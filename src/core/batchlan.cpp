@@ -1267,8 +1267,10 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     executionStack       << this;
 
     if (parent && stdinRedirect == nil) {
-      stdinRedirect = parent->stdinRedirect;
+      stdinRedirect    = parent->stdinRedirect;
       stdinRedirectAux = parent->stdinRedirectAux;
+      parent->stdinRedirect->AddAReference();
+      parent->stdinRedirectAux->AddAReference();
     } else {
       parent = nil;
     }
@@ -1328,6 +1330,8 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     if (parent) {
       stdinRedirect = nil;
       stdinRedirectAux = nil;
+      parent->stdinRedirect->RemoveAReference();
+      parent->stdinRedirectAux->RemoveAReference();
     }
 
     return result;
@@ -3386,8 +3390,20 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
               chain.ReportAnExecutionError("Encountered an error while parsing HBL", false, true);
           } else {
 
-              exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
-              exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
+              bool references_added = false;
+            
+            if (inArg && inArgAux) {
+              exc.stdinRedirectAux = inArgAux;
+              exc.stdinRedirect    = inArg;
+            } else {
+              if (chain.stdinRedirect) {
+                references_added = true;
+                chain.stdinRedirect->AddAReference();
+                chain.stdinRedirectAux->AddAReference();
+              }
+              exc.stdinRedirectAux = chain.stdinRedirectAux;
+              exc.stdinRedirect    = chain.stdinRedirect;
+            }
 
               if (simpleParameters.lLength && exc.TryToMakeSimple()) {
                   ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)exc.toStr()) );
@@ -3396,8 +3412,14 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
                   exc.Execute();
               }
 
+              if (references_added) {
+                chain.stdinRedirect->RemoveAReference();
+                chain.stdinRedirectAux->RemoveAReference();
+              }
+            
               exc.stdinRedirectAux = nil;
               exc.stdinRedirect    = nil;
+            
               if (exc.result) {
                   DeleteObject (chain.result);
                   chain.result = exc.result;

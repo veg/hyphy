@@ -473,15 +473,26 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         function_body->ResetFormulae();
       }
 
+      _PMathObj ret;
+    
       if (currentExecutionList && currentExecutionList->stdinRedirect) {
+          // 20180620: SLKP, need to split this off because if Execute fails
+          // then there will be a double free on stdinRedirect
         function_body -> stdinRedirect    = currentExecutionList->stdinRedirect;
         function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
+        
+        function_body -> stdinRedirect -> AddAReference();
+        function_body -> stdinRedirectAux -> AddAReference();
+        
+        ret = function_body->Execute();
+        
+        function_body -> stdinRedirect -> RemoveAReference();
+        function_body -> stdinRedirectAux -> RemoveAReference();
+        function_body -> stdinRedirect    = nil;
+        function_body -> stdinRedirectAux = nil;
+     } else {
+        ret = function_body->Execute();
       }
-
-      _PMathObj ret = function_body->Execute();
-
-      function_body -> stdinRedirect    = nil;
-      function_body -> stdinRedirectAux = nil;
 
       if (terminateExecution) {
         theScrap.Push (new _Constant (0.0));

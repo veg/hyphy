@@ -151,8 +151,24 @@ lfunction alignments.GetSequenceByName (dataset_name, sequence_name) {
  */
 
 lfunction alignments.GetIthSequence (dataset_name, index) {
-
     GetString   (seq_id, ^dataset_name, index);
+    GetDataInfo (seq_string, ^dataset_name, index);
+    return {utility.getGlobalValue("terms.id") : seq_id, utility.getGlobalValue("terms.data.sequence") : seq_string};
+}
+
+/**
+ * Get i-th sequence name/value from an alignment; retrieve the original sequence name if available
+ * @name alignments.GetIthSequenceOriginalName
+ * @param {String} dataset_name - name of dataset to get sequence names from
+ * @param {String} index - the name of the sequence to extract or None to set up the initial mapping
+ * @returns {Dict} {"id" : sequence name, "sequence" : sequence data}
+ */
+
+lfunction alignments.GetIthSequenceOriginalName (dataset_name, index) {
+    GetString   (seq_id, ^dataset_name, index);
+    if (Type (^"`dataset_name`.mapping") == "AssociativeList") {
+        seq_id = (^"`dataset_name`.mapping")[seq_id];
+    }
     GetDataInfo (seq_string, ^dataset_name, index);
     return {utility.getGlobalValue("terms.id") : seq_id, utility.getGlobalValue("terms.data.sequence") : seq_string};
 }
@@ -301,7 +317,30 @@ function alignments.LoadGeneticCodeAndAlignment(dataset_name, datafilter_name, p
  */
 function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) {
     DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3, , , data_info[terms.stop_codons]);
-    io.CheckAssertion("`datafilter_name`.sites*3==`dataset_name`.sites", "The input alignment must not contain stop codons");
+    if (^"`datafilter_name`.sites"*3 != ^"`dataset_name`.sites") {
+        // generate a more diagnostic error here
+        for (alignments.LoadCodonDataFile.i = 0; alignments.LoadCodonDataFile.i < ^"`dataset_name`.species"; alignments.LoadCodonDataFile.i += 1) {
+            DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3,  , "" + alignments.LoadCodonDataFile.i , data_info[terms.stop_codons]);
+            if (^"`datafilter_name`.sites"*3 != ^"`dataset_name`.sites") {
+                alignments.LoadCodonDataFile.name = alignments.GetIthSequenceOriginalName (dataset_name, alignments.LoadCodonDataFile.i);
+                alignments.LoadCodonDataFile.site_map = ^"`datafilter_name`.site_map";
+
+                alignments.LoadCodonDataFile.annotation_string = utility.PopulateDict (0, ^"`dataset_name`.sites",
+                                                       '(alignments.LoadCodonDataFile.name[terms.data.sequence])[_idx]',
+                                                       '_idx');
+
+
+                utility.ForEach (alignments.LoadCodonDataFile.site_map, "_value_",
+                    '
+                        `&alignments.LoadCodonDataFile.annotation_string`[_value_] = `&alignments.LoadCodonDataFile.annotation_string`[_value_] && 0;
+                    ');
+
+                console.log ("*** PROBLEM WITH SEQUENCE ' " + alignments.LoadCodonDataFile.name[terms.id] + "' (" + ^"`dataset_name`.sites" + " nt long, stop codons shown in capital letters)\n\n" + Join ("",alignments.LoadCodonDataFile.annotation_string));
+                break;
+            }
+        }
+        io.CheckAssertion("`datafilter_name`.sites*3==`dataset_name`.sites", "The input alignment must have the number of sites that is divisible by 3 and must not contain stop codons");
+    }
     data_info[terms.data.sites] = ^ "`datafilter_name`.sites";
     data_info[terms.data.dataset] = dataset_name;
     data_info[terms.data.datafilter] = datafilter_name;
