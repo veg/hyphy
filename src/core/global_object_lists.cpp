@@ -241,8 +241,9 @@ namespace hyphy_global_objects {
             return true;
           }
         }
+      } else {
+        WarnError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));
       }
-      WarnError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));
     }
 
     return false;
