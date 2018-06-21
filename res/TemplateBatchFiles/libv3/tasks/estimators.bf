@@ -738,7 +738,7 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
             }
         }, {
             "0": tree
-        }, model_template, initial_values, run_options)
+        }, model_template, initial_values, run_options, model_objects);
     }
 
     components = utility.Array1D(data_filter);
