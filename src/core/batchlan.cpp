@@ -1273,8 +1273,10 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     if (parent && stdinRedirect == nil) {
       stash1  = stdinRedirect    = parent->stdinRedirect;
       stash2  =  stdinRedirectAux = parent->stdinRedirectAux;
-      parent->stdinRedirect->AddAReference();
-      parent->stdinRedirectAux->AddAReference();
+      if (stash1) {
+        stash1->AddAReference();
+        stash2->AddAReference();
+      }
     } else {
       parent = nil;
     }
@@ -1334,8 +1336,8 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     if (parent) {
       stdinRedirect = nil;
       stdinRedirectAux = nil;
-      stash1->RemoveAReference();
-      stash2->RemoveAReference();
+      DeleteObject (stash1);
+      DeleteObject (stash2);
     }
 
     return result;
