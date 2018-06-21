@@ -580,7 +580,7 @@ void    SetStatusLine               (_String s) {
 
 //__________________________________________________________________________________
 void    SetStatusLineUser   (_String const s) {
-  if (isatty (STDERR_FILENO)) { // only print to terminal devices
+  if ( has_terminal_stderr ) { // only print to terminal devices
     setvbuf(stderr, NULL, _IONBF, 0);
     BufferToConsole("\33[2K\r", stderr);
     StringToConsole(s, stderr);

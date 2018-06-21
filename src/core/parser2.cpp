@@ -65,16 +65,8 @@ extern   _SimpleList BinOps,
          FunctionArgumentCount,
          associativeOps;
 
-extern   long           expressionsParsed;
-
 extern    _List         FunctionNameList;
 
-extern    _AVLListX     _HY_GetStringGlobalTypes;
-
-extern    hyFloat    tolerance,
-          maxRombergSteps,
-          integrationPrecisionFactor,
-          kMachineEpsilon;
 
 
 
@@ -648,8 +640,6 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
 {
   //static bool inAssignment = false;
-
-    expressionsParsed++;
 
     _List           operations,
                     operands,

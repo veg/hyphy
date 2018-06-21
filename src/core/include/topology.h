@@ -68,7 +68,7 @@ struct _TreeTopologyParseSettings {
   
     ~_TreeTopologyParseSettings () {
       if (parser_cache) {
-        parser_cache->dataList->ClearFormulasInList();
+        parser_cache->ClearFormulasInList();
         DeleteObject (parser_cache->dataList);
         DeleteObject (parser_cache);
       }
@@ -121,7 +121,23 @@ protected:
     void            destroyCompTree                     (node<long>*) const;
     _List*          SplitTreeIntoClustersInt            (node<long>*, _List*, _AVLListX&, long, long) const;
     char            internalTreeCompare                 (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology const*, bool = false) const;
-    char            internalNodeCompare                 (node<long>*, node<long>*, _SimpleList&, _SimpleList*, bool, long, node<long>*, _TreeTopology const*, bool = false) const;
+    
+    /**
+        Compare two nodes on the same (subset) of leaves and report if they create the same subpartition
+     
+        @param n1 the first node to compare
+        @param n2 the second node to compare
+        @param subTreeMap ?
+        @param reindexer ?
+        @param cangoup ?
+        @param totalSize ?
+        @param n22 ?
+        @param tree2 ?
+        @param isPattern ?
+     
+        @return whether or not the nodes are equal
+    */
+    bool            internalNodeCompare                 (node<long>* n1, node<long>*, _SimpleList& subTreeMap, _SimpleList* reindexer, bool cangoup, long totalSize, node<long>* n22, _TreeTopology const* tree2, bool isPattern = false) const;
     virtual HBLObjectRef       FlatRepresentation                  (void);
     void            FindCOTHelper                       (node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, hyFloat);
     void            FindCOTHelper2                      (node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, hyFloat);
@@ -310,6 +326,9 @@ public:
     /**
         return the default prefix for generating internal node names (e.g. 'Node')
     */
+
+    const _String     CompareSubTrees                 (_TreeTopology const*, node<long>*) const;
+    const _String     FindMaxCommonSubTree            (_TreeTopology const*, long&, _List*) const;
 
 
 

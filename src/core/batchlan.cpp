@@ -1172,20 +1172,9 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
 
 //____________________________________________________________________________________
 
-long        _ExecutionList::ExecuteAndClean     (long g, _String* fName)        // run this execution list
-{
-    long    f = -1;
+long        _ExecutionList::ExecuteAndClean     (long g) {
     Execute ();
-
-    if (fName && !terminate_execution) {
-        f = batchLanguageFunctionNames.GetDataByKey (fName);
-    }
-
-    terminate_execution      = false;
-
     ClearBFFunctionLists    (g);
-
-  return f;
 }
 
 //____________________________________________________________________________________
@@ -4552,6 +4541,8 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
 
       _ExecutionList   * namespace_payload = new _ExecutionList (namespace_text, funcID, false, &success);
+        
+       DeleteObject (funcID);
 
       if (success) {
         _ElementaryCommand * nested_list = new _ElementaryCommand (HY_HBL_COMMAND_NESTED_LIST);

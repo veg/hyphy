@@ -108,7 +108,7 @@ public:
     void        ExecuteSimple               (void);             // run a simple compiled list
     bool        TryToMakeSimple             (void);             // see if a list can be made into a compiled version
 
-    long        ExecuteAndClean             (long,_String* = nil);
+    long        ExecuteAndClean             (long);
 
     void        ResetFormulae               (void);             // decompile formulas (for reference functions)
     void        ResetNameSpace              (void);

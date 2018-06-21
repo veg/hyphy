@@ -83,7 +83,8 @@ namespace hy_global {
         /** set to true if it is necessary to print an extra new line character 
             when HyPhy exits */
     
-                     terminate_execution = false;
+                     terminate_execution = false,
+                     has_terminal_stdout = true, has_terminal_stderr = true;
     
     FILE            *hy_error_log_file,
                     *hy_message_log_file;
@@ -110,7 +111,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                      kHyPhyVersion  = _String ("2.4") & _String(__DATE__).Cut (7,10) & _String(__DATE__).Cut (0,2).Replace("Jan", "01", true).
+                      kHyPhyVersion  = _String ("2.4.0.") & _String(__DATE__).Cut (7,10) & _String(__DATE__).Cut (0,2).Replace("Jan", "01", true).
                                       Replace("Feb", "02", true).
                                       Replace("Mar", "03", true).
                                       Replace("Apr", "04", true).
@@ -349,7 +350,8 @@ namespace hy_global {
        
         init_genrand            (hy_random_seed);
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
-        
+        has_terminal_stdout = isatty (STDOUT_FILENO);
+        has_terminal_stderr = isatty (STDERR_FILENO);
         
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
         if (hy_mpi_node_rank == 0L) {

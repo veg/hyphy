@@ -84,9 +84,8 @@ _SimpleList::_SimpleList (long l, long start, long step)
 }
 
 //Length constructor
-_SimpleList::_SimpleList (unsigned long l)
-{
-    lLength = 0;
+_SimpleList::_SimpleList (unsigned long l) {
+    lLength = 0UL;
     laLength = (l/MEMORYSTEP + 1)*MEMORYSTEP;
     lData = (long*)MemAllocate (laLength * sizeof(hyPointer));
     memset (lData,0,laLength * sizeof(hyPointer));

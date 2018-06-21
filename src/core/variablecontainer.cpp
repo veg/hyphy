@@ -533,12 +533,12 @@ void    _VariableContainer::PushDepVariable (long var_ref, long local_ref) {
 //__________________________________________________________________________________
 
 bool    _VariableContainer::HasIndVariable  (long var_ref) const {
-    return iVariables && iVariables->FindStepping(var_ref, 2L);
+    return iVariables && iVariables->FindStepping(var_ref, 2L) >= 0;
 }
 //__________________________________________________________________________________
 
 bool    _VariableContainer::HasDepVariable  (long var_ref) const {
-    return dVariables && dVariables->FindStepping(var_ref, 2L);
+    return dVariables && dVariables->FindStepping(var_ref, 2L) >= 0;
 }
 //__________________________________________________________________________________
 
@@ -802,7 +802,7 @@ bool      _VariableContainer::HasLocals  (void) {
 
 //__________________________________________________________________________________
 bool      _VariableContainer::is_model_var  (long i) const {
-    return dVariables->lData[2*i+1]>=0;
+    return dVariables->lData[(i<<1)+1]>=0;
 }
 
 //__________________________________________________________________________________

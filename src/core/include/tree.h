@@ -171,23 +171,23 @@ public:
     void        AssignLabelsToBranches          (node<nodeCoord>*, _String*, bool);
 
     node<nodeCoord>*
-    AlignedTipsMapping                          (node<long>*, bool first = false, bool respectRoot = true) const;
+    AlignedTipsMapping                          (node<long>*, hyFloat& current_offset, bool first = false, bool respectRoot = true) const;
 
     void        AlignNodes                      (node<nodeCoord>*) const;
 
     node<nodeCoord>*
-    ScaledBranchMapping             (node<nodeCoord>* , _String*, long, long&, char) const;
+    ScaledBranchMapping             (node<nodeCoord>* , _String*, long, long&, hyTopologyBranchLengthMode) const;
 
     node<nodeCoord>*
-    RadialBranchMapping             (node<long>* , node<nodeCoord>*, _String*, hyFloat, long&, hyFloat&, char);
+    RadialBranchMapping             (node<long>* , node<nodeCoord>*, _String*, hyFloat, long&, hyFloat&, hyTopologyBranchLengthMode);
 
     void        ScaledBranchReMapping           (node<nodeCoord>*, hyFloat) const;
     char&       RootedFlag                      (void) {
         return rooted;
     }
 
-    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long) const;
-    void        TreePSRecurse                   (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long,long,long,_AssociativeList* = nil, char = 0, hyFloat* = nil) const;
+    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long, const _TreeTopologyParseSettings&) const;
+    void        TreePSRecurse                   (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long,long,long,const _TreeTopologyParseSettings&,_AssociativeList* = nil, char = 0, hyFloat* = nil) const;
 
     bool        AllBranchesHaveModels           (long) const;
     void        ScanSubtreeVars                 (_List&, char, _CalcNode*) const;
@@ -206,15 +206,13 @@ public:
     _String*    TreeUserParams                  (void) const;
 
 
-    const _String     CompareSubTrees                 (_TheTree*, node<long>*);
-    const _String     FindMaxCommonSubTree            (_TheTree const*, long&, _List*) const;
   
   
     void        AddNodeNamesToDS                (_DataSet*, bool, bool, char) const;
     // if the
-    hyFloat  PSStringWidth                   (_String const&);
+    static hyFloat  PSStringWidth                   (_String const&);
 
-    hyFloat  DetermineBranchLengthGivenScalingParameter (long, _String&, char) const;
+    hyFloat  DetermineBranchLengthGivenScalingParameter (long, _String&, hyTopologyBranchLengthMode) const;
 
     _AVLListX*  ConstructNodeToIndexMap         (bool) const;
     // 20090206: SLKP
@@ -340,14 +338,13 @@ protected:
                 topLevelRightL,
                 forceRecalculationOnTheseBranches,
                 nodesToUpdate;
+    
+    static      hyFloat _timesCharWidths[256],
+                         _maxTimesCharWidth;
 
 };
 
 
-extern _String      
-       includeModelSpecs,
-       treeOutputAVL,
-       treeOutputLayout;
 #ifdef _OPENMP
 #include "omp.h"
 #endif

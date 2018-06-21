@@ -360,7 +360,14 @@ class _SimpleList:public BaseObj {
         */
         void Flip(void); //flip the order of list elements
 
+        /**
+            Initialize the list object
+            @param bool if set to true, make a default memory allocation for the elements
+         
+            @return nothing; acts on this
+         */
         virtual void Initialize(bool = true);
+
 
         /**
         * Insert an element at a specific point

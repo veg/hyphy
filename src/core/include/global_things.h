@@ -260,7 +260,9 @@ namespace hy_global {
   
   extern  bool    hy_drop_into_debug_mode,
   hy_need_extra_nl,
-  terminate_execution;
+  terminate_execution,
+  has_terminal_stdout,
+  has_terminal_stderr;
   
   extern  int      hy_mpi_node_rank,
   hy_mpi_node_count;

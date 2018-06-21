@@ -74,6 +74,10 @@ class _AVLListX: public _AVLList {
 
         void        SetXtra(long,long);
         long        GetXtra(long) const;
+    
+        void        ClearFormulasInList (void) {
+            xtraD.ClearFormulasInList ();
+        }
 
 };
 

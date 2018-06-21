@@ -169,6 +169,18 @@ protected: // data members
         }
     };
  
+    template <typename LAMBDA> long FindLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
+        if (array) {
+            unsigned long array_l = array->countitems();
+            for (long index = 0UL; index < array_l; index += 2UL) {
+                if (cb (array->get (index), array->get (index+1), index)) {
+                    return index >> 1;
+                }
+            }
+        }
+        return kNotFound;
+    };
+
     template <typename LAMBDA> bool AnyLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
         if (array) {
             unsigned long array_l = array->countitems();

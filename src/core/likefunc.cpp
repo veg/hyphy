@@ -112,8 +112,6 @@ _String         mpiLoopSwitchToOptimize ("_CONTEXT_SWITCH_MPIPARTITIONS_"),
 
 #endif
 
-extern  hyFloat  kMachineEpsilon;
-
 #define     SQR(A) (A)*(A)
 #define     GOLDEN_RATIO 1.618034
 #define     GOLDEN_RATIO_R  0.61803399
@@ -691,7 +689,6 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
     if (leafScan) {
         ((_SimpleList*)leafSkips(f))->Clear();
         df->MatchStartNEnd(*(_SimpleList*)optimalOrders(f),*(_SimpleList*)leafSkips(f));
-        t->BuildINodeDependancies();
     }
     return true;
 }

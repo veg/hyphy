@@ -103,8 +103,7 @@ long_max = (hyFloat)LONG_MAX;
  
 //Used in formula, and constant
 
-hyFloat  kMachineEpsilon = 2.*DBL_EPSILON,
-            tolerance  = DBL_EPSILON;
+hyFloat  tolerance  = DBL_EPSILON;
 
 
 

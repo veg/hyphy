@@ -1348,6 +1348,7 @@ hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol,
 
     if (fa*fb<0.0) {
         fc = fb;
+        c = b;
 
         for (it = 0; it < MAX_BRENT_ITERATES; it++) {
             if (fb*fc>0.0) {
@@ -1410,11 +1411,13 @@ hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol,
             if (fabs(d)>tol1) {
                 b+=d;
             } else {
-                b+=fabs(tol1)*(1.*2.*(xm>=.0));
+                if (xm > 0.) {
+                    b += fabs (tol1);
+                } else {
+                    b -= fabs (tol1);
+                }
             }
-          
             fb = set_and_compute (b);
-
         }
     }
 

@@ -1094,7 +1094,7 @@ public:
 
     template <typename CALLBACK> void Each (CALLBACK cb, unsigned long start_at = 0) const {
         for (unsigned long i = start_at; i<s_length; i++) {
-            cb ( ((long*)(s_data))[i], i );
+            cb ( s_data[i], i );
         }
     }
 

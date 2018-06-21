@@ -1438,14 +1438,14 @@ _FString*    _TreeTopology::Compare (HBLObjectRefConst p) const {
 
 //__________________________________________________________________________________
 
-char     _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _SimpleList& subTreeMap, _SimpleList* reindexer, bool cangoup, long totalSize, node<long>* n22, _TreeTopology const* tree2, bool isPattern) const {
+bool     _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _SimpleList& subTreeMap, _SimpleList* reindexer, bool cangoup, long totalSize, node<long>* n22, _TreeTopology const* tree2, bool isPattern) const {
     // compares whether the nodes create the same subpartition
     
     // TODO SLKP 20171224: this needs review
     
     // count the number of children
     long  nc1 = n1->get_num_nodes(),
-    nc2 = n2->get_num_nodes() + (cangoup&&n2->parent) - (n22&&(!n2->parent));
+          nc2 = n2->get_num_nodes() + (cangoup&&n2->parent) - (n22&&(!n2->parent));
     
     
     if ( nc1 == nc2 || isPattern && nc2<nc1 ) {
@@ -1636,6 +1636,7 @@ char     _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _Si
 
 char     _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _SimpleList* reindexer, char compMode, long totalSize, node<long>* n22, _TreeTopology const* tree2, bool isPattern) const
 // compare tree topologies
+// return values mean
 {
     if (n1->get_num_nodes() == 0) {
         return 1;
@@ -1716,312 +1717,6 @@ char     _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _Si
     return 1;
 }
 
-//__________________________________________________________________________________
-
-const _String  _TheTree::FindMaxCommonSubTree (_TheTree const*  compareTo, long& sizeVar, _List* forest) const{
-    // TODO SLKP 20180313 possibly deprecate?
-  
-    _List           myLeaves,
-                    otherLeaves,
-                    sharedLeaves;
-
-    _SimpleList     indexer,
-                    otherIndexer,
-                    sharedLeavesIDin1,
-                    sharedLeavesIDin2;
-
-    node<long>      *myCT,
-                    *otherCT;
-
-    _String         rerootAt;
-
-    myCT            = prepTree4Comparison(myLeaves, indexer);
-    otherCT         = compareTo->prepTree4Comparison(otherLeaves, otherIndexer);
-
-    sharedLeaves.Intersect (otherLeaves,myLeaves,&sharedLeavesIDin1,&sharedLeavesIDin2);
-
-    if (sharedLeaves.countitems () > 1UL) { // more than one common leaf
-        // now we need to map shared leaves to a common indexing space
-
-        _SimpleList    reindexer ((unsigned long)otherLeaves.lLength),
-                       lidx1     ((unsigned long)myLeaves.lLength),
-                       lidx2     ((unsigned long)otherLeaves.lLength),
-                       ldx1,
-                       ldx2;
-
-        reindexer.lLength       = (unsigned long)otherLeaves.lLength;
-        lidx1.lLength = myLeaves.lLength;
-        lidx2.lLength = otherLeaves.lLength;
-
-        for (long k=0; k<otherLeaves.lLength; k++) {
-            lidx2.lData[otherIndexer.lData[k]] = k;
-        }
-
-        for (long k0=0; k0<myLeaves.lLength; k0++) {
-            lidx1.lData[indexer.lData[k0]] = k0;
-        }
-
-        for (long k1=0; k1<reindexer.lLength; k1++) {
-            reindexer.lData[k1] = -1;
-        }
-
-        for (long k2=0; k2<sharedLeaves.lLength; k2++) {
-            reindexer.lData[lidx2.lData[sharedLeavesIDin2.lData[k2]]] = lidx1.lData[sharedLeavesIDin1.lData[k2]];
-        }
-
-        // now we map actual leaf structures to their respective leaf indices
-
-        node_iterator<long> ni (myCT, _HY_TREE_TRAVERSAL_POSTORDER);
-
-
-        while (node<long>* iterator = ni.Next()) {
-            if (iterator->is_leaf()) {
-                ldx1 << (long)iterator;
-            }
-        }
-
-        ni.Reset (otherCT);
-        while (node<long>* iterator = ni.Next()) {
-            if (iterator->is_leaf()) {
-                ldx2 << (long)iterator;
-            }
-        }
-
-        // now we loop through the list of leaves and try to match them all up
-
-        _SimpleList     matchedTops,
-                        matchedSize;
-
-        for (long k3=0; k3<sharedLeaves.lLength-1; k3++) {
-            if (reindexer.lData[lidx2.lData[sharedLeavesIDin2.lData[k3]]]>=0)
-                // leaf still available
-            {
-                node<long>*      ln1 = (node<long>*)ldx1.lData[lidx1.lData[sharedLeavesIDin1.lData[k3]]],
-                                 *       ln2 = (node<long>*)ldx2.lData[lidx2.lData[sharedLeavesIDin2.lData[k3]]],
-                                         *      p1  = ln1->parent,
-                                                *         p2  = ln2->parent;
-
-                char             cRes = 0;
-
-                while ((internalTreeCompare (p1,p2,&reindexer,0,myLeaves.lLength,p2->parent?nil:ln2,compareTo) == 1)&&p1&&p2) {
-                    ln1 = p1;
-                    ln2 = p2;
-                    p1=p1->parent;
-                    p2=p2->parent;
-
-                    cRes = 1;
-                }
-                if (cRes) {
-                    _SimpleList* matchedLeaves = (_SimpleList*)ln2->in_object;
-
-                    matchedTops << (long)ln1;
-                    matchedSize << matchedLeaves->lLength;
-
-                    for (long k4=0; k4<matchedLeaves->lLength; k4++) {
-                        reindexer.lData[matchedLeaves->lData[k4]] = -1;
-                    }
-                }
-            }
-        }
-
-        if (matchedSize.lLength) {
-            if (forest) {
-                sizeVar = 0;
-                for (long k6=0; k6<matchedSize.lLength; k6++) {
-                    long maxSz = 0;
-
-
-                    ni.Reset(myCT);
-                    node<long>*   mNode  = (node<long>*)matchedTops.lData[k6];
-
-                    while (node<long>* iterator = ni.Next()) {
-                        if (!iterator->is_leaf()) {
-                            if (iterator == mNode) {
-                                break;
-                            }
-                            maxSz ++;
-                        }
-                    }
-
-                    ni.Reset(theRoot);
-
-                    while (node<long>* iterator = ni.Next()) {
-                      if (!iterator->is_leaf()) {
-                            if (maxSz == 0) {
-                                (*forest) << LocateVar(iterator->in_object)->GetName();
-                                break;
-                            }
-                            maxSz--;
-                        }
-                    }
-                    sizeVar += matchedSize.lData[k6];
-                }
-            } else {
-                long maxSz = -1,
-                     maxIdx  = 0;
-
-                for (long k5=0; k5<matchedSize.lLength; k5++)
-                    if (matchedSize.lData[k5]>maxSz) {
-                        maxSz = matchedSize.lData[k5];
-                        maxIdx  = k5;
-                    }
-
-                sizeVar = maxSz;
-
-                maxSz = 0;
-
-                node<long>*   mNode  = (node<long>*)matchedTops.lData[maxIdx];
-
-                ni.Reset (myCT);
-                while (node<long>* iterator = ni.Next()) {
-                    if (iterator->get_num_nodes()) {
-                        if (iterator == mNode) {
-                            break;
-                        }
-                        maxSz ++;
-                    }
-                }
-
-                ni.Reset (theRoot);
-
-              while (node<long>* iterator = ni.Next()) {
-                  if (iterator->get_num_nodes()) {
-                       if (maxSz == 0) {
-                            return *LocateVar(iterator->in_object)->GetName();
-                        }
-                        maxSz--;
-                    }
-                }
-            }
-        }
-    }
-    return kEmptyString;
-}
-
-
-//__________________________________________________________________________________
-
-const _String  _TheTree::CompareSubTrees (_TheTree* compareTo, node<long>* topNode) {
-    // compare tree topologies
-
-    _List           myLeaves,
-                    otherLeaves,
-                    sharedLeaves;
-
-    _SimpleList     indexer,
-                    otherIndexer,
-                    sharedLeavesID;
-
-    node<long>      *myCT,
-         *otherCT;
-
-    _String         rerootAt;
-
-    myCT            = prepTree4Comparison(myLeaves, indexer);
-    otherCT         = compareTo->prepTree4Comparison(otherLeaves, otherIndexer, topNode);
-
-    sharedLeaves.Intersect (myLeaves, otherLeaves,&sharedLeavesID);
-
-    // first compare the inclusion for the set of leaf labels
-
-    if (sharedLeavesID.lLength == otherLeaves.lLength) {
-        _SimpleList ilist (myLeaves.countitems(), -1L, 0L);
-
- 
-        //for BCC
-        for (long k2 = 0; k2 < otherIndexer.lLength; k2++) {
-            ilist.lData[sharedLeavesID.lData[otherIndexer.lData[k2]]] = k2;
-        }
-
-        for (long k2 = 0; k2<indexer.lLength; k2++) {
-            long         lidx      = ilist.lData[indexer.lData[k2]];
-            indexer.lData[k2] = lidx >=0L ? lidx : -1L;
-        }
-
-        _SimpleList *reindexer = &indexer;
-
-        // now compare explore possible subtree matchings
-        // for all internal nodes of this tree except the root
-
-        char   compRes = 0;
-
-        long   tCount = 1L,
-               nc2 = topNode->get_num_nodes();
-
-        node_iterator<long> ni (myCT, _HY_TREE_TRAVERSAL_POSTORDER);
-        ni.Next();
-        node<long>* iterator = ni.Next();
-
-        while (iterator!=myCT) {
-          long nc = iterator->get_num_nodes();
-          if (nc == nc2) {
-              long kk;
-              for (kk = 1; kk <= nc; kk++) {
-                  compRes = internalTreeCompare (otherCT,iterator, reindexer, 0, otherLeaves.lLength, iterator->go_down(kk),compareTo);
-                  if (compRes) {
-                      if (compRes == -1) {
-                          iterator = myCT;
-                      }
-                      break;
-                  }
-              }
-              if (kk>nc) {
-                  compRes = internalTreeCompare (otherCT,iterator, reindexer, 0, otherLeaves.lLength, nil, compareTo);
-                  if (compRes) {
-                      if (compRes == -1) {
-                          iterator = myCT;
-                      }
-                      break;
-                  }
-              } else {
-                  break;
-              }
-          }
-          tCount ++;
-          iterator = ni.Next();
-        }
-
-        if (iterator != myCT) {
-            ni.Reset (theRoot);
-            iterator = ni.Next ();
-            while (iterator != theRoot) {
-                if (tCount==0) {
-                    rerootAt = _String("Matched at the ") & *map_node_to_calcnode (iterator)->GetName() & '.';
-                    break;
-                } else {
-                    tCount --;
-                }
-
-                iterator = ni.Next();
-            }
-        } else {
-            long nc = myCT->get_num_nodes();
-
-            if (nc == nc2+1)
-                for (long kk = 1; kk <= nc; kk++) {
-                    compRes = internalTreeCompare (otherCT,myCT, reindexer, 0, otherLeaves.lLength, myCT->go_down(kk),compareTo);
-                    if (compRes==1) {
-                        break;
-                    }
-                }
-
-            if (compRes == 1) {
-                rerootAt = "Matched at the root.";
-            }
-        }
-
-        if (rerootAt.empty()) {
-            rerootAt = "No match: Different topologies (matching label sets).";
-        }
-    } else {
-        rerootAt = "No match: Unequal label sets.";
-    }
-
-    destroyCompTree (myCT);
-    destroyCompTree (otherCT);
-
-    return          rerootAt;
-}
 
 //__________________________________________________________________________________
 void _TreeTopology::EdgeCount (long& leaves, long& internals) const {
@@ -2629,7 +2324,7 @@ node<long>* _TreeTopology::prepTree4Comparison (_List& leafNames, _SimpleList& m
         The indices are in post-order traversal order
      
         `leafNames` stores lexicographically sorted leaf names
-        `mapping` stores the mapping between the original post-order index of a leaf and it's location in `leafNames`
+        `mapping` stores the mapping between the original post-order index of a leaf and its location in `leafNames`
      
      */
   
@@ -3359,6 +3054,281 @@ _AssociativeList *   _TreeTopology::SplitsIdentity (HBLObjectRef p)  const {
     return resultList;
 }
 
+//__________________________________________________________________________________
+
+const _String  _TreeTopology::FindMaxCommonSubTree (_TreeTopology const*  compare_to, long& size_tracker, _List* forest) const{
+    _List           myLeaves,
+                    otherLeaves,
+                    sharedLeaves;
+    
+    _SimpleList     indexer,
+                    otherIndexer,
+                    sharedLeavesIDin1,
+                    sharedLeavesIDin2;
+    
+    
+    _String         rerootAt;
+    
+    node<long>      *myCT    = prepTree4Comparison(myLeaves, indexer),
+                    *otherCT = compare_to->prepTree4Comparison(otherLeaves, otherIndexer);
+    
+    sharedLeaves.Intersect (otherLeaves,myLeaves,&sharedLeavesIDin1,&sharedLeavesIDin2);
+    
+    if (sharedLeaves.countitems() > 1UL) { // more than one common leaf
+                                           // now we need to map shared leaves to a common indexing space
+        
+        _SimpleList     my_inverted_index, // was lidx1
+                        other_inverted_index; // was lidx2
+        
+        my_inverted_index.Populate(indexer, _SimpleList::action_invert);
+        other_inverted_index.Populate(otherIndexer, _SimpleList::action_invert);
+        
+        _SimpleList     reindexer (otherLeaves.countitems(),-1L,0L),
+                        ldx1,
+                        ldx2;
+        
+        
+        for (long k2=0L; k2<sharedLeaves.countitems(); k2++) {
+            reindexer [other_inverted_index.get (sharedLeavesIDin2.get (k2))] = my_inverted_index.get (sharedLeavesIDin1.get (k2));
+            //          the original index of shared leaf k2  -> the original index of shared lead k1 (in post-order traveral)
+        }
+        
+        // now we map actual leaf structures to their respective leaf indices
+        
+        node_iterator<long> ni (myCT, _HY_TREE_TRAVERSAL_POSTORDER);
+        
+        while (node<long>* iterator = ni.Next()) {
+            if (iterator->is_leaf()) {
+                ldx1 << (long)iterator;
+            }
+        }
+        
+        ni.Reset (otherCT);
+        while (node<long>* iterator = ni.Next()) {
+            if (iterator->is_leaf()) {
+                ldx2 << (long)iterator;
+            }
+        }
+        
+        // now we loop through the list of leaves and try to match them all up
+        
+        _SimpleList     matchedTops,
+                        matchedSize;
+        
+        for (long k3=0UL; k3<sharedLeaves.countitems()-1L; k3++) {
+            long try_leaf_index = other_inverted_index.get (sharedLeavesIDin2.get (k3));
+            
+            if (reindexer.get (try_leaf_index) >= 0L) {
+                // leaf still available
+                node<long>*      ln1 = (node<long>*)ldx1.get (my_inverted_index.get (sharedLeavesIDin1.get (k3))),
+                         *       ln2 = (node<long>*)ldx2.get (try_leaf_index),
+                         *       p1  = ln1->parent,
+                         *       p2  = ln2->parent;
+                
+                bool             comparison_result = false;
+                
+                while ((internalTreeCompare (p1,p2,&reindexer,0,myLeaves.lLength,p2->parent?nil:ln2,compare_to) == 1)&&p1&&p2) {
+                    ln1 = p1;
+                    ln2 = p2;
+                    p1=p1->parent;
+                    p2=p2->parent;
+                    
+                    comparison_result = true;
+                }
+                
+                if (comparison_result) {
+                    _SimpleList* matchedLeaves = (_SimpleList*)ln2->in_object;
+                    
+                    matchedTops << (long)ln1;
+                    matchedSize << matchedLeaves->countitems();
+                    
+                    matchedLeaves->Each ([&] (long value, unsigned long) -> void {
+                        reindexer[value] = -1;
+                    });
+                }
+            }
+        }
+        
+        if (matchedSize.nonempty()) {
+            
+            auto handle_subtree = [&] (node<long> const * top_node) -> _String * {
+                ni.Reset(myCT);
+
+                long internal_node_count = 0L;
+                
+                while (node<long>* iterator = ni.Next()) {
+                    if (!iterator->is_leaf()) {
+                        if (iterator == top_node) {
+                            break;
+                        }
+                        internal_node_count ++;
+                    }
+                }
+                ni.Reset(theRoot);
+                while (node<long>* iterator = ni.Next()) {
+                    if (!iterator->is_leaf()) {
+                        if (internal_node_count == 0) {
+                            return LocateVar(iterator->in_object)->GetName();
+                        }
+                        internal_node_count--;
+                    }
+                }
+                return nil;
+            };
+            
+            if (forest) {
+                size_tracker = 0L;
+                for (long k6=0L; k6<matchedSize.lLength; k6++) {
+                    (*forest) << handle_subtree ((node<long>*)matchedTops.get (k6));
+                    size_tracker += matchedSize.get (k6);
+                }
+            } else {
+                long maxSz   = -1L,
+                     maxIdx  =  0L;
+                
+                matchedSize.Each ([&] (long value, unsigned long index) -> void {
+                    if (StoreIfGreater(maxSz, value)) {
+                        maxIdx = index;
+                    }
+                });
+                
+                size_tracker = maxSz;
+                _String const * res = handle_subtree ((node<long>*)matchedTops.lData[maxIdx]);
+                destroyCompTree(myCT);
+                destroyCompTree(otherCT);
+                return *res;
+            }
+        }
+    }
+    destroyCompTree(myCT);
+    destroyCompTree(otherCT);
+    return kEmptyString;
+}
+
+
+//__________________________________________________________________________________
+
+const _String  _TreeTopology::CompareSubTrees (_TreeTopology const* compareTo, node<long>* topNode) const {
+    // compare tree topologies
+    
+    _List           myLeaves,
+    otherLeaves,
+    sharedLeaves;
+    
+    _SimpleList     indexer,
+    otherIndexer,
+    sharedLeavesID;
+    
+    node<long>      *myCT,
+    *otherCT;
+    
+    _String         rerootAt;
+    
+    myCT            = prepTree4Comparison(myLeaves, indexer);
+    otherCT         = compareTo->prepTree4Comparison(otherLeaves, otherIndexer, topNode);
+    
+    sharedLeaves.Intersect (myLeaves, otherLeaves,&sharedLeavesID);
+    
+    // first compare the inclusion for the set of leaf labels
+    
+    if (sharedLeavesID.countitems() == otherLeaves.countitems()) {
+        _SimpleList ilist;
+        
+        ilist.Populate(myLeaves.countitems(), -1L, 0L);
+    
+        for (long k2 = 0L; k2 < otherIndexer.countitems(); k2++) {
+            ilist [sharedLeavesID.get(otherIndexer.get(k2))] = k2;
+        }
+        
+        for (long k2 = 0L; k2<indexer.countitems(); k2++) {
+            long         lidx      = ilist.lData[indexer.get(k2)];
+            indexer[k2] = lidx >=0L ? lidx : -1L;
+        }
+        
+        _SimpleList *reindexer = &indexer;
+        
+        // now compare explore possible subtree matchings
+        // for all internal nodes of this tree except the root
+        
+        char   compRes = 0;
+        
+        long   tCount = 1L,
+        nc2 = topNode->get_num_nodes();
+        
+        node_iterator<long> ni (myCT, _HY_TREE_TRAVERSAL_POSTORDER);
+        ni.Next();
+        node<long>* iterator = ni.Next();
+        
+        while (iterator!=myCT) {
+            long nc = iterator->get_num_nodes();
+            if (nc == nc2) {
+                long kk;
+                for (kk = 1; kk <= nc; kk++) {
+                    compRes = internalTreeCompare (otherCT,iterator, reindexer, 0, otherLeaves.lLength, iterator->go_down(kk),compareTo);
+                    if (compRes) {
+                        if (compRes == -1) {
+                            iterator = myCT;
+                        }
+                        break;
+                    }
+                }
+                if (kk>nc) {
+                    compRes = internalTreeCompare (otherCT,iterator, reindexer, 0, otherLeaves.lLength, nil, compareTo);
+                    if (compRes) {
+                        if (compRes == -1) {
+                            iterator = myCT;
+                        }
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+            tCount ++;
+            iterator = ni.Next();
+        }
+        
+        if (iterator != myCT) {
+            ni.Reset (theRoot);
+            iterator = ni.Next ();
+            while (iterator != theRoot) {
+                if (tCount==0) {
+                    rerootAt = _String("Matched at the ") & *map_node_to_calcnode (iterator)->GetName() & '.';
+                    break;
+                } else {
+                    tCount --;
+                }
+                
+                iterator = ni.Next();
+            }
+        } else {
+            long nc = myCT->get_num_nodes();
+            
+            if (nc == nc2+1)
+                for (long kk = 1; kk <= nc; kk++) {
+                    compRes = internalTreeCompare (otherCT,myCT, reindexer, 0, otherLeaves.lLength, myCT->go_down(kk),compareTo);
+                    if (compRes==1) {
+                        break;
+                    }
+                }
+            
+            if (compRes == 1) {
+                rerootAt = "Matched at the root.";
+            }
+        }
+        
+        if (rerootAt.empty()) {
+            rerootAt = "No match: Different topologies (matching label sets).";
+        }
+    } else {
+        rerootAt = "No match: Unequal label sets.";
+    }
+    
+    destroyCompTree (myCT);
+    destroyCompTree (otherCT);
+    
+    return          rerootAt;
+}
 
 
 

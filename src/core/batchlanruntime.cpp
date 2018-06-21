@@ -1406,10 +1406,35 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_progr
   current_program.advance();
 
   try {
-    _String requested_version = _ProcessALiteralArgument (*GetIthParameter(0UL),current_program);
-    if (kHyPhyVersion.to_float() < requested_version.to_float()) {
-      throw (_String ("Current script requires at least version ")& requested_version &" of HyPhy. Please download an updated version from http://www.hyphy.org or github.com/veg/hyphy and try again.");
-    }
+        _String requested_version = _ProcessALiteralArgument (*GetIthParameter(0UL),current_program);
+      
+          auto throw_error = [&] (void) -> void {
+              throw _String ("Current script requires at least version ")& requested_version &" of HyPhy. Please download an updated version from http://www.hyphy.org or github.com/veg/hyphy and try again.";
+          };
+      
+        const _List   local_version    = kHyPhyVersion.Tokenize ("."),
+                      required_version = requested_version.Tokenize(".");
+     
+          unsigned long const  upper_bound = MIN (local_version.countitems (), required_version.countitems());
+      
+      
+      for (unsigned long i = 0UL; i < upper_bound; i++) {
+          hyFloat local_number = ((_String*)local_version.GetItem(i))->to_float(),
+                  required_number = ((_String*)required_version.GetItem(i))->to_float();
+          
+          if (local_number > required_number) {
+              return true;
+          }
+          if (local_number < required_number) {
+              throw_error();
+          }
+      }
+
+      if (required_version.countitems() > upper_bound) {
+          return true;
+      }
+      throw_error ();
+
   } catch (const _String& error) {
     return  _DefaultExceptionHandler (nil, error, current_program);
   }
@@ -1417,6 +1442,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_progr
 }
 
 
+    
   //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& current_program){
