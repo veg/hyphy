@@ -1266,17 +1266,9 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     callPoints << currentCommand;
     executionStack       << this;
 
-    _AVLListXL * stash1 = nil;
-    _List* stash2 = nil; // recursion
-  
-  
     if (parent && stdinRedirect == nil) {
-      stash1  = stdinRedirect    = parent->stdinRedirect;
-      stash2  =  stdinRedirectAux = parent->stdinRedirectAux;
-      if (stash1) {
-        stash1->AddAReference();
-        stash2->AddAReference();
-      }
+      stdinRedirect = parent->stdinRedirect;
+      stdinRedirectAux = parent->stdinRedirectAux;
     } else {
       parent = nil;
     }
@@ -1336,8 +1328,6 @@ _PMathObj       _ExecutionList::Execute     (_ExecutionList* parent) {
     if (parent) {
       stdinRedirect = nil;
       stdinRedirectAux = nil;
-      DeleteObject (stash1);
-      DeleteObject (stash2);
     }
 
     return result;
@@ -3396,22 +3386,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
               chain.ReportAnExecutionError("Encountered an error while parsing HBL", false, true);
           } else {
 
-            _AVLListXL * stash1 = nil;
-            _List* stash2 = nil;
-            
-            if (inArg && inArgAux) {
-              exc.stdinRedirectAux = inArgAux;
-              exc.stdinRedirect    = inArg;
-            } else {
-              if (chain.stdinRedirect) {
-                stash1 = chain.stdinRedirect;
-                stash2 = chain.stdinRedirectAux; // for recursion calls
-                chain.stdinRedirect->AddAReference();
-                chain.stdinRedirectAux->AddAReference();
-              }
-              exc.stdinRedirectAux = chain.stdinRedirectAux;
-              exc.stdinRedirect    = chain.stdinRedirect;
-            }
+              exc.stdinRedirectAux = inArgAux?inArgAux:chain.stdinRedirectAux;
+              exc.stdinRedirect    = inArg?inArg:chain.stdinRedirect;
 
               if (simpleParameters.lLength && exc.TryToMakeSimple()) {
                   ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)exc.toStr()) );
@@ -3420,14 +3396,8 @@ void      _ElementaryCommand::ExecuteCase39 (_ExecutionList& chain) {
                   exc.Execute();
               }
 
-              if (stash1) {
-                stash1->RemoveAReference();
-                stash2->RemoveAReference();
-              }
-            
               exc.stdinRedirectAux = nil;
               exc.stdinRedirect    = nil;
-            
               if (exc.result) {
                   DeleteObject (chain.result);
                   chain.result = exc.result;
@@ -5606,74 +5576,79 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
                                             _String filter_specification = *GetFilterName (filterID) & spawningTree->GetName()->Enquote(',') & *freqVar->GetName();
 
-                                            _LikelihoodFunction lf (filter_specification, nil);
+                                            {
+                                                // 20180621 SLKP ensure that lf is deleted before the filter to unregister event listeners
 
-                                            if (terminateExecution) {
-                                                return;
-                                            }
+                                                _LikelihoodFunction lf (filter_specification, nil);
 
-                                            bool    doInternals = false;
-
-                                            if (parameters.lLength>5) {
-                                                doInternals = (ProcessNumericArgument ((_String*)parameters (5),chain.nameSpacePrefix)>0.5);
-                                            }
-
-
-                                            _String spoolFile;
-
-                                            FILE*   mainFile = nil;
-
-                                            errMsg = emptyString;
-
-                                            if (parameters.lLength > 6) {
-                                                spoolFile = ProcessLiteralArgument ((_String*)parameters (6),chain.nameSpacePrefix);
-                                                spoolFile.ProcessFileName();
-                                                mainFile = doFileOpen (spoolFile.sData,"w");
-                                                if (!mainFile) {
-                                                    errMsg = _String("Failed to open ") & spoolFile & " for writing";
-                                                }
-                                                if (doInternals) {
-                                                    spoolFile = spoolFile & ".anc";
-                                                }
-                                            }
-
-                                            if (errMsg.sLength == 0) {
-                                                _DataSet    * simDataSet;
-
-                                                if (mainFile) {
-                                                    simDataSet = new _DataSet (mainFile);
-                                                } else {
-                                                    simDataSet = new _DataSet (siteCount);
+                                                if (terminateExecution) {
+                                                    return;
                                                 }
 
-                                                checkPointer (simDataSet);
+                                                bool    doInternals = false;
 
-                                                _List exclusions;
+                                                if (parameters.lLength>5) {
+                                                    doInternals = (ProcessNumericArgument ((_String*)parameters (5),chain.nameSpacePrefix)>0.5);
+                                                }
 
-                                                _String *simName = new _String(AppendContainerName(*(_String*)parameters (0),chain.nameSpacePrefix));
-                                                _String mxName = *simName & ".rates";
-                                                setParameter (mxName, 0.0);
-                                                _Variable *catValVar        = FetchVar (LocateVarByName (mxName));
-                                                _Matrix*   catValues        = new _Matrix (1,1,false,true);
-                                                checkPointer    (catValues);
 
-                                                mxName = *simName & ".rateVars";
-                                                setParameter (mxName, 0.0);
-                                                _Variable * catNameVar  = FetchVar (LocateVarByName (mxName));
-                                                _Matrix* catNames       = new _Matrix (1,1,false,true);
+                                                _String spoolFile;
 
-                                                SetStatusLine ("Simulating Data");
-                                                lf.Simulate (*simDataSet, exclusions, catValues, catNames, rootStates, doInternals?(mainFile?&spoolFile:&emptyString):nil);
-                                                SetStatusLine ("Idle");
+                                                FILE*   mainFile = nil;
 
-                                                catValVar->SetValue(catValues, false);
-                                                catNameVar->SetValue(catNames, false);
-
-                                                StoreADataSet (simDataSet, simName);
-                                                DeleteObject (simName);
-                                                DeleteDataFilter (filterID);
                                                 errMsg = emptyString;
+
+                                                if (parameters.lLength > 6) {
+                                                    spoolFile = ProcessLiteralArgument ((_String*)parameters (6),chain.nameSpacePrefix);
+                                                    spoolFile.ProcessFileName();
+                                                    mainFile = doFileOpen (spoolFile.sData,"w");
+                                                    if (!mainFile) {
+                                                        errMsg = _String("Failed to open ") & spoolFile & " for writing";
+                                                    }
+                                                    if (doInternals) {
+                                                        spoolFile = spoolFile & ".anc";
+                                                    }
+                                                }
+
+                                                if (errMsg.sLength == 0) {
+                                                    _DataSet    * simDataSet;
+
+                                                    if (mainFile) {
+                                                        simDataSet = new _DataSet (mainFile);
+                                                    } else {
+                                                        simDataSet = new _DataSet (siteCount);
+                                                    }
+
+                                                    checkPointer (simDataSet);
+
+                                                    _List exclusions;
+
+                                                    _String *simName = new _String(AppendContainerName(*(_String*)parameters (0),chain.nameSpacePrefix));
+                                                    _String mxName = *simName & ".rates";
+                                                    setParameter (mxName, 0.0);
+                                                    _Variable *catValVar        = FetchVar (LocateVarByName (mxName));
+                                                    _Matrix*   catValues        = new _Matrix (1,1,false,true);
+                                                    checkPointer    (catValues);
+
+                                                    mxName = *simName & ".rateVars";
+                                                    setParameter (mxName, 0.0);
+                                                    _Variable * catNameVar  = FetchVar (LocateVarByName (mxName));
+                                                    _Matrix* catNames       = new _Matrix (1,1,false,true);
+
+                                                    SetStatusLine ("Simulating Data");
+                                                    lf.Simulate (*simDataSet, exclusions, catValues, catNames, rootStates, doInternals?(mainFile?&spoolFile:&emptyString):nil);
+                                                    SetStatusLine ("Idle");
+
+                                                    catValVar->SetValue(catValues, false);
+                                                    catNameVar->SetValue(catNames, false);
+
+                                                    StoreADataSet (simDataSet, simName);
+                                                    DeleteObject (simName);
+                                                    errMsg = emptyString;
+                                                }
                                             }
+
+                                            DeleteDataFilter (filterID);
                                         }
                                         DeleteObject   (ds);
                                         if (rootStates) {
