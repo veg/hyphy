@@ -732,7 +732,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
 lfunction estimators.CreateLFObject (context, data_filter, tree, model_template, initial_values, run_options, model_objects) {
     if (Type(data_filter) == "String") {
-        return estimators.FitSingleModel_Ext ({
+        return estimators.CreateLFObject (context, {
             {
                 data_filter__
             }
@@ -759,11 +759,15 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
         DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
    }
 
+
     user_model_id = context + ".user_model";
     utility.ExecuteInGlobalNamespace ("`user_model_id` = 0");
+
+
     ^(user_model_id) = model.generic.DefineModel(model_template, context + ".model", {
             "0": "terms.global"
         }, filters, None);
+
 
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i + 1] = "`context`.tree_" + i;
@@ -774,8 +778,9 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
 
 
     lfid = context + ".likelihoodFunction";
-    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lfid` = (`&lf_components`)");
 
+
+    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lfid` = (`&lf_components`)");
     df = 0;
     if (Type(initial_values) == "AssociativeList") {
         if (None == model_objects) {
