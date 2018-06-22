@@ -99,7 +99,6 @@
 "PSDI","Test whether sites in two populations are evolving under different selective pressures along internal tree branches.","CompareSelectivePressureIVL.bf";
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 "PSM","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1. Multiple subsets of one data set with shared dN/dS.","MFPositiveSelection.bf";
-"QSD","Quickly test for positive selection using several approaches.","QuickSelectionDetection.bf";
 "RELAX","Test whether selected branches are under relaxed or intensified selection against reference branches","SelectionAnalyses/RELAX.bf";
 "SSD","Use approximate likelihoods at a site to test for subtree specific selective pressure.","SubtreeSelectionComparison.bf";
 "DST","Perform a random effects (D)irectional (E)volution on (P)rotein (S)equences test to identify sites which evolve directionally towards a given residue [MPI enabled].","DirectionalREL.bf";
