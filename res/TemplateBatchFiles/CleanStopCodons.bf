@@ -153,6 +153,8 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceI
 		GetDataInfo (siteInfo, all64, sequenceIndex, siteIndex);
 		siteInfo1 = stopCodonTemplate*siteInfo;
 		siteInfo2 = nonStopCodonTemplate*siteInfo;
+		
+		
 		if (siteInfo1[0]>0 && siteInfo2[0] == 0)
 		{
 			sitesWithDeletions[siteIndex] = 1;

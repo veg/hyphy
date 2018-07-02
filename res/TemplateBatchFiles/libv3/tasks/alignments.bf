@@ -547,6 +547,57 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
 }
 
 /**
+ * @name alignments.TranslateCodonsToAminoAcidsWithAmbigsAllFrames
+ * Translate a codon sequence to amino-acids using the mapping provided by the
+ * genetic code in all 3 frames
+ * @param {String} sequence - the string to translate
+ * @param {Dictionary} code - genetic code description (e.g. returned by alignments.LoadGeneticCode)
+ * @param {lookup} code - resolution lookup dictionary
+ * @returns {Dict} for each reading frame F in {0, 1, 2} returns
+ 
+        F -> {
+            terms.data.sequence: translated sequence (always choose X if available, otherwise first sense resolution)
+            terms.sense_codons : N, // number of sense A/A
+            terms.stop_codons : N // number of stop codons
+        }
+ */
+ 
+ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbigsAllFrames (sequence, code, lookup) {
+        
+    result = {};
+    
+    
+    for (frame = 0; frame < 3; frame += 1) {
+        try_run = alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, frame, code, lookup);
+        
+        translation = ""; translation * 128;
+        
+        frame_result = {utility.getGlobalValue ("terms.sense_codons") : 0,
+                        utility.getGlobalValue ("terms.stop_codons") : 0
+                        };
+                        
+        upper_bound = Abs (try_run); 
+        for (i = 0; i < upper_bound; i+=1) {
+            if (try_run[i] / "X") { // has_stop
+                translation * "X";
+                frame_result [^"terms.stop_codons"] += 1;
+            } else {
+                translation * (try_run[i])["INDEXORDER"][0];
+                frame_result [^"terms.sense_codons"] += 1;
+            }
+        }
+                        
+        
+        translation * 0;
+        frame_result [utility.getGlobalValue ("terms.data.sequence")] = translation;
+        result[frame] = frame_result;
+    }
+
+	return result;
+}
+ 
+
+/**
  * @name alignments.MapAlignmentToReferenceCoordinates
  * Map a query sequence from the aligned coordinates
  * genetic code
@@ -704,4 +755,106 @@ lfunction alignments.Extract_site_patterns (data_filter) {
 
     return site_info;
 
+}
+
+/**
+ * @name alignments.StripGaps
+ * Remove gaps from a sequence
+ * @param {String} sequence - the input sequence
+ * @returns {String} the sequence with all gaps removed
+ */
+
+lfunction alignments.StripGaps (sequence) {
+    return sequence ^ {{"\-",""}};
+}
+
+/**
+ * @name alignments.alignment.MapCodonsToAA
+ * Map in-frame nucleotides onto a protein alignment string
+ 
+ * @param {String} codon_sequence - the codon sequence to map
+ * @param {String} aa_sequence - the matching aligned a.a. sequence 
+ * @param {Number} no more than this many mismatches - the codon sequence to map
+ * @param {Dict} mapping - code ["terms.code.mapping"]
+ 
+ * @returns {String} the mapped sequence
+ 
+ * @example 
+    GCAAAATCATTAGGGACTATGGAAAACAGA
+    -AKSLGTMEN-R
+    
+    maps to 
+    
+    ---GCAAAATCATTAGGGACTATGGAAAAC---AGA
+
+ */
+
+lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, mapping) {
+    
+    seqLen = Abs(aa_sequence);
+    translString = "";
+    translString * (seqLen);
+    seqLenN = Abs(codon_sequence);
+
+    aaPos = 0;
+    seqPos = 0;
+    codon = codon_sequence[seqPos][seqPos + 2];
+    currentAA = mapping[codon];
+    
+    mismatch_count = 0;
+
+    for (aaPos = 0; aaPos < seqLen && seqPos < seqLenN; aaPos += 1) {
+        advance = 1;
+        copy_codon = 1;
+                
+        if (currentAA != 0) {
+            if (aa_sequence[aaPos] == "-") {
+                //if (currentAA != "X") {
+                    translString * "---";
+                    advance = 0;
+                //}
+            } else {
+                mismatch_count += (aa_sequence[aaPos] != currentAA);
+                if (this_many_mm == 1) {
+                    if (mismatch_count == this_many_mm) {
+                        translString * 0;
+                        console.log (translString);
+                        console.log (codon_sequence);
+                    }
+                    assert(mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos + " (codon `seqPos`) : codon '" + codon_sequence[seqPos][seqPos + 2] + "'(`currentAA`) a.a. '`aa_sequence[aaPos]`'");
+                } else {
+                    if (mismatch_count >= this_many_mm) {
+                        translString * 0;
+                        return None;
+                    }
+                }
+            }
+        } else {
+            copy_codon = 0;
+        }
+
+        if (advance) {
+            if (copy_codon) {
+                if (currentAA == "X") {
+                    translString * "---";
+                } else {
+                    translString * codon;
+                }
+            } else {
+                //fprintf (stdout, "Skipping codon ", codon, "\n");
+                aaPos = aaPos - 1;
+            }
+            seqPos += 3;
+            codon = codon_sequence[seqPos][seqPos + 2];
+            currentAA = mapping[codon];
+        }
+    }
+    
+    for (; aaPos < seqLen; aaPos += 1) {
+        translString * "---";
+    }
+    
+
+    translString * 0;
+    return translString;
 }

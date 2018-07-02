@@ -479,6 +479,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
         if (Type((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i]) == "AssociativeList") { // have branch lengths for this partition
 
             _application_type = None;
+                        
             if (Type (branch_length_conditions) == "AssociativeList") {
                 if (Abs(branch_length_conditions) > estimators.ApplyExistingEstimates.i) {
                     _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
@@ -811,6 +812,11 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     this_namespace = this_namespace[0][Abs (this_namespace)-3];
 
     df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options, None);
+    
+    /*
+    Export (lfe, likelihoodFunction);
+    console.log (lfe);
+    */
 
    	Optimize(mles, likelihoodFunction);
 
