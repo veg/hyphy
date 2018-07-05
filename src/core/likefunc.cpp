@@ -4387,7 +4387,7 @@ DecideOnDivideBy (this);
 
                 if (useAdaptiveStep>0.5) {
                     if (convergenceMode < 2) {
-                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal);
+                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, precisionStep);
                     } else {
                         LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, convergenceMode == 2? precisionStep*0.25: precisionStep*0.0625);
                     }
@@ -4777,7 +4777,8 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     _Variable* curVar = index >= 0 ? GetIthIndependentVar (index) : nil;
 
     bool       movingLeft = false,
-               first      = true;
+               first      = true,
+               successful = false;
 
 
     _Parameter lowerBound = curVar?GetIthIndependentBound(index,true):0.,
@@ -4952,6 +4953,8 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         } else {
             rightValue = SetParametersAndCompute (index, right, &currentValues, gradient);
         }
+      
+      
 
         if (verbosityLevel > 100) {
             char buf [512];
@@ -4971,6 +4974,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
         if (rightValue<=middleValue && leftValue<=middleValue) {
             //if (index < 0) printf ("\nMaximum found\n");
+            successful = true;
             break;
         }
 
@@ -5044,17 +5048,38 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
                //exit (0);
             }
          }
+  
     } else {
         middleValue         = SetParametersAndCompute (index, middle, &currentValues, gradient);
     }
 
+    if (successful && !(rightValue<=middleValue && leftValue<=middleValue)) {
+      this->DoneComputing();
+      char buf[256], buf2[512];
+      snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
+      snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %d: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
+     
+      _String          sLF (8192L, true);
+      SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
+      sLF.Finalize     ();
 
+      FILE * out = doFileOpen ("/tmp/hyphy.dump", "w");
+      fwrite ((void*)sLF.getStr(), 1, sLF.Length(), out);
+      fclose (out);
+
+      WarnError (_String("Internal error in _LikelihoodFunction::Bracket, likelihood function calculation on the same parameter value returned different scores, dumping the offending likelihood function to /tmp/hyphy.dump") & buf & "\n" & buf2 &  "\nParameter name " & *GetIthIndependentName(index));
+ 
+    }
+  
     if (verbosityLevel > 100) {
         char buf [256];
-        snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET SUCCESSFUL: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
+        snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %d: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
         BufferToConsole (buf);
     }
-
+  
+    // SLKP 20180705 : error checking
+  
+ 
 
     bracketFCount+=likeFuncEvalCallCount-funcCounts;
     bracketCount++;
