@@ -240,7 +240,10 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& currentPr
     _LikelihoodFunction    *lf       = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (name2Find, objectType,nil, true, true);
 
     if (*arg2 == lfStartCompute) {
-            lf->PrepareToCompute(true);
+            lf->PrepareToCompute  (true);
+#ifdef  _OPENMP
+          lf->SetThreadCount    (systemCPUCount);
+#endif
     } else if (*arg2 == lfDoneCompute) {
             lf->DoneComputing (true);
     } else {
