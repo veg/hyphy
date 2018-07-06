@@ -5088,8 +5088,8 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     if (successful && !(rightValue<=middleValue && leftValue<=middleValue)) {
 
       
-      char buf[256], buf2[512];
-      snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
+      char buf[512], buf2[512];
+      snprintf (buf, 512, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%20.16g) = %%20.16g [@%%20.16g -> %%20.16g:@%%20.16g -> %%20.16g]]", index, middle, middleValue, left, leftValue,right, rightValue);
       snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %20.16g <= %20.16g >= %20.16g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
      
       _TerminateAndDump (_String (buf) & "\n" & buf2 &  "\nParameter name " & *GetIthIndependentName(index));
