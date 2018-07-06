@@ -37,7 +37,7 @@
 
  */
 
-  //#define _UBER_VERBOSE_LF_DEBUG
+//#define _UBER_VERBOSE_LF_DEBUG
 
 #include <string.h>
 #include <stdlib.h>
@@ -1960,13 +1960,13 @@ _Parameter  _LikelihoodFunction::Compute        (void)
     bool done = false;
 #ifdef _UBER_VERBOSE_LF_DEBUG
 
-    if (likeFuncEvalCallCount >= 12731) {
+    if (likeFuncEvalCallCount >= 335) {
         fprintf (stderr, "\n*** Likelihood function evaluation %ld ***\n", likeFuncEvalCallCount+1);
         for (unsigned long i=0; i<indexInd.lLength; i++) {
             _Variable *v = LocateVar (indexInd.lData[i]);
             if (v->HasChanged()) {
               fprintf (stderr, "[CHANGED] ");
-              fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
+              fprintf (stderr, "%s = %15.12g (%15.12g)\n", v->GetName()->sData, GetIthIndependent(i), ((_Constant*) LocateVar (indexInd.lData[i])->Compute())->Value());
             }
         }
     }
@@ -1997,7 +1997,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
                         ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    fprintf (stderr, "Did compute %g\n", result);
+                    fprintf (stderr, "Did compute %20.16g\n", result);
 #endif
                     _Parameter                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
                     UpdateBlockResult               (partID, blockResult);
@@ -2164,7 +2164,7 @@ _Parameter  _LikelihoodFunction::Compute        (void)
         evalsSinceLastSetup   ++;
         PostCompute ();
 #ifdef _UBER_VERBOSE_LF_DEBUG
-        fprintf (stderr, "%g\n", result);
+        fprintf (stderr, "%20.16g\n", result);
 #endif
         if (isnan (result)) {
             ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
@@ -4769,7 +4769,23 @@ void _LikelihoodFunction::GetAllIndependent (_Matrix & storage) const {
     }
 
 }
+  
+//_______________________________________________________________________________________
 
+void    _LikelihoodFunction::_TerminateAndDump(const _String &error) {
+    this->DoneComputing();
+  
+    _String          sLF (8192L, true);
+    SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
+    sLF.Finalize     ();
+  
+    FILE * out = doFileOpen ("/tmp/hyphy.dump", "w");
+    fwrite ((void*)sLF.getStr(), 1, sLF.Length(), out);
+    fclose (out);
+  
+    WarnError (_String("Internal error, likelihood function calculation on the same parameter value returned different scores, dumping the offending likelihood function to /tmp/hyphy.dump") & error );
+}
+ 
 
 //_______________________________________________________________________________________
 long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& middle, _Parameter& right,  _Parameter& leftValue, _Parameter& middleValue, _Parameter& rightValue, _Parameter& initialStep, _Matrix* gradient)
@@ -4849,8 +4865,6 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         saveM = NAN;
     }
 
-
-
     /*if (index < 0)
     {
         printf                                 ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
@@ -4861,7 +4875,10 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (verbosityLevel > 100) {
         char buf [512];
-        snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) INITIAL BRACKET %15.12g <= %15.12g (current %15.12g) <= %15.12g]", index, middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
+        snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld, eval %ld) INITIAL BRACKET %15.12g <= %15.12g (current %15.12g) <= %15.12g]", index, likeFuncEvalCallCount, middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
+      if (likeFuncEvalCallCount == 376) {
+        printf ("\nLog(L) = %20.16g\n", Compute());
+      }
         BufferToConsole (buf);
     }
 
@@ -4928,6 +4945,11 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
             middleValue = saveMV;
         } else {
              middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+             if (verbosityLevel > 100) {
+               char buf [512];
+               snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED middle to %15.12g, LogL = %15.12g]", index, middle, middleValue);
+               BufferToConsole (buf);
+             }
         }
 
         left = middle-leftStep;
@@ -4940,7 +4962,12 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
             leftValue = saveMV;
         } else {
             leftValue = SetParametersAndCompute (index, left, &currentValues, gradient);
-        }
+            if (verbosityLevel > 100) {
+              char buf [512];
+              snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED left to %15.12g, LogL = %15.12g]", index, left, leftValue);
+              BufferToConsole (buf);
+            }
+       }
 
 
         right = middle+rightStep;
@@ -4952,13 +4979,18 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
             rightValue = saveMV;
         } else {
             rightValue = SetParametersAndCompute (index, right, &currentValues, gradient);
-        }
+            if (verbosityLevel > 100) {
+              char buf [512];
+              snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED right to %15.12g, LogL = %15.12g]", index, right, rightValue);
+              BufferToConsole (buf);
+            }
+       }
       
       
 
         if (verbosityLevel > 100) {
             char buf [512];
-            snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): BRACKET %g (LogL : %15.12g diff: %15.12g) - %g (logL: %15.12g) - %g (LogL : %15.12g diff: %15.12g)]", index, left, leftValue, leftValue-middleValue, middle, middleValue, right, rightValue, rightValue-middleValue);
+            snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): BRACKET %20.16g (LogL : %15.12g diff: %15.12g) - %20.16g (logL: %15.12g) - %20.16g (LogL : %15.12g diff: %15.12g)]", index, left, leftValue, leftValue-middleValue, middle, middleValue, right, rightValue, rightValue-middleValue);
             BufferToConsole (buf);
         }
 
@@ -5043,7 +5075,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
            if (verbosityLevel > 100) {
               char buf [256];
-              snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
+              snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%20.16g) = %20.16g [@%20.16g -> %20.16g:@%20.16g -> %20.16g]]", index, middle, middleValue, left, leftValue,right, rightValue);
               BufferToConsole (buf);
                //exit (0);
             }
@@ -5054,26 +5086,19 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     }
 
     if (successful && !(rightValue<=middleValue && leftValue<=middleValue)) {
-      this->DoneComputing();
+
+      
       char buf[256], buf2[512];
       snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
-      snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %d: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
+      snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %20.16g <= %20.16g >= %20.16g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
      
-      _String          sLF (8192L, true);
-      SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
-      sLF.Finalize     ();
-
-      FILE * out = doFileOpen ("/tmp/hyphy.dump", "w");
-      fwrite ((void*)sLF.getStr(), 1, sLF.Length(), out);
-      fclose (out);
-
-      WarnError (_String("Internal error in _LikelihoodFunction::Bracket, likelihood function calculation on the same parameter value returned different scores, dumping the offending likelihood function to /tmp/hyphy.dump") & buf & "\n" & buf2 &  "\nParameter name " & *GetIthIndependentName(index));
+      _TerminateAndDump (_String (buf) & "\n" & buf2 &  "\nParameter name " & *GetIthIndependentName(index));
  
     }
   
     if (verbosityLevel > 100) {
         char buf [256];
-        snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %d: %15.12g <= %15.12g <= %15.12g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
+      snprintf (buf, 256, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %15.12g <= %15.12g <= %15.12g. Steps, L=%g, R=%g, values (delta-left) %20.16g : %20.16g : (delta-right) %20.16g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, middleValue-leftValue, middleValue, middleValue-rightValue);
         BufferToConsole (buf);
     }
   
@@ -6383,7 +6408,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
             if (FU<=FX) { // value at U is the new minimum
                 if (verbosityLevel > 50) {
                     char buf [256];
-                    snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (eval %ld) ACCEPT new try, confirm value %20.16g (delta = %20.16g)", likeFuncEvalCallCount,  GetIthIndependent(index), FU-FX);
+                    snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (eval %ld) ACCEPT new try, confirm value %20.16g (delta = %20.16g)", likeFuncEvalCallCount,  GetIthIndependent(index), FX-FU);
                     BufferToConsole (buf);
                 }
 
@@ -6401,7 +6426,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
             } else { // value at X remains the minimum
                 if (verbosityLevel > 50) {
                     char buf [256];
-                    snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (eval %ld) REJECT new try (delta = %20.16g)", likeFuncEvalCallCount, X, FU-FX);
+                    snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (eval %ld) REJECT new try (%20.16g) (delta = %20.16g)", likeFuncEvalCallCount, U, FX-FU);
                     BufferToConsole (buf);
                 }
 
@@ -6435,12 +6460,19 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
         middle      = X;
 
         if (middleValue<maxSoFar) {
-            if (verbosityLevel > 50) {
-              char buf [256];
-              snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) RESETTING THE VALUE (worse log likelihood obtained) ]\n\n", index);
-              BufferToConsole (buf);
-            }
-           SetIthIndependent(index,bestVal);
+          if (verbosityLevel > 50) {
+            char buf [256];
+            snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) RESETTING THE VALUE (worse log likelihood obtained; current value %20.16g, best value %20.16g) ]\n\n", index, GetIthIndependent(index), bestVal);
+            
+            BufferToConsole (buf);
+          }
+          if (CheckEqual(GetIthIndependent(index), bestVal) && !CheckEqual (middleValue,maxSoFar)) {
+            char buf[256];
+            snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::LocateTheBump (index %ld) current value %20.16g (parameter = %20.16g), best value %20.16g (parameter = %20.16g)); delta = %20.16g ]\n\n", index, middleValue, GetIthIndependent(index), maxSoFar, bestVal, maxSoFar - middleValue);
+            
+            _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));
+          }
+          SetIthIndependent(index,bestVal);
         } else {
             if (!CheckEqual(GetIthIndependent(index),middle)) {
                 if (verbosityLevel > 50) {
@@ -6449,6 +6481,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
                     BufferToConsole (buf);
                 }
                 SetIthIndependent (index,middle);
+                //Compute();
             } else {
                 if (verbosityLevel > 50) {
                     char buf [256];
@@ -7120,7 +7153,7 @@ void    _LikelihoodFunction::ScanAllVariables (void)
         if (_cv->GetUpperBound()>=u) {
             _cv->SetBounds(_cv->GetLowerBound(),DEFAULTPARAMETERUBOUND);
         }
-        //printf ("%s -> %d\n", _cv->theName->sData, rankVariables.GetXtra(rankVariables.Find ((BaseRef)indexInd.lData[i])));
+        //printf ("[VARIABLE RANK] %s -> %d\n", _cv->theName->sData, rankVariables.GetXtra(rankVariables.Find ((BaseRef)indexInd.lData[i])));
     }
 
     for (unsigned  long i=0; i<indexDep.lLength; i++) {
@@ -7695,6 +7728,8 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 matrices = (_List*)      (*((_List*)matricesToExponentiate(index)))(ciid) ;
 
                 long nodeID = ((_SimpleList*)computedLocalUpdatePolicy(index))->lData[ciid];
+              
+              
                 if (nodeID == 0 || nodeID == 1) {
                     long snID = -1;
 
@@ -7710,7 +7745,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                     }
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    fprintf (stderr, "\nCached %ld (%ld)/New %ld (%ld)\n", *cbid, nodeID, snID, matrices->lLength);
+                    fprintf (stderr, "\nCached %s (nodeID = %lD)/New %s (touched matrices %ld) Eval id = %ld\n", *cbid >= 0 ? t->GetNodeFromFlatIndex (*cbid)->GetName()->getStr() : "None", nodeID, snID >= 0 ? t->GetNodeFromFlatIndex (snID)->GetName()->getStr() : "None", matrices->lLength, likeFuncEvalCallCount);
 #endif
                     if (snID != *cbid) {
                         RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
@@ -7734,7 +7769,9 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 } else {
                     doCachedComp = nodeID;
                 }
-
+#ifdef _UBER_VERBOSE_LF_DEBUG
+              fprintf (stderr, "\ndoCachedComp = %ld\n", doCachedComp);
+#endif
             } else {
                 RestoreScalingFactors       (index, *cbid, patternCnt, scc, sccb);
 
@@ -7775,7 +7812,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
             if (doCachedComp >= 3) {
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                fprintf (stderr, "CACHE compute branch %d\n",doCachedComp-3);
+                fprintf (stderr, "CACHE compute branch %ld (%s)  Eval id = %ld\n\n",doCachedComp-3, t->GetNodeFromFlatIndex (doCachedComp-3)->GetName()->getStr(), likeFuncEvalCallCount);
 #endif
                 sum = t->ComputeLLWithBranchCache (*sl,
                                                    doCachedComp-3,
@@ -7786,6 +7823,29 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                    catID,
                                                    siteRes)
                       - _logLFScaler * overallScalingFactors.lData[index];
+              
+            /*#ifdef _UBER_VERBOSE_LF_DEBUG
+              if (likeFuncEvalCallCount >= 340) {
+                fprintf (stderr, "\nCheck validity of cache compute... diff = %20.16g\n\n", sum -
+                         t->ComputeTreeBlockByBranch (*sl,
+                                                      *branches,
+                                                      tcc,
+                                                      df,
+                                                      inc,
+                                                      conditionalTerminalNodeStateFlag[index],
+                                                      ssf,
+                                                      (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                                      overallScalingFactors.lData[index],
+                                                      0,
+                                                      df->GetPatternCount(),
+                                                      catID,
+                                                      siteRes,
+                                                      scc,
+                                                      branchIndex,
+                                                      branchIndex >= 0 ? branchValues->lData: nil));
+              }
+            #endif*/
+              
                 return sum;
             }
 
@@ -7890,7 +7950,9 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                 //printf ("Set up %d\n", doCachedComp);
                 *cbid = doCachedComp;
 
-
+#ifdef _UBER_VERBOSE_LF_DEBUG
+              fprintf (stderr, "PREPARING CACHE FOR NODE %ld (%s)\n" , doCachedComp, t->GetNodeFromFlatIndex (doCachedComp)->GetName()->getStr());
+#endif
                 overallScalingFactorsBackup.lData[index] = overallScalingFactors.lData[index];
                 if (sccb)
                     for (long recoverIndex = 0; recoverIndex < patternCnt; recoverIndex++) {
@@ -7926,8 +7988,10 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                                      catID,
                                                      siteRes)
                   - _logLFScaler * overallScalingFactors.lData[index];
+                  
+                  //fprintf (stderr, "CONGRUENCE CHECK %20.16g\n",fabs ((checksum-sum)/sum));
 
-                  if (fabs ((checksum-sum)/sum) > 0.00001) {
+                  if (fabs ((checksum-sum)/sum) > 1e-12) {
                     /*_Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
                                                                      *branches,
                                                                      tcc,
@@ -7948,11 +8012,16 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                     _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName();
 
 
-                    WarnError (_String("Internal error in ComputeBranchCache (branch ") & *node_name &
-                                " ) reversible model cached likelihood = "& checksum & ", directly computed likelihood = " & sum &
-                               ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
-                    WarnError ("Bailing");
+                    
+                    _TerminateAndDump (_String("Internal error in ComputeBranchCache (branch ") & *node_name &
+                                       " ) reversible model cached likelihood = "& _String (checksum, "%20.16g") & ", directly computed likelihood = " & _String (sum, "%20.16g") &
+                                       ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
+                    
                     return -A_LARGE_NUMBER;
+                  } else {
+#ifdef _UBER_VERBOSE_LF_DEBUG
+                    fprintf (stderr, "=== Absolute caching error %20.16g\n", checksum-sum, "\n");
+#endif
                   }
                 }
 

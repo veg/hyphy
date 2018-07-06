@@ -1744,7 +1744,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
 
                         if (rc && cr) {
                             _Polynomial *rcp = (_Polynomial *)rc->ConstructPolynomial(),
-                                         *crp = (_Polynomial *)cr->ConstructPolynomial();
+                                        *crp = (_Polynomial *)cr->ConstructPolynomial();
 
                             if (rcp && crp) {
                                 _PMathObj     tr = nil,
@@ -1775,7 +1775,9 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                 }
                                 if (tr && tc) {
                                     _Polynomial        * rcpF = (_Polynomial*)rcp->Mult(tr),
-                                                         * crpF = (_Polynomial*)crp->Mult(tc);
+                                                       * crpF = (_Polynomial*)crp->Mult(tc);
+                                  
+                                    //fprintf (stderr, "%s : %s\n", _String ((_String*)rcpF->toStr()).getStr(), _String ((_String*)crpF->toStr()).getStr());
 
                                     compResult         = rcpF->Equal(crpF);
                                     DeleteObject (rcpF);

@@ -414,7 +414,7 @@ protected:
 
 protected:
 
-
+    void            _TerminateAndDump           (const _String& error);
     void            ComputeParameterPenalty     (void);
     
     

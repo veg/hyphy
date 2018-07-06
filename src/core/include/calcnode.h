@@ -759,23 +759,23 @@ public:
             long           *        lNodeFlags,
             _Parameter*         scalingAdjustments,
             long*                   siteCorrectionCounts,
-            _GrowingVector*     lNodeResolutions,
+            _GrowingVector const*     lNodeResolutions,
             long&                   overallScaler,
-            long                    siteFrom,
+            long const                   siteFrom,
             long                    siteTo,
-            long                    catID,
-            _SimpleList*            = nil,
+            long const                   catID,
+            _SimpleList const*            = nil,
             _Parameter*         = nil
                                                     );
 
     _Parameter          ComputeLLWithBranchCache         (
-        _SimpleList&            siteOrdering,
-        long                    brID,
-        _Parameter*         cache,
+        _SimpleList const&             siteOrdering,
+        long const                   brID,
+        _Parameter const*         cache,
         _DataSetFilter const*     theFilter,
-        long                    siteFrom,
+        long const                   siteFrom,
         long                    siteTo,
-        long                    catID,
+        long const                   catID,
         _Parameter*         storageVec = nil
     );
 
