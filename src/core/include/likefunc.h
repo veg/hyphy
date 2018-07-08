@@ -259,7 +259,7 @@ public:
     long        SequenceCount           (long);
     unsigned long        SiteCount               (void) const;
     void        Rebuild                 (bool = false);
-    void        SerializeLF             (_String&, char=0, _SimpleList* = nil, _SimpleList* = nil);
+    virtual void        SerializeLF             (_String&, char=0, _SimpleList* = nil, _SimpleList* = nil);
     _Formula*   HasComputingTemplate    (void) const{
         return computingTemplate;
     }
@@ -710,9 +710,9 @@ public:
 
     virtual     _Parameter  Compute                 (void);
     virtual     void        RescanAllVariables      (void) {}
-
-
-
+    virtual void            SerializeLF             (_String& res, char=0, _SimpleList* = nil, _SimpleList* = nil) {
+        res.AppendNewInstance ((_String*)myBody.toStr());
+    }
     _Formula myBody;
 };
 
