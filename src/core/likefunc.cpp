@@ -4734,7 +4734,7 @@ bool CheckEqual (_Parameter a, _Parameter b, _Parameter tolerance) {
 }
 
 //_______________________________________________________________________________________
-_Parameter _LikelihoodFunction::SetParametersAndCompute (long index, _Parameter value, _Matrix* baseLine, _Matrix* direction)
+_Parameter _LikelihoodFunction::SetParametersAndCompute (long index, _Parameter value, _Matrix* baseLine, _Matrix* direction, bool skip_compute)
 {
     if (index >= 0) {
         SetIthIndependent (index,value);
@@ -4749,6 +4749,9 @@ _Parameter _LikelihoodFunction::SetParametersAndCompute (long index, _Parameter 
 
     }
 
+    if (skip_compute) {
+        return -A_LARGE_NUMBER;
+    }
     _Parameter logL = Compute();
     //if (index >=0)
     //  printf ("[SetParametersAndCompute %g = %g]\n", value, logL);
@@ -4830,6 +4833,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
     practicalUB = upperBound>DEFAULTPARAMETERUBOUND?DEFAULTPARAMETERUBOUND:upperBound;
     long               funcCounts = likeFuncEvalCallCount;
 
+    _Parameter stash_middle;
 
     if (index >= 0) {
         middle  =  GetIthIndependent (index);
@@ -4883,6 +4887,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
       SetIthIndependent(6L, GetIthIndependent(6L));
     }
     */
+    
 
     while (1) {
 
@@ -4904,7 +4909,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
                           snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket LEFT BOUNDARY (index %ld) UPDATED middle from %15.12g to %15.12g, LogL = %15.12g]", index, middle, middleValue);
                           BufferToConsole (buf);
                         }
-                        middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                        middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
                     }
                     return -2;
                 } else {
@@ -4920,7 +4925,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
             if (rightStep<initialStep*.1 && index >0 || index < 0 && rightStep < STD_GRAD_STEP) {
                 if (!first) {
                     if (go2Bound) {
-                        middleValue = SetParametersAndCompute (index, middle=upperBound, &currentValues, gradient);
+                        middleValue = stash_middle = SetParametersAndCompute (index, middle=upperBound, &currentValues, gradient);
                     }
                     return -2;
                 } else {
@@ -4934,13 +4939,13 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
 
         if (CheckEqual(middle,saveL)) {
-            middleValue = saveLV;
+            stash_middle = middleValue = saveLV;
         } else if (CheckEqual(middle,saveR)) {
-            middleValue = saveRV;
+            stash_middle = middleValue = saveRV;
         } else if (CheckEqual(middle,saveM)) {
-            middleValue = saveMV;
+            stash_middle = middleValue = saveMV;
         } else {
-             middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+             middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
              if (verbosityLevel > 100) {
                char buf [512];
                snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED middle to %15.12g, LogL = %15.12g]", index, middle, middleValue);
@@ -5045,7 +5050,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
             }
 
         if (middle>=practicalUB) {
-            middleValue         = SetParametersAndCompute (index, middle = practicalUB, &currentValues, gradient);
+            stash_middle = middleValue         = SetParametersAndCompute (index, middle = practicalUB, &currentValues, gradient);
             //if (index < 0) printf ("\nmiddle>=practicalUB\n");
             break;
         }
@@ -5062,12 +5067,12 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     if (curVar) {
         if (CheckAndSetIthIndependent(index,middle)) {
-          /*CheckAndSetIthIndependent(index,left);
-          _Parameter lc = Compute();
-          CheckAndSetIthIndependent(index,right);
-          _Parameter rc = Compute();
-          CheckAndSetIthIndependent(index,middle);*/
-           middleValue = Compute();
+              /*CheckAndSetIthIndependent(index,left);
+              _Parameter lc = Compute();
+              CheckAndSetIthIndependent(index,right);
+              _Parameter rc = Compute();
+              CheckAndSetIthIndependent(index,middle);*/
+           middleValue = stash_middle;//Compute();
 
            if (verbosityLevel > 100) {
               char buf [256];
@@ -5078,10 +5083,16 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
          }
   
     } else {
-        middleValue         = SetParametersAndCompute (index, middle, &currentValues, gradient);
+        middleValue         = stash_middle;
+        SetParametersAndCompute (index, middle, &currentValues, gradient,false);
+        
     }
 
     if (successful && !(rightValue<=middleValue && leftValue<=middleValue)) {
+     /** SLKP 20180709 need to have a more permissive check, because sometimes if the change is too small
+         (or involves a paremeter that has very little effect on the LF), recomputation could be within numerical error
+      
+      **/
 
       
       char buf[256], buf2[512];
