@@ -5670,7 +5670,7 @@ void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,_Parameter&
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Matrix&unit,  _Parameter& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize) {
+void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient, _Parameter& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize) {
     _Parameter funcValue;
 
     if (order==1L) {
@@ -5806,7 +5806,6 @@ bool    _LikelihoodFunction::SniffAround (_Matrix& values, _Parameter& bestSoFar
 _Parameter    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precision, _Matrix& bestVal, bool localOnly, long iterationLimit, _SimpleList* only_these_parameters, _Parameter check_value) {
 
     _Parameter  gradientStep     = STD_GRAD_STEP,
-                temp,
                 maxSoFar          = Compute(),
                 initial_value     = maxSoFar,
                 currentPrecision = localOnly?precision:.01;
@@ -5837,49 +5836,49 @@ _Parameter    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precisio
 
 
 
-    _Matrix     unit     (bestVal),
-                gradient (bestVal);
 
     long        vl = verbosityLevel;
 
     char        buffer[1024];
-
-    unit.PopulateConstantMatrix (1.);
 
     if (vl>1) {
         snprintf (buffer, sizeof(buffer),"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %15.12g\n",0,precision,gradientStep,maxSoFar);
         BufferToConsole (buffer);
     }
 
-    _Matrix     G (bestVal),
-                H (bestVal),
-                S (bestVal);
+    const unsigned long dim = bestVal.GetHDim() * bestVal.GetVDim();
+
+    _Matrix     gradient (bestVal),
+                current_direction,
+                previous_direction,
+                previous_gradient;
 
     _Parameter  gradL;
 
-    ComputeGradient     (gradient, unit, gradientStep, bestVal, freeze, 1, false);
-
+    ComputeGradient     (gradient, gradientStep, bestVal, freeze, 1, false);
     gradL = gradient.AbsValue ();
 
+    if (gradL > 0.0) {
+        // NOT already are at an extremum
+        
+        //gradient *= (1./gradL);
+        current_direction   = gradient;
+        // move down the gradient
 
-    if (gradL != 0.0) {
-
-        gradient            *= -1.;
-        G.Duplicate         (&gradient);
-        H.Duplicate         (&gradient);
-
-        for (long index = 0; index<200 && index < iterationLimit; index++, currentPrecision*=0.25) {
-            temp = maxSoFar;
+        for (long index = 0; index< MAX (dim, 10) && index < iterationLimit; index++, currentPrecision*=0.25) {
+            _Parameter current_maximum = maxSoFar;
 
             if (currentPrecision < 0.00001) {
                 currentPrecision = 0.00001;
             }
+            
+            //printf ("%s\n", _String ((_String*)gradient.toStr()).getStr());
+            
+            _Parameter line_search_precision = localOnly?precision:currentPrecision;
 
-            S      = gradient;
-            S     *= -1./gradient.AbsValue();
-            GradientLocateTheBump(localOnly?precision:currentPrecision, maxSoFar, bestVal, S);
+            GradientLocateTheBump(line_search_precision, maxSoFar, bestVal, current_direction);
 
-            LoggerAddGradientPhase (localOnly?precision:currentPrecision );
+            LoggerAddGradientPhase (line_search_precision);
             LoggerAllVariables ();
             LoggerLogL (maxSoFar);
 
@@ -5887,46 +5886,70 @@ _Parameter    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precisio
                 snprintf (buffer, sizeof(buffer),"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %15.12g\n",index+1,precision,gradientStep,maxSoFar);
                 BufferToConsole (buffer);
             }
-            if (localOnly) {
-                if (fabs((maxSoFar-temp))<=precision) {
-                    break;
-                }
-            } else if (fabs((maxSoFar-temp)/temp)<=precision) {
+            
+            //printf ("##### %g => %g %g\n", current_maximum, maxSoFar, maxSoFar-current_maximum);
+            
+            //if (localOnly) {
+            if (fabs(maxSoFar-current_maximum)<=precision) {
                 break;
             }
+            //} else if (fabs((maxSoFar-current_maximum)/current_maximum)<=precision) {
+            //    break;
+            //}
 
-            ComputeGradient (gradient, unit, gradientStep, bestVal, freeze, 1, false);
-            gradL =gradient.AbsValue ();
+            previous_gradient = gradient;
+            ComputeGradient (gradient, gradientStep, bestVal, freeze, 1, false);
+            
+            //gradL = gradient.AbsValue ();
+            
+            //printf (">>>> %g\n", gradL);
+            
             if (CheckEqual(gradL,0.0)) {
+                    // already at the maximum
                 break;
             }
-            S      = gradient;
-            //gradL  = S.AbsValue();
-            //S   *= 1.;
+            
+            //gradient *= (1./gradL);
+            
+            previous_direction = current_direction;
+            
+            _Parameter beta = 0., scalar_product = 0.;
+            
+            
+            // use Polak–Ribière direction
 
-            _Parameter      gg  = 0.,
-                            dgg = 0.;
-
-            for (unsigned long k = 0; k < indexInd.lLength; k++) {
-                gg  += G.theData[k]*G.theData[k];
-                dgg += (S.theData[k] + G.theData[k])*S.theData[k];
+            for (unsigned long i = 0UL; i < dim; i++) {
+                scalar_product += previous_gradient.theData[i] * previous_gradient.theData[i];
+                beta += gradient.theData[i] * ( gradient.theData[i] - previous_gradient.theData[i]);
             }
-
-            if (gg == 0.) {
-                break;
+            
+            
+            // use Dai–Yuan
+            /*for (unsigned long i = 0UL; i < dim; i++) {
+                beta += gradient.theData[i] * gradient.theData[i];
+                scalar_product += previous_direction.theData[i] * ( gradient.theData[i] - previous_gradient.theData[i]);
             }
-
-            dgg /= gg;
-
-
-            for (unsigned long k = 0; k < indexInd.lLength; k++) {
-                G.theData[k] = -S.theData[k];
-                gradient.theData[k] = H.theData[k] = G.theData[k] + dgg * H.theData[k];
+            beta = -beta;*/
+            
+            // Hestenes-Stiefel
+            /*for (unsigned long i = 0UL; i < dim; i++) {
+                beta += gradient.theData[i] * ( gradient.theData[i] - previous_gradient.theData[i]);
+                scalar_product += previous_direction.theData[i] * ( gradient.theData[i] - previous_gradient.theData[i]);
             }
+            beta = -beta;*/
 
-            if (terminateExecution) {
-                return check_value;
-            }
+            
+            //printf ("=== %g/%g %g\n", beta, scalar_product, beta / scalar_product);
+            beta /= scalar_product;
+            beta = MAX (beta, 0.0);
+            previous_direction = current_direction;
+            
+            previous_gradient = previous_direction;
+            previous_gradient *= beta;
+            
+            current_direction  = gradient;
+            current_direction += previous_gradient;
+
         }
     }
 
@@ -5960,15 +5983,10 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
                     freeze,
                     countLC;
 
-    _Matrix         unit     (bestVal),
-                    gradient (bestVal);
+    _Matrix         gradient (bestVal);
 
     long            vl = verbosityLevel,
                     index;
-
-    for (index=0; index<unit.GetHDim(); index++) {
-        unit[index]=1;
-    }
 
     while (currentPrecision>=gPrecision && freeze.lLength<indexInd.lLength) {
 
@@ -5978,7 +5996,7 @@ void    _LikelihoodFunction::GradientDescent (_Parameter& gPrecision, _Matrix& b
         }
 
         char    buffer[128];
-        ComputeGradient (gradient, unit, gradientStep, bestVal, freeze, 1);
+        ComputeGradient (gradient, gradientStep, bestVal, freeze, 1);
         if (gradientStep==0) {
             break;
         }

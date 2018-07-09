@@ -425,7 +425,7 @@ protected:
     void            ComputeBlockInt1            (long,_Parameter&,_TheTree*,_DataSetFilter*, char);
     void            CheckStep                   (_Parameter&, _Matrix, _Matrix* selection = nil);
     void            GetGradientStepBound        (_Matrix&, _Parameter &, _Parameter &, long* = nil);
-    void            ComputeGradient             (_Matrix&, _Matrix&,  _Parameter&, _Matrix&, _SimpleList&,
+    void            ComputeGradient             (_Matrix&,  _Parameter&, _Matrix&, _SimpleList&,
             long, bool normalize = true);
     bool            SniffAround                 (_Matrix& , _Parameter& , _Parameter&);
     void            RecurseCategory             (long,long,long,long,_Parameter
