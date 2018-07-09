@@ -156,7 +156,7 @@ utility.ForEach (relax.global_dnds, "_value_", '
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (relax.json,
+selection.io.json_store_lf_withEFV (relax.json,
                             relax.MG94_name,
                             relax.final_partitioned_mg_results[terms.fit.log_likelihood],
                             relax.final_partitioned_mg_results[terms.parameters],

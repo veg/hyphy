@@ -158,7 +158,7 @@ if (utility.Has (fubar.cache, terms.fubar.cache.gtr, "AssociativeList")) {
                     "_value_",
                     "_value_[terms.fit.MLE]");
     efv = (fubar.gtr_results[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0];
-    selection.io.json_store_lf_GTR_MG94 (fubar.json,
+    selection.io.json_store_lf_withEFV (fubar.json,
                                 utility.getGlobalValue ("terms.json.nucleotide_gtr"),
                                 fubar.gtr_results[utility.getGlobalValue ("terms.fit.log_likelihood")],
                                 fubar.gtr_results[utility.getGlobalValue ("terms.parameters")] ,

@@ -144,7 +144,7 @@ slac.global_dnds = selection.io.extract_global_MLE_re (slac.partitioned_mg_resul
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (slac.json,
+selection.io.json_store_lf_withEFV (slac.json,
                             terms.json.global_mg94xrev,
                             slac.partitioned_mg_results[terms.fit.log_likelihood],
                             slac.partitioned_mg_results[terms.parameters],
