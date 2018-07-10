@@ -6,6 +6,7 @@
 "BUSTED","[BUSTED] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED.bf";
 "aBSREL","[aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
 "RELAX","[RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";
+"FADE","[FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).","SelectionAnalyses/FADE.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
 "FEL-Contrast","Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/FEL-contrast.bf";
