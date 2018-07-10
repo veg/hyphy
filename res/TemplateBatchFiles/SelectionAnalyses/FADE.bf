@@ -167,11 +167,15 @@ if (utility.Has (fade.cache, terms.fade.cache.root, "AssociativeList")) {
     fade.roots = {};
 }
 
+if (utility.Has (fade.roots,index,'String')) {
+ (fade.partitions_and_trees[index])[terms.data.tree] = (trees.RootTree (_partition_[terms.data.tree], fade.roots[index]))[terms.data.tree];
+}
+assert (((fade.partitions_and_trees[index])[terms.data.tree])[terms.trees.rooted], "Input tree MUST be rooted");
 
+
+/* // Prompts for roots, disabled and input rooting is enforced.
 fade.prompted_for_roots = FALSE;
-// TODO: Accept only a rooted tree
 utility.ForEachPair (fade.partitions_and_trees, "index", "_partition_",
-                "
                     if ((_partition_[terms.data.tree])[terms.trees.rooted] == FALSE) {
                         if (utility.Has (fade.roots,index,'String')) {
                             (fade.partitions_and_trees[index])[terms.data.tree] = (trees.RootTree (_partition_[terms.data.tree], fade.roots[index]))[terms.data.tree];
@@ -184,8 +188,7 @@ utility.ForEachPair (fade.partitions_and_trees, "index", "_partition_",
                     }
                 "
                 );
-
-
+*/
 fade.name_mapping = fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
 
 
@@ -412,7 +415,7 @@ namespace fade {
     site.substitution.string := fade.SubstitutionHistory (((cache [^"terms.fade.cache.substitutions"])[partition_index])[s]);
 
     site_annotation_headers = {
-                                    "Composition" : "Aminoacid composition of site",
+                                    "Composition" : "Amino acid composition of site",
                                     "Substitutions" : "Substitution history on selected branches"
                                   };
 
