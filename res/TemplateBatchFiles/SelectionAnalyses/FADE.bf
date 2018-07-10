@@ -292,7 +292,6 @@ for (i = 0; i < 20; i+=1)
 
 }
 fade.baseline_efv = fade.baseline_efv * (1/(+fade.baseline_efv));
-console.log(fade.baseline_efv);
 
 
 
