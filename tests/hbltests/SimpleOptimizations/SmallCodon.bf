@@ -668,6 +668,9 @@ USE_ADAPTIVE_VARIABLE_STEP = 1;
 
 Optimize 			(res,lf);
 
+//Export (lfe, lf);
+//fprintf ("/tmp/test.bf", CLEAR_FILE, lfe);
+
 //fprintf (stdout, "\n\n", lf.trace, "\n\n");
 
 /* test epilogue */

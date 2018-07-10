@@ -6391,7 +6391,75 @@ void    _LikelihoodFunction::LocateTheBump (long index,_Parameter gPrecision, _P
             brentPrec = (right-left) * 0.2;
             //printf ("\nResetting brentPrec to %g\n", brentPrec, "\n");
         }
+        
+        
 
+        /*if (index >= 0) {
+            // try Newton Raphson
+            
+            if (middle - left > STD_GRAD_STEP && right - middle > STD_GRAD_STEP) {
+                
+                
+                _Parameter last_value, current_value = middle, current_fx = middleValue;
+                
+                auto store_max = [&] (_Parameter x, _Parameter fx) -> void {
+                    if (fx > maxSoFar) {
+                        maxSoFar = fx;
+                        bestVal  = x;
+                    }
+                };
+                
+                do  {
+                    last_value = current_value;
+
+                    _Parameter x_plus_h  = last_value + STD_GRAD_STEP,
+                               x_minus_h = last_value - STD_GRAD_STEP,
+                               fx_plus_h  = SetParametersAndCompute(index, x_plus_h),
+                               fx_minus_h = SetParametersAndCompute(index, x_minus_h),
+                               dFdX = (fx_plus_h - fx_minus_h) / (2. * STD_GRAD_STEP),
+                               d2FdX2 = ((fx_plus_h - current_fx) + (fx_minus_h - current_fx)) / (STD_GRAD_STEP * STD_GRAD_STEP);
+         
+         
+                    store_max (x_plus_h, fx_plus_h);
+                    store_max (x_minus_h, fx_minus_h);
+
+                    if (CheckEqual(d2FdX2, 0.0)) {
+                        current_value = last_value;
+                    } else {
+                        current_value = last_value - dFdX / d2FdX2;
+                    }
+         
+                    if (current_value < left || current_value > right) {
+                        break;
+                    }
+         
+                    //printf ("\n\nf(%20.16g) = %20.16g; f(%20.16g) = %20.16g\n", x_plus_h, fx_plus_h, x_minus_h, fx_minus_h);
+                    //printf ("f(%g) = %g; dF = %g, dF2 = %g\n", last_value, current_fx, dFdX, d2FdX2);
+         
+                    if (CheckAndSetIthIndependent(index, current_value)) {
+                        current_fx = SetParametersAndCompute (index, current_value);
+                    }
+                    //printf (" == move by %g with value %20.16g\n", current_value-last_value, current_fx);
+                    
+                    store_max (current_value, current_fx);
+         
+         
+                } while (fabs (current_value - last_value) >= brentPrec && current_value - left > STD_GRAD_STEP && right - current_value > STD_GRAD_STEP);
+                
+                if (fabs (current_value - last_value) < brentPrec && current_value - left > STD_GRAD_STEP && right - current_value > STD_GRAD_STEP) {
+                    CheckAndSetIthIndependent(index, bestVal);
+                    //printf (" == SUCCESS\n");
+                    FlushLocalUpdatePolicy            ();
+                    return;
+                }
+                CheckAndSetIthIndependent(index, bestVal);
+                middle = bestVal;
+                middleValue = maxSoFar;
+                //printf (" == FAILURE %20.16g -> %20.16g\n", middle, middleValue);
+
+            }
+        }*/
+        
         _Parameter U,V,W,X=middle,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
         W       = middle;
         V       = middle;
