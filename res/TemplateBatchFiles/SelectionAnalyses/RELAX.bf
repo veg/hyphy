@@ -28,6 +28,8 @@ LoadFunctionLibrary("libv3/convenience/math.bf");
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
+//utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.01);
+//utility.SetEnvVariable ("LF_SMOOTHING_REDUCTION", 1/2);
 
 /*------------------------------------------------------------------------------*/
 
@@ -459,7 +461,7 @@ if (relax.model_set == "All") {
 
     io.ReportProgressMessageMD ("RELAX", "pe", "Fitting the partitioned descriptive model (separate distributions for *test* and *reference* branches)");
     parameters.RemoveConstraint (utility.Keys (relax.bound_weights));
-    for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
+    for (relax.i = 1; relax.i <= relax.rate_classes; relax.i += 1) {
         parameters.RemoveConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
     }
     relax.pe.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
