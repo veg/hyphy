@@ -73,12 +73,12 @@ namespace terms{
 
     range_gte1 = {
         lower_bound: "1",
-        upper_bound: "1e26"
+        upper_bound: "1e25"
     };
 
     range_any = {
         lower_bound: "0",
-        upper_bound: "1e26"
+        upper_bound: "1e25"
     };
 
 

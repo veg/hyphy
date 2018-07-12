@@ -8115,7 +8115,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                   
                   //fprintf (stderr, "CONGRUENCE CHECK %20.16g\n",fabs ((checksum-sum)/sum));
 
-                  if (fabs ((checksum-sum)/sum) > 1e-12) {
+                  if (fabs ((checksum-sum)/sum) > 1.e-12 * df->GetPatternCount ()) {
                     /*_Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
                                                                      *branches,
                                                                      tcc,

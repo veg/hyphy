@@ -695,13 +695,11 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     }
 
     //assert (0);
+    //Export (lf,likelihoodFunction);
+    //console.log (lf);
 
    	Optimize (mles, likelihoodFunction);
 
-    /*
-    Export (lf,likelihoodFunction);
-    console.log (lf);
-    */
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
