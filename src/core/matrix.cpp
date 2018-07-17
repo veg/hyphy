@@ -3743,6 +3743,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                     }
                     continue;
                   }
+                    
+                    
 
 #endif
                     const unsigned long
@@ -3766,25 +3768,47 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                    */
 
                    for (unsigned long i = 0UL, vector_index = c; i < secondArg.hDim; i += 4UL, vector_index += column_shift4) {
-                      _Parameter c0 = secondArg.theData[vector_index],
-                                 c1 = secondArg.theData[vector_index+secondArg.vDim],
-                                 c2 = secondArg.theData[vector_index+column_shift2],
-                                 c3 = secondArg.theData[vector_index+column_shift3];
-
-                      for (unsigned long r = 0UL; r < hDim; r ++) {
-
-                        unsigned long element = r*vDim + i;
-
-                        _Parameter r0 = theData[element]   * c0,
-                                   r1 = theData[element+1] * c1,
-                                   r2 = theData[element+2] * c2,
-                                   r3 = theData[element+3] * c3;
-
-                        r0 += r1;
-                        r2 += r3;
-                        dest[r*vDim + c] += r0 + r2;
-
-                      }
+/*#ifdef  _SLKP_USE_AVX_INTRINSICS
+                       
+                       _Parameter quad1[4] __attribute__ ((aligned (32)));
+                       quad1[0] = secondArg.theData[vector_index];
+                       quad1[1] = secondArg.theData[vector_index+secondArg.vDim],
+                       quad1[2] = secondArg.theData[vector_index+column_shift2],
+                       quad1[3] = secondArg.theData[vector_index+column_shift3];
+                       __m256d __attribute__ ((aligned (32))) col_buffer = _mm256_load_pd (quad1);
+                       
+                       for (unsigned long r = 0UL; r < hDim; r ++) {
+                           
+                           //unsigned long element = r*vDim + i;
+                           __m256d __attribute__ ((aligned (32))) row_quad = _mm256_loadu_pd (theData + (r*vDim + i));
+                           dest[r*vDim + c] += _avx_sum_4(_mm256_mul_pd (col_buffer,row_quad));
+                           
+                       }
+                       
+#else*/
+                _Parameter c0 = secondArg.theData[vector_index],
+                           c1 = secondArg.theData[vector_index+secondArg.vDim],
+                           c2 = secondArg.theData[vector_index+column_shift2],
+                           c3 = secondArg.theData[vector_index+column_shift3];
+                           
+                           for (unsigned long r = 0UL; r < hDim; r ++) {
+                               
+                               unsigned long element = r*vDim + i;
+                               
+                            
+                               _Parameter r0 = theData[element]   * c0,
+                               r1 = theData[element+1] * c1,
+                               r2 = theData[element+2] * c2,
+                               r3 = theData[element+3] * c3;
+                               
+                               r0 += r1;
+                               r2 += r3;
+                               dest[r*vDim + c] += r0 + r2;
+                               
+                           }
+//#endif
+                           
+ 
                    }
                 }
               } else {

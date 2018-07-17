@@ -6386,12 +6386,17 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
             }
             vecPointer += cBase;
         }
+        
+        // TODO SLKP 20180703: ugly fix for underflow which WON'T work if category count > 1
 
         for (long iNodeCount = 0L; iNodeCount < flatTree.lLength - 1; iNodeCount++) {
             node<long>* thisINode       = (node<long>*)flatNodes.lData[iNodeCount];
           
+            _Parameter sum = 0.;
+            
             for (long cc = 0; cc < cBase; cc++) {
                 _Parameter      tmp = 1.0;
+                
                 for (long nc = 0; nc < thisINode->nodes.length; nc++) {
                     _Parameter  tmp2 = 0.0;
                     _CalcNode   * child         = map_node_to_calcnode(thisINode->go_down(nc+1));
@@ -6405,8 +6410,17 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
                     tmp *= tmp2;
                 }
                 vecPointer[cc] = tmp;
+                sum += tmp;
             }
+            
+            if (sum < _lfScalingFactorThreshold && sum > 0.0) {
+                for (long cc = 0; cc < cBase; cc++) {
+                    vecPointer[cc] *= _lfScalerUpwards;
+                }
+            }
+            
             vecPointer += cBase;
+            
         }
         RecoverNodeSupportStates2 (&GetRoot(),currentStateVector+globalShifter,currentStateVector,categoryCount>1?catCount:(-1));
     }
@@ -6425,7 +6439,8 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* 
 
     if (thisNode->parent) {
         if (thisNode->parent->parent) {
-            for (long cc = 0; cc < cBase; cc++,vecPointer++) {
+            _Parameter sum = 0.;
+            for (long cc = 0; cc < cBase; cc++) {
                 _Parameter tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
                     _Parameter  tmp2            = 0.0;
@@ -6445,8 +6460,15 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* 
 
                     tmp *= tmp2;
                 }
-                *vecPointer = tmp;
+                vecPointer[cc] = tmp;
+                sum += tmp;
             }
+            if (sum < _lfScalingFactorThreshold && sum > 0.0) {
+                for (long cc = 0; cc < cBase; cc++) {
+                    vecPointer[cc] *= _lfScalerUpwards;
+                }
+            }
+            vecPointer += cBase;
         } else {
             for (long cc = 0; cc < cBase; cc++,vecPointer++) {
                 _Parameter tmp = 1.0;

@@ -1014,10 +1014,13 @@ void      _CategoryVariable::ScanForGVariables (_AVLList& l)
 _Parameter      _CategoryVariable::Mean (void)
 {
     _Parameter mean = 0.;
+    
+    UpdateIntervalsAndValues ();
+    
     _Matrix * wts = GetWeights(),
               * val = GetValues();
 
-    for (long ii = 0; ii < intervals; ii++) {
+    for (long ii = 0; ii < intervals; ii++) {        
         mean += wts->theData[ii] * val->theData[ii];
     }
 
