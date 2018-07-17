@@ -240,7 +240,8 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 minimumSitesForAutoParallelize  ("MINIMUM_SITES_FOR_AUTO_PARALLELIZE"),
                                 userSuppliedVariableGrouping    ("PARAMETER_GROUPING"),
                                 addLFSmoothing                  ("LF_SMOOTHING_SCALER"),
-                                reduceLFSmoothing               ("LF_SMOOTHING_REDUCTION");
+                                reduceLFSmoothing               ("LF_SMOOTHING_REDUCTION"),
+                                custom_lf_convergence_criterion ("LF_CONVERGENCE_CRITERION");
 
 
 extern _String useNexusFileData,
@@ -1188,10 +1189,10 @@ void    _LikelihoodFunction::GetGlobalVars (_SimpleList& rec) const {
 }
 
 //_______________________________________________________________________________________
-_Parameter  _LikelihoodFunction::GetIthIndependent (long index) const {
+_Parameter  _LikelihoodFunction::GetIthIndependent (long index, bool map) const {
     _Parameter return_value;
 
-    if (parameterValuesAndRanges) {
+    if (parameterValuesAndRanges && map) {
         return_value = (*parameterValuesAndRanges)(index,1);
     } else {
       return_value = ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
@@ -3269,17 +3270,50 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                         perNode            = 1L;
                         overFlow           = 0L;
                     }
+                  
+                    /** benchmark partition level calculations and distribute partitions according to estimated computational weight **/
+ 
+                    _Matrix partition_weights (theDataFilters.lLength, 2, false, true);
 
+                    if (theDataFilters.lLength > slaveNodes) {
+                      
+                      for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
+                        //fprintf (stderr, "\nComputing block %ld\n", i);
+                        TimeDifference timer;
+                        ComputeBlock(i);
+                        _Parameter timeDiff   = timer.TimeSinceStart();
+                        partition_weights.Store (i, 0, timeDiff);
+                      }
+                      
+                    } else {
+                      for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
+                        partition_weights.Store (i, 0, 1.);
+                     }
+                    }
+                  
+                    _Constant * sum = (_Constant*)partition_weights.Sum();
+                    partition_weights *= (slaveNodes/sum->Value());
+                    for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
+                      partition_weights.Store (i, 1, i);
+                    }
+                  
+                    sum->SetValue(0.);
+                    _Matrix * sorted_by_weight = (_Matrix*)partition_weights.SortMatrixOnColumn(sum);
+                    DeleteObject (sum);
+                  
+                    //fprintf (stderr, "%s\n", ((_String*)sorted_by_weight->toStr())->getStr());
+
+                    MPISwitchNodesToMPIMode (slaveNodes);
                     /*if (overFlow) {
                         overFlow = slaveNodes/overFlow;
                     }*/
 
-                    ReportWarning    (_String ("InitMPIOptimizer with:") & (long)theDataFilters.lLength & " partitions on " & (long)slaveNodes
+                    /*ReportWarning    (_String ("InitMPIOptimizer with:") & (long)theDataFilters.lLength & " partitions on " & (long)slaveNodes
                                       & " MPI computational nodes. " & perNode & " partitions per node (+1 for "
                                       & overFlow & " nodes)");
 
 
-                    MPISwitchNodesToMPIMode (slaveNodes);
+                    
                     for (long i = 1L; i<totalNodeCount; i++) {
                         toPart = perNode;
 
@@ -3303,7 +3337,39 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
                         MPISendString    (sLF,i);
                         parallelOptimizerTasks.AppendNewInstance (new _SimpleList);
-                    }
+                    }*/
+                  
+                    long current_index = 0L;
+                  
+                  
+                    ReportWarning    (_String ("InitMPIOptimizer with:") & (long)theDataFilters.lLength & " partitions on " & (long)slaveNodes
+                                    & " MPI computational nodes. ");
+                  
+                    for (long i = 1L; i<totalNodeCount; i++) {
+                      _Parameter sum = 0.;
+                      _SimpleList my_part;
+                      do {
+                        sum += (*sorted_by_weight) (current_index, 0);
+                        my_part << round ((*sorted_by_weight) (current_index, 1));
+                        current_index++;
+                      } while (sum < 1. && theDataFilters.lLength - current_index >= (totalNodeCount - i));
+                        
+                      ReportWarning    (_String ("InitMPIOptimizer sending partitions ") & _String ((_String*)my_part.toStr()) & " to node " & i);
+                      
+                      
+                      //fprintf (stderr, "%s\n", _String ((_String*)my_part.toStr()).getStr());
+                      
+                      
+                      _String          sLF (8192L, true);
+                      SerializeLF      (sLF,_hyphyLFSerializeModeVanilla,&my_part);
+                      sLF.Finalize     ();
+                      
+                      MPISendString    (sLF,i);
+                      parallelOptimizerTasks.AppendNewInstance (new _SimpleList);
+                   }
+                  
+                  
+                    DeleteObject (sorted_by_weight);
                 }
 
 
@@ -3708,6 +3774,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
     SetupLFCaches       ();
     SetupCategoryCaches ();
+    computationalResults.Clear();
 
 
 #ifdef __HYPHYMPI__
@@ -3718,6 +3785,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
         }
     }
 
+  
     if (hyphyMPIOptimizerMode == _hyphyLFMPIModeNone) {
 #endif
         SetReferenceNodes();
@@ -3731,7 +3799,6 @@ _Matrix*        _LikelihoodFunction::Optimize () {
     }
 #endif
 
-    computationalResults.Clear();
 
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
     SetStatusBarValue (0,maxSoFar,0);
@@ -3756,6 +3823,21 @@ DecideOnDivideBy (this);
     checkParameter (useLastResults,keepStartingPoint,0.0);
     checkParameter (allowBoundary,go2Bound,1L);
     checkParameter (useInitialDistanceGuess,precision,1.);
+  
+    _FString * custom_convergence_callback_name =
+      (_FString*) FetchObjectFromVariableByType(&custom_lf_convergence_criterion, STRING);
+  
+  long custom_convergence_callback = custom_convergence_callback_name ? FindBFFunctionName(*custom_convergence_callback_name->theString) : -1L;
+  
+  
+    if (custom_convergence_callback >= 0) {
+      if (GetBFFunctionArgumentCount (custom_convergence_callback) != 2L) {
+        WarnError ("Custom convergence criterion convergence function must have exactly two arguments: current log-L, and an dictionary with id -> value mapping");
+        return new _Matrix();
+      }
+    }
+  
+    //fprintf (stderr, "Custom convergence %s %ld\n", custom_convergence_callback_name->theString->sData,custom_convergence_callback);
 
     if (CheckEqual (keepStartingPoint,1.0)) {
       for (unsigned long i=0UL; i<indexInd.lLength; i++) {
@@ -4543,10 +4625,33 @@ DecideOnDivideBy (this);
                 currentPrecision = averageChange2;
             }
 
-            if (maxSoFar-lastMaxValue<=precision/termFactor) {
-                inCount++;
-            } else {
+            // check for convergence
+            if (custom_convergence_callback >= 0) {
+              // custom callback
+              _List arguments;
+              _AssociativeList * parameters = new _AssociativeList;
+              
+              for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+                parameters-> MStore (*GetIthIndependentName(i), new _Constant (GetIthIndependent(i, false)));
+              }
+
+              arguments << new _Constant (maxSoFar);
+              arguments.AppendNewInstance(parameters);
+              
+              _PMathObj convegence_check = custom_convergence_callback_name->Call (&arguments, nil);
+              
+              if (convegence_check->Value () <= precision/termFactor) {
+                inCount ++;
+              } else {
                 inCount = 0;
+              }
+              DeleteObject (convegence_check);
+            } else {
+              if (maxSoFar-lastMaxValue<=precision/termFactor) {
+                  inCount++;
+              } else {
+                  inCount = 0;
+              }
             }
 
             lastMaxValue = maxSoFar;
