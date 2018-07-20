@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
- 
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,7 +34,7 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
 #define  HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
@@ -118,7 +118,7 @@ _List _TranslationTable::_list_of_default_tables ( _List() < "ACGT"
 
 
 const _String& _TranslationTable::GetDefaultTable(long tableType) {
-  
+
   switch (tableType) {
     case HY_TRANSLATION_TABLE_BINARY:
       return *(_String*)_list_of_default_tables (3);
@@ -129,9 +129,9 @@ const _String& _TranslationTable::GetDefaultTable(long tableType) {
    case HY_TRANSLATION_TABLE_DNA:
       return *(_String*)_list_of_default_tables (0);
   }
-  
+
   return emptyString;
-  
+
 }
 
 _TranslationTable::_TranslationTable (void)
@@ -191,7 +191,7 @@ long    _TranslationTable::TokenCode (char token) const
     for (unsigned long i = 0; i < resolution_count; i++) {
       theCode |= (1L << receptacle[i]); // set the right bit
     }
-  
+
     return theCode;
 }
 
@@ -270,15 +270,15 @@ long    _TranslationTable::LengthOfAlphabet (void) const {
 
 const _String&   _TranslationTable::ExpandToken            (char token) const {
   long    buf [256];
-  
+
   long resolution_count = TokenResolutions (token, buf);
   _String const * base_set = &GetAlphabetString();
   _String expansion (base_set->sLength, true);
-  
+
   for (unsigned long tc = 0; tc < resolution_count; tc++) {
     expansion << base_set->sData[buf[tc]];
   }
-  
+
   expansion.Finalize();
   return expansion;
 }
@@ -290,29 +290,29 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
   if (tokens.sLength == 1UL) {
     return TokenResolutions (tokens.getChar(0UL), receptacle, gapToOnes);
   } else {
-  
+
     long * large_store,
            large_store_static [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
-    
-    
+
+
     if (baseLength * tokens.sLength + tokens.sLength >= HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
       large_store = new long [baseLength * tokens.sLength + tokens.sLength];
     } else {
       large_store = large_store_static;
     }
-    
+
     /*
      large_store is a linear array which stores the following data
-     
+
      [0,unitLength) -- the number of resolutions for the i-th character
-     
+
      [unitLength,unitLength + baseLength] -- the actual resolutions for the 1st char
      [unitLength + baseLength, unitLength + 2*baseLength] -- the actual resolutions for the 2nd char
      ...
      */
-    
+
     long resolution_count = 1L;
-    
+
     for (unsigned long char_index = 0; char_index < tokens.sLength ; char_index++) {
       large_store [char_index] = TokenResolutions (tokens.sData[char_index], large_store + tokens.sLength + baseLength * char_index, gapToOnes);
       if (gapToOnes && large_store [char_index] == 0) {
@@ -321,12 +321,12 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
       }
       resolution_count *= large_store [char_index] > 0 ? large_store [char_index] : 0;
     }
-    
+
     if (resolution_count == 1L) {
       for (unsigned long char_index = 0; char_index < tokens.sLength ; char_index++) {
         large_store[char_index] = large_store[tokens.sLength + baseLength * char_index];
       }
-      
+
       if (receptacle) {
         receptacle [0]   = CombineDigits(large_store, tokens.sLength, baseLength);
       } else {
@@ -335,17 +335,17 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
     } else {
       if (receptacle) {
         // handle cases of 2 and 3 characters separately since they are the most common
-        
+
         if (resolution_count > HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
           FlagError(_String ("Too many ambiguous states in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
           return -1L;
         }
-        
+
         if (tokens.sLength == 3) {
           long digits[3],
               *resolution_arrays [3] = {large_store + tokens.sLength, large_store + tokens.sLength + baseLength,large_store + tokens.sLength + 2*baseLength},
               resolutions_index = 0L;
-          
+
           for (long digit1 = 0L; digit1 < large_store[0]; digit1 ++) {
             for (long digit2 = 0L; digit2 < large_store[1]; digit2 ++) {
               for (long digit3 = 0L; digit3 < large_store[2]; digit3 ++) {
@@ -353,28 +353,28 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
               }
             }
           }
-          
+
         } else {
           if (tokens.sLength == 2) {
             long digits[2],
                  *resolution_arrays [2] = {large_store + tokens.sLength,large_store + tokens.sLength + baseLength},
                  resolutions_index = 0L;
-            
+
             for (long digit1 = 0L; digit1 < large_store[0]; digit1 ++) {
               for (long digit2 = 0L; digit2 < large_store[1]; digit2 ++) {
                 receptacle[resolutions_index++] = resolution_arrays[0][digit1] * baseLength + resolution_arrays[1][digit2];
               }
             }
           } else { // more than 3 tokens [rare!]
-            
+
             if (tokens.sLength >= 32) {
               FlagError(_String ("The token string is too long in call to ") & _String (__PRETTY_FUNCTION__).Enquote());
               return -1L;
             }
-            
+
             long digits[32] {},
                  resolutions_index = 0L;
-            
+
             do {
               // assemble the current token, backwards
               long this_resolution = 0L,
@@ -383,9 +383,9 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
                 this_resolution += weight * *(large_store + tokens.sLength + baseLength * digit + digits[digit]);
                 weight *= tokens.sLength;
               }
-              
+
               receptacle[resolutions_index++] = this_resolution;
-              
+
               for (long digit = tokens.sLength - 1; digit >= 0; digit --) {
                 if (++digits[digit] < large_store[digit]) {
                   break;
@@ -394,21 +394,21 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
                   digits[digit] = 0L;
                 }
               }
-              
+
             } while (digits[0] < large_store[0]);
-            
+
           }
         }
       } else {
         resolution_count = -1L;
       }
     }
-    
-    
+
+
     if (large_store != large_store_static) {
       delete [] large_store;
     }
-    
+
     return resolution_count;
   }
 
@@ -417,10 +417,10 @@ long    _TranslationTable::MultiTokenResolutions (_String const& tokens, long* r
 //_________________________________________________________
 
 long    _TranslationTable::TokenResolutions (char token, long* receptacle, bool gapToOnes) const {
-  
+
   long custom_code = tokensAdded.sLength ? tokensAdded.Find (token):-1;
   long resolution_counter = -1L;
-  
+
   if (custom_code != -1) {
     resolution_counter = 0L;
     unsigned long shifter = 1L;
@@ -431,107 +431,107 @@ long    _TranslationTable::TokenResolutions (char token, long* receptacle, bool 
       shifter >>= 1;
     }
   } else {
-    
+
     if (baseSet.sLength) {
-      
+
       long base_char = baseSet.Find(token);
       // OPTIMIZE FLAG linear search:
       // SLKP 20071002 should really be a 256 char lookup table
-      
+
       if ( base_char !=-1 ) {
         resolution_counter = 1;
         receptacle[0] = base_char;
       }
     } else {
-      
+
       if (baseLength==4) {
-        
+
         switch (token) {
           case 'A':
             resolution_counter = 1L;
             receptacle[0]=0;
             break;
-            
+
           case 'C':
             resolution_counter = 1L;
             receptacle[0]=1;
             break;
-            
+
           case 'G':
             resolution_counter = 1L;
             receptacle[0]=2;
             break;
-            
+
           case 'T':
           case 'U':
             resolution_counter = 1L;
             receptacle[0]=3;
             break;
-            
+
           case 'Y':
             resolution_counter = 2L;
             receptacle[0]=1;
             receptacle[1]=3;
             break;
-            
+
           case 'R':
             resolution_counter = 2L;
             receptacle[0]=0;
             receptacle[1]=2;
             break;
-            
+
           case 'W':
             resolution_counter = 2L;
             receptacle[0]=0;
             receptacle[1]=3;
             break;
-            
+
           case 'S':
             resolution_counter = 2L;
             receptacle[0]=1;
             receptacle[1]=2;
             break;
-            
+
           case 'K':
             resolution_counter = 2L;
             receptacle[0]=2;
             receptacle[1]=3;
             break;
-            
+
           case 'M':
             resolution_counter = 2L;
             receptacle[0]=0;
             receptacle[1]=1;
             break;
-            
+
           case 'B':
             resolution_counter = 3L;
             receptacle[0]=1;
             receptacle[1]=2;
             receptacle[2]=3;
             break;
-            
+
           case 'D':
             resolution_counter = 3L;
             receptacle[0]=0;
             receptacle[1]=2;
             receptacle[2]=3;
             break;
-            
+
           case 'H':
             resolution_counter = 3L;
             receptacle[0]=0;
             receptacle[1]=1;
             receptacle[2]=3;
             break;
-            
+
           case 'V':
             resolution_counter = 3L;
             receptacle[0]=0;
             receptacle[1]=1;
             receptacle[2]=2;
            break;
-            
+
           case 'X':
           case 'N':
           case '?':
@@ -543,128 +543,128 @@ long    _TranslationTable::TokenResolutions (char token, long* receptacle, bool 
             receptacle[2]=2;
             receptacle[3]=3;
             break;
-            
+
           case '-':
             resolution_counter = 0L;
             break;
         }
       } else {
         if (baseLength==20) {
-          
-          
+
+
           switch (token) {
             case 'A':
               resolution_counter = 1L;
               receptacle[0]=0;
               break;
-              
+
             case 'B':
               resolution_counter = 2L;
               receptacle[0]=2;
               receptacle[1]=11;
               break;
-              
+
             case 'C':
               resolution_counter = 1L;
               receptacle[0]=1;
               break;
-              
+
             case 'D':
               resolution_counter = 1L;
               receptacle[0]=2;
               break;
-              
+
             case 'E':
               resolution_counter = 1L;
               receptacle[0]=3;
               break;
-              
+
             case 'F':
               resolution_counter = 1L;
               receptacle[0]=4;
               break;
-              
+
             case 'G':
               resolution_counter = 1L;
               receptacle[0]=5;
               break;
-              
+
             case 'H':
               resolution_counter = 1L;
               receptacle[0]=6;
               break;
-              
+
             case 'I':
               resolution_counter = 1L;
               receptacle[0]=7;
               break;
-              
+
             case 'K':
               resolution_counter = 1L;
               receptacle[0]=8;
               break;
-              
+
             case 'L':
               resolution_counter = 1L;
               receptacle[0]=9;
               break;
-              
+
             case 'M':
               resolution_counter = 1L;
               receptacle[0]=10;
               break;
-              
+
             case 'N':
               resolution_counter = 1L;
               receptacle[0]=11;
               break;
-              
+
             case 'P':
               resolution_counter = 1L;
               receptacle[0]=12;
               break;
-              
+
             case 'Q':
               resolution_counter = 1L;
               receptacle[0]=13;
               break;
-              
+
             case 'R':
               resolution_counter = 1L;
               receptacle[0]=14;
               break;
-              
+
             case 'S':
               resolution_counter = 1L;
               receptacle[0]=15;
               break;
-              
+
             case 'T':
               resolution_counter = 1L;
               receptacle[0]=16;
               break;
-              
+
             case 'V':
               resolution_counter = 1L;
               receptacle[0]=17;
               break;
-              
+
             case 'W':
               resolution_counter = 1L;
               receptacle[0]=18;
               break;
-              
+
             case 'Y':
               resolution_counter = 1L;
               receptacle[0]=19;
               break;
-              
+
             case 'Z':
               resolution_counter = 2L;
               receptacle[0]=3;
               receptacle[1]=13;
               break;
-              
+
             case 'X':
             case '?':
             case '.':
@@ -683,18 +683,18 @@ long    _TranslationTable::TokenResolutions (char token, long* receptacle, bool 
         } else
           // binary
         {
-          
+
           switch (token) {
             case '0':
               resolution_counter = 1L;
               receptacle[0]=0;
               break;
-              
+
             case '1':
               resolution_counter = 1L;
               receptacle[0]=1;
               break;
-              
+
             case 'X':
             case '?':
             case '.':
@@ -709,21 +709,21 @@ long    _TranslationTable::TokenResolutions (char token, long* receptacle, bool 
             }
               break;
           }
-          
+
         }
       }
     }
   }
-  
+
   if (resolution_counter == 0L && gapToOnes) {
     for (unsigned long i = 0UL; i < baseLength; i++) {
       receptacle[i] = i;
     }
     return baseLength;
   }
-  
+
   return resolution_counter;
-  
+
 }
 
 //_________________________________________________________
@@ -765,7 +765,7 @@ const _String& _TranslationTable::GetAlphabetString (void) const {
   if (baseSet.sLength) {
     return baseSet;
   }
-  
+
   if (baseLength == 4) {
     return _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_DNA);
   } else if (baseLength == 20) {
@@ -773,7 +773,7 @@ const _String& _TranslationTable::GetAlphabetString (void) const {
   } else {
     return _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_BINARY);
   }
-  
+
   return emptyString;
 
 }
@@ -1662,7 +1662,7 @@ _Parameter _DataSet::CheckAlphabetConsistency(void)
                 total   = 0;
 
     bool        checks    [256];
-  
+
     char        gapChar = theTT->GetGapChar();
 
     _String     baseSymbols;
@@ -1775,7 +1775,7 @@ void    _DataSet::MatchIndices (_Formula&f, _SimpleList& receptacle, bool isVert
     _String     varName  = isVert ? "siteIndex" : "speciesIndex";
     varName = AppendContainerName(varName, scope);
     _Variable   *v       = CheckReceptacle (&varName, emptyString, false);
-  
+
     //fprintf (stderr, "\n_DataSet::MatchIndices %d %s [%s] %s\n", isVert, scope ? scope->sData : "none", varName.sData, ((_String*)f.toStr())->sData);
 
     for (long i=0L; i<limit; i++) {
@@ -1863,8 +1863,8 @@ _DataSet*   _DataSet::Concatenate (_SimpleList const & ref)
       return new _DataSet;
     }
 
-  
-  
+
+
     _DataSet           * bigDataSet = new _DataSet;
     checkPointer(bigDataSet);
 
@@ -1940,7 +1940,7 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
     if (!joint_table) {
       return new _DataSet;
     }
-  
+
     _DataSet           * combined_data = new _DataSet;
     combined_data->theTT = joint_table;
 
@@ -1949,7 +1949,7 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
     unsigned long     max_sites = 0UL,
                       total_species_count = 0UL;
 
-  
+
 
     char     emptyStringSlot = joint_table->GetSkipChar();
 
@@ -1964,7 +1964,7 @@ _DataSet*   _DataSet::Combine (_SimpleList const& ref) {
         _DataSet const *current_data_set = (_DataSet const*)dataSetList(ref.Element (set_index));
         unsigned long sites_in_this_set = current_data_set->NoOfColumns(),
                       sequences_in_this_set = current_data_set->NoOfSpecies();
-      
+
         for (unsigned long seq_index = 0UL; seq_index < sequences_in_this_set; seq_index++) {
             combined_data->AddName (*current_data_set->GetSequenceName(seq_index));
             if (seq_index == 0UL && set_index == 0UL) {
@@ -2214,33 +2214,33 @@ void    _DataSetFilter::SetDimensions (void)
 //_______________________________________________________________________
 unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _SimpleList& map, _SimpleList& counts, short mode) const {
     indices.Clear(); map.Clear(); counts.Clear();
-    
+
     unsigned long             sites  = theMap.lLength,
     seqs   = theNodeMap.lLength,
     unit   = GetUnitLength();
-    
+
     if (mode == 0) {
-        _SimpleList hashSupport;        
+        _SimpleList hashSupport;
         _AVLListXL  sequenceHashes     (&hashSupport);
-        
+
         for (unsigned long sequenceIndex = 0; sequenceIndex < seqs; sequenceIndex ++){
             _String * thisSequence = GetSequenceCharacters (sequenceIndex);
-            
+
             long     sequenceHash   = thisSequence->Adler32(),
             f              = sequenceHashes.Find ((BaseRef)sequenceHash),
             rawSequenceIdx = theNodeMap.lData[sequenceIndex];
-            
+
             DeleteObject (thisSequence);
-            
+
             _SimpleList * sameScore = nil;
             if (f>=0) {
                 sameScore = (_SimpleList*)sequenceHashes.GetXtra (f);
                 for (long k = 0; k<sameScore->lLength; k++) {
                     bool fit = true;
                     f = sameScore->lData[k];
-                    
+
                     long fRaw = theNodeMap.lData[indices.lData[f]];
-                    
+
                     for (unsigned long site = 0; site < sites && fit; site++){
                         for (unsigned long unitIndex = 0; unitIndex < unit; unitIndex ++){
                             _Site * thisSite = theData->GetSite(theMap.lData[unit*site+unitIndex]);
@@ -2250,11 +2250,11 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                             }
                         }
                     }
-                    
+
                     if (fit) {
                         map << f;
                         counts.lData[f] ++;
-                        
+
                     } else {
                         f = -1;
                     }
@@ -2265,39 +2265,39 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                     sameScore = (_SimpleList*)checkPointer(new _SimpleList);
                     sequenceHashes.Insert ((BaseRef)sequenceHash,(long)sameScore,false);
                 }
-                
+
                 (*sameScore) << indices.lLength;
                 map     << indices.lLength;
                 indices << sequenceIndex;
                 counts  << 1;
             }
         }
-        
+
         }
     else{
         long             vd  = GetDimension(true);
-        
+
         _Parameter      *translatedVector = (_Parameter*)checkPointer(new _Parameter [vd]),
         *translatedVector2= (_Parameter*)checkPointer(new _Parameter [vd]);
-        
+
         _String         state1 (unit,false),
         state2 (unit,false);
-      
+
         sites = sites / unit;
-      
+
         for (long sequenceIndex = 0; sequenceIndex < seqs; sequenceIndex++) {
             bool checkState = false;
             for (long idx=0; idx<indices.countitems(); idx++) {
                 for (long m=0; m<sites; m++) {
                     RetrieveState (m,sequenceIndex, state1,false);
                     RetrieveState (m,indices.lData[idx], state2,false);
-                    
+
                     checkState = true;
                     long idx1 = Translate2Frequencies (state1, translatedVector,  true),
                     idx2 = Translate2Frequencies (state2, translatedVector2, true);
-                    
-                    //printf ("(%ld, %ld) %ld = %ld %ld\n", sequenceIndex, indices.lData[idx], m, idx1, idx2); 
-                    
+
+                    //printf ("(%ld, %ld) %ld = %ld %ld\n", sequenceIndex, indices.lData[idx], m, idx1, idx2);
+
                     if (idx2 >=0 && idx1 >=0) {
                         if (idx1==idx2) {
                             continue;
@@ -2306,33 +2306,33 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                             break;
                         }
                     } else {
-                        
-                        // check for equal ambigs 
+
+                        // check for equal ambigs
                         long k = 0;
                         for (; k < vd; k++){
                             if (translatedVector[k] != translatedVector2[k]){
                                 break;
                             }
                         }
-                            
+
                         if (k == vd)
                             continue;
-                            
+
                         if (mode == 1){
-                            
+
                                 long count1 = 0,
                                      count2 = 0;
-                                
+
                                 for (long t = 0; t<vd; t++) {
                                     count1 += translatedVector[t]>0.0;
                                     count2 += translatedVector2[t]>0.0;
                                 }
-                                
+
                                 if (count1 < vd && count2 < vd) {
                                     checkState = false;
                                     break;
                                 }
-                                
+
                             } else {
                                 bool first  = mode==2,
                                 second = mode==2;
@@ -2357,7 +2357,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                                         if (translatedVector2[t]>0.0) {
                                             first  |= (translatedVector[t]>0.0);
                                         }
-                                    }                       
+                                    }
                                     if (!(first&&second)) {
                                         checkState = false;
                                         break;
@@ -2366,27 +2366,27 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                             }
                         }
                     }
-                
+
                 if (checkState) {
                     map << idx;
                     counts.lData[idx] ++;
                     break;
                 }
             }
-            
+
             if (!checkState){
                 map     << indices.lLength;
                 indices << sequenceIndex;
                 counts  << 1;
             }
-            
+
         }
-        
+
         delete [] translatedVector;
-        delete [] translatedVector2;   
+        delete [] translatedVector2;
     }
-    
-    
+
+
     return indices.lLength;
 }
 
@@ -2526,7 +2526,7 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
 
         long        f = siteIndices.Find ((BaseRef)colIndex);
         _SimpleList * sameScore = nil;
-        
+
         if (f>=0) {
             sameScore = (_SimpleList*)siteIndices.GetXtra (f);
             for (long k = 0; k<sameScore->lLength; k++) {
@@ -2534,8 +2534,8 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
                 f = sameScore->lData[k];
                 for (long j=0; fit&&(j<unit); j++) { // sweep within one block
                     _Site * site1 = ds->GetSite(verticalList.lData[i+j]),
-                          * site2 = ds->GetSite(theMap.lData[unit*f+j]); 
-                            
+                          * site2 = ds->GetSite(theMap.lData[unit*f+j]);
+
                     for (long k=0; k<theNodeMap.lLength; k++) // sweep down the columns
                         if (site1->sData[theNodeMap.lData[k]]!=site2->sData[theNodeMap.lData[k]]) {
                             fit = false;
@@ -2606,7 +2606,7 @@ long    _DataSetFilter::FindSpeciesName (_List& s, _SimpleList& r) const {
             break;
         }
     }
-    
+
     return r.lLength;
 }
 
@@ -2822,11 +2822,11 @@ void    _DataSetFilter::SetExclusions (_String* theList, bool filter)
     _AVLList     exclusions (&holder);
 
     for (long k = 0; k < tokens.lLength; k++) {
-      
+
         _String* kth_token = (_String*)tokens.GetItem(k);
-      
+
         long posMarker = MapStringToCharIndex(*kth_token);
-        
+
 
         if (posMarker < 0) {
             ReportWarning (_String("Exclusion request for '") & *kth_token &"' does not represent a unique state and will therefore be ignored.");
@@ -2850,7 +2850,7 @@ void    _DataSetFilter::SetExclusions (_String* theList, bool filter)
 
 _String*    _DataSetFilter::GetExclusions (void) const {
     _String * res = new _String (16L, true);
-  
+
     if (theExclusions.lLength) {
         for (long k=0; k<theExclusions.lLength-1; k++) {
             (*res) << ConvertCodeToLetters (theExclusions.lData[k], unitLength);
@@ -2894,7 +2894,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
         _Formula fmla, lhs;
         _FormulaParsingContext fpc;
         fpc.setScope (scope);
-      
+
         long     outcome = Parse (&fmla, input, fpc,&lhs);
 
         if (outcome!=HY_FORMULA_EXPRESSION) {
@@ -3228,7 +3228,7 @@ const _String     _DataSetFilter::RetrieveState (unsigned long site, unsigned lo
   _String state ((unsigned long)unitLength, false);
   RetrieveState (site, pos, state, false);
   return state;
-  
+
 }
 
 //_______________________________________________________________________
@@ -3495,7 +3495,7 @@ _Matrix* _DataSetFilter::PairwiseCompare (_SimpleList* s1, _SimpleList *s2, _Lis
 
 _List *  _DataSetFilter::ComputePatternToSiteMap (void) const {
     _List * result = new _List ();
-  
+
     for (unsigned long k = 0UL; k < theFrequencies.lLength; k++) {
         (*result) < new _SimpleList;
     }
@@ -3649,16 +3649,16 @@ bool    _DataSetFilter::IsConstant (unsigned long site,bool relaxedDeletions)
             if (store[j]!=0.0) {
               break;
             }
-      
+
         delete [] store;
         delete [] store2;
         return j!=loopDim;
-      
+
     } else {
         for (unsigned long k = 1; k<upTo; k++) {
             Translate2Frequencies ((*this)(site,k), store2, false);
             for (j=0UL; j<loopDim; j++)
-              
+
                 if (store[j]!=store2[j]) {
                     delete [] store;
                     delete [] store2;
@@ -3666,7 +3666,7 @@ bool    _DataSetFilter::IsConstant (unsigned long site,bool relaxedDeletions)
                 }
         }
     }
-  
+
     delete [] store;
     delete [] store2;
     return true;
@@ -3705,7 +3705,7 @@ _Matrix*        _DataSetFilter::GetFilterCharacters (bool flip) const {
 
 _String*        _DataSetFilter::GetSequenceCharacters (long seqID)  const{
     long            unitSizeL   = GetUnitLength();
-  
+
     _String * aSequence = new _String (GetSiteCount(),true);
 
     if (seqID >= 0 && seqID < theNodeMap.lLength) {
@@ -3723,10 +3723,10 @@ _String*        _DataSetFilter::GetSequenceCharacters (long seqID)  const{
   //_______________________________________________________________________
 
 _String*        _DataSet::GetSequenceCharacters (long seqID)  const{
-  
+
   unsigned long        upTo = NoOfColumns();
   _String * aSequence = new _String (upTo,true);
-  
+
   if (seqID >= 0 && seqID < noOfSpecies) {
     for (unsigned long k2=0UL; k2<upTo; k2++) {
       (*aSequence) << GetSite (k2)->getChar (seqID);
@@ -3786,88 +3786,88 @@ void    _DataSetFilter::UnFreeze (long site)
 
 //_________________________________________________________
 _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset_filter_ambiguity_resolution resolution_option) const {
-  
+
   try {
-    
+
     if (unitLength > 3) {
       throw _String("ComputePairwiseDifferences is not implemented for data filters with unit size > 3");
     }
-    
+
     long    mxDim      = GetDimension (true);
-    
+
     _Matrix     *res   = new _Matrix  (mxDim,mxDim,false,true);
-    
+
     _Parameter  *sm1   = new _Parameter[mxDim],
     *sm2   = new _Parameter[mxDim];
-    
-    
-    
+
+
+
     _String      state1 (unitLength,false),
     state2 (unitLength,false);
-    
-    
+
+
     if (conversionCache.lLength == 0) {
       throw _String ("ComputePairwiseDifferences called on a filter with emptyString conversionCache");
     }
-    
+
     long        *tcodes  = conversionCache.lData+89,
     *ccodes  = conversionCache.lData+1,
     ccount   = conversionCache.lData[0];
-    
+
     for (unsigned long site_pattern = 0UL; site_pattern < theFrequencies.lLength; site_pattern++) {
       long s1 = -1, s2 = -1;
-      
+
       int c1, c2;
-      
+
       c1 = (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[unitLength*site_pattern]]])->sData[theNodeMap.lData[i]],
       c2 = (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[unitLength*site_pattern]]])->sData[theNodeMap.lData[j]];
-      
+
       if (unitLength == 1) {
         s1 = conversionCache.lData[(c1-40)*(undimension+1)+undimension],
         s2 = conversionCache.lData[(c2-40)*(undimension+1)+undimension];
       } else {
         int         c12 = (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[unitLength*site_pattern+1]]])->sData[theNodeMap.lData[i]],
         c22 = (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[unitLength*site_pattern+1]]])->sData[theNodeMap.lData[j]];
-        
-        
+
+
         state1.sData[0] = c1;
         state1.sData[1] = c12;
-        
+
         state2.sData[0] = c2;
         state2.sData[1] = c22;
-        
+
         c1  = ccodes[c1-40];
         c12 = ccodes[c12-40];
-        
+
         c2  = ccodes[c2-40];
         c22 = ccodes[c22-40];
-        
+
         if (unitLength == 2) {
           if ((c1>=0)&&(c12>=0)) {
             s1 = tcodes[c1*ccount+c12];
           }
-          
+
           if ((c2>=0)&&(c22>=0)) {
             s2 = tcodes[c2*ccount+c22];
           }
         } else {
           int         c13 = (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[unitLength*site_pattern+2]]])->sData[theNodeMap.lData[i]],
           c23 = (((_String**)theData->lData)[theData->theMap.lData[theMap.lData[unitLength*site_pattern+2]]])->sData[theNodeMap.lData[j]];
-          
+
           //printf ("\n%c %c", c13, c23);
-          
+
           state1.sData[2] = c13;
           state2.sData[2] = c23;
-          
+
           c13 = ccodes[c13-40];
           c23 = ccodes[c23-40];
-          
+
           //printf (" %d %d %s %s\n", c13, c23, state1.sData, state2.sData);
-          
+
           if ((c1>=0)&&(c12>=0)&&(c13>=0)) {
             s1 = tcodes[ccount*(c1*ccount+c12)+c13];
           }
-          
+
           if ((c2>=0)&&(c22>=0)&&(c23>=0)) {
             s2 = tcodes[ccount*(c2*ccount+c22)+c23];
           }
@@ -3884,28 +3884,28 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
         res = dsf->ComputePairwiseDifferences (seq,site,0);
       }*/
 
-      
+
       if (s1>=0 && s2>=0) { // one to one
         res->theData[s1*mxDim+s2] += theFrequencies.lData[site_pattern];
       } else {
         if (resolution_option != kAmbiguityHandlingSkip) {
           _Matrix * freqsAtSite = nil;
-          
+
           if (resolution_option != kAmbiguityHandlingResolve) {
             _SimpleList   //seqList,
             siteList;
-            
-            
+
+
             for (long si = 0; si < unitLength; si++) {
               siteList << theMap.lData[unitLength*site_pattern+si];
             }
-            
+
             _SimpleList copy_node_oder (theNodeMap);
             freqsAtSite     = theData->HarvestFrequencies (unitLength, unitLength, 0, copy_node_oder, siteList);
             if (theExclusions.lLength) {
               long k = 0,
                    u = GetDimension (false);
-              
+
               for (long i = 0; i<u; i++) {
                 if (i==theExclusions.lData[k] && k<theExclusions.lLength) {
                   k++;
@@ -3916,7 +3916,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
             }
             //XferwCorrection (freqsAtSite->theData, freqsAtSite->theData, mxDim);
           }
-          
+
           if (s1>=0) {
             // one to many
             if (unitLength>1) {
@@ -3924,29 +3924,29 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
             } else {
               Translate2Frequencies (c2,sm1,false);
             }
-            
+
             if (freqsAtSite) {
               if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
                 _Parameter totalW = 0.0;
-                
+
                 for  (long m=0; m<mxDim; m++)
                   if (sm1[m]>0.0) {
                     totalW += freqsAtSite->theData[m];
                   }
-                
+
                 if (totalW>0.0) {
                   s1 = s1*mxDim;
-                  
+
                   for  (long m=0; m<mxDim; m++,s1++)
                     if (sm1[m]>0.0) {
                       res->theData[s1] += theFrequencies.lData[site_pattern]*freqsAtSite->theData[m]/totalW;
                     }
                 }
-                
+
               } else {
                 _Parameter maxW   = 0.0;
                 long       maxIdx = -1;
-                
+
                 for  (long m=0; m<mxDim; m++) {
                   if (sm1[m]>0.0) {
                     _Parameter myWeight = freqsAtSite->theData[m];
@@ -3956,7 +3956,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                     }
                   }
                 }
-                
+
                 if (maxIdx>=0) {
                   res->theData[s1*mxDim+maxIdx] += theFrequencies.lData[site_pattern];
                 }
@@ -3966,7 +3966,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                - if ambig resolves to one s1 - count as a match
                - otherwise - count all contributions equally
                */
-              
+
               if (sm1[s1] > 0.0) {
                 res->theData[s1*mxDim+s1] += theFrequencies.lData[site_pattern];
               } else {
@@ -3976,11 +3976,11 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                     ambCount ++;
                   }
                 }
-                
+
                 s1 *= mxDim;
-                
+
                 _Parameter addFac = theFrequencies.lData[site_pattern]/(_Parameter)ambCount;
-                
+
                 for  (long m=0; m<mxDim; m++,s1++)
                   if (sm1[m]>0.0) {
                     res->theData[s1] += addFac;
@@ -3996,27 +3996,27 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
               } else {
                 Translate2Frequencies (c1,sm1,false);
               }
-              
+
               if (freqsAtSite) {
                 if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
                   _Parameter totalW = 0.0;
-                  
+
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0.0) {
                       totalW += freqsAtSite->theData[m];
                     }
-                  
+
                   if (totalW>0.0) {
                     for  (long m=0; m<mxDim; m++,s2+=mxDim)
                       if (sm1[m]>0.0) {
                         res->theData[s2] += theFrequencies.lData[site_pattern]*freqsAtSite->theData[m]/totalW;
                       }
                   }
-                  
+
                 } else {
                   _Parameter maxW   = 0.0;
                   long       maxIdx = -1;
-                  
+
                   for  (long m=0; m<mxDim; m++) {
                     if (sm1[m]>0.0) {
                       _Parameter myWeight = freqsAtSite->theData[m];
@@ -4026,7 +4026,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                       }
                     }
                   }
-                  
+
                   if (maxIdx>=0) {
                     res->theData[maxIdx*mxDim+s2] += theFrequencies.lData[site_pattern];
                   }
@@ -4040,7 +4040,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                     if (sm1[m]>0.0) {
                       ambCount ++;
                     }
-                  
+
                   _Parameter addFac = theFrequencies.lData[site_pattern]/(_Parameter)ambCount;
                   {
                     for  (long m=0; m<mxDim; m++,s2+=mxDim)
@@ -4060,18 +4060,18 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 Translate2Frequencies (c1,sm1,false);
                 Translate2Frequencies (c2,sm2,false);
               }
-              
+
               if (freqsAtSite) {
                 if (resolution_option == kAmbiguityHandlingAverageFrequencyAware) {
                   _Parameter totalW = 0.0;
-                  
+
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0)
                       for  (long m2=0; m2<mxDim; m2++)
                         if (sm2[m2]>0) {
                           totalW += freqsAtSite->theData[m]*freqsAtSite->theData[m2];
                         }
-                  
+
                   if (totalW>0.0) {
                     for  (long m=0; m<mxDim; m++)
                       if (sm1[m]>0)
@@ -4080,12 +4080,12 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                             res->theData[m*mxDim+m2] += theFrequencies.lData[site_pattern]*freqsAtSite->theData[m]*freqsAtSite->theData[m2]/totalW;
                           }
                   }
-                  
+
                 } else {
                   _Parameter maxW   = 0.0;
                   long       maxIdx  = -1,
                   maxIdx2 = -1;
-                  
+
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0)
                       for  (long m2=0; m2<mxDim; m2++)
@@ -4097,7 +4097,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                             maxIdx2 = m2;
                           }
                         }
-                  
+
                   if (maxIdx>=0) {
                     res->theData[maxIdx*mxDim+maxIdx2] += theFrequencies.lData[site_pattern];
                   }
@@ -4106,7 +4106,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 long ambCount  = 0,
                 ambCount2 = 0,
                 m         = 0;
-                
+
                 for  (; m<mxDim; m++) {
                   if (sm1[m]>0.0) {
                     if (sm2[m]>0.0) {
@@ -4118,10 +4118,10 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                     ambCount2 ++;
                   }
                 }
-                
+
                 if (m==mxDim) {
                   _Parameter addFac = theFrequencies.lData[site_pattern]/(_Parameter)(ambCount*ambCount2);
-                  
+
                   for  (long m=0; m<mxDim; m++)
                     if (sm1[m]>0)
                       for  (long m2=0; m2<mxDim; m2++)
@@ -4136,16 +4136,16 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
         }
       }
     }
-    
+
     delete[] sm1;
     delete[] sm2;
-    
+
     return res;
   }
   catch (const _String error) {
     WarnError (error);
     return    new _Matrix (1,1,false,true);
-    
+
   }
 }
 
@@ -4173,7 +4173,7 @@ void _DataSetFilter::ComputePairwiseDifferences (_Matrix& target, long i, long j
     for (k=0; k<7; k++) {
         target[k] = 0;
     }
-  
+
     k = theNodeMap.lData[i];
     l = theNodeMap.lData[j];
 
@@ -4191,7 +4191,7 @@ void _DataSetFilter::ComputePairwiseDifferences (_Matrix& target, long i, long j
         if (a>b) {
           EXCHANGE (a,b);
         }
-      
+
         if (a==b) {
             target[0]+=fc;
         } else {
@@ -4349,29 +4349,29 @@ long    _DataSetFilter::Translate2Frequencies (_String const& str, _Parameter* p
     long  store      [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
           resolution_count  = -1L;
 
-  
+
     InitializeArray(parvect, dimension, 0.);
-  
+
     if (unitLength == 1) {
         resolution_count = theData->theTT->TokenResolutions (str.sData[0],store,smear);
     } else {
         resolution_count = theData->theTT->MultiTokenResolutions(str,store, smear);
     }
-  
+
     long mapped_resolution_count = theExclusions.lLength ? theExclusions.CorrectForExclusions(store, resolution_count) : resolution_count;
-  
+
     /* handle the cases when no unambiguous resolutions were available */
     for (long i = 0L; i < mapped_resolution_count; i++) {
         parvect[store[i]] = 1.;
     }
-  
+
     if (mapped_resolution_count == 1L) {
       return store[0];
     }
     if (mapped_resolution_count == 0L && resolution_count == 0L && smear) {
        InitializeArray(parvect, dimension, 1.);
     }
-  
+
     return -1L;
 }
 
@@ -4379,23 +4379,23 @@ long    _DataSetFilter::Translate2Frequencies (_String const& str, _Parameter* p
 //_______________________________________________________________________
 
 long    _DataSetFilter::MapStringToCharIndex (_String& str) const {
-  
+
   long  store      [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
         resolution_count  = -1L;
-  
-  
+
+
   if (unitLength == 1) {
     resolution_count = theData->theTT->TokenResolutions (str.sData[0],store);
   } else {
     resolution_count = theData->theTT->MultiTokenResolutions(str,store);
   }
-  
+
   long mapped_resolution_count = theExclusions.lLength ? theExclusions.CorrectForExclusions(store, resolution_count) : resolution_count;
-  
+
   if (mapped_resolution_count == 1L) {
     return store[0];
   }
-  
+
   return -1L;
 }
 
@@ -4404,22 +4404,22 @@ long    _DataSetFilter::MapStringToCharIndex (_String& str) const {
 long    _DataSetFilter::Translate2Frequencies (char s, _Parameter* parvect, bool smear) const {
   long  store      [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
   resolution_count  = theData->theTT->TokenResolutions (s,store,smear);
-  
+
   long mapped_resolution_count = theExclusions.lLength ? theExclusions.CorrectForExclusions(store, resolution_count) : resolution_count;
-  
+
   if (mapped_resolution_count == 0L) {
     if (smear) {
       InitializeArray(parvect, dimension, 1.);
       return -1;
     }
   }
-  
+
   InitializeArray (parvect, dimension, 0.);
-  
+
   for (long i = 0L; i < mapped_resolution_count; i++) {
     parvect[store[i]] = 1.;
   }
-  
+
   return resolution_count==1L?1L:-1L;
 }
 
@@ -4458,12 +4458,12 @@ void    _DataSetFilter::SetupConversion (void)
 
         while(c<127) {
             //InitializeArray(temp, undimension + 1UL, 0.0);
-          
+
             Translate2Frequencies(c, temp, true);
-          
+
             long resolution_count = -1;
-          
-          
+
+
             for (unsigned long i=0UL; i<undimension; i++) {
                 long character_code_resolution =  (long)temp[i];
                 conversionCache << character_code_resolution;
@@ -4475,18 +4475,18 @@ void    _DataSetFilter::SetupConversion (void)
                     }
                 }
             }
-          
+
             conversionCache<<resolution_count;
             c++;
         }
         delete[] temp;
     } else {
-      
+
         if (unitLength==2 || unitLength==3) {
-          
+
             _String alphabet = theData->theTT->GetAlphabetString();
             unsigned long alphabet_dim = alphabet.sLength;
-          
+
 
             long  ccache [88],
                   uncorrected_dimension = GetDimension(false) ;
@@ -4999,12 +4999,12 @@ void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds)
 {
     int  fNS      = CurrentLine.FirstNonSpaceIndex(),
          space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
-    
+
     // hack for PAML support
     if (space2 > fNS && isspace(CurrentLine.getChar (space2+1))) {
         _String     sequence_name (CurrentLine,fNS, space2);
         CurrentLine.Trim(space2+2,-1); // chop out the name
-        ds.AddName(sequence_name);        
+        ds.AddName(sequence_name);
     } else {
         _String     sequence_name (CurrentLine,fNS, fNS+9);
         CurrentLine.Trim(fNS+10,-1); // chop out the name
@@ -5393,7 +5393,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             lastNexusDataMatrix = result;
 
             long            bfl = GetBFFunctionCount ();
-            
+
             _ExecutionList * nexusBF = ex ? ex :  new _ExecutionList;
             if (namespaceID) {
                 nexusBF->SetNameSpace(*namespaceID);
@@ -5416,6 +5416,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                 DeleteObject (nexusBF);
             } else {
                 ex->ClearExecutionList();
+                ex->Clear();
             }
             nexusBFBody         = emptyString;
         } else if (execBF == 0) {
@@ -5440,14 +5441,14 @@ BaseRef _DataSetFilter::toStr (unsigned long)
 //_________________________________________________________
 
 void    _DataSetFilter::PatternToSiteMapper (void* source, void* target, char mode, long padup) const {
-  
+
   unsigned long site_count = GetSiteCountInUnits();
-  
+
   switch (mode) {
     case 0: {
       _Parameter * target_array = (_Parameter*) target,
                  * source_array = (_Parameter*) source;
-      
+
       for (unsigned site = 0UL; site < site_count; site++ ) {
         target_array [site] = source_array [duplicateMap.lData[site]];
       }
@@ -5460,20 +5461,20 @@ void    _DataSetFilter::PatternToSiteMapper (void* source, void* target, char mo
     case 1: {
       long * target_array = (long*) target,
            * source_array = (long*) source;
-      
+
       for (unsigned site = 0UL; site < site_count; site++ ) {
         target_array [site] = source_array [duplicateMap.lData[site]];
       }
       for (long site = duplicateMap.lLength; site < padup; site++) {
         target_array [site] = 0;
       }
-      
+
       break;
     }
     case 2: {
       long * target_array = (long*) target;
       _Parameter       * source_array = (_Parameter*) source;
-      
+
       for (unsigned site = 0UL; site < site_count; site++ ) {
         target_array [site] = source_array [duplicateMap.lData[site]];
       }
@@ -5505,7 +5506,7 @@ long    _DataSetFilter::GetOriginalToShortMap(long index)
 //_________________________________________________________
 
 _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) const {
-  
+
     if (unitLength > 3) {
         return emptyString;
     }
@@ -5515,9 +5516,9 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
 
     long        char_states         = GetDimension(false),
                 *translation_buffer = new long [char_states];
- 
+
     _Parameter* count_buffer = new _Parameter [char_states];
-  
+
      for (unsigned long site_pattern = 0UL; site_pattern<theFrequencies.lLength; site_pattern ++) {
         long    index_in_dataset = theMap.lData[site_pattern];
 
@@ -5525,8 +5526,8 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
 
         for (unsigned long sequence_index =0UL; sequence_index < theNodeMap.lLength; sequence_index ++) {
             long resolution_count = theData->theTT->TokenResolutions ((*theData)(index_in_dataset, theNodeMap.lData[sequence_index],1),translation_buffer, false);
-          
-          
+
+
             if (resolution_count>1L) {
                 _Parameter equal_weight = 1./resolution_count;
                 for (long resolution_index = 0L; resolution_index < resolution_count; resolution_index++) {
@@ -5540,11 +5541,11 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
         }
 
         // find the residue with the highest frequency
-       
+
         _Parameter       max_weight      = -1.;
         InitializeArray (translation_buffer, char_states, 0L);
        long             max_char_count  = 0L;
-       
+
         for (unsigned long char_index = 0UL; char_index < char_states; char_index++) {
           if (StoreIfGreater(max_weight, count_buffer[char_index])) {
             max_char_count = 1;
@@ -5555,7 +5556,7 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
             }
           }
         }
-         
+
          if (max_char_count > 1L) {
             pattern_consensus.sData[site_pattern]=theData->theTT->AmbigToLetter(translation_buffer, max_char_count);
         } else {
@@ -5598,7 +5599,7 @@ void    _DataSetFilter::ConvertCodeToLettersBuffered (long code, char unit, char
         lookup->Insert ((BaseRef)code, (long)newT, false);
         lookupV = newT->sData;
     }
-  
+
     if (unit == 1) {
       storage[0] = lookupV[0];
     } else {
@@ -5616,48 +5617,48 @@ void    _DataSetFilter::ConvertCodeToLettersBuffered (long code, char unit, char
 //_________________________________________________________
 
 void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
-  
-  
+
+
   auto trim_to_10 = [] (const _String& seq_name) -> _String const& {
     if (seq_name.Length() >= 10) {
       return seq_name.Cut (0,9) & ' ';
     }
     return seq_name & _String (_String (" "), 11-seq_name.Length());
   };
-  
+
   // write out the file with this dataset filter
   checkParameter (dataFilePrintFormat,dFPrintFormat,6.0);
   checkParameter (dataFileDefaultWidth,dFDefaultWidth,50.0);
   _Parameter  gW;
-  
+
   long outputFormat = dFPrintFormat,
   printWidth   = dFDefaultWidth,
   gapWidth;
-  
+
   unsigned long sequence_count = NumberSpecies(),
   site_count     = GetSiteCount();
-  
+
   checkParameter (dataFileGapWidth,gW,10.0);
   if(!printWidth) {
     printWidth = 50;
   }
-  
+
   gapWidth = gW;
   if (gapWidth<=0) {
     gapWidth = printWidth;
   }
-  
+
   StringFileWrapper write_here (file ? nil : & string_buffer, file);
-  
+
   if (outputFormat < 4 || outputFormat > 8) {
     // not NEXUS or serial
     if (!(theData->theTT->IsStandardNucleotide() || theData->theTT->IsStandardAA())) {
       _String * bSet = &theData->theTT->baseSet;
-      
+
       write_here << "$BASESET:\""
       << *bSet
       << "\"\n";
-      
+
       if (theData->theTT->tokensAdded.sLength) {
         for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++) {
           write_here << "$TOKEN:\""
@@ -5669,33 +5670,33 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       }
     }
   }
-  
+
   switch (outputFormat) {
     case 1: // hash-mark interleaved
     case 10: { // FASTA interleaved
-      
+
       long sitesDone    = 0,
       upTo;
-      
+
       char seqDelimiter = (outputFormat==1)?'#':'>';
-      
+
       for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
         write_here << seqDelimiter
         << GetSequenceName(i)
         << kStringFileWrapperNewLine;
       }
-      
+
       while (sitesDone<theOriginalOrder.lLength) {
-        
+
         write_here << kStringFileWrapperNewLine
         << kStringFileWrapperNewLine;
-        
-        
+
+
         upTo = sitesDone+printWidth;
         if (upTo>theOriginalOrder.lLength) {
           upTo = theOriginalOrder.lLength;
         }
-        
+
         for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
           for (unsigned long j = sitesDone; j<upTo; j++) {
             if ((j-sitesDone)%gapWidth==0) {
@@ -5703,67 +5704,67 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
             }
             write_here << (*theData)(theOriginalOrder.lData[j],theNodeMap.lData[i],1);
           }
-          
+
           write_here << kStringFileWrapperNewLine;
         }
-        
+
         sitesDone = upTo;
       }
       break;
     }
-      
+
     case 2:     // PHYLIP sequential
     case 11:    // PAML
     {
-      
+
       write_here << _String((long)theNodeMap.lLength)
       << kStringFileWrapperTab
       << _String(theOriginalOrder.lLength)
       << kStringFileWrapperNewLine;
-      
+
       // proceed to spool out the data
       for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
         _String const * sequence_name = GetSequenceName(i);
         _String sequence_name_10;
-        
+
         if (outputFormat == 2) { // PHYLIP
           sequence_name_10 = trim_to_10 (*sequence_name);
         } else {
           sequence_name_10 = *sequence_name & "  ";
         }
-        
+
         write_here << sequence_name_10;
-        
+
         for (unsigned long site_index = 0; site_index<theOriginalOrder.lLength; site_index++) {
           if ((site_index%printWidth==0)&&site_index) {
             write_here << "\n           ";
           }
-          
+
           write_here << (*theData)(theOriginalOrder(site_index),theNodeMap(i),1);
           if (site_index%gapWidth==gapWidth-1) {
             write_here << ' ';
           }
         }
         write_here << kStringFileWrapperNewLine;
-        
+
       }
       break;
     }
-      
+
     case 3: { // phylip interleaved
               // print PHYLIP format header
               //fprintf (dest,"$FORMAT:\"PHYLIPI\"\n");
               // print number of species and sites
-      
+
       write_here << _String((long)theNodeMap.lLength)
       << kStringFileWrapperTab
       << _String(theOriginalOrder.lLength)
       << kStringFileWrapperNewLine;
-      
+
       // proceed to spool out the data
       for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
         write_here << trim_to_10 (*GetSequenceName(i));
-        
+
         for (unsigned long j = 0UL; j<theOriginalOrder.lLength; j++) {
           if (j==printWidth) {
             write_here << kStringFileWrapperNewLine;
@@ -5775,11 +5776,11 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           }
         }
       }
-      
-      
-      
+
+
+
       unsigned long completed = printWidth;
-      
+
       while (completed<theOriginalOrder.lLength-1) {
         long upTo = completed+printWidth<theOriginalOrder.lLength?completed+printWidth:theOriginalOrder.lLength;
         for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
@@ -5794,31 +5795,31 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
         completed+=printWidth;
         write_here << kStringFileWrapperNewLine;
       }
-      
-      
+
+
       break;
     }
-      
+
       // various flavors of NEXUS
-      
+
     case 4: // labels, sequential
     case 5: // labels, interleaved
     case 6: // no labels, sequential
     case 7: { // no labels, interleaved
               // write out the header
-      
+
       write_here << "#NEXUS\n\nBEGIN TAXA;\n\tDIMENSIONS NTAX = "
       << _String ((long)sequence_count)
       << ";\n\tTAXLABELS\n\t\t";
-      
+
       for (unsigned long i=0UL; i< sequence_count; i++) {
          write_here << GetSequenceName(i)->Enquote('\'') << ' ';
       }
-      
+
       write_here << ";\nEND;\n\nBEGIN CHARACTERS;\n\tDIMENSIONS NCHAR = "
       << _String((long)theOriginalOrder.lLength)
       << ";\n\tFORMAT\n\t\t";
-      
+
       if (theData->theTT->IsStandardNucleotide()) {
         write_here << "DATATYPE = DNA\n";
       } else {
@@ -5828,7 +5829,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           write_here << "DATATYPE = BINARY\n";
         } else {
           long alphabet_length = theData->theTT->baseSet.sLength;
-          
+
           write_here << "\t\tSYMBOLS = \"";
           for (unsigned long bc = 0UL; bc < alphabet_length-1; bc++) {
             write_here << theData->theTT->baseSet.getChar (bc)
@@ -5836,7 +5837,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
           }
           write_here << theData->theTT->baseSet.getChar (alphabet_length-1)
           << "\"\n";
-          
+
           if (theData->theTT->tokensAdded.sLength)
             for (long at = 0; at < theData->theTT->tokensAdded.sLength; at++) {
               write_here << "\nEQUATE =\""
@@ -5859,27 +5860,27 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       if (outputFormat%2) {
         write_here << "\n\t\tINTERLEAVE";
       }
-      
+
       write_here << "\n\t;\n\nMATRIX";
-      
-      
-      
+
+
+
       //compute space alignment for different taxa names
       // two passes - one to locate the max length and 2nd to compute padding lengths
-      
+
       unsigned long max_length = 0UL;
-      
+
       for (unsigned long i=0UL; i<sequence_count; i++) {
         StoreIfGreater (max_length, GetSequenceName(i)->sLength);
       }
-      
+
       _SimpleList taxaNamesPadding;
-      
+
       for (unsigned long i=0UL; i<sequence_count; i++) {
         taxaNamesPadding <<  max_length - GetSequenceName(i)->sLength;
       }
-      
-      
+
+
       if (outputFormat%2==0) { // sequential
         for (unsigned long i=0UL; i< sequence_count; i++) {
           if (outputFormat == 4) { // labels
@@ -5887,8 +5888,8 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
             << GetSequenceName(i)
             << '\''
             << _String (" ", taxaNamesPadding (i));
-            
-            
+
+
           } else {
             write_here << kStringFileWrapperNewLine;
           }
@@ -5899,15 +5900,15 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
         }
       } else {
         long  sitesDone = 0, upTo;
-        
+
         while (sitesDone< site_count) {
           upTo = sitesDone+printWidth;
-          
+
           if (upTo>site_count) {
             upTo = site_count;
           }
-          
-          
+
+
           for (unsigned long i=0UL; i< sequence_count; i++) {
             if (outputFormat == 5) { // labels
               write_here << "\n\t'"
@@ -5917,22 +5918,22 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
             } else {
               write_here << kStringFileWrapperNewLine;
             }
-            
+
             write_here << ' ';
             for (long site_index = sitesDone; site_index < upTo; site_index++) {
               write_here << (*theData)(theOriginalOrder.lData[site_index],theNodeMap.lData[i],1);
             }
-            
+
           }
           write_here << kStringFileWrapperNewLine << kStringFileWrapperNewLine;
           sitesDone = upTo;
         }
-        
+
       }
       write_here << ";\nEND;";
       break;
     }
-      
+
     case 8: {
       for (unsigned long i = 0UL; i< sequence_count; i++) {
         write_here << (*theData)(theOriginalOrder(0),theNodeMap(i),1);
@@ -5943,10 +5944,10 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
       }
       break;
     }
-      
+
     default: { // hash-mark sequential
       char seqDelimiter = (outputFormat==9)?'>':'#';
-      
+
       for (unsigned long i = 0UL; i< sequence_count; i++) {
         write_here << seqDelimiter << GetSequenceName(i);
         for (unsigned long j = 0UL; j<site_count; j++) {
@@ -5957,12 +5958,12 @@ void    _DataSetFilter::internalToStr (FILE * file ,_String& string_buffer) {
         }
         write_here << kStringFileWrapperNewLine;
       }
-      
+
       // finally see if we need to write out a tree
-      
+
     }
   }
-  
+
   if (outputFormat != 8) {
     _Parameter  treeDefined;
     checkParameter (dataFileTree, treeDefined,0.0);
@@ -6026,8 +6027,8 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
                            existingDS->NoOfUniqueColumns () != ds->NoOfUniqueColumns() ||
                            existingDS->GetTT () != ds->GetTT();
 
-        
-      
+
+
         for (AVLListXLIteratorKeyValue filter_key_value : ObjectIndexer (HY_BL_DATASET_FILTER)) {
           _DataSetFilter * filter = (_DataSetFilter*) filter_key_value.get_object();
           if (filter->GetData() == existingDS) {
@@ -6039,19 +6040,19 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
             }
           }
         }
-      
+
         dataSetList.Replace(pos,ds,false);
     }
-  
+
     _Parameter normalizeSeqNames = 1.;
     checkParameter (normalizeSequenceNames, normalizeSeqNames, 1.0);
-  
+
     CheckReceptacleAndStore (*setName&".mapping",emptyString,false, new _MathObject, false);
     if (normalizeSeqNames > 0.1) {
       _List _id_mapping;
       _AVLListXL id_mapping (&_id_mapping);
       bool       did_something = false;
-      
+
       for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
         _String * old_name = new _String (*ds->GetSequenceName (i));
         if (! old_name->IsValidIdentifier(false) ) {
@@ -6067,14 +6068,14 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
           *ds->GetSequenceName (i) = new_name;
           did_something = true;
         }
-        
+
         ds->GetSequenceName (i)->AddAReference();
         id_mapping.Insert (ds->GetSequenceName (i), (long)old_name, false, false);
       }
-      
+
       if (did_something) {
         _AssociativeList * mapping = new _AssociativeList();
-        
+
         _SimpleList history;
         long t,
              current_index = id_mapping.Traverser(history, t, id_mapping.GetRoot());
@@ -6083,7 +6084,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
           mapping->MStore(*(_String*)_id_mapping.GetItem (current_index), *(_String*)id_mapping.GetXtra(current_index));
           current_index = id_mapping.Traverser(history, t);
         }
-        
+
         CheckReceptacleAndStore (*setName&".mapping",emptyString,false, mapping, false);
      }
     }
@@ -6100,7 +6101,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
 _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps) const
 {
 
-            
+
     if (hSegmentation.lLength == 0L || vSegmentation.lLength<unit) { // revert to default (all data)
         if (hSegmentation.lLength==0) {
             hSegmentation.Populate (NoOfSpecies(),0,1);
@@ -6124,10 +6125,10 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
 
     long     positions  =   unit/atom,
              static_store [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
-  
+
 
     _String unit_for_counting (atom, false);
-  
+
     for (unsigned long site_pattern = 0UL; site_pattern <vSegmentation.lLength;  site_pattern +=unit) { // loop over the set of segments
         // make sure the partition is kosher
 
@@ -6136,23 +6137,23 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
         }
 
         for (unsigned long primary_site = site_pattern; primary_site < site_pattern+unit; primary_site += atom) {
-          
+
             long   index_in_pattern = (primary_site-site_pattern)/atom;
-            
+
             for (unsigned long sequence_index = 0; sequence_index <hSegmentation.lLength; sequence_index ++) {
                 // loop down each column
-              
+
                 unsigned long mapped_sequence_index = hSegmentation.lData[sequence_index];
                 // build atomic probabilities
-              
+
                 for (unsigned long m = 0; m<atom; m++ ) {
                   unit_for_counting.setChar(m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
                 }
-              
+
                 long resolution_count = theTT->MultiTokenResolutions(unit_for_counting, static_store, countGaps);
-              
+
                 if (resolution_count > 0UL) {
-          
+
                   _Parameter    normalized = 1./resolution_count;
 
                   for (long resolution_index = 0UL; resolution_index < resolution_count; resolution_index ++) {
@@ -6167,7 +6168,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
 
     unsigned long row_count    = out->GetHDim(),
                   column_count = out->GetVDim();
-  
+
     for (unsigned long column =0UL; column < column_count; column++) { // normalize each _column_ to sum to 1.
         _Parameter sum = 0.0;
 
