@@ -5415,7 +5415,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             if (nexusBF != ex) {
                 DeleteObject (nexusBF);
             } else {
-                ex->Clear();
+                ex->ClearExecutionList();
             }
             nexusBFBody         = emptyString;
         } else if (execBF == 0) {

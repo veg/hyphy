@@ -84,6 +84,8 @@ public:
 
     virtual
     ~_ExecutionList (void);
+  
+    void       ClearExecutionList (void);
 
     virtual
     BaseRef     makeDynamic (void);
