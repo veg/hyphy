@@ -485,16 +485,33 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         function_body->ResetFormulae();
       }
 
-      if (currentExecutionList && currentExecutionList->stdinRedirect) {
+      HBLObjectRef ret;
+      
+      if (currentExecutionList && currentExecutionList->has_stdin_redirect()) {
+          // 20180620: SLKP, need to split this off because if Execute fails
+          // then there will be a double free on stdinRedirect
+
+        auto stash1 = currentExecutionList->stdinRedirect;
+        auto stash2 = currentExecutionList->stdinRedirectAux;
+          
         function_body -> stdinRedirect    = currentExecutionList->stdinRedirect;
         function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
-      }
+          
+        currentExecutionList->stdinRedirect->AddAReference();
+        currentExecutionList->stdinRedirectAux->AddAReference();
 
-      HBLObjectRef ret = function_body->Execute();
+        ret = function_body->Execute();
+          
+        stash1 -> RemoveAReference();
+        stash2 -> RemoveAReference();
+         
+      } else {
+          ret = function_body->Execute();
+      }
 
       function_body -> stdinRedirect    = nil;
       function_body -> stdinRedirectAux = nil;
-      
+
       if (terminate_execution) {
         theScrap.Push (new _Constant (0.0));
         return true;

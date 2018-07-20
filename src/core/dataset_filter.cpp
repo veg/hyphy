@@ -165,6 +165,8 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
         _String         state1 (unit,false),
         state2 (unit,false);
         
+        sites = sites / unit;
+        
         for (long sequenceIndex = 0; sequenceIndex < seqs; sequenceIndex++) {
             bool checkState = false;
             for (long idx=0; idx<indices.countitems(); idx++) {

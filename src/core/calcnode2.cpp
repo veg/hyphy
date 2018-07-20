@@ -313,12 +313,12 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
 
 
     if (addOne >= 0) {
-        nodesToUpdate.lData[addOne] = 1;
+        nodesToUpdate.lData[addOne] = 2;
     }
 
     if (forceRecalculationOnTheseBranches.lLength) {
         for (unsigned long markedNode = 0; markedNode < forceRecalculationOnTheseBranches.lLength; markedNode++) {
-            nodesToUpdate.lData[forceRecalculationOnTheseBranches.lData[markedNode]] = 1;
+            nodesToUpdate.lData[forceRecalculationOnTheseBranches.lData[markedNode]] = 2;
         }
 
         if (canClear) {
@@ -341,11 +341,11 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
                 currentTreeNode->RecomputeMatrix (catID, categoryCount, nil);
             }
 
-            nodesToUpdate.lData[nodeID] = 1;
+            nodesToUpdate.lData[nodeID] = 2;
         }
 
         if (nodesToUpdate.lData[nodeID]) {
-            nodesToUpdate.lData[flatParents.lData[nodeID]+flatLeaves.lLength] = 1;
+            nodesToUpdate.lData[flatParents.lData[nodeID]+flatLeaves.lLength] = 2;
         }
     }
 
@@ -353,7 +353,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
     // one more pass to pick up all descendants of changed internal nodes
 
     for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
-        if (nodesToUpdate.lData[flatLeaves.lLength+flatParents.lData[nodeID]] && nodesToUpdate.lData[nodeID] == 0) {
+        if (nodesToUpdate.lData[flatLeaves.lLength+flatParents.lData[nodeID]] == 2 && nodesToUpdate.lData[nodeID] == 0) {
             nodesToUpdate.lData[nodeID] = 1;
         }
 
@@ -607,7 +607,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     // process the leaves first
 
     _SimpleList     taggedInternals                 (flatNodes.lLength, 0, 0);
-    long            alphabetDimension     =         theFilter->GetDimension(),
+    unsigned long   const alphabetDimension     =         theFilter->GetDimension(),
                     siteCount           =         theFilter->GetPatternCount(),
                     alphabetDimensionmod4  =      alphabetDimension-alphabetDimension%4;
 
@@ -637,7 +637,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
             bool    matchSet   = (parentCode == setBranch);
 
-            if (alphabetDimension == 4) {
+            if (alphabetDimension == 4UL) {
                 long k3     = 0;
                 if (matchSet)
                     for (long k = siteFrom; k < siteTo; k++, k3+=4) {
@@ -753,25 +753,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 } else {
                     siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.lData[siteID]] ;
                 }
-                if (siteState >= 0)
+                if (siteState >= 0L)
                     // a single character state; sweep down the appropriate column
                 {
-                    tMatrix  +=  siteState;
-                    if (alphabetDimension == 4) {
-                        parentConditionals[0] *= tMatrix[0];
-                        parentConditionals[1] *= tMatrix[4];
-                        parentConditionals[2] *= tMatrix[8];
-                        parentConditionals[3] *= tMatrix[12];
+                    if (alphabetDimension == 4UL) {
+                        parentConditionals[0] *= tMatrix[siteState];
+                        parentConditionals[1] *= tMatrix[siteState+4UL];
+                        parentConditionals[2] *= tMatrix[siteState+8UL];
+                        parentConditionals[3] *= tMatrix[siteState+12UL];
                     } else {
-                        long k = 0;
-                        for (; k < alphabetDimensionmod4; k+=4, tMatrix += alphabetDimension+alphabetDimension+alphabetDimension+alphabetDimension) {
-                            parentConditionals[k]   *= tMatrix[0];
-                            parentConditionals[k+1] *= tMatrix[alphabetDimension];
-                            parentConditionals[k+2] *= tMatrix[alphabetDimension+alphabetDimension];
-                            parentConditionals[k+3] *= tMatrix[alphabetDimension+alphabetDimension+alphabetDimension];
-                        }
-                        for (; k < alphabetDimension; k++, tMatrix += alphabetDimension) {
-                            parentConditionals[k] *= *tMatrix;
+                        unsigned long k = 0UL;
+                        unsigned long target_index = siteState;
+                        unsigned long shifter = alphabetDimension << 2;
+                        for (; k < alphabetDimensionmod4; k+=4UL, target_index += shifter) {
+                            parentConditionals[k]   *= tMatrix[target_index];
+                            parentConditionals[k+1L] *= tMatrix[target_index + alphabetDimension];
+                            parentConditionals[k+2L] *= tMatrix[target_index + alphabetDimension + alphabetDimension];
+                            parentConditionals[k+3L] *= tMatrix[target_index + alphabetDimension + alphabetDimension + alphabetDimension];
                         }
                     }
                     continue;
@@ -850,7 +848,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                                 load4;
 
 
-                        if (((long int)tMatrix & 0x1111b) == 0 && ((long int)childVector & 0x1111b) == 0){
+                        if (((long int)tMatrix & 0b1111) == 0 && ((long int)childVector & 0b1111) == 0){
                            for (long c = 0; c < alphabetDimensionmod4; c+=4) {
                                 load1 = _mm_load_pd (tMatrix+c);
                                 load2 = _mm_load_pd (tMatrix+c+2);
@@ -884,12 +882,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
                         __m256d sum256 = _mm256_setzero_pd();
 
-                        /*if (((long int)tMatrix & 0x11111b) == 0 && ((long int)childVector & 0x11111b) == 0){
-                            for (long c = 0L; c < alphabetDimensionmod4; c+=4L) {
-                                sum = _mm256_add_pd (sum,_mm256_mul_pd (_mm256_load_pd (tMatrix+c), _mm256_load_pd (childVector+c)));
-                             }
-                        } else {*/
-                            for (long c = 0; c < alphabetDimensionmod4; c+=4L) {
+                        for (long c = 0L; c < alphabetDimensionmod4; c+=4L) {
                               __m256d matrix_quad = _mm256_loadu_pd (tMatrix+c),
                                       child_quad = _mm256_loadu_pd (childVector+c),
                                       prod = _mm256_mul_pd (matrix_quad, child_quad);
@@ -897,22 +890,17 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                                 sum256 = _mm256_add_pd (sum256,prod);
                             }
 
-                        //}
-                        //double buffer[4] __attribute__ ((aligned (32)));
-                        //_mm256_store_pd(buffer, sum256);
-
-                        //accumulator = (buffer[0] + buffer[1]) + (buffer[2] + buffer[3]);
 
                         accumulator = _avx_sum_4(sum256);
                         //NOT sure why copy to doubles and add is faster
                         // that AVX istructions
 #else // _SLKP_USE_AVX_INTRINSICS
-                        for (long c = 0; c < alphabetDimensionmod4; c+=4) {
+                        for (unsigned long c = 0UL; c < alphabetDimensionmod4; c+=4UL) {
                         // 4 - unroll the loop
                              hyFloat pr1 =    tMatrix[c]   * childVector[c],
-                                        pr2 =    tMatrix[c+1] * childVector[c+1],
-                                        pr3 =    tMatrix[c+2] * childVector[c+2],
-                                        pr4 =    tMatrix[c+3] * childVector[c+3];
+                                     pr2 =    tMatrix[c+1L] * childVector[c+1L],
+                                     pr3 =    tMatrix[c+2L] * childVector[c+2L],
+                                     pr4 =    tMatrix[c+3L] * childVector[c+3L];
                             pr1 += pr2;
                             pr3 += pr4;
                             accumulator += pr1+pr3;
@@ -1083,17 +1071,16 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 break;
             }
 
-            hyFloat term = log(accumulator),
-                       temp_sum;
-
-            long       site_frequency = theFilter->theFrequencies (siteOrdering.lData[siteID]);
+            hyFloat term;
+            long   const    site_frequency = theFilter->theFrequencies (siteOrdering.lData[siteID]);
 
             if (site_frequency > 1L) {
-                term *= site_frequency;
+                 term = log(accumulator) * site_frequency - correction;
+            } else {
+                term = log(accumulator) - correction;
             }
           // Kahan sum
-            term     -= correction;
-            temp_sum = result + term;
+            hyFloat temp_sum = result + term;
             correction = (temp_sum - result) - term;
             result = temp_sum;
 
@@ -1132,25 +1119,33 @@ void            _TheTree::ComputeBranchCache    (
     long           *        lNodeFlags,
     hyFloat*         scalingAdjustments,
     long        *           siteCorrectionCounts,
-    _Vector*     lNodeResolutions,
+    _Vector const*     lNodeResolutions,
     long&                   overallScaler,
-    long                    siteFrom,
+    long const                   siteFrom,
     long                    siteTo,
-    long                    catID,
-    _SimpleList*            tcc,
+    long const                  catID,
+    _SimpleList const*            tcc,
     hyFloat*         siteRes
 )
 {
 
-
+    /*
+             the cache matrix (linearized into a vector) will have TWO rows with siteCount blocks of alphabetDimension doubles, storing the conditional likelihoods of individual sites at a given branch
+             in the virtually rerooted tree
+     
+             cache ->
+               Row 0 [brID node -- the branch that is being rerooted on]
+               Row 1 [conditional likelihoods for the new root]
+          */
     //printf ("ComputeBranchCache\n");
 
     _SimpleList taggedNodes (flatLeaves.lLength + flatNodes.lLength, 0, 0),
                 nodesToProcess,
                 rootPath;
 
-    long        myParent               = brID       -flatLeaves.lLength,
-                alphabetDimension     =            theFilter->GetDimension(),
+    long        myParent               = brID       -flatLeaves.lLength;
+    
+    const long  alphabetDimension     =            theFilter->GetDimension(),
                 alphabetDimensionmod4  =         alphabetDimension - alphabetDimension % 4,
                 siteCount               =            theFilter->GetPatternCount();
 
@@ -1245,7 +1240,9 @@ void            _TheTree::ComputeBranchCache    (
     taggedNodes.Populate (flatTree.lLength, 0, 0);
     rootPath.Flip ();
 
-    for  (long nodeID = 0; nodeID < nodesToProcess.lLength + rootPath.lLength - 2; nodeID++) {
+    long const node_count = nodesToProcess.lLength + rootPath.lLength - 2L;
+    
+    for  (long nodeID = 0; nodeID < node_count; nodeID++) {
         bool    notPassedRoot = nodeID<nodesToProcess.lLength;
 
         long    nodeCode   = notPassedRoot?nodesToProcess.lData [nodeID]:rootPath.lData[nodeID-nodesToProcess.lLength],
@@ -1259,24 +1256,24 @@ void            _TheTree::ComputeBranchCache    (
         }
 
         hyFloat * parentConditionals = iNodeCache +            (siteFrom + parentCode  * siteCount) * alphabetDimension;
-        if (taggedNodes.lData[parentCode] == 0)
+        if (taggedNodes.lData[parentCode] == 0L)
             // mark the parent for update and clear its conditionals if needed
         {
             //printf ("Resetting parentCode = %ld\n", parentCode);
-            taggedNodes.lData[parentCode]     = 1;
+            taggedNodes.lData[parentCode]     = 1L;
             hyFloat     const *localScalingFactor      = scalingAdjustments + parentCode*siteCount;
             if (alphabetDimension == 4L) {
-                long k3     = 0;
+                unsigned long k3     = 0UL;
                 for (long k = siteFrom; k < siteTo; k++, k3+=4) {
                     hyFloat scaler = localScalingFactor[k];
                     parentConditionals [k3]   = scaler;
-                    parentConditionals [k3+1] = scaler;
-                    parentConditionals [k3+2] = scaler;
-                    parentConditionals [k3+3] = scaler;
+                    parentConditionals [k3+1UL] = scaler;
+                    parentConditionals [k3+2UL] = scaler;
+                    parentConditionals [k3+3UL] = scaler;
                 }
             } else {
                 unsigned long k3     = 0UL;
-                for (long k = siteFrom; k < siteTo; k++) {
+                for (unsigned long k = siteFrom; k < siteTo; k++) {
                     hyFloat scaler = localScalingFactor[k];
                     for (unsigned long k2 = 0UL; k2 < alphabetDimension; k2++, k3++) {
                         parentConditionals [k3] = scaler;
@@ -1332,18 +1329,25 @@ void            _TheTree::ComputeBranchCache    (
 
             if (isLeaf) {
                 long siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.lData[siteID]] ;
-                if (siteState >= 0) {
+                if (siteState >= 0L) {
                     // a single character state; sweep down the appropriate column
-                     if (alphabetDimension == 4) { // special case for nuc data
+                     if (alphabetDimension == 4UL) { // special case for nuc data
                         parentConditionals[0] *= tMatrix[siteState];
-                        parentConditionals[1] *= tMatrix[siteState+4];
-                        parentConditionals[2] *= tMatrix[siteState+8];
-                        parentConditionals[3] *= tMatrix[siteState+12];
+                        parentConditionals[1] *= tMatrix[siteState+4UL];
+                        parentConditionals[2] *= tMatrix[siteState+8UL];
+                        parentConditionals[3] *= tMatrix[siteState+12UL];
                     } else {
-                        tMatrix  +=  siteState;
-                        for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension) {
-                          parentConditionals[k] *= *tMatrix;
-                            //printf ("Leaf %ld %g %g\n", k, parentConditionals[k], *tMatrix);
+                        unsigned long k = 0UL;
+                        unsigned long target_index = siteState;
+                        unsigned long shifter = alphabetDimension << 2;
+                        for (; k < alphabetDimensionmod4; k+=4UL, target_index += shifter) {
+                            parentConditionals[k]   *= tMatrix[target_index];
+                            parentConditionals[k+1UL] *= tMatrix[target_index + alphabetDimension];
+                            parentConditionals[k+2UL] *= tMatrix[target_index + alphabetDimension + alphabetDimension];
+                            parentConditionals[k+3UL] *= tMatrix[target_index + alphabetDimension + alphabetDimension + alphabetDimension];
+                        }
+                        for (; k < alphabetDimension; k++, target_index += alphabetDimension) {
+                            parentConditionals[k] *= tMatrix[target_index];
                         }
                     }
                     continue;
@@ -1356,7 +1360,7 @@ void            _TheTree::ComputeBranchCache    (
                     if ((tcc->lData[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom)
                         // the value of this conditional vector needs to be copied from a previously stored site
                         // subtree duplication
-                        for (long k = 0; k < alphabetDimension; k++) {
+                        for (long k = 0UL; k < alphabetDimension; k++) {
                             childVector[k] = lastUpdatedSite[k];
                         }
                     else {
@@ -1377,7 +1381,7 @@ void            _TheTree::ComputeBranchCache    (
             hyFloat sum      = .0;
             char       didScale = 0;
 
-            if (alphabetDimension == 4) { // special case for nuc data
+            if (alphabetDimension == 4UL) { // special case for nuc data
                 #ifdef _SLKP_USE_AVX_INTRINSICS
                       _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
                 #else
@@ -1409,53 +1413,69 @@ void            _TheTree::ComputeBranchCache    (
                         }
                     }
                 }
-                childVector += 4;
+                childVector += 4L;
             } else {
-                for (long p = 0; p < alphabetDimension; p++) {
-
-#ifdef _SLKP_USE_AVX_INTRINSICS
-                  if (alphabetDimension == 20UL) {
-
-                    __m256d t_matrix[5] = {_mm256_loadu_pd(tMatrix),
-                                           _mm256_loadu_pd(tMatrix+4UL),
-                                           _mm256_loadu_pd(tMatrix+8UL),
-                                           _mm256_loadu_pd(tMatrix+12UL),
-                                            _mm256_loadu_pd(tMatrix+16UL)},
-
-                            c_vector[5] = {_mm256_loadu_pd(childVector),
-                              _mm256_loadu_pd(childVector+4UL),
-                              _mm256_loadu_pd(childVector+8UL),
-                              _mm256_loadu_pd(childVector+12UL),
-                              _mm256_loadu_pd(childVector+16UL)};
-
-                    t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
-                    t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
-                    t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
-                    t_matrix[3] = _mm256_mul_pd(t_matrix[3], c_vector[3]);
-                    t_matrix[4] = _mm256_mul_pd(t_matrix[4], c_vector[4]);
-
-                    t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
-                    t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
-                    t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
-
-                    tMatrix               += 20UL;
-                    sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
-                    continue;
-
-                  }
+                for (long p = 0L; p < alphabetDimension; p++) {
+                    hyFloat      accumulator = 0.0;
+#ifdef _SLKP_USE_SSE_INTRINSICS
+                    __m128d buffer1,
+                            buffer2,
+                            buffer3 = _mm_setzero_pd(),
+                            buffer4 = _mm_setzero_pd(),
+                            load1,
+                            load2,
+                            load3,
+                            load4;
+                    if (((long int)tMatrix & 0b1111) == 0 && ((long int)childVector & 0b1111) == 0) {
+                        for (long c = 0L; c < alphabetDimensionmod4; c+=4) {
+                              load1 = _mm_load_pd (tMatrix+c);
+                              load2 = _mm_load_pd (tMatrix+c+2);
+                              load3 = _mm_load_pd (childVector+c);
+                              load4 = _mm_load_pd (childVector+c+2);
+                              buffer1 = _mm_mul_pd (load1, load3);
+                              buffer2 = _mm_mul_pd (load2, load4);
+                              buffer3 = _mm_add_pd (buffer1,buffer3);
+                              buffer4 = _mm_add_pd (buffer2,buffer4);
+                        }
+                    } else {
+                        for (long c = 0L; c < alphabetDimensionmod4; c+=4) {
+                            load1 = _mm_loadu_pd (tMatrix+c);
+                            load2 = _mm_loadu_pd (tMatrix+c+2);
+                            load3 = _mm_loadu_pd (childVector+c);
+                            load4 = _mm_loadu_pd (childVector+c+2);
+                            buffer1 = _mm_mul_pd (load1, load3);
+                            buffer2 = _mm_mul_pd (load2, load4);
+                            buffer3 = _mm_add_pd (buffer1,buffer3);
+                            buffer4 = _mm_add_pd (buffer2,buffer4);
+                        }
+                    }
+                    buffer3 = _mm_add_pd (buffer3, buffer4);
+                    double buffer[2] __attribute__ ((aligned (16)));
+                    _mm_store_pd (buffer, buffer3);
+                    accumulator = buffer[0] + buffer[1];
+                    
+#elif defined _SLKP_USE_AVX_INTRINSICS
+                    __m256d sum256 = _mm256_setzero_pd();
+                    for (long c = 0; c < alphabetDimensionmod4; c+=4L) {
+                        __m256d matrix_quad = _mm256_loadu_pd (tMatrix+c),
+                        child_quad = _mm256_loadu_pd (childVector+c),
+                        prod = _mm256_mul_pd (matrix_quad, child_quad);
+                        sum256 = _mm256_add_pd (sum256,prod);
+                    }
+                    accumulator = _avx_sum_4(sum256);
+#else
+                 for (unsigned long c = 0UL; c < alphabetDimensionmod4; c+=4UL) { // 4 - unroll the loop
+                        hyFloat pr1 =    tMatrix[c]   * childVector[c],
+                                   pr2 =    tMatrix[c+1] * childVector[c+1],
+                                   pr3 =    tMatrix[c+2] * childVector[c+2],
+                                   pr4 =    tMatrix[c+3] * childVector[c+3];
+                     
+                        pr1 += pr2;
+                        pr3 += pr4;
+                        accumulator += pr1+pr3;
+                 }
 #endif
-                  hyFloat      accumulator = 0.0;
-
-                  for (long c = 0; c < alphabetDimensionmod4; c+=4) { // 4 - unroll the loop
-                      hyFloat  pr1 =    tMatrix[c]   * childVector[c],
-                                  pr2 =    tMatrix[c+1] * childVector[c+1],
-                                  pr3 =    tMatrix[c+2] * childVector[c+2],
-                                  pr4 =    tMatrix[c+3] * childVector[c+3];
-                       pr1 += pr2;
-                       pr3 += pr4;
-                       accumulator += pr1+pr3;
-                  }
-
+                    
                   for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
                       accumulator +=  tMatrix[c] * childVector[c];
                   }
@@ -1507,7 +1527,8 @@ void            _TheTree::ComputeBranchCache    (
     hyFloat const _hprestrict_ *rootConditionals   = iNodeCache +  (rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength)  * siteCount * alphabetDimension;
 
     state = cache + alphabetDimension * siteCount;
-    for (unsigned long ii = siteFrom * alphabetDimension; ii < alphabetDimension*siteTo; ii++) {
+    const unsigned long site_bound = alphabetDimension*siteTo;
+    for (unsigned long ii = siteFrom * alphabetDimension; ii < site_bound; ii++) {
         state[ii] = rootConditionals[ii];
         //printf ("Root conditional [%ld] = %g, node state [%ld] = %g\n", ii, state[ii], ii, cache[ii]);
     }

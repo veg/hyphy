@@ -257,7 +257,7 @@ public:
     long        SequenceCount           (long);
     unsigned long        SiteCount               (void) const;
     void        Rebuild                 (bool rescan_parameters = false);
-    void        SerializeLF             (_StringBuffer&, char=0, _SimpleList* = nil, _SimpleList* = nil);
+    virtual void        SerializeLF             (_StringBuffer&, char=0, _SimpleList* = nil, _SimpleList* = nil);
     _Formula*   HasComputingTemplate    (void) const{
         return computingTemplate;
     }
@@ -373,7 +373,7 @@ protected:
     (hyFloat , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hyFloat check_lf = A_LARGE_NUMBER);
 
     hyFloat      SetParametersAndCompute
-    (long, hyFloat, _Matrix* = nil, _Matrix* = nil);
+    (long, hyFloat, _Matrix* = nil, _Matrix* = nil,  bool skip_compute = false);
 
     long            CostOfPath            (_DataSetFilter const*, _TheTree const* , _SimpleList&, _SimpleList* = nil) const;
 
@@ -413,7 +413,7 @@ protected:
 
 
     void            ComputeParameterPenalty     (void);
-
+    void            _TerminateAndDump           (const _String& error);
 
 
     bool            SendOffToMPI                (long);
@@ -422,7 +422,7 @@ protected:
     void            ComputeBlockInt1            (long,hyFloat&,_TheTree*,_DataSetFilter*, char);
     void            CheckStep                   (hyFloat&, _Matrix, _Matrix* selection = nil);
     void            GetGradientStepBound        (_Matrix&, hyFloat &, hyFloat &, long* = nil);
-    void            ComputeGradient             (_Matrix&, _Matrix&,  hyFloat&, _Matrix&, _SimpleList&,
+    void            ComputeGradient             (_Matrix&,  hyFloat&, _Matrix&, _SimpleList&,
             long, bool normalize = true);
     bool            SniffAround                 (_Matrix& , hyFloat& , hyFloat&);
     void            RecurseCategory             (long,long,long,long,hyFloat
@@ -706,7 +706,10 @@ public:
 
     virtual     hyFloat     Compute                 (void);
     virtual     void        RescanAllVariables      (void) {}
-
+    virtual void            SerializeLF             (_StringBuffer& res, char=0, _SimpleList* = nil, _SimpleList* = nil) {
+               res.AppendNewInstance ((_String*)myBody.toStr(kFormulaStringConversionNormal));
+    }
+    
 private:
     _Formula myBody;
 };

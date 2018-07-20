@@ -3463,69 +3463,15 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
             if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
                 /* two square dense matrices */
             {
-               unsigned long cumulativeIndex = 0UL;
-              
-               const unsigned long
-                              dimm4 = vDim - vDim%4,
-                              column_shift2 = secondArg.vDim * 2,
-                              column_shift3 = secondArg.vDim * 3,
-                              column_shift4 = secondArg.vDim * 4;
+                unsigned long cumulativeIndex = 0UL;
+                const unsigned long dimm4 = (vDim >> 2) << 2;
 
                 const hyFloat * row = theData;
                 hyFloat  * dest = storage.theData;
               
 
 #ifndef _SLKP_SSE_VECTORIZATION_
-              
-                
-                
-/*#ifdef  _SLKP_USE_AVX_INTRINSICS
-              __m256d buffer1,
-                      buffer2;
-              __m128d two1,
-                      two2;
-              
-              double  d[2] __attribute__ ((aligned (16)));
-
-              for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
-                for (unsigned long j=0; j<secondArg.vDim; j++) {
-                  hyFloat resCell  = 0.0;
-                  
-           
-                  unsigned long k = 0,
-                  column = j;
-                  
-                  
-                  for (; k < dimm4; k+=4, column += column_shift4) {
-                    buffer1 = _mm256_loadu_pd (row+k);
-                    buffer2 = _mm256_set_pd  (secondArg.theData [column + column_shift3],
-                                              secondArg.theData [column + column_shift2],
-                                              secondArg.theData [column + secondArg.vDim],
-                                              secondArg.theData [column]);
-                    
-                                              
-                    buffer1 = _mm256_mul_pd      (buffer1,buffer2);
-                    buffer1 = _mm256_add_pd     (
-                                                  _mm256_shuffle_pd (buffer1, buffer1, 0x0),_mm256_shuffle_pd (buffer1, buffer1, 0xf));
- 
-                    two1 = _mm256_extractf128_pd(buffer1,0);
-                    two2 = _mm256_extractf128_pd(buffer1,1);
-                    
-                    _mm_store_pd(d,_mm_add_pd(two1, two2));
-                    resCell += d[0];
-                   
-                  }
-                  
-                  if (dimm4 < vDim)
-                    for (; k < vDim; k++, column += secondArg.vDim) {
-                      resCell += row[k] * secondArg.theData[column];
-                    }
-                  
-                  dest[cumulativeIndex++] = resCell;
-                  
-                }
-              }
-#else*/
+            
               
               if (dimm4 == vDim) {
                 InitializeArray (dest, lDim, 0.0);
@@ -3537,15 +3483,37 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                     
                     __m256d __attribute__ ((aligned (32))) col_buffer[5];
                     
-                    hyFloat col[4] __attribute__ ((aligned (32)));
-                     unsigned long col_index = c;
-                     for (unsigned long quad = 0UL; quad < 5UL; quad ++) {
-                       for (unsigned long i = 0UL; i < 4UL; i++, col_index += 20UL) {
-                         col [i] = secondArg.theData[col_index];
-                       }
-                       col_buffer[quad] = _mm256_load_pd (col);
-                     }
-                  
+                      _Parameter quad1[4] __attribute__ ((aligned (32))),
+                                            quad2[4] __attribute__ ((aligned (32))),
+                                            quad3[4] __attribute__ ((aligned (32))),
+                                            quad4[4] __attribute__ ((aligned (32))),
+                                            quad5[4] __attribute__ ((aligned (32)));
+                      
+                                            quad1 [0] = secondArg.theData[c];
+                                            quad1 [1] = secondArg.theData[c + 20UL];
+                                            quad1 [2] = secondArg.theData[c + 40UL];
+                                            quad1 [3] = secondArg.theData[c + 60UL];
+                      
+                                            quad2 [0] = secondArg.theData[c + 80UL];
+                                            quad2 [1] = secondArg.theData[c + 100UL];
+                                            quad2 [2] = secondArg.theData[c + 120UL];
+                                            quad2 [3] = secondArg.theData[c + 140UL];
+                      
+                                            quad3 [0] = secondArg.theData[c + 160UL];
+                                            quad3 [1] = secondArg.theData[c + 180UL];
+                                            quad3 [2] = secondArg.theData[c + 200UL];
+                                            quad3 [3] = secondArg.theData[c + 220UL];
+                      
+                                            quad4 [0] = secondArg.theData[c + 240UL];
+                                            quad4 [1] = secondArg.theData[c + 260UL];
+                                            quad4 [2] = secondArg.theData[c + 280UL];
+                                            quad4 [3] = secondArg.theData[c + 300UL];
+                      
+                                            quad5 [0] = secondArg.theData[c + 320UL];
+                                            quad5 [1] = secondArg.theData[c + 340UL];
+                                            quad5 [2] = secondArg.theData[c + 360UL];
+                                            quad5 [3] = secondArg.theData[c + 380UL];
+
                     
                     hyFloat const * p = theData;
                     for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
@@ -3581,7 +3549,12 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                    
                    */
                   
-                   for (unsigned long i = 0UL, vector_index = c; i < secondArg.hDim; i += 4UL, vector_index += column_shift4) {
+                    const unsigned long
+                                            column_shift2 = secondArg.vDim << 1,
+                                            column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
+                                            column_shift4 = secondArg.vDim << 2;
+                    
+                    for (unsigned long i = 0UL, vector_index = c; i < secondArg.hDim; i += 4UL, vector_index += column_shift4) {
                       hyFloat c0 = secondArg.theData[vector_index],
                                  c1 = secondArg.theData[vector_index+secondArg.vDim],
                                  c2 = secondArg.theData[vector_index+column_shift2],
@@ -3604,6 +3577,11 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                    }
                 }
               } else {
+                  const unsigned long
+                          column_shift2 = secondArg.vDim << 1,
+                          column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
+                          column_shift4 = secondArg.vDim << 2;
+
                   for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
                       for (unsigned long j=0UL; j<secondArg.vDim; j++) {
                           hyFloat resCell  = 0.0;
@@ -5370,7 +5348,7 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
             ((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
         }
     } else {
-        if (copyF && ((_Formula**)theData)[lIndex]!=(_Formula*)ZEROPOINTER) {
+        if (((_Formula**)theData)[lIndex]!=(_Formula*)ZEROPOINTER) {
             delete ((_Formula**)theData)[lIndex];
         }
         ((_Formula**)theData)[lIndex] = copyF?(_Formula*)f.makeDynamic():&f;

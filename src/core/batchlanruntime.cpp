@@ -2321,7 +2321,24 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
       if (!result) {
         throw ("Encountered an error while parsing HBL");
       } else {
+          
 
+        _AVLListXL * stash1 = nil;
+        _List      * stash2 = nil;
+          
+        if (has_redirected_input) {
+          code.stdinRedirectAux = &_aux_argument_list;
+          code.stdinRedirect = &argument_list;
+        } else {
+           if (current_program.has_stdin_redirect()) {
+               stash1 = current_program.stdinRedirect;
+               stash2 = current_program.stdinRedirectAux;
+               current_program.stdinRedirect->AddAReference();
+               current_program.stdinRedirectAux->AddAReference();
+           }
+           code.stdinRedirect = current_program.stdinRedirect;
+           code.stdinRedirectAux = current_program.stdinRedirectAux;
+        }
         code.stdinRedirectAux = has_redirected_input ? &_aux_argument_list : current_program.stdinRedirectAux;
         code.stdinRedirect    = has_redirected_input? & argument_list :current_program.stdinRedirect;
 
@@ -2330,6 +2347,11 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
           code.ExecuteSimple ();
         } else {
           code.Execute();
+        }
+        
+        if (stash1) {
+          stash1->RemoveAReference();
+          stash2->RemoveAReference();
         }
 
         code.stdinRedirectAux = nil;

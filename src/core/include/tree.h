@@ -279,12 +279,12 @@ public:
             long           *        lNodeFlags,
             hyFloat*         scalingAdjustments,
             long*                   siteCorrectionCounts,
-            _Vector*     lNodeResolutions,
+            _Vector const*     lNodeResolutions,
             long&                   overallScaler,
-            long                    siteFrom,
+            long const                    siteFrom,
             long                    siteTo,
-            long                    catID,
-            _SimpleList*            = nil,
+            long const                   catID,
+            _SimpleList const *            = nil,
             hyFloat*         = nil
                                                     );
 

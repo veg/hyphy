@@ -2215,7 +2215,7 @@ void    _TheTree::TreePSRecurse (node<nodeCoord>* iterator, _StringBuffer &res, 
         res << "0 0 0 setrgbcolor\n";
     }
 
-    if (iterator->is_root() == nil && layout == 1) {
+    if (iterator->is_root() == false && layout == 1) {
         res <<  (_String (-iterator->in_object.h) & ' ' & _String (-iterator->in_object.v) & " translate\n");
     }
 }
@@ -2649,102 +2649,124 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
 //   resultMatrix is assumed to contain
 //      uniqueSites X (flatLeaves.lLength+flatTree.lLength)*cBase*2 X categoryCount
 {
-
+    
     long      globalShifter        = (flatLeaves.lLength+flatTree.lLength)*cBase,
-              catShifer             = dsf->GetPatternCount() * 2 * globalShifter;
-
+    catShifer             = dsf->GetPatternCount() * 2 * globalShifter;
+    
     IntPopulateLeaves (dsf, site_index);
-
+    
     /* pass 1; populate top-down vectors */
     /* ugly top-bottom algorithm for debuggability and compactness */
-
+    
     for (long catCount   = 0; catCount < categoryCount; catCount ++) {
-        hyFloat* currentStateVector = resultMatrix.theData + 2*globalShifter*site_index + catShifer*catCount,
-                  * vecPointer         = currentStateVector;
-
+        _Parameter* currentStateVector = resultMatrix.theData + 2*globalShifter*site_index + catShifer*catCount,
+        * vecPointer         = currentStateVector;
+        
         for (long nodeCount = 0L; nodeCount<flatCLeaves.lLength; nodeCount++) {
-            hyFloat *leafVec     = ((_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]))->theProbs;
-
+            _Parameter *leafVec     = ((_CalcNode*)(((BaseRef*)flatCLeaves.lData)[nodeCount]))->theProbs;
+            
             for (long cc = 0; cc < cBase; cc++) {
                 vecPointer[cc] = leafVec[cc];
             }
             vecPointer += cBase;
         }
-
+        
+        // TODO SLKP 20180703: ugly fix for underflow which WON'T work if category count > 1
+        
         for (long iNodeCount = 0L; iNodeCount < flatTree.lLength - 1; iNodeCount++) {
             node<long>* thisINode       = (node<long>*)flatNodes.lData[iNodeCount];
-
+            
+            _Parameter sum = 0.;
+            
             for (long cc = 0; cc < cBase; cc++) {
-                hyFloat      tmp = 1.0;
+                _Parameter      tmp = 1.0;
+                
                 for (long nc = 0; nc < thisINode->nodes.length; nc++) {
-                    hyFloat  tmp2 = 0.0;
+                    _Parameter  tmp2 = 0.0;
                     _CalcNode   * child         = map_node_to_calcnode(thisINode->go_down(nc+1));
-                    hyFloat  * childSupport  = currentStateVector + child->nodeIndex*cBase,
-                                * transMatrix   = child->GetCompExp(categoryCount>1?catCount:(-1))->theData + cc*cBase;
-
+                    _Parameter  * childSupport  = currentStateVector + child->nodeIndex*cBase,
+                    * transMatrix   = child->GetCompExp(categoryCount>1?catCount:(-1))->theData + cc*cBase;
+                    
                     for (long cc2 = 0; cc2 < cBase; cc2++) {
                         tmp2 += transMatrix[cc2] * childSupport[cc2];
                     }
-
+                    
                     tmp *= tmp2;
                 }
                 vecPointer[cc] = tmp;
+                sum += tmp;
             }
+            
+            if (sum < _lfScalingFactorThreshold && sum > 0.0) {
+                for (long cc = 0; cc < cBase; cc++) {
+                    vecPointer[cc] *= _lfScalerUpwards;
+                }
+            }
+            
             vecPointer += cBase;
+            
         }
         RecoverNodeSupportStates2 (&GetRoot(),currentStateVector+globalShifter,currentStateVector,categoryCount>1?catCount:(-1));
     }
     /* pass 2; populate bottom-up vectors */
     /* for this we need to traverse the tree pre-order */
     /* because speed is not much of a concern, use a recursive call for compactness */
-
+    
 }
 
 //_______________________________________________________________________________________________
 
-void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat* resultVector, hyFloat* forwardVector, long catID) {
-
+void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* resultVector, _Parameter* forwardVector, long catID) {
+    
     _CalcNode   * thisNodeC     = map_node_to_calcnode (thisNode);
-    hyFloat  * vecPointer    = resultVector + thisNodeC->nodeIndex * cBase;
-
+    _Parameter  * vecPointer    = resultVector + thisNodeC->nodeIndex * cBase;
+    
     if (thisNode->parent) {
         if (thisNode->parent->parent) {
-            for (long cc = 0; cc < cBase; cc++,vecPointer++) {
-                hyFloat tmp = 1.0;
+            _Parameter sum = 0.;
+            for (long cc = 0; cc < cBase; cc++) {
+                _Parameter tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
-                    hyFloat  tmp2            = 0.0;
+                    _Parameter  tmp2            = 0.0;
                     _CalcNode   * child         = map_node_to_calcnode(thisNode->parent->go_down (nc+1));
                     bool          invert        = (child == thisNodeC);;
                     if (invert) {
                         child = map_node_to_calcnode (thisNode->parent);
                     }
-
-                    hyFloat  * childSupport  = invert?resultVector + cBase*child->nodeIndex
-                                                  :forwardVector + child->nodeIndex*cBase,
-                                                  * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
-
+                    
+                    _Parameter  * childSupport  = invert?resultVector + cBase*child->nodeIndex
+                    :forwardVector + child->nodeIndex*cBase,
+                    * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
+                    
                     for (long cc2 = 0; cc2 < cBase; cc2++) {
                         tmp2 += transMatrix[cc2] * childSupport[cc2];
                     }
-
+                    
                     tmp *= tmp2;
                 }
-                *vecPointer = tmp;
+                vecPointer[cc] = tmp;
+                sum += tmp;
             }
+            if (sum < _lfScalingFactorThreshold && sum > 0.0) {
+                for (long cc = 0; cc < cBase; cc++) {
+                    vecPointer[cc] *= _lfScalerUpwards;
+                }
+            }
+            vecPointer += cBase;
         } else {
             for (long cc = 0; cc < cBase; cc++,vecPointer++) {
-                hyFloat tmp = 1.0;
+                _Parameter tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
-                    hyFloat  tmp2            = 0.0;
+                    _Parameter  tmp2            = 0.0;
                     _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.lData)[thisNode->parent->nodes.data[nc]->in_object]);
                     if (child != thisNodeC) {
-                        hyFloat  * childSupport  = forwardVector + child->nodeIndex*cBase,
-                                      * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
-
+                        _Parameter  * childSupport  = forwardVector + child->nodeIndex*cBase,
+                        * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
+                        
                         for (long cc2 = 0; cc2 < cBase; cc2++) {
                             tmp2 += transMatrix[cc2] * childSupport[cc2];
                         }
-
+                        
                         tmp *= tmp2;
                     }
                 }
@@ -2755,12 +2777,11 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat* res
         for (long cc=0; cc<cBase; cc++) {
             vecPointer [cc] = 1.0;
         }
-
+    
     for (long nc = 0; nc < thisNode->nodes.length; nc++) {
         RecoverNodeSupportStates2 (thisNode->nodes.data[nc],resultVector,forwardVector,catID);
     }
 }
-
 
 
 //_______________________________________________________________________________________________

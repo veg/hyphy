@@ -1102,10 +1102,17 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
     _ExecutionList*      stashCEL = currentExecutionList;
     callPoints << currentCommand;
     executionStack       << this;
-
+    
+    _AVLListXL * stash1 = nil;
+    _List* stash2 = nil; // recursion
+    
     if (parent && stdinRedirect == nil) {
-      stdinRedirect = parent->stdinRedirect;
-      stdinRedirectAux = parent->stdinRedirectAux;
+        stash1 = stdinRedirect = parent->stdinRedirect;
+        stash2 = stdinRedirectAux = parent->stdinRedirectAux;
+        if (stash1) {
+            stash1->AddAReference();
+            stash2->AddAReference();
+        }
     } else {
       parent = nil;
     }
@@ -1165,6 +1172,8 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
     if (parent) {
       stdinRedirect = nil;
       stdinRedirectAux = nil;
+      DeleteObject(stash1);
+      DeleteObject(stash2);
     }
 
     return result;
@@ -4543,7 +4552,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       _ExecutionList   * namespace_payload = new _ExecutionList (namespace_text, funcID, false, &success);
         
        DeleteObject (funcID);
-
+        // 20180713 SLKP -- this was marked as deleted in one of the v2.3 branches
       if (success) {
         _ElementaryCommand * nested_list = new _ElementaryCommand (HY_HBL_COMMAND_NESTED_LIST);
         nested_list->parameters.AppendNewInstance(namespace_payload);
