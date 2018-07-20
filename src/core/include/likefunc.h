@@ -170,7 +170,7 @@ public:
     // 4 - category variables
 
 
-    _Parameter  GetIthIndependent           (long) const;     // get the value of i-th independent variable
+    _Parameter  GetIthIndependent           (long, bool = true) const;     // get the value of i-th independent variable
     const _String*  GetIthIndependentName           (long) const;     // get the name of i-th independent variable
     _Parameter  GetIthDependent             (long) const;     // get the value of i-th dependent variable
     void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix

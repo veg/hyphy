@@ -1,4 +1,4 @@
-RequireVersion ("2.3.3");
+RequireVersion ("2.3.12");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -11,8 +11,8 @@ LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
 
-LoadFunctionLibrary("modules/io_functions.ibf");
-LoadFunctionLibrary("modules/selection_lib.ibf");
+LoadFunctionLibrary("SelectionAnalyses/modules/io_functions.ibf");
+LoadFunctionLibrary("SelectionAnalyses/modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
 
@@ -33,6 +33,10 @@ absrel.full_adaptive_model  = "Full adaptive model";
 absrel.rate_classes         = "Rate classes";
 absrel.per_branch_omega     = "Per-branch omega";
 
+terms.absrel.neg_lrt = terms.LRT + " (purifying selection)";
+terms.absrel.neg_uncorrected_pvalue =  terms.json.uncorrected_pvalue + " (purifying selection)";
+terms.absrel.neg_corrected_pvalue = terms.json.corrected_pvalue + " (purifying selection)";
+
 absrel.display_orders = {terms.original_name: -1,
                          terms.json.nucleotide_gtr: 0,
                               absrel.baseline_mg94xrev: 1,
@@ -42,7 +46,10 @@ absrel.display_orders = {terms.original_name: -1,
                               terms.json.rate_distribution: 3,
                               terms.LRT: 4,
                               terms.json.uncorrected_pvalue: 5,
-                              terms.json.corrected_pvalue: 6
+                              terms.json.corrected_pvalue: 6,
+                              terms.absrel.neg_lrt : 7,
+                              terms.absrel.neg_uncorrected_pvalue : 8,
+                              terms.absrel.neg_corrected_pvalue : 9
                              };
 
 
@@ -50,11 +57,11 @@ absrel.display_orders = {terms.original_name: -1,
 /*------------------------------------------------------------------------------*/
 
 
-absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site random effects likelihood)
+absrel.analysis_description = {terms.io.info : "aBSREL-NS (Adaptive branch-site random effects likelihood negative selection)
                             uses an adaptive random effects branch-site model framework
-                            to test whether each branch has evolved under positive selection,
+                            to test whether each branch has evolved under **purifying** or **positive** selection,
                             using a procedure which infers an optimal number of rate categories per branch.",
-                           terms.io.version : "2.0",
+                           terms.io.version : "2.0.1",
                            terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353",
                            terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                            terms.io.contact : "spond@temple.edu",
@@ -76,7 +83,7 @@ absrel.json    = {
 selection.io.startTimer (absrel.json [terms.json.timers], "Overall", 0);
 
 namespace absrel {
-    LoadFunctionLibrary ("modules/shared-load-file.bf");
+    LoadFunctionLibrary ("SelectionAnalyses/modules/shared-load-file.bf");
     load_file ("absrel");
 }
 
@@ -158,7 +165,7 @@ absrel.distribution_for_json = {absrel.per_branch_omega :
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_withEFV (absrel.json,
+selection.io.json_store_lf_GTR_MG94 (absrel.json,
                                      absrel.baseline_mg94xrev,
                                      absrel.base.results[terms.fit.log_likelihood],
                                      absrel.base.results[terms.parameters] ,
@@ -366,16 +373,21 @@ absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_
             "0": 35,
             "1": 10,
             "2": 20,
-            "3": 20,
+            "3": 12,
             "4": 20,
+            "5": 20
             },
             terms.number_precision : 2};
 
-fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "dN/dS range", "Sel. mode", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
 
 absrel.testing_table.settings [terms.table_options.header] = FALSE;
 absrel.branch.p_values                                        = {};
 absrel.branch.lrt                                             = {};
+
+absrel.branch.neg.p_values                                    = {};
+absrel.branch.neg.lrt                                         = {};
+
 
 for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch_id += 1) {
     absrel.current_branch           = absrel.names_sorted_by_length[absrel.branch_id];
@@ -386,34 +398,59 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     absrel.report.row [1] =  Format (absrel.branch.complexity[absrel.current_branch], 3, 0);
     absrel.dn_ds.distro   = absrel.branch.rate_distributions [absrel.current_branch];
 
-    if (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][0] < 1000) {
-        absrel.report.row [2] = Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][0],5,2) + " (" + Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][1]*100,5,2) + "%)";
+    if (absrel.dn_ds.distro[absrel.branch.complexity[0]][0] < 1000) {
+        absrel.report.row [2] = Format (absrel.dn_ds.distro[absrel.branch.complexity[0]][0],5,2);
     } else {
-        absrel.report.row [2] = ">1000 (" + Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][1]*100,5,2) + "%)";
+        absrel.report.row [2] = ">1000";
+    }
+
+    if (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][0] < 1000) {
+        absrel.report.row [2] += " : " + Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][0],5,2);
+    } else {
+        absrel.report.row [2] += " : >1000";
     }
 
     if ((absrel.selected_branches[0])[absrel.current_branch] == terms.tree_attributes.test) {
-
         if (absrel.dn_ds.distro [absrel.branch.complexity[absrel.current_branch]-1][0] > 1) {
             absrel.branch.ConstrainForTesting (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
             Optimize (absrel.null.mles, ^absrel.likelihood_function_id);
-            absrel.branch.test = absrel.ComputeLRT ( absrel.full_model.fit[terms.fit.log_likelihood], absrel.null.mles[1][0]);
+            absrel.branch.test = absrel.ComputeLRT ( absrel.full_model.fit[terms.fit.log_likelihood], absrel.null.mles[1][0], 1);
             estimators.RestoreLFStateFromSnapshot (absrel.likelihood_function_id, absrel.full_model.mle_set);
         } else {
             absrel.branch.test = {terms.LRT : 0, terms.p_value : 1};
         }
         absrel.branch.p_values [ absrel.current_branch ] = absrel.branch.test [terms.p_value];
         absrel.branch.lrt       [absrel.current_branch] = absrel.branch.test [terms.LRT];
-        absrel.report.row [3] = absrel.branch.test [terms.LRT];
-        absrel.report.row [4] = Format (absrel.branch.test [terms.p_value], 8, 5);
+        absrel.report.row [3] = "Positive";
+        absrel.report.row [4] = absrel.branch.test [terms.LRT];
+        absrel.report.row [5] = Format (absrel.branch.test [terms.p_value], 8, 5);
+        fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.testing_table.settings));
+
+        if (absrel.dn_ds.distro [absrel.branch.complexity[0]][0] < 1) {
+            absrel.df = absrel.branch.ConstrainForTestingNS (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch, absrel.dn_ds.distro);
+            Optimize (absrel.null.mles, ^absrel.likelihood_function_id);
+            Export (lfe, ^absrel.likelihood_function_id);
+            absrel.branch.test = absrel.ComputeLRT ( absrel.full_model.fit[terms.fit.log_likelihood], absrel.null.mles[1][0], absrel.df);
+            estimators.RestoreLFStateFromSnapshot (absrel.likelihood_function_id, absrel.full_model.mle_set);
+        } else {
+            absrel.branch.test = {terms.LRT : 0, terms.p_value : 1};
+        }
+        absrel.branch.neg.p_values [ absrel.current_branch ] = absrel.branch.test [terms.p_value];
+        absrel.branch.neg.lrt       [absrel.current_branch] = absrel.branch.test [terms.LRT];
+        absrel.report.row [3] = "Negative";
+        absrel.report.row [4] = absrel.branch.test [terms.LRT];
+        absrel.report.row [5] = Format (absrel.branch.test [terms.p_value], 8, 5);
+
     } else {
         absrel.branch.lrt [absrel.current_branch] = None;
         absrel.branch.p_values [absrel.current_branch] = None;
-        absrel.report.row [3] = "Not selected";
-        absrel.report.row [4] = "for testing";
+        absrel.report.row [3] = "";
+        absrel.report.row [4] = "Not selected";
+        absrel.report.row [5] = "for testing";
     }
 
     fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.testing_table.settings));
+
 }
 
 selection.io.json_store_branch_attribute(absrel.json, terms.LRT, terms.json.branch_label, absrel.display_orders[terms.LRT],
@@ -433,16 +470,41 @@ selection.io.json_store_branch_attribute (absrel.json, terms.json.corrected_pval
 absrel.test.all      = utility.Filter (absrel.branch.p_values.corrected, "_value_", "None!=_value_");
 absrel.test.positive = utility.Filter (absrel.test.all, "_value_", "_value_<=absrel.p_threshold");
 
+selection.io.json_store_branch_attribute(absrel.json, terms.absrel.neg_lrt, terms.json.branch_label, absrel.display_orders[terms.absrel.neg_lrt],
+                                                      0,
+                                                       absrel.branch.neg.lrt);
+
+selection.io.json_store_branch_attribute(absrel.json, terms.absrel.neg_uncorrected_pvalue, terms.json.branch_label, absrel.display_orders[terms.absrel.neg_uncorrected_pvalue],
+                                                      0,
+                                                       absrel.branch.neg.p_values);
+
+absrel.branch.p_values.neg.corrected = math.HolmBonferroniCorrection (absrel.branch.neg.p_values);
+
+selection.io.json_store_branch_attribute (absrel.json, terms.absrel.neg_corrected_pvalue, terms.json.branch_label,  absrel.display_orders[terms.absrel.neg_corrected_pvalue],
+                                                       0,
+                                                       absrel.branch.p_values.neg.corrected);
+
+absrel.test.neg.all      = utility.Filter (absrel.branch.p_values.neg.corrected, "_value_", "None!=_value_");
+absrel.test.negative = utility.Filter (absrel.test.neg.all, "_value_", "_value_<=absrel.p_threshold");
+
+
 selection.io.stopTimer (absrel.json [terms.json.timers], "Testing for selection");
 
 
 
 console.log ("----\n### Adaptive branch site random effects likelihood test ");
-console.log ( "Likelihood ratio test for episodic diversifying positive selection at Holm-Bonferroni corrected _p = " + Format (absrel.p_threshold, 8, 4) + "_ found **" + Abs(absrel.test.positive) + "** branches under selection among **"+ Abs (absrel.test.all) + "** tested.\n");
+console.log ( "Likelihood ratio test for episodic diversifying positive selection at Holm-Bonferroni corrected _p = " + Format (absrel.p_threshold, 8, 4) + "_ found **" + Abs(absrel.test.positive) + "** branches under **positive** selection among **"+ Abs (absrel.test.all) + "** tested.\n");
 utility.ForEachPair (absrel.test.positive, "_name_", "_p_",
             '
             console.log ("* " + _name_ + ", p-value = " + Format (_p_, 8,5));
             ');
+
+console.log ( "\nLikelihood ratio test for episodic purifying selection at Holm-Bonferroni corrected _p = " + Format (absrel.p_threshold, 8, 4) + "_ found **" + Abs(absrel.test.negative) + "** branches under **negative** selection among **"+ Abs (absrel.test.all) + "** tested.\n");
+utility.ForEachPair (absrel.test.negative, "_name_", "_p_",
+            '
+            console.log ("* " + _name_ + ", p-value = " + Format (_p_, 8,5));
+            ');
+
 
 absrel.json [terms.json.test_results] = {
                                              terms.json.pvalue_threshold : absrel.p_threshold,
@@ -465,10 +527,17 @@ return absrel.json;
 //------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------
 
-lfunction absrel.ComputeLRT (ha, h0) {
+lfunction absrel.ComputeLRT (ha, h0, df) {
     lrt  = 2*(ha-h0);
+
+    if (df == 1) {
+        return {utility.getGlobalValue("terms.LRT") : lrt,
+                utility.getGlobalValue("terms.p_value") : (1-0.4*CChi2 (lrt,1)-0.6* CChi2 (lrt,2))*.5};
+    }
+
     return {utility.getGlobalValue("terms.LRT") : lrt,
-            utility.getGlobalValue("terms.p_value") : (1-0.4*CChi2 (lrt,1)-0.6* CChi2 (lrt,2))*.5};
+            utility.getGlobalValue("terms.p_value") : (1-CChi2 (lrt,2*df))};
+
 }
 
 
@@ -538,6 +607,33 @@ lfunction absrel.branch.ConstrainForTesting (model, tree_id, branch_id) {
     }
 
 }
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction absrel.branch.ConstrainForTestingNS (model, tree_id, branch_id, distribution) {
+
+    component_count = model[utility.getGlobalValue ("terms.model.components")];
+    local_parameters = (model[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")];
+    if (component_count > 1) {
+        for (df = 0; df < component_count; df += 1) {
+            if (distribution[df][0] >= 1) {
+                break;
+            }
+            omega_k   = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), (df + 1));
+            parameters.SetConstraint ("`tree_id`.`branch_id`.`local_parameters[omega_k]`", "1", '');
+        }
+
+    } else {
+        parameters.SetConstraint (
+            "`tree_id`.`branch_id`.`local_parameters[utility.getGlobalValue ('terms.parameters.nonsynonymous_rate')]`",
+            "`tree_id`.`branch_id`.`local_parameters[utility.getGlobalValue ('terms.parameters.synonymous_rate')]`", '');
+
+        df = 1;
+    }
+    return df;
+
+}
+
 //------------------------------------------------------------------------------------------------------------------------
 
 lfunction absrel.PopulateInitialGrid (model, tree_id, branch_id, current_estimates) {

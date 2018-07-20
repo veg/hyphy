@@ -1776,7 +1776,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                 if (tr && tc) {
                                     _Polynomial        * rcpF = (_Polynomial*)rcp->Mult(tr),
                                                        * crpF = (_Polynomial*)crp->Mult(tc);
-                                  
+
                                     //fprintf (stderr, "%s : %s\n", _String ((_String*)rcpF->toStr()).getStr(), _String ((_String*)crpF->toStr()).getStr());
 
                                     compResult         = rcpF->Equal(crpF);
@@ -3359,8 +3359,8 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             }
 
         } else {
-            _Parameter _hprestrict_ * argData = secondArg.theData;
-            _Parameter _hprestrict_ * stData  = storage.theData;
+            _Parameter * _hprestrict_ argData = secondArg.theData;
+            _Parameter * _hprestrict_ stData  = storage.theData;
 
             long    upto = secondArg.lDim - secondArg.lDim%4;
 
@@ -3576,8 +3576,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Parameter c)
 
 {
     if (storageType == 1) { // numbers
-        _Parameter _hprestrict_ * destination = storage.theData;
-        _Parameter _hprestrict_           * source      = theData;
+        _Parameter * _hprestrict_ destination = storage.theData;
+        _Parameter * _hprestrict_ source      = theData;
 
         if (theIndex) {
             for (long k = 0; k < lDim; k++)
@@ -3667,15 +3667,15 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                 /* two square dense matrices */
             {
                unsigned long cumulativeIndex = 0UL;
-              
+
                const unsigned long dimm4 = (vDim >> 2) << 2;
 
                const _Parameter * row = theData;
                _Parameter  * dest = storage.theData;
-              
+
 
 #ifndef _SLKP_SSE_VECTORIZATION_
-              
+
 
               if (dimm4 == vDim) {
                 InitializeArray (dest, lDim, 0.0);
@@ -3686,18 +3686,18 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                   if (vDim == 20UL) { // special case for amino-acids
 
                     __m256d __attribute__ ((aligned (32))) col_buffer[5];
-                    
+
                     _Parameter quad1[4] __attribute__ ((aligned (32))),
                                quad2[4] __attribute__ ((aligned (32))),
                                quad3[4] __attribute__ ((aligned (32))),
                                quad4[4] __attribute__ ((aligned (32))),
                                quad5[4] __attribute__ ((aligned (32)));
-                      
+
                       quad1 [0] = secondArg.theData[c];
                       quad1 [1] = secondArg.theData[c + 20UL];
                       quad1 [2] = secondArg.theData[c + 40UL];
                       quad1 [3] = secondArg.theData[c + 60UL];
-                      
+
                       quad2 [0] = secondArg.theData[c + 80UL];
                       quad2 [1] = secondArg.theData[c + 100UL];
                       quad2 [2] = secondArg.theData[c + 120UL];
@@ -3724,8 +3724,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                       col_buffer[3] = _mm256_load_pd (quad4);
                       col_buffer[4] = _mm256_load_pd (quad5);
                       //
-                      
-                    
+
+
                     _Parameter const * p = theData;
                     for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
 
@@ -3743,8 +3743,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                     }
                     continue;
                   }
-                    
-                    
+
+
 
 #endif
                     const unsigned long
@@ -3769,46 +3769,46 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 
                    for (unsigned long i = 0UL, vector_index = c; i < secondArg.hDim; i += 4UL, vector_index += column_shift4) {
 /*#ifdef  _SLKP_USE_AVX_INTRINSICS
-                       
+
                        _Parameter quad1[4] __attribute__ ((aligned (32)));
                        quad1[0] = secondArg.theData[vector_index];
                        quad1[1] = secondArg.theData[vector_index+secondArg.vDim],
                        quad1[2] = secondArg.theData[vector_index+column_shift2],
                        quad1[3] = secondArg.theData[vector_index+column_shift3];
                        __m256d __attribute__ ((aligned (32))) col_buffer = _mm256_load_pd (quad1);
-                       
+
                        for (unsigned long r = 0UL; r < hDim; r ++) {
-                           
+
                            //unsigned long element = r*vDim + i;
                            __m256d __attribute__ ((aligned (32))) row_quad = _mm256_loadu_pd (theData + (r*vDim + i));
                            dest[r*vDim + c] += _avx_sum_4(_mm256_mul_pd (col_buffer,row_quad));
-                           
+
                        }
-                       
+
 #else*/
                 _Parameter c0 = secondArg.theData[vector_index],
                            c1 = secondArg.theData[vector_index+secondArg.vDim],
                            c2 = secondArg.theData[vector_index+column_shift2],
                            c3 = secondArg.theData[vector_index+column_shift3];
-                           
+
                            for (unsigned long r = 0UL; r < hDim; r ++) {
-                               
+
                                unsigned long element = r*vDim + i;
-                               
-                            
+
+
                                _Parameter r0 = theData[element]   * c0,
                                r1 = theData[element+1] * c1,
                                r2 = theData[element+2] * c2,
                                r3 = theData[element+3] * c3;
-                               
+
                                r0 += r1;
                                r2 += r3;
                                dest[r*vDim + c] += r0 + r2;
-                               
+
                            }
 //#endif
-                           
- 
+
+
                    }
                 }
               } else {
@@ -3878,11 +3878,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 #endif
                      for (long r = 0; r < hDim; r ++) {
 #ifdef _OPENMP
-#if GCC_VERSION > 40400
 #pragma omp parallel for default(none) shared(r,secondArg,storage) schedule(static) if (nt>1)  num_threads (nt)
-#else
-#pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1)  num_threads (nt)
-#endif
 #endif
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
                              _Parameter cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
@@ -3978,8 +3974,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
 
 
                     _Parameter  value                           = theData[k];
-                    _Parameter  _hprestrict_ *res               = storage.theData    + (m-i);
-                    _Parameter  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                    _Parameter  * _hprestrict_ res               = storage.theData    + (m-i);
+                    _Parameter  * _hprestrict_ secArg            = secondArg.theData  + i*vDim;
 
   #ifdef  _SLKP_USE_AVX_INTRINSICS
                       __m256d  value_op = _mm256_set1_pd (value);
@@ -4013,8 +4009,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
                           // in the form of A_rc * B_cc'
 
                           _Parameter  value                           = theData[k];
-                          _Parameter  _hprestrict_ *res               = storage.theData    + (m-i);
-                          _Parameter  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                          _Parameter  * _hprestrict_ res               = storage.theData    + (m-i);
+                          _Parameter  * _hprestrict_ secArg            = secondArg.theData  + i*vDim;
 
                           for (unsigned long i = 0UL; i < loopBound; i+=4) {
                               res[i]   += value * secArg[i];
@@ -5847,8 +5843,8 @@ _Parameter        _Matrix::Sqr (_Parameter* _hprestrict_ stash) {
             // loop interchange rocks!
 
 
-            _Parameter  _hprestrict_ * column = stash+lDim;
-            _Parameter const  _hprestrict_ * source = theData;
+            _Parameter  * _hprestrict_ column = stash+lDim;
+            _Parameter const  * _hprestrict_  source = theData;
 
             for (long j = 0; j < vDim; j++) {
                 for (long c = 0; c < vDim; c++) {
