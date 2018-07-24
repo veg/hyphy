@@ -53,7 +53,6 @@
 _Formula *chi2 = nil,
          *derchi2 = nil;
 
-long randomCount = 0;
 
 extern _Parameter machineEps;
 extern _Parameter tolerance;
@@ -129,10 +128,10 @@ _Constant::_Constant (void)
 //}
 
 //__________________________________________________________________________________
-_Parameter    _Constant::Value (void)
-{
+_Parameter    _Constant::Value (void) {
     return theValue;
 }
+
 //__________________________________________________________________________________
 BaseRef _Constant::toStr(unsigned long)
 {
@@ -140,112 +139,89 @@ BaseRef _Constant::toStr(unsigned long)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Add (_PMathObj theObj)
-{
+_PMathObj _Constant::Add (_PMathObj theObj) {
+  
     if (theObj->ObjectClass() == STRING) {
         return new _Constant ((theValue+((_FString*)theObj)->theString->toNum()));
-    } else {
-        return new _Constant ((theValue+((_Constant*)theObj)->theValue));
     }
+
+    return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a + b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sub (_PMathObj theObj)
-{
-    //if (theObj) return nil;
-    return new _Constant ((theValue-((_Constant*)theObj)->theValue));
-    //else
-    //  return  nil;
-    //return       (_PMathObj)result.makeDynamic();
+_PMathObj _Constant::Sub (_PMathObj theObj) {
+  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a - b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Minus (void)
-{
+_PMathObj _Constant::Minus (void) {
     return     new  _Constant (-Value());
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sum (void)
-{
+_PMathObj _Constant::Sum (void) {
     return     new  _Constant (Value());
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Mult (_PMathObj theObj)
-{
-//  if (!theObj) return nil;
-    return new _Constant ((theValue*((_Constant*)theObj)->theValue));
+_PMathObj _Constant::Mult (_PMathObj theObj) {
+  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a * b;});
+
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Div (_PMathObj theObj)
-{
-//  if (!theObj) return nil;
-    return new _Constant ((theValue/((_Constant*)theObj)->theValue));
+_PMathObj _Constant::Div (_PMathObj theObj) {
+  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a / b;});
+}
+//__________________________________________________________________________________
+_PMathObj _Constant::lDiv (_PMathObj theObj) {
+  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {
+    long       denom = b;
+    return     denom != 0L ? (long(a) % denom): a;
+  });
+}
+//__________________________________________________________________________________
+_PMathObj _Constant::longDiv (_PMathObj theObj) {
+  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {
+    long       denom = b;
+    return     denom != 0L ? (long(a) / denom): 0.0;
+  });
 }
 
-//__________________________________________________________________________________
-_PMathObj _Constant::lDiv (_PMathObj theObj) // %
-{
-    if (theObj) {
-        long       denom = ((_Constant*)theObj)->theValue;
-        return     denom?new _Constant  ((long)(Value())%denom):new _Constant  ((long)(Value()));
-    } else {
-        return nil;
-    }
-}
-//__________________________________________________________________________________
-_PMathObj _Constant::longDiv (_PMathObj theObj) // div
-{
-    if (theObj) {
-        long       denom = ((_Constant*)theObj)->theValue;
-        return     denom?new _Constant  ((long)(Value())/denom):new _Constant  (0.0);
-    } else {
-        return nil;
-    }
-}
 //__________________________________________________________________________________
 _PMathObj _Constant::Raise (_PMathObj theObj) {
-  if (!theObj) {
-    return nil;
-  }
-  
-  _Parameter    base  = Value(),
-  expon = theObj->Value();
-  
-  if (base>0.0) {
-    return    new  _Constant (exp (log(base)*(expon)));;
-  } else {
-    if (base<0.0) {
-      if (CheckEqual (expon, (long)expon)) {
-        return new _Constant (((((long)expon)%2)?-1:1)*exp (log(-base)*(expon)));
-      } else {
-        _String errMsg ("An invalid base/exponent pair passed to ^");
-        WarnError (errMsg.sData);
+  return _check_type_and_compute (theObj, [] (_Parameter base, _Parameter expon) -> _Parameter {
+    if (base>0.0) {
+      return    exp (log(base)*(expon));
+    } else {
+      if (base<0.0) {
+        if (CheckEqual (expon, (long)expon)) {
+          return ((((long)expon)%2)?-1:1)*exp (log(-base)*(expon));
+        } else {
+          _String errMsg ("An invalid base/exponent pair passed to ^");
+          WarnError (errMsg.sData);
+        }
       }
+      
+      if (expon != 0.0)
+        return     0.0;
+      else
+        return     1.0;
     }
-    
-    if (expon != 0.0)
-      return     new _Constant (0.0);
-    else
-      return     new _Constant (1.0);
-  }
+  });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Random (_PMathObj upperB)
-{
-    if (randomCount == 0) {
-        randomCount++;
-    }
-    _Parameter l = theValue, u=((_Constant*)upperB)->theValue,r = l;
-    if (u>l) {
-        r=genrand_int32();
-        r/=RAND_MAX_32;
-        r =l+(u-l)*r;
-    }
-    return new _Constant (r);
-
+_PMathObj _Constant::Random (_PMathObj theObj) {
+ 
+  return _check_type_and_compute (theObj, [] (_Parameter l, _Parameter u) -> _Parameter {
+      _Parameter r = l;
+      if (u>l) {
+          r=genrand_int32();
+          r/=RAND_MAX_32;
+          r =l+(u-l)*r;
+      }
+      return r;
+  });
 }
 
 //__________________________________________________________________________________
@@ -256,26 +232,22 @@ void     _Constant::Assign (_PMathObj theObj)
 }
 
 //__________________________________________________________________________________
-bool     _Constant::Equal (_PMathObj theObj)
-{
+bool     _Constant::Equal (_PMathObj theObj) {
     return theValue==((_Constant*)theObj)->theValue;
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Abs (void)
-{
+_PMathObj _Constant::Abs (void) {
     return     new _Constant (fabs(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sin (void)
-{
+_PMathObj _Constant::Sin (void) {
     return     new  _Constant (sin(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Cos (void)
-{
+_PMathObj _Constant::Cos (void){
     return     new _Constant  (cos(theValue));
 }
 
@@ -332,13 +304,11 @@ _PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
     return     new _FString (new _String (buffer));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Log (void)
-{
+_PMathObj _Constant::Log (void) {
     return     new _Constant  (log(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Sqrt (void)
-{
+_PMathObj _Constant::Sqrt (void) {
     return     new _Constant  (sqrt(theValue));
 }
 //__________________________________________________________________________________

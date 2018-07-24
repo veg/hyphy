@@ -2200,15 +2200,8 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
 
                             _Formula*  theTerm = new _Formula (lterm, theP);
 
-                            if (isAConstant) {
-                              // there is hope that this matrix is of numbers
-                              if (theTerm->ObjectClass() == NUMBER) {
-                                isAConstant = theTerm->IsAConstant();
-                              } else {
-                                isAConstant = false;
-                              }
-                            }
-
+                            isAConstant = isAConstant && theTerm->IsAConstant() && theTerm->ObjectClass() == NUMBER;
+                          
                             ((_Formula**)theData)[vDim*hPos+vPos] = theTerm;
                         }
 
