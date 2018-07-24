@@ -858,7 +858,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
  */
 
 lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options) {
-    return estimators.FitSingleModel_Ext (data_filter, tree, "models.DNA.GTR.ModelDescription", initial_values, run_options)
+    return estimators.FitSingleModel_Ext (data_filter, tree, "models.DNA.GTR.ModelDescription", initial_values, run_options);
 }
 
 /**

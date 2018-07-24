@@ -6059,10 +6059,12 @@ _Parameter    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precisio
     }
 
     SetAllIndependent (&bestVal);
-    if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value) == false) {
-        WarnError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") & initial_value & " to " & maxSoFar);
+    if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value, machineEps * 100.) == false) {
+        WarnError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") &
+                    _String (initial_value,"%20.16g") & " to " & _String(maxSoFar,"%20.16g"));
     }
-
+  
+ 
 
     if (vl>1) {
         BufferToConsole("\n");
