@@ -13,17 +13,8 @@ LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 LoadFunctionLibrary("SelectionAnalyses/modules/io_functions.ibf");
 
-namespace bgm {
-    LoadFunctionLibrary ("libv3/tasks/bayesgraph.ibf");
-    /*
-    namespace terms {
-        namespace settings {
-            nsteps
-        }
-    }
-    */
+LoadFunctionLibrary ("libv3/tasks/bayesgraph.ibf");
 
-}
 
 
 
@@ -74,7 +65,7 @@ bgm.fit_options = {terms.run_options.retain_lf_object : TRUE};
 
 if (bgm.run_type == "nucleotide") {
    bgm.alignment_info = alignments.ReadNucleotideDataSet ("bgm.dataset", None);
-   bgm.substitution_model_generator = "models.DNA.GTR.ModelDescription";
+   bgm.baseline_model = "models.DNA.GTR.ModelDescription";
 } else {
     if (bgm.run_type == "amino-acid") {
 
@@ -105,7 +96,6 @@ bgm.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (
                                                                              );
 
 
-
 io.CheckAssertion ("Abs (bgm.partitions_and_trees) == 1", "BGM cannot be run on data with multiple site partitions (and trees)");
 bgm.filter_specification = alignments.DefineFiltersForPartitions (bgm.partitions_and_trees, "bgm.dataset" , "bgm.filter.", bgm.alignment_info);
 bgm.store_tree_information();
@@ -131,6 +121,8 @@ bgm.min_subs    = io.PromptUser ("\n>Select the minium number of substitutions p
 
 // FIT THE BASELINE MODEL
 
+io.ReportProgressMessageMD("bgm", "phylo", "Performing initial model fit to obtain branch lengths and rate parameters");
+
 if (bgm.run_type == "nucleotide") {
    bgm.initial_values = utility.Extend (bgm.initial_values,
                                   {
@@ -147,10 +139,35 @@ if (bgm.run_type == "nucleotide") {
 bgm.baseline_fit = estimators.FitSingleModel_Ext (
                                                       bgm.filter_names,
                                                       bgm.trees,
-                                                      bgm.substitution_model_generator ,
+                                                      bgm.baseline_model ,
                                                       bgm.initial_values,
                                                       bgm.fit_options
                                                );
+
+
+io.ReportProgressMessageMD ("bgm", "phylo", ">Fitted an alignment-wide model. " + selection.io.report_fit (bgm.baseline_fit, 0, bgm.sample_size ) +  "\n\nTotal tree lengths by partition\n");
+utility.ForEachPair (bgm.baseline_fit[terms.branch_length], "_part_", "_value_",
+'
+    io.ReportProgressMessageMD ("bgm", "phylo", "Partition " + (1+_part_) + ". " + Format (+(utility.Map (_value_, "_data_",
+    "
+        _data_ [terms.fit.MLE]
+    "))
+    ,6,3) + " subs/site."
+    )
+'
+);
+
+selection.io.json_store_lf(bgm.json, bgm.baseline_model,bgm.baseline_fit[terms.fit.log_likelihood],
+                            bgm.baseline_fit[terms.parameters],
+                            bgm.sample_size, None, 0);
+
+utility.ForEachPair (bgm.filter_specification, "_key_", "_value_",
+    'selection.io.json_store_branch_attribute(bgm.json, bgm.baseline_model, terms.branch_length, 0,
+                                     _key_,
+                                     selection.io.extract_branch_info((bgm.baseline_fit[terms.branch_length])[_key_], "selection.io.branch.length"));');
+
+
+io.ReportProgressMessageMD("bgm", "ancestral", "Performing joint ancestral state reconstruction and mapping substitutions");
 
 bgm.ancestral_cache = ancestral.build (bgm.baseline_fit[terms.likelihood_function], 0, None);
 bgm.branch_filter = utility.Filter (bgm.selected_branches[0], "_class_", "_class_ == terms.tree_attributes.test");
@@ -168,57 +185,21 @@ if (bgm.run_type != "codon") {
 }
 
 if (Abs (bgm.counts["Sites"]) <= 2) {
-
+    console.log ("###ERROR: NOT ENOUGH SUBSTITUTIONS###");
+    console.log ("\n>BGM requires at least three sites to have accumulated sufficient substitutions to run network inference");
 } else {
+    bgm.site_count (bgm.counts);
 
+    bgm.raw_results = bgm.run (bgm.counts, bgm.burnin, bgm.nsteps, bgm.nsamples, bgm.max_parents);
+    bgm.mcmc_trace = utility.Map ({1, bgm.nsamples}["_MATRIX_ELEMENT_COLUMN_"], "_index_", "bgm.raw_results[_index_][0]");
+
+
+
+    //bgm.processed_results = {
 }
 
-console.log (bgm.counts);
 
 return 0;
-
-
-// --- execution -------------------------
-
-// load and pre-process codon alignment
-namespace bgm {
-    LoadFunctionLibrary ("SelectionAnalyses/modules/shared-load-file.bf");
-    load_file ("bgm");
-}
-
-
-// fit nucleotide general time-reversible model
-// we always re-estimate branch lengths?  Can we constrain to scale?
-namespace bgm {
-    doGTR ("bgm");
-}
-
-// what does this do?
-estimators.fixSubsetOfEstimates(bgm.gtr_results, bgm.gtr_results[terms.global]);
-
-bgm.user_tree = bgm.trees["0"];
-
-namespace bgm {
-    doPartitionedMG("bgm", TRUE);  // keep LF
-}
-
-
-// --- ancestral reconstruction --------------------
-bgm.ancestors = ancestral.build (bgm.partitioned_mg_results[terms.likelihood_function], 0, None);
-
-
-bgm.code = bgm.codon_data_info[utility.getGlobalValue("terms.code")];
-
-
-
-bgm.counts = ancestral.ComputeSubstitutionCounts(
-    bgm.ancestors,
-    None,  // all branches
-    "bgm.nsfilter",  // substitution filter
-    "bgm.min_sub_filter"   // site filter (e.g., MinCount)
-);
-
-
 
 // --- BGM analysis -------------------------------
 
@@ -226,8 +207,7 @@ lfunction bgm.run (_bgm_data, burnin, nsteps, nsamples, max_parents) {
 	/* convert data to matrix form */
     nodes = {};
     num_nodes = Abs (_bgm_data["Sites"]);
-	for (k = 0; k < num_nodes; k = k+1)
-	{
+	for (k = 0; k < num_nodes; k += 1) {
 	    /* Arguments:
 	        1. node name, must be a string
 	        2. maximum number of parents
@@ -236,24 +216,19 @@ lfunction bgm.run (_bgm_data, burnin, nsteps, nsamples, max_parents) {
 	        4. number of levels - always binary in this case (substitution mapped to branch)
 	    */
 	    node_name = ""+ ((_bgm_data["Sites"])[k] + 1);
-	    nodes + add_discrete_node (node_name, max_parents, 0, 2);
+	    nodes + bgm.add_discrete_node (node_name, max_parents, 0, 2);
 	}
 
+
     BayesianGraphicalModel gen_bgm = (nodes);
-    attach_data(&gen_bgm, _bgm_data["Counts"], 0, 0, 0);
-    bgm_result = order_MCMC(&gen_bgm, nsteps, burnin, nsamples);
+    bgm.attach_data (&gen_bgm, _bgm_data["Counts"], 0, 0, 0);
+    bgm_result = bgm.order_MCMC(&gen_bgm, nsteps, burnin, nsamples);
+
+    console.log (Rows(bgm_result));
+
 	return bgm_result;
 }
 
-
-bgm.results = bgm.run (bgm.counts, bgm.burnin, bgm.nsteps, bgm.nsamples, bgm.max_parents);
-
-// --- process BGM results -------------------------------
-
-bgm.trace = {1, bgm.nsamples};  // row vector
-for (bgm.i = 0; bgm.i < bgm.nsamples; bgm.i += 1) {
-    bgm.trace[bgm.i] = bgm.results[bgm.i][0];
-}
 
 // ==== HELPER FUNCTIONS ====
 
