@@ -117,6 +117,7 @@ function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
  * @returns {Number} 0
  */
 function models.codon.MG_REV.set_branch_length(model, value, parameter) {
+
     if (model[terms.model.type] == terms.global) {
         return models.generic.SetBranchLength(model, value, parameter);
     }
