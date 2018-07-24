@@ -70,9 +70,9 @@ function load_file (prefix) {
 
         */
 
-    "`prefix`.sample_size" = codon_data_info[utility.getGlobalValue("terms.data.sites")] * codon_data_info[utility.getGlobalValue("terms.data.sequences")];
+    sample_size=codon_data_info[utility.getGlobalValue("terms.data.sites")]*codon_data_info[utility.getGlobalValue("terms.data.sequences")];
 
-    codon_data_info[utility.getGlobalValue("terms.data.sample_size")] = "`prefix`.sample_size";
+    codon_data_info[utility.getGlobalValue("terms.data.sample_size")] = sample_size;
     upper_prefix = prefix && 1; //uppercase the prefix for json name
     codon_data_info[utility.getGlobalValue("terms.json.json")] = codon_data_info[utility.getGlobalValue("terms.data.file")] + "."+upper_prefix+".json";
 
