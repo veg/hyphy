@@ -62,7 +62,15 @@ long            lastMatrixDeclared = -1,
                 dummyVariable2,
                 expressionsParsed = 0;
 
-_Parameter gammaCoeff [7] = {
+
+
+
+
+//__________________________________________________________________________________
+
+
+_Parameter _gamma (_Parameter alpha) {
+  _Parameter static gammaCoeff [7] = {
     2.50662827463100050,
     190.9551718944012,
     -216.8366818451899,
@@ -70,16 +78,209 @@ _Parameter gammaCoeff [7] = {
     -3.087513097785903,
     0.003029460875352382,
     -0.00001345152485367085
-};
+  };
+  
+  _Parameter theV = alpha >=1.0? alpha : 2.-alpha,
+  result = gammaCoeff[0],
+  temp = theV;
+  
+  for (int i = 1; i < 7; ++i , temp += 1.) {
+    result += gammaCoeff[i] / temp;
+  }
+  
+  temp = theV + 4.5;
+  result *= exp(-temp+log(temp)*(theV-.5));
+  
+  if (alpha >= 1.0) {
+    return result;
+  }
+  temp = pi_const * (1-alpha);
+  return temp / result / sin (temp);
+}
 
-_Parameter lngammaCoeff [6] = {
+  //__________________________________________________________________________________
+
+
+_Parameter _ln_gamma (_Parameter alpha) {
+  // obtained from Numerical Recipes in C, p. 214 by afyp, February 7, 2007
+
+  _Parameter static lngammaCoeff [6] = {
     76.18009172947146,
     -86.50532032941677,
     24.01409824083091,
     -1.231739572450155,
     0.1208650973866179e-2,
     -0.5395239384953e-5
-};
+  };
+  
+  
+  _Parameter  x, y, tmp, ser;
+  
+  y = x = alpha;
+  tmp = x + 5.5;
+  tmp -= (x+0.5) * log(tmp);
+  ser = 1.000000000190015;
+  
+  for (int j = 0; j < 6 ; ++j ) {
+    ser += lngammaCoeff[j] / ( y += 1. );
+  }
+  
+  return -tmp + log(2.506628274631005*ser/x);
+
+ 
+}
+
+//__________________________________________________________________________________
+
+_Parameter _ibeta (_Parameter x, _Parameter a, _Parameter b) {
+    // check ranges
+  if (x > 0. && x < 1.) { // in range
+    
+ 
+    _Parameter  aa,
+                c,
+                d,
+                del,
+                h,
+                qab,
+                qam,
+                qap,
+                FPMIN = 1e-100;
+
+    
+    bool        swap = false;
+    
+    
+    if (x >= (a+1.)/(a+b+2.)) {
+      swap = true;
+      c = b;
+      b = a;
+      a = c;
+      x = 1. - x;
+    }
+    
+    qab = a+b;
+    qap = a+1.;
+    qam = a-1.;
+    c   = 1.;
+    d   = 1. - qab*x/qap;
+    if  ((d<FPMIN)&&(d>-FPMIN)) {
+      d = FPMIN;
+    }
+    d   = 1./d;
+    h   = d;
+    
+    for (int m=1; m<100; m++) {
+      _Parameter m2 = 2*m;
+      aa = m*(b-m)*x / ((qam+m2)*(a+m2));
+      d = 1.+aa*d;
+      if  ((d<FPMIN)&&(d>-FPMIN)) {
+        d = FPMIN;
+      }
+      c = 1.+aa/c;
+      if  ((c<FPMIN)&&(c>-FPMIN)) {
+        c = FPMIN;
+      }
+      d = 1./d;
+      h*= d*c;
+      aa = -(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+      d = 1.+aa*d;
+      if  ((d<FPMIN)&&(d>-FPMIN)) {
+        d = FPMIN;
+      }
+      c = 1.+aa/c;
+      if  ((c<FPMIN)&&(c>-FPMIN)) {
+        c = FPMIN;
+      }
+      d = 1./d;
+      del = d*c;
+      h*= del;
+      del -= 1.;
+      if  ((del<1.e-14)&&(del>-1.e-14))   {
+        break;
+      }
+    }
+    
+    c = exp (a*log(x)+b*log(1.-x)+_ln_gamma(a+b)-_ln_gamma(a)-_ln_gamma(b));
+    
+    if (swap) {
+      return 1.-c*h/a;
+    } else {
+      return c*h/a;
+    }
+  }
+  
+  
+  if (x <= 0.) {
+    if ( x < 0.) {
+      ReportWarning (_String ("IBeta is defined for x in [0,1]. Had x = ") & x);
+    }
+    return 0.;
+  }
+  
+  if ( x > 1.) {
+    ReportWarning (_String ("IBeta is defined for x in [0,1]. Had x = ") & x);
+  }
+  
+  return 1.;
+}
+
+//__________________________________________________________________________________
+
+_Parameter _igamma (_Parameter a, _Parameter x) {
+  _Parameter sum = 0.;
+  if (x>1e25) {
+    x=1.e25;
+  } else if (x<0.) {
+    WarnError ("The domain of x is {x>0} for IGamma (a,x)");
+    return 0.0;
+  } else if (x==0.0) {
+    return 0.0;
+  }
+  
+  
+  _Parameter gamma = _gamma (a);
+  
+  if (x <= a + 1.) {
+      // use the series representation
+      // IGamma (a,x)=exp(-x) x^a \sum_{n=0}^{\infty} \frac{\Gamma((a)}{\Gamma(a+1+n)} x^n
+    
+    _Parameter term = 1.0/a, den = a+1.;
+    
+    for (int count = 0; fabs (term) >= fabs (sum) * machineEps && count < 500; ++ count) {
+      sum+=term;
+      term*=x/den;
+      den += 1.0;
+    }
+    
+    return sum * exp (-x + a * log (x)) / gamma;
+    
+  }
+    // use the continue fraction representation
+    // IGamma (a,x)=exp(-x) x^a 1/x+/1-a/1+/1/x+/2-a/1+/2/x+...
+  
+  _Parameter lastTerm = 0., a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
+  for (int count = 1; count<500; ++count) {
+    an = count;
+    ana = an - a;
+    a0 = (a1+a0*ana)*factor;
+    b0 = (b1+b0*ana)*factor;
+    anf = an*factor;
+    a1  = x*a0+anf*a1;
+    b1  = x*b0+anf*b1;
+    if (a1!=0.0) {
+      factor=1.0/a1;
+      sum = b1*factor;
+      if (fabs(sum-lastTerm)/sum<machineEps) {
+        break;
+      }
+      lastTerm = sum;
+    }
+  }
+  
+  return 1.0 - sum * exp (-x + a * log (x)) / gamma;
+  
+}
 
 //__________________________________________________________________________________
 _Constant::_Constant (_Parameter value)
@@ -312,369 +513,113 @@ _PMathObj _Constant::Sqrt (void) {
     return     new _Constant  (sqrt(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Arctan (void)
-{
+_PMathObj _Constant::Arctan (void) {
     return     new _Constant  (atan(theValue));
 }
 
+
 //__________________________________________________________________________________
-_PMathObj _Constant::Gamma (void)
-{
-    _Parameter theV = theValue>=1.0?theValue:2-theValue, result = gammaCoeff[0], temp = theV;
 
-    for (long i=1; i<7; i++, temp+=1.0) {
-        result+=gammaCoeff[i]/temp;
-    }
-
-    temp = theV+4.5;
-    result *= exp(-temp+log(temp)*(theV-.5));
-
-    if (theValue>=1.0) {
-        return    new _Constant  (result);
-    }
-
-    else {
-        temp = pi_const*(1-theValue);
-
-        return     new _Constant  (temp/result/sin(temp));
-    }
-    return nil;
+_PMathObj _Constant::Gamma (void) {
+  return new _Constant (_gamma (theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LnGamma (void)
-{
-    // obtained from Numerical Recipes in C, p. 214 by afyp, February 7, 2007
-    _Parameter  x, y, tmp, ser;
-
-    y = x = theValue;
-    tmp = x + 5.5;
-    tmp -= (x+0.5) * log(tmp);
-    ser = 1.000000000190015;
-
-    for (long j = 0; j <= 5; j++) {
-        ser += lngammaCoeff[j] / ++y;
-    }
-
-    return new _Constant (-tmp + log(2.506628274631005*ser/x));
+_PMathObj _Constant::LnGamma (void) {
+  return new _Constant (_ln_gamma (theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Beta (_PMathObj arg)
-{
-    if (arg->ObjectClass()!=NUMBER) {
-        WarnError ("A non-numerical argument passed to Beta(x,y)");
-        return    nil;
-    }
-    
-    _Constant xy         = _Constant (theValue + ((_Constant*)arg)->theValue);
-    
-    _Constant * lnGammaX    = (_Constant *)LnGamma(),
-              * lnGammaY    = (_Constant *)arg->LnGamma(),
-              * lnGammaXY   = (_Constant *)xy.LnGamma(),
-              * result      = new _Constant (exp (lnGammaX->theValue + lnGammaY->theValue - lnGammaXY->theValue));
-         
-    DeleteObject (lnGammaX);
-    DeleteObject (lnGammaY);
-    DeleteObject (lnGammaXY);
-    
-    return result;
+_PMathObj _Constant::Beta (_PMathObj arg) {
+    return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
+      return exp (_ln_gamma (a) + _ln_gamma (b) - _ln_gamma (a + b));
+    });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2)
-{
-    if (theValue<=0.0) {
-        if (theValue < 0.0) {
-            _String     errMsg;
-            errMsg = _String ("IBeta is defined for x betweeen 0 and 1. Had: ") & theValue;
-            ReportWarning   (errMsg);
-        }
-        return new _Constant (0.0);
-    }
-
-    if (theValue>=1.0) {
-        if (theValue>1.0) {
-            _String     errMsg;
-            errMsg = _String ("IBeta is defined for x betweeen 0 and 1. Had: ") & theValue;
-            ReportWarning   (errMsg);
-        }
-        return new _Constant (1.0);
-    }
-
-
-    if ((arg1->ObjectClass()!=NUMBER)||(arg2->ObjectClass()!=NUMBER)) {
-        _String     errMsg ("IBeta called with a non-scalar argument.");
-        WarnError   (errMsg);
-        return      nil;
-    }
-
-    _Constant        *ga = (_Constant*)arg1->LnGamma(),
-                     *gb = (_Constant*)arg2->LnGamma();
-
-    if (ga&&gb) {
-        _Constant    *ac = (_Constant*)arg1,
-                     *bc = (_Constant*)arg2;
-
-        _Parameter  a = ac->Value(),
-                    b = bc->Value(),
-                    x = theValue,
-                    aa,
-                    c,
-                    d,
-                    del,
-                    h,
-                    qab,
-                    qam,
-                    qap,
-                    FPMIN = 1e-100;
-
-        bool        swap = false;
-
-        long        m,
-                    m2;
-
-        if (x >= (a+1.)/(a+b+2.)) {
-            swap = true;
-            c = b;
-            b = a;
-            a = c;
-            x = 1. - x;
-        }
-
-        qab = a+b;
-        qap = a+1.;
-        qam = a-1.;
-        c   = 1.;
-        d   = 1. - qab*x/qap;
-        if  ((d<FPMIN)&&(d>-FPMIN)) {
-            d = FPMIN;
-        }
-        d   = 1./d;
-        h   = d;
-
-        for (m=1; m<100; m++) {
-            m2 = 2*m;
-            aa = m*(b-m)*x / ((qam+m2)*(a+m2));
-            d = 1.+aa*d;
-            if  ((d<FPMIN)&&(d>-FPMIN)) {
-                d = FPMIN;
-            }
-            c = 1.+aa/c;
-            if  ((c<FPMIN)&&(c>-FPMIN)) {
-                c = FPMIN;
-            }
-            d = 1./d;
-            h*= d*c;
-            aa = -(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
-            d = 1.+aa*d;
-            if  ((d<FPMIN)&&(d>-FPMIN)) {
-                d = FPMIN;
-            }
-            c = 1.+aa/c;
-            if  ((c<FPMIN)&&(c>-FPMIN)) {
-                c = FPMIN;
-            }
-            d = 1./d;
-            del = d*c;
-            h*= del;
-            del -= 1.;
-            if  ((del<1.e-14)&&(del>-1.e-14))   {
-                break;
-            }
-        }
-
-        _Constant   * res = new _Constant (a+b);
-        ac  = (_Constant*)res->LnGamma();
-        c   = exp (a*log(x)+b*log(1-x)+ac->Value()-ga->Value()-gb->Value());
-
-        if (swap) {
-            res->theValue = 1.-c*h/a;
-        } else {
-            res->theValue = c*h/a;
-        }
-
-        DeleteObject (ac);
-        DeleteObject (ga);
-        DeleteObject (gb);
-        return  res;
-    }
-    DeleteObject (ga);
-    DeleteObject (gb);
-    return nil;
+_PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2) {
+  return _check_type_and_compute_3 (arg1, arg2, [] (_Parameter a, _Parameter b, _Parameter c) -> _Parameter {
+    return _ibeta(a,b,c);
+  });
 }
 
 
 //__________________________________________________________________________________
-_PMathObj _Constant::IGamma (_PMathObj arg)
-{
-    if (arg->ObjectClass()!=NUMBER) {
-        _String errMsg ("A non-numerical argument passed to IGamma(a,x)");
-        WarnError (errMsg);
-        return new _Constant (0.0);
-    }
-    _Parameter x = ((_Constant*)arg)->theValue, sum=0.0;
-    if (x>1e25) {
-        x=1e25;
-    } else if (x<0) {
-        _String errMsg ("The domain of x is {x>0} for IGamma (a,x)");
-        WarnError (errMsg);
-        return new _Constant (0.0);
-    } else if (x==0.0) {
-        return new _Constant (0.0);
-    }
-
-
-    if (x<=theValue+1) // use the series representation
-        // IGamma (a,x)=exp(-x) x^a \sum_{n=0}^{\infty} \frac{\Gamma((a)}{\Gamma(a+1+n)} x^n
-    {
-        _Parameter term = 1.0/theValue, den = theValue+1;
-        long count = 0;
-        while ((fabs(term)>=fabs(sum)*machineEps)&&(count<500)) {
-            sum+=term;
-            term*=x/den;
-            den += 1.0;
-            count++;
-        }
-    } else // use the continue fraction representation
-        // IGamma (a,x)=exp(-x) x^a 1/x+/1-a/1+/1/x+/2-a/1+/2/x+...
-    {
-        _Parameter lastTerm = 0, a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
-        for (long count = 1; count<500; count++) {
-            an = count;
-            ana = an - theValue;
-            a0 = (a1+a0*ana)*factor;
-            b0 = (b1+b0*ana)*factor;
-            anf = an*factor;
-            a1  = x*a0+anf*a1;
-            b1  = x*b0+anf*b1;
-            if (a1!=0.0) {
-                factor=1.0/a1;
-                sum = b1*factor;
-                if (fabs(sum-lastTerm)/sum<machineEps) {
-                    break;
-                }
-                lastTerm = sum;
-            }
-
-        }
-    }
-    _Constant *result = (_Constant*)Gamma();
-    result->SetValue(sum*exp(-x+theValue*log(x))/result->theValue);
-    if (x>theValue+1) {
-        result->SetValue (1.0-result->theValue);
-    }
-    return result;
+_PMathObj _Constant::IGamma (_PMathObj arg) {
+  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter { return _igamma(a, b);});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Erf (void)
-{
-    _Parameter lV = theValue;
-    _Constant  half (.5), sq = (lV*lV);
-    _PMathObj  IG = half.IGamma(&sq);
-    lV = ((_Constant*)IG)->theValue;
-    if (theValue<0) {
-        lV=-lV;
+_PMathObj _Constant::Erf (void) {
+  
+    _Parameter ig = _igamma (0.5, theValue * theValue);
+    if (theValue < 0.) {
+      ig = -ig;
     }
-    ((_Constant*)IG)->SetValue(lV);
-    return (_PMathObj)IG;
+    return new _Constant (ig);
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::ZCDF (void)
-{
-    _Parameter lV = theValue;
-
-    _Constant  half (.5),
-               sq (lV*lV/2);
-
-    _PMathObj  IG = half.IGamma(&sq);
-    lV = ((_Constant*)IG)->theValue/2;
-
-    if (theValue>0) {
-        ((_Constant*)IG)->SetValue(lV+.5);
-    } else {
-        ((_Constant*)IG)->SetValue(.5-lV);
+_PMathObj _Constant::ZCDF (void) {
+    _Parameter ig = _igamma (0.5, theValue * theValue * 0.5);
+  
+    if (theValue > 0) {
+      return new _Constant (0.5 * (ig + 1.));
     }
-    return (_PMathObj)IG;
-}
+    return new _Constant (0.5 * ( 1. - ig));
+ }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Time (void)
-{
-    _Constant result;
+_PMathObj _Constant::Time (void) {
+    _Constant * result = new _Constant;
     if (theValue<1.0) {
-        result.theValue = ((_Parameter)clock()/CLOCKS_PER_SEC);
+        result->theValue = ((_Parameter)clock()/CLOCKS_PER_SEC);
     } else {
         time_t tt;
-        result.theValue = ((_Parameter)time(&tt));
+        result->theValue = ((_Parameter)time(&tt));
     }
-    return     (_PMathObj)result.makeDynamic();
+    return     result;
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Less (_PMathObj theObj)
-{
-    if (theObj) {
-        return new _Constant (theValue<((_Constant*)theObj)->theValue);
-    } else {
-        return nil;
-    }
+_PMathObj _Constant::Less (_PMathObj theObj) {
+    return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a < b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Greater (_PMathObj theObj)
-{
-    if (theObj) {
-        return new _Constant (theValue>((_Constant*)theObj)->theValue);
-    } else {
-        return nil;
-    }
+_PMathObj _Constant::Greater (_PMathObj theObj) {
+  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a > b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta)
-{
-    _Parameter x = theValue, a = ((_Constant*)alpha)->theValue,
-               b = ((_Constant*)beta)->theValue, gd = exp(a * log(b) -b*x +(a-1)*log(x));
-    _Constant * c = (_Constant*)alpha->Gamma();
-    gd/=c->theValue;
-    c->SetValue(gd);
-    return c;
+_PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta) {
+  return _check_type_and_compute_3 (alpha, beta, [] (_Parameter x, _Parameter a, _Parameter b) -> _Parameter {
+    _Parameter gamma_dist = exp(a * log(b) -b*x +(a-1.)*log(x));
+    return gamma_dist / _gamma (a);
+  });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta)
-{
-    _Parameter     arg = theValue*((_Constant*)beta)->theValue;
-    /*if (arg==0)
-    {
-        _Constant zer (0);
-        return    (_PMathObj)zer.makeDynamic();
-    }*/
-    _Constant newX (arg);
-    return alpha->IGamma( &newX);
-}
+_PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta) {
+    return _check_type_and_compute_3 (alpha, beta, [] (_Parameter x, _Parameter a, _Parameter b) -> _Parameter {
+      return _igamma (a, b * x);
+    });
+ }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::CChi2 (_PMathObj n)
-// chi^2 n d.f. probability up to x
-{
-    _Constant halfn (((_Constant*)n)->theValue*.5),
-              halfx (theValue*0.5);
-
-    if (theValue < 0. || halfn.theValue <= 0.) {
+_PMathObj _Constant::CChi2 (_PMathObj theObj) {
+    return _check_type_and_compute (theObj, [] (_Parameter x, _Parameter b) -> _Parameter {
+      if (x < 0.0 || b <= 0.) {
         ReportWarning ("CChi2(x,n) only makes sense for both arguments positive");
-        return new _Constant (0.0);
-    }
-    return halfn.IGamma( &halfx);
+        return 0.0;
+      }
+      return _igamma( b*0.5 , x * 0.5);
+    });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::InvChi2 (_PMathObj n)
+_PMathObj _Constant::InvChi2 (_PMathObj n) {
 // chi^2 n d.f. probability up to x
-{
     if (!chi2) {
         _String fla ("IGamma(_n_,_x_)");
         chi2 = new _Formula (fla, nil);
@@ -693,98 +638,67 @@ _PMathObj _Constant::InvChi2 (_PMathObj n)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LessEq (_PMathObj theObj)
-{
-    if (theObj) {
-        return new _Constant (theValue<=((_Constant*)theObj)->theValue);
-    } else {
-        return nil;
-    }
+_PMathObj _Constant::LessEq (_PMathObj arg) {
+    return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter { return a <= b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::GreaterEq (_PMathObj theObj)
-{
-    if (theObj) {
-        return new _Constant (theValue>=((_Constant*)theObj)->theValue);
-    } else {
-        return nil;
-    }
+_PMathObj _Constant::GreaterEq (_PMathObj arg) {
+  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter { return a >= b;});
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::AreEqual (_PMathObj theObj)
-{
-    if (!theObj) {
-        return nil;
-    }
-
-    _Parameter a = theValue,
-               b = ((_Constant*)theObj)->theValue;
-
+_PMathObj _Constant::AreEqual (_PMathObj arg) {
+  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
     if (a==0.0) {
-        return new _Constant (b==0.0);
+      return b==0.0;
     }
-
-    return new _Constant(fabs ((a-b)/a)<tolerance);
+    
+    return fabs ((a-b)/a)<tolerance;
+  
+  });
+  
 }
-//__________________________________________________________________________________
-_PMathObj _Constant::NotEqual (_PMathObj theObj)
-{
-    if (!theObj) {
-        return nil;
-    }
-    _Parameter   a = theValue,
-                 b = ((_Constant*)theObj)->theValue;
 
+//__________________________________________________________________________________
+_PMathObj _Constant::NotEqual (_PMathObj arg) {
+  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
     if (a==0.0) {
-        return new _Constant (b!=0.0);
+      return b!=0.0;
     }
-
-    return new _Constant(fabs ((a-b)/a)>=tolerance);
-}
-//__________________________________________________________________________________
-_PMathObj _Constant::LAnd (_PMathObj theObj)
-{
-    if (!theObj) {
-        return nil;
-    }
-    return new _Constant ((long)(theValue)&&(long)(((_Constant*)theObj)->theValue));
-}
-//__________________________________________________________________________________
-_PMathObj _Constant::LOr (_PMathObj theObj)
-{
-    if (!theObj) {
-        return nil;
-    }
-    return new _Constant ((long)(theValue)||(long)(((_Constant*)theObj)->theValue));
+    
+    return fabs ((a-b)/a)>=tolerance;
+  });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LNot ()
-{
+_PMathObj _Constant::LAnd (_PMathObj arg) {
+    return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
+      return long (a) && long (b);
+    });
+}
+
+  //__________________________________________________________________________________
+_PMathObj _Constant::LOr (_PMathObj arg) {
+  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
+    return long (a) || long (b);
+  });
+}
+
+//__________________________________________________________________________________
+_PMathObj _Constant::LNot () {
     return new _Constant (CheckEqual(theValue, 0.0));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Min (_PMathObj theObj)
-{
-    if (!theObj) {
-        return nil;
-    }
-    if (theValue<((_Constant*)theObj)->theValue) {
-        return (_PMathObj) makeDynamic();
-    }
-    return   (_PMathObj) theObj->makeDynamic();
+_PMathObj _Constant::Min (_PMathObj arg) {
+    return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
+      return a < b ? a : b;
+    });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Max (_PMathObj theObj)
-{
-    if (!theObj) {
-        return nil;
-    }
-    if (theValue>((_Constant*)theObj)->theValue) {
-        return (_PMathObj) makeDynamic();
-    }
-    return   (_PMathObj) theObj->makeDynamic();
+_PMathObj _Constant::Max (_PMathObj arg) {
+  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
+    return a > b ? a : b;
+  });
 }
