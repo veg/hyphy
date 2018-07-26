@@ -100,7 +100,7 @@ public:
     virtual     long        SetDependance               (long);
     bool        SetMDependance              (_SimpleList&);
 
-    void        Clear                       (void);
+    virtual     void        Clear                       (void);
     virtual     void        ClearConstraints            (void);
 
     long        CountIndependents           (void);
