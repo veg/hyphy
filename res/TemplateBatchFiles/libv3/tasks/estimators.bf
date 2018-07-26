@@ -103,7 +103,6 @@ lfunction estimators.GetGlobalMLE_RegExp(results, re) {
  * @returns nothing
  */
 function estimators.copyGlobals2(key2, value2) {
-
     if (Type((estimators.ExtractMLEs.results[terms.global])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
     }
@@ -730,6 +729,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 }
 
 lfunction estimators.CreateLFObject (context, data_filter, tree, model_template, initial_values, run_options, model_objects) {
+
     if (Type(data_filter) == "String") {
         return estimators.CreateLFObject (context, {
             {

@@ -624,21 +624,25 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
         return;
     }
     _PMathObj opValue = thisNodeOperation->GetANumber();
-    _String* conv = (_String*)opValue->toStr();
-    if (opValue->ObjectClass()==STRING) {
-        result<<'"';
-        result<<conv;
-        result<<'"';
-    } else {
-        if (opValue->ObjectClass() == NUMBER && opValue->Value() < 0.0) {
-            result<<'(';
+    if (opValue) {
+        _String* conv = (_String*)opValue->toStr();
+        if (opValue->ObjectClass()==STRING) {
+            result<<'"';
             result<<conv;
-            result<<')';
+            result<<'"';
         } else {
-            result<<conv;
+            if (opValue->ObjectClass() == NUMBER && opValue->Value() < 0.0) {
+                result<<'(';
+                result<<conv;
+                result<<')';
+            } else {
+                result<<conv;
+            }
         }
+        DeleteObject(conv);
+    } else {
+        result << "<null>";
     }
-    DeleteObject(conv);
 }
 //__________________________________________________________________________________
 bool     _Formula::IsEmpty(void) const {
@@ -887,7 +891,7 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     if (fa*fb<0.0) {
         fc = fb;
         c = b;
-      
+
         for (it = 0; it < MAX_BRENT_ITERATES; it++) {
             if (fb*fc>0.0) {
                 fc = fa;
@@ -927,7 +931,7 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
                     q = -q;
                 }
                 p = fabs (p);
-              
+
                 if (p<0.0) {
                     p = -p;
                 }
@@ -1292,7 +1296,7 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                 if (! cacheUpdated && nextOp->CanResultsBeCached(thisOp)) {
                      /*if (likeFuncEvalCallCount == 12733 && i == 13) {
                          _Matrix * this_matrix = (_Matrix *)LocateVar (thisOp->GetAVariable())->GetValue();
-                         
+
                          _String buffer (1024UL, true), id ("TEMP");
                          this_matrix->Serialize(buffer, id);
                          buffer.Finalize();
@@ -1764,9 +1768,9 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
     if (!theFormula.lLength) {
         return 0.0;
     }
-    
+
     long stackTop = 0;
-    
+
     for (int i=0; i<theFormula.lLength; i++) {
         _Operation* thisOp = ((_Operation*)(((BaseRef*)theFormula.lData)[i]));
         if (thisOp->theNumber) {
@@ -1800,7 +1804,7 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
                         fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d (two op function), value %g\n", i, stack[stackTop-1].value );
                     }
 #endif
-                    
+
                 } else {
                     switch (thisOp->numberOfTerms) {
                         case -2 : {
@@ -1818,7 +1822,7 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
                             theFunc = (void(*)(Ptr,_Parameter,_Parameter))thisOp->opCode;
                             if (stackTop != 2 || i != theFormula.lLength - 1) {
                                 WarnError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)");
-                                
+
                                 return 0.0;
                             }
                             //stackTop = 0;
@@ -1838,12 +1842,12 @@ _Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDa
                             ++stackTop;
                         }
                     }
-                    
+
                 }
             }
         }
     }
-    
+
     return stack[0].value;
 }
 

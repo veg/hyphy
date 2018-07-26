@@ -58,7 +58,7 @@ lfunction utility.Array1D (m) {
             return Abs (m);
         }
     }
-    return None;
+    return 0;
 }
 
 /**

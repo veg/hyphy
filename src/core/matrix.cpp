@@ -2201,7 +2201,7 @@ _Matrix::_Matrix (_String& s, bool isNumeric, _VariableContainer const* theP) {
                             _Formula*  theTerm = new _Formula (lterm, theP);
 
                             isAConstant = isAConstant && theTerm->IsAConstant() && theTerm->ObjectClass() == NUMBER;
-                          
+
                             ((_Formula**)theData)[vDim*hPos+vPos] = theTerm;
                         }
 
@@ -9471,6 +9471,8 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
                 actionFormula.GetList().AppendNewInstance(new _Operation());
                 actionFormula.GetList().AppendNewInstance(new _Operation(emptyString,-fID-1));
 
+                //fprintf (stderr, "--->Action formula = %s\n", _String ( (_String*) actionFormula.toStr()).sData);
+
                 if (fID2 >= 0) {
                     testFormula.GetList().AppendNewInstance(new _Operation());
                     testFormula.GetList().AppendNewInstance(new _Operation(emptyString,-fID2-1));
@@ -9485,7 +9487,8 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
                 while (cn >= 0) {
                     _String* aKey = ((_String**)avl.dataList->lData)[cn];
                     if (aKey) {
-                        DeleteObject (fKey->theString);
+                       //fprintf (stderr, "[loop start] fKey instance check %ld (at key %s)\n", fKey->nInstances, aKey->sData);
+                       DeleteObject (fKey->theString);
                         fKey->theString = (_String*)aKey->toStr();
                         if (fID2 >= 0) {
                             ((_Operation**)testFormula.GetList().lData)[0]->SetNumber(fKey);
@@ -9499,6 +9502,7 @@ _PMathObj _AssociativeList::MIterator (_PMathObj p, _PMathObj p2)
                         actionFormula.Compute();
                         done ++;
                     }
+                    //fprintf (stderr, "[loop end] fKey instance check %ld (at key %s)\n", fKey->nInstances, aKey ? fKey->theString->sData : "Empty");
                     cn = avl.Traverser (hist,ls);
                 }
                 DeleteObject (fKey);

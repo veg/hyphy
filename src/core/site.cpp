@@ -1205,7 +1205,7 @@ void     _DataSet::ConvertRepresentations (void)
         _List horStrings;
 
         if (lLength == 0) {
-            AppendNewInstance (new _Site);
+            AppendNewInstance (new _String (128UL, true));
         } else {
             _Site * aSite = (_Site*)lData[0];
 

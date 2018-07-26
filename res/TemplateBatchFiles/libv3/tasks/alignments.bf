@@ -408,6 +408,8 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
     part_count = utility.Array1D(partitions);
     filters = {};
     if (utility.CheckKey(data_info, utility.getGlobalValue("terms.code"), "Matrix")) {
+
+
         for (i = 0; i < part_count; i += 1) {
             this_filter = {};
             DataSetFilter test = CreateFilter( ^ source_data, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
@@ -424,6 +426,7 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
 
     } else {
         for (i = 0; i < part_count; i += 1) {
+
             this_filter = {};
             this_filter[utility.getGlobalValue("terms.data.name")] = prefix + (partitions[i])[utility.getGlobalValue("terms.data.name")];
             DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ source_data, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
@@ -554,29 +557,29 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
  * @param {Dictionary} code - genetic code description (e.g. returned by alignments.LoadGeneticCode)
  * @param {lookup} code - resolution lookup dictionary
  * @returns {Dict} for each reading frame F in {0, 1, 2} returns
- 
+
         F -> {
             terms.data.sequence: translated sequence (always choose X if available, otherwise first sense resolution)
             terms.sense_codons : N, // number of sense A/A
             terms.stop_codons : N // number of stop codons
         }
  */
- 
+
  lfunction alignments.TranslateCodonsToAminoAcidsWithAmbigsAllFrames (sequence, code, lookup) {
-        
+
     result = {};
-    
-    
+
+
     for (frame = 0; frame < 3; frame += 1) {
         try_run = alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, frame, code, lookup);
-        
+
         translation = ""; translation * 128;
-        
+
         frame_result = {utility.getGlobalValue ("terms.sense_codons") : 0,
                         utility.getGlobalValue ("terms.stop_codons") : 0
                         };
-                        
-        upper_bound = Abs (try_run); 
+
+        upper_bound = Abs (try_run);
         for (i = 0; i < upper_bound; i+=1) {
             if (try_run[i] / "X") { // has_stop
                 translation * "X";
@@ -586,8 +589,8 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
                 frame_result [^"terms.sense_codons"] += 1;
             }
         }
-                        
-        
+
+
         translation * 0;
         frame_result [utility.getGlobalValue ("terms.data.sequence")] = translation;
         result[frame] = frame_result;
@@ -595,7 +598,7 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
 
 	return result;
 }
- 
+
 
 /**
  * @name alignments.MapAlignmentToReferenceCoordinates
@@ -771,26 +774,26 @@ lfunction alignments.StripGaps (sequence) {
 /**
  * @name alignments.alignment.MapCodonsToAA
  * Map in-frame nucleotides onto a protein alignment string
- 
+
  * @param {String} codon_sequence - the codon sequence to map
- * @param {String} aa_sequence - the matching aligned a.a. sequence 
+ * @param {String} aa_sequence - the matching aligned a.a. sequence
  * @param {Number} no more than this many mismatches - the codon sequence to map
  * @param {Dict} mapping - code ["terms.code.mapping"]
- 
+
  * @returns {String} the mapped sequence
- 
- * @example 
+
+ * @example
     GCAAAATCATTAGGGACTATGGAAAACAGA
     -AKSLGTMEN-R
-    
-    maps to 
-    
+
+    maps to
+
     ---GCAAAATCATTAGGGACTATGGAAAAC---AGA
 
  */
 
 lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, mapping) {
-    
+
     seqLen = Abs(aa_sequence);
     translString = "";
     translString * (seqLen);
@@ -800,13 +803,13 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
     seqPos = 0;
     codon = codon_sequence[seqPos][seqPos + 2];
     currentAA = mapping[codon];
-    
+
     mismatch_count = 0;
 
     for (aaPos = 0; aaPos < seqLen && seqPos < seqLenN; aaPos += 1) {
         advance = 1;
         copy_codon = 1;
-                
+
         if (currentAA != 0) {
             if (aa_sequence[aaPos] == "-") {
                 //if (currentAA != "X") {
@@ -849,11 +852,11 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
             currentAA = mapping[codon];
         }
     }
-    
+
     for (; aaPos < seqLen; aaPos += 1) {
         translString * "---";
     }
-    
+
 
     translString * 0;
     return translString;

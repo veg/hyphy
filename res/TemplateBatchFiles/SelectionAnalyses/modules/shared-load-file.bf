@@ -132,7 +132,6 @@ function load_file (prefix) {
 
     io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + codon_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
 
-
     if (utility.Has (settings, utility.getGlobalValue("terms.settings.branch_selector"), "String")) {
         selected_branches =  Call (settings[utility.getGlobalValue("terms.settings.branch_selector")], partitions_and_trees);
     } else {
@@ -238,6 +237,8 @@ function store_tree_information () {
     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.partitions"),
                                                          filter_specification);
      trees = utility.Map (partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
+
+
      filter_names = utility.Map (filter_specification, "_partition_", '_partition_[terms.data.name]');
 
      /* Store original name mapping */

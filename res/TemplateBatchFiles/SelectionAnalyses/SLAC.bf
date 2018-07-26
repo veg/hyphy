@@ -19,6 +19,7 @@ LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
 
+
 /*------------------------------------------------------------------------------
     Display analysis information
 */
@@ -111,12 +112,11 @@ slac.table_headers = {{"ES", "Expected synonymous sites"}
 slac.table_screen_output = {{"Codon", "Partition", "S", "N", "dS", "dN", "Selection detected?"}};
 slac.table_output_options =  {terms.table_options.header : TRUE, terms.table_options.minimum_column_width : 16, terms.table_options.align : "center"};
 
+
 namespace slac {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("slac");
 }
-
-
 
 slac.samples = io.PromptUser ("\n>Select the number of samples used to assess ancestral reconstruction uncertainty [select 0 to skip]",100,0,100000,TRUE);
 slac.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
@@ -132,6 +132,8 @@ selection.io.startTimer (slac.json [terms.json.timers], "Model fitting",1 );
 namespace slac {
     doGTR ("slac");
 }
+
+
 estimators.fixSubsetOfEstimates(slac.gtr_results, slac.gtr_results[terms.global]);
 
 namespace slac {
