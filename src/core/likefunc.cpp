@@ -1786,7 +1786,9 @@ bool    _LikelihoodFunction::PreCompute         (void)
 
     for (; i < arrayToCheck->lLength; i++) {
         _Variable* cornholio = LocateVar(arrayToCheck->lData[i]);
-        if (!cornholio->IsValueInBounds(((_Constant*) cornholio->Compute())->Value())){
+        _Parameter tp = cornholio->Compute()->Value();
+        if (!cornholio->IsValueInBounds(tp)){
+            ReportWarning (_String ("Failing bound checks on ") & *cornholio->GetName() & " = " & _String (tp, "%25.16g"));
             break;
         }
     }
@@ -2691,9 +2693,10 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
 
         subNumericValues = 0;
         DeleteObject             (cStr);
+      
+        _TerminateAndDump(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
+                        & badX);
 
-        WarnError(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
-                  & badX);
 
     }
 }
@@ -5923,7 +5926,8 @@ _Parameter    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precisio
                 if (optimizatonHistory) {
                     ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
                 }
-                WarnError (errorStr);
+                _TerminateAndDump (errorStr);
+                //WarnError (errorStr);
                 return check_value;
             }
             //return;

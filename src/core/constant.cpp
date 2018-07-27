@@ -392,6 +392,9 @@ _PMathObj _Constant::longDiv (_PMathObj theObj) {
 _PMathObj _Constant::Raise (_PMathObj theObj) {
   return _check_type_and_compute (theObj, [] (_Parameter base, _Parameter expon) -> _Parameter {
     if (base>0.0) {
+      if (expon == 1.) {
+        return base;
+      }
       return    exp (log(base)*(expon));
     } else {
       if (base<0.0) {

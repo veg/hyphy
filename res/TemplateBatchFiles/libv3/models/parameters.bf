@@ -363,6 +363,25 @@ lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
 }
 
 /**
+ * @name parameters.GetRange
+ * @param id
+ * @returns variable range
+ */
+lfunction parameters.GetRange(id) {
+
+    if (Type(id) == "String") {
+        GetInformation (range, ^id, 0);
+        return  {
+            ^"terms.lower_bound" : range[1],
+            ^"terms.upper_bound" : range[2]
+        };
+    }
+    io.ReportAnExecutionError ("An invalid combination of parameters was passed to parameters.GetRange. ID = " + id);
+    return None;
+}
+
+
+/**
  * @name parameters.SetRange
  * @param id
  * @param ranges
@@ -542,7 +561,6 @@ function parameters.helper.copy_definitions(target, source) {
 lfunction parameters.SetStickBreakingDistribution (parameters, values) {
     rate_count = Rows (values);
     left_over  = 1;
-
 
     for (i = 0; i < rate_count; i += 1) {
 

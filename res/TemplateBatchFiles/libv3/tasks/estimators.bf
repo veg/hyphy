@@ -965,8 +965,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         None);
 
 
-
-    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
 
     df = 0;
     model_assignment = {

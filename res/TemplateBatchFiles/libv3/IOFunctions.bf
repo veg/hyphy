@@ -709,13 +709,17 @@ lfunction io.SelectAnOption  (options, description) {
                 option_set [k][1] = options[keys[k]];
             }
         }
+
         ChoiceList  (selection,description,1,NO_SKIP,option_set);
+
         if (selection >= 0) {
             return option_set[selection][0];
+        } else {
+            selection = None;
         }
    }
-    assert (None != selection, "Selection canceled");
-    return None;
+   assert (None != selection, "Selection canceled");
+   return None;
 }
 
 /**
