@@ -20,9 +20,9 @@ macro(PCL_CHECK_FOR_SSE3)
   include(CheckCXXSourceRuns)
   set(CMAKE_REQUIRED_FLAGS)
 
-  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       set(CMAKE_REQUIRED_FLAGS "-msse3")
-  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
   check_cxx_source_runs("
       #include <pmmintrin.h>
@@ -46,9 +46,9 @@ macro(PCL_CHECK_FOR_AVX)
   include(CheckCXXSourceRuns)
   set(CMAKE_REQUIRED_FLAGS)
 
-  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       set(CMAKE_REQUIRED_FLAGS "-march=corei7-avx -mtune=corei7-avx")
-  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
   check_cxx_source_runs("
       #include <immintrin.h>
@@ -70,6 +70,7 @@ endmacro(PCL_CHECK_FOR_AVX)
 #-------------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH cmake)
 set(HYPHY_VERSION 2.1)
+
 
 #-------------------------------------------------------------------------------
 # setup the files we'll be using
@@ -94,7 +95,6 @@ set(DEFAULT_WARNING_FLAGS "-w")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
 
-
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     execute_process(
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
@@ -106,9 +106,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif()
 
     if(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -g -std=gnu++14")
     else(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -g")
     endif(${GCC_VERSION} VERSION_LESS 6.0)
 
     if(NOAVX)
@@ -141,16 +141,16 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -g")
     PCL_CHECK_FOR_AVX()
     if(${HAVE_AVX_EXTENSIONS})
-        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
+        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx ")
         add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
     else(${HAVE_AVX_EXTENSIONS})
         PCL_CHECK_FOR_SSE3()
         if(${HAVE_SSE3_EXTENSIONS})
             add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 -g")
         endif(${HAVE_SSE3_EXTENSIONS})
     endif (${HAVE_AVX_EXTENSIONS})
 
@@ -174,6 +174,14 @@ endif(NOT DEFINED DEFAULT_LINK_FLAGS)
 if(NOT DEFINED DEFAULT_WARNING_FLAGS)
     set(DEFAULT_WARNING_FLAGS "")
 endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
+
+include (CheckLibraryExists)
+
+CHECK_LIBRARY_EXISTS( "libamdlibm.so" "amd_log" "" HAS_AMD_LIBM)
+if(HAS_AMD_LIBM)
+    set(DEFAULT_LINK_FLAGS "${DEFAULT_LINK_FLAGS} -lamdlibm")
+    add_definitions(-D__USEAMDLOG__)
+endif(HAS_AMD_LIBM)
 
 
 #-------------------------------------------------------------------------------

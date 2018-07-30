@@ -170,7 +170,7 @@ public:
     // 4 - category variables
 
 
-    _Parameter  GetIthIndependent           (long) const;     // get the value of i-th independent variable
+    _Parameter  GetIthIndependent           (long, bool = true) const;     // get the value of i-th independent variable
     const _String*  GetIthIndependentName           (long) const;     // get the name of i-th independent variable
     _Parameter  GetIthDependent             (long) const;     // get the value of i-th dependent variable
     void        GetAllIndependent           (_Matrix&) const; // store all indepenent values in a matrix
@@ -259,7 +259,7 @@ public:
     long        SequenceCount           (long);
     unsigned long        SiteCount               (void) const;
     void        Rebuild                 (bool = false);
-    void        SerializeLF             (_String&, char=0, _SimpleList* = nil, _SimpleList* = nil);
+    virtual void        SerializeLF             (_String&, char=0, _SimpleList* = nil, _SimpleList* = nil);
     _Formula*   HasComputingTemplate    (void) const{
         return computingTemplate;
     }
@@ -374,7 +374,7 @@ protected:
     (_Parameter , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, _Parameter check_lf = A_LARGE_NUMBER);
 
     _Parameter      SetParametersAndCompute
-    (long, _Parameter, _Matrix* = nil, _Matrix* = nil);
+    (long, _Parameter, _Matrix* = nil, _Matrix* = nil, bool skip_compute = false);
 
     long            CostOfPath            (_DataSetFilter const*, _TheTree const* , _SimpleList&, _SimpleList* = nil) const;
 
@@ -414,7 +414,7 @@ protected:
 
 protected:
 
-
+    void            _TerminateAndDump           (const _String& error);
     void            ComputeParameterPenalty     (void);
     
     
@@ -425,7 +425,7 @@ protected:
     void            ComputeBlockInt1            (long,_Parameter&,_TheTree*,_DataSetFilter*, char);
     void            CheckStep                   (_Parameter&, _Matrix, _Matrix* selection = nil);
     void            GetGradientStepBound        (_Matrix&, _Parameter &, _Parameter &, long* = nil);
-    void            ComputeGradient             (_Matrix&, _Matrix&,  _Parameter&, _Matrix&, _SimpleList&,
+    void            ComputeGradient             (_Matrix&,  _Parameter&, _Matrix&, _SimpleList&,
             long, bool normalize = true);
     bool            SniffAround                 (_Matrix& , _Parameter& , _Parameter&);
     void            RecurseCategory             (long,long,long,long,_Parameter
@@ -710,9 +710,9 @@ public:
 
     virtual     _Parameter  Compute                 (void);
     virtual     void        RescanAllVariables      (void) {}
-
-
-
+    virtual void            SerializeLF             (_String& res, char=0, _SimpleList* = nil, _SimpleList* = nil) {
+        res.AppendNewInstance ((_String*)myBody.toStr());
+    }
     _Formula myBody;
 };
 

@@ -254,7 +254,6 @@ if (utility.Has (fubar.cache, terms.fubar.cache.grid, "Matrix") && utility.Has (
     estimators.ApplyExistingEstimates  ("fubar.lf.codon", fubar.model_id_to_object, fubar.gtr_results, None);
     estimators.TraverseLocalParameters ("fubar.lf.codon", fubar.model_id_to_object, "fubar.scalers.Constrain");
 
-
     fubar.pass1 = Max (fubar.ComputeOnGrid  ("fubar.lf.codon",
                          fubar.grid.MatrixToDict (fubar.grid.matrix),
                         "fubar.pass1.evaluator",
@@ -721,6 +720,7 @@ lfunction fubar.scalers.SetBranchLength (model, value, parameter) {
     parameters.RemoveConstraint (beta);
     parameters.SetValue ("`parameter`.`alpha`", s);
     parameters.SetValue ("`parameter`.`beta`", ^beta);
+    return 1;
 }
 
 //------------------------------------------------------------------------------

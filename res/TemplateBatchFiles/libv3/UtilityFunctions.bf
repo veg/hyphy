@@ -58,7 +58,7 @@ lfunction utility.Array1D (m) {
             return Abs (m);
         }
     }
-    return None;
+    return 0;
 }
 
 /**
@@ -575,6 +575,7 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
 
     Eval ("`key_name` = None");
     Eval ("`value_name` = None");
+
 
     if (Type (object) == "AssociativeList") {
         utility.ForEachPair.keys = Rows (object);

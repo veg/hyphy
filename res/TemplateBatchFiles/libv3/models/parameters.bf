@@ -363,13 +363,32 @@ lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
 }
 
 /**
+ * @name parameters.GetRange
+ * @param id
+ * @returns variable range
+ */
+lfunction parameters.GetRange(id) {
+
+    if (Type(id) == "String") {
+        GetInformation (range, ^id, 0);
+        return  {
+            ^"terms.lower_bound" : range[1],
+            ^"terms.upper_bound" : range[2]
+        };
+    }
+    io.ReportAnExecutionError ("An invalid combination of parameters was passed to parameters.GetRange. ID = " + id);
+    return None;
+}
+
+
+/**
  * @name parameters.SetRange
  * @param id
  * @param ranges
  * @returns nothing
  */
-function parameters.SetRange(id, ranges) {    
-    
+function parameters.SetRange(id, ranges) {
+
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {
@@ -543,9 +562,8 @@ lfunction parameters.SetStickBreakingDistribution (parameters, values) {
     rate_count = Rows (values);
     left_over  = 1;
 
-
     for (i = 0; i < rate_count; i += 1) {
-        
+
         parameters.SetValue ((parameters["rates"])[i], values[i][0]);
         if (i < rate_count - 1) {
             break_here = values[i][1] / left_over;
@@ -642,8 +660,14 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
     for (i = 0; i < components; i += 1) {
         this_component = {};
-        utility.ForEachPair((dict[i])[ utility.getGlobalValue("terms.branch_length")], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {utility.getGlobalValue('terms.fit.MLE') : `&factor`*_branch_length_}");
+
+
+        utility.ForEachPair((dict[i])[ utility.getGlobalValue("terms.branch_length")], "_branch_name_", "_branch_length_",
+            "
+            `&this_component`[_branch_name_] = {utility.getGlobalValue('terms.fit.MLE') : `&factor`*_branch_length_}
+         ");
         result[i] = this_component;
+
     }
 
     return { utility.getGlobalValue("terms.branch_length"): result

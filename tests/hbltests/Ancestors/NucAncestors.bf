@@ -153,14 +153,17 @@ GetDataInfo 	(_marginalFilterSiteToPatternMap, _marginalAncestorsFilter);
 _idx_3 = 0;
 for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 {
+    GetString (name, _marginalAncestors, _idx_1);
+    fprintf (stdout, name, "\n");
 	for (_idx_2 = 0; _idx_2 < _marginalAncestorsFilter.sites; _idx_2 = _idx_2 + 1)
 	{
 		_patternIndex 				 = _marginalFilterSiteToPatternMap[_idx_2];
 		_marginalInformation[_idx_3] = _marginalAncestors.marginal_support_matrix[{{_idx_1,_patternIndex*_characterDimension}}][{{_idx_1,(1+_patternIndex)*_characterDimension-1}}];
 		_idx_3 						 = _idx_3+1;
 	}
-
 }
+
+fprintf (stdout, _marginalAncestors.marginal_support_matrix, "\n");
 
 _outputCSV = ""; _outputCSV * 2048;
 _outputCSV * "Sequence,Site,ML Joint";
@@ -220,7 +223,7 @@ for (_idx_1 = 0; _idx_1 < _marginalAncestorsFilter.species; _idx_1 = _idx_1 + 1)
 
 _outputCSV * 0;
 
-fprintf ("../spool/nuc_ancestors.csv", CLEAR_FILE, _outputCSV);
+fprintf ("../data/nuc_ancestors.csv", CLEAR_FILE, _outputCSV);
 
 return 0;
 

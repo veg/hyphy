@@ -7,7 +7,7 @@ Core Developers:
   Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
   Art FY Poon    (apoon@cfenet.ubc.ca)
   Steven Weaver (sweaver@temple.edu)
-  
+
 Module Developers:
 	Lance Hepler (nlhepler@gmail.com)
 	Martin Smith (martin.audacis@gmail.com)
@@ -57,12 +57,12 @@ void    _LikelihoodFunction::DetermineLocalUpdatePolicy (void)
 {
     for (unsigned long k = 0; k < theTrees.lLength; k ++) {
         unsigned long catCount = ((_TheTree*)LocateVar(theTrees(k)))->categoryCount;
-        
+
         _List * lup = new _List,
               * mte = new _List;
 
         computedLocalUpdatePolicy.AppendNewInstance (new _SimpleList (catCount,0,0));
-        
+
         for (unsigned long l = 0; l < catCount; l++) {
             lup->AppendNewInstance (new _SimpleList);
             mte->AppendNewInstance (new _List);
@@ -86,10 +86,10 @@ void    _LikelihoodFunction::ComputeParameterPenalty (void){
                    mp = 0.5*(lb+ub),
                    span = ub-lb,
                    v  = GetIthIndependent(k);
-                   
+
        _Parameter term = exp (50*log (2.*fabs (v-mp)/span));
        /*if (term > 0.0) {
-        printf ("\n[_LikelihoodFunction::ComputeParameterPenalty %lu: %g %g %g %g]\n", k, lb, ub, v, term); 
+        printf ("\n[_LikelihoodFunction::ComputeParameterPenalty %lu: %g %g %g %g]\n", k, lb, ub, v, term);
        }*/
        smoothingPenalty += term;
         // (2.*(v-mp)/span)^50
@@ -140,7 +140,7 @@ long            _LikelihoodFunction::TotalRateClassesForAPartition    (long part
             }
           }
         return hmmCats;
-        
+
       }
     }
   } else if (partIndex < 0) {
@@ -188,7 +188,7 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
                               hmmCatCount      = 1L,
                               catVarFlags      = 0L,
                               varIndex;
-            
+
             try {
 
                 for ( varIndex = 0; varIndex < myCats.lLength; varIndex++) {
@@ -222,7 +222,7 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
 
                 if (varIndex <  myCats.lLength) {
                     throw ("Currently, HyPhy can support at most one HMM or Constant on Partition variable per partition");
-                    
+
                 }
 
                 (*catVarCounts) << totalCatCount;
@@ -254,7 +254,7 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
                 BatchDelete (catVarReferences,catVarCounts,catVarOffsets,hmmAndCOP,varType,container);
                 WarnError (error);
                 return;
-                
+
             }
         }
 
@@ -283,7 +283,7 @@ void    _LikelihoodFunction::RestoreScalingFactors (long index, long branchID, l
 
 bool    _LikelihoodFunction::ProcessPartitionList (_SimpleList& partsToDo, _Matrix* partitionList, _String const & caller) const {
     long    partCount = CountObjects(kLFCountPartitions);
-  
+
     if (partitionList) {
         partitionList->ConvertToSimpleList (partsToDo);
         partsToDo.Sort();
@@ -420,7 +420,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
 
 
         _String * sampledString = (_String*)thisSet->GetItem(0);
- 
+
         for (long siteIdx = 0; siteIdx<sampledString->sLength; siteIdx++) {
             target.AddSite (sampledString->sData[siteIdx]);
         }
@@ -637,7 +637,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
             if (runMode == _hyphyLFConditionProbsRawMatrixMode || runMode == _hyphyLFConditionProbsScaledMatrixMode)
                 // populate the matrix of conditionals and scaling factors
             {
-                _Parameter  _hprestrict_ *bufferForThisCategory = buffer + indexShifter;
+                _Parameter  * _hprestrict_  bufferForThisCategory = buffer + indexShifter;
 
                 ComputeBlock    (index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
                 if (usedCachedResults) {
@@ -719,7 +719,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                         for (long r1 = lowerBound, r2 = lowerBound2; r1 < upperBound; r1++,r2++) {
                             if (siteCorrectors) {
                                 long scv = *siteCorrectors;
-                                
+
                                 if (currentRateCombo == 0L) { // first entry
                                     buffer[r1] = currentRateWeight * buffer[r2];
                                     scalers.lData[r1] = scv;
@@ -735,7 +735,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                                         }
                                     }
                                 }
-                                
+
                                 siteCorrectors++;
                             } else {
                                 buffer[r1] += currentRateWeight * buffer[r2];
@@ -820,7 +820,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 {
 
     _DataSetFilter const* dsf       = GetIthFilter(index);
-  
+
     _TheTree        *blockTree      = (_TheTree*)LocateVar(theTrees.lData[index]);
 
     long            patternCount                    = dsf->GetPatternCount  (),
@@ -1199,7 +1199,7 @@ void _LikelihoodFunction::SetupParameterMapping (void)
     if (smoothingReduction <= 0.0 || smoothingReduction >= 1.0) {
       smoothingReduction = 0.8;
     }
-    
+
 
     for (unsigned long pIndex = 0; pIndex < indexInd.lLength; pIndex++) {
         _Variable* cv        = GetIthIndependentVar(pIndex);
@@ -1276,8 +1276,8 @@ _Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Paramet
             WarnError ("Constant-on-partition categories are currently not supported by the evaluation engine");
         } else {
             for (unsigned long patternID = 0UL; patternID < pattern_count; patternID++) {
-                
-                
+
+
                 long patternFrequency = index_filter->GetFrequency(patternID);
                 if (patternFrequency > 1) {
                     logL             += myLog(patternLikelihoods[patternID])*patternFrequency;
@@ -1321,11 +1321,11 @@ _Parameter _LikelihoodFunction::SumUpSiteLikelihoods (long index, const _Paramet
 _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
     _AssociativeList * result = new _AssociativeList;
 
-  
+
     _List               model_list,
                         filter_list,
                         frequency_list;
-  
+
     _SimpleList         aux_list;
 
     InsertVarIDsInList (result, "Categories", GetCategoryVars ());
@@ -1347,10 +1347,10 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
         aux_list << ith_tree->GetAVariable();
         filter_list    < new _String (*GetIthFilterName      (component));
         frequency_list < new _String (*GetIthFrequenciesName (component));
-      
+
         _SimpleList component_models;
         ith_tree->CompileListOfModels(component_models);
-      
+
         if (component_models.lLength == 1UL) {
             model_list << modelNames (component_models(0));
         } else {
@@ -1359,10 +1359,10 @@ _AssociativeList* _LikelihoodFunction::CollectLFAttributes (void) const {
     }
     InsertVarIDsInList (result, "Trees", aux_list);
     InsertStringListIntoAVL     (result, "Models", _SimpleList (model_list.lLength,0,1), model_list);
-  
+
     aux_list.Clear();
     aux_list.Populate (partition_count, 0, 1);
-  
+
     InsertStringListIntoAVL (result, "Datafilters", aux_list, filter_list);
     InsertStringListIntoAVL      (result, "Base frequencies", aux_list, frequency_list);
 
@@ -1378,7 +1378,7 @@ void _LikelihoodFunction::UpdateBlockResult (long index, _Parameter new_value) {
     while (computationalResults.GetUsed() <= index) {
         computationalResults.Store (0.0);
     }
-    
+
     computationalResults.theData[index] = new_value;
 }
 

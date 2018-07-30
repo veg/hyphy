@@ -1,0 +1,12 @@
+
+LoadFunctionLibrary ("BGM.bf", {"0" : "nucleotide", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "All", "3": "1e5", "4": "1e4", "5": "100", "6" : "1", "7" : "4"});
+assert (Abs (bgm.report.pairs_found) == 3, "Expected to find three interacting pairs for nucleotide data");
+
+LoadFunctionLibrary ("BGM.bf", {"0" : "nucleotide", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "All", "3": "1e5", "4": "1e4", "5": "100", "6" : "1", "7" : "5"});
+assert (utility.Has (bgm.json,terms.fit.MLE,"AssociativeArray") == FALSE, "Expected to find no results when filtering threshold is too high");
+
+LoadFunctionLibrary ("BGM.bf", {"0" : "amino-acid", "1" : PATH_TO_CURRENT_BF + "data/CD2.prot", "2" : "JTT", "3" : "All", "4": "1e5", "5": "1e4", "6": "100", "7" : "1", "8" : "4"});
+assert (Abs (bgm.report.pairs_found) >= 5, "Expected to find five or more interacting pairs for protein data");
+
+LoadFunctionLibrary ("BGM.bf", {"0" : "codon", "2" : PATH_TO_CURRENT_BF + "data/CD2.nex", "1" : "Universal", "3" : "All", "4": "1e5", "5": "1e4", "6": "100", "7" : "1", "8" : "5"});
+assert (Abs (bgm.report.pairs_found) >= 4, "Expected to find four or more interacting pairs for codon data");

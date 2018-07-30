@@ -427,21 +427,8 @@ void    _CalcNode::SetCompMatrix (long categID)
 
 //_______________________________________________________________________________________________
 
-_CalcNode::~_CalcNode (void)
-{
-
-#ifndef __HYALTIVEC__
-    if (theProbs) {
-        delete [] theProbs;
-    }
-#else
-    if (theProbs) {
-        vec_free(theProbs);
-    }
-#endif
-    if (compExp && referenceNode < 0) {
-        DeleteObject (compExp);
-    }
+_CalcNode::~_CalcNode (void) {
+    Clear();
 }
 
 //_______________________________________________________________________________________________
@@ -457,23 +444,26 @@ long    _CalcNode::FreeUpMemory (long)
     return res;
 }
 
+//_______________________________________________________________________________________________
+
+void _CalcNode::Clear (void) {
+  if (compExp && referenceNode < 0) {
+    DeleteAndZeroObject(compExp);
+  }
+  if (theProbs) {
+    delete [] theProbs;
+    theProbs = nil;
+  }
+  _VariableContainer::Clear();
+}
+
 //__________________________________________________________________________________
 
-void _CalcNode::RemoveModel (void)
-{
-  
-    if (compExp && referenceNode < 0) {
-        DeleteAndZeroObject(compExp);
-        compExp = nil;
-    }
-  
-    if (matrixCache) {
-    }
+void _CalcNode::RemoveModel (void) {
 
     categoryVariables.Clear();
     categoryIndexVars.Clear();
     remapMyCategories.Clear();
-
     Clear();
 
 }
@@ -1143,7 +1133,7 @@ void    _TheTree::PreTreeConstructor (bool)
 
     aCache                  = new _AVLListXL (new _SimpleList);
 
-    convertedMatrixExpressionsL.ClearFormulasInList();
+    convertedMatrixExpressions.ClearFormulasInList();
     convertedMatrixExpressions.Clear();
 
     getINodePrefix();
@@ -1170,7 +1160,7 @@ void    _TheTree::PostTreeConstructor (bool dupMe)
     DeleteObject (aCache);
     aCache = nil;
 
-    convertedMatrixExpressionsL.ClearFormulasInList();
+    convertedMatrixExpressions.ClearFormulasInList();
     convertedMatrixExpressions.Clear();
 
     while (theRoot->get_num_nodes() == 1) { // dumb tree w/ an extra top level node
@@ -1778,8 +1768,8 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
                             for (unsigned long cc = 0; cc < cNt.categoryVariables.lLength; cc++) {
                                 _CategoryVariable * thisCC = (_CategoryVariable *)LocateVar(cNt.categoryVariables.lData[cc]);
                                 thisCC -> SetValue (new _Constant(thisCC->Mean()), false);
-
                             }
+                            convertedMatrixExpressions.Insert ((BaseRef)nodeModelID, (long)expressionToSolveFor, false, false);
                         }
                         DeleteObject (result);
                     } else {
@@ -6386,12 +6376,17 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
             }
             vecPointer += cBase;
         }
+        
+        // TODO SLKP 20180703: ugly fix for underflow which WON'T work if category count > 1
 
         for (long iNodeCount = 0L; iNodeCount < flatTree.lLength - 1; iNodeCount++) {
             node<long>* thisINode       = (node<long>*)flatNodes.lData[iNodeCount];
           
+            _Parameter sum = 0.;
+            
             for (long cc = 0; cc < cBase; cc++) {
                 _Parameter      tmp = 1.0;
+                
                 for (long nc = 0; nc < thisINode->nodes.length; nc++) {
                     _Parameter  tmp2 = 0.0;
                     _CalcNode   * child         = map_node_to_calcnode(thisINode->go_down(nc+1));
@@ -6405,8 +6400,17 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
                     tmp *= tmp2;
                 }
                 vecPointer[cc] = tmp;
+                sum += tmp;
             }
+            
+            if (sum < _lfScalingFactorThreshold && sum > 0.0) {
+                for (long cc = 0; cc < cBase; cc++) {
+                    vecPointer[cc] *= _lfScalerUpwards;
+                }
+            }
+            
             vecPointer += cBase;
+            
         }
         RecoverNodeSupportStates2 (&GetRoot(),currentStateVector+globalShifter,currentStateVector,categoryCount>1?catCount:(-1));
     }
@@ -6425,7 +6429,8 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* 
 
     if (thisNode->parent) {
         if (thisNode->parent->parent) {
-            for (long cc = 0; cc < cBase; cc++,vecPointer++) {
+            _Parameter sum = 0.;
+            for (long cc = 0; cc < cBase; cc++) {
                 _Parameter tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
                     _Parameter  tmp2            = 0.0;
@@ -6445,8 +6450,15 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, _Parameter* 
 
                     tmp *= tmp2;
                 }
-                *vecPointer = tmp;
+                vecPointer[cc] = tmp;
+                sum += tmp;
             }
+            if (sum < _lfScalingFactorThreshold && sum > 0.0) {
+                for (long cc = 0; cc < cBase; cc++) {
+                    vecPointer[cc] *= _lfScalerUpwards;
+                }
+            }
+            vecPointer += cBase;
         } else {
             for (long cc = 0; cc < cBase; cc++,vecPointer++) {
                 _Parameter tmp = 1.0;
