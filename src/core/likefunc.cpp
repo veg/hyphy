@@ -5239,19 +5239,20 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
         
     }
 
-    if (successful && !(rightValue<=middleValue && leftValue<=middleValue)) {
+    if (successful ) {
      /** SLKP 20180709 need to have a more permissive check, because sometimes if the change is too small
          (or involves a paremeter that has very little effect on the LF), recomputation could be within numerical error
       
       **/
-
       
-      char buf[512], buf2[512];
-      snprintf (buf, 512, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%20.16g) = %%20.16g [@%%20.16g -> %%20.16g:@%%20.16g -> %%20.16g]]", index, middle, middleValue, left, leftValue,right, rightValue);
-      snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %20.16g <= %20.16g >= %20.16g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
-     
-    _TerminateAndDump (_String (buf) & "\n" & buf2 &  "\nParameter name " & (index >= 0 ? *GetIthIndependentName(index) : "line optimization"));
- 
+      if (rightValue - middleValue > 1e-12 || leftValue - middleValue > 1e-12) {
+        char buf[512], buf2[512];
+        snprintf (buf, 512, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%20.16g) = %%20.16g [@%%20.16g -> %%20.16g:@%%20.16g -> %%20.16g]]", index, middle, middleValue, left, leftValue,right, rightValue);
+        snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %20.16g <= %20.16g >= %20.16g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
+        _TerminateAndDump (_String (buf) & "\n" & buf2 &  "\nParameter name " & (index >= 0 ? *GetIthIndependentName(index) : "line optimization"));
+      }
+  
+      successful = rightValue<=middleValue && leftValue<=middleValue;
     }
   
     if (verbosityLevel > 100) {
@@ -5266,7 +5267,7 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
 
     bracketFCount+=likeFuncEvalCallCount-funcCounts;
     bracketCount++;
-    return (rightValue<=middleValue && leftValue<=middleValue) ? 0 : -1;
+    return successful ? 0 : -1;
 }
 //_______________________________________________________________________________________
 

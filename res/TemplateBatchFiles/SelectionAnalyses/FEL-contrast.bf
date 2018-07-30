@@ -135,17 +135,21 @@ fel.scaler_parameter_names = {};
 io.ReportProgressMessageMD('FEL', 'selector', "Selected `fel.branch_class_count` sets of branches to test\n");
 
 fel.branch_class_counter = 0;
+fel.branches.testable = {};
+fel.branches.has_background = FALSE;
 
 utility.ForEachPair (fel.branch_sets, "_group_", "_branches_",
     "
      if (_group_ != terms.tree_attributes.background) {
         fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (' + _group_ + ' branches)';
         fel.branch_class_counter += 1;
+        fel.branches.testable + _group_;
         fel.scaler_parameter_names [_group_] = 'fel.beta_scaler_group_' + fel.branch_class_counter;
         io.ReportProgressMessageMD('FEL',  'selector', '* Selected ' + Abs(_branches_) + ' branches in group _' + _group_ + '_ : \\\`' + Join (', ',_branches_) + '\\\`')
      } else {
         fel.scaler_parameter_names [_group_] = 'fel.beta_scaler_background';
-        fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (reference branches)'
+        fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (reference branches)';
+        fel.branches.has_background = TRUE;
      }
      "
 );
@@ -224,7 +228,7 @@ selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 
 //----------------------------------------------------------------------------------------
 function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
-    console.log (node_name + " -> " +  alpha_factor);
+    //console.log (node_name + " -> " +  alpha_factor);
 
     fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
 
@@ -261,10 +265,10 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
 
     if (^"fel.srv"){
-        ^"fel.alpha_scaler" = 1;
+        ^(^"fel.alpha.scaler") = 1;
     } else
     {
-        ^"fel.alpha_scaler" := 1;
+        ^(^"fel.alpha.scaler") := 1;
     }
 
     // all rates free
@@ -278,26 +282,37 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     Optimize (results, ^lf);
 
+    snapshot = estimators.TakeLFStateSnapshot (lf);
+
     alternative = estimators.ExtractMLEs (lf, model_mapping);
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
 
     sum = + utility.Map (^"fel.scaler_parameter_names", "_pname_",
-    '^_pname_'
+        '^_pname_'
     );
 
-
+    testable = utility.Array1D (^"fel.branches.testable");
+    denominator = testable;
+    if (^"fel.branches.has_background") {
+        denominator = testable + 1;
+    }
 
     // baseline NULL (everything = same rate)
 
-    ^(^"fel.alpha.scaler") = (^(^"fel.alpha.scaler")+ ^("fel.branch_class_count")*sum)/(^"fel.branch_class_count" + 1);
+    if (^"fel.srv") {
+        ^(^"fel.alpha.scaler") = (^(^"fel.alpha.scaler")+denominator*sum)/denominator;
+    }
 
     ref_parameter = (^"fel.scaler_parameter_names")["VALUEINDEXORDER"][0];
 
+    ^ref_parameter = sum /denominator;
+
     utility.ForEach (^"fel.scaler_parameter_names", "_pname_",
     '
-        if (_pname_ != ^`&ref_parameter`) {
-            parameters.SetConstraint (_pname_,^`&ref_parameter`, "");
+        console.log (`&ref_parameter`);
+        if (_pname_ != `&ref_parameter`) {
+            parameters.SetConstraint (_pname_,`&ref_parameter`, "");
         }
     '
     );
@@ -305,13 +320,19 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     Optimize (results, ^lf);
 
-    null = estimators.ExtractMLEs (lf, model_mapping);
-    null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-
-    console.log (alternative);
-    console.log (null);
+    if (denominator > 2) {
+        for (v = 0; v < testable; v+=1) {
+            for (v2 = v + 1; v2 < testable; v2+=1) {
+                console.log ("Testing " + (^"fel.branches.testable")[v] + " vs " + (^"fel.branches.testable")[v2]);
+                estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
+            }
+        }
+    }
 
     assert (0);
+
+    null = estimators.ExtractMLEs (lf, model_mapping);
+    null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
     return {
                 utility.getGlobalValue("terms.alternative") : alternative,
@@ -467,7 +488,7 @@ estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping
 fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                "Models" : {{"fel.site.mg_rev"}},
                                "Headers" : {{"libv3/all-terms.bf"}},
-                               "Variables" : {{"fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branch_class_count"}}
+                               "Variables" : {{"fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler"}}
                              });
 
 
