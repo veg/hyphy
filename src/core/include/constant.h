@@ -47,10 +47,15 @@ class _Constant : public _MathObject {
 
 private:
   template <class T> _PMathObj _check_type_and_compute (_PMathObj operand, T functor) {
-    if (operand && operand->ObjectClass() == NUMBER) {
-      return new _Constant (functor (Value (), ((_Constant*)operand)->Value()));
+    if (operand) {
+      if (operand->ObjectClass() == NUMBER) {
+        return new _Constant (functor (Value (), ((_Constant*)operand)->Value()));
+      } else {
+        WarnError (_String("<'constant' operation 'X'>, where 'X' is not a number. \nconstant = ") & (_String((_String*)toStr())) & "\n'X' = " & (_String((_String*)operand->toStr())));
+      }
+    } else {
+      WarnError (_String("<'constant' operation 'null'>, where constant = ") & (_String((_String*)toStr())));
     }
-    WarnError ("Not a numeric 'X' type in a <'constant' operation 'X'> call");
     return new _MathObject;
   }
 

@@ -2502,6 +2502,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
     _SimpleList badIndices; //indices of dependent variables which are out of bounds
 
     nonConstantDep = new _SimpleList;
+    _SimpleList nonConstantIndices; // for error reporting
 
     for (index = 0; index<indexDep.lLength && !ohWell; index++)
         // check whether any of the dependent variables are out of bounds
@@ -2511,10 +2512,13 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         currentValues.theData[index]    =   cornholio->Compute()->Value();
         lowerBounds.theData[index]      =   cornholio->GetLowerBound();
         upperBounds.theData[index]      =   cornholio->GetUpperBound();
+      
+        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g\n", cornholio->theName->sData, index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index]);
 
         bool badApple = currentValues.theData[index]<lowerBounds.theData[index] || currentValues.theData[index]>upperBounds.theData[index];
         if (badApple) {
             badIndices<<index;
+            //fprintf (stderr, "---> Constraint violated\n");
         }
 
         if (cornholio->IsConstant()) {
@@ -2523,13 +2527,14 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             j      = index; // for error reporting at the bottom
         } else {
             (*nonConstantDep) << indexDep.lData[index];
+            nonConstantIndices << index;
         }
     }
 
     if (badIndices.lLength && !ohWell) // one of the variables has left its prescribed bounds
         // build a table of dependancies
     {
-        _Matrix     dependancies (indexDep.lLength,indexInd.lLength,true,true);
+        _Matrix     dependancies (MAX(3,indexDep.lLength),indexInd.lLength,true,true);
 
         // element (i,j) represents the dependance of i-th dep var on the j-th ind var
         // 0 - no dep,
@@ -2540,7 +2545,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             _Parameter          temp = GetIthIndependent(index);
             SetIthIndependent  (index,temp*1.000000000001);
 
-            for (j=indexDep.lLength-1; j>-1; j--) {
+            for (j=0; j < indexDep.lLength; j++) {
                 _Parameter temp1 = GetIthDependent(j);
                 if (temp1>currentValues[j]) {
                     dependancies.Store(j,index,1.0);
@@ -2550,6 +2555,8 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             }
             SetIthIndependent (index,temp);
         }
+      
+        //fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).sData);
 
         // now we can go through the dependant variables which are out of bounds one at a time
         // and attempt to move them back in.
@@ -2566,26 +2573,31 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             // this is equivalent to searching for the matrix of dependancies for a column w/o negative
             // entries,such that row "index" has "1" in it
 
-            _Parameter correlation = 0.;
+            _Parameter correlation = 0.0;
 
-            for (j = indexInd.lLength-1; j>-1; j--) {
-                if (correlation == dependancies(badVarIndex,j)) {
+            for (j = 0; j < indexInd.lLength; j++) {
+                if ((correlation = dependancies(badVarIndex,j)) != 0.) {
+                    // fprintf (stderr, "## %d -> %g\n", j, correlation);
                     for (i=0; i<badIndices.lLength; i++) {
-                        _Parameter depIJ = dependancies(badIndices.lData[i],j);
-                        if (depIJ && depIJ != correlation) {
-                            break;
+                        if (i != index) {
+                          _Parameter depIJ = dependancies(badIndices.lData[i],j);
+                          if (depIJ && depIJ != correlation) {
+                              break;
+                          }
                         }
                     }
-                    if (i==indexInd.lLength) {
+                    if (i==badIndices.lLength) {
                         break;    //match found
                     }
                 }
 
             }
 
-            if (j==-1) { // no suitable variable found - try random permutations
+            if (j == indexInd.lLength) { // no suitable variable found - try random permutations
                 break;
             }
+          
+            //fprintf (stderr, "Will try to adjust indepdenent variable %s (%d)\n", GetIthIndependentName(j)->sData, j);
 
             // now nudge the independent variable (indexed by "j") upward (or downward),
             // until var badVarIndex is within limits again
@@ -2657,37 +2669,68 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         // reuse the first two rows of "dependancies" to store
         // the lower and upper bounds for the dependent vars
 
+        //fprintf (stderr, "Trying random permutations...\n");
+
+        // compile the list of variables that are tied in with bad constraints
+        _SimpleList _aux;
+        _AVLList    tagged ( &_aux);
+        
+        for (long k = 0; k < badIndices.lLength; k++) {
+          for (long k2 = 0; k2 < indexInd.lLength; k2++) {
+            if (dependancies(badIndices.Get(k), k2) != 0.0) {
+              tagged.Insert((BaseRef)k2);
+            }
+          }
+        }
+      
+        tagged.ReorderList();
+      
+        // fprintf (stderr, "Tagged the following variables %s\n", _String((_String*)_aux.toStr()).sData);
+      
+           
         for (index = 0; index<indexInd.lLength; index++) {
             dependancies.Store (0,index,GetIthIndependentBound (index,true));
             dependancies.Store (1,index,(GetIthIndependentBound (index,false)>10?10:GetIthIndependentBound (index,true))-dependancies(0,index));
+            dependancies.Store (2,index,GetIthIndependent (index));
         }
-
-        for (i=0; i<10000; i++) {
-            for (index = 0; index < indexInd.lLength; index++) {
-                SetIthIndependent   (index,dependancies(0,index)+genrand_real2()*dependancies(1,index));
-                for (j = 0; j < nonConstantDep->lLength; j++)
-                    // check whether any of the dependent variables are out of bounds
-                {
-                    currentValues.theData[j]    =   LocateVar(nonConstantDep->lData[j])->Compute()->Value();
-                    if (currentValues.theData[j]<lowerBounds.theData[j] || currentValues.theData[j]>upperBounds.theData[j]) {
-                        badConstraint = nonConstantDep->lData[j];
-                        break;
-                    }
-                }
-                if (j == nonConstantDep->lLength) {
-                    break;
-                }
+      
+        // fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).sData);
+      
+  
+        for (i = 0L; i < 10000L; i++) {
+            // choose random values for the variables that are involved with bad constraints
+          for (long v = 0L; v < _aux.lLength; v++) {
+            index = _aux.Get(v);
+            SetIthIndependent   (index,dependancies(0,index)+genrand_real2()*dependancies(1,index));
+              //fprintf (stderr, "[%d] %s => %g\n", index, GetIthIndependentName(index)->sData, GetIthIndependent(index));
+          }
+          for (j = 0; j < nonConstantDep->lLength; j++) {
+              // check whether any of the dependent variables are out of bounds
+            long j_corrected = nonConstantIndices.Get(j);
+            currentValues.theData[j_corrected]    =   LocateVar(nonConstantDep->lData[j])->Compute()->Value();
+              //fprintf (stderr, "[%d] %g (%g, %g)\n", j, j_corrected, currentValues.theData[j_corrected], lowerBounds.theData[j_corrected], upperBounds[j_corrected]);
+            if (currentValues.theData[j_corrected]<lowerBounds.theData[j_corrected] || currentValues.theData[j_corrected]>upperBounds.theData[j_corrected]) {
+                //fprintf (stderr, "===| CHECK FAILED\n");
+              badConstraint = nonConstantDep->lData[j];
+              break;
             }
-            if(index < indexInd.lLength) {
-                break;
-            }
+          }
+          if (j == nonConstantDep->lLength) {
+            break;
+          }
         }
+  
         ohWell = i==10000;
     }
     if (ohWell) {
         cornholio              = LocateVar(badConstraint);
 
         subNumericValues = 3;
+      
+        //fprintf (stderr, "%d\n", j);
+      
+        j = nonConstantIndices.Get(j);
+      
         _String         * cStr = (_String*)cornholio->GetFormulaString(),
                           badX   = (*cornholio->GetName()) & ":=" & *cStr & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".";
 
@@ -4892,7 +4935,7 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error) {
     fwrite ((void*)sLF.getStr(), 1, sLF.Length(), out);
     fclose (out);
   
-    WarnError (_String("Internal error, likelihood function calculation on the same parameter value returned different scores, dumping the offending likelihood function to /tmp/hyphy.dump") & error );
+    WarnError (_String("Internal error, dumping the offending likelihood function to /tmp/hyphy.dump") & error );
 }
  
 

@@ -576,6 +576,7 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
     Eval ("`key_name` = None");
     Eval ("`value_name` = None");
 
+
     if (Type (object) == "AssociativeList") {
         utility.ForEachPair.keys = Rows (object);
         ^(key_name) := utility.ForEachPair.keys[utility.ForEachPair.k];
