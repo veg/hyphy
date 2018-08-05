@@ -230,7 +230,7 @@ class _List:public _SimpleList {
 
         template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
             for (unsigned long i = startAt; i<lLength; i++) {
-                if ( condition (((BaseRefConst*)(lData))[i]) ) {
+                if ( condition (((BaseRefConst*)(lData))[i], i) ) {
                     return i;
                 }
             }

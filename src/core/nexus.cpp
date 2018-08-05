@@ -43,7 +43,7 @@
 #include <stdlib.h>
 
 #include "hy_string_buffer.h"
-#include "site.h"
+#include "dataset.h"
 #include "list.h"
 #include "batchlan.h"
 #include "hbl_env.h"
@@ -69,7 +69,6 @@ void    PadLine                     (FileState& fState, _DataSet& result);
 void    ISelector                   (FileState& fState, _String& CurrentLine, _DataSet& result);
 bool    SkipLine                    (_String& theLine, FileState* fS);
 void    TrimPhylipLine              (_String& CurrentLine, _DataSet& ds);
-void    ReadNexusFile               (FileState& fState, FILE*f, _DataSet& result);
 bool    ProcessNexusData            (FileState&, long,  FILE*, _String&, _DataSet&);
 void    ProcessNexusHYPHY           (FileState&, long,  FILE*, _String&, _DataSet&);
 void    ProcessNexusAssumptions     (FileState&, long,  FILE*, _String&, _DataSet&);

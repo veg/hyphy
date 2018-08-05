@@ -122,7 +122,7 @@ public:
    SINGLE resolution or -1 (multiple or invalid resolutions)
   */
 
-  void AddTokenCode(char, _String &);
+  void AddTokenCode(char, _String const &);
   void PrepareForChecks(void);
   bool IsCharLegal(char);
   char GetSkipChar(void);

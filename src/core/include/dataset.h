@@ -209,10 +209,11 @@ _DataSet *ReadDataSetFile(FILE *, char = 0, _String * = nil, _String * = nil,
                           _String * = nil,
                           _TranslationTable * = &defaultTranslationTable,
                           _ExecutionList *target = nil);
-void fillDefaultCharTable(void);
-void printFileResults(_DataSet *);
+
 
 bool StoreADataSet(_DataSet *, _String *);
+void    ReadNexusFile               (FileState& fState, FILE*f, _DataSet& result);
+
 
 extern _String nexusBFBody;
 extern _DataSet *lastNexusDataMatrix;

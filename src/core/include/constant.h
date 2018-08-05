@@ -41,8 +41,31 @@
 #define     __CONSTANT__
 
 #include "mathobj.h"
+#include "global_things.h"
 
 class _Constant : public _MathObject {
+
+private:
+    template <class T> HBLObjectRef _check_type_and_compute (HBLObjectRef operand, T functor) {
+        if (operand) {
+            if (operand->ObjectClass() == NUMBER) {
+                return new _Constant (functor (Value (), ((_Constant*)operand)->Value()));
+            } else {
+                hy_global::HandleApplicationError (_String("<'constant' operation 'X'>, where 'X' is not a number. \nconstant = ") & (_String((_String*)toStr())) & "\n'X' = " & (_String((_String*)operand->toStr())));
+            }
+        } else {
+            hy_global::HandleApplicationError (_String("<'constant' operation 'null'>, where constant = ") & (_String((_String*)toStr())));
+        }
+        return new _MathObject;
+    }
+    
+    template <class T> HBLObjectRef _check_type_and_compute_3 (HBLObjectRef operand, HBLObjectRef operand2, T functor) {
+        if (operand && operand2 && operand->ObjectClass() == NUMBER && operand2->ObjectClass() == NUMBER) {
+            return new _Constant (functor (Value (), ((_Constant*)operand)->Value(), ((_Constant*)operand2)->Value()));
+        }
+        hy_global::HandleApplicationError ("Not a numeric 'X' type in a <'constant' operation 'X'> call");
+        return new _MathObject;
+    }
 
 public:
 
@@ -60,7 +83,6 @@ public:
     virtual HBLObjectRef lDiv          (HBLObjectRef);
     virtual HBLObjectRef longDiv       (HBLObjectRef);
     virtual HBLObjectRef Raise         (HBLObjectRef);
-    virtual void      Assign        (HBLObjectRef);
     virtual bool      Equal         (HBLObjectRef);
     virtual HBLObjectRef Abs           (void);
     virtual HBLObjectRef Sin           (void);

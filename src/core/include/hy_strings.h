@@ -989,7 +989,7 @@ public:
    char long
    */
 
-  long FindTerminator(long start, _String const &terminator) const;
+   long FindTerminator(long start, _String const &terminator) const;
 
   /**
    * Strips quotes from around the string if present (in place)
@@ -1149,6 +1149,7 @@ public:
    * @param pattern the regular expression to compile
    * @param error_code will receive compilation error codes if any
    * @param case_sensitive controls whether or not the RE is case sensitive
+   * @param throw_errors if set, errors will result in thrown excptions (_String const type)
    * @return the resulting (opaque) RE datastructure, or NULL if
              compilation failed
 
@@ -1158,9 +1159,10 @@ public:
    - SLKP 20170616; reviewed while porting from the v3 branch
                     maded static member of the class, changed argument 1 to
                     const &
+   - SLKP 20180803; added the option for automatic error decoding
    */
   static regex_t *PrepRegExp(_String const &pattern, int &error_code,
-                             bool case_sensitive);
+                             bool case_sensitive, bool throw_errors = false);
 
   /**
    * Free a reg_exp datastructure previously returned by PrepRegExp

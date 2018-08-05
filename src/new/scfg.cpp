@@ -47,11 +47,11 @@ using namespace hy_global;
 
 #include    <math.h>
 
-_String     _HYSCFG_TERM_KEY_T  ("T"),
-            _HYSCFG_KEY_P       ("P"),
-            _HYSCFG_KEY_L       ("L"),
-            _HYSCFG_NT_KEY_1    ("1"),
-            _HYSCFG_NT_KEY_2    ("2");
+const _String     kSCFG_TERM_T  ("T"),
+                  kSCFG_TERM_P       ("P"),
+                  kSCFG_TERM_L       ("L"),
+                  kSCFG_TERM_NT_1    ("1"),
+                  kSCFG_TERM_NT_2    ("2");
 
 // _String      covariancePrecision ("COVARIANCE_PRECISION");
 
@@ -69,18 +69,14 @@ _String     _HYSCFG_TERM_KEY_T  ("T"),
 bitMasks bitMaskArray;
 
 
-_String     // various constants used in AddSCFGInfo
-_addSCFGInfoStats           ("STATISTICS"),
-                            _addSCFGInfoProductions     ("PRODUCTIONS"),
-                            _addSCFGInfoTerminals       ("TERMINALS"),
-                            _addSCFGInfoProbabilities   ("PROBABILITIES"),
+_String const
+                            kSCFGInfoStats           ("STATISTICS"),
+                            kSCFGInfoProductions     ("PRODUCTIONS"),
+                            kSCFGInfoTerminals       ("TERMINALS"),
+                            kSCFGInfoProbabilities   ("PROBABILITIES"),
 
-                            useJeffreysPrior            ("USE_JEFFREYS_PRIOR"),     // added Nov. 28, 2006 by afyp
-                            scfgOptimizationMethod      ("SCFG_OPTIMIZATION_METHOD");
-
-
-
-_String kSCFGCorpus        ("SCFG_STRING_CORPUS"),
+                            kSCFGUseJeffreysPrior    ("USE_JEFFREYS_PRIOR"),     // added Nov. 28, 2006 by afyp
+                            kSCFGOptimizationMethod  ("SCFG_OPTIMIZATION_METHOD");
 
 
 
@@ -91,88 +87,92 @@ _String kSCFGCorpus        ("SCFG_STRING_CORPUS"),
 
 #ifdef                  _USE_HYPHY_HOOKS_
 
-Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
-{
+Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
     _String         errorMessage;
     _SimpleList     parsedFormulas;
     // stash pointers to processed formulas here
-
+    
     startSymbol     = ss;
     insideCalls     = 0;
     outsideCalls    = 0;
-
+    
     // initialize the pointers
     parseTree     = nil;
-
-    long          termRules     = T_Rules->avl.countitems(),
-                  nonTermRules  = NT_Rules->avl.countitems();
-
-    if (termRules == 0) {
-        errorMessage = "A SCFG can not be constructed from an empty set of <Nonterminal>-><Terminal> production rules";
-    } else {
+    
+    
+    long          termRules     = T_Rules->countitems(),
+    nonTermRules  = NT_Rules->countitems();
+    
+    try {
+        
+        if (termRules == 0L) {
+            throw ("A SCFG can not be constructed from an empty set of <Nonterminal>-><Terminal> production rules");
+        }
+        
         _List         ruleProbabilities,            // an auxiliary list used to store strings describing production probabilities
-                      alreadySeenX;                 // a list of production rules that have already been added
-        // it is used to keep track of duplicate production rules
-
+        alreadySeenX;                 // a list of production rules that have already been added
+                                      // it is used to keep track of duplicate production rules
+        
         _SimpleList   foundNT,                      // an array to keep track of all 'declared' non-terminals
-                      ntFlags;                      // an array of flags of non-terminal properties
-
+        ntFlags;                      // an array of flags of non-terminal properties
+        
         _AVLList      tempTerminals (&terminals),       // an auxiliary wrapper around the set of terminal symbols used to check for duplication
-                      alreadySeen   (&alreadySeenX);    // and a wrapper for the alreadySeen list
-
+        alreadySeen   (&alreadySeenX);    // and a wrapper for the alreadySeen list
+        
         _AVLListX     tempNT        (&foundNT);         // and a wrapper for the set of non-terminals
-
+        
         // build a prefix parse tree as we go along
         // begin by allocating memory for the root data structure
         parseTree = new node<long>* [256];
-
-        for (long it = 0; it < 256; it++) {
+        
+        // TODO SLKP 20180803 : this should be replaced with a _Trie?
+        
+        for (int it = 0L; it < 256; it++) {
             parseTree [it] = (node<long>*)nil;
         }
-
-        for (long tc = 0; tc < termRules; tc++)
+        
+        for (long tc = 0L; tc < termRules; tc++) {
             // check Terminal rules for consistency
             // traverse the T_Rules AVL, which is assumed to be indexed by 0..termRules-1
-        {
             _AssociativeList * aRule = (_AssociativeList*)T_Rules->GetByKey (tc, ASSOCIATIVE_LIST);
             if (aRule) {
-                _FString    * literal       = (_FString*)aRule->GetByKey (_HYSCFG_TERM_KEY_T,STRING),
-                              * expression  = (_FString*)aRule->GetByKey (_HYSCFG_KEY_P, STRING);
-
-                _Constant   * lhs           = (_Constant*)aRule->GetByKey (_HYSCFG_KEY_L, NUMBER);
-
+                _FString    * literal       = (_FString*)aRule->GetByKey (kSCFG_TERM_T,STRING),
+                * expression  = (_FString*)aRule->GetByKey (kSCFG_TERM_P, STRING);
+                
+                _Constant   * lhs           = (_Constant*)aRule->GetByKey (kSCFG_TERM_L, NUMBER);
+                
                 if (literal && lhs && literal->theString->sLength) {
                     long index = tempTerminals.Insert (literal->theString);
                     // insert to the list of terminals if not seen before
                     if  (index>=0) // new terminal; added to list
-                        // now we process the terminal into the parse tree
+                                   // now we process the terminal into the parse tree
                     {
                         literal->theString->AddAReference(); // increase reference counter for the string object
-                        // add    the literal to the parse tree
-                        // handle the first character separately
-
+                                                             // add    the literal to the parse tree
+                                                             // handle the first character separately
+                        
                         unsigned char        currentCharacter = literal->theString->get_char(0);
                         node<long>* currentTreeNode  = parseTree[currentCharacter];
-
+                        
                         bool        addedRootStub    = false;
-
+                        
                         if (currentTreeNode == nil) {
                             currentTreeNode = new node<long>;
                             currentTreeNode->init(0);
                             parseTree[currentCharacter] = currentTreeNode;
                             addedRootStub = true;
                         }
-
+                        
                         long charP = 1;
-
+                        
                         for  (; charP < literal->theString->sLength; charP++) {
                             currentCharacter        = literal->theString->get_char(charP);
-
+                            
                             long   availableNodes   = currentTreeNode->get_num_nodes (),
-                                   nodeCounter      = (availableNodes>0);
-
+                            nodeCounter      = (availableNodes>0);
+                            
                             // SLKP: 20100630 need to check for a one-character existing prefix
-
+                            
                             if (availableNodes)
                                 for (; nodeCounter<=availableNodes; nodeCounter++) {
                                     node <long> * tryANode = currentTreeNode->go_down (nodeCounter);
@@ -180,7 +180,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                                         // can spell the 'literal' string down this branch
                                     {
                                         if (tryANode->get_num_nodes () == 0) // ERROR: not a prefix code; the terminal currently being added
-                                            // contains another terminal as a prefix
+                                                                             // contains another terminal as a prefix
                                         {
                                             availableNodes = 0;
                                         } else {
@@ -189,11 +189,11 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                                         break;
                                     }
                                 }
-
+                            
                             if (availableNodes || (addedRootStub && charP == 1)) // no error set
-                                // SLKP: 20100630
-                                // looks like there was a bug here, when a partial prefix would
-                                // not simply be reused, but rather re-added to the parent node
+                                                                                 // SLKP: 20100630
+                                                                                 // looks like there was a bug here, when a partial prefix would
+                                                                                 // not simply be reused, but rather re-added to the parent node
                             {
                                 if (availableNodes == nodeCounter)
                                     // and no matching child node has been found
@@ -209,7 +209,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                                 break;
                             }
                         }
-
+                        
                         if (errorMessage.sLength == 0) { // no error set; check to see if this terminal is not a prefix of something else
                             if (currentTreeNode->get_num_nodes () != 0) {
                                 errorMessage = _String("Terminal symbols must form a prefix code. ") & *literal->theString & " is a prefix of another terminal.";
@@ -220,21 +220,21 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                     } else {
                         index = -index-1;    // if this terminal has already been added, use the index
                     }
-
+                    
                     if (errorMessage.sLength == 0)
                         // a valid production rule
                     {
                         long          nt_index  = (long)(lhs->Compute()->Value()),
-                                      avl_index = tempNT.Insert ((BaseRef)nt_index); // store the integer index of the LHS if needed
-
+                        avl_index = tempNT.Insert ((BaseRef)nt_index); // store the integer index of the LHS if needed
+                        
                         if (avl_index<0) { // nt_index already exists; correct to positive range
                             avl_index = -avl_index - 1;
                         }
-
+                        
                         // update status flags for this non-terminal
                         tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_|_HYSCFG_NT_DTERM_|_HYSCFG_NT_TERM_);
-
-
+                        
+                        
                         // first ensure the rule is not a duplicate
                         _String         ruleString = _String (nt_index) & ",[" & index & ']';
                         long            seenMe     = alreadySeen.Insert (ruleString.makeDynamic());
@@ -245,11 +245,11 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                             _SimpleList *goodTRule = new _SimpleList ((long)nt_index);
                             (*goodTRule) << index;
                             rules.AppendNewInstance (goodTRule); // append the new rule to the list of existing rules
-
+                            
                             // process the formula
                             ProcessAFormula (expression, ruleProbabilities, parsedFormulas, errorMessage);
                         }
-
+                        
                         if (errorMessage.sLength == 0) {
                             continue;    // good rule! go on to check the next one
                         }
@@ -262,7 +262,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
             }
             break;
         } // done checking terminal rules
-
+        
         if (errorMessage.sLength == 0) { // all terminal rules were good; now we can check the non-terminal rules
             for (long tc = 0; tc < nonTermRules; tc++)
                 // check Non-terminal rules for consistency
@@ -270,12 +270,12 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
             {
                 _AssociativeList * aRule = (_AssociativeList*)NT_Rules->GetByKey (tc, ASSOCIATIVE_LIST);
                 if (aRule) {
-                    _FString    * expression    = (_FString*)aRule->GetByKey     (_HYSCFG_KEY_P, STRING);
-
-                    _Constant   * lhs           = (_Constant*)aRule->GetByKey    (_HYSCFG_KEY_L, NUMBER),
-                                  * rhs1            = (_Constant*)aRule->GetByKey    (_HYSCFG_NT_KEY_1, NUMBER),
-                                    * rhs2           = (_Constant*)aRule->GetByKey    (_HYSCFG_NT_KEY_2, NUMBER);
-
+                    _FString    * expression    = (_FString*)aRule->GetByKey     (kSCFG_TERM_P, STRING);
+                    
+                    _Constant   * lhs           = (_Constant*)aRule->GetByKey    (kSCFG_TERM_L, NUMBER),
+                    * rhs1            = (_Constant*)aRule->GetByKey    (kSCFG_TERM_NT_1, NUMBER),
+                    * rhs2           = (_Constant*)aRule->GetByKey    (kSCFG_TERM_NT_2, NUMBER);
+                    
                     if (lhs && rhs1 && rhs2) {
                         ProcessAFormula (expression, ruleProbabilities, parsedFormulas, errorMessage);
                         if (errorMessage.sLength == 0) {
@@ -298,7 +298,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                             ruleString = ruleString & _String (nt_index);
                             long            seenMe     = alreadySeen.Insert (ruleString.makeDynamic());
                             if (seenMe < 0) { // already seen
-                                //errorMessage = _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
+                                              //errorMessage = _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
                                 errorMessage = _String ("Duplicate production rule: ") & tc & " : " & ruleString;
                             } else {
                                 rules     && & goodNTRule; // append the new rule to the list of existing rules
@@ -314,27 +314,27 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                 break;
             }
         }
-
+        
         if (errorMessage.sLength == 0) { // all rules were good; next steps:
-            // (a). Validate the grammar
-            // (1).   Each non-terminal must appear in at least one LHS
-            // (2).   Each non-terminal must be resolvable to a terminal at some point
-            // (3).   Each non-terminal must be reachable from the start symbol
-
+                                         // (a). Validate the grammar
+                                         // (1).   Each non-terminal must appear in at least one LHS
+                                         // (2).   Each non-terminal must be resolvable to a terminal at some point
+                                         // (3).   Each non-terminal must be reachable from the start symbol
+            
             ntToTerminalMap.Populate (rules.lLength*terminals.lLength,-1,0);
-
+            
             bool         continueLoops = true;
-
+            
             // prepopulate the list of rules stratified by the LHS non-terminal by empty lists
             for (long ntC = 0; ntC < foundNT.lLength; ntC ++) {
                 _SimpleList emptyList;
                 byNT3 && & emptyList;
                 byNT2 && & emptyList;
-
+                
                 byRightNT1 && & emptyList;  // addition by AFYP, 2006-06-20
                 byRightNT2 && & emptyList;
             }
-
+            
             for (long ruleIdx = 0; ruleIdx < rules.lLength; ruleIdx ++) {
                 _SimpleList *aList = (_SimpleList*)rules(ruleIdx);      // retrieve two- or three-integer list
                 if (aList->lLength == 3) { // NT->NT NT
@@ -347,9 +347,9 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                     *((_SimpleList*)byNT2 (aList->lData[0])) << ruleIdx;
                     ntToTerminalMap.lData [indexNT_T (aList->lData[0],aList->lData[1])] = ruleIdx;
                 }
-
+                
             }
-
+            
             while (continueLoops) { // set status flags for all NT symbols based on production rules
                 continueLoops = false;
                 for (long ruleIdx = 0; ruleIdx < rules.lLength; ruleIdx ++) {
@@ -359,8 +359,8 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                     }
                 }
             }
-
-
+            
+            
             // now iterate over the list of declared NT and verify that they all comply to the three conditions above
             {
                 for (long ntC = 0; ntC < foundNT.lLength; ntC ++) {
@@ -379,25 +379,25 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                     }
                 }
             }
-
+            
             if (errorMessage.sLength == 0) // all non-terminals checked out
-                // populate the matrix of formulas
+                                           // populate the matrix of formulas
             {
                 CreateMatrix (&probabilities, parsedFormulas.lLength, 1, false, true, false);
                 probabilities.Convert2Formulas ();
                 for (long formC = 0; formC < parsedFormulas.lLength; formC++) {
                     probabilities.StoreFormula (formC,0,* ((_Formula**)parsedFormulas.lData)[formC]);
                 }
-
+                
                 long countT  = terminals.lLength,
-                     countNT = byNT2.lLength;
-
+                countNT = byNT2.lLength;
+                
                 // populate firstArray
                 firstArray.Populate (countNT*countT,0,0);
                 lastArray.Populate (countNT*countT,0,0);
                 precursorArray.Populate (countNT*countT,0,0);
                 followArray.Populate (countNT*countT,0,0);
-
+                
                 for (long i = 0; i < countNT; i++) {
                     _SimpleList * myRules = ((_SimpleList**)byNT2.lData)[i];
                     for (long i2 = 0; i2 < myRules->lLength; i2++) {    // for all i->m productions
@@ -406,7 +406,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         lastArray.lData [flatIndex] = 1;
                     }
                 }
-
+                
                 continueLoops = true;
                 while (continueLoops) {
                     continueLoops = false;
@@ -414,15 +414,15 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         _SimpleList * myRules = ((_SimpleList**)byNT3.lData)[i];
                         for (long i2 = 0; i2 < myRules->lLength; i2++) {
                             long rhs1 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[1],
-                                 rhs2 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[2];
-
+                            rhs2 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[2];
+                            
                             for (long i3 = 0; i3 < countT; i3++) {
                                 long anIndex = indexNT_T (i,i3),
-                                     rhs1v = firstArray.lData[indexNT_T (rhs1,i3)],
-                                     lhs1v = firstArray.lData[anIndex],
-                                     rhs2v = lastArray.lData [indexNT_T (rhs2,i3)],
-                                     lhs2v = lastArray.lData [anIndex];
-
+                                rhs1v = firstArray.lData[indexNT_T (rhs1,i3)],
+                                lhs1v = firstArray.lData[anIndex],
+                                rhs2v = lastArray.lData [indexNT_T (rhs2,i3)],
+                                lhs2v = lastArray.lData [anIndex];
+                                
                                 if (lhs1v == 0 && rhs1v) {
                                     continueLoops = true;
                                     firstArray.lData[anIndex] = 1;
@@ -440,12 +440,12 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         _SimpleList * myRules = ((_SimpleList**)byNT3.lData)[i];
                         for (long i2 = 0; i2 < myRules->lLength; i2++) {
                             long rhs1 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[1],
-                                 rhs2 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[2];
-
+                            rhs2 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[2];
+                            
                             for (long i3 = 0; i3 < countT; i3++) {
                                 long idx1 = indexNT_T (rhs1,i3),
-                                     idx2 = indexNT_T (rhs2,i3);
-
+                                idx2 = indexNT_T (rhs2,i3);
+                                
                                 if (lastArray.lData [idx1]) {
                                     precursorArray.lData[idx2] = 1;
                                 }
@@ -456,7 +456,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         }
                     }
                 }
-
+                
                 continueLoops = true;
                 while (continueLoops) { // populate Precursor and Follow
                     continueLoops = false;
@@ -464,17 +464,17 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                         _SimpleList * myRules = ((_SimpleList**)byNT3.lData)[i];
                         for (long i2 = 0; i2 < myRules->lLength; i2++) {
                             long rhs1 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[1],
-                                 rhs2 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[2];
-
+                            rhs2 = ((_List**)rules.lData)[myRules->lData[i2]]->lData[2];
+                            
                             for (long i3 = 0; i3 < countT; i3++) {
                                 long anIndex = indexNT_T (i,i3),
-                                     idx1    = indexNT_T (rhs1,i3),
-                                     idx2    = indexNT_T (rhs2,i3),
-                                     rhs1v   = precursorArray.lData[idx1],
-                                     rhs2v   = followArray.lData   [idx2],
-                                     lhs1v   = precursorArray.lData[anIndex],
-                                     lhs2v   = followArray.lData   [anIndex];
-
+                                idx1    = indexNT_T (rhs1,i3),
+                                idx2    = indexNT_T (rhs2,i3),
+                                rhs1v   = precursorArray.lData[idx1],
+                                rhs2v   = followArray.lData   [idx2],
+                                lhs1v   = precursorArray.lData[anIndex],
+                                lhs2v   = followArray.lData   [anIndex];
+                                
                                 if (lhs1v && rhs1v == 0) {
                                     continueLoops = true;
                                     precursorArray.lData[idx1] = 1;
@@ -488,38 +488,36 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss)
                     }
                 }
                 /*
-                for (long i = 0; i < countNT; i++)
-                {
-                    for (long i2 = 0; i2 < countT; i2++)
-                    {
-                        char buf [255];
-                        snprintf (buf, sizeof(buf), "%d=>%d %s %s %s %s\n", i, i2, firstArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
-                                                                lastArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
-                                                                precursorArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
-                                                                followArray.lData[indexNT_T (i,i2)]?"Yes":"No ");
-                        BufferToConsole (buf);
-                    }
-                }
-                */
+                 for (long i = 0; i < countNT; i++)
+                 {
+                 for (long i2 = 0; i2 < countT; i2++)
+                 {
+                 char buf [255];
+                 snprintf (buf, sizeof(buf), "%d=>%d %s %s %s %s\n", i, i2, firstArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
+                 lastArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
+                 precursorArray.lData[indexNT_T (i,i2)]?"Yes":"No ",
+                 followArray.lData[indexNT_T (i,i2)]?"Yes":"No ");
+                 BufferToConsole (buf);
+                 }
+                 }
+                 */
             }
         }
-    }
-
-    for (long clearFormulas = 0; clearFormulas < parsedFormulas.lLength; clearFormulas++)
-        // clean up memory from parsed probability formulas
-    {
-        delete ((_Formula**)parsedFormulas.lData)[clearFormulas];
-    }
-
-    if (errorMessage.sLength) {
-        HandleApplicationError      (errorMessage);
+        
+        
+        
+        for (long clearFormulas = 0; clearFormulas < parsedFormulas.lLength; clearFormulas++) {
+            // clean up memory from parsed probability formulas
+            delete ((_Formula**)parsedFormulas.lData)[clearFormulas];
+        }
+    } catch (const _String err) {
         ClearParseTree ();
-    } else {
-        ScanAllVariables   ();
-        // RandomSampleVerify (100);
-        /* temporarily removed this for node censoring (degenerate grammar) -- AFYP, August 30, 2006 */
+        HandleApplicationError (err);
     }
-
+    
+    ScanAllVariables   ();
+    // RandomSampleVerify (100);
+    /* temporarily removed this for node censoring (degenerate grammar) -- AFYP, August 30, 2006 */
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
@@ -566,7 +564,7 @@ void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities,
         }
     } else { // determininstic rule (prob = 1.0)
         aFormula = new _Formula (new _Constant (1.0), false); // constant 1.0
-        ruleProbabilities && & _HYSCFG_NT_KEY_1;
+        ruleProbabilities && & kSCFG_TERM_NT_1;
     }
 
     if (errorMessage.sLength == 0) {
@@ -1358,7 +1356,7 @@ void        Scfg::AddSCFGInfo (_AssociativeList* theList)
         stats->Store (k,1,pNot0-p01);   // number of tuples with probability = 1
         stats->Store (k,2,p01);     // number of tuples with probability in interval (0,1)
     }
-    theList->MStore (_addSCFGInfoStats, stats, false);
+    theList->MStore (kSCFGInfoStats, stats, false);
     stats = (_Matrix*)probabilities.Compute();
     theList->MStore (_addSCFGInfoProbabilities, stats, true);
 }

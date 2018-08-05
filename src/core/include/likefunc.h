@@ -169,7 +169,7 @@ public:
     // 4 - category variables
 
 
-    hyFloat  GetIthIndependent           (long) const;     // get the value of i-th independent variable
+    hyFloat  GetIthIndependent           (long, bool = true) const;     // get the value of i-th independent variable
     const _String*  GetIthIndependentName           (long) const;     // get the name of i-th independent variable
     const _String*  GetIthDependentName           (long) const;     // get the name of i-th independent variable
     hyFloat  GetIthDependent             (long) const;     // get the value of i-th dependent variable

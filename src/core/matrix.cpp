@@ -405,16 +405,7 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* th
               }
               
               _Formula*  theTerm = new _Formula (lterm, theP);
-              
-              if (isAConstant) {
-                // there is hope that this matrix is of numbers
-                if (theTerm->ObjectClass() == NUMBER) {
-                  isAConstant = theTerm->IsAConstant();
-                } else {
-                  isAConstant = false;
-                }
-              }
-              
+               isAConstant = isAConstant && theTerm->IsAConstant() && theTerm->ObjectClass() == NUMBER;
               ((_Formula**)theData)[vDim*hPos+vPos] = theTerm;
             }
             
@@ -3159,8 +3150,8 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             }
 
         } else {
-            hyFloat _hprestrict_ * argData = secondArg.theData;
-            hyFloat _hprestrict_ * stData  = storage.theData;
+            hyFloat * _hprestrict_ argData = secondArg.theData;
+            hyFloat * _hprestrict_ stData  = storage.theData;
             
             long    upto = secondArg.lDim - secondArg.lDim%4;
                        

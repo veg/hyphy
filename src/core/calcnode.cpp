@@ -225,13 +225,21 @@ hyFloat  _CalcNode::ProcessTreeBranchLength (_String const& branch_length) {
 
 //_______________________________________________________________________________________________
 
-_CalcNode::~_CalcNode (void) {
+void _CalcNode::Clear (void) {
+    if (compExp) {
+        DeleteAndZeroObject (compExp);
+    }
     if (theProbs) {
         delete [] theProbs;
+        theProbs = nil;
     }
-    if (compExp) {
-        DeleteObject (compExp);
-    }
+    _VariableContainer::Clear();
+}
+
+//_______________________________________________________________________________________________
+
+_CalcNode::~_CalcNode (void) {
+    
 }
 
 //_______________________________________________________________________________________________
@@ -248,13 +256,7 @@ long    _CalcNode::FreeUpMemory (long) {
 //__________________________________________________________________________________
 
 void _CalcNode::RemoveModel (void) {
-    if (compExp) {
-        DeleteAndZeroObject(compExp);
-    }
-
-    if (matrixCache) {
-    }
-
+ 
     categoryVariables.Clear();
     categoryIndexVars.Clear();
     remapMyCategories.Clear();
@@ -725,6 +727,7 @@ node<long>* _CalcNode::LocateMeInTree (void) const {
     return  ((_TreeTopology*)FetchVar(LocateVarByName(parentName)))->FindNodeByName(&myName);
     
 }
+
 
 //_______________________________________________________________________________________________
 

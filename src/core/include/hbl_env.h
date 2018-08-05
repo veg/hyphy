@@ -191,7 +191,9 @@ namespace hy_env {
           branch_length_stencil,
           kExpectedNumberOfSubstitutions,
           kStringSuppliedLengths,
-          include_model_spec
+          include_model_spec,
+          lf_convergence_criterion,
+          kSCFGCorpus
     ;
   
   

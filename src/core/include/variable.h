@@ -48,8 +48,7 @@
 #include "formula.h"
 
 
-class _Variable : public _Constant
-{
+class _Variable : public _Constant {
 
     friend class _Operation;
 
@@ -151,7 +150,7 @@ public:
 
 
     friend      void        ResetVariables          (void);
-    friend      _Variable*  LocateVar               (long);
+    //friend      _Variable*  LocateVar               (long);
     friend      void        InsertVar               (_Variable*);
 
 public:

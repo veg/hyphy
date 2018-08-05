@@ -1151,10 +1151,10 @@ void    _LikelihoodFunction::GetGlobalVars (_SimpleList& rec) const {
 }
 
 //_______________________________________________________________________________________
-hyFloat  _LikelihoodFunction::GetIthIndependent (long index) const {
+hyFloat  _LikelihoodFunction::GetIthIndependent (long index, bool map) const {
     hyFloat return_value;
 
-    if (parameterValuesAndRanges) {
+    if (parameterValuesAndRanges && map) {
         return_value = (*parameterValuesAndRanges)(index,1);
     } else {
         return_value = ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
@@ -1751,7 +1751,9 @@ bool    _LikelihoodFunction::PreCompute         (void)
 
     for (; i < arrayToCheck->lLength; i++) {
         _Variable* cornholio = LocateVar(arrayToCheck->lData[i]);
-        if (!cornholio->IsValueInBounds(((_Constant*) cornholio->Compute())->Value())){
+        hyFloat tp = cornholio->Compute()->Value();
+        if (!cornholio->IsValueInBounds(tp)){
+            ReportWarning (_String ("Failing bound checks on ") & *cornholio->GetName() & " = " & _String (tp, "%25.16g"));
             break;
         }
     }
@@ -2428,64 +2430,70 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
    of allowed parameter values
 */
 
-    if  (!indexDep.lLength) { // nothing to do here
+    unsigned long dep_var_count = indexDep.countitems();
+    
+    if  (dep_var_count == 0UL) { // nothing to do here
         return;
     }
-
-    long index,
-         i,
-         j,
-         badConstraint;
-
-    _Matrix currentValues (indexDep.lLength,1,false,true),
-            lowerBounds   (indexDep.lLength,1,false,true),
-            upperBounds   (indexDep.lLength,1,false,true);
-
+    
+    long index, i, j, badConstraint;
+    
+    _Matrix currentValues (dep_var_count,1,false,true),
+    lowerBounds   (dep_var_count,1,false,true),
+    upperBounds   (dep_var_count,1,false,true);
+    
     bool    ohWell = false;
-
+    
     _Variable*  cornholio;
     _SimpleList badIndices; //indices of dependent variables which are out of bounds
-
+    
+    if (nonConstantDep) {
+        DeleteObject(nonConstantDep);
+    }
     nonConstantDep = new _SimpleList;
-
-    for (index = 0; index<indexDep.lLength && !ohWell; index++)
+    _SimpleList nonConstantIndices; // for error reporting
+    
+    for (index = 0; index< dep_var_count && !ohWell; index++) {
         // check whether any of the dependent variables are out of bounds
-    {
         cornholio                       =   GetIthDependentVar(index);
-
+        
         currentValues.theData[index]    =   cornholio->Compute()->Value();
         lowerBounds.theData[index]      =   cornholio->GetLowerBound();
         upperBounds.theData[index]      =   cornholio->GetUpperBound();
-
+        
+        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g\n", cornholio->theName->sData, index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index]);
+        
         bool badApple = currentValues.theData[index]<lowerBounds.theData[index] || currentValues.theData[index]>upperBounds.theData[index];
         if (badApple) {
             badIndices<<index;
+            //fprintf (stderr, "---> Constraint violated\n");
         }
-
+        
         if (cornholio->IsConstant()) {
             badConstraint = indexDep.lData[index];
             ohWell = badApple;
             j      = index; // for error reporting at the bottom
         } else {
             (*nonConstantDep) << indexDep.lData[index];
+            nonConstantIndices << index;
         }
     }
-
+    
     if (badIndices.lLength && !ohWell) // one of the variables has left its prescribed bounds
-        // build a table of dependancies
+                                       // build a table of dependancies
     {
-        _Matrix     dependancies (indexDep.lLength,indexInd.lLength,true,true);
-
+        _Matrix     dependancies (MAX(3,indexDep.lLength),indexInd.lLength,true,true);
+        
         // element (i,j) represents the dependance of i-th dep var on the j-th ind var
         // 0 - no dep,
         // 1 -> monotone increase,
         // -1 -> monotone decrease
-
+        
         for (index = 0; index<indexInd.lLength; index++) {
             hyFloat          temp = GetIthIndependent(index);
             SetIthIndependent  (index,temp*1.000000000001);
-
-            for (j=indexDep.lLength-1; j>-1; j--) {
+            
+            for (j=0; j < indexDep.lLength; j++) {
                 hyFloat temp1 = GetIthDependent(j);
                 if (temp1>currentValues[j]) {
                     dependancies.Store(j,index,1.0);
@@ -2495,54 +2503,61 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             }
             SetIthIndependent (index,temp);
         }
-
+        
+        //fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).sData);
+        
         // now we can go through the dependant variables which are out of bounds one at a time
         // and attempt to move them back in.
         for (index = badIndices.lLength-1; index>-1; index--) {
             long       badVarIndex      = badIndices.lData[index];
             hyFloat temp             = GetIthDependent(badVarIndex);
-
+            
             currentValues[badVarIndex]  = temp;
-
+            
             bool              tooLow = temp<lowerBounds[badVarIndex];
-
+            
             // look for an independent which will increase (if tooLow) or decrease (too high) this variable
             // w/o decreasing the others
             // this is equivalent to searching for the matrix of dependancies for a column w/o negative
             // entries,such that row "index" has "1" in it
-
-            hyFloat correlation = 0.;
-
-            for (j = indexInd.lLength-1; j>-1; j--) {
-                if (correlation == dependancies(badVarIndex,j)) {
+            
+            hyFloat correlation = 0.0;
+            
+            for (j = 0; j < indexInd.lLength; j++) {
+                if ((correlation = dependancies(badVarIndex,j)) != 0.) {
+                    // fprintf (stderr, "## %d -> %g\n", j, correlation);
                     for (i=0; i<badIndices.lLength; i++) {
-                        hyFloat depIJ = dependancies(badIndices.lData[i],j);
-                        if (depIJ && depIJ != correlation) {
-                            break;
+                        if (i != index) {
+                            hyFloat depIJ = dependancies(badIndices.lData[i],j);
+                            if (depIJ && depIJ != correlation) {
+                                break;
+                            }
                         }
                     }
-                    if (i==indexInd.lLength) {
+                    if (i==badIndices.lLength) {
                         break;    //match found
                     }
                 }
-
+                
             }
-
-            if (j==-1) { // no suitable variable found - try random permutations
+            
+            if (j == indexInd.lLength) { // no suitable variable found - try random permutations
                 break;
             }
-
+            
+            //fprintf (stderr, "Will try to adjust indepdenent variable %s (%d)\n", GetIthIndependentName(j)->sData, j);
+            
             // now nudge the independent variable (indexed by "j") upward (or downward),
             // until var badVarIndex is within limits again
             // try this by a trivial bisection
-
+            
             hyFloat left         ,
-                       right      ,
-                       middle,
-                       lb         = tooLow?lowerBounds[badVarIndex]:upperBounds[badVarIndex];
-
+            right      ,
+            middle,
+            lb         = tooLow?lowerBounds[badVarIndex]:upperBounds[badVarIndex];
+            
             bool    decrement = (correlation < 0. && tooLow) || (correlation > 0. && !tooLow);
-
+            
             if (decrement) { // need to decrement "j"
                 left  = GetIthIndependentBound(j,true);
                 right = GetIthIndependent(j);
@@ -2550,12 +2565,12 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
                 right = GetIthIndependentBound(j,false);
                 left  = GetIthIndependent(j);
             }
-
-
+            
+            
             temp=right-left>0.001?
-                 0.00001:
-                 (right-left)*0.0001;
-
+            0.00001:
+            (right-left)*0.0001;
+            
             while (right-left>temp) {
                 middle                  = (left+right)/2.0;
                 SetIthIndependent         (j,middle);
@@ -2566,7 +2581,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
                     } else {
                         right = middle;
                     }
-
+                    
                 } else {
                     if (decrement) {
                         right = middle;
@@ -2578,9 +2593,9 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             // take "right" as the new value for the ind
             SetIthIndependent(j,decrement?left:right);
         }
-
+        
         // now we check to see whether all is well
-
+        
         if (index==-1) {
             // verify that all dependent vars are now within allowed domains
             for (index = indexDep.lLength-1; index>-1; index--)
@@ -2595,51 +2610,85 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
                 return;
             }
         }
-
+        
         // if we get here, then some of the dependent variables couldn't be moved withing bound
         // we will try 10,000 random assignments of independent variables
         // hoping that one of them will do the trick
         // reuse the first two rows of "dependancies" to store
         // the lower and upper bounds for the dependent vars
-
+        
+        //fprintf (stderr, "Trying random permutations...\n");
+        
+        // compile the list of variables that are tied in with bad constraints
+        _SimpleList _aux;
+        _AVLList    tagged ( &_aux);
+        
+        for (long k = 0; k < badIndices.lLength; k++) {
+            for (long k2 = 0; k2 < indexInd.lLength; k2++) {
+                if (dependancies(badIndices.get(k), k2) != 0.0) {
+                    tagged.Insert((BaseRef)k2);
+                }
+            }
+        }
+        
+        tagged.ReorderList();
+        
+        // fprintf (stderr, "Tagged the following variables %s\n", _String((_String*)_aux.toStr()).sData);
+        
+        
         for (index = 0; index<indexInd.lLength; index++) {
             dependancies.Store (0,index,GetIthIndependentBound (index,true));
             dependancies.Store (1,index,(GetIthIndependentBound (index,false)>10?10:GetIthIndependentBound (index,true))-dependancies(0,index));
+            dependancies.Store (2,index,GetIthIndependent (index));
         }
-
-        for (i=0; i<10000; i++) {
-            for (index = 0; index < indexInd.lLength; index++) {
+        
+        // fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).sData);
+        
+        
+        for (i = 0L; i < 10000L; i++) {
+            // choose random values for the variables that are involved with bad constraints
+            for (long v = 0L; v < _aux.lLength; v++) {
+                index = _aux.get(v);
                 SetIthIndependent   (index,dependancies(0,index)+genrand_real2()*dependancies(1,index));
-                for (j = 0; j < nonConstantDep->lLength; j++)
-                    // check whether any of the dependent variables are out of bounds
-                {
-                    currentValues.theData[j]    =   LocateVar(nonConstantDep->lData[j])->Compute()->Value();
-                    if (currentValues.theData[j]<lowerBounds.theData[j] || currentValues.theData[j]>upperBounds.theData[j]) {
-                        badConstraint = nonConstantDep->lData[j];
-                        break;
-                    }
-                }
-                if (j == nonConstantDep->lLength) {
+                //fprintf (stderr, "[%d] %s => %g\n", index, GetIthIndependentName(index)->sData, GetIthIndependent(index));
+            }
+            for (j = 0; j < nonConstantDep->lLength; j++) {
+                // check whether any of the dependent variables are out of bounds
+                long j_corrected = nonConstantIndices.get(j);
+                currentValues.theData[j_corrected]    =   LocateVar(nonConstantDep->lData[j])->Compute()->Value();
+                //fprintf (stderr, "[%d] %g (%g, %g)\n", j, j_corrected, currentValues.theData[j_corrected], lowerBounds.theData[j_corrected], upperBounds[j_corrected]);
+                if (currentValues.theData[j_corrected]<lowerBounds.theData[j_corrected] || currentValues.theData[j_corrected]>upperBounds.theData[j_corrected]) {
+                    //fprintf (stderr, "===| CHECK FAILED\n");
+                    badConstraint = nonConstantDep->lData[j];
                     break;
                 }
             }
-            if(index < indexInd.lLength) {
+            if (j == nonConstantDep->lLength) {
                 break;
             }
         }
+        
         ohWell = i==10000;
     }
     if (ohWell) {
         cornholio              = LocateVar(badConstraint);
-
-        _String         * cStr = (_String*)cornholio->GetFormulaString(kFormulaStringConversionReportRanges),
-                          badX   = (*cornholio->GetName()) & ":=" & *cStr & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".";
-
+        
+        subNumericValues = 3;
+        
+        //fprintf (stderr, "%d\n", j);
+        
+        j = nonConstantIndices.get(j);
+        
+        _String         * cStr = (_String*)cornholio->GetFormulaString(kFormulaStringConversionNormal),
+        badX   = (*cornholio->GetName()) & ":=" & *cStr & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".";
+        
+        subNumericValues = 0;
         DeleteObject             (cStr);
-
-        HandleApplicationError(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
-                  & badX.Enquote());
-
+        
+        _TerminateAndDump(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
+                          & badX);
+        
+        
     }
 }
 //_______________________________________________________________________________________
@@ -3015,9 +3064,9 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
         MPISwitchNodesToMPIMode (categCount);
 
-        _String          sLF (8192L, true);
+        _StringBuffer          sLF (8192L);
         SerializeLF      (sLF,_hyphyLFSerializeModeCategoryAsGlobal);
-        sLF.Finalize     ();
+        sLF.TrimSpace()     ();
         long             senderID = 0;
 
         // sets up a de-categorized LF on each compute node
@@ -3092,8 +3141,8 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
             //ReportWarning (((_String*)parallelOptimizerTasks.toStr())->getStr());
         }
 
-        CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
-        CreateMatrix (&resTransferMatrix, 2, cacheSize, false, true, false);
+        _Matrix::CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
+        _Matrix::CreateMatrix (&resTransferMatrix, 2, cacheSize, false, true, false);
         ReportWarning(_String("[MPI] InitMPIOptimizer successful. ") & transferrableVars & " transferrable parameters, " & cacheSize & " sites to be cached.");
     } else {
         if (hyphyMPIOptimizerMode == _hyphyLFMPIModePartitions || hyphyMPIOptimizerMode == _hyphyLFMPIModeAuto || hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate) {
@@ -3196,9 +3245,9 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                         ReportWarning (_String((_String*)subset.toStr()));
                         fromPart += toPart;
 
-                        _String          sLF (8192L, true);
+                        _StringBuffer          sLF (8192UL);
                         SerializeLF      (sLF,_hyphyLFSerializeModeVanilla,nil,&subset);
-                        sLF.Finalize     ();
+                        sLF.TrimSpace()  ;
 
                         MPISendString (sLF,i);
                         parallelOptimizerTasks.AppendNewInstance (new _SimpleList);
@@ -3216,40 +3265,68 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                         overFlow           = 0L;
                     }
 
-                    /*if (overFlow) {
-                        overFlow = slaveNodes/overFlow;
-                    }*/
-
-                    ReportWarning    (_String ("InitMPIOptimizer with:") & (long)theDataFilters.lLength & " partitions on " & (long)slaveNodes
-                                      & " MPI computational nodes. " & perNode & " partitions per node (+1 for "
-                                      & overFlow & " nodes)");
-
+                    _Matrix partition_weights (theDataFilters.lLength, 2, false, true);
+                    
+                    if (theDataFilters.lLength > slaveNodes) {
+                        
+                        for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
+                            //fprintf (stderr, "\nComputing block %ld\n", i);
+                            TimeDifference timer;
+                            ComputeBlock(i);
+                            hyFloat timeDiff   = timer.TimeSinceStart();
+                            partition_weights.Store (i, 0, timeDiff);
+                        }
+                        
+                    } else {
+                        for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
+                            partition_weights.Store (i, 0, 1.);
+                        }
+                    }
+                    
+                    _Constant * sum = (_Constant*)partition_weights.Sum();
+                    partition_weights *= (slaveNodes/sum->Value());
+                    for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
+                        partition_weights.Store (i, 1, i);
+                    }
+                    
+                    sum->SetValue(0.);
+                    _Matrix * sorted_by_weight = (_Matrix*)partition_weights.SortMatrixOnColumn(sum);
+                    DeleteObject (sum);
+                    
 
                     MPISwitchNodesToMPIMode (slaveNodes);
+                    
+                    long current_index = 0L;
+                    
+                    ReportWarning    (_String ("InitMPIOptimizer with:") & (long)theDataFilters.lLength & " partitions on " & (long)slaveNodes
+                                      & " MPI computational nodes. ");
+                    
                     for (long i = 1L; i<totalNodeCount; i++) {
-                        toPart = perNode;
-
-                        if (overFlow) {
-                            toPart++;
-                            overFlow--;
-                        }
-
-                        if (fromPart+toPart > theDataFilters.lLength || i == slaveNodes) {
-                            toPart = theDataFilters.lLength-fromPart;
-                        }
-
-                        _SimpleList     subset (toPart,fromPart,1);
-
-                        ReportWarning (_String((_String*)subset.toStr()));
-                        fromPart += toPart;
-
-                        _String          sLF (8192L, true);
-                        SerializeLF      (sLF,_hyphyLFSerializeModeVanilla,&subset);
-                        sLF.Finalize     ();
-
+                        hyFloat sum = 0.;
+                        _SimpleList my_part;
+                        do {
+                            sum += (*sorted_by_weight) (current_index, 0);
+                            my_part << round ((*sorted_by_weight) (current_index, 1));
+                            current_index++;
+                        } while (sum < 1. && theDataFilters.lLength - current_index >= (totalNodeCount - i));
+                        
+                        ReportWarning    (_String ("InitMPIOptimizer sending partitions ") & _String ((_String*)my_part.toStr()) & " to node " & i);
+                        
+                        
+                        //fprintf (stderr, "%s\n", _String ((_String*)my_part.toStr()).getStr());
+                        
+                        
+                        _StringBuffer     sLF (8192L);
+                        SerializeLF       (sLF,_hyphyLFSerializeModeVanilla,&my_part);
+                        sLF.TrimSpace     ();
+                        
                         MPISendString    (sLF,i);
                         parallelOptimizerTasks.AppendNewInstance (new _SimpleList);
                     }
+                    
+                    
+                    DeleteObject (sorted_by_weight);
+                    
                 }
 
 
@@ -3277,7 +3354,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                     DeleteObject (mapString);
                 }
 
-                CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
+                _Matrix::CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
                 ReportWarning(_String("[MPI] InitMPIOptimizer:Finished with the setup. Maximum of ") & transferrableVars & " transferrable parameters.");
             }
         }
@@ -3654,6 +3731,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
     SetupLFCaches       ();
     SetupCategoryCaches ();
+    computationalResults.Clear();
 
 
 #ifdef __HYPHYMPI__
@@ -3702,7 +3780,16 @@ DecideOnDivideBy (this);
     checkParameter (useLastResults,keepStartingPoint,0.0);
     checkParameter (allowBoundary,go2Bound,1L);
     checkParameter (useInitialDistanceGuess,precision,1.);
-
+    
+    _FString * custom_convergence_callback_name = (_FString *)hy_env::EnvVariableGet(hy_env::lf_convergence_criterion, STRING);
+    long custom_convergence_callback = custom_convergence_callback_name ?  FindBFFunctionName(*custom_convergence_callback_name->get_str()) : -1L;
+    if (custom_convergence_callback >= 0) {
+         if (GetBFFunctionArgumentCount (custom_convergence_callback) != 2L) {
+             HandleApplicationError("Custom convergence criterion convergence function must have exactly two arguments: current log-L, and an dictionary with id -> value mapping");
+             return new _Matrix;
+         }
+    }
+    
     if (CheckEqual (keepStartingPoint,1.0)) {
       for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         _Variable *iv = GetIthIndependentVar (i);
@@ -4486,11 +4573,31 @@ DecideOnDivideBy (this);
             } else if (currentPrecision>averageChange2) {
                 currentPrecision = averageChange2;
             }
+            
+            if (custom_convergence_callback >= 0) {
+                _List arguments;
+                _AssociativeList * parameters = new _AssociativeList;
+                
+                GetIndependentVars().Each ([&] (long value, unsigned long i) -> void {
+                    parameters-> MStore (*GetIthIndependentName(i), new _Constant (GetIthIndependent(i, false)));
+                });
+                arguments < new _Constant (maxSoFar) < parameters;
 
-            if (maxSoFar-lastMaxValue<=precision/termFactor) {
-                inCount++;
+                HBLObjectRef convegence_check = custom_convergence_callback_name->Call (&arguments, nil);
+                
+                if (convegence_check->Value () <= precision/termFactor) {
+                    inCount ++;
+                }
+                else {
+                    inCount = 0;
+                }
+                DeleteObject (convegence_check);
             } else {
-                inCount = 0;
+                if (maxSoFar-lastMaxValue<=precision/termFactor) {
+                    inCount++;
+                } else {
+                    inCount = 0;
+                }
             }
 
             lastMaxValue = maxSoFar;
@@ -4576,7 +4683,7 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error) {
     FILE * out = doFileOpen ("/tmp/hyphy.dump", "w");
     fwrite ((void*)sLF.get_str(), 1, sLF.length(), out);
     fclose (out);
-    HandleApplicationError (_String("Internal error, likelihood function calculation on the same parameter value returned different scores, dumping the offending likelihood function to /tmp/hyphy.dump") & error, true);
+    HandleApplicationError (_String("Internal error, dumping the offending likelihood function to '/tmp/hyphy.dump'.") & error, true);
 }
 //_______________________________________________________________________________________
 
@@ -5015,10 +5122,13 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                   (or involves a paremeter that has very little effect on the LF), recomputation could be within numerical error
          
         **/
+        if (rightValue - middleValue > 1e-12 || leftValue - middleValue > 1e-12) {
          char buf[256], buf2[512];
          snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
          snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %20.16g <= %20.16g >= %20.16g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
          _TerminateAndDump (_String (buf) & "\n" & buf2 &  "\nParameter name " & (index >= 0 ? *GetIthIndependentName(index) : "line optimization"));
+        }
+        successful = rightValue<=middleValue && leftValue<=middleValue;
     }
     
     if (verbosity_level > 100) {
@@ -5030,7 +5140,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
 
     bracketFCount+=likeFuncEvalCallCount-funcCounts;
     bracketCount++;
-    return (rightValue<=middleValue && leftValue<=middleValue) ? 0 : -1;
+    return successful ? 0 : -1;
 }
 //_______________________________________________________________________________________
 
@@ -5733,12 +5843,11 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
     if (check_value != A_LARGE_NUMBER) {
         if (!CheckEqual(check_value, maxSoFar)) {
             _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]";
-            ReportWarning (errorStr);
             if (check_value - 0.01 > maxSoFar) {
                 if (optimizatonHistory) {
                     ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
                 }
-                HandleApplicationError (errorStr);
+                _TerminateAndDump (errorStr);
                 return;
             }
             //return;
@@ -5850,7 +5959,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
     }
 
     SetAllIndependent (&bestVal);
-    if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value) == false) {
+    if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value,  kMachineEpsilon * 100.) == false) {
         HandleApplicationError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") & initial_value & " to " & maxSoFar);
     }
 
@@ -7933,7 +8042,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                      siteRes)
                   - _logLFScaler * overallScalingFactors.lData[index];
 
-                  if (fabs ((checksum-sum)/sum) > 1.e-12 * df->GetPatternCount ()) {
+                  if (fabs ((checksum-sum)/sum) > 1.e-10 * df->GetPatternCount ()) {
                     /*hyFloat check2 = t->ComputeTreeBlockByBranch (*sl,
                                                                      *branches,
                                                                      tcc,
@@ -8442,10 +8551,6 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl) {
         }
     }
 
-#ifdef __SORTING_DEBUG
-    printf ("\nTheortical cost lower bound %ld",t->GetLowerBoundOnCost (df));
-    printf ("\nSave all cost lower bound %ld",t->GetLowerBoundOnCost (df,&sl));
-#endif
 }
 //_______________________________________________________________________________________
 
@@ -8823,16 +8928,16 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     checkParameter(acceptRootedTrees, stashIM, 0.0);
     rec.AppendAnAssignmentToBuffer(&acceptRootedTrees, new _String(stashIM));
 
-    checkParameter(includeModelSpecs, stashIM, 0.0);
+    bool include_model_info = hy_env::EnvVariableTrue(hy_env::include_model_spec);
     {
         for (long idx = 0; idx < redirectorT->lLength; idx++) {
             if (dV2.lData[idx] >= 0) {
                 rec << "\nUseModel (";
                 rec << *((_String *)modelNames(dV2.lData[idx]));
                 rec << ");\n";
-                setParameter(includeModelSpecs, 0.0);
+                hy_env::EnvVariableSet(hy_env::include_model_spec, new HY_CONSTANT_FALSE, false);
             } else {
-                setParameter(includeModelSpecs, 1.0);
+                hy_env::EnvVariableSet(hy_env::include_model_spec, new HY_CONSTANT_TRUE, false);
             }
 
             rec << "Tree ";
@@ -8843,7 +8948,8 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
             rec << '\n';
         }
     }
-    setParameter(includeModelSpecs, stashIM);
+    hy_env::EnvVariableSet(hy_env::include_model_spec, include_model_info ? new HY_CONSTANT_TRUE : new HY_CONSTANT_FALSE, false);
+    
 
     rec << locVars;
 

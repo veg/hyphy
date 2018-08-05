@@ -1136,15 +1136,19 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, un
     }
   
     HBLObjectRef op_data = this_node_op->GetANumber();
-    _String* conv = (_String*)op_data->toStr();
-    if (op_data->ObjectClass()==STRING) {
-        (result <<'"').AppendNewInstance (conv) << '"';
-    } else {
-        if (op_data->ObjectClass() == NUMBER && op_data->Value() < 0.0) {
-          (result <<'(').AppendNewInstance (conv) << ')';
+    if (op_data) {
+        _String* conv = (_String*)op_data->toStr();
+        if (op_data->ObjectClass()==STRING) {
+            (result <<'"').AppendNewInstance (conv) << '"';
         } else {
-            result.AppendNewInstance (conv);
+            if (op_data->ObjectClass() == NUMBER && op_data->Value() < 0.0) {
+              (result <<'(').AppendNewInstance (conv) << ')';
+            } else {
+                result.AppendNewInstance (conv);
+            }
         }
+    } else {
+        result << "<null>";
     }
 }
 

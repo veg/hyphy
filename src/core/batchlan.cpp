@@ -293,8 +293,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 
     //ReportMPIError(MPI_Send(&messageLength, 1, MPI_LONG, destID, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD),true);
 
-    _FString*    sentVal = new _FString;
-    sentVal->theString = (_String*)theMessage.makeDynamic();
+    _FString*    sentVal = new _FString ((_String*)theMessage.makeDynamic());
     _Variable *   mpiMsgVar = CheckReceptacle (&hy_env::mpi_last_sent_message, kEmptyString, false);
     mpiMsgVar->SetValue (sentVal, false);
     //setParameter (mpiLastSentMsg, &sentVal);
@@ -326,12 +325,6 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
 
     // nonagressive polling mode
   
-    int message_received = 0;
-    while (! message_received) {
-      MPI_Iprobe (senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &message_received, MPI_STATUS_IGNORE);
-      usleep (100);
-    }
-
   
     ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD,&status),false);
 
@@ -962,30 +955,32 @@ void _ExecutionList::Init (_String* namespaceID) {
 
 }
 
-
-
 //____________________________________________________________________________________
-
-_ExecutionList::~_ExecutionList (void)
-{
+void _ExecutionList::ClearExecutionList (void) {
     if (cli) {
         delete [] cli->values;
         delete [] cli->stack;
         delete cli;
         cli = nil;
     }
-
+    
     if (profileCounter) {
         DeleteObject (profileCounter);
         profileCounter = nil;
     }
-
+    
     DeleteObject (stdinRedirect);
     DeleteObject (stdinRedirectAux);
     DeleteObject (nameSpacePrefix);
-
+    
     ResetFormulae();
-    DeleteObject (result);
+    DeleteAndZeroObject (result);
+}
+
+//____________________________________________________________________________________
+
+_ExecutionList::~_ExecutionList (void) {
+    ClearExecutionList();
 }
 
 //____________________________________________________________________________________

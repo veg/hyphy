@@ -317,6 +317,7 @@ public:
      -  SLKP 20170923 initial implementation
      */
     virtual void TrimSpace (void);
+    
 };
 
 #endif

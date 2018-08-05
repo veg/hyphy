@@ -59,28 +59,8 @@
 using namespace hyphy_global_objects;
 using namespace hy_global;
 
-_TranslationTable defaultTranslationTable;
 
 //_________________________________________________________
-
-extern hyFloat dFPrintFormat, dFDefaultWidth;
-
-//_________________________________________________________
-
-//_________________________________________________________
-
-/* function declarations */
-
-void checkTTStatus(FileState *fs);
-void processCommand(_String *s, FileState *fs);
-void FilterRawString(_String &s, FileState *fs, _DataSet &ds);
-long ProcessLine(_String &s, FileState *fs, _DataSet &ds);
-void PadLine(FileState &fState, _DataSet &result);
-void ISelector(FileState &fState, _String &CurrentLine, _DataSet &result);
-bool SkipLine(_String &theLine, FileState *fS);
-void TrimPhylipLine(_String &CurrentLine, _DataSet &ds);
-void ProcessTree(FileState *, FILE *, _String &);
-void ReadNexusFile(FileState &fState, FILE *f, _DataSet &result);
 
 
 //_________________________________________________________

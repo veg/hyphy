@@ -142,7 +142,7 @@ void _DataSet::ConvertRepresentations(void) {
     _List horStrings;
 
     if (lLength == 0) {
-      AppendNewInstance(new _Site);
+      AppendNewInstance(new _StringBuffer (128UL));
     } else {
       _Site *aSite = (_Site *)lData[0];
 
@@ -1005,3 +1005,821 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
     
     return true;
 }
+
+//_________________________________________________________
+//_________________________________________________________
+// reading the data set file in here
+
+//_________________________________________________________
+void    checkTTStatus (FileState* fs) {// check whether the translation table needs to be refreshed}
+    if (fs->translationTable == &defaultTranslationTable) {
+        fs->translationTable =  (_TranslationTable*)defaultTranslationTable.makeDynamic();
+    }
+}
+//_________________________________________________________
+void    processCommand (_String * s, FileState*fs) {
+    
+    static const _List _CommandList (
+        new _String ("BASESET"),
+        new _String ("FORMAT"),
+        new _String ("RAWLINE"),
+        new _String ("REPEAT"),
+        new _String ("TOKEN")
+    );
+    
+    static const _String  kBase20  ("BASE20"),
+                          kPHYLIPi ("PHYLIPI"),
+                          kPHYLIPs ("PHYLIPS"),
+                          kRAW     ("RAW");
+    
+    
+    long f = -1,
+         command_index;
+
+    for (command_index=0L; command_index<_CommandList.countitems(); ++command_index) {
+        f = s->Find (*(_String*)_CommandList.GetItem (command_index));
+        if ( f!= kNotFound) {
+            break;
+        }
+    }
+    
+    try {
+        if (f==-1) { // unrecognized command
+            return;
+        } else {
+            // trim the string
+            //s->Trim (f+((_String*)CommandList(i))->Length(),-1);
+            
+            f = s->Find (":", f + 1L + ((_String*)_CommandList.GetItem (command_index))->length());
+            
+            if (f == kNotFound) { // poorly formed command
+                throw (s->Enquote('[', ']') & " was not of the form COMMAND : DATA");
+            }
+            
+            
+            if (command_index >= 1 &&  command_index<=3 ) {
+                long start = f + 1;
+                long end = s->ExtractEnclosedExpression(start, '"', '"', 0);
+                
+                if (end == kNotFound || end - start <= 2L) {
+                    throw (s->Enquote('[', ']') & " was not of the form COMMAND : \"DATA\" (missing quotes)");
+                }
+                s->Trim (start + 1L, end - 1L);
+           } else {
+               s->Trim (f + 1L, kStringEnd);
+           }
+            
+           // 's' should now contain only the payload of the command
+            
+            switch (command_index) {
+                    char c;
+                    
+                case 4: {// new token
+                    checkTTStatus (fs);
+                    // attempt to extract a token. Looking for (e.g):   "c" = "AC"
+                    
+                    _SimpleList matches = s->RegExpMatch("\\\"([a-z,A-Z])\\\"\\ *=\\ *\\\"([a-z,A-Z]+)\\\"", false, true);
+                    if (matches.countitems() == 6) {
+                        fs->translationTable->AddTokenCode (matches.get (2),s->Cut (matches.get(3), matches.get(4)));
+                    } else {
+                        throw (s->Enquote('[', ']') & " was not of the form \"token\"=\"translation\"");
+                    }
+                }
+                break;
+                    
+                    
+                case 0: { // new code set, e.g  "ACGU"
+                    checkTTStatus(fs);
+                    // erase previous char definitions
+                    fs->translationTable->translationsAdded.Clear();
+                    fs->translationTable->tokensAdded = "";
+                    if (*s != kBase20) {
+                        long start = 0;
+                        long end = s->ExtractEnclosedExpression(start, '"', '"', 0);
+                        if (end == kNotFound || end - start <= 3L) {
+                             throw (s->Enquote('[', ']') & " was not of the form \"at least two letters\"");
+                        }
+                        // TODO : there is no check that baseset is actually valid (e.g. no duplicate characters etc)
+                        fs->translationTable->AddBaseSet (s->Cut (start + 1, end - 1));
+                    } else {
+                        fs->translationTable->AddBaseSet (kEmptyString);
+                        fs->translationTable->baseLength = 20;
+                    }
+                }
+                break;
+                    
+                case 1: //FORMAT
+                    if (*s== kPHYLIPi) { // PHYLIP Interleaved
+                        fs->fileType = 1;
+                        fs->interleaved = TRUE;
+                    } else if (*s== kPHYLIPs) { // PHYLIP sequential
+                        fs->fileType = 1;
+                        fs->interleaved = FALSE;
+                    }
+                    if (*s== kRAW) { // RAW Sequential Data (as in NEXUS)
+                        fs->fileType = 2;
+                        fs->interleaved = FALSE;
+                    }
+                    fs->autoDetect = false;
+                    break;
+                    
+                case 3: // REPEAT CHAR
+                    fs->repeat = s->get_char(0);
+                    break;
+                    
+                case 2: // RAWLINE template e.g 1,-1 skips one word at the beginning and one word at the end
+                    _List chips (s,',');
+                    chips.ForEach([&] (BaseRef number, unsigned long index) -> void {
+                        fs->rawLinesFormat<< ((_String*)number)->to_long();
+                    });
+                    break;
+                    
+            }
+        }
+    } catch (const _String warning) {
+        ReportWarning (warning);
+    }
+}
+//_________________________________________________________
+
+void    FilterRawString (_String& s, FileState* fs, _DataSet & ds) {
+    // TODO: SLKP 20180803 this needs to be tested or deprecated.
+    s.CompressSpaces();
+    _List words (s.Tokenize(" "));
+    
+    long current_start = 0L,
+         current_end   = (long)words.countitems () - 1L;
+                 
+    fs->rawLinesFormat.Each([&] (long word, unsigned long idx) -> void {
+        if (word > 0L) {
+            current_start += word;
+        } else {
+            if (word < 0L) {
+                current_end += word;
+            } else {
+                if (current_start < current_end) {
+                    ds.AddName (*((_String*)words.GetItem (current_start)));
+                    current_start ++;
+                }
+            }
+        }
+    });
+    
+    if (current_start >= current_end) {
+        s = kEmptyString;
+    } else {
+        s = words.Join(" ", current_start, current_end);
+    }
+}
+//_________________________________________________________
+void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine) {
+    
+    // TODO SLKP 20180803 this is pretty inefficient, but previous code
+    // was not doing enough sytnax checks
+    
+    _StringBuffer * tree_string = new _StringBuffer (128L);
+    long start_index = kNotFound,
+         end_index   = kNotFound;
+    
+    while (CurrentLine.nonempty() && (start_index == kNotFound || end_index == kNotFound)) {
+        *tree_string << CurrentLine;
+        if (start_index == kNotFound) {
+            start_index = CurrentLine.FindTerminator(0L, "(");
+        }
+        if (start_index != kNotFound) {
+            end_index = CurrentLine.FindTerminator (start_index + 1L, ")");
+        }
+        
+        if (end_index == kNotFound) {
+            ReadNextLine (f,&CurrentLine,fState, false);
+            *tree_string << CurrentLine;
+        }
+    }
+    
+    if (start_index == kNotFound || end_index == kNotFound) {
+        ReportWarning (tree_string->Enquote() & " has mimatched '(' and ')'");
+        DeleteObject (tree_string);
+    } else {
+        tree_string->TrimSpace();
+        CurrentLine = tree_string->Cut (end_index + 1, kStringEnd);
+        tree_string->Trim (start_index, end_index);
+        hy_env::EnvVariableSetNamespace(hy_env::data_file_tree, new HY_CONSTANT_TRUE, fState->theNamespace, false);
+        hy_env::EnvVariableSetNamespace(hy_env::data_file_tree_string, new _FString (tree_string), nil, false);
+    }
+}
+
+//_________________________________________________________
+
+long    ProcessLine (_String&s , FileState *fs, _DataSet& ds) {
+    long sitesAttached = 0L;
+    
+    try {
+        s.Each([&] (char letter, unsigned long i) -> void {
+            letter = toupper(letter);
+            if (fs->translationTable->IsCharLegal(letter)) { // go on
+                if (fs->curSpecies==0) { // add new column
+                    ds.AddSite (letter);
+                    sitesAttached++;
+                } else { //append to exisiting column
+                         //if (c == fs->skip) continue;
+                         // check to see if this species needs to be padded
+                    
+                    if (letter == fs->repeat) {
+                        if ( fs->curSite+sitesAttached >= ds.lLength) { // a dot not matched by a previously read character; ignore
+                            throw sitesAttached;
+                        }
+                        
+                        letter = ((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->get_char(0);
+                        if (letter=='\0') {
+                            letter = ((_Site*)(ds._List::operator ()
+                                          (((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->GetRefNo())))->get_char(0);
+                        }
+                    }
+                    
+                    if (fs->curSite+sitesAttached+1>fs->totalSitesRead) {
+                        // pad previous species to full length
+                        _Site * newS = new _Site (fs->skip);
+                        newS->AppendNCopies(fs->skip, fs->curSpecies-1L);
+                        (*newS) << letter;
+                        
+                        
+                        ds.theFrequencies << 1;
+                        newS->SetRefNo(-1);
+                        
+                        ds < newS;
+                        fs->totalSitesRead++;
+                    } else {
+                        ds.Write2Site (fs->curSite+sitesAttached, letter);
+                    }
+                    
+                    sitesAttached++;
+                }
+            }
+        });
+    } catch (long e) {
+        return e;
+    }
+    
+    // make sure that this species has enough data in it, and if not - pad it with '?'
+    
+    if ( fs->curSite+sitesAttached<fs->totalSitesRead && fs->interleaved) {
+        // pad this species to full length
+        for (long j = fs->curSite+sitesAttached; j<fs->totalSitesRead; j++) {
+            ds.Write2Site (j, fs->skip);
+        }
+    }
+    if (!fs->curSpecies) {
+        fs->totalSitesRead+=sitesAttached;
+    }
+    return sitesAttached;
+}
+
+//_________________________________________________________
+void    PadLine (FileState& fState, _DataSet& result) { // make sure that there is enough data in this line
+                                                      // and if not - "pad" it with '?''s
+    if (fState.curSite<fState.totalSitesRead) // pad line if needed
+        for (long j = fState.curSite; j<fState.totalSitesRead; j++) {
+            result.Write2Site (j, fState.skip);
+        }
+}
+
+//_________________________________________________________
+void    ISelector (FileState& fState, _String& CurrentLine, _DataSet& result) {
+    if (fState.interleaved) { // interleaved file
+        if (fState.curSpecies&&(!((fState.curSpecies)%fState.totalSpeciesExpected))) { // read a chunk of all species
+            if (fState.totalSitesRead && !result.InternalStorageMode()) {
+                for (long i = fState.curSite; i<fState.totalSitesRead; i++) {
+                    result.Compact(i);
+                }
+                
+                result.ResetIHelper();
+                
+            }
+            fState.curSite = fState.totalSitesRead;
+            fState.curSpecies = 0;
+            ProcessLine (CurrentLine, &fState, result);
+            fState.curSpecies = 1;
+            if (!fState.curSite) {
+                fState.totalSpeciesRead++;
+            }
+        } else {
+            ProcessLine (CurrentLine, &fState, result);
+            if (!fState.curSite) {
+                fState.totalSpeciesRead++;
+            }
+            fState.curSpecies++;
+        }
+    } else {
+        if (fState.curSpecies+1<fState.totalSpeciesExpected) {
+            fState.curSpecies++;
+        }
+        if (fState.curSpecies == fState.totalSpeciesRead) {
+            PadLine (fState, result);
+            fState.curSite = 0;
+        }
+        if (fState.totalSpeciesRead<fState.totalSpeciesExpected) {
+            fState.totalSpeciesRead++;
+        }
+        
+        fState.curSite+=ProcessLine (CurrentLine, &fState, result);
+        
+    }
+}
+
+//_________________________________________________________
+bool SkipLine (_String& theLine, FileState* fS) {
+    
+    if ( theLine.char_at(0) =='/' && theLine.char_at(1)=='/' ) {
+        return true;
+    }
+    
+    char c = theLine.FirstNonSpace();
+    
+    if (c&& (!( c=='$' && !fS->acceptingCommands)) ) {
+        return false;
+    }
+    
+    return true;
+}
+
+
+//_________________________________________________________
+void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase) {
+    _StringBuffer  tempBuffer (1024L);
+    
+    char lastc;
+    
+    if (fp) {
+        lastc = fgetc(fp);
+    } else {
+        lastc = fs->pInSrc<fs->theSource->length()?fs->theSource->char_at(fs->pInSrc++):0;
+    }
+    
+    if (fs->fileType != 3) { // not NEXUS - do not skip [..]
+        if (fp)
+            while ( !feof(fp) && lastc!=10 && lastc!=13 ) {
+                if (lastc) {
+                    tempBuffer << lastc;
+                }
+                
+                lastc = fgetc(fp);
+            }
+        else
+            while (lastc && lastc!=10 && lastc!=13 ) {
+                tempBuffer << lastc;
+                lastc = fs->theSource->char_at(fs->pInSrc++);
+            }
+        
+    } else {
+        if (upCase) {
+            lastc = toupper(lastc);
+        }
+        
+        while (((fp&&(!feof(fp)))||(fs->theSource&&(fs->pInSrc<=fs->theSource->length ()))) && lastc!='\r' && lastc!='\n') {
+            if (lastc=='[') {
+                if (fs->isSkippingInNEXUS) {
+                    ReportWarning ("Nested comments in NEXUS really shouldn't be used.");
+                } else {
+                    fs->isSkippingInNEXUS = true;
+                }
+            }
+            if (fs->isSkippingInNEXUS) {
+                if (lastc==']') {
+                    fs->isSkippingInNEXUS = false;
+                    tempBuffer << ' ';
+                }
+            } else {
+                tempBuffer << lastc;
+            }
+            
+            if (fp) {
+                if (upCase) {
+                    lastc = toupper(fgetc(fp));
+                } else {
+                    lastc = fgetc(fp);
+                }
+            } else {
+                if (upCase) {
+                    lastc = toupper(fs->theSource->char_at(fs->pInSrc++));
+                } else {
+                    lastc = fs->theSource->char_at(fs->pInSrc++);
+                }
+            }
+            
+        }
+        
+        if ( lastc==10 || lastc==13 ) {
+            tempBuffer << ' ';
+        }
+    }
+    
+    tempBuffer.TrimSpace();
+    
+    if ( (fp && feof(fp)) || (fs->theSource && fs->pInSrc >= fs->theSource->length()) ) {
+        if (tempBuffer.empty ()) {
+            *s = "";
+            return;
+        }
+    }
+    *s = tempBuffer;
+    
+    if (SkipLine (*s, fs)) {
+        ReadNextLine(fp,s,fs,false,upCase);
+    }
+    
+    if (s->nonempty() && s->char_at (s->length()-1) == '\n') {
+        s->Trim (0,(long)s->length()-2L);
+    }
+}
+//_________________________________________________________
+void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds) {
+    int  fNS      = CurrentLine.FirstNonSpaceIndex(),
+    space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
+    
+    // hack for PAML support
+    if (space2 > fNS && isspace(CurrentLine.char_at (space2+1))) {
+        _String     sequence_name (CurrentLine,fNS, space2);
+        CurrentLine.Trim(space2+2,-1); // chop out the name
+        ds.AddName(sequence_name);
+    } else {
+        _String     sequence_name (CurrentLine,fNS, fNS+9);
+        CurrentLine.Trim(fNS+10,-1); // chop out the name
+        ds.AddName(sequence_name);
+    }
+}
+
+
+//_________________________________________________________
+_DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, _String* namespaceID, _TranslationTable* dT, _ExecutionList* ex) {
+    
+    static const _String kNEXUS ("#NEXUS"),
+                         kDefSeqNamePrefix ("Species");
+    
+    bool     doAlphaConsistencyCheck = true;
+    _DataSet* result = new _DataSet;
+    
+    
+    _String         CurrentLine = hy_env::data_file_tree_string & "={{}};",
+                    savedLine;
+    
+    _ExecutionList reset (CurrentLine);
+    reset.Execute();
+#ifdef __HYPHYMPI__
+    if (_hy_mpi_node_rank == 0)
+#endif
+    terminate_execution = false;
+    
+    hy_env::EnvVariableSet(hy_env::data_file_tree, new HY_CONSTANT_FALSE, false);
+    
+    // initialize the instance of a file state variable
+    FileState   fState;
+    fState.translationTable =  dT;
+    fState.curSpecies =
+    fState.totalSpeciesRead =
+    fState.totalSitesRead =
+    fState.totalSpeciesExpected =
+    fState.totalSitesExpected =
+    fState.curSite =
+    fState.maxStringLength   = 0;
+    fState.acceptingCommands = true;
+    fState.allSpeciesDefined = false;
+    fState.interleaved       = false;
+    fState.isSkippingInNEXUS = false;
+    fState.autoDetect        = true;
+    fState.fileType          = -1;
+    fState.baseLength        = 4;
+    fState.repeat            = '.',
+    fState.skip            = 0;
+    fState.theSource         = theS;
+    fState.pInSrc            = 0;
+    fState.theNamespace      = namespaceID;
+    
+    if (!(f||theS)) {
+        HandleApplicationError("ReadDataSetFile received null file AND string references. At least one must be specified");
+    }
+    // done initializing
+    
+    long     fileLength = 0;
+    
+#ifdef __HYPHYMPI__
+    if (_hy_mpi_node_rank == 0) {
+#endif
+        if       (f) {
+            fseek    (f,0,SEEK_END);
+            fileLength = ftell(f);
+            rewind  (f);
+        } else {
+            fileLength = theS->length();
+        }
+        
+#ifdef __HYPHYMPI__
+    }
+#endif
+    
+    
+    
+    //if (f==NULL) return (_DataSet*)result.makeDynamic();
+    // nothing to do
+    
+    CurrentLine = kEmptyString;
+    
+    ReadNextLine (f,&CurrentLine,&fState);
+    if (CurrentLine.empty()) {
+        HandleApplicationError("Empty File Encountered By ReadDataSet.");
+        return result;
+    } else {
+        if (CurrentLine.BeginsWith (kNEXUS,false)) {
+            ReadNexusFile (fState,f,(*result));
+            doAlphaConsistencyCheck = false;
+        } else {
+            long i,j,k, filePosition = -1, saveSpecExpected = 0x7FFFFFFF;
+            char c;
+            while (CurrentLine.nonempty()) { // stuff to do
+                                          // check if the line has a command in it
+                
+                c = CurrentLine.FirstNonSpace();
+                while (1) {
+                    if (fState.acceptingCommands) {
+                        if (c == '$') { // command line
+                            processCommand(&CurrentLine, &fState);
+                            break;
+                        }
+                    }
+                    
+                    if (!fState.skip) {
+                        fState.skip = fState.translationTable->GetSkipChar();
+                    }
+                    fState.acceptingCommands = FALSE;
+                    
+                    if (fState.fileType==-1) { // undecided file type - assume it is PHYLIP sequential
+                        if ((c == '#')||(c=='>')) { // hash-mark format
+                            fState.fileType = 0;
+                        } else { // assume this is a sequential PHYLIP file
+                            fState.fileType = 1;
+                            fState.interleaved = false;
+                        }
+                        
+                    }
+                    // decide what to do next
+                    // if format is PHYLIP and we do not know the expected dimensions,
+                    //   we must read those in first
+                    if (fState.fileType==1) { // PHYLIP
+                        if ((filePosition<0)&&(fState.autoDetect)) {
+                            filePosition = (f?
+                                            ftell (f)
+#ifdef __WINDOZE__
+                                            -1
+#endif
+                                            :fState.pInSrc);
+                            savedLine = CurrentLine;
+                        }
+                        
+                        if (fState.totalSitesExpected==0 || fState.totalSpeciesExpected==0) { // must read dimensions first
+                            i = CurrentLine.FirstNonSpaceIndex();
+                            j = CurrentLine.FirstSpaceIndex(i);
+                            if (j != kNotFound) {
+                                k = CurrentLine.FirstNonSpaceIndex(j);
+                                if (k != kNotFound) { // could have dimensions
+                                    saveSpecExpected = fState.totalSpeciesExpected = CurrentLine.Cut(i,j-1L).to_long();
+                                    fState.totalSitesExpected=CurrentLine.Cut(k, kStringEnd).to_long();
+                                }
+                                if (CurrentLine.Find ('I', k, kStringDirectionBackward)>=0) { // interleaved
+                                    fState.interleaved = true;
+                                }
+                            }
+                        } else
+                            // now for the data crunching part
+                            // detect a line, diagnose it and dispatch accordingly
+                        {
+                            if (fState.interleaved) {
+                                if (fState.totalSpeciesRead<fState.totalSpeciesExpected) {
+                                    TrimPhylipLine (CurrentLine, (*result));
+                                }
+                                if (fState.curSite && fState.curSpecies >= saveSpecExpected &&
+                                    fState.totalSitesRead >= fState.totalSitesExpected) {
+                                    // reached the end of the data - see maybe there is a tree
+                                    ReadNextLine (f,&CurrentLine,&fState);
+                                    if (CurrentLine.nonempty()) {
+                                        if (CurrentLine.FirstNonSpace()=='(') { // could be a tree string
+                                            ProcessTree (&fState,f, CurrentLine);
+                                        }
+                                    }
+                                    break;
+                                }
+                                
+                            } else {
+                                if (fState.totalSitesRead > fState.totalSitesExpected)
+                                    // oops - autodetect incorrectly assumed that the file was sequential
+                                {
+                                    fState.curSpecies =
+                                    fState.totalSpeciesRead =
+                                    fState.totalSitesRead =
+                                    fState.curSite =
+                                    fState.totalSpeciesExpected =
+                                    fState.totalSitesExpected =
+                                    fState.maxStringLength = 0;
+                                    fState.allSpeciesDefined = false;
+                                    fState.interleaved = true;
+                                    fState.autoDetect = true;
+                                    
+                                    if(f) {
+                                        fseek (f, filePosition, SEEK_SET);
+                                    } else {
+                                        fState.pInSrc = filePosition;
+                                    }
+                                    
+                                    CurrentLine = savedLine;
+                                    result->ForEach ([] (BaseRef site, unsigned long) -> void {
+                                        ((_Site*)site)->TrimSpace();
+                                    });
+                                    
+                                    result->theNames.Clear();
+                                    result->theMap.Clear();
+                                    result->Clear();
+                                    result->theFrequencies.Clear();
+                                    if (result->dsh) {
+                                        result->dsh->incompletePatterns->Clear(false);
+                                        delete (result->dsh);
+                                        result->dsh = nil;
+                                    }
+                                    continue;
+                                }
+                                if (fState.totalSpeciesRead==0) {
+                                    fState.totalSpeciesExpected = 1;
+                                    if (!fState.curSite) {
+                                        TrimPhylipLine (CurrentLine, (*result));
+                                    }
+                                }
+                                
+                                else if (fState.curSite>=fState.totalSitesExpected) {
+                                    fState.totalSpeciesExpected++;
+                                    if (fState.totalSpeciesExpected>saveSpecExpected) {
+                                        // reached the end of the data - see maybe there is a tree
+                                        ReadNextLine (f,&CurrentLine,&fState);
+                                        if (CurrentLine.nonempty()) {
+                                            if (CurrentLine.FirstNonSpace()=='(') { // could be a tree string
+                                                ProcessTree (&fState,f, CurrentLine);
+                                            }
+                                        }
+                                        break;
+                                    }
+                                    TrimPhylipLine (CurrentLine, (*result));
+                                }
+                            }
+                            
+                            ISelector (fState, CurrentLine, (*result));
+                        }
+                        break;
+                    }
+                    // that's all for PHYLIP
+                    
+                    // now handle raw data case
+                    if (fState.fileType == 2) { // raw data
+                        FilterRawString(CurrentLine, &fState, (*result));
+                        if (CurrentLine.nonempty()) {
+                            break;
+                        }
+                        if (ProcessLine (CurrentLine, &fState, (*result))) {
+                            fState.curSpecies++;
+                            fState.totalSpeciesRead++;
+                        }
+                        break;
+                    }
+                    
+                    // lastly, handle the auto-detect standard case
+                    
+                    // check to see if the string defines a name
+                    if (c=='#' || c=='>') { // a name it is
+                        if (fState.allSpeciesDefined) { // can't define the species after data
+                            break;
+                        } else {
+                            if ((!fState.totalSpeciesRead)&&(fState.totalSpeciesExpected>=1)) {
+                                fState.interleaved = TRUE;
+                            } else {
+                                fState.interleaved = FALSE;
+                            }
+                            fState.totalSpeciesExpected++;
+                            CurrentLine.Trim(CurrentLine.FirstNonSpaceIndex(1),kStringEnd);
+                            if (CurrentLine.char_at(0) == '#' || CurrentLine.char_at(0) == '>') {
+                                CurrentLine = kDefSeqNamePrefix &_String(fState.totalSpeciesExpected);
+                            }
+                            result->AddName (CurrentLine);
+                        }
+                        break;
+                    }
+                    // check to see if the string defines a tree
+                    if (c=='(') {
+                        ProcessTree (&fState,f, CurrentLine);
+                        ReadNextLine (f,&CurrentLine,&fState);
+                    }
+                    
+                    // check to see where to stick the incoming line
+                    
+                    if (fState.totalSpeciesExpected == 0) {
+                        // raw data fed before names defined - skip
+                        break;
+                    }
+                    if( fState.totalSpeciesExpected>1 && fState.totalSpeciesRead == 0) {
+                        fState.allSpeciesDefined = TRUE;
+                    }
+                    
+                    // repeat the structure of PHYLIP reader
+                    
+                    ISelector (fState, CurrentLine, (*result));
+                    
+                    break;
+                }
+                
+                ReadNextLine (f,&CurrentLine,&fState);
+                
+            }
+        }
+    }
+    
+    
+    
+    if (fState.totalSitesRead && fState.interleaved && !result->InternalStorageMode()) {
+        for (long i = fState.curSite; i<fState.totalSitesRead; i++) {
+            result->Compact(i);
+        }
+        result->ResetIHelper();
+    }
+    
+    if ((!fState.interleaved)&&(fState.fileType!=2)) {
+        PadLine (fState, (*result));
+    }
+    
+    
+    
+    // make sure interleaved duplications are handled correctly
+    
+    result->Finalize();
+    result->noOfSpecies       = fState.totalSpeciesRead;
+    result->theTT             = fState.translationTable;
+    
+    // check to see if result may be an amino-acid data
+    if (doAlphaConsistencyCheck && result->theTT == &defaultTranslationTable) {
+        if (result->GetNoTypes() == 0)
+            // emptyString data set
+            // try binary data
+        {
+            _TranslationTable *trialTable = new _TranslationTable (defaultTranslationTable);
+            trialTable->baseLength = 2;
+            _DataSet * res2 = ReadDataSetFile (f, execBF, theS, bfName, namespaceID, trialTable);
+            if (res2->GetNoTypes()) {
+                DeleteObject (result);
+                return res2;
+            }
+            DeleteObject (trialTable);
+        } else
+            // check it out
+            if (result->CheckAlphabetConsistency()<0.5)
+                // less than 50% of the data in the alphabet is not in the basic alphabet
+            {
+                _TranslationTable trialTable (defaultTranslationTable);
+                trialTable.baseLength = 20;
+                (*result).theTT = &trialTable;
+                if ((*result).CheckAlphabetConsistency()<0.5) {
+                    CurrentLine = "More than 50% of characters in the data are not in the alphabet.";
+                    (*result).theTT =  &defaultTranslationTable;
+                    ReportWarning (CurrentLine);
+                } else {
+                    (*result).theTT = (_TranslationTable*)trialTable.makeDynamic();
+                }
+                
+            }
+        
+    }
+    if (nexusBFBody.nonempty()) {
+        if (execBF == 1) {
+            lastNexusDataMatrix = result;
+            
+            long            bfl = GetBFFunctionCount ();
+            
+            _ExecutionList * nexusBF = ex ? ex :  new _ExecutionList;
+            if (namespaceID) {
+                nexusBF->SetNameSpace(*namespaceID);
+            }
+            nexusBF->BuildList(nexusBFBody, nil, false, true);
+            //_ExecutionList nexusBF (nexusBFBody,namespaceID);
+            if (bfName) {
+                nexusBF->sourceFile = *bfName;
+            }
+            
+            nexusBF->ExecuteAndClean(bfl);
+            if (nexusBF != ex) {
+                DeleteObject (nexusBF);
+            } else {
+                ex->ClearExecutionList();
+                ex->Clear();
+            }
+            nexusBFBody         = kEmptyString;
+        } else if (execBF == 0) {
+            nexusBFBody         = kEmptyString;
+        }
+    }
+    
+    return result;
+}
+
+

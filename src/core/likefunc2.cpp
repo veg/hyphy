@@ -839,7 +839,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                     branchValues,
                     postToIn;
 
-    blockTree->MapPostOrderToInOderTraversal (postToIn, doLeaves == false);
+    blockTree->MapPostOrderToInOrderTraversal (postToIn, doLeaves == false);
     supportValues.Clear                      ();
     _Matrix::CreateMatrix                             (&supportValues,matrixSize,shiftForTheNode,false,true,false);
 

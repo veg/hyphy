@@ -312,7 +312,7 @@ class _SimpleList:public BaseObj {
 
         template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {
-            if ( condition (((long*)(lData))[i]) ) {
+            if ( condition (((long*)(lData))[i], i )) {
               return i;
             }
           }

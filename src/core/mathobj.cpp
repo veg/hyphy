@@ -82,9 +82,7 @@ _MathObject* _MathObject:: Raise      (_MathObject*)     {
     HandleApplicationError (kErrorStringNullOperand);
     return this;
 }
-void _MathObject::         Assign     (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
-}
+
 bool _MathObject::         Equal      (_MathObject*)     {
     HandleApplicationError (kErrorStringNullOperand);
     return false;

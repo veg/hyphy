@@ -1357,7 +1357,7 @@ void _String::FlushRegExp(regex_t* re) {
 
 //=============================================================
 
-regex_t* _String::PrepRegExp(const _String& pattern, int &error_code, bool case_sensitive) {
+regex_t* _String::PrepRegExp(const _String& pattern, int &error_code, bool case_sensitive, bool throw_errors) {
   regex_t *res = new regex_t;
   
   error_code = regcomp(res, pattern.get_str(),
@@ -1365,6 +1365,9 @@ regex_t* _String::PrepRegExp(const _String& pattern, int &error_code, bool case_
   
   if (error_code) {
     FlushRegExp(res);
+    if (throw_errors) {
+      throw (GetRegExpError (error_code));
+    }
     return nil;
   }
   return res;

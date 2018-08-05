@@ -1621,7 +1621,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       if (current_program.stdinRedirect) {
         _String const option = current_program.FetchFromStdinRedirect ();
 
-        model_id = matching_models.FindOnCondition( [&] (long index) -> bool {
+        model_id = matching_models.FindOnCondition( [&] (long index, unsigned long) -> bool {
           return option == * (_String*) templateModelList.GetItem (index,0);
         });
 
@@ -1649,7 +1649,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
           printf ("\n\n Please type in the abbreviation for the model you want to use:");
           _String const user_choice = StringFromConsole();
 
-          model_id = matching_models.FindOnCondition( [&] (long index) -> bool {
+          model_id = matching_models.FindOnCondition( [&] (long index, unsigned long) -> bool {
             return user_choice.EqualIgnoringCase(*(_String*) templateModelList.GetItem (index,0));
           });
 
@@ -1954,7 +1954,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
       case HY_BL_LIKELIHOOD_FUNCTION: {
 
 
-        if (object_type == HY_BL_SCFG && set_this_attribute == kSCFGCorpus) {
+     if (object_type == HY_BL_SCFG && set_this_attribute == hy_env::kSCFGCorpus) {
           HBLObjectRef corpus_source = _ProcessAnArgumentByType (set_this_attribute, MATRIX|STRING, current_program, &dynamic_variable_manager);
           if (corpus_source->ObjectClass () == STRING) {
             _List   single_string ( new _String (((_FString*)corpus_source)->get_str()));
@@ -3196,7 +3196,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         }
         
         auto validate_choice = [&] (_String const& user_choice) -> long {
-            return available_choices->FindOnCondition([&] (BaseRefConst item) -> bool {
+            return available_choices->FindOnCondition([&] (BaseRefConst item, unsigned long) -> bool {
                 return user_choice == *(_String*)((_List*)item)->GetItem (0);
             });
         };

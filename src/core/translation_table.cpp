@@ -729,7 +729,7 @@ const _String &_TranslationTable::GetAlphabetString(void) const {
 
 //___________________________________________
 
-void _TranslationTable::AddTokenCode(char token, _String &code) {
+void _TranslationTable::AddTokenCode(char token, _String const &code) {
   long f, newCode = 0;
 
   bool killBS = false;

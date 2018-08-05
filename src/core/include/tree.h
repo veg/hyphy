@@ -108,7 +108,6 @@ public:
     }
 
     virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
-    virtual  HBLObjectRef      TEXTreeString               (HBLObjectRef) const;
     virtual  HBLObjectRef      PlainTreeString             (HBLObjectRef,HBLObjectRef);
 
     virtual _String const   GetNodeName                 (node<long> *, bool = false) const;
@@ -128,7 +127,7 @@ public:
 
     _List*      RecoverAncestralSequences       (_DataSetFilter const*, _SimpleList const&, _List const&, hyFloat *, hyFloat const*, long, long*, _Vector*, bool = false);
     void        RecoverNodeSupportStates        (_DataSetFilter const*, long, _Matrix&);
-    void        RecoverNodeSupportStates2       (node<long>*,hyFloat*,hyFloat*,long);
+    void        RecoverNodeSupportStates2       (node<long>*,hyFloat*,hyFloat*,long, _AVLListX &);
     _List*      SampleAncestors                 (_DataSetFilter*, node<long>*);
     void        PurgeTree                       (void);
 
@@ -166,8 +165,6 @@ public:
 
     virtual void        ClearConstraints                (void);
 
-    bool        FindScalingVariables            (_SimpleList&) const;
-    bool        HaveStringBranchLengths         (void) const;
     void        AssignLabelsToBranches          (node<nodeCoord>*, _String*, bool);
 
     node<nodeCoord>*
@@ -186,25 +183,17 @@ public:
         return rooted;
     }
 
-    nodeCoord   TreeTEXRecurse                  (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long, const _TreeTopologyParseSettings&) const;
-    void        TreePSRecurse                   (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long,long,long,const _TreeTopologyParseSettings&,_AssociativeList* = nil, char = 0, hyFloat* = nil) const;
+     void        TreePSRecurse                   (node<nodeCoord>*,_StringBuffer&,hyFloat,hyFloat,long,long,long,long,const _TreeTopologyParseSettings&,_AssociativeList* = nil, char = 0, hyFloat* = nil) const;
 
     bool        AllBranchesHaveModels           (long) const;
-    void        ScanSubtreeVars                 (_List&, char, _CalcNode*) const;
     void        AllocateResultsCache            (long);
     long        CountTreeCategories             (void);
     void        CompileListOfModels             (_SimpleList&);
 
-    void        MarkMatches                     (_DataSetFilter*,long,long) const;
-    long        GetLowerBoundOnCost             (_DataSetFilter*, _SimpleList* = nil) const;
     _SimpleList&GetLeftINodes                   (void) {
         return leftiNodes;
     }
-    bool        MatchLeavesToDF                 (_SimpleList&, _DataSetFilter*, bool) const;
-    virtual void
-    RemoveModel                     (void);
-    _String*    TreeUserParams                  (void) const;
-
+    virtual void    RemoveModel                     (void);
 
   
   
@@ -219,7 +208,7 @@ public:
     // makes an AVL of with keys storing memory addresses of node<long> tree nodes
     // and values showing the order in either flatLeaves (bool = false) or flatNodes (bool = true)
 
-    void        MapPostOrderToInOderTraversal   (_SimpleList&, bool = true) const;
+    void        MapPostOrderToInOrderTraversal   (_SimpleList&, bool = true) const;
     // 20090306: SLKP
     // 20100511: SLKP
     // construct a post-order -> in-order traveral map for internal nodes
@@ -248,20 +237,6 @@ public:
 
     const _CalcNode * GetNodeFromFlatIndex (long index) const;
   
-    hyFloat  VerySimpleLikelihoodEvaluator   (_SimpleList&            updateNodes,
-            _DataSetFilter*      theFilter,
-            hyFloat*          iNodeCache,
-            long       *             lNodeFlags,
-            _Vector*      lNodeResolutions);
-
-#ifdef MDSOCL
-			hyFloat OCLLikelihoodEvaluator (			_SimpleList&	     updateNodes, 
-                                                        _DataSetFilter*		 theFilter,
-                                                        hyFloat*			 iNodeCache,
-                                                         long	   *		 lNodeFlags,
-                                                        _Vector*		 lNodeResolutions,
-														_OCLEvaluator& OCLEval);
-#endif
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
     void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, hyFloat const*, _List&, _SimpleList*, _List&, hyFloat const*, long);
@@ -341,9 +316,28 @@ protected:
     
     static      hyFloat _timesCharWidths[256],
                          _maxTimesCharWidth;
+    
+    static      _String const kTreeOutputLabel,
+                              kTreeOutputTLabel,
+                              kTreeOutputFSPlaceH;
 
 };
 
+
+#define    _HY_BITMASK_WIDTH_ (8*sizeof (unsigned long))
+
+struct      bitMasks {
+    unsigned long masks[_HY_BITMASK_WIDTH_];
+    bitMasks (void) {
+        unsigned long aBit = 1;
+        for (long k=0; k<_HY_BITMASK_WIDTH_; k++) {
+            masks[k] = aBit;
+            aBit = aBit << 1;
+        }
+    }
+};
+
+extern bitMasks bitMaskArray;
 
 #ifdef _OPENMP
 #include "omp.h"

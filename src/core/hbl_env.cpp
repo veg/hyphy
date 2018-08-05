@@ -224,6 +224,8 @@ _String const
         // literal for the expected number of substitions (per unit time)
     kGetStringFromUser                              ("PROMPT_FOR_STRING"),
         // [LEGACY] placeholder for prompting the user for a string value
+    kSCFGCorpus                                     ("SCFG_STRING_CORPUS"),
+        // set SCFG training corpus
     kStringSuppliedLengths                          ("STRING_SUPPLIED_LENGTHS"),
         // literal for branch lengths from the Newick tree string
     last_file_path                                  ("LAST_FILE_PATH"),
@@ -232,6 +234,11 @@ _String const
     last_model_parameter_list          (            "LAST_MODEL_PARAMETER_LIST"),
         // a stand-in for the list of model parameters for the last
         // declared model
+    
+    lf_convergence_criterion                        ("LF_CONVERGENCE_CRITERION"),
+        // if set to a string, provides a callback function ID to LF optimization routines,
+        // expected to take two arguments: current log L and a dict with current param values
+        // returns T/F for convergence criterion check
     
     lib_directory                                   ("HYPHY_LIB_DIRECTORY"),
         // is set to the library directory for standard library searchers; can be set via a CL argument (LIBPATH)

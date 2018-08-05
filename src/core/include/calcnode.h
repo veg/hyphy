@@ -98,6 +98,8 @@ public:
     // change the codeBase value for this node
     // this will resize the vector used to handle frequencies
     
+    virtual     void        Clear                       (void);
+
     bool                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil, _List* = nil);
     // reexponentiate the transition matrix and
     // store it in compExp.
@@ -178,7 +180,6 @@ public:
     
 public:
     hyFloat*     theProbs;       // list of transitional probabilities
-    //long            lastState;
     // deprecate??
 protected:
     
@@ -211,7 +212,8 @@ protected:
     _Matrix   *     compExp;        // matrix exponential computed previously
     _Matrix   **    matrixCache;    // only meaningful for category computations
     
-    long            cBase;          // dimension of theProbs
+    long            cBase,          // dimension of theProbs
+                    lastState;
     /*nodeIndex,
     referenceNode,
     slaveNodes;*/
