@@ -28,7 +28,7 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 fel.analysis_description = {
     terms.io.info: "FEL-contrast (Fixed Effects Likelihood) investigates whether or not selective pressures differ between two or more sets of
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
-    and then beta rates are tested for equality at each site. LRT (one degree of freedom) is used to assess significance.",
+    and then beta rates are tested for equality at each site. LRT is used to assess significance.",
     terms.io.version: "0.2",
     terms.io.reference: "Kosakovsky Pond SL, Frost SDW, Grossman Z, Gravenor MB, Richman DD, Leigh Brown AJ (2006) Adaptation to Different Human Populations by HIV-1 Revealed by Codon-Based Analyses. PLoS Comput Biol 2(6): e62.",
     terms.io.authors: "Sergei L Kosakovsky Pond",
@@ -51,7 +51,7 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 */
 
 
-
+terms.fel.pairwise      = "pairwise";
 fel.site_alpha          = "Site relative synonymous rate";
 fel.site_beta_reference = "Site relative non-synonymous rate (reference branches)";
 fel.site_tested_classes = {};
@@ -80,23 +80,6 @@ fel.display_orders =   {terms.original_name: -1,
 selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
 
 
-fel.table_headers = {{"alpha", "Synonymous substitution rate at a site"}
-                     {"beta_r", "Non-synonymous substitution rate at a site for reference branches"}
-                     {"beta_t", "Non-synonymous substitution rate at a site for test branches"}
-                     {"beta_r=beta_t", "The rate estimate under the constant selective pressure model"}
-                     {"LRT", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
-                     {"p-value", "Likelihood ration test statistic for beta_r = beta_t, versus beta_r &neq; beta_t"}
-                     {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
-
-
-/**
-This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
-is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
-the next set of variables.
-*/
-
-fel.table_screen_output  = {{"Codon", "alpha", "beta-reference", "beta-test", "LRT", "Difference detected?"}};
-fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
 
 
 namespace fel {
@@ -154,16 +137,82 @@ utility.ForEachPair (fel.branch_sets, "_group_", "_branches_",
      "
 );
 
-selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
+fel.test_count = 1;
+if (fel.branch_class_counter > 2) {
+    fel.test_count += fel.branch_class_counter * (fel.branch_class_counter-1) / 2;
+}
 
+fel.table_headers = {2 + utility.Array1D (fel.scaler_parameter_names) + fel.test_count, 2};
+fel.table_headers [0][0] = "alpha"; fel.table_headers [0][1] = "Synonymous substitution rate at a site";
+
+fel.k = 1;
+fel.rate.names = utility.Keys (fel.scaler_parameter_names);
+utility.ForEach (fel.rate.names, "_n_", ,
+'
+    fel.table_headers [fel.k][0] = "beta (" + _n_ + ")";
+    fel.table_headers [fel.k][1] = "Non-synonymous substitution rate at a site for " + _n_ + " branches";
+    fel.k += 1;
+');
+
+fel.report.rate_count = fel.k;
+
+fel.table_headers [fel.k][0] = "p-value (overall)";
+if (fel.branch_class_counter == 1) {
+    fel.table_headers [fel.k][1] = "P-value for the test that " + fel.branches.testable[0] + " branches have different non-synonymous rates than background branches";
+} else {
+    fel.table_headers [fel.k][1] = "P-value for the test that non-synonymous rates differ between any of the selected groups: " + Join (",", fel.branches.testable);
+}
+
+fel.k += 1;
+
+fel.report.test_count = 1 + fel.branch_class_counter * (fel.branch_class_counter-1) / 2;
+fel.tests.key = {fel.report.test_count, 4};
+fel.tests.key [0][0] = "overall";
+fel.tests.key [0][1] = -1;
+fel.tests.key [0][3] = fel.report.rate_count;
+
+fel.test.index = 1;
+
+for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
+    for (fel.v2 = fel.v + 1; fel.v2 < fel.branch_class_counter; fel.v2 += 1) {
+        fel.table_headers [fel.k][0] = "P-value for " + fel.branches.testable[fel.v] + " vs " + fel.branches.testable[fel.v2];
+        fel.tests.key [fel.test.index][0] = fel.branches.testable[fel.v] + " vs " + fel.branches.testable[fel.v2];
+        fel.tests.key [fel.test.index][1] = 1 + fel.v;
+        fel.tests.key [fel.test.index][2] = 1 + fel.v2;
+        fel.tests.key [fel.test.index][3] = fel.report.rate_count + fel.test.index;
+
+        fel.table_headers [fel.k][1] = "P-value for  the test that non-synonymous rates differ between " + fel.branches.testable[fel.v] + " and " + fel.branches.testable[fel.v2] + " branches";
+        fel.k += 1;
+        fel.test.index += 1;
+    }
+}
+
+fel.report.counts         = {fel.report.test_count,1};
+
+fel.table_headers [fel.k][0] = "Total branch length";
+fel.table_headers [fel.k][1] = "The total length of branches contributing to inference at this site, and used to scale beta-alpha";
+
+
+/**
+This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
+is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
+the next set of variables.
+*/
+
+fel.table_screen_output  = {{"Codon", "alpha", "beta", "test", "p-value"}};
+fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.align : "center",
+                            terms.table_options.column_widths : { "0" : 8, "1" : 16, "2" : 30, "3" : 40, "4" : 10}};
+
+selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
 estimators.fixSubsetOfEstimates(fel.gtr_results, fel.gtr_results[terms.global]);
 
 namespace fel {
     doPartitionedMG ("fel", FALSE);
 }
 
-fel.final_partitioned_mg_results = fel.partitioned_mg_results;
-/*
+
+//fel.final_partitioned_mg_results = fel.partitioned_mg_results;
+
 io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
 
@@ -191,7 +240,7 @@ selection.io.json_store_lf_GTR_MG94 (fel.json,
                             utility.ArrayToDict (utility.Map (fel.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}")),
                             (fel.final_partitioned_mg_results[terms.efv_estimate])["VALUEINDEXORDER"][0],
                             fel.display_orders[terms.json.global_mg94xrev]);
-*/
+
 
 estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_partitioned_mg_results[terms.global]);
 
@@ -199,8 +248,6 @@ utility.ForEachPair (fel.filter_specification, "_key_", "_value_",
     'selection.io.json_store_branch_attribute(fel.json, terms.json.global_mg94xrev, terms.branch_length, fel.display_orders[terms.json.global_mg94xrev],
                                              _key_,
                                              selection.io.extract_branch_info((fel.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
-
-
 
 
 selection.io.stopTimer (fel.json [terms.json.timers], "Model fitting");
@@ -278,12 +325,9 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     '
     );
 
-    utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
-
     Optimize (results, ^lf);
 
     snapshot = estimators.TakeLFStateSnapshot (lf);
-
     alternative = estimators.ExtractMLEs (lf, model_mapping);
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
@@ -304,76 +348,92 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         ^(^"fel.alpha.scaler") = (^(^"fel.alpha.scaler")+denominator*sum)/denominator;
     }
 
-    ref_parameter = (^"fel.scaler_parameter_names")["VALUEINDEXORDER"][0];
+
+    ref_parameter = (^"fel.scaler_parameter_names")[(^"fel.branches.testable")["VALUEINDEXORDER"][0]];
 
     ^ref_parameter = sum /denominator;
 
-    utility.ForEach (^"fel.scaler_parameter_names", "_pname_",
-    '
-        console.log (`&ref_parameter`);
-        if (_pname_ != `&ref_parameter`) {
-            parameters.SetConstraint (_pname_,`&ref_parameter`, "");
-        }
-    '
-    );
-
-
-    Optimize (results, ^lf);
-
-    if (denominator > 2) {
-        for (v = 0; v < testable; v+=1) {
-            for (v2 = v + 1; v2 < testable; v2+=1) {
-                console.log ("Testing " + (^"fel.branches.testable")[v] + " vs " + (^"fel.branches.testable")[v2]);
-                estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
+    if (testable == 1) {
+        parameters.SetConstraint ((^"fel.scaler_parameter_names")[^"terms.tree_attributes.background"],ref_parameter, "");
+    } else {
+        utility.ForEach (^"fel.scaler_parameter_names", "_pname_",
+        '
+            //console.log ("REF " + `&ref_parameter`);
+            if (_pname_ != `&ref_parameter`) {
+                parameters.SetConstraint (_pname_,`&ref_parameter`, "");
             }
-        }
+        '
+        );
     }
 
-    assert (0);
-
+    Optimize (results, ^lf);
     null = estimators.ExtractMLEs (lf, model_mapping);
     null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
+    if (testable > 2) {
+        pairwise = {};
+        for (v = 0; v < testable; v+=1) {
+            for (v2 = v + 1; v2 < testable; v2+=1) {
+                v1n = (^"fel.branches.testable")[v];
+                v2n = (^"fel.branches.testable")[v2];
+
+                estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
+                parameters.SetConstraint ((^"fel.scaler_parameter_names")[v1n],(^"fel.scaler_parameter_names")[v2n], "");
+                //GetString (lfi, ^lf, -1);
+                //console.log (lfi);
+                Optimize (results, ^lf);
+                pairwise[v1n + "|" + v2n] = estimators.ExtractMLEs (lf, model_mapping);
+                (pairwise[v1n + "|" + v2n])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+           }
+        }
+    } else {
+        pairwise = None;
+    }
+
     return {
                 utility.getGlobalValue("terms.alternative") : alternative,
-                utility.getGlobalValue("terms.null"): null
+                utility.getGlobalValue("terms.null"): null,
+                utility.getGlobalValue("terms.fel.pairwise"): pairwise
            };
 }
 
 /* echo to screen calls */
 
-fel.report.counts        = {{0,0}};
 
-
-
-fel.report.more_selection = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+fel.report.pairwise = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
                                     Format(fel.report.row[0],10,3),
-                                    Format(fel.report.row[1],10,3),
-                                    Format(fel.report.row[2],10,3),
-                                    Format(fel.report.row[4],10,3),
-                                    "Incr. p = " + Format(fel.report.row[5],6,4)}};
+                                    Format(fel.report.row[fel.report.rate1_index],10,3) + " : " + Format(fel.report.row[fel.report.rate2_index],10,3),
+                                    fel.report.test ,
+                                    Format(fel.report.row[fel.report.pvalue_index],6,4)}};
 
-fel.report.less_selection = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+fel.report.overall = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
                                     Format(fel.report.row[0],10,3),
-                                    Format(fel.report.row[1],10,3),
-                                    Format(fel.report.row[2],10,3),
-                                    Format(fel.report.row[4],10,3),
-                                    "Decr. p = " + Format(fel.report.row[5],6,4)}};
+                                    Format(fel.report.rates[0],10,3) + " - " + Format(fel.report.rates[fel.report.rate_count-2],10,3),
+                                    fel.report.test,
+                                    Format(fel.report.row[fel.report.pvalue_index],6,4)}};
+
 
 function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row) {
 
-    fel.print_row = None;
-    if (fel.report.row [5] < fel.pvalue) {
-        if (fel.report.row[1] < fel.report.row[2]) {
-            fel.print_row = fel.report.more_selection;
-            fel.report.counts[0] += 1;
-        } else {
-            fel.print_row = fel.report.less_selection;
-            fel.report.counts [1] += 1;
-        }
-    }
+    fel.k.bound   = Rows (fel.tests.key);
 
-     if (None != fel.print_row) {
+    for (fel.k = 0; fel.k < fel.k.bound;  fel.k += 1) {
+        fel.print_row = None;
+        if (fel.report.row[fel.tests.key[fel.k][3]] <= fel.p_value) {
+            fel.report.test         = fel.tests.key[fel.k][0];
+            fel.report.rate1_index  = fel.tests.key[fel.k][1];
+            fel.report.pvalue_index = fel.tests.key[fel.k][3];
+            if (fel.report.rate1_index >= 0) {
+                fel.report.rate2_index = fel.tests.key[fel.k][2];
+                fel.print_row = fel.report.pairwise;
+            } else {
+                fel.print_row = fel.report.overall;
+                fel.report.rates = Transpose (fel.report.row[{{0,1}}][{{0,fel.report.rate_count-1}}]) % 0;
+            }
+            fel.report.counts [fel.k] += 1;
+        }
+
+        if (None != fel.print_row) {
             if (!fel.report.header_done) {
                 io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
                 fprintf (stdout,
@@ -381,54 +441,80 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
                 fel.report.header_done = TRUE;
                 fel.table_output_options[terms.table_options.header] = FALSE;
             }
-
             fprintf (stdout,
                 io.FormatTableRow (fel.print_row,fel.table_output_options));
-
         }
+    }
+
+
+
 
 }
 
 
 lfunction fel.store_results (node, result, arguments) {
+    //console.log (^"fel.table_headers");
 
     partition_index = arguments [2];
     pattern_info    = arguments [3];
 
-    result_row          = { { 0, // alpha
-                          0, // beta_r
-                          0, // beta_t
-                          0, // beta_r==beta_t
-                          0, // LRT
-                          1, // p-value,
-                          0  // total branch length of tested branches
-                      } };
+    array_size = utility.getGlobalValue ("fel.report.rate_count") + utility.getGlobalValue ("fel.report.test_count") + 1;
+
+    result_row          = { 1, array_size } ["_MATRIX_ELEMENT_COLUMN_>=^'fel.report.rate_count'&&_MATRIX_ELEMENT_COLUMN_<array_size-1"];
 
 
     if (None != result) { // not a constant site
 
+        result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
+        k = 1;
+        utility.ForEach (^"fel.rate.names", "_n_",
+            '
+                `&result_row`[`&k`] = ( estimators.GetGlobalMLE ((`&result`[utility.getGlobalValue("terms.alternative")], fel.site_tested_classes [_n_])));
+                 `&k` += 1;
+           '
+        );
+
+
         lrt = math.DoLRT ((result[utility.getGlobalValue("terms.null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                          1);
-        result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
-        result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_beta_reference");
-        result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_beta_test");
-        result_row [3] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.null")], ^"fel.site_beta_test");
-        result_row [4] = lrt [utility.getGlobalValue("terms.LRT")];
-        result_row [5] = lrt [utility.getGlobalValue("terms.p_value")];
+                          Max (1,^'fel.branch_class_counter' - 1));
 
+        p_values = {};
+        p_values ["overall"] = lrt[^'terms.p_value'];
+        test_keys = {};
 
-        sum = 0;
+        for (v = 0; v < ^'fel.branch_class_counter'; v += 1) {
+            for (v2 = v + 1; v2 < ^'fel.branch_class_counter'; v2 += 1) {
+                test_key = (^'fel.branches.testable') [v] + "|" + (^'fel.branches.testable') [v2];
+                test_keys + test_key;
+                lrt = math.DoLRT (((result[utility.getGlobalValue("terms.fel.pairwise")])[test_key])[utility.getGlobalValue("terms.fit.log_likelihood")],
+                                  (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
+                                  1);
+                p_values [test_key] = lrt[^'terms.p_value'];
+            }
+        }
+
+        p_values = math.HolmBonferroniCorrection (p_values);
+        result_row [k] = p_values ["overall"];
+
+        for (v = 1; v < ^'fel.report.test_count'; v+=1) {
+            k += 1;
+            result_row [k] = p_values[test_keys[v-1]];
+        }
+
+        k += 1;
+
         alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
 
         utility.ForEach (^"fel.case_respecting_node_names", "_node_",
                 '`&sum` += ((`&alternative_lengths`)[_node_])[utility.getGlobalValue("terms.fit.MLE")];');
 
-        result_row [6] = sum;
-    }
+        result_row [k] = sum;
+     }
 
 
     utility.EnsureKey (^"fel.site_results", partition_index);
+
 
     utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_fel_result_",
         '
@@ -442,6 +528,8 @@ lfunction fel.store_results (node, result, arguments) {
 }
 //----------------------------------------------------------------------------------------
 
+
+
 fel.site_results = {};
 fel.partition_index = 0;
 
@@ -452,6 +540,8 @@ model.ApplyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {terms.
 fel.case_respecting_node_names = trees.branch_names (fel.site_tree, TRUE);
 
 fel.site_patterns = alignments.Extract_site_patterns ((fel.filter_specification[fel.partition_index])[utility.getGlobalValue("terms.data.name")]);
+
+
 
 // apply constraints to the site tree
 // alpha = alpha_scaler * branch_length
@@ -488,7 +578,7 @@ estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping
 fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                "Models" : {{"fel.site.mg_rev"}},
                                "Headers" : {{"libv3/all-terms.bf"}},
-                               "Variables" : {{"fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler"}}
+                               "Variables" : {{"fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise"}}
                              });
 
 
@@ -533,7 +623,10 @@ fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
                                terms.json.content : fel.site_results };
 
 
-io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites with **increased** dN/dS in the test branches relative to the reference branches and _" + fel.report.counts[1] + "_ sites with **decreased** dN/dS selection at p <= " + fel.pvalue + "**");
+for (fel.k = 0; fel.k < fel.report.test_count; fel.k += 1) {
+    io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[fel.k] + "_ " + io.SingularOrPlural (fel.report.counts[fel.k], "site", "sites") + " with different _" + fel.tests.key[fel.k][0] +"_ dN/dS at p <= " + fel.pvalue + "**");
+}
+
 
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");

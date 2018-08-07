@@ -29,15 +29,18 @@ lfunction estimators.TakeLFStateSnapshot(lf_id) {
 }
 
 lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
-    utility.ForEachPair (snapshot, "_name_", "_info_",
-    '
-        if (_info_ / terms.constraint) {
-            parameters.SetConstraint (_name_, _info_ [terms.constraint], "");
+    p_names = utility.Keys (snapshot);
+    p_count = utility.Array1D (p_names);
 
+    for (k = 0; k < p_count; k += 1) {
+        _name_ = p_names [k];
+        _info_ = snapshot [_name_];
+        if (_info_ / ^"terms.constraint") {
+            parameters.SetConstraint (_name_, _info_ [^"terms.constraint"], "");
         } else {
-            parameters.SetValue (_name_, _info_ [terms.fit.MLE]);
+            parameters.SetValue (_name_, _info_ [^"terms.fit.MLE"]);
         }
-    ');
+    }
 }
 
 /**
