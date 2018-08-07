@@ -29,15 +29,18 @@ lfunction estimators.TakeLFStateSnapshot(lf_id) {
 }
 
 lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
-    utility.ForEachPair (snapshot, "_name_", "_info_",
-    '
-        if (_info_ / terms.constraint) {
-            parameters.SetConstraint (_name_, _info_ [terms.constraint], "");
+    p_names = utility.Keys (snapshot);
+    p_count = utility.Array1D (p_names);
 
+    for (k = 0; k < p_count; k += 1) {
+        _name_ = p_names [k];
+        _info_ = snapshot [_name_];
+        if (_info_ / ^"terms.constraint") {
+            parameters.SetConstraint (_name_, _info_ [^"terms.constraint"], "");
         } else {
-            parameters.SetValue (_name_, _info_ [terms.fit.MLE]);
+            parameters.SetValue (_name_, _info_ [^"terms.fit.MLE"]);
         }
-    ');
+    }
 }
 
 /**
@@ -103,7 +106,6 @@ lfunction estimators.GetGlobalMLE_RegExp(results, re) {
  * @returns nothing
  */
 function estimators.copyGlobals2(key2, value2) {
-
     if (Type((estimators.ExtractMLEs.results[terms.global])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
     }
@@ -730,6 +732,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 }
 
 lfunction estimators.CreateLFObject (context, data_filter, tree, model_template, initial_values, run_options, model_objects) {
+
     if (Type(data_filter) == "String") {
         return estimators.CreateLFObject (context, {
             {
@@ -858,7 +861,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
  */
 
 lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options) {
-    return estimators.FitSingleModel_Ext (data_filter, tree, "models.DNA.GTR.ModelDescription", initial_values, run_options)
+    return estimators.FitSingleModel_Ext (data_filter, tree, "models.DNA.GTR.ModelDescription", initial_values, run_options);
 }
 
 /**
@@ -965,8 +968,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         None);
 
 
-
-    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
 
     df = 0;
     model_assignment = {

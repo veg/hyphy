@@ -1125,29 +1125,33 @@ void _ExecutionList::Init (_String* namespaceID) {
 }
 
 
+//____________________________________________________________________________________
+
+void _ExecutionList::ClearExecutionList (void) {
+  if (cli) {
+    delete [] cli->values;
+    delete [] cli->stack;
+    delete cli;
+    cli = nil;
+  }
+  
+  if (profileCounter) {
+    DeleteObject (profileCounter);
+    profileCounter = nil;
+  }
+  
+  DeleteAndZeroObject (stdinRedirect);
+  DeleteAndZeroObject (stdinRedirectAux);
+  DeleteAndZeroObject (nameSpacePrefix);
+  
+  ResetFormulae();
+  DeleteAndZeroObject (result);
+}
 
 //____________________________________________________________________________________
 
-_ExecutionList::~_ExecutionList (void)
-{
-    if (cli) {
-        delete [] cli->values;
-        delete [] cli->stack;
-        delete cli;
-        cli = nil;
-    }
-
-    if (profileCounter) {
-        DeleteObject (profileCounter);
-        profileCounter = nil;
-    }
-
-    DeleteObject (stdinRedirect);
-    DeleteObject (stdinRedirectAux);
-    DeleteObject (nameSpacePrefix);
-
-    ResetFormulae();
-    DeleteObject (result);
+_ExecutionList::~_ExecutionList (void) {
+  ClearExecutionList();
 }
 
 //____________________________________________________________________________________

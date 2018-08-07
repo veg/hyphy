@@ -43,6 +43,29 @@
 #include "mathobj.h"
 
 class _Constant : public _MathObject {
+  
+
+private:
+  template <class T> _PMathObj _check_type_and_compute (_PMathObj operand, T functor) {
+    if (operand) {
+      if (operand->ObjectClass() == NUMBER) {
+        return new _Constant (functor (Value (), ((_Constant*)operand)->Value()));
+      } else {
+        WarnError (_String("<'constant' operation 'X'>, where 'X' is not a number. \nconstant = ") & (_String((_String*)toStr())) & "\n'X' = " & (_String((_String*)operand->toStr())));
+      }
+    } else {
+      WarnError (_String("<'constant' operation 'null'>, where constant = ") & (_String((_String*)toStr())));
+    }
+    return new _MathObject;
+  }
+
+  template <class T> _PMathObj _check_type_and_compute_3 (_PMathObj operand, _PMathObj operand2, T functor) {
+    if (operand && operand2 && operand->ObjectClass() == NUMBER && operand2->ObjectClass() == NUMBER) {
+      return new _Constant (functor (Value (), ((_Constant*)operand)->Value(), ((_Constant*)operand2)->Value()));
+    }
+    WarnError ("Not a numeric 'X' type in a <'constant' operation 'X'> call");
+    return new _MathObject;
+  }
 
 public:
 

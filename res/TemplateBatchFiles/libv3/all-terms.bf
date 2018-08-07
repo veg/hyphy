@@ -23,6 +23,7 @@ namespace terms{
     nonsynonymous_sub_count = "nonsynonymous substitution count";
     original_name           = "original name";
     replicates              = "replicates";
+    data_type               = "datatype";
 
     category            = "category";
     mixture             = "mixture";
@@ -73,7 +74,7 @@ namespace terms{
 
     range_gte1 = {
         lower_bound: "1",
-        upper_bound: "1e25"
+        upper_bound: "1e10"
     };
 
     range_any = {
@@ -470,11 +471,23 @@ namespace terms{
     }
 
     /* Terms associated with tree labeling */
-    namespace tree_attributes{
+    namespace tree_attributes {
         internal    = "internal";
         leaf        = "leaf";
         test        = "test";
         background  = "background";
+    }
+
+    /* Terms associated with BGMs */
+
+    namespace bgm {
+        namespace node {
+            id = "NodeID";
+            type = "NodeType";
+            max_parents = "MaxParents";
+            prior_size = "PriorSize";
+            levels = "NumLevels";
+        }
     }
 
 }

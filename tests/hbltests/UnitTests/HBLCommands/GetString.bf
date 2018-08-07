@@ -39,7 +39,7 @@ function runTest ()
 	//-----------------------------------------------------------------------------------------------------------------
 
 	GetString (versionString, HYPHY_VERSION, 0);
-	assert ((versionString$"^[0-9]+\\.[0-9a-zA-Z]+$")[0]==0, "The short version string must be of the form major.minor[beta]. Had " + versionString);
+	assert ((versionString$"^[0-9]+\\.[0-9]+\\.[0-9a-zA-Z]*$")[0]==0, "The short version string must be of the form major.minor.release[beta]. Had " + versionString);
 
 	GetString (versionString, HYPHY_VERSION, 1);
 	assert ((versionString$"^HYPHY\\ [0-9]+\\.[0-9a-zA-Z]+.+\\ for .+$")[0]==0, "The full version string must be of the form major.minor[beta][MP] for platform description. Had " + versionString);

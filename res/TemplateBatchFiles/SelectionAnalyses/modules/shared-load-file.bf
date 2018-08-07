@@ -69,7 +69,10 @@ function load_file (prefix) {
         }
 
         */
-    codon_data_info[utility.getGlobalValue("terms.data.sample_size")] = codon_data_info[utility.getGlobalValue("terms.data.sites")] * codon_data_info[utility.getGlobalValue("terms.data.sequences")];
+
+    sample_size=codon_data_info[utility.getGlobalValue("terms.data.sites")]*codon_data_info[utility.getGlobalValue("terms.data.sequences")];
+
+    codon_data_info[utility.getGlobalValue("terms.data.sample_size")] = sample_size;
     upper_prefix = prefix && 1; //uppercase the prefix for json name
     codon_data_info[utility.getGlobalValue("terms.json.json")] = codon_data_info[utility.getGlobalValue("terms.data.file")] + "."+upper_prefix+".json";
 
@@ -128,7 +131,6 @@ function load_file (prefix) {
         */
 
     io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + codon_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
-
 
     if (utility.Has (settings, utility.getGlobalValue("terms.settings.branch_selector"), "String")) {
         selected_branches =  Call (settings[utility.getGlobalValue("terms.settings.branch_selector")], partitions_and_trees);
@@ -235,6 +237,8 @@ function store_tree_information () {
     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.partitions"),
                                                          filter_specification);
      trees = utility.Map (partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
+
+
      filter_names = utility.Map (filter_specification, "_partition_", '_partition_[terms.data.name]');
 
      /* Store original name mapping */
@@ -272,7 +276,8 @@ function doGTR (prefix) {
                                          trees,
                                          gtr_results);
 
-    io.ReportProgressMessageMD (prefix, "nuc-fit", "* " + selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
+    io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
+        selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.sample_size")));
 
 
 
@@ -281,24 +286,19 @@ function doGTR (prefix) {
                     utility.Map (gtr_results[utility.getGlobalValue("terms.global")], "_value_", '   {terms.fit.MLE : _value_[terms.fit.MLE]}'),
                     "_value_",
                     "_value_[terms.fit.MLE]");
+
     efv = (gtr_results[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0];
     selection.io.json_store_lf_withEFV (json,
+
                                 utility.getGlobalValue ("terms.json.nucleotide_gtr"),
                                 gtr_results[utility.getGlobalValue ("terms.fit.log_likelihood")],
                                 gtr_results[utility.getGlobalValue ("terms.parameters")] ,
-                                codon_data_info[utility.getGlobalValue ("terms.data.sample_size")],
+                                3*(^"`prefix`.sample_size"),
                                 gtr_rates,
                                 efv,
                                 display_orders[utility.getGlobalValue ("terms.json.nucleotide_gtr")]);
 
 
-    /* TODO: Why does this not work here? */
-    /*
-    utility.ForEachPair (filter_specification, "_key_", "_value_",
-        'selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.json.nucleotide_gtr"), utility.getGlobalValue ("terms.branch_length"), display_orders[terms.json.nucleotide_gtr],
-                                         _key_,
-                                         selection.io.extract_branch_info((gtr_results[utility.getGlobalValue ("terms.branch_length")])[_key_], "selection.io.branch.length"));');
-    */
 
     /* Store branch lengths */
     for (partition_index = 0; partition_index < Abs(filter_specification); partition_index += 1) {

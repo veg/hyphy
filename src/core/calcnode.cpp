@@ -427,21 +427,8 @@ void    _CalcNode::SetCompMatrix (long categID)
 
 //_______________________________________________________________________________________________
 
-_CalcNode::~_CalcNode (void)
-{
-
-#ifndef __HYALTIVEC__
-    if (theProbs) {
-        delete [] theProbs;
-    }
-#else
-    if (theProbs) {
-        vec_free(theProbs);
-    }
-#endif
-    if (compExp && referenceNode < 0) {
-        DeleteObject (compExp);
-    }
+_CalcNode::~_CalcNode (void) {
+    Clear();
 }
 
 //_______________________________________________________________________________________________
@@ -457,23 +444,26 @@ long    _CalcNode::FreeUpMemory (long)
     return res;
 }
 
+//_______________________________________________________________________________________________
+
+void _CalcNode::Clear (void) {
+  if (compExp && referenceNode < 0) {
+    DeleteAndZeroObject(compExp);
+  }
+  if (theProbs) {
+    delete [] theProbs;
+    theProbs = nil;
+  }
+  _VariableContainer::Clear();
+}
+
 //__________________________________________________________________________________
 
-void _CalcNode::RemoveModel (void)
-{
-  
-    if (compExp && referenceNode < 0) {
-        DeleteAndZeroObject(compExp);
-        compExp = nil;
-    }
-  
-    if (matrixCache) {
-    }
+void _CalcNode::RemoveModel (void) {
 
     categoryVariables.Clear();
     categoryIndexVars.Clear();
     remapMyCategories.Clear();
-
     Clear();
 
 }

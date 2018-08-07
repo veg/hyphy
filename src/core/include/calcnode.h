@@ -167,6 +167,9 @@ public:
     void                SetFlag          (void) {
         theProbs[0]=-3.1415296;
     }
+  
+    virtual     void        Clear                       (void);
+  
 
     void                SetSummedFlag    (void) {
         if (theProbs[0]>=0) {
