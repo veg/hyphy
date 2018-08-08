@@ -21,6 +21,7 @@ lfunction selection.io.defineBranchSets(partition_info) {
         utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
         list_models   = utility.sortStrings(utility.Keys   (available_models)); // get keys
         option_count  = Abs (available_models);
+
     } else {
         option_count = 0;
     }
@@ -89,6 +90,8 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
 //------------------------------------------------------------------------------
 lfunction selection.io.SelectAllBranches(partition_info) {
+    return_set = {};
+
     for (k = 0; k < Abs (partition_info); k+=1) {
         tree_configuration = {};
         tree_for_analysis = (partition_info[k])[utility.getGlobalValue("terms.data.tree")];

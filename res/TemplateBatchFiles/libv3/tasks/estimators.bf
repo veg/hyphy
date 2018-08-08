@@ -29,15 +29,18 @@ lfunction estimators.TakeLFStateSnapshot(lf_id) {
 }
 
 lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
-    utility.ForEachPair (snapshot, "_name_", "_info_",
-    '
-        if (_info_ / terms.constraint) {
-            parameters.SetConstraint (_name_, _info_ [terms.constraint], "");
+    p_names = utility.Keys (snapshot);
+    p_count = utility.Array1D (p_names);
 
+    for (k = 0; k < p_count; k += 1) {
+        _name_ = p_names [k];
+        _info_ = snapshot [_name_];
+        if (_info_ / ^"terms.constraint") {
+            parameters.SetConstraint (_name_, _info_ [^"terms.constraint"], "");
         } else {
-            parameters.SetValue (_name_, _info_ [terms.fit.MLE]);
+            parameters.SetValue (_name_, _info_ [^"terms.fit.MLE"]);
         }
-    ');
+    }
 }
 
 /**
@@ -103,7 +106,6 @@ lfunction estimators.GetGlobalMLE_RegExp(results, re) {
  * @returns nothing
  */
 function estimators.copyGlobals2(key2, value2) {
-
     if (Type((estimators.ExtractMLEs.results[terms.global])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
     }
@@ -381,6 +383,58 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
     return result;
 }
 
+/**
+ * @name
+ * @param {String} tree_name
+ * @param {Dictionary} model_descriptions
+ * @param {Matrix} initial_values
+ * @param branch_length_conditions
+ * @returns number of constrained parameters;
+ */
+function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions, initial_values, _application_type, keep_track_of_proportional_scalers) {
+    estimators.ApplyExistingEstimatesToTree.constraint_count = 0;
+
+
+    ExecuteCommands("GetInformation (estimators.ApplyExistingEstimatesToTree.map, `_tree_name`);");
+    estimators.ApplyExistingEstimatesToTree.branch_names = Rows(estimators.ApplyExistingEstimatesToTree.map);
+
+    for (estimators.ApplyExistingEstimatesToTree.b = 0; estimators.ApplyExistingEstimatesToTree.b < Abs(estimators.ApplyExistingEstimatesToTree.map); estimators.ApplyExistingEstimatesToTree.b += 1) {
+        _branch_name = estimators.ApplyExistingEstimatesToTree.branch_names[estimators.ApplyExistingEstimatesToTree.b];
+
+        if (initial_values / _branch_name) { // have an entry for this branch name
+           _existing_estimate = initial_values[_branch_name];
+
+           if (Type(_existing_estimate) == "AssociativeList") {
+               _set_branch_length_to = (initial_values[_branch_name])[terms.fit.MLE];
+                if (None != branch_length_conditions) {
+                    if (None != _application_type) {
+
+                        if (Type(_application_type) == "String") {
+                            if (_application_type == terms.model.branch_length_constrain ) {
+                                estimators.ApplyExistingEstimatesToTree.constraint_count += estimators.constrainBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimatesToTree.map[_branch_name]], _set_branch_length_to);
+                                continue;
+                            }
+                            _set_branch_length_to = {};
+                            _set_branch_length_to[terms.branch_length] = _existing_estimate[terms.fit.MLE];
+                            _set_branch_length_to[terms.model.branch_length_scaler] = _application_type;
+                            keep_track_of_proportional_scalers[_application_type] = 1;
+                        }
+                    }
+                }
+
+                estimators.ApplyExistingEstimatesToTree.constraint_count += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimatesToTree.map[_branch_name]], _set_branch_length_to);
+            } else {
+                if (Type(_existing_estimate) != "Unknown") {
+                    warning.log ("Incorrect type for the initial values object of for branch '" + _branch_name + "' : " + _existing_estimate);
+                }
+           }
+        }
+    }
+
+    //fprintf (stdout, Format (^_tree_name, 1,1), "\n");
+
+    return estimators.ApplyExistingEstimatesToTree.constraint_count;
+}
 
 /**
  * @name
@@ -426,8 +480,24 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
         if (Type((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i]) == "AssociativeList") { // have branch lengths for this partition
 
-            _tree_name = (estimators.ApplyExistingEstimates.lfInfo[terms.fit.trees])[estimators.ApplyExistingEstimates.i];
+            _application_type = None;
 
+            if (Type (branch_length_conditions) == "AssociativeList") {
+                if (Abs(branch_length_conditions) > estimators.ApplyExistingEstimates.i) {
+                    _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
+                }
+            }
+
+            estimators.ApplyExistingEstimates.df_correction +=  estimators.ApplyExistingEstimatesToTree  ((estimators.ApplyExistingEstimates.lfInfo[terms.fit.trees])[estimators.ApplyExistingEstimates.i],
+                                                                                                          model_descriptions,
+                                                                                                          (initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i],
+                                                                                                          _application_type,
+                                                                                                          estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers);
+
+
+
+
+            /*
             ExecuteCommands("GetInformation (estimators.ApplyExistingEstimates.map, `_tree_name`);");
             estimators.ApplyExistingEstimates.branch_names = Rows(estimators.ApplyExistingEstimates.map);
 
@@ -463,7 +533,8 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
                         }
                    }
                 }
-            }
+
+            }*/
 
         } else {
         	if (Type((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i]) != "Unknown") {
@@ -551,8 +622,8 @@ lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial
 
         utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
 
-        
-    
+
+
         df = 0;
 
         if (Type(initial_values) == "AssociativeList") {
@@ -613,7 +684,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
 
- 
+
     df = 0;
 
     if (Type(initial_values) == "AssociativeList") {
@@ -626,11 +697,11 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     }
 
     //assert (0);
+    //Export (lf,likelihoodFunction);
+    //console.log (lf);
 
    	Optimize (mles, likelihoodFunction);
 
-    Export (lf,likelihoodFunction);
-    console.log (lf);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
@@ -661,14 +732,15 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 }
 
 lfunction estimators.CreateLFObject (context, data_filter, tree, model_template, initial_values, run_options, model_objects) {
+
     if (Type(data_filter) == "String") {
-        return estimators.FitSingleModel_Ext ({
+        return estimators.CreateLFObject (context, {
             {
                 data_filter__
             }
         }, {
             "0": tree
-        }, model_template, initial_values, run_options)
+        }, model_template, initial_values, run_options, model_objects);
     }
 
     components = utility.Array1D(data_filter);
@@ -689,11 +761,15 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
         DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
    }
 
+
     user_model_id = context + ".user_model";
     utility.ExecuteInGlobalNamespace ("`user_model_id` = 0");
+
+
     ^(user_model_id) = model.generic.DefineModel(model_template, context + ".model", {
             "0": "terms.global"
         }, filters, None);
+
 
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i + 1] = "`context`.tree_" + i;
@@ -704,8 +780,9 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
 
 
     lfid = context + ".likelihoodFunction";
-    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lfid` = (`&lf_components`)");
 
+
+    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lfid` = (`&lf_components`)");
     df = 0;
     if (Type(initial_values) == "AssociativeList") {
         if (None == model_objects) {
@@ -736,6 +813,12 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     this_namespace = this_namespace[0][Abs (this_namespace)-3];
 
     df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options, None);
+
+
+    /*
+    Export (lfe, likelihoodFunction);
+    fprintf ("/tmp/pogo-dump.fit", CLEAR_FILE, lfe);
+    */
 
    	Optimize(mles, likelihoodFunction);
 
@@ -778,7 +861,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
  */
 
 lfunction estimators.FitGTR_Ext (data_filter, tree, initial_values, run_options) {
-    return estimators.FitSingleModel_Ext (data_filter, tree, "models.DNA.GTR.ModelDescription", initial_values, run_options)
+    return estimators.FitSingleModel_Ext (data_filter, tree, "models.DNA.GTR.ModelDescription", initial_values, run_options);
 }
 
 /**
@@ -885,8 +968,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         None);
 
 
-
-    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
 
     df = 0;
     model_assignment = {

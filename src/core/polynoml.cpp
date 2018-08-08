@@ -964,7 +964,7 @@ bool         _Polynomial::Equal(_MathObject* m)
         if (diff) {
             _Constant * v = (_Constant*)diff->IsANumber(true);
             if (v!=nil) {
-                result = fabs (v->Value()) < 1.e-6;
+                result = CheckEqual (v->Value(),0.0);
                 DeleteObject (v);
             }
             //_String * diffS = (_String*)diff->toStr();

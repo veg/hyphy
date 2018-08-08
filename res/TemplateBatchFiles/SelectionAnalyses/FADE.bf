@@ -138,7 +138,7 @@ fade.path.base = (fade.json [terms.json.input])[terms.json.file];
 fade.path.cache = fade.path.base + ".FADE.cache";
 io.ReportProgressBar  ("init", "Loading existing cache files");
 fade.cache = io.LoadCacheFromFile (fade.path.cache);
-io.ClearProgressBar                   (); 
+io.ClearProgressBar                   ();
 
 console.log ( "> FADE will write cache and result files to _`fade.path.base`.FADE.cache_ and _`fade.path.base`.FADE.json_, respectively \n\n");
 
@@ -227,9 +227,13 @@ if (utility.Has (fade.cache, terms.fade.cache.model, "String") && utility.Has (f
     io.WriteCacheToFile (fade.path.cache, fade.cache);
 }
 
+fade.rebuild_lf = FALSE;
+
 if (utility.Has (fade.cache, terms.fade.cache.baseline, "AssociativeList")) {
     io.ReportProgressMessageMD  ("FADE", "baseline", "Loaded baseline model fit from cache");
     fade.baseline_fit = fade.cache [terms.fade.cache.baseline];
+    fade.rebuild_lf = TRUE;
+
 } else {
     selection.io.startTimer (fade.json [terms.json.timers], "Baseline Fit", 1);
     io.ReportProgressMessageMD  ("FADE", "baseline", "Fitting the baseline (`fade.baseline_model`) model to obtain branch lengths and rate matrix estimates");
@@ -294,6 +298,19 @@ utility.ForEachPair (fade.filter_specification, "_key_", "_value_",
 // TBD
 
 if (utility.Has (fade.cache, terms.fade.cache.substitutions, "AssociativeList") == FALSE) {
+    if (fade.rebuild_lf) {
+        estimators.CreateLFObject (                   "fade.ancestral.rebuild",
+                                                          fade.filter_names,
+                                                          fade.trees,
+                                                          "fade.generator.MLE" ,
+                                                           fade.baseline_fit,
+                                                          {terms.run_options.retain_lf_object: TRUE},
+                                                          None
+                                                   )
+
+        fade.baseline_fit[terms.likelihood_function] = "fade.ancestral.rebuild.likelihoodFunction";
+    }
+
     utility.EnsureKey (fade.cache, terms.fade.cache.substitutions);
     utility.EnsureKey (fade.cache, terms.fade.cache.composition);
 
@@ -407,7 +424,7 @@ namespace fade {
                          {"BayesFactor[bias>0]", "Empiricial Bayes Factor for substitution bias"}
                          };
 
- 
+
 
          table_screen_output  = {{"Site", "Partition", "target", "rate", "bias", "Bayes Factor", site_annotation_headers["Composition"], site_annotation_headers["Substitutions"]}};
          report.biased_site = {{"" + (1+filter_info[s]),
@@ -537,7 +554,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
                                                                   "fade.pass1.result_handler",
                                                                   None);
                  io.WriteCacheToFile (fade.path.cache, fade.cache);
-          }                                                        
+          }
         } else {
             if (utility.Has (fade.cache [terms.fade.cache.mcmc], fade.bias.residue, "AssociativeList")) {
                 io.ReportProgressBar    ("fade", "[`fade.bias.residue`] Loaded posterior sample for grid loadings");
@@ -746,7 +763,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 fade.json [terms.fade.cache.settings] = fade.run_settings;
 fade.json [terms.fade.json.site_annotations] = {
     terms.fade.json.headers : fade.site_annotation_headers,
-    terms.fade.json.site_annotations : fade.site_annotations 
+    terms.fade.json.site_annotations : fade.site_annotations
 };
 fade.json [terms.fit.MLE] = {terms.json.headers   : fade.table_headers,
                                terms.json.content : fade.site_results };

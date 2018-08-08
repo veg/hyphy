@@ -13,6 +13,10 @@
 "","Evolutionary rates on non-coding data.","!Relative evolutionary rate inference";
 "LEISR","[LEISR] Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";
 
+"","Identify pairs or networks of sites that co-evolve.","!Coevolutionary analysis";
+"BGM","[BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.","BGM.bf";
+
+
 "","Perform a maximum likelihood analysis on a single file given a single tree.","!Basic Analyses";
 "ACD","Analyse codon data with a variery of standard models using given tree.","AnalyzeCodonData.bf";
 "AD","Analyse nucleotide or aminoacid data with a variery of standard models using given tree.","AnalyzeNucProtData.bf";
@@ -99,7 +103,6 @@
 "PSDI","Test whether sites in two populations are evolving under different selective pressures along internal tree branches.","CompareSelectivePressureIVL.bf";
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 "PSM","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1. Multiple subsets of one data set with shared dN/dS.","MFPositiveSelection.bf";
-"QSD","Quickly test for positive selection using several approaches.","QuickSelectionDetection.bf";
 "RELAX","Test whether selected branches are under relaxed or intensified selection against reference branches","SelectionAnalyses/RELAX.bf";
 "SSD","Use approximate likelihoods at a site to test for subtree specific selective pressure.","SubtreeSelectionComparison.bf";
 "DST","Perform a random effects (D)irectional (E)volution on (P)rotein (S)equences test to identify sites which evolve directionally towards a given residue [MPI enabled].","DirectionalREL.bf";

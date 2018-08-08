@@ -440,7 +440,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
           } else {
             _Variable *newV = new _Variable (*argument_k);
             newV->SetValue(nthterm,false);
-            nthterm->AddAReference();
+            //nthterm->AddAReference();
             existingDVars<<argument_var->GetAVariable();
             displacedVars<<argument_var; // 2 references
             argument_var->AddAReference(); // 3 references
@@ -473,12 +473,29 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         function_body->ResetFormulae();
       }
 
+      _PMathObj ret;
+
       if (currentExecutionList && currentExecutionList->stdinRedirect) {
+          // 20180620: SLKP, need to split this off because if Execute fails
+          // then there will be a double free on stdinRedirect
+
+        auto stash1 = currentExecutionList->stdinRedirect;
+        auto stash2 = currentExecutionList->stdinRedirectAux;;
+          // for recursive calls, both function_body and currentExecutionList can be reset to null
+
         function_body -> stdinRedirect    = currentExecutionList->stdinRedirect;
         function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
-      }
 
-      _PMathObj ret = function_body->Execute();
+        currentExecutionList -> stdinRedirect -> AddAReference();
+        currentExecutionList -> stdinRedirectAux -> AddAReference();
+
+        ret = function_body->Execute();
+
+        stash1 -> RemoveAReference();
+        stash2-> RemoveAReference();
+      } else {
+        ret = function_body->Execute();
+      }
 
       function_body -> stdinRedirect    = nil;
       function_body -> stdinRedirectAux = nil;
@@ -624,6 +641,7 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
       theScrap.theStack.Place(temp);
       return true;
     } else {
+      DeleteObject (temp);
       return false;
     }
 

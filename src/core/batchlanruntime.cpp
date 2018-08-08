@@ -1,21 +1,21 @@
 /*
- 
+
  HyPhy - Hypothesis Testing Using Phylogenies.
- 
+
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
  Art FY Poon    (apoon@cfenet.ubc.ca)
  Steven Weaver (sweaver@temple.edu)
- 
+
  Module Developers:
  Lance Hepler (nlhepler@gmail.com)
  Martin Smith (martin.audacis@gmail.com)
- 
+
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
  "Software"), to deal in the Software without restriction, including
@@ -23,10 +23,10 @@
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included
  in all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -34,7 +34,7 @@
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- 
+
  */
 
 #include      "baseobj.h"
@@ -68,47 +68,47 @@ _AVLListX   openFileHandles     (&openFileHandlesBackend);
 
 bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentProgram) {
     currentProgram.currentCommand++;
-    
+
 
     _String  freqStorageID = *(_String*)parameters(0),
-             dataID        = currentProgram.AddNameSpaceToID(*(_String*)parameters(1)), 
+             dataID        = currentProgram.AddNameSpaceToID(*(_String*)parameters(1)),
              errMsg        ;
-    
+
     _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(freqStorageID,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_HARVEST_FREQUENCIES, true, false, &currentProgram);
      if (!theReceptacle) {
         return false;
-    }    
+    }
     SetStatusLine           ("Gathering Frequencies");
 
 
     long       objectType = HY_BL_DATASET|HY_BL_DATASET_FILTER;
     BaseRefConst    sourceObject = _HYRetrieveBLObjectByName (dataID, objectType,nil,false);
-    
+
     long      unit      = ProcessNumericArgument((_String*)parameters(2),currentProgram.nameSpacePrefix),
               posspec   = ProcessNumericArgument((_String*)parameters(4),currentProgram.nameSpacePrefix),
               atom      = ProcessNumericArgument((_String*)parameters(3),currentProgram.nameSpacePrefix);
-    
+
     _Matrix*            receptacle = nil;
-    
+
     _Parameter          cghf = 1.0;
     checkParameter      (hfCountGap,cghf,1.0, currentProgram.nameSpacePrefix);
-    
+
     if (objectType == HY_BL_DATASET) { // harvest directly from a DataSet
         _String         vSpecs,
                         hSpecs;
-        
+
         if (parameters.lLength>5)   {
             vSpecs = *(_String*)parameters(5);
         }
         if (parameters.lLength>6)   {
             hSpecs = *(_String*)parameters(6);
         }
-        
+
         _DataSet const * dataset = (_DataSet const*)sourceObject;
         _SimpleList     hL, vL;
         dataset->ProcessPartition (hSpecs,hL,false);
         dataset->ProcessPartition (vSpecs,vL,true);
-        
+
         receptacle = dataset->HarvestFrequencies(unit,atom,posspec,hL, vL,cghf>0.5);
     } else { // harvest from a DataSetFilter
         if (objectType == HY_BL_DATASET_FILTER) {
@@ -117,18 +117,18 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
             errMsg = _String ("'") & dataID & "' is neither a DataSet nor a DataSetFilter";
         }
     }
-    
+
     SetStatusLine           (emptyString);
-    
+
     if (errMsg.sLength || receptacle == nil) {
         DeleteObject (receptacle);
-        currentProgram.ReportAnExecutionError (errMsg); 
+        currentProgram.ReportAnExecutionError (errMsg);
         theReceptacle->SetValue (new _MathObject, false);
         return false;
-    }   
+    }
     theReceptacle->SetValue (receptacle, false);
     return true;
-    
+
     //CheckReceptacleCommandIDAndStore (&freqStorageID,HY_HBL_COMMAND_HARVEST_FREQUENCIES,true, receptacle, false);
 }
 
@@ -137,10 +137,10 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& currentP
 bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& currentProgram, bool doOptimize) {
     currentProgram.currentCommand++;
     // construct the receptacle matrix
-    
+
     _String  lfResName  (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
              lfNameID   (currentProgram.AddNameSpaceToID(*(_String*)parameters(1)));
-             
+
     _Variable* result = CheckReceptacleCommandID (&lfResName, doOptimize?HY_HBL_COMMAND_OPTIMIZE:HY_HBL_COMMAND_COVARIANCE_MATRIX,true);
 
     // Handle string variables passed as likefunc IDs?
@@ -151,20 +151,20 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
 
     long       objectType = HY_BL_LIKELIHOOD_FUNCTION|HY_BL_SCFG|HY_BL_BGM;
     _LikelihoodFunction    *lkf = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (lfNameID, objectType,nil,doOptimize==false);
-    
-    if (lkf == nil) { // will only happen if the object is a custom function 
+
+    if (lkf == nil) { // will only happen if the object is a custom function
         lkf = (_LikelihoodFunction*)checkPointer(new _CustomFunction (&lfNameID));
     }
-    
-    if (!doOptimize) { 
-        // COVARIANCE_MATRIX 
- 
+
+    if (!doOptimize) {
+        // COVARIANCE_MATRIX
+
         SetStatusLine (_String("Finding the cov. matrix/profile CI for ")&lfNameID);
         _String              cpl = currentProgram.AddNameSpaceToID(covarianceParameterList);
         _Variable            *  restrictVariable = FetchVar (LocateVarByName(cpl));
         _SimpleList          *  restrictor       = nil;
-        
-        if (objectType == HY_BL_LIKELIHOOD_FUNCTION || objectType == HY_BL_SCFG){ 
+
+        if (objectType == HY_BL_LIKELIHOOD_FUNCTION || objectType == HY_BL_SCFG){
         // not a BGM
             if (restrictVariable) { // only consider some variables
                 _SimpleList variableIDs;
@@ -194,7 +194,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                         restrictor = nil;
                     }
                }
-            }   
+            }
             result->SetValue( (_Matrix*)lkf->CovarianceMatrix(restrictor),false);
             DeleteObject (restrictor);
         } else {
@@ -209,7 +209,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
         if (objectType != HY_BL_NOT_DEFINED) {
             SetStatusLine (_String("Optimizing ") & _HYHBLTypeToText (objectType) & ' ' &lfNameID);
         } else {
-            SetStatusLine (_String("Optimizing user function ") &lfNameID);        
+            SetStatusLine (_String("Optimizing user function ") &lfNameID);
         }
         result -> SetValue(lkf->Optimize(),false);
     }
@@ -217,8 +217,8 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
     if (objectType == HY_BL_NOT_DEFINED) {
         DeleteObject (lkf);    // delete the custom function object
     }
-    
-    
+
+
     SetStatusLine ("Finished with the optimization");
 
     return true;
@@ -227,20 +227,23 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& currentProgram) {
-        
+
     currentProgram.currentCommand++;
 
     _String *arg1       = (_String*)parameters(0),
             *arg2      = (_String*)parameters(1),
             name2Find   = AppendContainerName(*arg1,currentProgram.nameSpacePrefix);
-            
+
     // bool isSCFG  = false;
 
     long                   objectType = HY_BL_LIKELIHOOD_FUNCTION|HY_BL_SCFG|HY_BL_BGM;
     _LikelihoodFunction    *lf       = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (name2Find, objectType,nil, true, true);
 
     if (*arg2 == lfStartCompute) {
-            lf->PrepareToCompute(true);
+            lf->PrepareToCompute  (true);
+#ifdef  _OPENMP
+          lf->SetThreadCount    (systemCPUCount);
+#endif
     } else if (*arg2 == lfDoneCompute) {
             lf->DoneComputing (true);
     } else {
@@ -249,18 +252,18 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& currentPr
             return false;
         } else {
             return CheckReceptacleCommandIDAndStore(&AppendContainerName(*arg2,currentProgram.nameSpacePrefix), HY_HBL_COMMAND_LFCOMPUTE, HY_HBL_COMMAND_LFCOMPUTE, new _Constant (lf->Compute()), false);
-                                             
+
         }
     }
 
     return true;
-    
+
 }
 
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& currentProgram) {
-        
+
     currentProgram.currentCommand++;
 
     SetStatusLine ("Waiting for model selection");
@@ -288,7 +291,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                             unitLength      = thisDF->GetUnitLength();
 
         _TranslationTable const*  thisTT = thisDF->GetData()->GetTT();
-        
+
         if (unitLength==1) {
             if (thisTT->IsStandardNucleotide()) {
                 dataType = "nucleotide";
@@ -315,7 +318,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
 
         for (unsigned long model_index = 0; model_index < templateModelList.lLength; model_index++) {
             _List *model_components = (_List*)templateModelList(model_index);
-            
+
             if (dataType.Equal((_String*)model_components->GetItem(3))) {
                 _String * dim = (_String*)model_components->GetItem(2);
                 if (*dim==_String("*")|| dataDimension == dim->toNum()) {
@@ -351,7 +354,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
                 printf ("\n\n               +--------------------------+\n");
                 printf     ("               | Select a standard model. |\n");
                 printf     ("               +--------------------------+\n\n\n");
-                
+
                 for (model_id = 0; model_id<matchingModels.lLength; model_id++) {
                     printf ("\n\t(%s):%s",((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(0))->getStr(),
                             ((_String*)(*(_List*)templateModelList(matchingModels(model_id)))(1))->getStr());
@@ -396,16 +399,16 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
     stdModel.stdinRedirect    = currentProgram.stdinRedirect;
     stdModel.Execute();
     stdModel.stdinRedirectAux = nil;
-    stdModel.stdinRedirect    = nil;   
+    stdModel.stdinRedirect    = nil;
 
     return true;
-    
+
 }
 
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleUseModel (_ExecutionList& currentProgram) {
-    
+
     currentProgram.currentCommand++;
     _String namedspacedMM (currentProgram.AddNameSpaceToID(*(_String*)parameters(0)));
     long mID = FindModelName(namedspacedMM);
@@ -427,7 +430,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
     /*
         first check to see if matrix parameters here are valid
     */
-    
+
     _String *currentArgument = (_String*)parameters(0),
              nmspc           = AppendContainerName(*currentArgument,currentProgram.nameSpacePrefix),
              errMsg,
@@ -446,7 +449,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         setParameter (randomSeed, ((long)globalRandSeed));
         return true;
     }
-    
+
     if (currentArgument->Equal (&deferConstrainAssignment)) {
         bool on = ProcessNumericArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
         if (on) {
@@ -472,12 +475,12 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
     if (currentArgument->Equal (&statusBarUpdateString)) {
         _String sbar_value = ProcessLiteralArgument ((_String*)parameters(1), currentProgram.nameSpacePrefix);
 
-#if defined __UNIX__ 
+#if defined __UNIX__
         #if not defined __HYPHY_GTK__ && not defined __HEADLESS__
             SetStatusLineUser     (sbar_value);
         #else
             SetStatusLine (sbar_value);
-        #endif 
+        #endif
 #else
         SetStatusLine     (empty,sbar_value, empty, 0, HY_SL_TASK);
 #endif
@@ -487,9 +490,9 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
 
     long objectIndex,
          typeFlag    = HY_BL_ANY;
-    
+
     BaseRef theObject      = _HYRetrieveBLObjectByNameMutable (nmspc, typeFlag, &objectIndex);
-    
+
     switch (typeFlag)
     {
         case HY_BL_BGM: { // BGM Branch
@@ -606,7 +609,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
             }
         } // end BGM
         break;
-        
+
         case HY_BL_SCFG:
         case HY_BL_LIKELIHOOD_FUNCTION:
         {
@@ -627,12 +630,12 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
         }
         break;
         // end SCFG and LF
-        
+
         case HY_BL_DATASET:
         case HY_BL_DATASET_FILTER: {
             _DataSet * ds = nil;
-          
-            
+
+
             long sequence_index  = ProcessNumericArgument ((_String*)parameters(1),currentProgram.nameSpacePrefix);
             if (typeFlag == HY_BL_DATASET) {
                 ds = (_DataSet*) theObject;
@@ -642,28 +645,28 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                 ds = dsf->GetData ();
                 sequence_index = dsf->theNodeMap.Map (sequence_index);
             }
-          
+
             if (typeFlag == HY_BL_DATASET_FILTER) {
               ReleaseDataFilterLock(objectIndex);
             }
-        
-          
+
+
           _String * sequence_name = new _String(ProcessLiteralArgument ((_String*)parameters(2),currentProgram.nameSpacePrefix));
-          
+
           if (! ds->SetSequenceName (sequence_index, sequence_name)) {
             delete sequence_name;
             currentProgram.ReportAnExecutionError (*((_String*)parameters(1)) & " (=" & sequence_index & ") is not a valid sequence index");
             return false;
-           
+
           }
         } // end data set and data set filter
-        break; 
+        break;
         // Dataset and Datasetfilter
-        
+
         default:
             // check to see if this is a calcnode
             _CalcNode* treeNode = (_CalcNode*)FetchObjectFromVariableByType(&nmspc, TREE_NODE);
-            if (treeNode) { 
+            if (treeNode) {
                 if (*((_String*)parameters(1)) == _String("MODEL")) {
                     _String modelName = AppendContainerName(*((_String*)parameters(2)),currentProgram.nameSpacePrefix);
                     long modelType = HY_BL_MODEL, modelIndex;
@@ -675,9 +678,9 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                             return false;
                         }
                         long pID, lfID = ((_TheTree*)parentTree->Compute())->IsLinkedToALF(pID);
-                      
+
                         treeNode->ReplaceModel (modelName, parentTree);
-                      
+
                         if (lfID>=0){
                           ((_LikelihoodFunction*)likeFuncList(lfID))->Rebuild(true);
                           //currentProgram.ReportAnExecutionError ((*parentTree->GetName()) & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID) &") and cannot be modified ");
@@ -694,11 +697,11 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& currentProgram
                      return false;
                 }
             }
-            
+
             currentProgram.ReportAnExecutionError (*currentArgument & " is not a valid likelihood function/data set filter/tree topology/tree node");
             return false;
 
-    
+
     } // end cases
     return true;
 }
@@ -740,7 +743,7 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& currentProgram) {
         }
     }
     currentProgram.ReportAnExecutionError(_String("Assertion statement '") & *(_String*)parameters(0) & "' could not be computed or was not numeric.");
- 
+
     return false;
 }
 
@@ -752,16 +755,16 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgra
 
     _List local_version    = __HYPHY__VERSION__.Tokenize ("."),
           required_version = theVersion.Tokenize(".");
-  
+
     try {
-    
+
       unsigned long const  upper_bound = MIN (local_version.countitems(), required_version.countitems());
-    
-    
+
+
       for (unsigned long i = 0UL; i < upper_bound; i++) {
         _Parameter local_number = ((_String*)local_version.GetItem(i))->toNum();
         _Parameter required_number = ((_String*)required_version.GetItem(i))->toNum();
-        
+
         if (local_number > required_number) {
           return true;
         }
@@ -769,7 +772,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& currentProgra
           throw (0);
         }
       }
-    
+
       if (required_version.countitems() > upper_bound) {
           return true;
       }
@@ -806,7 +809,7 @@ bool      _ElementaryCommand::HandleClearConstraints(_ExecutionList& currentProg
         if (cID>=0) { // variable exists
             FetchVar(cID)->ClearConstraints();
         }
-    }    
+    }
     return true;
 }
 
@@ -814,24 +817,24 @@ bool      _ElementaryCommand::HandleClearConstraints(_ExecutionList& currentProg
 
 bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgram){
     currentProgram.currentCommand++;
-    
+
     _String    theBaseNode          (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
                treeName;
-    
+
     _Variable* theObject = FetchVar (LocateVarByName(theBaseNode));
-    
+
     if (!theObject || (theObject->ObjectClass()!=TREE && theObject->ObjectClass()!=TREE_NODE)) {
         WarnError (_String("Not a defined tree/tree node object '") & theBaseNode & "' in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
         return false;
     }
-    
+
     _TheTree *theTree = nil;
     if (theObject->ObjectClass() == TREE_NODE) {
         theTree     = (_TheTree*)((_VariableContainer*)theObject)->GetTheParent();
         if (!theTree) {
             WarnError (_String("Internal error - orphaned tree node '") & theBaseNode & "' in call to "& _HY_ValidHBLExpressions.RetrieveKeyByPayload(HY_HBL_COMMAND_MOLECULAR_CLOCK));
             return false;
-            
+
         }
         treeName    = *theTree->GetName();
         theBaseNode = theObject->GetName()->Cut(treeName.sLength+1,-1);
@@ -840,7 +843,7 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
         theTree     = (_TheTree*)theObject;
         theBaseNode = emptyString;
     }
-    
+
     theTree->MolecularClock(theBaseNode,parameters);
     return true;
 }
@@ -849,7 +852,7 @@ bool      _ElementaryCommand::HandleMolecularClock(_ExecutionList& currentProgra
 
 bool      _ElementaryCommand::HandleGetURL(_ExecutionList& currentProgram){
     currentProgram.currentCommand++;
-    
+
     _String url   (ProcessLiteralArgument((_String*)parameters(1),currentProgram.nameSpacePrefix)),
             *arg1 = (_String*)parameters(0),
             *act  = parameters.lLength>2?(_String*)parameters(2):nil,
@@ -879,7 +882,7 @@ bool      _ElementaryCommand::HandleGetURL(_ExecutionList& currentProgram){
         }
     }
     if (errMsg.sLength) {
-        currentProgram.ReportAnExecutionError (errMsg); 
+        currentProgram.ReportAnExecutionError (errMsg);
         return false;
     }
 
@@ -890,7 +893,7 @@ bool      _ElementaryCommand::HandleGetURL(_ExecutionList& currentProgram){
 
 bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     currentProgram.currentCommand++;
-    
+
     _String  errMsg,
              *result = nil;
 
@@ -913,7 +916,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     if (f >=0 ) {
         f = _HY_GetStringGlobalTypes.GetXtra (f);
     }
-  
+
     switch (f) {
 
         case HY_BL_LIKELIHOOD_FUNCTION: // LikelihoodFunction
@@ -928,7 +931,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
             }
             break;
         }
-           
+
         case HY_BL_HBL_FUNCTION: // UserFunction
             result = (_String*)GetObjectNameByType(HY_BL_HBL_FUNCTION,sID);
             if (result) {
@@ -937,9 +940,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 resAVL->MStore ("Arguments", new _Matrix(GetBFFunctionArgumentList(sID)), false);
                 theReceptacle->SetValue (resAVL,false);
                 return true;
-            } 
+            }
             break;
-            
+
         case HY_BL_TREE: { // Tree
             // 20110608 SLKP: REFACTOR into a separate function
             // I am sure this is used somewhere else (perhaps for other types)
@@ -952,14 +955,14 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
 
         default: { // everything else...
             // decide what kind of object current argument represents
-          
-          
-          
+
+
+
             _String *currentArgument = (_String*)parameters(1),
                     nmspaced       = AppendContainerName(*currentArgument,currentProgram.nameSpacePrefix);
             long    typeFlag       = HY_BL_ANY,
                     index          = -1;
-                    
+
             BaseRefConst theObject      = _HYRetrieveBLObjectByName (nmspaced, typeFlag, &index);
 
             if (theObject) {
@@ -985,7 +988,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                         if (sID < 0) {
                             _List filterSeqNames;
                             _List const * originalNames = &dataSetFilterObject->GetData()->GetNames();
-                          
+
                             for (long seqID=0; seqID<dataSetFilterObject->NumberSpecies(); seqID++) {
                                 filterSeqNames << originalNames->GetItem (dataSetFilterObject->theNodeMap.Element (seqID));
                             }
@@ -1027,7 +1030,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 }
                 case HY_BL_LIKELIHOOD_FUNCTION:
                 case HY_BL_SCFG: {
-                
+
                     _LikelihoodFunction *lf = (_LikelihoodFunction*)theObject;
                     if (sID>=0) {
                         if (sID<lf->GetIndependentVars().lLength) {
@@ -1047,10 +1050,10 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                     }
                     break;
                 }
-                
+
                 case HY_BL_MODEL: {
                     if (sID>=0) {
-                        // check to make see if the 
+                        // check to make see if the
                        if (sID2 < 0) { // get the sID's parameter name
                             _SimpleList     modelP;
                             _AVLList        modelPA (&modelP);
@@ -1058,7 +1061,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                             modelPA.ReorderList();
                             if (sID<modelP.lLength) {
                                 result = (_String*)LocateVar(modelP.lData[sID])->GetName()->makeDynamic();
-                            } 
+                            }
 
                         } else { // get the formula for cell (sID, sID2)
                             if (!IsModelOfExplicitForm (index)) {
@@ -1069,7 +1072,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                                 }
                             }
                         }
-                        
+
                     } else {
                         _Variable   * tV, * tV2;
                         bool         mByF;
@@ -1105,7 +1108,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                     theReceptacle->SetValue (resAVL,false);
                     return true;
                 }
-            } // end of "switch" 
+            } // end of "switch"
         }
         else {
             if (currentArgument->Equal(&versionString)) {
@@ -1131,7 +1134,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                 } else if (currentArgument->Equal(&timeStamp)) {
                     result = new _String(GetTimeStamp(sID < 0.5));
                 } else if (currentArgument->Equal(&listLoadedLibraries)) {
-                  theReceptacle->SetValue (new _Matrix (loadedLibraryPaths.Keys()));
+                  theReceptacle->SetValue (new _Matrix (loadedLibraryPaths.Keys()), false);
                   return true;
                 } else {
                   _Variable* theVar = FetchVar(LocateVarByName (nmspaced));
@@ -1140,7 +1143,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                       result = (_String*)theVar->toStr();
                     } else {
                       if (sID == -1){
-                        
+
                         _SimpleList vL;
                         _AVLList    vAVL (&vL);
                         theVar->ScanForVariables (vAVL, true);
@@ -1150,13 +1153,13 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
                         SplitVariableIDsIntoLocalAndGlobal (vL, splitVars);
                         InsertVarIDsInList (resL, "Global", *(_SimpleList*)splitVars(0));
                         InsertVarIDsInList (resL, "Local",   *(_SimpleList*)splitVars(1));
-                        
+
                         theReceptacle->SetValue (resL,false);
                         return true;
                       }
-                      
+
                       else {  // formula string
-                        
+
                         if (sID == -3) {
                           _String local, global;
                           _SimpleList var_index;
@@ -1193,18 +1196,18 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
     }
 
     if (errMsg.sLength) {
-        currentProgram.ReportAnExecutionError (errMsg); 
+        currentProgram.ReportAnExecutionError (errMsg);
         DeleteObject (result);
-        result = nil;    
+        result = nil;
     }
-    
+
     if (result) {
         theReceptacle->SetValue (new _FString (result),false);
         return true;
     }
 
     theReceptacle->SetValue (new _MathObject(), false);
-    
+
 
     return false;
 }
@@ -1215,21 +1218,21 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& currentProgram){
 bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
 
     currentProgram.currentCommand++;
-    
+
     _String objectID (currentProgram.AddNameSpaceToID(*(_String*)parameters(1))),
             arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
             errMsg;
-  
+
     _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_EXPORT, true, false, &currentProgram);
     if (!theReceptacle) {
         return false;
-    }    
- 
+    }
+
     _FString        * outLF = new _FString (new _String (8192UL,1));
- 
+
     long typeFlag = HY_BL_MODEL | HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER | HY_BL_HBL_FUNCTION,
              index;
-        
+
     BaseRef objectToExport = _HYRetrieveBLObjectByNameMutable (objectID, typeFlag, &index);
     if (! objectToExport) {
         errMsg = _String ("'") & objectID & "' is not a supported type";
@@ -1257,18 +1260,18 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
                 outLF->theString->Finalize();
                 break;
             }
-            
+
         }
     }
 
     if (errMsg.sLength) {
         outLF->theString->Finalize();
         DeleteObject (outLF);
-        currentProgram.ReportAnExecutionError (errMsg); 
+        currentProgram.ReportAnExecutionError (errMsg);
         theReceptacle->SetValue (new _MathObject, false);
         return false;
     }
-    
+
     theReceptacle->SetValue (outLF,false);
 
     return true;
@@ -1279,21 +1282,21 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& currentProgram){
 bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& currentProgram){
 
     currentProgram.currentCommand++;
-   
+
     _String  arg1 (currentProgram.AddNameSpaceToID(*(_String*)parameters(0))),
              errMsg,
              expressionToParse = *(_String*)parameters(1);
-             
+
     _Formula  *theResult = nil;
 
     _Variable * theReceptacle = CheckReceptacleCommandID (&AppendContainerName(arg1,currentProgram.nameSpacePrefix),HY_HBL_COMMAND_DIFFERENTIATE, true, false, &currentProgram);
     if (!theReceptacle) {
         return false;
-    }    
+    }
 
 
     _Formula theExpression (expressionToParse,currentProgram.nameSpacePrefix, &errMsg);
-    
+
     if (!theExpression.IsEmpty() && errMsg.sLength == 0) {
         long times = 1;
         if (parameters.lLength==4) {
@@ -1315,16 +1318,16 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& currentProgram
     }
 
     if (errMsg.sLength || theResult == nil) {
-        if (theResult) { 
-            delete (theResult); 
+        if (theResult) {
+            delete (theResult);
         } else {
             errMsg = _String("Differentiation of '") & *(_String*)parameters(1) & "' failed";
         }
-        currentProgram.ReportAnExecutionError (errMsg); 
+        currentProgram.ReportAnExecutionError (errMsg);
         theReceptacle->SetValue (new _MathObject, false);
         return false;
     }
-    
+
     theReceptacle->SetFormula (*theResult);
     if (theResult) delete (theResult);
 
@@ -1338,15 +1341,15 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
     currentProgram.currentCommand++;
     _String* targetName = (_String*)parameters(0),
              fnm;
-    
+
     bool     doClose                 = true,
              print_to_stdout         = false;
-    
+
     FILE*   dest = nil;
-    
+
     try {
         bool    skipFilePathEval        = false;
-        
+
         if (targetName->Equal(&stdoutDestination)) {
             _FString * redirect = (_FString*)FetchObjectFromVariableByType (&blFprintfRedirect, STRING);
             if (redirect && redirect->theString->sLength) {
@@ -1355,15 +1358,15 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                 } else {
                     skipFilePathEval = true;
                     targetName       = redirect->theString;
-                } 
+                }
             }
             else {
                 print_to_stdout = true;
             }
         }
-        
+
         checkParameter (printDigitsSpec,printDigits,0L);
-        
+
         if (!print_to_stdout) {
             fnm = *targetName;
             if (fnm.Equal(&messageLogDestination)) {
@@ -1375,16 +1378,16 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                 if (skipFilePathEval == false && !fnm.IsALiteralArgument()) {
                     fnm = GetStringFromFormula (&fnm,currentProgram.nameSpacePrefix);
                 }
-                
+
                 if (!fnm.ProcessFileName(true,false,(Ptr)currentProgram.nameSpacePrefix, false, &currentProgram)) {
                     return false;
                 }
-                
-                
+
+
                 long k  = openFileHandles.Find (&fnm);
-                
+
                 doClose = k<0;
-                
+
                 if (!doClose) {
                     dest = (FILE*)openFileHandles.GetXtra (k);
                 } else {
@@ -1393,13 +1396,13 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                 }
             }
         }
-        
+
         for (long i = 1; i<parameters.lLength; i++) {
             _String    *varname = (_String*)parameters(i);
-            
+
             BaseRef    thePrintObject   =   nil;
             _Formula   f;
-            
+
             if (varname->Equal(&clearFile)) {
                 if (!print_to_stdout && dest) {
                     fclose (dest);
@@ -1423,10 +1426,10 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                 thePrintObject=&currentProgram;
             } else {
                 // check for possible string reference
-                
+
                 _String    temp    = ProcessStringArgument (varname),
                            nmspace;
-                
+
                 if (temp.sLength > 0) {
                     nmspace = AppendContainerName(temp,currentProgram.nameSpacePrefix);
                     if (nmspace.IsValidIdentifier()) {
@@ -1435,14 +1438,14 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                 } else {
                     nmspace = AppendContainerName(*varname,currentProgram.nameSpacePrefix);
                 }
-                
-                
+
+
                 if (thePrintObject == nil) {
                     long typeFlag = HY_BL_ANY,
                          index;
-                  
+
                     thePrintObject = _HYRetrieveBLObjectByNameMutable (nmspace, typeFlag, &index);
-                    
+
                     if (!thePrintObject) {
                         _String argCopy = *varname,
                                 errMsg;
@@ -1463,7 +1466,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
                     }
                 }
             }
-            
+
             if (thePrintObject) {
                 if (!print_to_stdout) {
                     thePrintObject->toFileStr (dest);
@@ -1477,7 +1480,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
     catch (_String errMsg) {
         currentProgram.ReportAnExecutionError (errMsg);
     }
-    
+
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
     if (print_to_stdout) {
         yieldCPUTime();
@@ -1486,7 +1489,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& currentProgram)
     if (dest && dest!=globalMessageFile && doClose) {
         fclose (dest);
     }
-    
+
     return !currentProgram.IsErrorState();
 }
 

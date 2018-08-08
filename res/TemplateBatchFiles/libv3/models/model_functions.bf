@@ -8,7 +8,7 @@ LoadFunctionLibrary ("../convenience/regexp.bf");
 /**
  * @name model.GetParameters_RegExp
  * @param model {String} - model ID
- * @param re {String} - regular expression 
+ * @param re {String} - regular expression
  * @return a dictionary of global model parameters that match a regexp
  */
 lfunction model.GetParameters_RegExp(model, re) {
@@ -34,7 +34,7 @@ lfunction model.GetParameters_RegExp(model, re) {
  * @param rules
  */
 function model.ApplyModelToTree (id, tree, model_list, rules) {
-    
+
 	if (Type (rules) == "AssociativeList") {
 	    // this has the form
 	    // model id : list of branches to apply the model (as a string COLUMN matrix with branch names,
@@ -53,15 +53,16 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
                               ");
 
 	    }
-	    
-	    /* 
-	    
+
+	    /*
+
 	    debug.log (tree);
 	    _t = Eval ("Format (`id`,1,1)");
 	    debug.log (_t);
-	    
+
 	    */
-	    
+
+
 	    model.ApplyModelToTree.ids = Rows (rules);
 	    for (model.ApplyModelToTree.k = 0; model.ApplyModelToTree.k < Abs (rules); model.ApplyModelToTree.k += 1) {
 	        model.ApplyModelToTree.name = model.ApplyModelToTree.ids[model.ApplyModelToTree.k];
@@ -219,19 +220,18 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 
 	// Add data filter information to model description
-	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
-    
-
+	if ( None != data_filter) {
+	    models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
+	}
 
     // Set Q field
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.defineQ], model.generic.DefineModel.model, id);
 
 
     // Define type of frequency estimator
-	if (estimator_type != None) {
+	if (None != estimator_type) {
 		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
 	}
-
 
     // Set EFV field
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
@@ -247,13 +247,13 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 
 	parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.matrix_id],model.generic.DefineModel.model[terms.model.rate_matrix]);
-	
+
 	if (Type ((model.generic.DefineModel.model[terms.efv_estimate])[0]) == "String") {
 	    parameters.StringMatrixToFormulas (model.generic.DefineModel.model [terms.model.efv_id],model.generic.DefineModel.model[terms.efv_estimate]);
 	} else {
 	    utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 	}
-	    	
+
 
 	model.define_from_components (id, 	model.generic.DefineModel.model [terms.model.matrix_id], model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
 
@@ -261,7 +261,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
        Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
-    
+
 	return model.generic.DefineModel.model;
 }
 
@@ -277,7 +277,9 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filter, estimator_type) {
 
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
-	models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
+	if (None != estimator_type) {
+	    models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
+	}
 
     // for mixture models this will define the mixture components as well
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.defineQ], model.generic.DefineModel.model, id);
@@ -361,7 +363,7 @@ function models.generic.ConstrainBranchLength (model, value, parameter) {
             messages.log ("models.generic.ConstrainBranchLength: not exactly one local model parameter");
         }
     } else {
-         messages.log ("models.generic.ConstrainBranchLength: unsupported value type " + Type (value) + "\n" + value);    
+         messages.log ("models.generic.ConstrainBranchLength: unsupported value type " + Type (value) + "\n" + value);
     }
     return 0;
 }
@@ -446,8 +448,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
  * @returns 0
  */
 lfunction models.generic.AttachFilter (model, filter) {
-    
-    
+
     if (Type (filter) != "String") {
         utility.ForEach (filter, "_filter_", "models.generic.AttachFilter (`&model`, _filter_)");
         model[utility.getGlobalValue("terms.model.data")] = filter;

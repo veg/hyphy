@@ -24,22 +24,28 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
+LoadFunctionLibrary     ("libv3/tasks/mpi.bf");
+
 
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
+//utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.01);
+//utility.SetEnvVariable ("LF_SMOOTHING_REDUCTION", 1/2);
+
 
 /*------------------------------------------------------------------------------*/
 
 relax.analysis_description = {
-                               terms.io.info : "RELAX (a random effects test of selection relaxation) uses a random effects branch-site model framework to test whether a set of 'Test' branches evolves under relaxed selection relative to a set of 'Reference' branches (R), as measured by the relaxation parameter (K).",
-                               terms.io.version : "2.0",
+                               terms.io.info : "RELAX (a random effects test of selection relaxation) uses a random effects branch-site model framework to test whether a set of 'Test' branches evolves under relaxed selection relative to a set of 'Reference' branches (R), as measured by the relaxation parameter (K).
+                                                Version 2.1 adds a check for stability in K estimates to try to mitigate convergence problems",
+                               terms.io.version : "2.1",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                                terms.io.contact : "spond@temple.edu",
                                terms.io.requirements : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"
                               };
-                              
+
 relax.json    = { terms.json.analysis: relax.analysis_description,
                   terms.json.input: {},
                   terms.json.fits : {},
@@ -49,6 +55,8 @@ relax.json    = { terms.json.analysis: relax.analysis_description,
 
 relax.relaxation_parameter        = "relax.K";
 relax.rate_classes     = 3;
+
+
 relax.MG94_name = terms.json.mg94xrev_sep_rates;
 relax.general_descriptive_name = "General descriptive";
 relax.alternative_name = "RELAX alternative";
@@ -59,6 +67,11 @@ relax.partitioned_descriptive_name = "RELAX partitioned descriptive";
 terms.relax.k          = "relaxation or intensification parameter";
 terms.relax.k_range    = {
         terms.lower_bound: "0",
+        terms.upper_bound: "50"
+    };
+
+terms.relax.k_range1    = {
+        terms.lower_bound: "1",
         terms.upper_bound: "50"
     };
 
@@ -90,6 +103,7 @@ selection.io.startTimer (relax.json [terms.json.timers], "Overall", 0);
 namespace relax {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ({utility.getGlobalValue("terms.prefix"): "relax", utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "relax.select_branches"}});
+    LoadFunctionLibrary ("modules/grid_compute.ibf");
 }
 
 
@@ -136,11 +150,12 @@ namespace relax {
 
 io.ReportProgressMessageMD ("RELAX", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
+
+
 relax.final_partitioned_mg_results = estimators.FitMGREV (relax.filter_names, relax.trees, relax.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
     terms.run_options.partitioned_omega: relax.selected_branches,
 }, relax.partitioned_mg_results);
-
 
 io.ReportProgressMessageMD("RELAX", "codon-refit", "* " + selection.io.report_fit (relax.final_partitioned_mg_results, 0, relax.codon_data_info[terms.data.sample_size]));
 
@@ -175,81 +190,129 @@ utility.ForEachPair (relax.filter_specification, "_key_", "_value_",
 
 selection.io.stopTimer (relax.json [terms.json.timers], "Preliminary model fitting");
 
+parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
 
 if (relax.model_set == "All") { // run all the models
 
-    relax.ge.bsrel_model =  model.generic.DefineMixtureModel("relax.BS_REL.ModelDescription",
-            "relax.ge", {
-                "0": parameters.Quote(terms.local),
-                "1": relax.codon_data_info[terms.code],
-                "2": parameters.Quote (relax.rate_classes) // the number of rate classes
-            },
-            relax.filter_names,
-            None);
+    relax.ge_guess = None;
 
-    for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
-        parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range_almost_01);
+    while (1) {
+
+        relax.ge.bsrel_model =  model.generic.DefineMixtureModel("relax.BS_REL.ModelDescription",
+                "relax.ge", {
+                    "0": parameters.Quote(terms.local),
+                    "1": relax.codon_data_info[terms.code],
+                    "2": parameters.Quote (relax.rate_classes) // the number of rate classes
+                },
+                relax.filter_names,
+                None);
+
+        for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
+            parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range_almost_01);
+        }
+        parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
+        /*
+        for (relax.i = 1; relax.i <= relax.rate_classes; relax.i += 1) {
+            console.log (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
+            console.log (
+            parameters.GetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)))
+            );
+        }
+        */
+
+        relax.model_object_map = { "relax.ge" :       relax.ge.bsrel_model };
+
+        io.ReportProgressMessageMD ("RELAX", "gd", "Fitting the general descriptive (separate k per branch) model");
+        selection.io.startTimer (relax.json [terms.json.timers], "General descriptive model fitting", 2);
+
+        if (Type (relax.ge_guess) != "Matrix") {
+            relax.ge_guess = relax.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
+                    "_value_[terms.fit.MLE]"));
+        }
+
+        relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
+
+        parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
+
+        relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
+                                        relax.trees,
+                                        { "0" : {"DEFAULT" : "relax.ge"}},
+                                        relax.final_partitioned_mg_results,
+                                        relax.model_object_map,
+                                        {
+                                            terms.run_options.apply_user_constraints: "relax.init.k",
+                                            terms.run_options.retain_lf_object : TRUE
+
+                                        });
+
+        //Export (lfe, ^relax.general_descriptive.fit [terms.likelihood_function]);
+        //console.log (lfe);
+
+        estimators.TraverseLocalParameters (relax.general_descriptive.fit [terms.likelihood_function], relax.model_object_map, "relax.set.k2");
+
+        relax.general_descriptive.fit = estimators.FitExistingLF (relax.general_descriptive.fit [terms.likelihood_function], relax.model_object_map);
+
+        selection.io.stopTimer (relax.json [terms.json.timers], "General descriptive model fitting");
+
+        io.ReportProgressMessageMD("RELAX", "ge", "* " + selection.io.report_fit (relax.general_descriptive.fit, 9, relax.codon_data_info[terms.data.sample_size]));
+        io.ReportProgressMessageMD("RELAX", "ge", "* The following baseline rate distribution for branch-site combinations was inferred");
+        relax.inferred_ge_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.ge.bsrel_model, relax.general_descriptive.fit)) % 0;
+
+        selection.io.report_dnds (relax.inferred_ge_distribution);
+
+        if (relax.rate_classes > 2) {
+            if (relax.inferred_ge_distribution[0][1] < 1e-5 || relax.inferred_ge_distribution[1][1] < 1e-5) {
+                io.ReportProgressMessageMD("RELAX", "ge", "\n ### Because some of the rate classes were collapsed to 0, the model is likely overparameterized. RELAX will reduce the number of site rate classes by one and repeat the fit now.\n----\n");
+                relax.rate_classes = relax.rate_classes - 1;
+                relax.ge_guess = {relax.rate_classes, 2};
+                relax.shift    = 0;
+                //console.log (relax.inferred_ge_distribution);
+                for (relax.i = 0; relax.i < relax.rate_classes; relax.i += 1) {
+                    if (relax.inferred_ge_distribution[relax.i][1] < 1e-5 && relax.shift == 0) {
+                        relax.shift += 1;
+                        continue;
+                    }
+                    relax.ge_guess[relax.i][0] = relax.inferred_ge_distribution[relax.i + relax.shift][0];
+                    relax.ge_guess[relax.i][1] = relax.inferred_ge_distribution[relax.i + relax.shift][1];
+                }
+                //console.log (relax.ge_guess);
+                continue;
+            }
+        }
+
+
+        relax.distribution_for_json = {'Shared' : utility.Map (utility.Range (relax.rate_classes, 0, 1),
+                                                             "_index_",
+                                                             "{terms.json.omega_ratio : relax.inferred_ge_distribution [_index_][0],
+                                                               terms.json.proportion  : relax.inferred_ge_distribution [_index_][1]}")
+                                       };
+        selection.io.json_store_lf (relax.json,
+                                    relax.general_descriptive_name,
+                                    relax.general_descriptive.fit[terms.fit.log_likelihood],
+                                    relax.general_descriptive.fit[terms.parameters] + 9 , // +9 comes from CF3x4
+                                    relax.codon_data_info[terms.data.sample_size],
+                                    relax.distribution_for_json,
+                                    relax.display_orders[relax.general_descriptive_name]
+                                );
+
+        selection.io.json_store_branch_attribute(relax.json, relax.general_descriptive_name, terms.branch_length, relax.display_orders[relax.general_descriptive_name],
+                                                     0,
+                                                     selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "selection.io.branch.length"));
+
+        relax.k_estimates = selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "relax.extract.k");
+
+        relax.k_stats = math.GatherDescriptiveStats (utility.Map (utility.Values (relax.k_estimates), "_value_", "0+_value_"));
+
+        io.ReportProgressMessageMD("RELAX", "ge", "* Branch-level `terms.relax.k` distribution has mean " + Format (relax.k_stats[terms.math.mean], 5,2) + ", median " +
+                                                     Format (relax.k_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (relax.k_stats[terms.math._2.5], 5,2) + " - " + Format (relax.k_stats[terms.math._97.5], 5,2));
+
+
+        selection.io.json_store_branch_attribute(relax.json, "k (general descriptive)", terms.json.branch_label, relax.display_orders[relax.general_descriptive_name],
+                                                     0,
+                                                     relax.k_estimates);
+
+        break;
     }
-    parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
-
-    relax.model_object_map = { "relax.ge" :       relax.ge.bsrel_model };
-
-    io.ReportProgressMessageMD ("RELAX", "gd", "Fitting the general descriptive (separate k per branch) model");
-    selection.io.startTimer (relax.json [terms.json.timers], "General descriptive model fitting", 2);
-
-    relax.ge_guess = relax.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
-            "_value_[terms.fit.MLE]"));
-
-    relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
-        
-    parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
-
-    relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
-                                    relax.trees,
-                                    { "0" : {"DEFAULT" : "relax.ge"}},
-                                    relax.final_partitioned_mg_results,
-                                    relax.model_object_map,
-                                    {
-                                        terms.run_options.apply_user_constraints: "relax.init.k"
-                                    });
-
-
-
-    selection.io.stopTimer (relax.json [terms.json.timers], "General descriptive model fitting");
-
-    io.ReportProgressMessageMD("RELAX", "ge", "* " + selection.io.report_fit (relax.general_descriptive.fit, 9, relax.codon_data_info[terms.data.sample_size]));
-    io.ReportProgressMessageMD("RELAX", "ge", "* The following baseline rate distribution for branch-site combinations was inferred");
-    relax.inferred_ge_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.ge.bsrel_model, relax.general_descriptive.fit)) % 0;
-    selection.io.report_dnds (relax.inferred_ge_distribution);
-    relax.distribution_for_json = {'Shared' : utility.Map (utility.Range (relax.rate_classes, 0, 1),
-                                                         "_index_",
-                                                         "{terms.json.omega_ratio : relax.inferred_ge_distribution [_index_][0],
-                                                           terms.json.proportion  : relax.inferred_ge_distribution [_index_][1]}")
-                                   };
-    selection.io.json_store_lf (relax.json,
-                                relax.general_descriptive_name,
-                                relax.general_descriptive.fit[terms.fit.log_likelihood],
-                                relax.general_descriptive.fit[terms.parameters] + 9 , // +9 comes from CF3x4
-                                relax.codon_data_info[terms.data.sample_size],
-                                relax.distribution_for_json,
-                                relax.display_orders[relax.general_descriptive_name]
-                            );
-
-    selection.io.json_store_branch_attribute(relax.json, relax.general_descriptive_name, terms.branch_length, relax.display_orders[relax.general_descriptive_name],
-                                                 0,
-                                                 selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "selection.io.branch.length"));
-
-    relax.k_estimates = selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "relax.extract.k");
-
-    relax.k_stats = math.GatherDescriptiveStats (utility.Map (utility.Values (relax.k_estimates), "_value_", "0+_value_"));
-
-    io.ReportProgressMessageMD("RELAX", "ge", "* Branch-level `terms.relax.k` distribution has mean " + Format (relax.k_stats[terms.math.mean], 5,2) + ", median " +
-                                                 Format (relax.k_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (relax.k_stats[terms.math._2.5], 5,2) + " - " + Format (relax.k_stats[terms.math._97.5], 5,2));
-
-
-    selection.io.json_store_branch_attribute(relax.json, "k (general descriptive)", terms.json.branch_label, relax.display_orders[relax.general_descriptive_name],
-                                                 0,
-                                                 relax.k_estimates);
 
 } else {
     relax.general_descriptive.fit = relax.final_partitioned_mg_results;
@@ -289,7 +352,6 @@ relax.bound_weights = models.BindGlobalParameters ({"0" : relax.reference.bsrel_
 models.BindGlobalParameters ({"0" : relax.test.bsrel_model, "1" : relax.reference.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 
 
-parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
 model.generic.AddGlobal (relax.test.bsrel_model, relax.relaxation_parameter, terms.relax.k);
 
 
@@ -356,9 +418,68 @@ io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution wa
 relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.test.bsrel_model)) % 0;
 selection.io.report_dnds (relax.inferred_distribution);
 
+
 io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **reference** branches");
 relax.inferred_distribution_ref = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.reference.bsrel_model)) % 0;
 selection.io.report_dnds (relax.inferred_distribution_ref);
+
+relax.lf.raw = relax.ComputeOnGrid  ( relax.alternative_model.fit[terms.likelihood_function],
+                             relax.grid.MatrixToDict ({200,1}["_MATRIX_ELEMENT_ROW_*0.025"]),
+                            "relax.pass1.evaluator",
+                            "relax.pass1.result_handler");
+
+// FIND the difference between K < 1 and K > 1
+
+relax.best_samples = {{-1e100,-1e100}};
+
+for (relax.k = 0; relax.k < 40; relax.k += 1) {
+    relax.best_samples[0] = Max (relax.best_samples[0], relax.lf.raw[relax.k]);
+}
+
+for (relax.k = 40; relax.k < 200; relax.k += 1) {
+    relax.best_samples[1] = Max (relax.best_samples[1], relax.lf.raw[relax.k]);
+}
+
+
+if (Abs (relax.best_samples[1] - relax.best_samples[0]) < 5.) { // could be diagnostic of convergence problems
+    io.ReportProgressMessageMD("RELAX", "alt-2", "* Potential convergence issues due to flat likelihood surfaces; checking to see whether K > 1 or K < 1 is robustly inferred");
+    if (relax.fitted.K > 1) {
+        parameters.SetRange (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.relax.k), terms.range01);
+    } else {
+        parameters.SetRange (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.relax.k), terms.relax.k_range1);
+    }
+    relax.alternative_model.fit.take2 =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map},
+                                                           relax.alternative_model.fit ,
+                                                           relax.model_object_map,
+                                                           {terms.run_options.retain_lf_object: TRUE}
+                                                           );
+
+
+
+    if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit[terms.fit.log_likelihood]) {
+
+        io.ReportProgressMessageMD("RELAX", "alt-2", "\n### Potential for highly unreliable K inference due to multiple local maxima in the likelihood function, treat results with caution ");
+        io.ReportProgressMessageMD("RELAX", "alt-2", "> Relaxation parameter reset to opposite mode of evolution from that obtained in the initial optimization.");
+        io.ReportProgressMessageMD("RELAX", "alt-2", "* " + selection.io.report_fit (relax.alternative_model.fit.take2, 9, relax.codon_data_info[terms.data.sample_size]));
+        relax.fitted.K = estimators.GetGlobalMLE (relax.alternative_model.fit.take2,terms.relax.k);
+        io.ReportProgressMessageMD("RELAX", "alt-2", "* Relaxation/intensification parameter (K) = " + Format(relax.fitted.K,8,2));
+        io.ReportProgressMessageMD("RELAX", "alt-2", "* The following rate distribution was inferred for **test** branches");
+        relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.test.bsrel_model)) % 0;
+        selection.io.report_dnds (relax.inferred_distribution);
+
+
+        io.ReportProgressMessageMD("RELAX", "alt-2", "* The following rate distribution was inferred for **reference** branches");
+        relax.inferred_distribution_ref = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.reference.bsrel_model)) % 0;
+        selection.io.report_dnds (relax.inferred_distribution_ref);
+
+        relax.alternative_model.fit = relax.alternative_model.fit.take2;
+    }
+
+
+    parameters.SetRange (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.relax.k), terms.relax.k_range);
+
+
+}
 
 relax.distribution_for_json = {relax.test_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),
                                                      "_index_",
@@ -459,7 +580,7 @@ if (relax.model_set == "All") {
 
     io.ReportProgressMessageMD ("RELAX", "pe", "Fitting the partitioned descriptive model (separate distributions for *test* and *reference* branches)");
     parameters.RemoveConstraint (utility.Keys (relax.bound_weights));
-    for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
+    for (relax.i = 1; relax.i <= relax.rate_classes; relax.i += 1) {
         parameters.RemoveConstraint (model.generic.GetGlobalParameter (relax.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
     }
     relax.pe.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
@@ -522,7 +643,7 @@ lfunction relax.extract.k(branch_info) {
 lfunction relax.set.k (tree_name, node_name, model_description) {
     if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.relax.k"), "String")) {
         k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];
-        parameters.SetValue (tree_name + "." + node_name + "." + k, 1);
+        parameters.SetConstraint (tree_name + "." + node_name + "." + k, utility.getGlobalValue ("relax.relaxation_parameter"), "");
         parameters.SetRange (tree_name + "." + node_name + "." + k, utility.getGlobalValue ("terms.relax.k_range"));
     }
     return tree_name + "." + node_name + "." + k;
@@ -530,9 +651,23 @@ lfunction relax.set.k (tree_name, node_name, model_description) {
 
 //------------------------------------------------------------------------------
 
+lfunction relax.set.k2 (tree_name, node_name, model_description) {
+    if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.relax.k"), "String")) {
+        k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];
+        parameters.RemoveConstraint (tree_name + "." + node_name + "." + k);
+    }
+    return tree_name + "." + node_name + "." + k;
+}
+
+
+//------------------------------------------------------------------------------
+
 lfunction relax.init.k (lf_id, components, data_filter, tree, model_map, initial_values, model_objects) {
     parameter_set = estimators.TraverseLocalParameters (lf_id, model_objects, "relax.set.k");
-    parameters.SetConstraint (model.generic.GetGlobalParameter (utility.getGlobalValue("relax.ge.bsrel_model") , terms.AddCategory (utility.getGlobalValue("terms.parameters.omega_ratio"),2)), utility.getGlobalValue("terms.parameters.one"), utility.getGlobalValue("terms.global"));
+    rc = utility.getGlobalValue ("relax.rate_classes");
+    /*if (rc > 2) {
+        parameters.SetConstraint (model.generic.GetGlobalParameter (utility.getGlobalValue("relax.ge.bsrel_model") , terms.AddCategory (utility.getGlobalValue("terms.parameters.omega_ratio"),rc-1)), utility.getGlobalValue("terms.parameters.one"), utility.getGlobalValue("terms.global"));
+    }*/
     /*parameters.SetConstraint (model.generic.GetGlobalParameter (utility.getGlobalValue("relax.ge.bsrel_model") , terms.AddCategory (utility.getGlobalValue("terms.parameters.omega_ratio"),utility.getGlobalValue ("relax.rate_classes"))),
                              "1/(" +
                                 Join ("*", utility.Map (
@@ -558,7 +693,17 @@ lfunction relax.BS_REL.ModelDescription (type, code, components) {
 
 
 lfunction relax.DistributionGuess (mean) {
-    guess = {{0.05,0.7}{0.25,0.2}{10,0.1}};
+    rc = utility.getGlobalValue ("relax.rate_classes");
+
+    guess = {rc,2};
+
+    guess[rc-1][0] = 5;
+    guess[rc-1][1] = 0.1;
+
+    for (k = 0; k < rc - 1; k += 1) {
+        guess[k][0] = 0.1 ^ (1 / (1 + k));
+        guess[k][1] = (0.9) / (rc-1) ;
+    }
 
     norm = + guess[-1][1];
     guess_mean = 1/(+(guess [-1][0] $ guess [-1][1]))/norm;
@@ -627,7 +772,7 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
        key = "component_" + component;
        ExecuteCommands ("
         function rate_generator (fromChar, toChar, namespace, model_type, model) {
-           return relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')], 
+           return relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
                 'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                 'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                 'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
@@ -637,6 +782,8 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
        if ( component < bs_rel[utility.getGlobalValue("terms.model.components")]) {
             model.generic.AddGlobal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
             parameters.DeclareGlobalWithRanges (_aux[component-1], 0.5, 0, 1);
+       } else {
+
        }
        models.codon.generic.DefineQMatrix(bs_rel, namespace);
        rate_matrices [key] = bs_rel[utility.getGlobalValue("terms.model.rate_matrix")];
@@ -717,4 +864,16 @@ lfunction relax.select_branches(partition_info) {
 
     return_set + tree_configuration;
     return return_set;
+}
+
+//------------------------------------------------------------------------------
+
+lfunction relax.grid.MatrixToDict (grid) {
+    return utility.Map (utility.MatrixToListOfRows (grid), "_value_",
+                                                                '{  terms.relax.k : {
+                                                                            terms.id : relax.relaxation_parameter,
+                                                                            terms.fit.MLE : _value_[1]
+                                                                        }
+
+                                                                 }');
 }

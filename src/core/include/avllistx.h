@@ -74,6 +74,10 @@ class _AVLListX: public _AVLList {
         long        GetXtra(long) const;
   
         long        FindAndGetXtra (BaseRefConst, long not_found_value = -1);
+    
+        void        ClearFormulasInList (void) {
+            xtraD.ClearFormulasInList();
+        }
 
 };
 

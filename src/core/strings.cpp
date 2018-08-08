@@ -69,7 +69,7 @@
 #define MOD_ADLER 65521
 
 _String   compileDate = __DATE__,
-          __HYPHY__VERSION__ = _String ("2.3.13.") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
+          __HYPHY__VERSION__ = _String ("2.3.14.") & compileDate.Cut (7,10) & compileDate.Cut (0,2).Replace("Jan", "01", true).
                                                                                                   Replace("Feb", "02", true).
                                                                                                   Replace("Mar", "03", true).
                                                                                                   Replace("Apr", "04", true).
