@@ -102,7 +102,7 @@ extern      long            lastMatrixDeclared,
             subNumericValues;
 
 long        LocateVarByName (_String const&);
-inline _Variable*  LocateVar       (long index);
+_Variable*  LocateVar       (long index);
 HBLObjectRef   FetchObjectFromVariableByType       (_String const*, const unsigned long, long = -1, _String* = nil);
 HBLObjectRef   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
 HBLObjectRef   FetchObjectFromFormulaByType         (_Formula&, const unsigned long, long = -1, _String* = nil);

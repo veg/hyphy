@@ -268,9 +268,10 @@ protected:
 
     void        ClearParseTree  (void);
     /* SLKP: this function is used to clear the data structures holding the input parse tree */
-    void        ProcessAFormula (_FString*, _List&, _SimpleList&, _String&);
+    static void        ProcessAFormula (_FString*, _List&, _SimpleList&);
+    // 20180808: throws _String exceptions when errors encountered
     /* SLKP: utility function to process a probability expression */
-    bool        CheckANT        (long,long,long, _AVLListX&, long);
+    bool        CheckANT        (long,long,long, _AVLListX&, long) const;
     /* SLKP: utility function which checks conditions on rules involving non-terminals
              returning true if status flags for some of the non-terminals were modified*/
     _String*    TokenizeString  (_String&, _SimpleList&);
@@ -298,7 +299,7 @@ protected:
     // should be consulted during computation.  The SECOND bool indicates first call for inside
     // probabilities and that computeFlagsI should be consulted.
 
-    long        indexNT_T             (long, long);
+    inline long        indexNT_T             (long, long) const;
     // index (nt, term) pairs into ntToTerminalMap
 
     hyFloat  LookUpRuleProbability (long index) {
