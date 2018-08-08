@@ -97,7 +97,7 @@ fade.analysis_description = {terms.io.info :
                            terms.io.reference : "TBD",
                            terms.io.authors : "Sergei L Kosakovsky Pond",
                            terms.io.contact : "spond@temple.edu",
-                           terms.io.requirements : "A protein alignment and a phylogenetic tree (optionally annotated with {})"
+                           terms.io.requirements : "A protein alignment and a **rooted** phylogenetic tree (optionally annotated with {})"
                           };
 
 
@@ -167,10 +167,15 @@ if (utility.Has (fade.cache, terms.fade.cache.root, "AssociativeList")) {
     fade.roots = {};
 }
 
-fade.prompted_for_roots = FALSE;
+if (utility.Has (fade.roots,index,'String')) {
+ (fade.partitions_and_trees[index])[terms.data.tree] = (trees.RootTree (_partition_[terms.data.tree], fade.roots[index]))[terms.data.tree];
+}
+assert (((fade.partitions_and_trees[index])[terms.data.tree])[terms.trees.rooted], "Input tree MUST be rooted");
 
+
+/* // Prompts for roots, disabled and input rooting is enforced.
+fade.prompted_for_roots = FALSE;
 utility.ForEachPair (fade.partitions_and_trees, "index", "_partition_",
-                "
                     if ((_partition_[terms.data.tree])[terms.trees.rooted] == FALSE) {
                         if (utility.Has (fade.roots,index,'String')) {
                             (fade.partitions_and_trees[index])[terms.data.tree] = (trees.RootTree (_partition_[terms.data.tree], fade.roots[index]))[terms.data.tree];
@@ -183,8 +188,7 @@ utility.ForEachPair (fade.partitions_and_trees, "index", "_partition_",
                     }
                 "
                 );
-
-
+*/
 fade.name_mapping = fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
 
 
@@ -282,9 +286,25 @@ utility.ForEachPair (fade.baseline_fit[terms.branch_length], "_part_", "_value_"
 '
 );
 
-selection.io.json_store_lf(fade.json, fade.baseline_model,fade.baseline_fit[terms.fit.log_likelihood],
+//Normalize EFV for saving to JSON
+fade.baseline_efv = {20, 1};
+for (i = 0; i < 20; i+=1)
+{
+    fade.efv_search = terms.characterFrequency(models.protein.alphabet[i]);  
+    fade.baseline_efv[i] = ((fade.baseline_fit[terms.global])[fade.efv_search])[terms.fit.MLE];
+
+}
+fade.baseline_efv = fade.baseline_efv * (1/(+fade.baseline_efv));
+
+
+
+
+selection.io.json_store_lf_withEFV(fade.json, fade.baseline_model,fade.baseline_fit[terms.fit.log_likelihood],
                             fade.baseline_fit[terms.parameters],
-                            fade.alignment_sample_size, None, 0);
+                            fade.alignment_sample_size, 
+                            None, 
+                            fade.baseline_efv,
+                            0);
 
 utility.ForEachPair (fade.filter_specification, "_key_", "_value_",
     'selection.io.json_store_branch_attribute(fade.json, fade.baseline_model, terms.branch_length, 0,
@@ -395,7 +415,7 @@ namespace fade {
     site.substitution.string := fade.SubstitutionHistory (((cache [^"terms.fade.cache.substitutions"])[partition_index])[s]);
 
     site_annotation_headers = {
-                                    "Composition" : "Aminoacid composition of site",
+                                    "Composition" : "Amino acid composition of site",
                                     "Substitutions" : "Substitution history on selected branches"
                                   };
 
@@ -817,9 +837,9 @@ function     fade.RunPrompts (prompts) {
 
      if (prompts["method"]) {
         fade.run_settings["method"] = io.SelectAnOption  ({
-                                                                terms.fade.methods.MH : "Full Metropolis-Hastings MCMC algorithm (slowest, original 2013 paper implementation)",
+                                                                terms.fade.methods.VB0 : "0-th order Variational Bayes approximations (fastest, recommended default)",
                                                                 terms.fade.methods.CG : "Collapsed Gibbs sampler (intermediate speed)",
-                                                                terms.fade.methods.VB0 : "0-th order Variational Bayes approximations (fastest, recommended default)"
+                                                                terms.fade.methods.MH : "Full Metropolis-Hastings MCMC algorithm (slowest, original 2013 paper implementation)"
                                                             }, "Posterior estimation method");
         prompts["method"] = FALSE;
      }

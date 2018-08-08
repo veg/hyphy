@@ -230,7 +230,7 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution, d
 //------------------------------------------------------------------------------
 
 
-function selection.io.json_store_lf_GTR_MG94 (json, name, ll, df, ss, rate_distribution, frequencies, display_order) {
+function selection.io.json_store_lf_withEFV (json, name, ll, df, ss, rate_distribution, frequencies, display_order) {
 
     utility.EnsureKey(json, terms.json.fits);
 

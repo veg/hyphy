@@ -170,7 +170,7 @@ estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_part
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (fel.json,
+selection.io.json_store_lf_withEFV (fel.json,
                             terms.json.global_mg94xrev,
                             fel.final_partitioned_mg_results[terms.fit.log_likelihood],
                             fel.final_partitioned_mg_results[terms.parameters],

@@ -113,7 +113,7 @@ selection.io.stopTimer (busted.json [terms.json.timers], "Preliminary model fitt
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (busted.json,
+selection.io.json_store_lf_withEFV (busted.json,
                             busted.MG94,
                             busted.final_partitioned_mg_results[terms.fit.log_likelihood],
                             busted.final_partitioned_mg_results[terms.parameters],

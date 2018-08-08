@@ -288,8 +288,8 @@ function doGTR (prefix) {
                     "_value_[terms.fit.MLE]");
 
     efv = (gtr_results[utility.getGlobalValue("terms.efv_estimate")])["VALUEINDEXORDER"][0];
+    selection.io.json_store_lf_withEFV (json,
 
-    selection.io.json_store_lf_GTR_MG94 (json,
                                 utility.getGlobalValue ("terms.json.nucleotide_gtr"),
                                 gtr_results[utility.getGlobalValue ("terms.fit.log_likelihood")],
                                 gtr_results[utility.getGlobalValue ("terms.parameters")] ,

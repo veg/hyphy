@@ -70,6 +70,7 @@ assert (trees.HasBranchLengths(fade.baseline.tree), "Input tree MUST have branch
 assert (fade.baseline.tree[terms.trees.rooted], "Input tree MUST be rooted");
 
 
+
 fade.replicates = io.PromptUser ("How many replicate datasets be simulated", 100, 1, 10000, true);
 fade.sites_class_count = io.PromptUser ("How many types of sites will be simulated", 2, 1, 10000, true);
 fade.site_classes      = {};
@@ -90,7 +91,7 @@ for (k = 0; k < fade.sites_class_count; k += 1) {
 
 fade.selected_branches = (selection.io.defineBranchSets ( {"0" : { terms.data.tree : fade.baseline.tree}} ))[0];
 
-fade.settings [terms.data.tree]    = fade.baseline.tree[terms.trees.newick_with_lengths];
+fade.settings [terms.data.tree]    = fade.baseline.tree[terms.trees.newick_annotated]; // SJS changed, should retain labeling in output.s
 fade.settings [terms.json.tested]  = fade.selected_branches;
 fade.settings [terms.fade.regimes] = fade.site_classes;
 fade.settings [terms.replicates]   = fade.replicates;
