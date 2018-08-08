@@ -196,8 +196,12 @@ endif(NOT ${OPENMP_FOUND})
 #-------------------------------------------------------------------------------
 # default installation prefix
 #-------------------------------------------------------------------------------
-set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
-set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
+if(NOT DEFINED CMAKE_INSTALL_PREFIX)
+    set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Installation prefix")
+endif()
+if(NOT DEFINED INSTALL_PREFIX)
+    set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
+endif()
 if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     set(DEFAULT_LIBRARIES pthread)
 else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
