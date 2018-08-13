@@ -549,11 +549,6 @@ fel.site_patterns = alignments.Extract_site_patterns ((fel.filter_specification[
 
 utility.ForEach (fel.case_respecting_node_names, "_node_",
         '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
-         /*if (_node_class_ == terms.tree_attributes.test) {
-            _beta_scaler = fel.scalers[1];
-         } else {
-            _beta_scaler = fel.scalers[2];
-         }*/
          _beta_scaler = fel.scaler_parameter_names[_node_class_];
          fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.alpha.scaler, _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
     ');

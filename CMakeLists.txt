@@ -95,6 +95,7 @@ set(DEFAULT_WARNING_FLAGS "-w")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
 
+
 macro(CHECK_CPU_EXTENSIONS)
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")

@@ -40,19 +40,9 @@ lfunction pass1.evaluator (lf_id, tasks, scores) {
     task_count = Abs (tasks);
     for (i = 0; i < task_count; i+=1) {
         
-        //console.log (tasks[task_ids[i]]);
-        
         parameters.SetValues (tasks[task_ids[i]]);
         LFCompute (^lf_id, ll);
         results [task_ids[i]] = ll;
-        
-        /*if (ll < -1e10) {
-           LFCompute (^lf_id, LF_DONE_COMPUTE);
-           io.SpoolLF (lf_id, "/tmp/RELAX", "alt.lf");
-            assert (0);
-        }
-        
-        console.log (ll + "\n\n");*/
         
     }
 
