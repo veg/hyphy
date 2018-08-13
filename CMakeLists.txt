@@ -95,22 +95,7 @@ set(DEFAULT_WARNING_FLAGS "-w")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    execute_process(
-        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-        OUTPUT_VARIABLE GCC_VERSION
-    )
-
-    if (${GCC_VERSION} VERSION_LESS 4.9)
-        message(FATAL_ERROR "Require at least gcc-4.9")
-    endif()
-
-    if(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -g -std=gnu++14")
-    else(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -g")
-    endif(${GCC_VERSION} VERSION_LESS 6.0)
-
+macro(CHECK_CPU_EXTENSIONS)
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
         if(NOSSE3)
@@ -135,25 +120,35 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
             endif(${HAVE_SSE3_EXTENSIONS})
         endif(${HAVE_AVX_EXTENSIONS})
     endif(NOAVX)
+endmacro()
+
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
+        OUTPUT_VARIABLE GCC_VERSION
+    )
+
+    if (${GCC_VERSION} VERSION_LESS 4.9)
+        message(FATAL_ERROR "Require at least gcc-4.9")
+    endif()
+
+    CHECK_CPU_EXTENSIONS()
+    
+    if(${GCC_VERSION} VERSION_LESS 6.0)
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
+    else(${GCC_VERSION} VERSION_LESS 6.0)
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+    endif(${GCC_VERSION} VERSION_LESS 6.0)
+
+    
 
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -g")
-    PCL_CHECK_FOR_AVX()
-    if(${HAVE_AVX_EXTENSIONS})
-        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx ")
-        add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
-    else(${HAVE_AVX_EXTENSIONS})
-        PCL_CHECK_FOR_SSE3()
-        if(${HAVE_SSE3_EXTENSIONS})
-            add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 -g")
-        endif(${HAVE_SSE3_EXTENSIONS})
-    endif (${HAVE_AVX_EXTENSIONS})
-
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+    CHECK_CPU_EXTENSIONS()
     set_property(
      SOURCE ${SRC_CORE}
      APPEND_STRING PROPERTY  COMPILE_FLAGS " -std=c++14 "
@@ -196,8 +191,12 @@ endif(NOT ${OPENMP_FOUND})
 #-------------------------------------------------------------------------------
 # default installation prefix
 #-------------------------------------------------------------------------------
-set(INSTALL_PREFIX /usr/local CACHE PATH "Installation prefix")
-set(CMAKE_INSTALL_PREFIX ${INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
+if(NOT DEFINED CMAKE_INSTALL_PREFIX)
+    set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Installation prefix")
+endif()
+if(NOT DEFINED INSTALL_PREFIX)
+    set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
+endif()
 if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     set(DEFAULT_LIBRARIES pthread)
 else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
