@@ -89,23 +89,20 @@ _String const
 
 Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
   
-
-  
      _SimpleList     parsedFormulas;
-    // stash pointers to processed formulas here
+    // stash pointers to processed production expressions formulas here
     
     startSymbol     = ss;
     insideCalls     = 0;
     outsideCalls    = 0;
     
     // initialize the pointers
-    parseTree     = nil;
     
     
     long          termRules     = T_Rules->countitems(),
     nonTermRules  = NT_Rules->countitems();
     
-  try {
+    try {
     
     if (termRules == 0L) {
       throw ("A SCFG can not be constructed from an empty set of <Nonterminal>-><Terminal> production rules");
@@ -124,7 +121,6 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
     _AVLListX     tempNT        (&foundNT);         // and a wrapper for the set of non-terminals
     
     
-    _Trie         production_symbols;
     
     for (long tc = 0L; tc < termRules; tc++) {
         // check Terminal rules for consistency
@@ -277,13 +273,13 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
         // now iterate over the list of declared NT and verify that they all comply to the three conditions above
       for (long ntC = 0L; ntC < foundNT.lLength; ntC ++) {
         long ntFlag = tempNT.GetXtra (ntC);
-        if ((ntFlag & _HYSCFG_NT_LHS_) == 0) {
+        if ((ntFlag & _HYSCFG_NT_LHS_) == 0L) {
           throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " does not appear on the left-hand side of any production rules.";
         }
-        if ((ntFlag & _HYSCFG_NT_START_) == 0) {
+        if ((ntFlag & _HYSCFG_NT_START_) == 0L) {
           throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " can not be derived from the start symbol.";
         }
-        if ((ntFlag & _HYSCFG_NT_TERM_) == 0) {
+        if ((ntFlag & _HYSCFG_NT_TERM_) == 0L) {
           throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " can not be used to derive any terminal symbols.";
         }
       }
@@ -400,7 +396,6 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
     
         parsedFormulas.ClearFormulasInList();
     } catch (const _String err) {
-    ClearParseTree ();
     HandleApplicationError (err);
   }
   
@@ -409,22 +404,6 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
     /* temporarily removed this for node censoring (degenerate grammar) -- AFYP, August 30, 2006 */
 }
 
-/*--------------------------------------------------------------------------------------------------------------------------------*/
-
-void        Scfg::ClearParseTree    (void)
-{
-    if (parseTree) {
-        for (long pt = 0; pt < 256; pt++) {
-            node<long>* aNode = parseTree [pt];
-            if (aNode) {
-                aNode->delete_tree ();
-                delete (aNode);
-            }
-        }
-        delete [] parseTree;
-        parseTree = nil;
-    }
-}
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -433,12 +412,12 @@ long        Scfg::indexNT_T (long nt, long t) const {
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
- void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities, _SimpleList& parsedFormulas)
-{
+ void    Scfg::ProcessAFormula  (_FString* expression, _List & ruleProbabilities, _SimpleList& parsedFormulas) {
     _Formula *aFormula ;
     if (expression) { // probabilistic rule
         aFormula = new _Formula;
 
+        
         _String  anExpression (expression->get_str());
 
         _Formula lhs;
@@ -450,7 +429,7 @@ long        Scfg::indexNT_T (long nt, long t) const {
             ruleProbabilities < new _String(expression->get_str());
         }
     } else { // determininstic rule (prob = 1.0)
-        aFormula = new _Formula (new _Constant (1.0), false); // constant 1.0
+        aFormula = new _Formula (new HY_CONSTANT_TRUE, false); // constant 1.0
         ruleProbabilities < new _String (kSCFG_TERM_NT_1);
     }
 
@@ -495,8 +474,7 @@ bool    Scfg::CheckANT  (long lhs, long rhs1, long rhs2, _AVLListX& tempNT, long
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-void    Scfg::ScanAllVariables  (void)
-{
+void    Scfg::ScanAllVariables  (void) {
     indexInd.Clear();
     indexDep.Clear();
     indexCat.Clear();
@@ -509,41 +487,38 @@ void    Scfg::ScanAllVariables  (void)
     }
 
     scannerList.ReorderList(); // sort all scanned variables
-
-    for (long varID = 0; varID < allVariables.lLength; varID++) {
-        _Variable * aParameter = LocateVar (allVariables.lData[varID]);
-        if (aParameter->IsCategory()) {
-            indexCat << allVariables.lData[varID];
-        } else if (aParameter->IsIndependent()) {
-            indexInd << allVariables.lData[varID];
+    
+    allVariables.Each ([this] (long var_index, unsigned long) -> void {
+        _Variable * parameter = LocateVar (var_index);
+        if (parameter->IsCategory()) {
+            this->indexCat << var_index;
+        } else if (parameter->IsIndependent()) {
+            this->indexInd << var_index;
         } else {
-            indexDep << allVariables.lData[varID];
+            this->indexDep << var_index;
         }
-    }
+    });
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-_String*    Scfg::VerifyValues  (void)
-{
-    _Matrix * probValues = (_Matrix*)probabilities.Compute(); // initialize all the probability values
-    for (long k=0; k<rules.lLength; k++) { // check that all probabilities are in [0,1]
-        hyFloat  aValue = (*probValues)(k,0);
-        /*
-        _SimpleList *   r = (_SimpleList*)rules(k);
-        char buf [256];
-        if (r->lLength==2)
-        {
-            snprintf (buf, sizeof(buf), "rule %d [%d->%d] Pr %f\n", k,r->lData[0],r->lData[1],aValue);
-        } else {
-            snprintf (buf, sizeof(buf), "rule %d [%d->%d,%d] Pr %f\n", k,r->lData[0],r->lData[1],r->lData[2],aValue);
-        }
-        BufferToConsole(buf);
-        */
-        if (aValue < 0.0 || aValue > 1.0) {
-            return new _String (_String ("Probability value for rule ") & _String (GetRuleString (k)) & " is not within [0,1]: " & aValue);
-        }
-    }
+_String*    Scfg::VerifyValues  (void) {
+    
+    _Matrix * sample_of_values = (_Matrix*)probabilities.Compute();
+    
+    sample_of_values->ForEachCellNumeric([this] (
+        hyFloat value, unsigned long index, unsigned long, unsigned long) -> void {
+            if (value < 0.0 || value > 1.0) {
+                throw _String ("Probability value for rule ") & _String (GetRuleString (index)) & " is not within [0,1] " & value;
+            }
+    });
+    
+    byNT2.ForEach([this] (BaseRef object, unsigned long index) -> void {
+        
+    });
+    
+    
+   
 
     // now check that for each non-terminal, the sum of all probabilities is 1
     {
@@ -706,8 +681,7 @@ _String*    Scfg::TokenizeString    (_String& inString, _SimpleList& outTokens)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-Scfg::~Scfg  (void)
-{
+Scfg::~Scfg  (void) {
     ClearParseTree ();
 }
 

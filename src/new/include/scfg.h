@@ -132,7 +132,7 @@ public:
     // (a) in [0,1]
     // (b) for a fixed NT 'i' the sum of all probabilities for the rules
     //     involving the NT is 1
-    // returns nil if all is good
+    // throws const String exceptions if checks fail
 
     virtual void        RandomSampleVerify      (long);
     // draw a number of values using LHC sampling on parameter bounds
@@ -251,14 +251,12 @@ public:
     // the indexing for the rules is the same as in the 'rules' list
 
 
-    node<long>**        parseTree;          // maintains a parse tree which maps character input (ASCII) to the set of
+    _Trie             production_symbols;          // maintains a parse tree which maps character input (ASCII) to the set of
     // terminal characters expressed as integer indices.
     // Each node is associated with the branch which terminates in it
     // The 3 highest order bytes of the <long> data filed are only used for leaves,
     // and represent the index of the terminal symbol, whilst the lowest order byte
     // associates a character with the branch
-    // The 'root' of the parseTree is represented by the array of 256
-    // node<long>* for faster indexing
 
     long                startSymbol,
                         insideCalls,
@@ -266,8 +264,6 @@ public:
 
 protected:
 
-    void        ClearParseTree  (void);
-    /* SLKP: this function is used to clear the data structures holding the input parse tree */
     static void        ProcessAFormula (_FString*, _List&, _SimpleList&);
     // 20180808: throws _String exceptions when errors encountered
     /* SLKP: utility function to process a probability expression */
