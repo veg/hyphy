@@ -139,12 +139,14 @@ class _Trie: public _List
          * @return Nothing. 
          */
         
-        long     FindKey (const _String& key, _SimpleList* path = nil, bool prefixOK = false) const;
+        long     FindKey (const _String& key, _SimpleList* path = nil, bool prefixOK = false, unsigned long * start_index = nil) const;
         /**
          * Determine if 'key' is in the trie
          * @param  key      -- the string to search for
          * @param  path     -- store the indices for the trie traversal history (if supplied)
          * @param  prefixOK -- returns a match if a prefix of 'key' in the trie
+         * @param  start_index -- if not null, start searching at this position of the string, and store where the key was matched
+                                  (if prefixOK is set to true, this is useful to return up to what point the key was matched)
          * @return the index of the key in 'nodes' if found, kNotFound/kTrieInvalidLetter otherwise  
          */
 
@@ -196,7 +198,7 @@ class _Trie: public _List
          * @return None
          */
         
-        long     GetValue (const long key);
+        long     GetValue (const long key) const;
         /**
          * Retrieve the value associated with the key _index_
          * @param  key -- the index of the key (returned by Find for example); if key < 0 or key >= nodes.lLength, nothing is done

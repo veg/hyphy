@@ -248,6 +248,24 @@ unsigned long DrawFromDiscrete(ARG_TYPE const *cdf, unsigned long dimension) {
   return index;
 }
 
+template <typename FUNCTOR>
+unsigned long DrawFromDiscreteGenerator (FUNCTOR&& generator, unsigned long dimension) {
+  /**
+   assuming that cdf is an array of probabilities summing to 1,
+   draw a random index from the distribution
+   
+   */
+  
+  unsigned long index = 0UL;
+  auto sum_so_far = generator(0), random_draw = genrand_real2();
+  
+  while (sum_so_far < random_draw && index < dimension) {
+    sum_so_far += generator(++index);
+  }
+  
+  return index;
+}
+
 template <typename ARG_TYPE> void BatchDelete(ARG_TYPE first) { delete first; }
 
 template <typename ARG_TYPE, typename... Args>

@@ -185,19 +185,25 @@ long    _Trie::InsertNextLetter (const char letter, const unsigned long current_
 
 
 //----------------------------------------------------------------------------------------------------------------------
-long     _Trie::FindKey (const _String& key, _SimpleList* path, bool prefixOK) const{
+long     _Trie::FindKey (const _String& key, _SimpleList* path, bool prefixOK, unsigned long * start_index) const{
     long current_index = 0L,
          next_index    = 0L;
-    for (unsigned long k = 0UL; k <= key.length() && current_index >= 0L; k++){
+    for (unsigned long k = start_index ? *start_index : 0UL; k <= key.length() && current_index >= 0L; k++){
        next_index = FindNextLetter (key.char_at(k), current_index);
        if (path)
             (*path) << next_index;
        if (next_index < 0 && prefixOK) {
            next_index = FindNextLetter (0, current_index);
            current_index = next_index;
-           break;
+           if (start_index) {
+             *start_index = k;
+           }
+           return current_index;
        }
        current_index = next_index;
+    }
+    if (start_index) {
+      *start_index = key.length();
     }
     return current_index;
 }
@@ -231,7 +237,7 @@ void     _Trie::UpdateValue(const long key, const long value) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-long     _Trie::GetValue(const long key) {
+long     _Trie::GetValue(const long key) const{
     if (key >= 0 && key < payload.lLength)
         return payload.lData[key];
     

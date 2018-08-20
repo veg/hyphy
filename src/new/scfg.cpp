@@ -40,6 +40,7 @@
 #include    "scfg.h"
 #include "function_templates.h"
 #include "global_things.h"
+#include "vector.h"
 
 using namespace hy_global;
 
@@ -69,14 +70,7 @@ const _String     kSCFG_TERM_T       ("T"),
 bitMasks bitMaskArray;
 
 
-_String const
-                            kSCFGInfoStats           ("STATISTICS"),
-                            kSCFGInfoProductions     ("PRODUCTIONS"),
-                            kSCFGInfoTerminals       ("TERMINALS"),
-                            kSCFGInfoProbabilities   ("PROBABILITIES"),
 
-                            kSCFGUseJeffreysPrior    ("USE_JEFFREYS_PRIOR"),     // added Nov. 28, 2006 by afyp
-                            kSCFGOptimizationMethod  ("SCFG_OPTIMIZATION_METHOD");
 
 
 
@@ -144,11 +138,11 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
         // insert to the list of terminals if not seen before
       if  (index>=0) {// new terminal; added to list
                      // now we process the terminal into the parse tree
-        if (production_symbols.FindKey(literal->get_str(), nil, true) != kNotFound) {
+        if (terminal_symbols.FindKey(literal->get_str(), nil, true) != kNotFound) {
            throw  _String("Terminal symbols must form a prefix code, but ") & *literal->get_str().Enquote() & " contains another terminal symbol as a prefix.";
         }
         
-        production_symbols.Insert(literal->get_str(), index);
+        terminal_symbols.Insert(literal->get_str(), index);
       } else {
         index = -index-1;    // if this terminal has already been added, use the index
       }
@@ -502,219 +496,149 @@ void    Scfg::ScanAllVariables  (void) {
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-_String*    Scfg::VerifyValues  (void) {
+void    Scfg::VerifyValues  (void) {
     
-    _Matrix * sample_of_values = (_Matrix*)probabilities.Compute();
+    _Matrix * sampled_values = (_Matrix*)probabilities.Compute();
     
-    sample_of_values->ForEachCellNumeric([this] (
+    sampled_values->ForEachCellNumeric([this] (
         hyFloat value, unsigned long index, unsigned long, unsigned long) -> void {
             if (value < 0.0 || value > 1.0) {
                 throw _String ("Probability value for rule ") & _String (GetRuleString (index)) & " is not within [0,1] " & value;
             }
     });
-    
-    byNT2.ForEach([this] (BaseRef object, unsigned long index) -> void {
-        
+  
+
+  
+    byNT2.ForEach([this, sampled_values] (BaseRef object, unsigned long index) -> void {
+      hyFloat checksum = 0.;
+      auto compute_sum = [&checksum,sampled_values] (long value, unsigned long idx) -> void {
+        checksum += sampled_values->directIndex (value);
+      };
+      ((_SimpleList*)object)->Each (compute_sum);
+      ((_SimpleList*)byNT3.GetItem(index))->Each (compute_sum);
+      
+      if (!CheckEqual (checksum, 1.0)) { // check within reasonable system precision
+        throw _String (_String ("Probability values for non-terminal ") & (index+1) & " do not appear to add up to one: " & checksum);
+      }
     });
-    
-    
-   
-
-    // now check that for each non-terminal, the sum of all probabilities is 1
-    {
-        for (long k=0; k<byNT2.lLength; k++) {
-            hyFloat    p_sum = 0.0;
-            _SimpleList * l2 = (_SimpleList*)byNT2(k),
-                          * l3 = (_SimpleList*)byNT3(k);
-
-            for (long r = 0; r < l2->lLength ; r++) {
-                p_sum += (*probValues)(l2->lData[r],0);
-            }
-
-            {
-                for (long r = 0; r < l3->lLength ; r++) {
-                    p_sum += (*probValues)(l3->lData[r],0);
-                }
-            }
-
-            if (!CheckEqual (p_sum, 1.0)) { // check within reasonable system precision
-                return new _String (_String ("Probability values for non-terminal ") & (k+1) & " do not appear to add up to one: " & p_sum);
-            }
-        }
-    }
-
-    return nil;
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-void    Scfg::RandomSampleVerify  (long samples)
-{
-    if (samples>0) {
-        _String *   errMsg     = nil;
-        long        paramCount = GetIndependentVars().lLength;
-        hyFloat  stepFactor = 1./samples;
+void    Scfg::RandomSampleVerify  (long samples) {
+  try {
+    if (samples>0L) {
+        long        paramCount = GetIndependentVars().countitems();
+        hyFloat  step_factor = 1./samples;
 
-        if (paramCount > 0) { // some adjustable parameters
-            _Matrix parameterBounds (paramCount,3,false,true); // used to store the lower parameter bound
+        if (paramCount > 0L) { // some adjustable parameters
+            _Matrix parameterBounds (paramCount,2,false,true); // used to store the lower parameter bound
             // the sampling step
             // and the current value
-            for (long var = 0; var < paramCount; var++) {
-                _Variable * aVar = LocateVar (GetIndependentVars()(var));
-                parameterBounds.Store (var,0,aVar->GetLowerBound());
-                parameterBounds.Store (var,1,(aVar->GetUpperBound()-parameterBounds(var,0))*stepFactor);
-                parameterBounds.Store (var,2,aVar->Compute()->Value());
+            _Matrix stash;
+            GetAllIndependent (stash);
+          
+            for (long var = 0L; var < paramCount; var++) {
+                hyFloat bounds [2] = {GetIthIndependentBound (var, true), GetIthIndependentBound (var)};
+                parameterBounds.Store (var, 0, bounds[0]);
+                parameterBounds.Store (var, 1, (bounds[1]-bounds[0]) * step_factor);
             }
 
             _SimpleList zeroThruNm1 (samples-1,0,1);
 
-            for (long it = 0; it < samples; it = it+1) {
+            for (long it = 0L; it < samples; ++it) {
                 zeroThruNm1.Permute (1);
-                for (long var = 0; var < paramCount; var++) {
+                for (long var = 0L; var < paramCount; var++) {
                     SetIthIndependent (var, parameterBounds(var,0) + parameterBounds(var,1) * zeroThruNm1.lData[var]);
                 }
-
-                if ((errMsg=VerifyValues ())) {
-                    char buf [256];
-                    snprintf (buf, sizeof(buf), "Breaking from RandomSampleVerify() on iteration %ld of %ld", it, samples);
-                    BufferToConsole(buf);
-
-                    break;
-                }
+              
+                VerifyValues ();
             }
-            {
-                for (long var = 0; var < paramCount; var++) { // restore initial parameter values
-                    SetIthIndependent (var,parameterBounds(var,2));
-                }
-            }
+          
+            SetAllIndependent(&stash);
         } else { // check fixed values
-            errMsg = VerifyValues ();
-        }
-
-        if (errMsg) {
-            HandleApplicationError (_String(errMsg));
+            VerifyValues ();
         }
     }
+  } catch (const _String err) {
+    HandleApplicationError (err);
+  }
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-void    Scfg::SetStringCorpus  (_Matrix* stringMatrix)
-{
+void    Scfg::SetStringCorpus  (_Matrix* stringMatrix) {
+  try{
     corpusChar.Clear();
     corpusInt.Clear();
     DumpComputeStructures ();
-
-    for (long stringRow = 0; stringRow < stringMatrix->GetHDim(); stringRow++) {
-        for (long stringColumn = 0; stringColumn < stringMatrix->GetVDim(); stringColumn++) {
+  
+    for (long stringRow = 0L; stringRow < stringMatrix->GetHDim(); stringRow++) {
+        for (long stringColumn = 0L; stringColumn < stringMatrix->GetVDim(); stringColumn++) {
             _FString    * aString   = (_FString *)stringMatrix->GetFormula (stringRow,stringColumn)->Compute();
             _SimpleList * tokenized = new _SimpleList;
-            _String      * errMsg   = TokenizeString (*aString->theString, *tokenized);
-            if (errMsg) {
-                HandleApplicationError (_String(errMsg));
-                return;
-            }
-            corpusChar << aString->theString;
-            corpusInt  << tokenized;
-
-            DeleteObject (tokenized);
+            TokenizeString (aString->get_str(), *tokenized);
+            corpusChar < new _StringBuffer (aString->get_str());
+            corpusInt  < tokenized;
         }
 
     }
     InitComputeStructures();
+  } catch (const _String err) {
+    HandleApplicationError (err);
+  }
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
-_String*    Scfg::TokenizeString    (_String& inString, _SimpleList& outTokens)
-{
-    if (inString.sLength == 0) {
-        return new _String ("Empty strings are not allowed as SCFG input.");
+void    Scfg::TokenizeString    (_StringBuffer const& inString, _SimpleList& outTokens) const {
+    // TODO: SLKP 20180820 Changed the algorithm for tokenization using _Trie calls; confirm that this still works
+  
+    if (inString.empty() == 0) {
+       throw _String ("Empty strings are not allowed as SCFG input.");
     }
 
     // check to see if the string is too long
 
-    if ((inString.sLength+1.0)*inString.sLength*0.5*byNT3.lLength > _HYSCFG_UPPER_BOUND_) {
-        return new _String ("The input string is too long.");
+    if ((inString.length()+1.0)*inString.length()*0.5*byNT3.countitems() > _HYSCFG_UPPER_BOUND_) {
+        throw _String ("The input string is too long.");
     }
-
-
-    node<long>* currentTreeNode = nil; // used to keep track of where we are in the tree
-    long        stringIndex     = 0;
-
-    for (; stringIndex < inString.sLength; stringIndex++) {
-        unsigned char currentChar  = inString.get_char (stringIndex);
-        if (currentTreeNode == nil) { // root of the tree
-            if   (!(currentTreeNode = parseTree[currentChar])) {
-                break;
-            }
-        } else {
-            long child = 1,
-                 upTo  = currentTreeNode->get_num_nodes();
-
-            for (; child <= upTo; child++)
-                if ((currentTreeNode->go_down(child)->get_data() & _HYSCFG_CHARACTER_MASK_) == currentChar) {
-                    currentTreeNode = currentTreeNode->go_down(child);
-                    break;
-                }
-            if (child == upTo) {
-                break;
-            }
-        }
-
-        if (currentTreeNode->get_num_nodes() == 0) { // at the leaf; emit a token
-            outTokens << ((currentTreeNode->get_data()&_HYSCFG_TERMINAL_MASK_) >> 8);
-            currentTreeNode = nil; // reset to the root
-        }
+  
+    unsigned long current_index = 0L;
+  
+    while (current_index < inString.length()) {
+      unsigned long last_index = current_index;
+      long next_token_location = terminal_symbols.FindKey (inString, NULL, true, &current_index);
+      if (next_token_location < 0L) {
+        throw _String ("Invalid terminal symbol in the input string starting with ") & inString.Chop (last_index, current_index).Enquote ();
+      }
+      outTokens << terminal_symbols.GetValue (next_token_location);
     }
-
-    // check error conditions
-    if (currentTreeNode) { // stuck in the middle of the tree
-        return new _String ("Premature string end: incomplete terminal");
-    }
-
-    if (stringIndex < inString.sLength)
-        return new _String (_String("Invalid terminal symbol in the input string between '") & inString.Cut (stringIndex-10, stringIndex-1) & "' and '"
-                            & inString.Cut (stringIndex, stringIndex+10) & "'.");
-
-    return nil;
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
 Scfg::~Scfg  (void) {
-    ClearParseTree ();
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-_String *   Scfg::GetRuleString (long ruleIdx)
-{
-    if (ruleIdx < 0 || ruleIdx >= rules.lLength) {
-        return new _String;
+_StringBuffer *   Scfg::GetRuleString (long rule_index) const {
+    if (rule_index < 0 || rule_index >= rules.countitems()) {
+        return new _StringBuffer;
     }
 
-    _String * result = new _String (64L, true);
-    _SimpleList * aRule = (_SimpleList*) rules (ruleIdx);
-    _String     * temp  = (_String*)probabilities.GetFormula (ruleIdx,0)->toStr();
-
-    (*result) << "{";
-    (*result) << _String(aRule->lData[0]);
-    (*result) << "}->";
-    if (aRule->lLength == 2) { // NT->T
-        (*result) << "\"";
-        (*result) << *(_String*)terminals(aRule->lData[1]);
-        (*result) << "\" : ";
+    _StringBuffer * result = new _StringBuffer (64UL);
+    _SimpleList * aRule = (_SimpleList*) rules.GetItem (rule_index);
+ 
+    (*result) << "{" << _String(aRule->get(0)) << "}->";
+    if (aRule->countitems() == 2) { // NT->T
+        (*result) << "\"" << *(_String*)terminals.GetItem (aRule->get (1)) << "\" : ";
     } else {
-        (*result) << "{";
-        (*result) << _String(aRule->lData[1]);
-        (*result) << "}{";
-        (*result) << _String(aRule->lData[2]);
-        (*result) << "} : ";
+        (*result) << "{" << _String(aRule->get(1)) << "}{" << _String (aRule->get (2)) << "} : ";
     }
 
-    (*result) << temp;
-    DeleteObject (temp);
-    result->Finalize ();
+    result->AppendNewInstance((_String*)probabilities.GetFormula (rule_index,0)->toStr(kFormulaStringConversionNormal));
+    result->TrimSpace ();
     return result;
 }
 
@@ -722,21 +646,19 @@ _String *   Scfg::GetRuleString (long ruleIdx)
 
 BaseRef     Scfg::toStr  (unsigned long)
 {
-    _String * result = new _String (128L, true); // allocate a buffer with the initial length of 128 characters
-
-    for (long i = 0; i < rules.lLength; i++) {
-        (*result) << new _String (GetRuleString(i));
-        (*result) << "\n";
+    _StringBuffer * result = new _StringBuffer (128UL); // allocate a buffer with the initial length of 128 characters
+  
+    for (long i = 0UL; i < rules.countitems(); i++) {
+        result->AppendNewInstance (new _String (GetRuleString(i))) << '\n';
     }
 
-    result->Finalize ();
+    result->TrimSpace ();
     return result;
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-void        Scfg::DumpComputeStructures (void)
-{
+void        Scfg::DumpComputeStructures (void) {
     insideProbs.Clear       ();
     insideProbsT.Clear      ();
     outsideProbs.Clear      ();
@@ -749,26 +671,23 @@ void        Scfg::DumpComputeStructures (void)
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-hyFloat      Scfg::Compute (void)
-{
+hyFloat      Scfg::Compute (void) {
 
-    bool first = computeFlagsI.lLength;
+    bool first = computeFlagsI.nonempty();
 
-    hyFloat  res = 0.0,
-                ip,
-                useJP;
-
-    checkParameter (useJeffreysPrior, useJP, 0.0);
+    hyFloat  res = 0.0, ip;
+             //useJP = hy_env::EnvVariableGetNumber(kSCFGUseJeffreysPrior, 0.0);
 
     // update the probability matrix
     probabilities.Compute ();
 
 
-    for (long stringID = 0; stringID < corpusChar.lLength; stringID++) {
+    for (long stringID = 0L; stringID < corpusChar.countitems(); stringID++) {
         // assuming that production probabilities have changed since last Compute(),
         // retain 0 and 1's but clear buffer of stored 0<Pr<1 values.
         _Matrix * cachedProbs = (_Matrix*)(storedInsideP(stringID));
-        for (long cid = 0; cid < cachedProbs->GetHDim(); cid++) { // reset 0,1 values to -1
+      
+        for (long cid = 0L; cid < cachedProbs->GetHDim(); cid++) { // reset 0,1 values to -1
             cachedProbs->Store (cid,0,-1.);
         }
 
@@ -779,7 +698,8 @@ hyFloat      Scfg::Compute (void)
         BufferToConsole (buf);
         */
 
-        hyFloat  temp = ComputeInsideProb (0,((_String*)corpusChar(stringID))->sLength-1,stringID,startSymbol, first);
+        hyFloat  temp = ComputeInsideProb (0,((_String*)corpusChar(stringID))->length()-1,stringID,startSymbol, first);
+ 
         if (temp == 0.) {
             ReportWarning (_String("Underflow detected for string ") & stringID & ". Spiking optimizer to avoid this region of parameter space.");
             return (-A_LARGE_NUMBER);
@@ -801,171 +721,40 @@ hyFloat      Scfg::Compute (void)
         // computeFlagsO.Clear();
     }
 
-    /*char buf [256];
-    snprintf (buf, sizeof(buf), "Compute() total inside calls = %d\n", insideCalls);
-    BufferToConsole(buf);*/
-
     insideCalls = 0;    // reset counter
-
-
-
-#ifdef __NEVER_DEFINED__
-    if (useJP >= 1.0) { // using Jeffrey's prior (the square root of the determinant of Fisher's information matrix)
-        setParameter(useJeffreysPrior, 0.0);        // Compute() is called by CovarianceMatrix(), prevent infinite loop
-
-
-        _Matrix *   fisherinfo  = (_Matrix *) _LikelihoodFunction::CovarianceMatrix (nil, FALSE);
-        // returns the Hessian matrix
-        // i.e. square matrix of second partial derivatives of log-likelihood, obtained from Compute().
-        // This is the empirical Fisher information matrix.
-        // Matrix must be non-negative definite, i.e. all eigenvalues are positive.
-        // The determinant of the matrix is the product of eigenvalues.
-
-
-        // need to remove rows and columns from Fisher's information matrix
-        _Matrix     fi (fisherinfo->GetHDim()-1, fisherinfo->GetVDim()-1, false, true);
-
-        for (long i = 0; i < fisherinfo->GetHDim() - 1; i++) {  // display matrix
-            for (long j = 0; j < fisherinfo->GetVDim() - 1; j++) {
-                fi.Store(i, j, (*fisherinfo) (i,j));
-            }
-        }
-
-
-        setParameter (useJeffreysPrior, 1.0);       // reset flag
-
-        _AssociativeList *  eigen       = (_AssociativeList *) fi.Eigensystem();
-
-
-
-        _Matrix *           eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
-        hyFloat          logdet      = 0.0,      // avoid overflow from large determinants
-                            checkzero   = 0.0;
-
-
-        for (long i = 0; i < eigenvalues->GetHDim(); i++) { // display eigenvalues
-            for (long j = 0; j < eigenvalues->GetVDim(); j++) {
-                hyFloat      temp = (*eigenvalues) (i,j);
-
-                checkzero += temp;
-
-                if (temp < 0.0) {       // can't allow any negative eigenvalues!
-                    snprintf (buf, sizeof(buf), "WARNING: negative eigenvalue.\n");
-                    BufferToConsole (buf);
-
-                    return res - 100.0;     // return a large negative number (worse log-likelihood)
-                }
-                logdet += log(temp);                // product of eigenvalues is the determinant
-
-            }
-        }
-
-        /*
-        //if (checkzero == 0.0) {       // all eigenvalues are zero, QR probably barfed
-            for (long i = 0; i < fi.GetHDim(); i++)
-            {
-                for (long j = 0; j < fi.GetVDim(); j++)
-                {
-                    snprintf (buf, sizeof(buf), "%lf\t", fi (i, j) );
-                    BufferToConsole (buf);
-                }
-                snprintf (buf, sizeof(buf), "\n");
-                BufferToConsole (buf);
-            }
-            snprintf (buf, sizeof(buf), "\n");
-            BufferToConsole (buf);
-
-        //  return res - 100.0;
-        //}
-
-
-        snprintf (buf, sizeof(buf), "log determinant = %lf\n", logdet);
-        BufferToConsole (buf);
-        */
-
-        hyFloat  jp  = 0.5 * logdet;     // this is Jeffrey's (1946) invariant prior applied to log-likelihood
-
-        return res + jp;    // else
-
-
-        // calculate the determinant
-        _Matrix *   ludFisher   = (_Matrix *) fisherinfo->LUDecompose();        // returns n x (n+1) matrix, where (n+1)th column contains vector
-        // of row interchanges, and the remaining nxn is the LUD.
-
-        for (long i = 0; i < ludFisher->GetHDim(); i++) {   // display matrix
-            for (long j = 0; j < ludFisher->GetVDim(); j++) {
-                hyFloat  temp = (*ludFisher) (i,j);
-                snprintf (buf, sizeof(buf), "%5.3lf\t", temp);
-                BufferToConsole (buf);
-            }
-            snprintf (buf, sizeof(buf), "\n");
-            BufferToConsole (buf);
-        }
-
-        snprintf (buf, sizeof(buf), "\n");
-        BufferToConsole (buf);
-
-        hyFloat  trace       = 1.0;
-
-        for (long diag = 0; diag < ludFisher->GetHDim(); diag++) {          // diagonal of LU contains the eigenvalues
-            hyFloat  temp = (*ludFisher) (diag,diag);
-            snprintf (buf, sizeof(buf), "%5.3lf\t", temp);
-            BufferToConsole (buf);
-
-            trace *= temp;      // product of eigenvalues is the determinant
-        }
-
-        snprintf (buf, sizeof(buf), "<- trace\n");
-        BufferToConsole (buf);
-
-        /*
-        snprintf (buf, sizeof(buf), "penalize %f\n", 0.5 * log(fabs(trace)) );
-        BufferToConsole (buf);
-        */
-
-        fisherinfo->Clear();
-        ludFisher->Clear();
-
-        return res + 0.5 * log(trace);      // penalized log-likelihood
-
-    } else {
-        return res;
-    }
-#endif
 
     return res;
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-void        Scfg::InitComputeStructures (void)
-{
+void        Scfg::InitComputeStructures (void) {
     unsigned long maxStringLength = 0UL;
-    for (unsigned long stringCount = 0UL; stringCount < corpusChar.lLength; stringCount++) {
+    for (unsigned long stringCount = 0UL; stringCount < corpusInt.countitems(); stringCount++) {
+        StoreIfGreater(maxStringLength, ((_SimpleList*)corpusInt.GetItem (stringCount))->countitems());
 
-        unsigned long                    maxDimension = ((_String*)corpusChar(stringCount))->sLength;
-        maxStringLength         = MAX (maxStringLength, maxDimension);
+        insideProbsT < new _SimpleList;
+        outsideProbsT < new _SimpleList;
 
-        insideProbsT.AppendNewInstance(new _SimpleList);
-        outsideProbsT.AppendNewInstance(new _SimpleList);
-
-        insideProbs.AppendNewInstance(new _AVLListX ((_SimpleList*)insideProbsT(stringCount)));
-        outsideProbs.AppendNewInstance(new _AVLListX ((_SimpleList*)outsideProbsT(stringCount)));
+        insideProbs  < new _AVLListX ((_SimpleList*)insideProbsT(stringCount));
+        outsideProbs < new _AVLListX ((_SimpleList*)outsideProbsT(stringCount));
       
-        storedInsideP.AppendNewInstance(new _GrowingVector);
-        storedInsideP.AppendNewInstance(new _GrowingVector);
+        storedInsideP < new _Vector;
+        storedInsideP < new _Vector;
 
     }
-    maxStringLength = (maxStringLength * (maxStringLength+1) * byNT2.lLength / 64)+1;
+    maxStringLength = (maxStringLength * (maxStringLength+1) * byNT2.countitems() / 64)+1;
+    // SLKP 20180820: TODO is 64 here to represent a hardcoded sizeof (long)?
     computeFlagsI.Populate (maxStringLength,0,0);
     computeFlagsO.Populate (maxStringLength,0,0);
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-inline  long    scfgIndexIntoAnArray            (long start,long end,long nt,long stringLength)
-{
-    return (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
+inline  long    Scfg::scfgIndexIntoAnArray            (long start,long end,long nt,long stringLength) {
+    //return (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
+
+    return end + ((((stringLength << 1) - start -1L) * start + nt * (stringLength + 1L) * stringLength) >> 1);
 
     /* Each non terminal is given a triangular array for all substrings of a string, indexed by start, end (0-based, of course),
        and subject to end >= start
@@ -981,7 +770,7 @@ inline  long    scfgIndexIntoAnArray            (long start,long end,long nt,lon
 
         To find the offest of the (s,e) substring from the 0-th element of this array we compute (L = string length)
 
-        (e-s) + sum_{k=0}{s-1} (L-k) = e-s + s/2 (L + L - s + 1) = e - s + (2L - s + 1) s /2 = e + (2L - s - 1)
+        (e-s) + sum_{k=0}{s-1} (L-k) = e-s + s/2 (L + L - s + 1) = e - s + (2L - s + 1) s /2 =
 
      */
 
@@ -993,31 +782,31 @@ inline  long    scfgIndexIntoAnArray            (long start,long end,long nt,lon
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-void    setIndexBit             (long start,long end,long nt,long stringLength,_SimpleList& theArray)
-{
-    long theIndex = (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
-    theArray.lData[theIndex/32] |= bitMaskArray.masks[theIndex%32];
-    /*char str255 [255];
-    snprintf (str255, sizeof(str255),"Store %d %d %d %d into %x\n", start, end, nt, stringLength, theIndex, theArray.lData[theIndex/32]);
-    BufferToConsole (str255);*/
+void    Scfg::setIndexBit             (long start,long end,long nt,long stringLength,_SimpleList& theArray) {
+    //long theIndex = (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
+    long array_index = scfgIndexIntoAnArray (start, end, nt, stringLength);
+    //theArray.lData[theIndex/32] |= bitMaskArray.masks[theIndex%32];
+    theArray[array_index >> 5] |= bitMaskArray.masks [array_index - (array_index << 5 >> 5)];
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-bool    getIndexBit             (long start,long end,long nt,long stringLength,_SimpleList& theArray)
-{
-    long theIndex = (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
+bool    Scfg::getIndexBit             (long start,long end,long nt,long stringLength,_SimpleList& theArray) {
+    //long theIndex = (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
+    long array_index = scfgIndexIntoAnArray (start, end, nt, stringLength);
+
     /*char str255 [255];
     snprintf (str255, sizeof(str255),"Fetch %d %d %d %d from %x to give %d\n", start, end, nt, stringLength, theArray.lData[theIndex/32], (theArray.lData[theIndex/32] & (bitMaskArray.masks[theIndex%32])) > 0);
     BufferToConsole (str255);*/
-    return (theArray.lData[theIndex/32] & bitMaskArray.masks[theIndex%32]) > 0;
+    //return (theArray.lData[theIndex/32] & bitMaskArray.masks[theIndex%32]) > 0;
+  
+    return (theArray.get (array_index >> 5) & bitMaskArray.masks [array_index - (array_index << 5 >> 5)]) > 0L;
 }
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
 /* ---- SCFG:  Inside Probability -------------------------- */
 
-hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntIndex, bool firstPass)
-{
+hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntIndex, bool firstPass) {
 
     // static long insideCalls = 0;
     insideCalls ++;
@@ -1025,32 +814,26 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
 
     /* quickly handle extreme cases */
     if (to > from) { // more than a single terminal in the substring
-        if (((_SimpleList**)byNT3.lData)[ntIndex]->lLength == 0)
-            // ntIndex non-terminal can only generate terminals
-        {
-            //if (firstPass) // mark this triplet as computed
-            //setIndexBit (from, to, ntIndex, ((_String*)corpusChar.lData[stringIndex])->sLength, computeFlagsI);
+        if (((_SimpleList*)byNT3.GetItem (ntIndex))->empty()) {
+            // ntIndex non-terminal can only generate single terminals
             return 0.;
         }
-    } else {    // to == from
-        if (((_SimpleList**)byNT2.lData)[ntIndex]->lLength == 0)
+    } else {    // to == from [single terminal]
+        if (((_SimpleList*)byNT2.GetItem (ntIndex))->empty()) {
             // ntIndex non-terminal can only generate other non-terminals
-        {
-            //if (firstPass) // mark this triplet as computed
-            //setIndexBit (from, to, ntIndex, ((_String*)corpusChar.lData[stringIndex])->sLength, computeFlagsI);
-
             return 0.;
         }
     }
 
     /* look up the triple in the cache and decide if it's already been done */
 
-    _AVLListX *             theAVL = (_AVLListX*)insideProbs(stringIndex);
+    _AVLListX *             theAVL = (_AVLListX*)insideProbs.GetItem (stringIndex);
     // see if this is already done
-    long    stringL         = ((_String**)corpusChar.lData)[stringIndex]->sLength,
-            tripletIndex   = scfgIndexIntoAnArray(from,to,ntIndex,stringL),
+  
+    long    stringL         = ((_SimpleList*)corpusInt.GetItem (stringIndex))->countitems(),
+            tripletIndex    = scfgIndexIntoAnArray(from,to,ntIndex,stringL),
             avlIndex        = theAVL->FindLong (tripletIndex),
-            matrixIndex        = -1;
+            matrixIndex     = -1;
 
     if (avlIndex < 0) { // the triplet is not in the search tree
         if (firstPass) { // has this been done?
@@ -1065,9 +848,9 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
         if (matrixIndex < 0) { // identically 1
             return 1.0;
         } else { // have we already computed this?
-            hyFloat currentValue = ((_GrowingVector**)storedInsideP.lData)[stringIndex]->theData[matrixIndex];
-            if (currentValue >= 0.0) {
-                return currentValue;
+            hyFloat current_value = ((_Vector*)storedInsideP.GetItem (stringIndex))->directIndex(matrixIndex);
+            if (current_value >= 0.0) {
+                return current_value;
             }
             // else was reset to -1, re-compute
         }
@@ -1078,72 +861,52 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
     hyFloat      insideProbValue = 0.0;
 
     if (to == from) { // single terminal substring; direct lookup
-        long ruleIndex = ntToTerminalMap.lData[indexNT_T(ntIndex,((_SimpleList**)corpusInt.lData)[stringIndex]->lData[to])];
-        if (ruleIndex >= 0) {
-            insideProbValue = LookUpRuleProbability (ruleIndex);
+        //long ruleIndex = ntToTerminalMap.lData[indexNT_T(ntIndex,((_SimpleList**)corpusInt.lData)[stringIndex]->lData[to])];
+        long rule_index = ntToTerminalMap.get (indexNT_T(ntIndex,((_SimpleList*)corpusInt.GetItem (stringIndex))->get(to)));
+        if (rule_index >= 0L) {
+            insideProbValue = LookUpRuleProbability (rule_index);
         }
     } else {
-        if (firstPass)
+        if (firstPass) {
             // try the heuristics
-        {
-            _SimpleList* stringList = ((_SimpleList**)corpusInt.lData)[stringIndex];
+            _SimpleList* stringList = (_SimpleList*)corpusInt.GetItem (stringIndex);
             // if any of these conditions are TRUE, then both inside and outside Pr(s,t,i) = 0
-            if (! (firstArray.lData[indexNT_T(ntIndex, stringList->lData[from])] &&
-                    lastArray.lData[indexNT_T(ntIndex, stringList->lData[to])]
-                    && (from == 0 || precursorArray.lData[indexNT_T(ntIndex, stringList->lData[from-1])])
-                    && (to == stringL-1 || followArray.lData[indexNT_T(ntIndex, stringList->lData[to+1])]))) {
+            if (firstArray.get(indexNT_T(ntIndex, stringList->get(from))) ||
+                    lastArray.get(indexNT_T(ntIndex, stringList->get(to)))
+                   || (from == 0L || precursorArray.get(indexNT_T(ntIndex, stringList->get(from-1L))))
+                   || (to == stringL-1L || followArray.get(indexNT_T(ntIndex, stringList->get(to+1L))))) {
                 setIndexBit (from, to, ntIndex, stringL, computeFlagsI);
                 return 0.0;
             }
         }
-
-        _SimpleList     * myNTNTRules = ((_SimpleList**)byNT3.lData)[ntIndex];
-
-        for (long ruleIdx = 0; ruleIdx < myNTNTRules->lLength; ruleIdx++) { // loop over all NT-> NT NT rules
-            long          currentRuleIndex = myNTNTRules->lData[ruleIdx];
-            hyFloat    ruleProb = LookUpRuleProbability(currentRuleIndex);
-
-            if (ruleProb > 0.0) {
-                _SimpleList * currentRule = ((_SimpleList **)rules.lData)[currentRuleIndex];
-                long          nt1         = currentRule->lData[1],
-                              nt2        = currentRule->lData[2],
-                              halfway      = from+(to-from)/2+1;
-
-                {
-                    for (long bp = from+1; bp <= halfway; bp++) { // now loop over all breakpoints
-                        hyFloat t = ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass);
-                        if (t>0.0) {
-                            insideProbValue += t*
-                                               ComputeInsideProb (bp,to,stringIndex,nt2,firstPass)*
-                                               ruleProb;
-                            /*
-                            insideProbValue += exp( log(t) +
-                                                    log(ComputeInsideProb (bp,to,stringIndex,nt2,firstPass)) +
-                                                    log(ruleProb) );
-                             */
-                            // attempts to prevent likelihood underflow -- AFYP Aug 4, 2006
-                        }
-                    }
-                }
-
-
-                for (long bp = halfway+1; bp <= to; bp++) { // now loop over all breakpoints
-                    hyFloat t = ComputeInsideProb (bp,to,stringIndex,nt2,firstPass);
-                    if (t > 0.0) {
-
-                        insideProbValue += t *
-                                           ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass)*
-                                           ruleProb;
-                        /*
-                        insideProbValue += exp( log(t) +
-                                                log(ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass)) +
-                                                log(ruleProb));
-                         */
-                    }
-                }
-            }
-        }
     }
+
+    ((_SimpleList*)byNT3.GetItem (ntIndex))->Each (
+         [this,from, to, &insideProbValue,stringIndex,firstPass] (long rule_index, unsigned long array_index) -> void {
+           hyFloat    rule_prob = LookUpRuleProbability(rule_index);
+           if (rule_prob > 0.0) {
+             _SimpleList * currentRule = (_SimpleList *)rules.GetItem(rule_index);
+             long          nt1          = currentRule->get(1),
+                           nt2          = currentRule->get(2),
+                           halfway      = from+ ((to-from) >> 1)+1;
+             
+             for (long bp = from+1L; bp <= halfway; bp++){
+               hyFloat t = ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass);
+               if (t>0.0) {
+                 insideProbValue += t*ComputeInsideProb (bp,to,stringIndex,nt2,firstPass)*rule_prob;
+               }
+             }
+             
+             for (long bp = halfway+1L; bp <= to; bp++) { // now loop over all breakpoints
+               hyFloat t = ComputeInsideProb (bp,to,stringIndex,nt2,firstPass);
+               if (t > 0.0) {
+                 
+                 insideProbValue += t * ComputeInsideProb (from,bp-1,stringIndex,nt1,firstPass)*rule_prob;
+               }
+             }
+           }
+         }
+    );
 
     /* decide what to do with the probability:
 
@@ -1161,14 +924,14 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
         BufferToConsole (str255);
         */
 
-        if (avlIndex < 0) {
-            long    mxID = -1;
+        if (avlIndex < 0L) {
+            long    mxID = -1L;
             if (insideProbValue < 1.0) {
-                mxID = ((_GrowingVector*)(storedInsideP(stringIndex)))->Store (insideProbValue);
+                mxID = ((_Vector*)storedInsideP.GetItem (stringIndex))->Store(insideProbValue);
             }
             theAVL->Insert ((BaseRef)tripletIndex, mxID);
         } else { // update values
-            ((_GrowingVector*)(storedInsideP(stringIndex)))->_Matrix::Store (matrixIndex,0,insideProbValue);
+            ((_Vector*)storedInsideP.GetItem (stringIndex))->_Matrix::Store (matrixIndex,0,insideProbValue);
         }
     }
 
@@ -1190,88 +953,72 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
 }
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
-void        Scfg::AddSCFGInfo (_AssociativeList* theList)
-{
+void        Scfg::AddSCFGInfo (_AssociativeList* theList) {
+  static _String const      // various constants used in AddSCFGInfo
+                kAddSCFGInfoStats           ("STATISTICS"),
+                kAddSCFGInfoProductions     ("PRODUCTIONS"),
+                kAddSCFGInfoTerminals       ("TERMINALS"),
+                kAddSCFGInfoProbabilities   ("PROBABILITIES");
+
+  
     _SimpleList indexer (corpusChar.lLength, 0, 1);
-    InsertStringListIntoAVL (theList, kSCFGCorpus, indexer, corpusChar);
+    InsertStringListIntoAVL (theList, hy_env::kSCFGCorpus, indexer, corpusChar);
+  
     _List       ruleStrings;
-    for (long i=0; i<rules.lLength; i++) {
+    for (long i=0; i<rules.countitems(); i++) {
         ruleStrings.AppendNewInstance(GetRuleString (i));
     }
 
-    indexer.Populate (rules.lLength, 0, 1);
-    InsertStringListIntoAVL (theList, _addSCFGInfoProductions, indexer, ruleStrings);
-    indexer.Populate (terminals.lLength, 0, 1);
-    InsertStringListIntoAVL (theList, _addSCFGInfoTerminals, indexer, terminals);
+    indexer.Populate (rules.countitems(), 0, 1);
+    InsertStringListIntoAVL (theList, kAddSCFGInfoProductions, indexer, ruleStrings);
+    indexer.Populate (terminals.countitems (), 0, 1);
+    InsertStringListIntoAVL (theList, kAddSCFGInfoTerminals, indexer, terminals);
 
     _Matrix * stats = new _Matrix (corpusChar.lLength,3,false,true);
 
-    for (long k=0; k<corpusChar.lLength; k++) {
-        long       strL    = ((_String*)corpusChar(k))->sLength,
-                   pNot0   = ((_AVLListX*)insideProbs(k))->dataList->lLength,
-                   p01     = ((_GrowingVector*)storedInsideP(k))->GetUsed();
+    for (long k=0L; k<corpusChar.countitems(); k++) {
+        long       strL    = ((_String*)corpusChar.GetItem (k))->length(),
+                   pNot0   = ((_AVLListX*)insideProbs.GetItem(k))->countitems(),
+                   p01     = ((_Vector*)storedInsideP.GetItem(k))->get_used();
 
-        hyFloat totalPR = strL*(strL+1.)*0.5*byNT2.lLength;
+        hyFloat totalPR = strL*(strL+1.)*0.5*byNT2.countitems();
         stats->Store (k,0,totalPR); // total number of tuples (i,j,v)
         stats->Store (k,1,pNot0-p01);   // number of tuples with probability = 1
         stats->Store (k,2,p01);     // number of tuples with probability in interval (0,1)
     }
-    theList->MStore (kSCFGInfoStats, stats, false);
+    theList->MStore (kAddSCFGInfoStats, stats, false);
     stats = (_Matrix*)probabilities.Compute();
-    theList->MStore (_addSCFGInfoProbabilities, stats, true);
+    theList->MStore (kAddSCFGInfoProbabilities, stats, true);
 }
 
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long ntIndex, bool firstOutside, bool firstInside)
-{
-
-    /* _String nyi ("This function is under development - AFYP");
-    WarnError (nyi); */
-
-    // static long      outsideCalls = 0;
-
-    /* get length of this string */
-    long            stringL = ((_String**)corpusChar.lData)[stringIndex]->sLength;
-
+hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long ntIndex, bool firstOutside, bool firstInside) {
     outsideCalls++;
 
-    /*
-    if (firstOutside)
-    {
-        char buf [256];
-        snprintf (buf, sizeof(buf), "outside %d\t%d\t%d\n", from,to,ntIndex);
-        BufferToConsole(buf);
-    }
-    */
+  
+    /* get length of this string */
+    const long            stringL = ((_SimpleList*)corpusInt.GetItem (stringIndex))->countitems();
 
     // quickly handle extreme cases
-    if (from == 0 && to == stringL-1) { // dealing with entire string
-        if (ntIndex == 0) { // for start symbol
-            //if(firstPass) // mark this triplet as computed
-            //setIndexBit(from, to, ntIndex, ((_String*)corpusChar.lData[stringIndex])->sLength, computeFlagsO);
-            return 1.0;
-        } else {            // not the start symbol
-            //if(firstPass) // mark this triplet as computed
-            //setIndexBit(from, to, ntIndex, ((_String*)corpusChar.lData[stringIndex])->sLength, computeFlagsO);
-            return 0.;
-        }
+    if (from == 0L && to == stringL-1L) { // dealing with entire string
+        return ntIndex == 0L ? 1.0 : 0.0; // unity if the current symbol is the start symbol
     }
 
     if (to > from) {
-        if (( (_SimpleList**)byNT3.lData)[ntIndex]->lLength == 0) {
-            return 0.;  // NT can only emit terminal; inside is 0, so outside is useless
+        if (((_SimpleList*)byNT3.GetItem (ntIndex))->empty()) {
+           return 0.;  // NT can only emit terminal; inside is 0, so outside is useless
         }
     } else {    // from==to
-        if (( (_SimpleList**)byNT2.lData)[ntIndex]->lLength == 0) {
-            return 0.;  // NT can only generate NT NT
+        if (((_SimpleList*)byNT2.GetItem (ntIndex))->empty()) {
+          return 0.;  // NT can only generate NT NT
         }
     }
 
 
     if (!firstInside && firstOutside) { // re-use information from inside probs.
-        if (ComputeInsideProb(from,to,stringIndex,ntIndex,firstInside) == 0) {
+        if (ComputeInsideProb(from,to,stringIndex,ntIndex,firstInside) == 0.) {
             setIndexBit (from,to,ntIndex,stringL,computeFlagsO);
             return 0.;
         }
@@ -1284,13 +1031,13 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
     */
 
     /* look up (s,t,i) in cache and decide if it has already been computed */
-    _AVLListX *     theAVL          = (_AVLListX*)outsideProbs(stringIndex);
+    _AVLListX *     theAVL          = (_AVLListX*)outsideProbs.GetItem (stringIndex);
 
     long            tripletIndex    = scfgIndexIntoAnArray(from,to,ntIndex,stringL),    // convert (s,t,i)
                     avlIndex     = theAVL->FindLong (tripletIndex),              // retrieve key
                     matrixIndex        = -1;
 
-    if (avlIndex < 0) { // the triplet is not in the search tree
+    if (avlIndex < 0L) { // the triplet is not in the search tree
         if (firstOutside) { // has this been computed?
             if (getIndexBit (from, to, ntIndex, stringL, computeFlagsO)) {  // if TRUE, then already done and equals 0
                 return 0.;
@@ -1304,7 +1051,7 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
         if (matrixIndex < 0) {  // identically 1
             return 1.0;
         } else { // have we already computed this?
-            hyFloat currentValue = ((_GrowingVector**)storedOutsideP.lData)[stringIndex]->theData[matrixIndex];
+            hyFloat currentValue = ((_Vector*)storedOutsideP.GetItem (stringIndex))->directIndex(matrixIndex);
             if (currentValue >= 0.0) {
                 return currentValue;
             }
@@ -1312,65 +1059,63 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
     }
 
     /* have to compute stuff; note, nothing below this line should get called after the first pass */
-    if (firstOutside)
+    if (firstOutside) {
         // try the heuristics
-    {
-        _SimpleList* stringList = ((_SimpleList**)corpusInt.lData)[stringIndex];
+ 
+        _SimpleList* stringList = (_SimpleList*)corpusInt.GetItem (stringIndex);
         // if any of these conditions are TRUE, then both inside and outside Pr(s,t,i) = 0
-        if (! (firstArray.lData[indexNT_T(ntIndex, stringList->lData[from])] &&
-                lastArray.lData[indexNT_T(ntIndex, stringList->lData[to])]
-                && (from == 0 || precursorArray.lData[indexNT_T(ntIndex, stringList->lData[from-1])])
-                && (to == stringL-1 || followArray.lData[indexNT_T(ntIndex, stringList->lData[to+1])]))) {
-            setIndexBit (from, to, ntIndex, stringL, computeFlagsO);
-            return 0.0;
+        if (firstArray.get(indexNT_T(ntIndex, stringList->get(from))) ||
+            lastArray.get(indexNT_T(ntIndex, stringList->get(to)))
+            || (from == 0L || precursorArray.get(indexNT_T(ntIndex, stringList->get(from-1L))))
+            || (to == stringL-1L || followArray.get(indexNT_T(ntIndex, stringList->get(to+1L))))) {
+          setIndexBit (from, to, ntIndex, stringL, computeFlagsO);
+          return 0.0;
         }
+
     }
 
     hyFloat      outsideProbValue = 0.0;
+  
+  
 
-    /* loop over all j->ki productions */
-    _SimpleList *   myNTNTRules = ((_SimpleList**)byRightNT2.lData)[ntIndex];
-    for (long ruleIdx = 0; ruleIdx < myNTNTRules->lLength; ruleIdx++) {
-        long        currentRuleIndex = myNTNTRules->lData[ruleIdx];
-        hyFloat  ruleProb = LookUpRuleProbability(currentRuleIndex);     // Pr(j->ki)
-
-        if (ruleProb > 0.0) {
-            _SimpleList *   currentRule = ((_SimpleList **)rules.lData)[currentRuleIndex];  // rule = list of three integers
-            long            j           = currentRule->lData[0],
-                            k           = currentRule->lData[1];
-
-            for (long leftBisect = 0; leftBisect < from; leftBisect++) {
-                hyFloat  t = ComputeInsideProb(leftBisect,from-1,stringIndex,k,firstInside);
-                if (t > 0.0)
-                    outsideProbValue += t *
-                                        ComputeOutsideProb(leftBisect,to,stringIndex,j,firstOutside,firstInside) *
-                                        ruleProb;
-            }
-        }
-    }
-
-    /* loop over all j->ik productions */
-    myNTNTRules = ((_SimpleList**)byRightNT1.lData)[ntIndex];
-    {
-        for (long ruleIdx = 0; ruleIdx < myNTNTRules->lLength; ruleIdx++) {
-            long        currentRuleIndex = myNTNTRules->lData[ruleIdx];
-            hyFloat  ruleProb = LookUpRuleProbability(currentRuleIndex);     // Pr(j->ik)
-
-            if (ruleProb > 0.0) {
-                _SimpleList *   currentRule = ((_SimpleList **)rules.lData)[currentRuleIndex];
-                long            j           = currentRule->lData[0],
-                                k           = currentRule->lData[2];
-
+    /* loop over all j-> k  {ntIndex} productions; */
+    ((_SimpleList*)byRightNT2.GetItem (ntIndex))->Each (
+       [this, from, to, firstInside,firstOutside, stringIndex, &outsideProbValue] (long rule_index, unsigned long) -> void {
+         hyFloat  rule_prob = LookUpRuleProbability(rule_index);
+         if (rule_prob > 0.0) {
+           _SimpleList *   current_rule = (_SimpleList *)rules.GetItem(rule_index);  // rule = list of two integers
+           long            j           = current_rule->get(0),
+                           k           = current_rule->get(1);
+           
+           for (long leftBisect = 0; leftBisect < from; leftBisect++) {
+             hyFloat  t = ComputeInsideProb(leftBisect,from-1,stringIndex,k,firstInside);
+             if (t > 0.0)
+               outsideProbValue += t * ComputeOutsideProb(leftBisect,to,stringIndex,j,firstOutside,firstInside) * rule_prob;
+           }
+         }
+       }
+    );
+  
+  /* loop over all j-> {ntIndex} k productions; */
+    ((_SimpleList*)byRightNT1.GetItem (ntIndex))->Each (
+           [this, from, to, firstInside,firstOutside, stringIndex, stringL, &outsideProbValue] (long rule_index, unsigned long) -> void {
+             hyFloat  rule_prob = LookUpRuleProbability(rule_index);
+             if (rule_prob > 0.0) {
+               _SimpleList *   current_rule = (_SimpleList *)rules.GetItem(rule_index);  // rule = list of two integers
+               long            j           = current_rule->get(0),
+                               k           = current_rule->get(2);
+               
                 for (long rightBisect = to+1; rightBisect < stringL; rightBisect++) {
-                    hyFloat  t = ComputeInsideProb(to+1,rightBisect,stringIndex,k,firstInside);
-                    if (t > 0.0)
-                        outsideProbValue += t *
-                                            ComputeOutsideProb(from,rightBisect,stringIndex,j,firstOutside,firstInside) *
-                                            ruleProb;
-                }
-            }
-        }
-    }
+                 hyFloat  t = ComputeInsideProb(to+1,rightBisect,stringIndex,k,firstInside);
+                 if (t > 0.0)
+                   outsideProbValue += t * ComputeOutsideProb(from,rightBisect,stringIndex,j,firstOutside,firstInside) * rule_prob;
+               }
+             }
+
+           }
+    );
+                                                   
+
 
     /* decide what to do with the probability:
 
@@ -1390,11 +1135,11 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
         if (avlIndex < 0) { // triplet (s,t,i) not in search tree
             long    mxID = -1;
             if (outsideProbValue < 1.0) {
-                mxID = ((_GrowingVector*)(storedOutsideP(stringIndex)))->Store (outsideProbValue);
+                mxID = ((_Vector*)(storedOutsideP.GetItem(stringIndex)))->Store (outsideProbValue);
             }
             theAVL->Insert((BaseRef)tripletIndex, mxID);    // if Pr = 1.0, stores -1
         } else {    // update values
-            ((_GrowingVector*)(storedOutsideP(stringIndex)))->_Matrix::Store (matrixIndex,0,outsideProbValue);
+            ((_Vector*)(storedOutsideP(stringIndex)))->_Matrix::Store (matrixIndex,0,outsideProbValue);
         }
     }
 
@@ -1407,27 +1152,27 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-_Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
-{
-    hyFloat  useJP,
-                sOM;
-
-    checkParameter (useJeffreysPrior, useJP, 0.0);
-    checkParameter (scfgOptimizationMethod, sOM, 0.0);
-
-    if (useJP > 0.0 || sOM > 0.0) {
-        return _LikelihoodFunction::Optimize();    // Jeffrey's prior violates EM
-    }
-
-    char    buf [256];      // debugging buffer
+_Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */ {
+  // SLKP 20180820 : TODO check to see if this is functional
+  
+  const static _String kSCFGOptimizationMethod  ("SCFG_OPTIMIZATION_METHOD");
+  
+  if (hy_env::EnvVariableGetNumber(kSCFGOptimizationMethod, 0.0)) {
+    // fall back to default optimization; do not use EM
+    return _LikelihoodFunction::Optimize();
+  }
+ 
+    //char    buf [256];
+    // debugging buffer
 
 
 
 
     // populated with zeros for longest string by InitComputeStructures();
     // inside flags cleared by calling Scfg::Compute()
-    bool    firstInside     = computeFlagsI.lLength,
-            firstOutside = computeFlagsO.lLength;
+  
+    bool    firstInside     = computeFlagsI.nonempty(),
+            firstOutside    = computeFlagsO.nonempty();
 
 
     // update probability matrix -- converts formulas to numerical values
@@ -1436,34 +1181,38 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
     // create container for new production rule probability estimates
     //  numerator in column 1, denominator in column 2
-    long        nRules = (unsigned long) probabilities.GetHDim();
+  
+    long        nRules = probabilities.GetSize();
     _Matrix     nextProbs(nRules, 2, FALSE, TRUE);
 
 
 
     // scan production rule formulas for linking constraints, done once for entire optimization
     _List           links;
-    _SimpleList *   thisLink = new _SimpleList();
-
-    for (long ruleCount = 0; ruleCount < nRules; ruleCount++) {
+  
+  // TODO SLKP 20180820: this is quite inefficient; should be optimized unless the whole
+  // function is being deprecated
+    for (long ruleCount = 0L; ruleCount < nRules; ruleCount++) {
         _Formula *  thisRule = probabilities.GetFormula (ruleCount, 0);
 
         if ( !(thisRule->IsAConstant()) ) {
-            *thisLink << ruleCount;
+            _SimpleList * linked_rules = new _SimpleList;
+            *linked_rules << ruleCount;
 
-            for (long nextrule = ruleCount+1; nextrule < nRules; nextrule++) {
+            for (long nextrule = ruleCount+1L; nextrule < nRules; nextrule++) {
                 _Formula *  thatRule = probabilities.GetFormula (nextrule, 0);
                 if ( thisRule->EqualFormula (thatRule) ) {
-                    *thisLink << nextrule;
-                    snprintf (buf, sizeof(buf), "linked rule %ld to %ld\n", ruleCount+1, nextrule+1);
-                    BufferToConsole (buf);
+                    *linked_rules << nextrule;
+                    //snprintf (buf, sizeof(buf), "linked rule %ld to %ld\n", ruleCount+1, nextrule+1);
+                    //BufferToConsole (buf);
                 }
             }
 
-            if (thisLink->lLength > 1) {
-                links && thisLink;    // append duplicate
+            if (linked_rules->countitems() > 1) {
+                links < linked_rules;    // append duplicate
+            } else {
+              delete linked_rules;
             }
-            thisLink->Clear();
         }
     }
 
@@ -1481,43 +1230,43 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
     do {
         oldLk = newLk;
-
-        for (long ruleCount = 0; ruleCount < nRules; ruleCount++) {
-            nextProbs.Store(ruleCount, 0, 0);   // zero all entries in container matrix
-            nextProbs.Store(ruleCount, 1, 0);
+      
+         for (long ruleCount = 0; ruleCount < nRules; ruleCount++) {
+            nextProbs.Store(ruleCount, 0, 0.);   // zero all entries in container matrix
+            nextProbs.Store(ruleCount, 1, 0.);
         }
 
 
 
         // loop over strings in corpus
-        for (long stringID = 0; stringID < corpusChar.lLength; stringID++) {
-            long    stringL     = ((_String**)corpusChar.lData)[stringID]->sLength,
-                    countNT      = byNT2.lLength;
+        for (long stringID = 0; stringID < corpusChar.countitems(); stringID++) {
+            long    stringL     = ((_String*)corpusInt.GetItem(stringID))->length(),
+                    countNT      = byNT2.countitems();
 
-            hyFloat  denom       = 0,
-                        stringProb = ComputeInsideProb(0, stringL-1, stringID, startSymbol, firstInside);
+            hyFloat  denom       = 0.,
+                     stringProb = ComputeInsideProb(0, stringL-1, stringID, startSymbol, firstInside);
             // by calculating this, firstInside should be reset to FALSE
 
-            _SimpleList*    stringList = ((_SimpleList**)corpusInt.lData)[stringID];
-
+            _SimpleList*    tokenized_string = (_SimpleList*)corpusInt.GetItem(stringID);
 
             /* After computing string Pr., absence in AVL indicates inside Pr = 0   */
             /* so treat firstInside as FALSE below...                               */
 
             if (stringProb > 0.) {
-                for (long ntIndex = 0; ntIndex < countNT; ntIndex++) {  // loop over all non-terminal symbols
+                for (long ntIndex = 0L; ntIndex < countNT; ntIndex++) {  // loop over all non-terminal symbols
 
                     /* calculate denominator (number of times i-th NT was used in string */
-                    denom = 0;
-
+                    denom = 0.;
+                  bool  has_NTNT = ((_SimpleList*)byNT3.GetItem (ntIndex))->nonempty();
+                  
                     for (long from = 0; from < stringL; from++) {
-                        if (( (_SimpleList**)byNT3.lData)[ntIndex]->lLength == 0) { // only i->m
+                        if (!has_NTNT) { // only i->m
                             denom += ComputeInsideProb(from,from,stringID,ntIndex,FALSE) *
                                      ComputeOutsideProb(from,from,stringID,ntIndex,firstOutside,FALSE) /
                                      stringProb;
                         } else {    // NT has i->jk productions
                             //for (long to = from; to < stringL; to++)
-                            for (long to = from + 1; to < stringL; to++) {  // count only i->jk
+                            for (long to = from + 1L; to < stringL; to++) {  // count only i->jk
 
                                 denom += ComputeInsideProb(from,to,stringID,ntIndex,FALSE) *
                                          ComputeOutsideProb(from,to,stringID,ntIndex,firstOutside,FALSE) /
@@ -1552,124 +1301,100 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                         }
                     } // end loop over [s]
 
-                    /*
-                    snprintf (buf, sizeof(buf), "string = %d\tnt = %d\tdenom = %f\n", stringID, ntIndex, denom);
-                    BufferToConsole (buf);
-                     */
-
+ 
                     if (denom > 0.) {
                         // loop over i->m productions of current NT
-                        _SimpleList *   imRules = ((_SimpleList**)byNT2.lData)[ntIndex];
-
-                        for (long rC = 0; rC < imRules->lLength; rC++) {
-                            hyFloat      numer       = 0.;
-                            long            ruleIndex   = imRules->lData[rC];
-                            _SimpleList *   currentRule = ((_SimpleList**)rules.lData)[ruleIndex];
-                            long            termIndex   = currentRule->lData[1];
-                            hyFloat      ruleProb    = LookUpRuleProbability (ruleIndex);
-
-                            if (ruleProb == 1.0 || ruleProb == 0.0) {
-                                continue;
+                      
+                      ((_SimpleList*)byNT2.GetItem (ntIndex))->Each([this, ntIndex, stringID, firstOutside, stringProb, nRules, denom, &nextProbs] (long rule_index, unsigned long) -> void {
+                          hyFloat         numer       = 0.;
+                         _SimpleList *    currentRule =  (_SimpleList * )rules.GetItem (rule_index);
+                          long            termIndex   = currentRule->get(1);
+                          hyFloat         rule_prob    = LookUpRuleProbability (rule_index);
+                        
+                          if (rule_prob == 1.0 || rule_prob == 0.0) {
+                            return;
+                          }
+                        
+                        ((_SimpleList*) corpusInt.GetItem (stringID))->Each ([this, termIndex, stringID, ntIndex, stringProb, firstOutside, &numer] (long token_code, unsigned long from) -> void {
+                          if (token_code == termIndex) {
+                            hyFloat  tryProb = ComputeInsideProb(from,from,stringID,ntIndex,FALSE);
+                            if (tryProb > 0.0) {
+                              numer += tryProb *
+                              ComputeOutsideProb(from,from,stringID,ntIndex,firstOutside,FALSE) /
+                              stringProb;
                             }
+                          }
+                        });
+                        nextProbs[rule_index] += numer;
+                        nextProbs[nRules + rule_index] += denom;
+                     });
+                      
+ 
 
-                            const char *  thisString = ((_String**)corpusInt.lData)[stringID]->getStr();
-
-                            for (long from = 0; from < stringL; from++) {
-                                long    thisSymbol = thisString[from];
-                                if (thisSymbol == termIndex) {
-                                    hyFloat  tryProb = ComputeInsideProb(from,from,stringID,ntIndex,FALSE);
-                                    if (tryProb > 0.0) {
-                                        numer += tryProb *
-                                                 ComputeOutsideProb(from,from,stringID,ntIndex,firstOutside,FALSE) /
-                                                 stringProb;
-                                    }
-                                }
-                            }
-                            // update i->m production probability
-
-                            /*
-                             snprintf (buf, sizeof(buf), "storing %f/%f into ruleIndex %d\n", numer, denom, ruleIndex);
-                             BufferToConsole(buf);
-                             */
-
-                            nextProbs.theData[ruleIndex] += numer;
-                            nextProbs.theData[nRules + ruleIndex] += denom;
-                        }
-
-
+                      
 
                         // loop over all i->jk productions of current NT
-                        _SimpleList *   ijkRules = ((_SimpleList**)byNT3.lData)[ntIndex];
+                    ((_SimpleList*)byNT3.GetItem (ntIndex))->Each ([this, nRules, stringL, ntIndex, tokenized_string, stringID, firstOutside, stringProb, denom, &nextProbs] (long rule_index, unsigned long) {
+                        hyFloat      rule_prob    = LookUpRuleProbability (rule_index),
+                                    numer        = 0.;
+                      
+                      if (rule_prob == 0. || rule_prob == 1.) {
+                        return;
+                      }
+                      
+                      _SimpleList *   currentRule = (_SimpleList*)rules.GetItem (rule_index);
+                      long            jIndex      = currentRule->get(1),
+                                      kIndex      = currentRule->get(2);
+
+                      for (long from = 0L; from < stringL-1; from++) { /* calculate equation (20) */
+                        // use heuristics to skip zero productions
+                        
+                        if ( ! (firstArray.get(indexNT_T(ntIndex,tokenized_string->get(from)))
+                                && (from == 0 || precursorArray.get(indexNT_T(ntIndex,tokenized_string->get(from-1))))) ) {
+                          continue;
+                        }
+                        
+                        
+                        for (long to = from; to < stringL; to++) {  /* BUG? <- start at s=t or s=t+1 ??? */
+                          // more short-cuts from heuristics
+                          
+                          if (! (lastArray.get (indexNT_T(ntIndex, tokenized_string->get(to)))
+                                 && (to == stringL-1 || followArray.get(indexNT_T(ntIndex,tokenized_string->get(to+1)))))) {
+                            continue;
+                          }
+                          
+                
+                          hyFloat  op  = ComputeOutsideProb(from,to,stringID,ntIndex,firstOutside,FALSE);
+                          
+                          if (op == 0.) {
+                            continue;    // yet another short-cut
+                          }
+                          
+                          
+                          for (long bisect = from; bisect < to; bisect++) {
+                            hyFloat ip = ComputeInsideProb(from,bisect,stringID,jIndex,FALSE);
+                            if (ip > 0.) {
+                              numer += rule_prob * ip *
+                              ComputeInsideProb(bisect+1,to,stringID,kIndex,FALSE) * op /
+                              stringProb;
+                            }
+                          }
+                        }
+                      }
+                      
+                      /*
+                       snprintf (buf, sizeof(buf), "storing %f/%f into ruleIndex %d\n", numer, denom, ruleIndex);
+                       BufferToConsole(buf);
+                       */
+                      
+                      nextProbs.theData[rule_index] += numer;
+                      nextProbs.theData[nRules + rule_index] += denom;
+                    });
 
                         /*
                          snprintf (buf, sizeof(buf), "nt %d has %d ijk rules\n", ntIndex, ijkRules->lLength);
                          BufferToConsole(buf);
                          */
-                        {
-                            for (long rC = 0; rC < ijkRules->lLength; rC++) {
-                                long            ruleIndex   = ijkRules->lData[rC];
-                                hyFloat      ruleProb    = LookUpRuleProbability (ruleIndex),
-                                                numer        = 0.;
-
-                                _SimpleList *   currentRule = ((_SimpleList**)rules.lData)[ruleIndex];
-                                long            jIndex      = currentRule->lData[1],
-                                                kIndex      = currentRule->lData[2];
-
-                                if (ruleProb == 0.0 || ruleProb == 1.0) {
-                                    continue;
-                                }
-
-                                /*
-                                snprintf (buf, sizeof(buf), "rule %d (%d->%d,%d)\tPr = %f\n", ruleIndex, ntIndex, jIndex, kIndex, ruleProb);
-                                BufferToConsole (buf);
-                                 */
-
-
-                                for (long from = 0; from < stringL-1; from++) { /* calculate equation (20) */
-                                    // use heuristics to skip zero productions
-
-                                    if ( ! (firstArray.lData[indexNT_T(ntIndex,stringList->lData[from])]
-                                            && (from == 0 || precursorArray.lData[indexNT_T(ntIndex,stringList->lData[from-1])])) ) {
-                                        continue;
-                                    }
-
-
-                                    for (long to = from; to < stringL; to++) {  /* BUG? <- start at s=t or s=t+1 ??? */
-                                        // more short-cuts from heuristics
-
-                                        if (! (lastArray.lData[indexNT_T(ntIndex, stringList->lData[to])]
-                                                && (to == stringL-1 || followArray.lData[indexNT_T(ntIndex, stringList->lData[to+1])])) ) {
-                                            continue;
-                                        }
-
-
-                                        hyFloat  op  = ComputeOutsideProb(from,to,stringID,ntIndex,firstOutside,FALSE);
-
-                                        if (op == 0) {
-                                            continue;    // yet another short-cut
-                                        }
-
-
-                                        for (long bisect = from; bisect < to; bisect++) {
-                                            hyFloat ip = ComputeInsideProb(from,bisect,stringID,jIndex,FALSE);
-                                            if (ip > 0.) {
-                                                numer += ruleProb * ip *
-                                                         ComputeInsideProb(bisect+1,to,stringID,kIndex,FALSE) * op /
-                                                         stringProb;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                /*
-                                 snprintf (buf, sizeof(buf), "storing %f/%f into ruleIndex %d\n", numer, denom, ruleIndex);
-                                 BufferToConsole(buf);
-                                 */
-
-                                nextProbs.theData[ruleIndex] += numer;
-                                nextProbs.theData[nRules + ruleIndex] += denom;
-                            }
-                        }
 
                     } // endif denom > 0
 
@@ -1677,34 +1402,26 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
                 } // end loop over NT
 
 
-            } else {    // stringProb <= 0
-                snprintf (buf, sizeof(buf), "WARNING: String probability <= 0 (%f)\n", stringProb);
-                BufferToConsole (buf);
             }
 
             // repopulate with zeros for next string
             if (firstInside) {
-                computeFlagsI.Populate(computeFlagsI.lLength,0,0);
+                computeFlagsI.Populate(computeFlagsI.countitems(),0,0);
             }
             if (firstOutside) {
-                computeFlagsO.Populate(computeFlagsO.lLength,0,0);
+                computeFlagsO.Populate(computeFlagsO.countitems(),0,0);
             }
 
 
 
             // clear stored inside and outside probabilities -- need to re-estimate and re-fill AVLs
-            _Matrix * cachedProbs   = (_Matrix*)(storedInsideP(stringID));
-            {
-                for (long cid = 0; cid < cachedProbs->GetHDim(); cid++) {
-                    cachedProbs->Store(cid,0,-1.);
-                }
-            }
-            cachedProbs = (_Matrix*)(storedOutsideP(stringID));
-            {
-                for (long cid = 0; cid < cachedProbs->GetHDim(); cid++) {
-                    cachedProbs->Store(cid,0,-1.);
-                }
-            }
+          
+          _Matrix * reset[2] = {(_Matrix*)(storedInsideP.GetItem(stringID)), (_Matrix*)(storedOutsideP.GetItem(stringID))};
+          for (_Matrix * mp : reset) {
+              for (long cid = 0L; cid < mp->GetHDim(); cid++) {
+                mp->Store(cid,0,-1.);
+              }
+          }
         } // end loop over strings
 
 
@@ -1774,14 +1491,13 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
         }
 
         if (firstInside) {
-            firstInside = FALSE;    // reset flags
+            firstInside = false;    // reset flags
         }
         if (firstOutside) {
-            firstOutside = FALSE;
+            firstOutside = false;
         }
 
         probabilities.Compute ();   // convert updated formulas to numerical values
-
 
         // calculated log-likelihood of corpus using updated production Pr
         // and compare to previous value.
@@ -1797,18 +1513,17 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
             break;
         }
 
-        if (newLk < oldLk) {
+        /*if (newLk < oldLk) {
             snprintf (buf, sizeof(buf), "\nERROR: log L = %f is lower than previous value %f at step %ld \n", newLk, oldLk, rep);
             BufferToConsole (buf);
             // break;
-        }
+        }*/
 
     } while (fabs(newLk - oldLk) > SCFG_OPTIMIZATION_THRESHOLD);    // should be non-absolute - afyp 11/30/2006
 
-    snprintf (buf, sizeof(buf), "Used %ld iterations in expectation maximization.\n", rep);
-    BufferToConsole (buf);
+    //snprintf (buf, sizeof(buf), "Used %ld iterations in expectation maximization.\n", rep);
+    //BufferToConsole (buf);
 
-    delete  thisLink;   // release allocated memory
 
 
     // SLKP:  TBI this actually needs to be populated still
@@ -1818,122 +1533,120 @@ _Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-_String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString)
-{
-    if (ntIndex < 0) {
+_String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString) {
+  try {
+    if (ntIndex < 0L) {
         storageString = new _SimpleList;
         SpawnRandomString (startSymbol, storageString);
-        _String      *backString = new _String (storageString->lLength, true);
-        for (long k=0; k<storageString->lLength; k++) {
-            (*backString) << (_String*)terminals (storageString->lData[k]);
-        }
-        backString->Finalize();
-        DeleteObject (storageString);
+        _StringBuffer      *backString = new _StringBuffer (storageString->countitems());
+        storageString->Each ([&backString, this] (long terminal_index, unsigned long) -> void {
+          (*backString) << *(_String*)terminals.GetItem(terminal_index);
+        });
+      
+        delete storageString;
+        backString->TrimSpace();
         return backString;
     }
 
     hyFloat      randomValue = genrand_real2 (),
-                    sum         = 0.;
+                 sum         = 0.;
 
+    
     long            ruleIndex   = 0;
+    
     _SimpleList*    aList       = (_SimpleList*)byNT2(ntIndex),
-                    *  aRule;
-
+               *    aRule;
+    
     // loop through terminal rules (X->x) and sum probabilities
     for (; ruleIndex<aList->lLength && sum < randomValue ; ruleIndex++) {
-        sum += LookUpRuleProbability (aList->lData[ruleIndex]);
+      sum += LookUpRuleProbability (aList->lData[ruleIndex]);
     }
-
+    
     if (sum >= randomValue) {
-        aRule = (_SimpleList*)rules(aList->lData[ruleIndex-1]);
-        (*storageString) << aRule->lData[1];
-        return nil;
+      aRule = (_SimpleList*)rules(aList->get(ruleIndex-1));
+      (*storageString) << aRule->lData[1];
+      return nil;
     }
-
+    
     ruleIndex = 0;
     aList       = (_SimpleList*)byNT3(ntIndex);
     for (; ruleIndex<aList->lLength && sum < randomValue ; ruleIndex++) {
-        sum += LookUpRuleProbability (aList->lData[ruleIndex]);
+      sum += LookUpRuleProbability (aList->lData[ruleIndex]);
     }
-
+    
     if (sum >= randomValue) {
-        aRule = (_SimpleList*)rules(aList->lData[ruleIndex-1]);
-        SpawnRandomString (aRule->lData[1],storageString);
-        SpawnRandomString (aRule->lData[2],storageString);
+      aRule = (_SimpleList*)rules(aList->get(ruleIndex-1));
+      SpawnRandomString (aRule->get(1),storageString);
+      SpawnRandomString (aRule->get(2),storageString);
     } else {
-        _String oops ("SCFG::SpawnRandomString() randomValue ");
-        oops = oops & randomValue & " exceeded sum " & sum;
-        oops = oops & ": nt=" & ntIndex & " stor=" & (_String *) storageString->toStr();
-        HandleApplicationError(oops);
+      throw _String ("SCFG::SpawnRandomString() randomValue ") & randomValue & " exceeded sum " & sum & ": nt=" & ntIndex & " stor=" & *(_String *) storageString->toStr();
     }
-
-    return nil;
+    
+   
+  } catch (const _String err) {
+    HandleApplicationError(err);
+    return new _String;
+  }
+  
+  return nil;
 
 }
-
 
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 /*  Implementation of CYK algorithm by AFYP     2006-07-12                                                                        */
 /*--------------------------------------------------------------------------------------------------------------------------------*/
-_String *   Scfg::BestParseTree(void)
-{
-    long            countNT         = byNT2.lLength;
-    bool            firstPass       = computeFlagsI.lLength;
+_StringBuffer *   Scfg::BestParseTree(void) {
+    long            countNT         = byNT2.countitems();
+    bool            firstPass       = computeFlagsI.nonempty();
 
-    _String *       parseTreeString = new _String();
+    _StringBuffer *       parseTreeString = new _StringBuffer();
     //char          buf [4096];
 
-
-    for (long stringIndex = 0; stringIndex < corpusChar.lLength; stringIndex++) {
-        long    stringL     = ((_String**)corpusChar.lData)[stringIndex]->sLength;
+    for (long stringIndex = 0L; stringIndex < corpusInt.countitems(); stringIndex++) {
+        long    stringL     = ((_SimpleList*)corpusInt.GetItem(stringIndex))->countitems();
 
         // initialize AVL tree for storing non-zero subtrees (i,j,v) to refer to _SimpleList
         _SimpleList     triplets;
-        _AVLListX *     theAVL;
+        _AVLListX *     theAVL = new _AVLListX (&triplets);
 
-        theAVL = new _AVLListX (&triplets);
+        _SimpleList     argMaxYZK;      // stores (y,z,k) keyed by argmax(i,j,v) in AVL
+        _Vector         *theMatrix = new _Vector;     // stores likelihood for subtree (i,j,v)
 
-        _SimpleList             argMaxYZK;      // stores (y,z,k) keyed by argmax(i,j,v) in AVL
-        _GrowingVector  *theMatrix;     // stores likelihood for subtree (i,j,v)
+        for (long from = 0; from < stringL; from++) {   // initialization
+            for (long ntIndex = 0; ntIndex < countNT; ntIndex++) {
+                long        tripletIndex    = scfgIndexIntoAnArray (from,from,ntIndex,stringL),
+                            mxID         = -1;
+                hyFloat  lk = ComputeInsideProb(from,from,stringIndex,ntIndex,firstPass);
 
-        theMatrix = new _GrowingVector;
-
-        {
-            for (long from = 0; from < stringL; from++) {   // initialization
-                for (long ntIndex = 0; ntIndex < countNT; ntIndex++) {
-                    long        tripletIndex    = scfgIndexIntoAnArray (from,from,ntIndex,stringL),
-                                mxID         = -1;
-                    hyFloat  lk = ComputeInsideProb(from,from,stringIndex,ntIndex,firstPass);
-
-                    if (lk > 0.) {
-                        mxID = theMatrix->Store (lk);
-                        theAVL->Insert ((BaseRef)tripletIndex, mxID);
-                        for (long count = 0; count < 3; count++) {
-                            argMaxYZK << 0;    // append (0,0,0)
-                        }
+                if (lk > 0.) {
+                    mxID = theMatrix->Store (lk);
+                    theAVL->Insert ((BaseRef)tripletIndex, mxID);
+                    argMaxYZK.AppendRange (3,0,0);
+                    for (long count = 0; count < 3; count++) {
+                        argMaxYZK << 0;    // append (0,0,0)
                     }
                 }
             }
         }
 
         for (long from = 0; from < stringL-1; from++) { // iterate over all substrings and non-terminals
-            for (long to = from+1; to < stringL; to++) {
-                for (long ntIndex = 0; ntIndex < countNT; ntIndex++) {
+            for (long to = from+1L; to < stringL; to++) {
+                for (long ntIndex = 0L; ntIndex < countNT; ntIndex++) {
                     hyFloat      maxLk = 0.;
                   
                     long            maxLeft    = -1L,
                                     maxRight   = -1L,
                                     maxBisect  = -1L;
                   
-                    _SimpleList *   itsRules = ((_SimpleList **) byNT3.lData)[ntIndex];
+                    _SimpleList *   itsRules = (_SimpleList*)byNT3.GetItem (ntIndex);
 
-                    for (unsigned long ruleIdx = 0UL; ruleIdx < itsRules->lLength; ruleIdx++) {    // iterate over all productions
-                        long            currentRuleIndex    = itsRules->lData[ruleIdx];
-                        _SimpleList *   currentRule         = ((_SimpleList**)rules.lData)[currentRuleIndex];
-                        hyFloat      ruleProb            = LookUpRuleProbability(currentRuleIndex);
-                        long            leftNT              = currentRule->lData[1],
-                                        rightNT             = currentRule->lData[2];
+                    for (unsigned long ruleIdx = 0UL; ruleIdx < itsRules->countitems(); ruleIdx++) {    // iterate over all productions
+                        long            currentRuleIndex    = itsRules->get(ruleIdx);
+                        _SimpleList *   currentRule         = (_SimpleList*)rules.GetItem (currentRuleIndex);
+                        hyFloat         ruleProb            = LookUpRuleProbability(currentRuleIndex);
+                        long            leftNT              = currentRule->get(1),
+                                        rightNT             = currentRule->get(2);
 
                         if (ruleProb > 0.) {
                             for (long bisect = from; bisect < to; bisect++) {       // iterate over all bisects of substring
@@ -1978,71 +1691,46 @@ _String *   Scfg::BestParseTree(void)
         }
 
         // apply stack to reconstructing best parse
-        CykTraceback (0,stringL-1,0,stringIndex,theAVL,&argMaxYZK,theMatrix,parseTreeString);
+        CykTraceback (0,stringL-1,0,stringIndex,theAVL,&argMaxYZK,theMatrix,*parseTreeString);
 
         (*parseTreeString) = (*parseTreeString) & "\n"; // separate tree strings
     }
 
 
     // BufferToConsole((char *)(const char *) (*parseTreeString));
-    parseTreeString -> Finalize();
+    parseTreeString -> TrimSpace();
     return (parseTreeString);
 }
 
 
 /*------------------------------------------------------------------------------------------------------------------------------*/
 /*  Converts stack of best-parse productions into a tree string.- AFYP                                                          */
-void    Scfg::CykTraceback (long i, long j, long v, long stringIndex, _AVLListX * theAVL, _SimpleList * theYZKs, _GrowingVector * theMatrix, _String * parseTreeString)
-{
+void    Scfg::CykTraceback (long i, long j, long v, long stringIndex, _AVLListX const * theAVL, _SimpleList const * theYZKs, _Vector const * theMatrix, _StringBuffer& parseTreeString) const {
     //  for sub-string (i,j) and non-terminal (v), string of length (stringL)
+    _SimpleList * corpusString  = ((_SimpleList*)corpusInt.GetItem (stringIndex));
 
-    long    stringL         = ((_String**)corpusChar.lData)[stringIndex]->sLength,
-            tripletIndex  = scfgIndexIntoAnArray(i,j,v,stringL),
-            avlIndex       = theAVL -> Find ((BaseRef)tripletIndex);
+    long    stringL         = corpusString->countitems(),
+            tripletIndex    = scfgIndexIntoAnArray(i,j,v,stringL),
+            avlIndex        = theAVL -> Find ((BaseRef)tripletIndex);
 
-    _String * corpusString  = ((_String**)corpusChar.lData)[stringIndex];
 
     if (avlIndex < 0) { // value not in tree
         ReportWarning (_String("ERROR: Unknown triplet encountered in CYK traceback: (") & i & "," & j & "," & v & ")");
     } else {
-        long        matrixIndex = theAVL->GetXtra (avlIndex),
-                    y           = theYZKs->lData[matrixIndex * 3],
-                    z           = theYZKs->lData[matrixIndex * 3 + 1],
-                    k           = theYZKs->lData[matrixIndex * 3 + 2];
-#ifdef __NEVER_DEFINED__
-        if (y == 0 && z == 0 && k == 0) {   // node terminates
-            snprintf (buf, sizeof(buf), "%d:%d", i, v);
-            // BufferToConsole(buf);
-            (*parseString) << (const char *) buf;
-        } else {                        // node spawns two children
+        long        matrixIndex = theAVL->GetXtra (avlIndex) * 3,
+                    y           = theYZKs->get(matrixIndex),
+                    z           = theYZKs->get(matrixIndex + 1),
+                    k           = theYZKs->get(matrixIndex + 2);
 
-            snprintf (buf, sizeof(buf), "(");
-            // BufferToConsole(buf);
-            (*parseString) << (const char *) buf;
-
-            CykTraceback(i,k,y,stringIndex,theAVL,theYZKs,theMatrix,parseString);
-
-            snprintf (buf, sizeof(buf), ",");
-            // BufferToConsole(buf);
-            (*parseString) << (const char *) buf;
-
-            CykTraceback(k+1,j,z,stringIndex,theAVL,theYZKs,theMatrix,parseString);
-
-            snprintf (nodename, sizeof(nodename), "Node%d", tripletIndex);
-            snprintf (buf, sizeof(buf), ")%s:%d", nodename, v);
-            // BufferToConsole(buf);
-            (*parseString) << (const char *) buf;
-
-        }
-#else
         if (y==0 && z==0 && k==0) { // node terminates
-            (*parseTreeString) = (*parseTreeString) & "(" & v & " " & corpusString->sData[i] & ")";
+            parseTreeString << '(' << v << "terminal " << corpusString->get (i) << ')';
+            //(*parseTreeString) = (*parseTreeString) & "(" & v & " " & corpusString->sData[i] & ")";
             /*
             snprintf (buf, sizeof(buf), "(%d %s)", v, corpusString->sData[i]);
             (*parseString) << (const char *) buf;
              */
         } else {
-            (*parseTreeString) = (*parseTreeString) & "(" & v & " ";
+            parseTreeString << "(" << v << " ";
             /*
             snprintf (buf, sizeof(buf), "(%d ", v);
             (*parseString) << (const char *) buf;
@@ -2054,14 +1742,13 @@ void    Scfg::CykTraceback (long i, long j, long v, long stringIndex, _AVLListX 
 
             CykTraceback(k+1,j,z,stringIndex,theAVL,theYZKs,theMatrix,parseTreeString);
 
-            (*parseTreeString) = (*parseTreeString) & ")";
+            parseTreeString << ")";
 
             /*
             snprintf (buf, sizeof(buf), ")");
             (*parseString) << (const char *) buf;
              */
         }
-#endif
     }
 }
 

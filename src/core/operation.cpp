@@ -450,7 +450,6 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
           } else {
             _Variable *newV = new _Variable (*argument_k);
             newV->SetValue(nthterm,false);
-            nthterm->AddAReference();
             existingDVars<<argument_var->get_index();
             displacedVars<<argument_var; // 2 references
             argument_var->AddAReference(); // 3 references

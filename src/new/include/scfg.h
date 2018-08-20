@@ -126,8 +126,8 @@ public:
     BaseRef             toStr                   (unsigned long = 0UL); // a string representation of the SCFG
 
     virtual void        ScanAllVariables        (void);
-    virtual _String*    GetRuleString           (long); // return a string representation of a derivation rule
-    virtual _String*    VerifyValues            (void);
+    virtual _StringBuffer*    GetRuleString           (long) const; // return a string representation of a derivation rule
+    virtual void        VerifyValues            (void);
     // for a given set of parameter values, check that all probabilities are
     // (a) in [0,1]
     // (b) for a fixed NT 'i' the sum of all probabilities for the rules
@@ -158,9 +158,9 @@ public:
     // from which to generate a substring (called recursively)
     // the string argument is the storage, created by the first call
 
-    virtual _String *           BestParseTree           (void);
+    virtual _StringBuffer *           BestParseTree           (void);
 
-    virtual void                CykTraceback            (long,long,long,long,_AVLListX *,_SimpleList *,_Vector *,_String *);
+    virtual void                CykTraceback            (long,long,long,long,_AVLListX const *,_SimpleList const *,_Vector const *,_StringBuffer&) const;
 
 
 
@@ -251,7 +251,7 @@ public:
     // the indexing for the rules is the same as in the 'rules' list
 
 
-    _Trie             production_symbols;          // maintains a parse tree which maps character input (ASCII) to the set of
+    _Trie             terminal_symbols;          // maintains a parse tree which maps character input (ASCII) to the set of
     // terminal characters expressed as integer indices.
     // Each node is associated with the branch which terminates in it
     // The 3 highest order bytes of the <long> data filed are only used for leaves,
@@ -270,9 +270,9 @@ protected:
     bool        CheckANT        (long,long,long, _AVLListX&, long) const;
     /* SLKP: utility function which checks conditions on rules involving non-terminals
              returning true if status flags for some of the non-terminals were modified*/
-    _String*    TokenizeString  (_String&, _SimpleList&);
+    void     TokenizeString  (_StringBuffer const&, _SimpleList&) const;
     /* SLKP: convert a string (1st argument) into a series of terminal tokens (stored into the 2nd argument)
-             Returns nil if all is good, or an error string if something went wrong
+             Throws _String exceptions if something goes wrong
     */
 
     void        DumpComputeStructures (void);
@@ -301,24 +301,25 @@ protected:
     hyFloat  LookUpRuleProbability (long index) {
         return ((_Matrix*)probabilities.RetrieveNumeric())->theData[index];
     }
-
+  
+    static inline  long    scfgIndexIntoAnArray            (long,long,long,long);
+    /* this function indexes the triple start_substring, end_substring,non-terminal index given the string length (last argument)
+     into a linear array
+     */
+    
+    static _SimpleList *   arrayIntoScfgIndex              (long,long);
+    /* this function indexes from a linear array to the triple start_substring, end_substring, non-terminal index
+     given the string length -AFYP
+     */
+    
+    static inline  bool    getIndexBit                             (long,long,long,long,_SimpleList&);
+    static inline  void    setIndexBit                             (long,long,long,long,_SimpleList&);
+    /* this function indexes the triple start_substring, end_substring,non-terminal index given the string length (4th argument)
+     into a bit array stored in the last argument
+     */
 };
 
 
-inline  long    scfgIndexIntoAnArray            (long,long,long,long);
-/* this function indexes the triple start_substring, end_substring,non-terminal index given the string length (last argument)
-   into a linear array
-*/
 
-_SimpleList *   arrayIntoScfgIndex              (long,long);
-/* this function indexes from a linear array to the triple start_substring, end_substring, non-terminal index
-    given the string length -AFYP
-*/
-
-inline  bool    getIndexBit                             (long,long,long,long,_SimpleList&);
-inline  void    setIndexBit                             (long,long,long,long,_SimpleList&);
-/* this function indexes the triple start_substring, end_substring,non-terminal index given the string length (4th argument)
-   into a bit array stored in the last argument
-*/
 
 #endif
