@@ -48,22 +48,22 @@ using namespace hy_global;
 
 extern  hyFloat  lnGamma (hyFloat);
 
-
+/*
 _String     _HYBgm_NODE_INDEX   ("NodeID"),
             _HYBgm_NODETYPE       ("NodeType"),
             _HYBgm_NUM_LEVELS ("NumLevels"),
             _HYBgm_MAX_PARENT ("MaxParents"),
             _HYBgm_PRIOR_SIZE ("PriorSize"),
-            _HYBgm_PRIOR_MEAN ("PriorMean"),      /* for continuous (Gaussian) nodes */
+            _HYBgm_PRIOR_MEAN ("PriorMean"),      // for continuous (Gaussian) nodes
             _HYBgm_PRIOR_PRECISION    ("PriorPrecision"),
             _HYBgm_PRIOR_SCALE    ("PriorScale"),
 
-            /*SLKP 20070926; add string constants for progress report updates */
+            // SLKP 20070926; add string constants for progress report updates
             _HYBgm_STATUS_LINE_MCMC           ("Running Bgm MCMC"),
             _HYBgm_STATUS_LINE_MCMC_DONE  ("Finished Bgm MCMC"),
             _HYBgm_STATUS_LINE_CACHE      ("Caching Bgm scores"),
             _HYBgm_STATUS_LINE_CACHE_DONE ("Done caching Bgm scores"),
-            /*SLKP*/
+ 
 
             _HYBgm_METHOD_KEY ("BGM_OPTIMIZATION_METHOD"),
             _HYBgm_MPI_CACHING ("USE_MPI_CACHING"),
@@ -85,28 +85,24 @@ _String     _HYBgm_NODE_INDEX   ("NodeID"),
             _HYBgm_IMPUTE_SAMPLES ("BGM_IMPUTE_SAMPLES"),
 
             _HYBgm_CONTINUOUS_MISSING_VALUE ("BGM_CONTINUOUS_MISSING_VALUE");
+*/
 
 
 //__________________________________________________________________________________________________________
 #ifdef      __UNIX__
 
-void        ConsoleBGMStatus (_String, hyFloat, _String * fileName = nil);
-
-
-void        ConsoleBGMStatus (_String statusLine, hyFloat percentDone, _String * fileName)
-{
-    FILE           *outFile = fileName?doFileOpen (fileName->sData,"w"):nil;
+void        ConsoleBGMStatus (_String const statusLine, hyFloat percentDone, _String const * fileName) {
+    FILE           *outFile = fileName?doFileOpen (fileName->get_str(),"w"):nil;
     _String        reportLine (statusLine);
-
 
     if (percentDone >= 0.0) {
         reportLine = reportLine & ". " & percentDone & "% done.";
     }
 
     if (outFile) {
-        fprintf (outFile,"%s", reportLine.sData);
+        fprintf (outFile,"%s", reportLine.get_str());
     } else if (verbosity_level == 1) {
-        printf ("\033\015 %s", reportLine.sData);
+        printf ("\033\015 %s", reportLine.get_str());
     }
 
     if (percentDone < -1.5) {
@@ -115,48 +111,37 @@ void        ConsoleBGMStatus (_String statusLine, hyFloat percentDone, _String *
     } else if (percentDone < -0.5) {
         setvbuf (stdout,nil, _IONBF,1);
     }
+  
     if (outFile) {
         fclose (outFile);
     }
-
 }
 
 #endif
 
 
-
-
-
-
-
 //__________________________________________________________________________________________________________
-hyFloat      LogSumExpo (_Vector * log_values)
-{
-    //  Computes the sum of a vector whose values are stored as log-transforms,
+hyFloat      LogSumExpo (_Vector * log_values) {
+  
+    //  Computes the log of a sum of a vector whose values are stored as log-transforms,
     //  such that exponentiating the vector entries would result in numerical underflow.
 
     long        size            = log_values->get_used();
-    hyFloat  sum_exponents   = 0.;
+    hyFloat     sum_exponents   = 0.;
 
 
     // handle some trivial cases
-    if (size == 0) {
+    if (size == 0L) {
         return 0.;    // log(exp(0)) = log(1) = 0
     } else if (size == 1) {
-        return (*log_values)(0,0);    // log(exp(log(x)))
+        return log_values->directIndex(0L);    // log(exp(log(x)))
     }
 
-
     // find the largest (least negative) log-value
-    hyFloat      max_log  = (*log_values) (0, 0),
-                    this_log;
-
-    for (long val = 1; val < size; val++) {
-        this_log = (*log_values) (val, 0);
-
-        if (this_log > max_log) {
-            max_log = this_log;
-        }
+  
+    hyFloat      max_log  = (*log_values) (0, 0);
+    for (long idx = 1L; idx < size; idx++) {
+        StoreIfGreater (max_log, log_values->directIndex(idx));
     }
 
 
@@ -164,8 +149,8 @@ hyFloat      LogSumExpo (_Vector * log_values)
     //      This will cause some underflow for the smallest values, but we can
     //  use this approximation to handle very large ranges of values.
     //  NOTE: subtracting a negative value.
-    for (long val = 0; val < size; val++) {
-        sum_exponents += exp( (*log_values) (val, 0) - max_log );
+    for (long idx = 0L; idx < size; idx++) {
+        sum_exponents += exp( log_values->directIndex(idx) - max_log );
     }
 
     return (log(sum_exponents) + max_log);

@@ -40,12 +40,6 @@
 // #include "HYUtils.h"
 
 
-/*SLKP 20070926; include progress report updates */
-#if !defined __UNIX__ && !defined __HEADLESS__
-#include "HYConsoleWindow.h"
-#endif
-/*SLKP*/
-
 
 #if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
 #include "mpi.h"
@@ -59,12 +53,11 @@
 	natural log.
 	see Fienberg and Holland (1972) J Multivar Anal 2: 127-134.
 */
-#define     DIRICHLET_FLATTENING_CONST  0.5
-#define		MIN_SAMPLE_SIZE				5
+#define   kBGMDirichletFlattening  0.5
+#define		kBGMMinSize       				5
 
 
-class _BayesianGraphicalModel : public _LikelihoodFunction
-{
+class _BayesianGraphicalModel : public _LikelihoodFunction {
 public:
     /* constructors */
     _BayesianGraphicalModel () { }
@@ -195,16 +188,8 @@ protected:
 };
 
 
-
-//______________________________________________________________________________________________
-#ifdef __NEVER_DEFINED__
-class _DynamicBayesGraph : public _BayesianGraphicalModel
-{
-public:
-
-protected:
-
-};
+#ifdef      __UNIX__
+  void ConsoleBGMStatus (_String const statusLine, hyFloat percentDone, _String const * fileName)
 #endif
 
 
