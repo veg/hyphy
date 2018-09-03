@@ -68,18 +68,18 @@ public:
 
 
     /* network initialization */
-    bool            SetDataMatrix   (_Matrix *),    // via SetParameter HBL
-                    SetWeightMatrix (_Matrix *),
-                    SetConstraints    (_Matrix *),    //  "       "
-                    SetStructure  (_Matrix *),
-                    SetParameters (_AssociativeList *),
-                    SetNodeOrder  (_SimpleList *);
+    bool            SetDataMatrix   (_Matrix const *),    // via SetParameter HBL
+                    SetWeightMatrix (_Matrix const *),
+                    SetConstraints    (_Matrix const *),    //  "       "
+                    SetStructure  (_Matrix const *),
+                    SetParameters (_AssociativeList const *),
+                    SetNodeOrder  (_SimpleList const *);
 
 
     /* computation */
     virtual hyFloat      Compute (void);	// compute likelihood of current network structure
-    hyFloat      Compute (_Matrix &),	// compute likelihood of given network structure
-                    Compute (_SimpleList &, _List *);	// compute likelihood of given node order
+    hyFloat              Compute (_Matrix const &),	// compute likelihood of given network structure
+                         Compute (_SimpleList const &, _List *);	// compute likelihood of given node order
                     									//	return edge marginal probabilities at pointer
                     									
     virtual _Matrix *       Optimize ();	// generic wrapper from HBL to different optimization methods
@@ -94,17 +94,17 @@ public:
     void            MPIReceiveScores (_Matrix *, bool, long);
     void            ReleaseCache (void);
 
-    hyFloat      ComputeDiscreteScore (long node_id),
-                    ComputeDiscreteScore (long, _Matrix &),
-                    ComputeDiscreteScore (long, _SimpleList &),
+    hyFloat         ComputeDiscreteScore (long node_id),
+                    ComputeDiscreteScore (long, _Matrix const &),
+                    ComputeDiscreteScore (long, _SimpleList const &),
 
                     ComputeContinuousScore (long node_id),
-                    ComputeContinuousScore (long, _Matrix &),
-                    ComputeContinuousScore (long, _SimpleList &);
+                    ComputeContinuousScore (long, _Matrix const &),
+                    ComputeContinuousScore (long, _SimpleList const &);
 
 
-    hyFloat      ImputeDiscreteNodeScore (long, _SimpleList &),	// use Gibbs sampling to compute expectation over missing data
-    				ImputeCGNodeScore (long, _SimpleList &);		// arguments: node ID, parent ID's
+    hyFloat         ImputeDiscreteNodeScore (long, _SimpleList const &),	// use Gibbs sampling to compute expectation over missing data
+    				ImputeCGNodeScore (long, _SimpleList const &);		// arguments: node ID, parent ID's
 
     void            ComputeParameters (void),	// UNDER DEVELOPMENT - and I think I ended up using HBL instead
                     ComputeParameters (_Matrix *);
@@ -120,19 +120,19 @@ public:
 
 
     /* utility */
-    void            InitMarginalVectors (_List *);
-    void            DumpMarginalVectors (_List *);
+    void            InitMarginalVectors (_List *) const;
+    void            DumpMarginalVectors (_List *) const;
 
     void            SerializeBGMtoMPI (_String &);	// pass network object to compute node as HBL
 
     void            RandomizeGraph (_Matrix *, _SimpleList *, hyFloat, long, long, bool);
-    _SimpleList *   GetOrderFromGraph (_Matrix &);
-    bool            GraphObeysOrder (_Matrix &, _SimpleList &);
+    _SimpleList const   GetOrderFromGraph (_Matrix const &) const;
+    bool            GraphObeysOrder (_Matrix &, _SimpleList const &);
 
-    void            UpdateDirichletHyperparameters (long , _SimpleList &, _Matrix * , _Matrix * );
+    void            UpdateDirichletHyperparameters (long , _SimpleList const &, _Matrix * , _Matrix * );
 
-    hyFloat      K2Score (long, _Matrix &, _Matrix &),
-                    BDeScore (long, _Matrix &, _Matrix &),
+    hyFloat          K2Score (long, _Matrix const &, _Matrix const &) const,
+                    BDeScore (long, _Matrix const&, _Matrix const&) const,
                     BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, hyFloat, hyFloat, long);
 
     long            GetNumNodes (void)  {
@@ -142,14 +142,17 @@ public:
         return theData.GetHDim();
     }
 
-    void            GetNodeOrder (_Matrix * order);
-    void            GetStructure (_Matrix * graph);
-    _Matrix*        GetConstraints (void) {
+    void            GetNodeOrder (_Matrix * order) const;
+    void            GetStructure (_Matrix * graph) const;
+    _Matrix*        GetConstraints (void) const {
         return (_Matrix*)constraint_graph.makeDynamic();
       
     }
 
 protected:
+
+    bool            is_node_continuous (long node) {return node_type.get (node) == 1L;}
+    bool            is_node_discrete (long node) {return node_type.get (node) == 0L;}
 
     long            num_nodes;
 
@@ -187,9 +190,5 @@ protected:
 
 };
 
-
-#ifdef      __UNIX__
-  void ConsoleBGMStatus (_String const statusLine, hyFloat percentDone, _String const * fileName)
-#endif
 
 

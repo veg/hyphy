@@ -79,7 +79,7 @@ public:
     // modify (in-place) the argument to make it an ordered K-tuple; will also check dimensions and such
     // returns true if the k-tuple if valid; false otherwise
 
-    unsigned long   Index           (_SimpleList&);
+    unsigned long   Index           (_SimpleList const&);
     // return an index into the linear array pointed to by the K-tuple in the argument (ASSUMED to be valid here!)
 
     hyFloat      DirectIndex     (unsigned long);
@@ -88,7 +88,7 @@ public:
     unsigned long   Store           (hyFloat, _SimpleList&);
     // associate a value with the K-tuple; returns the direct index for the value
 
-    hyFloat      Retrieve        (_SimpleList&);
+    hyFloat      Retrieve        (_SimpleList const&);
     // return the value associated with the K-tuple
 
     void            IndexToTuple    (unsigned long, _SimpleList&);

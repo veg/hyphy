@@ -105,7 +105,7 @@ bool    _NTupleStorage::CheckKTuple (_SimpleList& kTuple) {
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-unsigned long   _NTupleStorage::Index (_SimpleList& kTuple) {
+unsigned long   _NTupleStorage::Index (_SimpleList const& kTuple) {
     unsigned long myIndex = 0UL;
     if (storageK)
         for (long k=kTuple.lLength-1L; k >=0; k--) {
@@ -130,7 +130,7 @@ unsigned long   _NTupleStorage::Store (hyFloat value, _SimpleList& kTuple) {
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-hyFloat  _NTupleStorage::Retrieve (_SimpleList& kTuple) {
+hyFloat  _NTupleStorage::Retrieve (_SimpleList const& kTuple) {
     return theData[Index (kTuple)];
 }
 

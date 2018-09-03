@@ -1060,8 +1060,7 @@ bool  _SimpleList::NChooseKInit (_SimpleList& state, _SimpleList& store, unsigne
 }
 
 // Implements algorithm NEXKSB from p.27 of http://www.math.upenn.edu/~wilf/website/CombinatorialAlgorithms.pdf
-bool  _SimpleList::NChooseK (_SimpleList& state, _SimpleList& store)
-{
+bool  _SimpleList::NChooseK (_SimpleList& state, _SimpleList& store) {
     if (state.lLength == 1) { // first pass
         state << 0;              // m
         state << state.lData[0]; // h

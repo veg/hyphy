@@ -343,7 +343,26 @@ class _SimpleList:public BaseObj {
           return filtered;
         }
 
-        /**
+        template <typename FILTER> _SimpleList const Filter (FILTER condition, unsigned long start_index = 0UL) const {
+            _SimpleList filtered;
+            for (unsigned long i = start_index; i<lLength; i++) {
+                long value = ((long*)(lData))[i];
+                if (condition (value , i)) {
+                    filtered << value;
+                }
+            }
+            return filtered;
+        }
+
+        template <typename FUNCTOR> _SimpleList const MapList (FUNCTOR transform, unsigned long start_index = 0UL) const {
+            _SimpleList mapped;
+            mapped.RequestSpace(countitems() - (long)start_index);
+            for (unsigned long i = start_index; i<lLength; i++) {
+                mapped << transform (((long*)(lData))[i] , i);
+            }
+            return mapped;
+        }
+/**
         * Same as find, but steps over indices
         * Example: SimpleList(1,3,5,7).Find(3,3) = -1 
         * @param s The integer to find

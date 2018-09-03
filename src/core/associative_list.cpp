@@ -287,6 +287,17 @@ HBLObjectRef _AssociativeList::GetByKey (_String const& key, long objType) const
     return nil;
 }
 
+
+//_____________________________________________________________________________________________
+
+hyFloat _AssociativeList::GetNumberByKey (_String const& key) const {
+    _Constant * c = (_Constant*)GetByKey(key, NUMBER);
+    if (c) {
+        return c->Value();
+    }
+    throw key.Enquote() & " was not associated with a numeric value";
+}
+
 //_____________________________________________________________________________________________
 HBLObjectRef _AssociativeList::GetByKey (_String const& key) const {
     return (HBLObjectRef)avl.GetDataByKey(&key);

@@ -151,8 +151,14 @@ public:
      * @return The minimum or maximum numeric value and corresponding key
      */
     HBLObjectRef           ExtremeValue    (bool do_mimimum) const;
+    
+    /**
+     Added 20180902 as a convenience function; throws a const _String error if key is of wrong type
+     */
+    
+    hyFloat GetNumberByKey (const _String& key) const;
 
-
+    
 private:
     _AVLListXL          avl;
     _List           theData;

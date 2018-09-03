@@ -41,6 +41,8 @@
 #include "bayesgraph.h"
 #include "function_templates.h"
 #include "time_difference.h"
+#include "hbl_env.h"
+#include "ntuplestorage.h"
 
 #include "global_things.h"
 
@@ -49,14 +51,7 @@ using namespace hy_global;
 extern  hyFloat  lnGamma (hyFloat);
 
 /*
-_String     _HYBgm_NODE_INDEX   ("NodeID"),
-            _HYBgm_NODETYPE       ("NodeType"),
-            _HYBgm_NUM_LEVELS ("NumLevels"),
-            _HYBgm_MAX_PARENT ("MaxParents"),
-            _HYBgm_PRIOR_SIZE ("PriorSize"),
-            _HYBgm_PRIOR_MEAN ("PriorMean"),      // for continuous (Gaussian) nodes
-            _HYBgm_PRIOR_PRECISION    ("PriorPrecision"),
-            _HYBgm_PRIOR_SCALE    ("PriorScale"),
+_String
 
             // SLKP 20070926; add string constants for progress report updates
             _HYBgm_STATUS_LINE_MCMC           ("Running Bgm MCMC"),
@@ -162,198 +157,139 @@ hyFloat      LogSumExpo (_Vector * log_values) {
 //__________________________________________________________________________________________________________
 //__________________________________________________________________________________________________________
 //__________________________________________________________________________________________________________
-_BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes)
-{
-    _String             errorMessage;
-    _AssociativeList *  this_avl;
-    long                global_max_parents  = 0;
-    _Constant *         avl_val;
+_BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes) {
+    
+    static const  _String _HYBgm_NODE_INDEX   ("NodeID"),
+                          _HYBgm_NODETYPE       ("NodeType"),
+                          _HYBgm_NUM_LEVELS ("NumLevels"),
+                          _HYBgm_MAX_PARENT ("MaxParents"),
+                          _HYBgm_PRIOR_SIZE ("PriorSize"),
+                          _HYBgm_PRIOR_MEAN ("PriorMean"),      // for continuous (Gaussian) nodes
+                          _HYBgm_PRIOR_PRECISION    ("PriorPrecision"),
+                          _HYBgm_PRIOR_SCALE    ("PriorScale");
+    
+    long                global_max_parents  = 0L;
 
     node_names.Clear();
 
+    
+    try {
 
     // the fundamental defining characteristic of _BayesianGraphicalModel objects
-    num_nodes           = nodes->avl.countitems();
+        num_nodes           = nodes->countitems();
 
 
-    // allocate space to class matrices
-    CreateMatrix (&theStructure, num_nodes, num_nodes, false, true, false);
+        // allocate space to class matrices
+        _Matrix::CreateMatrix (&theStructure, num_nodes, num_nodes, false, true, false);
+        _Matrix::CreateMatrix (&constraint_graph, num_nodes, num_nodes, false, true, false);
 
-    CreateMatrix (&prior_sample_size, num_nodes, 1, false, true, false);
-    CreateMatrix (&prior_mean, num_nodes, 1, false, true, false);
-    CreateMatrix (&prior_precision, num_nodes, 1, false, true, false);
-    CreateMatrix (&prior_scale, num_nodes, 1, false, true, false);
+        _Matrix::CreateMatrix (&prior_sample_size, num_nodes, 1, false, true, false);
+        _Matrix::CreateMatrix (&prior_mean, num_nodes, 1, false, true, false);
+        _Matrix::CreateMatrix (&prior_precision, num_nodes, 1, false, true, false);
+        _Matrix::CreateMatrix (&prior_scale, num_nodes, 1, false, true, false);
 
-    CreateMatrix (&constraint_graph, num_nodes, num_nodes, false, true, false);
+ 
+
+        // allocate space for _SimpleList objects
+        node_type.Populate (num_nodes, 0, 0);
+        max_parents.Populate (num_nodes, 0, 0);
+        num_levels.Populate(num_nodes, 0, 0);
+        has_missing.Populate(num_nodes, 0, 0);
 
 
-    // allocate space for _SimpleList objects
-    node_type.Populate (num_nodes, 0, 0);
-    max_parents.Populate (num_nodes, 0, 0);
-    num_levels.Populate(num_nodes, 0, 0);
-    has_missing.Populate(num_nodes, 0, 0);
+        for (long node = 0L; node < num_nodes; node++) {
+            
+            const _AssociativeList * this_avl = (_AssociativeList *) (nodes->GetByKey (node, ASSOCIATIVE_LIST));
 
+            // AVL should include following items:  "NodeID"        - variable name
+            //                                      "NodeType"      - 0 = discrete, 1 = continuous (Gaussian)
+            //                                      "NLevels"       - (discrete only)
+            //                                      "MaxParents"    - maximum number of parents
+            //                                      "PriorSize"     - hyperparameter for multinomial-Dirichlet
+            //                                                      - also used for degrees of freedom hyperparameter for Gaussian node
+            //                                      "PriorMean"     - hyperparameter for Gaussian node
+            //                                      "PriorPrecision" - hyperparameter for Gaussian node
+            //                                      "PriorScale"    - fourth hyperparameter for Gaussian node
 
-    for (long node = 0; node < num_nodes; node++) {
-        this_avl = (_AssociativeList *) (nodes->GetByKey (node, ASSOCIATIVE_LIST));
-
-        // AVL should include following items:  "NodeID"        - variable name
-        //                                      "NodeType"      - 0 = discrete, 1 = continuous (Gaussian)
-        //                                      "NLevels"       - (discrete only)
-        //                                      "MaxParents"    - maximum number of parents
-        //                                      "PriorSize"     - hyperparameter for multinomial-Dirichlet
-        //                                                      - also used for degrees of freedom hyperparameter for Gaussian node
-        //                                      "PriorMean"     - hyperparameter for Gaussian node
-        //                                      "PriorPrecision" - hyperparameter for Gaussian node
-        //                                      "PriorScale"    - fourth hyperparameter for Gaussian node
-
-        _FString *name = (_FString*)this_avl->GetByKey (_HYBgm_NODE_INDEX, STRING);
-        if (!name){
-            HandleApplicationError ("Invalid node name (expected a string) passed to a BGM constructor");
-            return;
-        }
-        
-        node_names.AppendNewInstance(new _String (*name->theString));  // append a pointer to _String duplicate
-
-        // DEBUGGING
-        /* wuz: ReportWarning (_String("node_name[") & node & "]=" & (_String *)node_names.lData[node]);
-         20111210 SLKP : _String (_String*) contstructor will actually assume that the argument is 
-                       : 'unencumbered' i.e. not a member of _Lists etc
-                       : this function call will create a stack copy of node_names.lData[node]
-                       : print it to messages.log and then kill the dynamic portion of the object (sData)
-                       : this will create all kinds of havoc downstream
-         */
-        // bug fix:
-        ReportWarning (_String("node_name[") & node & "]=" & *((_String *)node_names.lData[node]));
-        
-
-        // node type (0 = discrete, 1 = continuous)
-        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NODETYPE, NUMBER)))) {
-            node_type.lData[node] = (long)(avl_val->Value());
-            if (node_type.lData[node] < 0 || node_type.lData[node] > 2) {
-                errorMessage = _String("Unsupported NodeType ") & node_type.lData[node] & " for node " & node;
-                break;
+            _FString *name = (_FString*)this_avl->GetByKey (_HYBgm_NODE_INDEX, STRING);
+            if (!name){
+                throw "Invalid node name (expected a string) passed to a BGM constructor";
             }
-        } else {
-            errorMessage = _String ("Missing NodeType in associative array for node ") & node;
-            break;
-        }
+            
+            node_names < new _StringBuffer (name->get_str());  // append a pointer to _String duplicate
 
-
-        // number of levels (discrete nodes)
-        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_NUM_LEVELS, NUMBER)))) {
-            num_levels.lData[node] = (long)(avl_val->Value());
-
-            if (num_levels.lData[node] <= 1) {
-                errorMessage = _String("NLevels must be greater than 1, received ") & num_levels.lData[node] & " for node " & node;
-                break;
-            }
-        } else {
-            if (!avl_val && node_type.lData[node] == 0) {
-                errorMessage = _String ("Missing NumLevels in associative array for node ") & node;
-                break;
-            }
-        }
-
-
-        // max parents
-        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_MAX_PARENT, NUMBER)))) {
-            max_parents.lData[node] = (long)(avl_val->Value());
-
-            if (max_parents.lData[node] > global_max_parents) {
-                global_max_parents = max_parents.lData[node];
+            // DEBUGGING
+            /* wuz: ReportWarning (_String("node_name[") & node & "]=" & (_String *)node_names.lData[node]);
+             20111210 SLKP : _String (_String*) contstructor will actually assume that the argument is
+                           : 'unencumbered' i.e. not a member of _Lists etc
+                           : this function call will create a stack copy of node_names.lData[node]
+                           : print it to messages.log and then kill the dynamic portion of the object (sData)
+                           : this will create all kinds of havoc downstream
+             */
+            // bug fix:
+            ReportWarning (_String("node_name[") & node & "]=" & *((_String *)node_names.GetItem(node)));
+            
+            // node type (0 = discrete, 1 = continuous)
+            node_type[node] = (long)this_avl->GetNumberByKey(_HYBgm_NODETYPE);
+            if (node_type.get(node) < 0L || node_type.get(node) > 2L) {
+                throw _String("Unsupported NodeType ") & node_type.get(node) & " for node " & node;
             }
 
-            if (max_parents.lData[node] <= 0) {
-                errorMessage = _String ("MaxParents must be greater than zero, received ") & max_parents.lData[node] & " for node " & node;
-                break;
+            // number of levels (discrete nodes)
+            num_levels[node] = (long)this_avl->GetNumberByKey(_HYBgm_NUM_LEVELS);
+            if (num_levels.get(node) <= 1) {
+                throw _String("NLevels must be greater than 1, received ") & num_levels.get(node) & " for node " & node;
             }
-
-            if (max_parents.lData[node] >= num_nodes) {
-                errorMessage = _String ("MaxParents cannot equal or exceed the number of nodes in the network, see node ") & node;
-                break;
+            
+            // max parents
+            max_parents[node] = (long)this_avl->GetNumberByKey(_HYBgm_MAX_PARENT);
+            global_max_parents = Maximum(global_max_parents, max_parents.get (node));
+            if (max_parents.get (node) <= 0L || max_parents.get(node) >= num_nodes) {
+                throw _String ("MaxParents must be in [1,") & num_nodes & "], received " & max_parents.get (node) & " for node " & node;
             }
-        } else {
-            errorMessage = _String ("Missing MaxParents in associative array for node ") & node;
-            break;
-        }
-
-
-        // prior sample size
-        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SIZE, NUMBER)))) {
-            prior_sample_size.Store (node, 0, (hyFloat) (avl_val->Value()));
-
+            
+            prior_sample_size.Store (node, 0, this_avl->GetNumberByKey (_HYBgm_PRIOR_SIZE));
             if (prior_sample_size(node,0) < 0) {
-                errorMessage = _String ("PriorSampleSize must be at least zero, received ") & prior_sample_size(node,0) & " for node " & node;
-                break;
+                throw _String ("PriorSampleSize must be at least zero, received ") & prior_sample_size(node,0) & " for node " & node ;
             }
-        } else {
-            errorMessage = _String ("Missing PriorSize in associative array for node ") & node;
-            break;
-        }
+            
+            
+            
+            if (is_node_continuous(node)) { // the next set of options only makes sense for continuous
+                // prior mean (Gaussian)
+                prior_mean.Store (node, 0,this_avl->GetNumberByKey (_HYBgm_PRIOR_MEAN));
 
+                prior_precision.Store (node, 0, this_avl->GetNumberByKey (_HYBgm_PRIOR_PRECISION));
+                if (prior_precision (node, 0) <= 0.) {
+                    throw _String ("PriorPrecision must be greater than zero, received ") & prior_precision(node,0) & " for node " & node;
+                }
 
-        // prior mean (Gaussian)
-        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_MEAN, NUMBER)))) {
-            prior_mean.Store (node, 0, (hyFloat) (avl_val->Value()));
-        } else if (!avl_val && node_type.lData[node] == 1) {
-            errorMessage = _String ("Missing PriorMean in associative array for node ") & node;
-            break;
-        }
+                prior_scale.Store (node, 0, this_avl->GetNumberByKey (_HYBgm_PRIOR_SCALE));
+                
+                if (prior_scale (node, 0) <= 0.) {
+                    throw _String ("PriorScale must be greater than zero, received ") & prior_scale(node,0) & " for node " & node;
+                }
 
-
-        // prior precision (Gaussian)
-        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_PRECISION, NUMBER)))) {
-            prior_precision.Store (node, 0, (hyFloat) (avl_val->Value()));
-
-            if (avl_val <= 0) {
-                errorMessage = _String ("PriorPrecision must be greater than zero, received ") & prior_precision(node,0) & " for node " & node;
-                break;
+                // ReportWarning (_String("prior_precision[") & node & "] set to " & prior_precision(node,0) );
             }
-            // ReportWarning (_String("prior_precision[") & node & "] set to " & prior_precision(node,0) );
-        } else if (!avl_val && node_type.lData[node] == 1) {
-            errorMessage = _String ("Missing PriorPrecision in associative array for node ") & node;
-            break;
         }
 
 
-        // prior scale (Gaussian)
-        if ((avl_val = (_Constant *) (this_avl->GetByKey (_HYBgm_PRIOR_SCALE, NUMBER)))) {
-            prior_scale.Store (node, 0, (hyFloat) (avl_val->Value()));
-
-            if (avl_val <= 0) {
-                errorMessage = _String ("PriorScale must be greater than zero, received ") & prior_scale(node,0) & " for node " & node;
-                break;
-            }
-        } else if (!avl_val && node_type.lData[node] == 1) {
-            errorMessage = _String ("Missing PriorScale in associative array for node ") & node;
-            break;
+        // allocate node score cache
+        
+        for (long node = 0L; node < num_nodes; node++) {
+            node_score_cache < new _List ((unsigned long)global_max_parents + 1UL);	// appends a dynamic copy of _List object to start
         }
+        scores_cached = FALSE;
+        ReportWarning (_String ("Constructed BayesianGraphicalModel with ") & num_nodes & " nodes.");
+    } catch (const _String err) {
+        HandleApplicationError(err);
     }
-
-
-    if (errorMessage.sLength) {
-        HandleApplicationError (errorMessage);
-    }
-
-
-    // allocate node score cache
-    _List   emptyList (global_max_parents + 1);
-
-    for (long node = 0; node < num_nodes; node++) {
-        node_score_cache && (&emptyList);	// appends a dynamic copy of _List object to start
-    }
-
-    scores_cached = FALSE;
-
-    ReportWarning (_String ("Constructed BayesianGraphicalModel with ") & num_nodes & " nodes.");
 }
 
 
-
 //__________________________________________________________________________________________________________
-_BayesianGraphicalModel::~_BayesianGraphicalModel (void)
-{
+_BayesianGraphicalModel::~_BayesianGraphicalModel (void) {
     /* destructor */
 }
 
@@ -361,8 +297,10 @@ _BayesianGraphicalModel::~_BayesianGraphicalModel (void)
 
 
 //__________________________________________________________________________________________________________
-bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
-{
+bool _BayesianGraphicalModel::SetDataMatrix (_Matrix const * data) {
+    
+    const static _String _HYBgm_CONTINUOUS_MISSING_VALUE ("BGM_CONTINUOUS_MISSING_VALUE");
+    
     /* ------------------------------------------------------------------------------------------------
         SetDataMatrix()
             Takes a matrix pointer passed from HBL and assign it to class member variable.
@@ -378,97 +316,96 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix * data)
 
 	/* reset missing value indicators to 0, in case we 
 		are replacing a data matrix with missing values */
-	for (long node = 0; node < num_nodes; node++) {
-		has_missing.lData[node] = 0;
+    
+	for (long node = 0L; node < num_nodes; node++) {
+		has_missing[node] = 0L;
 	}
 	
     /* check for user assignment of continuous missing value indicator */
-    checkParameter (_HYBgm_CONTINUOUS_MISSING_VALUE, continuous_missing_value, -666.0);
-	ReportWarning (_String ("Entered SetDataMatrix() with missing CG flag: ") & continuous_missing_value & " and node types" & (_String *) node_type.toStr());
+    
+    continuous_missing_value = hy_env::EnvVariableGetNumber(_HYBgm_CONTINUOUS_MISSING_VALUE, -666.0);
+    ReportWarning (_String ("Entered SetDataMatrix() with missing CG flag: ") & continuous_missing_value & " and node types" & (_String *) node_type.toStr());
 	
-    data_nlevels.Populate (num_nodes, 1, 0);
+    try {
+        if (data->GetVDim() != num_nodes) {
+            throw _String("Number of variables in data (") & data->GetVDim() & ") does not match number of nodes in graph (" & num_nodes & ")";
+        }
 
-    if (data->GetVDim() == num_nodes) {
-        // if (theData) DeleteObject (theData);
-        // purge duplicate from memory (makeDynamic)
+        data_nlevels.Populate (num_nodes, 1, 0);
 
-        theData = (_Matrix &) *data;        // duplicate matrix to member variable
-        theData.CheckIfSparseEnough (TRUE);
+            // if (theData) DeleteObject (theData);
+            // purge duplicate from memory (makeDynamic)
+
+        theData.Duplicate(data);        // duplicate matrix to member variable
+        theData.CheckIfSparseEnough (TRUE); // make dense
 
         scores_cached = FALSE;
 
 
         for (long nrows = theData.GetHDim(), node = 0; node < num_nodes; node++) {
             // if discrete node, compute number of levels and missingness
-            if (node_type.lData[node] == 0) {
-                data_nlevels.lData[node] = 1;
+            // missingness is encoded by negative values
+            // otherwise the range is assumed to be 0 : max_value (I think (?) SLKP)
+            if (is_node_discrete(node)) {
+                data_nlevels[node] = 1;
 
-                for (long val, row = 0; row < nrows; row++) {
-                    val = theData (row, node);
-
-                    if (val < 0 && has_missing.lData[node] == 0) {
-                        has_missing.lData[node] = 1;
-                        continue;
-                    }
-
-                    if (val + 1 > data_nlevels.lData[node]) {
-                        data_nlevels.lData[node] = data_nlevels.lData[node] + 1;
+                for (long row = 0L; row < nrows; row++) {
+                    long val = theData (row, node);
+                    
+                    if (val < 0) {
+                        has_missing[node] = 1L;
+                    } else {
+                        if (val + 1L > data_nlevels.get (node)) {
+                            ++data_nlevels[node];
+                        }
                     }
                 }
 
-                if (data_nlevels.lData[node] != num_levels.lData[node]) {
-                    HandleApplicationError (_String ("ERROR: Number of levels in data (") & data_nlevels.lData[node] & ") for discrete node "
-                               & node & " is not compatible with node setting (" & num_levels.lData[node]
+                if (data_nlevels.get (node) != num_levels.get (node)) {
+                    throw (_String (" Number of levels in data (") & data_nlevels.get(node) & ") for discrete node "
+                               & node & " is not compatible with node setting (" & num_levels.get(node)
                                & ").  Check your data or reset the BayesianGraphicalModel.");
 
-                    return (FALSE);
                 }
-            }
-
-            // continuous
-            else if (node_type.lData[node] == 1) {
-                for (long val, row = 0; row < nrows; row++) {
-					val = theData (row, node);
-                    if (val == continuous_missing_value && has_missing.lData[node] == 0) {
-                        has_missing.lData[node] = 1;
-						ReportWarning (_String("Detected missing continuous value at row ") & row);
-                        break;
+            } else if (is_node_continuous(node)) {
+                for (long row = 0L; row < nrows; row++) {
+                    hyFloat val = theData (row, node);
+                    if (val == continuous_missing_value) {
+                        has_missing[node] = 1;
+                        ReportWarning (_String("Detected missing continuous value at row ") & row);
+                        break; // TODO SLKP : discard partial row?
                     }
                 }
             }
         }
-
-        ReportWarning (_String ("Set data matrix to:\n") & (_String *)theData.toStr() & "\n" & " and missing values at " & (_String *) has_missing.toStr());
-    } else {
-        HandleApplicationError (_String("ERROR: Number of variables in data (") & data->GetVDim() & ") does not match number of nodes in graph (" & num_nodes & ")");
-        return (FALSE);
+        ReportWarning (_String ("Set data matrix to:\n") & *(_String *)theData.toStr() & "\n" & " and missing values at " & *(_String *) has_missing.toStr());
+        
+    } catch (const _String err) {
+        HandleApplicationError (err);
+        return false;
     }
-
 
     // compute node scores and store in cache
     CacheNodeScores();
-
-
-    return (TRUE);
+    return true;
 }
 
+//__________________________________________________________________________________________________________
 
-
-bool _BayesianGraphicalModel::SetWeightMatrix (_Matrix * weights)
-{
+bool _BayesianGraphicalModel::SetWeightMatrix (_Matrix const * weights) {
     if (weights->GetHDim() == theData.GetHDim() && weights->GetHDim() == num_nodes) {
-        theWeights = (_Matrix &) *weights;
-        ReportWarning(_String("Assigned weight matrix:\n") & (_String *) theWeights.toStr());
-        return TRUE;
+        theWeights.Duplicate (weights);
+        ReportWarning(_String("Assigned weight matrix:\n") & *(_String *) theWeights.toStr());
+        return true;
     }
 
     HandleApplicationError ("Incompatible matrix dimensions in SetWeightMatrix().");
-    return FALSE;
+    return false;
 }
 
 
 //__________________________________________________________________________________________________________
-bool _BayesianGraphicalModel::SetConstraints (_Matrix * constraints)
+bool _BayesianGraphicalModel::SetConstraints (_Matrix const * constraints)
 {
     /* -----------------------------------------------------------------
         SetConstraints()
@@ -479,10 +416,10 @@ bool _BayesianGraphicalModel::SetConstraints (_Matrix * constraints)
             -1 entry indicates a banned edge (never in network)
             0 entry indicates no constraint
        ----------------------------------------------------------------- */
-    if (constraints->GetHDim() == num_nodes) {
-        constraint_graph = (_Matrix &) (*constraints);
-        ReportWarning (_String("Assigned constraint matrix:\n ") & (_String*) constraint_graph.toStr() );
-        return (TRUE);
+    if (constraints->check_dimension(num_nodes, num_nodes)) {
+        constraint_graph.Duplicate(constraints);
+        ReportWarning (_String("Assigned constraint matrix:\n ") & *(_String*) constraint_graph.toStr() );
+        return true;
     }
 
     HandleApplicationError ("ERROR: Constraint matrix incompatible dimensions to graph.");
@@ -492,8 +429,8 @@ bool _BayesianGraphicalModel::SetConstraints (_Matrix * constraints)
 
 
 //__________________________________________________________________________________________________________
-bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
-{
+
+bool _BayesianGraphicalModel::SetStructure (_Matrix const * structure) {
     /* -------------------------------------------------------------------
         SetStructure()
             Assign pointer to _Matrix object from batchlan:SetParameter()
@@ -503,97 +440,88 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix * structure)
             If node order is incompatible, reset the node order.
        ------------------------------------------------------------------- */
 
-    if (structure->GetHDim() == num_nodes) {
-        // check graph against constraint matrix
-        for (long row = 0; row < num_nodes; row++) {
-            for (long col = 0; col < num_nodes; col++) {
-                if (constraint_graph(row,col) < 0 && (*structure)(row,col) == 1) {
-                    HandleApplicationError (_String ("ERROR: Structure contains banned edge: ") & _String (row) & _String ("->") & _String (col));
-                    return (FALSE);
+    try {
+    
+        if (!structure->check_dimension(num_nodes, num_nodes)) {
+            throw ("Structure incompatible dimensions to graph.");
+        }
+        
+        structure->ForEachCellNumeric ([this] (hyFloat value, long index, long row, long col) -> void {
+            if (value == 1.) {
+                if (this->constraint_graph (row, col) < 0.) {
+                     throw (_String ("Structure contains banned edge: ") & _String (row) & _String ("->") & _String (col));
                 }
-
-                if (constraint_graph(row,col) > 0 && (*structure)(row,col) == 0) {
-                    HandleApplicationError (_String  ("ERROR: Structure lacks enforced edge:") & _String (row) & _String ("->") & _String (col));
-                    return (FALSE);
+            } else {
+                if (value == 0.) {
+                    if (this->constraint_graph (row, col) > 0.) {
+                        throw (_String ("Structure lacks enforced edge: ") & _String (row) & _String ("->") & _String (col));
+                    }
                 }
             }
-        }
-
+        });
 
         // is new structure compatible with node order set in HBL?
         if (node_order_arg.lLength == num_nodes && !GraphObeysOrder (theStructure, node_order_arg)) {
             // need to reset node_order
-            _SimpleList * templist;
-
-            templist = GetOrderFromGraph (theStructure);
-            node_order_arg = (_SimpleList &) (*templist);
-            DeleteObject (templist);
-
-            ReportWarning (_String ("Structure is incompatible with existing node order, resetting order."));
+            node_order_arg = GetOrderFromGraph (theStructure);
+            ReportWarning ("Structure is incompatible with existing node order, resetting order.");
         }
 
-        theStructure = (_Matrix &) (*structure);
-        return (TRUE);
+        theStructure.Duplicate(structure);
+        return true;
+
+    } catch (const _String err) {
+        HandleApplicationError (err);
+        return false;
     }
-
-    HandleApplicationError ("ERROR: Structure incompatible dimensions to graph.");
-    return (FALSE);
-}
-
-
-void _BayesianGraphicalModel::GetStructure (_Matrix * graph)
-{
-    for (long row = 0; row < num_nodes; row++)
-        for (long col = 0; col < num_nodes; col++) {
-            graph->Store (row, col, theStructure(row, col));
-        }
-
-    ReportWarning (_String("GetStructure() copied graph ") & (_String *) graph->toStr());
+    return true;
 }
 
 //__________________________________________________________________________________________________________
-bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList * order)
-{
+
+void _BayesianGraphicalModel::GetStructure (_Matrix * graph)  const{
+    graph->Duplicate (&theStructure);
+    ReportWarning (_String("GetStructure() copied graph ") & *(_String *) graph->toStr());
+}
+
+//__________________________________________________________________________________________________________
+bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList const * order) {
     /* -----------------------------------------------------------------
         SetNodeOrder()
             Set node ordering to vector argument from HBL SetParameter().
        ----------------------------------------------------------------- */
 
-    if (order->lLength == num_nodes) {
-        if (GraphObeysOrder (theStructure, (_SimpleList &) *order)) {
-            node_order_arg.Populate(num_nodes, 0, 0);   // reset member variable
-
-            for (long i = 0; i < num_nodes; i++) {
-                node_order_arg.lData[i] = order->lData[i];
-            }
-
-            ReportWarning (_String("BayesianGraphicalModel node order arg set to ") & (_String *) node_order_arg.toStr());
-
-            return (TRUE);
-        } else {
-            HandleApplicationError ("ERROR: Node order incompatible with current graph.");
-            return (FALSE);
+    try {
+        if (order->countitems() != num_nodes) {
+            throw ("Node order argument has incorrect length.");
         }
-    } else {
-        HandleApplicationError ("ERROR: Node order argument incorrect length.");
-        return (FALSE);
+        if (!GraphObeysOrder (theStructure, *order)) {
+            throw ("Node order incompatible with current graph.");
+        }
+        
+        node_order_arg.Duplicate(order);
+        ReportWarning (_String("BayesianGraphicalModel node order arg set to ") & *(_String *) node_order_arg.toStr());
+
+    } catch (_String const err) {
+        HandleApplicationError(err);
+        return false;
     }
+    return true;
 }
 
+//__________________________________________________________________________________________________________
 
-void _BayesianGraphicalModel::GetNodeOrder (_Matrix * receptacle)
-{
-    if (node_order_arg.lLength == num_nodes) {
-        for (long node = 0; node < num_nodes; node++) {
-            receptacle->Store (0, node, node_order_arg.lData[node]);
-        }
+void _BayesianGraphicalModel::GetNodeOrder (_Matrix * receptacle) const {
+    if (node_order_arg.countitems() == num_nodes) {
+        node_order_arg.Each ([receptacle] (long value, unsigned long index) -> void {
+            receptacle->Store (0, index, value);
+        });
     }
 }
 
 
 //__________________________________________________________________________________________________________
-hyFloat _BayesianGraphicalModel::Compute (void)
-{
+hyFloat _BayesianGraphicalModel::Compute (void) {
     /* --------------------------------------------------------------
         Compute()   [POLYMORPHIC]
             Return posterior probability of [CURRENT] network
@@ -602,8 +530,8 @@ hyFloat _BayesianGraphicalModel::Compute (void)
 
     hyFloat  log_score = 0.;
 
-    for (long node_id = 0; node_id < num_nodes; node_id++) {
-        log_score += node_type.lData[node_id] ? ComputeContinuousScore (node_id) : ComputeDiscreteScore (node_id);
+    for (long node_id = 0L; node_id < num_nodes; node_id++) {
+        log_score += is_node_continuous(node_id) ? ComputeContinuousScore (node_id) : ComputeDiscreteScore (node_id);
     }
 
     return log_score;
@@ -612,8 +540,7 @@ hyFloat _BayesianGraphicalModel::Compute (void)
 
 
 //__________________________________________________________________________________________________________
-hyFloat _BayesianGraphicalModel::Compute (_Matrix & g)
-{
+hyFloat _BayesianGraphicalModel::Compute (_Matrix const & g) {
     /* --------------------------------------------------------------
         Compute()   [POLYMORPHIC]
             Return posterior probability of [GIVEN] network
@@ -623,7 +550,7 @@ hyFloat _BayesianGraphicalModel::Compute (_Matrix & g)
     hyFloat  log_score = 0.;
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {    // discrete nodes are 0 (FALSE)
-        log_score += node_type.lData[node_id] ? ComputeContinuousScore (node_id, g) : ComputeDiscreteScore (node_id, g);
+        log_score += is_node_continuous(node_id)? ComputeContinuousScore (node_id, g) : ComputeDiscreteScore (node_id, g);
     }
 
     return log_score;
@@ -632,8 +559,7 @@ hyFloat _BayesianGraphicalModel::Compute (_Matrix & g)
 
 
 //__________________________________________________________________________________________________________
-hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * marginals)
-{
+hyFloat  _BayesianGraphicalModel::Compute (_SimpleList const & node_order, _List * marginals) {
     /* --------------------------------------------------------------
         Compute()   [POLYMORPHIC]
             Return posterior probability of given node order by
@@ -642,103 +568,85 @@ hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * mar
        -------------------------------------------------------------- */
 
     hyFloat          log_likel   = 0.;
-    _Vector      *gv1, *gv2;
 
 
     // reset _GrowingVector objects stored in _List object
     for (long i = 0; i < num_nodes * num_nodes; i++) {
-        gv1 = (_Vector *) marginals->lData[i];
-        gv1 -> ZeroUsed();
+        ((_Vector *) marginals->GetItem(i))->ZeroUsed();
     }
 
 
-    for (long nodeIndex = 0; nodeIndex < node_order.lLength; nodeIndex++) {
-        long                child_node      = node_order.lData[nodeIndex],
-                            maxp            = max_parents.lData[child_node];
+    for (long nodeIndex = 0L; nodeIndex < node_order.countitems(); nodeIndex++) {
+        
+        long                child_node      = node_order.get(nodeIndex),
+                            maxp            = max_parents.get(child_node);
 
-        _List           *   score_lists     = (_List *) node_score_cache.lData[child_node];
-        _Constant       *   orphan_score    = (_Constant *) (score_lists->lData[0]);
+        _List           *   score_lists     = (_List *) node_score_cache.GetItem(child_node);
+        _Constant       *   orphan_score    = (_Constant *) (score_lists->GetItem(0));
 
 
-        gv1 = (_Vector *) marginals->lData[child_node * num_nodes + child_node]; // store denominator in diagonal
-        gv1->ZeroUsed();
+        _Vector * gv1 = (_Vector *) marginals->GetItem (child_node * num_nodes + child_node); // store denominator in diagonal
+        gv1 -> ZeroUsed();
         gv1 -> Store (orphan_score->Value());   // append score - note gv1 does not change within
 
 
 
-        if (maxp > 0) {
+        if (maxp > 0L) {
             // all nodes to the right are potential parents, except banned parents!
-            _SimpleList     precedes;
-            for (long parIndex = nodeIndex + 1; parIndex < node_order.lLength; parIndex++) {
-                long    par = node_order.lData[parIndex];
-
-                if (constraint_graph(par, child_node) >= 0) {   // not banned
-                    precedes << par;
-                }
-            }
-
+            // SLKP. To the right? Not the left?
+            
+            _SimpleList precedes = node_order.Filter([child_node,this] (long value, unsigned long) -> bool {
+                return this->constraint_graph (value, child_node) >= 0.;
+            }, nodeIndex+1UL);
+            
 
             // handle trivial case of one parent
-            _Matrix *   single_parent_scores    = (_Matrix *) (score_lists->lData[1]);
-
-            for (long i = 0; i < precedes.lLength; i++) {
-                long    par = precedes.lData[i];
-
-                gv1 -> Store ((*single_parent_scores) (par, 0)); // append to denominator
-                gv2 = (_Vector *) marginals->lData[child_node * num_nodes + par]; // update parent-specific numerator
-                gv2 -> Store ((*single_parent_scores) (par, 0));
-            }
+            _Matrix *   single_parent_scores    = (_Matrix *) (score_lists->GetItem(1));
+            precedes.Each ([this, gv1, single_parent_scores,marginals,child_node] (long parent_index, unsigned long) -> void {
+                hyFloat score = (*single_parent_scores) (parent_index, 0);
+                gv1->Store (score);
+                ((_Vector *) marginals->GetItem(child_node * this->num_nodes + parent_index))->Store (score);
+            });
 
 
             // more than one parent requires k-tuples
             if (maxp > 1) {
-                _SimpleList         indices (precedes.lLength, 0, 1);   // populates list with 0, 1, 2, ..., M-1
+                _SimpleList         indices (precedes.countitems(), 0, 1);   // populates list with 0, 1, 2, ..., M-1
                 // where M is the number of eligible parents in [precedes]
-                _NTupleStorage *    family_scores;
 
-                for (long nparents = 2; nparents <= maxp; nparents++) {
+                for (long nparents = 2L; nparents <= maxp && nparents <= precedes.countitems(); nparents++) {
                     _SimpleList     subset,
                                     auxil;
 
                     bool            not_finished;
 
-
-                    if (nparents > precedes.lLength) {  // not enough eligible parents to form tuples!
-                        break;
-                    }
-
-
+            
                     if (indices.NChooseKInit (auxil, subset, nparents, false)) {
                         hyFloat      tuple_score;
                         _SimpleList     parents;
 
                         parents.Populate (nparents, 0, 0);  // allocate memory
-
-                        family_scores = (_NTupleStorage *) (score_lists->lData[nparents]);
-
+                        _NTupleStorage * family_scores = (_NTupleStorage *) (score_lists->GetItem(nparents));
 
                         do {
                             //parents.Clear();
                             not_finished = indices.NChooseK (auxil, subset);    // cycle through index combinations
 
-
-                            for (long i = 0; i < nparents; i++) {   // convert indices to parent IDs (skipping child)
-                                long    realized = precedes.lData[subset.lData[i]];
+                            for (long i = 0L; i < nparents; i++) {   // convert indices to parent IDs (skipping child)
+                                long    realized = precedes.get(subset.get(i));
                                 if (realized >= child_node) {
                                     realized--;
                                 }
-                                parents.lData[i] = realized;
+                                parents[i] = realized;
                             }
-                            parents.Sort(TRUE);
-
+                            parents.Sort();
                             tuple_score = family_scores -> Retrieve (parents);
 
                             gv1 -> Store (tuple_score); // append to denominator
 
                             for (long i = 0; i < nparents; i++) {
 								// update parent combination-specific numerator
-                                gv2 = (_Vector *) marginals->lData[child_node * num_nodes + precedes.lData[subset.lData[i]]];
-                                gv2 -> Store (tuple_score);
+                                ((_Vector *) marginals->GetItem(child_node * num_nodes + precedes.get(subset.get(i))))-> Store (tuple_score);
                             }
                         } while (not_finished);
                     }
@@ -746,8 +654,9 @@ hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * mar
             }
         }
 
-        gv1 -> _Matrix::Store (0, 0, LogSumExpo(gv1));  // replace first entry with sum, i.e. marginal log-likelihood of child node
-        log_likel += (*gv1)(0, 0);
+        hyFloat log_sum = LogSumExpo(gv1);
+        gv1 -> _Matrix::Store (0, 0, log_sum);  // replace first entry with sum, i.e. marginal log-likelihood of child node
+        log_likel += log_sum;
 
     }
     // end loop over child nodes
@@ -758,12 +667,18 @@ hyFloat  _BayesianGraphicalModel::Compute (_SimpleList & node_order, _List * mar
 
 
 //__________________________________________________________________________________________________________
-hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id)
-{
+hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id) {
+    return ComputeDiscreteScore (node_id, theStructure);
+}
+
+//__________________________________________________________________________________________________________
+hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _Matrix const & g) {
+    
     _SimpleList     parents;
 
-    for (long par = 0; par < num_nodes; par++) {
-        if (theStructure(par, node_id) == 1 && node_type.lData[par] == 0) {
+    // SLKP TODO 20180902 : do we want to potentially include the node itself?
+    for (long par = 0L; par < num_nodes; par++) {
+        if ( g(par, node_id) == 1. && is_node_discrete(par)) {
             parents << par;
         }
     }
@@ -773,23 +688,7 @@ hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id)
 
 
 //__________________________________________________________________________________________________________
-hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _Matrix & g)
-{
-    _SimpleList     parents;
-
-    for (long par = 0; par < num_nodes; par++) {
-        if ( g(par, node_id) == 1 && node_type.lData[par] == 0) {
-            parents << par;
-        }
-    }
-
-    return ComputeDiscreteScore (node_id, parents);
-}
-
-
-//__________________________________________________________________________________________________________
-hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleList & parents)
-{
+hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleList const & parents) {
     /* --------------------------------------------------------------------
         ComputeDiscreteScore()
             Returns posterior probability of local network structure
@@ -800,26 +699,19 @@ hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleLis
 
     // use cached node scores if available
     if (scores_cached) {
-        _List *     scores  = (_List *) node_score_cache.lData[node_id];
+        _List *     scores  = (_List *) node_score_cache.GetItem (node_id);
 
-        if (parents.lLength == 0) {
-            _Constant *     orphan_score = (_Constant *) scores->lData[0];
-            return (hyFloat) orphan_score->Value();
-        } else if (parents.lLength == 1) {
-            _Matrix *   single_parent_scores = (_Matrix *) scores->lData[1];
-            return (hyFloat) (*single_parent_scores) (parents.lData[0], 0);
+        if (parents.empty()) {
+            return ((_Constant *)scores->GetItem(0))->Value();
+        } else if (parents.countitems() == 1UL) {
+            return (* ((_Matrix *) scores->GetItem(1))) (parents.get(0), 0);
         } else {
-            _NTupleStorage *    family_scores   = (_NTupleStorage *) scores->lData[parents.lLength];
-            _SimpleList         nktuple;
-
-            for (long i = 0; i < parents.lLength; i++) {    // map parents back to nk-tuple
-                long    par = parents.lData[i];
-                if (par > node_id) {
-                    par--;
-                }
-                nktuple << par;
-            }
-            return (hyFloat) family_scores->Retrieve (nktuple);  // using nk-tuple
+            _NTupleStorage *    family_scores   = (_NTupleStorage *) scores->GetItem (parents.countitems());
+        
+            return (hyFloat) family_scores->Retrieve (parents.MapList( [node_id] (long value, unsigned long) -> long {
+                return value > node_id ? value - 1L : value;
+            }));
+            // using nk-tuple
         }
     }
 
@@ -827,56 +719,58 @@ hyFloat  _BayesianGraphicalModel::ComputeDiscreteScore (long node_id, _SimpleLis
     //ReportWarning (_String ("Non-cached call of ComputeDiscreteScore with ") & node_id & " <- " & (_String *) parents.toStr());
 
     // impute score if missing data
-    if (has_missing.lData[node_id]) {
+    if (has_missing.get(node_id)) {
         return ImputeDiscreteNodeScore (node_id, parents);
     } else {
-        for (long par = 0; par < parents.lLength; par++) {
-            if (has_missing.lData[parents.lData[par]]) {
-                return ImputeDiscreteNodeScore (node_id, parents);
-            }
+        if (parents.Any ([this] (long value, unsigned long) -> bool {
+            return this->has_missing.get (value);
+        })) {
+            return ImputeDiscreteNodeScore (node_id, parents);
         }
     }
 
     _Matrix         n_ijk,
-                    n_ij;       // [i] indexes child nodes,
+                    n_ij;
+    // [i] indexes child nodes,
     // [j] indexes combinations of values for parents of i-th node,
     // [k] indexes values of i-th node
 
     UpdateDirichletHyperparameters (node_id, parents, &n_ij, &n_ijk);
 
-    return ( (prior_sample_size (node_id, 0) == 0) ?
+    return ( (prior_sample_size (node_id, 0) == 0.) ?
              K2Score (node_id, n_ij, n_ijk) :
              BDeScore (node_id, n_ij, n_ijk) );
 }
 
 
 //_______________________________________________________________
-void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _SimpleList &dparents, _Matrix * n_ij, _Matrix * n_ijk)
-{
-    if (node_type.lData[dnode] > 0) {
+void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _SimpleList const &dparents, _Matrix * n_ij, _Matrix * n_ijk) {
+    if (! is_node_discrete(dnode)) {
         ReportWarning ("ERROR: UpdateDirichletHyperparameters() called on non-discrete node!  That sucks!");
+        return;
     }
 
+    if (!dparents.empty ()) {
+        _SimpleList     multipliers ((long)1L);
+        long            num_parent_combos   = 1L;
 
-    if (dparents.lLength > 0) {
-        _SimpleList     multipliers ((long)1);
-        long            num_parent_combos   = 1;
-
-        for (long par = 0; par < dparents.lLength; par++) {
-            num_parent_combos *= num_levels.lData[dparents.lData[par]];
+        for (long par = 0L; par < dparents.countitems(); par++) {
+            num_parent_combos *= num_levels.get(dparents.get(par));
             multipliers << num_parent_combos;
         }
 
-        CreateMatrix (n_ij, num_parent_combos, 1, false, true, false);
-        CreateMatrix (n_ijk, num_parent_combos, num_levels.lData[dnode], false, true, false);
+        _Matrix::CreateMatrix (n_ij, num_parent_combos, 1, false, true, false);
+        _Matrix::CreateMatrix (n_ijk, num_parent_combos, num_levels.lData[dnode], false, true, false);
 
+        hyFloat norm  = prior_sample_size(dnode,0)/num_parent_combos,
+                norm2 = 1./num_levels.get(dnode);
 
         // initialize matrices with prior hyperparameters (a_ijk) -- if using K2, entries will remain zero
         for (long j = 0; j < num_parent_combos; j++) {
-            n_ij->Store (j, 0, prior_sample_size(dnode,0) / num_parent_combos);
+            n_ij->Store (j, 0, norm);
 
             for (long k = 0; k < num_levels.lData[dnode]; k++) {
-                n_ijk->Store (j, k, (*n_ij)(j,0) / num_levels.lData[dnode]);
+                n_ijk->Store (j, k, (*n_ij)(j,0) * norm2);
             }
         }
 
@@ -888,23 +782,23 @@ void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Si
             For now, just export complete cases - BUT THIS WILL CAUSE PROBLEMS IF NONE OF
                 THE CASES IS COMPLETE! - afyp, 2010/02/25
          */
-        for (long obs = 0; obs < theData.GetHDim(); obs++) {
+        for (long obs = 0L; obs < theData.GetHDim(); obs++) {
             long    index           = 0,
                     child_state     = theData(obs, dnode);
 
-            if (child_state < 0) {
+            if (child_state < 0L) {
                 continue;    /* missing observation */
             }
 
-            for (long par = 0; par < dparents.lLength; par++) {
-                long    this_parent         = dparents.lData[par],
+            for (long par = 0L; par < dparents.countitems(); par++) {
+                long    this_parent         = dparents.get(par),
                         this_parent_state = theData(obs, this_parent);
 
-                if (this_parent_state < 0) {
+                if (this_parent_state < 0L) {
                     index = -1; /* missing observation */
                     break;
                 }
-                index += this_parent_state * multipliers.lData[par];
+                index += this_parent_state * multipliers.get(par);
             }
 
             if (index >= 0) {
@@ -913,29 +807,28 @@ void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Si
                 n_ij->Store ((long) index, 0, (*n_ij)(index, 0) + 1);
             }
         }
-    }
-
-    else {
+    } else {
         // conditionally independent node
-        CreateMatrix (n_ij, 1, 1, false, true, false);
-        CreateMatrix (n_ijk, 1, num_levels.lData[dnode], false, true, false);
+        _Matrix::CreateMatrix (n_ij, 1, 1, false, true, false);
+        _Matrix::CreateMatrix (n_ijk, 1, num_levels.get(dnode), false, true, false);
 
         // prior hyperparameters (uniform distribution)
-        for (long k = 0; k < num_levels.lData[dnode]; k++) {
-            n_ijk->Store(0, k, prior_sample_size(dnode,0) / num_levels.lData[dnode]);
+        hyFloat flat_value = prior_sample_size(dnode,0) / num_levels.get(dnode);
+        for (long k = 0; k < num_levels.get(dnode); k++) {
+            n_ijk->Store(0, k, flat_value);
         }
 
         // update with data
         for (long obs = 0; obs < theData.GetHDim(); obs++) {
             long child_state = theData(obs, dnode);
 
-            if (child_state < 0) {
+            if (child_state < 0L) {
                 continue;
             }
 
 			// this is where we would modify the increment value (1) if we are weighting cases...
             n_ijk->Store (0, child_state, (*n_ijk)(0, child_state) + 1);
-            n_ij->Store (0, 0, (*n_ij)(0,0) + 1);
+            n_ij->Store  (0, 0, (*n_ij)(0,0) + 1);
         }
     }
 }
@@ -943,16 +836,15 @@ void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Si
 
 
 //___________________________________________________________________________________________
-hyFloat _BayesianGraphicalModel::K2Score (long node_id, _Matrix & n_ij, _Matrix & n_ijk)
-{
+hyFloat _BayesianGraphicalModel::K2Score (long node_id, _Matrix const & n_ij, _Matrix const & n_ijk) const {
     hyFloat  log_score   = 0.;
-    long        r_i         = num_levels.lData[node_id];
+    long        r_i         = num_levels.get(node_id);
 
-    for (long j = 0; j < n_ij.GetHDim(); j++) {
+    for (long j = 0L; j < n_ij.GetHDim(); j++) {
         log_score += lnGamma(r_i);  // (r-1)!
         log_score -= lnGamma(n_ij(j, 0) + r_i); // (N+r-1)!
 
-        for (long k = 0; k < r_i; k++) {
+        for (long k = 0L; k < r_i; k++) {
             log_score += lnGamma(n_ijk(j,k) + 1);   // (N_ijk)!
         }
     }
@@ -963,17 +855,16 @@ hyFloat _BayesianGraphicalModel::K2Score (long node_id, _Matrix & n_ij, _Matrix 
 
 
 //___________________________________________________________________________________________
-hyFloat _BayesianGraphicalModel::BDeScore (long node_id, _Matrix & n_ij, _Matrix & n_ijk)
-{
+hyFloat _BayesianGraphicalModel::BDeScore (long node_id, _Matrix const & n_ij, _Matrix const & n_ijk) const {
     // note that n_ij and n_ijk already contain prior counts, updated by data
     hyFloat  n_prior_ij      = prior_sample_size (node_id, 0) / n_ij.GetHDim(),
                 n_prior_ijk     = n_prior_ij / num_levels.lData[node_id],
                 log_score        = 0.;
 
-    for (long j = 0; j < n_ij.GetHDim(); j++) {
+    for (long j = 0L; j < n_ij.GetHDim(); j++) {
         log_score += lnGamma(n_prior_ij) - lnGamma(n_ij(j,0));
 
-        for (long k = 0; k < num_levels.lData[node_id]; k++) {
+        for (long k = 0L; k < num_levels.get(node_id); k++) {
             log_score += lnGamma(n_ijk(j,k)) - lnGamma(n_prior_ijk);
         }
     }
@@ -984,8 +875,7 @@ hyFloat _BayesianGraphicalModel::BDeScore (long node_id, _Matrix & n_ij, _Matrix
 
 
 //___________________________________________________________________________________________
-void    _BayesianGraphicalModel::InitMarginalVectors (_List * compute_list)
-{
+void    _BayesianGraphicalModel::InitMarginalVectors (_List * compute_list) const {
     /* ------------------------------------------------------------------------------------
         InitMarginalVectors()
             Allocate storage of node and edge marginal posterior probabilities accumulated
@@ -993,33 +883,20 @@ void    _BayesianGraphicalModel::InitMarginalVectors (_List * compute_list)
             (edges), whereas diagonal entries are used to store node marginals.
        ------------------------------------------------------------------------------------ */
 
-    _Vector * newstore = new _Vector;
-
     for (long i = 0; i < num_nodes * num_nodes; i++) {
-        (*compute_list) && newstore;
+        (*compute_list) < new _Vector;
     }
-
-    DeleteObject (newstore);
 }
 
 
 
 //___________________________________________________________________________________________
-void    _BayesianGraphicalModel::DumpMarginalVectors (_List * compute_list)
-{
-    for (long i = 0; i < compute_list->lLength; i++) {
-        ((_Vector *) compute_list->lData[i]) -> Clear();
-    }
-
+void    _BayesianGraphicalModel::DumpMarginalVectors (_List * compute_list)  const {
     DeleteObject (compute_list);
 }
 
-
-
-
 //___________________________________________________________________________________________
-void    _BayesianGraphicalModel::CacheNodeScores (void)
-{
+void    _BayesianGraphicalModel::CacheNodeScores (void) {
     /*  -----------------------------------------------------------------------------------
         CacheNodeScores() loops through nodes in the network and calls compute functions
         to calculate local network scores given the number and identity of parents for that node.
@@ -1036,7 +913,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
         variable [node_score_cache].
         ----------------------------------------------------------------------------------- */
 
-    ReportWarning (_String ("Entered CacheNodeScores()"));
+    //ReportWarning (_String ("Entered CacheNodeScores()"));
 
     if (scores_cached) {
         return;
@@ -1306,19 +1183,10 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
     _Matrix         single_parent_scores (num_nodes, 1, false, true);
 
 
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-    TimerDifferenceFunction(false); // save initial timer; will only update every 1 second
-#if !defined __HEADLESS__
-    SetStatusLine     (empty,_HYBgm_STATUS_LINE_CACHE, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
-#else
-    SetStatusLine     (_HYBgm_STATUS_LINE_CACHE);
-#endif
-    hyFloat  seconds_accumulator = .0,
-                temp;
 #endif
 
-    for (long node_id = 0; node_id < num_nodes; node_id++) {
-        long        maxp        = max_parents.lData[node_id];
+    for (long node_id = 0L; node_id < num_nodes; node_id++) {
+        long        maxp        = max_parents.get(node_id);
         _List   *   this_list   = (_List *) node_score_cache.lData[node_id];    // retrieve pointer to list of scores for this child node
 
         this_list->Clear();     // reset the list
@@ -1336,10 +1204,6 @@ void    _BayesianGraphicalModel::CacheNodeScores (void)
 
         _Constant   orphan_score (score);   // score computed with no parents (initialized empty list)
         (*this_list) && (&orphan_score);
-
-#if !defined __UNIX__ || defined __HEADLESS__
-        temp = .0;
-#endif
 
         if (maxp > 0) {
             _Matrix     single_parent_scores (num_nodes, 1, false, true);
@@ -1938,7 +1802,7 @@ bool    _BayesianGraphicalModel::GraphObeysOrder (_Matrix & graph, _SimpleList &
 
 
 //_______________________________________________________________________________________________________________________
-_SimpleList *   _BayesianGraphicalModel::GetOrderFromGraph (_Matrix & graph)
+_SimpleList const   _BayesianGraphicalModel::GetOrderFromGraph (_Matrix const & graph) const
 {
     /* ---------------------------------------------------------------------------------
         GetOrderFromGraph()
@@ -1948,11 +1812,11 @@ _SimpleList *   _BayesianGraphicalModel::GetOrderFromGraph (_Matrix & graph)
             For an empty graph, this should return (0,1,2,...,num_nodes-1)
      ----------------------------------------------------------------------------------- */
 
-    _SimpleList *   new_order  = new _SimpleList (1, 0, 0); // initialize with single entry, [0]
+    _SimpleList  new_order  (1, 0, 0); // initialize with single entry, [0]
 
     for (long left_of, node = 1; node < num_nodes; node++) {
         // loop through nodes in list looking for parents
-        for (left_of = 0; left_of < new_order->lLength; left_of++) {
+        for (left_of = 0L; left_of < new_order->countitems(); left_of++) {
             // if the node is the child,
             if (graph (left_of, node)) {
                 new_order->InsertElement ((BaseRef) node, left_of, false, false);
@@ -1961,12 +1825,12 @@ _SimpleList *   _BayesianGraphicalModel::GetOrderFromGraph (_Matrix & graph)
         }
 
         // if we reach end of list, append
-        if (left_of == new_order->lLength) {
-            (*new_order) << node;
+        if (left_of == new_order->countitems()) {
+            new_order << node;
         }
 
     }
-	ReportWarning(_String("Constructed node order from graph:\n") & (_String *)new_order->toStr() & "\n");
+	ReportWarning(_String("Constructed node order from graph:\n") & *(_String *)new_order->toStr() & "\n");
     return new_order;
 }
 
