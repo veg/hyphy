@@ -1465,7 +1465,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     _ExecutionList reset (CurrentLine);
     reset.Execute();
 #ifdef __HYPHYMPI__
-    if (_hy_mpi_node_rank == 0)
+    if (hy_mpi_node_rank == 0L)
 #endif
     terminate_execution = false;
     
@@ -1502,7 +1502,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     long     fileLength = 0;
     
 #ifdef __HYPHYMPI__
-    if (_hy_mpi_node_rank == 0) {
+    if (hy_mpi_node_rank == 0L) {
 #endif
         if       (f) {
             fseek    (f,0,SEEK_END);

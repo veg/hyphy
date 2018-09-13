@@ -61,7 +61,7 @@ _String
  
 
             _HYBgm_METHOD_KEY ("BGM_OPTIMIZATION_METHOD"),
-            _HYBgm_MPI_CACHING ("USE_MPI_CACHING"),
+ 
 
             _HYBgm_K2_RESTARTS ("BGM_K2_RESTARTS"),
             _HYBgm_K2_RANDOMIZE ("BGM_K2_RANDOMIZE"),
@@ -914,29 +914,124 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
         ----------------------------------------------------------------------------------- */
 
     //ReportWarning (_String ("Entered CacheNodeScores()"));
+  
+    static const _String kHYBgm_MPI_CACHING ("USE_MPI_CACHING");
 
     if (scores_cached) {
         return;
     }
+  
+    try {
 
+      _SimpleList     all_but_one (num_nodes-1L, 0, 1),
+                      nk_tuple;
+      
+      hyFloat         score;
+      _Matrix         single_parent_scores (num_nodes, 1, false, true);
+      
+      auto            handle_node_score = [this, &single_parent_scores,&all_but_one,&nk_tuple] (long node_id) -> _List * {
+                          _SimpleList parents (0L),
+                                      aux_list;
+        
+                          _List*      list_of_matrices = new _List;;
+                          long        maxp = max_parents.get(node_id);
+                          hyFloat     score;
+        
+                            // compute single parent scores
+                          for (long par = 0L; par < num_nodes; par++) {
+                            if (par == node_id) {   // child cannot be its own parent
+                              continue;
+                            }
+                            
+                            parents[0UL] = par;
+                            
+                            if (is_node_discrete(node_id) ) {
+                                // discrete-valued child node cannot have continuous parent
+                              if (is_node_discrete (par)) {
+                                score = ComputeDiscreteScore (node_id, parents);
+                              }
+                            } else {
+                                // continuous child can have discrete or continuous parents
+                              score = ComputeContinuousScore (node_id, parents);
+                            }
+                            
+                            single_parent_scores.Store (par, 0UL, score);
+                          }
+                            // compute multiple parent scores
+                          for (long np = 2; np <= maxp; np++) {
+                            _NTupleStorage * family_scores = new _NTupleStorage (num_nodes-1, np);
+                            
+                            parents << 0L;   // allocate space for one additional parent
+                            
+                            if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false)) {
+                              bool    remaining, family_is_discrete;
+                              long    res;
+                              
+                              do {
+                                remaining = all_but_one.NChooseK (aux_list, nk_tuple);
+                                
+                                if (is_node_discrete(node_id)) {
+                                  family_is_discrete = TRUE;
+                                  for (long par, par_idx = 0; par_idx < np; par_idx++) {
+                                    par = nk_tuple.get(par_idx);
+                                    if (par >= node_id) {
+                                      par++;
+                                    }
+                                    
+                                    if (is_node_discrete (par) == false) {    // all parents must be discrete
+                                      family_is_discrete = false;
+                                      break;
+                                    }
+                                    
+                                    parents[par_idx] = par;
+                                  }
+                                  
+                                  if (family_is_discrete) {
+                                    score = ComputeDiscreteScore (node_id, parents);
+                                  }
+                                } else {
+                                  for (long par_idx = 0; par_idx < np; par_idx++) {
+                                    long par = nk_tuple.lData[par_idx];
+                                    if (par >= node_id) {
+                                      par++;
+                                    }
+                                    parents.lData[par_idx] = par;
+                                  }
+                                  
+                                  score = ComputeContinuousScore (node_id, parents);
+                                }
+                                
+                                res = family_scores->Store (score, nk_tuple);
+                              } while (remaining);
+                            } else {
+                              throw ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
+                            }
+                            
+                            list_of_matrices->AppendNewInstance(family_scores);   // append duplicate to storage
+                          }
+                          return list_of_matrices;
+        
+                      };
+
+      auto compute_singleton_scores = [this] (long node_id) -> hyFloat {
+        _SimpleList  parents;
+        if (is_node_discrete(node_id)) {
+          return ComputeDiscreteScore (node_id, parents);    // [_SimpleList parents] should always be empty for master node
+        } else {
+          return ComputeContinuousScore (node_id, parents);
+        }
+      };
 
 #if defined __HYPHYMPI__
-    bool  use_mpi_caching;
-    checkParameter (_HYBgm_MPI_CACHING, use_mpi_caching, false);
-
+    bool  use_mpi_caching = hy_env::EnvVariableTrue(kHYBgm_MPI_CACHING);
+ 
     if (use_mpi_caching) {
         ReportWarning (_String ("Using MPI to cache node scores."));
 
         // MPI_Init() is called in main()
         int             size, rank;
         long            mpi_node;
-        _SimpleList     parents,
-                        all_but_one (num_nodes-1, 0, 1),
-                        aux_list,
-                        nk_tuple;
-
-        hyFloat      score;
-        _Matrix         single_parent_scores (num_nodes, 1, false, true);
+      
 
         MPI_Status      status; // contains source, tag, and error code
 
@@ -946,8 +1041,8 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
 
 
         if (rank == 0) {
-            _String     bgmSwitch ("_BGM_SWITCH_"),
-                        bgmStr;
+            _String  const   bgmSwitch ("_BGM_SWITCH_");
+            _String     bgmStr;
 
             _List       * this_list;
 
@@ -960,18 +1055,19 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
 
 
             // switch compute nodes from mpiNormal to bgm loop context
-            for (long ni = 1; ni < size; ni++) {
+            for (long ni = 1L; ni < size; ni++) {
                 MPISendString (bgmSwitch, ni);
             }
 
 
             // receive confirmation of successful switch
-            for (long ni = 1; ni < size; ni++) {
+            for (long ni = 1L; ni < size; ni++) {
                 long fromNode = ni;
 
                 _String t (MPIRecvString (ni,fromNode));
-                if (!t.Equal (&bgmSwitch)) {
-                    HandleApplicationError (_String("Failed to confirm MPI mode switch at node ") & ni);
+              
+                if (t != bgmSwitch) {
+                    throw _String ("Failed to confirm MPI mode switch at node ") & ni;
                     return;
                 } else {
                     ReportWarning (_String("Successful mode switch to Bgm MPI confirmed from node ") & ni);
@@ -980,30 +1076,27 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
             }
 
 
-            // farm out jobs to idle nodes until none are left
-            for (long node_id = 0; node_id < num_nodes; node_id++) {
-                long        maxp            = max_parents.lData[node_id];
+            // farm out jobs to idle compute nodes until none are left
+            for (long node_id = 0; node_id < num_nodes; node_id++) { // node_id iterates over network nodes
+                long        maxp            = max_parents.get(node_id);
+
                 _String     mxString,
                             mxName;
-                hyFloat  score;
+              
+                hyFloat     score = compute_singleton_scores (node_id);
 
 
-                this_list   = (_List *) node_score_cache.lData[node_id];
 
-                if (node_type.lData[node_id] == 0) {
-                    score = ComputeDiscreteScore (node_id, parents);    // [_SimpleList parents] should always be empty for master node
-                } else {
-                    score = ComputeContinuousScore (node_id, parents);
-                }
-
-                _Constant   orphan_score (score);
+                //_Constant   orphan_score (score);
 
 
+                this_list   = (_List *) node_score_cache.GetItem(node_id);
                 this_list->Clear();
-                (*this_list) && (&orphan_score);    // handle orphan score locally
+                 // handle orphan score locally
+              
+              
 
-
-                if (maxp > 0) { // don't bother to farm out trivial cases
+                if (maxp > 0L) { // don't bother to farm out trivial cases
                     // look for idle nodes
                     mpi_node = 1;
                     do {
@@ -1016,10 +1109,8 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
 
                             break;
                         }
-                        mpi_node++;
-                    } while (mpi_node < size);
+                     } while (++mpi_node < size);
                 }
-
 
                 if (mpi_node == size) { // all nodes are busy, wait for one to send results
                     MPIReceiveScores (mpi_node_status, true, node_id);
@@ -1029,278 +1120,78 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
 
 
             // collect remaining jobs
-            while (1) {
-                // look for a busy node
-                mpi_node = 1;
-                do {
-                    if ( (*mpi_node_status)(mpi_node,0) == 1) {
-                        break;
-                    }
-                    mpi_node++;
-                } while (mpi_node < size);
-
-                if (mpi_node < size) {
-                    MPIReceiveScores (mpi_node_status, false, 0);    // at least one node is busy
-                } else {
-                    break;
-                }
+            mpi_node = 0L;
+            mpi_node_status->ForEachCellNumeric([&mpi_node] (hyFloat value, long, long, long column)-> void {
+              if (column == 0L) {
+                mpi_node += value > 0.0 ? 1 : 0;
+              }
+            });
+          
+            while (mpi_node > 0L) {
+              MPIReceiveScores (mpi_node_status, false, 0);
+              mpi_node --;
             }
-
+          
 
             // shut down compute nodes
-            for (long shutdown = -1, mpi_node = 1; mpi_node < size; mpi_node++) {
+            for (long shutdown = -1, mpi_node = 1L; mpi_node < size; mpi_node++) {
                 ReportMPIError(MPI_Send(&shutdown, 1, MPI_LONG, mpi_node, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD), true);
                 ReportWarning (_String ("Node 0 sending shutdown signal to node ") & mpi_node);
             }
-
-        }
-
-        else {  // compute node
-            long        node_id, maxp;  // update in while loop
-            _List       list_of_matrices;
-
-            while (1) {
+        } else {  // compute node
+ 
+            while (1) { // wait for the next message from the master
                 _String     mxString,
                             mxName;
 
-                list_of_matrices.Clear();
-
-
+                long        node_id;  // update in while loop
+              
                 // wait for master node to issue node ID to compute
                 ReportMPIError (MPI_Recv (&node_id, 1, MPI_LONG, 0, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, &status), false);
                 ReportWarning (_String("Node") & (long)rank & " received child " & (long)node_id & " from node " & (long)status.MPI_SOURCE);
 
                 if (node_id < 0) {
-                    ReportWarning (_String("Node") & (long)rank & " recognizes shutdown signal.\n");
+                    ReportWarning (_String("Node") & (long)rank & " recognizes BGM loop shutdown signal.\n");
                     break;  // received shutdown message (-1)
                 }
-
-                maxp = max_parents.lData[node_id];
-                parents << 0;   // allocate space for one parent
-
-                if (parents.lLength != 1) { /* DEBUGGING */
-                    HandleApplicationError (_String("ERROR: _SimpleList parents not expected length (1), found ") & parents.lLength);
-                }
-
-
-                // compute single parent scores
-                for (long par = 0; par < num_nodes; par++) {
-                    if (par == node_id) {   // child cannot be its own parent
-                        continue;
-                    }
-
-                    parents.lData[0] = par;
-
-                    if (node_type.lData[node_id] == 0) {
-                        // discrete-valued child node cannot have continuous parent
-                        if (node_type.lData[par] == 0) {
-                            score = ComputeDiscreteScore (node_id, parents);
-                        }
-                    } else {
-                        // continuous child can have discrete or continuous parents
-                        score = ComputeContinuousScore (node_id, parents);
-                    }
-
-                    single_parent_scores.Store (par, 0, score);
-                }
-
-
-                // compute multiple parent scores
-                for (long np = 2; np <= maxp; np++) {
-                    _NTupleStorage  family_scores (num_nodes-1, np);
-
-                    parents << 0;   // allocate space for one additional parent
-
-                    if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false)) {
-                        bool    remaining, family_is_discrete;
-                        long    res;
-
-                        do {
-                            remaining = all_but_one.NChooseK (aux_list, nk_tuple);
-
-                            if (node_type.lData[node_id] == 0) {
-                                family_is_discrete = TRUE;
-                                for (long par, par_idx = 0; par_idx < np; par_idx++) {
-                                    par = nk_tuple.lData[par_idx];
-                                    if (par >= node_id) {
-                                        par++;
-                                    }
-
-                                    if (node_type.lData[par] != 0) {    // all parents must be discrete
-                                        family_is_discrete = FALSE;
-                                        break;
-                                    }
-
-                                    parents.lData[par_idx] = par;
-                                }
-
-                                if (family_is_discrete) {
-                                    score = ComputeDiscreteScore (node_id, parents);
-                                }
-                            } else {
-                                for (long par_idx = 0; par_idx < np; par_idx++) {
-                                    long par = nk_tuple.lData[par_idx];
-                                    if (par >= node_id) {
-                                        par++;
-                                    }
-                                    parents.lData[par_idx] = par;
-                                }
-
-                                score = ComputeContinuousScore (node_id, parents);
-                            }
-
-                            res = family_scores.Store (score, nk_tuple);
-                        } while (remaining);
-                    } else {
-                        HandleApplicationError("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
-                    }
-
-                    list_of_matrices << (&family_scores);   // append duplicate to storage
-                }
-
-                // send results to master node
-
+              
+              
+                _List * list_of_matrices = handle_node_score (node_id);
+                _List   memory_cleanup;
+                memory_cleanup.AppendNewInstance (list_of_matrices);
                 ReportMPIError (MPI_Send (single_parent_scores.theData, num_nodes, MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
-
-                for (long np = 2; np <= maxp; np++) {
-                    _Matrix * storedMx = (_Matrix *) list_of_matrices.lData[np-2];
+                list_of_matrices->ForEach ([&] (BaseRef * mx, unsigned long idx) -> void {
+                    _Matrix * storedMx = (_Matrix *) mx;
                     ReportMPIError (MPI_Send (storedMx->theData, storedMx->GetHDim(), MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
-                }
+                });
+              
             }
             // end while, received shutdown from master node
         }
         // end else if compute node
-    }
-
-    else {  // perform single-threaded
+    } else {  // perform single-threaded
 #else
 
-    _SimpleList     parents,
-                    all_but_one (num_nodes-1, 0, 1),
-                    aux_list,
-                    nk_tuple;
-
-    _Matrix         single_parent_scores (num_nodes, 1, false, true);
-
-
-#endif
-
     for (long node_id = 0L; node_id < num_nodes; node_id++) {
-        long        maxp        = max_parents.get(node_id);
-        _List   *   this_list   = (_List *) node_score_cache.lData[node_id];    // retrieve pointer to list of scores for this child node
+         _List   *   this_list   = (_List *) node_score_cache.GetItem (node_id);    // retrieve pointer to list of scores for this child node
 
         this_list->Clear();     // reset the list
 
         // prepare some containers
-        _SimpleList parents;
-        hyFloat  score;
+        hyFloat  score = compute_singleton_scores (node_id);
+        this_list->AppendNewInstance(new _Constant (score));
+      
+      
+      
 
-        if (node_type.lData[node_id] == 0) {    // child node is discrete (multinomial)
-            score = ComputeDiscreteScore (node_id, parents);
-        } else {                            // child node is continuous (conditional Gaussian)
-            score = ComputeContinuousScore (node_id, parents);
+        if (max_parents.get(node_id) > 0) {
+            _List *     scores = handle_node_score (node_id); // this will also populate single_parent_scores
+            (*this_list) && & single_parent_scores;
+            (*this_list) << *scores;
+            delete scores;
         }
 
 
-        _Constant   orphan_score (score);   // score computed with no parents (initialized empty list)
-        (*this_list) && (&orphan_score);
-
-        if (maxp > 0) {
-            _Matrix     single_parent_scores (num_nodes, 1, false, true);
-
-            parents << 0;   // allocate space for one parent
-
-            for (long par = 0; par < num_nodes; par++) {
-                if (par == node_id) {   // child cannot be its own parent, except morally-challenged time travellers
-                    continue;
-                }
-
-                parents.lData[0] = par;
-
-                // discrete child cannot have continuous parent
-                if (node_type.lData[node_id] == 0) {
-                    score = (node_type.lData[par] == 0) ? ComputeDiscreteScore (node_id, parents) : -A_LARGE_NUMBER;
-                } else {
-                    score = ComputeContinuousScore (node_id, parents);
-                }
-
-                single_parent_scores.Store (par, 0, score);
-            }
-            (*this_list) && (&single_parent_scores);
-        }
-
-        for (long np = 2; np <= maxp; np++) {
-            _NTupleStorage  family_scores (num_nodes-1, np);
-
-            parents << 0;   // allocate space for one additional parent
-
-            if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false)) {
-                bool    remaining, family_is_discrete;
- 
-                do {
-                    remaining = all_but_one.NChooseK (aux_list, nk_tuple);
-
-                    if (node_type.lData[node_id] == 0) {
-                        family_is_discrete = TRUE;
-                        for (long par, par_idx = 0; par_idx < np; par_idx++) {
-                            par = nk_tuple.lData[par_idx];
-                            if (par >= node_id) {
-                                par++;
-                            }
-
-                            if (node_type.lData[par] != 0) {    // all parents must be discrete
-                                family_is_discrete = FALSE;
-                                break;
-                            }
-
-                            parents.lData[par_idx] = par;
-                        }
-
-                        if (family_is_discrete) {
-                            score = ComputeDiscreteScore (node_id, parents);
-                        }
-                    } else {
-                        for (long par_idx = 0; par_idx < np; par_idx++) {
-                            long par = nk_tuple.lData[par_idx];
-                            if (par >= node_id) {
-                                par++;
-                            }
-                            parents.lData[par_idx] = par;
-                        }
-
-                        score = ComputeContinuousScore (node_id, parents);
-                    }
-
-                    family_scores.Store (score, nk_tuple);
-                } while (remaining);
-            } else {
-                HandleApplicationError ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
-                return ;
-            }
-            (*this_list) && (&family_scores);   // append duplicate to storage
-        }
-
-
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-        if ((temp=TimerDifferenceFunction(true))>1.0) { // time to update
-            seconds_accumulator += temp;
-
-            _String statusLine = _HYBgm_STATUS_LINE_CACHE & " " & (node_id+1) & "/" & num_nodes
-                                 & " nodes (" & (1.0+node_id)/seconds_accumulator & "/second)";
-
-#if defined __HEADLESS__
-            SetStatusLine (statusLine);
-#else
-            SetStatusLine (empty,statusLine,empty,100*(float)node_id/(num_nodes),HY_SL_TASK|HY_SL_PERCENT);
-#endif
-            TimerDifferenceFunction (false); // reset timer for the next second
-            yieldCPUTime (); // let the GUI handle user actions
-
-            if (terminate_execution) { // user wants to cancel the analysis
-                break;
-            }
-        }
-#endif
     }
 #endif
 
@@ -1308,13 +1199,15 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
     }   // completes else statement
 #endif
 
-#if !defined __UNIX__ || defined __HEADLESS__
-    SetStatusLine     (_HYBgm_STATUS_LINE_CACHE_DONE);
-#endif
-
+    } catch (const _String e) {
+      HandleApplicationError(e);
+      return;
+    }
+      
+      
     scores_cached = TRUE;
-
     ReportWarning (_String ("Cached node scores."));
+      
 }
 
 

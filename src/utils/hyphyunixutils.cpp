@@ -223,8 +223,8 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
     ReportWarning ("[MPI] Entered mpiNormalLoop");
 
-    _String* theMessage     = MPIRecvString (-1,senderID),  // listen for messages from any node
-             * resStr        = nil;
+    _String* theMessage     = MPIRecvString (-1,senderID);   // listen for messages from any node
+    _StringBuffer * resStr        = nil;
 
     while (theMessage->nonempty()) {
         hy_env :: EnvVariableSet (hy_env ::mpi_node_id, new _Constant (rank), false);
@@ -256,8 +256,8 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                 _Variable*          lfName = FetchVar(LocateVarByName(MPI_NEXUS_FILE_RETURN));
 
                 if (lfName) {
-                    resStr = (_String*)(lfName->Compute()->toStr());
-                } else {
+                    resStr = new _StringBuffer ((_String*)lfName->Compute()->toStr());
+                 } else {
                     _FString        *lfID = (_FString*)FetchObjectFromVariableByType (&lf2SendBack, STRING);
 
                     if (!lfID) {
@@ -267,10 +267,10 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
                     long type = HY_BL_LIKELIHOOD_FUNCTION, index;
                     
-                    _LikelihoodFunction *lf = (_LikelihoodFunction *)_HYRetrieveBLObjectByName    (*lfID->theString, type, &index, false, false);
+                    _LikelihoodFunction *lf = (_LikelihoodFunction *)_HYRetrieveBLObjectByName    (lfID->get_str(), type, &index, false, false);
 
                     if (lf == nil) {
-                        HandleApplicationError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & *lfID->theString &"' did not refer to a well-defined likelihood function.\n\n\n");
+                        HandleApplicationError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & lfID->get_str() &"' did not refer to a well-defined likelihood function.\n\n\n");
                         break;
                     }
                   
@@ -282,7 +282,11 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                 _ExecutionList exL (*theMessage);
                 //ReportWarning (_String ((_String*)batchLanguageFunctionNames.toStr()));
                 HBLObjectRef res = exL.Execute();
-                resStr = res?(_String*)res->toStr():new _String ("0");
+                if (res) {
+                  resStr = new _StringBuffer ((_String*)res->toStr());
+                } else {
+                  resStr = new _StringBuffer ("0");
+                }
             }
 
             MPISendString(*resStr,senderID);

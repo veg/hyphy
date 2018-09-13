@@ -3066,7 +3066,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
         _StringBuffer          sLF (8192L);
         SerializeLF      (sLF,_hyphyLFSerializeModeCategoryAsGlobal);
-        sLF.TrimSpace()     ();
+        sLF.TrimSpace    ();
         long             senderID = 0;
 
         // sets up a de-categorized LF on each compute node

@@ -98,300 +98,300 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
     
     try {
     
-    if (termRules == 0L) {
-      throw ("A SCFG can not be constructed from an empty set of <Nonterminal>-><Terminal> production rules");
-    }
-    
-    _List         ruleProbabilities,            // an auxiliary list used to store strings describing production probabilities
-    alreadySeenX;                 // a list of production rules that have already been added
-                                  // it is used to keep track of duplicate production rules
-    
-    _SimpleList   foundNT,                      // an array to keep track of all 'declared' non-terminals
-    ntFlags;                      // an array of flags of non-terminal properties
-    
-    _AVLList      tempTerminals (&terminals),       // an auxiliary wrapper around the set of terminal symbols used to check for duplication
-    alreadySeen   (&alreadySeenX);    // and a wrapper for the alreadySeen list
-    
-    _AVLListX     tempNT        (&foundNT);         // and a wrapper for the set of non-terminals
-    
-    
-    
-    for (long tc = 0L; tc < termRules; tc++) {
-        // check Terminal rules for consistency
-        // traverse the T_Rules AVL, which is assumed to be indexed by 0..termRules-1
-      _AssociativeList * aRule = (_AssociativeList*)T_Rules->GetByKey (tc, ASSOCIATIVE_LIST);
-      
-      if (aRule == nil) {
-        throw _String("Each production rule must be specified as an associative array, but rule ") & tc & " was not.";
-      }
-      _FString    * literal       = (_FString*)aRule->GetByKey (kSCFG_TERM_T,STRING),
-      * expression   = (_FString*)aRule->GetByKey (kSCFG_TERM_P, STRING);
-      
-      _Constant   * lhs           = (_Constant*)aRule->GetByKey (kSCFG_TERM_L, NUMBER);
-      
-      if (! (literal && lhs && !literal->empty())) {
-        throw _String("Each terminal rule must have a non-empty target terminal and a left-hand side non-terminal. Rule ") & tc & " did not comply.";
+      if (termRules == 0L) {
+        throw ("A SCFG can not be constructed from an empty set of <Nonterminal>-><Terminal> production rules");
       }
       
+      _List         ruleProbabilities,            // an auxiliary list used to store strings describing production probabilities
+      alreadySeenX;                 // a list of production rules that have already been added
+                                    // it is used to keep track of duplicate production rules
       
-      long index = tempTerminals.Insert (literal->get_str().makeDynamic(), -1, false, true);
-        // insert to the list of terminals if not seen before
-      if  (index>=0) {// new terminal; added to list
-                     // now we process the terminal into the parse tree
-        if (terminal_symbols.FindKey(literal->get_str(), nil, true) != kNotFound) {
-           throw  _String("Terminal symbols must form a prefix code, but ") & *literal->get_str().Enquote() & " contains another terminal symbol as a prefix.";
+      _SimpleList   foundNT,                      // an array to keep track of all 'declared' non-terminals
+      ntFlags;                      // an array of flags of non-terminal properties
+      
+      _AVLList      tempTerminals (&terminals),       // an auxiliary wrapper around the set of terminal symbols used to check for duplication
+      alreadySeen   (&alreadySeenX);    // and a wrapper for the alreadySeen list
+      
+      _AVLListX     tempNT        (&foundNT);         // and a wrapper for the set of non-terminals
+      
+      
+      
+      for (long tc = 0L; tc < termRules; tc++) {
+          // check Terminal rules for consistency
+          // traverse the T_Rules AVL, which is assumed to be indexed by 0..termRules-1
+        _AssociativeList * aRule = (_AssociativeList*)T_Rules->GetByKey (tc, ASSOCIATIVE_LIST);
+        
+        if (aRule == nil) {
+          throw _String("Each production rule must be specified as an associative array, but rule ") & tc & " was not.";
+        }
+        _FString    * literal       = (_FString*)aRule->GetByKey (kSCFG_TERM_T,STRING),
+        * expression   = (_FString*)aRule->GetByKey (kSCFG_TERM_P, STRING);
+        
+        _Constant   * lhs           = (_Constant*)aRule->GetByKey (kSCFG_TERM_L, NUMBER);
+        
+        if (! (literal && lhs && !literal->empty())) {
+          throw _String("Each terminal rule must have a non-empty target terminal and a left-hand side non-terminal. Rule ") & tc & " did not comply.";
         }
         
-        terminal_symbols.Insert(literal->get_str(), index);
-      } else {
-        index = -index-1;    // if this terminal has already been added, use the index
-      }
-      
-      long          nt_index  = (long)(lhs->Compute()->Value()),
-      avl_index = tempNT.Insert ((BaseRef)nt_index); // store the integer index of the LHS if needed
-      
-      if (avl_index<0) { // nt_index already exists; correct to positive range
-        avl_index = -avl_index - 1;
-      }
-      
-        // update status flags for this non-terminal
-      tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_|_HYSCFG_NT_DTERM_|_HYSCFG_NT_TERM_);
-      
-      
-        // first ensure the rule is not a duplicate
-      _String         ruleString = _String (nt_index) & ",[" & index & ']';
-        // create a new record for the rule of the form "nt index,[t index]"
-      long            seenMe     = alreadySeen.Insert (ruleString.makeDynamic(), -1, false, true);
-      if (seenMe < 0L) { // already seen
-        throw _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
-      }
-      
-      rules < & ((*new _SimpleList ()) << nt_index << index);
-      ProcessAFormula (expression, ruleProbabilities, parsedFormulas);
-
-    } // done checking terminal rules
-    
-    for (long tc = 0L; tc < nonTermRules; tc++) {
-        // check Non-terminal rules for consistency
-        // traverse the NT_Rules AVL, which is assumed to be indexed by 0..nonTermRules-1
-      _AssociativeList * aRule = (_AssociativeList*)NT_Rules->GetByKey (tc, ASSOCIATIVE_LIST);
-      if (!aRule) {
-        throw _String("Each rule must be specified as an associative array, but rule ") & tc & " was not.";
-      }
-      _FString    * expression    = (_FString*)aRule->GetByKey     (kSCFG_TERM_P, STRING);
-      
-      _Constant   * lhs           = (_Constant*)aRule->GetByKey    (kSCFG_TERM_L, NUMBER),
-      * rhs1          = (_Constant*)aRule->GetByKey    (kSCFG_TERM_NT_1, NUMBER),
-      * rhs2          = (_Constant*)aRule->GetByKey    (kSCFG_TERM_NT_2, NUMBER);
-      
-      if (! (lhs && rhs1 && rhs2)) {
-        throw _String("Each non-terminal rule must have two right-hand side non-terminals and a left-hand side non-terminal. Rule ") & tc & " did not comply.";
-      }
-      
-      ProcessAFormula (expression, ruleProbabilities, parsedFormulas);
-      
-      _SimpleList goodNTRule;
-      long          nt_index = (long)(lhs->Compute()->Value());
-      long avl_index = tempNT.Insert ((BaseRef)nt_index); // store the integer index of the LHS if needed
-      if (avl_index<0) {
-        avl_index = -avl_index - 1;
-      }
-      tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_); // update status flags for this non-terminal
-      
-      _StringBuffer     ruleString;
-      ruleString << nt_index << ',';
-      goodNTRule << nt_index;
-      
-      nt_index    = (long)(rhs1->Compute()->Value());
-      tempNT.Insert ((BaseRef)nt_index);
-      goodNTRule << nt_index;
-      ruleString << nt_index & ',';
-      
-      nt_index    = (long)(rhs2->Compute()->Value());
-      tempNT.Insert ((BaseRef)nt_index);
-      goodNTRule << nt_index;
-      ruleString <<_String (nt_index);
-      
-      long            seenMe     = alreadySeen.Insert (&ruleString, -1, true);
-      if (seenMe < 0) { // already seen
-        throw _String ("Duplicate production rule: ") & tc & " : " & ruleString.Enquote();
-      }
-      rules < new _SimpleList (goodNTRule); // append the new rule to the list of existing rules
-    }
-    
-     // all rules were good; next steps:
-     // (a). Validate the grammar
-     // (1).   Each non-terminal must appear in at least one LHS
-     // (2).   Each non-terminal must be resolvable to a terminal at some point
-     // (3).   Each non-terminal must be reachable from the start symbol
-      
-      ntToTerminalMap.Populate (rules.lLength*terminals.lLength,-1,0);
-      
-      bool         continueLoops = true;
-    
-        // prepopulate the list of rules stratified by the LHS non-terminal by empty lists
-      for (long ntC = 0L; ntC < foundNT.lLength; ntC ++) {
-        byNT2 < new _SimpleList;
-        byNT3 < new _SimpleList;
-        byRightNT1 < new _SimpleList;
-        byRightNT2 < new _SimpleList;
-      }
-      
-      for (long ruleIdx = 0L; ruleIdx < rules.lLength; ruleIdx ++) {
-        _SimpleList *aList = (_SimpleList*)rules(ruleIdx);      // retrieve two- or three-integer list
         
-        if (aList->countitems() == 3UL) { // NT->NT NT
-          *((_SimpleList*)byNT3 (aList->get(0))) << ruleIdx;
-          /* addition by AFYP, 2006-06-20 */
-          *((_SimpleList*)byRightNT1 (aList->get(1))) << ruleIdx;
-          *((_SimpleList*)byRightNT2 (aList->get(2))) << ruleIdx;
-          /* ---------- end add --------- */
+        long index = tempTerminals.Insert (literal->get_str().makeDynamic(), -1, false, true);
+          // insert to the list of terminals if not seen before
+        if  (index>=0) {// new terminal; added to list
+                       // now we process the terminal into the parse tree
+          if (terminal_symbols.FindKey(literal->get_str(), nil, true) != kNotFound) {
+             throw  _String("Terminal symbols must form a prefix code, but ") & *literal->get_str().Enquote() & " contains another terminal symbol as a prefix.";
+          }
+          
+          terminal_symbols.Insert(literal->get_str(), index);
         } else {
-          *((_SimpleList*)byNT2 (aList->get(0))) << ruleIdx;
-          ntToTerminalMap [indexNT_T (aList->lData[0],aList->get(1))] = ruleIdx;
+          index = -index-1;    // if this terminal has already been added, use the index
         }
         
+        long          nt_index  = (long)(lhs->Compute()->Value()),
+        avl_index = tempNT.Insert ((BaseRef)nt_index); // store the integer index of the LHS if needed
+        
+        if (avl_index<0) { // nt_index already exists; correct to positive range
+          avl_index = -avl_index - 1;
+        }
+        
+          // update status flags for this non-terminal
+        tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_|_HYSCFG_NT_DTERM_|_HYSCFG_NT_TERM_);
+        
+        
+          // first ensure the rule is not a duplicate
+        _String         ruleString = _String (nt_index) & ",[" & index & ']';
+          // create a new record for the rule of the form "nt index,[t index]"
+        long            seenMe     = alreadySeen.Insert (ruleString.makeDynamic(), -1, false, true);
+        if (seenMe < 0L) { // already seen
+          throw _String ("Duplicate production rule:" ) & GetRuleString (-seenMe-1);
+        }
+        
+        rules < & ((*new _SimpleList ()) << nt_index << index);
+        ProcessAFormula (expression, ruleProbabilities, parsedFormulas);
+
+      } // done checking terminal rules
+      
+      for (long tc = 0L; tc < nonTermRules; tc++) {
+          // check Non-terminal rules for consistency
+          // traverse the NT_Rules AVL, which is assumed to be indexed by 0..nonTermRules-1
+        _AssociativeList * aRule = (_AssociativeList*)NT_Rules->GetByKey (tc, ASSOCIATIVE_LIST);
+        if (!aRule) {
+          throw _String("Each rule must be specified as an associative array, but rule ") & tc & " was not.";
+        }
+        _FString    * expression    = (_FString*)aRule->GetByKey     (kSCFG_TERM_P, STRING);
+        
+        _Constant   * lhs           = (_Constant*)aRule->GetByKey    (kSCFG_TERM_L, NUMBER),
+        * rhs1          = (_Constant*)aRule->GetByKey    (kSCFG_TERM_NT_1, NUMBER),
+        * rhs2          = (_Constant*)aRule->GetByKey    (kSCFG_TERM_NT_2, NUMBER);
+        
+        if (! (lhs && rhs1 && rhs2)) {
+          throw _String("Each non-terminal rule must have two right-hand side non-terminals and a left-hand side non-terminal. Rule ") & tc & " did not comply.";
+        }
+        
+        ProcessAFormula (expression, ruleProbabilities, parsedFormulas);
+        
+        _SimpleList goodNTRule;
+        long          nt_index = (long)(lhs->Compute()->Value());
+        long avl_index = tempNT.Insert ((BaseRef)nt_index); // store the integer index of the LHS if needed
+        if (avl_index<0) {
+          avl_index = -avl_index - 1;
+        }
+        tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_); // update status flags for this non-terminal
+        
+        _StringBuffer     ruleString;
+        ruleString << nt_index << ',';
+        goodNTRule << nt_index;
+        
+        nt_index    = (long)(rhs1->Compute()->Value());
+        tempNT.Insert ((BaseRef)nt_index);
+        goodNTRule << nt_index;
+        ruleString << nt_index & ',';
+        
+        nt_index    = (long)(rhs2->Compute()->Value());
+        tempNT.Insert ((BaseRef)nt_index);
+        goodNTRule << nt_index;
+        ruleString <<_String (nt_index);
+        
+        long            seenMe     = alreadySeen.Insert (&ruleString, -1, true);
+        if (seenMe < 0) { // already seen
+          throw _String ("Duplicate production rule: ") & tc & " : " & ruleString.Enquote();
+        }
+        rules < new _SimpleList (goodNTRule); // append the new rule to the list of existing rules
       }
       
-      while (continueLoops) { // set status flags for all NT symbols based on production rules
-        continueLoops = false;
+       // all rules were good; next steps:
+       // (a). Validate the grammar
+       // (1).   Each non-terminal must appear in at least one LHS
+       // (2).   Each non-terminal must be resolvable to a terminal at some point
+       // (3).   Each non-terminal must be reachable from the start symbol
+        
+        ntToTerminalMap.Populate (rules.lLength*terminals.lLength,-1,0);
+        
+        bool         continueLoops = true;
+      
+          // prepopulate the list of rules stratified by the LHS non-terminal by empty lists
+        for (long ntC = 0L; ntC < foundNT.lLength; ntC ++) {
+          byNT2 < new _SimpleList;
+          byNT3 < new _SimpleList;
+          byRightNT1 < new _SimpleList;
+          byRightNT2 < new _SimpleList;
+        }
+        
         for (long ruleIdx = 0L; ruleIdx < rules.lLength; ruleIdx ++) {
-          _SimpleList *aList = (_SimpleList*)rules(ruleIdx);
+          _SimpleList *aList = (_SimpleList*)rules(ruleIdx);      // retrieve two- or three-integer list
+          
           if (aList->countitems() == 3UL) { // NT->NT NT
-            continueLoops = continueLoops || CheckANT (aList->get(0),aList->get(1), aList->get(2), tempNT, startSymbol);
+            *((_SimpleList*)byNT3 (aList->get(0))) << ruleIdx;
+            /* addition by AFYP, 2006-06-20 */
+            *((_SimpleList*)byRightNT1 (aList->get(1))) << ruleIdx;
+            *((_SimpleList*)byRightNT2 (aList->get(2))) << ruleIdx;
+            /* ---------- end add --------- */
+          } else {
+            *((_SimpleList*)byNT2 (aList->get(0))) << ruleIdx;
+            ntToTerminalMap [indexNT_T (aList->lData[0],aList->get(1))] = ruleIdx;
           }
-        }
-      }
-      
-      
-        // now iterate over the list of declared NT and verify that they all comply to the three conditions above
-      for (long ntC = 0L; ntC < foundNT.lLength; ntC ++) {
-        long ntFlag = tempNT.GetXtra (ntC);
-        if ((ntFlag & _HYSCFG_NT_LHS_) == 0L) {
-          throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " does not appear on the left-hand side of any production rules.";
-        }
-        if ((ntFlag & _HYSCFG_NT_START_) == 0L) {
-          throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " can not be derived from the start symbol.";
-        }
-        if ((ntFlag & _HYSCFG_NT_TERM_) == 0L) {
-          throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " can not be used to derive any terminal symbols.";
-        }
-      }
-    
-        _Matrix::CreateMatrix (&probabilities, parsedFormulas.lLength, 1, false, true, false);
-        probabilities.Convert2Formulas ();
-        parsedFormulas.Each ([&] (long fl_ref, unsigned long index) ->  void {
-          probabilities.StoreFormula (index, 0, *(_Formula*)fl_ref);
-        });
-    
-      auto get_rule_idx = [&] (long i, long j) -> long {
-        return ((_SimpleList*)rules.GetItem (i))->get(j);
-      };
-    
-        
-        long countT  = terminals.countitems(),
-             countNT = byNT2.countitems();
-        
-        firstArray.Populate (countNT*countT,0,0);
-        lastArray.Populate (countNT*countT,0,0);
-        precursorArray.Populate (countNT*countT,0,0);
-        followArray.Populate (countNT*countT,0,0);
-        
-        for (long i = 0L; i < countNT; i++) {
-          _SimpleList * myRules = (_SimpleList*)byNT2.GetItem (i);
-          for (long i2 = 0L; i2 < myRules->lLength; i2++) {    // for all i->m productions
-            long flatIndex = indexNT_T (i, get_rule_idx (myRules->get (i2), 1));
-            firstArray  [flatIndex]  = 1L;
-            lastArray   [flatIndex]  = 1L;
-          }
+          
         }
         
-        continueLoops = true;
-        while (continueLoops) {
+        while (continueLoops) { // set status flags for all NT symbols based on production rules
           continueLoops = false;
+          for (long ruleIdx = 0L; ruleIdx < rules.lLength; ruleIdx ++) {
+            _SimpleList *aList = (_SimpleList*)rules(ruleIdx);
+            if (aList->countitems() == 3UL) { // NT->NT NT
+              continueLoops = continueLoops || CheckANT (aList->get(0),aList->get(1), aList->get(2), tempNT, startSymbol);
+            }
+          }
+        }
+        
+        
+          // now iterate over the list of declared NT and verify that they all comply to the three conditions above
+        for (long ntC = 0L; ntC < foundNT.lLength; ntC ++) {
+          long ntFlag = tempNT.GetXtra (ntC);
+          if ((ntFlag & _HYSCFG_NT_LHS_) == 0L) {
+            throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " does not appear on the left-hand side of any production rules.";
+          }
+          if ((ntFlag & _HYSCFG_NT_START_) == 0L) {
+            throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " can not be derived from the start symbol.";
+          }
+          if ((ntFlag & _HYSCFG_NT_TERM_) == 0L) {
+            throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " can not be used to derive any terminal symbols.";
+          }
+        }
+      
+          _Matrix::CreateMatrix (&probabilities, parsedFormulas.lLength, 1, false, true, false);
+          probabilities.Convert2Formulas ();
+          parsedFormulas.Each ([&] (long fl_ref, unsigned long index) ->  void {
+            probabilities.StoreFormula (index, 0, *(_Formula*)fl_ref);
+          });
+      
+        auto get_rule_idx = [&] (long i, long j) -> long {
+          return ((_SimpleList*)rules.GetItem (i))->get(j);
+        };
+      
+          
+          long countT  = terminals.countitems(),
+               countNT = byNT2.countitems();
+          
+          firstArray.Populate (countNT*countT,0,0);
+          lastArray.Populate (countNT*countT,0,0);
+          precursorArray.Populate (countNT*countT,0,0);
+          followArray.Populate (countNT*countT,0,0);
+          
           for (long i = 0L; i < countNT; i++) {
-            _SimpleList * myRules = (_SimpleList*)byNT3.GetItem(i);
-            for (long i2 = 0L; i2 < myRules->lLength; i2++) {
-              
-              long rhs1 = get_rule_idx (myRules->get (i2), 1),
-                   rhs2 = get_rule_idx (myRules->get (i2), 2);
-              
-              for (long i3 = 0L; i3 < countT; i3++) {
-                long anIndex = indexNT_T (i,i3),
-                rhs1v = firstArray.get(indexNT_T (rhs1,i3)),
-                lhs1v = firstArray.get(anIndex),
-                rhs2v = lastArray.get (indexNT_T (rhs2,i3)),
-                lhs2v = lastArray.get (anIndex);
+            _SimpleList * myRules = (_SimpleList*)byNT2.GetItem (i);
+            for (long i2 = 0L; i2 < myRules->lLength; i2++) {    // for all i->m productions
+              long flatIndex = indexNT_T (i, get_rule_idx (myRules->get (i2), 1));
+              firstArray  [flatIndex]  = 1L;
+              lastArray   [flatIndex]  = 1L;
+            }
+          }
+          
+          continueLoops = true;
+          while (continueLoops) {
+            continueLoops = false;
+            for (long i = 0L; i < countNT; i++) {
+              _SimpleList * myRules = (_SimpleList*)byNT3.GetItem(i);
+              for (long i2 = 0L; i2 < myRules->lLength; i2++) {
                 
-                if (lhs1v == 0 && rhs1v) {
-                  continueLoops = true;
-                  firstArray[anIndex] = 1;
-                }
-                if (lhs2v == 0 && rhs2v) {
-                  continueLoops = true;
-                  lastArray[anIndex] = 1;
+                long rhs1 = get_rule_idx (myRules->get (i2), 1),
+                     rhs2 = get_rule_idx (myRules->get (i2), 2);
+                
+                for (long i3 = 0L; i3 < countT; i3++) {
+                  long anIndex = indexNT_T (i,i3),
+                  rhs1v = firstArray.get(indexNT_T (rhs1,i3)),
+                  lhs1v = firstArray.get(anIndex),
+                  rhs2v = lastArray.get (indexNT_T (rhs2,i3)),
+                  lhs2v = lastArray.get (anIndex);
+                  
+                  if (lhs1v == 0 && rhs1v) {
+                    continueLoops = true;
+                    firstArray[anIndex] = 1;
+                  }
+                  if (lhs2v == 0 && rhs2v) {
+                    continueLoops = true;
+                    lastArray[anIndex] = 1;
+                  }
                 }
               }
             }
           }
-        }
-    
-        for (long i = 0L; i < countNT; i++) { // initialize Precursor and Follow
-          _SimpleList * myRules = (_SimpleList*)byNT3.GetItem(i);
-          for (long i2 = 0L; i2 < myRules->lLength; i2++) {
-            long rhs1 = get_rule_idx (myRules->get (i2), 1),
-                 rhs2 = get_rule_idx (myRules->get (i2), 2);
-            
-            for (long i3 = 0L; i3 < countT; i3++) {
-              long idx1 = indexNT_T (rhs1,i3),
-                   idx2 = indexNT_T (rhs2,i3);
-              
-              if (lastArray.get (idx1)) {
-                precursorArray[idx2] = 1;
-              }
-              if (firstArray.get(idx2)) {
-                followArray[idx1]    = 1;
-              }
-            }
-          }
-        }
-    
-        
-        continueLoops = true;
-        while (continueLoops) { // populate Precursor and Follow
-          continueLoops = false;
-          for (long i = 0L; i < countNT; i++) {
+      
+          for (long i = 0L; i < countNT; i++) { // initialize Precursor and Follow
             _SimpleList * myRules = (_SimpleList*)byNT3.GetItem(i);
             for (long i2 = 0L; i2 < myRules->lLength; i2++) {
               long rhs1 = get_rule_idx (myRules->get (i2), 1),
                    rhs2 = get_rule_idx (myRules->get (i2), 2);
               
               for (long i3 = 0L; i3 < countT; i3++) {
-                long anIndex = indexNT_T (i,i3),
-                idx1    = indexNT_T (rhs1,i3),
-                idx2    = indexNT_T (rhs2,i3),
-                rhs1v   = precursorArray.get(idx1),
-                rhs2v   = followArray.get   (idx2),
-                lhs1v   = precursorArray.get(anIndex),
-                lhs2v   = followArray.get   (anIndex);
+                long idx1 = indexNT_T (rhs1,i3),
+                     idx2 = indexNT_T (rhs2,i3);
                 
-                if (lhs1v && rhs1v == 0) {
-                  continueLoops = true;
-                  precursorArray[idx1] = 1;
+                if (lastArray.get (idx1)) {
+                  precursorArray[idx2] = 1;
                 }
-                if (lhs2v && rhs2v == 0) {
-                  continueLoops = true;
-                  followArray[idx2] = 1;
+                if (firstArray.get(idx2)) {
+                  followArray[idx1]    = 1;
                 }
               }
             }
           }
-        }
-    
-        parsedFormulas.ClearFormulasInList();
+      
+          
+          continueLoops = true;
+          while (continueLoops) { // populate Precursor and Follow
+            continueLoops = false;
+            for (long i = 0L; i < countNT; i++) {
+              _SimpleList * myRules = (_SimpleList*)byNT3.GetItem(i);
+              for (long i2 = 0L; i2 < myRules->lLength; i2++) {
+                long rhs1 = get_rule_idx (myRules->get (i2), 1),
+                     rhs2 = get_rule_idx (myRules->get (i2), 2);
+                
+                for (long i3 = 0L; i3 < countT; i3++) {
+                  long anIndex = indexNT_T (i,i3),
+                  idx1    = indexNT_T (rhs1,i3),
+                  idx2    = indexNT_T (rhs2,i3),
+                  rhs1v   = precursorArray.get(idx1),
+                  rhs2v   = followArray.get   (idx2),
+                  lhs1v   = precursorArray.get(anIndex),
+                  lhs2v   = followArray.get   (anIndex);
+                  
+                  if (lhs1v && rhs1v == 0) {
+                    continueLoops = true;
+                    precursorArray[idx1] = 1;
+                  }
+                  if (lhs2v && rhs2v == 0) {
+                    continueLoops = true;
+                    followArray[idx2] = 1;
+                  }
+                }
+              }
+            }
+          }
+      
+          parsedFormulas.ClearFormulasInList();
     } catch (const _String err) {
-    HandleApplicationError (err);
-  }
+      HandleApplicationError (err);
+    }
   
     ScanAllVariables   ();
     // RandomSampleVerify (100);
