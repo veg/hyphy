@@ -4927,15 +4927,21 @@ void _LikelihoodFunction::GetAllIndependent (_Matrix & storage) const {
 void    _LikelihoodFunction::_TerminateAndDump(const _String &error) {
     this->DoneComputing();
   
-    _String          sLF (8192L, true);
-    SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
-    sLF.Finalize     ();
   
     FILE * out = doFileOpen ("/tmp/hyphy.dump", "w");
-    fwrite ((void*)sLF.getStr(), 1, sLF.Length(), out);
-    fclose (out);
   
-    WarnError (_String("Internal error, dumping the offending likelihood function to /tmp/hyphy.dump") & error );
+    _String err ("Internal error ");
+  
+    if (out) {
+      _String          sLF (8192L, true);
+      SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
+      sLF.Finalize     ();
+      fwrite ((void*)sLF.getStr(), 1, sLF.Length(), out);
+      fclose (out);
+      err = err & " dumping the offending likelihood function to /tmp/hyphy.dump ";
+    }
+  
+    WarnError (err & '\n' & error );
 }
  
 
@@ -8160,7 +8166,6 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
               }
 
 
-
             if (np > 1) {
               _Parameter correction = 0.;
               for (blockID = 0; blockID < np; blockID ++)  {
@@ -8242,7 +8247,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                   printf ("%ld %s = %15.12g\n", p_id, GetIthIndependentVar(p_id)->GetName()->sData, (*parameterValuesAndRanges)(p_id,0));
                 }*/
 
-                 #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
+                #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
                 for (blockID = 0; blockID < np; blockID ++) {
                     t->ComputeBranchCache (*sl,doCachedComp, bc, inc, df,
                                            conditionalTerminalNodeStateFlag[index],
@@ -8254,7 +8259,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                                            (1+blockID) * sitesPerP,
                                            catID,tcc,siteRes);
                 }
-
+ 
                 // check results
 
                 if (sum > -A_LARGE_NUMBER) {
@@ -8269,7 +8274,7 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
                   - _logLFScaler * overallScalingFactors.lData[index];
                   
                   //fprintf (stderr, "CONGRUENCE CHECK %20.16g\n",fabs ((checksum-sum)/sum));
-
+                  
                   if (fabs ((checksum-sum)/sum) > 1.e-10 * df->GetPatternCount ()) {
                     /*_Parameter check2 = t->ComputeTreeBlockByBranch (*sl,
                                                                      *branches,
@@ -8290,6 +8295,21 @@ _Parameter  _LikelihoodFunction::ComputeBlock (long index, _Parameter* siteRes, 
 
                     _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName();
 
+#ifdef _UBER_VERBOSE_LF_DEBUG
+
+                    long ic = t->GetINodeCount();
+                    long pc = df->GetPatternCount();
+                    for (long s = 0; s < pc; s ++) {
+                      for (long node_id = 0; node_id < ic; node_id ++) {
+                        long direct = node_id * pc + s;
+                        if (ssf[direct] != 1.) {
+                          printf ("%ld / %s %g\n", sl->lData[s],  ((_CalcNode*)t->flatTree.GetItem(node_id))->GetName()->getStr(), ssf[direct]);
+                        }
+                      }
+                    }
+#endif
+
+                    printf ("Overall scaling factor %ld\n", overallScalingFactors.lData[index]);
 
                     
                     _TerminateAndDump (_String("Internal error in ComputeBranchCache (branch ") & *node_name &

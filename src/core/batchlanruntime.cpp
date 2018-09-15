@@ -240,18 +240,29 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& currentPr
     _LikelihoodFunction    *lf       = (_LikelihoodFunction*)_HYRetrieveBLObjectByName (name2Find, objectType,nil, true, true);
 
     if (*arg2 == lfStartCompute) {
-            lf->PrepareToCompute  (true);
+          lf->PrepareToCompute  (true);
 #ifdef  _OPENMP
           lf->SetThreadCount    (systemCPUCount);
 #endif
     } else if (*arg2 == lfDoneCompute) {
+            lf->FlushLocalUpdatePolicy();
             lf->DoneComputing (true);
     } else {
         if (!lf->HasBeenSetup()) {
             WarnError (_String("Please call LFCompute (lf_id, ")&lfStartCompute&") before evaluating the likelihood function");
             return false;
         } else {
-            return CheckReceptacleCommandIDAndStore(&AppendContainerName(*arg2,currentProgram.nameSpacePrefix), HY_HBL_COMMAND_LFCOMPUTE, HY_HBL_COMMAND_LFCOMPUTE, new _Constant (lf->Compute()), false);
+          if (*arg2 == _String("LF_TRACK_CACHE")) {
+            lf->DetermineLocalUpdatePolicy();
+          } else {
+            if (*arg2 == _String("LF_ABANDON_CACHE")) {
+              lf->FlushLocalUpdatePolicy();
+            }
+            else {
+               return CheckReceptacleCommandIDAndStore(&AppendContainerName(*arg2,currentProgram.nameSpacePrefix), HY_HBL_COMMAND_LFCOMPUTE, HY_HBL_COMMAND_LFCOMPUTE, new _Constant (lf->Compute()), false);
+            }
+          }
+          
 
         }
     }

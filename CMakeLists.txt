@@ -133,15 +133,15 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         message(FATAL_ERROR "Require at least gcc-4.9")
     endif()
 
-    CHECK_CPU_EXTENSIONS()
-    
+
     if(${GCC_VERSION} VERSION_LESS 6.0)
       set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
     else(${GCC_VERSION} VERSION_LESS 6.0)
       set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
     endif(${GCC_VERSION} VERSION_LESS 6.0)
 
-    
+    CHECK_CPU_EXTENSIONS()
+
 
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")

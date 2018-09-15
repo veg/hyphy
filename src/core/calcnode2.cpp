@@ -48,7 +48,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "dmalloc.h"
 #endif
 
-//#define _UBER_VERBOSE_LF_DEBUG
+//#define _UBER_VERBOSE_LF_DEBUG 1
+
 
 //#define _UBER_VERBOSE_DUMP_MATRICES
 //#define _UBER_VERBOSE_DUMP 27
@@ -88,9 +89,10 @@ void echoNodeList (_SimpleList& theNodes, _SimpleList& leaves, _SimpleList& iNod
 #ifdef  _SLKP_LFENGINE_REWRITE_
 
 
-_Parameter          _lfScalerUpwards          = pow(2.,200.),
+_Parameter          _lfScalerPower            = 100.,
+                    _lfScalerUpwards          = pow(2.,_lfScalerPower),
                     _lfScalingFactorThreshold = 1./_lfScalerUpwards,
-                    _logLFScaler            = 200. *log(2.);
+                    _logLFScaler              = _lfScalerPower *log(2.);
 
 _GrowingVector      _scalerMultipliers,
                     _scalerDividers;
@@ -101,6 +103,9 @@ _GrowingVector      _scalerMultipliers,
 /*----------------------------------------------------------------------------------------------------------*/
 
 inline void _handle4x4_pruning_case (double const* childVector, double const* tMatrix, double* parentConditionals, void* transposed_mx) {
+
+      //printf ("_handle4x4_pruning_case => \n%g %g %g %g\n", parentConditionals [0], parentConditionals [1], parentConditionals [2], parentConditionals [3]);
+
 #ifdef _SLKP_USE_SSE_INTRINSICS
         double tv [4]     __attribute__ ((aligned (16))) = {childVector[0],
                                                             childVector[1],
@@ -147,16 +152,19 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
 
   /*
    A1*B1 + A2*B2 + A3*B3 + A4*B4, where A4 = 1-A1-A2-A3 can be done with three multipications
-   and 3 extra additions, like
+   and 3 extra subtractions, like
 
    A1*(B1-B4) + A2*(B2-B4) + A3*(B3-B4) + B4
+   
+   20180914: SLKP, turning this off because of unstable numerical behavior if B1, B2, B3, B4 have
+             very different magnitudes (that occurs for poorly initialized trees that require
+             massive scaling)
 
    */
 
 #elif defined _SLKP_USE_AVX_INTRINSICS
 
-
-      __m256d c3     = _mm256_set1_pd(childVector[3]),
+      /*__m256d c3     = _mm256_set1_pd(childVector[3]),
               c0     = _mm256_sub_pd(_mm256_set1_pd(childVector[0]),c3),
               c1     = _mm256_sub_pd(_mm256_set1_pd(childVector[1]),c3),
               c2     = _mm256_sub_pd(_mm256_set1_pd(childVector[2]),c3),
@@ -178,23 +186,62 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
         __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
                 sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), c3);
 
-        _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
+        _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));*/
 
-
+         __m256d c3     = _mm256_set1_pd(childVector[3]),
+                 c0     = _mm256_set1_pd(childVector[0]),
+                 c1     = _mm256_set1_pd(childVector[1]),
+                 c2     = _mm256_set1_pd(childVector[2]),
+                 t0,t1,t2,t3;
+  
+         if (transposed_mx) {
+             t0    = ((__m256d*)transposed_mx)[0];
+             t1    = ((__m256d*)transposed_mx)[1];
+             t2    = ((__m256d*)transposed_mx)[2];
+             t3    = ((__m256d*)transposed_mx)[3];
+         } else {
+             t0     = (__m256d) {tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]};
+             t1     = (__m256d) {tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]};
+             t2     = (__m256d) {tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]};
+             t3     = (__m256d) {tMatrix[3],tMatrix[7],tMatrix[11],tMatrix[15]};
+         }
+  
+         // load transition matrix by column
+  
+         __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
+         sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), _mm256_mul_pd(c3,t3));
+  
+         _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
 
 #else
+  
         // 12 multiplications, 16 additions, 3 subtractions
-
-        _Parameter t1 = childVector[0] - childVector[3],
+  
+        /*_Parameter t1 = childVector[0] - childVector[3],
                    t2 = childVector[1] - childVector[3],
                    t3 = childVector[2] - childVector[3],
                    t4 = childVector[3];
 
+  
+  
         parentConditionals [0] *= (tMatrix[0]  * t1 + tMatrix[1] * t2) + (tMatrix[2] * t3 + t4);
         parentConditionals [1] *= (tMatrix[4]  * t1 + tMatrix[5] * t2) + (tMatrix[6] * t3 + t4);
         parentConditionals [2] *= (tMatrix[8]  * t1 + tMatrix[9] * t2) + (tMatrix[10] * t3 + t4);
-        parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);
+        parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);*/
+  
+  
+         parentConditionals [0] *= tMatrix[0] * childVector[0] + tMatrix[1] * childVector[1] + tMatrix[2] * childVector[2] + tMatrix[3] * childVector[3];
+         parentConditionals [1] *= tMatrix[4] * childVector[0] + tMatrix[5] * childVector[1] + tMatrix[6] * childVector[2] + tMatrix[7] * childVector[3];
+         parentConditionals [2] *= tMatrix[8] * childVector[0] + tMatrix[9] * childVector[1] + tMatrix[10] * childVector[2] + tMatrix[11] * childVector[3];
+         parentConditionals [3] *= tMatrix[12] * childVector[0] + tMatrix[13] * childVector[1] + tMatrix[14] * childVector[2] + tMatrix[15] * childVector[3];
+  
 #endif
+  /*printf ("\n[\n%g %g %g %g", tMatrix [0], tMatrix [1], tMatrix [2], tMatrix [3]);
+  printf ("\n%g %g %g %g", tMatrix [4], tMatrix [5], tMatrix [6], tMatrix [7]);
+  printf ("\n%g %g %g %g", tMatrix [8], tMatrix [9], tMatrix [10], tMatrix [11]);
+  printf ("\n%g %g %g %g\n]\n", tMatrix [12], tMatrix [13], tMatrix [14], tMatrix [15]);
+  printf ("\n\n%g %g %g %g\n", childVector [0], childVector [1], childVector [2], childVector [3]);
+  printf ("\n%g %g %g %g\n", parentConditionals [0], parentConditionals [1], parentConditionals [2], parentConditionals [3]);*/
 
 }
 
@@ -601,6 +648,44 @@ _Parameter  _TheTree::VerySimpleLikelihoodEvaluator   (_SimpleList&          upd
     return result;
 }
 
+/*----------------------------------------------------------------------------------------------------------*/
+
+void _updateForwardScalers (_SimpleList const*        tcc, _SimpleList&        siteOrdering, long didScale, long siteID, long siteTo, long parentCode, long siteCount, long& parentTCCIIndex, long& parentTCCIBit, _Parameter*         scalingAdjustments, long * siteCorrectionCounts, _DataSetFilter const*     theFilter, long & localScalerChange, _Parameter*         siteRes) {
+
+  if (tcc) {
+    // look ahead to see if we need to correct for downstream cached nodes
+    long cparentTCCIIndex   =   parentTCCIIndex,
+    cparentTCCIBit   =   parentTCCIBit;
+    
+    _Parameter              scM;
+    if (didScale < 0) {
+      scM = _lfScalingFactorThreshold;
+    } else {
+      scM = _lfScalerUpwards;
+    }
+    
+    
+    for (long sid = siteID + 1; sid < siteTo; sid++,cparentTCCIBit++) {
+      if (cparentTCCIBit == _HY_BITMASK_WIDTH_) {
+        cparentTCCIBit   = 0;
+        cparentTCCIIndex ++;
+      }
+      
+      if ((tcc->lData[cparentTCCIIndex] & bitMaskArray.masks[cparentTCCIBit]) > 0) {
+        if (siteCorrectionCounts) {
+          siteCorrectionCounts [siteOrdering.lData[sid]] += didScale;
+        }
+        scalingAdjustments   [parentCode*siteCount + sid] *= scM;
+        if (siteRes) {
+          siteRes[siteOrdering.lData[siteID]] *= scM;
+        }
+        localScalerChange                               += didScale * theFilter->theFrequencies (siteOrdering.lData[sid]);
+      } else {
+        break;
+      }
+    }
+  }
+}
 
 /*----------------------------------------------------------------------------------------------------------*/
 
@@ -638,13 +723,15 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
         siteTo = siteCount;
     }
 
-/*
+
  #ifdef _UBER_VERBOSE_LF_DEBUG
-  printf ("\n\n_TheTree::ComputeTreeBlockByBranch\n");
-  echoNodeList (updateNodes,flatLeaves,flatNodes );
-  printf ("\n");
+  if (likeFuncEvalCallCount == _UBER_VERBOSE_LF_DEBUG) {
+    printf ("\n\n_TheTree::ComputeTreeBlockByBranch\n");
+    echoNodeList (updateNodes,flatLeaves,flatNodes );
+    printf ("\n");
+  }
 #endif
-*/
+
     for  (unsigned long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
         long    nodeCode   = updateNodes.lData [nodeID],
                 parentCode = flatParents.lData [nodeCode];
@@ -1028,37 +1115,9 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
                 }
 
                 //printf ("NS: site %d node %d \n", siteOrdering.lData[siteID], parentCode);
-
-                if (tcc) {
-                    // look ahead to see if we need to correct for downstream cached nodes
-                    long cparentTCCIIndex   =   parentTCCIIndex,
-                         cparentTCCIBit   =   parentTCCIBit;
-
-                    _Parameter              scM;
-                    if (didScale < 0) {
-                        scM = _lfScalingFactorThreshold;
-                    } else {
-                        scM = _lfScalerUpwards;
-                    }
-
-
-                    for (long sid = siteID + 1; sid < siteTo; sid++,cparentTCCIBit++) {
-                        if (cparentTCCIBit == _HY_BITMASK_WIDTH_) {
-                            cparentTCCIBit   = 0;
-                            cparentTCCIIndex ++;
-                        }
-
-                        if ((tcc->lData[cparentTCCIIndex] & bitMaskArray.masks[cparentTCCIBit]) > 0) {
-                            if (siteCorrectionCounts) {
-                                siteCorrectionCounts [siteOrdering.lData[sid]] += didScale;
-                            }
-                            scalingAdjustments   [parentCode*siteCount + sid] *= scM;
-                            localScalerChange                               += didScale * theFilter->theFrequencies (siteOrdering.lData[sid]);
-                        } else {
-                            break;
-                        }
-                    }
-                }
+              
+              _updateForwardScalers (tcc, siteOrdering, didScale,  siteID,  siteTo,  parentCode,  siteCount,  parentTCCIIndex,  parentTCCIBit,       scalingAdjustments,  siteCorrectionCounts, theFilter,  localScalerChange, nil);
+              
             }
         }
     }
@@ -1118,11 +1177,11 @@ _Parameter      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleL
             _Parameter temp_sum = result + term;
             correction = (temp_sum - result) - term;
             result = temp_sum;
-/*#ifdef _UBER_VERBOSE_LF_DEBUG
-          if (likeFuncEvalCallCount == 340) {
-              fprintf (stderr, "%s %ld\t%20.16g\t%20.16g\t%20.16g\n", siteID == siteTo - 1 ? "FINAL " : "", siteID, accumulator, term, result);
+#ifdef _UBER_VERBOSE_LF_DEBUG
+          if (likeFuncEvalCallCount == _UBER_VERBOSE_LF_DEBUG) {
+              fprintf (stderr, "%s %ld\t%20.16g\t%20.16g\t%20.16g\n", siteID == siteTo - 1 ? "FINAL " : "", siteOrdering.lData[siteID], accumulator, term, result);
           }
-#endif*/
+#endif
 
         }
     }
@@ -1201,12 +1260,14 @@ void            _TheTree::ComputeBranchCache    (
     }
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
+  if (_UBER_VERBOSE_LF_DEBUG == likeFuncEvalCallCount) {
     printf ("\n\nComputeBranchCache at branch %ld; siteOdering %s\n",
             brID, _String((_String*)siteOrdering.toStr()).sData);
 
     echoNodeList (rootPath,flatLeaves,flatNodes );
     printf ("\n");
     echoNodeList (nodesToProcess,flatLeaves,flatNodes);
+  }
 #endif
 
     _Parameter   * state = cache + alphabetDimension * siteFrom,
@@ -1314,7 +1375,10 @@ void            _TheTree::ComputeBranchCache    (
         _CalcNode    * currentTreeNode = (_CalcNode*) (isLeaf?  flatCLeaves (nodeCode):
                                                        flatTree    (notPassedRoot?nodeCode:parentCode));
 #ifdef _UBER_VERBOSE_LF_DEBUG
+        if (_UBER_VERBOSE_LF_DEBUG == likeFuncEvalCallCount) {
+        
         printf ("isLeaf = %d, not passedRoot = %d, nodeCode = %ld, parentCode = %ld, matrix from %s, parent name %s\n", isLeaf, notPassedRoot, nodeCode, parentCode, currentTreeNode->GetName()->sData, ((_CalcNode    *)flatTree(parentCode))->GetName()->sData);
+        }
 #endif
         _Parameter  const * _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
 
@@ -1332,7 +1396,10 @@ void            _TheTree::ComputeBranchCache    (
 
         if (!isLeaf) {
 #ifdef _UBER_VERBOSE_LF_DEBUG
-           printf ("childvector from %d %s\n", nodeCode, ((_CalcNode    *)flatTree(nodeCode))->GetName()->sData);
+           if (_UBER_VERBOSE_LF_DEBUG == likeFuncEvalCallCount) {
+
+             printf ("childvector from %d %s\n", nodeCode, ((_CalcNode    *)flatTree(nodeCode))->GetName()->sData);
+           }
 #endif
            lastUpdatedSite = childVector = iNodeCache + (siteFrom + nodeCode * siteCount) * alphabetDimension;
         }
@@ -1386,7 +1453,7 @@ void            _TheTree::ComputeBranchCache    (
                 } else {
                     childVector = lNodeResolutions->theData + (-siteState-1) * alphabetDimension;
                 }
-                canScale = 0;
+                canScale = false;
             } else {
                 if (tcc&&notPassedRoot) {
                     if ((tcc->lData[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom)
@@ -1558,18 +1625,24 @@ void            _TheTree::ComputeBranchCache    (
                         }
                     }
                 }
+
             }
 
-            if (didScale&&siteCorrectionCounts) {
-                siteCorrectionCounts [siteOrdering.lData[siteID]] += didScale;
-                siteRes[siteOrdering.lData[siteID]] *= didScale<0?_lfScalingFactorThreshold:_lfScalerUpwards;
+            if (didScale) {
+                if (siteCorrectionCounts) {
+                  siteCorrectionCounts [siteOrdering.lData[siteID]] += didScale;
+                  siteRes[siteOrdering.lData[siteID]] *= didScale<0?_lfScalingFactorThreshold:_lfScalerUpwards;
+                }
+                //_updateForwardScalers (tcc, siteOrdering, didScale,  siteID,  siteTo,  parentCode,  siteCount,  parentTCCIIndex,  parentTCCIBit,       scalingAdjustments,  siteCorrectionCounts, theFilter,  localScalerChange, siteRes);
             }
         }
     }
 
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-    printf ("root name %s\n", ((_CalcNode    *)flatTree(rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength))->GetName()->sData);
+    if (_UBER_VERBOSE_LF_DEBUG == likeFuncEvalCallCount) {
+      printf ("root name %s\n", ((_CalcNode    *)flatTree(rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength))->GetName()->sData);
+    }
 #endif
 
     _Parameter const * _hprestrict_ rootConditionals   = iNodeCache +  (rootPath.lData[rootPath.lLength-2L] - flatLeaves.lLength)  * siteCount * alphabetDimension;
@@ -1580,9 +1653,25 @@ void            _TheTree::ComputeBranchCache    (
 
     for (unsigned long ii = siteFrom * alphabetDimension; ii < site_bound; ii++) {
         state[ii] = rootConditionals[ii];
-        //printf ("Root conditional [%ld] = %g, node state [%ld] = %g\n", ii, state[ii], ii, cache[ii]);
+        //  printf ("Root conditional [%ld] = %g, node state [%ld] = %g\n", ii, state[ii], ii, cache[ii]);
     }
 
+#ifdef _UBER_VERBOSE_LF_DEBUG
+  if (_UBER_VERBOSE_LF_DEBUG == likeFuncEvalCallCount) {
+    printf ("\n CACHE DUMP\n");
+    unsigned long shift = alphabetDimension * siteCount;
+    for (unsigned long ii = siteFrom; ii < siteTo; ii++) {
+      printf ("\nPattern %8d (%8d) ", ii, siteOrdering.Get (ii));
+      for (unsigned long c = 0; c < alphabetDimension; c++) {
+        //printf ("\t%10.6g\t%10.6g", cache[ii * alphabetDimension + c], cache[shift + ii * alphabetDimension + c]);
+        printf ("\t%10.6g", cache[shift + ii * alphabetDimension + c]);
+      }
+    }
+    printf ("\n CACHE DUMP DONE\n");
+}
+#endif
+
+  
     if (!siteCorrectionCounts && localScalerChange) {
         #pragma omp atomic
         overallScaler += localScalerChange;
@@ -1612,7 +1701,7 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
     _Parameter*         storageVec
 )
 {
-  auto bookkeeping =  [&siteOrdering, &storageVec, &theFilter] (const long siteID, const _Parameter accumulator, _Parameter& correction, _Parameter& result) ->  void {
+  auto bookkeeping =  [&siteOrdering, &storageVec, &theFilter, siteTo] (const long siteID, const _Parameter accumulator, _Parameter& correction, _Parameter& result) ->  void {
 
     long direct_index = siteOrdering.lData[siteID];
 
@@ -1633,13 +1722,13 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
       _Parameter temp_sum = result + term;
       correction = (temp_sum - result) - term;
       result = temp_sum;
-/*
+
  #ifdef _UBER_VERBOSE_LF_DEBUG
-      if (likeFuncEvalCallCount == 340) {
-        fprintf (stderr, "%s %ld\t%20.16g\t%20.16g\t%20.16g\n", siteID == siteTo - 1 ? "FINAL " : "", siteID, accumulator, term, result);
+      if (_UBER_VERBOSE_LF_DEBUG == likeFuncEvalCallCount) {
+        fprintf (stderr, "%s %ld\t%20.16g\t%20.16g\t%20.16g\n", siteID == siteTo - 1 ? "FINAL " : "", siteOrdering.lData[siteID], accumulator, term, result);
       }
 #endif
-*/
+
     }
   };
 
@@ -1684,17 +1773,25 @@ _Parameter          _TheTree::ComputeLLWithBranchCache (
 
           for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
             _Parameter accumulator = 0.;
+            
+             /** 20180914 : SLKP need to use the same numerics as the _handle4x4_pruning_case
+                 otherwise highly scaled trees (e.g. very poor initial conditions) may suffer
+                 from numerical overflow **/
+            
+              
              #ifdef _SLKP_USE_AVX_INTRINSICS
-               __m256d root_c = _mm256_loadu_pd (rootConditionals),
-               probs  = _mm256_loadu_pd (theProbs),
-               b_cond0 = _mm256_set1_pd(branchConditionals[0]),
-               b_cond1 = _mm256_set1_pd(branchConditionals[1]),
-               b_cond2 = _mm256_set1_pd(branchConditionals[2]),
-               b_cond3 = _mm256_set1_pd(branchConditionals[3]),
-               s01    = _mm256_add_pd ( _mm256_mul_pd (b_cond0, tmatrix_transpose[0]), _mm256_mul_pd (b_cond1, tmatrix_transpose[1])),
-               s23    = _mm256_add_pd ( _mm256_mul_pd (b_cond2, tmatrix_transpose[2]), _mm256_mul_pd (b_cond3, tmatrix_transpose[3]));
-               accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));
+            
+            __m256d root_c = _mm256_loadu_pd (rootConditionals),
+                probs  = _mm256_loadu_pd (theProbs),
+                b_cond0 = _mm256_set1_pd(branchConditionals[0]),
+                b_cond1 = _mm256_set1_pd(branchConditionals[1]),
+                b_cond2 = _mm256_set1_pd(branchConditionals[2]),
+                b_cond3 = _mm256_set1_pd(branchConditionals[3]),
+                s01    = _mm256_add_pd ( _mm256_mul_pd (b_cond0, tmatrix_transpose[0]), _mm256_mul_pd (b_cond1, tmatrix_transpose[1])),
+                s23    = _mm256_add_pd ( _mm256_mul_pd (b_cond2, tmatrix_transpose[2]), _mm256_mul_pd (b_cond3, tmatrix_transpose[3]));
+                accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));
 
+ 
               #else
                   accumulator =    rootConditionals[0] * theProbs[0] *
                   (branchConditionals[0] *  transitionMatrix[0] + branchConditionals[1] *  transitionMatrix[1] + branchConditionals[2] *  transitionMatrix[2] + branchConditionals[3] *  transitionMatrix[3]) +
