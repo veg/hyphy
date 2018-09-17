@@ -312,7 +312,9 @@ public:
     */
 
     _AssociativeList*CollectLFAttributes         (void) const;
-    void    UnregisterListeners (void);
+    void    UnregisterListeners                  (void);
+    void    DetermineLocalUpdatePolicy           (void);
+    void    FlushLocalUpdatePolicy               (void);
 
 protected:
 
@@ -407,11 +409,7 @@ protected:
             argument 2 provides an optional subcollection of partititons to operate on;
                 the default is to operate on all
     */
-
-
-protected:
-
-
+  
     void            ComputeParameterPenalty     (void);
     void            _TerminateAndDump           (const _String& error);
 
@@ -515,8 +513,6 @@ protected:
 
     _List*          RecoverAncestralSequencesMarginal
     (long, _Matrix&,_List const&, bool = false);
-    void            DetermineLocalUpdatePolicy  (void);
-    void            FlushLocalUpdatePolicy      (void);
     void            RestoreScalingFactors       (long, long, long, long*, long *);
     void            SetupLFCaches               (void);
     void            SetupCategoryCaches         (void);

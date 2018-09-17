@@ -1340,7 +1340,9 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
 bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_program) {
 
   const static _String kLFStartCompute ("LF_START_COMPUTE"),
-                       kLFDoneCompute  ("LF_DONE_COMPUTE");
+                       kLFDoneCompute  ("LF_DONE_COMPUTE"),
+                       kLFTrackCache   ("LF_TRACK_CACHE"),
+                       kLFAbandonCache ("LF_ABANDON_CACHE");
 
   current_program.advance();
   _Variable * receptacle = nil;
@@ -1355,14 +1357,21 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_p
 
     if (op_kind == kLFStartCompute) {
       source_object->PrepareToCompute(true);
-    } else if (op_kind == kLFDoneCompute) {
+     } else if (op_kind == kLFDoneCompute) {
+      source_object->FlushLocalUpdatePolicy();
       source_object->DoneComputing (true);
     } else {
       if (!source_object->HasBeenSetup()) {
         throw (_String("Please call LFCompute (, ") & *GetIthParameter (0UL)& kLFStartCompute & ") before evaluating the likelihood function");
       } else {
-        receptacle = _ValidateStorageVariable (current_program, 2);
-        receptacle->SetValue (new _Constant (source_object->Compute()), false);
+        if (op_kind = kLFTrackCache) {
+          source_object->DetermineLocalUpdatePolicy();
+        } else if (op_kind = (op_kind = kLFTrackCache)) {
+          source_object->FlushLocalUpdatePolicy();
+        } else {
+          receptacle = _ValidateStorageVariable (current_program, 2);
+          receptacle->SetValue (new _Constant (source_object->Compute()), false);
+        }
       }
     }
 

@@ -173,9 +173,12 @@ extern  long likeFuncEvalCallCount,
 matrix_exp_count;
 
 
-hyFloat          _lfScalerUpwards          = pow(2.,200.),
+hyFloat          _lfScalerPower            = 100.,
+_lfScalerUpwards          = pow(2.,_lfScalerPower),
 _lfScalingFactorThreshold = 1./_lfScalerUpwards,
-_logLFScaler            = 200. *log(2.);
+_logLFScaler              = _lfScalerPower *log(2.);
+
+
 
 _Vector      _scalerMultipliers,
 _scalerDividers;
@@ -245,13 +248,17 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
      and 3 extra additions, like
      
      A1*(B1-B4) + A2*(B2-B4) + A3*(B3-B4) + B4
-     
+
+     20180914: SLKP, turning this off because of unstable numerical behavior if B1, B2, B3, B4 have
+     very different magnitudes (that occurs for poorly initialized trees that require
+     massive scaling)
+
      */
     
 #elif defined _SLKP_USE_AVX_INTRINSICS
     
     
-    __m256d c3     = _mm256_set1_pd(childVector[3]),
+    /*__m256d c3     = _mm256_set1_pd(childVector[3]),
     c0     = _mm256_sub_pd(_mm256_set1_pd(childVector[0]),c3),
     c1     = _mm256_sub_pd(_mm256_set1_pd(childVector[1]),c3),
     c2     = _mm256_sub_pd(_mm256_set1_pd(childVector[2]),c3),
@@ -273,14 +280,39 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
     __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
     sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), c3);
     
-    _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
+    _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));*/
+  
+    __m256d c3     = _mm256_set1_pd(childVector[3]),
+    c0     = _mm256_set1_pd(childVector[0]),
+    c1     = _mm256_set1_pd(childVector[1]),
+    c2     = _mm256_set1_pd(childVector[2]),
+    t0,t1,t2,t3;
+  
+    if (transposed_mx) {
+      t0    = ((__m256d*)transposed_mx)[0];
+      t1    = ((__m256d*)transposed_mx)[1];
+      t2    = ((__m256d*)transposed_mx)[2];
+      t3    = ((__m256d*)transposed_mx)[3];
+    } else {
+      t0     = (__m256d) {tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]};
+      t1     = (__m256d) {tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]};
+      t2     = (__m256d) {tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]};
+      t3     = (__m256d) {tMatrix[3],tMatrix[7],tMatrix[11],tMatrix[15]};
+    }
+  
+  // load transition matrix by column
+  
+  __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
+  sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), _mm256_mul_pd(c3,t3));
+  
+  _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
     
     
     
 #else
     // 12 multiplications, 16 additions, 3 subtractions
     
-    hyFloat t1 = childVector[0] - childVector[3],
+    /*hyFloat t1 = childVector[0] - childVector[3],
     t2 = childVector[1] - childVector[3],
     t3 = childVector[2] - childVector[3],
     t4 = childVector[3];
@@ -288,7 +320,13 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
     parentConditionals [0] *= (tMatrix[0]  * t1 + tMatrix[1] * t2) + (tMatrix[2] * t3 + t4);
     parentConditionals [1] *= (tMatrix[4]  * t1 + tMatrix[5] * t2) + (tMatrix[6] * t3 + t4);
     parentConditionals [2] *= (tMatrix[8]  * t1 + tMatrix[9] * t2) + (tMatrix[10] * t3 + t4);
-    parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);
+    parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);*/
+  
+    parentConditionals [0] *= tMatrix[0] * childVector[0] + tMatrix[1] * childVector[1] + tMatrix[2] * childVector[2] + tMatrix[3] * childVector[3];
+    parentConditionals [1] *= tMatrix[4] * childVector[0] + tMatrix[5] * childVector[1] + tMatrix[6] * childVector[2] + tMatrix[7] * childVector[3];
+    parentConditionals [2] *= tMatrix[8] * childVector[0] + tMatrix[9] * childVector[1] + tMatrix[10] * childVector[2] + tMatrix[11] * childVector[3];
+    parentConditionals [3] *= tMatrix[12] * childVector[0] + tMatrix[13] * childVector[1] + tMatrix[14] * childVector[2] + tMatrix[15] * childVector[3];
+
 #endif
     
 }

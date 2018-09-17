@@ -4675,15 +4675,22 @@ DecideOnDivideBy (this);
 //_______________________________________________________________________________________
     
 void    _LikelihoodFunction::_TerminateAndDump(const _String &error) {
-    this->DoneComputing();
-   _StringBuffer          sLF (8192L);
-    SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
-    sLF.TrimSpace();
-    
+  
     FILE * out = doFileOpen ("/tmp/hyphy.dump", "w");
-    fwrite ((void*)sLF.get_str(), 1, sLF.length(), out);
-    fclose (out);
-    HandleApplicationError (_String("Internal error, dumping the offending likelihood function to '/tmp/hyphy.dump'.") & error, true);
+  
+    _String err ("Internal error ");
+  
+    if (out) {
+       this->DoneComputing();
+      _StringBuffer          sLF (8192L);
+      SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
+      sLF.TrimSpace();
+      fwrite ((void*)sLF.get_str(), 1, sLF.length(), out);
+      fclose (out);
+    }
+
+  
+    HandleApplicationError (err & '\n' & error, true);
 }
 //_______________________________________________________________________________________
 
