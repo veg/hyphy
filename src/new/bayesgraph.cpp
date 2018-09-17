@@ -50,6 +50,8 @@ using namespace hy_global;
 
 extern  hyFloat  lnGamma (hyFloat);
 
+const   _String  kBGMContraintMatrix ("BGM_CONSTRAINT_MATRIX");
+
 /*
 _String
 
@@ -60,25 +62,15 @@ _String
             _HYBgm_STATUS_LINE_CACHE_DONE ("Done caching Bgm scores"),
  
 
-            _HYBgm_METHOD_KEY ("BGM_OPTIMIZATION_METHOD"),
+            ,
  
 
             _HYBgm_K2_RESTARTS ("BGM_K2_RESTARTS"),
             _HYBgm_K2_RANDOMIZE ("BGM_K2_RANDOMIZE"),
 
-            _HYBgm_MCMC_NCHAINS       ("BGM_MCMC_NCHAINS"),
-            _HYBgm_MCMC_TEMP      ("BGM_MCMC_TEMPERATURE"),
-            _HYBgm_MCMC_MAXSTEPS  ("BGM_MCMC_MAXSTEPS"),
-            _HYBgm_MCMC_BURNIN        ("BGM_MCMC_BURNIN"),
-            _HYBgm_MCMC_SAMPLES       ("BGM_MCMC_SAMPLES"),
-
-            _HYBgm_MCMC_PROBSWAP  ("BGM_MCMC_PROBSWAP"),
-            _HYBgm_MCMC_MAXFAILS  ("BGM_MCMC_MAXFAILS"),
-
-            _HYBgm_IMPUTE_MAXSTEPS    ("BGM_IMPUTE_MAXSTEPS"),
-            _HYBgm_IMPUTE_BURNIN  ("BGM_IMPUTE_BURNIN"),
-            _HYBgm_IMPUTE_SAMPLES ("BGM_IMPUTE_SAMPLES"),
-
+ 
+ 
+  
             _HYBgm_CONTINUOUS_MISSING_VALUE ("BGM_CONTINUOUS_MISSING_VALUE");
 */
 
@@ -1042,7 +1034,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
 
         if (rank == 0) {
             _String  const   bgmSwitch ("_BGM_SWITCH_");
-            _String     bgmStr;
+            _StringBuffer    bgmStr (2048UL);
 
             _List       * this_list;
 
@@ -1160,7 +1152,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
                 _List   memory_cleanup;
                 memory_cleanup.AppendNewInstance (list_of_matrices);
                 ReportMPIError (MPI_Send (single_parent_scores.theData, num_nodes, MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
-                list_of_matrices->ForEach ([&] (BaseRef * mx, unsigned long idx) -> void {
+                list_of_matrices->ForEach ([&] (BaseRef mx, unsigned long idx) -> void {
                     _Matrix * storedMx = (_Matrix *) mx;
                     ReportMPIError (MPI_Send (storedMx->theData, storedMx->GetHDim(), MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
                 });
@@ -1296,99 +1288,67 @@ void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool 
 	Pass current network structure, data, constraint graph, and other analysis settings
 	to compute node as HBL.
    ------------------------------------------------------------------------------------ */
-void _BayesianGraphicalModel::SerializeBGMtoMPI (_String & rec)
-{
-    char        buf [255];
+void _BayesianGraphicalModel::SerializeBGMtoMPI (_StringBuffer & rec) {
+  
+    const static _String           kHYBgm_IMPUTE_MAXSTEPS    ("BGM_IMPUTE_MAXSTEPS"),
+                                   kHYBgm_IMPUTE_BURNIN  ("BGM_IMPUTE_BURNIN"),
+                                   kHYBgm_IMPUTE_SAMPLES ("BGM_IMPUTE_SAMPLES");
 
-    _String *   bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
+  
+    rec << "\
+USE_MPI_CACHING=1;\
+PRINT_DIGITS=-1;\
+function add_discrete_node (id,maxp,size,nlev) {\
+  return {\
+    'NodeID' : id,\
+    'NodeType' : 0,\
+    'MaxParents' : maxp.\
+    'PriorSize'  : size,\
+    'NumLevels' : nlev\
+  };\
+}\
+function add_gaussian_node (id,maxp,size,mean,prec,scale) {\
+  return {\
+  'NodeID' : id,\
+  'NodeType' : 1,\
+  'MaxParents' : maxp.\
+  'PriorVar'  : prec,\
+  'NumLevels' : nlev,\
+  'PriorScale' : scale\
+  };\
+}\
+nodes = {};";
 
-    long  impute_max_steps, impute_burnin, impute_sample_size;    // permit user to reset impute settings
-
-    checkParameter (_HYBgm_IMPUTE_MAXSTEPS, impute_max_steps, 10000L);
-    checkParameter (_HYBgm_IMPUTE_BURNIN, impute_burnin, 1000L);
-    checkParameter (_HYBgm_IMPUTE_SAMPLES, impute_sample_size, 100L);
-
-    rec << "USE_MPI_CACHING=1;\n";
-    rec << "PRINT_DIGITS=-1;\n";
-
-    // write utility functions
-    rec << "function add_discrete_node (id,maxp,size,nlev)\n";
-    rec << "{\ndnode={};\n";
-    rec << "dnode[\"NodeID\"]=id;\n";
-    rec << "dnode[\"NodeType\"]=0;\n";
-    rec << "dnode[\"MaxParents\"]=maxp;\n";
-    rec << "dnode[\"PriorSize\"]=size;\n";
-    rec << "dnode[\"NumLevels\"]=nlev;\n";
-    rec << "return dnode;\n}\n";
-
-    rec << "function add_gaussian_node (id,maxp,size,mean,prec,scale)\n";
-    rec << "{\ngnode={};\n";
-    rec << "gnode[\"NodeID\"]=id;\n";
-    rec << "gnode[\"NodeType\"]=1;\n";
-    rec << "gnode[\"PriorSize\"]=size;\n";
-    rec << "gnode[\"MaxParents\"]=maxp;\n";
-    rec << "gnode[\"PriorMean\"]=mean;\n";
-    rec << "gnode[\"PriorVar\"]=prec;\n";
-    rec << "gnode[\"PriorScale\"]=scale;\n";
-    rec << "return gnode;\n}\n";
-
-
-    // prepare assortative lists
-    rec << "nodes={};\n";
-
-    for (long node_id = 0; node_id < num_nodes; node_id++) {
-        if (node_type.lData[node_id] == 0) {
-            rec << "nodes[Abs(nodes)]=add_discrete_node(";
+    for (long node_id = 0L; node_id < num_nodes; node_id++) {
+        if (is_node_discrete (node_id)) {
+            rec << "nodes + add_discrete_node("
+                << *(_String*)node_names.GetItem (node_id) << max_parents.get (node_id) << ',' << prior_sample_size (node_id, 0) << ',' << num_levels.get (node_id) << ")'\n";
             // I can't figure out how to write the _String object from [node_names] to file :-P
-            snprintf (buf, sizeof(buf), "\"Node%d\",%d,%d,%d", node_id, (long)max_parents.lData[node_id], (long)prior_sample_size(node_id,0), num_levels.lData[node_id]);
-            rec << buf;
-            rec << ");\n";
-        } else {
-            rec << "nodes[Abs(nodes)]=add_gaussian_node(";
-            snprintf (buf, sizeof(buf), "\"Node%d\",%d,%d,%f,%f,%f", node_id, (long)max_parents.lData[node_id], (long)prior_sample_size(node_id,0),
-                     prior_mean(node_id,0), prior_precision(node_id,0), prior_scale(node_id,0) );
-            rec << buf;
-            rec << ");\n";
-        }
+         } else {
+            rec << "nodes + add_gaussian_node("
+              << *(_String*)node_names.GetItem (node_id) << max_parents.get (node_id) << ',' << prior_sample_size (node_id, 0) << ',' << prior_mean (node_id, 0) << ',' << prior_precision (node_id, 0) << ',' << prior_scale (node_id, 0) << ")'\n";
+         }
     }
 
     // write BGM constructor
-    rec << "BayesianGraphicalModel ";
-    rec << bgmName;
-    rec << "=(nodes);\n";
+  
+    _String const * bgm_name =(_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
+  
+    rec << "BayesianGraphicalModel " << *bgm_name << "(nodes);\n"
+        << kHYBgm_IMPUTE_MAXSTEPS << '=' << hy_env :: EnvVariableGetNumber (kHYBgm_IMPUTE_MAXSTEPS,10000.) << ";\n"
+        << kHYBgm_IMPUTE_BURNIN << '=' << hy_env :: EnvVariableGetNumber (kHYBgm_IMPUTE_BURNIN,1000.) << ";\n"
+        << kHYBgm_IMPUTE_SAMPLES << '=' << hy_env :: EnvVariableGetNumber (kHYBgm_IMPUTE_SAMPLES,1000.) << ";\n";
 
-    // missing data imputation settings
-    snprintf (buf, sizeof(buf), "BGM_IMPUTE_MAXSTEPS = %d;\n", (long)impute_max_steps);
-    rec << buf;
-    snprintf (buf, sizeof(buf), "BGM_IMPUTE_BURNIN = %d;\n", (long)impute_burnin);
-    rec << buf;
-    snprintf (buf, sizeof(buf), "BGM_IMPUTE_SAMPLES = %d;\n", (long)impute_sample_size);
-    rec << buf;
 
+  
     // serialize constraint matrix
-    rec << "bgmConstraints=";
-    rec << (_String *)constraint_graph.toStr();
-    rec << ";\n";
-    rec << "SetParameter(";
-    rec << bgmName;
-    rec << ",BGM_CONSTRAINT_MATRIX,bgmConstraints);\n";
+    rec << "bgmConstraints = " << (_String *)constraint_graph.toStr() << ";\n";
+    rec << "SetParameter(" << *bgm_name << ',' << kBGMContraintMatrix << ",bgmConstraints);\n";
 
     // serialize data matrix and assign to BGM
-    rec << "kBGMData=";
-    rec << (_String *)theData.toStr();
-    rec << ";\n";
-    rec << "SetParameter(";
-    rec << bgmName;
-    rec << ",BGM_DATA_MATRIX,kBGMData);\n";
+    rec << kBGMData << '=' << (_String *)theData.toStr() << ";\n";
+    rec << "SetParameter(" << *bgm_name << ',' << kBGMData << ',' << kBGMData << ");\n";
 
-    /*
-    rec << "bgmWeights=";
-    rec << (_String *)theWeights.toStr();
-    rec << ";\n";
-    rec << "SetParameter(";
-    rec << bgmName;
-    rec << ",BGM_WEIGHT_MATRIX,bgmWeights);\n";
-    */
 }
 #endif
 
@@ -1402,6 +1362,15 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
         Wrapper function to access various optimization methods (K2, structural MCMC, order MCMC)
             and implement MPI functionality.
        --------------------------------------------------------------------------------------------- */
+    static const _String kHYBgm_METHOD_KEY      ("BGM_OPTIMIZATION_METHOD"),
+                         kHYBgm_K2_RESTARTS     ("BGM_K2_RESTARTS"),
+                         kHYBgm_K2_RANDOMIZE    ("BGM_K2_RANDOMIZE"),
+                         kHYBgm_MCMC_NCHAINS       ("BGM_MCMC_NCHAINS"),
+                         kHYBgm_MCMC_TEMP      ("BGM_MCMC_TEMPERATURE"),
+                         kHYBgm_MCMC_MAXSTEPS  ("BGM_MCMC_MAXSTEPS"),
+                         kHYBgm_MCMC_BURNIN        ("BGM_MCMC_BURNIN"),
+                         kHYBgm_MCMC_SAMPLES       ("BGM_MCMC_SAMPLES");
+
     ReportWarning (_String("Entered _BayesianGraphicalModel::Optimize()"));
 
     if (!scores_cached) {
@@ -1409,140 +1378,130 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
     }
 
 
-    hyFloat      optMethod;      // 0 = K2 fixed order
+    hyFloat      optMethod =   hy_env::EnvVariableGetNumber(kHYBgm_METHOD_KEY, 0.0);    // 0 = K2 fixed order
     // 1 = K2 shuffle order with restarts
     // 2 = structural MCMC, fixed order
     // 3 = structural MCMC
     // 4 = order MCMC
 
-    _Matrix *   output_matrix;      // for order-MCMC and graph-MCMC has 4 columns: (1) chain trace;
+    _Matrix *   output_matrix = nil;      // for order-MCMC and graph-MCMC has 4 columns: (1) chain trace;
     //  (2) edge marginal posteriors; (3) best state (node ordering or graph);
     //  (4) last state visited in chain
 
-
-    checkParameter (_HYBgm_METHOD_KEY, optMethod, 0.);
-
     ReportWarning (_String("... optimization method set to ") & optMethod);
+  
+    try {
 
-    if (optMethod < 2) {
-        ReportWarning (_String("... starting K2 algorithm"));
+      if (optMethod < 2.) {
+          ReportWarning (_String("... starting K2 algorithm"));
+        
+        
+          output_matrix =  new _Matrix (num_nodes * num_nodes, 2, false, true);
 
-        long        num_restarts,           // HBL settings
-                    num_randomize;
+        
+           K2Search (optMethod,
+                     hy_env::EnvVariableGetNumber(kHYBgm_K2_RESTARTS, 1.0),
+                     hy_env::EnvVariableGetNumber(kHYBgm_K2_RANDOMIZE, num_nodes),
+                     output_matrix);
+      } else {
+        long      mcmc_steps = hy_env :: EnvVariableGetNumber(kHYBgm_MCMC_MAXSTEPS, 0.),
+                  mcmc_burnin = hy_env :: EnvVariableGetNumber(kHYBgm_MCMC_BURNIN, 0.),
+                  mcmc_samples = hy_env :: EnvVariableGetNumber(kHYBgm_MCMC_SAMPLES, 0.);
 
-        checkParameter (_HYBgm_K2_RESTARTS, num_restarts, 1L);
-        checkParameter (_HYBgm_K2_RANDOMIZE, num_randomize, num_nodes);
+          if (mcmc_steps <= 0)    {
+              throw (kHYBgm_MCMC_MAXSTEPS & " must be positive\n");
+          }
+          if (mcmc_burnin < 0 || mcmc_burnin >= mcmc_steps)    {
+              throw(kHYBgm_MCMC_BURNIN & " must be positive and less than " & kHYBgm_MCMC_MAXSTEPS);
+          }
 
-        output_matrix =  new _Matrix (num_nodes * num_nodes, 2, false, true);
-        K2Search (optMethod, num_restarts, num_randomize, output_matrix);
-    } else {
-        _String         oops;
-        long      mcmc_steps, mcmc_burnin, mcmc_samples;
-
-
-        // acquisition of HBL arguments with a few sanity checks
-        checkParameter (_HYBgm_MCMC_MAXSTEPS, mcmc_steps, 0L);
-        if (mcmc_steps <= 0)    {
-            oops = _String ("You asked HyPhy to run MCMC with zero steps in the chain! Did you forget to set Bgm_MCMC_STEPS?\n");
-        }
-
-        checkParameter (_HYBgm_MCMC_BURNIN, mcmc_burnin, 0L);
-        if (mcmc_burnin < 0)    {
-            oops = _String("You can't have a negative burn-in (_HYBgm_MCMC_BURNIN)!\n");
-        }
-
-        checkParameter (_HYBgm_MCMC_SAMPLES, mcmc_samples, 0L);
-        if (mcmc_samples < 0)   {
-            oops = _String ("You can't have a negative sample size!");
-        }
-
-        if (oops.sLength > 0) {
-            HandleApplicationError (oops);
-            return nil;
-        }
-
-#if defined __HYPHYMPI__ && defined __AFYP_DEVELOPMENT__
-        int         size,
-                    rank;
-        long        mpi_node;
-        char        mpi_message [256];
-
-        MPI_Status  status; // contains source, tag, and error code
-
-        MPI_Comm_size (MPI_COMM_WORLD, &size);  // number of processes
-        MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+          if (mcmc_samples < 0 || mcmc_samples > (mcmc_burnin - mcmc_burnin))   {
+              throw(kHYBgm_MCMC_SAMPLES & " must be positive and less than " & kHYBgm_MCMC_MAXSTEPS & " - " & kHYBgm_MCMC_BURNIN);
+          }
 
 
-        checkParameter (_HYBgm_MCMC_NCHAINS, mcmc_nchains, 1);
-        if (mcmc_nchains <= 0) {
-            oops = _String ("You must run at least one chain in MCMC.");
-            WarnError (oops);
+  #if defined __HYPHYMPI__ && defined __AFYP_DEVELOPMENT__
+          int         size,
+                      rank;
+          long        mpi_node;
+          char        mpi_message [256];
 
-            return nil;
-        }
+          MPI_Status  status; // contains source, tag, and error code
+
+          MPI_Comm_size (MPI_COMM_WORLD, &size);  // number of processes
+          MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+
+
+           long mcmc_nchains = hy_env :: EnvVariableGetNumber(kHYBgm_MCMC_NCHAINS, 1.);
+           if (mcmc_nchains <= 0) {
+              throw ("You must run at least one chain in MCMC.");
+          }
 
 
 
-        // parallel coupled chains (MPI)
-        if (mcmc_nchains > 1) {
-            checkParameter (_HYBgm_MCMC_TEMP, mcmc_dtemp, 1);
-            if (mcmc_nchains > 0 && mcmc_dtemp <= 1) {
-                oops = _String ("Temperature increment must be greater than 1.");
-                WarnError (oops);
-            }
+          // parallel coupled chains (MPI)
+          if (mcmc_nchains > 1) {
+              hyFloat mcmc_dtemp = hy_env :: EnvVariableGetNumber (kHYBgm_MCMC_TEMP, 1.);
+              if (mcmc_dtemp <= 1.) {
+                  throw ("Temperature increment must be greater than 1.");
+              }
 
-            hyFloat  chain_T = 1. / (1. + mcmc_dtemp*rank);
+              hyFloat  chain_T = 1. / (1. + mcmc_dtemp*rank);
 
 
-            /* note that GraphMetropolis already returns structure and last posterior prob as matrix entries */
-            /* use sampling interval to swap chains */
-            /* each chain needs a matrix pointer for output */
-            if (optMethod < 4) {
-                checkPointer (output_matrix = new _Matrix ( (mcmc_samples > num_nodes*num_nodes) ? mcmc_samples : num_nodes*num_nodes, 4, false, true));
-                GraphMetropolis (optMethod==2, mcmc_burnin, mcmc_steps, mcmc_samples, chain_T, output_matrix);
+              /* note that GraphMetropolis already returns structure and last posterior prob as matrix entries */
+              /* use sampling interval to swap chains */
+              /* each chain needs a matrix pointer for output */
+              if (optMethod < 4) {
+                  output_matrix = ;
+                  output_matrix = GraphMetropolis (optMethod==2, mcmc_burnin, mcmc_steps, mcmc_samples, chain_T);
 
-                for (long samp = 0; samp < mcmc_samples; samp++) {
-                    /*** UNDER DEVELOPMENT ***/
-                    if (rank > 0) {
+                  for (long samp = 0; samp < mcmc_samples; samp++) {
+                      /*** UNDER DEVELOPMENT ***/
+                      if (rank > 0) {
 
-                    } else {
+                      } else {
 
-                    }
-                }
-            }
-        }
+                      }
+                  }
+              }
+          }
 
-        // single chain
-        else {
-#endif
-            output_matrix = new _Matrix ( (mcmc_samples > num_nodes*num_nodes) ? mcmc_samples : num_nodes*num_nodes, 4, false, true);
+          // single chain
+          else {
+  #endif
+ 
+              if (optMethod < 4) {
+                  ReportWarning (_String("... starting graph-mcmc"));
+                  output_matrix = GraphMetropolis ( (optMethod == 2), mcmc_burnin, mcmc_steps, mcmc_samples, 1.);
+              } else {
+                  ReportWarning (_String("... starting order-mcmc"));
+                  if (mcmc_burnin > 0) {
+                      ReportWarning (_String("Executing order-MCMC for burn-in period of ") & mcmc_burnin & " steps");
+                      output_matrix = OrderMetropolis (FALSE, mcmc_burnin, mcmc_samples, 1.);
 
-            if (optMethod < 4) {
-                ReportWarning (_String("... starting graph-mcmc"));
-                GraphMetropolis ( (optMethod == 2), mcmc_burnin, mcmc_steps, mcmc_samples, 1., output_matrix);
-            } else {
-                ReportWarning (_String("... starting order-mcmc"));
-                if (mcmc_burnin > 0) {
-                    ReportWarning (_String("Executing order-MCMC for burn-in period of ") & mcmc_burnin & " steps");
-                    OrderMetropolis (FALSE, mcmc_burnin, mcmc_samples, 1., output_matrix);
+                      ReportWarning (_String("Automatically reset node_order_arg to best order visited in order-MCMC burn-in:\n "));
+                      if (node_order_arg.lLength == 0) {
+                          node_order_arg.Populate (num_nodes, 0, 0);
+                      }
+                      for (long i = 0; i < num_nodes; i++) {
+                          node_order_arg.lData[i] = (*output_matrix) (i,3);
+                      }
+                      ReportWarning    (_String((_String*)node_order_arg.toStr()));
+                      delete output_matrix;
+                  }
+                  ReportWarning (_String("Executing order-MCMC for ") & mcmc_steps & " steps, sample size " & mcmc_samples);
+                  output_matrix = OrderMetropolis (TRUE, mcmc_steps, mcmc_samples, 1.);
+              }
 
-                    ReportWarning (_String("Automatically reset node_order_arg to best order visited in order-MCMC burn-in:\n "));
-                    if (node_order_arg.lLength == 0) {
-                        node_order_arg.Populate (num_nodes, 0, 0);
-                    }
-                    for (long i = 0; i < num_nodes; i++) {
-                        node_order_arg.lData[i] = (*output_matrix) (i,3);
-                    }
-                    ReportWarning    (_String((_String*)node_order_arg.toStr()));
-                }
-                ReportWarning (_String("Executing order-MCMC for ") & mcmc_steps & " steps, sample size " & mcmc_samples);
-                OrderMetropolis (TRUE, mcmc_steps, mcmc_samples, 1., output_matrix);
-            }
+  #if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
+          }
+  #endif
 
-#if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
-        }
-#endif
-
+      }
+    } catch (const _String err) {
+      HandleApplicationError(err);
+      return new _Matrix;
     }
 
 
@@ -1552,9 +1511,9 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
 
 
 //_________________________________________________________________________________________________________
-void _BayesianGraphicalModel::K2Search (bool do_permute_order, long n_restart, long n_randomize, _Matrix * result)
-{
+_Matrix* _BayesianGraphicalModel::K2Search (bool do_permute_order, long n_restart, long n_randomize) {
     //  THIS NEEDS UPDATING
+    return new _Matrix;
 #ifdef __NEVER_DEFINED__
     hyFloat  this_score, best_score, next_score;
 
@@ -1669,8 +1628,7 @@ void _BayesianGraphicalModel::K2Search (bool do_permute_order, long n_restart, l
 
 
 //_______________________________________________________________________________________________________________________
-bool    _BayesianGraphicalModel::GraphObeysOrder (_Matrix & graph, _SimpleList & order)
-{
+bool    _BayesianGraphicalModel::GraphObeysOrder (_Matrix & graph, _SimpleList const & order) const {
     _Matrix order_matrix (num_nodes, num_nodes, false, true);
 
     // convert order vector to matrix form
@@ -1709,29 +1667,29 @@ _SimpleList const   _BayesianGraphicalModel::GetOrderFromGraph (_Matrix const & 
 
     for (long left_of, node = 1; node < num_nodes; node++) {
         // loop through nodes in list looking for parents
-        for (left_of = 0L; left_of < new_order->countitems(); left_of++) {
+        for (left_of = 0L; left_of < new_order.countitems(); left_of++) {
             // if the node is the child,
             if (graph (left_of, node)) {
-                new_order->InsertElement ((BaseRef) node, left_of, false, false);
+                new_order.InsertElement ((BaseRef) node, left_of, false, false);
                 break;
             }
         }
 
         // if we reach end of list, append
-        if (left_of == new_order->countitems()) {
+        if (left_of == new_order.countitems()) {
             new_order << node;
         }
 
     }
-	ReportWarning(_String("Constructed node order from graph:\n") & *(_String *)new_order->toStr() & "\n");
+	ReportWarning(_String("Constructed node order from graph:\n") & _String ((_String *)new_order.toStr()) & "\n");
     return new_order;
 }
 
 
 
 //_______________________________________________________________________________________________________________________
-void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burnin, long mcmc_steps, long mcmc_samples,
-        hyFloat chain_t, _Matrix * result)
+_Matrix*    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_burnin, long mcmc_steps, long mcmc_samples,
+        hyFloat chain_t)
 {
     /* --------------------------------------------------------------------------------------------------------
         GraphMetropolis()
@@ -1740,95 +1698,81 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
             If theStructure is empty graph, initialize order with random permutation.
             If [fixed_order]=TRUE, only explores the subset of graphs compatible with [node_order_arg] if specified.
 
-        Returns pointer to matrix containing:   (1) vector of posterior probabiities
+        returns                 :   (1) vector of posterior probabiities
                                                 (2) linearized matrix of edge marginal posteriors
                                                 (3)     "       "   for best graph
                                                 (4)     "       "   for last graph visited in chain
+     
+        throws const _String exceptions
        --------------------------------------------------------------------------------------------------------- */
+  
+   const static _String           kHYBgm_MCMC_PROBSWAP  ("BGM_MCMC_PROBSWAP"),
+                                  kHYBgm_MCMC_MAXFAILS  ("BGM_MCMC_MAXFAILS");
+
 
     _Matrix     *   proposed_graph  = new _Matrix (num_nodes, num_nodes, false, true);
+    _Matrix     *   result = new _Matrix ( (mcmc_samples > num_nodes*num_nodes) ? mcmc_samples : num_nodes*num_nodes, 4, false, true);
 
     _Matrix         current_graph (num_nodes, num_nodes, false, true),
-                    best_graph (num_nodes, num_nodes, false, true);
+                    best_graph    (num_nodes, num_nodes, false, true);
 
-    hyFloat      current_score, proposed_score, best_score,
+    hyFloat         current_score, proposed_score, best_score,
                     lk_ratio,
-                    prob_swap;
+                    prob_swap = hy_env::EnvVariableGetNumber(kHYBgm_MCMC_PROBSWAP, 0.1);
   
 
     long            sampling_interval = mcmc_steps / mcmc_samples,
-                    max_fails, param_max_fails;
+                    max_fails = hy_env::EnvVariableGetNumber(kHYBgm_MCMC_MAXFAILS, 100);
 
     _SimpleList *   proposed_order  = new _SimpleList();
     _SimpleList     current_order;
-
+  
+    _List           track_local_allocations; // use this to dispose of local allocations, including thrown exceptions
+    track_local_allocations < proposed_graph < result < proposed_order;
 
     // parse HBL settings
-    checkParameter (_HYBgm_MCMC_PROBSWAP, prob_swap, 0.1);
-    if (prob_swap < 0 || prob_swap > 1.) {
-        HandleApplicationError ("BGM_MCMC_PROBSWAP must be assigned a value between 0 and 1.  Exiting.\n");
-        return;
+    if (prob_swap < 0. || prob_swap > 1.) {
+        throw (kHYBgm_MCMC_PROBSWAP & " must be assigned a value between 0 and 1");
     }
 
-    checkParameter (_HYBgm_MCMC_MAXFAILS, param_max_fails, 100L);
-    if (param_max_fails <= 0.) {
-        HandleApplicationError ("BGM_MCMC_MAXFAILS must be assigned a value greater than 0");
-        return;
-    } else {
-        max_fails = (long) param_max_fails;
-    }
+    if (max_fails <= 0.) {
+        throw  (kHYBgm_MCMC_MAXFAILS & " must be assigned a value greater than 0");
 
+    }
 
 
 
     // initialize chain state
-	if (fixed_order)
-	{
-		if (node_order_arg.lLength > 0 && GraphObeysOrder (theStructure, node_order_arg) )
-		{
-			(*proposed_graph) = (_Matrix &) theStructure;
-            (*proposed_order) = (_SimpleList &) node_order_arg;
+    if (fixed_order) {
+      if (node_order_arg.nonempty() && GraphObeysOrder (theStructure, node_order_arg) ) {
+          (*proposed_graph) = theStructure;
+          (*proposed_order) = node_order_arg;
 
-            ReportWarning (_String ("Starting GraphMetropolis() using node_order_arg:\n ") & (_String *) proposed_order->toStr());
+          ReportWarning (_String ("Starting GraphMetropolis() using node_order_arg:\n ") & _String((_String *) proposed_order->toStr()));
         } else {
-            HandleApplicationError ("ERROR: Structure does not match order, aborting GraphMetropolis().");
+              throw ("ERROR: Structure does not match order, aborting GraphMetropolis().");
+        }
+    } else {
+      *proposed_order = GetOrderFromGraph (*proposed_graph);
+    }
 
-            return;
-		}
-	} else {
-		/*
-		(*proposed_graph)   = (_Matrix &) theStructure;
-		proposed_order      = GetOrderFromGraph (theStructure);
-		 */
-		proposed_order = GetOrderFromGraph (*proposed_graph);
-	}
+    
+    // randomize the initial graph
+    RandomizeGraph (proposed_graph, proposed_order, prob_swap, num_nodes*num_nodes, max_fails, fixed_order);
+    ReportWarning (_String ("seeding with randomized graph:\n") & _String ((_String *) proposed_graph->toStr()));
 
-	
-	// randomize the initial graph
-	RandomizeGraph (proposed_graph, proposed_order, prob_swap, num_nodes*num_nodes, max_fails, fixed_order);
-	ReportWarning (_String ("seeding with randomized graph:\n") & _String ((_String *) proposed_graph->toStr()));
-
-    // status line
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-    long    updates = 0;
-    TimerDifferenceFunction (false);
-#if defined __HEADLESS__
-    SetStatusLine (_HYBgm_STATUS_LINE_MCMC);
-#else
-    SetStatusLine (empty, _HYBgm_STATUS_LINE_MCMC, empty, 0, HY_SL_TASK|HY_SL_PERCENT);
-#endif
-#endif
 
 
     current_order = (*proposed_order);
 
-    current_graph = (_Matrix &) (*proposed_graph);
-    best_graph = (_Matrix &) (*proposed_graph);
+    current_graph = (*proposed_graph);
+    best_graph    = (*proposed_graph);
 
     best_score = proposed_score = current_score = Compute((_Matrix &) *proposed_graph);
 
 
     // main loop
+    long entry;
     for (long step = 0; step < mcmc_steps + mcmc_burnin; step++) {
         //ReportWarning (_String ("current graph (") & current_score & "): \n" & (_String *) current_graph.toStr());
 		
@@ -1842,73 +1786,51 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
         lk_ratio = exp(proposed_score - current_score);
 
         if (lk_ratio > 1. || genrand_real2() < lk_ratio) {  // Metropolis-Hastings
-            current_graph   = (_Matrix &) (*proposed_graph);        // accept proposed graph
+            current_graph   = *proposed_graph;        // accept proposed graph
             current_score   = proposed_score;
+            current_order   = *proposed_order;
+          
 
-            for (long foo = 0; foo < num_nodes; foo++) {
-                current_order.lData[foo] = proposed_order->lData[foo];
-            }
-
-            if (current_score > best_score) {
-                best_score = current_score;
-                best_graph = (_Matrix &) current_graph;         // keep track of best graph ever visited by chain
+            if (StoreIfGreater(best_score, current_score)) {
+                best_graph = current_graph;         // keep track of best graph ever visited by chain
             }
         } else {
             // revert proposal
-            for (long row = 0; row < num_nodes; row++) {
-                proposed_order->lData[row] = current_order.lData[row];
-
-                for (long col = 0; col < num_nodes; col++) {
-                    proposed_graph->Store(row, col, current_graph(row, col));
-                }
-            }
+            *proposed_order = current_order;
+            *proposed_graph = current_graph;
         }
 
         // chain sampling
         if (step >= mcmc_burnin) {
-            if ( (step-(long)mcmc_burnin) % sampling_interval == 0) {
-                long    entry   = (long int) ((step-mcmc_burnin) / sampling_interval);
-
-                result->Store (entry, 0, current_score);        // update chain trace
-
-                for (long row = 0; row < num_nodes; row++) {    // update edge tallies
-                    for (long offset=row*num_nodes, col = 0; col < num_nodes; col++) {
-                        result->Store (offset+col, 1, (*result)(offset+col,1) + current_graph(row, col));
+            if ( (step- mcmc_burnin) % sampling_interval == 0L) {
+              
+                result->Store (entry++, 0, current_score);        // update chain trace
+              
+                for (long row = 0L; row < num_nodes; row++) {    // update edge tallies
+                    for (long offset=row*num_nodes, col = 0L; col < num_nodes; col++) {
+                        result->get_dense_numeric_cell (offset+col, 1) += current_graph(row, col);
                     }
                 }
             }
         }
-
-#if !defined __UNIX__ || defined __HEADLESS__
-        if (TimerDifferenceFunction(true)>1.0) { // time to update
-            updates ++;
-            _String statusLine = _HYBgm_STATUS_LINE_MCMC & " " & (step+1) & "/" & (mcmc_steps + mcmc_burnin)
-                                 & " steps (" & (1.0+step)/updates & "/second)";
-#if defined __HEADLESS__
-            SetStatusLine     (statusLine);
-#else
-            SetStatusLine     (empty,statusLine,empty,100*step/(mcmc_steps + mcmc_burnin),HY_SL_TASK|HY_SL_PERCENT);
-#endif
-            TimerDifferenceFunction(false); // reset timer for the next second
-            yieldCPUTime(); // let the GUI handle user actions
-            if (terminate_execution) { // user wants to cancel the analysis
-                break;
-            }
-        }
-#else
+        // TODO SLKP 20180917 : implement progress updates in the new API, maybe use VERBOSITY_LEVEL
+        /*
         if (step % ((mcmc_steps + mcmc_burnin)/100) == 0) {
-            ReportWarning (_String ("graphMCMC at step ") & step & " of " & (mcmc_steps+mcmc_burnin));
+             (_String ("graphMCMC at step ") & step & " of " & (mcmc_steps+mcmc_burnin));
         }
-#endif
+        */
+      
 
     }
+  
+    hyFloat normalizer = 1./mcmc_samples;
 
     // convert edge tallies to frequencies, and report best and last graph
-    for (long row = 0; row < num_nodes; row++) {
-        for (long offset=row*num_nodes, col = 0; col < num_nodes; col++) {
-            result->Store (offset+col, 1, (*result)(offset+col,1)/mcmc_samples);
-            result->Store (offset+col, 2, (hyFloat) best_graph(row, col));
-            result->Store (offset+col, 3, (hyFloat) current_graph(row,col));
+    for (long row = 0L; row < num_nodes; row++) {
+        for (long offset=row*num_nodes, col = 0L; col < num_nodes; col++) {
+            result->get_dense_numeric_cell (offset+col, 1) *= normalizer;
+            result->get_dense_numeric_cell (offset+col, 2) = best_graph(row, col);
+            result->get_dense_numeric_cell (offset+col, 3) = current_graph(row,col);
         }
     }
 
@@ -1917,245 +1839,220 @@ void    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcmc_bu
     theStructure = (_Matrix &) current_graph;
     ReportWarning (_String("On exiting GraphMetropolic() assigned last state to theStructure: ") & (_String *) theStructure.toStr());
 
-    // release memory
-    delete (proposed_graph);
-    delete (proposed_order);
+    result->AddAReference(); // do not clear track_local_allocations is deleted
+    return result;
 }
 
 
 
 //_____________________________________________________________________________________________________________
-void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * order, hyFloat prob_swap, long num_steps, long max_fails, bool fixed_order)
-{
+void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * order, hyFloat prob_swap, long num_steps, long max_fails, bool fixed_order) {
     //  Modify a graph by adding, removing, or reversing an edge, so long as that modification
     //  complies with the constraint matrix and (when fixed_order=TRUE) node order.
-
-    if (num_nodes <= 1) { // nothing to do
-      return;
-    }
+    //  throws const _String exceptions
   
-    long    step = 0, fail = 0;
-
-
-    // calculate number of parents for each child for rapid access later
-    _SimpleList     num_parents;
-
-    num_parents.Populate (num_nodes, 0, 0);
-
-    for (long child = 0; child < num_nodes; child++) {
-        for (long parent = 0; parent < num_nodes; parent++) {
-            if ( (*graph)(parent, child) > 0) {
-                num_parents.lData[child]++;
-            }
+  
+      auto remove_random_edge = [this, graph] (long parent_index, long child_index) -> bool {
+      _SimpleList     removeable_edges;
+      
+        // build a list of current parents
+      for (long par = 0L; par < num_nodes; par++)
+          // par is parent of child AND the edge is NOT enforced
+        if ((*graph)(par,child_index) && constraint_graph(par,child_index) <=0.) {
+          removeable_edges << par;
         }
+      
+      if (removeable_edges.nonempty()) {
+          // shuffle the list and remove the first parent
+        graph->Store (removeable_edges.get (removeable_edges.Choice()), child_index, 0.);
+        return true;
+      } else {
+          // none of the edges can be removed
+        return false;
+      }
 
-        if (num_parents.lData[child] > max_parents.lData[child]) {
-            HandleApplicationError (_String ("Number of parents exceeds maximum BEFORE randomization of graph at node ") & child & " (" & num_parents.lData[child] & " > " & max_parents.lData[child] & ")\n" );
-            break;
-        }
-    }
+    };
 
-
-    // randomize graph
-    long    p_rank, c_rank, parent, child;
-
-    do {
-        // a fail-safe to avoid infinite loops
-        if (fail > max_fails) {
-            HandleApplicationError (_String ("Failed to modify the graph in RandomizeGraph() after ") & max_fails & " attempts.");
-            break;
-        }
-
-        // pick a random edge
-        p_rank  = (genrand_int32() % (num_nodes-1)) + 1;    // shift right to not include lowest node in order
-        c_rank  = genrand_int32() % p_rank;
-
-        child = order->lData[c_rank];
-        parent = order->lData[p_rank];
+    if (num_nodes > 1) { // nothing to do
+     
+      long    step = 0L, fail = 0L;
 
 
-        if (fixed_order || genrand_real2() > prob_swap) {
-            if ( (*graph)(parent,child) == 0 && constraint_graph(parent,child) >= 0) {
-				// add an edge if it is absent and not banned
-                if (num_parents.lData[child] == max_parents.lData[child]) {
-					// child is already at maximum number of parents
-                    // move an edge from an existing parent to target parent
-                    _SimpleList     removeable_edges;
+      // calculate number of parents for each child for rapid access later
+      _SimpleList     num_parents;
 
-                    // build a list of current parents
-                    for (long par = 0; par < num_nodes; par++)
-						// par is parent of child AND the edge is NOT enforced
-                        if ((*graph)(par,child) && constraint_graph(par,child)<=0) {
-                            removeable_edges << par;
-                        }
+      num_parents.Populate (num_nodes, 0, 0);
+      
 
-                    if (removeable_edges.lLength > 0) {
-                        // shuffle the list and remove the first parent
-						removeable_edges.Permute(1);
-						graph->Store (removeable_edges.lData[0], child, 0.);
-						graph->Store (parent, child, 1.);
-						
-						/*
-                        graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], child, 0.);
-                        graph->Store (parent, child, 1.);
-						 */
-                        step++;
+      for (long child = 0; child < num_nodes; child++) {
+          for (long parent = 0; parent < num_nodes; parent++) {
+              if ( (*graph)(parent, child) > 0.) {
+                  num_parents[child]++;
+              }
+          }
+
+          if (num_parents.get(child) > max_parents (child)) {
+              throw (_String ("Number of parents exceeds maximum BEFORE randomization of graph at node ") & child & " (" & num_parents.get(child) & " > " & max_parents.get(child) & ")\n" );
+          }
+      }
+
+
+      // randomize graph
+       do {
+          // a fail-safe to avoid infinite loops
+          if (fail > max_fails) {
+              throw (_String ("Failed to modify the graph in RandomizeGraph() after ") & max_fails & " attempts.");
+          }
+
+          // pick a random edge
+          long p_rank  = (genrand_int32() % (num_nodes-1)) + 1L,    // shift right to not include lowest node in order
+               c_rank  =  genrand_int32() % p_rank,
+               child  = order->get(c_rank),
+               parent = order->get(p_rank);
+
+
+          if (fixed_order || genrand_real2() > prob_swap) {
+              if ( (*graph)(parent,child) == 0. && constraint_graph(parent,child) >= 0.) {
+                  // add an edge if it is absent and not banned
+                  if (num_parents.get(child) == max_parents.get (child)) {
+                    if (remove_random_edge (parent, child)) {
+                      graph->Store (parent, child, 1.);
+                      step ++;
                     } else {
-                        // none of the edges can be removed
-                        fail++;
+                      fail ++;
                     }
-                } else {
-					// child can accept one more edge
-                    graph->Store (parent, child, 1.);
-                    num_parents.lData[child]++;
-                    step++;
-                }
-            }
+                  } else {
+            // child can accept one more edge
+                      graph->Store (parent, child, 1.);
+                      num_parents[child]++;
+                      step++;
+                  }
+              } else if ( (*graph)(parent,child) == 1. && constraint_graph(parent,child) <= 0.) {
+          // delete an edge if it is present and not enforced
+                  graph->Store (parent, child, 0.);
+                  num_parents[child]--;
+                  step++;
+              } else {
+                  fail++;
+              }
+          } else {    // swap nodes in ordering and flip edge if present
+  
+              //
+              bool    ok_to_go = !((*graph)(parent,child) == 1.  &&  ( constraint_graph(child,parent)<0. || constraint_graph(parent,child)>0. )) &&
+                        //P->C cannot be flipped if C->P is banned or P->C is enforced
+                      !order->Any ([parent, child, graph, this] (long intermediate) -> bool {
+                              return ( (*graph)(parent,intermediate)==1. && constraint_graph (parent, intermediate)>0. )  ||
+                                     ( (*graph)(intermediate,child) ==1. && constraint_graph (intermediate, child)>0. )  ||
+                                      constraint_graph (intermediate,parent) <0.  ||
+                                      constraint_graph (child,intermediate)  <0.  ;
 
-            else if ( (*graph)(parent,child) == 1 && constraint_graph(parent,child) <= 0) {
-				// delete an edge if it is present and not enforced
-                graph->Store (parent, child, 0.);
-                num_parents.lData[child]--;
-                step++;
-            } else {
-                fail++;
-            }
-        } else {    // swap nodes in ordering and flip edge if present
-            bool    ok_to_go = TRUE;
+                      }, c_rank+1L)
+            
+                // by flipping the parent->child edge, we would screw up ordering for
+                // an enforced edge:  C < B < P   becomes  P < B < C  where B->C or P->B is enforced.
+                // also, a banned edge implies a node ordering constraint
 
-            // P->C cannot be flipped if C->P is banned or P->C is enforced
-            if ( (*graph)(parent,child) == 1  &&  ( constraint_graph(child,parent)<0 || constraint_graph(parent,child)>0 )  ) {
-                ok_to_go = FALSE;
-            }
+             ;
+          
+            
 
-
-            // check all other nodes affected by the swap
-            if (ok_to_go) {
-                for (long bystander, i=c_rank+1; i < p_rank; i++) {
-                    bystander = order->lData[i];    // retrieve node id
-					
-					// by flipping the parent->child edge, we would screw up ordering for
-					// an enforced edge:  C < B < P   becomes  P < B < C  where B->C or P->B is enforced.
-					// also, a banned edge implies a node ordering constraint
-                    if (
-                        ( (*graph)(parent,bystander)==1 && constraint_graph (parent, bystander)>0 )  ||
-                        ( (*graph)(bystander,child)==1 && constraint_graph (bystander, child)>0 )  ||
-                        constraint_graph (bystander,parent)<0  ||  
-						constraint_graph (child,bystander)<0
-                    ) {
-                        ok_to_go = FALSE;
-                        break;
-                    }
-                }
-            }
-
-
-            // if everything checks out OK
-            if ( ok_to_go ) {
-                if ( (*graph)(parent,child) == 1 && constraint_graph(child,parent)>=0 ) {
-					// flip the target edge
-                    graph->Store (parent, child, 0);
-                    graph->Store (child, parent, 1);
-                    num_parents.lData[child]--;
-                    num_parents.lData[parent]++;
-
-                    if (num_parents.lData[parent] > max_parents.lData[parent]) {
-                        // parent cannot accept any more edges, delete one of the edges at random (including the edge to flip)
-                        _SimpleList     removeable_edges;
-
-                        for (long par = 0; par < num_nodes; par++)
-                            if (  (*graph)(par, parent)  &&  constraint_graph(par, parent)<=0  ) {
-                                removeable_edges << par;
-                            }
-
-						removeable_edges.Permute(1);
-						graph->Store (removeable_edges.lData[0], parent, 0.);
-						/*
-                        graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], parent, 0.);
-						 */
-                        num_parents.lData[parent]--;
-                    }
-
-                    step++;
-                }
-				// if the number of parents for parent node will exceed maximum, 
-				// then the edge is deleted instead of flipped (delete without add)
-
-                // swap nodes in order
-                order->lData[p_rank] = child;
-                order->lData[c_rank] = parent;	// remember to update the order matrix also!
-
-                // update edges affected by node swap
-				//  child <-  N   ...   N <- parent                   _________________,
-                //                                    becomes        |                 v
-                //                                                 parent    N         N    child
-                //                                                           ^                |
-                //                                                           `----------------+
-                for (long bystander, i = c_rank+1; i < p_rank; i++) {
-                    bystander = order->lData[i];
-
-                    if ( (*graph)(bystander, child) == 1 ) {
-                        graph->Store (bystander, child, 0);
-                        num_parents.lData[child]--;
-
-                        graph->Store (child, bystander, 1);
-                        num_parents.lData[bystander]++;
-
-                        if (num_parents.lData[bystander] > max_parents.lData[bystander]) {
-                            // number of parents for bystander node now exceeds maximum,
-                            //  select a random edge to remove - including the edge C->B we just made!
-                            _SimpleList     removeable_edges;
-
-                            for (long par = 0; par < num_nodes; par++) {
-                                if (  (*graph)(par, bystander)  &&  constraint_graph(par, bystander)<=0  ) {
-                                    removeable_edges << par;
-                                }
-							}
-							
-							
-                            removeable_edges.Permute(1);
-							graph->Store (removeable_edges.lData[0], bystander, 0.);
-							/*
-                            graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], bystander, 0.);
-							 */
-                            num_parents.lData[bystander]--;
+              // if everything checks out OK
+              if ( ok_to_go ) {
+                  if ( (*graph)(parent,child) == 1 && constraint_graph(child,parent)>=0 ) {
+            // flip the target edge
+  
+                      if (num_parents.get(parent) == max_parents.get(parent)) {
+                        if (!remove_random_edge (child, parent)) {
+                          fail ++;
+                          continue;
                         }
-                    }
+                      }
+                      graph->Store (parent, child, 0);
+                      graph->Store (child, parent, 0);
+                      num_parents[child]--;
+                      num_parents[parent]++;
 
-                    if ( (*graph)(parent,bystander) == 1) {
-						// flip edge from parent to bystander (P->B)
-                        graph->Store (parent, bystander, 0);
-                        num_parents.lData[bystander]--;
+                      step++;
+                  }
+          // if the number of parents for parent node will exceed maximum, 
+          // then the edge is deleted instead of flipped (delete without add)
 
-                        graph->Store (bystander, parent, 1);
-                        num_parents.lData[parent]++;
+                  // swap nodes in order
+                  (*order)[p_rank] = child;
+                  (*order)[c_rank] = parent;	// remember to update the order matrix also!
 
-                        if (num_parents.lData[parent] > max_parents.lData[parent]) {
-							// remove excess edge from X to parent other than bystander
-                            _SimpleList     removeable_edges;
+                  // update edges affected by node swap
+          //  child <-  N   ...   N <- parent                   _________________,
+                  //                                    becomes        |                 v
+                  //                                                 parent    N         N    child
+                  //                                                           ^                |
+                  //                                                           `----------------+
+                  for (long bystander, i = c_rank+1; i < p_rank; i++) {
+                      bystander = order->lData[i];
 
-                            for (long par = 0; par < num_nodes; par++) {
-                                if (  (*graph)(par, parent)  &&  constraint_graph(par, parent)<=0  ) {
-                                    removeable_edges << par;
-                                }
-							}
-							
-                            removeable_edges.Permute(1);
-							graph->Store (removeable_edges.lData[0], parent, 0.);
-							/*
-                            graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], parent, 0.);
-							 */
-                            num_parents.lData[parent]--;
-                        }
-                    }
+                      if ( (*graph)(bystander, child) == 1 ) {
+                          graph->Store (bystander, child, 0);
+                          num_parents.lData[child]--;
+
+                          graph->Store (child, bystander, 1);
+                          num_parents.lData[bystander]++;
+
+                          if (num_parents.lData[bystander] > max_parents.lData[bystander]) {
+                              // number of parents for bystander node now exceeds maximum,
+                              //  select a random edge to remove - including the edge C->B we just made!
+                              _SimpleList     removeable_edges;
+
+                              for (long par = 0; par < num_nodes; par++) {
+                                  if (  (*graph)(par, bystander)  &&  constraint_graph(par, bystander)<=0  ) {
+                                      removeable_edges << par;
+                                  }
                 }
+                
+                
+                              removeable_edges.Permute(1);
+                graph->Store (removeable_edges.lData[0], bystander, 0.);
+                /*
+                              graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], bystander, 0.);
+                 */
+                              num_parents.lData[bystander]--;
+                          }
+                      }
 
-                step++;
-            } else {
-                fail++;
-            }
-        }
-    } while (step < num_steps);
+                      if ( (*graph)(parent,bystander) == 1) {
+              // flip edge from parent to bystander (P->B)
+                          graph->Store (parent, bystander, 0);
+                          num_parents[bystander]--;
+
+                          graph->Store (bystander, parent, 1);
+                          num_parents[parent]++;
+
+                          if (num_parents.lData[parent] > max_parents.lData[parent]) {
+                // remove excess edge from X to parent other than bystander
+                              _SimpleList     removeable_edges;
+
+                              for (long par = 0; par < num_nodes; par++) {
+                                  if (  (*graph)(par, parent)  &&  constraint_graph(par, parent)<=0  ) {
+                                      removeable_edges << par;
+                                  }
+                }
+                
+                              removeable_edges.Permute(1);
+                graph->Store (removeable_edges.lData[0], parent, 0.);
+                /*
+                              graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], parent, 0.);
+                 */
+                              num_parents[parent]--;
+                          }
+                      }
+                  }
+
+                  step++;
+              } else {
+                  fail++;
+              }
+          }
+      } while (step < num_steps);
+    }
 }
 
 

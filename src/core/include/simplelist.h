@@ -497,8 +497,13 @@ class _SimpleList:public BaseObj {
          * @param size how many elements to sample
          * @return resampled list
          */
-        _SimpleList const Sample (unsigned long size);
+        _SimpleList const Sample (unsigned long size) const;
 
+        /**
+         * Draw a random element from the list
+         * @return the index of the sampled element or -1 if the list is empty
+         */
+        long Choice () const;
 
         /**
         * TODO:Permute elements in blocks of given size with possible replacement

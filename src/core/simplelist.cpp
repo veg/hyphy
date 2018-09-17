@@ -162,24 +162,30 @@ long _SimpleList::operator () (const unsigned long i) const {
 }
 
 //Assignment operator
-const _SimpleList& _SimpleList::operator = (_SimpleList const &l)
-{
-    Clear();
-    lLength  = l.lLength;
-    laLength = l.laLength;
-    if (laLength) {
-        lData = (long*)MemAllocate (laLength*sizeof (hyPointer));
-        if (lLength) {
-            memcpy (lData,l.lData,lLength*sizeof (hyPointer));
-        }
+const _SimpleList& _SimpleList::operator = (_SimpleList const &l) {
+    if (l.laLength && lData && laLength >= l.lLength && laLength <= l.laLength && CanFreeMe()) {
+        // reuse existing memory allocation
+      lLength  = l.lLength;
+      if (lLength) {
+        memcpy (lData,l.lData,lLength*sizeof (hyPointer));
+      }
+    } else { // allocate new memory
+      Clear();
+      lLength  = l.lLength;
+      laLength = l.laLength;
+      if (laLength) {
+          lData = (long*)MemAllocate (laLength*sizeof (hyPointer));
+          if (lLength) {
+              memcpy (lData,l.lData,lLength*sizeof (hyPointer));
+          }
+      }
     }
 
     return *this;
 }
 
 //Append operator
-_SimpleList _SimpleList::operator & (_SimpleList l)
-{
+_SimpleList _SimpleList::operator & (_SimpleList l) {
     _SimpleList res (l.lLength + lLength);
     if (!res.laLength) {
         return res;
@@ -423,8 +429,7 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
     return new _SimpleList;
 }
 
-void  _SimpleList::Clear (bool completeClear)
-{
+void  _SimpleList::Clear (bool completeClear) {
     if (CanFreeMe()) {
         lLength = 0UL;
         if (completeClear) {
@@ -1159,8 +1164,16 @@ void  _SimpleList::Permute (long blockLength) {
     }
 }
 
+  // Create a permutation of the list's elements
+long  _SimpleList::Choice () const {
+  if (lLength) {
+    return genrand_int32() % lLength;
+  }
+  return kNotFound;
+}
+
 // Create a permutation of the list's elements
-_SimpleList const  _SimpleList::Sample (unsigned long size) {
+_SimpleList const  _SimpleList::Sample (unsigned long size) const {
     // TODO SLKP 20171026: this is new, need to check correctness
     if (size >= lLength) {
         return *this;

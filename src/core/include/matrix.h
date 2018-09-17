@@ -201,8 +201,8 @@ public:
         return MATRIX;
     }
 
-    void     operator = (_Matrix&);             // assignment operation on matrices
-    void     operator = (_Matrix*);             // assignment operation on matrices with temp results
+    _Matrix&     operator = (_Matrix&);             // assignment operation on matrices
+    _Matrix&     operator = (_Matrix*);             // assignment operation on matrices with temp results
 
     virtual HBLObjectRef    Random (HBLObjectRef);    // reshuffle the matrix
 
@@ -278,6 +278,10 @@ public:
 
     hyFloat  operator () (long, long) const;       // read access to an element in a matrix
     hyFloat& operator [] (long);             // read/write access to an element in a matrix
+  
+    hyFloat& get_dense_numeric_cell (unsigned long r, unsigned long c) {
+        return theData[r*vDim + c];
+    }
 
     void        Store               (long, long, hyFloat);                       // write access to an element in a matrix
     void        StoreObject         (long, long, _MathObject*, bool dup = false);

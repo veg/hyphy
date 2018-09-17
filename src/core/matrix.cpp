@@ -3045,18 +3045,28 @@ _Matrix::~_Matrix (void)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::operator = (_Matrix& m)
-{
-    Clear();
-    DuplicateMatrix (this, &m);
+_Matrix&    _Matrix::operator = (_Matrix& m) {
+    // SLKP 20180917 : reuse memory if copying dense numeric matrices of the same dimension
+    if (m.is_numeric() && is_numeric() && CanFreeMe() && m.theIndex == nil && theIndex == nil && m.GetHDim () == GetHDim () && GetVDim () == m.GetVDim()) {
+      unsigned long i = 0UL;
+      for (unsigned long r = 0UL; r < hDim; r++) {
+        for (unsigned long c = 0UL; c < vDim; c++) {
+          theData[i] = m.theData[i];
+        }
+      }
+    } else {
+      Clear();
+      DuplicateMatrix (this, &m);
+    }
+    return *this;
 }
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::operator = (_Matrix* m)
-{
-    Clear();
-    DuplicateMatrix (this, m);
+_Matrix&    _Matrix::operator = (_Matrix* m) {
+    //Clear();
+    //DuplicateMatrix (this, m);
+    return (*this = m);
 }
 
 
@@ -5220,8 +5230,10 @@ void _Matrix::MStore (long ind1, long ind2, HBLObjectRef poly)
 
 
 //_____________________________________________________________________________________________
-hyFloat&     _Matrix::operator [] (long i)
-{
+hyFloat&     _Matrix::operator [] (long i) {
+    if (is_dense()) {
+      return theData [i];
+    }
     long lIndex = Hash (i/vDim, i%vDim);
     if (lIndex == -1) {
         IncreaseStorage();

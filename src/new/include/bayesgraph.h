@@ -85,9 +85,9 @@ public:
     virtual _Matrix *       Optimize ();	// generic wrapper from HBL to different optimization methods
     										// e.g., K2, structural MCMC, order MCMC (see next functions)
 	
-    void            GraphMetropolis (bool, long, long, long, hyFloat, _Matrix *),
-                    OrderMetropolis (bool, long, long, hyFloat, _Matrix *),
-                    K2Search (bool, long, long, _Matrix *);
+    _Matrix*        GraphMetropolis (bool, long, long, long, hyFloat),
+    _Matrix*        OrderMetropolis (bool, long, long, hyFloat),
+    _Matrix*        K2Search (bool, long, long);
 
 
     void            CacheNodeScores (void);	// MPI enabled
@@ -123,11 +123,11 @@ public:
     void            InitMarginalVectors (_List *) const;
     void            DumpMarginalVectors (_List *) const;
 
-    void            SerializeBGMtoMPI (_String &);	// pass network object to compute node as HBL
+    void            SerializeBGMtoMPI (_StringBuffer &);	// pass network object to compute node as HBL
 
     void            RandomizeGraph (_Matrix *, _SimpleList *, hyFloat, long, long, bool);
     _SimpleList const   GetOrderFromGraph (_Matrix const &) const;
-    bool            GraphObeysOrder (_Matrix &, _SimpleList const &);
+    bool            GraphObeysOrder (_Matrix &, _SimpleList const &) const;
 
     void            UpdateDirichletHyperparameters (long , _SimpleList const &, _Matrix * , _Matrix * );
 
@@ -151,8 +151,8 @@ public:
 
 protected:
 
-    bool            is_node_continuous (long node) {return node_type.get (node) == 1L;}
-    bool            is_node_discrete (long node) {return node_type.get (node) == 0L;}
+    bool            is_node_continuous (long node) const {return node_type.get (node) == 1L;}
+    bool            is_node_discrete (long node) const {return node_type.get (node) == 0L;}
 
     long            num_nodes;
 
