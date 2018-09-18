@@ -38,91 +38,63 @@
  */
 
 
-#include "bayesgraph.h"
 #include "function_templates.h"
 #include "global_things.h"
+#include "bayesgraph.h"
+
+#include "ntuplestorage.h"
 
 using namespace hy_global;
 
-extern _String      _HYBgm_IMPUTE_MAXSTEPS,
-       _HYBgm_IMPUTE_BURNIN,
-       _HYBgm_IMPUTE_SAMPLES;
-
-extern hyFloat   lnGamma (hyFloat),
-       gaussDeviate (void),
-       LogSumExpo (_Vector *);
-
-
-
 
 //___________________________________________________________________________________________
-void _BayesianGraphicalModel::SerializeBGM (_String & rec)
-{
+void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
     /* --------------------------------------------------------------------
         ExportModel()
             Export the network structure and parameters as an associative
             array.
        -------------------------------------------------------------------- */
+  
+    static const _String kNodeType ("NodeType") , kParents ("Parents"), kCPDFs ("CPDFs");
 
     ReportWarning (_String("Entered _BayesianGraphicalModel::ExportModel()"));
 
     if (theData.GetHDim() > 0) {
-        _String *   bgmName = (_String *) bgmNamesList (bgmList._SimpleList::Find((long)this));
-        _String     bgmNameLocal;
-        _String     nodeKey;
+        _String     bgm_name = *(_String *) bgmNamesList (bgmList._SimpleList::Find((long)this)) & "_export";
 
-        bgmNameLocal.Duplicate(bgmName);
-        bgmNameLocal << "_export";
-
-        rec << bgmNameLocal;
-        rec << "={};\n";
-
+        rec << bgm_name << "={};\n";
+ 
         for (long node = 0; node < num_nodes; node++) {
-            nodeKey = bgmNameLocal & "[\"" & node & "\"]";
-
-            rec << nodeKey;
-            rec << " = {};\n";
-
-            // record node type
-            rec << '(';
-            rec << nodeKey;
-            rec << ")[\"NodeType\"] = ";
-            rec << _String(node_type.lData[node]);
-            rec << ";\n";
-
-            // record parents as _Matrix object
-            _SimpleList parents,
-                        d_parents, c_parents;
-
+          
+           // start the dictionary entry for this node
+           rec << bgm_name << "['" << node << "'] = {\n"
+               << kNodeType.Enquote() << ':' << _String (node_type.get (node)) << ",\n"
+               << kParents.Enquote() << ':' ;
+          
+            _SimpleList parents, d_parents, c_parents;
+          
             for (long pnode = 0; pnode < num_nodes; pnode++) {
-                if (pnode == node) {
-                    continue;
+              if (pnode == node) {
+                continue;
+              }
+              if (theStructure(pnode,node) == 1) {
+                parents << pnode;
+                
+                if (is_node_discrete(pnode)) {
+                  d_parents << pnode;
+                } else {
+                  c_parents << pnode;
                 }
-                if (theStructure(pnode,node) == 1) {
-                    parents << pnode;
-
-                    if (node_type.lData[pnode] == 0) {
-                        d_parents << pnode;
-                    } else {
-                        c_parents << pnode;
-                    }
-                }
+              }
             }
-
-            rec << '(';
-            rec << nodeKey;
-            rec << ")[\"Parents\"] = {";
-            rec << _String((_String *)parents.toStr());
-            rec << "};\n";
-
-            // record network parameters as conditional probability density functions
-            rec << '(';
-            rec << nodeKey;
-            rec << ")[\"CPDFs\"] = {{";
-
-
+          
+            rec << '{';
+            rec.AppendNewInstance((_String*)parents.toStr()) << "},\n";
+            rec << kCPDFs.Enquote() << " : {{";
+ 
+ 
             // posterior probability density functions (PDFs) conditional on child node state (indexed by i)
-            if (node_type.lData[node] == 0) {
+            if (is_node_discrete (node)) {
                 // discrete child node, compute Dirichlet hyperparameters
                 _Matrix     n_ij, n_ijk;
 
@@ -140,53 +112,48 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
                             rec << ',';
                         }
                     }
-                    rec << "}},{\\\"PDF\\\":\\\"Dirichlet\\\"})\"";
+                    rec << "}},{'PDF':'Dirichlet'})\"";
                     if (j < n_ij.GetHDim()-1) {
                         rec << ',';
                     }
                 }
-            }
-
-            else if (node_type.lData[node] == 1) {  // CG child node
-                long            k                   = c_parents.lLength,        // a useful short-hand
+            } else if (is_node_continuous(node)) {  // CG child node
+                long            k                 = c_parents.countitems(),        // a useful short-hand
                                 num_parent_combos = 1;
 
                 _SimpleList     multipliers ((long)1),
                                 n_ij, pa_indexing;
 
-                hyFloat      rho_prior   = prior_sample_size (node, 0) > 0 ? (prior_sample_size (node, 0) / num_parent_combos) : 1.0,
+                hyFloat         rho_prior   = prior_sample_size (node, 0) > 0 ? (prior_sample_size (node, 0) / num_parent_combos) : 1.0,
                                 phi_prior = prior_scale (node, 0);
 
-                _Matrix         mu_prior (k+1, 1, false, true),
-                                tau_prior (k+1, k+1, false, true);
+                _Matrix         mu_prior  (k+1L, 1L, false, true),
+                                tau_prior (k+1L, k+1L, false, true);
 
-
-                // index cases by discrete parent configurations
-                for (long par = 0; par < d_parents.lLength; par++) {
-                    num_parent_combos *= num_levels.lData[d_parents.lData[par]];
-                    multipliers << num_parent_combos;
-                }
-
+              
+                d_parents.Each ([&num_parent_combos, &multipliers, this] (long value, unsigned long) -> void {
+                    multipliers << (num_parent_combos *= num_levels.get (value));
+                });
+            
                 n_ij.Populate (num_parent_combos, 0, 0);
                 pa_indexing.Populate (theData.GetHDim(), 0, 0);
 
-                if (d_parents.lLength > 0) {
+                if (d_parents.nonempty()) {
                     for (long obs = 0; obs < theData.GetHDim(); obs++) {
                         long    index       = 0,
                                 multiplier = 1;
 
                         for (long par = 0; par < d_parents.lLength; par++) {
-                            long    this_parent     = parents.lData[par];
-
+                            long    this_parent     = parents.get(par);
                             index += theData(obs, this_parent) * multiplier;    // max index = sum (parent * levels(parent))
-                            multiplier *= num_levels.lData[this_parent];
+                            multiplier *= num_levels.get(this_parent);
                         }
 
-                        pa_indexing.lData[obs] = index;
-                        n_ij.lData[index] += 1;
+                        pa_indexing[obs] = index;
+                        n_ij[index] += 1;
                     }
                 } else {
-                    n_ij.lData[0] = theData.GetHDim();
+                    n_ij[0] = theData.GetHDim();
                 }
 
 
@@ -197,7 +164,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
                             if (row == 0) {
                                 tau_prior.Store (0, 0, prior_precision (node, 0));
                             } else {
-                                tau_prior.Store (row, col, prior_precision (c_parents.lData[row],0));
+                                tau_prior.Store (row, col, prior_precision (c_parents.get(row),0));
                             }
                         } else {
                             tau_prior.Store (row, col, 0.);    // zero off-diagonal entries
@@ -208,25 +175,24 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 
                 mu_prior.Store (0, 0, prior_mean (node, 0));                // prior intercept
                 for (long i = 1; i < k+1; i++) {
-                    mu_prior.Store (i, 0, 0);    // set prior expectation of regression coefficients to zero
+                    mu_prior.Store (i, 0, 0.);    // set prior expectation of regression coefficients to zero
                 }
 
 
                 // for every discrete parent config (on which CG marginal distribution is conditioned)
                 for (long pa = 0; pa < num_parent_combos; pa++) {
                     // compute summary statistics
-                    _Matrix     zbpa (n_ij.lData[pa], k+1, false, true),
-                                yb (n_ij.lData[pa], 1, false, true);
+                    _Matrix     zbpa (n_ij.get(pa), k+1, false, true),
+                                yb (n_ij.get(pa), 1, false, true);
 
-                    for (long count_n = 0, obs = 0; obs < theData.GetHDim(); obs++) {
-                        if (pa_indexing.lData[obs] == pa) {
+                    for (long count_n = 0L, obs = 0L; obs < theData.GetHDim(); obs++) {
+                        if (pa_indexing.get(obs) == pa) {
                             zbpa.Store (count_n, 0, 1);
                             for (long cpar = 0; cpar < k; cpar++) {
-                                zbpa.Store (count_n, cpar+1, theData(obs, c_parents.lData[cpar]));
+                                zbpa.Store (count_n, cpar+1, theData(obs, c_parents.get(cpar)));
                             }
 
                             yb.Store (count_n, 0, theData(obs, node));
-
                             count_n++;
                         }
                     }
@@ -253,7 +219,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
                     temp *= mu;
                     mu = temp;
 
-					DeleteObject (tauinv);
+                    DeleteObject (tauinv);
 					
                     hyFloat  rho = rho_prior + n_ij.lData[pa],
                                 phi = phi_prior;
@@ -278,9 +244,9 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
                     // report CG posterior distributions to output string
                     rec << "\"Random(";
                     rec << _String((_String *)mu.toStr());
-                    rec << ",{\\\"PDF\\\":\\\"Gaussian\\\",\\\"ARG0\\\":Random({{";
+                    rec << ",{'PDF':'Gaussian','ARG0':Random({{";
                     rec << _String(phi);
-                    rec << "}},{\\\"PDF\\\":\\\"InverseWishart\\\",\\\"ARG0\\\":{{";
+                    rec << "}},{'PDF':'InverseWishart','ARG0':{{";
                     rec << _String(rho);
                     rec << "}}})*";
                     rec << _String((_String*)tau.Inverse()->toStr());
@@ -293,7 +259,7 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 
             }
 
-            rec << "}};\n"; // end matrix entry of conditional PDFs.
+            rec << "}}\n" << "};\n";
         }
     } else {
         HandleApplicationError (_String("Cannot export network parameters, this _BayesianGraphicalModel object has no data!"));
@@ -304,65 +270,60 @@ void _BayesianGraphicalModel::SerializeBGM (_String & rec)
 
 
 //___________________________________________________________________________________________
-bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import)
-{
+bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import) {
     //  Unpack contents of associative list sent from HBL.
     //   use to restore node score cache as an alternative to computing scores
     //   de novo from data -- particularly useful for time-consuming imputation
     //   in cases of missing data
-    ReportWarning (_String("Entered ImportCache() with avl: ") & (_String *) cache_import->toStr());
+    //ReportWarning (_String("Entered ImportCache() with avl: ") & (_String *) cache_import->toStr());
 
-    _String         keyString;
-    HBLObjectRef       valuePtr;
 
     if (scores_cached) {
-        ReportWarning (_String("WARNING: Overwriting pre-existing node score cache in bayesgraph2.cpp:ImportCache()"));
+        ReportWarning (_String("WARNING: Overwriting pre-existing node score cache in ") & __PRETTY_FUNCTION__);
     }
 
-    for (long node = 0; node < num_nodes; node++) {
-        _String     errMsg;
-        _List   *   node_scores = (_List *) node_score_cache.lData[node];
+    try {
+      for (long node = 0; node < num_nodes; node++) {
+          _List   *   node_scores = (_List *) node_score_cache.GetItem (node);
+          node_scores->Clear();
 
-        node_scores->Clear();
+          for (long num_parents = 0; num_parents <= max_parents.get(node); num_parents++) {
+            
+              const _String key = _String("Node") & node & "NumParents" & num_parents;
+            
+              HBLObjectRef cache_value = (HBLObjectRef) cache_import->GetByKey (key);
+              if (!cache_value) {
+                throw key.Enquote() & " not present in the cache dictionary";
+              }
 
-        for (long num_parents = 0; num_parents <= max_parents.lData[node]; num_parents++) {
-            keyString = _String("Node") & node & "NumParents" & num_parents;
-
-            if (num_parents == 0) {
-                if ((valuePtr = cache_import->GetByKey(keyString, NUMBER))) {
-                    (*node_scores) && (_Constant *) valuePtr;    // append duplicate
+              if (num_parents == 0) {
+                  if (cache_value->ObjectClass () == NUMBER) {
+                      (*node_scores) && cache_value;
+                  } else {
+                    throw key.Enquote() & " was expected to be a number";
+                 }
+              } else {
+                if (cache_value->ObjectClass () == MATRIX) {
+                  (*node_scores) && cache_value;
                 } else {
-                    errMsg = _String ("Expecting numerical value in associative list for key ") & keyString;
+                  throw key.Enquote() & " was expected to be a matrix";
                 }
-            } else if (num_parents == 1) {
-                if ((valuePtr = cache_import->GetByKey(keyString, MATRIX))) {
-                    (*node_scores) && (_Matrix *) valuePtr;
-                } else {
-                    errMsg = _String ("Expecting matrix in associative list for key ") & keyString;
-                }
-            } else {
-                if ((valuePtr = cache_import->GetByKey(keyString, MATRIX))) {
-                    (*node_scores) && (_NTupleStorage *) valuePtr;
-                } else {
-                    errMsg = _String("Expecting matrix (_NTupleStorage) object in associative list for key ") & keyString;
-                }
-            }
-        }
-
-        if (errMsg) {
-            HandleApplicationError (errMsg);
-            return false;
-        }
+              }
+          }
+      }
+    } catch (const _String err) {
+      HandleApplicationError(err);
+      return false;
     }
+  
 
-    scores_cached = TRUE;
+    scores_cached = true;
     return true;
 }
 
 
 //___________________________________________________________________________________________
-bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
-{
+bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export) const {
     // Export an associative list containing node_score_cache contents to HBL
     //  entries are indexed by key string referring to child node and number of parents,
     //      e.g. "N0P2" refers to scores associated with child node 0 and two parents
@@ -377,13 +338,15 @@ bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export)
         ReportWarning (_String("Exporting cache with ") & num_nodes & " nodes");
 
         for (long node = 0; node < num_nodes; node++) {
-            this_list = (_List *) node_score_cache.lData[node];
+            this_list = (_List *) node_score_cache.GetItem (node);
 
             for (long npar = 0; npar <= max_parents.lData[node]; npar++) {
                 keyString = _String ("Node") & node & "NumParents" & npar;
                 _FString    aKey (keyString, false);
+              
+              
 
-                ReportWarning (_String("Inserting with key ") & keyString);
+                //ReportWarning (_String("Inserting with key ") & keyString);
 
                 if (npar == 0) {
                     orphan_score = (_Constant *) this_list->lData[npar];

@@ -85,8 +85,8 @@ public:
     virtual _Matrix *       Optimize ();	// generic wrapper from HBL to different optimization methods
     										// e.g., K2, structural MCMC, order MCMC (see next functions)
 	
-    _Matrix*        GraphMetropolis (bool, long, long, long, hyFloat),
-    _Matrix*        OrderMetropolis (bool, long, long, hyFloat),
+    _Matrix*        GraphMetropolis (bool, long, long, long, hyFloat);
+    _Matrix*        OrderMetropolis (bool, long, long, hyFloat);
     _Matrix*        K2Search (bool, long, long);
 
 
@@ -113,9 +113,9 @@ public:
 
 
     /* input/output */
-    void                SerializeBGM (_String &);	// export network structure and parameters to HBL
+    void                SerializeBGM (_StringBuffer &);	// export network structure and parameters to HBL
     bool                ImportModel (_AssociativeList *),	// THIS HAS NOT BEEN WRITTEN
-                        ExportCache (_AssociativeList *),	// send node score cache to HBL as associative list
+                        ExportCache (_AssociativeList *) const,	// send node score cache to HBL as associative list
                         ImportCache (_AssociativeList *);	// set node score cache to HBL associative list
 
 

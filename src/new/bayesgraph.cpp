@@ -918,7 +918,6 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
       _SimpleList     all_but_one (num_nodes-1L, 0, 1),
                       nk_tuple;
       
-      hyFloat         score;
       _Matrix         single_parent_scores (num_nodes, 1, false, true);
       
       auto            handle_node_score = [this, &single_parent_scores,&all_but_one,&nk_tuple] (long node_id) -> _List * {
@@ -1396,13 +1395,12 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
           ReportWarning (_String("... starting K2 algorithm"));
         
         
-          output_matrix =  new _Matrix (num_nodes * num_nodes, 2, false, true);
+          //output_matrix =  new _Matrix (num_nodes * num_nodes, 2, false, true);
 
         
-           K2Search (optMethod,
+           output_matrix = K2Search (optMethod,
                      hy_env::EnvVariableGetNumber(kHYBgm_K2_RESTARTS, 1.0),
-                     hy_env::EnvVariableGetNumber(kHYBgm_K2_RANDOMIZE, num_nodes),
-                     output_matrix);
+                     hy_env::EnvVariableGetNumber(kHYBgm_K2_RANDOMIZE, num_nodes));
       } else {
         long      mcmc_steps = hy_env :: EnvVariableGetNumber(kHYBgm_MCMC_MAXSTEPS, 0.),
                   mcmc_burnin = hy_env :: EnvVariableGetNumber(kHYBgm_MCMC_BURNIN, 0.),
@@ -1852,19 +1850,19 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
     //  throws const _String exceptions
   
   
-      auto remove_random_edge = [this, graph] (long parent_index, long child_index) -> bool {
+      auto remove_random_parent_edge = [this, graph] (long node_index) -> bool {
       _SimpleList     removeable_edges;
       
         // build a list of current parents
       for (long par = 0L; par < num_nodes; par++)
           // par is parent of child AND the edge is NOT enforced
-        if ((*graph)(par,child_index) && constraint_graph(par,child_index) <=0.) {
+        if ((*graph)(par,node_index) && constraint_graph(par,node_index) <=0.) {
           removeable_edges << par;
         }
       
       if (removeable_edges.nonempty()) {
           // shuffle the list and remove the first parent
-        graph->Store (removeable_edges.get (removeable_edges.Choice()), child_index, 0.);
+        graph->Store (removeable_edges.get (removeable_edges.Choice()), node_index, 0.);
         return true;
       } else {
           // none of the edges can be removed
@@ -1915,7 +1913,7 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
               if ( (*graph)(parent,child) == 0. && constraint_graph(parent,child) >= 0.) {
                   // add an edge if it is absent and not banned
                   if (num_parents.get(child) == max_parents.get (child)) {
-                    if (remove_random_edge (parent, child)) {
+                    if (remove_random_parent_edge (child)) {
                       graph->Store (parent, child, 1.);
                       step ++;
                     } else {
@@ -1962,13 +1960,15 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
             // flip the target edge
   
                       if (num_parents.get(parent) == max_parents.get(parent)) {
-                        if (!remove_random_edge (child, parent)) {
+                        if (!remove_random_parent_edge (parent)) {
                           fail ++;
                           continue;
+                        } else {
+                          num_parents[parent]--;
                         }
                       }
-                      graph->Store (parent, child, 0);
-                      graph->Store (child, parent, 0);
+                      graph->Store (parent, child, 0.);
+                      graph->Store (child, parent, 1.);
                       num_parents[child]--;
                       num_parents[parent]++;
 
@@ -1982,65 +1982,41 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
                   (*order)[c_rank] = parent;	// remember to update the order matrix also!
 
                   // update edges affected by node swap
-          //  child <-  N   ...   N <- parent                   _________________,
+                  //  child <-  N   ...   N <- parent                   _________________,
                   //                                    becomes        |                 v
                   //                                                 parent    N         N    child
                   //                                                           ^                |
                   //                                                           `----------------+
                   for (long bystander, i = c_rank+1; i < p_rank; i++) {
-                      bystander = order->lData[i];
+                      bystander = order->get(i);
 
-                      if ( (*graph)(bystander, child) == 1 ) {
-                          graph->Store (bystander, child, 0);
-                          num_parents.lData[child]--;
-
-                          graph->Store (child, bystander, 1);
-                          num_parents.lData[bystander]++;
-
-                          if (num_parents.lData[bystander] > max_parents.lData[bystander]) {
+                      if ( (*graph)(bystander, child) == 1. ) {
+                          graph->Store (bystander, child, 0.);
+                          num_parents[child]--;
+                          graph->Store (child, bystander, 1.);
+                          num_parents[bystander]++;
+                        
+                  
+                          if (num_parents.get(bystander) > max_parents.get(bystander)) {
                               // number of parents for bystander node now exceeds maximum,
                               //  select a random edge to remove - including the edge C->B we just made!
-                              _SimpleList     removeable_edges;
-
-                              for (long par = 0; par < num_nodes; par++) {
-                                  if (  (*graph)(par, bystander)  &&  constraint_graph(par, bystander)<=0  ) {
-                                      removeable_edges << par;
-                                  }
-                }
-                
-                
-                              removeable_edges.Permute(1);
-                graph->Store (removeable_edges.lData[0], bystander, 0.);
-                /*
-                              graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], bystander, 0.);
-                 */
-                              num_parents.lData[bystander]--;
+                              remove_random_parent_edge (bystander);
+                              // guaranteed to work because at least C->B is removable
+                              num_parents[bystander]--;
                           }
                       }
 
-                      if ( (*graph)(parent,bystander) == 1) {
-              // flip edge from parent to bystander (P->B)
-                          graph->Store (parent, bystander, 0);
+                      if ( (*graph)(parent,bystander) == 1.) {
+                          // flip edge from parent to bystander (P->B)
+                          graph->Store (parent, bystander, 0.);
                           num_parents[bystander]--;
 
-                          graph->Store (bystander, parent, 1);
+                          graph->Store (bystander, parent, 1.);
                           num_parents[parent]++;
 
-                          if (num_parents.lData[parent] > max_parents.lData[parent]) {
-                // remove excess edge from X to parent other than bystander
-                              _SimpleList     removeable_edges;
-
-                              for (long par = 0; par < num_nodes; par++) {
-                                  if (  (*graph)(par, parent)  &&  constraint_graph(par, parent)<=0  ) {
-                                      removeable_edges << par;
-                                  }
-                }
-                
-                              removeable_edges.Permute(1);
-                graph->Store (removeable_edges.lData[0], parent, 0.);
-                /*
-                              graph->Store (removeable_edges.lData[ (long) (genrand_real2()*removeable_edges.lLength) ], parent, 0.);
-                 */
+                          if (num_parents.get(parent) > max_parents.get(parent)) {
+                              // remove excess edge from X to parent other than bystander (or bystander as well)
+                              remove_random_parent_edge (parent);
                               num_parents[parent]--;
                           }
                       }
@@ -2058,8 +2034,7 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
 
 
 //_______________________________________________________________________________________________________________________
-void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps, long sample_size, hyFloat chain_t,
-        _Matrix * result)
+_Matrix *    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps, long sample_size, hyFloat chain_t)
 {
     /* ----------------------------------------------------------------------------------------
         OrderMetropolis()
@@ -2070,15 +2045,15 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
         possible orderings (i.e. permutations of a sequence of length N) is factorial(N),
         and can possibly be computed exactly for N < 8.
        ---------------------------------------------------------------------------------------- */
-    long            first_node, second_node,
-                    sample_lag = n_steps / sample_size;
+   _Matrix     *   result = new _Matrix ( Maximum(n_steps , num_nodes*num_nodes), 4, false, true);
+  
+    long            sample_lag = n_steps / sample_size;
 
-    hyFloat      lk_ratio,
+    hyFloat         lk_ratio,
                     prob_current_order, prob_proposed_order, best_prob,
                     denom;
 
-    _SimpleList     current_order, proposed_order, best_node_order,
-                    * ptr_to_order;
+    _SimpleList     current_order, proposed_order, best_node_order;
 
     _List           * marginals         = new _List ();
 
@@ -2089,42 +2064,12 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 
 
 
-    /* SLKP 20070926
-     Add user feedback via the console window status bar
-     */
-    VerbosityLevel();
-    long howManyTimesUpdated = 0; // how many times has the line been updated; is the same as the # of seconds
-  
-  
-    TimeDifference timer;
-    // save initial timer; will only update every 1 second
-#ifdef __HEADLESS__
-    SetStatusLine (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")));
-#else
-#ifndef __UNIX__
-    SetStatusLine     (empty,_HYBgm_STATUS_LINE_MCMC & (do_sampling ? empty : _String(" burnin")), empty ,0,HY_SL_TASK|HY_SL_PERCENT);
-#else
-    _String         * progressReportFile = NULL;
-    _Variable       * progressFile = CheckReceptacle (&optimizationStatusFile, kEmptyString, false);
-
-    if (progressFile->ObjectClass () == STRING) {
-        progressReportFile = ((_FString*)progressFile->Compute())->theString;
-    }
-    ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC & (do_sampling ? kEmptyString : _String(" burnin")), -1., progressReportFile);
-#endif
-#endif
-
-    /* SLKP */
-
-
 
     // initialize node ordering
-    if (node_order_arg.lLength > 0) {
+    if (node_order_arg.nonempty()) {
         current_order = node_order_arg;
     } else {
-        ptr_to_order = GetOrderFromGraph (theStructure);
-        current_order.Duplicate(ptr_to_order);
-        DeleteObject (ptr_to_order);
+        current_order = GetOrderFromGraph (theStructure);
     }
 
     best_prob = prob_current_order = Compute (current_order, marginals);
@@ -2133,22 +2078,12 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
     proposed_order.Populate (num_nodes, 0, 1);
 
     // chain
-    for (long step = 0; step < n_steps; step++) {
+    for (long step = 0L; step < n_steps; step++) {
         // copy over current order to proposed order
-        for (long i = 0; i < proposed_order.lLength; i++) {
-            proposed_order.lData[i] = current_order.lData[i];
-        }
+        proposed_order = current_order;
+        _SimpleList      pair_to_swap = proposed_order.Sample (2);
 
-
-        // swap random nodes in ordered sequence
-        first_node  = genrand_int32() % num_nodes;
-        second_node = genrand_int32() % num_nodes;
-
-        while (first_node == second_node) {
-            second_node = genrand_int32() % num_nodes;
-        }
-
-        proposed_order.Swap (first_node, second_node);
+        proposed_order.Swap (pair_to_swap.get(0), pair_to_swap.get (1));
 
 
         // compute likelihood ratio of proposed : current orders
@@ -2158,9 +2093,8 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
         if (lk_ratio > 1. || genrand_real2() < lk_ratio) {  // then set current to proposed order
             current_order = proposed_order;
             prob_current_order = prob_proposed_order;
-
-            if (prob_proposed_order > best_prob) {
-                best_prob = prob_proposed_order;        // update best node ordering
+          
+            if (StoreIfGreater(best_prob, prob_proposed_order)) {
                 best_node_order = proposed_order;
             }
         }
@@ -2168,14 +2102,13 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
 
         // if past burn-in period and at sampling step, record trace and marginals
         if (do_sampling) {
-            if (step % sample_lag == 0) {
-				ReportWarning(_String("At step ") & step & " order: " & (_String *) current_order.toStr());
-				
+            if (step % sample_lag == 0L) {
+                ReportWarning(_String("At step ") & step & " order: " & _String((_String *) current_order.toStr()));
                 result->Store (step / sample_lag, 0, prob_current_order);
 
                 for (long child = 0; child < num_nodes; child++) {
                     // retrieve information from Compute()
-                    gv      = (_Vector *) marginals->lData[child * num_nodes + child];
+                    gv      = (_Vector *) marginals->GetItem (child * num_nodes + child);
                     denom   = (*gv)(0, 0);  // first entry holds node marginal post pr
 
                     for (long edge, parent = 0; parent < num_nodes; parent++) {
@@ -2184,77 +2117,43 @@ void    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_steps
                         }
 
                         edge    = child * num_nodes + parent;
-                        gv      = (_Vector *) marginals->lData[edge];
+                        gv      = (_Vector *) marginals->GetItem (edge);
 
                         // not all _GrowingVector entries in marginals are being used,
                         //      i.e., edges incompatible with order
                         if (gv->get_used() > 0) {
-							// store as transpose so that row = parent and column = child, same as GraphMCMC
-                            result->Store (parent*num_nodes+child, 1, (*result)(parent*num_nodes+child, 1) + exp (LogSumExpo(gv) - denom));
+                            // store as transpose so that row = parent and column = child, same as GraphMCMC
+                            result->get_dense_numeric_cell(parent*num_nodes+child, 1) += exp (LogSumExpo(gv) - denom);
                         }
                     }
                 }
             }
         }
-
-
-        /*SLKP 20070926; include progress report updates */
-        if (timer.TimeSinceStart()>1.0) { // time to update
-            howManyTimesUpdated ++;
-            _String statusLine = _HYBgm_STATUS_LINE_MCMC & (do_sampling ? kEmptyString : _String(" burnin")) & " " & (step+1) & "/" & n_steps
-                                 & " steps (" & (1.0+step)/howManyTimesUpdated & "/second)";
-#if  defined __HEADLESS__
-            SetStatusLine (statusLine);
-#else
-#if !defined __UNIX__
-            SetStatusLine     (empty,statusLine,empty,100*step/(n_steps),HY_SL_TASK|HY_SL_PERCENT);
-            yieldCPUTime(); // let the GUI handle user actions
-            if (terminate_execution) { // user wants to cancel the analysis
-                break;
-            }
-#endif
-#if defined __UNIX__ && ! defined __HEADLESS__ 
-            ConsoleBGMStatus (statusLine, 100.*step/(n_steps), progressReportFile);
-#endif
-#endif
-
-            timer.Start(); // reset timer for the next second
-        }
-        /* SLKP */
-
     }
+
+
     // chain terminates
 
 
     // convert sums of edge posterior probs. in container to means
+    hyFloat norm = 1./ sample_size;
     for (long edge = 0; edge < num_nodes * num_nodes; edge++) {
-        result->Store (edge, 1, (*result)(edge,1) / sample_size);
+        result->get_dense_numeric_cell(edge, 1)*= norm;
     }
 
 
     // export node ordering info
     for (long node = 0; node < num_nodes; node++) {
-        result->Store (node, 2, (hyFloat) (best_node_order.lData[node]));
-        result->Store (node, 3, (hyFloat) (current_order.lData[node]));
+        result->Store (node, 2, best_node_order.get(node));
+        result->Store (node, 3, current_order.get(node));
     }
 
 
     DumpMarginalVectors (marginals);
 
-
-    /*SLKP 20070926; include progress report updates */
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-    SetStatusLine     (_HYBgm_STATUS_LINE_MCMC_DONE);
-#endif
-#if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
-    ConsoleBGMStatus (_HYBgm_STATUS_LINE_MCMC_DONE, -1.0, progressReportFile);
-#endif
-    /* SLKP */
-
-
     // update node order
     node_order_arg = current_order;
-    ReportWarning (_String("Set node_order_arg to last order visited in orderMCMC:\n") & (_String*)node_order_arg.toStr());
+    ReportWarning (_String("Set node_order_arg to last order visited in orderMCMC:\n") & _String((_String*)node_order_arg.toStr()));
 }
 
 
