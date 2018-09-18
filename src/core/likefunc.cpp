@@ -1216,6 +1216,12 @@ void    _LikelihoodFunction::SetIthIndependent (long index, hyFloat p) {
     //printf ("%10.10g\n", p);
     _Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
     v->SetValue (new _Constant (p), false);
+    if (parameterValuesAndRanges) {
+      hyFloat check_value = v->Value();
+      if (p != check_value) {
+        parameterValuesAndRanges->Store(index,0,check_value);
+      }
+    }
 }
 
 //_______________________________________________________________________________________
@@ -1240,14 +1246,29 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p)
 
     hyFloat oldValue = v->Value();
 
-    if (p!=0.0) {
-        set = (fabs((oldValue-p)/p))>kMachineEpsilon;
+    if (p != INFINITY) {
+      if (p!=0.0) {
+          set = (fabs((oldValue-p)/p))>kMachineEpsilon;
+      } else {
+          set = fabs(oldValue-p)>kMachineEpsilon;
+      }
     } else {
-        set = fabs(oldValue-p)>kMachineEpsilon;
+      set = true;
     }
 
     if (set) {
         v->SetValue (new _Constant (p), false);
+        /**
+         SLKP : because 'p' may be moved back into parameter bounds,
+         if parameterValuesAndRanges is being used, we may need to update that the set
+         */
+        if (parameterValuesAndRanges) {
+          hyFloat check_value = v->Value();
+          if (p != check_value) {
+            parameterValuesAndRanges->Store(index,0,check_value);
+          }
+        }
+
     }
 
     return set;
