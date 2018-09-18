@@ -1193,7 +1193,7 @@ _Parameter  _LikelihoodFunction::GetIthIndependent (long index, bool map) const 
     _Parameter return_value;
 
     if (parameterValuesAndRanges && map) {
-        return_value = (*parameterValuesAndRanges)(index,1);
+      return_value = (*parameterValuesAndRanges)(index,1);
     } else {
       return_value = ((_Constant*) LocateVar (indexInd.lData[index])->Compute())->Value();
     }
@@ -1250,6 +1250,12 @@ void    _LikelihoodFunction::SetIthIndependent (long index, _Parameter p) {
     //printf ("%10.10g\n", p);
     _Variable * v =(_Variable*) LocateVar (indexInd.lData[index]);
     v->SetValue (new _Constant (p), false);
+    if (parameterValuesAndRanges) {
+      _Parameter check_value = v->Value();
+      if (p != check_value) {
+        parameterValuesAndRanges->Store(index,0,check_value);
+      }
+    }
 }
 
 //_______________________________________________________________________________________
@@ -1273,15 +1279,31 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, _Parameter p
     }
 
     _Parameter oldValue = v->Value();
+  
+    /** SLKP: need to handle the case of infinity separately */
 
-    if (p!=0.0) {
-        set = (fabs((oldValue-p)/p))>machineEps;
+    if (p != INFINITY) {
+      if (p!=0.0) {
+          set = (fabs((oldValue-p)/p))>machineEps;
+      } else {
+          set = fabs(oldValue-p)>machineEps;
+      }
     } else {
-        set = fabs(oldValue-p)>machineEps;
+      set = true;
     }
 
     if (set) {
         v->SetValue (new _Constant (p), false);
+        /**
+          SLKP : because 'p' may be moved back into parameter bounds,
+                 if parameterValuesAndRanges is being used, we may need to update that the set
+        */
+        if (parameterValuesAndRanges) {
+            _Parameter check_value = v->Value();
+            if (p != check_value) {
+              parameterValuesAndRanges->Store(index,0,check_value);
+            }
+        }
     }
 
     return set;
@@ -4981,6 +5003,11 @@ long    _LikelihoodFunction::Bracket (long index, _Parameter& left, _Parameter& 
             GetGradientStepBound                   (*gradient, lowerBound, upperBound, &freezeCount);
             //printf ("[FREEZE %ld/%g]\n", freezeCount, upperBound);
             if (freezeCount == 0 || freezeCount == indexInd.lLength || upperBound < 1e-10) {
+                if (verbosityLevel > 100) {
+                  char buf[512];
+                  sprintf (buf, "\n\t[_LikelihoodFunction::Bracket (eval %ld) cannot find an admissible gradient step (freezeCount = %d, upperBound = %15.12g)]", likeFuncEvalCallCount, freezeCount, upperBound);
+                  BufferToConsole (buf);
+                }
                 return -2;
             }
         }
@@ -6057,8 +6084,10 @@ _Parameter    _LikelihoodFunction::ConjugateGradientDescent (_Parameter precisio
             //}
 
             previous_gradient = gradient;
+  
             ComputeGradient (gradient, gradientStep, bestVal, freeze, 1, false);
-            
+          
+          
             //gradL = gradient.AbsValue ();
             
             //printf (">>>> %g\n", gradL);
@@ -6289,7 +6318,7 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
     
     
     middle_vector = bestVal;
-    
+  
     int  outcome = Bracket(-1, left,middle,right,leftValue, middleValue, rightValue,bp, &gradient);
     if (middleValue < initialValue) {
         SetAllIndependent (&bestVal);
@@ -6326,7 +6355,17 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
             } else {
                 SetAllIndependent (&bestVal);
             }
+            /*_Matrix check;
+            GetAllIndependent(check);
+            BufferToConsole("\nExiting _LikelihoodFunction::GradientLocateTheBump\n");
+            StringToConsole(_String((_String*) check.toStr()));
+            NLToConsole();
+            StringToConsole(_String(maxSoFar));
+            NLToConsole();
+            StringToConsole(Compute());
+            NLToConsole();*/
             FlushLocalUpdatePolicy();
+          
             return;
         }
         
@@ -6466,7 +6505,6 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                 if (verbosityLevel > 50) {
                     char buf [256];
                     snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump RESETTING THE VALUE (worse log likelihood obtained; current value %20.16g, best value %20.16g) ]\n\n", middleValue, maxSoFar);
-                    
                     BufferToConsole (buf);
                 }
                 SetAllIndependent (&bestVal);
