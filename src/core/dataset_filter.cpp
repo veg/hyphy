@@ -60,8 +60,7 @@ _DataSetFilter::~_DataSetFilter(void) { DeleteObject(accessCache); }
 //_______________________________________________________________________
 
 void _DataSetFilter::CopyFilter (_DataSetFilter const *copyFrom) {
-    memcpy ((char*)this, (char*)copyFrom, sizeof (_DataSetFilter));
-    
+  
     theFrequencies.Duplicate        (&copyFrom->theFrequencies);
     theNodeMap.Duplicate            (&copyFrom->theNodeMap);
     theMap.Duplicate                (&copyFrom->theMap);
@@ -81,14 +80,18 @@ void _DataSetFilter::CopyFilter (_DataSetFilter const *copyFrom) {
 BaseRef _DataSetFilter::makeDynamic (void) const {
     _DataSetFilter * r = new _DataSetFilter;
     r->CopyFilter   (this);
-    
     return r;
+}
+
+  //_______________________________________________________________________
+
+void _DataSetFilter::Duplicate(BaseRefConst source)  {
+  CopyFilter   ((_DataSetFilter const*)source);
 }
 
 
 //_______________________________________________________________________
-void    _DataSetFilter::SetDimensions (void)
-{
+void    _DataSetFilter::SetDimensions (void) {
     dimension   = GetDimension(true);
     undimension = GetDimension(false);
 }
@@ -2042,6 +2045,14 @@ void    _DataSetFilter::toFileStr (FILE*dest, unsigned long) {
 }
 
   //_________________________________________________________
+ BaseRef   _DataSetFilter::toStr(unsigned long) {
+    // write out the file with this dataset filter
+  _StringBuffer * serialized = new _StringBuffer (256UL + GetSiteCount() * NumberSpecies());
+  internalToStr (nil,serialized);
+  return serialized;
+}
+
+  //_________________________________________________________
 void    _DataSetFilter::ConvertCodeToLettersBuffered (long code, unsigned char unit, _String& storage, _AVLListXL* lookup) const {
     // write out the file with this dataset filter
   long            lookupC     = lookup->FindLong (code);
@@ -2528,4 +2539,5 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
   
   return out;
 }
+
 

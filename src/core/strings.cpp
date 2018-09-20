@@ -160,6 +160,24 @@ _String::_String(const _String &s) {
 
 //=============================================================
 
+_String::_String(_String &&s) {
+  s_length = s.s_length;
+  s_data = s.s_data;
+  s.Initialize();
+}
+
+  //=============================================================
+
+_String::_String(_StringBuffer &&s) {
+  s_length = s.s_length;
+  s_data = s.s_data;
+  s.TrimSpace();
+  s.Initialize();
+}
+
+
+//=============================================================
+
 _String::_String(_String *s) {
     if (s->CanFreeMe ()) {
         s_data       = s->s_data;
@@ -167,7 +185,7 @@ _String::_String(_String *s) {
         s->s_data    = nil;
         DeleteObject (s);
     } else {
-        AllocateAndCopyString (s_data, s_length);
+        AllocateAndCopyString (s->s_data, s->s_length);
         s->RemoveAReference();
     }
 }
@@ -906,7 +924,7 @@ long _String::FindAnyCase (const _String& pattern, long start, long end) const {
 }
 //=============================================================
 
-const _String _String::Replace(const _String& pattern, const _String replace, bool replace_all) const {
+const _String _String::Replace(const _String& pattern, const _String& replace, bool replace_all) const {
   
   if (s_length < pattern.s_length || pattern.s_length == 0UL) {
     return *this;
@@ -1016,60 +1034,6 @@ bool _String::BeginsWithAndIsNotAnIdent (_String const& pattern) const {
 */
 
 
-//=============================================================
-
-
-template <class DELIM> long _String::ExtractEnclosedExpression (long& from, DELIM open, DELIM close, int options) const {
-  long   current_position = from,
-         current_level    = 0L;
-  
-  bool       respect_quote = options & fExtractRespectQuote,
-             respect_escape = options & fExtractRespectEscape,
-             do_escape = false;
-  
-  char       quote_state = '\0';
-  
-  while (current_position < s_length) {
-    char this_char = s_data[current_position];
-    
-    if (do_escape) {
-      do_escape = false;
-    } else {
-      if ((this_char == '"' || this_char == '\'') && respect_quote && !do_escape) {
-        if (quote_state == '\0') {
-          quote_state = this_char;
-        } else {
-          if (this_char == quote_state) {
-            quote_state = '\0';
-          }
-        }
-      } else if (open == this_char && quote_state == '\0') {
-        // handle the case when close and open are the same
-        if (current_level == 1L && close == this_char && from < current_position) {
-          return current_position;
-        }
-        current_level++;
-        if (current_level == 1L) {
-          from = current_position;
-        }
-      } else if (close == this_char && quote_state == '\0') {
-        current_level--;
-        if (current_level == 0L && from < current_position) {
-          return current_position;
-        }
-        if (current_level < 0L) {
-          return kNotFound;
-        }
-      } else if (this_char == '\\' && respect_escape && quote_state != '\0' && !do_escape) {
-        do_escape = true;
-      }
-    }
-    
-    current_position++;
-  }
-  
-  return kNotFound;
-}
 
 //=============================================================
 

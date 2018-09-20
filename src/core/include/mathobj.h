@@ -65,7 +65,6 @@ public:
     virtual _MathObject* lDiv       (_MathObject*)     ;
     virtual _MathObject* longDiv    (_MathObject*)     ;
     virtual _MathObject* Raise      (_MathObject*)     ;
-    virtual void         Assign     (_MathObject*)     ;
     virtual bool         Equal      (_MathObject*)     ;
     virtual _MathObject* Abs        (void)             ;
     virtual _MathObject* Sin        (void)             ;

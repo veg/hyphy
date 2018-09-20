@@ -47,19 +47,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Data Set Filter/Numeric
 //_________________________________________________________
 
-_DataSetFilter::_DataSetFilter(void) {
-  unitLength = 0;
-  theData = NULL;
-  accessCache = nil;
-}
-//_________________________________________________________
-_DataSetFilter::_DataSetFilter(_DataSet *ds, char, _String &) {
-  theData = ds;
-  accessCache = nil;
-}
-//_________________________________________________________
-_DataSetFilter::~_DataSetFilter(void) { DeleteObject(accessCache); }
-
 //_________________________________________________________
 _DataSetFilterNumeric::~_DataSetFilterNumeric(void) {
 
@@ -75,6 +62,9 @@ _DataSetFilterNumeric::~_DataSetFilterNumeric(void) {
   }
 
 }
+
+  //_________________________________________________________
+
 
 _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
                                              _DataSet *ds, long cc) {
@@ -207,4 +197,14 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
 bool     _DataSetFilterNumeric::CompareTwoSites (unsigned long, unsigned long, unsigned long) const {
   return false;
 }
+
+  //_______________________________________________________________________
+
+BaseRef _DataSetFilterNumeric::makeDynamic (void) const {
+  _DataSetFilterNumeric * r = new _DataSetFilterNumeric();
+  r->CopyFilter           (this);
+  r->probabilityVectors.Duplicate(&probabilityVectors);
+  return r;
+}
+
 

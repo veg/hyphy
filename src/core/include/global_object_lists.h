@@ -293,5 +293,6 @@ namespace hyphy_global_objects {
 
     BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 
+    extern   _AVLListX batchLanguageFunctionNamesIndexed;
   
 }

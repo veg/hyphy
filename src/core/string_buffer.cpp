@@ -252,6 +252,7 @@ _StringBuffer&    _StringBuffer::AppendNCopies   (_String const& value, unsigned
 
 _StringBuffer& _StringBuffer::AppendSubstring(const _String& source, long start, long end) {
   (*this) << _String (source, start, end);
+  return (*this);
 }
 
  

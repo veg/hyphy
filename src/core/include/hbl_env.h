@@ -139,6 +139,7 @@ namespace hy_env {
           automatically_convert_branch_lengths,
           always_reload_libraries ,
           assertion_behavior,
+          assume_reversible,
           data_file_tree,
           data_file_tree_string,
           nexus_file_tree_matrix      ,
@@ -193,6 +194,7 @@ namespace hy_env {
           kStringSuppliedLengths,
           include_model_spec,
           lf_convergence_criterion,
+          try_numeric_sequence_match,
           kSCFGCorpus
     ;
   

@@ -43,6 +43,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
 
+_TranslationTable hy_default_translation_table;
+
 using namespace hy_global;
 
 _List _TranslationTable::_list_of_default_tables(_List() < "ACGT" < "ACGU" <

@@ -487,9 +487,10 @@ bool _List::Equal(_List const & l2) const
 long  _List::FindObject (BaseRefConst s, long startat) const {
     _String const * st = (_String const*)s;
     for (unsigned long i = startat; i<lLength; i++) {
+      
         _String * sp = (_String*)(((BaseRef*)lData)[i]->toStr());
 
-        if (st->Equal(sp)) {
+        if (*st == *sp) {
             DeleteObject(sp);
             return i;
         }

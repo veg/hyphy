@@ -180,8 +180,8 @@ _String *    StringFromConsole   () {
 
 //__________________________________________________________________________________
 
-void    StringToConsole (_String const s,  void * extra) {
-    BufferToConsole ((const char*)*s, extra);
+void    StringToConsole (_String const & s,  void * extra) {
+    BufferToConsole ((const char*)s, extra);
 }
 
 

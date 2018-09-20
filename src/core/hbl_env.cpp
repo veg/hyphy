@@ -147,6 +147,11 @@ _String const
     assertion_behavior                              ("ASSERTION_BEHAVIOR"),
         // if set to TRUE, then assertions that fail skip to the end of the current script
         // otherwise they terminate the program
+    assume_reversible                               ("ASSUME_REVERSIBLE"),
+        // 0 : check reversibility at run-time
+        // 1 : ASSUME reversibility
+        // -1 : ASSUME NON-reversibility
+  
     automatically_convert_branch_lengths            ("AUTOMATICALLY_CONVERT_BRANCH_LENGTHS"),
         // if TRUE, then HyPhy will attempt to solve BL (t) = C for model parameter t, whenever possible
     base_directory                                  ("HYPHY_BASE_DIRECTORY"),
@@ -277,6 +282,8 @@ _String const
         // if set, will cause data filters to _EXCLUDE_ sites with gaps or other N-fold redundancies
     status_bar_update_string                        ("STATUS_BAR_STATUS_STRING"),
         // used to set the progress message displayed to the user
+    try_numeric_sequence_match                      ("TRY_NUMERIC_SEQUENCE_MATCH"),
+        // try matching sequences by 0 (or 1) based index, if matching by name fails
     true_const                                      ("TRUE"),
         // the TRUE (1.0) constant
     use_last_model                                  ("USE_LAST_MODEL"),

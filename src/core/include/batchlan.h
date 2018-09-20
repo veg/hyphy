@@ -446,6 +446,9 @@ _String* MPIRecvString          (long,long&);
 #endif
 //____________________________________________________________________________________
 
+  //  EXTERN GLOBALS TODO SLKP 20180920 : these need to be reviewed and removed
+
+
 extern  _List
 
 dataSetList,
@@ -473,7 +476,6 @@ modelTypeList,
 //       vs expression based matrices, for which the dimension is stored.
 modelFrequenciesIndices,
 listOfCompiledFormulae;
-
 
 
 extern  _String
@@ -508,7 +510,6 @@ closeFile                       ,
 useLastDefinedMatrix            ,
 MessageLogging                  ,
 selectionStrings                ,
-useNoModel                      ,
 stdoutDestination               ,
 messageLogDestination           ,
 dataPanelSourcePath             ,
@@ -543,7 +544,6 @@ errorReportFormatExpression     ,
 errorReportFormatExpressionStr  ,
 errorReportFormatExpressionStack,
 errorReportFormatExpressionStdin,
-lastModelUsed                   ,
 deferConstrainAssignment        ,
 kBGMData                        ,
 bgmConstraintMx                 ,

@@ -1400,7 +1400,7 @@ bool      _ElementaryCommand::HandleUseModel (_ExecutionList& current_program) {
     _Matrix*    source_model = (_Matrix*)_HYRetrieveBLObjectByNameMutable (source_name, object_type,&model_index,false);
 
     if (!source_model && raw_model_name != kUseNoModel) {
-        throw (source_name.Enquote() & " does not refer to a valid defined substitution model and is not " & useNoModel);
+        throw (source_name.Enquote() & " does not refer to a valid defined substitution model and is not " & kUseNoModel);
     }
 
   } catch (const _String& error) {
@@ -1680,7 +1680,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       PushFilePath        (model_file, false);
       ReadBatchFile       (model_file,std_model);
       PopFilePath         ();
-      lastModelUsed       = model_file;
+      last_model_used    = model_file;
       std_model.Execute (&current_program);
 
     }
@@ -2060,7 +2060,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
     if (destination == kFprintfStdout) {
       _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
-      if (redirect->has_data()) {
+      if (redirect && redirect->has_data()) {
         destination         = redirect->get_str();
         if (destination == kFprintfDevNull) {
           return true; // "print" to /dev/null
@@ -2103,7 +2103,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
       }
     }
 
-    for (unsigned long print_argument_idx = 1UL; print_argument_idx < parameter_count (); print_argument_idx) {
+    for (unsigned long print_argument_idx = 1UL; print_argument_idx < parameter_count (); print_argument_idx++) {
       _String * current_argument = GetIthParameter(print_argument_idx);
       BaseRef   managed_object_to_print  = nil,
                 dynamic_object_to_print = nil;
@@ -3337,13 +3337,7 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
   
   _List local_object_manager;
   
-  _String *likef          = (_String*)parameters(1),
-  tempString      = ProcessStringArgument (likef),
-  errMsg;
-  
-  if (tempString.nonempty()) {
-    likef = &tempString;
-  }
+  _String *likef          = (_String*)parameters(1);
   
   _String name2lookup = AppendContainerName(*likef,chain.nameSpacePrefix);
   long    objectID    = FindLikeFuncName (name2lookup);

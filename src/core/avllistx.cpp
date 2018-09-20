@@ -173,3 +173,13 @@ long _AVLListX::GetDataByKey(BaseRefConst key) const {
     }
     return GetXtra(f);
 }
+
+//______________________________________________________________
+
+long _AVLListX::FindAndGetXtra(BaseRefConst key, long default_value) const {
+  long f = Find (key);
+  if (f >= 0) {
+    return GetXtra(f);
+  }
+  return default_value;
+}

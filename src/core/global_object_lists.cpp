@@ -74,6 +74,10 @@ namespace hyphy_global_objects {
    data filter objects -- internal
    */
   
+    _List _batchLanugageFunctionNamesIndexed;
+   _AVLListX batchLanguageFunctionNamesIndexed (&_batchLanugageFunctionNamesIndexed);
+
+  
   
   
   void  _SetDataFilterParameters (_String const& name, _DataSetFilter const& filter) {
@@ -614,7 +618,45 @@ namespace hyphy_global_objects {
         return dataSetNamesList.FindObject (&s);
     }
     
-    
+    //____________________________________________________________________________________
+    long    FindBgmName (_String const&s) {
+      return bgmNamesList.FindObject (&s);
+    }
+
+    //____________________________________________________________________________________
+    long    FindScfgName (_String const&s) {
+      return scfgNamesList.FindObject (&s);
+    }
+  
+ 
+    //____________________________________________________________________________________
+    long    FindBFFunctionName (_String const&s, _VariableContainer const* theP) {
+      if (theP) {
+        _String prefix = *(theP->GetName());
+        
+          //ReportWarning (_String ("Looking for ") & s.Enquote() & " in " & prefix.Enquote());
+        
+        while (1) {
+          _String test_id = prefix & '.' & s;
+          long idx = batchLanguageFunctionNamesIndexed.Find (&test_id);
+          if (idx >= 0) {
+            return batchLanguageFunctionNamesIndexed.GetXtra(idx);
+              //s = test_id;
+              //return idx;
+          }
+          long cut_at = prefix.FindBackwards ('.', 0, -1);
+          if (cut_at > 0) {
+            prefix.Trim (0, cut_at - 1);
+          } else {
+            break;
+          }
+        };
+      }
+      
+      
+        //ReportWarning (_String ("Looking for ") & s.Enquote() & " in global context");
+      return batchLanguageFunctionNamesIndexed.FindAndGetXtra(&s,-1);
+    }
     //____________________________________________________________________________________
     long    FindLikeFuncName (_String const&s, bool tryAsAString)
     {

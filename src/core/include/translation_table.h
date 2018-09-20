@@ -172,3 +172,4 @@ public:
   // if null - then assume default translation table;
 };
 
+extern _TranslationTable hy_default_translation_table;

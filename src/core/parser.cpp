@@ -1105,7 +1105,12 @@ void    SetupOperationLists (void) {
 
         hyReservedWords << BuiltInFunctions;
         hyReservedWords.AppendNewInstance (new _String("global"));
+      
+      
         hyReservedWords.Sort();
+        /*hyReservedWords.ForEach ([] (BaseRef item, unsigned long index) -> void {
+            printf ("%d %s\n", index, ((_String*)item)->get_str());
+        });*/
     }
 
 

@@ -264,22 +264,23 @@ void    ReadInTemplateFiles(void) {
     fclose (modelList);
     
     if (theData.length()) {
-        _ElementaryCommand::ExtractConditions(theData,0,availableTemplateFiles);
-        for (long i = 0; i<availableTemplateFiles.countitems(); i++) {
-            _String* thisString = (_String*)availableTemplateFiles(i);
-            _List   thisFile;
-            _ElementaryCommand::ExtractConditions(*thisString,thisString->FirstNonSpaceIndex(),thisFile,',');
-            if (thisFile.lLength!=3) {
-                availableTemplateFiles.Delete(i);
-                i--;
-                continue;
+      
+        _List extracted_files;
+      
+        _ElementaryCommand::ExtractConditions(theData,0,extracted_files);
+        extracted_files.ForEach([] (BaseRef item, unsigned long) -> void {
+            _String* thisString = (_String*)item;
+            _List  *  thisFile  = new _List();
+            _ElementaryCommand::ExtractConditions(*thisString,thisString->FirstNonSpaceIndex(),*thisFile,',');
+            if (thisFile->countitems() == 3L) {
+                thisFile->ForEach ([] (BaseRef item, unsigned long) -> void { ((_String*)item)->StripQuotes();});
+                availableTemplateFiles.AppendNewInstance(thisFile);
+            } else {
+              DeleteObject (thisFile);
             }
-            for (long j = 0; j<3; j++) {
-                ((_String*)thisFile(j))->StripQuotes();
-            }
-            availableTemplateFiles.Replace(i,&thisFile,true);
-        }
-
+          
+        });
+      
     }
 }
 
@@ -351,10 +352,7 @@ void    ReadInPostFiles(void) {
 long    DisplayListOfChoices (void) {
     ReadInTemplateFiles();
   
-    auto access_choice_item = [&] (long cat, long item) -> const _String * {
-        return (_String*)(*(_List*)availableTemplateFiles(cat))(item);
-    };
-
+ 
     if (!availableTemplateFiles.lLength) {
         return -1;
     }
@@ -364,9 +362,10 @@ long    DisplayListOfChoices (void) {
     _SimpleList categoryDelimiters;
     _List       categoryHeadings;
 
-    for (choice = 0; choice< availableTemplateFiles.lLength; choice++) {
-        _String const * this_line = access_choice_item (2, choice);
-        if ( this_line->get_char (0) == '!') {
+    for (choice = 0; choice< availableTemplateFiles.countitems(); choice++) {
+      _String const * this_line = (_String const *)availableTemplateFiles.GetItem (choice, 2);
+      
+         if ( this_line->get_char (0) == '!') {
             categoryDelimiters<<choice;
             _String * category_heading = new _String (*this_line);
             category_heading->Trim (1,kStringEnd);
@@ -378,7 +377,7 @@ long    DisplayListOfChoices (void) {
     if (categoryDelimiters.lLength==0) {
         while (choice == -1) {
             for (choice = 0; choice<availableTemplateFiles.lLength; choice++) {
-                printf ("\n\t(%s):%s", access_choice_item (choice, 0)->get_str() , access_choice_item (choice, 1) -> get_str());
+                printf ("\n\t(%s):%s", ((_String const *)availableTemplateFiles.GetItem (choice, 0))->get_str() , ((_String const *)availableTemplateFiles.GetItem (choice, 1)) -> get_str());
             }
             printf ("\n\n Please type in the abbreviation for the file you want to use (or press ENTER to process custom batch file):");
           
@@ -389,7 +388,7 @@ long    DisplayListOfChoices (void) {
             }
           
             for (choice = 0; choice<availableTemplateFiles.lLength; choice++) {
-                if (user_input == *access_choice_item (choice, 0)) {
+                if (user_input == *(_String const *)availableTemplateFiles.GetItem (choice, 0)) {
                     break;
                 }
             }
@@ -440,7 +439,7 @@ long    DisplayListOfChoices (void) {
                      end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.lData[categNumber+1];
 
                 for (choice = start; choice<end; choice++) {
-                    printf ("\n\t(%ld) %s",choice-start+1,access_choice_item (choice, 1)->get_str());
+                    printf ("\n\t(%ld) %s",choice-start+1,((_String const *)availableTemplateFiles.GetItem (choice, 1))->get_str());
                 }
 
                 printf ("\n\n Please select the analysis you would like to perform (or press ENTER to return to the list of analysis types):");

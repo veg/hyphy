@@ -201,13 +201,12 @@ private:
   bool useHorizontalRep;
 };
 
-extern _TranslationTable defaultTranslationTable;
-
 void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool append = false,
                   bool upCase = true);
+
 _DataSet *ReadDataSetFile(FILE *, char = 0, _String * = nil, _String * = nil,
                           _String * = nil,
-                          _TranslationTable * = &defaultTranslationTable,
+                          _TranslationTable * = &hy_default_translation_table,
                           _ExecutionList *target = nil);
 
 

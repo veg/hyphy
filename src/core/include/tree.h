@@ -160,7 +160,6 @@ public:
     void        SetUpMatrices                   (long);
     void        CleanUpMatrices                 (void);
     //void        BuildTopLevelCache              (void);
-    void        KillTopLevelCache               (void);
     void        SetCompMatrices                 (long) const;
 
     virtual void        ClearConstraints                (void);

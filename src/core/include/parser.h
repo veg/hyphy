@@ -95,11 +95,8 @@ extern      _String         HalfOps;
 
 extern      _Trie           UnOps;
 
-extern      long            printDigits,
-                            verbosityLevel;
 
-extern      long            lastMatrixDeclared,
-            subNumericValues;
+extern      long            lastMatrixDeclared;
 
 long        LocateVarByName (_String const&);
 _Variable*  LocateVar       (long index);

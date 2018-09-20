@@ -52,6 +52,7 @@ enum _hy_dataset_filter_ambiguity_resolution {
   kAmbiguityHandlingSkip
 };
 
+
 class _DataSetFilter : public BaseObj {
 
 public:
@@ -221,16 +222,32 @@ public:
    * have the same pattern in the original alignment
    */
 
-  void PatternToSiteMapper(void *, void *, char, long) const;
+  template<typename SOURCE_TYPE, typename TARGET_TYPE> void PatternToSiteMapper(SOURCE_TYPE const* source, TARGET_TYPE  * target,  long padup, TARGET_TYPE filler) const {
+    
+  
+    duplicateMap.Each ([source, target] (long value, unsigned long site) -> void {
+      target [site] = source[value];
+    });
+    
+    if (padup > 0) {
+      for (long site = duplicateMap.countitems(); site < padup; site++) {
+        target[site] = filler;
+      }
+    }
+  }
+  
   /*
+      20180920: SLKP changed to templates
       20090325: SLKP
+   
       a function that takes per pattern values (source, argument 1)
       and maps them onto sites into target (argument 2)
-      the third argument is 0 to treat the pointers as hyFloat*
+      the third argument is 
+      0 to treat the pointers as hyFloat*
       1 to treat them as long*
       2 and to treat them as hyFloat* and long*, respetively
       20090929: SLKP
-      the fourth argument is used to speficy a padding-size,
+      the third argument is used to speficy a padding-size,
           all values from the filter size up to that value are set to 1 (for
      mode 0) and 0 (for mode 1) this is needed to handle uneven data filters in
      SITE_LIKELIHOOD constructs

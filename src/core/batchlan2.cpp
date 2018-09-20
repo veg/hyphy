@@ -65,7 +65,6 @@ extern      _String                 blDoSQL,
             blGetNeutralNull,
             blHBLProfile,
             blDeleteObject,
-            last_model_parameter_list,
             blGetString,
             blRequireVersion,
             blAssert;
@@ -1414,7 +1413,7 @@ BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long
 
     if (type & HY_BL_MODEL) {
         loc = FindModelName(name);
-        if (loc < 0 && name == last_model_parameter_list || name == hy_env::use_last_model) {
+        if (loc < 0 && name == hy_env::last_model_parameter_list || name == hy_env::use_last_model) {
             loc = lastMatrixDeclared;
         }
         if (loc >= 0) {

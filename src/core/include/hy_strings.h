@@ -70,6 +70,7 @@ enum hy_string_search_direction {
 class _SimpleList;
 class _List;
 class _ExecutionList;
+class _StringBuffer;
 
 class _String : public BaseObj {
 
@@ -145,6 +146,24 @@ public:
    - SLKP 20170517 reviewed while porting from v3 branch
    */
   _String(const _String &str);
+
+  /**
+   * A RHS move constructor
+   * @param str : the string to copy from
+   
+   * Revision history
+   - SLKP 20180920 initial implementation
+   */
+   _String(_String && str);
+
+  /**
+   * A RHS move constructor for string buffer
+   * @param str : the string to copy from
+   
+   * Revision history
+   - SLKP 20180920 initial implementation
+   */
+   _String(_StringBuffer && str);
 
   /**
    * The purpose of this constructor is a "move" contents from a dynamically
@@ -803,7 +822,7 @@ public:
      - SLKP 20170614; reviewed while porting from the v3 branch
    */
 
-  const _String Replace(const _String &pattern, const _String replace,
+  const _String Replace(const _String &pattern, const _String& replace,
                         bool replace_all) const;
 
   /**
@@ -970,8 +989,61 @@ public:
      - SLKP 20171211: added support for generic callbacks to check whether or not the final character has been found
   */
 
-  template <class DELIM> long ExtractEnclosedExpression(long &, DELIM, DELIM, int) const;
-
+    //=============================================================
+  
+  
+  template <class DELIM> long ExtractEnclosedExpression (long& from, DELIM open, DELIM close, int options) const {
+    long   current_position = from,
+    current_level    = 0L;
+    
+    bool       respect_quote = options & fExtractRespectQuote,
+    respect_escape = options & fExtractRespectEscape,
+    do_escape = false;
+    
+    char       quote_state = '\0';
+    
+    while (current_position < s_length) {
+      char this_char = s_data[current_position];
+      
+      if (do_escape) {
+        do_escape = false;
+      } else {
+        if ((this_char == '"' || this_char == '\'') && respect_quote && !do_escape) {
+          if (quote_state == '\0') {
+            quote_state = this_char;
+          } else {
+            if (this_char == quote_state) {
+              quote_state = '\0';
+            }
+          }
+        } else if (open == this_char && quote_state == '\0') {
+            // handle the case when close and open are the same
+          if (current_level == 1L && close == this_char && from < current_position) {
+            return current_position;
+          }
+          current_level++;
+          if (current_level == 1L) {
+            from = current_position;
+          }
+        } else if (close == this_char && quote_state == '\0') {
+          current_level--;
+          if (current_level == 0L && from < current_position) {
+            return current_position;
+          }
+          if (current_level < 0L) {
+            return kNotFound;
+          }
+        } else if (this_char == '\\' && respect_escape && quote_state != '\0' && !do_escape) {
+          do_escape = true;
+        }
+      }
+      
+      current_position++;
+    }
+    
+    return kNotFound;
+  }
+  
   /**
    * Starting at a 0-based index [argument 1],
    * find a span that terminates in one of the characters in [argument 2], while
@@ -1354,7 +1426,7 @@ void SetStatusLine(_String, _String, _String, long, char);
 
 void SetStatusLineUser(_String const);
 
-void StringToConsole(_String const, void *extra = nil);
+void StringToConsole(_String const &, void *extra = nil);
 void BufferToConsole(const char *, void *extra = nil);
 void NLToConsole(void *extra = nil);
 

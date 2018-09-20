@@ -48,10 +48,9 @@ using namespace hyphy_global_objects;
 
 #define DATA_SET_SWITCH_THRESHOLD 100000
 
-extern _TranslationTable defaultTranslationTable;
 
 _DataSet::_DataSet(void) {
-  theTT = &defaultTranslationTable;
+  theTT = &hy_default_translation_table;
   streamThrough = nil;
   dsh = nil;
   useHorizontalRep = false;
@@ -64,7 +63,7 @@ _DataSet::_DataSet(long l)
 {
   dsh = nil;
   streamThrough = nil;
-  theTT = &defaultTranslationTable;
+  theTT = &hy_default_translation_table;
   useHorizontalRep = false;
 }
 
@@ -73,7 +72,7 @@ _DataSet::_DataSet(long l)
 _DataSet::_DataSet(FILE *f) {
   dsh = nil;
   useHorizontalRep = false;
-  theTT = &defaultTranslationTable;
+  theTT = &hy_default_translation_table;
   streamThrough = f;
   theMap << 0; // current sequence
   theMap << 0; // current site
@@ -83,7 +82,7 @@ _DataSet::_DataSet(FILE *f) {
 //_______________________________________________________________________
 
 _DataSet::~_DataSet(void) {
-  if (theTT != &defaultTranslationTable) {
+  if (theTT != &hy_default_translation_table) {
     DeleteObject(theTT);
   }
 }
@@ -95,9 +94,9 @@ void _DataSet::Clear(bool) {
   theMap.Clear();
   theFrequencies.Clear();
   theNames.Clear();
-  if (theTT != &defaultTranslationTable) {
+  if (theTT != &hy_default_translation_table) {
     DeleteObject(theTT);
-    theTT = &defaultTranslationTable;
+    theTT = &hy_default_translation_table;
   }
   noOfSpecies = 0;
   if (dsh) {
@@ -114,7 +113,7 @@ BaseRef _DataSet::makeDynamic(void) const {
   _DataSet *r = new _DataSet;
   r->theMap.Duplicate(&theMap);
   r->theFrequencies.Duplicate(&theFrequencies);
-  if (theTT != &defaultTranslationTable) {
+  if (theTT != &hy_default_translation_table) {
     r->theTT->AddAReference();
   }
   r->theNames.Duplicate(&theNames);
@@ -391,7 +390,7 @@ _DataSet::GetFreqType(long index) const { // return the frequency of a site
 //_______________________________________________________________________
 
 void _DataSet::SetTranslationTable(_DataSet *newTT) {
-  if (theTT && (theTT != &defaultTranslationTable)) {
+  if (theTT && (theTT != &hy_default_translation_table)) {
     DeleteObject(theTT);
   }
   theTT = (_TranslationTable *)newTT->theTT->makeDynamic();
@@ -400,7 +399,7 @@ void _DataSet::SetTranslationTable(_DataSet *newTT) {
 //_______________________________________________________________________
 
 void _DataSet::SetTranslationTable(_TranslationTable *newTT) {
-  if (theTT && (theTT != &defaultTranslationTable)) {
+  if (theTT && (theTT != &hy_default_translation_table)) {
     DeleteObject(theTT);
   }
   theTT = (_TranslationTable *)newTT->makeDynamic();
@@ -1012,8 +1011,8 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
 
 //_________________________________________________________
 void    checkTTStatus (FileState* fs) {// check whether the translation table needs to be refreshed}
-    if (fs->translationTable == &defaultTranslationTable) {
-        fs->translationTable =  (_TranslationTable*)defaultTranslationTable.makeDynamic();
+    if (fs->translationTable == &hy_default_translation_table) {
+        fs->translationTable =  (_TranslationTable*)hy_default_translation_table.makeDynamic();
     }
 }
 //_________________________________________________________
@@ -1758,12 +1757,12 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     result->theTT             = fState.translationTable;
     
     // check to see if result may be an amino-acid data
-    if (doAlphaConsistencyCheck && result->theTT == &defaultTranslationTable) {
+    if (doAlphaConsistencyCheck && result->theTT == &hy_default_translation_table) {
         if (result->GetNoTypes() == 0)
             // emptyString data set
             // try binary data
         {
-            _TranslationTable *trialTable = new _TranslationTable (defaultTranslationTable);
+            _TranslationTable *trialTable = new _TranslationTable (hy_default_translation_table);
             trialTable->baseLength = 2;
             _DataSet * res2 = ReadDataSetFile (f, execBF, theS, bfName, namespaceID, trialTable);
             if (res2->GetNoTypes()) {
@@ -1776,12 +1775,12 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             if (result->CheckAlphabetConsistency()<0.5)
                 // less than 50% of the data in the alphabet is not in the basic alphabet
             {
-                _TranslationTable trialTable (defaultTranslationTable);
+                _TranslationTable trialTable (hy_default_translation_table);
                 trialTable.baseLength = 20;
                 (*result).theTT = &trialTable;
                 if ((*result).CheckAlphabetConsistency()<0.5) {
                     CurrentLine = "More than 50% of characters in the data are not in the alphabet.";
-                    (*result).theTT =  &defaultTranslationTable;
+                    (*result).theTT =  &hy_default_translation_table;
                     ReportWarning (CurrentLine);
                 } else {
                     (*result).theTT = (_TranslationTable*)trialTable.makeDynamic();

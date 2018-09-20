@@ -75,7 +75,6 @@ pathNames,
 theModelList,
 batchLanguageFunctions,
 batchLanguageFunctionNames,
-_batchLanugageFunctionNamesIndexed,
 batchLanguageFunctionParameterLists,
 batchLanguageFunctionParameterTypes,
 compiledFormulaeParameters,
@@ -83,7 +82,6 @@ modelNames,
 executionStack,
 loadedLibraryPathsBackend;
 
-_AVLListX batchLanguageFunctionNamesIndexed (&_batchLanugageFunctionNamesIndexed);
 
 #ifdef __MAC__
 _String volumeName;
@@ -137,7 +135,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 marginalAncestors               ("MARGINAL"),
                                 doLeavesAncestors               ("DOLEAVES"),
                                  dialogPrompt,
-                                hy_scanf_last_file_path,
                                 defFileNameValue;
 
 
@@ -1590,7 +1587,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               currentLine.Trim(1,kStringEnd);
           }
 
-          if (currentLine.nonempty()) {
+          if (currentLine.empty()) {
               continue;
           }
 
@@ -1612,14 +1609,14 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                            condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
                       if (condition_index_match < 0) {
                           // try to see if the command accepts a variable number of arguments (at least X)
-                         if (commandExtraInfo->extract_conditions.lLength == 1 && commandExtraInfo->extract_conditions.lData[0] < 0) {
-                              if (pieces->lLength < -commandExtraInfo->extract_conditions.lData[0]) {
-                                   throw (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.lData[0]) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
-                              } else {
-                                   throw (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
+                         if (commandExtraInfo->extract_conditions.countitems() == 1 && commandExtraInfo->extract_conditions.get(0) < 0) {
+                              if (pieces->countitems() < -commandExtraInfo->extract_conditions.get(0)) {
+                                   throw (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected at least " & _String (-commandExtraInfo->extract_conditions.get(0)) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
                               }
-  
+                         } else {
+                           throw (_String("Incorrect number of arguments (") & (long) pieces->lLength & ") supplied: expected one of " & _String ((_String*)commandExtraInfo->extract_conditions.toStr()) & ", while processing '"& currentLine.Cut (0, upto) & "'. ");
                          }
+
                       }
                     
                       if (commandExtraInfo->do_trim) {
@@ -2542,13 +2539,9 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
     SetStatusLine ("Simulating Data");
 
     _String  likefID        = chain.AddNameSpaceToID(*(_String*)parameters(1)),
-             tempString     = ProcessStringArgument (&likefID),
-             errMsg;
+              errMsg;
 
-    if (tempString.nonempty()) {
-        likefID = tempString;
-    }
-
+ 
     long f  = FindLikeFuncName (likefID),
          s2 = FindSCFGName     (likefID);
 
@@ -3418,7 +3411,14 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
 
 
     // non printable characters at the end ?
-    while (index>=0 && !isprint(input[--index])) ;
+    while (index>0) {
+      if (!isprint (input.char_at (index))) {
+        index--;
+      } else {
+        break;
+      }
+    }
+  
     input.Trim (0,index);
 
     for (index = 0L; index<input.length(); index++) {
@@ -3613,7 +3613,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
     }
 
 
-    if (scope_depth != 0L || comment_state != slash_star || literal_state != normal_text || matrix_depth != 0L || bracket_depth != 0L || parentheses_depth != 0L) {
+    if (scope_depth != 0L || comment_state != no_comment || literal_state != normal_text || matrix_depth != 0L || bracket_depth != 0L || parentheses_depth != 0L) {
         if (result!='}') {
             HandleApplicationError (_String("Expression appears to be incomplete/syntax error. {} scope: ") &scope_depth & ", () depth "
                        & parentheses_depth & ", matrix scope: " & matrix_depth & '.' & (literal_state == double_quote ?" In a \"\" literal. ":kEmptyString)
@@ -3671,7 +3671,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
         normal_text = 0,
         single_quote = 1,
         double_quote = 2
-    } quote_type;
+    } quote_type = normal_text;
 
 
     for (; index<source.length(); index++) {
@@ -3691,7 +3691,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
             }
             if (c==')') {
                 parentheses_depth --;
-                if (!parentheses_depth == 0L) {
+                if (parentheses_depth == 0L) {
                     break;
                 }
                 continue;
@@ -4622,7 +4622,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
         _String source_file (f);
 
         if (source_file.BeginsWith ("#NEXUS",false)) {
-            ReadDataSetFile (f,1,nil,&fName, nil, &defaultTranslationTable, &target);
+            ReadDataSetFile (f,1,nil,&fName, nil, &hy_default_translation_table, &target);
         } else {
             target.BuildList (source_file);
             target.sourceFile = fName;

@@ -98,7 +98,7 @@ namespace hy_global {
     _String const    kEmptyString,
                      kPromptForFilePlaceholder        ("PROMPT_FOR_FILE"),
                      kTemporaryFilePlaceholder        ("TEMP_FILE_NAME"),
-                     kEmptyAssociateList ("{}"),
+                     kEmptyAssociativeList ("{}"),
                      kHyPhyCiteString ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using\
  phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at\
  http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n"),
@@ -130,6 +130,7 @@ namespace hy_global {
     _String
                      hy_base_directory,
                      hy_lib_directory,
+                     hy_scanf_last_file_path,
                      hy_standard_library_directory ("TemplateBatchFiles"),
                      hy_standard_model_directory   ("TemplateModels"),
                      hy_error_log_name             ("errors.log"),
@@ -160,10 +161,9 @@ namespace hy_global {
                      verbosity_level = 0L;
   
   
-    namespace {
-      int _reg_exp_err_code = 0;
-      regex_t * hy_float_regex = _String::PrepRegExp ("[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?", _reg_exp_err_code, true);
-    }
+    int _reg_exp_err_code = 0;
+    regex_t * hy_float_regex = _String::PrepRegExp ("[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?", _reg_exp_err_code, true);
+  
   
 
     //____________________________________________________________________________________
@@ -718,9 +718,9 @@ namespace hy_global {
     _String errMsg;
     
     try {
-      if (path_name == kPromptForFilePlaceholder || path_name == kEmptyAssociativeList) {
+      if (path_name == kPromptForFilePlaceholder || path_name == kEmptyString) {
         // prompt user for file
-        if (path_name == kEmptyAssociativeList) {
+        if (path_name == kEmptyString) {
 #if not defined __MINGW32__ && not defined __WINDOZE__
           char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
           int fileDescriptor = mkstemp(tmpFileName);

@@ -161,7 +161,6 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 useFullMST                      ("USE_MST_HEURISTIC"),
                                 stateCountMatrix                ("STATE_COUNT_MATRIX"),
                                 wStateCountMatrix               ("WSTATE_COUNT_MATRIX"),
-                                tryNumericSequenceMatch         ("TRY_NUMERIC_SEQUENCE_MATCH"),
                                 allowSequenceMismatch           ("ALLOW_SEQUENCE_MISMATCH"),
                                 shortMPIReturn                  ("SHORT_MPI_RETURN"),
                                 mpiPrefixCommand                ("MPI_PREFIX_COMMAND"),
@@ -185,7 +184,6 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 // $6 for CPU load
                                 optimizationStringStatus        ("OPTIMIZATION_PROGRESS_STATUS"),
                                 optimizationStringQuantum       ("OPTIMIZATION_PROGRESS_QUANTUM"),
-                                assumeReversible                ("ASSUME_REVERSIBLE_MODELS"),
                                 categoryMatrixScalers           (".site_scalers"),
                                 categoryLogMultiplier           (".log_scale_multiplier"),
                                 optimizationHardLimit           ("OPTIMIZATION_TIME_HARD_LIMIT"),
@@ -195,9 +193,6 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 reduceLFSmoothing               ("LF_SMOOTHING_REDUCTION");
 
 
-extern _String useNexusFileData,
-       VerbosityLevelString,
-       acceptRootedTrees;
 
 
 void        countingTraverse         (node<long>*, long&, long, long&, bool);
@@ -570,8 +565,9 @@ _String const * _LikelihoodFunction::GetIthFrequenciesName (long f) const {
 
 //_______________________________________________________________________________________
 
-bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, bool leafScan) // from triplets
-{
+
+bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, bool leafScan) { // from triplets
+  
     _TheTree*       t = GetIthTree(f);
 
     _TreeIterator   ti (t, _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
@@ -616,9 +612,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
         j = df->FindSpeciesName (tips, tipMatches);
 
         if (j != tips.lLength) { // try numeric match
-            hyFloat      doNum = 0.0;
-            checkParameter (tryNumericSequenceMatch, doNum, 0.0);
-            if (doNum>0.5) {
+            if (hy_env::EnvVariableTrue(hy_env::try_numeric_sequence_match)) {
 
                 try {
                     tipMatches.Clear();
@@ -2043,9 +2037,9 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                 //printf ("[RECEIVE]: %d\n", partID, "\n");
 
                 _DataSetFilter const * thisBlockFilter      = GetIthFilter(partID);
-                thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0,blockWidth);
+                thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, blockWidth, 1.);
                 _SimpleList* blockScalers = ((_SimpleList*)partScalingCache(partID));
-                thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + (blockWidth*theTrees.lLength+blockPatternSize), blockScalers->lData, 2,blockWidth);
+                thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + (blockWidth*theTrees.lLength+blockPatternSize), blockScalers->lData, blockWidth, -1, 0.);
                 totalSent--;
             }
         } else
@@ -2054,8 +2048,8 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                 ComputeSiteLikelihoodsForABlock      (partID, bySiteResults->theData + blockWidth*theTrees.lLength, *(_SimpleList*)partScalingCache(theTrees.lLength));
                 if (usedCachedResults == false) {
                     _DataSetFilter const * thisBlockFilter      = GetIthFilter(partID);
-                    thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, 0, blockWidth);
-                    thisBlockFilter->PatternToSiteMapper (((_SimpleList*)partScalingCache(theTrees.lLength))->lData, ((_SimpleList*)partScalingCache(partID))->lData, 1, blockWidth);
+                    thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, blockWidth, 1.);
+                    thisBlockFilter->PatternToSiteMapper (((_SimpleList*)partScalingCache(theTrees.lLength))->lData, ((_SimpleList*)partScalingCache(partID))->lData, blockWidth, 0L);
                 }
             }
 
@@ -2694,20 +2688,13 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
     if (ohWell) {
         cornholio              = LocateVar(badConstraint);
         
-        subNumericValues = 3;
-        
+      
         //fprintf (stderr, "%d\n", j);
         
         j = nonConstantIndices.get(j);
         
-        _String         * cStr = (_String*)cornholio->GetFormulaString(kFormulaStringConversionNormal),
-        badX   = (*cornholio->GetName()) & ":=" & *cStr & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".";
-        
-        subNumericValues = 0;
-        DeleteObject             (cStr);
-        
         _TerminateAndDump(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
-                          & badX);
+                          & (*cornholio->GetName()) & ":=" & _String((_String*)cornholio->GetFormulaString(kFormulaStringConversionSubstiteValues)) & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".");
         
         
     }
@@ -4727,7 +4714,6 @@ void _LikelihoodFunction::CleanUpOptimize (void)
         for (long i=0; i<theTrees.lLength; i++) {
             _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
             cT->CleanUpMatrices();
-            cT->KillTopLevelCache();
         }
 
         DeleteCaches (false);
@@ -5014,7 +5000,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             stash_middle = middleValue = saveMV;
         } else {
             middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
-            if (verbosityLevel > 100) {
+            if (verbosity_level > 100) {
                char buf [512];
                snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED middle to %15.12g, LogL = %15.12g]", index, middle, middleValue);
                BufferToConsole (buf);
@@ -5031,7 +5017,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             leftValue = saveMV;
         } else {
             leftValue = SetParametersAndCompute (index, left, &currentValues, gradient);
-            if (verbosityLevel > 100) {
+            if (verbosity_level > 100) {
                 char buf [512];
                 snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED left to %15.12g, LogL = %15.12g]", index, left, leftValue);
                 BufferToConsole (buf);
@@ -5048,7 +5034,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             rightValue = saveMV;
         } else {
             rightValue = SetParametersAndCompute (index, right, &currentValues, gradient);
-            if (verbosityLevel > 100) {
+            if (verbosity_level > 100) {
                 char buf [512];
                 snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) UPDATED right to %15.12g, LogL = %15.12g]", index, right, rightValue);
                 BufferToConsole (buf);
@@ -6185,7 +6171,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
                        // set up left, right, middle
 
       if (outcome == -2) {
-        if (verbosityLevel > 50) {
+        if (verbosity_level > 50) {
           char buf [256];
           snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump BRACKET == -2 clause]");
           BufferToConsole (buf);
@@ -6222,7 +6208,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
               bool parabolic_step = false;
               XM = .5*(left+right);
 
-              if (verbosityLevel > 50) {
+              if (verbosity_level > 50) {
                   char buf [256];
                   snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump (current max = %20.16g) GOLDEN RATIO INTERVAL CHECK: %g <= %g (%g = %g) <= %g, span = %g]", maxSoFar, left, XM, X, fabs(X-XM), right, right-left);
                   BufferToConsole (buf);
@@ -6263,14 +6249,14 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
               }
               U = fabs (D) >= tol1 ? X + D : X + (D > 0. ? tol1 : -tol1);
               FU = -SetParametersAndCompute (-1,U,&prior_parameter_values,&gradient);
-              if (verbosityLevel > 50) {
+              if (verbosity_level > 50) {
                   char buf [256];
                   snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump GOLDEN RATIO TRY: param %20.16g, log L %20.16g]",  U, -FU);
                   BufferToConsole (buf);
               }
 
               if (FU<=FX) { // accept the move
-                    if (verbosityLevel > 50) {
+                    if (verbosity_level > 50) {
                     char buf [256];
                     snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump (eval %ld) ACCEPT new try, confirm value %20.16g (delta = %20.16g)", likeFuncEvalCallCount,  U, FX-FU);
                     BufferToConsole (buf);
@@ -6289,7 +6275,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
                     X = U;
                     FX = FU;
               } else {
-                    if (verbosityLevel > 50) {
+                    if (verbosity_level > 50) {
                      char buf [256];
                      snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump (eval %ld) REJECT new try (%20.16g) (delta = %20.16g)", likeFuncEvalCallCount, U, FX-FU);
                      BufferToConsole (buf);
@@ -6314,7 +6300,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
               outcome++;
         }
 
-        if (verbosityLevel > 50) {
+        if (verbosity_level > 50) {
          char buf [256];
          snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %15.12g/%15.12g ]\n\n", gPrecision, X, -FX, middleValue, maxSoFar);
           BufferToConsole (buf);
@@ -6322,7 +6308,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
         middleValue = -FX;
         //brentHistory.Store (0.);
         if (middleValue < maxSoFar) {
-            if (verbosityLevel > 50) {
+            if (verbosity_level > 50) {
                 char buf [256];
                 snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump RESETTING THE VALUE (worse log likelihood obtained; current value %20.16g, best value %20.16g) ]\n\n", middleValue, maxSoFar);
                 BufferToConsole (buf);
@@ -6333,7 +6319,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
           SetAllIndependent (&current_best_vector);
           maxSoFar    = Compute();
           bestVal     = current_best_vector;
-          if (verbosityLevel > 50) {
+          if (verbosity_level > 50) {
             char buf [256];
             snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump moving parameter value (should trigger LL update) %15.12g ||L2|| move ]\n\n", (current_best_vector-bestVal).AbsValue());
             BufferToConsole (buf);
@@ -6597,7 +6583,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
         middle      = X;
 
         if (middleValue<maxSoFar) {
-            if (verbosityLevel > 50) {
+            if (verbosity_level > 50) {
               char buf [256];
               snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) RESETTING THE VALUE (worse log likelihood obtained; current value %20.16g, best value %20.16g) ]\n\n", index, GetIthIndependent(index), bestVal);
               BufferToConsole (buf);
@@ -7619,10 +7605,8 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
     _SimpleList alreadyDoneModelsL;
     _AVLListX   alreadyDoneModels (&alreadyDoneModelsL);
 
-    hyFloat assumeRev = 0.;
-    checkParameter (assumeReversible,assumeRev,0.0);
-
-
+    hyFloat assume_rev = hy_env::EnvVariableGetNumber(hy_env::assume_reversible, 0.);
+ 
     for (unsigned long i=0UL; i<theTrees.lLength; i++) {
         _Matrix         *glFreqs = GetIthFrequencies(i);
         _DataSetFilter const* df      = GetIthFilter(i);
@@ -7641,10 +7625,10 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
           _SimpleList treeModels;
           t->CompileListOfModels (treeModels);
           bool isReversiblePartition = true;
-          if (assumeRev > 0.5) {
+          if (assume_rev > 0.5) {
               ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a reversible model");
           } else {
-              if (assumeRev < -0.5) {
+              if (assume_rev < -0.5) {
                 isReversiblePartition = false;
                 ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a non-reversible model");
               } else {
@@ -8820,9 +8804,9 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
             (_DataSet *)dataSetList(indexedDataSets.lData[idx5]), 1, dH,
             *(_SimpleList *)dV(idx5));
         if (idx5) {
-            stashParameter(dataFilePrintFormat, 0.0, true);
+            stashParameter(hy_env::data_file_print_format, 0.0, true);
         } else {
-            stashParameter(dataFilePrintFormat, 4.0, true);
+            stashParameter(hy_env::data_file_print_format, 4.0, true);
         }
 
         _String *cs = (_String *)entireSet->toStr();
@@ -8840,7 +8824,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
             rec.AppendNewInstance(cs);
         }
         DeleteObject(entireSet);
-        stashParameter(dataFilePrintFormat, 0.0, false);
+        stashParameter(hy_env::data_file_print_format, 0.0, false);
     }
     hy_env::EnvVariableSet(hy_env::skip_omissions, stashed_nfold ? new  HY_CONSTANT_TRUE : new  HY_CONSTANT_FALSE , false);
   
@@ -8947,35 +8931,35 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
 
 
     // write out all the trees, including model definitions if needed
-    hyFloat stashIM = 0.0;
-    checkParameter(tryNumericSequenceMatch, stashIM, 0.0);
+    //hyFloat stashIM = hy_env::EnvVariableTrue(hy_env::accept_rooted_trees);
+    //checkParameter(tryNumericSequenceMatch, stashIM, 0.0);
+  
 
-    rec.AppendAnAssignmentToBuffer(&tryNumericSequenceMatch,
-                                   new _String(stashIM));
-
-    checkParameter(acceptRootedTrees, stashIM, 0.0);
-    rec.AppendAnAssignmentToBuffer(&acceptRootedTrees, new _String(stashIM));
+    rec.AppendAnAssignmentToBuffer(&hy_env::try_numeric_sequence_match,
+                                   new _String((hyFloat)hy_env::EnvVariableTrue(hy_env::try_numeric_sequence_match)));
+    rec.AppendAnAssignmentToBuffer(&hy_env::accept_rooted_trees,
+                                 new _String((hyFloat)hy_env::EnvVariableTrue(hy_env::accept_rooted_trees)));
 
     bool include_model_info = hy_env::EnvVariableTrue(hy_env::include_model_spec);
-    {
-        for (long idx = 0; idx < redirectorT->lLength; idx++) {
-            if (dV2.lData[idx] >= 0) {
-                rec << "\nUseModel (";
-                rec << *((_String *)modelNames(dV2.lData[idx]));
-                rec << ");\n";
-                hy_env::EnvVariableSet(hy_env::include_model_spec, new HY_CONSTANT_FALSE, false);
-            } else {
-                hy_env::EnvVariableSet(hy_env::include_model_spec, new HY_CONSTANT_TRUE, false);
-            }
-
-            rec << "Tree ";
-            rec << LocateVar(redirectorT->lData[idx])->GetName();
-            rec << '=';
-            rec.AppendNewInstance((_String *)(
-                (_TheTree *)LocateVar(redirectorT->lData[idx]))->toStr());
-            rec << '\n';
+ 
+    for (long idx = 0; idx < redirectorT->lLength; idx++) {
+        if (dV2.lData[idx] >= 0) {
+            rec << "\nUseModel (";
+            rec << *((_String *)modelNames(dV2.lData[idx]));
+            rec << ");\n";
+            hy_env::EnvVariableSet(hy_env::include_model_spec, new HY_CONSTANT_FALSE, false);
+        } else {
+            hy_env::EnvVariableSet(hy_env::include_model_spec, new HY_CONSTANT_TRUE, false);
         }
+
+        rec << "Tree ";
+        rec << LocateVar(redirectorT->lData[idx])->GetName();
+        rec << '=';
+        rec.AppendNewInstance((_String *)(
+            (_TheTree *)LocateVar(redirectorT->lData[idx]))->toStr());
+        rec << '\n';
     }
+
     hy_env::EnvVariableSet(hy_env::include_model_spec, include_model_info ? new HY_CONSTANT_TRUE : new HY_CONSTANT_FALSE, false);
     
 
@@ -9045,12 +9029,9 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     }
 
     // write out the global variable for enforcing reversible models
-    checkParameter(assumeReversible, stashIM, 0.0);
-    rec.AppendAnAssignmentToBuffer(&assumeReversible, new _String(stashIM));
+    rec.AppendAnAssignmentToBuffer(&hy_env::assume_reversible, new _String(hy_env::EnvVariableGetNumber(hy_env::assume_reversible, 0.)));
 
-    rec << "LikelihoodFunction ";
-    rec << *lfName;
-    rec << " = (";
+    rec << "LikelihoodFunction " << *lfName << " = (";
 
     long dsID = 0;
     {

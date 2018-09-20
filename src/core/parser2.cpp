@@ -676,13 +676,14 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
     _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
     for (long i = 0; i<=s.length(); i++) {
-        storage = 0; // no implied ops by default
-
-        if (isspace(s.get_char(i))) { // skip spaces and tabs
+        char     lookAtMe = s.get_char(i);
+ 
+        if (isspace(lookAtMe)) { // skip spaces and tabs
             continue;
         }
       
-        char     lookAtMe = s.get_char(i);
+        storage = 0; // no implied ops by default
+      
         //printf ("at '%c', the formula looks like this %s\n", lookAtMe, (const char*)_String ((_String*)f->GetList().toStr()));
 
         if (i==s.length() || lookAtMe == ')' || lookAtMe == ']' || lookAtMe == ',') {
