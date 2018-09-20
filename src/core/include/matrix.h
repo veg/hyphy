@@ -129,6 +129,11 @@ public:
             second argument: how many columns
 
     */
+    _Matrix (hyFloat, unsigned long, unsigned long);
+    /**
+      20180919 SLKP
+          make an rxc matrix that is constant (each cell is the same)
+    */
 
     ~_Matrix (void);                            //destructor
 
@@ -201,8 +206,8 @@ public:
         return MATRIX;
     }
 
-    _Matrix&     operator = (_Matrix&);             // assignment operation on matrices
-    _Matrix&     operator = (_Matrix*);             // assignment operation on matrices with temp results
+    _Matrix const&     operator = (_Matrix const&);             // assignment operation on matrices
+    _Matrix const&     operator = (_Matrix const*);             // assignment operation on matrices with temp results
 
     virtual HBLObjectRef    Random (HBLObjectRef);    // reshuffle the matrix
 
@@ -264,7 +269,7 @@ public:
     // added by afyp July 6, 2009
     HBLObjectRef   Eigensystem (void) const;
     HBLObjectRef   LUSolve (HBLObjectRef) const;
-    HBLObjectRef   Inverse (void);
+    HBLObjectRef   Inverse (void) const;
     HBLObjectRef   Abs (void);                     // returns the norm of a matrix
     // if it is a vector - returns the Euclidean length
     // otherwise returns the largest element
@@ -585,7 +590,7 @@ private:
     void        RowAndColumnMax     (hyFloat&, hyFloat&, hyFloat* = nil);
     void        Subtract            (_Matrix&, _Matrix&);
     void        Multiply            (_Matrix&, hyFloat);
-    void        Multiply            (_Matrix&, _Matrix&);
+    void        Multiply            (_Matrix&, _Matrix const &) const;
     bool        IsNonEmpty          (long) const;
     // checks to see if the i-th position in the storage is non-empty
     bool        CheckDimensions     (_Matrix&) const;

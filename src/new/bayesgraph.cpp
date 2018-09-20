@@ -48,8 +48,6 @@
 
 using namespace hy_global;
 
-extern  hyFloat  lnGamma (hyFloat);
-
 const   _String  kBGMContraintMatrix ("BGM_CONSTRAINT_MATRIX");
 
 /*
@@ -108,7 +106,7 @@ void        ConsoleBGMStatus (_String const statusLine, hyFloat percentDone, _St
 
 
 //__________________________________________________________________________________________________________
-hyFloat      LogSumExpo (_Vector * log_values) {
+hyFloat      _BayesianGraphicalModel::LogSumExpo (_Vector * log_values) {
   
     //  Computes the log of a sum of a vector whose values are stored as log-transforms,
     //  such that exponentiating the vector entries would result in numerical underflow.
@@ -742,15 +740,10 @@ void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Si
         return;
     }
 
-    if (!dparents.empty ()) {
-        _SimpleList     multipliers ((long)1L);
-        long            num_parent_combos   = 1L;
-
-        for (long par = 0L; par < dparents.countitems(); par++) {
-            num_parent_combos *= num_levels.get(dparents.get(par));
-            multipliers << num_parent_combos;
-        }
-
+    if (dparents.nonempty ()) {
+        _SimpleList     multipliers (ComputeParentMultipliers(dparents));
+        long            num_parent_combos = multipliers.GetElement(-1L);
+ 
         _Matrix::CreateMatrix (n_ij, num_parent_combos, 1, false, true, false);
         _Matrix::CreateMatrix (n_ijk, num_parent_combos, num_levels.lData[dnode], false, true, false);
 
@@ -833,11 +826,11 @@ hyFloat _BayesianGraphicalModel::K2Score (long node_id, _Matrix const & n_ij, _M
     long        r_i         = num_levels.get(node_id);
 
     for (long j = 0L; j < n_ij.GetHDim(); j++) {
-        log_score += lnGamma(r_i);  // (r-1)!
-        log_score -= lnGamma(n_ij(j, 0) + r_i); // (N+r-1)!
+        log_score += _ln_gamma(r_i);  // (r-1)!
+        log_score -= _ln_gamma(n_ij(j, 0) + r_i); // (N+r-1)!
 
         for (long k = 0L; k < r_i; k++) {
-            log_score += lnGamma(n_ijk(j,k) + 1);   // (N_ijk)!
+            log_score += _ln_gamma(n_ijk(j,k) + 1);   // (N_ijk)!
         }
     }
 
@@ -854,10 +847,10 @@ hyFloat _BayesianGraphicalModel::BDeScore (long node_id, _Matrix const & n_ij, _
                 log_score        = 0.;
 
     for (long j = 0L; j < n_ij.GetHDim(); j++) {
-        log_score += lnGamma(n_prior_ij) - lnGamma(n_ij(j,0));
+        log_score += _ln_gamma(n_prior_ij) - _ln_gamma(n_ij(j,0));
 
         for (long k = 0L; k < num_levels.get(node_id); k++) {
-            log_score += lnGamma(n_ijk(j,k)) - lnGamma(n_prior_ijk);
+            log_score += _ln_gamma(n_ijk(j,k)) - _ln_gamma(n_prior_ijk);
         }
     }
 
@@ -1249,7 +1242,7 @@ void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool 
 
         if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false)) {
             long        score_index     = 0,
-                        num_ktuples      = exp(lnGamma(num_nodes) - lnGamma(num_nodes - np) - lnGamma(np+1)),
+                        num_ktuples      = exp(_ln_gamma(num_nodes) - _ln_gamma(num_nodes - np) - _ln_gamma(np+1)),
                         ntuple_receipt;
 
             _Matrix     scores_to_store (num_ktuples, 1, false, true);
@@ -1770,7 +1763,7 @@ _Matrix*    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcm
 
 
     // main loop
-    long entry;
+    long entry = 0L;
     for (long step = 0; step < mcmc_steps + mcmc_burnin; step++) {
         //ReportWarning (_String ("current graph (") & current_score & "): \n" & (_String *) current_graph.toStr());
 		
@@ -1938,7 +1931,7 @@ void    _BayesianGraphicalModel::RandomizeGraph (_Matrix * graph, _SimpleList * 
               //
               bool    ok_to_go = !((*graph)(parent,child) == 1.  &&  ( constraint_graph(child,parent)<0. || constraint_graph(parent,child)>0. )) &&
                         //P->C cannot be flipped if C->P is banned or P->C is enforced
-                      !order->Any ([parent, child, graph, this] (long intermediate) -> bool {
+                      !order->Any ([parent, child, graph, this] (long intermediate, unsigned long) -> bool {
                               return ( (*graph)(parent,intermediate)==1. && constraint_graph (parent, intermediate)>0. )  ||
                                      ( (*graph)(intermediate,child) ==1. && constraint_graph (intermediate, child)>0. )  ||
                                       constraint_graph (intermediate,parent) <0.  ||
@@ -2154,6 +2147,8 @@ _Matrix *    _BayesianGraphicalModel::OrderMetropolis (bool do_sampling, long n_
     // update node order
     node_order_arg = current_order;
     ReportWarning (_String("Set node_order_arg to last order visited in orderMCMC:\n") & _String((_String*)node_order_arg.toStr()));
+  
+    return result;
 }
 
 

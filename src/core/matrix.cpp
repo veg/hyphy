@@ -101,8 +101,6 @@ void        MatrixIndexError        (long, long, long, long);
 
 
 // function prototypes
-hyFloat  lnGamma (hyFloat) ,
-         gammaDeviate (hyFloat, hyFloat = 1.);
 
 
 #ifdef _SLKP_USE_AVX_INTRINSICS
@@ -113,175 +111,6 @@ hyFloat  lnGamma (hyFloat) ,
   }
 #endif
 
-
-//__________________________________________________________________________________________________________
-hyFloat  lnGamma(hyFloat theValue) {
-    //  Returns Log(gamma(x))
-    if (theValue <= 0) {
-        HandleApplicationError ("ERROR (matrix.cpp): Requested lnGamma(x) for x <= 0.");
-        return HY_INVALID_RETURN_VALUE;
-    }
-
-    static hyFloat lngammaCoeff [6] = {   76.18009172947146,
-                                         -86.50532032941677,
-                                         24.01409824083091,
-                                         -1.231739572450155,
-                                         0.1208650973866179e-2,
-                                         -0.5395239384953e-5
-                                         };
-
-    static hyFloat lookUpTable [20] = {   0.       ,  0.       ,  0.6931472,  1.7917595,  3.1780538,
-                                         4.7874917,  6.5792512,  8.5251614, 10.6046029, 12.8018275,
-                                         15.1044126, 17.5023078, 19.9872145, 22.5521639, 25.1912212,
-                                         27.8992714, 30.6718601, 33.5050735, 36.3954452, 39.3398842
-                                         };
-
-    // use look-up table for small integer values
-    if (theValue <= 20. && (theValue - (long)theValue) == 0.) {
-        return (lookUpTable [(long) theValue - 1]);
-    }
-
-    // else do it the hard way
-    hyFloat  x, y, tmp, ser;
-
-    y = x = theValue;
-    tmp = x + 5.5;
-    tmp -= (x+0.5) * log(tmp);
-    ser = 1.000000000190015;
-
-    for (int j = 0; j <= 5; j++) {
-        ser += lngammaCoeff[j] / ++y;
-    }
-
-    return (-tmp + log(2.506628274631005*ser/x));
-}
-
-
-//___________________________________________________________________________________________
-hyFloat  gaussDeviate (void) {
-    /*
-     Use Box-Muller transform to generate random deviates from Gaussian distribution with
-     zero mean and unit variance (Numerical Recipes).
-     */
-
-    static int      iset = 0;
-    static double   gset;
-    double          fac, rsq, v1, v2;
-
-    if (iset == 0) {
-        do {
-            v1 = 2.0 * genrand_real2() - 1.0;   // uniform random number on (0,1), i.e. no endpoints
-            v2 = 2.0 * genrand_real2() - 1.0;
-            rsq = v1*v1 + v2*v2;
-        } while (rsq >= 1.0 || rsq == 0.0);
-
-        fac = sqrt(-2.0 * log(rsq)/rsq);
-        gset = v1 * fac;
-        iset = 1;           // set flag to indicate second deviate available
-
-        return (hyFloat) (v2 * fac);
-    } else {
-        iset = 0;
-        return (hyFloat) gset;       // use second deviate
-    }
-}
-
-
-//__________________________________________________________________________________________________________
-hyFloat  exponDeviate (void) {
-    return -log(1.0-genrand_real2());   // uniform random number on interval (0,1]
-}
-
-
-
-//__________________________________________________________________________________________________________
-hyFloat  gammaDeviate (hyFloat a, hyFloat scale) {
-
-    /* -----------------------------------------
-     GS algorithm from GNU GPL rgamma.c
-     *  Mathlib : A C Library of Special Functions
-     *  Copyright (C) 1998 Ross Ihaka
-     *  Copyright (C) 2000--2008 The R Development Core Team
-
-     * Ziggurat algorithm from Marsaglia and Tsang (2000) "A Simple Method
-     *  for Generating Gamma Variables" ACM Trans Math Soft 26(3) 363-372
-     ----------------------------------------- */
-
-    const static double exp_m1 = 0.36787944117144232159;    /* exp(-1) = 1/e */
-
-    double              e, x, p;
-
-    if (a < 0.0) {
-        ReportWarning ("NaN in gammaDeviate()");
-        return 0.;
-    } else if (a == 0.0) {
-        return 0.;
-    } else if (a < 1.0) {   // GS algorithm for parameters 0 < a < 1
-        if(a == 0) {
-            return 0.;
-        }
-
-        e = 1.0 + exp_m1 * a;
-
-        while (1) {
-            p = e * genrand_real2();    // should be uniform random number on open interval (0,1)
-            // but genrand_real3 scoping (baseobj.cpp) is insufficient
-            if (p >= 1.0) {
-                x = -log((e - p) / a);
-                if (exponDeviate() >= (1.0 - a) * log(x)) {
-                    break;
-                }
-            } else {
-                x = exp(log(p) / a);
-                if (exponDeviate() >= x) {
-                    break;
-                }
-            }
-        }
-
-        return x*scale;
-    }
-
-    else if (a == 1.0) {
-        return exponDeviate() * scale;
-    }
-
-    else {  // a > 1., Ziggurat algorithm
-        double  x, v, u,
-                d   = a - 1./3.,
-                c = 1. / sqrt(9.*d);
-
-        for (;;) {
-            do {
-                x = gaussDeviate();
-                v = 1. + c * x;
-            } while (v <= 0.);
-
-            v = v * v * v;
-            u = genrand_real2();
-
-            if (u < 1. - 0.0331 * (x*x)*(x*x) ) {
-                return (d * v * scale);
-            }
-
-            if ( log(u) < 0.5*x*x + d*(1.-v+log(v)) ) {
-                return (d * v * scale);
-            }
-        }
-    }
-}
-
-
-
-//__________________________________________________________________________________
-hyFloat  chisqDeviate (double df) {
-    if (df < 0.0) {
-        HandleApplicationError (_String("ERROR in chisqDeviate(): require positive degrees of freedom"));
-        return HY_INVALID_RETURN_VALUE;
-    }
-
-    return gammaDeviate(df/2.0, 2.0);   // chi-square distribution is special case of gamma
-}
 
 
 
@@ -572,11 +401,19 @@ _Matrix::_Matrix (_SimpleList const& sl, long colArg) {
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (hyFloat* inList, unsigned long rows, unsigned long columns)
-{
+_Matrix::_Matrix (hyFloat* inList, unsigned long rows, unsigned long columns) {
   CreateMatrix (this, rows, columns, false, true, false);
   for (unsigned long k = 0; k < rows*columns; k++) {
     theData[k] = inList[k];
+  }
+}
+
+//_____________________________________________________________________________________________
+
+_Matrix::_Matrix (hyFloat constant, unsigned long rows, unsigned long columns) {
+  CreateMatrix (this, rows, columns, false, true, false);
+  for (unsigned long k = 0; k < rows*columns; k++) {
+    theData[k] = constant;
   }
 }
 
@@ -1539,7 +1376,7 @@ HBLObjectRef   _Matrix::Log (void) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _Matrix::Inverse (void) {
+HBLObjectRef   _Matrix::Inverse (void) const {
     if (is_square_numeric(false)) {
         return    new _MathObject;
     }
@@ -1555,11 +1392,13 @@ HBLObjectRef   _Matrix::Inverse (void) {
                 b.theData[i-1L]=0.0;
             }
             _Matrix* invVector = (_Matrix*)LUdec->LUSolve(&b);
-            _Matrix* corrTerm = (_Matrix*)(*this*(*invVector)-b).makeDynamic();
-            _Matrix* corrX =  (_Matrix*)LUdec->LUSolve(corrTerm);
+            _Matrix corrTerm;
+             Multiply(corrTerm, *invVector);
+            corrTerm -= b;
+            //_Matrix* corrTerm = (_Matrix*)(*this*(*invVector)-b).makeDynamic();
+            _Matrix* corrX =  (_Matrix*)LUdec->LUSolve(&corrTerm);
             *invVector-=*corrX;
             DeleteObject (corrX);
-            DeleteObject (corrTerm);
             for (long j=0; j<hDim; j++) {
                 result->set (j,i) = invVector->theData[j];
             }
@@ -3045,7 +2884,7 @@ _Matrix::~_Matrix (void)
 
 //_____________________________________________________________________________________________
 
-_Matrix&    _Matrix::operator = (_Matrix& m) {
+_Matrix const&    _Matrix::operator = (_Matrix const& m) {
     // SLKP 20180917 : reuse memory if copying dense numeric matrices of the same dimension
     if (m.is_numeric() && is_numeric() && CanFreeMe() && m.theIndex == nil && theIndex == nil && m.GetHDim () == GetHDim () && GetVDim () == m.GetVDim()) {
       unsigned long i = 0UL;
@@ -3063,7 +2902,7 @@ _Matrix&    _Matrix::operator = (_Matrix& m) {
 
 //_____________________________________________________________________________________________
 
-_Matrix&    _Matrix::operator = (_Matrix* m) {
+_Matrix const&    _Matrix::operator = (_Matrix const* m) {
     //Clear();
     //DuplicateMatrix (this, m);
     return (*this = m);
@@ -3431,7 +3270,7 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Multiply  (_Matrix& storage, _Matrix& secondArg)
+void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
 // multiplication operation on matrices
 // internal function
 // storage is assumed to NOT be *this
@@ -6732,22 +6571,19 @@ HBLObjectRef       _Matrix::SubObj (HBLObjectRef mp)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::operator *= (hyFloat c)
-{
+void        _Matrix::operator *= (hyFloat c) {
     Multiply (*this,c);
 }
 
 //_____________________________________________________________________________________________
-_Matrix     _Matrix::operator * (hyFloat c)
-{
+_Matrix     _Matrix::operator * (hyFloat c) {
     _Matrix result (*this);
     Multiply (result,c);
     return result;
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::operator *= (_Matrix& m)
-{
+void        _Matrix::operator *= (_Matrix& m) {
     if (CheckDimensions     (m)) {
         AgreeObjects        (m);
         _Matrix   result    (hDim, m.vDim, false, storageType);

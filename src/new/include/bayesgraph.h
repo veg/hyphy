@@ -103,8 +103,8 @@ public:
                     ComputeContinuousScore (long, _SimpleList const &);
 
 
-    hyFloat         ImputeDiscreteNodeScore (long, _SimpleList const &),	// use Gibbs sampling to compute expectation over missing data
-    				ImputeCGNodeScore (long, _SimpleList const &);		// arguments: node ID, parent ID's
+    hyFloat         ImputeDiscreteNodeScore (long, _SimpleList const &) const,	// use Gibbs sampling to compute expectation over missing data
+                    ImputeCGNodeScore (long, _SimpleList const &) const;		// arguments: node ID, parent ID's
 
     void            ComputeParameters (void),	// UNDER DEVELOPMENT - and I think I ended up using HBL instead
                     ComputeParameters (_Matrix *);
@@ -133,7 +133,7 @@ public:
 
     hyFloat          K2Score (long, _Matrix const &, _Matrix const &) const,
                     BDeScore (long, _Matrix const&, _Matrix const&) const,
-                    BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, hyFloat, hyFloat, long);
+                    BottcherScore (_Matrix const &, _Matrix const &, _Matrix const &, _Matrix const &, hyFloat, hyFloat, long) const;
 
     long            GetNumNodes (void)  {
         return num_nodes;
@@ -152,8 +152,11 @@ public:
 protected:
 
     bool            is_node_continuous (long node) const {return node_type.get (node) == 1L;}
-    bool            is_node_discrete (long node) const {return node_type.get (node) == 0L;}
-
+    bool            is_node_discrete   (long node) const {return node_type.get (node) == 0L;}
+    const _SimpleList
+                    ComputeParentMultipliers (_SimpleList const&) const;
+    long            ReindexParentObservations(_SimpleList const& parents, _SimpleList& n_ij, _SimpleList& pa_indexing) const;
+  
     long            num_nodes;
 
     /* ------------------------------------------- */
@@ -187,6 +190,8 @@ protected:
     _SimpleList     node_order_arg;     // provides access to node ordering functionality as HBL argument
 
     /* ------------------------------------------- */
+  
+    static          hyFloat      LogSumExpo (_Vector * log_values);
 
 };
 

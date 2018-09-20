@@ -141,4 +141,10 @@ public:
     hyFloat theValue;
 };
 
+hyFloat _ln_gamma (hyFloat alpha);
+hyFloat  gaussDeviate (void);
+hyFloat  exponDeviate (void);
+hyFloat  gammaDeviate (hyFloat a, hyFloat scale = 1.);
+hyFloat  chisqDeviate (double df);
+
 #endif
