@@ -105,8 +105,9 @@ namespace hy_global {
                      kXVariableName ("_x_"),
                      kNVariableName ("_n_"),
                      kErrorStringIncompatibleOperands ("Incompatible operands"),
-                     kErrorStringBadMatrixDefinition  ("Invalid matrix definition"),
-                     kErrorStringInvalidMatrixIndex   ("Invalid matrix index"),
+                     kErrorStringBadMatrixDefinition  ("Invalid matrix definition "),
+                     kErrorStringInvalidMatrixIndex   ("Invalid matrix index "),
+                     kErrorStringUnterminatedMatrix   ("Unterminated matrix definition "),
                      kErrorStringMemoryFail           ("Out of memory"),
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
@@ -184,7 +185,7 @@ namespace hy_global {
     hyPointer MemReallocate (hyPointer old_pointer, long new_size) {
         hyPointer result  = (hyPointer) realloc (old_pointer, new_size);
         
-        if (!result) {
+        if (result == nil) {
             HandleApplicationError (_String ("Failed to resize memory to '")  & new_size & "' bytes'", true);
         }
         
@@ -572,7 +573,7 @@ namespace hy_global {
     }
     
     //____________________________________________________________________________________
-    void    ReportWarning (_String const message) {
+    void    ReportWarning (_String const & message) {
         
         bool do_logging = EnvVariableTrue(message_logging);
             
@@ -593,7 +594,7 @@ namespace hy_global {
     }
     
     //____________________________________________________________________________________
-    void HandleOrStoreApplicationError (_String* error_string, _String const message) {
+    void HandleOrStoreApplicationError (_String* error_string, _String const & message) {
         if (error_string) {
             *error_string = message;
         } else {
@@ -602,13 +603,31 @@ namespace hy_global {
     }
 
     //____________________________________________________________________________________
-    void HandleErrorWhileParsing (_String const error_string, _String const context) {
+    void HandleErrorWhileParsing (_String const & error_string, _String const & context) {
         HandleApplicationError (_String ("While parsing:\n") & context & "\n" & error_string);
     }
 
-    
+  //____________________________________________________________________________________
+    const _String  PrepareErrorContext     (_String const & context, long from, unsigned long size) {
+      
+      _StringBuffer result;
+      
+      if (from > 0) {
+          result << "...";
+      }
+      
+      result << _String (context, from, from + size);
+      
+      if (from + size > context.length()) {
+        result << "...";
+      }
+      
+      
+      return result;
+    }
+  
     //____________________________________________________________________________________
-    void HandleApplicationError (const _String message, bool force_exit) {
+    void HandleApplicationError (const _String & message, bool force_exit) {
 
         if (!force_exit && currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
             currentExecutionList->ReportAnExecutionError(message, true);

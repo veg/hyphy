@@ -68,7 +68,7 @@ void _StringBuffer::AllocateBufferSpace(const unsigned long character_count) {
 void _StringBuffer::ResizeString(void) {
   if (sa_length < s_length) {
     unsigned long inc_by = s_length - sa_length;
-
+  
     if (inc_by < HY_STRING_BUFFER_ALLOCATION_CHUNK) {
       inc_by = HY_STRING_BUFFER_ALLOCATION_CHUNK;
     }

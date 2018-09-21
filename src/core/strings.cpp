@@ -170,8 +170,9 @@ _String::_String(_String &&s) {
 
 _String::_String(_StringBuffer &&s) {
   s_length = s.s_length;
-  s_data = s.s_data;
   s.TrimSpace();
+  s_data = s.s_data;
+  s._String::Initialize();
   s.Initialize();
 }
 
@@ -899,6 +900,24 @@ long _String::Find(const bool lookup[256], long start, long end) const {
   return kNotFound;
 }
 
+//=============================================================
+
+long _String::FindAnyCase (const bool lookup[256], long start, long end) const {
+  if (s_length) {
+    long span = NormalizeRange(start, end);
+    if (span > 0L) {
+      
+      for (unsigned long index = start; index <= end; index ++ ) {
+        if (lookup [tolower(s_data[index])] || lookup [toupper (s_data[index])]) {
+          return index;
+        }
+      }
+    }
+  }
+  
+  return kNotFound;
+}
+
 
 //=============================================================
 long _String::FindAnyCase (const _String& pattern, long start, long end) const {
@@ -985,17 +1004,46 @@ long _String::FirstNonSpaceFollowingSpace(long start, long end, hy_string_search
   return first_space;
 }
 
-//=============================================================
-bool _String::BeginsWith (_String const& pattern, bool case_sensitive, unsigned long from) const{
-  if (pattern.s_length + from < s_length) {
-    return (case_sensitive ? Find (pattern, from)
-            : FindAnyCase (pattern, from)) == from;
+//Begins with string
+bool _String::BeginsWith (_String const& pattern, bool case_sensitive, unsigned long startfrom) const{
+  if (s_length >= pattern.s_length + startfrom) {
+    if (case_sensitive) {
+      for (unsigned long idx = 0; idx < pattern.s_length; idx ++) {
+        if (s_data[idx+startfrom] != pattern.s_data[idx]) {
+          return false;
+        }
+      }
+    } else {
+       for (unsigned long idx = 0; idx < pattern.s_length; idx ++) {
+        if (tolower(s_data[idx+startfrom]) != tolower(pattern.s_data[idx])) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
-  
- 
   return false;
 }
 
+//Begins with string
+bool _String::BeginsWith (const bool pattern[256], bool case_sensitive, unsigned long startfrom) const{
+  if (s_length >= 1UL + startfrom) {
+    if (case_sensitive) {
+      for (unsigned long idx = 0; idx < 256; idx ++) {
+        if (pattern [s_data[startfrom]]) {
+          return true;
+        }
+      }
+    } else {
+      for (unsigned long idx = 0; idx < 256; idx ++) {
+        if (pattern [tolower(s_data[startfrom])] || pattern [toupper(s_data[startfrom])] ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
 
 
 //Ends with string
@@ -1034,82 +1082,6 @@ bool _String::BeginsWithAndIsNotAnIdent (_String const& pattern) const {
 */
 
 
-
-//=============================================================
-
-
-long _String::FindTerminator (long start, _String const& terminator) const {
-  
-  long    current_position  = start;
-  
-  
-  long   curly_depth = 0L,
-         square_depth = 0L,
-         paren_depth = 0L;
-  
-  bool   do_escape = false;
-  char   quote_state = '\0';
-  
-  while (current_position < s_length) {
-    char this_char = s_data[current_position];
-    if (do_escape) {
-      do_escape = false;
-    } else {
-      if ((this_char == '"' || this_char == '\'') && !do_escape) {
-        if (quote_state == '\0') {
-          quote_state = this_char;
-        } else {
-          if (this_char == quote_state) {
-            quote_state = '\0';
-          }
-        }
-      } else {
-        if (quote_state == '\0') {
-          
-          switch (this_char) {
-            case '(':
-              paren_depth ++;
-              break;
-            case ')':
-              if (paren_depth > 0L) {
-                paren_depth --;
-              }
-              break;
-            case '[':
-              square_depth++;
-              break;
-            case ']':
-              if (square_depth > 0L) {
-                square_depth --;
-              }
-              break;
-            case '{':
-              curly_depth++;
-              break;
-            case '}':
-              if (curly_depth > 0L) {
-                curly_depth --;
-              }
-              break;
-            default:
-              if (curly_depth == 0L && square_depth == 0L && paren_depth == 0L) {
-                if (BeginsWith (terminator, true, current_position)) {
-                  return current_position;
-                }
-              }
-          }
-        } else {
-          if (this_char == '\\' && quote_state != '\0' && !do_escape) {
-            do_escape = true;
-          }
-        }
-      }
-    }
-    current_position++;
-  }
-  
-  return kNotFound;
-}
 
 //=============================================================
 

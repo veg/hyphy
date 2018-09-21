@@ -158,220 +158,223 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* th
   hPos = 0,
   vPos = 0;
   
-  _String terminators (",}");
+  bool    terminators [256] {false};
+  terminators [(unsigned char)','] = true;
+  terminators [(unsigned char)'}'] = true;
   
-  if (j>i && s.length()>4) { // non-empty string
-    _String term;
-    if (s.char_at (i) == '{' && s.char_at (j) == '{') { // first type
-      i = j+1;
-      // read the dimensions first
-      
-      while (i<s.length()) {
-        i = s.FindTerminator (i, terminators);
-        if (i < 0) {
-          HandleApplicationError ("Unterminated matrix definition");
-          return;
-        }
-        cc = s.char_at (i);
+  try {
+  
+    if (j>i && s.length()>4) { // non-empty string
+      _String term;
+      if (s.char_at (i) == '{' && s.char_at (j) == '{') { // first type
+        i = j+1;
+        // read the dimensions first
         
-        if (cc=='}') {
-          break;
-        }
-        
-        if (cc==',') {
-          vDim++;
-        }
-        i++;
-      }
-      
-      vDim++;
-      hDim = 1;
-      
-      for (i = i + 1; i<s.length()-1; i++) {
-        i = s.ExtractEnclosedExpression (i,'{','}',fExtractRespectQuote | fExtractRespectEscape);
-        if (i < 0) {
-          break;
-        }
-        hDim ++;
-      }
-      
-      if ( hDim<=0 || vDim<=0) {
-        return;
-      }
-      
-      if (isNumeric) {
-        CreateMatrix (this, hDim, vDim, false, true, false);
-      } else {
-        CreateMatrix (this, hDim, vDim, false, false, true);
-      }
-      
-      // scan the elements one-by-one
-      
-      for (i=1; i<s.length()-1; i++) {
-        if (s.char_at(i) == '{') {
-          while (s.char_at(i) != '}') {
-            i++;
-            j = s.FindTerminator (i, terminators);
-            
-            if (j<0) {
-              HandleApplicationError ("Unterminated matrix definition");
-              return;
-            }
-            
-            _String lterm (s,s.FirstNonSpaceIndex(i,j-1,kStringDirectionForward),j-1); // store the term in a string
-            
-            //printf ("%s\n", lterm.sData);
-            
-            if (isNumeric) {
-              if (lterm.length() == 1 && lterm.char_at(0) =='*') {
-                lterm = kEmptyString;    // dummy element in probability matrix
-              }
-              
-              theData[vDim*hPos+vPos] = lterm.to_float ();
-            } else {
-              if (lterm.length() == 1 && lterm.char_at(0) =='*') {
-                lterm = kEmptyString;    // dummy element in probability matrix
-              }
-              
-              _Formula*  theTerm = new _Formula (lterm, theP);
-               isAConstant = isAConstant && theTerm->IsAConstant() && theTerm->ObjectClass() == NUMBER;
-              ((_Formula**)theData)[vDim*hPos+vPos] = theTerm;
-            }
-            
-            vPos++;
-            if (vPos>vDim) {
-              HandleApplicationError ("Rows of unequal lengths in matrix definition");
-              return;
-            }
-            
-            i=j;
+        while (i<s.length()) {
+          long i2 = s.FindTerminator (i, terminators);
+          if (i2 == kNotFound) {
+            HandleApplicationError (kErrorStringUnterminatedMatrix & PrepareErrorContext(s, i));
           }
-        }
-        if (s[i]=='}') {
-          if (vPos!=vDim) {
-            HandleApplicationError ( kErrorStringBadMatrixDefinition );
-            return;
-          }
-          hPos++;
-          vPos = 0;
-          if (hPos>hDim) {
-            HandleApplicationError ( kErrorStringBadMatrixDefinition );
-            return;
-          }
-        }
-      }
-      if (hPos!=hDim) {
-        HandleApplicationError ( kErrorStringBadMatrixDefinition );
-        return;
-      }
-    } else { // second type of input
-      for (i=j,j=0; s.char_at (i) !='{' && s.char_at (i) !='}' && i<s.length(); i++) {
-        if (s.char_at(i)==',') { // neither hDim nore vDim have been specified
-          if (j > 0) {
+          i = i2;
+          cc = s.char_at (i);
+          
+          if (cc=='}') {
             break;
           }
-          term = s.Cut(1,i-1);
-          hDim = round(ProcessNumericArgument (&term,theP));
-          j    = i+1;
-        }
-      }
-      
-      if (j) { // both hDim and vDim specified
-        term = s.Cut(j,i-1);
-        vDim = ProcessNumericArgument (&term,theP);
-      } else { // only one dim specified, matrix assumed to be square
-        term = s.Cut(1,i-1);
-        hDim = ProcessNumericArgument (&term,theP);
-        vDim = hDim;
-      }
-      
-      if (hDim<=0 || vDim<=0) {
-        return;
-      }
-      
-      if (isNumeric) {
-        CreateMatrix (this, hDim, vDim, true, true, false);
-      } else {
-        CreateMatrix (this, hDim, vDim, true, false, true);
-      }
-      
-      // read the terms now
-      
-      for (; i<s.length(); i++) {
-        if (s.char_at (i) =='{') {
-          hPos = -1;
-          vPos = -1;
-          k    = i+1;
           
-          for (j=i+1; j<s.length () && s.char_at (j) !='}'; j++) {
-            j = s.FindTerminator (j, terminators);
+          if (cc==',') {
+            vDim++;
+          }
+          i++;
+        }
+        
+        vDim++;
+        hDim = 1;
+        
+        for (i = i + 1L; i<s.length()-1; i++) {
+          i = s.ExtractEnclosedExpression (i,'{','}',fExtractRespectQuote | fExtractRespectEscape);
+          if (i < 0) {
+            break;
+          }
+          hDim ++;
+        }
+        
+        if ( hDim<=0 || vDim<=0) {
+          return;
+        }
+        
+        if (isNumeric) {
+          CreateMatrix (this, hDim, vDim, false, true, false);
+        } else {
+          CreateMatrix (this, hDim, vDim, false, false, true);
+        }
+        
+        // scan the elements one-by-one
+        
+        for (i=1; i<s.length()-1; i++) {
+          if (s.char_at(i) == '{') {
+            while (s.char_at(i) != '}') {
+              i++;
+              j = s.FindTerminator (i, terminators);
+              
+              if (j<0) {
+                HandleApplicationError (kErrorStringUnterminatedMatrix & PrepareErrorContext(s, i));
+                return;
+              }
+              
+              _String lterm (s,s.FirstNonSpaceIndex(i,j-1,kStringDirectionForward),j-1); // store the term in a string
+              
+              //printf ("%s\n", lterm.sData);
+              
+              if (isNumeric) {
+                if (lterm.length() == 1 && lterm.char_at(0) =='*') {
+                  lterm = kEmptyString;    // dummy element in probability matrix
+                }
+                
+                theData[vDim*hPos+vPos] = lterm.to_float ();
+              } else {
+                if (lterm.length() == 1 && lterm.char_at(0) =='*') {
+                  lterm = kEmptyString;    // dummy element in probability matrix
+                }
+                
+                _Formula*  theTerm = new _Formula (lterm, theP);
+                 isAConstant = isAConstant && theTerm->IsAConstant() && theTerm->ObjectClass() == NUMBER;
+                ((_Formula**)theData)[vDim*hPos+vPos] = theTerm;
+              }
+              
+              vPos++;
+              if (vPos>vDim) {
+                throw _String ("Rows of unequal lengths in matrix definition in ") & PrepareErrorContext(lterm, 0);
+              }
+              
+              i=j;
+            }
+          }
+          if (s[i]=='}') {
+            if (vPos!=vDim) {
+              throw  kErrorStringBadMatrixDefinition & PrepareErrorContext (s,i-16);
+            }
+            hPos++;
+            vPos = 0;
+            if (hPos>hDim) {
+              throw kErrorStringBadMatrixDefinition & PrepareErrorContext (s,i-16);
+            }
+          }
+        }
+        if (hPos!=hDim) {
+          throw kErrorStringBadMatrixDefinition & PrepareErrorContext (s,i-16);
+        }
+      } else { // second type of input
+        for (i=j,j=0; s.char_at (i) !='{' && s.char_at (i) !='}' && i<s.length(); i++) {
+          if (s.char_at(i)==',') { // neither hDim nore vDim have been specified
+            if (j > 0) {
+              break;
+            }
+            term = s.Cut(1,i-1);
+            hDim = round(ProcessNumericArgument (&term,theP));
+            j    = i+1;
+          }
+        }
+        
+        if (j) { // both hDim and vDim specified
+          term = s.Cut(j,i-1);
+          vDim = ProcessNumericArgument (&term,theP);
+        } else { // only one dim specified, matrix assumed to be square
+          term = s.Cut(1,i-1);
+          hDim = ProcessNumericArgument (&term,theP);
+          vDim = hDim;
+        }
+        
+        if (hDim<=0 || vDim<=0) {
+          return;
+        }
+        
+        if (isNumeric) {
+          CreateMatrix (this, hDim, vDim, true, true, false);
+        } else {
+          CreateMatrix (this, hDim, vDim, true, false, true);
+        }
+        
+        // read the terms now
+        
+        for (; i<s.length(); i++) {
+          if (s.char_at (i) =='{') {
+            hPos = -1;
+            vPos = -1;
+            k    = i+1;
             
-            if (j<0) {
-              HandleApplicationError ("Unterminated matrix definition");
+            for (j=i+1; j<s.length () && s.char_at (j) !='}'; j++) {
+              long j2 = s.FindTerminator (j, terminators);
+              
+              if (j2<0) {
+                throw (kErrorStringUnterminatedMatrix & PrepareErrorContext(s,j));
+              }
+              j = j2;
+              
+              if (s.char_at (j) ==',') {
+                term = s.Cut (s.FirstNonSpaceIndex(k,j-1,kStringDirectionForward),j-1);
+                _Formula coordF (term,theP);
+                hyFloat coordV = coordF.Compute()->Value();
+                if (hPos == -1) {
+                  hPos = coordV;
+                } else {
+                  vPos = coordV;
+                }
+                k = j+1;
+              } else {
+                j--;
+              }
+            }
+            
+            if (hPos <0 || vPos<0 || hPos>=hDim || vPos>=vDim)
+              // bad index
+            {
+              MatrixIndexError (hPos,vPos,hDim,vDim);
               return;
             }
             
-            if (s.char_at (j) ==',') {
-              term = s.Cut (s.FirstNonSpaceIndex(k,j-1,kStringDirectionForward),j-1);
-              _Formula coordF (term,theP);
-              hyFloat coordV = coordF.Compute()->Value();
-              if (hPos == -1) {
-                hPos = coordV;
-              } else {
-                vPos = coordV;
+            term = s.Cut(k,j-1); // read the element
+            
+            if (isNumeric) {
+              if (term.length() == 1UL && term.get_char (0)=='*') {
+                term = kEmptyString;    // dummy element in probability matrix
               }
-              k = j+1;
+              
+              (*this)[vDim*hPos+vPos];
+              k = Hash (hPos,vPos);
+              theData[k]=term.to_float ();
             } else {
-              j--;
+              if (term.length() == 1UL && term.get_char (0)=='*') {
+                term = kEmptyString;    // dummy element in probability matrix
+              }
+              
+              _Formula * theTerm = new _Formula (term,theP);
+              isAConstant = isAConstant && theTerm->IsAConstant();
+              
+              (*this)[vDim*hPos+vPos];
+              k = Hash (hPos,vPos);
+              ((_Formula**)theData)[k]=theTerm;
             }
+            i = j;
           }
-          
-          if (hPos <0 || vPos<0 || hPos>=hDim || vPos>=vDim)
-            // bad index
-          {
-            MatrixIndexError (hPos,vPos,hDim,vDim);
-            return;
-          }
-          
-          term = s.Cut(k,j-1); // read the element
-          
-          if (isNumeric) {
-            if (term.length() == 1UL && term.get_char (0)=='*') {
-              term = kEmptyString;    // dummy element in probability matrix
-            }
-            
-            (*this)[vDim*hPos+vPos];
-            k = Hash (hPos,vPos);
-            theData[k]=term.to_float ();
-          } else {
-            if (term.length() == 1UL && term.get_char (0)=='*') {
-              term = kEmptyString;    // dummy element in probability matrix
-            }
-            
-            _Formula * theTerm = new _Formula (term,theP);
-            isAConstant = isAConstant && theTerm->IsAConstant();
-            
-            (*this)[vDim*hPos+vPos];
-            k = Hash (hPos,vPos);
-            ((_Formula**)theData)[k]=theTerm;
-          }
-          i = j;
         }
-      }
-    } // end else
-    
-    if (!isNumeric) {
-      storageType = 2; // formula elements
-      checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
-      if ((ANALYTIC_COMPUTATION_FLAG)&&!isAConstant) {
-        ConvertFormulas2Poly (false);
-      }
+      } // end else
       
-      if (isAConstant) { // a matrix of numbers - store as such
-        Evaluate ();
+      if (!isNumeric) {
+        storageType = 2; // formula elements
+        checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
+        if ((ANALYTIC_COMPUTATION_FLAG)&&!isAConstant) {
+          ConvertFormulas2Poly (false);
+        }
+        
+        if (isAConstant) { // a matrix of numbers - store as such
+          Evaluate ();
+        }
+        AmISparse();
       }
-      AmISparse();
     }
+  } catch (const _String& err) {
+    HandleApplicationError(err);
   }
 }
 
@@ -6897,13 +6900,14 @@ void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned l
                     if (f) {
                         HBLObjectRef fv = f->Compute();
                         if (fv) {
-                            res << ((_FString*)fv)->get_str();
+                          res << _String ((_String*)fv->toStr());
+                          //;((_FString*)fv)->get_str();
                         }
                     }
                     res << '"';
 
                 }
-                res << closeBracket << (doJSON ? ',' : ' ');
+                res << closeBracket << (doJSON ? ',' : ' ') << '\n';
             }
         }
         res << padder << closeBracket;
@@ -6928,7 +6932,7 @@ void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned l
                     res << "0.";
                 }
             }
-            res << "]";
+            res << "]\n";
         }
     } else {
         _Matrix* eval = (_Matrix*)(storageType==3?EvaluateSimple():Evaluate(false));

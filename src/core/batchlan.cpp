@@ -1090,7 +1090,7 @@ void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool rec
 HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
 
   //setParameter(_hyLastExecutionError, new _MathObject, nil, false);
-
+  try{
 
     _ExecutionList*      stashCEL = currentExecutionList;
     callPoints << currentCommand;
@@ -1168,6 +1168,9 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
       DeleteObject(stash1);
       DeleteObject(stash2);
     }
+  } catch (const _String err) {
+    HandleApplicationError(err);
+  }
 
     return result;
 }

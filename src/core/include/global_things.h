@@ -171,7 +171,7 @@ namespace hy_global {
    
    @param message the diagnostic message to report
    */
-  void    ReportWarning (_String const message);
+  void    ReportWarning (_String const & message);
   
   //_______________________________________________________________________
   
@@ -183,12 +183,12 @@ namespace hy_global {
    @message the error message
    
    */
-  void      HandleOrStoreApplicationError (_String* error_string, _String const message);
+  void      HandleOrStoreApplicationError (_String* error_string, _String const & message);
   
   /**
    This is a convenience function to report an error while parsing expressions (context)
    */
-  void        HandleErrorWhileParsing (_String const error_string, _String const context);
+  void        HandleErrorWhileParsing (_String const & error_string, _String const & context);
   
   
   /**
@@ -201,8 +201,18 @@ namespace hy_global {
    @param message the error message
    @param force_exit force application exit
    */
-  void      HandleApplicationError (_String const message, bool force_exit = false);
+  void      HandleApplicationError (_String const & message, bool force_exit = false);
   
+  /**
+      When HyPhy encounters an error in a particular expression, it may be useful
+      to report the location of the error in the string.
+   
+      This function extracts the substring of the requested size from the context,
+      padding with ellipses if needed, and returns it
+   */
+   
+   const _String  PrepareErrorContext     (_String const & context, long from, unsigned long size = 32UL);
+
   /**
    Return a path specification to one of the standard HyPhy directories
    
@@ -294,6 +304,7 @@ namespace hy_global {
   kErrorStringDatasetRefIndexError,        // -171
   kErrorStringMatrixExportError,           // -200
   kErrorStringNullOperand,                  // -666
+  kErrorStringUnterminatedMatrix,
   kNoneToken
   ;
   

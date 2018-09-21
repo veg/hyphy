@@ -2203,11 +2203,13 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
               original_path (file_path);
 
       FILE * source_file = nil;
+      
+      bool        reload          = hy_env::EnvVariableTrue(hy_env::always_reload_libraries);
+
 
       if (do_load_library) {
-        bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound,
-        reload          = hy_env::EnvVariableTrue(hy_env::always_reload_libraries);
-
+        bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound;
+ 
         for (unsigned long p = 0; !source_file && p < _hy_standard_library_paths.countitems(); p++) {
           for (unsigned long e = 0; !source_file && e < _hy_standard_library_extensions.countitems(); e++) {
             _String try_path = *((_String*)_hy_standard_library_paths(p)) & file_path & *((_String*)_hy_standard_library_extensions(e));
@@ -2228,48 +2230,48 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             }
           }
         }
-
-        if (source_file == nil) {
-          ProcessFileName (file_path, false,false,(hyPointer)current_program.nameSpacePrefix);
-
-          if (loadedLibraryPaths.Find(&file_path) >= 0 && parameter_count() == 2UL && !reload) {
-            ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & file_path);
-            return true;
-          }
-
-          if ((source_file = doFileOpen (file_path.get_str (), "rb")) == nil) {
-            throw (_String("Could not read command file from '") &
-                   original_path & "' (expanded to '" & file_path & "')");
-          }
-        }
-
-        if (do_load_from_file && source_file) {
-          ReportWarning (_String("Loaded ") & original_path.Enquote() & " from " & file_path.Enquote());
-          loadedLibraryPaths.Insert (new _String (file_path),0,false,true);
-        }
-
-        source_code = new _String (source_file);
-
-        if (fclose       (source_file) ) { // failed to fclose
-          DeleteObject (source_code);
-          throw (_String("Internal error: failed in a call to fclose ") & file_path.Enquote());
-        }
-        pop_path = true;
-        PushFilePath (file_path);
-
       }
-    } else {
-      source_code = new _String (_ProcessALiteralArgument(*GetIthParameter(0UL), current_program));
-    }
+ 
+      if (source_file == nil) {
+        ProcessFileName (file_path, false,false,(hyPointer)current_program.nameSpacePrefix);
 
-    if (!source_code || source_code->empty()) {
-      throw ("Empty/missing source code string");
-    }
+        if (loadedLibraryPaths.Find(&file_path) >= 0 && parameter_count() == 2UL && !reload) {
+          ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & file_path);
+          return true;
+        }
 
-    if (!do_load_from_file && GetIthParameter(1UL)->nonempty()) {
+        if ((source_file = doFileOpen (file_path.get_str (), "rb")) == nil) {
+          throw (_String("Could not read command file from '") &
+                 original_path & "' (expanded to '" & file_path & "')");
+        }
+      }
+
+      if (do_load_from_file && source_file) {
+        ReportWarning (_String("Loaded ") & original_path.Enquote() & " from " & file_path.Enquote());
+        loadedLibraryPaths.Insert (new _String (file_path),0,false,true);
+      }
+
+      source_code = new _String (source_file);
+
+      if (fclose       (source_file) ) { // failed to fclose
+        DeleteObject (source_code);
+        throw (_String("Internal error: failed in a call to fclose ") & file_path.Enquote());
+      }
       pop_path = true;
-      PushFilePath (*GetIthParameter(1UL), false, false);
+      PushFilePath (file_path);
+    } else { // commands are not loaded from a file
+       source_code = new _String (_ProcessALiteralArgument(*GetIthParameter(0UL), current_program));
     }
+    
+
+      if (!source_code || source_code->empty()) {
+        throw _String("Empty/missing source code string");
+      }
+
+      if (!do_load_from_file && GetIthParameter(1UL)->nonempty()) {
+        pop_path = true;
+        PushFilePath (*GetIthParameter(1UL), false, false);
+      }
 
     _String * use_this_namespace = nil;
 

@@ -796,6 +796,7 @@ public:
  */
 
    long    Find (const bool lookup[256] , long start = 0L, long to = kStringEnd) const ;
+   long    FindAnyCase (const bool lookup[256] , long start = 0L, long to = kStringEnd) const ;
 /**
   * Find first occurence of the string between "start" and "end" (inclusive)
   * @see Find() for parameter explanation
@@ -917,8 +918,9 @@ public:
    case (not cheap) added the third argument to check for match from a given
    position in this
   */
-  bool BeginsWith(_String const &pattern, bool case_sensitive = true,
-                  unsigned long from = 0UL) const;
+  
+  bool BeginsWith (_String const& pattern, bool case_sensitive = true, unsigned long from = 0UL) const;
+  bool BeginsWith (bool const lookup[256], bool case_sensitive = true, unsigned long from = 0UL) const;
 
   /**
    * Checks to see if String ends with substring
@@ -1057,11 +1059,93 @@ public:
    *  Revision history
       - SLKP 20170615   reviewed while porting from the v2.3 branch;
                         for the string; included support for singly quoted
-   literals; cleaned up the logic, and fixed broken logic for terminator > 1
-   char long
+                        literals; cleaned up the logic, and fixed broken logic for terminator > 1
+                        char long
+   
+      - SLKP 20180921   converted into a template to make it possible to search
+                        for multiple terminators
    */
 
-   long FindTerminator(long start, _String const &terminator) const;
+  template <typename TERMINATOR> long FindTerminator(long start, TERMINATOR const &terminator) const{
+    
+    long    current_position  = start;
+    
+    
+    long   curly_depth = 0L,
+    square_depth = 0L,
+    paren_depth = 0L;
+    
+    bool   do_escape = false;
+    char   quote_state = '\0';
+    
+    while (current_position < s_length) {
+      char this_char = s_data[current_position];
+      if (do_escape) {
+        do_escape = false;
+      } else {
+        if ((this_char == '"' || this_char == '\'') && !do_escape) {
+          if (quote_state == '\0') {
+            quote_state = this_char;
+          } else {
+            if (this_char == quote_state) {
+              quote_state = '\0';
+            }
+          }
+        } else {
+          if (quote_state == '\0') {
+            
+            switch (this_char) {
+              case '(':
+                paren_depth ++;
+                current_position++;
+                continue;
+              case ')':
+                if (paren_depth > 0L) {
+                  current_position++;
+                  continue;
+                }
+                break;
+              case '[':
+                square_depth++;
+                current_position++;
+                continue;
+              case ']':
+                if (square_depth > 0L) {
+                  square_depth --;
+                  current_position++;
+                  continue;
+                }
+                break;
+              case '{':
+                curly_depth++;
+                current_position++;
+                continue;
+              case '}':
+                if (curly_depth > 0L) {
+                  curly_depth --;
+                  current_position++;
+                  continue;
+                }
+                break;
+            }
+            
+            if (curly_depth == 0L && square_depth == 0L && paren_depth == 0L) {
+              if (BeginsWith (terminator, true, current_position)) {
+                return current_position;
+              }
+            }
+          } else {
+            if (this_char == '\\' && quote_state != '\0' && !do_escape) {
+              do_escape = true;
+            }
+          }
+        }
+      }
+      current_position++;
+    }
+    
+    return kNotFound;
+  }
 
   /**
    * Strips quotes from around the string if present (in place)

@@ -381,9 +381,10 @@ void    _TheTree::PostTreeConstructor (bool make_copy) {
  
   auto variable_handler = [&] (void) -> void {
     /** TODO SLKP 20171211, make sure the semantics are unchanged */
-    if (make_copy) {
-      variablePtrs.Replace (get_index(), this->makeDynamic(), false);
-    }
+    // existing variable is a CalcNode
+    
+    variablePtrs.Replace (get_index(), make_copy ? this->makeDynamic() : this, false);
+    
   };
   
   bool accept_rooted = EnvVariableTrue(accept_rooted_trees);
@@ -443,8 +444,6 @@ void    _TheTree::PostTreeConstructor (bool make_copy) {
     }
   }
   
-  variable_handler ();
-
   if (!theRoot) {
       HandleApplicationError ("Invalid tree/topology string specification.");
   } else {

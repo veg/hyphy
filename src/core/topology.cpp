@@ -133,9 +133,8 @@ void    _TreeTopology::PostTreeConstructor (bool make_copy) {
     
     auto variable_handler = [&] (void) -> void {
         /** TODO SLKP 20171211, make sure the semantics are unchanged */
-        if (make_copy) {
-            variablePtrs.Replace (get_index(), this->makeDynamic(), false);
-        }
+        variablePtrs.Replace (get_index(), make_copy ? this->makeDynamic() : this, false);
+      
         /*
          BaseRef temp =  variablePtrs(theIndex);
          variablePtrs[theIndex]=make_copy ? this->makeDynamic() : this;
@@ -279,7 +278,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
     _StringBuffer nodeName;
     
     _any_char_in_set non_space        (" \t\r\n"),
-                     newick_delimiter (" \t\r\n(),{}[];");
+                     newick_delimiter (" \t\r\n(),{}[];:");
     non_space.invert();
     
     
@@ -317,6 +316,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
             switch (look_at_me) {
                 case '(': { // creating a new internal node one level down
                             // a new node
+                  
                     newNode = new node<long>;
                     
                     if (lastChar == '(' || lastChar == ',') {
@@ -397,7 +397,6 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
                     _SimpleList numerical_match (parms.RegExpMatch(hy_float_regex, i+1));
                     if (numerical_match.empty()) {
                         throw _String("Failed to read a number for the branch length following ':'");
-                        break;
                     }
                     nodeValue = parms.Cut (numerical_match(0), numerical_match(1));
                     i = numerical_match(1);
@@ -425,6 +424,8 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
                     break;
                 }
             }
+          
+            lastChar = look_at_me;
         }
     } catch (const _String error) {
         isDefiningATree = kTreeNotBeingDefined;
@@ -810,7 +811,7 @@ void _TreeTopology::toFileStr(FILE* f, unsigned long padding) {
 //__________________________________________________________________________________
 
 HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
-    const _String kSplitNodeNames ("SPLIT_NODE_NAMES");
+    const static _String kSplitNodeNames ("SPLIT_NODE_NAMES");
     
     switch (opCode) { // first check operations without arguments
         case HY_OP_CODE_ABS: // Abs

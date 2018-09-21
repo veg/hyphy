@@ -302,8 +302,7 @@ Methods
 
 void _List::AppendNewInstance (BaseRef br) {
     if (br) {
-        (*this)<<br;
-        br->RemoveAReference();
+        (*this)<br;
     } else {
         HandleApplicationError(_String ("Passed a null reference to ") & __PRETTY_FUNCTION__);
     }
@@ -325,8 +324,7 @@ long  _List::BinaryFindObject (BaseObj const * s, long startAt) const {
     while (top>bottom) {
         middle = (top+bottom)/2;
         _String* stp = (_String*)(((BaseRef*)lData)[middle]->toStr());
-
-        hyComparisonType      cres = st->Compare (stp);
+        hyComparisonType      cres = st->Compare (*stp);
         DeleteObject (stp);
 
         if (cres == kCompareLess) {
@@ -340,7 +338,7 @@ long  _List::BinaryFindObject (BaseObj const * s, long startAt) const {
     }
     middle = top;
     _String* stp=(_String*)(((BaseRef*)lData)[middle]->toStr());
-    if (st->Equal(stp)) {
+    if (st->Equal(*stp)) {
         DeleteObject(stp);
         return middle;
     }
