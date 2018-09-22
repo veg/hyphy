@@ -1024,7 +1024,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
     if (doCurrentCommand) {
         _ElementaryCommand *theCommand = FetchLastCommand();
         if (theCommand) {
-            errMsg = errMsg & " in to " & _String ((_String*)theCommand->toStr());
+            errMsg = errMsg & " in call to " & _String ((_String*)theCommand->toStr());
         }
     }
     errorState = true;
@@ -2316,7 +2316,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
         fName = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
         ds = ReadDataSetFile (nil,0,&fName,nil,chain.nameSpacePrefix?chain.nameSpacePrefix->GetName():nil);
     } else {
-        if (fName.Equal (&useNexusFileData)) {
+        if (fName == useNexusFileData) {
             if (!lastNexusDataMatrix) {
                 HandleApplicationError (useNexusFileData & " was used in ReadDataFile, and no NEXUS data matrix was available.");
                 return;

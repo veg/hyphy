@@ -56,9 +56,9 @@ struct FileState {
 
   _TranslationTable *translationTable;
   long curSpecies, totalSpeciesRead, totalSitesRead, totalSpeciesExpected,
-      totalSitesExpected, curSite, maxStringLength, pInSrc;
+       totalSitesExpected, curSite, maxStringLength, pInSrc, currentFileLine;
   bool acceptingCommands, allSpeciesDefined, interleaved, autoDetect,
-      isSkippingInNEXUS;
+       isSkippingInNEXUS;
   int fileType, baseLength;
   char repeat, skip;
 

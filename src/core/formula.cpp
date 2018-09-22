@@ -117,7 +117,7 @@ void _Formula::Duplicate  (_Formula const * f_cast) {
 //__________________________________________________________________________________
 void _Formula::DuplicateReference  (const _Formula* f) {
     for (unsigned long i=0; i<f->theFormula.countitems(); i++) {
-        _Operation *ith_term = GetIthTerm(i);
+        _Operation *ith_term = f->GetIthTerm(i);
         // TODO Document what -2 means and when it is used
         if (ith_term->GetAVariable()==-2) {
             theFormula.AppendNewInstance(new _Operation ((HBLObjectRef)LocateVar (-ith_term->GetNoTerms()-1)->Compute()->makeDynamic()));
@@ -225,6 +225,7 @@ BaseRef _Formula::toStr (_hyFormulaStringConversionMode mode, _List* matched_nam
         delete theTree;
         theTree = nil;
     }
+  
     return result;
 }
 //__________________________________________________________________________________
@@ -941,6 +942,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
     }
 
     if (replace_with) {
+        all_constant = true;
         for  (int k=1; k <= n_children; k++) {
             top_node->go_down(k)->delete_tree(true);
         }
@@ -978,7 +980,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
 
 
 //__________________________________________________________________________________
-void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, unsigned char op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode) {
+void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode) {
     
     if (!this_node_op) {
         if (!top_node) {
@@ -1070,7 +1072,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, un
                         result<<'(';
                         SubtreeToString (result, top_node->go_down(1),op_precedence,match_names, nil, mode);
                         result <<&this_node_op->GetCode();
-                        SubtreeToString (result, top_node->go_down(1),op_precedence_right,match_names, nil, mode);
+                        SubtreeToString (result, top_node->go_down(2),op_precedence_right,match_names, nil, mode);
                         result<<')';
                         return;
                     }
@@ -2671,10 +2673,10 @@ bool _Formula::IsAConstant (void) {
   for (unsigned long i=0UL; i<upper_bound; i++) {
     if ( ItemAt (i)->IsAVariable()) {
       return false;
-    }
-    
-    return true;
+    }    
   }
+  return true;
+
 }
 
 //__________________________________________________________________________________

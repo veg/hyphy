@@ -248,7 +248,7 @@ _String::_String (const _String& str, unsigned long copies) {
     s_data = (char*)MemAllocate (s_length+1UL);
     if (s_length > 0UL) {
         for (unsigned long i = 0UL; i < copies; i++) {
-            memcpy (s_data + i * str.s_length, s_data, str.s_length);
+            memcpy (s_data + i * str.s_length, str.s_data, str.s_length);
         }
     }
     s_data[s_length]='\0';
@@ -276,8 +276,7 @@ _String::_String(FILE * file, long read_this_many) {
 }
 
 //=============================================================
-_String::~_String(void)
-{
+_String::~_String(void) {
     if (CanFreeMe()) {
         if (s_data) {
             free (s_data);
@@ -722,6 +721,8 @@ const _String    _String::ChangeCase (hy_string_case conversion_type) const {
   for (unsigned long i = 0UL; i<s_length; i++) {
     result.s_data [i] = conversion_function (s_data[i]);
   }
+  
+  return result;
 }
 
 //=============================================================
@@ -740,7 +741,7 @@ const _List _String::Tokenize(const _String& splitter) const {
     cp = cpp + splitter.s_length;
   }
   
-  tokenized < new _String(*this, cp);
+  tokenized < new _String(*this, cp, kStringEnd);
   return tokenized;
 }
 

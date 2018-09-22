@@ -55,6 +55,8 @@ public:
     _FString (long);
     _FString (_String*);
     _FString (void);
+    _FString (const _FString&);
+    _FString (_FString&&);
     virtual  ~_FString ();
 //  ~_Constant (void);
 

@@ -1424,7 +1424,8 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
 
             if (levelData->countitems()==0) {
-                if (s[i-curOp.length()]!=')' && storage!=')' && s[i-curOp.length()] !=']') {
+              char check_char = s.get_char(i-curOp.length());
+                if (check_char !=')' && storage!=')' && check_char !=']') {
                     if (!twoToken && UnOps.FindKey (s.get_char(i)) >= 0) {
                         twoOrOne = 1;
                     } else {

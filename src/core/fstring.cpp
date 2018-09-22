@@ -85,6 +85,21 @@ _FString::_FString (long in_data){
 }
 
 //__________________________________________________________________________________
+_FString::_FString (const _FString& source){
+  the_string = new _StringBuffer (*source.the_string);
+}
+
+//__________________________________________________________________________________
+_FString::_FString (_FString&& source){
+  if (source.CanFreeMe()) {
+    the_string = source.the_string;
+    source.the_string = nil;
+  } else {
+    the_string = new _StringBuffer (*source.the_string);
+  }
+}
+
+//__________________________________________________________________________________
 _FString::_FString (_String const& data, bool meta) {
     if (meta) {
  

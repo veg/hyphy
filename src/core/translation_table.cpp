@@ -836,7 +836,7 @@ char _TranslationTable::GetGapChar(void) const {
 const _String
 _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
 
-  _StringBuffer res(base);
+  _String res ((unsigned long)base);
 
   if (code >= 0) {
     // OPTIMIZE FLAG; repeated memory allocation/deallocation

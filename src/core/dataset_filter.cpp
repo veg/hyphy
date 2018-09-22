@@ -394,7 +394,7 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
     
     duplicateMap.RequestSpace (verticalList.lLength/unit+1);
     
-    _String      siteHolder   (unit*theNodeMap.lLength,false);
+    _String      siteHolder   (unit*theNodeMap.lLength);
     
     //bool       startD = false;
     
@@ -510,7 +510,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
         if (theExc) {
           hyFloat   *store_vec = new hyFloat [GetDimension(false)];
           patterns_to_be_removed = theFrequencies.FilterIndex (
-              [&] (long value, unsigned long index) -> bool {
+              [this, store_vec, theExc] (long value, unsigned long index) -> bool {
                 long invalid_state = HasExclusions(index, theExc, store_vec);
                 if (invalid_state != -1) {
                   ReportWarning ((*this)(index,invalid_state).Enquote () & " was encountered in sequence "& *GetSequenceName (invalid_state) & " at site pattern " & (long)index
@@ -700,8 +700,9 @@ void    _DataSetFilter::SetExclusions (_String const& exclusion_string, bool fil
     if (character_list.empty()) {
         return;
     }
-    
-    _AVLList     exclusions (&theExclusions);
+  
+    _SimpleList  _exclusions;
+    _AVLList     exclusions (&_exclusions);
   
     character_list.Tokenize(',').ForEach ([&] (BaseRefConst  exlcusion_character, unsigned long) -> void {
       _String* kth_token = (_String*)exlcusion_character;
@@ -716,6 +717,7 @@ void    _DataSetFilter::SetExclusions (_String const& exclusion_string, bool fil
     });
 
     exclusions.ReorderList();
+    theExclusions = _exclusions;
     if (filter) {
         FilterDeletions (&theExclusions);
     }
@@ -1107,7 +1109,7 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage) con
     // TODO 20171002: in this and other functions, replace local caches with
     // an instance of
   
-    long        filter_dimension  = GetDimension(true),
+    long        filter_dimension  = GetDimension(false),
                 sequence_count    = theNodeMap.countitems()?theNodeMap.countitems():theData->NoOfSpecies();
   
     hyFloat* store    = new hyFloat [filter_dimension];
@@ -1211,7 +1213,7 @@ long    _DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, 
   
         for (unsigned long k = 0UL; k<theNodeMap.countitems(); k++) {
             RetrieveState           (site, k, buffer, false);
-            Translate2Frequencies   (buffer, store, false);
+            Translate2Frequencies   (buffer, store, false, false);
             
           
             unsigned long   filter_dim = GetDimension(false);
@@ -1222,7 +1224,7 @@ long    _DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, 
                       if (theExc->Find(character) < 0) {
                           return -1; // found at least one non-excluded character (possibly partial)
                       } else {
-                        found_forbidden = character;
+                        found_forbidden = k;
                       }
                   }
             }
@@ -1789,7 +1791,7 @@ long    _DataSetFilter::CorrectCode (long code) const {
 
 
 //_______________________________________________________________________
-long    _DataSetFilter::Translate2Frequencies (_String const& str, hyFloat* parvect, bool smear) const {
+long    _DataSetFilter::Translate2Frequencies (_String const& str, hyFloat* parvect, bool smear, bool correct_for_exclusions) const {
     // TODO : SLKP 20171002, this will break ugly if dimension > HYPHY_SITE_DEFAULT_BUFFER_SIZE
   
     long  store      [HYPHY_SITE_DEFAULT_BUFFER_SIZE],
@@ -1804,7 +1806,7 @@ long    _DataSetFilter::Translate2Frequencies (_String const& str, hyFloat* parv
         resolution_count = theData->theTT->MultiTokenResolutions(str,store, smear);
     }
     
-    long mapped_resolution_count = theExclusions.lLength ? theExclusions.CorrectForExclusions(store, resolution_count) : resolution_count;
+    long mapped_resolution_count = correct_for_exclusions && theExclusions.nonempty() ? theExclusions.CorrectForExclusions(store, resolution_count) : resolution_count;
     
     /* handle the cases when no unambiguous resolutions were available */
     for (long i = 0L; i < mapped_resolution_count; i++) {

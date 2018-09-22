@@ -413,7 +413,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
                         throw _String ("Unexpected node name");
                     }
                     
-                    long end_of_id = parms.ExtractEnclosedExpression(i, non_space, newick_delimiter, fExtractRespectQuote | fExtractRespectEscape);
+                    long end_of_id = parms.ExtractEnclosedExpression(i, non_space, newick_delimiter, fExtractRespectQuote | fExtractRespectEscape | fExtractOneLevelOnly);
                     if (end_of_id == kNotFound) {
                         throw _String ("Unexpected end of tree string while searching for a node name");
                     } else {

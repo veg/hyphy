@@ -1431,7 +1431,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_progr
           hyFloat local_number = ((_String*)local_version.GetItem(i))->to_float(),
                   required_number = ((_String*)required_version.GetItem(i))->to_float();
           
-          if (local_number > required_number) {
+          if (local_number >= required_number) {
               return true;
           }
           if (local_number < required_number) {
@@ -2587,161 +2587,164 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
         long          object_type = HY_BL_ANY,
                       object_index;
 
-        BaseRefConst       source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
+        BaseRefConst       source_object = nil;
+        try {
+          source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
 
-        switch (object_type) {
-          case HY_BL_DATASET: {
-            _DataSet const* data_set_object = (_DataSet const*)source_object;
-            if (index1 >=0) { // get a specific sequence name
-              if (index1 < data_set_object->NoOfSpecies()) {
-                return_value = make_fstring (*(_String*)(data_set_object->GetNames().GetItem(index1)));
-              } else {
-                throw (_String (index1) & " exceeds the maximum index for the underlying DataSet object");
-              }
-            } else {
-                return_value = new _Matrix (data_set_object->GetNames(), false);
-            }
-            break;
-          }
-          case HY_BL_DATASET_FILTER: {
-            _DataSetFilter const* data_filter = (_DataSetFilter const*)source_object;
-
-            if (index1 >=0 ) { // get a specific sequence name
-              if (index1 < data_filter->NumberSpecies()) {
-                return_value = make_fstring (*(_String*)data_filter->GetData()->GetNames().GetItem(data_filter->theNodeMap.Element(index1)));
-              } else {
-                throw (_String (index1) & " exceeds the maximum index for the underlying DataSetFilter object");
-              }
-            } else {
-              _List filter_seq_names;
-              _List const * original_names = &data_filter->GetData()->GetNames();
-              data_filter->theNodeMap.Each ([&] (long value, unsigned long) -> void {
-                filter_seq_names << original_names->GetItem (value);
-              });
-              return_value = new _Matrix (filter_seq_names);
-
-            }
-            break;
-          }
-
-          case HY_BL_HBL_FUNCTION: {
-            return_value  = &(
-                              (*new _AssociativeList)
-                              < (_associative_list_key_value){"ID", new _FString (*GetObjectNameByType (HY_BL_HBL_FUNCTION, object_index, false)) }
-                              < (_associative_list_key_value){"Arguments", new _Matrix(GetBFFunctionArgumentList(object_index)) }
-                              < (_associative_list_key_value){"Body", new _FString (GetBFFunctionBody(object_index).sourceText,false) }
-                              );
-            break;
-          }
-
-          case HY_BL_LIKELIHOOD_FUNCTION:
-          case HY_BL_SCFG: {
-            _LikelihoodFunction const *lf = (_LikelihoodFunction const*) source_object;
-            if (index1 >= 0L) {
-              if (index1<lf->GetIndependentVars().countitems()) {
-                return_value = make_fstring (*LocateVar(lf->GetIndependentVars().GetElement(index1))->GetName());
-              } else {
-                if (index1 < lf->GetIndependentVars().countitems()+lf->GetDependentVars().countitems()) {
-                  return_value = make_fstring (*LocateVar(lf->GetDependentVars().GetElement(index1-lf->GetIndependentVars().countitems()))->GetName());
+          switch (object_type) {
+            case HY_BL_DATASET: {
+              _DataSet const* data_set_object = (_DataSet const*)source_object;
+              if (index1 >=0) { // get a specific sequence name
+                if (index1 < data_set_object->NoOfSpecies()) {
+                  return_value = make_fstring (*(_String*)(data_set_object->GetNames().GetItem(index1)));
                 } else {
-                  throw (_String (index1) & " exceeds the maximum index for the underlying LikelihoodFunction/SCFG object");
+                  throw (_String (index1) & " exceeds the maximum index for the underlying DataSet object");
                 }
+              } else {
+                  return_value = new _Matrix (data_set_object->GetNames(), false);
               }
-            } else {
-              return_value = lf->CollectLFAttributes ();
-              if (object_type == HY_BL_SCFG) {
-                ((Scfg* const)lf)->AddSCFGInfo ((_AssociativeList*)return_value);
-              }
+              break;
             }
-            break;
-          }
+            case HY_BL_DATASET_FILTER: {
+              _DataSetFilter const* data_filter = (_DataSetFilter const*)source_object;
 
-          case HY_BL_MODEL: {
-            if (index1 >= 0L) {
-              if (index2 < 0L) { // get the name of index1 parameter
-                long variable_index = PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
-                    ScanModelForVariables (object_index, parameter_list, false, -1, false);
-                }).Map (index1);
-                if (variable_index >= 0) {
-                  return_value = make_fstring (*LocateVar(variable_index)->GetName());
+              if (index1 >=0 ) { // get a specific sequence name
+                if (index1 < data_filter->NumberSpecies()) {
+                  return_value = make_fstring (*(_String*)data_filter->GetData()->GetNames().GetItem(data_filter->theNodeMap.Element(index1)));
                 } else {
-                  throw (_String (index1) & " exceeds the maximum parameter index for the underlying Model object");
+                  throw (_String (index1) & " exceeds the maximum index for the underlying DataSetFilter object");
                 }
-              } else { // get the formula for cell (index1, index2)
-                if (!IsModelOfExplicitForm (object_index)) {
-                  _Variable*      rate_matrix = (_Variable*)source_object;
-                  _Formula * cell = ((_Matrix*)rate_matrix->GetValue())->GetFormula (index1,index2);
-                  if (cell) {
-                    return_value = make_fstring_pointer ((_String*)cell->toStr(kFormulaStringConversionNormal));
+              } else {
+                _List filter_seq_names;
+                _List const * original_names = &data_filter->GetData()->GetNames();
+                data_filter->theNodeMap.Each ([&] (long value, unsigned long) -> void {
+                  filter_seq_names << original_names->GetItem (value);
+                });
+                return_value = new _Matrix (filter_seq_names);
+
+              }
+              break;
+            }
+
+            case HY_BL_HBL_FUNCTION: {
+              return_value  = &(
+                                (*new _AssociativeList)
+                                < (_associative_list_key_value){"ID", new _FString (*GetObjectNameByType (HY_BL_HBL_FUNCTION, object_index, false)) }
+                                < (_associative_list_key_value){"Arguments", new _Matrix(GetBFFunctionArgumentList(object_index)) }
+                                < (_associative_list_key_value){"Body", new _FString (GetBFFunctionBody(object_index).sourceText,false) }
+                                );
+              break;
+            }
+
+            case HY_BL_LIKELIHOOD_FUNCTION:
+            case HY_BL_SCFG: {
+              _LikelihoodFunction const *lf = (_LikelihoodFunction const*) source_object;
+              if (index1 >= 0L) {
+                if (index1<lf->GetIndependentVars().countitems()) {
+                  return_value = make_fstring (*LocateVar(lf->GetIndependentVars().GetElement(index1))->GetName());
+                } else {
+                  if (index1 < lf->GetIndependentVars().countitems()+lf->GetDependentVars().countitems()) {
+                    return_value = make_fstring (*LocateVar(lf->GetDependentVars().GetElement(index1-lf->GetIndependentVars().countitems()))->GetName());
                   } else {
-                    throw ("Invalid rate matrix cell index");
+                    throw (_String (index1) & " exceeds the maximum index for the underlying LikelihoodFunction/SCFG object");
+                  }
+                }
+              } else {
+                return_value = lf->CollectLFAttributes ();
+                if (object_type == HY_BL_SCFG) {
+                  ((Scfg* const)lf)->AddSCFGInfo ((_AssociativeList*)return_value);
+                }
+              }
+              break;
+            }
+
+            case HY_BL_MODEL: {
+              if (index1 >= 0L) {
+                if (index2 < 0L) { // get the name of index1 parameter
+                  long variable_index = PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
+                      ScanModelForVariables (object_index, parameter_list, false, -1, false);
+                  }).Map (index1);
+                  if (variable_index >= 0) {
+                    return_value = make_fstring (*LocateVar(variable_index)->GetName());
+                  } else {
+                    throw (_String (index1) & " exceeds the maximum parameter index for the underlying Model object");
+                  }
+                } else { // get the formula for cell (index1, index2)
+                  if (!IsModelOfExplicitForm (object_index)) {
+                    _Variable*      rate_matrix = (_Variable*)source_object;
+                    _Formula * cell = ((_Matrix*)rate_matrix->GetValue())->GetFormula (index1,index2);
+                    if (cell) {
+                      return_value = make_fstring_pointer ((_String*)cell->toStr(kFormulaStringConversionNormal));
+                    } else {
+                      throw ("Invalid rate matrix cell index");
+                    }
+                  } else {
+                    throw ("Direct indexing of rate matrix cells is not supported for expression based (e.g. mixture) substitution models");
+                  }
+                }
+
+              } else {
+                _Variable   * rates, * freqs;
+                bool         is_canonical;
+                RetrieveModelComponents (object_index, rates, freqs, is_canonical);
+
+                if (rates) {
+                  if (index1 == -1) { // branch length expression
+                    return_value = make_fstring_pointer (((_Matrix*)rates->GetValue())->BranchLengthExpression((_Matrix*)freqs->GetValue(),is_canonical));
+                  } else
+                  /*
+                   returns an AVL with keys
+                   "RATE_MATRIX" - the ID of the rate matrix
+                   "EQ_FREQS"    - the ID of eq. freq. vector
+                   "MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
+                   */
+                  {
+                    return_value  = &(
+                                      (*new _AssociativeList)
+                                      < (_associative_list_key_value){"RATE_MATRIX",new _FString(*rates->GetName())}
+                                      < (_associative_list_key_value){"EQ_FREQS",new _FString(*freqs->GetName()) }
+                                      < (_associative_list_key_value){"MULT_BY_FREQ",new _Constant (is_canonical) }
+                                      );
                   }
                 } else {
-                  throw ("Direct indexing of rate matrix cells is not supported for expression based (e.g. mixture) substitution models");
+                  throw "Failed to retrieve model rate matrix";
                 }
               }
-
-            } else {
-              _Variable   * rates, * freqs;
-              bool         is_canonical;
-              RetrieveModelComponents (object_index, rates, freqs, is_canonical);
-
-              if (rates) {
-                if (index1 == -1) { // branch length expression
-                  return_value = make_fstring_pointer (((_Matrix*)rates->GetValue())->BranchLengthExpression((_Matrix*)freqs->GetValue(),is_canonical));
-                } else
-                /*
-                 returns an AVL with keys
-                 "RATE_MATRIX" - the ID of the rate matrix
-                 "EQ_FREQS"    - the ID of eq. freq. vector
-                 "MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
-                 */
-                {
-                  return_value  = &(
-                                    (*new _AssociativeList)
-                                    < (_associative_list_key_value){"RATE_MATRIX",new _FString(*rates->GetName())}
-                                    < (_associative_list_key_value){"EQ_FREQS",new _FString(*freqs->GetName()) }
-                                    < (_associative_list_key_value){"MULT_BY_FREQ",new _Constant (is_canonical) }
-                                    );
-                }
-              } else {
-                throw "Failed to retrieve model rate matrix";
-              }
+              break;
             }
-            break;
-          }
-          case HY_BL_BGM: {
-              //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
-            _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) source_object;
+            case HY_BL_BGM: {
+                //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
+              _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) source_object;
 
-            switch (index1) {
-              case HY_HBL_GET_STRING_BGM_SCORE: {   // return associative list containing node score cache
-                _AssociativeList        * export_alist  = new _AssociativeList;
+              switch (index1) {
+                case HY_HBL_GET_STRING_BGM_SCORE: {   // return associative list containing node score cache
+                  _AssociativeList        * export_alist  = new _AssociativeList;
 
-                if (this_bgm -> ExportCache (export_alist)) {
-                  return_value = export_alist;
-                } else {
-                  DeleteObject (export_alist);
-                  throw "Failed to export node score cache for BGM";
+                  if (this_bgm -> ExportCache (export_alist)) {
+                    return_value = export_alist;
+                  } else {
+                    DeleteObject (export_alist);
+                    throw "Failed to export node score cache for BGM";
+                  }
+
+                  break;
                 }
-
-                break;
+                case HY_HBL_GET_STRING_BGM_SERIALIZE: {   // return associative list with network structure and parameters
+                  _StringBuffer *serialized_bgm = new _StringBuffer (1024L);
+                  this_bgm -> SerializeBGM (*serialized_bgm);
+                  return_value = new _FString (serialized_bgm);
+                  break;
+                }
+                default: {
+                  throw _String ("Unrecognized index ") & index1 & " for a BGM object";
+                }
               }
-              case HY_HBL_GET_STRING_BGM_SERIALIZE: {   // return associative list with network structure and parameters
-                _StringBuffer *serialized_bgm = new _StringBuffer (1024L);
-                this_bgm -> SerializeBGM (*serialized_bgm);
-                return_value = new _FString (serialized_bgm);
-                break;
-              }
-              default: {
-                throw _String ("Unrecognized index ") & index1 & " for a BGM object";
-              }
+              break;
             }
-            break;
           }
-
-
-        } // end of "switch"
+        } catch (_String const & err) { // lookup failed
+          return_value = nil;
+        }
       }
 
         // finally, try to look up a variable
@@ -3409,7 +3412,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
     
     if (parameters.lLength>3) {
       parameterName = (_String*)parameters.lData[3];
-      if (parameterName->Equal(&explicitFormMExp)) {
+      if (parameterName->Equal(explicitFormMExp)) {
         doExpressionBased = true;
         multFreqs         = 0;
       } else {
@@ -3421,7 +3424,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
     
     parameterName = (_String*)parameters.lData[1];
     
-    if (parameterName->Equal (&useLastDefinedMatrix)) {
+    if (parameterName->Equal (useLastDefinedMatrix)) {
       if (lastMatrixDeclared<0) {
         throw "First Call to Model. USE_LAST_DEFINED_MATRIX is meaningless.";
       }

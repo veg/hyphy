@@ -1478,11 +1478,13 @@ void  _SimpleList::BubbleSort (void) {
     bool done = lLength == 0UL;
     while (!done) {
         done = true;
-        for (unsigned long i=lLength-1UL,j=0UL; i>0UL; i--,j++) {
-            if (Compare(i,j) == kCompareLess) {
-                done = false;
-                EXCHANGE (((long*)lData)[i], ((long*)lData)[j]);
-             }
+        unsigned long upper_bound = lLength - 1L;
+        for (unsigned long i=0UL; i < upper_bound; i++) {
+          if (Compare(i,i+1) == kCompareGreater) {
+            done = false;
+            EXCHANGE (((long*)lData)[i],((long*)lData)[i+1]);
+            upper_bound = i;
+          }
         }
     }
 }
@@ -1577,11 +1579,13 @@ void SortLists (_SimpleList* ref, _SimpleList* index) {
  
           while (!done) {
               done = true;
-              for (unsigned long i=ref->lLength-1UL,j=0UL; i>0UL; i--,j++) {
-                if (ref->Compare(i,j) == kCompareLess) {
+              unsigned long upper_bound = ref->lLength - 1L;
+              for (unsigned long i=0UL; i < upper_bound; i++) {
+                if (ref->Compare(i,i+1) == kCompareGreater) {
                   done = false;
-                  EXCHANGE (((long*)ref->lData)[i],((long*)ref->lData)[j]);
-                  EXCHANGE (((long*)index->lData)[i],((long*)index->lData)[j]);
+                  EXCHANGE (((long*)ref->lData)[i],((long*)ref->lData)[i+1]);
+                  EXCHANGE (((long*)index->lData)[i],((long*)index->lData)[i+1]);
+                  upper_bound = i;
                 }
               }
           }

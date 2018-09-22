@@ -674,7 +674,7 @@ void _DataSet::toFileStr(FILE *dest, unsigned long padding) {
 
 void _DataSet::AddName(_String const &s) {
   theNames.AppendNewInstance(
-      new _String(s, 0, s.FirstNonSpaceIndex(0, -1, kStringDirectionForward)));
+      new _String(s, 0, s.FirstNonSpaceIndex(0, -1, kStringDirectionBackward)));
 }
 
 //_________________________________________________________
@@ -1345,6 +1345,8 @@ bool SkipLine (_String& theLine, FileState* fS) {
 //_________________________________________________________
 void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase) {
     _StringBuffer  tempBuffer (1024L);
+  
+    fs->currentFileLine ++;
     
     char lastc;
     
@@ -1479,6 +1481,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     fState.totalSpeciesExpected =
     fState.totalSitesExpected =
     fState.curSite =
+    fState.currentFileLine =
     fState.maxStringLength   = 0;
     fState.acceptingCommands = true;
     fState.allSpeciesDefined = false;

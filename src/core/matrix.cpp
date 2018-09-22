@@ -2458,7 +2458,7 @@ void        _Matrix::MakeMeSimple (void) {
                 cmd->has_volatile_entries = cmd->has_volatile_entries || ((_Formula*)newFormulas.lData[k])->ConvertToSimple(varList);
             }
 
-            cmd->varIndex.Duplicate (&varList);
+            cmd->varIndex.Duplicate     (&varListAux);
             cmd->theStack               = (_SimpleFormulaDatum*)MatrixMemAllocate (stackLength*sizeof(_SimpleFormulaDatum));
             cmd->varValues              = (_SimpleFormulaDatum*)MatrixMemAllocate ((cmd->varIndex.countitems()>0?varList.countitems():1)*sizeof(_SimpleFormulaDatum));
             cmd->formulaRefs            = references.lData;

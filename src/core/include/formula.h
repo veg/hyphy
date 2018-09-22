@@ -232,7 +232,7 @@ public:
 
 protected:
 
-    void        SubtreeToString     (_StringBuffer & result, node<long>* top_node, unsigned char op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal);
+    void        SubtreeToString     (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal);
     void        ConvertToTree       (bool err_msg = true);
     void        ConvertFromTree     (void);
     bool        CheckSimpleTerm     (HBLObjectRef);

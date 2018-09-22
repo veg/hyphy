@@ -47,6 +47,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define fExtractRespectQuote 0x01
 #define fExtractRespectEscape 0x02
+#define fExtractOneLevelOnly  0x04
 
 #define fIDAllowFirstNumeric 0x01
 #define fIDAllowCompound 0x02
@@ -999,8 +1000,9 @@ public:
     current_level    = 0L;
     
     bool       respect_quote = options & fExtractRespectQuote,
-    respect_escape = options & fExtractRespectEscape,
-    do_escape = false;
+               respect_escape = options & fExtractRespectEscape,
+               one_level_only = options & fExtractOneLevelOnly,
+               do_escape = false;
     
     char       quote_state = '\0';
     
@@ -1023,10 +1025,15 @@ public:
           if (current_level == 1L && close == this_char && from < current_position) {
             return current_position;
           }
-          current_level++;
-          if (current_level == 1L) {
+          if (current_level == 0L) {
             from = current_position;
+            current_level++;
+          } else {
+            if (!one_level_only) {
+              current_level++;
+            }
           }
+          
         } else if (close == this_char && quote_state == '\0') {
           current_level--;
           if (current_level == 0L && from < current_position) {

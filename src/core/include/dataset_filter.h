@@ -143,7 +143,7 @@ public:
   bool HasDeletions(unsigned long site, _AVLList * = nil) const;
   long HasExclusions(unsigned long site, _SimpleList *theExc, hyFloat *buffer) const;
 
-  long Translate2Frequencies(_String const &, hyFloat *, bool) const;
+  long Translate2Frequencies(_String const &, hyFloat *, bool, bool = true) const;
   long MapStringToCharIndex(_String &) const;
   // long   Translate2Frequencies (char*,    hyFloat*, bool = true);
   long Translate2Frequencies(char, hyFloat *, bool) const;

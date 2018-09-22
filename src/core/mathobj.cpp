@@ -469,16 +469,17 @@ void _MathObject::Duplicate (BaseRefConst) {
   //SW: Why do we need a string for the type?
 HBLObjectRef _MathObject::Type (void) {
   
-  const _FString kNumber ("Number");
-  const _FString kMatrix ("Matrix");
-  const _FString kContainer ("Container");
-  const _FString kTreeNode ("TreeNode");
-  const _FString kTree ("Tree");
-  const _FString kString ("String");
-  const _FString kAssociativeList ("AssociativeList");
-  const _FString kTopology ("Topology");
-  const _FString kPolynomial ("Polynomial");
-  const _FString kUnknown ("Unknown");
+  static const _FString kNumber       ("Number", false);
+  static const _FString kMatrix       ("Matrix", false);
+  static const _FString kContainer    ("Container", false);
+  static const _FString kTreeNode     ("TreeNode", false);
+  static const _FString kTree         ("Tree", false);
+  static const _FString kString       ("String", false);
+  static const _FString kAssociativeList
+                                      ("AssociativeList", false);
+  static const _FString kTopology     ("Topology", false);
+  static const _FString kPolynomial   ("Polynomial", false);
+  static const _FString kUnknown      ("Unknown", false);
   
   switch (ObjectClass()) {
       

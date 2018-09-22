@@ -80,7 +80,7 @@ bool    ReadNextNexusStatement      (FileState&, FILE* , _String&, long, _String
 long    ReadNextNexusEquate         (FileState&, FILE* , _String&, long, _String&, bool = false, bool = true);
 void    NexusParseEqualStatement    (_String&);
 
-static auto  error_conext = [] (_String const& buffer, long position) -> const _String & {return (buffer.Cut (0,position) & " <=? " & buffer.Cut (position+1,kStringEnd)).Enquote();};
+static auto  error_conext = [] (_String const& buffer, long position) -> const _String {return (buffer.Cut (0,position) & " <=? " & buffer.Cut (position+1,kStringEnd)).Enquote();};
 
 //_________________________________________________________
 
@@ -660,7 +660,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                               
                                 treeIdents && & tree_id;
                                 //  now get the rest of the tree string
-                                pos2 = buffer.FirstNonSpaceIndex(pos+1,kStringDirectionBackward);
+                                pos2 = buffer.FirstNonSpaceIndex(pos2,pos+1, kStringDirectionBackward);
                                 buffer.Trim (pos2,kStringEnd);
                                 treeStrings && & buffer;
                             }
@@ -747,14 +747,14 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                     break;
                   }
                   if (!(isalnum(c)||(c=='_'))) {
-                    ReportWarning (_String("Node names should begin with a letter, a number, or an underscore: ") & error_conext (key1, i) );
+                    ReportWarning (_String("Node names should begin with a letter, a number, or an underscore: ") & error_conext (*file_tree_string, i) );
                     i = file_tree_string->length() +2;
                     break;
                   }
                   while (isalnum(c)||(c=='_')) {
                     if (lastNode<file_tree_string->length()) {
                       lastNode++;
-                      c = key1.char_at (lastNode);
+                      c = file_tree_string->char_at (lastNode);
                     } else {
                       break;
                     }
@@ -765,7 +765,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                   if (lastNode != kNotFound) {
                     revisedTreeString<< (_String*)translationsTo.lData[lastNode];
                   } else {
-                    revisedTreeString<< &key2;
+                    revisedTreeString<< node_name;
                   }
                   break;
                 }
@@ -1174,7 +1174,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
 
                 if (labels) {
                     if (result.GetNames().lLength<spExp) {
-                        if (spExp>0 && buffer.nonempty ()) {
+                        if (spExp>0 && buffer.empty ()) {
                             ReportWarning (_String("Could not find NTAX taxon names in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.");
                             break;
                         }
@@ -1206,7 +1206,7 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
                     source = &buffer;
                 }
 
-                if (source->nonempty()) {
+                if (source->empty()) {
                     ReportWarning (_String("Could not find NTAX data strings in the matrix. Read: ")&_String((long)result.GetNames().lLength) & " sequences.");
                     break;
                 }
@@ -1259,10 +1259,9 @@ bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentL
 
 //_________________________________________________________
 
-void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
-{
+void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result) {
     bool   dataRead = false, lookForEnd = false;
-    long   f,g;
+    long   f,g, file_line = fState.currentFileLine;
 
     fState.fileType = 3; // NEXUS
     static const _String beginMark ("BEGIN"), endMark ("END"), data ("DATA"), chars ("CHARACTERS"),
@@ -1273,8 +1272,14 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result)
     ReadNextLine(file,&CurrentLine,&fState,false);
     while (CurrentLine.nonempty()) {
         f = 0;
-        while ((f = CurrentLine.FindAnyCase(beginMark,f,-1 ))>=0) {
-            f = CurrentLine.FirstNonSpaceIndex (f+beginMark.length(),-1,kStringDirectionForward);
+        /** TODO SLKP 20180921 : if any of the commands loads a new CurrentLine, the marker 'f' needs to be reset
+            but currently we have no way of knowing whether or not a new line was loaded.
+            For the time-being fixing by adding a line # tracker for fState
+         */
+        while ((f = CurrentLine.FindAnyCase(beginMark,file_line == fState.currentFileLine ? f : 0L,kStringEnd ))>=0) {
+           file_line = fState.currentFileLine;
+          
+            f = CurrentLine.FirstNonSpaceIndex (f+beginMark.length(),kStringEnd,kStringDirectionForward);
             if (f!=-1) { // process
                 g = CurrentLine.Find (';', f, -1);
                 if (g!=kNotFound) {
