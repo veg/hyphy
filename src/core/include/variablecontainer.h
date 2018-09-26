@@ -62,12 +62,12 @@ class   _VariableContainer: public _Variable {
 public:
 
     _VariableContainer (void);
-    _VariableContainer (_String theName, _String theTmplt = "", _VariableContainer* theP = nil);
+    _VariableContainer (_String const & theName, _String theTmplt = "", _VariableContainer* theP = nil);
     // name, matrix constructor, the parent (if there is one)
     virtual ~_VariableContainer(void);
 
     void                    InitializeVarCont       (_String const&, _String&, _VariableContainer*, _AVLListXL* = nil);
-    void                    ScanModelBasedVariables (_String&, _AVLListXL*);
+    void                    ScanModelBasedVariables (_String const&, _AVLListXL*);
     virtual     void        SetModel                (long,_AVLListXL*);
 
     virtual     void        MarkDone (void);

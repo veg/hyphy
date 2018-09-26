@@ -270,7 +270,7 @@ _StringBuffer& _StringBuffer::SanitizeForSQLAndAppend(const char c) {
 _StringBuffer& _StringBuffer::SanitizeForSQLAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForSQLAndAppend(s.get_char(i));
+    this->SanitizeForSQLAndAppend(s.char_at(i));
   }
   return *this;
 }
@@ -295,7 +295,7 @@ _StringBuffer& _StringBuffer::SanitizeForPostScriptAndAppend(const char c) {
 _StringBuffer& _StringBuffer::SanitizeForPostScriptAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForPostScriptAndAppend(s.get_char(i));
+    this->SanitizeForPostScriptAndAppend(s.char_at(i));
   }
 }
 
@@ -325,7 +325,7 @@ _StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const char c) {
 _StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForHTMLAndAppend(s.get_char(i));
+    this->SanitizeForHTMLAndAppend(s.char_at(i));
   }
   return *this;
 }
@@ -357,7 +357,7 @@ _StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const char c) {
 _StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForHTMLAndAppend(s.get_char(i));
+    this->SanitizeForHTMLAndAppend(s.char_at(i));
   }
   return *this;
 }
@@ -380,7 +380,7 @@ _StringBuffer& _StringBuffer::SanitizeAndAppend(const char c) {
 _StringBuffer& _StringBuffer::SanitizeAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeAndAppend(s.get_char(i));
+    this->SanitizeAndAppend(s.char_at(i));
   }
   return *this;
 }

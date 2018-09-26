@@ -1418,6 +1418,8 @@ HBLObjectRef   _Matrix::Inverse (void) const {
 HBLObjectRef   _Matrix::MultByFreqs (long freqID) {
 // multiply this transition probs matrix by frequencies
     HBLObjectRef value = ComputeNumeric(true);
+    
+    //printf ("\n%s\n", _String ((_String*)toStr()).get_str());
 
     if (freqID>=0) {
         _Matrix* freq_matrix = nil;
@@ -1975,9 +1977,9 @@ void    _Matrix::CheckIfSparseEnough(bool force) {
                     tempData[theIndex[i]]=((hyPointer*)theData)[i];
                 }
             }
-            MatrixMemFree (theData);
+            delete[] theData;
             theData = (hyFloat*)tempData;
-        } else {
+       } else {
             //objects
             hyFloat* tempData = (hyFloat*) MemAllocate (square_dimension*sizeof(hyFloat));
             InitializeArray(tempData, square_dimension, 0.0);
@@ -1988,9 +1990,13 @@ void    _Matrix::CheckIfSparseEnough(bool force) {
                     tempData [k] = ((hyFloat*)theData) [i];
                 }
             }
+           delete[] theData;
+           theData = (hyFloat*)tempData;
+
         }
         lDim = square_dimension;
-        MatrixMemFree (theIndex);
+        delete[] theIndex;
+        theIndex = nil;
     }
 }
 
@@ -5208,26 +5214,18 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
 //_____________________________________________________________________________________________
 
 
-void        _Matrix::Swap (_Matrix& m)
-{
-    long         *tIndex,
-                 t;
-
-    hyFloat   *tData;
-    HBLObjectRef    tObj;
-    _CompiledMatrixData *tCmd;
-
-    SWAP(theData,m.theData,tData);
-    SWAP(hDim,m.hDim,t);
-    SWAP(vDim,m.vDim,t);
-    SWAP(lDim,m.lDim,t);
-    SWAP(theIndex,m.theIndex,tIndex);
-    SWAP(storageType,m.storageType,t);
-    SWAP(bufferPerRow,m.bufferPerRow,t);
-    SWAP(overflowBuffer,m.overflowBuffer,t);
-    SWAP(allocationBlock,m.allocationBlock,t);
-    SWAP(theValue,m.theValue,tObj);
-    SWAP(cmd,m.cmd,tCmd);
+void        _Matrix::Swap (_Matrix& m){
+    Exchange(theData,m.theData);
+    Exchange(hDim,m.hDim);
+    Exchange(vDim,m.vDim);
+    Exchange(lDim,m.lDim);
+    Exchange(theIndex,m.theIndex);
+    Exchange(storageType,m.storageType);
+    Exchange(bufferPerRow,m.bufferPerRow);
+    Exchange(overflowBuffer,m.overflowBuffer);
+    Exchange(allocationBlock,m.allocationBlock);
+    Exchange(theValue,m.theValue);
+    Exchange(cmd,m.cmd);
 }
 
 //_____________________________________________________________________________________________

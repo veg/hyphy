@@ -311,6 +311,7 @@ namespace hy_global {
             likeFuncNamesList.Clear();
             dataSetList.Clear();
             dataSetNamesList.Clear();
+            batchLanguageFunctions.Clear();
             compiledFormulaeParameters.Clear();
             modelNames.Clear();
             KillExplicitModelFormulae ();
@@ -437,6 +438,8 @@ namespace hy_global {
         _HY_HBLCommandHelper.Clear();
         _HY_ValidHBLExpressions.Clear();
         listOfCompiledFormulae.Clear();
+        
+        
         
 #ifdef  __HYPHYMPI__
         // MPI_Barrier (MPI_COMM_WORLD);

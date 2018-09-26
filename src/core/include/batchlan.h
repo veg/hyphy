@@ -457,6 +457,7 @@ likeFuncList,
 templateModelList,
 scfgNamesList,
 scfgList,
+batchLanguageFunctions,
 
 bgmNamesList,       // modified by afyp
 bgmList,

@@ -365,7 +365,7 @@ long    DisplayListOfChoices (void) {
     for (choice = 0; choice< availableTemplateFiles.countitems(); choice++) {
       _String const * this_line = (_String const *)availableTemplateFiles.GetItem (choice, 2);
       
-         if ( this_line->get_char (0) == '!') {
+         if ( this_line->char_at (0) == '!') {
             categoryDelimiters<<choice;
             _String * category_heading = new _String (*this_line);
             category_heading->Trim (1,kStringEnd);

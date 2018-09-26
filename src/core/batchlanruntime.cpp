@@ -1397,7 +1397,7 @@ bool      _ElementaryCommand::HandleUseModel (_ExecutionList& current_program) {
                object_type = object_type_request,
                model_index = HY_NO_MODEL;
 
-    _Matrix*    source_model = (_Matrix*)_HYRetrieveBLObjectByNameMutable (source_name, object_type,&model_index,false);
+    _Variable *    source_model = (_Variable*)_HYRetrieveBLObjectByNameMutable (source_name, object_type,&model_index,false);
 
     if (!source_model && raw_model_name != kUseNoModel) {
         throw (source_name.Enquote() & " does not refer to a valid defined substitution model and is not " & kUseNoModel);

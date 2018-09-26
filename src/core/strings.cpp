@@ -1064,7 +1064,7 @@ bool _String::BeginsWithAndIsNotAnIdent (_String const& pattern) const {
   
   if (BeginsWith (pattern)) {
     if (s_length > pattern.s_length) {
-      char next_char = get_char (pattern.s_length);
+      char next_char = char_at (pattern.s_length);
       if (isalnum(next_char) || next_char == '.' || next_char == '_' || next_char == '&') {
         // TODO SLKP 20170616: what is the use case for next_char == '&'?
         return false;
@@ -1206,8 +1206,8 @@ bool    _String::IsALiteralArgument (bool strip_quotes) {
 
 
 hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_object, _String const * context) const {
-  char first_char    = get_char(0);
-  bool is_func_ref   = get_char(s_length-1) == '&';
+  char first_char    = char_at(0);
+  bool is_func_ref   = char_at(s_length-1) == '&';
   
   if (first_char == '*' || first_char == '^') {
     if (is_func_ref) {
@@ -1446,7 +1446,7 @@ _String const _String::Random(const unsigned long length, const _String * alphab
     for (unsigned long c = 0UL; c < length; c++) {
       unsigned long idx = genrand_int32 () % alphabet_length;
       if (alphabet) {
-        random.set_char (c, alphabet->get_char(idx));
+        random.set_char (c, alphabet->char_at(idx));
       } else {
         random.set_char (c,(char)(1UL+idx));
       }

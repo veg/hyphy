@@ -1170,38 +1170,65 @@ void    FilterRawString (_String& s, FileState* fs, _DataSet & ds) {
         s = words.Join(" ", current_start, current_end);
     }
 }
-//_________________________________________________________
+//_________________________________________________________________________________________________
+
+
+//_________________________________________________________________________________________________
+
 void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine) {
     
-    // TODO SLKP 20180803 this is pretty inefficient, but previous code
-    // was not doing enough sytnax checks
+    // TODO SLKP 20180921 this does extra work to read in the tree string multiple times;
+    // the solution is to have a proper buffer wrapper, and to
     
-    _StringBuffer * tree_string = new _StringBuffer (128L);
-    long start_index = kNotFound,
-         end_index   = kNotFound;
-    
-    while (CurrentLine.nonempty() && (start_index == kNotFound || end_index == kNotFound)) {
-        *tree_string << CurrentLine;
-        if (start_index == kNotFound) {
-            start_index = CurrentLine.FindTerminator(0L, "(");
-        }
-        if (start_index != kNotFound) {
-            end_index = CurrentLine.FindTerminator (start_index + 1L, ")");
+    class _MultilineBuffer : public _StringBuffer {
+        public:
+        
+        _MultilineBuffer (_String const& current_line, FileState *fs, FILE* f) : _StringBuffer (current_line) {
+            file_state = fs;
+            file = f;
         }
         
-        if (end_index == kNotFound) {
-            ReadNextLine (f,&CurrentLine,fState, false);
-            *tree_string << CurrentLine;
+        virtual const char get_char(long index) {
+            if (index >= 0L && index < s_length) {
+                return s_data[index];
+            } else {
+                _String  next_line;
+                ReadNextLine (file,&next_line,file_state, false);
+                if (next_line.nonempty()) {
+                    *this << next_line;
+                    return get_char (index);
+                }
+            }
+            return _String::default_return;
         }
+        
+        FileState *file_state;
+        FILE * file;
+
+    };
+    
+    
+    //_MultilineBuffer mlb (CurrentLine, fState, f);
+    
+    _StringBuffer * tree_string = new _StringBuffer (128L);
+    long start_index = 0,
+         end_index   = CurrentLine.ExtractEnclosedExpression(start_index, '(', ')', fExtractRespectQuote|fExtractRespectEscape);
+    
+    while (start_index == kNotFound || end_index == kNotFound) {
+        _String next_line;
+        ReadNextLine (f,&next_line,fState, false);
+        CurrentLine = CurrentLine & next_line;
+        start_index = 0L;
+        end_index   = CurrentLine.ExtractEnclosedExpression(start_index, '(', ')', fExtractRespectQuote|fExtractRespectEscape);
     }
     
     if (start_index == kNotFound || end_index == kNotFound) {
         ReportWarning (tree_string->Enquote() & " has mimatched '(' and ')'");
         DeleteObject (tree_string);
     } else {
+        *tree_string << CurrentLine.Cut (start_index, end_index);
         tree_string->TrimSpace();
-        CurrentLine = tree_string->Cut (end_index + 1, kStringEnd);
-        tree_string->Trim (start_index, end_index);
+        CurrentLine.Trim (end_index + 1, kStringEnd);
         hy_env::EnvVariableSetNamespace(hy_env::data_file_tree, new HY_CONSTANT_TRUE, fState->theNamespace, false);
         hy_env::EnvVariableSetNamespace(hy_env::data_file_tree_string, new _FString (tree_string), nil, false);
     }

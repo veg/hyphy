@@ -163,7 +163,7 @@ BaseRef _VariableContainer::toStr (unsigned long) {
 
 //__________________________________________________________________________________
 
-_VariableContainer::_VariableContainer (_String theName, _String theTmplt, _VariableContainer* theP) : iVariables(nil), dVariables(nil), gVariables(nil) {
+_VariableContainer::_VariableContainer (_String const & theName, _String theTmplt, _VariableContainer* theP) : iVariables(nil), dVariables(nil), gVariables(nil) {
     InitializeVarCont (theName, theTmplt,theP);
 }
 
@@ -250,7 +250,7 @@ _Matrix* _VariableContainer::GetFreqMatrix (void) const  {
 }
 
 //__________________________________________________________________________________
-void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLListXL* varCache) {
+void    _VariableContainer::ScanModelBasedVariables (_String const & fullName, _AVLListXL* varCache) {
     if (theModel!= HY_NO_MODEL) { // build the matrix variables
         _SimpleList       mVars;
         _String           varName;
@@ -286,7 +286,7 @@ void    _VariableContainer::ScanModelBasedVariables (_String& fullName, _AVLList
             if (aVar->IsGlobal()) {
                 PushGlobalVariable(aVar->get_index());
             } else {
-                varName = fullName&'.'&ContextFreeName();
+                varName = fullName&'.'&aVar->ContextFreeName();
                 _Variable * spawnedVar = CheckReceptacle(&varName, kEmptyString, false, false);
                 spawnedVar->SetBounds (aVar->GetLowerBound(), aVar->GetUpperBound());
 
@@ -839,8 +839,8 @@ void      _VariableContainer::CopyModelParameterValue (long var_idx, long ref_id
             model_var->SetValue (LocateVar (var_idx)->Compute());
             
 #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-            if (1 || likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
-                fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, model_var->GetName()->sData, model_var->Compute()->Value());
+            if (1 || l == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
+                fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", LocateVar (var_idx)->GetName()->get_str(), model_var->GetName()->get_str(), model_var->Compute()->Value());
             }
 #endif
         }

@@ -2798,8 +2798,8 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
             current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
         }
         DeleteObject(computedExponentials);
-#ifdef _UBER_VERBOSE_DUMP_MATRICES
-        if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP) {
+//#ifdef _UBER_VERBOSE_DUMP_MATRICES
+        //if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP) {
             fprintf (stderr, "\n T_MATRIX = {");
             for (unsigned long nodeID = 0; nodeID < flatLeaves.lLength + flatTree.lLength - 1; nodeID++) {
                 bool    isLeaf     = nodeID < flatLeaves.lLength;
@@ -2809,12 +2809,12 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
                 if (nodeID) {
                     fprintf (stderr, ",");
                 }
-                fprintf (stderr, "\n\"%s\":%s", current_node->GetName()->sData, _String((_String*)current_node->GetCompExp()->toStr()).sData);
+                fprintf (stderr, "\n\"%s\":%s", current_node->GetName()->get_str(), _String((_String*)current_node->GetCompExp()->toStr()).get_str());
                 
             }
             fprintf (stderr, "\n};\n");
-        }
-#endif
+        //}
+//#endif
         
         
     }
@@ -3026,6 +3026,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         ((_CalcNode*) flatTree    (nodeCode));
         
         hyFloat  const * transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+        
+        
         hyFloat  *       childVector,
         *       lastUpdatedSite;
         
@@ -3116,6 +3118,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                             parentConditionals[k+2L] *= tMatrix[target_index + alphabetDimension + alphabetDimension];
                             parentConditionals[k+3L] *= tMatrix[target_index + alphabetDimension + alphabetDimension + alphabetDimension];
                         }
+                        for (; k < alphabetDimension; k++, target_index += alphabetDimension) {
+                            parentConditionals[k] *= tMatrix[target_index];
+                        }
                     }
                     continue;
                 } else {
@@ -3180,6 +3185,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     
                     for (long p = 0L; p < alphabetDimension; p++) {
                         hyFloat      accumulator = 0.0;
+                        
                         
 #ifdef _SLKP_USE_SSE_INTRINSICS
                         
@@ -3391,7 +3397,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             for (long p = 0; p < alphabetDimension; p++,rootIndex++) {
                 accumulator += rootConditionals[rootIndex] * theProbs[p];
             }
-        
+                
         /*#pragma omp critical
          {
          if (likeFuncEvalCallCount == 0) {

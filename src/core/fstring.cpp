@@ -160,6 +160,7 @@ HBLObjectRef _FString::Add (HBLObjectRef p) {
       res    = new _StringBuffer (get_str().length() + add_this->get_str().length());
       (*res) << get_str()  << add_this->get_str();
     } else {
+      res    = new _StringBuffer (get_str().length());
       ((*res) << get_str()).AppendNewInstance((_String*)p->toStr());
     }
     return new _FString (res, false);

@@ -227,7 +227,7 @@ long _TranslationTable::MultiTokenResolutions(_String const &tokens,
                                               bool gapToOnes) const {
 
   if (tokens.length() == 1UL) {
-    return TokenResolutions(tokens.get_char(0UL), receptacle, gapToOnes);
+    return TokenResolutions(tokens.char_at (0UL), receptacle, gapToOnes);
   } else {
 
     long *large_store, large_store_static[HYPHY_SITE_DEFAULT_BUFFER_SIZE];
@@ -842,7 +842,7 @@ _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
     // OPTIMIZE FLAG; repeated memory allocation/deallocation
     if (baseSet.length())
       for (long k = 1; k <= base; k++, code /= baseLength) {
-        res.set_char(base - k,baseSet.get_char(code % baseLength));
+        res.set_char(base - k,baseSet.char_at(code % baseLength));
       }
     else if (baseLength == 4) {
       for (long k = 1; k <= base; k++, code /= baseLength) {

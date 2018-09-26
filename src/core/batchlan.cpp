@@ -1349,8 +1349,7 @@ void        _ExecutionList::ExecuteSimple       (void)
 
 //____________________________________________________________________________________
 
-void        _ExecutionList::ResetFormulae       (void)      // run this execution list
-{
+void        _ExecutionList::ResetFormulae       (void) {
     currentCommand = 0L;
     _SimpleList to_delete_aux;
     _AVLList to_delete (&to_delete_aux);

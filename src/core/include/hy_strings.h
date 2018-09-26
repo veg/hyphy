@@ -336,11 +336,11 @@ public:
    *  Revision history
    - SLKP 20170517 reviewed while porting from v3 branch
    */
-  inline const char get_char(long index) const {
+  virtual const char get_char(long index) const {
     if (index >= 0L && index < s_length) {
       return s_data[index];
     }
-    return default_return;
+    return _String::default_return;
   }
 
   /**
@@ -1004,10 +1004,10 @@ public:
                one_level_only = options & fExtractOneLevelOnly,
                do_escape = false;
     
-    char       quote_state = '\0';
+    char       quote_state = '\0',
+               this_char = get_char (current_position);
     
-    while (current_position < s_length) {
-      char this_char = s_data[current_position];
+    while (this_char) {
       
       if (do_escape) {
         do_escape = false;
@@ -1047,7 +1047,8 @@ public:
         }
       }
       
-      current_position++;
+      this_char = get_char (++current_position);
+        
     }
     
     return kNotFound;
@@ -1084,7 +1085,7 @@ public:
     
     bool   do_escape = false;
     char   quote_state = '\0';
-    
+      
     while (current_position < s_length) {
       char this_char = s_data[current_position];
       if (do_escape) {
@@ -1414,6 +1415,10 @@ public:
 protected:
   unsigned long s_length;
   char *s_data;
+    
+    /** this value is returned for "failed"
+     access operations that don't throw errors, e.g. getChar */
+  const static char default_return = '\0';
 
 private:
   /** Find the length of the maximum prefix that forms a valid ID
@@ -1471,9 +1476,6 @@ private:
     return kNotFound;
   }
 
-  /** this value is returned for "failed"
-   access operations that don't throw errors, e.g. getChar */
-  const static char default_return = '\0';
 
   /** this is a utility function which allocates length+1 chars for s_data,
   copies the data from source_string, and sets the terminating 0

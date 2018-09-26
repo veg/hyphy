@@ -3622,7 +3622,6 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
 
 _Matrix*        _LikelihoodFunction::Optimize () {
 
-
     if (lockedLFID != -1) {
         HandleApplicationError ("Optimize() could not be executed, because another optimization is already in progress.");
         return new _Matrix (1,1,false,true);
@@ -3680,7 +3679,6 @@ _Matrix*        _LikelihoodFunction::Optimize () {
         (*optimizatonHistory) < (_associative_list_key_value){"Parameters", variable_traces};
       }
     }
-
 
 
 
@@ -4655,8 +4653,6 @@ DecideOnDivideBy (this);
         optimizatonHistory = nil;
     }
 
-    CleanUpOptimize();
-
     _Matrix result (2,indexInd.lLength+indexDep.lLength<3?3:indexInd.lLength+indexDep.lLength, false, true);
 
     //forceRecomputation = true;
@@ -4677,6 +4673,8 @@ DecideOnDivideBy (this);
   #if !defined __UNIX__ || defined __HEADLESS__
     SetStatusBarValue (-1,maxSoFar,(likeFuncEvalCallCount-evalsIn)/TimerDifferenceFunction(true));
   #endif
+
+    CleanUpOptimize();
 
     return (_Matrix*)result.makeDynamic();
 }
@@ -4702,9 +4700,7 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error) {
 }
 //_______________________________________________________________________________________
 
-void _LikelihoodFunction::CleanUpOptimize (void)
-{
-
+void _LikelihoodFunction::CleanUpOptimize (void) {
     categID = 0;
     CleanupParameterMapping ();
     //printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrix_exp_count);
@@ -4776,7 +4772,7 @@ void _LikelihoodFunction::CleanUpOptimize (void)
 
     setParameter (likeFuncCountVar,likeFuncEvalCallCount);
     isInOptimize = false;
-    //DoneComputing();
+    DoneComputing();
     hasBeenOptimized = true;
     hasBeenSetUp     = 0;
     lockedLFID       = -1;
@@ -7709,111 +7705,11 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
     }
 
     if (conditionalInternalNodeLikelihoodCaches) {
-#ifdef  _HY_GPU_EXAMPLE_CALCULATOR
 
-        long        ciid             = MAX(0,currentRateClass); // ignore this for now as it pertains to more complex evolutionary models
-
-        /* step 1: determine which _branches_ need to be updated; most of the work is done in _TheTree::DetermineNodesForUpdate
-        We will store store both those branches which need to be traversed and
-        those matrices that need to be reexponentiated. Note that the first set can have branches not in the second set
-        (parents of "touched" nodes, whose matrices have not changed).
-
-
-        */
-
-        _List      changedModels;
-        /* retrieve the list of modified matrices for partition 'index' (initially always 0 for simple cases)
-         */
-
-        _SimpleList changedBranches;
-        /* this is the list of INDICES of branches that are going to be computed;
-
-           for a tree with N leaves and M < N internal nodes, the leaves will
-           be indexed from 0 to N-1 (in post-order traversal), while internal
-           branches from N to N + M - 1 (also in post-order traversal)
-
-           for example the tree ((A,C)N1,D,(B,E)N2)Root will be laid out as
-
-           A,C,D,B,E,N1,N2,Root
-
-           when we look at the index of a branch, we can decide if its a leaf by checking
-           that its index is < N.
-
-        */
-
-        t->DetermineNodesForUpdate (changedBranches, // this will receive the list of branch indices (in post-order traversal, with
-                                    // child ALWAYS preceding the parent (as in the tree example before)
-                                    &changedModels, // this will receive the list of _CalcNode objects which must be exponentitated
-                                    -1, -1, true); // don't worry about this now
-
-
-
-
-
-        /* step 2: update all the transition matrices that have been marked as modified are
-         this is normally done by _TheTree::ExponentiateMatrices
-         determination of WHICH matrices have been modifed is taken care of my the host code and is supplied
-         in the matricesToExponentiate member variable:  */
-
-
-
-
-        t->ExponentiateMatrices(changedModels,
-                                1 /* use one thread */,
-                                -1 /*ignore this flag for now */);
-
-        /* now for the kernel computation you would need to copy modified matrices onto the device using the code like
-
-            for (long nodeID = 0; nodeID < matrices->lLength; nodeID++)
-            {
-                _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
-                thisNode->GetCompMatrix (ciid)->theData; // this is the class member which actually contains the double*
-                                                         // pointer to matrix entires (laid out row by row, i.e. [i*vDim + j]
-                                                         // indexes row i column j; here vDim is the "vertical" dimension, i.e.
-                                                         // the number of columns
-            }
-
-        */
-
-        /* step 3
-        */
-
-        /*
-            because much of the access is done using protected members of _TheTree, I defined a new function that does
-            the calculation as simply as possible
-        */
-
-        // this is to update the GUI.
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-        if (divideBy && (likeFuncEvalCallCount % divideBy == 0)) {
-            yieldCPUTime();
-        }
-#endif
-
-
-#ifdef MDSOCL
-
-        return t->OCLLikelihoodEvaluator (changedBranches,
-              df,
-              conditionalInternalNodeLikelihoodCaches[index],
-              conditionalTerminalNodeStateFlag[index],
-              (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
-              OCLEval[index]);
-#else
-
-        return t->VerySimpleLikelihoodEvaluator (changedBranches,
-                df,
-                conditionalInternalNodeLikelihoodCaches[index],
-                conditionalTerminalNodeStateFlag[index],
-                (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index) );
-#endif
-
-#else
         long        catID            = siteRes?currentRateClass:-1;
 
-        if (conditionalInternalNodeLikelihoodCaches[index])
+        if (conditionalInternalNodeLikelihoodCaches[index]) {
             // not a 2 sequence analysis
-        {
             long blockID    = df->GetPatternCount()*t->GetINodeCount(),
                  patternCnt = df->GetPatternCount();
 
@@ -7910,15 +7806,6 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 t->ExponentiateMatrices(*matrices, GetThreadCount(),catID);
             }
 
-            //printf ("%d %d\n",likeFuncEvalCallCount, matrix_exp_count);
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-            if (divideBy && (likeFuncEvalCallCount % divideBy == 0)) {
-                #pragma omp critical
-                yieldCPUTime();
-            }
-#endif
-
-
 
 
             hyFloat sum  = 0.;
@@ -8009,7 +7896,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
             }*/
 
             sum -= _logLFScaler * overallScalingFactors.lData[index];
-
+            
 
             if (doCachedComp < 0) {
                 //printf ("Cache check in %d %d\n", doCachedComp, overallScalingFactors[index]);
@@ -8085,9 +7972,9 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 // need to update siteRes when computing cache and changing scaling factors!
             }
             return sum;
-        } else if (conditionalTerminalNodeStateFlag[index] || !df->IsNormalFilter())
+        } else if (conditionalTerminalNodeStateFlag[index] || !df->IsNormalFilter()) {
             // two sequence analysis
-        {
+
             _SimpleList bc;
             _List       mc;
             t->DetermineNodesForUpdate         (bc, &mc);
@@ -8111,7 +7998,6 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
             }
 
         }
-#endif
 
     } else {
         HandleApplicationError ("Dude -- lame! No cache. I can't compute like that with the new LF engine.");

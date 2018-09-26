@@ -327,9 +327,9 @@ bool        _Operation::EqualOp (_Operation* otherOp)
 
 long     _Operation::BinOpCode           (_String const & op_token, long index) {
   if (index >= 0)
-    return BinOps.Find (op_token.get_char(index-1L) * 256L + op_token.get_char (index));
+    return BinOps.Find (op_token.char_at (index-1L) * 256L + op_token.char_at (index));
   
-  return BinOps.Find (op_token.length () == 2 ? op_token.get_char(0) * 256L + op_token.get_char (1) : op_token.get_char (0));
+  return BinOps.Find (op_token.length () == 2 ? op_token.char_at(0) * 256L + op_token.char_at (1) : op_token.char_at (0));
 }
 
 
