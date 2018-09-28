@@ -32,6 +32,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <unistd.h>
 
 #include "global_things.h"
+#include "function_templates.h"
 
 using namespace hy_global;
 
@@ -694,7 +695,7 @@ int main (int argc, char* argv[])
   
     {
     
-      const _String path_consts [] = {"BASEPATH=", "LIBPATH=", "USEPATH="};
+      const _String path_consts [] = {"BASEPATH=", "LIBPATH=", "USEPATH=", "CPU="};
       
       for (unsigned long i=1UL; i<argc; i++) {
           _String thisArg (argv[i]);
@@ -702,7 +703,7 @@ int main (int argc, char* argv[])
           if (thisArg.get_char(0)=='-') { // -[LETTER] arguments
               ProcessConfigStr (thisArg);
           } else if (thisArg.BeginsWith (path_consts[0])) { // BASEPATH
-              baseArgDir = thisArg.Cut(path_consts[0].length(),-1);
+              baseArgDir = thisArg.Cut(path_consts[0].length(),kStringEnd);
               if (baseArgDir.length()) {
                   if (baseArgDir (-1L) != dirSlash) {
                       baseArgDir = baseArgDir & dirSlash;
@@ -712,7 +713,7 @@ int main (int argc, char* argv[])
                   pathNames&&         &hy_base_directory;
              }
           } else if (thisArg.BeginsWith (path_consts[1])) { // LIBPATH
-              libArgDir = thisArg.Cut(path_consts[1].length(),-1);
+              libArgDir = thisArg.Cut(path_consts[1].length(),kStringEnd);
               if (libArgDir.length()) {
                   if (libArgDir (-1L) != dirSlash) {
                       libArgDir = libArgDir & dirSlash;
@@ -722,11 +723,13 @@ int main (int argc, char* argv[])
                   pathNames&&         &hy_lib_directory;
              }
           } else if (thisArg.BeginsWith (path_consts[2])) {
-              baseDir                      = thisArg.Cut(path_consts[2].length(),-1);
+              baseDir                      = thisArg.Cut(path_consts[2].length(),kStringEnd);
               hy_error_log_name            = baseDir & hy_error_log_name;
               hy_messages_log_name         = baseDir & hy_messages_log_name;
               pathNames.Delete    (0);
               pathNames&&         &baseDir;
+          } else if (thisArg.BeginsWith (path_consts[3])) {
+              system_CPU_count  = Maximum (1L, thisArg.Cut(path_consts[3].length(),kStringEnd).to_long());
           } else
           //argFile = thisArg;
           positional_arguments && &thisArg;

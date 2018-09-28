@@ -4624,7 +4624,7 @@ DecideOnDivideBy (this);
 
         }
 
-        ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes.\n" & likeFuncEvalCallCount-evalsIn & " likelihood evaluation calls and " & matrix_exp_count - exponentiationsIn & " matrix exponentiations calls were made\n");
+        ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes.\n" & _String ((long)likeFuncEvalCallCount-evalsIn) & " likelihood evaluation calls and " & _String ((long)matrix_exp_count - exponentiationsIn) & " matrix exponentiations calls were made\n");
 
         if (optMethod == 7) {
             _Matrix bestMSoFar (indexInd.lLength,1,false,true);
