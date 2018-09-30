@@ -1503,6 +1503,7 @@ USE_ADAPTIVE_VARIABLE_STEP		= 1;
 OPTIMIZATION_METHOD        		= 4;
 
 PRODUCE_OPTIMIZATION_LOG        = 1;
+
 Optimize(res_IntermediateCodon_AA_LF,IntermediateCodon_AA_LF);
 fprintf (stdout, "\n\n", IntermediateCodon_AA_LF.trace, "\n\n");
 
