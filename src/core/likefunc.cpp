@@ -1256,12 +1256,12 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p)
          SLKP : because 'p' may be moved back into parameter bounds,
          if parameterValuesAndRanges is being used, we may need to update that the set
          */
-        if (parameterValuesAndRanges) {
+        /*if (parameterValuesAndRanges) {
           hyFloat check_value = v->Value();
           if (p != check_value) {
             parameterValuesAndRanges->Store(index,0,check_value);
           }
-        }
+        }*/
 
     }
 
@@ -5127,7 +5127,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
         SetParametersAndCompute (index, middle, &currentValues, gradient, false);
     }
 
-    if (successful && !(rightValue<=middleValue && leftValue<=middleValue)) {
+    if (successful ) {
         /** SLKP 20180709 need to have a more permissive check, because sometimes if the change is too small
                   (or involves a paremeter that has very little effect on the LF), recomputation could be within numerical error
          
@@ -5858,7 +5858,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
                     ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
                 }
                 _TerminateAndDump (errorStr);
-                return;
+                return check_value;
             }
             //return;
         }
@@ -5874,13 +5874,9 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
     }
 
 
-
-
-    long        vl = verbosity_level;
-
     char        buffer[1024];
 
-    if (vl>1) {
+    if (verbosity_level>1) {
         snprintf (buffer, sizeof(buffer),"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %15.12g\n",0,precision,gradientStep,maxSoFar);
         BufferToConsole (buffer);
     }
@@ -5898,7 +5894,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
     gradL = gradient.AbsValue ();
 
 
-    if (gradL < 0.0) {
+    if (gradL > 0.0) {
         current_direction   = gradient;
         
         for (long index = 0; index< MAX (dim, 10) && index < iterationLimit; index++, currentPrecision*=0.25) {
@@ -5915,7 +5911,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
             LoggerAllVariables ();
             LoggerLogL (maxSoFar);
 
-            if (vl>1) {
+            if (verbosity_level>1) {
                 snprintf (buffer, sizeof(buffer),"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %15.12g\n",index+1,precision,gradientStep,maxSoFar);
                 BufferToConsole (buffer);
             }
@@ -5973,7 +5969,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
         HandleApplicationError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") & initial_value & " to " & maxSoFar);
     }
 
-    if (vl>1) {
+    if (verbosity_level>1) {
         BufferToConsole("\n");
     }
 
@@ -6122,8 +6118,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
 //_______________________________________________________________________________________
 
-  void    _LikelihoodFunction::GradientLocateTheBump (hyFloat gPrecision, hyFloat& maxSoFar, _Matrix& bestVal, _Matrix& gradient)
-  {
+  void    _LikelihoodFunction::GradientLocateTheBump (hyFloat gPrecision, hyFloat& maxSoFar, _Matrix& bestVal, _Matrix& gradient) {
     DetermineLocalUpdatePolicy           ();
     hyFloat  leftValue   = maxSoFar,
     middleValue = maxSoFar,
@@ -6142,8 +6137,9 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
     // _GrowingVector brentHistory;
 
     middle_vector = bestVal;
-    int  outcome = Bracket(-1, left,middle,right,leftValue, middleValue, rightValue,bp, &gradient);
       
+    int  outcome = Bracket(-1, left,middle,right,leftValue, middleValue, rightValue,bp, &gradient);
+
     if (middleValue < initialValue) {
       SetAllIndependent (&bestVal);
       FlushLocalUpdatePolicy();
@@ -6206,7 +6202,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
               if (verbosity_level > 50) {
                   char buf [256];
-                  snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump (current max = %20.16g) GOLDEN RATIO INTERVAL CHECK: %g <= %g (%g = %g) <= %g, span = %g]", maxSoFar, left, XM, X, fabs(X-XM), right, right-left);
+                  snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump (current max = %20.16g) GOLDEN RATIO INTERVAL CHECK: %g <= %g (%g = %g) <= %g, span = %g]", middleValue, left, XM, X, fabs(X-XM), right, right-left);
                   BufferToConsole (buf);
               }
               
@@ -6247,7 +6243,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
               FU = -SetParametersAndCompute (-1,U,&prior_parameter_values,&gradient);
               if (verbosity_level > 50) {
                   char buf [256];
-                  snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump GOLDEN RATIO TRY: param %20.16g, log L %20.16g]",  U, -FU);
+                  snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump GOLDEN RATIO TRY: param %20.16g, log L %20.16g (%20.16g)]",  U, -FU, -FX);
                   BufferToConsole (buf);
               }
 

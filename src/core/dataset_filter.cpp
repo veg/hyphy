@@ -564,7 +564,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
           
           duplicateMap.Each ( [&](long value, unsigned long index) -> void {
             long delete_this_entry = patterns_to_be_removed.BinaryFind(value);
-            if (delete_this_entry != -1) {
+            if (delete_this_entry >= 0) {
               if (running_indexer.countitems() <= delete_this_entry) { // first time across this site pattern
                 running_indexer << -1L;
                 skip_offset ++;
@@ -578,7 +578,8 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
             }
           });
         }
-      
+        
+        //printf ("%s\n", _String ((_String*)data_sites_to_be_deleted.toStr()).get_str());
         filter_sites_to_be_deleted.Clear();
         theOriginalOrder.DeleteList (data_sites_to_be_deleted);
         theFrequencies.DeleteList (patterns_to_be_removed);

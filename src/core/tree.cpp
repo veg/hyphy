@@ -364,7 +364,7 @@ void    _TheTree::PreTreeConstructor (bool) {
 //_______________________________________________________________________________________________
 
 void    _TheTree::delete_associated_calcnode (node<long> * n) const {
-   DeleteVariable(map_node_to_calcnode(n)->GetName());
+   DeleteVariable(*map_node_to_calcnode(n)->GetName());
 }
 
 

@@ -1674,7 +1674,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
 
       }
 
-      _String  model_file = GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & *(_String*)templateModelList.GetItem((matching_models(model_id),4));
+      _String  model_file = GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & *(_String*)templateModelList.GetItem(matching_models(model_id),4);
 
       _ExecutionList       std_model;
       PushFilePath        (model_file, false);
@@ -2239,7 +2239,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
           ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & file_path);
           return true;
         }
-
+          
         if ((source_file = doFileOpen (file_path.get_str (), "rb")) == nil) {
           throw (_String("Could not read command file from '") &
                  original_path & "' (expanded to '" & file_path & "')");
@@ -2854,8 +2854,9 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
         input_data = console_data;
       }
     } else { // not stdin
-      _FString * source_string = (_FString*)_ProcessAnArgumentByType(source_name,STRING,current_program,&dynamic_reference_manager);
+      
       if (is_sscanf) {
+        _FString * source_string = (_FString*)_ProcessAnArgumentByType(source_name,STRING,current_program,&dynamic_reference_manager);
         input_data = & source_string->get_str();
         if (hy_env::EnvVariableTrue(hy_env::end_of_file)) { // reset path
           hy_scanf_last_file_path = kEmptyString;
@@ -2875,10 +2876,16 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
           }
         }
       } else {
-        _String file_path (*source_string->get_str());
-        if (!ProcessFileName(file_path, true,false,(hyPointer)current_program.nameSpacePrefix, false, &current_program)) {
-          return false;
-        }
+         _String file_path;
+         if (source_name == kPromptForFilePlaceholder) {
+             file_path = source_name;
+         } else {
+             file_path = ((_FString*)_ProcessAnArgumentByType(source_name,STRING,current_program,&dynamic_reference_manager))->get_str();
+         }
+         if (!ProcessFileName(file_path, true,false,(hyPointer)current_program.nameSpacePrefix, false, &current_program)) {
+              return false;
+         }
+        
         FILE * input_stream = doFileOpen (file_path.get_str(), "rb");
         if (!input_stream) {
           throw     (file_path.Enquote() & " could not be opened for reading by fscanf. Path stack:\n\t" & GetPathStack("\n\t"));
@@ -2915,7 +2922,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
                   upper_bound = has_rewind ? simpleParameters.countitems() - 1L : simpleParameters.countitems();
     
     while (argument_index < upper_bound && current_stream_position < input_data->length()) {
-      _Variable * store_here = _ValidateStorageVariable (current_program, argument_index + 1UL - has_rewind);
+      _Variable * store_here = _ValidateStorageVariable (current_program, argument_index + 1UL);
      
       long   lookahead = current_stream_position;
       
@@ -3037,9 +3044,9 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
       current_stream_position = lookahead + 1L;
       argument_index ++;
     }
-    if (argument_index<simpleParameters.countitems()) {
+    if (argument_index + has_rewind <simpleParameters.countitems()) {
       hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
-      throw ("Could not read all the parameters requested.");
+      throw (_String("Could not read all the parameters requested."));
     } else {
       hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_FALSE, false);
     }
@@ -3202,7 +3209,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         }
         
         if (available_choices->empty()) {
-            throw ("The list of choices is empty");
+            throw (_String("The list of choices is empty"));
         }
         
         if ((long) available_choices->countitems() < number_of_choices) {

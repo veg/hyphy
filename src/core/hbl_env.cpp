@@ -128,7 +128,7 @@ namespace hy_env {
                               .PushPairCopyKey (produce_markdown_output, new HY_CONSTANT_FALSE)
                               .PushPairCopyKey (integration_maximum_iterations, new _Constant (8.))
                               .PushPairCopyKey (integration_precision_factor, new _Constant (1.e-5))
-                              .PushPairCopyKey (skip_omissions, new _Constant (HY_CONSTANT_TRUE))
+                              .PushPairCopyKey (skip_omissions, new _Constant (HY_CONSTANT_FALSE))
                               .PushPairCopyKey (data_file_print_format, new _Constant (6.0))
                               .PushPairCopyKey (data_file_default_width, new _Constant (50.0))
                               .PushPairCopyKey (data_file_gap_width, new _Constant (10.0))

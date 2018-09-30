@@ -82,21 +82,19 @@ void    NexusParseEqualStatement    (_String&);
 
 static auto  error_conext = [] (_String const& buffer, long position) -> const _String {return (buffer.Cut (0,position) & " <=? " & buffer.Cut (position+1,kStringEnd)).Enquote();};
 
-//_________________________________________________________
-
 
 //_________________________________________________________
 
 bool    FindNextNexusToken (FileState& fState, FILE* f, _String& CurrentLine, long pos) {
     pos = CurrentLine.FirstNonSpaceIndex (pos,-1,kStringDirectionForward);
-    if (pos==-1) {
+    if (pos==kNotFound) {
         ReadNextLine(f,&CurrentLine,&fState,false);
         pos = CurrentLine.FirstNonSpaceIndex (0,-1,kStringDirectionForward);
-        if (pos==-1) {
+        if (pos==kNotFound) {
             return false;
         }
     }
-    CurrentLine.Trim (pos, -1);
+    CurrentLine.Trim (pos, kStringEnd);
     return true;
 }
 
@@ -326,9 +324,9 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
                 done = true;
             }
         } else {
-            long offSet;
+            long offSet = 0;
 
-            ReportWarning (CurrentLine.Cut (0, offSet = CurrentLine.FirstSpaceIndex(1,kStringEnd)) & " is not used by HYPHY");
+            ReportWarning (CurrentLine.Cut (0, CurrentLine.FirstSpaceIndex(1,kStringEnd)) & " is not used by HYPHY");
             while (!done) {
                 _StringBuffer buffer (128UL);
                 done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, false, false,true,false,false);
@@ -527,9 +525,9 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
                 }
             }
         } else {
-            long offSet;
+            long offSet = 0L;
 
-            ReportWarning (CurrentLine.Cut (0, offSet = CurrentLine.FirstSpaceIndex(1,-1)) & " is not used by HYPHY");
+            ReportWarning (CurrentLine.Cut (0, CurrentLine.FirstSpaceIndex(1,-1)) & " is not used by HYPHY");
             while (!done) {
                 _StringBuffer buffer (128UL);
                 done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, false, false,true,false,false);
@@ -581,6 +579,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
     long    treeSelected = 0, insertPos = 0;
 
     while (!done) {
+        
         if (!FindNextNexusToken (fState, f, CurrentLine, pos)) {
             break;
         }
@@ -676,14 +675,14 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
             }
         } else {
 
-            long offSet = 0L;
+           long offSet = 0L;
 
-            ReportWarning (CurrentLine.Cut (0, offSet = CurrentLine.FirstSpaceIndex(1,kStringEnd)) & " is not used by HYPHY in TREES block");
-            while (!done) {
+           ReportWarning (CurrentLine.Cut (0, CurrentLine.FirstSpaceIndex(1,kStringEnd)) & " is not used by HYPHY in TREES block");
+           while (!done) {
                 _StringBuffer buffer (128UL);
                 done = ReadNextNexusStatement (fState, f, CurrentLine, offSet, buffer, false, false,true,false,false);
-            }
-            done = false;
+           }
+           done = false;
         }
 
         if (!done) {

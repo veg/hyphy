@@ -400,7 +400,7 @@ hyFloat  _CalcNode::ComputeBranchLength (void) {
         result += fabs(ComputeModelMatrix()->ExpNumberOfSubs (freqMx, mbf))*weight;
     });
 
-    if (theMx->GetHDim() >= hy_env::EnvVariableGetNumber(kLargeMatrixBranchLengthDimension, 20.)) {
+    if (freqMx->GetSize()  >= hy_env::EnvVariableGetNumber(kLargeMatrixBranchLengthDimension, 20.)) {
         result /= hy_env::EnvVariableGetNumber(kLargeMatrixBranchLengthModifier, 3.);
     }
     

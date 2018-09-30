@@ -1461,7 +1461,7 @@ void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
     
     if (pieces->countitems() % 2 > 0) {
       DeleteObject(choice_list);
-      throw ("Must have an even number of arguments for explicitly enumerated choice - description pairs");
+     throw (_String ("Must have an even number of arguments for explicitly enumerated choice - description pairs in ") & __PRETTY_FUNCTION__ & ". Had " & _String ((_String*)pieces->toStr()).Enquote());
     }
     
     _List * choices = new _List;
@@ -1470,9 +1470,9 @@ void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
         _String * selector    = new _String (*(_String*)pieces->GetItem(k)),
                 * desription  = new _String (*(_String*)pieces->GetItem(k+1));
         selector->StripQuotes(); desription->StripQuotes();
-        choices < new _List (selector,desription);
+        *choices < new _List (selector,desription);
     }
-    
+    choice_list->parameters < choices;
     choice_list->simpleParameters << 0L;
   } else {
     choice_list->parameters << pieces->GetItem(4L);
@@ -1520,7 +1520,7 @@ void  _ExecutionList::BuildExecuteCommandInstruction (_List * pieces, long code)
 
 void  _ExecutionList::BuildFscanf(_List * pieces, long code) {  
 
-    static _String kFscanfRewind ("REWIND");
+    static const _String kFscanfRewind ("REWIND");
 
     long    names_vs_types_offset = 0L;
   
@@ -1554,7 +1554,7 @@ void  _ExecutionList::BuildFscanf(_List * pieces, long code) {
       scanf->parameters << pieces->GetItem(index);
     }
 
-    if (scanf->parameters.countitems() + 1UL != scanf->simpleParameters.countitems()) {
+    if (scanf->parameters.countitems()  != scanf->simpleParameters.countitems() + 1UL) {
       throw (_String("The numbers of parameter type descriptors (")& _String((long)scanf->simpleParameters.countitems()) &") and arguments ("
              &_String((long)(scanf->parameters.countitems() - 1UL))& ") did not match");
     }
@@ -1990,6 +1990,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY :
         case HY_HBL_COMMAND_DO_SQL:
         case HY_HBL_COMMAND_CHOICE_LIST:
+        case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
         case HY_HBL_COMMAND_SIMULATE_DATA_SET: {
             (*string_form) << procedure (code);
         }
@@ -4023,7 +4024,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
 
         dsc->addAndClean (target);
         return true;
-    } else if (oper.Equal(&blSimulateDataSet)) {
+    } else if (oper == blSimulateDataSet) {
         _List pieces;
         ExtractConditions (source,mark1+1,pieces,',');
         if ( pieces.lLength>4UL || pieces.lLength==0UL ) {

@@ -118,7 +118,7 @@ hyFloat  tolerance  = DBL_EPSILON;
 void            DeleteTreeVariable      (long, _SimpleList &, bool);
 
 //__________________________________________________________________________________
-inline _Variable * LocateVar (long index) {
+_Variable * LocateVar (long index) {
     return (_Variable *)(((BaseRef*)variablePtrs.lData)[index]);
 }
 

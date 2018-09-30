@@ -2898,7 +2898,7 @@ _Matrix const&    _Matrix::operator = (_Matrix const& m) {
     if (m.is_numeric() && is_numeric() && CanFreeMe() && m.theIndex == nil && theIndex == nil && m.GetHDim () == GetHDim () && GetVDim () == m.GetVDim()) {
       unsigned long i = 0UL;
       for (unsigned long r = 0UL; r < hDim; r++) {
-        for (unsigned long c = 0UL; c < vDim; c++) {
+        for (unsigned long c = 0UL; c < vDim; c++, i++) {
           theData[i] = m.theData[i];
         }
       }

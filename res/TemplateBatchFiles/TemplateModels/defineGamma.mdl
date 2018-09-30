@@ -85,7 +85,7 @@ ChoiceList (distribution,"Choose Distribution",1,SKIP_NONE,
 			/*10*/"Normal(x>0) mod Beta","Normal (x>0) distribution with parameter sigma, partitioned by the beta. Mean parameter: mu, variance parameter: sigma^2.",
 			/*11*/"Beta-Uniform","Mean 1 piecewise uniform on [0,1] and [1,R] partitioned by the beta.",
 			/*12*/"Uniform","Mean 1 piecewise uniform on [0,1] and [1,R].",
-			/*13*/"Beta-(Gamma+Inv)","Mixture of gamma mod beta and an invariant class partitioned by the beta.",
+			/*13*/"Beta-(Gamma+Inv)","Mixture of gamma mod beta and an invariant class partitioned by the beta."
 			);
 }
 
