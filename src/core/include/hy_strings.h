@@ -1109,6 +1109,7 @@ public:
                 continue;
               case ')':
                 if (paren_depth > 0L) {
+                  paren_depth --;
                   current_position++;
                   continue;
                 }

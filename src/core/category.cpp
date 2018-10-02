@@ -50,7 +50,7 @@ using namespace hyphy_global_objects;
 
 //___________________________________________________________________________________________
 
-_String    defaultEqual         ("EQUAL"),
+const _String    defaultEqual         ("EQUAL"),
            medianRep          ("MEDIAN"),
            scaledMedianRep        ("SCALED_MEDIAN"),
            maxCatIvals            ("MAX_CATEGORY_INTERVALS"),
@@ -167,9 +167,8 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
     // construct the formula for interval weights
     param = (_String*)parameters (1);
     check = false;
-    if (!param->Equal(&defaultEqual))
+    if (*param != defaultEqual) {
         // do something here, otherwise they are just equal
-    {
         _String             splitterName (AppendContainerName(*param,theP));
         f = LocateVarByName (splitterName);
 
@@ -177,7 +176,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
             _CategoryVariable * iSplitter = (_CategoryVariable*)FetchVar(f);
             if (!CheckEqual (iSplitter->GetMinX(),SLIGHT_SHIFT) ||
                     !CheckEqual (iSplitter->GetMaxX(),1.0) ||
-                    theName->Equal(&splitterName) ||
+                    *theName == splitterName ||
                     (intervals = iSplitter->GetNumberOfIntervals()+1) < 2) {
                 HandleApplicationError (errorMsg & _String("Category variables which specify interval splitting options must be supported on [0,1], and not result in circular dependance"));
                 return;
@@ -294,9 +293,9 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
     // set the representation mode
 
     param = (_String*)parameters(2);
-    if (medianRep.Equal(param)) {
+    if (medianRep == *param) {
         representation = MEDIAN;
-    } else if (scaledMedianRep.Equal(param)) {
+    } else if (scaledMedianRep == *param) {
         representation = SCALED_MEDIAN;
     } else {
         representation = MEAN;
@@ -504,7 +503,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
             _String hmmModelName = AppendContainerName(*(_String*)parameters(8),theP);
             f = FindModelName(hmmModelName);
             if (f==-1) {
-                if (constantOnPartition.Equal ((_String*)parameters (8))) {
+                if (constantOnPartition == *(_String*)parameters (8)) {
                     flags = CONSTANT_ON_PARTITION;
                 } else {
                     HandleApplicationError (errorMsg & (*(_String*)parameters(8))& " is not an existing model identifier in call to 'category'");

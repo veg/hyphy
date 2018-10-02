@@ -9096,9 +9096,9 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
                         globals = true;
                         *res<< "\nGlobal Parameters:\n";
                     }
-                    _String value ((_String*)v->GetFormulaString(kFormulaStringConversionNormal), kAppendAnAssignmentToBufferPlain);
+                    _String value ((_String*)v->GetFormulaString(kFormulaStringConversionNormal));
                     value = value & " = " & _String ((_String*)v->toStr());
-                    res->AppendAnAssignmentToBuffer(GetIthDependentName(i), &value);
+                    res->AppendAnAssignmentToBuffer(GetIthDependentName(i), &value, kAppendAnAssignmentToBufferPlain);
                 }
             }
     

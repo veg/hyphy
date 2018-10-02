@@ -88,7 +88,7 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), kEmptyS
 }
 
 //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology    (_String const name, _String const & parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,kEmptyString)
+_TreeTopology::_TreeTopology    (_String const & name, _String const & parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,kEmptyString)
 // builds a tree from a string
 {
     PreTreeConstructor   (dupMe);
@@ -103,9 +103,7 @@ _TreeTopology::_TreeTopology    (_String const name, _String const & parms, bool
 }
 
 //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology    (_String* name):_CalcNode (*name,kEmptyString) {
-    
-}
+_TreeTopology::_TreeTopology    (_String const * name):_CalcNode (*name,kEmptyString) {}
 
 //_______________________________________________________________________________________________
 

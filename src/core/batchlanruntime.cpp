@@ -1193,11 +1193,13 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
 bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current_program) {
     // TODO SLKP 20170706 this needs to be reimplemented; legacy code is ugly and buggy
     _Variable * receptacle = nil;
+    
 
     try {
 
         current_program.currentCommand++;
         _String  const  constraint_pattern = _ProcessALiteralArgument (*GetIthParameter(0), current_program);
+        throw (_String ("This has not yet been implemented"));
  /*
   _String *       replicateSource,
   thisS,
@@ -1652,8 +1654,8 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
           printf (    "               +--------------------------+\n\n\n");
 
           for (model_id = 0; model_id<matching_models.lLength; model_id++) {
-            printf ("\n\t(%s):%s",((_String*)templateModelList.GetItem((matching_models(model_id),0)))->get_str(),
-                                  ((_String*)templateModelList.GetItem((matching_models(model_id),1)))->get_str());
+            printf ("\n\t(%s):%s",((_String*)templateModelList.GetItem(matching_models(model_id),0))->get_str(),
+                                  ((_String*)templateModelList.GetItem(matching_models(model_id),1))->get_str());
           }
           printf ("\n\n Please type in the abbreviation for the model you want to use:");
           _String const user_choice = StringFromConsole();
@@ -2235,7 +2237,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
       if (source_file == nil) {
         ProcessFileName (file_path, false,false,(hyPointer)current_program.nameSpacePrefix);
 
-        if (loadedLibraryPaths.Find(&file_path) >= 0 && parameter_count() == 2UL && !reload) {
+        if (do_load_library && loadedLibraryPaths.Find(&file_path) >= 0 && parameter_count() == 2UL && !reload) {
           ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & file_path);
           return true;
         }
@@ -2330,7 +2332,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
       _ExecutionList code (*source_code, use_this_namespace, false, &result);
 
       if (!result) {
-        throw ("Encountered an error while parsing HBL");
+        throw (_String("Encountered an error while parsing HBL"));
       } else {
           
 
@@ -2350,8 +2352,6 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
            code.stdinRedirect = current_program.stdinRedirect;
            code.stdinRedirectAux = current_program.stdinRedirectAux;
         }
-        code.stdinRedirectAux = has_redirected_input ? &_aux_argument_list : current_program.stdinRedirectAux;
-        code.stdinRedirect    = has_redirected_input? & argument_list :current_program.stdinRedirect;
 
         if (!simpleParameters.empty() && code.TryToMakeSimple()) {
           ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)code.toStr()) );
@@ -2841,7 +2841,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
         // echo the input if there is no fprintf redirect in effect
 
         _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
-        if (redirect->has_data()) {
+        if (!(redirect && redirect->has_data())) {
           StringToConsole (*input_data); NLToConsole();
         }
         dynamic_reference_manager < redirected;
@@ -3187,7 +3187,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                         if (!target_variable->IsAStringMatrix()) {
                             throw (choices_parameter.Enquote() & " is not a matrix of strings");
                         }
-                        if (!target_variable->GetVDim() != 2) {
+                        if (target_variable->GetVDim() != 2) {
                             throw (choices_parameter.Enquote() & " is not a matrix with two columns");
                         }
                         _List choices;
@@ -3238,7 +3238,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
             }
         } else {
 #ifdef  __HEADLESS__
-            throw ("Unhandled request for data from standard input (headless HyPhy)");
+            throw (_String("Unhandled request for data from standard input (headless HyPhy)"));
 #endif
             if (do_markdown) {
                 printf ("\n\n####%s\n", dialog_title.get_str());
@@ -3303,33 +3303,32 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
           
             selection_tree.ReorderList();
           
-            if (selections.empty () || selections.GetElement(0UL) < 0) {
-                // failed selection
-              hy_env::EnvVariableSet(hy_env::selection_strings, new HY_NULL_RETURN, false);
-              if (number_of_choices == 1L) {
-                receptacle->SetValue (new _Constant (-1.), false);
-              } else {
-                receptacle->SetValue (new _Matrix (_SimpleList (1UL,-1L,0)), false);
-              }
-              terminate_execution = true;
-            } else {
-              if (number_of_choices > 1L) {
-                _SimpleList corrected_for_exclusions;
-                _List       chosen_strings;
-                for (unsigned long i = 0UL; i < selections.countitems(); i++) {
-                  corrected_for_exclusions << excluded.SkipCorrect(selections.Element(i));
-                  chosen_strings < new _FString (*(_String*)available_choices->GetItem(selections.Element(i), 0),false);
-                }
-                receptacle->SetValue (new _Matrix (corrected_for_exclusions), false);
-              } else {
-                receptacle->SetValue (new _Constant (excluded.SkipCorrect (selections.Element(0UL))), false);
-                hy_env::EnvVariableSet(hy_env::selection_strings, new _FString (*(_String*)available_choices->GetItem(selections.Element(0UL), 0),false), false);
-              }
-            }
           
         }
       
-      
+        if (selections.empty () || selections.GetElement(0UL) < 0) {
+            // failed selection
+            hy_env::EnvVariableSet(hy_env::selection_strings, new HY_NULL_RETURN, false);
+            if (number_of_choices == 1L) {
+                receptacle->SetValue (new _Constant (-1.), false);
+            } else {
+                receptacle->SetValue (new _Matrix (_SimpleList (1UL,-1L,0)), false);
+            }
+            terminate_execution = true;
+        } else {
+            if (number_of_choices > 1L) {
+                _SimpleList corrected_for_exclusions;
+                _List       chosen_strings;
+                for (unsigned long i = 0UL; i < selections.countitems(); i++) {
+                    corrected_for_exclusions << excluded.SkipCorrect(selections.Element(i));
+                    chosen_strings < new _FString (*(_String*)available_choices->GetItem(selections.Element(i), 0),false);
+                }
+                receptacle->SetValue (new _Matrix (corrected_for_exclusions), false);
+            } else {
+                receptacle->SetValue (new _Constant (excluded.SkipCorrect (selections.Element(0UL))), false);
+                hy_env::EnvVariableSet(hy_env::selection_strings, new _FString (*(_String*)available_choices->GetItem(selections.Element(0UL), 0),false), false);
+            }
+        }
         
         
     } catch (const _String& error) {

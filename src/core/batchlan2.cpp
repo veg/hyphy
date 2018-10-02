@@ -205,7 +205,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_REPLICATE_CONSTRAINT,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ReplicateConstraint(", HY_HBL_COMMAND_REPLICATE_CONSTRAINT,false),
                                                                 -2,
-                                                                "ReplicateConstraint(<constraint pattern in terms of 'this1', 'this2',...>, <an argument to replace 'this*', for each 'thisN' in the pattern);"));
+                                                                "ReplicateConstraint(<constraint pattern in terms of 'this1', 'this2',...>, <an argument to replace 'this*', for each 'thisN' in the pattern);",','));
 
 
     lengthOptions.Clear();lengthOptions.Populate (3,1,1);
@@ -251,16 +251,11 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                         &lengthOptions));
     
 
-    lengthOptions.Clear();lengthOptions.Populate (3,5,1);
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_INFORMATION,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetInformation(", HY_HBL_COMMAND_GET_INFORMATION,false),
-                                                                -1,
-                                                                "HarvestFrequencies(<receptacle>, <DataSet or DataSetFilter>, <atom INTEGER>, <unit INTEGER <= atom>, <position aware 0 or 1>, [optional site partion], [optional sequence partition] (only for DataSetArguments)",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
+                                                                2,
+                                                                "GetInformation(<receptacle>, <DataSet or DataSetFilter or LikelihoodFunction or Model or Variable or Regexp or String>",
+                                                                ','));
 
     lengthOptions.Clear();lengthOptions.Populate (3,2,1); // 2, 3, 4
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_DATA_INFO,

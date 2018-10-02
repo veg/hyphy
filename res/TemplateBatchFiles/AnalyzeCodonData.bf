@@ -18,6 +18,7 @@ SelectTemplateModel(filteredData);
 _DO_TREE_REBALANCE_ = 1;
 #include "queryTree.bf";
 
+
 if (modelType)
 {
 	ChoiceList (branchLengths, "Branch Lengths", 1, SKIP_NONE,
@@ -29,7 +30,7 @@ if (modelType)
 		return;
 	}
 	
-	if (branchLengths == 1)
+	if (branchLengths == 2)
 	{
 		global treeScaler = 1;
 		ReplicateConstraint ("this1.?.?:=treeScaler*this2.?.?__", givenTree, givenTree);

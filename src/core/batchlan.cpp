@@ -1119,8 +1119,7 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
 
     hy_env::EnvVariableSet(hy_env::path_to_current_bf, &cfp, true);
 
-    DeleteObject        (result);
-    result               = nil;
+    DeleteAndZeroObject        (result);
     currentExecutionList = this;
     currentCommand       = 0;
 

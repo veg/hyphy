@@ -468,7 +468,8 @@ public:
     template <typename CALLBACK> void ForEachCellNumeric (CALLBACK&& cbv) const {
         if (theIndex) {
             for (unsigned long i=0UL; i<lDim; i++) {
-                if (long idx = theIndex[i] >= 0L) {
+                long idx = theIndex[i];
+                if (idx >= 0L) {
                     long row = idx / vDim;
                     cbv (theData[i], idx, row, idx - row*vDim);
                 }

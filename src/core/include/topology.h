@@ -186,8 +186,8 @@ public:
     void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_StringBuffer&, _TreeTopologyParseSettings const& settings,  hyTopologyBranchLengthMode branch_length_mode, long variable_ref  = -1L, bool = false) const;
 
     _TreeTopology                       (void);
-    _TreeTopology                       (_String const, _String const&, bool = true, _AssociativeList* mapping = nil);
-    _TreeTopology                       (_String*);
+    _TreeTopology                       (_String const&, _String const&, bool = true, _AssociativeList* mapping = nil);
+    _TreeTopology                       (_String const*);
     _TreeTopology                       (_TheTree*);
 
     virtual                 ~_TreeTopology                      (void);

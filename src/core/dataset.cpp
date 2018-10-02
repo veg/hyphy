@@ -589,9 +589,9 @@ long _DataSet::ComputeSize(void) {
 
 //_________________________________________________________
 hyFloat _DataSet::CheckAlphabetConsistency(void) {
-  long charsIn = 0, gaps = 0, total = 0;
+  long charsIn = 0L, gaps = 0L, total = 0L;
 
-  bool checks[256];
+  bool checks[256] = {false};
 
   char gapChar = theTT->GetGapChar();
 
@@ -609,10 +609,6 @@ hyFloat _DataSet::CheckAlphabetConsistency(void) {
         _TranslationTable::GetDefaultTable(HY_TRANSLATION_TABLE_BINARY);
   }
 
-  for (; charsIn < 256; charsIn++) {
-    checks[charsIn] = false;
-  }
-
   for (charsIn = 0; charsIn < baseSymbols.length(); charsIn++) {
     checks[(unsigned char)baseSymbols.get_char(charsIn)] = true;
   }
@@ -620,8 +616,8 @@ hyFloat _DataSet::CheckAlphabetConsistency(void) {
   charsIn = 0;
 
   for (long i = 0; i < lLength; i++) {
-    _String *thisColumn = (_String *)lData[i];
-    long w = theFrequencies.lData[i];
+    _String *thisColumn = (_String *)GetItem(i);
+    long w = theFrequencies.get(i);
     for (long j = 0; j < thisColumn->length(); j++)
       if (checks[(unsigned char)thisColumn->get_char(j)]) {
         charsIn += w;

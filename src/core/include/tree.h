@@ -87,9 +87,9 @@ class _TheTree: public _TreeTopology
 public:
 
     _TheTree ();                                                // default constructor - doesn't do much
-    _TheTree (_String name, _String const& parms, bool = true);       // builds a tree from a string
-    _TheTree (_String name, _TreeTopology*);                    // builds a tree from a tree topology
-    _TheTree (_String name, _TheTree*);                    // builds a tree from another tree
+    _TheTree (_String const &name, _String const& parms, bool = true);       // builds a tree from a string
+    _TheTree (_String const &name, _TreeTopology*);                    // builds a tree from a tree topology
+    _TheTree (_String const& name, _TheTree*);                    // builds a tree from another tree
 
 
     virtual                 ~_TheTree                   (void);

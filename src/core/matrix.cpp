@@ -7240,7 +7240,7 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
 hyFloat  _Matrix::ExpNumberOfSubs  (_Matrix* freqs, bool mbf) {
     // TODO SLKP 20171027 SLKP reviewed and edited; check correctness
     
-    if (!is_square_numeric() || !freqs->is_numeric()) {
+    if (!is_square_numeric(false) || !freqs->is_numeric()) {
         return 0.0;
     }
 

@@ -98,7 +98,7 @@ _TranslationTable::_TranslationTable(_String &alphabet) {
 //_________________________________________________________
 BaseRef _TranslationTable::makeDynamic(void) const {
   _TranslationTable *r = new _TranslationTable;
-
+  r->baseLength = baseLength;
   r->tokensAdded.Duplicate(&tokensAdded);
   r->baseSet.Duplicate(&baseSet);
   r->translationsAdded.Duplicate(&translationsAdded);

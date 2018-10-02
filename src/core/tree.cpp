@@ -302,7 +302,7 @@ void    _TheTree::PurgeTree (void) {
 }
 
 //_______________________________________________________________________________________________
-_TheTree::_TheTree              (_String name, _String const & parms, bool make_a_copy):_TreeTopology (&name) {
+_TheTree::_TheTree              (_String const & name, _String const & parms, bool make_a_copy):_TreeTopology (&name) {
   PreTreeConstructor   (make_a_copy);
   _TreeTopologyParseSettings settings = CollectParseSettings();
   settings.AllocateCache();
@@ -313,7 +313,7 @@ _TheTree::_TheTree              (_String name, _String const & parms, bool make_
 
 
 //_______________________________________________________________________________________________
-_TheTree::_TheTree              (_String name, _TreeTopology* top):_TreeTopology (&name) {
+_TheTree::_TheTree              (_String const & name, _TreeTopology* top):_TreeTopology (&name) {
   PreTreeConstructor   (false);
   if (top->theRoot) {
     isDefiningATree         = kTreeIsBeingParsed;
@@ -405,7 +405,7 @@ void    _TheTree::PostTreeConstructor (bool make_copy) {
             node_temp->add_node(*theRoot->go_down(3-i));
             delete theRoot;
             theRoot = node_temp;
-            delete_associated_calcnode (theRoot);
+            //delete_associated_calcnode (theRoot);
             rooted = i == 1 ? ROOTED_LEFT : ROOTED_RIGHT;
             ReportWarning (_String("Rooted topology. Removing one branch - the ") & (i==1 ? "left" : "right") & " root child has been promoted to be the new root");
             break;
@@ -421,7 +421,7 @@ void    _TheTree::PostTreeConstructor (bool make_copy) {
           delete theRoot;
           theRoot = node_temp;
           rooted = ROOTED_LEFT;
-          delete_associated_calcnode(theRoot);
+          //delete_associated_calcnode(theRoot);
         }
       } else {
         if (theRoot->get_num_nodes() == 0) {
@@ -452,7 +452,7 @@ void    _TheTree::PostTreeConstructor (bool make_copy) {
 }
 
 //_______________________________________________________________________________________________
-_TheTree::_TheTree              (_String name, _TheTree* otherTree):_TreeTopology (&name) {
+_TheTree::_TheTree              (_String const &name, _TheTree* otherTree):_TreeTopology (&name) {
     PreTreeConstructor   (false);
     if (otherTree->theRoot) {
         isDefiningATree         = kTreeIsBeingParsed;
