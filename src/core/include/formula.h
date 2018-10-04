@@ -177,7 +177,7 @@ public:
        */
     bool        ConvertToSimple     (_AVLList& variableIndex);
     void        ConvertFromSimple   (_AVLList const& variableIndex);
-    void        ConvertFromSimple   (_SimpleList const& variableIndex);
+    void        ConvertFromSimpleList   (_SimpleList const& variableIndex);
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 

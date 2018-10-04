@@ -2252,11 +2252,11 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
 
 //__________________________________________________________________________________
 void _Formula::ConvertFromSimple (_AVLList const& variableIndex) {
-  ConvertFromSimple(variableIndex.dataList);
+  ConvertFromSimpleList (*variableIndex.dataList);
 }
 
 //__________________________________________________________________________________
-void _Formula::ConvertFromSimple (_SimpleList const& variableIndex) {
+void _Formula::ConvertFromSimpleList (_SimpleList const& variableIndex) {
   if (theFormula.empty()) {
     return;
   }

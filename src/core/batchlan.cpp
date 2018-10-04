@@ -157,7 +157,6 @@ blContinue             ("continue;"),          // moved
 blInclude              ("#include"),           // moved
 blDataSet              ("DataSet "),           // moved
 blDataSetFilter            ("DataSetFilter "),
-blConstructCM          ("ConstructCategoryMatrix("),
 blTree                     ("Tree "),
 blLF                       ("LikelihoodFunction "),
 blLF3                  ("LikelihoodFunction3 "),
@@ -1671,6 +1670,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               case HY_HBL_COMMAND_MPI_RECEIVE:
               case HY_HBL_COMMAND_FIND_ROOT:
               case HY_HBL_COMMAND_ALIGN_SEQUENCES:
+              case HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX:
               case HY_HBL_COMMAND_DO_SQL:
               {
                     _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);

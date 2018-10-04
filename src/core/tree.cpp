@@ -2756,7 +2756,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     
 #ifdef _OPENMP
     unsigned long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
-    matrix_exp_count += matrixQueue.lLength;
+    hy_global::matrix_exp_count += matrixQueue.lLength;
 #endif
     
 #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
@@ -4495,7 +4495,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
             _Matrix* comp_exp = currentTreeNode->GetCompExp();
             if (!comp_exp) {
                 hy_global::HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__ & ". Transition matrix not computed for " & *currentTreeNode->GetName());
-                return;
+                return nil;
             }
             transitionMatrix = comp_exp->theData;
         }

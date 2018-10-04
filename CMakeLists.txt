@@ -91,8 +91,8 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_CONTRIB}
 # make it fast, scotty
 #-------------------------------------------------------------------------------
 
-set(DEFAULT_WARNING_FLAGS "-w")
-set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
+set(DEFAULT_WARNING_FLAGS " -w  ")
+set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wevery -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
 
 
@@ -161,7 +161,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     )
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
-set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}")
+set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g ")
 MESSAGE ("Set compiler flags to ${DEFAULT_COMPILE_FLAGS}")
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)

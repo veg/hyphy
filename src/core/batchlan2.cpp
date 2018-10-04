@@ -1436,7 +1436,7 @@ BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long
     
     if (type & HY_BL_TREE) {
         _Variable* tree_var = FetchVar (LocateVarByName(name));
-        if (tree_var->ObjectClass() == TREE) {
+        if (tree_var && tree_var->ObjectClass() == TREE) {
             return tree_var;
         }
     }

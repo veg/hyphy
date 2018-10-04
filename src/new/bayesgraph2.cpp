@@ -282,7 +282,7 @@ bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import) {
               }
           }
       }
-    } catch (const _String err) {
+    } catch (const _String &err) {
       HandleApplicationError(err);
       return false;
     }
@@ -506,7 +506,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
           */
         log_score += BottcherScore (yb, zbpa, tau, mu, rho, phi, n_ij.lData[pa]);
       }
-    } catch (const _String err) {
+    } catch (const _String & err) {
       HandleApplicationError(err);
     }
 
@@ -651,7 +651,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix const& yb, _Matrix cons
       //ReportWarning (_String("BottcherScore() returning with log L = ") & pa_log_score);
 
       return pa_log_score;
-    } catch (_String const err) {
+    } catch (_String const & err) {
       HandleApplicationError(err);
     }
   return -A_LARGE_NUMBER;
@@ -958,7 +958,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     // compute the average of sampled log-likelihoods
     //log_score = LogSumExpo (vector_of_scores) - log((double)vector_of_scores->GetUsed());
     
-  } catch (const _String err) {
+  } catch (const _String & err) {
     HandleApplicationError(err);
   }
   
@@ -1472,7 +1472,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
     // compute the average of sampled log-likelihoods
     //log_score = LogSumExpo (vector_of_scores) - log((double)vector_of_scores->GetUsed());
   
-  } catch (const _String err) {
+  } catch (const _String & err) {
     HandleApplicationError(err);
     return -A_LARGE_NUMBER;
   }

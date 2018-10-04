@@ -98,7 +98,7 @@ class _Trie: public _List
     
         template <typename... values>  long  Insert (const _String& key, long payload, values... data) {
             Insert (key, payload);
-            Insert (data...);
+            return Insert (data...);
         }
  
         template <typename... values> _Trie (values... data) {

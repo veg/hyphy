@@ -558,9 +558,8 @@ void  _Variable::SetFormula (_Formula& theF) {
     _SimpleList vars;
     _AVLList vA (&vars);
     theF.ScanFForVariables (vA,true);
-    vA.ReorderList();
 
-    if (vars.BinaryFind(theIndex)>=0) {
+    if (vA.Find((BaseRefConst)theIndex)>=0) {
         HandleApplicationError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr(kFormulaStringConversionNormal))&" because it would create a circular dependance."));
         if (&theF!=right_hand_side) {
             delete right_hand_side;
@@ -603,14 +602,10 @@ void  _Variable::SetFormula (_Formula& theF) {
               *deferSetFormula << theIndex;
               deferIsConstant  << isAConstant;
           } else {
-              long i;
-              _SimpleList tcache;
-              long        iv;
-
-              i = variableNames.Traverser (tcache,iv,variableNames.GetRoot());
-
-              for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
-                  _Variable* theV = FetchVar(i);
+              
+              for (AVLListXIteratorKeyValue variable_record : AVLListXIterator (&variableNames)) {
+                  _Variable * theV = LocateVar(variable_record.get_value());
+                  //printf ("%s\n", theV->GetName()->get_str());
                   if (theV->IsContainer()) {
                       _VariableContainer* theVC = (_VariableContainer*)theV;
                       if (theVC->SetDependance(theIndex) == -2) {
@@ -619,12 +614,12 @@ void  _Variable::SetFormula (_Formula& theF) {
                       }
                   }
               }
-              {
-                  for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
-                      if (((_String*)likeFuncNamesList(i))->nonempty()) {
-                          ((_LikelihoodFunction*)likeFuncList(i))->UpdateIndependent(theIndex,isAConstant);
-                      }
-              }
+              
+              likeFuncNamesList.ForEach ([this, isAConstant] (BaseRef lf_name, unsigned long idx) -> void {
+                  if (((_String*)lf_name)->nonempty()) {
+                      ((_LikelihoodFunction*)likeFuncList(idx))->UpdateIndependent(theIndex,isAConstant);
+                  }
+              });
           }
     }
 

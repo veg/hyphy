@@ -171,9 +171,9 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
                 values[array_index].value = var_value->Value();
             } else {
                 if (var_value->ObjectClass() == MATRIX) {
-                    values[var_index].reference = (hyPointer)((_Matrix*)var_value)->theData;
+                    values[array_index].reference = (hyPointer)((_Matrix*)var_value)->theData;
                 } else {
-                    throw ("Internal error in PopulateArraysForASimpleFormula");
+                    throw (_String("Internal error in PopulateArraysForASimpleFormula"));
                 }
             }
         });

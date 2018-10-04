@@ -148,7 +148,7 @@ const _String _ProcessALiteralArgument (_String const& expression, _ExecutionLis
 
 BaseRefConst    _GetHBLObjectByType (_String const&  source_name, long& type, long * object_index = nil) {
   long            object_type = type;
-  BaseRefConst    source_object = _HYRetrieveBLObjectByName (source_name, object_type,object_index,false);
+  BaseRefConst    source_object = _HYRetrieveBLObjectByName (source_name, object_type,object_index,false, true);
 
   if (source_object == nil) {
     throw (source_name.Enquote('\'') & " is not a " & _HYHBLTypeToText(type));
@@ -161,7 +161,7 @@ BaseRefConst    _GetHBLObjectByType (_String const&  source_name, long& type, lo
 
 BaseRef    _GetHBLObjectByTypeMutable (_String const&  source_name, long& type, long * object_index = nil) {
   long            object_type = type;
-  BaseRef         source_object = _HYRetrieveBLObjectByNameMutable (source_name, object_type,object_index,false);
+  BaseRef         source_object = _HYRetrieveBLObjectByNameMutable (source_name, object_type,object_index,false, true);
 
   if (source_object == nil) {
     throw (source_name.Enquote('\'') & " is not a " & _HYHBLTypeToText(type));
@@ -676,7 +676,8 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
                                             _String ("COMPLETE"),_hyphyLFConstructCategoryMatrixConditionals,
                                             _String ("WEIGHTS"),_hyphyLFConstructCategoryMatrixWeights,
                                             _String ("SITE_LOG_LIKELIHOODS"), _hyphyLFConstructCategoryMatrixSiteProbabilities,
-                                            _String ("CLASSES"), _hyphyLFConstructCategoryMatrixClasses
+                                            _String ("CLASSES"), _hyphyLFConstructCategoryMatrixClasses,
+                                            _String ("SHORT"), _hyphyLFConstructCategoryMatrixClasses
                                           );
 
 
@@ -1404,6 +1405,8 @@ bool      _ElementaryCommand::HandleUseModel (_ExecutionList& current_program) {
     if (!source_model && raw_model_name != kUseNoModel) {
         throw (source_name.Enquote() & " does not refer to a valid defined substitution model and is not " & kUseNoModel);
     }
+      
+    lastMatrixDeclared = model_index;
 
   } catch (const _String& error) {
     return  _DefaultExceptionHandler (nil, error, current_program);

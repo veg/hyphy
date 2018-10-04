@@ -2479,7 +2479,7 @@ void        _Matrix::MakeMeSimple (void) {
 void        _Matrix::MakeMeGeneral (void) {
     if (storageType == _SIMPLE_FORMULA_TYPE) {
         for (long k = 0L; k < cmd->formulasToEval.lLength; k++) {
-            ((_Formula*)cmd->formulasToEval.lData[k])->ConvertFromSimple(cmd->varIndex);
+            ((_Formula*)cmd->formulasToEval.lData[k])->ConvertFromSimpleList(cmd->varIndex);
         }
 
         delete [] cmd->formulaValues;
@@ -3332,7 +3332,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                     
                     __m256d __attribute__ ((aligned (32))) col_buffer[5];
                     
-                      _Parameter quad1[4] __attribute__ ((aligned (32))),
+                      hyFloat quad1[4] __attribute__ ((aligned (32))),
                                             quad2[4] __attribute__ ((aligned (32))),
                                             quad3[4] __attribute__ ((aligned (32))),
                                             quad4[4] __attribute__ ((aligned (32))),

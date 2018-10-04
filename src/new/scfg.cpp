@@ -389,7 +389,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
           }
       
           parsedFormulas.ClearFormulasInList();
-    } catch (const _String err) {
+    } catch (const _String & err) {
       HandleApplicationError (err);
     }
   
@@ -560,7 +560,7 @@ void    Scfg::RandomSampleVerify  (long samples) {
             VerifyValues ();
         }
     }
-  } catch (const _String err) {
+  } catch (const _String & err) {
     HandleApplicationError (err);
   }
 }
@@ -584,7 +584,7 @@ void    Scfg::SetStringCorpus  (_Matrix* stringMatrix) {
 
     }
     InitComputeStructures();
-  } catch (const _String err) {
+  } catch (const _String & err) {
     HandleApplicationError (err);
   }
 }
@@ -1583,7 +1583,7 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString) {
     }
     
    
-  } catch (const _String err) {
+  } catch (const _String & err) {
     HandleApplicationError(err);
     return new _String;
   }

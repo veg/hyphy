@@ -272,7 +272,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes) {
         }
         scores_cached = FALSE;
         ReportWarning (_String ("Constructed BayesianGraphicalModel with ") & num_nodes & " nodes.");
-    } catch (const _String err) {
+    } catch (const _String & err) {
         HandleApplicationError(err);
     }
 }
@@ -370,7 +370,7 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix const * data) {
         }
         ReportWarning (_String ("Set data matrix to:\n") & *(_String *)theData.toStr() & "\n" & " and missing values at " & *(_String *) has_missing.toStr());
         
-    } catch (const _String err) {
+    } catch (const _String & err) {
         HandleApplicationError (err);
         return false;
     }
@@ -460,7 +460,7 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix const * structure) {
         theStructure.Duplicate(structure);
         return true;
 
-    } catch (const _String err) {
+    } catch (const _String & err) {
         HandleApplicationError (err);
         return false;
     }
@@ -492,7 +492,7 @@ bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList const * order) {
         node_order_arg.Duplicate(order);
         ReportWarning (_String("BayesianGraphicalModel node order arg set to ") & *(_String *) node_order_arg.toStr());
 
-    } catch (_String const err) {
+    } catch (_String const & err) {
         HandleApplicationError(err);
         return false;
     }
@@ -1183,7 +1183,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
     }   // completes else statement
 #endif
 
-    } catch (const _String e) {
+    } catch (const _String & e) {
       HandleApplicationError(e);
       return;
     }
@@ -1490,7 +1490,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
   #endif
 
       }
-    } catch (const _String err) {
+    } catch (const _String & err) {
       HandleApplicationError(err);
       return new _Matrix;
     }

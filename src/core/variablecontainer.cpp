@@ -543,7 +543,7 @@ bool    _VariableContainer::HasDepVariable  (long var_ref) const {
 //__________________________________________________________________________________
 
 void    _VariableContainer:: RemoveLocalVariable (_SimpleList*& array, long array_index) {
-    if (array->countitems() >2UL) {
+    if (array->countitems() > 2UL) {
         array->Delete(array_index);
         array->Delete(array_index);
         array->TrimMemory();
@@ -692,7 +692,7 @@ long    _VariableContainer::InsertVariableInSortedList (_SimpleList * & list, _S
         while (insert_here< array_l) {
             _Variable *existing_var = LocateVar (list->get(insert_here));
             if (!existing_var) {
-                HandleApplicationError ("Internal error in InsertVariableInSortedList()", false);
+                HandleApplicationError (_String("Internal error in InsertVariableInSortedList()"), false);
                 return -1;
             }
             if (var_name.Compare (*existing_var->GetName()) != kCompareGreater) {
@@ -725,8 +725,8 @@ long      _VariableContainer::SetDependance (long varIndex) {
         }
 
 
-        //printf ("Moving ind->dep for %s from %s\n", LocateVar (varIndex)->GetName()->sData,
-        //      GetName()->sData);
+        /*printf ("Moving ind->dep for %s from %s\n", LocateVar (varIndex)->GetName()->get_str(),
+                GetName()->get_str());*/
 
         if (iVariables->lData[f+1]>=0) {
             //printf ("Local variable %s\n", LocateVar (iVariables->lData[f+1])->GetName()->sData);
@@ -962,8 +962,8 @@ bool _VariableContainer::IsConstant (void) {
 
 void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight) {
     
-    ForEachLocalVariable(iVariables, [&] (long var_idx, long ref_idx, unsigned long) -> bool {
-        l.Insert((BaseRef)var_idx);
+    //printf ("_VariableContainer::ScanContainerForVariable %x\n", this);
+    ForEachLocalVariable(iVariables, [&] (long var_idx, long ref_idx, unsigned long) -> void {
         if (tagger) {
             tagger->UpdateValue ((BaseRef)var_idx, weight, 0);
         }
@@ -973,7 +973,7 @@ void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _A
         _SimpleList temp;
         _AVLList  ta (&temp);
 
-        ForEachLocalVariable(dVariables, [&] (long var_idx, long ref_idx, unsigned long) -> bool {
+        ForEachLocalVariable(dVariables, [&] (long var_idx, long ref_idx, unsigned long) -> void {
             l2.Insert((BaseRef)var_idx);
             LocateVar (var_idx)->ScanForVariables(ta, true, tagger, weight);
         });

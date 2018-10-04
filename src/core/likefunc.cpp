@@ -268,15 +268,15 @@ void         DecideOnDivideBy (_LikelihoodFunction* lf)
 hyFloat            tdiff = timer.TimeSinceStart();
 #ifdef  _OPENMP
 #ifdef  __HYPHYMPI__ 
-    if (systemCPUCount > 1 && hy_mpi_node_rank == 0) {
+    if ( hy_global::system_CPU_count > 1 && hy_mpi_node_rank == 0) {
 #else
-    if (systemCPUCount > 1) {
+    if ( hy_global::system_CPU_count > 1) {
 #endif
 
         hyFloat          minDiff = tdiff;
         long                bestTC  = 1;
 
-        for (long k = 2; k <= system_CPU_count; k++) {
+        for (long k = 2; k <= hy_global::system_CPU_count; k++) {
             lf->SetThreadCount              (k);
             TimeDifference timer;
             lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex));
@@ -2930,13 +2930,13 @@ inline hyFloat sqr (hyFloat x)
             }
             inode_index++;
           }
-          if (independent_vars_l.lLength==1) {
+          if (independent_vars_l.countitems()==1) {
             _Variable * branch_parameter = LocateVar(independent_vars_l.GetElement(0));
             if (!branch_parameter->HasBeenInitialized () || !branch_parameter->HasChanged()) {
               ReportWarning(_String("Initial guess for ") & *branch_parameter->GetName() & " is " & (c3*.66667));
               branch_parameter->CheckAndSet (c3*.66667, true);
             }
-          } else if (independent_vars_l.lLength>=2) {
+          } else if (independent_vars_l.countitems() >=2) {
             for (unsigned long int p = 0UL; p < independent_vars_l.lLength; p++) {
               _Variable * branch_parameter = LocateVar(independent_vars_l.GetElement(p));
               if (! branch_parameter->HasBeenInitialized () || !branch_parameter->HasChanged()) {
