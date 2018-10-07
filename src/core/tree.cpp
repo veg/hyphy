@@ -2798,8 +2798,8 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
             current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
         }
         DeleteObject(computedExponentials);
-//#ifdef _UBER_VERBOSE_DUMP_MATRICES
-        //if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP) {
+#ifdef _UBER_VERBOSE_DUMP_MATRICES
+        if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP) {
             fprintf (stderr, "\n T_MATRIX = {");
             for (unsigned long nodeID = 0; nodeID < flatLeaves.lLength + flatTree.lLength - 1; nodeID++) {
                 bool    isLeaf     = nodeID < flatLeaves.lLength;
@@ -2813,8 +2813,8 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
                 
             }
             fprintf (stderr, "\n};\n");
-        //}
-//#endif
+        }
+#endif
         
         
     }

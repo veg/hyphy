@@ -1175,7 +1175,7 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
 
 //____________________________________________________________________________________
 
-long        _ExecutionList::ExecuteAndClean     (long g) {
+void        _ExecutionList::ExecuteAndClean     (long g) {
     Execute ();
     ClearBFFunctionLists    (g);
 }
@@ -1332,8 +1332,7 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
 //____________________________________________________________________________________
 
-void        _ExecutionList::ExecuteSimple       (void)
-{
+void        _ExecutionList::ExecuteSimple       (void) {
     PopulateArraysForASimpleFormula (cli->varList, cli->values);
     Execute();
 
@@ -2921,7 +2920,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
-
+    
   switch (code) {
 
     case 0: // formula reparser

@@ -52,6 +52,8 @@ global AC=1;
 global CG:=AT;
 global GT:=AT;
 
+
+
 MG94custom={61,61};
 MG94custom[0][1]:=AC*R*synRate*0.10767;
 MG94custom[0][2]:=synRate*0.19375;
@@ -645,6 +647,7 @@ vectorOfFrequencies={
 }
 ;
 
+
 Model MG94customModel=(MG94custom,vectorOfFrequencies,0);
 
 UseModel (MG94customModel);
@@ -654,6 +657,7 @@ Tree givenTree=(((D_CD_83_ELI_ACC_K03454,D_CD_83_NDK_ACC_M27323)Node3,D_UG_94_94
 DataSet ds = ReadDataFile(USE_NEXUS_FILE_DATA);
 
 DataSetFilter filteredData = CreateFilter(ds,3,"0-1319","4,5,7,6,1,0,2,3","TAA,TAG,TGA");
+
 
 PARAMETER_GROUPING = {"0" : {{"R","AC","AT","CT"}}};
 LikelihoodFunction lf = (filteredData,givenTree);

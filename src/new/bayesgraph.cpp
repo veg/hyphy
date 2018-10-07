@@ -949,7 +949,6 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
                             
                             if (all_but_one.NChooseKInit (aux_list, nk_tuple, np, false)) {
                               bool    remaining, family_is_discrete;
-                              long    res;
                               
                               do {
                                 remaining = all_but_one.NChooseK (aux_list, nk_tuple);
@@ -985,7 +984,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
                                   score = ComputeContinuousScore (node_id, parents);
                                 }
                                 
-                                res = family_scores->Store (score, nk_tuple);
+                                family_scores->Store (score, nk_tuple);
                               } while (remaining);
                             } else {
                               throw ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");

@@ -92,7 +92,7 @@ set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_CONTRIB}
 #-------------------------------------------------------------------------------
 
 set(DEFAULT_WARNING_FLAGS " -w  ")
-set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wevery -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
+set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
 
 
@@ -156,7 +156,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     endif (${HAVE_AVX_EXTENSIONS})
 
     set_property(
-     SOURCE ${SRC_CORE}
+     SOURCE ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_UNIXMAIN}
      APPEND_STRING PROPERTY  COMPILE_FLAGS " -std=c++14 "
     )
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -395,8 +395,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg -O0 "
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg -O0 "
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
 )
 
 

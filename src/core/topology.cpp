@@ -311,6 +311,10 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
             
             char   look_at_me = parms.char_at(i);
             
+            if (isspace (look_at_me)) {
+                continue;
+            }
+            
             switch (look_at_me) {
                 case '(': { // creating a new internal node one level down
                             // a new node
@@ -2127,7 +2131,7 @@ void _TreeTopology::SubTreeString (node<long>* root, _StringBuffer &result, _Tre
     }
 
     if (!iterator->is_root()) {
-      if (all_names && !node_name.BeginsWith(settings.inode_prefix)) {
+      if (all_names || !node_name.BeginsWith(settings.inode_prefix)) {
         result << node_name;
       }
       PasteBranchLength (iterator,result,mode,branch_length_variable);

@@ -3055,7 +3055,7 @@ DataSetFilter filteredData_1 = CreateFilter(ds_1,3,"0-401","9,3,0-2,4-8,24,16,23
 
 AUTO_PARALLELIZE_OPTIMIZE = 2;
 
-VERBOSITY_LEVEL			    = 10;
+VERBOSITY_LEVEL			    = 1;
 
 
 LikelihoodFunction lf = (filteredData_1,tree_1_0,filteredData_1,tree_1_1,filteredData_1,tree_1_2,filteredData_1,tree_1_3,filteredData_1,tree_1_4,"Log(P_1*SITE_LIKELIHOOD[0]+(1-P_1)*P_2*SITE_LIKELIHOOD[1]+(1-P_1)*(1-P_2)*P_3*SITE_LIKELIHOOD[2]+(1-P_1)*(1-P_2)*(1-P_3)*P_4*SITE_LIKELIHOOD[3]+(1-P_1)*(1-P_2)*(1-P_3)*(1-P_4)*SITE_LIKELIHOOD[4])");

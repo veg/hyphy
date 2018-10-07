@@ -964,6 +964,7 @@ void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _A
     
     //printf ("_VariableContainer::ScanContainerForVariable %x\n", this);
     ForEachLocalVariable(iVariables, [&] (long var_idx, long ref_idx, unsigned long) -> void {
+        l.Insert((BaseRef)var_idx);
         if (tagger) {
             tagger->UpdateValue ((BaseRef)var_idx, weight, 0);
         }
@@ -994,7 +995,7 @@ void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _A
 //__________________________________________________________________________________
 
 void _VariableContainer::ScanForDVariables (_AVLList& l,_AVLList&) const {
-    ForEachLocalVariable(dVariables, [&] (long var_idx, long ref_idx, unsigned long) -> bool {
+    ForEachLocalVariable(dVariables, [&] (long var_idx, long ref_idx, unsigned long) -> void {
         l.Insert((BaseRef)var_idx);
     });
 }
@@ -1002,7 +1003,7 @@ void _VariableContainer::ScanForDVariables (_AVLList& l,_AVLList&) const {
 //__________________________________________________________________________________
 
 void _VariableContainer::GetListOfModelParameters (_List& rec) {
-    ForEachLocalVariable(iVariables, [&] (long var_idx, long ref_idx, unsigned long) -> bool {
+    ForEachLocalVariable(iVariables, [&] (long var_idx, long ref_idx, unsigned long) -> void {
         if (ref_idx >= 0) {
             rec << LocateVar(ref_idx)->GetName();
         }

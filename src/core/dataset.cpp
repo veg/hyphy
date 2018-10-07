@@ -1830,8 +1830,9 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             if (bfName) {
                 nexusBF->sourceFile = *bfName;
             }
-            
+
             nexusBF->ExecuteAndClean(bfl);
+
             if (nexusBF != ex) {
                 DeleteObject (nexusBF);
             } else {

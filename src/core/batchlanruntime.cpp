@@ -2076,6 +2076,10 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
       else {
         print_to_stdout = true;
       }
+    } else {
+        if (destination == kPromptForFilePlaceholder) {
+            skip_file_path_eval = true;
+        }
     }
 
     print_digit_specification = hy_env::EnvVariableGetDefaultNumber (hy_env::print_float_digits);
@@ -3097,7 +3101,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         _SimpleList selections,
         excluded;
         
-        bool        variable_number = number_of_choices < 0,
+        bool        variable_number = number_of_choices <= 0L,
                     do_markdown     = hy_env :: EnvVariableTrue(hy_env :: produce_markdown_output);
         
         
@@ -3319,7 +3323,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
             }
             terminate_execution = true;
         } else {
-            if (number_of_choices > 1L) {
+            if (variable_number || number_of_choices > 1L) {
                 _SimpleList corrected_for_exclusions;
                 _List       chosen_strings;
                 for (unsigned long i = 0UL; i < selections.countitems(); i++) {

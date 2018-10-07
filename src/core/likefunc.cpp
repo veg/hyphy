@@ -595,6 +595,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
 
     // now that "tips" contains all the names of tree tips we can
     // scan thru the names in the datafilter and check whether there is a 1-1 match
+        
     if ((t->IsDegenerate()?2:tips.lLength)!=df->NumberSpecies()) {
         HandleOrStoreApplicationError (errorMessage,_String("The number of tree tips in ")&*t->GetName()& " (" & _String((long)tips.lLength)
                    & ") is not equal to the number of species in the data filter associated with the tree " &
@@ -7076,8 +7077,7 @@ _CategoryVariable*  _LikelihoodFunction::FindCategoryVar (long index)
 }
 
 //_______________________________________________________________________________________
-void    _LikelihoodFunction::ScanAllVariables (void)
-{
+void    _LikelihoodFunction::ScanAllVariables (void) {
     _SimpleList   allVariables,
                   covCat,
                   cpCat,
@@ -7086,72 +7086,80 @@ void    _LikelihoodFunction::ScanAllVariables (void)
 
 
     _AVLListX    rankVariables (&rankVariablesSupp);
+    _AVLList     avl (&allVariables);
+    
+    // scan parameters that may be present in frequency vectors and compute tree sizes
+    // rank these global variables as influential
+    
+    theProbabilities.Each([this, &treeSizes,&rankVariables,&avl] (long var_index, unsigned long index) -> void {
+        long iNodeCount, lNodeCount;
+        GetIthTree (index)->EdgeCount(iNodeCount, lNodeCount);
+        treeSizes << (iNodeCount + lNodeCount);
+        LocateVar (var_index)->ScanForVariables (avl,true,&rankVariables,treeSizes.GetElement(-1) << 16);
+    });
+    
 
-
-    {
-        _AVLList avl (&allVariables);
-        for (unsigned long i=0; i<theProbabilities.lLength; i++) {
-            long iNodeCount, lNodeCount;
-            ((_TheTree*)(LocateVar(theTrees(i))))->EdgeCount (iNodeCount, lNodeCount);
-            treeSizes << (iNodeCount + lNodeCount);
-            (LocateVar(theProbabilities(i)))->ScanForVariables (avl,true,&rankVariables,treeSizes.GetElement(-1) << 16);
-        }
-
-
-        if (computingTemplate) {
-            computingTemplate->ScanFForVariables (avl,true,false,true, false, &rankVariables, treeSizes.Sum() << 16);
-        }
-
-        avl.ReorderList();
+    if (computingTemplate) {
+        computingTemplate->ScanFForVariables (avl,true,false,true, false, &rankVariables, treeSizes.Sum() << 16);
     }
 
-    if (templateKind<0) {
+    avl.ReorderList();
+
+    if (templateKind<0) { // remove dependance of the function from the HMM model specifier
         allVariables.Delete (allVariables.Find(-templateKind-1));
         rankVariables.Delete ((BaseRef)(-templateKind-1));
     }
 
-    {
-        _AVLList iia (&indexInd),
-                 iid (&indexDep);
+    _AVLList iia (&indexInd),
+             iid (&indexDep);
 
-        for (unsigned  long i=0; i<allVariables.lLength; i++) {
-            long variableIndex = allVariables.lData[i];
-            _Variable* theV = (_Variable*)LocateVar(variableIndex);
-            if (theV->IsCategory()) {
-                if (((_CategoryVariable*)theV)->IsUncorrelated()) {
-                    if (((_CategoryVariable*)theV)->IsConstantOnPartition()) {
-                        indexCat << variableIndex;
-                    } else {
-                        cpCat << variableIndex;
-                    }
+    for (unsigned  long i=0UL; i<allVariables.countitems(); i++) {
+        long variableIndex = allVariables.get(i);
+        _Variable* theV = (_Variable*)LocateVar(variableIndex);
+        if (theV->IsCategory()) {
+            if (((_CategoryVariable*)theV)->IsUncorrelated()) {
+                if (((_CategoryVariable*)theV)->IsConstantOnPartition()) {
+                    indexCat << variableIndex;
                 } else {
-                    covCat<< variableIndex;
+                    cpCat << variableIndex;
                 }
-                continue;
-            }
-            if (theV->IsIndependent()) {
-                iia.Insert ((BaseRef)variableIndex);
             } else {
-                iid.Insert ((BaseRef)variableIndex);
+                covCat<< variableIndex;
             }
+            continue;
         }
-
-        for (unsigned long i=0; i<theTrees.lLength; i++) {
-            ((_TheTree*)(LocateVar(theTrees(i))))->ScanAndAttachVariables ();
-            ((_TheTree*)(LocateVar(theTrees(i))))->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (i) << 16);
+        if (theV->IsIndependent()) {
+            iia.Insert ((BaseRef)variableIndex);
+        } else {
+            iid.Insert ((BaseRef)variableIndex);
         }
+    }
+    
+    theTrees.Each ([this, &iia, &iid, &rankVariables, &treeSizes] (long tree_index, unsigned long index) -> void {
+        _TheTree * tree_var = (_TheTree*)LocateVar(tree_index);
+        tree_var->ScanAndAttachVariables ();
+        tree_var->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (index) << 16);
+        tree_var->ScanContainerForVariables  (iia, iid, &rankVariables, 1L + treeSizes.GetElement (index));
+        tree_var->ScanForDVariables (iid, iia);
+        tree_var->SetUp();
+    });
+    
 
-        for (unsigned long i=0; i<theTrees.lLength; i++) {
-            _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-            cT->ScanContainerForVariables  (iia, iid, &rankVariables, 1 + treeSizes.GetElement (i));
-            cT->ScanForDVariables (iid, iia);
-            cT->SetUp();
-        }
-
-        iia.ReorderList ();
-        iid.ReorderList ();
+    /*for (unsigned long i=0; i<theTrees.lLength; i++) {
+        ((_TheTree*)(LocateVar(theTrees(i))))->ScanAndAttachVariables ();
+        ((_TheTree*)(LocateVar(theTrees(i))))->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (i) << 16);
     }
 
+    for (unsigned long i=0; i<theTrees.lLength; i++) {
+        _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
+        cT->ScanContainerForVariables  (iia, iid, &rankVariables, 1 + treeSizes.GetElement (i));
+        cT->ScanForDVariables (iid, iia);
+        cT->SetUp();
+    }*/
+
+    iia.ReorderList ();
+    iid.ReorderList ();
+ 
 
 
     /* mod 10/28/2005; Need to make two passes on trees; one to check for all category variables defined on the tree

@@ -551,7 +551,7 @@ _String*  _List::Join (_String const & spacer, long startAt, long endAt) const {
     }
 
     for (unsigned long k = MAX(0L,startAt); k < endAt; k++) {
-        if (k) {
+        if (k > startAt) {
             (*joined) << spacer;
         }
         joined->AppendNewInstance((_String*) ((BaseRef*)lData)[k]->toStr());
