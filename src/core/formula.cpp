@@ -2372,15 +2372,21 @@ HBLObjectRef _Formula::ConstructPolynomial (void) {
     bool wellDone = true;
     _String errMsg;
 
-    for (unsigned long i=0UL; wellDone && i<theFormula.lLength; i++) {
+    for (unsigned long i=0UL; wellDone && i<theFormula.countitems(); i++) {
       wellDone = ItemAt (i)->ExecutePolynomial(theStack, nil, &errMsg);
+        /*if (wellDone) {
+            printf ("%ld (%ld)\n", i, theStack.StackDepth());
+            for (long k = 0; k < theStack.StackDepth(); k++) {
+                printf ("\t%s\n", _String((_String*)theStack.Peek (k)->toStr()).get_str());
+            }
+        }*/
+    }
+    
+    if (theStack.StackDepth() == 1 && wellDone) {
+        return theStack.Pop(false);
     }
 
-    if (theStack.StackDepth() != 1 || ! wellDone) {
-        return    nil;
-    }
-
-    return theStack.Pop(false);
+    return nil;
 }
 
 //__________________________________________________________________________________

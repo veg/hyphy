@@ -139,6 +139,17 @@ public:
    */
   _String(const hyFloat number, const char *format = nil);
 
+    /**
+     * Construct a string representation of a hyFloat(double) to string,
+     * using with the required digits of precision ("%.[N]g") specified
+     * @param number : The floating number to convert to string
+     * @param unsigned char : The number of significant digits
+     
+     * Revision history
+     - SLKP 20181009 initial implementation
+     */
+    _String(const hyFloat number, unsigned char digits_of_precision);
+
   /**
    * A RHS copy constructor
    * @param str : the string to copy from

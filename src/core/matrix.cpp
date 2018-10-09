@@ -2320,106 +2320,93 @@ _Matrix*        _Matrix::BranchLengthStencil (void) const {
 _String*        _Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf) {
     if (storageType == _FORMULA_TYPE) {
 
-        long            stackLength = 0;
+        long            stack_length = 0L;
 
-        _SimpleList     newFormulas,
+        _SimpleList     new_formulas,
                         references;
 
-        _List           flaStringsL;
-        _AVLListX       flaStrings(&flaStringsL);
+        _List           converted_expressions;
+        _AVLListX       converted_expressions_avl(&converted_expressions);
         _Matrix*        stencil = BranchLengthStencil();
 
+        print_digit_specification = hy_env::EnvVariableGetDefaultNumber(hy_env::print_float_digits);
       
-      
-      _SimpleList varList = PopulateAndSort([&] (_AVLList & list) -> void {
-          ProcessFormulas (stackLength,list,newFormulas,references,flaStrings,true,stencil);
-      });
+       _SimpleList varList = PopulateAndSort([&] (_AVLList & list) -> void {
+           ProcessFormulas (stack_length,list,new_formulas,references,converted_expressions_avl,true,stencil);
+       });
 
         _StringBuffer * sendMeBack = new _StringBuffer(256L);
       
-        if (baseFreqs->storageType == _NUMERICAL_TYPE) {
+        if (baseFreqs->is_numeric()) {
             // numerical base frequencies
-            _Matrix   multipliersByRate (newFormulas.lLength,1,false,true);
-            for (long i = 0; i<lDim; i++) {
-                long thisRef = references.lData[i];
-                if (thisRef>=0) {
-                    long cellIndex = i;
-                    if (theIndex) {
-                        cellIndex = theIndex[i];
-                    }
-
-                    multipliersByRate.theData[thisRef] += (*baseFreqs)(cellIndex/vDim,0) *
-                                                          (mbf?(*baseFreqs)(cellIndex%vDim,0):1.0);
+            _Matrix   multipliersByRate (new_formulas.countitems(),1,false,true);
+            
+            ForEach([this, &multipliersByRate, &references, baseFreqs, mbf] (BaseRef object, unsigned long direct_index, unsigned long index) -> void {
+                long this_ref = references.get (index);
+                if (this_ref >= 0) {
+                    multipliersByRate.set(0,this_ref) += (*baseFreqs)(direct_index/vDim,0) *
+                                                         (mbf?(*baseFreqs)(direct_index%vDim,0):1.0);
                 }
-            }
+                
+            }, [] (unsigned long) -> BaseRef {return nil;});
+            
 
-
-            bool    firstDone = false;
-            for (unsigned long k=0UL; k<newFormulas.countitems(); k++) {
-                if (!CheckEqual(multipliersByRate.theData[k],0.0)) {
-                    if (firstDone) {
+            for (unsigned long k=0UL; k<new_formulas.countitems(); k++) {
+                hyFloat this_multiplier = multipliersByRate (k, 0);
+                
+                if (!CheckEqual(this_multiplier,0.0)) {
+                    if (sendMeBack->nonempty()) {
                         (*sendMeBack) << '+';
                     }
-                    _String * fStr = (_String*)flaStringsL(k);
-                  
+                    
                     (*sendMeBack) << '('
-                                  << fStr
+                                  << (_String*)converted_expressions.GetItem(k)
                                   << ")*"
-                                  << _String(multipliersByRate.theData[k]);
+                                  << _String(this_multiplier, print_digit_specification);
                   
-                    firstDone = true;
                 }
             }
-        } else if (baseFreqs->storageType == 2)
+        } else if (baseFreqs->is_expression_based()) {
             // formula-based equilibrium frequencies
-        {
+            
             _List   freqFla,
                     multipliersByRate;
 
-            for (long k=0L; k<newFormulas.countitems(); k++) {
+            for (long k=0L; k<new_formulas.countitems(); k++) {
                 multipliersByRate.AppendNewInstance(new _StringBuffer (128L));
             }
 
-            for (long i = 0L; i<hDim; i++) {
-                freqFla.AppendNewInstance ((_String*)baseFreqs->GetFormula(i,0)->toStr(kFormulaStringConversionNormal, nil,true));
+            for (long k=0L; k<hDim; k++) {
+                freqFla.AppendNewInstance ((_String*)baseFreqs->GetFormula(k,0)->toStr(kFormulaStringConversionNormal, nil,true));
             }
 
-            for (long i = 0L; i<lDim; i++) {
-                long thisRef = references.lData[i];
-                if (thisRef>=0) {
-                    _StringBuffer * thisAdder = (_StringBuffer*)multipliersByRate(thisRef);
+            ForEach([this, &multipliersByRate, &references, baseFreqs, mbf, &freqFla] (BaseRef object, unsigned long direct_index, unsigned long index) -> void {
+                long this_ref = references.get (index);
+                if (this_ref >= 0L) {
+                    _StringBuffer * thisAdder = (_StringBuffer*)multipliersByRate(this_ref);
                     if (thisAdder->nonempty()) {
                         (*thisAdder) << '+';
                     }
-
-                    long cellIndex = i;
-                    if (theIndex) {
-                        cellIndex = theIndex[i];
-                    }
-
                     (*thisAdder) << '(';
                     if (mbf) {
-                        (*thisAdder) << (_String*)freqFla(cellIndex%vDim)
-                                     << ")*(";
+                        (*thisAdder) << (_String*)freqFla(direct_index%vDim)
+                        << ")*(";
                     }
-                    (*thisAdder) << (_String*)freqFla(cellIndex/vDim) << ')';
+                    (*thisAdder) << (_String*)freqFla(direct_index/vDim) << ')';
                 }
-            }
+            }, [] (unsigned long) -> BaseRef {return nil;});
 
-            for (long k=0L; k<newFormulas.countitems(); k++) {
+            for (long k=0L; k<new_formulas.countitems(); k++) {
                 ((_StringBuffer*)multipliersByRate(k))->TrimSpace();
-            }
-
-            for (long k=0L; k<newFormulas.countitems(); k++) {
                 if (k) {
                     (*sendMeBack) << '+';
                 }
-              
+                
                 (*sendMeBack) << '('
-                   << (_String*)flaStringsL(k)
-                   << ")*("
-                   << (_String*)multipliersByRate(k)
-                   << ')';
+                    << (_String*)converted_expressions.GetItem(k)
+                    << ")*("
+                    << (_String*)multipliersByRate(k)
+                    << ')';
             }
         }
         sendMeBack->TrimSpace();
@@ -3332,46 +3319,51 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                     
                     __m256d __attribute__ ((aligned (32))) col_buffer[5];
                     
-                      hyFloat quad1[4] __attribute__ ((aligned (32))),
-                                            quad2[4] __attribute__ ((aligned (32))),
-                                            quad3[4] __attribute__ ((aligned (32))),
-                                            quad4[4] __attribute__ ((aligned (32))),
-                                            quad5[4] __attribute__ ((aligned (32)));
-                      
-                                            quad1 [0] = secondArg.theData[c];
-                                            quad1 [1] = secondArg.theData[c + 20UL];
-                                            quad1 [2] = secondArg.theData[c + 40UL];
-                                            quad1 [3] = secondArg.theData[c + 60UL];
-                      
-                                            quad2 [0] = secondArg.theData[c + 80UL];
-                                            quad2 [1] = secondArg.theData[c + 100UL];
-                                            quad2 [2] = secondArg.theData[c + 120UL];
-                                            quad2 [3] = secondArg.theData[c + 140UL];
-                      
-                                            quad3 [0] = secondArg.theData[c + 160UL];
-                                            quad3 [1] = secondArg.theData[c + 180UL];
-                                            quad3 [2] = secondArg.theData[c + 200UL];
-                                            quad3 [3] = secondArg.theData[c + 220UL];
-                      
-                                            quad4 [0] = secondArg.theData[c + 240UL];
-                                            quad4 [1] = secondArg.theData[c + 260UL];
-                                            quad4 [2] = secondArg.theData[c + 280UL];
-                                            quad4 [3] = secondArg.theData[c + 300UL];
-                      
-                                            quad5 [0] = secondArg.theData[c + 320UL];
-                                            quad5 [1] = secondArg.theData[c + 340UL];
-                                            quad5 [2] = secondArg.theData[c + 360UL];
-                                            quad5 [3] = secondArg.theData[c + 380UL];
+                      hyFloat   quad1[4] __attribute__ ((aligned (32))),
+                                quad2[4] __attribute__ ((aligned (32))),
+                                quad3[4] __attribute__ ((aligned (32))),
+                                quad4[4] __attribute__ ((aligned (32))),
+                                quad5[4] __attribute__ ((aligned (32)));
 
-                    
+                                quad1 [0] = secondArg.theData[c];
+                                quad1 [1] = secondArg.theData[c + 20UL];
+                                quad1 [2] = secondArg.theData[c + 40UL];
+                                quad1 [3] = secondArg.theData[c + 60UL];
+
+                                quad2 [0] = secondArg.theData[c + 80UL];
+                                quad2 [1] = secondArg.theData[c + 100UL];
+                                quad2 [2] = secondArg.theData[c + 120UL];
+                                quad2 [3] = secondArg.theData[c + 140UL];
+
+                                quad3 [0] = secondArg.theData[c + 160UL];
+                                quad3 [1] = secondArg.theData[c + 180UL];
+                                quad3 [2] = secondArg.theData[c + 200UL];
+                                quad3 [3] = secondArg.theData[c + 220UL];
+
+                                quad4 [0] = secondArg.theData[c + 240UL];
+                                quad4 [1] = secondArg.theData[c + 260UL];
+                                quad4 [2] = secondArg.theData[c + 280UL];
+                                quad4 [3] = secondArg.theData[c + 300UL];
+
+                                quad5 [0] = secondArg.theData[c + 320UL];
+                                quad5 [1] = secondArg.theData[c + 340UL];
+                                quad5 [2] = secondArg.theData[c + 360UL];
+                                quad5 [3] = secondArg.theData[c + 380UL];
+
+                              col_buffer[0] = _mm256_load_pd (quad1);
+                              col_buffer[1] = _mm256_load_pd (quad2);
+                              col_buffer[2] = _mm256_load_pd (quad3);
+                              col_buffer[3] = _mm256_load_pd (quad4);
+                              col_buffer[4] = _mm256_load_pd (quad5);
+                      
                     hyFloat const * p = theData;
                     for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
                       
                       __m256d r0 = _mm256_mul_pd(_mm256_loadu_pd(p), col_buffer[0]);
-                      __m256d r1 = _mm256_mul_pd(_mm256_loadu_pd(p+4), col_buffer[1]);
-                      __m256d r2 = _mm256_mul_pd(_mm256_loadu_pd(p+8), col_buffer[2]);
-                      __m256d r3 = _mm256_mul_pd(_mm256_loadu_pd(p+12), col_buffer[3]);
-                      __m256d r4 = _mm256_mul_pd(_mm256_loadu_pd(p+16), col_buffer[4]);
+                      __m256d r1 = _mm256_mul_pd(_mm256_loadu_pd(p+4UL), col_buffer[1]);
+                      __m256d r2 = _mm256_mul_pd(_mm256_loadu_pd(p+8UL), col_buffer[2]);
+                      __m256d r3 = _mm256_mul_pd(_mm256_loadu_pd(p+12UL), col_buffer[3]);
+                      __m256d r4 = _mm256_mul_pd(_mm256_loadu_pd(p+16UL), col_buffer[4]);
                       
                       __m256d s01 = _mm256_add_pd(r0, r1);
                       __m256d s23 = _mm256_add_pd(r2, r3);

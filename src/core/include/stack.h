@@ -59,7 +59,10 @@ public:
     HBLObjectRef Pop (bool del = true);            // pop object from the top of the stack
     long      StackDepth (void) const;    // returns the depth of the stack
     void      Reset (void);         // clear the stack
-
+    HBLObjectRef    Peek (long offset = 0L);
+        // peek at the object 'offset'
+        // units from the top of the stack
+    
     virtual   void    Initialize (void);
     virtual   void    Duplicate (BaseRefConst);
 

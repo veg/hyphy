@@ -3250,7 +3250,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
             if (do_markdown) {
                 printf ("\n\n####%s\n", dialog_title.get_str());
             } else {
-                const _String spacer ('-', dialog_title.length());
+                const _String spacer (_String('-'), dialog_title.length());
                 printf ("\n\n\t\t\t+%s+\n\t\t\t|%s|\n\t\t\t+%s+\n\n",
                          spacer.get_str(),
                          dialog_title.get_str(),

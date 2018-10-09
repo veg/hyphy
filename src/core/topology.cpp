@@ -1944,7 +1944,7 @@ HBLObjectRef _TreeTopology::BranchLength (HBLObjectRef p) {
             }
           } else if (node_objects[0]) {
             if (nodes[1]) {
-              if (nodes[0]->Equal(nodes[1])) {
+              if (*nodes[0] == *nodes[1]) {
                 branch_length = 0.0;
               } else if (*nodes[1] == kExpectedNumberOfSubstitutions) {
                 _String bl (GetBranchLengthString (node_objects[0], true));

@@ -61,8 +61,7 @@ _Stack::~_Stack (void)
 }
 
 //__________________________________________________________________________________
-bool _Stack::Push (HBLObjectRef newObj, bool dup)    // push object onto the stack
-{
+bool _Stack::Push (HBLObjectRef newObj, bool dup) {   // push object onto the stack
     if (dup)
         theStack<<(newObj);
     else
@@ -71,8 +70,7 @@ bool _Stack::Push (HBLObjectRef newObj, bool dup)    // push object onto the sta
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Stack::Pop (bool del)        // pop object from the top of the stack
-{
+HBLObjectRef _Stack::Pop (bool del)   {      // pop object from the top of the stack
     HBLObjectRef r = (HBLObjectRef)theStack.lData[theStack.lLength-1];
     if (del) {
         theStack.lLength--;
@@ -81,13 +79,19 @@ HBLObjectRef _Stack::Pop (bool del)        // pop object from the top of the sta
 }
 
 //__________________________________________________________________________________
-long _Stack::StackDepth (void) const  // returns the depth of the stack
-{
+HBLObjectRef _Stack::Peek (long offset)   {      // pop object from the top of the stack
+    if (offset < theStack.lLength) {
+        return (HBLObjectRef)theStack.lData[theStack.lLength-1-offset];
+    }
+    return nil;
+}
+
+//__________________________________________________________________________________
+long _Stack::StackDepth (void) const { // returns the depth of the stack
     return theStack.lLength;
 }
 
 //__________________________________________________________________________________
-void _Stack::Reset (void)   // clears the stack
-{
+void _Stack::Reset (void) {  // clears the stack
     theStack.Clear();
 }

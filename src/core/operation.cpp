@@ -598,8 +598,7 @@ void        _Operation::StackDepth (long& depth)
 
 
 //__________________________________________________________________________________
-bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg)
-{
+bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg) {
     if (theData<=-2 || numberOfTerms < 0) {
         return false;
     }

@@ -247,7 +247,7 @@ HBLObjectRef   FetchObjectFromFormulaByType (_Formula& f, const unsigned long ob
 HBLObjectRef   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg) {
     if (id) {
         _Variable * v = FetchVar (LocateVarByName (*id));
-        if (v && (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass)) {
+        if (v && (objectClass == HY_ANY_OBJECT || (v->ObjectClass () & objectClass))) {
             return v->Compute();
         }
         if (command_id >= 0 || errMsg) {
