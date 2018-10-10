@@ -914,7 +914,7 @@ _String*        _DataSet::GetSequenceCharacters (long seqID)  const{
 //_________________________________________________________
 
 bool    StoreADataSet (_DataSet* ds, _String* setName) {
-    if (!setName->IsValidIdentifier (true)) {
+    if (!setName->IsValidIdentifier (fIDAllowCompound | fIDAllowFirstNumeric)) {
         HandleApplicationError (setName->Enquote() & " is not a valid identifier while constructing a DataSet");
         return false;
     }
