@@ -372,22 +372,27 @@ void    _PolynomialData::MultiplyTerms (long* target, long* s1, long* s2)
 }
 
 //__________________________________________________________________________________
-void    _PolynomialData::RaiseTerm (long* target, long power)
-{
-    for (long i=0; i<numberVars; i++,target++) {
-        *target *= power;
+void    _PolynomialData::RaiseTerm (long* target, long power) {
+    for (long i=0L; i<numberVars; i++) {
+        target[i] *= power;
     }
 }
 
 //__________________________________________________________________________________
-hyFloat  _PolynomialData::BinaryRaise (hyFloat base, long pwr)
-{
+hyFloat  _PolynomialData::BinaryRaise (hyFloat base, long pwr) {
     hyFloat result = 1;
     char bits[sizeof(long)*8];
+    
+    bool invert = false;
+    if (pwr < 0) {
+        invert = true;
+        pwr = -pwr;
+    }
+    
     unsigned char nLength = 0;
     while (pwr) {
         bits[nLength]=pwr%2;
-        pwr/=2;
+        pwr = pwr >> 1;
         nLength++;
     }
     while (nLength) {
@@ -399,7 +404,7 @@ hyFloat  _PolynomialData::BinaryRaise (hyFloat base, long pwr)
             result*=result;
         }
     }
-    return result;
+    return invert ? 1./result : result;
 }
 
 //__________________________________________________________________________________
@@ -1611,7 +1616,7 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
         Convert2OperationForm();
         hyFloat nb = ((_Constant*)m)->Value();
         if (nb==0.0) {
-            return new _Polynomial;
+            return new _Polynomial (0.);
         }
 
         _Polynomial* result = new _Polynomial (*this);
@@ -2243,7 +2248,7 @@ _MathObject* _Polynomial::Raise (_MathObject* m)
         del = true;
         objectT = m->ObjectClass();
     }
-    if (objectT==1) { // a number
+    if (objectT==NUMBER) { // a number
         Convert2OperationForm();
         _Polynomial* result;
         if (theTerms->NumberOfTerms()==1) { // just a monomial
@@ -2647,6 +2652,8 @@ void    _Polynomial::RankTerms(_SimpleList* receptacle)
     }
 }
 
+
+
 //__________________________________________________________________________________
 
 BaseObj* _Polynomial::toStr (unsigned long padding) {
@@ -2686,7 +2693,7 @@ BaseObj* _Polynomial::toStr (unsigned long padding) {
         long *cT = theTerms->GetTerm(i);
         bool      printedFirst = false;
         for (long k=0; k<variableIndex.countitems(); k++,cT++) {
-          if (*cT>0) {
+          if (*cT != 0) {
             if (printedFirst) {
               *result<<'*';
             } else {
@@ -2696,6 +2703,10 @@ BaseObj* _Polynomial::toStr (unsigned long padding) {
             *result<<(_String*)_varNames(k);
             if (*cT>1) {
               *result<<'^'<< _String(*cT);
+            } else {
+                if (*cT < 0) {
+                    *result<<'^'<< _String(*cT).Enquote('(',')');
+                }
             }
           }
         }

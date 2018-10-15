@@ -55,6 +55,9 @@ extern _SimpleList BinOps,
        FunctionArgumentCount,
        associativeOps;
 
+_SimpleList     _Operation::ListOfInverseOps;
+
+
 //__________________________________________________________________________________
 
 _Operation::_Operation  (void) {
@@ -105,8 +108,7 @@ void    _Operation::Duplicate(BaseRefConst r) {
 
 //__________________________________________________________________________________
 BaseRef _Operation::toStr (unsigned long) {
-
-
+    
     if (theData != -1) {
         return new _String (_String("Variable ")& *LocateVar(GetAVariable())->GetName());
     } else if (theNumber) {
@@ -156,14 +158,19 @@ _Operation::_Operation  (_String const& opc, const long opNo = 2) {
     theNumber     = nil;
 }
 //__________________________________________________________________________________
-_Operation::_Operation  (HBLObjectRef theObj)
-// construct the operation by its symbol and, if relevant -
-// number of operands
-{
+_Operation::_Operation  (HBLObjectRef theObj) {
     numberOfTerms = 0;
     theData       = -1;
     opCode        = -1;
     theNumber     = theObj;
+}
+
+//__________________________________________________________________________________
+_Operation::_Operation  (_Variable const & v) {
+    numberOfTerms = 0;
+    theData       = v.get_index();
+    opCode        = -1;
+    theNumber     = nil;
 }
 
 //__________________________________________________________________________________

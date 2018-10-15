@@ -105,7 +105,7 @@ bool    ExpressionCalculator (void) {
   _String data (StringFromConsole());
   
     //Checking for exit
-  if (data.CompareIgnoringCase(kExit)) {
+  if (data.CompareIgnoringCase(kExit) == kCompareEqual) {
     return false;
   }
   
@@ -114,6 +114,8 @@ bool    ExpressionCalculator (void) {
   
   _FormulaParsingContext fpc;
   long retCode = Parse(&lhs, data, fpc, nil);
+    
+  //printf ("%s\n", _String ((_String*)lhs.GetList().toStr(kFormulaStringConversionNormal)).get_str());
   
   if (!terminate_execution) {
     if (retCode == HY_FORMULA_EXPRESSION) {

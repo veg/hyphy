@@ -300,12 +300,13 @@ Methods
 ==============================================================
 */
 
-void _List::AppendNewInstance (BaseRef br) {
+long _List::AppendNewInstance (BaseRef br) {
     if (br) {
         (*this)<br;
     } else {
         HandleApplicationError(_String ("Passed a null reference to ") & __PRETTY_FUNCTION__);
     }
+    return lLength;
 }
 
 

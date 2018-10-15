@@ -76,6 +76,9 @@ public:
     // store a variable or a constant
     _Operation  (HBLObjectRef);
     // store a non-numeric constant
+    _Operation  (_Variable const&);
+    // create an operation that references a variable
+
 
     virtual ~_Operation (void);
 
@@ -155,8 +158,15 @@ public:
     virtual bool            EqualOp             (_Operation*);
 
     static  long            BinOpCode           (_String const &, long = -1);
-
+    
+    static bool             AreOpsInverse       (long op_code1, long op_code2) {
+        long compose = op_code1 < op_code2 ? (op_code1 << 16) + (op_code2) : (op_code2 << 16) + (op_code1);
+        return ListOfInverseOps.Find (compose) != kNotFound;
+    }
+    
+    static      _SimpleList         ListOfInverseOps;
 protected:
+
 
     bool        ReportOperationExecutionError ( _String, _String*);
 

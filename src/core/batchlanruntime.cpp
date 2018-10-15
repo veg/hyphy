@@ -233,8 +233,10 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& current_progra
         throw (GetIthParameter(3UL)->Enquote() & " (the number of times to differentiate) must be a non-negative integer");
       }
     }
-
-    _Formula * derivative = parsed_expression.Differentiate(*GetIthParameter(2));
+      
+    _Variable * dx  = _ValidateStorageVariable (current_program, 2);
+    _Formula * derivative = parsed_expression.Differentiate(*dx->GetName());
+      
     for (; times>1 && derivative; times--) {
       _Formula * temp = derivative->Differentiate (*GetIthParameter(2));
       delete derivative;
@@ -243,6 +245,8 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& current_progra
     if (derivative) {
       receptacle->SetFormula(*derivative);
       delete derivative;
+    } else {
+      throw (_String ("Differentiation of ") & _String((_String*)GetIthParameter(1)->toStr()).Enquote() & " failed.");
     }
 
   } catch (const _String& error) {
@@ -1856,17 +1860,16 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
       return true;
     }
 
-    if (object_to_change == hy_env::random_seed) {
+    if (object_to_change == hy_env::execution_mode) {
       current_program.errorHandlingMode = _ProcessNumericArgumentWithExceptions (*GetIthParameter(1),current_program.nameSpacePrefix);
       return true;
-
     }
 
     if (object_to_change == hy_env::status_bar_update_string) {
       SetStatusLineUser (_ProcessALiteralArgument (*GetIthParameter(1), current_program));
       return true;
-
     }
+      
 
     const _String source_name   = AppendContainerName (*GetIthParameter(0), current_program.nameSpacePrefix);
 

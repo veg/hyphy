@@ -47,11 +47,13 @@
 #include "stack.h"
 #include "operation.h"
 
+
 #include "hy_string_buffer.h"
 #include "formula_parsing_context.h"
 
 class _Variable;
 class _VariableContainer;
+class _Polynomial;
 
 
 union       _SimpleFormulaDatum {
@@ -74,6 +76,7 @@ class   _Formula {
 public:
     _Formula (void);
     _Formula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
+    _Formula (const _Polynomial *);
     
     long     ParseFormula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
     

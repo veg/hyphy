@@ -117,8 +117,7 @@ protected:
 
 //__________________________________________________________________________________
 
-class _Polynomial : public _MathObject
-{
+class _Polynomial : public _MathObject {
 
 public:
 
@@ -141,9 +140,9 @@ public:
     virtual _MathObject*    Mult                (_MathObject*);
     virtual _MathObject*    Compute             (void);
     virtual bool            Equal               (_MathObject*);
-    hyFloat              ComputePolynomial   (void);
+    hyFloat                 ComputePolynomial   (void);
 
-    hyFloat              ComputeP            (hyFloat* , hyFloat* , long , long, long*, long*);
+    hyFloat                 ComputeP            (hyFloat* , hyFloat* , long , long, long*, long*);
     _MathObject*            IsANumber           (bool = false);
     virtual  bool           IsObjectEmpty       (void);
 
@@ -159,10 +158,15 @@ public:
 
     virtual void            toFileStr (FILE*, unsigned long = 0UL);
 
-    long                    GetNoVariables(void) {
+    long                    GetNoVariables(void) const {
         return variableIndex.countitems();
     }
-    _PolynomialData*        GetTheTerms(void) {
+    
+    _Variable*              GetIthVariable (unsigned long i) const {
+        return LocateVar (variableIndex.get (i));
+    }
+    
+    _PolynomialData*        GetTheTerms(void) const {
         return theTerms;
     }
     void                    SetTheTerms(_PolynomialData* td) {
@@ -183,6 +187,7 @@ public:
     void                    Convert2ComputationForm
     (_SimpleList *c1 = nil, _SimpleList *c2 = nil, _SimpleList* termsToInclude = nil);
     void                    RankTerms       (_SimpleList*);
+        
 protected:
 
     void                DropSmallTerms(void);

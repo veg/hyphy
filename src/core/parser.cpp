@@ -520,7 +520,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 _Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal)
 {
     if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
-        HandleApplicationError(name->Enquote() & " is not a valid variable identifier in call to " & fID);
+        HandleApplicationError(name->Enquote() & " is not a valid variable identifier");
         return nil;
     }
 
@@ -549,7 +549,7 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
 _Variable* CheckReceptacleCommandIDException (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context) {
     // TODO: allow ^name and such to constitute valid run-time references
    if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
-    throw  (name->Enquote('\'') & " is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.');
+    throw  (name->Enquote('\'') & " is not a valid variable identifier");
    }
   
   long    f = LocateVarByName (*name);
@@ -740,6 +740,12 @@ void  ReplaceVar (_Variable* theV) {
 //__________________________________________________________________________________
 void    SetupOperationLists (void) {
 
+    auto package_ops = [] (long op1, long op2) -> long {
+        if (op1 < op2) {
+            return (op1 << 16) + op2;
+        }
+        return (op2 << 16) + op1;
+    };
   
     UnOps  < "-" <
              "!" <
@@ -816,6 +822,11 @@ void    SetupOperationLists (void) {
   
     BinOps<<'+'*256+'=';
     opPrecedence<<8;
+
+    _Operation::ListOfInverseOps
+    << package_ops(HY_OP_CODE_NOT, HY_OP_CODE_NOT)
+    << package_ops (HY_OP_CODE_EXP, HY_OP_CODE_LOG)
+    << package_ops (HY_OP_CODE_TAN, HY_OP_CODE_ARCTAN);
 
     if (BuiltInFunctions.lLength==0)
         // construct a list of operations

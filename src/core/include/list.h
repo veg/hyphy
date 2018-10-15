@@ -202,10 +202,10 @@ class _List:public _SimpleList {
         * Append reference to *this
         * \n\n \b Example: \code _List result_list << existing_list \endcode 
         * @param br The object to be appended
-        * @return Nothing. Operates on the _List.
+        * @return The length of the list following element addition
         * @sa AppendNewInstance()
         */
-        void AppendNewInstance(BaseRef);
+        long AppendNewInstance(BaseRef);
   
         /**
          * Append a variable number of arguments without increasing ref counts
