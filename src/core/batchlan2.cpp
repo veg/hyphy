@@ -55,8 +55,7 @@ using namespace hy_global;
 //____________________________________________________________________________________
 // global variables
 
-_String     lastSetOfConstraints    ("LAST_SET_OF_CONSTRAINTS"),
-            isDynamicGraph          ("BGM_DYNAMIC"),
+_String     isDynamicGraph          ("BGM_DYNAMIC"),
             treeNodeNameMapping     ("TREE_NODE_NAME_MAPPING");
 
 
@@ -87,8 +86,6 @@ _AVLListX    _HY_GetStringGlobalTypes (&_HY_GetStringGlobalTypesAux),
 
 int          _HYSQLCallBack                     (void* data,int callCount);
 //int        _HYSQLBusyCallBack                 (void* exList,int cc,char** rd,char** cn);
-bool         RecurseDownTheTree                 (_SimpleList&, _List&, _List&, _List&, _SimpleList&);
-// this is a ReplicateConstraint helper
 
 //____________________________________________________________________________________
 
@@ -786,147 +783,6 @@ void      _ElementaryCommand::ExecuteCase54 (_ExecutionList& chain) {
         HandleApplicationError ("Illegal right hand side in call to Topology id = ...; it must be a string, a Newick tree spec or a topology");
     }
 }
-
-
-
-//____________________________________________________________________________________
-
-bool    RecurseDownTheTree (_SimpleList& theNodes, _List& theNames, _List&theConstraints, _List& theParts, _SimpleList& partIndex)
-{
-    _SimpleList localNodes;
-
-    node<long>* firstNode = (node<long>*)theNodes(0), *otherNode;
-    bool        doThisOne = (firstNode->get_parent()!=nil), good = true;
-    long        index, ind, i;
-
-    /*
-     if (doThisOne)
-    {
-        BufferToConsole (_String((_String*)theParts.toStr()));
-        NLToConsole();
-        BufferToConsole (_String((_String*)partIndex.toStr()));
-        NLToConsole();
-    }
-     */
-
-    // there are a few cases to consider
-    for (ind = 1; ind<=firstNode->get_num_nodes(); ind++) { // have children nodes
-        localNodes<< (long)firstNode->go_down(ind);
-        for (index = 1; index<theNodes.lLength; index++) {
-            otherNode = (node<long>*)theNodes(index);
-            otherNode = otherNode->go_down(ind);
-            if (!otherNode) {
-                good = false;
-                break;
-            }
-            localNodes<<(long)otherNode;
-        }
-        if (!good) {
-            break;
-        }
-        good = RecurseDownTheTree (localNodes, theNames, theConstraints, theParts, partIndex);
-        if (!good) {
-            break;
-        }
-        localNodes.Clear();
-    }
-
-    // do this constraint now
-
-    if (doThisOne&&good) { // not a root - so we apply the constraint
-        _CalcNode*  firstCNode = (_CalcNode*)LocateVar (firstNode->get_data());
-        _SimpleList goodVars;
-        _List       otherGoodVars;
-        _Variable* firstVar;
-
-        ind = 0;
-
-        while ((firstVar=firstCNode->GetIthIndependent(ind))) {
-            for (index = 0; index<partIndex.lLength; index++) {
-                if (partIndex.lData[index]==0) {
-                    if (!firstVar->GetName()->EqualWithWildChar(*(_String*)theParts.lData[index],'?')) {
-                        break;
-                    }
-                }
-            }
-            if (index==partIndex.lLength) {
-                goodVars<<ind;
-            }
-            ind++;
-        }
-
-        for (i = 1; i<theNodes.lLength; i++) {
-            otherNode = (node<long>*)theNodes(i);
-            firstCNode = (_CalcNode*)LocateVar (otherNode->get_data());
-            _SimpleList dummy;
-            otherGoodVars && & dummy;
-            long          theseInd = firstCNode->CountAll();
-            _SimpleList   avVars;
-            for (index = 0; index < theseInd; index++) {
-                avVars << index;
-            }
-            for (index = 0; index<goodVars.countitems(); index++) {
-                long j=0,k=0;
-                bool found1 = false;
-                for (k = 0; k<partIndex.lLength; k++)
-                    if (partIndex.lData[k]==i) {
-                        break;
-                    }
-
-                for (; j<avVars.lLength; j++) {
-                    firstVar = firstCNode->GetIthParameter(avVars.lData[j]);
-                    if (firstVar->GetName()->EqualWithWildChar(*(_String*)theParts.lData[k],'?')) {
-                        (*(_SimpleList*)(otherGoodVars(i-1))) << avVars.lData[j];
-                        avVars.Delete (j);
-                        found1 = true;
-                        break;
-                    }
-                }
-                if (!found1) {
-                    goodVars.Delete (index);
-                    for (long ff = 0; ff < i-1; ff++) {
-                        ((_SimpleList*)(otherGoodVars(i-1)))->Delete (index);
-                    }
-                    index--;
-                }
-            }
-        }
-
-        // now the constraints can be built
-
-        for (index = 0; index < goodVars.lLength; index++) {
-            _String newConstraint;
-            for (ind = 0; ind < partIndex.lLength; ind++) {
-                if (partIndex.lData[ind]<0) {
-                    newConstraint = newConstraint & *(_String*)theParts(ind);
-                } else {
-                    otherNode = (node<long>*)theNodes(partIndex.lData[ind]);
-                    _CalcNode*  CNode = (_CalcNode*)LocateVar (otherNode->get_data());
-
-                    if (ind>0)
-                        newConstraint = newConstraint &
-                                        *(CNode->GetIthParameter((*(_SimpleList*)
-                                                (otherGoodVars(partIndex.lData[ind]-1))).lData[index])->GetName());
-                    else
-                        newConstraint = newConstraint &
-                                        *(CNode->GetIthIndependent(goodVars.lData[index])->GetName());
-                }
-
-            }
-            theConstraints&& &newConstraint;
-        }
-    }
-
-    if (!good) {
-        HandleApplicationError (*(LocateVar(firstNode->get_data())->GetName())& " is incompatible with "&
-                                (*LocateVar(((node<long>*)theNodes(index-1))->get_data())->GetName()) & " in call to ReplicateConstraint");
-        return false;
-    }
-
-    return true;
-
-}
-
 
 //____________________________________________________________________________________
 

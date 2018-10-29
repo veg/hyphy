@@ -843,7 +843,7 @@ HBLObjectRef   _FString::Call (_List* arguments, _hyExecutionContext* context) {
       return result;
       
   } else {
-    HandleApplicationError (_String ("The first argument ('") & *get_str() & "') to 'Call' was not an HBL function name");
+    HandleApplicationError (_String ("The first argument ('") & get_str() & "') to 'Call' was not an HBL function name");
   }
   
   return new _MathObject;

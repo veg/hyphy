@@ -531,7 +531,7 @@ bool _String::Equal(const char c) const {
 //=============================================================
 
 
-bool _String::EqualWithWildChar(const _String& pattern, const char wildchar, unsigned long start_this, unsigned long start_pattern) const {
+bool _String::EqualWithWildChar(const _String& pattern, const char wildchar, unsigned long start_this, unsigned long start_pattern, _SimpleList * wildchar_matches) const {
     // wildcards only matter in the second string
     
     if (pattern.s_length > start_pattern && wildchar != '\0') {
@@ -543,32 +543,63 @@ bool _String::EqualWithWildChar(const _String& pattern, const char wildchar, uns
         
         unsigned long i = start_this;
         // the position we are currently trying to match in *this
-        
+        long last_matched_char = (long)start_this - 1L;
+        // the index of the last character in *this that was matched to something other than the wildcard
+
         while (i <= s_length) {
-            
             if (scanning_pattern) { // skip consecutive wildcards in "pattern"
                 scanning_pattern = pattern.s_data[++match_this_char] == wildchar;
             } else {
                 if (s_data[i] == pattern.s_data[match_this_char]) {
-                    
                     if (is_wildcard) {
-                        // could either match the next char or consume it into the wildcard
-                        if (EqualWithWildChar (pattern, wildchar, i, match_this_char)) {
-                            // matching worked
-                            return true;
+                        // could either match the next character or consume it into the wildcard
+                        if (wildchar_matches) {
+                            // record the current wildcard match
+                            // if this is the last (0) character, return true
+                            long rollback_checkpoint = wildchar_matches->countitems();
+                            if (last_matched_char + 1 < i) { // something get matched to the wildchard
+                                *wildchar_matches << (last_matched_char+1) << (i-1);
+                            }
+                            if (i == s_length) {
+                                return true;
+                            }
+                            if (EqualWithWildChar (pattern, wildchar, i, match_this_char, wildchar_matches)) {
+                                // matching worked
+                                return true;
+                            } else { // consume the character into the wildcard
+                                i++;
+                                for (long k = wildchar_matches->countitems() - rollback_checkpoint; k >= 0; k--) {
+                                    wildchar_matches->Pop();
+                                }
+                                continue;
+                            }
                         } else {
-                            i++;
-                            continue;
+                            if (EqualWithWildChar (pattern, wildchar, i, match_this_char)) {
+                                // matching worked
+                                return true;
+                            } else { // consume the character into the wildcard
+                                i++;
+                                continue;
+                            }
                         }
                     } else {
                         // try character match
                         // note that the terminal '0' characters will always match, so
                         // this is where we terminate
+                        if (wildchar_matches) {
+                            if (last_matched_char + 1 < i) { // something get matched to the wildchard
+                                *wildchar_matches << (last_matched_char+1) << (i-1);
+                            }
+                            last_matched_char = i;
+                        }
                         i++;
                         match_this_char++;
                         if (i > s_length || match_this_char > pattern.s_length) {
                             break;
                         }
+                        // TODO check to see if this will return true strings that match the pattern and
+                        // have some left-over stuff, like
+                        // "tree.node.a.b" might incorrectly match "tree.?.a"
                         is_wildcard =  pattern.s_data[match_this_char] == wildchar;
                         scanning_pattern = is_wildcard;
                     }
@@ -579,6 +610,12 @@ bool _String::EqualWithWildChar(const _String& pattern, const char wildchar, uns
                     scanning_pattern = false;
                     i++;
                 }
+            }
+        }
+
+        if (wildchar_matches) {
+            if (last_matched_char + 1 < i) { // something get matched to the wildchard
+                *wildchar_matches << (last_matched_char+1) << (i-1);
             }
         }
         

@@ -320,7 +320,8 @@ namespace hy_global {
     
   extern hyFloat     kMachineEpsilon;
   
-  extern regex_t   * hy_float_regex;
+  extern regex_t   * hy_float_regex,
+                   * hy_replicate_constraint_regexp;
   
 }
 

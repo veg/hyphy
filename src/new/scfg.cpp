@@ -199,20 +199,20 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
         tempNT.SetXtra (avl_index, tempNT.GetXtra (avl_index)|_HYSCFG_NT_LHS_); // update status flags for this non-terminal
         
         _StringBuffer     ruleString;
-        ruleString << nt_index << ',';
+        ruleString << _String(nt_index) << ',';
         goodNTRule << nt_index;
         
         nt_index    = (long)(rhs1->Compute()->Value());
         tempNT.Insert ((BaseRef)nt_index);
         goodNTRule << nt_index;
-        ruleString << nt_index & ',';
+        ruleString << _String(nt_index) << ',';
         
         nt_index    = (long)(rhs2->Compute()->Value());
         tempNT.Insert ((BaseRef)nt_index);
         goodNTRule << nt_index;
         ruleString <<_String (nt_index);
         
-        long            seenMe     = alreadySeen.Insert (&ruleString, -1, true);
+        long            seenMe     = alreadySeen.Insert (new _String(ruleString), -1, false, true);
         if (seenMe < 0) { // already seen
           throw _String ("Duplicate production rule: ") & tc & " : " & ruleString.Enquote();
         }
@@ -593,7 +593,7 @@ void    Scfg::SetStringCorpus  (_Matrix* stringMatrix) {
 void    Scfg::TokenizeString    (_StringBuffer const& inString, _SimpleList& outTokens) const {
     // TODO: SLKP 20180820 Changed the algorithm for tokenization using _Trie calls; confirm that this still works
   
-    if (inString.empty() == 0) {
+    if (inString.empty()) {
        throw _String ("Empty strings are not allowed as SCFG input.");
     }
 

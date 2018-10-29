@@ -95,7 +95,7 @@ _Variable* _CheckForExistingVariableByType (_String const& name, _ExecutionList&
         throw (variable_id.Enquote() & " is not an existing variable");
     }
 
-    if (!(desired_type == HY_ANY_OBJECT || target_variable->ObjectClass() == desired_type)) {
+    if (!(desired_type == HY_ANY_OBJECT || target_variable->ObjectClass() & desired_type)) {
         throw (name.Enquote () & " is not of type " & FetchObjectNameFromType (desired_type));
     }
 
@@ -159,9 +159,9 @@ BaseRefConst    _GetHBLObjectByType (_String const&  source_name, long& type, lo
 
   //____________________________________________________________________________________
 
-BaseRef    _GetHBLObjectByTypeMutable (_String const&  source_name, long& type, long * object_index = nil) {
+BaseRef    _GetHBLObjectByTypeMutable (_String const&  source_name, long& type, long * object_index = nil, bool do_literal_lookup = true) {
   long            object_type = type;
-  BaseRef         source_object = _HYRetrieveBLObjectByNameMutable (source_name, object_type,object_index,false, true);
+  BaseRef         source_object = _HYRetrieveBLObjectByNameMutable (source_name, object_type,object_index,false, do_literal_lookup);
 
   if (source_object == nil) {
     throw (source_name.Enquote('\'') & " is not a " & _HYHBLTypeToText(type));
@@ -175,10 +175,7 @@ BaseRef    _GetHBLObjectByTypeMutable (_String const&  source_name, long& type, 
 
 _Variable* _ElementaryCommand::_ValidateStorageVariable (_ExecutionList& program, unsigned long argument_index) const {
     _String  storage_id (program.AddNameSpaceToID(*GetIthParameter(argument_index)));
-
     _Variable * receptacle = CheckReceptacleCommandIDException (&AppendContainerName(storage_id,program.nameSpacePrefix),get_code(), true, false, &program);
-  
-  
     return receptacle;
 }
 
@@ -360,7 +357,11 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& current_program){
 bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program) {
      static const _String kPairwiseCountAmbiguitiesResolve                ("RESOLVE_AMBIGUITIES"),
                           kPairwiseCountAmbiguitiesAverage                ("AVERAGE_AMBIGUITIES"),
-                          kPairwiseCountAmbiguitiesSkip                   ("SKIP_AMBIGUITIES");
+                          kPairwiseCountAmbiguitiesSkip                   ("SKIP_AMBIGUITIES"),
+                          kCharacters                                     ("CHARACTERS"),
+                          kConsensus                                      ("CONSENSUS"),
+                          kParameters                                     ("PARAMETERS");
+
 
     _Variable * receptacle = nil;
     current_program.advance();
@@ -387,45 +388,53 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
             break;
 
             case 3UL: { // data parameters, or sequence string
-                _String const argument = _ProcessALiteralArgument (*GetIthParameter(2),current_program);
-                if (argument == _String ("CHARACTERS")) {
-                    _List characters;
-                    if (filter_source) {
-                       unsigned long character_count = filter_source->GetDimension(true),
-                        fd = filter_source->GetUnitLength();
+                
+                _String argument;
+                try {
+                    argument = _ProcessALiteralArgument (*GetIthParameter(2),current_program);
+                } catch (const _String err) {
+                    // not a string
+                }
+                if (argument.nonempty()) {
+                    if (argument == kCharacters) {
+                        _List characters;
+                        if (filter_source) {
+                           unsigned long character_count = filter_source->GetDimension(true),
+                            fd = filter_source->GetUnitLength();
 
-                        for (unsigned long idx = 0UL; idx < character_count; idx++) {
-                            characters < new _String (filter_source->ConvertCodeToLetters (filter_source->CorrectCode(idx), fd));
+                            for (unsigned long idx = 0UL; idx < character_count; idx++) {
+                                characters < new _String (filter_source->ConvertCodeToLetters (filter_source->CorrectCode(idx), fd));
+                            }
+                        } else {
+                            _String alphabet_string = dataset_source->GetTT () ? dataset_source->GetTT ()->GetAlphabetString() : kEmptyString;
+                            for (unsigned long idx = 0UL; idx < alphabet_string.length(); idx++) {
+                                characters < new _String (alphabet_string (idx));
+                            }
                         }
-                    } else {
-                        _String alphabet_string = dataset_source->GetTT () ? dataset_source->GetTT ()->GetAlphabetString() : kEmptyString;
-                        for (unsigned long idx = 0UL; idx < alphabet_string.length(); idx++) {
-                            characters < new _String (alphabet_string (idx));
+                        receptacle->SetValue (new _Matrix (characters), false);
+                    } else if (argument == kParameters) {
+                        if (filter_source) {
+                            _AssociativeList * parameterInfo = new _AssociativeList;
+
+                            (*parameterInfo) < (_associative_list_key_value){"ATOM_SIZE", new _Constant (filter_source->GetUnitLength())}
+                            < (_associative_list_key_value){"EXCLUSIONS", new _FString  (filter_source->GetExclusions())}
+                            < (_associative_list_key_value){"SITES_STRING", new _FString  ((_String*)filter_source->theOriginalOrder.ListToPartitionString())}
+                            < (_associative_list_key_value){"SEQUENCES_STRING", new _FString  ((_String*)filter_source->theNodeMap.ListToPartitionString())};
+
+                            receptacle->SetValue (parameterInfo,false);
+
+                        } else {
+                            throw (argument.Enquote('\'') & " is only available for DataSetFilter objects");
                         }
-                    }
-                    receptacle->SetValue (new _Matrix (characters), false);
-                } else if (argument == _String ("PARAMETERS")) {
-                    if (filter_source) {
-                        _AssociativeList * parameterInfo = new _AssociativeList;
-
-                        (*parameterInfo) < (_associative_list_key_value){"ATOM_SIZE", new _Constant (filter_source->GetUnitLength())}
-                        < (_associative_list_key_value){"EXCLUSIONS", new _FString  (filter_source->GetExclusions())}
-                        < (_associative_list_key_value){"SITES_STRING", new _FString  ((_String*)filter_source->theOriginalOrder.ListToPartitionString())}
-                        < (_associative_list_key_value){"SEQUENCES_STRING", new _FString  ((_String*)filter_source->theNodeMap.ListToPartitionString())};
-
-                        receptacle->SetValue (parameterInfo,false);
-
-                    } else {
-                        throw (argument.Enquote('\'') & " is only available for DataSetFilter objects");
-                    }
-                } else if (argument == _String ("CONSENSUS")) { // argument == _String("PARAMETERS")
-                    if (filter_source) {
-                        receptacle->SetValue (new _FString (new _String(filter_source->GenerateConsensusString())), false);
-                    } else {
-                        _DataSetFilter temp;
-                        _SimpleList l1, l2;
-                        temp.SetFilter (dataset_source, 1, l1, l2, false);
-                        receptacle->SetValue (new _FString (new _String(temp.GenerateConsensusString())), false);
+                    } else if (argument == kConsensus) { // argument == _String("PARAMETERS")
+                        if (filter_source) {
+                            receptacle->SetValue (new _FString (new _String(filter_source->GenerateConsensusString())), false);
+                        } else {
+                            _DataSetFilter temp;
+                            _SimpleList l1, l2;
+                            temp.SetFilter (dataset_source, 1, l1, l2, false);
+                            receptacle->SetValue (new _FString (new _String(temp.GenerateConsensusString())), false);
+                        }
                     }
                 } else {
                     long seqID = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2),current_program.nameSpacePrefix);
@@ -1086,7 +1095,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& current_
         long      unit      = _ProcessNumericArgumentWithExceptions(*GetIthParameter(2),current_program.nameSpacePrefix),
                   atom      = _ProcessNumericArgumentWithExceptions(*GetIthParameter(3),current_program.nameSpacePrefix);
 
-        bool      position_specific = _ProcessNumericArgumentWithExceptions(*GetIthParameter(3),current_program.nameSpacePrefix) > 0.5,
+        bool      position_specific = _ProcessNumericArgumentWithExceptions(*GetIthParameter(4),current_program.nameSpacePrefix) > 0.5,
                   include_gaps       = hy_env::EnvVariableTrue(hy_env::harvest_frequencies_gap_options);
 
         switch (object_type) {
@@ -1197,148 +1206,367 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
 
 bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current_program) {
     // TODO SLKP 20170706 this needs to be reimplemented; legacy code is ugly and buggy
-    _Variable * receptacle = nil;
+
+    static const _String kLastSetOfConstraints    ("LAST_SET_OF_CONSTRAINTS");
     
+    current_program.advance();
+    
+    _TreeIterator ** traversers = nil;
+    unsigned long template_parameter_count = parameter_count() - 1L;
+    deferSetFormula = new _SimpleList;
 
+    auto cleanup = [template_parameter_count] (_TreeIterator ** t) -> void {
+        if (t) {
+            for (long k = 0L; k < template_parameter_count; k++) {
+                if (t[k]) {
+                    delete t[k];
+                }
+            }
+            delete [] t;
+        }
+        delete deferSetFormula;
+    };
+    
+    auto resolve_name = [] (_String const& my_name, BaseRefConst parent_name) -> _String const  {
+        return my_name.Cut (((_String*)parent_name)->length() + 1, kStringEnd);
+    };
+    
+    
     try {
+        
+        /** check the plug-in first **/
+        
+        _List templated_operations,
+              parent_object_names;
+        
+        traversers = new _TreeIterator* [parameter_count()-1] {NULL};
 
-        current_program.currentCommand++;
+        for (long k = 1L; k < parameter_count(); k++) {
+            _CalcNode * this_object = (_CalcNode *)_CheckForExistingVariableByType (*GetIthParameter(k), current_program, TREE | TREE_NODE);
+            if (this_object->ObjectClass () == TREE) {
+                traversers[k-1] = new _TreeIterator ((_TheTree*)this_object, _HY_TREE_TRAVERSAL_POSTORDER);
+                parent_object_names << this_object->GetName();
+            } else {
+                node<long> * cn = this_object->LocateMeInTree();
+                if (!cn) {
+                    throw (*GetIthParameter(k) & " is not a part of a tree object");
+                }
+                parent_object_names << this_object->ParentTree()->GetName();
+                traversers[k-1] = new _TreeIterator (this_object, cn, _HY_TREE_TRAVERSAL_POSTORDER);
+            }
+            templated_operations < new _List;
+        }
+        
+        /*_CalcNode * check = traversers[1]->Next();
+        while (check) {
+            printf ("%s\n", check->GetName()->get_str());
+            check = traversers[1]->Next();
+        }
+        
+        throw (_String("BAIL"));*/
+
         _String  const  constraint_pattern = _ProcessALiteralArgument (*GetIthParameter(0), current_program);
-        throw (_String ("This has not yet been implemented"));
- /*
-  _String *       replicateSource,
-  thisS,
-  prStr = GetStringFromFormula((_String*)parameters(0),chain.nameSpacePrefix);
+        
+        /** parse the contraint pattern using the standard exprssion parser
+         because of '?' in template names, and things like __ which need to be deferred,
+         the standard parser will fail with standard argument calls
+         */
 
-  replicateSource = &prStr;
+        _String parse_error, patttern_copy (constraint_pattern);
+        _FormulaParsingContext fpc (&parse_error, current_program.nameSpacePrefix);
+        fpc.allowTemplate() = '?';
+        
+        _Formula               pattern,
+                               lhs;
+        
+        long    return_value = Parse (&pattern, patttern_copy, fpc, &lhs);
+        
+        if (return_value != HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT && return_value != HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT && return_value != HY_FORMULA_EXPRESSION) {
+            throw (_String ("The template for ReplicateConstraint must be an assignment, with an expression based left-hand side, or simple expression"));
+        }
+        
 
-  _List           parts,
-  theConstraints;
+        /** for 0 -- (K-1), where thisK is the largest "this" argument,
+         stores the operation objects that reference these variables
+         **/
 
-  _SimpleList     thisIndex,
-  thisArgs;
+        _Operation * lhs_op = nil;
+        
+        if (return_value != HY_FORMULA_EXPRESSION) {
+            lhs_op = new _Operation (*LocateVar(fpc.assignmentRefID()));
+            lhs.PushTerm (lhs_op);
+            lhs_op->RemoveAReference();
+        }
+        
+        _Formula * formulas [2] = {&lhs, &pattern};
+        
+        _List      substitution_variables (new _List, new _List);
+        _List      list_of_constraints;
+        
+        auto       add_a_constraint = [return_value, &list_of_constraints] (_String* lhs, _String *rhs) -> void {
+            _StringBuffer * new_constraint = new _StringBuffer;
+            switch (return_value) {
+                case HY_FORMULA_EXPRESSION:
+                    new_constraint->AppendNewInstance(rhs);
+                    break;
+                case HY_FORMULA_VARIABLE_FORMULA_ASSIGNMENT:
+                    (new_constraint->AppendNewInstance(lhs) << ":=").AppendNewInstance (rhs);
+                    break;
+                case HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT:
+                    (new_constraint->AppendNewInstance(lhs) << "=").AppendNewInstance (rhs);
+                    break;
 
-  long            ind1    =   replicateSource->Find("this"),
-  ind2,
-  ind3,
-  ind4;
+            }
+            
+            list_of_constraints < new_constraint;
+        };
+        
+        unsigned long reference_argument = 0UL; // either the first argument
+                                                // or the argument that appears on the LHS
+        
+        _SimpleList   substitution_variable_by_index;
+                        // this keeps track of which template parameter the i-th thisN.?.. argument comes from
+        
+        for (_Formula * f : formulas) {
+            bool is_lhs = f == &lhs;
+            f->GetList().ForEach([&templated_operations, is_lhs, &reference_argument, &substitution_variables, &substitution_variable_by_index] (BaseRef op, unsigned long index) -> void {
+                _Variable const * operation_var = ((_Operation*) op)->RetrieveVar();
+                if (operation_var) {
+                    _SimpleList pattern_match (operation_var->GetName()->RegExpMatch(hy_replicate_constraint_regexp, 0));
+                    if (pattern_match.nonempty()) {
+                        unsigned long index = operation_var->GetName()->Cut (pattern_match (2), pattern_match (3)).to_long() - 1UL;
+                        if (index >= templated_operations.countitems()) {
+                            throw (operation_var->GetName()->Enquote() & " does not have a matched positional argument");
+                        }
+                        if (is_lhs) {
+                            reference_argument = index;
+                        }
+                        _List * term_record = new _List;
+                        term_record->AppendNewInstance (new _String (*operation_var->GetName(), pattern_match (4), pattern_match (5)));
+                        (*term_record) << op;
+                        //printf ("[term_record] %s\n", ((_String*) (term_record->toStr()))->get_str());
 
-  if (ind1<0) {
-  HandleApplicationError (*(_String*)parameters(0)&" has no 'this' references in call to ReplicateConstraint!");
-  return ;
-  }
+                        ((_List*)templated_operations.GetItem(index))->AppendNewInstance(term_record);
+                        *((_List*)(substitution_variables.GetItem(0))) << operation_var->GetName();
+                        substitution_variable_by_index << index;
+                    }
+                }
+            });
+        }
+        
+        
+        templated_operations.ForEach ([this] (BaseRef items, long index) -> void {
+            if (((_List*)items)->empty()) {
+                throw (GetIthParameter(index + 1L)->Enquote() & " (argument " & _String (index+1L) & ") did not appear in the contstraint expression");
+            }
+        });
+        
+        /** perform a joint traversal of all the template objects
+            the first template object will be used to create the list
+            of local parameters that could be used to populate template contraints
+         */
+        
+        
+        auto incompatible_error = [this, reference_argument] (unsigned long i, const _String& name) -> void {
+            throw (GetIthParameter(i + 1L)->Enquote() & " (argument " & _String ((long)i+1L) &
+                   ") is topologically incompatible with the reference argument " & GetIthParameter(reference_argument + 1UL)->Enquote()) & " at node " & name.Enquote();
+        };
+        
+        for (;;) {
+            _CalcNode * reference_iteratee = traversers[reference_argument]->Next();
+            node <long> * reference_node   = traversers[reference_argument]->GetNode();
+            
+            //printf ("%s\n", reference_iteratee->GetName()->get_str());
+            
+            if (reference_iteratee) {
+                _List iteratees;
+                iteratees << reference_iteratee;
+                for (unsigned long i = 0UL; i < template_parameter_count; i++) {
+                    if (reference_argument != i) {
+                        _CalcNode * current_iteratee = traversers[i]->Next();
+                        if (!current_iteratee) {
+                            incompatible_error (i, *reference_iteratee->GetName());
+                        }
+                        //printf ("%s\n", current_iteratee->GetName()->get_str());
+                        node <long> *current_node = traversers[i]->GetNode();
+                        if (current_node->get_num_nodes() != reference_node->get_num_nodes()) {
+                            incompatible_error (i,*reference_iteratee->GetName());
+                        }
+                        iteratees << current_iteratee;
+                    }
+                }
+                
+                auto handle_variable = [&parent_object_names,resolve_name] (_Variable* local_k, _List * conditions, _List * parameter_set, _List *matched_subexpressions, long condition_index) -> void {
+                    _String local_name = resolve_name (*local_k->GetName(), parent_object_names.GetItem(condition_index));
+                    _SimpleList matched_conditions;
+                    
+                    if (conditions->Every ([&local_name,&matched_conditions] (long condition, unsigned long i) -> bool {
+                        _String const * match_pattern = (_String*)((_List*)condition)->GetItem (0);
+                        //printf ("[pattern] %s\n",match_pattern->get_str());
+                        if (i == 0) {
+                            return local_name.EqualWithWildChar (*match_pattern,'?', 0, 0, &matched_conditions);
+                            
+                        } else {
+                            return local_name.EqualWithWildChar (*match_pattern,'?');
+                        }
+                    })) {
+                        //printf ("[%ld] %s\n", condition_index,local_name.get_str());
+                        *parameter_set << local_k;
+                        _List * subexpressions = new _List;
+                        for (long k = 0L; k < matched_conditions.countitems(); k+=2) {
+                            subexpressions->AppendNewInstance (new _String (local_name, matched_conditions(k), matched_conditions (k+1)));
+                        }
+                        *matched_subexpressions < subexpressions;
+                    }
+                };
 
-  _SimpleList thisHits (parameters.lLength-1,0,0);
+                if (reference_iteratee->HasLocals()) { // stuff to do
+                    _List parameter_sets,
+                          matched_subexpressions;
+                    for (unsigned long i = 0UL; i < template_parameter_count; i++) {
+                        parameter_sets < new _List;
+                        matched_subexpressions < new _List;
+                    }
+                    
 
-  while (ind1>=0) { // references to 'this' still exist
-  ind2 = ind1+4; // look forward to the number of 'this'
-  while ('0'<=replicateSource->sData[ind2] && replicateSource->sData[ind2]<='9') {
-  ind2++;
-  }
+                    /** now see if there any applicable contstraints that can be generated
+                     if there is a LHS expression, then only independent variables will be pulled
+                     */
+                    
+                    long independent_count = reference_iteratee->CountIndependents();
+                    _List * conditions = ((_List*)templated_operations.GetItem(reference_argument));
+                    _List * reference_parameters = (_List*)parameter_sets.GetItem(reference_argument);
+                    _List* matched_reference_subexpressions = (_List*)matched_subexpressions.GetItem(reference_argument);
+                        /*
+                            this will store, for each reference argument, the parts of parameter names
+                            that were matched by the '?' in the template expression.
+                            The convention is that the first set takes precedence, so that
+                            this1.?.? := this1.?.synRate will store the matches for the two '?' from the first expression
+                         */
+                    
+                    
+                    for  (long k = 0L; k < independent_count; k++) {
+                        handle_variable ( reference_iteratee->GetIthIndependent(k), conditions, reference_parameters, matched_reference_subexpressions, reference_argument);
+                    }
+                    
+                    if (!lhs_op) {
+                        for  (long k = 0L; k < reference_iteratee->CountDependents(); k++) {
+                            handle_variable ( reference_iteratee->GetIthDependent(k), conditions, reference_parameters, matched_reference_subexpressions, reference_argument);
+                        }
+                    }
+                    
+                    /** now check to see if subsequent template arguments fit reference template parameters
+                        If there are multiple parameter matches for any subsequent template, then
+                     */
+                    
+                    if (reference_parameters->nonempty()) {
+                        for (unsigned long i = 0UL; i < template_parameter_count; i++) {
+                            if (i != reference_argument) {
+                                _CalcNode  * template_iteratee = (_CalcNode*)iteratees.GetItem(i);
+                                _List      * template_variables = (_List*)parameter_sets.GetItem(i);
+                                _List      * matched_template_subexpressions = (_List*)matched_subexpressions.GetItem(i);
+                                _List      * template_conditions = ((_List*)templated_operations.GetItem(i));
+                                long      variable_count = template_iteratee->CountIndependents();
+                                
+                                
+                                // see which parameters match the template conditions
+                                for  (long k = 0L; k < variable_count; k++) {
+                                    handle_variable ( template_iteratee->GetIthIndependent(k), template_conditions, template_variables, matched_template_subexpressions, i);
+                                }
+                                variable_count = template_iteratee->CountDependents();
+                                for  (long k = 0L; k < variable_count; k++) {
+                                    handle_variable ( template_iteratee->GetIthDependent(k), template_conditions, template_variables, matched_template_subexpressions, i);
+                                }
+                            }
+                        }
+                        // now for each reference parameter, see if it is matched by the corresponding template paramters
+                        
+                        reference_parameters->ForEach([&substitution_variables, &pattern, &lhs, &matched_subexpressions, reference_argument, &parameter_sets, add_a_constraint, &current_program, &substitution_variable_by_index] (BaseRef  ref, unsigned long i) -> void {
+                            _Variable * ref_var = (_Variable *)ref;
+                            _List * reference_subexpressions    = (_List*)matched_subexpressions.GetItem(reference_argument,i);
+                            _List   local_substitution_variables;
+                            
+                            
+                            if   (parameter_sets.Every ([reference_argument, ref_var, &local_substitution_variables, matched_subexpressions, reference_subexpressions] (long template_i, unsigned long i2) -> bool {
+                                if (i2 != reference_argument) {
+                                    _List * template_parameter_set = (_List *)template_i;
+                                    _List * matched_template_subexpressions = (_List*)matched_subexpressions.GetItem(i2);
+                                    
+                                    return template_parameter_set->Any ([matched_template_subexpressions, reference_subexpressions, &local_substitution_variables] (long argument_ij, unsigned long i3) -> bool {
+                                        _List *  check_subs = (_List*) matched_template_subexpressions->GetItem (i3);
+                                        for (long i = 0; i < Minimum(check_subs->countitems(), reference_subexpressions->countitems()); i++) {
+                                            if (*(_String*)check_subs->GetItem(i) != *(_String*)reference_subexpressions->GetItem(i) ) {
+                                                return false;
+                                            }
+                                        }
+                                        local_substitution_variables << (_Variable *)argument_ij;
+                                        return true;
+                                    });
+                                } else {
+                                    local_substitution_variables << ref_var;
+                                    return true;
+                                }
+                            })) { // this template argument is OK to go
+                                ((_List*)(substitution_variables.GetItem(1)))->Duplicate(substitution_variables.GetItem(0));
+                                //printf ("%s\n", ((_String*)local_substitution_variables.toStr())->get_str());
+                                substitution_variable_by_index.Each ([&substitution_variables,&local_substitution_variables] (long template_index, unsigned long idx) -> void {
+                                    _String * sub_name = ((_Variable*) local_substitution_variables.GetItem(template_index))->GetName();
+                                    ((_List*)(substitution_variables.GetItem(1)))->InsertElement (sub_name, idx, false, true);
+                                });
+                                
 
-  ind3  = replicateSource->Cut(ind1+4,ind2-1).toNum();
-  ind2  = replicateSource->FindEndOfIdent (ind1,-1,'?');
-  // now ind1-ind2 contains a reference with this...
-  _String newS  (*replicateSource,ind1,ind2);
-  thisS = _String("this")&_String(ind3);
-  if ((ind4 = ((_String*)parameters(ind3))->Find('.'))>=0) { // branch argument
-  newS = newS.Replace (thisS,((_String*)parameters(ind3))->Cut(0,ind4-1), true);
-  } else { // non-branch argument
-  newS = newS.Replace (thisS,*((_String*)parameters(ind3)), true);
-  }
-  parts&& &newS;
-  ind3--;
-  thisIndex<<ind3; // sequence of references to this
+                                /*local_substitution_variables.ForEach([&substitution_variables] (BaseRef v, unsigned long) -> void {
+                                     *((_List*)(substitution_variables.GetItem(1))) << ((_Variable*) v)->GetName();
+                                });*/
+                                
+                                add_a_constraint (lhs.IsEmpty() ? nil : ((_String*)lhs.toStr (kFormulaStringConversionNormal, &substitution_variables)),
+                                                  ((_String*)pattern.toStr (kFormulaStringConversionNormal, &substitution_variables)));
+                                // apply the constraint
+                            }
+                            
+                        });
+                    }
 
-  if (ind3<0 || ind3 >= thisHits.lLength) {
-  HandleApplicationError (_String("Invalid reference to ") & thisS & " in the constraint specification");
-  return ;
-  }
-  thisHits.lData[ind3] = 1;
+                }
+            } else { // possible termination
+                for (unsigned long i = 0UL; i < template_parameter_count; i++) {
+                    if (reference_argument != i) {
+                        if (traversers[i]->Next()) {
+                            incompatible_error (i, "Root node");
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        
+        list_of_constraints.ForEach ([&current_program] (BaseRefConst constraint_i, unsigned long) -> void {
+            _String constraint = *(_String*)constraint_i;
+            _Formula rhs, lhs;
+            _FormulaParsingContext fpc (nil, current_program.nameSpacePrefix);
+            long result = Parse (&rhs,constraint,fpc,&lhs);
+            ExecuteFormula(&rhs,&lhs,result,fpc.assignmentRefID(),current_program.nameSpacePrefix,fpc.assignmentRefType());
+        });
 
-  if (ind2>=replicateSource->sLength-1) {
-  break;
-  }
-  ind1 = replicateSource->Find("this",ind2+1,-1);
-  if (ind1==-1) {
-  newS = replicateSource->Cut(ind2+1,-1);
-  } else {
-  newS = replicateSource->Cut(ind2+1,ind1-1);
-  }
-  parts&& &newS;
-  thisIndex<<-1;
-  }
-  // now that the string is conveniently partritioned into blocks
-  // we will check the arguments and store references
-
-  for (ind1 = 1; ind1<parameters.lLength; ind1++) {
-  if (thisHits.lData[ind1-1] == 0) {
-  HandleApplicationError (_String("Unused ") & ind1 & "-th reference variable: " & *(_String*)parameters(ind1));
-  return ;
-  }
-
-  _String namespaced = chain.AddNameSpaceToID(*(_String*)parameters(ind1));
-  ind2 = LocateVarByName (namespaced);
-  if (ind2<0) {
-  HandleApplicationError(namespaced & " is undefined in call to ReplicateConstraint.");
-  return  ;
-  }
-
-  _Variable* thisNode = FetchVar (ind2);
-  if (thisNode->ObjectClass()==TREE_NODE) {
-  thisArgs<< (long)((_CalcNode*)thisNode)->LocateMeInTree();
-  } else if (thisNode->ObjectClass()==TREE) {
-  thisArgs<< (long)&((_TheTree*)thisNode)->GetRoot();
-  } else {
-  HandleApplicationError (*(_String*)parameters(ind1) & " is neither a tree nor a tree node in call to ReplicateConstraint.");
-  return ;
-  }
-  }
-
-  // now with this list ready we can recurse down the tree and produce the contsraints
-  if (RecurseDownTheTree(thisArgs, parameters, theConstraints, parts, thisIndex)) {
-  if (theConstraints.lLength) {
-  ReportWarning  (_String("\nReplicateConstraint generated the following contsraints:"));
-  hyFloat      doDeferSet;
-  checkParameter (deferConstrainAssignment,doDeferSet,0.0);
-  bool            applyNow = CheckEqual(doDeferSet,0.0);
-  _String         *constraintAccumulator = new _String(128L,true);
-
-  if (applyNow) {
-  deferSetFormula = new _SimpleList;
-  }
-
-  for (ind1 = 0; ind1 < theConstraints.lLength; ind1++) {
-  replicateSource = (_String*)(theConstraints(ind1)->toStr());
-  if (applyNow) {
-  _Formula rhs, lhs;
-  _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
-  ind2 = Parse (&rhs,*replicateSource,fpc,&lhs);
-  ExecuteFormula(&rhs,&lhs,ind2,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
-  }
-  (*constraintAccumulator) << replicateSource;
-  (*constraintAccumulator) << ';';
-  (*constraintAccumulator) << '\n';
-  //ReportWarning (*replicateSource);
-  DeleteObject (replicateSource);
-  }
-  constraintAccumulator->Finalize();
-  ReportWarning (*constraintAccumulator);
-  CheckReceptacleAndStore (&lastSetOfConstraints,"ReplicateConstraint",false,new _FString(constraintAccumulator),false);
-  if (applyNow) {
-  FinishDeferredSF();
-  }
-  }
-  }
-*/
-
+        
+        _StringBuffer * generated_constraints = new _StringBuffer (list_of_constraints.Join (";\n"));
+        if (generated_constraints->nonempty()) {
+            *generated_constraints << ";";
+        }
+        
+        hy_env::EnvVariableSet(kLastSetOfConstraints, new _FString (generated_constraints), false);
+        
+        FinishDeferredSF ();
+        
         // first find the pattern
 
 
     } catch (const _String& error) {
-        return  _DefaultExceptionHandler (receptacle, error, current_program);
+        cleanup (traversers);
+        return  _DefaultExceptionHandler (nil, error, current_program);
     }
-
+    
+    cleanup (traversers);
     return true;
 }
 
@@ -1427,7 +1655,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_progr
         _String requested_version = _ProcessALiteralArgument (*GetIthParameter(0UL),current_program);
       
           auto throw_error = [&] (void) -> void {
-              throw _String ("Current script requires at least version ")& requested_version &" of HyPhy. Please download an updated version from http://www.hyphy.org or github.com/veg/hyphy and try again.";
+              throw _String ("Current script requires at least version ")& requested_version &" of HyPhy. Had version " &kHyPhyVersion & ". Please download an updated version from http://www.hyphy.org or github.com/veg/hyphy and try again.";
           };
       
         const _List   local_version    = kHyPhyVersion.Tokenize ("."),
@@ -1440,7 +1668,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_progr
           hyFloat local_number = ((_String*)local_version.GetItem(i))->to_float(),
                   required_number = ((_String*)required_version.GetItem(i))->to_float();
           
-          if (local_number >= required_number) {
+          if (local_number > required_number) {
               return true;
           }
           if (local_number < required_number) {
@@ -1448,7 +1676,7 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_progr
           }
       }
 
-      if (required_version.countitems() > upper_bound) {
+      if (required_version.countitems() <= upper_bound) {
           return true;
       }
       throw_error ();
@@ -1972,7 +2200,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
 
 
      if (object_type == HY_BL_SCFG && set_this_attribute == hy_env::kSCFGCorpus) {
-          HBLObjectRef corpus_source = _ProcessAnArgumentByType (set_this_attribute, MATRIX|STRING, current_program, &dynamic_variable_manager);
+          HBLObjectRef corpus_source = _ProcessAnArgumentByType (*GetIthParameter(2UL), MATRIX|STRING, current_program, &dynamic_variable_manager);
           if (corpus_source->ObjectClass () == STRING) {
             _List   single_string ( new _String (((_FString*)corpus_source)->get_str()));
             _Matrix wrapper (single_string);
@@ -2148,7 +2376,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
           if (!managed_object_to_print) { // not an existing variable
             try {
               long object_type = HY_BL_ANY, object_index;
-              managed_object_to_print = _GetHBLObjectByTypeMutable (namespaced_id, object_type, &object_index);
+              managed_object_to_print = _GetHBLObjectByTypeMutable (namespaced_id, object_type, &object_index, false);
               if (object_type == HY_BL_DATASET_FILTER) {
                 ReleaseDataFilterLock(object_index);
               }
@@ -2409,7 +2637,7 @@ bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
       static const _String  kSQLRowData              ("SQL_ROW_DATA"),
                             kSQLColumnNames          ("SQL_COLUMN_NAMES");
 
-      _ExecutionList * caller = (_ExecutionList *)caller;
+      _ExecutionList * caller = (_ExecutionList *)exL;
 
       if (!terminate_execution)
         if (caller && cc && !caller->empty()) {
@@ -2448,11 +2676,11 @@ bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
 #ifdef __HYPHY_NO_SQLITE__
     throw ("SQLite commands can not be used in a HyPhy version built with the __HYPHY_NO_SQLITE__ flag");
 #else
-    receptacle = _ValidateStorageVariable (current_program, 2UL);
 
     if (*GetIthParameter(0UL) == kSQLOpen) { // open a DB from file path
+      receptacle = _ValidateStorageVariable (current_program, 2UL);
       _String file_name = _ProcessALiteralArgument (*GetIthParameter(1UL), current_program);
-      if (!ProcessFileName(file_name, true, true, (hyPointer)current_program.nameSpacePrefix,false,&current_program)) {
+      if (!ProcessFileName(file_name, true, false, (hyPointer)current_program.nameSpacePrefix,false,&current_program)) {
         return false;
       }
 
@@ -2481,14 +2709,14 @@ bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
       }
     } else {
       bool closing_db = *GetIthParameter(0UL) == kSQLClose;
-      long db_index   = sql_databases.Map(_ProcessNumericArgumentWithExceptions(*GetIthParameter(closing_db ? 2UL : 0UL), current_program.nameSpacePrefix), 0L);
+      long db_index   = _ProcessNumericArgumentWithExceptions(*GetIthParameter(closing_db ? 2UL : 0UL), current_program.nameSpacePrefix);
 
-      if (db_index == 0L) {
+      if (sql_databases.Map (db_index, 0L) == 0L) {
         throw (GetIthParameter(closing_db ? 2UL : 0UL)-> Enquote() & " is an invalid database index");
       }
 
       if (closing_db) {
-        sqlite3_close ((sqlite3*)sql_databases.Element(db_index));
+        sqlite3_close ((sqlite3*)sql_databases.get(db_index));
         sql_databases [db_index] = 0L;
       } else {
           _String callback_code = _ProcessALiteralArgument(*GetIthParameter(2UL), current_program);
@@ -2498,7 +2726,7 @@ bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
           if (!terminate_execution) {
             _String const sql_code = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program);
 
-            if (sqlite3_exec((sqlite3*)sql_databases.lData[db_index], sql_code.get_str(), sql_handler, (hyPointer)&callback_script, nil) != SQLITE_OK) {
+            if (sqlite3_exec((sqlite3*)sql_databases.get(db_index), sql_code.get_str(), sql_handler, (hyPointer)&callback_script, nil) != SQLITE_OK) {
               throw _String(sqlite3_errmsg((sqlite3*)sql_databases(db_index)));
             }
           }
@@ -2600,213 +2828,222 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
         BaseRefConst       source_object = nil;
         try {
           source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
+        }
+        catch (_String const & err) { // lookup failed
+            return_value = nil;
+            object_type = HY_BL_NOT_DEFINED;
+        }
 
-          switch (object_type) {
-            case HY_BL_DATASET: {
-              _DataSet const* data_set_object = (_DataSet const*)source_object;
-              if (index1 >=0) { // get a specific sequence name
-                if (index1 < data_set_object->NoOfSpecies()) {
-                  return_value = make_fstring (*(_String*)(data_set_object->GetNames().GetItem(index1)));
-                } else {
-                  throw (_String (index1) & " exceeds the maximum index for the underlying DataSet object");
-                }
+      switch (object_type) {
+        case HY_BL_DATASET: {
+          _DataSet const* data_set_object = (_DataSet const*)source_object;
+          if (index1 >=0) { // get a specific sequence name
+            if (index1 < data_set_object->NoOfSpecies()) {
+              return_value = make_fstring (*(_String*)(data_set_object->GetNames().GetItem(index1)));
+            } else {
+              throw (_String (index1) & " exceeds the maximum index for the underlying DataSet object");
+            }
+          } else {
+              return_value = new _Matrix (data_set_object->GetNames(), false);
+          }
+          break;
+        }
+        case HY_BL_DATASET_FILTER: {
+          _DataSetFilter const* data_filter = (_DataSetFilter const*)source_object;
+          ReleaseDataFilterLock (object_index);
+          if (index1 >=0 ) { // get a specific sequence name
+            if (index1 < data_filter->NumberSpecies()) {
+              return_value = make_fstring (*(_String*)data_filter->GetData()->GetNames().GetItem(data_filter->theNodeMap.Element(index1)));
+            } else {
+              throw (_String (index1) & " exceeds the maximum index for the underlying DataSetFilter object");
+            }
+          } else {
+            _List filter_seq_names;
+            _List const * original_names = &data_filter->GetData()->GetNames();
+            data_filter->theNodeMap.Each ([&] (long value, unsigned long) -> void {
+              filter_seq_names << original_names->GetItem (value);
+            });
+            return_value = new _Matrix (filter_seq_names);
+
+          }
+          break;
+        }
+
+        case HY_BL_HBL_FUNCTION: {
+          return_value  = &(
+                            (*new _AssociativeList)
+                            < (_associative_list_key_value){"ID", new _FString (*GetObjectNameByType (HY_BL_HBL_FUNCTION, object_index, false)) }
+                            < (_associative_list_key_value){"Arguments", new _Matrix(GetBFFunctionArgumentList(object_index)) }
+                            < (_associative_list_key_value){"Body", new _FString (GetBFFunctionBody(object_index).sourceText,false) }
+                            );
+          break;
+        }
+
+        case HY_BL_LIKELIHOOD_FUNCTION:
+        case HY_BL_SCFG: {
+          _LikelihoodFunction const *lf = (_LikelihoodFunction const*) source_object;
+          if (index1 >= 0L) {
+            if (index1<lf->GetIndependentVars().countitems()) {
+              return_value = make_fstring (*LocateVar(lf->GetIndependentVars().GetElement(index1))->GetName());
+            } else {
+              if (index1 < lf->GetIndependentVars().countitems()+lf->GetDependentVars().countitems()) {
+                return_value = make_fstring (*LocateVar(lf->GetDependentVars().GetElement(index1-lf->GetIndependentVars().countitems()))->GetName());
               } else {
-                  return_value = new _Matrix (data_set_object->GetNames(), false);
+                throw (_String (index1) & " exceeds the maximum index for the underlying LikelihoodFunction/SCFG object");
               }
-              break;
             }
-            case HY_BL_DATASET_FILTER: {
-              _DataSetFilter const* data_filter = (_DataSetFilter const*)source_object;
-
-              if (index1 >=0 ) { // get a specific sequence name
-                if (index1 < data_filter->NumberSpecies()) {
-                  return_value = make_fstring (*(_String*)data_filter->GetData()->GetNames().GetItem(data_filter->theNodeMap.Element(index1)));
-                } else {
-                  throw (_String (index1) & " exceeds the maximum index for the underlying DataSetFilter object");
-                }
-              } else {
-                _List filter_seq_names;
-                _List const * original_names = &data_filter->GetData()->GetNames();
-                data_filter->theNodeMap.Each ([&] (long value, unsigned long) -> void {
-                  filter_seq_names << original_names->GetItem (value);
-                });
-                return_value = new _Matrix (filter_seq_names);
-
-              }
-              break;
-            }
-
-            case HY_BL_HBL_FUNCTION: {
-              return_value  = &(
-                                (*new _AssociativeList)
-                                < (_associative_list_key_value){"ID", new _FString (*GetObjectNameByType (HY_BL_HBL_FUNCTION, object_index, false)) }
-                                < (_associative_list_key_value){"Arguments", new _Matrix(GetBFFunctionArgumentList(object_index)) }
-                                < (_associative_list_key_value){"Body", new _FString (GetBFFunctionBody(object_index).sourceText,false) }
-                                );
-              break;
-            }
-
-            case HY_BL_LIKELIHOOD_FUNCTION:
-            case HY_BL_SCFG: {
-              _LikelihoodFunction const *lf = (_LikelihoodFunction const*) source_object;
-              if (index1 >= 0L) {
-                if (index1<lf->GetIndependentVars().countitems()) {
-                  return_value = make_fstring (*LocateVar(lf->GetIndependentVars().GetElement(index1))->GetName());
-                } else {
-                  if (index1 < lf->GetIndependentVars().countitems()+lf->GetDependentVars().countitems()) {
-                    return_value = make_fstring (*LocateVar(lf->GetDependentVars().GetElement(index1-lf->GetIndependentVars().countitems()))->GetName());
-                  } else {
-                    throw (_String (index1) & " exceeds the maximum index for the underlying LikelihoodFunction/SCFG object");
-                  }
-                }
-              } else {
-                return_value = lf->CollectLFAttributes ();
-                if (object_type == HY_BL_SCFG) {
-                  ((Scfg* const)lf)->AddSCFGInfo ((_AssociativeList*)return_value);
-                }
-              }
-              break;
-            }
-
-            case HY_BL_MODEL: {
-              if (index1 >= 0L) {
-                if (index2 < 0L) { // get the name of index1 parameter
-                  long variable_index = PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
-                      ScanModelForVariables (object_index, parameter_list, false, -1, false);
-                  }).Map (index1);
-                  if (variable_index >= 0) {
-                    return_value = make_fstring (*LocateVar(variable_index)->GetName());
-                  } else {
-                    throw (_String (index1) & " exceeds the maximum parameter index for the underlying Model object");
-                  }
-                } else { // get the formula for cell (index1, index2)
-                  if (!IsModelOfExplicitForm (object_index)) {
-                    _Variable*      rate_matrix = (_Variable*)source_object;
-                    _Formula * cell = ((_Matrix*)rate_matrix->GetValue())->GetFormula (index1,index2);
-                    if (cell) {
-                      return_value = make_fstring_pointer ((_String*)cell->toStr(kFormulaStringConversionNormal));
-                    } else {
-                      throw ("Invalid rate matrix cell index");
-                    }
-                  } else {
-                    throw ("Direct indexing of rate matrix cells is not supported for expression based (e.g. mixture) substitution models");
-                  }
-                }
-
-              } else {
-                _Variable   * rates, * freqs;
-                bool         is_canonical;
-                RetrieveModelComponents (object_index, rates, freqs, is_canonical);
-
-                if (rates) {
-                  if (index1 == -1) { // branch length expression
-                    return_value = make_fstring_pointer (((_Matrix*)rates->GetValue())->BranchLengthExpression((_Matrix*)freqs->GetValue(),is_canonical));
-                  } else
-                  /*
-                   returns an AVL with keys
-                   "RATE_MATRIX" - the ID of the rate matrix
-                   "EQ_FREQS"    - the ID of eq. freq. vector
-                   "MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
-                   */
-                  {
-                    return_value  = &(
-                                      (*new _AssociativeList)
-                                      < (_associative_list_key_value){"RATE_MATRIX",new _FString(*rates->GetName())}
-                                      < (_associative_list_key_value){"EQ_FREQS",new _FString(*freqs->GetName()) }
-                                      < (_associative_list_key_value){"MULT_BY_FREQ",new _Constant (is_canonical) }
-                                      );
-                  }
-                } else {
-                  throw "Failed to retrieve model rate matrix";
-                }
-              }
-              break;
-            }
-            case HY_BL_BGM: {
-                //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
-              _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) source_object;
-
-              switch (index1) {
-                case HY_HBL_GET_STRING_BGM_SCORE: {   // return associative list containing node score cache
-                  _AssociativeList        * export_alist  = new _AssociativeList;
-
-                  if (this_bgm -> ExportCache (export_alist)) {
-                    return_value = export_alist;
-                  } else {
-                    DeleteObject (export_alist);
-                    throw "Failed to export node score cache for BGM";
-                  }
-
-                  break;
-                }
-                case HY_HBL_GET_STRING_BGM_SERIALIZE: {   // return associative list with network structure and parameters
-                  _StringBuffer *serialized_bgm = new _StringBuffer (1024L);
-                  this_bgm -> SerializeBGM (*serialized_bgm);
-                  return_value = new _FString (serialized_bgm);
-                  break;
-                }
-                default: {
-                  throw _String ("Unrecognized index ") & index1 & " for a BGM object";
-                }
-              }
-              break;
+          } else {
+            return_value = lf->CollectLFAttributes ();
+            if (object_type == HY_BL_SCFG) {
+              ((Scfg* const)lf)->AddSCFGInfo ((_AssociativeList*)return_value);
             }
           }
-        } catch (_String const & err) { // lookup failed
-          return_value = nil;
+          break;
+        }
+
+        case HY_BL_MODEL: {
+          if (index1 >= 0L) {
+            if (index2 < 0L) { // get the name of index1 parameter
+              long variable_index = PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
+                  ScanModelForVariables (object_index, parameter_list, false, -1, false);
+              }).Map (index1);
+              if (variable_index >= 0) {
+                return_value = make_fstring (*LocateVar(variable_index)->GetName());
+              } else {
+                throw (_String (index1) & " exceeds the maximum parameter index for the underlying Model object");
+              }
+            } else { // get the formula for cell (index1, index2)
+              if (!IsModelOfExplicitForm (object_index)) {
+                _Variable*      rate_matrix = (_Variable*)source_object;
+                _Formula * cell = ((_Matrix*)rate_matrix->GetValue())->GetFormula (index1,index2);
+                if (cell) {
+                  return_value = make_fstring_pointer ((_String*)cell->toStr(kFormulaStringConversionNormal));
+                } else {
+                  throw (_String("Invalid rate matrix cell index"));
+                }
+              } else {
+                throw (_String("Direct indexing of rate matrix cells is not supported for expression based (e.g. mixture) substitution models"));
+              }
+            }
+
+          } else {
+            _Variable   * rates, * freqs;
+            bool         is_canonical;
+            RetrieveModelComponents (object_index, rates, freqs, is_canonical);
+
+            if (rates) {
+              if (index1 == -1) { // branch length expression
+                return_value = make_fstring_pointer (((_Matrix*)rates->GetValue())->BranchLengthExpression((_Matrix*)freqs->GetValue(),is_canonical));
+              } else
+              /*
+               returns an AVL with keys
+               "RATE_MATRIX" - the ID of the rate matrix
+               "EQ_FREQS"    - the ID of eq. freq. vector
+               "MULT_BY_FREQ" - a 0/1 flag to determine which format the matrix is in.
+               */
+              {
+                return_value  = &(
+                                  (*new _AssociativeList)
+                                  < (_associative_list_key_value){"RATE_MATRIX",new _FString(*rates->GetName())}
+                                  < (_associative_list_key_value){"EQ_FREQS",new _FString(*freqs->GetName()) }
+                                  < (_associative_list_key_value){"MULT_BY_FREQ",new _Constant (is_canonical) }
+                                  );
+              }
+            } else {
+              throw _String("Failed to retrieve model rate matrix");
+            }
+          }
+          break;
+        }
+        case HY_BL_BGM: {
+            //ReportWarning(_String("In HandleGetString() for case HY_BL_BGM"));
+          _BayesianGraphicalModel * this_bgm      = (_BayesianGraphicalModel *) source_object;
+
+          switch (index1) {
+            case HY_HBL_GET_STRING_BGM_SCORE: {   // return associative list containing node score cache
+              _AssociativeList        * export_alist  = new _AssociativeList;
+
+              if (this_bgm -> ExportCache (export_alist)) {
+                return_value = export_alist;
+              } else {
+                DeleteObject (export_alist);
+                throw "Failed to export node score cache for BGM";
+              }
+
+              break;
+            }
+            case HY_HBL_GET_STRING_BGM_SERIALIZE: {   // return associative list with network structure and parameters
+              _StringBuffer *serialized_bgm = new _StringBuffer (1024L);
+              this_bgm -> SerializeBGM (*serialized_bgm);
+              return_value = new _FString (serialized_bgm);
+              break;
+            }
+            default: {
+              throw _String ("Unrecognized index ") & index1 & " for a BGM object";
+            }
+          }
+          break;
         }
       }
+    }
 
         // finally, try to look up a variable
       if (!return_value) {
         _Variable* var = FetchVar(LocateVarByName (AppendContainerName(*GetIthParameter(1UL), current_program.nameSpacePrefix)));
-        if (var->IsIndependent() && index1 != -3) {
-          return_value = make_fstring_pointer ((_String*) var->toStr());
-        } else {
-          if (index1 == -1){
-            _SimpleList variable_list = PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
-              var->ScanForVariables (parameter_list, true);
-            });
-            _AssociativeList   * var_list_by_kind = new _AssociativeList;
-
-            _List split_vars;
-            SplitVariableIDsIntoLocalAndGlobal (variable_list, split_vars);
-            InsertVarIDsInList (var_list_by_kind, "Global", *(_SimpleList*)split_vars(0));
-            InsertVarIDsInList (var_list_by_kind, "Local",  *(_SimpleList*)split_vars(1));
-            return_value = var_list_by_kind;
-          }
-          else {  // formula string
-
-            if (index1 == -3) {
-              _StringBuffer local, global;
-              _SimpleList var_index;
-              var_index << var->get_index ();
-              if (var->IsIndependent()) {
-                  //printf ("ExportIndVariables\n");
-                ExportIndVariables (global, local, &var_index);
+        
+        if (var) {
+            if (var->IsIndependent() && index1 != -3) {
+              if (!var->has_been_set()) {
+                  return_value = new _MathObject;
               } else {
-                  //printf ("ExportDepVariables\n");
-                ExportDepVariables(global, local, &var_index);
+                  return_value = make_fstring_pointer ((_String*) var->toStr());
               }
-              return_value = make_fstring_pointer ( & ((*new _StringBuffer (128L)) << global << local << '\n'));
-
             } else {
-              _Matrix * formula_matrix = (index2 >= 0 && var->ObjectClass() == MATRIX) ? (_Matrix*)var->GetValue () : nil;
-              if (formula_matrix) {
-                _Formula* cell = formula_matrix->GetFormula(index1, index2);
-                if (cell) {
-                  return_value = make_fstring_pointer ((_String*) cell->toStr(kFormulaStringConversionNormal));
+              if (index1 == -1){
+                _SimpleList variable_list = PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
+                  var->ScanForVariables (parameter_list, true);
+                });
+                _AssociativeList   * var_list_by_kind = new _AssociativeList;
+
+                _List split_vars;
+                SplitVariableIDsIntoLocalAndGlobal (variable_list, split_vars);
+                InsertVarIDsInList (var_list_by_kind, "Global", *(_SimpleList*)split_vars(0));
+                InsertVarIDsInList (var_list_by_kind, "Local",  *(_SimpleList*)split_vars(1));
+                return_value = var_list_by_kind;
+              }
+              else {  // formula string
+
+                if (index1 == -3) {
+                  _StringBuffer local, global;
+                  _SimpleList var_index;
+                  var_index << var->get_index ();
+                  if (var->IsIndependent()) {
+                      //printf ("ExportIndVariables\n");
+                    ExportIndVariables (global, local, &var_index);
+                  } else {
+                      //printf ("ExportDepVariables\n");
+                    ExportDepVariables(global, local, &var_index);
+                  }
+                  return_value = make_fstring_pointer ( & ((*new _StringBuffer (128L)) << global << local << '\n'));
+
+                } else {
+                  _Matrix * formula_matrix = (index2 >= 0 && var->ObjectClass() == MATRIX) ? (_Matrix*)var->GetValue () : nil;
+                  if (formula_matrix) {
+                    _Formula* cell = formula_matrix->GetFormula(index1, index2);
+                    if (cell) {
+                      return_value = make_fstring_pointer ((_String*) cell->toStr(kFormulaStringConversionNormal));
+                    }
+                  } else {
+                    return_value = make_fstring_pointer ((_String*)var->GetFormulaString (kFormulaStringConversionNormal));
+                  }
                 }
-              } else {
-                return_value = make_fstring_pointer ((_String*)var->GetFormulaString (kFormulaStringConversionNormal));
               }
             }
           }
-        }
       }
 
       if (!return_value) {
-        throw ("No viable object to obtain information from");
+        throw (_String("No viable object to obtain information from"));
       }
 
       receptacle->SetValue (return_value, false);

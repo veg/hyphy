@@ -47,6 +47,7 @@ _FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer
     is_volatile = false;
     in_assignment = false;
     build_complex_objects = true;
+    allow_template = '\0';
     err_msg = err;
     formula_scope = scope;
 }

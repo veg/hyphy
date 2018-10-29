@@ -110,17 +110,35 @@ public:
     // return a non-neg number (function index) if this is a user function,
     // otherwise, return -1
 
-    virtual  long           GetAVariable        (void) {    // return the index of the variable
-        return theData>=-2?theData:-theData-3;
+    virtual  long           GetAVariable        (void) const{
+        if (theData >= -1) {
+            return theData;
+        }
+        if (theData < -2) {
+            return -theData - 3;
+        }
+        return -numberOfTerms-1;
+        // return the index of the variable
+    }
+
+    virtual  long           IsValueSubstitution        (void) const{
+        return theData == -2;
     }
 
     virtual  void           SetAVariable        (long d) {  // return the index of the variable
         theData=d;
     }
 
-    _Variable *             RetrieveVar         (void) {
+    _Variable *             RetrieveVar         (void) const {
       if (theData != -1) {
-        return FetchVar(GetAVariable());
+        long var_idx = GetAVariable();
+        if (var_idx >= 0) {
+            return FetchVar(var_idx);
+        } else {
+            if (var_idx == -2) {
+                return FetchVar (-numberOfTerms-1);
+            }
+        }
       }
       return nil;
     }

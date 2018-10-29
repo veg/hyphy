@@ -3263,7 +3263,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
     case HY_HBL_COMMAND_SET_PARAMETER:
         return HandleSetParameter(chain);
 
-    case 38:
+    case 38: // reconstruct ancestors
         ExecuteCase38 (chain, false);
         break;
 
@@ -3284,6 +3284,14 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         return HandleDifferentiate (chain);
         break;
 
+      case HY_HBL_COMMAND_GET_INFORMATION:
+          return HandleGetInformation(chain);
+          break;
+
+      case HY_HBL_COMMAND_REPLICATE_CONSTRAINT:
+          return HandleReplicateConstraint (chain);
+          break;
+
     case HY_HBL_COMMAND_INTEGRATE:
     case HY_HBL_COMMAND_FIND_ROOT:
         return HandleFindRootOrIntegrate(chain);
@@ -3299,28 +3307,28 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         break;
 
 
-    case 47:
+    case 47: // state counter; deprecate
         ExecuteCase47 (chain);
         break;
 
     case HY_HBL_COMMAND_LFCOMPUTE:
         return HandleComputeLFFunction(chain);
 
-    case 50:
+    case 50: // sample ancestors
         ExecuteCase38 (chain, true);
         break;
 
     case HY_HBL_COMMAND_GET_URL:
         return HandleGetURL (chain);
 
-    case 52:
+    case 52: // Simulate
         ExecuteCase52 (chain);
         break;
 
     case HY_HBL_COMMAND_DO_SQL:
         return HandleDoSQL(chain);
 
-    case 54:
+    case 54: // topology id =
         ExecuteCase54 (chain);
         break;
 
@@ -3329,7 +3337,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         break;
 
 
-    case 58:
+      case 58: // #profile
         ExecuteCase58 (chain);
         break;
 
@@ -3341,20 +3349,24 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         HandleRequireVersion(chain);
         break;
 
-    case 61:
+    case 61: // SCFG =
         ExecuteCase61 (chain);
         break;
 
-    case 63:
+    case 63: // dead?
         ExecuteCase63 (chain);
         break;
 
-    case 64:
+    case 64: // BGM =
         ExecuteCase64 (chain);
         break;
 
     case HY_HBL_COMMAND_ASSERT:
         HandleAssert (chain);
+        break;
+
+    case HY_HBL_COMMAND_GET_DATA_INFO:
+        HandleGetDataInfo(chain);
         break;
 
     case HY_HBL_COMMAND_NESTED_LIST:

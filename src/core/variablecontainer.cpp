@@ -743,7 +743,7 @@ long      _VariableContainer::SetDependance (long varIndex) {
 }
 
 //__________________________________________________________________________________
-bool      _VariableContainer::SetMDependance (_SimpleList& mDep)
+bool      _VariableContainer::SetMDependance (_SimpleList const & mDep)
 {
   if (iVariables) {
     if (mDep.lLength*2 > iVariables->lLength)
@@ -798,11 +798,6 @@ long      _VariableContainer::CountDependents(void) const {
 //__________________________________________________________________________________
 bool      _VariableContainer::HasLocals  (void) {
     return  iVariables && iVariables->countitems() > 0UL || dVariables && dVariables->countitems() > 0UL;
-}
-
-//__________________________________________________________________________________
-bool      _VariableContainer::is_model_var  (long i) const {
-    return dVariables->lData[(i<<1)+1]>=0;
 }
 
 //__________________________________________________________________________________

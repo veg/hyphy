@@ -1269,9 +1269,14 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             
             impliedMult = (i && numeric.isAllowed [(unsigned char)s.get_char(i-1)]);
 
-            long j = 1;
-            while ( i+j<s.length() && (alpha.isAllowed [(unsigned char)s.get_char(i+j)]|| numeric.isAllowed [(unsigned char)s.get_char(i+j)]) ) {
-                j++;
+            long j = 1L;
+            while ( i+j<s.length() ) {
+                unsigned char look_ahead = s.get_char(i+j);
+                if (alpha.isAllowed [look_ahead]|| numeric.isAllowed [look_ahead] || parsingContext.allowTemplate() == look_ahead) {
+                    j++;
+                } else {
+                    break;
+                }
             }
 
 
@@ -1338,14 +1343,23 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                     long realVarLoc = LocateVarByName (realVarName);
                     if (realVarLoc<0) { // bad instant variable reference
-                        return HandleFormulaParsingError ("Attempted to evaluate an undeclared variable ", parsingContext.errMsg(), s, i);
-                     }
+                        if (! (parsingContext.allowTemplate() && f2)) {
+                            return HandleFormulaParsingError ("Attempted to evaluate an undeclared variable ", parsingContext.errMsg(), s, i);
+                        }
+                    }
+                    // 20181021 handle deferrals for templates
+                    
+                    
                     if (!f2) { // 03/25/2004 ? Confused why the else
                         levelData->AppendNewInstance(new _Operation((_MathObject*)FetchVar (realVarLoc)->Compute()->makeDynamic()));
                     } else {
                         _Operation * variable_op = new _Operation (true, realVarName, globalKey, parsingContext.formulaScope());
+                        // this will create the variable even if did not exist before
+                        realVarLoc = variable_op->RetrieveVar()->get_index();
+                        //if (realVarLoc >= 0) {
                         variable_op -> SetTerms(-variableNames.GetXtra (realVarLoc)-1);
-                        variable_op ->SetAVariable(-2);
+                        //}
+                        variable_op -> SetAVariable(-2);
                         (*levelData) < variable_op;
                     }
                 } else {

@@ -5133,7 +5133,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                   (or involves a paremeter that has very little effect on the LF), recomputation could be within numerical error
          
         **/
-        if (rightValue - middleValue > 1e-12 || leftValue - middleValue > 1e-12) {
+        if (rightValue - middleValue > 1e-9 || leftValue - middleValue > 1e-9) {
          char buf[256], buf2[512];
          snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
          snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %20.16g <= %20.16g >= %20.16g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
@@ -6581,7 +6581,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
               snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) RESETTING THE VALUE (worse log likelihood obtained; current value %20.16g, best value %20.16g) ]\n\n", index, GetIthIndependent(index), bestVal);
               BufferToConsole (buf);
             }
-            if (CheckEqual(GetIthIndependent(index), bestVal) && !CheckEqual (middleValue,maxSoFar)) {
+            if (CheckEqual(GetIthIndependent(index), bestVal) && fabs (middleValue-maxSoFar) > 1e-9) {            
                 char buf[256];
                 snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::LocateTheBump (index %ld) current value %20.16g (parameter = %20.16g), best value %20.16g (parameter = %20.16g)); delta = %20.16g ]\n\n", index, middleValue, GetIthIndependent(index), maxSoFar, bestVal, maxSoFar - middleValue);
                 _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));

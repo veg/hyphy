@@ -707,10 +707,12 @@ _String const    _Variable::ContextFreeName(void) const {
 
 //__________________________________________________________________________________
 _String const   _Variable::ParentObjectName(void) const {
-    long location = theName->FindBackwards (".", 0, -1);
-    if (location > 0) {
-       return theName->Cut (0,location-1); 
-    }  
+    static const _String kDot (".");
+    
+    long location = theName->FindBackwards (kDot, 0L, kStringEnd);
+    if (location > 0L) {
+        return theName->Cut (0, location-1L);
+    }
     return kEmptyString;
 }
 

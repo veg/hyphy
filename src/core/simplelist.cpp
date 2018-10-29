@@ -464,7 +464,7 @@ void _SimpleList::DebugVarList(void)
 void  _SimpleList::Delete (long index, bool compact) {
     if (index>=0 && index<lLength) {
         lLength--;
-        if (lLength-index) {
+        if (lLength > index) {
             for (unsigned long k = index; k < lLength; k++) {
                 lData[k] = lData[k+1];
             }
@@ -1224,12 +1224,10 @@ void  _SimpleList::PermuteWithReplacement (long blockLength)
 
 }
 
-long _SimpleList::Pop (void)
-{
+long _SimpleList::Pop (void) {
     if (lLength > 0L) {
         return lData[--lLength];
     }
-
     return 0L;
 }
 

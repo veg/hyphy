@@ -47,16 +47,22 @@ using namespace hy_global;
 
 
 _TreeIterator::_TreeIterator (_TheTree const* source, int traversal_type): iterator(source->theRoot, traversal_type & fTreeIteratorTraversalMask) {
-    source_tree = source;
+    root_n = source->theRoot;
+    root_node =  map_node_to_calcnode (source->theRoot);
+    flags  = traversal_type;
+}
+
+_TreeIterator::_TreeIterator (_CalcNode const* root, node<long>* nroot, int traversal_type): iterator(nroot, traversal_type & fTreeIteratorTraversalMask) {
+    root_node = root;
+    root_n = nroot;
     flags  = traversal_type;
 }
 
 _TreeIterator::~_TreeIterator (void) {};
 
 void     _TreeIterator:: Reset (void) {
-    iterator.Reset (source_tree->theRoot);
+    iterator.Reset (root_n);
 }
-
 
 _CalcNode *     _TreeIterator:: Next (void) {
     
@@ -98,7 +104,7 @@ bool  _TreeIterator::IsAtLeaf          (void) const {
 bool  _TreeIterator::IsAtRoot          (void) const {
     node <long>* const current = iterator.Current();
     if (current) {
-        return current->get_parent() == nil;
+        return current == root_n;
     }
     return false;
 }

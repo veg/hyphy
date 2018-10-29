@@ -2462,7 +2462,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
 
 _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps) const {
   
-  if (hSegmentation,empty () || vSegmentation.countitems() < unit) { // revert to default (all data)
+  if (hSegmentation.empty () || vSegmentation.countitems() < unit) { // revert to default (all data)
     if (hSegmentation.empty ()) {
       hSegmentation.Populate (NoOfSpecies(),0,1);
     }
@@ -2473,7 +2473,7 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
   }
   
   if (unit%atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
-    HandleApplicationError (_String("Atom should divide unit in ") & _String (__PRETTY_FUNCTION__).Enquote() &" call");
+    HandleApplicationError (_String("Atom must divide unit, had ") & _String ((long)unit) & "/" & _String ((long)atom));
     return new _Matrix (1,1);
   }
   

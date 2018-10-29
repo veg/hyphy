@@ -87,7 +87,6 @@ public:
     virtual     void        ScanForDVariables           (_AVLList&,_AVLList&) const;
     virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0) const;
 
-    virtual     bool        is_model_var                  (long) const;
     virtual     bool        IsConstant                  (void);
     virtual     BaseRef     makeDynamic                 (void) const;
     virtual     void        Duplicate                   (BaseRefConst);
@@ -98,7 +97,7 @@ public:
 
     virtual     bool        RemoveDependance            (long);
     virtual     long        SetDependance               (long);
-    bool        SetMDependance              (_SimpleList&);
+    bool        SetMDependance              (_SimpleList const&);
 
     virtual     void        Clear                       (void);
     virtual     void        ClearConstraints            (void);
@@ -140,7 +139,7 @@ public:
     _VariableContainer* GetTheParent                (void) {
         return theParent;
     }
-
+    
 protected: // data members
 
     _SimpleList         *iVariables,

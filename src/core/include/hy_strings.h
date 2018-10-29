@@ -533,6 +533,7 @@ public:
    @param wildchar : the charcter to treat as a wild char
    @param start_this : start matching at this position in "this"
    @param start_pattern : start matching at this position in *pattern*
+   @param wildchar_matches: if given, push indices of ranges that matched wildcards
 
    @return did the string match the pattern
 
@@ -540,11 +541,14 @@ public:
    - SLKP 20170517 reviewed while porting from v3 branch
    [CHANGE-NOTE SLKP 20170517 change pattern type to _String const& from _String
    const *]
+   - SLKP 20181024 add the optional _SimpleList argument to store the index ranges
+                   which matched the wildcards
 
    */
   bool EqualWithWildChar(_String const &pattern, char const wildchar = '*',
                          unsigned long start_this = 0UL,
-                         unsigned long start_pattern = 0UL) const;
+                         unsigned long start_pattern = 0UL,
+                         _SimpleList * wildchar_matches = nil) const;
 
   /*
    ==============================================================

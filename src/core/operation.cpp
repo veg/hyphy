@@ -264,9 +264,8 @@ _Operation::~_Operation (void)
 }
 
 //__________________________________________________________________________________
-bool _Operation::IsAVariable(bool deep)
-{
-    if (theData==-1 || theData == -2) {
+bool _Operation::IsAVariable(bool deep) {
+    if (theData == -1 || theData == -2) {
         if (deep&&theNumber) {
             return theNumber->IsVariable();
         }

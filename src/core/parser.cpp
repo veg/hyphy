@@ -178,30 +178,52 @@ void SplitVariableIDsIntoLocalAndGlobal (const _SimpleList& theList, _List& spli
 
 //__________________________________________________________________________________
 _String FetchObjectNameFromType (const unsigned long objectClass) {
-    switch (objectClass) {
-        case HY_UNDEFINED:
-            return "Undefined";
-        case NUMBER:
-            return "Number";
-        case MATRIX:
-            return "Container variable";
-        case TREE_NODE:
-            return "Tree node";
-        case TREE:
-            return "Tree";
-        case STRING:
-            return "String";
-        case ASSOCIATIVE_LIST:
-            return "Associative Array";
-        case TOPOLOGY:
-            return "Topology";
-        case POLYNOMIAL:
-            return "Polynomial";
-        case HY_ANY_OBJECT:
-            return "Any HyPhy object";
+    
+    
+    if (objectClass == HY_ANY_OBJECT) {
+        return "Any object";
+    }
+    _StringBuffer result;
+    
+    auto push_with_spacer = [&result] (const char * v) -> void {
+        if (result.nonempty()) {
+            result << " or ";
+        }
+        result << v;
+    };
+    
+    if (objectClass & HY_UNDEFINED) {
+        result << "Undefined";
+    }
+    if (objectClass & NUMBER) {
+        push_with_spacer ("Number");
+    }
+    if (objectClass & MATRIX) {
+        push_with_spacer ("Matrix");
+    }
+    if (objectClass & CONTAINER) {
+        push_with_spacer ("Variable container");
+    }
+    if (objectClass & TREE_NODE) {
+        push_with_spacer ("Tree Node");
+    }
+    if (objectClass & TREE) {
+        push_with_spacer ("Tree");
+    }
+    if (objectClass & STRING) {
+        push_with_spacer ("String");
+    }
+    if (objectClass & ASSOCIATIVE_LIST) {
+        push_with_spacer ("Associative Array");
+    }
+    if (objectClass & TOPOLOGY) {
+        push_with_spacer ("Topology");
+    }
+    if (objectClass & POLYNOMIAL) {
+        push_with_spacer ("Polynomial");
     }
     
-    return kEmptyString;
+    return result;
 }
 
 //__________________________________________________________________________________
@@ -1128,88 +1150,32 @@ void    SetupOperationLists (void) {
 
 }
 
-//__________________________________________________________________________________
-void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAll)
-{
-    rec.Clear();
-    if (varRefs.lLength == 0) {
-        return;
-    }
-
-    long i;
-    _SimpleList startVars;
-    _VariableContainer*  firstVar = (_VariableContainer*)LocateVar(varRefs.lData[0]);
-
-    firstVar->ScanAndAttachVariables();
-
-    {
-        _AVLList sA (&startVars);
-        if (doAll) {
-
-            firstVar->ScanContainerForVariables (sA,sA);
-            firstVar->ScanForGVariables (sA,sA);
-        }
-
-        firstVar->ScanForDVariables (sA,sA);
-        sA.ReorderList ();
-    }
-
-    if (!doAll) {
-        for (i=startVars.lLength-1; i>=0; i--) {
-            if (firstVar->is_model_var(i)) {
-                startVars.Delete(i);
-            }
-        }
-    }
-
-    for (i=0; i<startVars.lLength; i++) {
-        _String thisName (LocateVar(startVars.lData[i])->GetName()->Cut
-                          (LocateVar(startVars.lData[i])->GetName()->FindBackwards('.',0,-1),-1));
-        rec && &thisName;
-    }
-
-    for (i=varRefs.lLength-1; i>=1; i--) {
-        firstVar = (_VariableContainer*)LocateVar(varRefs.lData[i]);
-        firstVar->ScanAndAttachVariables();
-        firstVar->MatchParametersToList (rec,doAll);
-    }
-
-    for (i=rec.lLength-1; i>=0; i--) {
-        _String* thisLine = ((_String*)rec(i));
-        thisLine->Trim(1,-1);
-        if (doAll)
-            if (LocateVarByName(*thisLine)<0) {
-                *thisLine = _String('!')&*thisLine;
-            }
-    }
-
-}
 
 
 //__________________________________________________________________________________
 
-void  FinishDeferredSF (void)
-{
-    if (deferSetFormula->lLength) {
+void  FinishDeferredSF (void) {
+    if (deferSetFormula->nonempty()) {
         SortLists (deferSetFormula, &deferIsConstant);
-        _SimpleList tcache;
-        long        iv,
-                    i = variableNames.Traverser (tcache,iv,variableNames.GetRoot());
-
-        for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
-            _Variable* theV = FetchVar(i);
+        
+        for (AVLListXIteratorKeyValue variable_record : AVLListXIterator (&variableNames)) {
+            _Variable * theV = LocateVar(variable_record.get_value());
             if (theV->IsContainer()) {
                 ((_VariableContainer*)theV)->SetMDependance (*deferSetFormula);
             }
         }
-
-        for (long j = 0; j<likeFuncList.lLength; j++)
-            if (((_String*)likeFuncNamesList(j))->nonempty()) {
-                _LikelihoodFunction * lf = (_LikelihoodFunction*)likeFuncList(j);
-                for (long k = 0; k < deferSetFormula->lLength; k++) {
-                    lf->UpdateIndependent(deferSetFormula->lData[k],deferIsConstant.lData[k]);
+        
+        likeFuncList.ForEach([] (BaseRef lf_object, unsigned long idx) -> void {
+            if (((_String*)likeFuncNamesList(idx))->nonempty()) {
+                _LikelihoodFunction * lf = (_LikelihoodFunction*)lf_object;
+                for (long k = 0L; k < deferSetFormula->countitems(); k++) {
+                    lf->UpdateIndependent(deferSetFormula->get(k),deferIsConstant.get(k));
                 }
             }
+        });
+        
+
+       
     }
     DeleteObject (deferSetFormula);
     deferSetFormula = nil;

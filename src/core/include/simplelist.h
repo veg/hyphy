@@ -333,6 +333,13 @@ class _SimpleList:public BaseObj {
             return false;
         }
 
+        template <typename CONDITION> bool Every (CONDITION&& predicate, long startAt = 0) const {
+            for (unsigned long i = startAt; i<lLength; i++) {
+                if (!predicate ( ((long*)(lData))[i], i )) return false;
+            }
+            return true;
+        }
+
         template <typename FILTER> _SimpleList const FilterIndex (FILTER condition) const {
           _SimpleList filtered;
           for (unsigned long i = 0UL; i<lLength; i++) {

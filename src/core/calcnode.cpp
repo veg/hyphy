@@ -418,7 +418,7 @@ hyFloat& _CalcNode::operator[] (unsigned long i) {
 
 BaseRef _CalcNode::toStr (unsigned long) {
     _StringBuffer * res = new _StringBuffer (64L);
-    (*res) << theName << '(' << CountIndependents() << ',' << CountDependents() << ')';
+    (*res) << theName << '(' << _String(CountIndependents()) << ',' << _String(CountDependents()) << ')';
     res->TrimSpace();
     return res;
 }

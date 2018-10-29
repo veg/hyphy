@@ -6953,7 +6953,7 @@ void     _Matrix::Serialize (_StringBuffer& res, _String& myID) {
             res.AppendNewInstance((_String*)toStr());
             res << ';';
         } else if (is_expression_based()) {
-            res << _String ("={") & hDim & ',' & vDim & "};\n";
+            res << (_String ("={") & hDim & ',' & vDim & "};\n");
             for (long h=0L; h<hDim; h++) {
                 for (long v=0L; v<vDim; v++) {
                     _Formula *theCell = GetFormula (h,v);

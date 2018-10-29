@@ -16,7 +16,8 @@ function trapAllErrors (command) {
 
     LAST_HBL_EXECUTION_ERROR = "";
     ExecuteCommands ("SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);" + command);
-    assert (Type(LAST_HBL_EXECUTION_ERROR) != "String", "Encountered an error '" + LAST_HBL_EXECUTION_ERROR + "', while executing '" +  command + "'.\n");
+    //fprintf (stdout, "***", Abs(LAST_HBL_EXECUTION_ERROR), "***\n");
+    assert (Abs(LAST_HBL_EXECUTION_ERROR) == 0, "Encountered an error '" + LAST_HBL_EXECUTION_ERROR + "', while executing '" +  command + "'.\n");
     localTestResult          = 1;
     
     return localTestResult;

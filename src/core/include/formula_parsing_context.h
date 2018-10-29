@@ -52,7 +52,13 @@ private:
     char                 assignment_ref_type;
     bool                 is_volatile;
     bool                 in_assignment;
+    char                 allow_template;
+        /*
+            if not '\0' (default), will permit variable IDs to contain this character
+            useful for parsing 'ReplicateConstraint' type expressions
+        */
     bool                 build_complex_objects;
+    
         /*
             this controls whether or not
             [matrix, TBD] and dictionary constant are built in place (default)
@@ -69,6 +75,7 @@ public:
         bool&       buildComplexObjects (void)          { return build_complex_objects;}
         long&       assignmentRefID (void)              { return assignment_ref_id; }
         char&       assignmentRefType (void)            { return assignment_ref_type;}
+        char&       allowTemplate (void)                { return allow_template;}
         _String*    errMsg (void)                       { return err_msg; }
         _VariableContainer const* formulaScope (void)         { return formula_scope; }
         void        setScope (_String const* scope);

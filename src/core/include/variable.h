@@ -152,6 +152,7 @@ public:
     friend      void        ResetVariables          (void);
     //friend      _Variable*  LocateVar               (long);
     friend      void        InsertVar               (_Variable*);
+    bool        has_been_set                        (void) const {return !(HY_VARIABLE_NOTSET & varFlags);}
 
 public:
 

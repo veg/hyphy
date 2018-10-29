@@ -396,4 +396,3 @@ void mpiBgmLoop (int rank, int size)
     DeleteObject (theMessage);
 }
 #endif
-

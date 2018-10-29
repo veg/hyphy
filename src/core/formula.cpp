@@ -170,9 +170,9 @@ void _Formula::Duplicate  (_Formula const * f_cast) {
 void _Formula::DuplicateReference  (const _Formula* f) {
     for (unsigned long i=0; i<f->theFormula.countitems(); i++) {
         _Operation *ith_term = f->GetIthTerm(i);
-        // TODO Document what -2 means and when it is used
-        if (ith_term->GetAVariable()==-2) {
-            theFormula.AppendNewInstance(new _Operation ((HBLObjectRef)LocateVar (-ith_term->GetNoTerms()-1)->Compute()->makeDynamic()));
+        // -2 is used to code for value substitutions (x__)
+        if (ith_term->IsValueSubstitution()) {
+            theFormula.AppendNewInstance(new _Operation ((HBLObjectRef)LocateVar (ith_term->GetAVariable())->Compute()->makeDynamic()));
         } else {
             theFormula && ith_term;
         }
@@ -964,7 +964,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, in
 
     // decide what to do about this operation
 
-    if (this_node_op->IsAVariable(false)) {
+    if (this_node_op->IsAVariable(false) || this_node_op->IsValueSubstitution()) {
         // this operation is just a variable - add ident to string and return
         long node_variable_index = this_node_op->GetAVariable();
         if (node_variable_index < 0L) {
@@ -1000,8 +1000,14 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, in
                 }
             } else if (replace_with->ObjectClass () == STRING) {
                 result.AppendNewInstance((_String*)replace_with->toStr());
+                if (this_node_op->IsValueSubstitution()) {
+                    result << "__";
+                }
             } else {
                 result << node_variable->GetName();
+                if (this_node_op->IsValueSubstitution()) {
+                    result << "__";
+                }
             }
         } else {
             _String * variable_name = LocateVar(node_variable_index)->GetName();
@@ -1016,6 +1022,9 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, in
                 }
             } else {
                 result<<variable_name;
+            }
+            if (this_node_op->IsValueSubstitution()) {
+                result << "__";
             }
         }
         return;
@@ -2755,7 +2764,7 @@ void    _Formula::ConvertToTree (bool err_msg) {
 
             _Operation* currentOp = ItemAt(i);
 
-            if (currentOp->theNumber || currentOp->theData >= 0L || currentOp->theData < -2L) { // a data bit
+            if (currentOp->theNumber || currentOp->theData >= 0L || currentOp->theData <= -2L) { // a data bit
                 node<long>* leafNode = new node<long>;
                 leafNode->init(i);
                 nodeStack<<(long)leafNode;

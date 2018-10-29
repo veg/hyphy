@@ -52,11 +52,13 @@ private:
   node_iterator<long> iterator;
   int                 flags;
   _SimpleList         history;
-  _TheTree   const    *source_tree;
+  _CalcNode const     *root_node;
+  node<long>          *root_n;
   
   
 public:
   _TreeIterator (_TheTree const * source, int traversal_type);
+  _TreeIterator (_CalcNode const * root,  node<long>* root_node, int traversal_type);
   ~_TreeIterator (void);
   void                    Reset (void);
   
