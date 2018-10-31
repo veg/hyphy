@@ -1,6 +1,8 @@
 LoadFunctionLibrary("SelectionAnalyses/RELAX.bf", {
     "0": "Universal",
     "1": PATH_TO_CURRENT_BF + "data/CD2.nex",
-    "2": "PR",
-    "3": "All"
+    "2": "Classic mode",
+    "3": "GROUP1",
+    "4": "GROUP2",
+    "5": "All"
 });

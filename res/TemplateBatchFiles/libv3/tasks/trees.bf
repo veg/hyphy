@@ -425,7 +425,6 @@ lfunction trees.ExtractTreeInfo(tree_string) {
  */
 
 lfunction trees.HasBranchLengths (tree_info) {
-
     return utility.Array1D (tree_info [^"terms.trees.partitioned"]) == utility.Array1D (tree_info [^"terms.branch_length"]);
 }
 
@@ -446,7 +445,8 @@ function trees.GetBranchCount(tree_string) {
  * @param {String} tree_string
  * @returns {Number} total branch count
  */
-function trees.SortedBranchLengths(tree_string) {
+ 
+lfunction trees.SortedBranchLengths(tree_string) {
 
     tree_count = trees.GetBranchCount(tree_string);
     Tree T = tree_string;
@@ -466,10 +466,211 @@ function trees.SortedBranchLengths(tree_string) {
  * @param {String} tree_string
  * @returns {Matrix} 1xN sorted branch names
  */
-function trees.BranchNames(tree) {
-    tree_string = tree[terms.trees.newick];
+ 
+lfunction trees.BranchNames(tree) {
+    tree_string = tree[^"terms.trees.newick"];
     Topology T = tree_string;
     branch_names = BranchName(T, -1);
     return branch_names;
 }
+
+/**
+ * Compute branch labeling using parsimony
+ * @name trees.ParsimonyLabel
+ * @param 	{String} tree ID
+ * @param 	{Dict} 	 leaf -> label
+ 					 labels may be missing for some of the leaves to induce partial labeling of the tree
+ * @returns {Dict} 	 {"score" : value, "labels" : Internal Branch -> label}
+ */
+  
+lfunction trees.ParsimonyLabel(tree_id, given_labels) {   
+   tree_avl = (^tree_id) ^ 0;
+   label_values = utility.Values (given_labels);
+   label_count  = utility.Array1D (label_values);
+   labels = {};
+   scores = {}; // node name -> score of optimal labeling staring at this now given parent state 
+   optimal_labeling = {}; // node name -> current node labeling which achieves this score
+   resulting_labels = {}; // internal nodes -> label
+   
+   // pass 1 to fill in the score matrix
+   for (k = 0; k < Abs (tree_avl) ; k += 1) {
+   	 	node_name = (tree_avl[k])["Name"];
+   	 	node_children = (tree_avl[k])["Children"];
+   	 	c_count = utility.Array1D (node_children);
+   	 	if (c_count) { // internal node
+   	 		// first check to see if all the children are labeled
+   	 	
+   	 		c_names = {c_count , 1};
+   	 	
+			for (c = 0; c < c_count; c+=1) {
+				c_names[c] = (tree_avl[node_children[c]])["Name"];
+   	 			if (scores / c_names[c] == FALSE)  {
+   	 				break;
+   	 			}
+   	 			
+   	 		}
+   	 		if (c == c_count) {
+    	 			
+   	 			scores [node_name] = {1, label_count};
+   	 			labels [node_name] = {1, label_count};
+   	 			
+   	 			
+    	 		for (parent_state = 0; parent_state < label_count; parent_state+=1) {
+    	 			best_score = 1e100;
+    	 			best_state = None;
+    	 			for (my_state = 0; my_state < label_count; my_state+=1) {
+    	 				my_score = 0;
+						for (c = 0; c < c_count; c+=1) {
+							my_score += (scores [c_names[c]])[my_state];
+						}
+						if (my_state != parent_state) {
+							my_score += 1;
+						}
+						if (my_score < best_score) {
+							best_score = my_score;
+							best_state = my_state;
+						}
+					}
+   	 	 			(scores [node_name])[parent_state] = best_score;
+   	 	 			(labels [node_name])[parent_state] = best_state;
+   	 	 		}
+   	 	 		
+   	 	 	}
+   	 	} else {
+   	 		if (utility.Has (given_labels, node_name, "String")) {
+   	 			node_label = given_labels[node_name];
+   	 			scores [node_name] = {1, label_count};
+   	 			labels [node_name] = {1, label_count};
+   	 			
+   	 			for (z = 0; z < label_count; z+=1) {
+   	 				if (node_label == label_values[z]) {
+   	 					break;
+   	 				}
+   	 			}
+   	 			
+    	 			for (i = 0; i < label_count; i+=1) {
+   	 				(scores [node_name]) [i] = 1 - (z == i);
+   	 				(labels [node_name]) [i] = z;
+   	 			}			
+   	 		}
+   	 	}
+   }
+   
+   
+   // pass 2 to choose the best state for subtree parents
+ 
+ 
+   total_score = 0;
+    
+   for (k = 0; k < Abs (tree_avl); k += 1) {
+   	 	node_name = (tree_avl[k])["Name"];
+   	 	node_children = (tree_avl[k])["Children"];
+   	 	c_count = utility.Array1D (node_children);
+   	 	if (c_count) { // internal node
+   	 		parent = (tree_avl[k])["Parent"];
+   	 		if (parent > 0) {
+   	 			if (utility.Has (scores, (tree_avl[parent])["Name"], "Matrix")) {
+   	 				continue;
+   	 			}
+   	 		}
+   	 		
+   	 		if (utility.Has (scores, node_name, "Matrix") == FALSE) {
+   	 			continue;
+   	 		}
+   	 		
+   	 		best_score = 1e100;
+   	 		best_label = None;
+   	 		
+   	 		for (i = 0; i < label_count; i+=1) {
+   	 			my_score = (scores [node_name])[i];
+   	 			
+   	 			if (my_score < best_score) {
+   	 				best_score = my_score;
+   	 				best_label = i;
+   	 			}
+   	 		}
+   	 		
+   	 		total_score += best_score;
+   	 		resulting_labels [node_name] = best_label;
+   	 	}
+ 	}
+ 	   
+   tree_avl = (^tree_id) ^ 1;
+   for (k = 2; k < Abs (tree_avl); k += 1) {
+   	 node_name = (tree_avl[k])["Name"];
+   	 if (utility.Array1D((tree_avl[k])["Children"])) {
+   	 	parent = (tree_avl[k])["Parent"];
+   	 	if (utility.Has (resulting_labels, (tree_avl[parent])["Name"], "Number")) {
+   	 		parent = resulting_labels[(tree_avl[parent])["Name"]];
+   	 		resulting_labels[node_name] = (labels [node_name])[parent];
+   	 	}
+   	 }
+   }
+   
+   return {"score" : total_score, "labels" : utility.Map (resulting_labels, "_value_", "`&label_values`[_value_]")};  
+   // pass 1 to choose the best state for subtree parents
+}
+
+/**
+ * Annotate a tree string with using user-specified labels  
+ * @name trees.ParsimonyLabel
+ * @param 	{String} tree ID
+ * @param 	{Dict} 	 node_name -> label
+ * @param {String} a pair of characters to enclose the label in 
+ * @param {Bool} whether or not to include branch lentghs
+ * @return {String} annotated string
+ */
+
+lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
+	theAVL = (^tree_id)^0;
+	_ost = "";
+	_ost * 256;
+	
+	lastLevel = 0;
+	treeSize  = Abs(theAVL);
+	treeInfo  = theAVL[0];
+	rootIndex = treeInfo["Root"];
+	
+	for (nodeIndex = 1; nodeIndex < treeSize; nodeIndex += 1) {
+        nodeInfo = theAVL[nodeIndex];
+        myDepth = nodeInfo["Depth"];
+        if (lastDepth < myDepth) {
+            if (lastDepth) {
+                _ost * ",";
+            }
+            for (pidx = lastDepth; pidx < myDepth; pidx += 1) {
+                _ost * "(";
+            }
+        } else {
+            if (lastDepth > myDepth) {
+                for (pidx = myDepth; pidx < lastDepth; pidx += 1) {
+                    _ost * ")";
+                }				
+            } else {
+                _ost * ",";
+            }
+        }
+        
+        _ost * nodeInfo["Name"];
+        
+        
+        if (labels / nodeInfo["Name"]) {
+            if (Abs(labels[nodeInfo["Name"]])) {
+                _ost * (chars[0] + labels[nodeInfo["Name"]] + chars[1]);
+            }
+        }
+
+        if (doLengths) {
+            if (nodeIndex < treeSize - 1) {
+                _ost * ":";
+                _ost * (""+nodeInfo ["Length"]); 
+            }
+        }
+        lastDepth = myDepth;
+	}
+	
+	_ost * 0;
+	return _ost;
+}
+
 

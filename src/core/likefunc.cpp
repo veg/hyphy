@@ -6520,8 +6520,8 @@ void    _LikelihoodFunction::GradientLocateTheBump (_Parameter gPrecision, _Para
                 bestVal     = current_best_vector;
            }
             
-            if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 10. * machineEps)) {
-                WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%15.12g") & " / " & _String (initialValue,"%15.12g") & ".\n");// & _String ((_String*)brentHistory.toStr()));
+            if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 100. * machineEps)) {
+                WarnError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%18.16g") & " / " & _String (initialValue,"%18.16g") & ".\n");// & _String ((_String*)brentHistory.toStr()));
                 return;
             }
             

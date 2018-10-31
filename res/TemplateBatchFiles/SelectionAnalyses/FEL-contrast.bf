@@ -29,7 +29,7 @@ fel.analysis_description = {
     terms.io.info: "FEL-contrast (Fixed Effects Likelihood) investigates whether or not selective pressures differ between two or more sets of
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
     and then beta rates are tested for equality at each site. LRT is used to assess significance.",
-    terms.io.version: "0.2",
+    terms.io.version: "0.3",
     terms.io.reference: "Kosakovsky Pond SL, Frost SDW, Grossman Z, Gravenor MB, Richman DD, Leigh Brown AJ (2006) Adaptation to Different Human Populations by HIV-1 Revealed by Codon-Based Analyses. PLoS Comput Biol 2(6): e62.",
     terms.io.authors: "Sergei L Kosakovsky Pond",
     terms.io.contact: "spond@temple.edu",
@@ -80,8 +80,6 @@ fel.display_orders =   {terms.original_name: -1,
 selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
 
 
-
-
 namespace fel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ({utility.getGlobalValue("terms.prefix"): "fel", utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "fel.select_branches"}});
@@ -99,7 +97,7 @@ if (fel.srv == "Yes"){
     fel.srv = FALSE
 }
 /* Prompt for p value threshold */
-fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
+fel.p_value  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
 
 
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to use as the test set in the FEL-contrast analysis');
@@ -133,6 +131,7 @@ utility.ForEachPair (fel.branch_sets, "_group_", "_branches_",
         fel.scaler_parameter_names [_group_] = 'fel.beta_scaler_background';
         fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (reference branches)';
         fel.branches.has_background = TRUE;
+        io.ReportProgressMessageMD('FEL',  'selector', '* ' + Abs(_branches_) + ' branches are in the background group : \\\`' + Join (', ',_branches_) + '\\\`')
      }
      "
 );
@@ -156,22 +155,24 @@ utility.ForEach (fel.rate.names, "_n_", ,
 
 fel.report.rate_count = fel.k;
 
-fel.table_headers [fel.k][0] = "p-value (overall)";
+
+fel.table_headers [fel.k][0] = "P-value (overall)";
 if (fel.branch_class_counter == 1) {
     fel.table_headers [fel.k][1] = "P-value for the test that " + fel.branches.testable[0] + " branches have different non-synonymous rates than background branches";
 } else {
     fel.table_headers [fel.k][1] = "P-value for the test that non-synonymous rates differ between any of the selected groups: " + Join (",", fel.branches.testable);
 }
 
-fel.k += 1;
 
-fel.report.test_count = 1 + fel.branch_class_counter * (fel.branch_class_counter-1) / 2;
+
+fel.report.test_count = 1 + (fel.branch_class_counter > 2) * (fel.branch_class_counter * (fel.branch_class_counter-1) / 2);
 fel.tests.key = {fel.report.test_count, 4};
 fel.tests.key [0][0] = "overall";
 fel.tests.key [0][1] = -1;
 fel.tests.key [0][3] = fel.report.rate_count;
 
-fel.test.index = 1;
+fel.test.index = fel.test_count > 1;
+fel.k += fel.test_count > 1;
 
 for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
     for (fel.v2 = fel.v + 1; fel.v2 < fel.branch_class_counter; fel.v2 += 1) {
@@ -186,6 +187,9 @@ for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
         fel.test.index += 1;
     }
 }
+
+io.ReportProgressMessageMD('FEL',  'tests', '**' + fel.test_count + "** " + io.SingularOrPlural (fel.test_count , "test", "tests")+" will be performed at each site");
+
 
 fel.report.counts         = {fel.report.test_count,1};
 
@@ -349,6 +353,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     }
 
 
+	
     ref_parameter = (^"fel.scaler_parameter_names")[(^"fel.branches.testable")["VALUEINDEXORDER"][0]];
 
     ^ref_parameter = sum /denominator;
@@ -356,10 +361,12 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     if (testable == 1) {
         parameters.SetConstraint ((^"fel.scaler_parameter_names")[^"terms.tree_attributes.background"],ref_parameter, "");
     } else {
-        utility.ForEach (^"fel.scaler_parameter_names", "_pname_",
+        utility.ForEach (^"fel.branches.testable", "_gname_",
         '
             //console.log ("REF " + `&ref_parameter`);
+            _pname_ =  (^"fel.scaler_parameter_names")[_gname_];
             if (_pname_ != `&ref_parameter`) {
+            	//console.log (_pname_ + "=>" + `&ref_parameter`);
                 parameters.SetConstraint (_pname_,`&ref_parameter`, "");
             }
         '
@@ -473,8 +480,7 @@ lfunction fel.store_results (node, result, arguments) {
                  `&k` += 1;
            '
         );
-
-
+        
         lrt = math.DoLRT ((result[utility.getGlobalValue("terms.null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           Max (1,^'fel.branch_class_counter' - 1));
@@ -482,17 +488,20 @@ lfunction fel.store_results (node, result, arguments) {
         p_values = {};
         p_values ["overall"] = lrt[^'terms.p_value'];
         test_keys = {};
+        
+        if (^'fel.report.test_count' > 1) {
 
-        for (v = 0; v < ^'fel.branch_class_counter'; v += 1) {
-            for (v2 = v + 1; v2 < ^'fel.branch_class_counter'; v2 += 1) {
-                test_key = (^'fel.branches.testable') [v] + "|" + (^'fel.branches.testable') [v2];
-                test_keys + test_key;
-                lrt = math.DoLRT (((result[utility.getGlobalValue("terms.fel.pairwise")])[test_key])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                                  (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                                  1);
-                p_values [test_key] = lrt[^'terms.p_value'];
-            }
-        }
+			for (v = 0; v < ^'fel.branch_class_counter'; v += 1) {
+				for (v2 = v + 1; v2 < ^'fel.branch_class_counter'; v2 += 1) {
+					test_key = (^'fel.branches.testable') [v] + "|" + (^'fel.branches.testable') [v2];
+					test_keys + test_key;
+					lrt = math.DoLRT (((result[utility.getGlobalValue("terms.fel.pairwise")])[test_key])[utility.getGlobalValue("terms.fit.log_likelihood")],
+									  (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
+									  1);
+					p_values [test_key] = lrt[^'terms.p_value'];
+				}
+			}
+		}
 
         p_values = math.HolmBonferroniCorrection (p_values);
         result_row [k] = p_values ["overall"];
