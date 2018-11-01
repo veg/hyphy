@@ -130,16 +130,33 @@ if (relax.numbers_of_tested_groups == 2) {
 }
 
 relax.has_unclassified = FALSE;
+relax.group_choices = {};
 
 function relax.echo_group (group, description) {
 	utility.ForEachPair (relax.selected_branches, "_partition_", "_selection_",
-		"_selection_ = utility.Filter (_selection_, '_value_', '_value_ == group');
+		"_selection_ = utility.Filter (_selection_, '_selector_', '_selector_ == group');
+		 relax.group_choices[group] = 'Set ' + group + ' with ' + utility.Array1D (_selection_) + ' branches';
 		 io.ReportProgressMessageMD('RELAX',  'selector', '* Selected ' + Abs(_selection_) + ' branches as the _`group`_ set: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
 };
 
 
 relax.branch_sets ["relax.echo_group"][""];
+
+if (relax.numbers_of_tested_groups > 2) {
+	relax.reference_set_name = io.SelectAnOption (relax.group_choices, "Select the set of branches to use as reference");
+	if (relax.branch_sets [relax.reference_set_name] > 0) {
+		relax.k = utility.Keys (relax.branch_sets);
+		for (relax.i = 0; relax.i < relax.numbers_of_tested_groups; relax.i += 1) {
+			if (relax.k [relax.i] != relax.reference_set_name ) {
+				relax.branch_sets [relax.k [relax.i]] = relax.branch_sets [relax.reference_set_name];
+				break;
+			}
+		}
+		relax.branch_sets [relax.reference_set_name] = 0;
+	}	
+}
+
 
 utility.ForEachPair (relax.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == relax.unclassified_branches_name');
@@ -371,12 +388,13 @@ if (relax.numbers_of_tested_groups == 2) {
 		relax.model_namespaces[_value_] = relax.k;
 	");
 	relax.reference_model_namespace = relax.model_namespaces[0];
+	//console.log (relax.model_namespaces);
+	//console.log (relax.reference_model_namespace);
 }
 
 //console.log (relax.model_namespaces);
 //explicit loop to avoid re-entrance errors 
 
-relax.model_namespaces = utility.Keys (relax.model_object_map);
 relax.relax_parameter_terms = {};
 
 relax.bound_weights = {};
