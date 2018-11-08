@@ -377,6 +377,8 @@ function models.generic.ConstrainBranchLength (model, value, parameter) {
  */
 function models.generic.SetBranchLength (model, value, parameter) {
 
+	//console.log ("\n**Setting branch length of " + parameter + " to " + value);
+
      if (Abs((model[terms.parameters])[terms.local]) >= 1) {
         if (Type (model [terms.model.branch_length_string]) == "String") {
             models.generic.SetBranchLength.expression = model [terms.model.branch_length_string];
@@ -411,8 +413,9 @@ function models.generic.SetBranchLength (model, value, parameter) {
 
                 if (Type (value) == "AssociativeList") {
                  	if (Abs (models.generic.SetBranchLength.expression)) {
-                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,1e26)");
                     	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+                    	//console.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t); 	
 					    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 
 					} else {
@@ -423,8 +426,12 @@ function models.generic.SetBranchLength (model, value, parameter) {
                     return 1;
 
                 } else {
-                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,1e26)");
                      Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
+                     if (value > 0 && models.generic.SetBranchLength.t == 0) { // solution failed
+                     	models.generic.SetBranchLength.t = value; // better to guess a >0 value 
+                     }
+                     //console.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
                      messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
               }
             } else {

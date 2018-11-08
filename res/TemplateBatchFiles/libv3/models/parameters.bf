@@ -505,6 +505,7 @@ function parameters.ConstrainSets(set1, set2) {
 function parameters.RemoveConstraint(id) {
     if (Type(id) == "String") {
         if (Abs(id)) {
+            //console.log ("RemoveConstraint `id` = " + Eval(id));
             Eval("`id` = " + Eval(id));
         }
     } else {

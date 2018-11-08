@@ -698,10 +698,11 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     //assert (0);
     //Export (lf,likelihoodFunction);
-    //console.log (lf);
+    //console.log (lf);   
+	//utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
+	
+	//console.log ("\n****Initial LF value = " + estimators.ComputeLF (lf_id) + "\n*****");
     
-    //utility.SetEnvVariable ("VERBOSITY_LEVEL" ,10);
-
    	Optimize (mles, likelihoodFunction);
 
 
