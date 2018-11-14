@@ -359,8 +359,9 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
                         }
                     }
                     
-                    
+                     
                     FinalizeNode (parentNode, nodeNumbers.get (lastNode), nodeName, nodeParameters, nodeValue, &nodeComment, parse_settings);
+                    
                     pop_node ();
                     
                     if (look_at_me == ',') { // also create a new node on the same level

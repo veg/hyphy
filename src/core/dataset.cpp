@@ -961,7 +961,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
         for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
             _String * old_name = new _String (*ds->GetSequenceName (i));
             if (! old_name->IsValidIdentifier(false) ) {
-                ds->GetSequenceName (i)->ConvertToAnIdent(false);
+                *ds->GetSequenceName (i) = ds->GetSequenceName (i)->ConvertToAnIdent(false);
                 did_something = true;
             }
             if (id_mapping.Find (ds->GetSequenceName (i)) >= 0) {
@@ -981,13 +981,9 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
         if (did_something) {
             _AssociativeList * mapping = new _AssociativeList();
             
-            _SimpleList history;
-            long t,
-            current_index = id_mapping.Traverser(history, t, id_mapping.GetRoot());
-            
-            while (current_index >= 0L) {
-                mapping->MStore(*(_String*)_id_mapping.GetItem (current_index), *(_String*)id_mapping.GetXtra(current_index));
-                current_index = id_mapping.Traverser(history, t);
+            for (AVLListXLIteratorKeyValue filter_key_value : AVLListXLIterator (&id_mapping)) {
+                //printf ("%d => %s\n", filter_key_value.get_index(), ((_String*)filter_key_value.get_object())->get_str());
+                mapping->MStore(*(_String *)id_mapping.Retrieve (filter_key_value.get_index()), *(_String*)filter_key_value.get_object());
             }
             
             CheckReceptacleAndStore (*setName&".mapping",kEmptyString,false, mapping, false);

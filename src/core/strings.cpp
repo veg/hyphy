@@ -1182,15 +1182,15 @@ const _String  _String::ConvertToAnIdent(int options) const {
       }
       first = false;
     } else {
-      if ( ! hy_Valid_ID_Chars.is_valid(current_char)) {
+      if ( hy_Valid_ID_Chars.is_valid(current_char)) {
         if (allow_compounds && current_char == '.') {
           first = true;
-          converted << current_char;
-        } else {
+        }
+        converted << current_char;
+      } else {
           if (last_char != default_placeholder) {
             converted << default_placeholder;
           }
-        }
       }
     }
     last_char = converted.char_at (converted.length () - 1UL);
