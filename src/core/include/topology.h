@@ -165,6 +165,7 @@ protected:
      */
     
   
+    virtual void _RemoveNodeList (_SimpleList const& list);
 
 public:
     // class constants
@@ -229,7 +230,7 @@ public:
     
     _List*          MapNodesToModels                    (void);
 
-    virtual _String const  GetNodeName                         (node<long> *, bool = false) const;
+    virtual _String const GetNodeName                         (node<long> *, bool = false) const;
     virtual _String const *GetNodeModel                        (node<long> *) const;
     virtual _String const GetBranchLengthString                (node<long> *, bool get_expression = false) const;
     // SLKP 20100901:

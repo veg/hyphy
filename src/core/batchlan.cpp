@@ -432,11 +432,8 @@ hyFloat  ProcessNumericArgument (_String* data, _VariableContainer const* theP, 
 
 //____________________________________________________________________________________
 
-HBLObjectRef   ProcessAnArgumentByType (_String const* expression, _VariableContainer const* theP, long objectType, _ExecutionList* currentProgram)
-{
+HBLObjectRef   ProcessAnArgumentByType (_String const* expression, _VariableContainer const* theP, long objectType, _ExecutionList* currentProgram) {
     _String   errMsg;
-
-
     _Formula  expressionProcessor (*expression, theP, currentProgram?&errMsg:nil);
 
     if (errMsg.nonempty() && currentProgram) {
@@ -474,9 +471,6 @@ const _String ProcessLiteralArgument (_String const* data, _VariableContainer co
 _AssociativeList*   ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* currentProgram) {
   return (_AssociativeList* )ProcessAnArgumentByType (data, theP, ASSOCIATIVE_LIST, currentProgram);
 }
-
-
-
 
 //____________________________________________________________________________________
 const _String&    GetBFFunctionNameByIndex  (long idx) {
@@ -2155,6 +2149,8 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
           _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
 
           long     parseCode = Parse(&f,(*theFla),fpc,&f2);
+          
+          //printf ("RHS = %s\n", _String ((_String*)f2.toStr(kFormulaStringConversionNormal)).get_str());
 
           if (parseCode != HY_FORMULA_FAILED ) {
               if (fpc.isVolatile() == false) { // not a matrix constant
@@ -3626,7 +3622,7 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
     }
 
 
-    if (scope_depth != 0L || comment_state != no_comment || literal_state != normal_text || matrix_depth != 0L || bracket_depth != 0L || parentheses_depth != 0L) {
+    if (scope_depth != 0L || comment_state == slash_star || literal_state != normal_text || matrix_depth != 0L || bracket_depth != 0L || parentheses_depth != 0L) {
         if (result!='}') {
             HandleApplicationError (_String("Expression appears to be incomplete/syntax error. {} scope: ") &scope_depth & ", () depth "
                        & parentheses_depth & ", matrix scope: " & matrix_depth & '.' & (literal_state == double_quote ?" In a \"\" literal. ":kEmptyString)
@@ -4100,9 +4096,9 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
             dsc.parameters              &&(&dsID);
             dsc.parameters              << pieces(0);
             for (long optP = 1; optP < pieces.lLength; optP++)
-                if (((_String*)pieces(optP))->Equal(&marginalAncestors)) {
+                if (((_String*)pieces(optP))->Equal(marginalAncestors)) {
                     dsc.simpleParameters << -1;
-                } else if (((_String*)pieces(optP))->Equal(&doLeavesAncestors)) {
+                } else if (((_String*)pieces(optP))->Equal(doLeavesAncestors)) {
                     dsc.simpleParameters << -2;
                 } else {
                     dsc.parameters  << pieces(optP);

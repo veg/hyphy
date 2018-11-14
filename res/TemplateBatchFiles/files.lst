@@ -1,18 +1,22 @@
 "","Run a standard selection inference method on coding-sequence data.","!Selection Analyses";
-"MEME","Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).","SelectionAnalyses/MEME.bf";
-"FEL","Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).","SelectionAnalyses/FEL.bf";
-"SLAC","Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).","SelectionAnalyses/SLAC.bf";
-"FUBAR","Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).","SelectionAnalyses/FUBAR.bf";
-"BUSTED","Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED.bf";
-"aBSREL","Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
-"RELAX","Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";
+"MEME","[MEME] Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).","SelectionAnalyses/MEME.bf";
+"FEL","[FEL] Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).","SelectionAnalyses/FEL.bf";
+"SLAC","[SLAC] Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).","SelectionAnalyses/SLAC.bf";
+"FUBAR","[FUBAR] Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).","SelectionAnalyses/FUBAR.bf";
+"BUSTED","[BUSTED] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED.bf";
+"aBSREL","[aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
+"RELAX","[RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";
+"FADE","[FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).","SelectionAnalyses/FADE.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
 "FEL-Contrast","Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/FEL-contrast.bf";
 
-"","Analyze amino-acid data.","!Protein Analyses";
-"Relative Rates","Run a relative rates analysis on a protein alignment, in the spirit of Rate4Site (PMID: 12169533).","ProteinAnalyses/relative_prot_rates.bf";
-"Model inference","[EXPERIMENTAL] Infer a customized amino-acid exchangeability matrix from a training data set of protein alignments.","ProteinAnalyses/ProteinGTRfit.bf";
+"","Evolutionary rates on non-coding data.","!Relative evolutionary rate inference";
+"LEISR","[LEISR] Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";
+
+"","Identify pairs or networks of sites that co-evolve.","!Coevolutionary analysis";
+"BGM","[BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.","BGM.bf";
+
 
 "","Perform a maximum likelihood analysis on a single file given a single tree.","!Basic Analyses";
 "ACD","Analyse codon data with a variery of standard models using given tree.","AnalyzeCodonData.bf";
@@ -100,7 +104,6 @@
 "PSDI","Test whether sites in two populations are evolving under different selective pressures along internal tree branches.","CompareSelectivePressureIVL.bf";
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 "PSM","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1. Multiple subsets of one data set with shared dN/dS.","MFPositiveSelection.bf";
-"QSD","Quickly test for positive selection using several approaches.","QuickSelectionDetection.bf";
 "RELAX","Test whether selected branches are under relaxed or intensified selection against reference branches","SelectionAnalyses/RELAX.bf";
 "SSD","Use approximate likelihoods at a site to test for subtree specific selective pressure.","SubtreeSelectionComparison.bf";
 "DST","Perform a random effects (D)irectional (E)volution on (P)rotein (S)equences test to identify sites which evolve directionally towards a given residue [MPI enabled].","DirectionalREL.bf";

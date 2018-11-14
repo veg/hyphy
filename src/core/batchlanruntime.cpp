@@ -146,9 +146,9 @@ const _String _ProcessALiteralArgument (_String const& expression, _ExecutionLis
 
   //____________________________________________________________________________________
 
-BaseRefConst    _GetHBLObjectByType (_String const&  source_name, long& type, long * object_index = nil) {
+BaseRefConst    _GetHBLObjectByType (_String const&  source_name, long& type, long * object_index, _ExecutionList* current_program) {
   long            object_type = type;
-  BaseRefConst    source_object = _HYRetrieveBLObjectByName (source_name, object_type,object_index,false, true);
+  BaseRefConst    source_object = _HYRetrieveBLObjectByName (source_name, object_type,object_index,false, true, current_program);
 
   if (source_object == nil) {
     throw (source_name.Enquote('\'') & " is not a " & _HYHBLTypeToText(type));
@@ -372,7 +372,7 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
         const _String source_name = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
 
         long            object_type = HY_BL_DATASET|HY_BL_DATASET_FILTER;
-        BaseRefConst    source_object = _GetHBLObjectByType(source_name, object_type);
+        BaseRefConst    source_object = _GetHBLObjectByType(source_name, object_type, nil, &current_program);
 
         _DataSetFilter const * filter_source  = object_type == HY_BL_DATASET_FILTER ? (_DataSetFilter const *)source_object : nil;
         _DataSet       const * dataset_source = filter_source ? nil : (_DataSet const *)source_object;
@@ -393,6 +393,7 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                 try {
                     argument = _ProcessALiteralArgument (*GetIthParameter(2),current_program);
                 } catch (const _String err) {
+                    //printf ("%s\n", err.get_str());
                     // not a string
                 }
                 if (argument.nonempty()) {
@@ -704,7 +705,7 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
         const _String source_name = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
         long            object_type = HY_BL_LIKELIHOOD_FUNCTION  | HY_BL_TREE,
                         object_index;
-        BaseRefConst    source_object = _GetHBLObjectByType (source_name, object_type, &object_index);
+        BaseRefConst    source_object = _GetHBLObjectByType (source_name, object_type, &object_index, &current_program);
 
         switch (object_type) {
             case HY_BL_LIKELIHOOD_FUNCTION: {
@@ -1090,7 +1091,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& current_
         receptacle = _ValidateStorageVariable (current_program);
 
         long       object_type = HY_BL_DATASET|HY_BL_DATASET_FILTER;
-        BaseRefConst    source_object = _GetHBLObjectByType(*GetIthParameter(1), object_type);
+        BaseRefConst    source_object = _GetHBLObjectByType(*GetIthParameter(1), object_type, nil, &current_program);
 
         long      unit      = _ProcessNumericArgumentWithExceptions(*GetIthParameter(2),current_program.nameSpacePrefix),
                   atom      = _ProcessNumericArgumentWithExceptions(*GetIthParameter(3),current_program.nameSpacePrefix);
@@ -1588,7 +1589,7 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_p
     _String    const op_kind = * GetIthParameter(1UL);
 
     long       object_type = HY_BL_LIKELIHOOD_FUNCTION|HY_BL_SCFG|HY_BL_BGM;
-    _LikelihoodFunction*    source_object = (_LikelihoodFunction*)_GetHBLObjectByType(AppendContainerName (*GetIthParameter(0UL), current_program.nameSpacePrefix),object_type);
+    _LikelihoodFunction*    source_object = (_LikelihoodFunction*)_GetHBLObjectByType(AppendContainerName (*GetIthParameter(0UL), current_program.nameSpacePrefix),object_type, nil,&current_program);
 
     if (op_kind == kLFStartCompute) {
       source_object->PrepareToCompute(true);
@@ -1816,7 +1817,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       ReadModelList();
 
       long            object_type = HY_BL_DATASET|HY_BL_DATASET_FILTER;
-      _DataSetFilter const *    source_filter = (_DataSetFilter const*)_GetHBLObjectByType(source_name, object_type);
+      _DataSetFilter const *    source_filter = (_DataSetFilter const*)_GetHBLObjectByType(source_name, object_type, nil, &current_program);
 
 
       _String             data_type;
@@ -2277,7 +2278,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
 
   static        _List       _open_file_handles_aux;
-                _AVLListX   open_file_handles     (&_open_file_handles_aux);
+  static        _AVLListX   open_file_handles     (&_open_file_handles_aux);
 
 
   current_program.advance();
@@ -2353,7 +2354,10 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
         if (!print_to_stdout && destination_file) {
           fclose (destination_file);
           destination_file = doFileOpen (destination.get_str(), "w");
-          open_file_handles.UpdateValue(&destination, (long)destination_file, 1);
+          _String* destination_copy = new _String (destination);
+          if (open_file_handles.UpdateValue(destination_copy, (long)destination_file, 1) >= 0) { // did not insert value
+            DeleteObject (destination_copy);
+          }
         }
       } else if (*current_argument == kFprintfKeepOpen) {
         if (!print_to_stdout) {
@@ -3384,7 +3388,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                 
                 
                 try {
-                    BaseRefConst       source_object = _GetHBLObjectByType (source_name, object_type, &object_index);
+                    BaseRefConst       source_object = _GetHBLObjectByType (source_name, object_type, &object_index, &current_program);
                     // this wil also handle USE_LAST_MODEL
                     switch (object_type) {
                         case HY_BL_DATASET: {
@@ -3589,13 +3593,12 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
   // REQUIRES CODE REVIEW FROM THIS POINT ON
   //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
-{
+void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample) {
   chain.currentCommand++;
   
   _List local_object_manager;
   
-  _String *likef          = (_String*)parameters(1);
+  _String *likef          =  GetIthParameter(1);
   
   _String name2lookup = AppendContainerName(*likef,chain.nameSpacePrefix);
   long    objectID    = FindLikeFuncName (name2lookup);
@@ -3610,7 +3613,7 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
       
       _Matrix * partitionList         = nil;
       if (parameters.lLength>2) {
-        _String  secondArg = *(_String*)parameters(2);
+        _String  secondArg = *GetIthParameter(2);
         partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
       }
       _SimpleList                     partsToDo;
@@ -3619,7 +3622,10 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
         lf->ReconstructAncestors(*ds, partsToDo, *dsName,  sample, simpleParameters.Find(-1) >= 0, simpleParameters.Find(-2) >= 0 );
       }
       
+      ds->AddAReference();
+      dsName->AddAReference();
       StoreADataSet  (ds, dsName);
+    
     } else {
       objectID    =   FindSCFGName       (name2lookup);
       if (objectID>=0)

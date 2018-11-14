@@ -706,8 +706,7 @@ bool  _AVLList::HasData (long idx)
 
 //______________________________________________________________
 
-void  _AVLList::Delete (BaseRefConst b, bool delMe)
-{
+void  _AVLList::Delete (BaseRefConst b, bool delMe) {
 
     if (root == -1) {
         return;
@@ -763,9 +762,8 @@ void  _AVLList::Delete (BaseRefConst b, bool delMe)
             }
         }
 
-        if (p==root)
+        if (p==root) {
             //root = pa.lData[k-1];
-        {
             root = leftChild.lData[root];
         }
     } else {

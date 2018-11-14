@@ -6319,8 +6319,8 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
           }
         }
 
-        if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 10. * kMachineEpsilon)) {
-          HandleApplicationError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & maxSoFar & " / " & initialValue & ".\n");
+        if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 100. * kMachineEpsilon)) {
+          HandleApplicationError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%18.16g") & " / " & _String (initialValue,"%18.16g") & ".\n");
 
           return;
         }
@@ -9145,7 +9145,7 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
                 } else {
                     *res<<',';
                 }
-                *res<< currentTree->GetNodeName (ti.GetNode());
+                *res<< currentTree->GetNodeName (currentNode);
                 if (!useExpectedSubstitutions) {
                     *res<<'{';
                     

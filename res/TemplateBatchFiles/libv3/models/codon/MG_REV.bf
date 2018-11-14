@@ -30,7 +30,7 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
         },
         utility.getGlobalValue("terms.model.get_branch_length"): "",
         utility.getGlobalValue("terms.model.set_branch_length"): "models.codon.MG_REV.set_branch_length",
-        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.constrain_branch_length",
+        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.ConstrainBranchLength",
         utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.empirical.corrected.CF3x4",
         utility.getGlobalValue("terms.model.q_ij"): "models.codon.MG_REV._GenerateRate",
         utility.getGlobalValue("terms.model.time"): "models.DNA.generic.Time",
@@ -40,8 +40,10 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
 }
 
 
-lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, _tt) {
-    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"), "beta", utility.getGlobalValue("terms.parameters.nonsynonymous_rate"), "omega", utility.getGlobalValue("terms.parameters.omega_ratio"));
+lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, model) {
+    return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type,
+    model[utility.getGlobalValue("terms.translation_table")],
+    "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"), "beta", utility.getGlobalValue("terms.parameters.nonsynonymous_rate"), "omega", utility.getGlobalValue("terms.parameters.omega_ratio"));
 }
 
 /**
@@ -70,7 +72,7 @@ lfunction models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace
         }
 
         nuc_rate = parameters.ApplyNameSpace(nuc_rate, namespace);
-        (_GenerateRate.p[utility.getGlobalValue("terms.global")])[terms.nucleotideRate(_GenerateRate.diff[utility.getGlobalValue("terms.diff.from")], _GenerateRate.diff[utility.getGlobalValue("terms.diff.to")])] = nuc_rate;
+        (_GenerateRate.p[utility.getGlobalValue("terms.global")])[terms.nucleotideRateReversible(_GenerateRate.diff[utility.getGlobalValue("terms.diff.from")], _GenerateRate.diff[utility.getGlobalValue("terms.diff.to")])] = nuc_rate;
 
         if (_tt[fromChar] != _tt[toChar]) {
             if (model_type == utility.getGlobalValue("terms.global")) {
@@ -115,6 +117,7 @@ function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
  * @returns {Number} 0
  */
 function models.codon.MG_REV.set_branch_length(model, value, parameter) {
+
     if (model[terms.model.type] == terms.global) {
         return models.generic.SetBranchLength(model, value, parameter);
     }
@@ -125,6 +128,8 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
     models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
     models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
+
+
 
     if (Type(value) == "AssociativeList") {
         if (value[terms.model.branch_length_scaler] == terms.model.branch_length_constrain) {
@@ -142,6 +147,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                     model[terms.parameters.nonsynonymous_rate] = Simplify(bl_string, models.codon.MG_REV.set_branch_length.sub);
                 }
 
+                //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
 
                 parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.parameters.synonymous_rate] + "))/(" + model[terms.parameters.nonsynonymous_rate] + ")", "");
                 return 1;

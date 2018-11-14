@@ -680,10 +680,16 @@ _String const*    _TheTree::GetNodeModel (node<long>* n) const {
 //_______________________________________________________________________________________________
 
 const _String    _TheTree::GetNodeName      (node<long>* n, bool fullName) const {
+    return GetNodeName(map_node_to_calcnode(n), fullName);
+}
+
+//_______________________________________________________________________________________________
+
+const _String    _TheTree::GetNodeName      (_CalcNode const* cn, bool fullName) const {
     if (fullName) {
-        return *map_node_to_calcnode(n)->GetName();
+        return *cn->GetName();
     }
-    return map_node_to_calcnode(n)->GetName()->Cut (GetName()->length()+1L,kStringEnd);
+    return cn->GetName()->Cut (GetName()->length()+1L,kStringEnd);
 }
 
 
@@ -4469,52 +4475,52 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     allNodeCount = iNodeCount + leafCount - 1;
     
     for  (long nodeID = 0; nodeID < allNodeCount; nodeID++) {
-        long    parentCode = flatParents.lData [nodeID],
-        nodeCode   = nodeID;
+        long    parent_index = flatParents.get (nodeID),
+                node_index   = nodeID;
         
-        bool    isLeaf     = nodeID < flatLeaves.lLength;
+        bool    is_leaf     = nodeID < flatLeaves.countitems();
         
         
-        if (!isLeaf) {
-            nodeCode -=  flatLeaves.lLength;
-            AddBranchToForcedRecomputeList (nodeCode);
+        if (!is_leaf) {
+            node_index -=  flatLeaves.countitems();
+            AddBranchToForcedRecomputeList (node_index);
         }
         
-        hyFloat * parentConditionals = iNodeCache + parentCode * alphabetDimension * patternCount;
+        hyFloat * parentConditionals = iNodeCache + parent_index * alphabetDimension * patternCount;
         
-        if (taggedInternals.lData[parentCode] == 0L) {
+        if (taggedInternals.get(parent_index) == 0L) {
             // mark the parent for update and clear its conditionals if needed
-            taggedInternals.lData[parentCode]     = 1L;
+            taggedInternals[parent_index]     = 1L;
             InitializeArray(parentConditionals, patternCount*alphabetDimension, 1.);
         }
         
-        _CalcNode *          currentTreeNode = isLeaf? ((_CalcNode*) flatCLeaves (nodeCode)):((_CalcNode*) flatTree    (nodeCode));
-        hyFloat  const*        transitionMatrix = nil;
+        _CalcNode *          tree_node_object = is_leaf? ((_CalcNode*) flatCLeaves (node_index)):((_CalcNode*) flatTree    (node_index));
+        hyFloat  const*      transition_matrix = nil;
         
         if (!catAssignments) {
-            _Matrix* comp_exp = currentTreeNode->GetCompExp();
+            _Matrix* comp_exp = tree_node_object->GetCompExp();
             if (!comp_exp) {
-                hy_global::HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__ & ". Transition matrix not computed for " & *currentTreeNode->GetName());
+                hy_global::HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__ & ". Transition matrix not computed for " & *tree_node_object->GetName());
                 return nil;
             }
-            transitionMatrix = comp_exp->theData;
+            transition_matrix = comp_exp->theData;
         }
         
         // this will need to be toggled on a per site basis
         hyFloat  *       childVector;
         
-        if (!isLeaf) {
-            childVector = iNodeCache + (nodeCode * patternCount) * alphabetDimension;
+        if (!is_leaf) {
+            childVector = iNodeCache + (node_index * patternCount) * alphabetDimension;
         }
         
         for (long siteID = 0; siteID < patternCount; siteID++, parentConditionals += alphabetDimension) {
             if (catAssignments) {
-                transitionMatrix = currentTreeNode->GetCompExp(catAssignments[siteOrdering.lData[siteID]])->theData;
+                transition_matrix = tree_node_object->GetCompExp(catAssignments[siteOrdering.lData[siteID]])->theData;
             }
             
-            hyFloat  const *tMatrix = transitionMatrix;
-            if (isLeaf) {
-                long siteState = lNodeFlags[nodeCode*patternCount + siteOrdering.lData[siteID]] ;
+            hyFloat  const *tMatrix = transition_matrix;
+            if (is_leaf) {
+                long siteState = lNodeFlags[node_index*patternCount + siteOrdering.lData[siteID]] ;
                 if (siteState >= 0L) { // a fully resolved leaf
                     tMatrix  +=  siteState;
                     for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension) {
@@ -4543,7 +4549,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
             
             hyFloat overallMax                     = 0.0;
             
-            long       *stateBuffer                   = isLeaf?leafBuffer:stateCache;
+            long       *stateBuffer                   = is_leaf?leafBuffer:stateCache;
             
             // check for degeneracy
             
@@ -4592,7 +4598,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
                 }
             }
             
-            if (isLeaf) {
+            if (is_leaf) {
                 if (alsoDoLeaves) {
                     leafBuffer += alphabetDimension;
                 }
@@ -4606,7 +4612,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     
     _List      *result = new _List;
     for (long k = 0; k < stateCacheDim; k++) {
-        result->AppendNewInstance (new _String(siteCount*unitLength,false));
+        result->AppendNewInstance (new _String((unsigned long)siteCount*unitLength));
     }
     
     hyFloat   _hprestrict_ * rootConditionals = iNodeCache + alphabetDimension * ((iNodeCount-1)  * patternCount);
@@ -4755,4 +4761,13 @@ hyFloat   _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, long
     return overallResult + myLog (currentAccumulator);
 }
 
+//_______________________________________________________________________________________________
 
+void    _TheTree::_RemoveNodeList (_SimpleList const& clean_indices) {
+    if (compExp) {
+        DeleteAndZeroObject(compExp);
+    }
+    clean_indices.Each([] (long var_idx, unsigned long) -> void {
+        DeleteVariable(var_idx, true);
+    });
+}

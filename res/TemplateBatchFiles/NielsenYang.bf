@@ -13,7 +13,6 @@ ModelNames = {{"Neutral",
 			  "3 Normal",
 			  "Gamma mod Beta",
 			  "Beta & 1"}};
-			  
 
 MAXIMUM_ITERATIONS_PER_VARIABLE = 2000;
 OPTIMIZATION_PRECISION 			= 0.001;
@@ -22,7 +21,8 @@ modelLL							= {};
 
 /*-------------------------------------------------------------------------------*/
 
-function PromptForAParameter (promptString, leftBound, rightBound, midx) {
+function PromptForAParameter (promptString, leftBound, rightBound, midx)
+{
 	if (noMorePrompting)
 	{
 		return -1;
@@ -46,7 +46,8 @@ function PromptForAParameter (promptString, leftBound, rightBound, midx) {
 
 /*-------------------------------------------------------------------------------*/
 
-function PromptForWeights (promptString, wc,  midx) {
+function PromptForWeights (promptString, wc,  midx)
+{
 	resMx = {wc,1};
 	if (noMorePrompting)
 	{
@@ -85,7 +86,8 @@ function PromptForWeights (promptString, wc,  midx) {
 
 /*-------------------------------------------------------------------------------*/
 
-function WriteSnapshot (modelIdx) {
+function WriteSnapshot (modelIdx)
+{
 	likOF = LIKELIHOOD_FUNCTION_OUTPUT;
 	LIKELIHOOD_FUNCTION_OUTPUT = 6;
 	SPOOL_FILE = SUMMARY_FILE+"_MODEL_"+modelIdx+".nex";
@@ -96,7 +98,8 @@ function WriteSnapshot (modelIdx) {
 
 /*-------------------------------------------------------------------------------*/
 
-function PromptForModelParameter (modelIdx) {
+function PromptForModelParameter (modelIdx)
+{
 	noMorePrompting = 0;
 	if (modelIdx == 0)
 	{
@@ -229,7 +232,8 @@ function PromptForModelParameter (modelIdx) {
 
 /* ____________________________________________________________________________________________________________________*/
 
-function FrameText (frameChar,vertChar,parOff,theText) {
+function FrameText (frameChar,vertChar,parOff,theText)
+{
 	h = Abs (theText)+4;
 	fprintf (stdout,"\n");
 	for (k=0; k<parOff; k=k+1)
@@ -284,7 +288,8 @@ function BuildCodonFrequencies4 (obsF)
 
 /* ____________________________________________________________________________________________________________________*/
 
-function BuildCodonFrequencies12 (obsF) {
+function BuildCodonFrequencies12 (obsF)
+{
 	PIStop = 1.0;
 	result = {ModelMatrixDimension,1};
 	hshift = 0;
@@ -307,7 +312,8 @@ function BuildCodonFrequencies12 (obsF) {
 /* ____________________________________________________________________________________________________________________*/
 
 
-function GetDistributionParameters (sigLevel) {
+function GetDistributionParameters (sigLevel)
+{
 	GetInformation (distrInfo,c);
 	D = Columns(distrInfo);
 	E = 0.0;
@@ -785,7 +791,6 @@ if (IS_TREE_PRESENT_IN_DATA)
 
 }
 
-
 if (!IS_TREE_PRESENT_IN_DATA)
 {
 	SetDialogPrompt ("Please select a tree file for the data:");
@@ -793,32 +798,30 @@ if (!IS_TREE_PRESENT_IN_DATA)
 }
 
 Topology T = treeString;
-fprintf (stdout, "\n\nUsing tree: ", Format (T, 1, 1), "\n");
+fprintf (stdout, "\n\n", Format (T, 1, 1), "\n");
 
 treeString = RerootTree (treeString,0);
-
-fprintf (stdout, "\n\nRerooted tree: ", treeString, "\n");
-
 
 chosenModelList = {16,1};
 
 ChoiceList (modelType,"Distributions",1,SKIP_NONE,
 			"Run All","Run all available dN/dS distributions",
 			"Run Custom","Choose from available dN/dS distributions.");
-			
 
-
-if (modelType<0) {
+if (modelType<0)
+{
 	return;
 }
 
-
-if (modelType==0) {
-	for (rateType = 0; rateType<16; rateType=rateType+1) {
+if (modelType==0)
+{
+	for (rateType = 0; rateType<16; rateType=rateType+1)
+	{
 		chosenModelList[rateType][0] = 1;
 	}
-} else  {
-
+}
+else
+{
 	ChoiceList (modelTypes,"Distributions",0,SKIP_NONE,
 				"Single Rate","Single Rate",
 				"Neutral","Neutral",
@@ -837,10 +840,8 @@ if (modelType==0) {
 			    "Gamma mod Beta","Two parameter gamma partitioned by a two parameter beta",
 			    "Beta & 1", "Discrete beta and a point mass at one. The M8a model from PAML.");
 
-
-
-
-	if (modelTypes[0]<0) {
+	if (modelTypes[0]<0)
+	{
 		return;
 	}
 
@@ -966,7 +967,6 @@ if ((psigLevel <= 0)||(psigLevel>1))
 	psigLevel = .95;
 }
 fprintf (stdout, "\n>Using ", psigLevel , " cutoff\n");
-
 
 for (rateType = 5; rateType < 16; rateType = rateType + 1)
 {

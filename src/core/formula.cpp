@@ -310,12 +310,15 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
 
      ConvertToTree    ();
     
-     
+     //printf ("\n **** Diff %s on %s\n\n", _String ((_String*)toStr(kFormulaStringConversionNormal)).get_str(), var_name.get_str());
 
     _SimpleList  var_refs = PopulateAndSort ([&] (_AVLList & parameter_list) -> void {
                             this->ScanFForVariables (parameter_list, true, true, true);
     });
     
+    if (var_refs.empty()) { // handle the case of constant expressions here
+        return new _Formula (new _Constant (0.0));
+    }
 
     _Formula    ** dydx = new _Formula* [var_refs.countitems()] {0};// stores precomputed derivatives for all the
     
@@ -337,17 +340,15 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
 
             if (thisVar->IsIndependent()) {
                 dYdX = new _Formula ((*thisVar->GetName() == var_name)?new _Constant (1.0):new _Constant (0.0));
-                dYdX->ConvertToTree();
-                dydx [k] = dYdX;
             } else {
                 dYdX = thisVar->varFormula->Differentiate (var_name, bail, false);
-
                 if (dYdX->IsEmpty()) {
-                    delete (dYdX);
+                    dydx_cleanup ();
                     return res;
                 }
-                dydx [k] = dYdX;
             }
+            dYdX->ConvertToTree();
+            dydx [k] = dYdX;
           }
 
             // SortLists             (&varRefs, &dydx);
@@ -389,6 +390,9 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
         _Formula * simplified_polynomial = new _Formula (is_poly);
         //printf ("%s\n", _String ((_String*)simplified_polynomial->toStr(kFormulaStringConversionNormal)).get_str());
         delete res;
+        
+        //printf ("\n RESULT : %s \n", _String ((_String*)simplified_polynomial->toStr(kFormulaStringConversionNormal)).get_str());
+
         return simplified_polynomial;
     } else {
         //printf ("%s\n", _String ((_String*)res->toStr(kFormulaStringConversionNormal)).get_str());
@@ -1889,7 +1893,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
 // TODO SLKP 20170925 Needs code review
 {
     _Stack * scrap_here;
-    if (theFormula.lLength == 0) {
+    if (theFormula.empty()) {
         theStack.theStack.Clear();
         theStack.Push (new _MathObject, false);
         scrap_here = &theStack;

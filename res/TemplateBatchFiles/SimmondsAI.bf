@@ -1,4 +1,4 @@
-RequireVersion ("0.9920060601");
+RequireVersion ("0.99.20060601");
 VERBOSITY_LEVEL = -1;
 
 /*************************************************************************************************/
@@ -60,6 +60,7 @@ SetDialogPrompt ("Load a nucleotide sequence file:");
 
 DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
 leafCount  = ds.species;
+DataSetFilter filteredData = Bootstrap (ds,1);
 
 fprintf (stdout, "Read file: ", ds,"\n");
 
@@ -251,7 +252,7 @@ fprintf (stdout, "Using ", treeIt, " tree bootstraps and ", shuffleIt, " relabel
 treeAVL 	= givenTree^0;
 treeAVL2 	= givenTree^1;
 
-baseD		= runATreeSample (0);
+baseD		= runATreeSample ();
 fprintf   	(stdout, "\nBaseline d = ", baseD[0], "\n");
 
 totalRes    = {treeIt,3};
@@ -265,22 +266,21 @@ meanO 		= baseD[0];
 meanS		= baseD[1];
 sigB		= (propSig < baseD[2]);
 
-for (it = 0; it < treeIt-1; it = it + 1)
-{
+for (it = 0; it < treeIt-1; it += 1) {
 	DataSetFilter filteredData = Bootstrap (ds,1);
-	ts	 = InferTreeTopology (0);
+ 	ts	 = InferTreeTopology (0);
 	Tree givenTree = ts;
 	ts	 = RerootTree (givenTree, choiceMatrix);
 	Tree givenTree = ts;
 	treeAVL 	= givenTree^0;
 	treeAVL2 	= givenTree^1;
-	simD		= runATreeSample (0);
+	simD		= runATreeSample ();
 	totalRes[it+1][0] = simD[0];
 	totalRes[it+1][1] = simD[1];
 	totalRes[it+1][2] = simD[2];
-	meanO = meanO + simD[0];
-	meanS = meanS + simD[1];
-	sigB  = sigB + (propSig < simD[2]);
+	meanO += simD[0];
+	meanS += simD[1];
+	sigB  += (propSig < simD[2]);
 }
 
 fprintf (stdout, "\n\nAssociation Index: ", meanO/meanS, "\nBootstrap significance :" , sigB, "/", treeIt, "\n");
@@ -310,8 +310,9 @@ ACCEPT_ROOTED_TREES = 0;
 
 /*************************************************************************************************/
 
-function runATreeSample (dummy)
-{
+function runATreeSample () {
+
+   
 	mapVec	    = {1,leafCount}["_MATRIX_ELEMENT_COLUMN_"];
 	myLeafAlloc = {1,leafCount};
 	for (_k = 0; _k < leafCount; _k = _k + 1)
@@ -326,11 +327,8 @@ function runATreeSample (dummy)
 	{
 		treeAVL 	= givenTree^0;
 		rsD			= computeSimmondsD (myLeafAlloc, Random(mapVec,0), kindCount);
-		if (rsD > baseD) 
-		{
-			gte = gte +1;
-		}
-		meanRat		= meanRat + rsD;
+		gte += (rsD > baseD);
+		meanRat		+= rsD;
 	}	
 	outMx = {{baseD, meanRat/shuffleIt, gte/shuffleIt}};
 	return outMx;

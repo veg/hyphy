@@ -997,7 +997,7 @@ void     _DataSetFilter::SetMap  (_String const &s) {
 
 //_______________________________________________________________________
 _String* _DataSetFilter::MakeSiteBuffer (void) const {
-    return new _String ((unsigned long)unitLength, false);
+    return new _String ((unsigned long)unitLength);
 }
 
 //_______________________________________________________________________
@@ -1030,7 +1030,7 @@ _String&     _DataSetFilter::operator () (unsigned long site, unsigned long pos)
 //_______________________________________________________________________
 
 const _String     _DataSetFilter::RetrieveState (unsigned long site, unsigned long pos) const {
-    _String state ((unsigned long)unitLength, false);
+    _String state ((unsigned long)unitLength);
     RetrieveState (site, pos, state, false);
     return state;
 }
@@ -1163,7 +1163,7 @@ _Matrix*        _DataSetFilter::GetFilterCharacters (bool flip) const {
     
     _List       result;
     
-    _StringBuffer      char_buffer (unit_length);
+    _String      char_buffer (unit_length);
     
     if (flip) {
         for (long k=0; k< seq_length; k++) {
@@ -1187,14 +1187,12 @@ _Matrix*        _DataSetFilter::GetFilterCharacters (bool flip) const {
 //_______________________________________________________________________
 
 _String*        _DataSetFilter::GetSequenceCharacters (long seqID)  const{
-    long            unitSizeL   = GetUnitLength();
+    unsigned long            unitSizeL   = GetUnitLength();
     
     _StringBuffer * aSequence = new _StringBuffer (GetSiteCount());
   
-  
-    
     if (seqID >= 0 && seqID < theNodeMap.countitems()) {
-        _StringBuffer      aState (unitSizeL);
+        _String      aState (unitSizeL);
         unsigned long        upTo = GetSiteCountInUnits();
         for (unsigned long k2=0UL; k2<upTo; k2++) {
             RetrieveState(k2,seqID,aState);

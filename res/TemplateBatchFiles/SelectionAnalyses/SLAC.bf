@@ -1,5 +1,6 @@
 RequireVersion("2.3");
 
+
 /*------------------------------------------------------------------------------
     Load library files
 */
@@ -18,6 +19,7 @@ LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
+
 
 /*------------------------------------------------------------------------------
     Display analysis information
@@ -70,17 +72,17 @@ slac.pvalue = 0.1;
 slac.json = {
     terms.json.analysis: slac.analysis_description,
     terms.json.fits: {},
-    terms.json.timers: {},
+    terms.json.timers: {}
 };
     /**
         The dictionary of results to be written to JSON at the end of the run
     */
-    
+
 slac.display_orders =   {terms.original_name: -1,
                         terms.json.nucleotide_gtr: 0,
                         terms.json.global_mg94xrev: 1
                        };
-                       
+
 
 selection.io.startTimer (slac.json [terms.json.timers], "Total time", 0);
 
@@ -111,12 +113,11 @@ slac.table_headers = {{"ES", "Expected synonymous sites"}
 slac.table_screen_output = {{"Codon", "Partition", "S", "N", "dS", "dN", "Selection detected?"}};
 slac.table_output_options =  {terms.table_options.header : TRUE, terms.table_options.minimum_column_width : 16, terms.table_options.align : "center"};
 
+
 namespace slac {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("slac");
 }
-
-
 
 slac.samples = io.PromptUser ("\n>Select the number of samples used to assess ancestral reconstruction uncertainty [select 0 to skip]",100,0,100000,TRUE);
 slac.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
@@ -132,6 +133,8 @@ selection.io.startTimer (slac.json [terms.json.timers], "Model fitting",1 );
 namespace slac {
     doGTR ("slac");
 }
+
+
 estimators.fixSubsetOfEstimates(slac.gtr_results, slac.gtr_results[terms.global]);
 
 namespace slac {
@@ -144,7 +147,7 @@ slac.global_dnds = selection.io.extract_global_MLE_re (slac.partitioned_mg_resul
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (slac.json,
+selection.io.json_store_lf_withEFV (slac.json,
                             terms.json.global_mg94xrev,
                             slac.partitioned_mg_results[terms.fit.log_likelihood],
                             slac.partitioned_mg_results[terms.parameters],
@@ -222,6 +225,7 @@ slac.report_negative_site = {{"" + (1+((slac.filter_specification[slac.i])[terms
                                     "Neg. p = " + slac.row[9]}};
 
 
+
 for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
     slac.printed_header_sampler = FALSE;
     slac.table_output_options[terms.table_options.header] = TRUE;
@@ -264,13 +268,13 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
     }
 
     slac.branch_attributes = selection.substitution_mapper (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.counts, slac.ancestors ["MAPPING"], slac.codon_data_info[terms.code]);
-    
+
     /*
     selection.io.json_store_branch_attribute(slac.json, terms.original_name, terms.json.node_label, 0,
                                              slac.i,
                                              slac.name_mapping);
     */
-    
+
     selection.io.json_store_branch_attribute(slac.json, terms.codon, terms.json.node_label, 0,
                                              slac.i,
                                              slac.branch_attributes[terms.codon]);
@@ -329,7 +333,11 @@ if (slac.samples > 0) {
         slac.table_output_options_samplers[terms.table_options.header] = TRUE;
         slac.sample.results = {};
 
-        slac.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{slac.partitioned_mg_results[terms.likelihood_function]}}});
+        slac.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{slac.partitioned_mg_results[terms.likelihood_function]}},
+                                        "Headers" : {{"libv3/all-terms.bf"}},
+                                        "Variables" : {{"slac.by_site","slac.AVERAGED","slac.RESOLVED","slac.by_branch"}}
+                                        });
+
 
         for (slac.s = 0; slac.s < slac.samples; slac.s+=1) {
 
@@ -602,6 +610,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
                              // this implies that the ancestor is fully resolved
                         resolution = lookup [-this_state-2]; // column vector with 1's for possible resolutions
                         resolution_count = + resolution;
+                                                
 
                         av = Eval (averaged);
                         for (k = 0; k < 4; k += 1) {

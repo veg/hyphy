@@ -507,7 +507,130 @@ namespace hyphy_global_objects {
     
     //____________________________________________________________________________________
     
-    BaseRef _HYRetrieveBLObjectByNameMutable    (_String const& name, long& type, long *index, bool errMsg, bool tryLiteralLookup) {
+    //____________________________________________________________________________________
+    
+    BaseRefConst _HYRetrieveBLObjectByName    (_String const& name, long& type, long *index, bool errMsg, bool expression_based_lookup, _ExecutionList* current_program) {
+        
+        long loc = -1;
+        if (type & HY_BL_DATASET) {
+            loc = FindDataSetName (name);
+            if (loc >= 0) {
+                type = HY_BL_DATASET;
+                if (index) {
+                    *index = loc;
+                }
+                return dataSetList (loc);
+            }
+        }
+        
+        if (type & HY_BL_DATASET_FILTER) {
+            loc = FindDataFilter (name);
+            if (loc >= 0) {
+                type = HY_BL_DATASET_FILTER;
+                if (index) {
+                    *index = loc;
+                }
+                return GetDataFilter (loc);
+            }
+        }
+        
+        if (type & HY_BL_LIKELIHOOD_FUNCTION) {
+            loc = FindLikeFuncName (name);
+            if (loc >= 0) {
+                type = HY_BL_LIKELIHOOD_FUNCTION;
+                if (index) {
+                    *index = loc;
+                }
+                return likeFuncList (loc);
+            }
+        }
+        
+        if (type & HY_BL_SCFG) {
+            loc = FindSCFGName (name);
+            if (loc >= 0) {
+                type = HY_BL_SCFG;
+                if (index) {
+                    *index = loc;
+                }
+                return scfgList (loc);
+            }
+        }
+        
+        if (type & HY_BL_BGM) {
+            loc = FindBgmName (name);
+            if (loc >= 0) {
+                type = HY_BL_BGM;
+                if (index) {
+                    *index = loc;
+                }
+                return bgmList (loc);
+            }
+        }
+        
+        if (type & HY_BL_MODEL) {
+            loc = FindModelName(name);
+            if (loc < 0 && name == hy_env::last_model_parameter_list || name == hy_env::use_last_model) {
+                loc = lastMatrixDeclared;
+            }
+            if (loc >= 0) {
+                type = HY_BL_MODEL;
+                if (index) {
+                    *index = loc;
+                }
+                if (IsModelOfExplicitForm(loc)) {
+                    return (BaseRef)modelMatrixIndices.lData[loc];
+                }
+                return LocateVar (modelMatrixIndices.lData[loc]);
+            }
+        }
+        
+        if (type & HY_BL_HBL_FUNCTION) {
+            loc = FindBFFunctionName(name);
+            if (loc >= 0) {
+                type = HY_BL_HBL_FUNCTION;
+                if (index) {
+                    *index = loc;
+                }
+                return &GetBFFunctionBody (loc);
+            }
+        }
+        
+        if (type & HY_BL_TREE) {
+            _Variable* tree_var = FetchVar (LocateVarByName(name));
+            if (tree_var && tree_var->ObjectClass() == TREE) {
+                return tree_var;
+            }
+        }
+        
+        if (expression_based_lookup) {
+            /**
+             this is meant to resolve reference based expressions, like ^(string) or *(string)
+             
+             */
+            
+            _String referenced_object;
+            
+            hy_reference_type ref = name.ProcessVariableReferenceCases (referenced_object, (current_program && current_program->nameSpacePrefix) ? current_program->nameSpacePrefix->GetName() : nil);
+            
+            if (ref == kStringLocalDeference || ref == kStringGlobalDeference) {
+                //printf ("%s\n", referenced_object.get_str());
+                return _HYRetrieveBLObjectByName (referenced_object, type, index, errMsg, false, current_program);
+            }
+            
+        }
+
+        
+        if (errMsg) {
+            HandleApplicationError (_String ("'") & name & "' does not refer to an existing object of type " & _HYHBLTypeToText (type));
+        }
+        type = HY_BL_NOT_DEFINED;
+        return nil;
+    }
+    
+    //____________________________________________________________________________________
+    
+
+    BaseRef _HYRetrieveBLObjectByNameMutable    (_String const& name, long& type, long *index, bool errMsg, bool expression_based_lookup, _ExecutionList* current_program) {
         using namespace hyphy_global_objects;
         
         long loc = -1;
@@ -601,9 +724,21 @@ namespace hyphy_global_objects {
             }
         }
         
-        if (tryLiteralLookup) {
-            _String nameIDRef = ProcessLiteralArgument(&name, nil);
-            return _HYRetrieveBLObjectByNameMutable (nameIDRef, type, index, errMsg, false);
+        if (expression_based_lookup) {
+            /**
+             this is meant to resolve reference based expressions, like ^(string) or *(string)
+             
+             */
+            
+            _String referenced_object;
+            
+            hy_reference_type ref = name.ProcessVariableReferenceCases (referenced_object, (current_program && current_program->nameSpacePrefix) ? current_program->nameSpacePrefix->GetName() : nil);
+            
+            if (ref == kStringLocalDeference || ref == kStringGlobalDeference) {
+                //printf ("%s\n", referenced_object.get_str());
+                return _HYRetrieveBLObjectByNameMutable (referenced_object, type, index, errMsg, false, current_program);
+            }
+            
         }
         
         if (errMsg) {

@@ -653,7 +653,6 @@ Model MG94customModel=(MG94custom,vectorOfFrequencies,0);
 UseModel (MG94customModel);
 Tree givenTree=(((D_CD_83_ELI_ACC_K03454,D_CD_83_NDK_ACC_M27323)Node3,D_UG_94_94UG114_ACC_U88824)Node2,D_CD_84_84ZR085_ACC_U88822,(B_US_83_RF_ACC_M17451,((B_FR_83_HXB2_ACC_K03455,B_US_86_JRFL_ACC_U63632)Node11,B_US_90_WEAU160_ACC_U21135)Node10)Node8);
 
-
 DataSet ds = ReadDataFile(USE_NEXUS_FILE_DATA);
 
 DataSetFilter filteredData = CreateFilter(ds,3,"0-1319","4,5,7,6,1,0,2,3","TAA,TAG,TGA");
@@ -667,6 +666,8 @@ OPTIMIZATION_METHOD		   = 4;
 USE_ADAPTIVE_VARIABLE_STEP = 1;
 
 Optimize 			(res,lf);
+
+fprintf (stdout, lf);
 
 //fprintf (stdout, "\n\n", lf.trace, "\n\n");
 

@@ -224,19 +224,20 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
                         testFormula.GetList() < new _Operation() < new _Operation(kEmptyString,-filter-1L);
                     }
 
-                    _FString fKey;
-                    
+                    _FString * fKey = new _FString;
+                    // TODO SLKP 20181113 : this could be a memory leak, but it needs to be allocated dynamically
+                    // otherwise if "actionFormula" makes use of "theKey" it may not be properly cleared
                     for (AVLListXLIteratorKeyValue filter_key_value : AVLListXLIterator (&avl)) {
                         _String * current_key = (_String *)avl.Retrieve (filter_key_value.get_index());
                         if (current_key) {
-                            fKey.SetStringContent (new _StringBuffer (*current_key));
+                            fKey->SetStringContent (new _StringBuffer (*current_key));
                             if (filter >= 0L) {
-                                testFormula.GetIthTerm(0)->SetNumber(&fKey);
+                                testFormula.GetIthTerm(0)->SetNumber(fKey);
                                 if (CheckEqual(testFormula.Compute()->Value(),0.0)) {
                                     continue;
                                 }
                             }
-                            actionFormula.GetIthTerm(0)->SetNumber(&fKey);
+                            actionFormula.GetIthTerm(0)->SetNumber(fKey);
                             actionFormula.GetIthTerm(1)->SetNumber((HBLObjectRef)filter_key_value.get_object());
                             actionFormula.Compute();
                             done ++;
@@ -245,9 +246,11 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
                     
                     actionFormula.GetIthTerm(0)->SetNumber(nil);
                     actionFormula.GetIthTerm(1)->SetNumber(nil);
-                    if (filter >= 0) {
+                    if (filter >= 0L) {
                         testFormula.GetIthTerm(0)->SetNumber(nil);
                     }
+                    
+                    DeleteObject (fKey);
                     
                 }
              }

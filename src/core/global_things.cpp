@@ -430,6 +430,7 @@ namespace hy_global {
         
         
         for (AVLListXIteratorKeyValue command_helper : AVLListXIterator (&_HY_HBLCommandHelper)) {
+            //printf ("Deleting %d\n", command_helper.get_index());
             delete ((_HBLCommandExtras*)command_helper.get_value());
         }
         

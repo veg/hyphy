@@ -81,7 +81,7 @@ ChoiceList (distribution,"Choose Distribution",1,SKIP_NONE,
 			/*9*/"Normal(x>0) mod Beta","Normal (x>0) distribution with parameter sigma, partitioned by the beta. Mean parameter: mu, variance parameter: sigma^2.",
 			/*10*/"Uniform mod Beta","Mean 1 piecewise uniform on [0,1] and [1,R] partitioned by the beta.",
 			/*11*/"Uniform","Mean 1 piecewise uniform on [0,1] and [1,R].",
-			/*12*/"2 Gamma","Mixture of two mean 1 gammas."
+			/*12*/"2 Gamma","Mixture of two mean 1 gammas.",
 			);
 
 if (distribution<0)

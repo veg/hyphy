@@ -5,9 +5,16 @@ LoadFunctionLibrary ("libv3/all-terms.bf");
 /** @module models.DNA */
 
 models.DNA.models = {{"GTR", "General time reversible model"}, 
-                     {"HKY85", "Hasegawa Kishino Yano 85 (HKY85) model"}};
+                     {"HKY85", "Hasegawa Kishino Yano 85 (HKY85) model"},
+                     {"JC69", "Jukes-Cantor 69 (JC69) model"}};
+
+models.DNA.generators ={"GTR": "models.DNA.GTR.ModelDescription",
+                        "HKY85": "models.DNA.HKY85.ModelDescription",
+                        "JC69": "models.DNA.JC69.ModelDescription"};
+                                       
 
 models.DNA.alphabet = {{"A","C","G","T"}};
+models.DNA.dimensions = 4;
 
 /**
  * @name models.DNA.generic.DefineQMatrix
@@ -54,7 +61,8 @@ function models.DNA.generic.DefineQMatrix (modelSpec, namespace) {
 			__rp = Call (__rate_function, __alphabet[_rowChar], 
 													__alphabet[_colChar],
 													 namespace,
-													__modelType);
+													__modelType,
+													modelSpec);
 													
 																							   
 		 	if (None != __rate_variation) {

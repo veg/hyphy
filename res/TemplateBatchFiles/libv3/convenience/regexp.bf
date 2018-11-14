@@ -56,6 +56,9 @@ lfunction regexp.Split(string, re) {
  * @returns {String} the portion of the string that is matching
  */
 lfunction regexp.Find(string, re) {
+
+   // console.log (string);
+
     coordinates = string $ re;
     if (coordinates[0] >= 0) {
         return string[coordinates[0]][coordinates[1]];
@@ -81,6 +84,32 @@ lfunction regexp.FindSubexpressions(string, re) {
         return matched;
     }
     return None;
+}
+
+/**
+ * @name regexp.PartitionByRegularExpressions
+ * @param {Dict/Matrix} strings set of strings to partition (if Dict, will use the set of VALUES)
+ * @param {Dict/Matrix} rex - string matrix of regular expressions ((if Dict, will use the set of VALUES)
+ * @returns {Dict} "reg-exp" : "set of matched strings" (as dict) PLUS a special key ("") which did not match any regular expression
+ */
+lfunction regexp.PartitionByRegularExpressions(strings, rex) {
+    result = {};
+
+    utility.ForEach (rex, "_value_", '`&result`[_value_] = {}');
+    result[""] = {};
+    matched_regexp = None;
+
+    utility.ForEach (strings, "_value_",
+    '
+        `&matched_regexp` = utility.First (`&rex`, "_regex_", "None!=regexp.Find (_value_, _regex_)");
+         if (None == `&matched_regexp`) {
+            `&result`[""] + _value_;
+        } else {
+             `&result`[`&matched_regexp`] + _value_;
+        }
+    ');
+
+    return result;
 }
 
 

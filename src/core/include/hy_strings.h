@@ -992,7 +992,7 @@ public:
    ']' or open paranthesis ')'
      Can also be any object that supports char == object checks
    * @param options: a bitmask of options, if fExtractRespectQuote is mixed in
-   then do not look withing enquoted parts of the string if set if
+   then do not look within enquoted parts of the string if set if
    fExtractRespectEscape is mixed in do not consider \char as matches to char
    when searching
    *
@@ -1021,21 +1021,29 @@ public:
     
     char       quote_state = '\0',
                this_char = get_char (current_position);
+      
+   
     
     while (this_char) {
-      
+      bool       check_quote = false;
+        
       if (do_escape) {
         do_escape = false;
       } else {
+        // also need to handle cases when quotes are in the open / close set
+        
         if ((this_char == '"' || this_char == '\'') && respect_quote && !do_escape) {
           if (quote_state == '\0') {
+            check_quote = true;
             quote_state = this_char;
           } else {
             if (this_char == quote_state) {
+              check_quote = true;
               quote_state = '\0';
             }
           }
-        } else if (open == this_char && quote_state == '\0') {
+        }
+        if (open == this_char && (check_quote || quote_state == '\0')) {
             // handle the case when close and open are the same
           if (current_level == 1L && close == this_char && from < current_position) {
             return current_position;
@@ -1049,7 +1057,7 @@ public:
             }
           }
           
-        } else if (close == this_char && quote_state == '\0') {
+        } else if (close == this_char && (check_quote || quote_state == '\0')) {
           current_level--;
           if (current_level == 0L && from < current_position) {
             return current_position;

@@ -209,7 +209,16 @@ function parameters.SetValues(set) {
  * @returns nothing
  */
 lfunction parameters.ConstrainMeanOfSet (set, mean, namespace) {
-    unscaled = utility.Map (utility.Values (set), "_name_", "_name_ + '_scaler_variable'");
+    if (Type (set) == "AssociativeList") {
+        unscaled = utility.Map (utility.Values (set), "_name_", "_name_ + '_scaler_variable'");
+    } else {
+        if (Type (set) == "Matrix") {
+         unscaled = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");
+        }
+        else {
+            return;
+        }
+    }
     global_scaler = namespace + ".scaler_variable";
     parameters.SetConstraint (global_scaler, Join ("+", unscaled), "global");
     utility.ForEach (set, "_name_", '
@@ -250,6 +259,22 @@ function parameters.Quote(arg) {
 }
 
 /**
+ * @name parameters.AppendMultiplicativeTerm
+ * @param {String} expression - the matrix to modify
+ * @param {String} term - the multiplier to append
+ * @returns {String} (expression) * (term)
+ */
+lfunction parameters.AppendMultiplicativeTerm (expression, term) {
+    if (Type (expression) == "String") {
+        if (Abs (expression)) {
+            return "(" + expression + ")*(" + term + ")";
+        }
+        return term;
+    }
+    return expression;
+}
+
+/**
  * @name parameters.AddMultiplicativeTerm
  * @param {Matrix} matrix - matrix to scale
  * @param {Number} term - scalar to multiply matrix by
@@ -287,18 +312,18 @@ lfunction parameters.AddMultiplicativeTerm(matrix, term, do_empties) {
  */
 function parameters.StringMatrixToFormulas(id, matrix) {
     __N = Rows(matrix);
+    __M = Columns(matrix);
 
-    ExecuteCommands("`id` = {__N,__N}");
+    ExecuteCommands("`id` = {__N,__M}");
 
     for (__r = 0; __r < __N; __r += 1) {
-        for (__c = 0; __c < __N; __c += 1) {
+        for (__c = 0; __c < __M; __c += 1) {
 
-            if (__r != __c && Abs(matrix[__r][__c])) {
+            if (Abs(matrix[__r][__c])) {
                 ExecuteCommands("`id`[__r][__c] := " + matrix[__r][__c]);
             }
         }
     }
-
 }
 
 /**
@@ -338,22 +363,42 @@ lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
 }
 
 /**
+ * @name parameters.GetRange
+ * @param id
+ * @returns variable range
+ */
+lfunction parameters.GetRange(id) {
+
+    if (Type(id) == "String") {
+        GetInformation (range, ^id);
+        return  {
+            ^"terms.lower_bound" : range[1],
+            ^"terms.upper_bound" : range[2]
+        };
+    }
+    io.ReportAnExecutionError ("An invalid combination of parameters was passed to parameters.GetRange. ID = " + id);
+    return None;
+}
+
+
+/**
  * @name parameters.SetRange
  * @param id
  * @param ranges
  * @returns nothing
  */
 function parameters.SetRange(id, ranges) {
+
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {
-                //console.log (id + "=>" + ranges);
                 if (Abs(ranges[terms.lower_bound])) {
                     ExecuteCommands("`id` :> " + ranges[terms.lower_bound]);
-                }
+                 }
                 if (Abs(ranges[terms.upper_bound])) {
                     ExecuteCommands("`id` :< " + ranges[terms.upper_bound]);
                 }
+                return 0;
             }
         }
     } else {
@@ -362,8 +407,11 @@ function parameters.SetRange(id, ranges) {
             for (parameters.SetRange.k = 0; parameters.SetRange.k < parameters.SetRange.var_count; parameters.SetRange.k += 1) {
                 parameters.SetRange(id[parameters.SetRange.k], ranges);
             }
+            return 0;
         }
     }
+    io.ReportAnExecutionError ("An invalid combination of parameters was passed to parameters.SetRange. ID = " + id + ", range = " + ranges);
+
 }
 
 /**
@@ -399,6 +447,7 @@ lfunction parameters.GetConstraint(parameter) {
 function parameters.SetConstraint(id, value, global_tag) {
     if (Type(id) == "String") {
         if (Abs(id)) {
+            //console.log ("`global_tag` `id` := " + value);
             ExecuteCommands("`global_tag` `id` := " + value);
         }
     } else {
@@ -514,6 +563,7 @@ lfunction parameters.SetStickBreakingDistribution (parameters, values) {
     left_over  = 1;
 
     for (i = 0; i < rate_count; i += 1) {
+
         parameters.SetValue ((parameters["rates"])[i], values[i][0]);
         if (i < rate_count - 1) {
             break_here = values[i][1] / left_over;
@@ -610,8 +660,14 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
     for (i = 0; i < components; i += 1) {
         this_component = {};
-        utility.ForEachPair((dict[i])[ utility.getGlobalValue("terms.branch_length")], "_branch_name_", "_branch_length_", "`&this_component`[_branch_name_] = {utility.getGlobalValue('terms.fit.MLE') : `&factor`*_branch_length_}");
+
+
+        utility.ForEachPair((dict[i])[ utility.getGlobalValue("terms.branch_length")], "_branch_name_", "_branch_length_",
+            "
+            `&this_component`[_branch_name_] = {utility.getGlobalValue('terms.fit.MLE') : `&factor`*_branch_length_}
+         ");
         result[i] = this_component;
+
     }
 
     return { utility.getGlobalValue("terms.branch_length"): result

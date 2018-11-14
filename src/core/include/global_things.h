@@ -254,7 +254,6 @@ namespace hy_global {
    */
   const _String GetTimeStamp (bool do_gmt = false);
   
-  
   /**
    Global variables (grouped by type, then alphabetically)
    */

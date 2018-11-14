@@ -323,12 +323,11 @@ _Variable* FetchVar (long index, unsigned long type_check) {
 }
 
 //__________________________________________________________________________________
-void       UpdateChangingFlas (long vN)
-{
+void       UpdateChangingFlas (long vN) {
     // check to see if formulae contain a reference to this var
     // if so: "decompile" them
 
-    long topLimit = compiledFormulaeParameters.lLength;
+    long topLimit = compiledFormulaeParameters.countitems();
 
     _SimpleList * toDelete = nil;
 
@@ -383,9 +382,8 @@ void       UpdateChangingFlas (_SimpleList & involvedVariables)
 }
 
 //__________________________________________________________________________________
-void DeleteVariable (long dv, bool deleteself)
-{
-    if (dv>=0) {
+void DeleteVariable (long dv, bool deleteself) {
+    if (dv>=0L) {
 
         _String *name  = (_String*)variableNames.Retrieve (dv);
         _String myName = *name&'.';

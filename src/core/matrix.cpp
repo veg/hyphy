@@ -2633,6 +2633,7 @@ bool        _Matrix::IsAStringMatrix (void) const
                         [&] (unsigned long i) -> _Formula * {return ((_Formula**)theData)[i];});
             
         } catch (int ) {
+            return false;
         }
 
     }

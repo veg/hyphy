@@ -2,7 +2,7 @@
 
 // These terms must be defined in this manner in order to avoid conflicts w/ built-in functions global and Gamma
 terms.global               = "global";
-terms.json.global          = "Global model fit";
+terms.json.global          = "Global model fit"; // TODO: Kill
 terms.rate_variation.Gamma = "Gamma";
 
 
@@ -16,11 +16,14 @@ namespace terms{
     codons                  = "codons";
     codon                   = "codon";
     sense_codons            = "sense";
+    nucleotide              = "nucleotide";
     stop_codons             = "stop";
     translation_table       = "translation-table";
     synonymous_sub_count    = "synonymous substitution count";
     nonsynonymous_sub_count = "nonsynonymous substitution count";
     original_name           = "original name";
+    replicates              = "replicates";
+    data_type               = "datatype";
 
     category            = "category";
     mixture             = "mixture";
@@ -32,6 +35,7 @@ namespace terms{
     number_precision    = "number-precision";
     three_way           = "three-way";
     reduced             = "reduced";
+    substitutions       = "substitutions";
 
     parameters     = "parameters";
     local          = "local";
@@ -70,12 +74,12 @@ namespace terms{
 
     range_gte1 = {
         lower_bound: "1",
-        upper_bound: "1e26"
+        upper_bound: "1e10"
     };
 
     range_any = {
         lower_bound: "0",
-        upper_bound: "1e26"
+        upper_bound: "1e25"
     };
 
 
@@ -84,11 +88,25 @@ namespace terms{
 
 
     /* Term functions */
+    function characterFrequency (character) {
+        return "Equilibrium frequency for " + character;
+    }
     function nucleotideRate(fromC, toC) {
         return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
     }
+
+    function nucleotideRateReversible (fromC, toC) {
+        if (fromC < toC) {
+            return nucleotideRate (fromC, toC);
+        }
+        return nucleotideRate (toC, fromC);
+    }
+
     function aminoacidRate(fromA, toA) {
-        return "Substitution rate from aminoacid " + fromA + " to aminoacid " + toA;
+        return "Substitution rate from amino-acid " + fromA + " to amino-acid " + toA;
+    }
+    function binaryRate(fromX, toX) {
+        return "Substitution rate from character " + fromX + " to character " + toX;
     }
     function timeParameter() {
         return "Evolutionary time parameter";
@@ -126,6 +144,7 @@ namespace terms{
         sequences      = "sequences";
         sequence       = "sequence";
         sample_size    = "sample size";
+        composition    = "composition";
         file           = "file";
         cache          = "cache";
         name           = "name";
@@ -169,7 +188,9 @@ namespace terms{
         equal      = "Equal frequencies";
         CF3x4      = "Corrected 3x4 frequency estimator";
         _20x1      = "Protein 20x1 estimator";
+        MLE        = "Maximum likelihood frequency estimator";
         predefined = "Based on a training set";
+        binary     = "Binary character frequency estimator";
     }
 
     /* Terms accompanying tasks/genetic_code.bf */
@@ -228,9 +249,10 @@ namespace terms{
         global_mg94xrev       = "Global MG94xREV";
         mg94xrev_sep_rates    = "MG94xREV with separate rates for branch sets";
         nucleotide_gtr        = "Nucleotide GTR";
+        baseline              = "Baseline";
         frequencies           = "Equilibrium frequencies";
         model                 = "model"; // TODO: change string to "model name"
-       // global                = "Global model fit"; // Defined at the top of file
+       // global              = "Global model fit"; // Defined at the top of file
         attribute             = "attributes";
         display_order         = "display order";
         attribute_type        = "attribute type";
@@ -363,11 +385,14 @@ namespace terms{
         synonymous_rate               = "synonymous rate";
         nonsynonymous_rate            = "non-synonymous rate";
         omega_ratio                   = "non-synonymous/synonymous rate ratio";
+        multiple_hit_rate             = "rate at which multiple nucleotides are changed instantly within a single codon";
+
         one                           = "1";
         theta                         = "theta";
         default_time                  = "t";
         omegas                        = "omegas";
         omega                         = "omega";
+        delta                         = "delta";
         weights                       = "weights";
         weight                        = "weight";
         rates                         = "rates";
@@ -436,6 +461,9 @@ namespace terms{
         model_map = "model_map";
         partitioned = "partitioned";
         model_list = "model_list";
+        rooted = "rooted";
+        root   = "root";
+        branches = "branches";
 
         //node_name = "Name";
         //children = "Children";
@@ -443,11 +471,23 @@ namespace terms{
     }
 
     /* Terms associated with tree labeling */
-    namespace tree_attributes{
+    namespace tree_attributes {
         internal    = "internal";
         leaf        = "leaf";
         test        = "test";
         background  = "background";
+    }
+
+    /* Terms associated with BGMs */
+
+    namespace bgm {
+        namespace node {
+            id = "NodeID";
+            type = "NodeType";
+            max_parents = "MaxParents";
+            prior_size = "PriorSize";
+            levels = "NumLevels";
+        }
     }
 
 }

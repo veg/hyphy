@@ -282,6 +282,11 @@ namespace hyphy_global_objects {
     
     // TODO: 20171005 SLKP, these will be deprecated
     
+    BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false, _ExecutionList* current_program = nil);
+    
+    BaseRef      _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false, _ExecutionList* current_program = nil);
+    
+
     long      FindDataSetName                 (_String const&);
     long      FindSCFGName                    (_String const&);
     long      FindBFFunctionName              (_String const&, _VariableContainer const* = nil);
@@ -290,8 +295,6 @@ namespace hyphy_global_objects {
 
     long      FindLikeFuncName                (_String const&, bool = false);
     long      FindModelName                   (_String const&);
-
-    BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 
     extern   _AVLListX batchLanguageFunctionNamesIndexed;
   

@@ -358,6 +358,8 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
                             nodeName = mapped_name->get_str();
                         }
                     }
+                    
+                    
                     FinalizeNode (parentNode, nodeNumbers.get (lastNode), nodeName, nodeParameters, nodeValue, &nodeComment, parse_settings);
                     pop_node ();
                     
@@ -469,7 +471,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
 
 bool    _TreeTopology::FinalizeNode (node<long>* nodie, long number , _String nodeName, _String const& nodeParameters, _String& nodeValue, _String* nodeComment, _TreeTopologyParseSettings const& settings) {
     
-    if (nodeName.empty() || (!settings.ingore_user_inode_names && nodie->get_num_nodes()>0)) {
+    if (nodeName.empty() || (settings.ingore_user_inode_names && nodie->get_num_nodes()>0)) {
         nodeName = settings.inode_prefix & number;
     }
 
@@ -510,29 +512,46 @@ node<long>* _TreeTopology::FindNodeByName (_String const* match) const {
 
 //_______________________________________________________________________________________________
 
+void    _TreeTopology::_RemoveNodeList (_SimpleList const& clean_indices) {
+    flatTree.DeleteList(clean_indices);
+    flatCLeaves.DeleteList(clean_indices);
+    
+    
+    node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+    
+    while (node<long>* iterator = ni.Next()) {
+        if ((iterator->in_object = clean_indices.CorrectForExclusions(iterator->in_object, -1)) < 0L) {
+            throw _String ("Internal error: index remap failed");
+        }
+    }
+}
+
+//_______________________________________________________________________________________________
+
 void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
     
     // TODO SLKP 20171213; why did the original implementation delete the entire path
     // up to the root?
     
     try {
-        if (nodeName->ObjectClass () == STRING) {
-            _FString         * remove_me     = (_FString*)nodeName;
+        _SimpleList clean_indices;
+
+        auto RemoveNodeByName = [this, &clean_indices] (_FString* remove_me) -> void {
 
             node<long>* remove_this_node = FindNodeByName (&remove_me->get_str()),
-                      * parent_of_removed_node;
-
+            * parent_of_removed_node;
+            
             if (!remove_this_node || ( parent_of_removed_node = remove_this_node->get_parent()) == nil) {
-                throw _String ("Node not found in the tree or is the root node");
+                throw _String ("Node ") & remove_me->get_str().Enquote() & " not found in the tree or is the root node";
             }
-
-            _SimpleList clean_indices;
-
+            
+            
             while (parent_of_removed_node) {
                 clean_indices << remove_this_node->in_object;
+                //  printf ("Removing %s\n", GetNodeName(remove_this_node).get_str());
                 parent_of_removed_node->detach_child(remove_this_node->get_child_num());
-
-
+                
+                
                 for (int orphans = 1; orphans <= remove_this_node->get_num_nodes(); orphans++) {
                     parent_of_removed_node->add_node(*remove_this_node->go_down(orphans));
                 }
@@ -542,34 +561,40 @@ void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
                 parent_of_removed_node = parent_of_removed_node->get_parent();
                 
                 // SLKP 20171213: only delete nodes up the chain if they have a single child
-                if (remove_this_node->get_num_nodes() == 1)
+                if (remove_this_node->get_num_nodes() == 1) {
                     if (parent_of_removed_node == nil) {
-                        remove_this_node = remove_this_node->go_down (1);
-                        parent_of_removed_node = remove_this_node->get_parent();
+                        /* we are promoting the single remaining child of the current root to be the root */
+                        theRoot = remove_this_node->go_down (1);
+                        theRoot->detach_parent();
+                        clean_indices << remove_this_node->in_object;
+                        delete remove_this_node;
+
+                        
+                        //parent_of_removed_node = remove_this_node->get_parent();
+                        break;
+                    }
                 } else {
                     break;
                 }
             }
-            
-            clean_indices.Sort();
-            flatTree.DeleteList(clean_indices);
-            flatCLeaves.DeleteList(clean_indices);
-
-            
-            ((_Vector*)compExp)->DeleteList (clean_indices);
-            
-            node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+        };
         
-            while (node<long>* iterator = ni.Next()) {
-                if ((iterator->in_object = clean_indices.CorrectForExclusions(iterator->in_object, -1)) < 0L) {
-                    throw _String ("Internal error: index remap failed");
-                }
+        if (nodeName->ObjectClass () == STRING) {
+            RemoveNodeByName ((_FString*)nodeName);
+            clean_indices.Sort();
+            _RemoveNodeList (clean_indices);
+
+        } else if (nodeName->ObjectClass () == MATRIX) {
+            _Matrix * names = (_Matrix* ) nodeName;
+            if (names->IsAStringMatrix()) {
+                names->ForEach([RemoveNodeByName] (HBLObjectRef n, unsigned long, unsigned long) -> void {if (n) RemoveNodeByName ((_FString*)n);},
+                               [names] (unsigned long i) -> HBLObjectRef {return names->GetFormula(i, -1)->Compute();});
+            } else {
+                throw _String ("Matrix-valued argument was expected to contain strings");
+                
             }
-
-
-
         } else {
-           throw _String ("An invalid argument (not a string) supplied");
+           throw _String ("An invalid argument (not a string or a string matrix) supplied");
         }
     } catch (const _String err) {
         HandleApplicationError (err & " in " & __PRETTY_FUNCTION__);
@@ -681,12 +706,13 @@ node<long>*  _TreeTopology::CopyTreeStructure (node <long>* theNode,  bool) cons
 
 //_______________________________________________________________________________________________
 
-const _String    _TreeTopology::GetNodeName (node<long>* n, bool fullName) const {
+const _String   _TreeTopology::GetNodeName (node<long>* n, bool fullName) const {
     if (fullName) {
         return *GetName()&'.'&*(_String*)(flatTree.GetItem(n->in_object));
     }
     return *(_String*)(flatTree.GetItem (n->in_object));
  }
+
 
 //_______________________________________________________________________________________________
 

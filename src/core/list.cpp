@@ -446,7 +446,7 @@ void  _List::DeleteList (const _SimpleList& toDelete)
                 ((BaseRef*)lData)[i-k] = ((BaseRef*)lData)[i];
             }
         }
-        lLength -= toDelete.lLength;
+        lLength -= k;
         if (laLength-lLength>MEMORYSTEP) {
             laLength -= ((laLength-lLength)/MEMORYSTEP)*MEMORYSTEP;
             if (laLength > 0)

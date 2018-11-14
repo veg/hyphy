@@ -537,11 +537,21 @@ lfunction console.log (arg) {
 }
 
 /**
+ * I am tired of having dangling console.log debug statements
+ * @returns nothing
+ */
+lfunction debug.log (arg) {
+    if (utility.GetEnvVariable ("_DEBUG_MESSAGES_ON_")) {
+        fprintf (stdout, arg, "\n");
+    }
+}
+
+/**
  * I am tired of typing fprintf (MESSAGE_LOG, ...)
  * @returns nothing
  */
 lfunction messages.log (arg) {
-    fprintf (MESSAGE_LOG, arg, "\n");
+    fprintf (MESSAGE_LOG, "\n", arg);
 }
 
 
@@ -663,6 +673,7 @@ lfunction io.ReadDelimitedFile  (path, separator, has_header) {
         fscanf (path, REWIND, "Lines", data);
    } else {
         fscanf (PROMPT_FOR_FILE, REWIND, "Lines", data);
+        path = utility.getGlobalValue("LAST_FILE_PATH");
    }
    result = {utility.getGlobalValue("terms.io.rows") : {}};
    index = 0;
@@ -674,6 +685,7 @@ lfunction io.ReadDelimitedFile  (path, separator, has_header) {
    for (k = index; k < row_count; k+=1) {
         result [utility.getGlobalValue("terms.io.rows")] + regexp.Split (data[k], separator);
    }
+   result[utility.getGlobalValue("terms.json.file")] = path;
    return result;
 }
 
@@ -697,11 +709,36 @@ lfunction io.SelectAnOption  (options, description) {
                 option_set [k][1] = options[keys[k]];
             }
         }
+
         ChoiceList  (selection,description,1,NO_SKIP,option_set);
+
         if (selection >= 0) {
             return option_set[selection][0];
+        } else {
+            selection = None;
         }
    }
-    assert (None != selection, "Selection canceled");
-    return None;
+   assert (None != selection, "Selection canceled");
+   return None;
+}
+
+/**
+ * @name io.ReportExecutionError
+ * @param error_msg
+ */
+function io.ReportAnExecutionError (error_msg) {
+    assert (0, "Fatal execution error `error_msg`");
+}
+
+/**
+ * @name io.SingularOrPlural
+ * @param value
+ * @param singular
+ * @param plural
+ */
+lfunction io.SingularOrPlural (value, singular, plural) {
+   if (value == 1) {
+        return singular;
+   }
+   return plural;
 }

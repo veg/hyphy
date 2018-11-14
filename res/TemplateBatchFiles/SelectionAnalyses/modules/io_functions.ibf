@@ -19,9 +19,9 @@ lfunction selection.io.defineBranchSets(partition_info) {
     if (Abs (partition_info) == 1) { // allow more refined selections if there is only one tree
         tree_for_analysis = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
         utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
-        list_models   = utility.Keys   (available_models); // get keys
-        branch_counts = utility.Values (available_models);
+        list_models   = utility.sortStrings(utility.Keys   (available_models)); // get keys
         option_count  = Abs (available_models);
+
     } else {
         option_count = 0;
     }
@@ -90,6 +90,8 @@ lfunction selection.io.defineBranchSets(partition_info) {
 
 //------------------------------------------------------------------------------
 lfunction selection.io.SelectAllBranches(partition_info) {
+    return_set = {};
+
     for (k = 0; k < Abs (partition_info); k+=1) {
         tree_configuration = {};
         tree_for_analysis = (partition_info[k])[utility.getGlobalValue("terms.data.tree")];
@@ -228,7 +230,7 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution, d
 //------------------------------------------------------------------------------
 
 
-function selection.io.json_store_lf_GTR_MG94 (json, name, ll, df, ss, rate_distribution, frequencies, display_order) {
+function selection.io.json_store_lf_withEFV (json, name, ll, df, ss, rate_distribution, frequencies, display_order) {
 
     utility.EnsureKey(json, terms.json.fits);
 
@@ -293,7 +295,6 @@ lfunction selection.io.adjust_partition_string (string, sites) {
 
 function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
 
-
     if (None == dict_key) {
         json[key] = value;
     } else {
@@ -316,7 +317,10 @@ function selection.io.json_store_branch_attribute(json, attribute_name, attribut
                              "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
 
     utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
-                             "(((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name]");
+                             "  if (values / selection.io.json_store_branch_attribute.branch_name) {
+                                    (((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name];
+                                }
+                              ");
  }
 
 

@@ -1,4 +1,4 @@
-RequireVersion ("2.0020110101");
+RequireVersion ("2.00.20110101");
 
 ExecuteAFile  (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"chooseGeneticCode.def");
 ExecuteAFile  (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"2RatesAnalyses"+DIRECTORY_SEPARATOR+"MG94xREVxBivariate.mdl");

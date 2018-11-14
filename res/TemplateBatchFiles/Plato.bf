@@ -5,7 +5,7 @@
   October 2006
 */
 
-RequireVersion ("0.9920060901");
+RequireVersion ("0.99.20060901");
 
 VERBOSITY_LEVEL		  = -1; /* HELPS REDUCE GUI REFRESH OVERHEAD */
 ACCEPT_BRANCH_LENGTHS = 1;

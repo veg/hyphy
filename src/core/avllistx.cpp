@@ -142,6 +142,7 @@ long  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
         }
     } else {
         Insert (b,d);
+        // SLKP 20181113 Insert assumes that b is not a managed object
     }
     return exists;
 }

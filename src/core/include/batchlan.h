@@ -652,7 +652,6 @@ void    _HBL_Init_Const_Arrays       (void);
 
 
 
-BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
 /**
  An accessor function which attempts to retrieve a reference to a HyPhy Batch Language Object
  by name. A list of acceptable object classes can be specified in the type parameter. Note that

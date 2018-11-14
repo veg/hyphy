@@ -3,8 +3,7 @@
 function factorial (x)
 {
 	res = 1;
-	for (x2 = 2; x2 <= x; x2=x2+1)
-	{
+	for (x2 = 2; x2 <= x; x2 += 1) {
 		res = res * x2;
 	}
 	return res;
@@ -12,116 +11,71 @@ function factorial (x)
 
 /*--------------------------------------------------- */
 
-function computeMigrationEvents (assignmentVector)
-{
+function computeMigrationEvents (assignmentVector) {
+    /* 
+        SLKP 20180125
+        updated this for cases when internal node names are not unique, e.g., when
+        bootstrap values are supplied
+    */
+	
+	
+	leaf_count = 0;
 
-	assignmentMatrices = {};
-	nodeState 		   = {};
-
-	for (specIndex = 0; specIndex < leafCount; specIndex = specIndex + 1)
-	{
-		aMx = {2,kindCount};
-		s2  = assignmentVector[specIndex];
-		for (k=0; k<kindCount; k=k+1)
-		{
-			aMx[0][k] = s2;
-			aMx[1][k] = 1-(k==s2);
-		}
-
-		specName = TipName (givenTree, specIndex);
-		assignmentMatrices [specName] = aMx;
-	}
-
-	for (node = 1; node < treeSize; node = node + 1)
-	{
-		nodeInfo 		= treeAVL[node];
-		nodeChildren	= nodeInfo ["Children"];
+	for (node = 1; node < treeSize; node += 1) {
+		nodeChildren	= (treeAVL[node]) ["Children"];
 		cCount			= Abs(nodeChildren);
 
-		if (cCount)
-		{
-			localMatrices = {};
+        /*
+             for each node populate a 2xN (N = number of character states)
+             element (1,N) stores the cost of the subtree starting at this node, assuming parent has state N
+             element (0,N) stores the assignment at this node, which realizes the score
+         
+        */
 
-			nodeName = nodeInfo["Name"];
+		if (cCount == 0) { // leaf
+		
+		    s = assignmentVector[leaf_count];
+		    (treeAVL[node])["_PARSIMONY_"] = {2,kindCount} ["(_MATRIX_ELEMENT_ROW_==0)*s+(_MATRIX_ELEMENT_ROW_==1)*(1-(_MATRIX_ELEMENT_COLUMN_==s))"];
+		    leaf_count += 1;
+		    
+		} else { // internal node
 
-			/*
-			fprintf (stdout, "\n@----------\nNode ", nodeName, "\n");
-			*/
+			subtreeCost = {kindCount,1};
+			
+			// total cost of setting this node to state s2 
 
-			for (s1 = 0; s1<cCount; s1=s1+1)
-			{
-				childIndex = nodeChildren[s1];
-				childIndex = treeAVL	 [childIndex];
-				childName  = childIndex  ["Name"];
-				localMatrices[s1] = assignmentMatrices[childName];
-				/*
-				fprintf (stdout, "\nChild ", childName, localMatrices[s1], "\n");
-				*/
-			}
-
-			twoWay = {kindCount,1};
-
-			for (s2 = 0; s2 < kindCount; s2 = s2+1)
-			{
+			for (s2 = 0; s2 < kindCount; s2 += 1) {
 				lc = 0;
-				for (s3 = 0; s3<cCount; s3=s3+1)
-				{
-					aMx = localMatrices[s3];
-					lc  = lc + aMx[1][s2];
+				for (s3 = 0; s3<cCount; s3 += 1) {
+				    lc  += ((treeAVL[nodeChildren[s3]])["_PARSIMONY_"])[1][s2];
 				}
-				twoWay[s2] = lc;
+				subtreeCost[s2] = lc;
 			}
 
-			/*
-			fprintf (stdout, ">> TWO-WAY ", twoWay, "\n");
-			*/
 
-			if (nodeInfo["Parent"])
-			{
+			if ((treeAVL[node])["Parent"]) {
+			    // not the root
+			    
 				aMx = {2,kindCount};
 
-				for (s2 = 0; s2 < kindCount; s2 = s2+1)
-				{
-					minV = 1e100;
-					minI = 0;
-
-					for (s3 = 0; s3 < kindCount; s3 = s3+1)
-					{
-						aCost = (s3!=s2) + twoWay[s3];
-						if (minV > aCost)
-						{
-							minV  = aCost;
-							minI  = s3;
-						}
-					}
-
-					aMx[0][s2] = minI;
-					aMx[1][s2] = minV;
+				for (s2 = 0; s2 < kindCount; s2 += 1) {
+                    score_matrix = Min ({1,kindCount} ["(_MATRIX_ELEMENT_COLUMN_!=s2)+subtreeCost[_MATRIX_ELEMENT_COLUMN_]"], 1);
+					aMx[0][s2] = score_matrix[1];
+					aMx[1][s2] = score_matrix[0];
 				}
-
-				/*
-				fprintf (stdout, "NODE MATRIX", aMx, "\n");
-				*/
-				assignmentMatrices [nodeName] = aMx;
-			}
-			else
-			{
-				totalCost = 1e100;
-				nodeState [nodeName] = 0;
-
-
-				for (s2 = 0; s2 < kindCount; s2 = s2+1)
-				{
-					if (twoWay[s2] < totalCost)
-					{
-						totalCost = twoWay[s2];
-						nodeState [nodeName] = s2;
-					}
-				}
+				
+				(treeAVL[node])["_PARSIMONY_"] = aMx;
+				
+				
+			} else {
+				subtreeCost = Min (subtreeCost, 1);
+				(treeAVL[node])["_PARSIMONY_"] = subtreeCost[1];
 			}
 		}
 	}
-	return totalCost;
+	
+	
+	return subtreeCost[0];
 }
 
 /*--------------------------------------------------- */
@@ -179,8 +133,7 @@ while (kindCount < 2)
 goOn  = 1;
 
 
-while (goOn)
-{
+while (goOn) {
 	defClades 	 = 0;
 	clades  	 = {};
 	strings 	 = {};
@@ -198,13 +151,11 @@ while (goOn)
 			fprintf (stdout,"\nEnter a reg exp used to define clade ",defClades+1,":");
 			fscanf  (stdin,"String",theRegExp);
 
-			for (specIndex = 0; specIndex < leafCount; specIndex = specIndex + 1)
-			{
+			for (specIndex = 0; specIndex < leafCount; specIndex = specIndex + 1) {
 				specName = TipName (givenTree, specIndex);
 				specMatch = specName $ theRegExp;
 
-				if (specMatch[0]>=0 && matchedSoFar[specIndex] == 0)
-				{
+				if (specMatch[0]>=0 && matchedSoFar[specIndex] == 0) {
 					aClade [specName] = 1;
 					if (Abs(st))
 					{
@@ -216,16 +167,14 @@ while (goOn)
 					}
 
 					matchedSoFar [specIndex] = 1;
-					leafAllocs   [specIndex] = defClades;
+					leafAllocs   [specIndex] = Random (0,1) > 0.05;//defClades;
 				}
 			}
 		}
-		else
-		{
+		else {
 			for (specIndex = 0; specIndex < leafCount; specIndex = specIndex + 1)
 			{
-				if (matchedSoFar[specIndex] == 0)
-				{
+				if (matchedSoFar[specIndex] == 0) {
 					specName = TipName (givenTree, specIndex);
 					aClade [specName] = 1;
 					if (Abs(st))
@@ -237,13 +186,12 @@ while (goOn)
 						st = specName;
 					}
 					matchedSoFar [specIndex] = 1;
-					leafAllocs   [specIndex] = kindCount-1;
+					leafAllocs   [specIndex] = Random (0,1) > 0.05; //kindCount-1;
 				}
 			}
 		}
 
-		if (Abs(aClade) == 0)
-		{
+		if (Abs(aClade) == 0) {
 			fprintf (stdout, "ERROR: an empty clade for reg-exp ", goOn, "\n");
 			defClades = kindCount;
 			break;
@@ -252,9 +200,9 @@ while (goOn)
 		{
 			fprintf (stdout, "Matched: ",st,"\n");
 		}
-		strings[Abs(strings)] = st;
-		clades [Abs(clades) ] = aClade;
-		defClades = defClades + 1;
+		strings + st;
+		clades + aClade;
+		defClades += 1;
 	}
 
 	if (Abs(clades) == kindCount)
@@ -282,8 +230,7 @@ while (goOn)
 }
 
 descriptives = {};
-for (k=0; k<kindCount; k=k+1)
-{
+for (k=0; k<kindCount; k=k+1) {
 	fprintf (stdout, "Please enter a descriptive name for TYPE ",k+1," sequences:");
 	fscanf	(stdin, "String", className);
 	descriptives [k] = className;
@@ -305,41 +252,28 @@ fprintf (PROMPT_FOR_FILE,CLEAR_FILE,"Tree theTree=", Format (givenTree,1,0),";\n
 transitions = {};
 sameState   = {};
 
-for (node = 2; node < treeSize; node = node + 1)
-{
-	nodeInfo 		= treeAVL2[node];
-	nodeChildren	= nodeInfo ["Children"];
-	parentNode 		= nodeInfo["Parent"];
-	parentNode 		= treeAVL2[parentNode];
-	parentNode 		= parentNode["Name"];
-	parentNode 		= nodeState[parentNode];
-	nodeName   		= nodeInfo["Name"];
-	myState    		= assignmentMatrices[nodeName];
-	myState    		= myState[0][parentNode];
-
-	if (parentNode != myState)
-	{
-		aKey = descriptives[parentNode] + " --> " + descriptives[myState];
-		aList = transitions[aKey];
-		if (Abs(aList) == 0)
-		{
-			aList = {};
+for (node = treeSize - 2; node > 0 ; node = node - 1) {
+    
+    
+    parentState = (treeAVL[((treeAVL[node])["Parent"])])["_PARSIMONY_"];
+    myState     = ((treeAVL[node])["_PARSIMONY_"])[0][parentState];
+    
+    (treeAVL[node])["_PARSIMONY_"] = myState;
+    
+	if (parentState != myState) {
+		aKey = descriptives[parentState] + " --> " + descriptives[myState];
+		if (Abs(transitions[aKey]) == 0) {
+			transitions[aKey] = {};
 		}
-		aList[Abs(aList)] = nodeName;
-		transitions[aKey] = aList;
+		transitions[aKey] + ((treeAVL[node])["Name"]);
 	}
-	else
-	{
+	else {
 		aKey = descriptives[parentNode];
-		aList = sameState[aKey];
-		if (Abs(aList) == 0)
-		{
-			aList = {};
+		if (Abs(sameState[aKey]) == 0) {
+			sameState[aKey] = {};
 		}
-		aList[Abs(aList)] = nodeName;
-		sameState[aKey] = aList;
+		sameState[aKey] + ((treeAVL[node])["Name"]);
 	}
-	nodeState [nodeName] = myState;
 }
 
 returnAVL = {"MIGRATIONS": Abs(transitions)};
@@ -350,8 +284,7 @@ if (Abs(transitions))
 
 	keys = Rows (transitions);
 
-	for (cc = 0; cc < Columns (keys); cc = cc + 1)
-	{
+	for (cc = 0; cc < Columns (keys); cc += 1) {
 		aKey = keys[cc];
 		fprintf (stdout, "\n", aKey, ":\n");
 		aList = transitions[aKey];
@@ -382,8 +315,7 @@ if (resample)
 	sampleCount = 0;
 	totalPossible = factorial(leafCount);
 
-	for (k=0; k<kindCount; k=k+1)
-	{
+	for (k=0; k<kindCount; k += 1) {
 		totalPossible = totalPossible/factorial(Abs(clades[k]));
 	}
 
@@ -396,16 +328,10 @@ if (resample)
 	histogram = {};
 
 	step = sampleCount$20;
-	for (sampleID = 0; sampleID < sampleCount; sampleID = sampleID + 1)
-	{
-		aSample = Random(leafAllocs,0);
-		k = computeMigrationEvents(aSample);
+	for (sampleID = 0; sampleID < sampleCount; sampleID += 1) {
+		k = computeMigrationEvents(Random(leafAllocs,0));
+		fprintf (stdout, "Replicate ", (sampleID+1), " has ", k, " migration events\n");
 		histogram[k] = histogram[k] + 1;
-
-		if ((sampleID+1)%step == 0)
-		{
-			fprintf (stdout, Format ((sampleID+1)*100/sampleCount, 6, 2), "% done\n");
-		}
 	}
 
 	k2 = Abs (histogram);
@@ -413,7 +339,7 @@ if (resample)
 	s1 = Rows (histogram);
 	for (sampleID = 0; sampleID < k2; sampleID = sampleID+1)
 	{
-		s2 = 0+s1[sampleID];
+		s2 = +s1[sampleID];
 		countMatrix[sampleID][0] = s2;
 		countMatrix[sampleID][1] = histogram[s2];
 	}
@@ -423,16 +349,13 @@ if (resample)
 
 	for (sampleID = 0; sampleID < k2; sampleID = sampleID+1)
 	{
-		if (countMatrix[sampleID][0] <= observedEvents)
-		{
+		if (countMatrix[sampleID][0] <= observedEvents) {
 			pVal = pVal+countMatrix[sampleID][1];
 		}
-		if (sampleID)
-		{
+		if (sampleID) {
 			countMatrix[sampleID][2] = countMatrix[sampleID][1]/sampleCount + countMatrix[sampleID-1][2];
 		}
-		else
-		{
+		else {
 			countMatrix[sampleID][2] = countMatrix[sampleID][1]/sampleCount;
 		}
 	}

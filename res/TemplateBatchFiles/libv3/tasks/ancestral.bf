@@ -1,4 +1,4 @@
-RequireVersion("2.26");
+RequireVersion("2.3.11");
 
 LoadFunctionLibrary("../UtilityFunctions.bf");
 
@@ -89,8 +89,8 @@ ancestral._bacCacheInstanceCounter = 0;
  * Builds ancestral states
  * @name ancestral.build
  * @param {Number} _lfID - the likelihood function ID
- * @param {Number} _lfComponentID - 
- * @param {options} options - 
+ * @param {Number} _lfComponentID -
+ * @param {options} options -
  * @returns an integer index to reference
  * the opaque structure for subsequent operations
  * @example
@@ -105,8 +105,8 @@ function ancestral.build (_lfID, _lfComponentID, options) {
  * @name ancestral._buildAncestralCacheInternal
  * @private
  * @param {Number} _lfID - the likelihood function ID
- * @param {Number} _lfComponentID - 
- * @param {options} options - 
+ * @param {Number} _lfComponentID -
+ * @param {options} options -
  * @returns an integer index to reference
  * the opaque structure for subsequent operations
  */
@@ -139,9 +139,8 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         });
     }
 
-
     _bac_tree_avl = ( ^ _bac_treeID) ^ 0;
-
+    
     GetString(_bacSequenceNames, ^ _bac_filterID, -1);
 
 
@@ -157,6 +156,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     DataSetFilter _bacAF = CreateFilter(_bac_ancDS, _bacCharsPerState, "", "", _bacCharProperties["EXCLUSIONS"]);
     GetString(_bacAncestralNames, _bacAF, -1);
     GetDataInfo(_bacAncestralPatternMap, _bacAF);
+
 
     /* now start building a matrix of mapped states;
 
@@ -217,7 +217,6 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     }["_MATRIX_ELEMENT_COLUMN_"];
 
 
-    debug = 0;
     /* loop over branches (rows) */
     for (_bacBranchCounter = 1; _bacBranchCounter <= _bacBranchCount; _bacBranchCounter += 1) {
         _bacRowIndex = _bacMapTreeNodeToDF[_bacBranchCounter - 1];
@@ -297,10 +296,41 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     };
 }
 
-
-
+/*******************************************/
 /**
- * Prepare a substitution matrix for use by BGM
+ * @name ancestral.ComputeSubstitutionCounts
+   branch filter helper function
+*/
+
+lfunction ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names) {
+    coordinates = {{k-1, parent-1}};
+
+    for (k = 1; k < Abs(ancestral_data["TREE_AVL"]); k+=1) {
+        parent = ((ancestral_data["TREE_AVL"])[k])["Parent"];
+
+        if (parent) {
+            node_name = ((ancestral_data["TREE_AVL"])[k])["Name"];
+            if (None != branch_filter) {
+                if (Type (branch_filter) == "AssociativeList") {
+                    if (branch_filter / node_name == FALSE) {
+                        continue;
+                    }
+                } else {
+                    if (Call (branch_filter, node_name) == FALSE) {
+                        continue;
+                    }
+                }
+            }
+            selected_branches + Eval (coordinates);
+            selected_branch_names + node_name;
+        }
+    }
+
+    return Abs (selected_branches);
+}
+
+/*******************************************/
+/**
  * @name ancestral.ComputeSubstitutionCounts
  * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
  * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
@@ -327,39 +357,15 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         S = number of sites passing filter
 
  */
- 
- 
 
-/*******************************************/
+
+
 
 lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, substitution_filter, site_filter) {
     selected_branches       = {};
     selected_branch_names   = {};
 
-    coordinates = {{k-1, parent-1}};
-
-    for (k = 1; k < Abs(ancestral_data["TREE_AVL"]); k+=1) {
-        parent = ((ancestral_data["TREE_AVL"])[k])["Parent"];
-
-        if (parent) {
-            node_name = ((ancestral_data["TREE_AVL"])[k])["Name"];
-            if (None != branch_filter) {
-                if (Type (branch_filter) == "AssociativeList") {
-                    if (branch_filter [node_name] != TRUE) {
-                        continue;
-                    }
-                } else {
-                    if (Call (branch_filter, node_name) == FALSE) {
-                        continue;
-                    }
-                }
-            }
-            selected_branches + Eval (coordinates);
-            selected_branch_names + node_name;
-        }
-    }
-
-    branches = Abs (selected_branches);
+    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);;
 
     sites  = (ancestral_data["DIMENSIONS"])["SITES"];
     counts = {branches,sites};
@@ -415,43 +421,148 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
 }
 
 /*******************************************
-	count subsitutions at a given site;
-	returns an AVL with
+ **
+ * @name ancestral.ComputeSubstitutionBySite
+ * tabulates all substitutions occurring at a specified site, possibly restricted to a
+ * subset of branches
 
-	["CHARS"]  - the 1xN matrix which maps index->character string
-	["COUNTS"] - the NxN (N = Columns(returnValue["CHARS"]) matrix
-				 with counts of substitutions at the site
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Number} site - the 0-based index of a site
 
-	pass this function the ID of ancestral cache
-	and the index of the site to recover
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
 
-*******************************************/
+ * @returns
+        {
+         terms.trees.branches :  {Matrix Nx1} names of selected branches,
+         terms.substitutions   :  {Dictionary} of substitution counts;
+                              will look like "FROM" -> "TO" -> List of branches where this type of substitution occured
+         terms.substitutions:{
+               "N":{
+                 "H":{
+                   "0":"COW"
+                  }
+                },
+               "K":{
+                 "N":{
+                   "0":"Node5"
+                  },
+                 "T":{
+                   "0":"HORSE"
+                  }
+                },
+               "R":{
+                 "K":{
+                   "0":"Node3"
+                  },
+                 "P":{
+                   "0":"MOUSE"
+                  }
+                }
+              }
+        }
 
-lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
-    if (Abs(_ancestral_cache)) {
-        if (_siteID >= 0 && _siteID < (_ancestral_cache["DIMENSIONS"])["SITES"]) {
-            _bacSiteC = {};
-            _thisColumn = (_ancestral_cache["MATRIX"])[-1][_siteID];
-            _bacSiteC["CHARS"] = _ancestral_cache["CHARS"];
-            _bacSiteDim = (_ancestral_cache["DIMENSIONS"])["CHARS"];
-            _bacCounter = (_ancestral_cache["DIMENSIONS"])["BRANCHES"] - 1;
-            _bacSiteMx = {
-                _bacSiteDim,
-                _bacSiteDim
-            };
+        N = number of selected branches
+ */
 
-            for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator += 1) {
-                _bacParentID = ((_ancestral_cache["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
-                _myState = _thisColumn[_bacTreeIterator];
-                _pState = _thisColumn[_bacParentID];
-                ancestral._expandSubstitutionMap(_pState, _myState, _ancestral_cache["AMBIGS"], _bacSiteMx);
-            }
+/*******************************************/
 
-            _bacSiteC["COUNTS"] = _bacSiteMx;
-            return _bacSiteC;
+
+lfunction ancestral.ComputeSubstitutionBySite (ancestral_data, site, branch_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+    branches = ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);
+
+    result   = {};
+
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        parent = (selected_branches[b])[1];
+        own_state    = (ancestral_data["MATRIX"])[self][site];
+        parent_state = (ancestral_data["MATRIX"])[parent][site];
+
+        if  ((own_state != parent_state) && (own_state != -1) && (parent_state != -1)) {
+            own_state = (ancestral_data["CHARS"])[own_state];
+            parent_state = (ancestral_data["CHARS"])[parent_state];
+            utility.EnsureKey (result, parent_state);
+            utility.EnsureKey (result[parent_state], own_state);
+            ((result[parent_state])[own_state]) + selected_branch_names[b];
         }
     }
-    return {};
+
+
+    return  {
+             ^"terms.trees.branches"  : selected_branch_names,
+             ^"terms.substitutions"   : result
+            };
+
+}
+
+/*******************************************
+ **
+ * @name ancestral.ComputeSiteComposition
+ * computes the counts of individual characters (including ancestral states)
+ * at a specific site, possibly filtered to a subset of branches
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Number} site - the 0-based index of a site
+
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
+
+ * @returns
+        {
+         terms.trees.branches :  {Matrix Nx1} names of selected branches,
+         terms.data.composition   :  {Dictionary} of character counts;
+                              will look like
+
+        }
+
+        N = number of selected branches
+ */
+
+/*******************************************/
+
+
+lfunction ancestral.ComputeSiteComposition (ancestral_data, site, branch_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+
+    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);
+
+    result   = {};
+
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        own_state    = (ancestral_data["MATRIX"])[self][site];
+
+        if (own_state >= 0) {
+            own_state    = (ancestral_data["CHARS"])[own_state];
+            result [own_state] += 1;
+        } else {
+            if (own_state < (-1)) {
+                resolution = (ancestral_data["AMBIGS"])[-own_state - 2];
+                resolution = (resolution["(_MATRIX_ELEMENT_ROW_+1)*_MATRIX_ELEMENT_VALUE_"])[resolution];
+                count = 1/utility.Array1D (resolution);
+                utility.ForEach (resolution, "_value_", "`&result`[(`&ancestral_data`['CHARS'])[_value_-1]] += `&count`;");
+            }
+        }
+
+    }
+
+
+    return  {
+             ^"terms.trees.branches"  : selected_branch_names,
+             ^"terms.data.composition"   : result
+            };
+
 }
 
 
@@ -469,11 +580,11 @@ lfunction ancestral._substitutionsBySite(_ancestral_cache, _siteID) {
 *******************************************/
 
 function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
             _bacSiteC = {};
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC["CHARS"] = (_ancestralRecoveryCache[_ancID])["CHARS"];
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC["CHARS"] = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC["CHARS"]);
             _bacCounter = Rows(_thisColumn) - 1;
             _bacSiteMx = {
@@ -482,8 +593,8 @@ function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
             };
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1) {
-                if (_branchSubset[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Name"] && 1]) {
-                    _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                if (_branchSubset[((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Name"] && 1]) {
+                    _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                     _myState = _thisColumn[_bacTreeIterator];
                     _pState = _thisColumn[_bacParentID];
                     _expandSubstitutionMap(_pState, _myState, _ancID, "_bacSiteMx");
@@ -511,14 +622,14 @@ function _substitutionsBySiteSubset(_ancID, _siteID, _branchSubset) {
 *******************************************/
 
 function _rootState(_ancID, _siteID) {
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
             _bacRootState = {};
-            _bacRootIndex = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[0])["Root"] - 1;
-            _rootStateIndex = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[_bacRootIndex][_siteID];
+            _bacRootIndex = ((_ancID["TREE_AVL"])[0])["Root"] - 1;
+            _rootStateIndex = (_ancID["MATRIX"])[_bacRootIndex][_siteID];
             _bacRootState["INDEX"] = _rootStateIndex;
             if (_rootStateIndex >= 0) {
-                _bacRootState["CHAR"] = ((_ancestralRecoveryCache[_ancID])["CHARS"])[_rootStateIndex];
+                _bacRootState["CHAR"] = (_ancID["CHARS"])[_rootStateIndex];
             } else {
                 _bacRootState["CHAR"] = "-";
             }
@@ -553,22 +664,22 @@ function _mapSNSBySite(_ancID, _siteID, _scaled) {
 /********************************************/
 
 function _mapSubstitutionsBySiteAux(_ancID, _siteID, _scaled, mode) {
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
             TREE_OUTPUT_OPTIONS = {};
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC = (_ancestralRecoveryCache[_ancID])["CHARS"];
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC);
             _bacCounter = Rows(_thisColumn) - 1;
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1) {
-                _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                 _myState = _thisColumn[_bacTreeIterator];
                 _pState = _thisColumn[_bacParentID];
                 _bacStateLabel = "";
 
 
-                _bac_bn = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Name"];
+                _bac_bn = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Name"];
                 TREE_OUTPUT_OPTIONS[_bac_bn] = {};
                 if (mode == 2) {
                     (TREE_OUTPUT_OPTIONS[_bac_bn])["TREE_OUTPUT_BRANCH_THICKNESS"] = 1;
@@ -641,12 +752,12 @@ function _mapSubstitutionsBySiteAux(_ancID, _siteID, _scaled, mode) {
             }
 
             if (mode == 2) {
-                (TREE_OUTPUT_OPTIONS[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Name"]]) = {
+                (TREE_OUTPUT_OPTIONS[((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Name"]]) = {
                     "TREE_OUTPUT_BRANCH_THICKNESS": 1
                 };
             }
 
-            _bacTreeString = PostOrderAVL2StringDL((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled);
+            _bacTreeString = PostOrderAVL2StringDL(_ancID["TREE_AVL"], _scaled);
             Tree _bacTempTree = _bacTreeString;
             _bac_bn = "";
             _bac_bn * 128;
@@ -688,15 +799,15 @@ function _mapCharactersBySiteNewick(_ancID, _siteID, _scaled) {
 }
 
 function _mapSubstitutionsBySiteNewickAux(_ancID, _siteID, _scaled, mode) {
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC = (_ancestralRecoveryCache[_ancID])["CHARS"];
+    if (Abs(_ancID)) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC);
             _bacCounter = Rows(_thisColumn) - 1;
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1) {
-                _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                 _myState = _thisColumn[_bacTreeIterator];
                 _pState = _thisColumn[_bacParentID];
                 _bacStateLabel = "";
@@ -712,10 +823,10 @@ function _mapSubstitutionsBySiteNewickAux(_ancID, _siteID, _scaled, mode) {
                     }
                 }
 
-                (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["SubLabel"] = _bacStateLabel;
+                ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["SubLabel"] = _bacStateLabel;
             }
 
-            return PostOrderAVL2StringAnnotate((_ancestralRecoveryCache[_ancID])["TREE_AVL"], _scaled, "SubLabel");
+            return PostOrderAVL2StringAnnotate(_ancID["TREE_AVL"], _scaled, "SubLabel");
         }
     }
     return "";
@@ -733,9 +844,9 @@ function _filterDimensions(_ancID) {
         1,
         2
     };
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        _sites = Columns((_ancestralRecoveryCache[_ancID])["MATRIX"]);
-        _branches = Rows((_ancestralRecoveryCache[_ancID])["MATRIX"]) - 1;
+    if (Abs_ancID) {
+        _sites = Columns(_ancID["MATRIX"]);
+        _branches = Rows(_ancID["MATRIX"]) - 1;
         _result[0] = _sites;
         _result[1] = _branches;
     }
@@ -756,11 +867,11 @@ function _countSubstitutionsByBranchSite(_ancID, _siteID, _filter) {
         0,
         1
     };
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
             TREE_OUTPUT_OPTIONS = {};
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC = (_ancestralRecoveryCache[_ancID])["CHARS"];
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC);
             _bacCounter = Rows(_thisColumn) - 1;
             _result = {
@@ -769,7 +880,7 @@ function _countSubstitutionsByBranchSite(_ancID, _siteID, _filter) {
             };
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator += 1) {
-                _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                 _myState = _thisColumn[_bacTreeIterator];
                 _pState = _thisColumn[_bacParentID];
                 _bacSiteMx = {
@@ -798,16 +909,16 @@ function _countSubstitutionsByBranchSite(_ancID, _siteID, _filter) {
 
 function _tabulateSubstitutionsAtSiteByBranch(_ancID, _siteID) {
     _result = {};
-    if (Abs(_ancestralRecoveryCache[_ancID])) {
-        if (_siteID >= 0 && _siteID < Columns((_ancestralRecoveryCache[_ancID])["MATRIX"])) {
-            _thisColumn = ((_ancestralRecoveryCache[_ancID])["MATRIX"])[-1][_siteID];
-            _bacSiteC = (_ancestralRecoveryCache[_ancID])["CHARS"];
+    if (Abs_ancID) {
+        if (_siteID >= 0 && _siteID < Columns(_ancID["MATRIX"])) {
+            _thisColumn = (_ancID["MATRIX"])[-1][_siteID];
+            _bacSiteC = _ancID["CHARS"];
             _bacSiteDim = Columns(_bacSiteC);
             _bacCounter = Rows(_thisColumn) - 1;
 
 
             for (_bacTreeIterator = 0; _bacTreeIterator < _bacCounter; _bacTreeIterator = _bacTreeIterator + 1) {
-                _bacParentID = (((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
+                _bacParentID = ((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Parent"] - 1;
                 _myState = _thisColumn[_bacTreeIterator];
                 _pState = _thisColumn[_bacParentID];
 
@@ -818,7 +929,7 @@ function _tabulateSubstitutionsAtSiteByBranch(_ancID, _siteID) {
                     haveS = 0;
                     haveNS = 0;
                 }
-                _result[(((_ancestralRecoveryCache[_ancID])["TREE_AVL"])[_bacTreeIterator + 1])["Name"]] = {
+                _result[((_ancID["TREE_AVL"])[_bacTreeIterator + 1])["Name"]] = {
                     {
                         haveS__,
                         haveNS__
@@ -889,7 +1000,7 @@ function _convertSubstitutionToCharacters(_state1, _state2, _ancID, _resultMatri
                 };
                 _vec1[_state1] = 1;
             } else {
-                _vec1 = ((_ancestralRecoveryCache[_ancID])["AMBIGS"])[-_state1 - 2];
+                _vec1 = (_ancID["AMBIGS"])[-_state1 - 2];
             }
             if (_state2 >= 0) {
                 _vec2 = {
@@ -898,7 +1009,7 @@ function _convertSubstitutionToCharacters(_state1, _state2, _ancID, _resultMatri
                 };
                 _vec2[_state2] = 1;
             } else {
-                _vec2 = ((_ancestralRecoveryCache[_ancID])["AMBIGS"])[-_state2 - 2];
+                _vec2 = (_ancID["AMBIGS"])[-_state2 - 2];
             }
             _vec1 = _vec1 * Transpose(_vec2);
             _vec2 = {

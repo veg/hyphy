@@ -1257,66 +1257,68 @@ bool    _String::IsALiteralArgument (bool strip_quotes) {
 
 
 hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_object, _String const * context) const {
-  char first_char    = char_at(0);
-  bool is_func_ref   = char_at(s_length-1) == '&';
-  
-  if (first_char == '*' || first_char == '^') {
-    if (is_func_ref) {
-      referenced_object = kEmptyString;
-      return kStringInvalidReference;
-    }
-    bool is_global_ref = first_char == '^';
-    _String   plain_name (*this, 1, -1);
-    
-    if (plain_name.IsValidIdentifier(fIDAllowCompound)) {
-      if (context) {
-        plain_name = *context & '.' & plain_name;
-      }
-      _FString * dereferenced_value = (_FString*)FetchObjectFromVariableByType(&plain_name, STRING);
-      if (dereferenced_value && dereferenced_value->get_str().ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
-        if (!is_global_ref && context) {
-          referenced_object = *context & '.' & referenced_object;
-        }
-        return is_global_ref?kStringGlobalDeference:kStringLocalDeference;
-      }
-    } else {
+  if (nonempty()) {
+      char first_char    = char_at(0);
+      bool is_func_ref   = char_at(s_length-1) == '&';
       
-      _String try_as_expression;
-      if (context) {
-        _VariableContainer ctxt (*context);
-        try_as_expression = ProcessLiteralArgument (&plain_name, &ctxt);
-      } else {
-        try_as_expression = ProcessLiteralArgument (&plain_name, nil);
-      }
-      if (try_as_expression.ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
-        if (!is_global_ref && context) {
-          referenced_object = *context & '.' & try_as_expression;
+      if (first_char == '*' || first_char == '^') {
+        if (is_func_ref) {
+          referenced_object = kEmptyString;
+          return kStringInvalidReference;
         }
+        bool is_global_ref = first_char == '^';
+        _String   plain_name (*this, 1, -1);
         
-        return is_global_ref?kStringGlobalDeference:kStringLocalDeference;
+        if (plain_name.IsValidIdentifier(fIDAllowCompound)) {
+          if (context) {
+            plain_name = *context & '.' & plain_name;
+          }
+          _FString * dereferenced_value = (_FString*)FetchObjectFromVariableByType(&plain_name, STRING);
+          if (dereferenced_value && dereferenced_value->get_str().ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
+            if (!is_global_ref && context) {
+              referenced_object = *context & '.' & referenced_object;
+            }
+            return is_global_ref?kStringGlobalDeference:kStringLocalDeference;
+          }
+        } else {
+          
+          _String try_as_expression;
+          if (context) {
+            _VariableContainer ctxt (*context);
+            try_as_expression = ProcessLiteralArgument (&plain_name, &ctxt);
+          } else {
+            try_as_expression = ProcessLiteralArgument (&plain_name, nil);
+          }
+          if (try_as_expression.ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
+            if (!is_global_ref && context) {
+              referenced_object = *context & '.' & try_as_expression;
+            }
+            
+            return is_global_ref?kStringGlobalDeference:kStringLocalDeference;
+          }
+        }
       }
-    }
-  }
-  
-  if (is_func_ref) {
-    referenced_object = Cut (0, s_length-2UL);
-    if (referenced_object.IsValidIdentifier(fIDAllowCompound)) {
-      referenced_object = (context? (*context & '.' & referenced_object): (referenced_object)) & '&';
-      return kStringDirectReference;
-    }
-  }
-  else {
-    if (IsValidIdentifier(fIDAllowCompound)) {
-      if (context) {
-        _String cdot = *context & '.';
-        referenced_object = BeginsWith(cdot) ? *this : (cdot & *this);
-      } else {
-        referenced_object = *this;
+      
+      if (is_func_ref) {
+        referenced_object = Cut (0, s_length-2UL);
+        if (referenced_object.IsValidIdentifier(fIDAllowCompound)) {
+          referenced_object = (context? (*context & '.' & referenced_object): (referenced_object)) & '&';
+          return kStringDirectReference;
+        }
       }
-      return kStringDirectReference;
-    }
+      else {
+        if (IsValidIdentifier(fIDAllowCompound)) {
+          if (context) {
+            _String cdot = *context & '.';
+            referenced_object = BeginsWith(cdot) ? *this : (cdot & *this);
+          } else {
+            referenced_object = *this;
+          }
+          return kStringDirectReference;
+        }
+      }
   }
-  
+      
   referenced_object = kEmptyString;
   return kStringInvalidReference;
 }

@@ -65,13 +65,13 @@ absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site ran
 io.DisplayAnalysisBanner ( absrel.analysis_description );
 
 absrel.json    = {
-                    terms.json.analysis: absrel.analysis_description, 
+                    terms.json.analysis: absrel.analysis_description,
                     terms.json.input: {},
                     terms.json.fits : {},
                     terms.json.timers : {},
                     terms.json.test_results : {}
                   };
-                  
+
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Overall", 0);
 
@@ -158,7 +158,7 @@ absrel.distribution_for_json = {absrel.per_branch_omega :
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (absrel.json,
+selection.io.json_store_lf_withEFV (absrel.json,
                                      absrel.baseline_mg94xrev,
                                      absrel.base.results[terms.fit.log_likelihood],
                                      absrel.base.results[terms.parameters] ,
@@ -725,8 +725,8 @@ lfunction absrel.BS_REL._DefineQ(bs_rel, namespace) {
     for (component = 1; component <= component_count; component += 1) {
        key = "component_" + component;
        ExecuteCommands ("
-        function rate_generator (fromChar, toChar, namespace, model_type, _tt) {
-           return absrel.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _tt,
+        function rate_generator (fromChar, toChar, namespace, model_type, model) {
+           return absrel.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
                 'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                 'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                 'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));

@@ -25,7 +25,7 @@ lfunction models.DNA.HKY85.ModelDescription(type) {
         utility.getGlobalValue("terms.model.type"): type,
         utility.getGlobalValue("terms.model.get_branch_length"): "",
         utility.getGlobalValue("terms.model.set_branch_length"): "models.generic.SetBranchLength",
-        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.constrain_branch_length",
+        utility.getGlobalValue("terms.model.constrain_branch_length"): "models.generic.ConstrainBranchLength",
         utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.empirical.nucleotide",
         utility.getGlobalValue("terms.model.q_ij"): "models.DNA.HKY85._GenerateRate",
         utility.getGlobalValue("terms.model.time"): "models.DNA.generic.Time",
@@ -51,7 +51,7 @@ function models.DNA.HKY85.is_transition(fromChar, toChar) {
  * @param {String} model_type
  * @return models.DNA.HKY85._GenerateRate.p
  */
-function models.DNA.HKY85._GenerateRate(fromChar, toChar, namespace, model_type) {
+function models.DNA.HKY85._GenerateRate(fromChar, toChar, namespace, model_type, model) {
     models.DNA.HKY85._GenerateRate.p = {};
     models.DNA.HKY85._GenerateRate.p[model_type] = {};
 

@@ -111,7 +111,8 @@ public:
     virtual  HBLObjectRef      PlainTreeString             (HBLObjectRef,HBLObjectRef);
 
     virtual _String const   GetNodeName                 (node<long> *, bool = false) const;
-  
+    virtual _String const   GetNodeName                 (_CalcNode const *cn, bool = false) const;
+
     virtual _String const   GetBranchLengthString       (node<long> *, bool get_expression = false) const;
     virtual  hyFloat        GetBranchLength             (node<long> *) const ;
     virtual  _String const  GetBranchValue              (node<long> *) const ;
@@ -294,6 +295,8 @@ public:
 protected:
   
     void        delete_associated_calcnode (node<long>*) const;
+
+    virtual void _RemoveNodeList (_SimpleList const& list);
 
     bool        IntPopulateLeaves   (_DataSetFilter const*, long) const;
 

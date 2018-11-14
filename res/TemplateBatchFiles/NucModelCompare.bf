@@ -1,4 +1,4 @@
-RequireVersion ("0.9920061127");
+RequireVersion ("0.99.20061127");
 
 /* 
 	This file takes a nucleotide data set and a tree (either from the data file or from a separate 	file) and computes maximum likelihood estimates for every possible 4x4 reversible model on that data and tree.
