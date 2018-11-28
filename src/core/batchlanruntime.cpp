@@ -79,7 +79,7 @@ void _CheckExpressionForCorrectness (_Formula& parsed_expression, _String const&
     if (parsed_expression.IsEmpty ()) {
         throw (exp.Enquote () & " parsed to an empty expression");
     }
-    if (!(desired_type == HY_ANY_OBJECT || parsed_expression.ObjectClass() == desired_type)) {
+    if (!(desired_type == HY_ANY_OBJECT || parsed_expression.ObjectClass() & desired_type)) {
         // TODO SLKP 20170704: ObjectClass will compute the expression with current values which may fail
         throw (exp.Enquote () & " did not evaluate to a " & FetchObjectNameFromType (desired_type));
     }
@@ -1172,7 +1172,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                                 if (vID >= 0) (*restrictor) << vID;
                             }
 
-                            if (restrictor->empty() == 0) {
+                            if (restrictor->empty()) {
                                 DeleteAndZeroObject (restrictor);
                             }
                         }
@@ -1605,7 +1605,7 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_p
         } else if (op_kind == kLFAbandonCache) {
           source_object->FlushLocalUpdatePolicy();
         } else {
-          receptacle = _ValidateStorageVariable (current_program, 2);
+          receptacle = _ValidateStorageVariable (current_program, 1UL);
           receptacle->SetValue (new _Constant (source_object->Compute()), false);
         }
       }
@@ -2121,15 +2121,13 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
           if (!parent_tree) {
             throw (GetIthParameter(0UL)->Enquote() & " is an orphaned tree node (the parent tree has been deleted)");
           }
+          tree_node->ReplaceModel (model_name, parent_tree);
           long partition_id, likelihood_function_id = ((_TheTree*)parent_tree->Compute())->IsLinkedToALF(partition_id);
           if (likelihood_function_id>=0){
             //throw(parent_tree->GetName()->Enquote() & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, likelihood_function_id) &") and cannot be modified ");
             //return false;
             ((_LikelihoodFunction*)likeFuncList (likelihood_function_id))->Rebuild(true);
-
           }
-
-          tree_node->ReplaceModel (model_name, parent_tree);
         } else {
           throw  (set_this_attribute.Enquote() & " is not a supported parameter type for a tree node argument");
         }
@@ -2220,7 +2218,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
           if (lkf->GetIndependentVars().Map (parameter_index) < 0L) {
             throw (GetIthParameter(1)->Enquote() & " (=" & parameter_index & ") is not a valid parameter index");
            }
-          lkf->SetIthIndependent (parameter_index,_ProcessNumericArgumentWithExceptions (*GetIthParameter(1),current_program.nameSpacePrefix));
+          lkf->SetIthIndependent (parameter_index,_ProcessNumericArgumentWithExceptions (*GetIthParameter(2),current_program.nameSpacePrefix));
         }
       } // end HY_BL_SCFG; HY_BL_LIKELIHOOD_FUNCTION
         break;
@@ -2994,7 +2992,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
         // finally, try to look up a variable
       if (!return_value) {
         _Variable* var = FetchVar(LocateVarByName (AppendContainerName(*GetIthParameter(1UL), current_program.nameSpacePrefix)));
-        
+
         if (var) {
             if (var->IsIndependent() && index1 != -3) {
               if (!var->has_been_set()) {
@@ -3318,11 +3316,12 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
     
     auto   handle_exclusions = [] (long count, _SimpleList & excluded) -> const _SimpleList {
         _SimpleList lfids;
-        lfids.Subtract(_SimpleList(likeFuncNamesList.countitems(), 0L, 1L), excluded);
+        lfids.Subtract(_SimpleList(count, 0L, 1L), excluded);
         return lfids;
     };
     
     static const _String kSkipNone ("SKIP_NONE"),
+    kNoSkip ("NO_SKIP"),
     kLikelihoodFunctions ("LikelihoodFunction");
   
     static const unsigned long maximum_wrong_choices = 10UL;
@@ -3349,9 +3348,9 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                     do_markdown     = hy_env :: EnvVariableTrue(hy_env :: produce_markdown_output);
         
         
-        if (exclusions != kSkipNone) {
+        if (exclusions != kSkipNone && exclusions != kNoSkip) {
             try {
-                HBLObjectRef exlcusion_argument = _ProcessAnArgumentByType(*exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
+                HBLObjectRef exlcusion_argument = _ProcessAnArgumentByType(exclusions, NUMBER | MATRIX, current_program, &local_dynamic_manager);
                 if (exlcusion_argument->ObjectClass() == NUMBER) {
                     excluded << exlcusion_argument->Compute ()->Value();
                 } else {
@@ -3359,6 +3358,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                     excluded.Sort();
                 }
             } catch (_String const & e) {
+                //printf ("%s\n", e.get_str());
                 // no exclusions, so do nothing
             }
         }
@@ -3441,12 +3441,23 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                         if (target_variable->GetVDim() != 2) {
                             throw (choices_parameter.Enquote() & " is not a matrix with two columns");
                         }
+                        
                         _List choices;
                         target_variable->FillInList(choices, false);
                         choices.bumpNInst();
-                        for (unsigned long k = 0UL; k < choices.countitems(); k+=2) {
+                        
+                        handle_exclusions (target_variable->GetHDim(), excluded).Each (
+                             [&] (long value, unsigned long ) -> void {
+                                 _String const * parameter_name = LocateVar(value)->GetName();
+                                 (*available_choices) < new _List (choices.GetItem(value << 1),
+                                                                   choices.GetItem(1L + (value << 1)));
+                             }
+                             );
+                                                                                       
+                        
+                        /*for (unsigned long k = 0UL; k < choices.countitems(); k+=2) {
                             (*available_choices) < new _List (choices.GetItem(k), choices.GetItem(k+1));
-                        }
+                        }*/
                     }   catch (_String const& e2) {
                         throw (choices_parameter.Enquote() & " is not a supported object/literal for the list of choices");
                     }
@@ -3542,7 +3553,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                long integer_choice = user_choice.to_long();
               
                if   (integer_choice > 0L && integer_choice <= available_choices->countitems()) {
-                 selection_tree.Insert((BaseRef)integer_choice);
+                 selection_tree.Insert((BaseRef)(integer_choice-1));
                } else {
                  ++ wrong_selections;
                }

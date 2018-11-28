@@ -382,12 +382,12 @@ void       UpdateChangingFlas (_SimpleList & involvedVariables)
 }
 
 //__________________________________________________________________________________
-void DeleteVariable (long dv, bool deleteself) {
+void DeleteVariable (long dv, bool deleteself, bool do_checks) {
     if (dv>=0L) {
 
-        _String *name  = (_String*)variableNames.Retrieve (dv);
-        _String myName = *name&'.';
-        long    vidx   = variableNames.GetXtra (dv);
+        _String *name   = (_String*)variableNames.Retrieve (dv);
+        _String my_name = *name&'.';
+        long    vidx    = variableNames.GetXtra (dv);
 
         UpdateChangingFlas (vidx);
 
@@ -395,30 +395,31 @@ void DeleteVariable (long dv, bool deleteself) {
         variableNames.Find (name,recCache);
         _String     nextVarID;// = *(_String*)variableNames.Retrieve(variableNames.Next (dv,recCache));
         long        nvid;
-        if ((nvid = variableNames.Next (dv,recCache))>=0) {
+        if ((nvid = variableNames.Next (dv,recCache))>=0L) {
             nextVarID = *(_String*)variableNames.Retrieve(nvid);
         }
 
         if (deleteself) {
-            _SimpleList tcache;
-            long        iv,
-                        k = variableNames.Traverser (tcache, iv, variableNames.GetRoot());
-
-            for (; k>=0; k = variableNames.Traverser (tcache, iv)) {
-                _Variable * thisVar = FetchVar(k);
-
-                if (thisVar->CheckFForDependence (vidx,false)) {
-                    HBLObjectRef curValue = thisVar->Compute();
-                    curValue->AddAReference(); // TODO this could be a leak 01/05/2004.
-                    thisVar->SetValue (curValue);
-                    DeleteObject (curValue);
+            
+            
+            _Variable * self_variable = FetchVar(dv);
+            
+            if (do_checks) {
+                for (AVLListXIteratorKeyValue variable_iterator : AVLListXIterator (&variableNames)) {
+                    _Variable * check_variable = FetchVar(variable_iterator.get_value());
+                    if (self_variable != check_variable && check_variable->CheckFForDependence (vidx,false)) {
+                        HBLObjectRef current_variable_value = check_variable->Compute();
+                        current_variable_value->AddAReference(); // if this isn't done; the object will be deleted when the formula is cleared in SetValue
+                        check_variable->SetValue (current_variable_value);
+                        DeleteObject (current_variable_value);
+                    }
                 }
             }
-
-            DeleteObject (FetchVar(dv));
+        
 
             variableNames.Delete (variableNames.Retrieve(dv),true);
-            (*((_SimpleList*)&variablePtrs))[vidx]=0;
+            variablePtrs[vidx] = nil;
+            DeleteObject (self_variable);
             freeSlots<<vidx;
         } else {
             _Variable* delvar = (FetchVar(dv));
@@ -427,7 +428,7 @@ void DeleteVariable (long dv, bool deleteself) {
                 dc->Clear();
             }
         }
-
+        
         _List       toDelete;
 
         recCache.Clear();
@@ -435,7 +436,7 @@ void DeleteVariable (long dv, bool deleteself) {
 
         for (; nextVar>=0; nextVar = variableNames.Next (nextVar, recCache)) {
             _String dependent = *(_String*)variableNames.Retrieve (nextVar);
-            if (dependent.BeginsWith(myName)) {
+            if (dependent.BeginsWith(my_name)) {
                 toDelete && & dependent;
             } else {
                 break;
@@ -537,8 +538,7 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 }
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal)
-{
+_Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal, bool clear_trees) {
     if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
         HandleApplicationError(name->Enquote() & " is not a valid variable identifier");
         return nil;
@@ -548,7 +548,8 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
 
     if (f>=0L) {
       _Variable * existing = FetchVar (f);
-      if (existing->ObjectClass() == TREE) {
+    
+      if (clear_trees && (existing->ObjectClass() == TREE || existing->ObjectClass() == TOPOLOGY)) {
         DeleteVariable (*existing->GetName());
         f = -1L;
       }
@@ -643,8 +644,8 @@ bool CheckReceptacleAndStore (_String name, _String fID, bool checkValid, HBLObj
 }
 
 //__________________________________________________________________________________
-void  InsertVar (_Variable* theV)
-{
+void  InsertVar (_Variable* theV) {
+        
     long pos = variableNames.Insert (theV->theName);
 
     if (pos < 0 && isDefiningATree == kTreeNodeBeingCreated)
@@ -692,14 +693,13 @@ _String const&  AppendContainerName (_String const& inString, _VariableContainer
 //__________________________________________________________________________________
 _String const&  AppendContainerName (_String const& inString, _String const* namescp) {
     static _String returnMe;
-
+    
     if (_hy_application_globals.Find (&inString) >= 0) {
         return inString;
     }
     
     hy_reference_type reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && !namescp -> empty() ? namescp : nil);
     
-
     if (reference_type != kStringInvalidReference) {
         return returnMe;
     }

@@ -446,7 +446,6 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 //----------------------------------------------------------------------------------------
 lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
 
-
     GetString   (lfInfo, ^lf_fel,-1);
 
 

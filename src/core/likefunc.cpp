@@ -5203,9 +5203,8 @@ void    _LikelihoodFunction::CheckStep (hyFloat& tryStep, _Matrix vect, _Matrix*
 
 //_______________________________________________________________________________________
 
-HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList)
-{
-    if (indexInd.lLength==0) {
+HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList) {
+    if (indexInd.empty()) {
         return nil;
     }
 
@@ -5217,7 +5216,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 
     checkParameter (covariancePrecision,cm,1.0);
 
-    long        i = parameterList?parameterList->lLength:indexInd.lLength,
+    long        parameter_count = parameterList?parameterList->countitems():indexInd.countitems(),
                 j;
 
     PrepareToCompute();
@@ -5233,49 +5232,39 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         parameterList = &indexInd;
     }
 
-    if (cm<1.)
+    if (cm<1.) {
         // use likelihood profile with the appropriate signifcance level
-    {
-        _Matrix     sigLevels  (i,7,false,true);
+        _Matrix     * sigLevels = new _Matrix (parameter_count,7,false,true);
 
         // find the appropriate significance level for chi2
 
-        _String xxc ("_xx_");
+        _String xxc = _HYGenerateANameSpace () & (".x");
         thisVar = CheckReceptacle (&xxc, kEmptyString);
         thisVar->SetBounds (-1.e30,1.e30);
 
-        if (cm>0.0) {
-
-            _String     fString = _String ("CChi2(_xx_,1)-") & cm;
-            _Formula    CChi2Fla (fString,nil);
-            t1 = CChi2Fla.Brent (thisVar,0,0);
-            if (fabs(CChi2Fla.Compute()->Value())>1.e-6) {
-                HandleApplicationError ("Failed to compute chi-square significance level in call to CovarianceMatrix");
-                DoneComputing();
-                return    (HBLObjectRef)sigLevels.makeDynamic();
-            }
-        } else {
-            if (cm<0.0) {
-                t1 = -2.*cm;
+        try {
+            if (cm>0.0) {
+                _String     fString = _String ("CChi2(") & xxc & ",1)-" & cm;
+                _Formula    CChi2Fla (fString,nil);
+                t1 = CChi2Fla.Brent (thisVar,0,0);
+                if (fabs(CChi2Fla.Compute()->Value())>1.e-6) {
+                    throw _String ("Failed to compute chi-square significance level");
+                }
             } else {
-                HandleApplicationError ("Must have a non-zero COVARIANCE_PRECISION in call to CovarianceMatrix.");
-                DoneComputing();
-                return    (HBLObjectRef)sigLevels.makeDynamic();
+                if (cm<0.0) {
+                    t1 = -2.*cm;
+                } else {
+                    throw (_String("Must have a non-zero ") & covariancePrecision);
+                }
             }
+        } catch (const _String& e) {
+            DoneComputing();
+            DeleteVariable(thisVar->get_index(), true, false);
+            HandleApplicationError (e);
+            return    sigLevels;
         }
 
-#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-        hyFloat totalCount    = 2*parameterList->lLength;
-
-        long       finishedCount = 0;
-
-        TimerDifferenceFunction  (false);
-        DecideOnDivideBy (this);
-#endif
-
-
         thisVar->SetNumericValue (t1);
-
 
         /* ____________________________________ NEW CODE BY AFYP _____________________________________ */
         long        mastodon    = likeFuncList._SimpleList::Find((long)this);
@@ -5290,11 +5279,14 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
             myName      = (_String*)likeFuncNamesList (mastodon);
         }
 
-        _String     fString     = _String("function _profileFit(_xxv_,_variableIndex){SetParameter(")&*myName&",_variableIndex,_xxv_);LFCompute("
+        _String xxv = "_xxv";
+        
+        _String     fString     = _String("function _profileFit(") & xxv & ",_variableIndex){SetParameter(" &*myName&",_variableIndex," &xxv&");LFCompute("
                                   //    &*myName&(",_xxres);  fprintf (stdout,\"\\n\",_xxv_,\" \",_xxres);  return _xxres;}");
-                                  &*myName&(",_xxres);return _xxres;}");
+                                  &*myName & _String (",_xxres);") //"fprintf (stdout,\"\\n\",") & xxv & ",\" \",_xxres);
+                                  &"return _xxres;}";
 
-
+        //printf ("%s\n", fString.get_str());
 
         /* ___________________________________ ! NEW CODE BY AFYP ____________________________________ */
 
@@ -5304,20 +5296,21 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         _ExecutionList exL (fString);
         exL.Execute ();
 
-        for (i=0; i<parameterList->lLength; i++) {
-            j = useIndirectIndexing?parameterList->lData[i]:i;
+        for (parameter_count=0; parameter_count<parameterList->lLength; parameter_count++) {
+            j = useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count;
             t2 = GetIthIndependent (j);
             _Variable* thisVar2 = LocateVar (indexInd.lData[j]);
             thisVar->SetBounds (thisVar2->GetLowerBound(),thisVar2->GetUpperBound());
-            sigLevels.Store (i,1,t2);
+            sigLevels->Store (parameter_count,1,t2);
 
             char buffer[255];
             snprintf (buffer, sizeof(buffer),"%.14g",t1);
 
-            fString = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
+            fString = _String("_profileFit(") & xxc & "," & j & ")-(" & buffer& ')';
             _Formula    FitFla (fString,nil);
+            
             if (CheckEqual(t2,thisVar2->GetLowerBound())) {
-                sigLevels.Store (i,0,t2);
+                sigLevels->Store (parameter_count,0,t2);
             } else {
                 h = FitFla.Brent (thisVar,t2+1,t2,t2*0.0001+0.000001);
                 //sigLevels.Store (i,0,MAX(h,thisVar2->GetLowerBound()));
@@ -5327,32 +5320,24 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                   lf_buffer = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
                   _Formula try_again (lf_buffer,nil);
                   h = try_again.Brent (thisVar,t2+1,t2,t2*0.0001+0.000001);
-                  sigLevels.Store (i,5,h);
-                  sigLevels.Store (i,0,thisVar2->GetLowerBound());
+                  sigLevels->Store (parameter_count,5,h);
+                  sigLevels->Store (parameter_count,0,thisVar2->GetLowerBound());
 
                 } else {
-                  sigLevels.Store (i,0,h);
-                  sigLevels.Store (i,5,h);
+                  sigLevels->Store (parameter_count,0,h);
+                  sigLevels->Store (parameter_count,5,h);
                 }
            }
 
-            snprintf (buffer, sizeof(buffer),"%.14g",sigLevels (i,0));
+            snprintf (buffer, sizeof(buffer),"%.14g",(*sigLevels) (parameter_count,0));
             _String checkLFDIFF = _String("CChi2(2*(-_profileFit(") & buffer & "," & j & ")+(" & functionValue & ")),1)";
             HBLObjectRef lf_diff = (HBLObjectRef) _FString (checkLFDIFF, false).Evaluate(_hyDefaultExecutionContext);
-            sigLevels.Store (i,3,lf_diff->Value());
+            sigLevels->Store (parameter_count,3,lf_diff->Value());
             DeleteObject (lf_diff);
-
-#ifndef __UNIX__
-            finishedCount += 1;
-            if (TimerDifferenceFunction(true)>1.) {
-                SetStatusBarValue (finishedCount/totalCount*100.,1,0);
-                TimerDifferenceFunction (false);
-            }
-#endif
 
 
             if (CheckEqual(t2,thisVar2->GetUpperBound())) {
-                sigLevels.Store (i,2,t2);
+                sigLevels->Store (parameter_count,2,t2);
             } else {
                 //_List store_evals;
                 h = FitFla.Brent (thisVar,t2,t2,t2*0.0001+0.000001);//, &store_evals);
@@ -5362,38 +5347,31 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                   lf_buffer = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
                   _Formula try_again (lf_buffer,nil);
                   h = try_again.Brent (thisVar, t2,t2,t2*0.0001+0.000001);
-                  sigLevels.Store (i,6,h);
-                  sigLevels.Store (i,2,thisVar2->GetUpperBound());
+                  sigLevels->Store (parameter_count,6,h);
+                  sigLevels->Store (parameter_count,2,thisVar2->GetUpperBound());
 
                 } else {
-                  sigLevels.Store (i,2,h);
-                  sigLevels.Store (i,6,h);
+                  sigLevels->Store (parameter_count,2,h);
+                  sigLevels->Store (parameter_count,6,h);
                 }
             }
 
-             snprintf (buffer, sizeof(buffer),"%.14g",sigLevels (i,2));
+             snprintf (buffer, sizeof(buffer),"%.14g",(*sigLevels) (parameter_count,2));
              checkLFDIFF =_String("CChi2(2*(-_profileFit(") & buffer & "," & j & ")+(" & functionValue & ")),1)";
              lf_diff = (HBLObjectRef) _FString (checkLFDIFF, false).Evaluate(_hyDefaultExecutionContext);
-             sigLevels.Store (i,4,lf_diff->Value());
+             sigLevels->Store (parameter_count,4,lf_diff->Value());
              DeleteObject (lf_diff);
-
-#ifndef __UNIX__
-            finishedCount += 1;
-            if (TimerDifferenceFunction(true)>1.) {
-                SetStatusBarValue (finishedCount/totalCount*100.,1,0);
-                TimerDifferenceFunction (false);
-            }
-#endif
 
             SetIthIndependent (j,t2);
         }
 
         DoneComputing();
-        return  (HBLObjectRef)sigLevels.makeDynamic();
+        DeleteVariable(thisVar->get_index(), true, false);
+        return  sigLevels;
     }
 
-    _Matrix     hessian    (i,i,false,true),
-                funcValues (i,5,false,true),
+    _Matrix     hessian    (parameter_count,parameter_count,false,true),
+                funcValues (parameter_count,5,false,true),
                 *iMap = nil;
 
     _AssociativeList * mapMethod = nil;
@@ -5402,17 +5380,17 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
     checkParameter  (useIntervalMapping, uim, 0.0);
 
     if (uim > 0.5) {
-        iMap = new _Matrix (i,3,false,true);
+        iMap = new _Matrix (parameter_count,3,false,true);
         mapMethod = new _AssociativeList;
 
     }
     // y,x',x''
     // first check for boundary values and move the parameter values a bit if needed
-    for (i=0; i<parameterList->lLength; i++) {
-        long     dIndex = useIndirectIndexing?parameterList->lData[i]:i;
+    for (parameter_count=0; parameter_count<parameterList->lLength; parameter_count++) {
+        long     dIndex = useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count;
         thisVar = LocateVar (indexInd.lData[dIndex]);
         t1 = thisVar->Value();
-        funcValues.Store (i,3,t1);
+        funcValues.Store (parameter_count,3,t1);
 
         hyFloat locH = 1./131072.; //*(t1>10.?exp(log(10.)*((long)log(t1)/log(10.))):1.);
 
@@ -5450,7 +5428,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         }*/
 
 
-        funcValues.Store (i,4,(locH+t1)-t1);
+        funcValues.Store (parameter_count,4,(locH+t1)-t1);
 
         if (t1+locH > thisVar->GetUpperBound()) {
             SetIthIndependent (dIndex,thisVar->GetUpperBound()-2.0*locH);
@@ -5485,9 +5463,9 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                 dy2 = dy*((1-t1*t1)/(t1+1)/(t1+1));
                 varMapMethod.SetValue(2.);
             }
-            iMap->Store(i,0,y);
-            iMap->Store(i,1,dy);
-            iMap->Store(i,2,dy2);
+            iMap->Store(parameter_count,0,y);
+            iMap->Store(parameter_count,1,dy);
+            iMap->Store(parameter_count,2,dy2);
             mapMethod->MStore (&varKeyName, &varMapMethod, true);
         }
     }
@@ -5509,31 +5487,31 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 #endif
 
     // fill in funcValues with L(...,x_i\pm h,...) and 1st derivatives and get 2nd derivatives
-    for (i=0; i<parameterList->lLength; i++) {
-        long              pIdx = useIndirectIndexing?parameterList->lData[i]:i;
+    for (parameter_count=0; parameter_count<parameterList->lLength; parameter_count++) {
+        long              pIdx = useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count;
 
         hyFloat        pVal = GetIthIndependent (pIdx),
                           d1,
-                          locH = funcValues (i,4);
+                          locH = funcValues (parameter_count,4);
 
         SetIthIndependent (pIdx,pVal-locH); // - step
         t1 = Compute();
-        funcValues.Store (i,0,t1);
+        funcValues.Store (parameter_count,0,t1);
         SetIthIndependent (pIdx,pVal+locH); // + step
         t2 = Compute();
-        funcValues.Store (i,1,t2);          // reset value
+        funcValues.Store (parameter_count,1,t2);          // reset value
         SetIthIndependent (pIdx,pVal);
         d1 = (t2-t1)/(2.0*locH);
         // central 1st derivative
-        funcValues.Store (i,2,d1);
+        funcValues.Store (parameter_count,2,d1);
 
         t1  = ((t1-functionValue)+(t2-functionValue))/(locH*locH);
         // Standard central second derivative
 
         if (uim < 0.5) {
-            hessian.Store (i,i,-t1);
+            hessian.Store (parameter_count,parameter_count,-t1);
         } else {
-            hessian.Store (i,i,-(t1*(*iMap)(i,1)*(*iMap)(i,1)+(*iMap)(i,2)*d1));
+            hessian.Store (parameter_count,parameter_count,-(t1*(*iMap)(parameter_count,1)*(*iMap)(parameter_count,1)+(*iMap)(parameter_count,2)*d1));
         }
 
 #ifndef __UNIX__
@@ -5550,13 +5528,13 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         // fill in off-diagonal elements using the f-la
         // f_xy = 1/4h^2 (f(x+h,y+h)-f(x+h,y-h)+f(x-h,y-h)-f(x-h,y+h))
 
-        for (i=0; i<parameterList->lLength-1; i++) {
-            long        iidx = useIndirectIndexing?parameterList->lData[i]:i;
+        for (parameter_count=0; parameter_count<parameterList->lLength-1; parameter_count++) {
+            long        iidx = useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count;
 
             hyFloat  ival  = GetIthIndependent(iidx),
                         locHi = 1/8192.;//funcValues (i,4);
 
-            for (j=i+1; j<parameterList->lLength; j++) {
+            for (j=parameter_count+1; j<parameterList->lLength; j++) {
                 long        jidx = useIndirectIndexing?parameterList->lData[j]:j;
 
                 hyFloat  jval  = GetIthIndependent(jidx),
@@ -5579,11 +5557,11 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                 t2 = (a-b-d+c)/(4*locHi*locHj);
 
                 if (uim > 0.5) {
-                    t2 *= (*iMap)(i,1)*(*iMap)(j,1);
+                    t2 *= (*iMap)(parameter_count,1)*(*iMap)(j,1);
                 }
 
-                hessian.Store (i,j,-t2);
-                hessian.Store (j,i,-t2);
+                hessian.Store (parameter_count,j,-t2);
+                hessian.Store (j,parameter_count,-t2);
                 SetIthIndependent (iidx,ival);
                 SetIthIndependent (jidx,jval);
 #ifndef __UNIX__
@@ -5601,19 +5579,19 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         // f_xy = 1/h^2 (f(x+h,y+h)-f(x)-f_x h -f_y h -.5h^2(f_xx+f_yy))
 
         if (CheckEqual(cm,1.)) {
-            for (i=0; i<parameterList->lLength-1; i++) {
-                hyFloat t3 = GetIthIndependent(useIndirectIndexing?parameterList->lData[i]:i),
-                           t5 = hessian(i,i),
-                           t6 = funcValues(i,2);
+            for (parameter_count=0; parameter_count<parameterList->lLength-1; parameter_count++) {
+                hyFloat t3 = GetIthIndependent(useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count),
+                           t5 = hessian(parameter_count,parameter_count),
+                           t6 = funcValues(parameter_count,2);
 
-                SetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i,t3+h);
-                for (j=i+1; j<parameterList->lLength; j++) {
+                SetIthIndependent (useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count,t3+h);
+                for (j=parameter_count+1; j<parameterList->lLength; j++) {
                     hyFloat t4 = GetIthIndependent(useIndirectIndexing?parameterList->lData[j]:j);
                     SetIthIndependent (useIndirectIndexing?parameterList->lData[j]:j,t4+h);
                     t1 = Compute();
                     t2 = (t1-functionValue-(t6+funcValues(j,2)-.5*(t5+hessian(j,j))*h)*h)/(h*h);
-                    hessian.Store (i,j,-t2);
-                    hessian.Store (j,i,-t2);
+                    hessian.Store (parameter_count,j,-t2);
+                    hessian.Store (j,parameter_count,-t2);
                     SetIthIndependent (useIndirectIndexing?parameterList->lData[j]:j,t4);
 #ifndef __UNIX__
                     finishedCount ++;
@@ -5623,7 +5601,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                     }
 #endif
                 }
-                SetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i,t3);
+                SetIthIndependent (useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count,t3);
             }
         }
     }
@@ -5637,11 +5615,11 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         DeleteObject (mapMethod);
     }
 
-    for (i=0; i<parameterList->lLength; i++) {
-        t1 = funcValues(i,3);
-        t2 = GetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i);
+    for (parameter_count=0; parameter_count<parameterList->lLength; parameter_count++) {
+        t1 = funcValues(parameter_count,3);
+        t2 = GetIthIndependent (useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count);
         if (!CheckEqual (t1,t2)) {
-            SetIthIndependent (useIndirectIndexing?parameterList->lData[i]:i,t1);
+            SetIthIndependent (useIndirectIndexing?parameterList->lData[parameter_count]:parameter_count,t1);
         }
     }
     return hessian.Inverse();

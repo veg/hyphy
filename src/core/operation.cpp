@@ -438,10 +438,10 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
           }
         }
         
-        _Variable* argument_var = CheckReceptacle (argument_k, kEmptyString, false, false);
+        _Variable* argument_var = CheckReceptacle (argument_k, kEmptyString, false, false, false);
         
         if (!isRefVar) {
-          if (argument_var->IsIndependent()) {
+          if (argument_var->IsIndependent() && (argument_var->ObjectClass() & (TREE|TOPOLOGY)) == 0) {
             // if the variable exists and is independent then
             // simply swap the value of the var, otherwise
             // duplicate the entire variable
@@ -474,9 +474,9 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
           // TODO SLKP 20170928 Check that this doesn't break reference variable calls
           // used to write namespaced variable to nthterm
           if (nameSpace) {
-              reference_var =  CheckReceptacle (&AppendContainerName (*refArgName, nameSpace), kEmptyString, false, false);
+              reference_var =  CheckReceptacle (&AppendContainerName (*refArgName, nameSpace), kEmptyString, false, false, false);
           } else {
-              reference_var =  CheckReceptacle (refArgName, kEmptyString, false, false);
+              reference_var =  CheckReceptacle (refArgName, kEmptyString, false, false, false);
           }
           
           variableNames.SetXtra (new_index, reference_var->get_index());

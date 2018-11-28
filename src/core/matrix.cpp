@@ -118,8 +118,8 @@ void        MatrixIndexError        (long, long, long, long);
 
 void    MatrixIndexError (long hPos, long vPos, long hDim, long vDim) {
     HandleApplicationError (
-                            _String  ("Invalid Matrix Index [") &  _String ((long)hPos) & "][" & _String ((long)vPos) &
-                            "] in a " &_String (hDim) & " by " &_String (vDim) & " matrix.");
+                            kErrorStringInvalidMatrixIndex & _String ((long)hPos).Enquote('[',']') & _String ((long)vPos).Enquote('[',']') &
+                            " in an " &_String (hDim) & " by " &_String (vDim) & " matrix.");
 }
 
 //_____________________________________________________________________________________________

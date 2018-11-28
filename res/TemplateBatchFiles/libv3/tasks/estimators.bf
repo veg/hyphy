@@ -817,11 +817,10 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options, None);
 
 
-    /*
-    Export (lfe, likelihoodFunction);
-    fprintf ("/tmp/pogo-dump.fit", CLEAR_FILE, lfe);
-    */
-
+    
+    //Export (lfe, likelihoodFunction);
+    //fprintf ("/tmp/pogo-dump.fit", CLEAR_FILE, lfe);
+    
    	Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {

@@ -147,7 +147,7 @@ _String const
     assertion_behavior                              ("ASSERTION_BEHAVIOR"),
         // if set to TRUE, then assertions that fail skip to the end of the current script
         // otherwise they terminate the program
-    assume_reversible                               ("ASSUME_REVERSIBLE"),
+    assume_reversible                               ("ASSUME_REVERSIBLE_MODELS"),
         // 0 : check reversibility at run-time
         // 1 : ASSUME reversibility
         // -1 : ASSUME NON-reversibility

@@ -219,6 +219,8 @@ struct _any_char_in_set {
             valid [accept[i]] = true;
         }
     }
+    
+    
     void invert () {
         ArrayForEach(valid, 256, [] (bool v, unsigned long) -> bool {return !v;});
     }
@@ -278,6 +280,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
     _any_char_in_set non_space        (" \t\r\n"),
                      newick_delimiter (" \t\r\n(),{}[];:");
     non_space.invert();
+    newick_delimiter.valid [0] = true;
     
     
     char        lastChar    = '\0';
@@ -359,7 +362,7 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
                         }
                     }
                     
-                     
+                    
                     FinalizeNode (parentNode, nodeNumbers.get (lastNode), nodeName, nodeParameters, nodeValue, &nodeComment, parse_settings);
                     
                     pop_node ();

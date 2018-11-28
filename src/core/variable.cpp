@@ -328,9 +328,9 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the 
 
     long     valueClass = theP->ObjectClass();
   
-    /*bool     doPrint = (*theName) == _String("_value_");
+    /*bool     doPrint = (*theName) == _String("_pattern_info_");
     if (doPrint) {
-      printf ("Setting %s to %s\n", theName->sData, _String((_String*)theP->toStr()).sData);
+      printf ("Setting %s to %s\n", theName->get_str(), _String((_String*)theP->toStr()).get_str());
     }*/
 
     if (valueClass==NUMBER) {
@@ -340,6 +340,7 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the 
 
             // also update the fact that this variable is no longer dependent in all declared
             // variable containers which contain references to this variable
+            
             for (unsigned long i = 0UL; i<variablePtrs.lLength; i++) {
                 if (freeSlots.Find(i)>=0) {
                     continue;
@@ -394,10 +395,10 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the 
             varValue=nil;
         }
       
-        if (valueClass==TREE) {
+        /*if (valueClass & (TREE)) {
             variablePtrs.lData[theIndex] = (long)(((_TheTree*)theP)->makeDynamicCopy(GetName()));
             DeleteObject(this);
-        } else {
+        } else*/ {
             if (dup) {
                 varValue = (HBLObjectRef)theP->makeDynamic();
             } else {

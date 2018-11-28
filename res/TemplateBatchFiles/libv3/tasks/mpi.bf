@@ -192,6 +192,7 @@ namespace mpi {
 
 
     lfunction QueueJob (queue, job, arguments, result_callback) {
+    
         /**
             send the job function with provided arguments to
             the first available node.

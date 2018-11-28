@@ -484,19 +484,26 @@ namespace hy_global {
     
     //____________________________________________________________________________________
     
-    void PopulateCurrentCallStack      (_List& calls, _List& stdins) {
+    void PopulateCurrentCallStack      (_List& calls, _List& stdins, _List& contexts) {
     /**
         Fill out the list of execution lists (calls) and standard inputs (stdins)
      
      */
         calls.Clear  ();
         stdins.Clear ();
+        contexts.Clear ();
         
         if (executionStack.lLength) {
             for (long callLevel = executionStack.lLength -1L ; callLevel >=0L ; callLevel --) {
                 _ExecutionList * currentLevel = (_ExecutionList*)executionStack (callLevel);
                 
                 calls.AppendNewInstance(new _String ((_String*)((_ElementaryCommand*)(*currentLevel)(currentLevel->currentCommand?currentLevel->currentCommand-1:0))->toStr()));
+                
+                if (currentLevel->nameSpacePrefix) {
+                    contexts << currentLevel->nameSpacePrefix->GetName();
+                } else {
+                    contexts.AppendNewInstance (new _String);
+                }
                 
                 if (currentLevel->stdinRedirect) {
                     stdins.AppendNewInstance ((_String*)currentLevel->stdinRedirect->toStr());
@@ -516,9 +523,10 @@ namespace hy_global {
         _StringBuffer* error_message = new _StringBuffer (128UL);
         
         _List    calls,
-                 stdins;
+                 stdins,
+                 contexts;
         
-        PopulateCurrentCallStack	 (calls, stdins);
+        PopulateCurrentCallStack	 (calls, stdins, contexts);
         
         _FString * error_formatting_expression = (_FString*) EnvVariableGet(error_report_format_expression, STRING);
         
@@ -546,10 +554,16 @@ namespace hy_global {
         if (doDefault) {
             (*error_message) << "Error:\n" << theMessage;
             
-            if (calls.lLength) {
+            if (calls.nonempty()) {
                 (*error_message) << "\n\nFunction call stack\n";
-                for (unsigned long k = 0UL; k < calls.lLength; k++) {
-                    (*error_message) << (_String((long)k+1) & " : " & (*(_String*)calls(k)) & '\n');
+                for (unsigned long k = 0UL; k < calls.countitems(); k++) {
+                    (*error_message) << (_String((long)k+1)) << " :  ";
+                    _String * context = (_String*)contexts.GetItem(k);
+                    if (context->nonempty()) {
+                        (*error_message) << "[namespace = " << *context << "] ";
+                    }
+                    (*error_message) << (*(_String*)calls(k)) << '\n';
+                    
                     _String* redir = (_String*)stdins (k);
                     if (!redir->empty()) {
                         (*error_message) << "\tStandard input redirect:\n\t\t"

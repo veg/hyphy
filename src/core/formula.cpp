@@ -2672,14 +2672,14 @@ bool _Formula::IsAConstant (void) {
 //__________________________________________________________________________________
 bool _Formula::IsConstant (bool strict) {
   unsigned long const upper_bound = NumberOperations();
-  
+
   for (unsigned long i=0UL; i<upper_bound; i++) {
     if (ItemAt (i)->IsConstant(strict) == false) {
       return false;
     }
-    
-    return true;
   }
+    
+  return true;
 }
 
 //__________________________________________________________________________________

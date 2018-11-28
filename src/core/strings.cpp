@@ -1269,7 +1269,7 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
         bool is_global_ref = first_char == '^';
         _String   plain_name (*this, 1, -1);
         
-        if (plain_name.IsValidIdentifier(fIDAllowCompound)) {
+        if (plain_name.IsValidIdentifier(fIDAllowCompound | fIDAllowFirstNumeric)) {
           if (context) {
             plain_name = *context & '.' & plain_name;
           }
@@ -1301,13 +1301,13 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
       
       if (is_func_ref) {
         referenced_object = Cut (0, s_length-2UL);
-        if (referenced_object.IsValidIdentifier(fIDAllowCompound)) {
+        if (referenced_object.IsValidIdentifier(fIDAllowCompound | fIDAllowFirstNumeric)) {
           referenced_object = (context? (*context & '.' & referenced_object): (referenced_object)) & '&';
           return kStringDirectReference;
         }
       }
       else {
-        if (IsValidIdentifier(fIDAllowCompound)) {
+        if (IsValidIdentifier(fIDAllowCompound | fIDAllowFirstNumeric)) {
           if (context) {
             _String cdot = *context & '.';
             referenced_object = BeginsWith(cdot) ? *this : (cdot & *this);

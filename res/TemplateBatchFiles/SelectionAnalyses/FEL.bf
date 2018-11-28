@@ -147,8 +147,6 @@ namespace fel {
 io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
 
-
-
 fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
     terms.run_options.partitioned_omega: fel.selected_branches,

@@ -34,16 +34,16 @@ MATRIX
 END;
 
 BEGIN TREES;
-	TREE tree = ((((Pig:0.147969,Cow:0.213430):0.085099,Horse:0.165787,Cat:0.264806):0.058611,((RhMonkey{PR}:0.002015,Baboon{PR}:0.003108){PR}:0.022733,(Human{PR}:0.004349,Chimp{PR}:0.000799){PR}:0.011873){PR}:0.101856){PR}:0.340802,Rat:0.050958,Mouse:0.097950);
+	TREE tree = ((((Pig{Group2},Cow{Group2}){Group2},Horse{Group2},Cat{Group2}),((RhMonkey{Group1},Baboon{Group4}){Group4},(Human{Group1},Chimp{Group1}){Group1})),Rat{Group3},Mouse{Group3})
 END;
 
 BEGIN HYPHY;
 
 DATA_PANEL_SOURCE_PATH="";
 DataSet CD2 = ReadDataFile (USE_NEXUS_FILE_DATA);
-DataSetFilter CD2_part = CreateFilter (CD2,3,"0-560","(null)","TAA,TAG,TGA");
+DataSetFilter CD2_part = CreateFilter (CD2,3,"0-560","","TAA,TAG,TGA");
+
 Tree CD2_tree=((((Pig,Cow)Node3,Horse,Cat)Node2,((RhMonkey,Baboon)Node9,(Human,Chimp)Node12)Node8)Node1,Rat,Mouse);
-OpenDataPanel(CD2,"(null)","0,0,0,0,2,0,10","MG94xREV_3x4,6,0,14443523,CD2_tree",CD2_LF);
 
 global CD2_part_Shared_AC=0.5710714109234631;
 global CD2_part_Shared_AT=0.2756961373814887;

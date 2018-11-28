@@ -46,7 +46,7 @@ lfunction selection.io.defineBranchSets(partition_info) {
             selectTheseForTesting[3 + k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
         }
     }
-
+    
     ChoiceList(testSet, "Choose the set of branches to test for selection", 1, NO_SKIP, selectTheseForTesting);
 
     io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");

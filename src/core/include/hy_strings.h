@@ -45,7 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "regex.h"
 #include "wchar.h"
 
-#define fExtractRespectQuote 0x01
+#define fExtractRespectQuote  0x01
 #define fExtractRespectEscape 0x02
 #define fExtractOneLevelOnly  0x04
 
@@ -1022,8 +1022,6 @@ public:
     char       quote_state = '\0',
                this_char = get_char (current_position);
       
-   
-    
     while (this_char) {
       bool       check_quote = false;
         
@@ -1073,6 +1071,14 @@ public:
       this_char = get_char (++current_position);
         
     }
+      
+    // check if \0 is a valid terminator
+      
+   if (close == this_char) {
+       if (current_level == 1L && from < current_position) {
+           return current_position;
+       }
+   }
     
     return kNotFound;
   }

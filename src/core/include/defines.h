@@ -71,7 +71,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define  kMaxDialogPrompts  10L
 
-#define  HY_UNDEFINED       0x000UL
+#define  HY_UNDEFINED       0x400UL
 #define  NUMBER             0x001UL
 #define  MATRIX             0x004UL
 #define  CONTAINER          0x008UL

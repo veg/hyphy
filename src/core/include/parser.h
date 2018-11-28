@@ -109,7 +109,7 @@ _String const&    AppendContainerName     (_String const&, _String const*);
 _String*    FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex);
 
 void        DeleteVariable  (_String const&, bool deleteself = true);
-void        DeleteVariable  (long, bool deleteself);
+void        DeleteVariable  (long, bool deleteself, bool do_checks = true);
 
 void        DeleteTreeVariable
 (_String&, _SimpleList&,bool);
@@ -130,7 +130,7 @@ bool        ExpressionCalculator(void);
 bool        ExpressionCalculator(_String data);
 
 _Variable*  CheckReceptacle
-(_String const*, _String const & , bool = true, bool = false);
+(_String const*, _String const & , bool = true, bool = false, bool clear_trees = true);
 
 bool        CheckReceptacleAndStore
 (_String const*,_String, bool, HBLObjectRef, bool = true);

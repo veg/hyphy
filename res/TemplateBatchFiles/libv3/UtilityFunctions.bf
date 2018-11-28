@@ -227,6 +227,7 @@ lfunction utility.Range (elements, from, step) {
 function utility.Map (object, lambda_name, transform) {
 
     Eval ("`lambda_name` = None");
+    utility.Map.return_object = None;
 
     if (Type (object) == "AssociativeList") {
         utility.Map.return_object = {};
@@ -235,27 +236,27 @@ function utility.Map (object, lambda_name, transform) {
         for (utility.Map.k = 0; utility.Map.k < Abs (object); utility.Map.k += 1) {
             utility.Map.return_object [utility.Map.keys[utility.Map.k]] = Eval (transform);
         }
-        return utility.Map.return_object;
-    }
+    } else {
+        if (Type (object) == "Matrix") {
+            utility.Map.rows = Rows (object);
+            utility.Map.columns = Columns (object);
+            utility.Map.return_object = {utility.Map.rows,  utility.Map.columns};
 
-    if (Type (object) == "Matrix") {
-        utility.Map.rows = Rows (object);
-        utility.Map.columns = Columns (object);
-        utility.Map.return_object = {utility.Map.rows,  utility.Map.columns};
+            ^(lambda_name) := object [utility.Map.r][utility.Map.c];
+            for (utility.Map.r = 0; utility.Map.r < utility.Map.rows; utility.Map.r += 1) {
+                for (utility.Map.c = 0; utility.Map.c < utility.Map.columns; utility.Map.c += 1) {
+                    utility.Map.temp = Eval (transform);
+                    assert (Type (utility.Map.temp) == "Number" || Type (utility.Map.temp) == "String", "Unsupported object type in call to utility.Map [Matrix]");
+                    utility.Map.return_object [utility.Map.r][utility.Map.c] = utility.Map.temp;
 
-        ^(lambda_name) := object [utility.Map.r][utility.Map.c];
-        for (utility.Map.r = 0; utility.Map.r < utility.Map.rows; utility.Map.r += 1) {
-            for (utility.Map.c = 0; utility.Map.c < utility.Map.columns; utility.Map.c += 1) {
-                utility.Map.temp = Eval (transform);
-                assert (Type (utility.Map.temp) == "Number" || Type (utility.Map.temp) == "String", "Unsupported object type in call to utility.Map [Matrix]");
-                utility.Map.return_object [utility.Map.r][utility.Map.c] = utility.Map.temp;
-
+                }
             }
+        
         }
-        return utility.Map.return_object;
     }
+    Eval ("`lambda_name` = None");
 
-    return None;
+    return utility.Map.return_object;
 }
 
 /**
@@ -288,6 +289,8 @@ lfunction utility.MatrixToListOfRows (object) {
  * _nonnegatives = utility.Filter (_data_vector, "_value_", "_value_ >= 0");
  */
 function utility.Filter (object, lambda_name, condition) {
+    
+    utility.Filter.return_object = None;
 
     Eval ("`lambda_name` = None");
 
@@ -300,24 +303,22 @@ function utility.Filter (object, lambda_name, condition) {
                 utility.Filter.return_object [utility.Filter.keys[utility.Filter.k]] = ^(lambda_name);
             }
         }
-        return utility.Filter.return_object;
-    }
-
-    if (Type (object) == "Matrix") {
-        utility.Filter.rows = Rows (object);
-        utility.Filter.columns = Columns (object);
-        ^(lambda_name) := object [utility.Filter.r][utility.Filter.c];
-        for (utility.Filter.r = 0; utility.Filter.r < utility.Filter.rows; utility.Filter.r += 1) {
-            for (utility.Filter.c = 0; utility.Filter.c < utility.Filter.columns; utility.Filter.c += 1) {
-                if (Eval (condition)) {
-                    utility.Filter.return_object + ^(lambda_name);
+    } else {
+        if (Type (object) == "Matrix") {
+            utility.Filter.rows = Rows (object);
+            utility.Filter.columns = Columns (object);
+            ^(lambda_name) := object [utility.Filter.r][utility.Filter.c];
+            for (utility.Filter.r = 0; utility.Filter.r < utility.Filter.rows; utility.Filter.r += 1) {
+                for (utility.Filter.c = 0; utility.Filter.c < utility.Filter.columns; utility.Filter.c += 1) {
+                    if (Eval (condition)) {
+                        utility.Filter.return_object + ^(lambda_name);
+                    }
                 }
             }
         }
-        return utility.Filter.return_object;
     }
-
-    return None;
+    Eval ("`lambda_name` = None");
+    return utility.Filter.return_object;
 }
 
 /**
@@ -330,17 +331,19 @@ function utility.Filter (object, lambda_name, condition) {
  */
 function utility.First (object_utility_first, lambda_name, condition) {
 
-    Eval ("`lambda_name` = None");
+     utility.First.return_object = None;
+     
+     Eval ("`lambda_name` = None");
 
      if (Type (object_utility_first) == "AssociativeList") {
         utility.First.keys = Rows (object_utility_first);
         ^(lambda_name) := object_utility_first [utility.First.keys[utility.First.k]];
         for (utility.First.k = 0; utility.First.k < Abs (object); utility.First.k += 1) {
             if (Eval (condition)) {
-                return ^(lambda_name);
+                utility.First.return_object = ^(lambda_name);
+                break;
             }
         }
-        return None;
     }
 
     if (Type (object_utility_first) == "Matrix") {
@@ -350,14 +353,15 @@ function utility.First (object_utility_first, lambda_name, condition) {
         for (utility.First.r = 0; utility.First.r < utility.First.rows; utility.First.r += 1) {
             for (utility.First.c = 0; utility.First.c < utility.First.columns; utility.First.c += 1) {
                 if (Eval (condition)) {
-                    return ^(lambda_name);
+                     utility.First.return_object = ^(lambda_name);
+                     break;
                 }
             }
         }
-        return None;
     }
-
-    return None;
+    
+    Eval ("`lambda_name` = None");
+    return utility.First.return_object;
 }
 
 /**
@@ -397,22 +401,24 @@ function utility.ForEach (object, lambda_name, transform) {
         for (utility.ForEach.k = 0; utility.ForEach.k < utility.ForEach.size; utility.ForEach.k += 1) {
             ExecuteCommands (transform, enclosing_namespace);
         }
-        return;
-    }
+    } else {
 
-    if (Type (object) == "Matrix") {
-        utility.ForEach.rows = Rows (object);
-        utility.ForEach.columns = Columns (object);
+        if (Type (object) == "Matrix") {
+            utility.ForEach.rows = Rows (object);
+            utility.ForEach.columns = Columns (object);
 
-        if (utility.ForEach.rows && utility.ForEach.columns)  {
-             ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
-            for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
-                for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
-                    ExecuteCommands (transform, enclosing_namespace);
+            if (utility.ForEach.rows && utility.ForEach.columns)  {
+                 ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
+                for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
+                    for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
+                        ExecuteCommands (transform, enclosing_namespace);
+                    }
                 }
             }
         }
     }
+
+    Eval ("`lambda_name` = None");
 }
 
 /**
@@ -547,6 +553,7 @@ function utility.PopulateDict (from, to, value, lambda) {
         for (utility.PopulateDict.k = from; utility.PopulateDict.k < to; utility.PopulateDict.k+=1) {
             utility.PopulateDict.result[utility.PopulateDict.k] = Eval (value);
         }
+        Eval ("`lambda` = None");
    }
     else {
         for (utility.PopulateDict.k = from; utility.PopulateDict.k < to; utility.PopulateDict.k+=1) {
@@ -584,26 +591,30 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
         for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {
             ExecuteCommands (transform, enclosing_namespace);
         }
-        utility.ForEachPair.warn_non_rentrant = FALSE;
-        return;
-    }
-    if (Type (object) == "Matrix") {
-        utility.ForEachPair.rows = Rows (object);
-        utility.ForEachPair.columns = Columns (object);
+    } else {
+        if (Type (object) == "Matrix") {
+            utility.ForEachPair.rows = Rows (object);
+            utility.ForEachPair.columns = Columns (object);
 
-        if (utility.ForEachPair.rows && utility.ForEachPair.columns) {
+            if (utility.ForEachPair.rows && utility.ForEachPair.columns) {
 
-            ^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
-            ^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
+                ^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
+                ^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
 
-            for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
-                for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
-                    ExecuteCommands (transform, enclosing_namespace);
+                for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
+                    for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
+                        ExecuteCommands (transform, enclosing_namespace);
 
+                    }
                 }
             }
         }
     }
+
+    Eval ("`key_name` = None");
+    Eval ("`value_name` = None"); 
+    // reset bindings here to avoid calls on stale formula in subsequent invocations
+
     utility.ForEachPair.warn_non_rentrant = FALSE;
 
 }
@@ -938,18 +949,22 @@ lfunction utility.CatersianProduct (arguments) {
     return product;
 }
 
-function _sortStringsAux (theKey, theValue) {
-	for (_gb_idx2 = 0; _gb_idx2 < theValue; _gb_idx2 += 1) {
+function _sortStringsAux (theKey, theValue)
+{
+	for (_gb_idx2 = 0; _gb_idx2 < theValue; _gb_idx2=_gb_idx2+1)
+	{
 		_gb_sortedStrings [_gb_idx] = theKey;
 		_gb_idx = _gb_idx + 1;
 	}
 	return 0;
 }
 
-function utility.sortStrings (_theList) {
+function utility.sortStrings (_theList)
+{
 	_gb_dim = Rows (_theList)*Columns (_theList);
 	_toSort = {};
-	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx += 1) {
+	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
+	{
 		_toSort[_theList[_gb_idx]] = _toSort[_theList[_gb_idx]]+1;
 	}
 	_gb_sortedStrings = {_gb_dim,1};

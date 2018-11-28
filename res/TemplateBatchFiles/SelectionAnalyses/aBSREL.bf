@@ -223,6 +223,7 @@ absrel.branch.complexity       = {};
 
 utility.ToggleEnvVariable ("USE_LAST_RESULTS", TRUE);
 
+
 absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
             "0": 35,
             "1": 10,
@@ -251,12 +252,15 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         absrel.report.row [2] =  Format(absrel.current_rate_count,0,0);
         model.ApplyToBranch ((absrel.model_defintions [absrel.current_rate_count])[terms.id], absrel.tree_id, absrel.current_branch);
         parameters.SetValues (absrel.current_branch_estimates);
-
+        
+        
         absrel.initial_guess = absrel.ComputeOnAGrid (absrel.PopulateInitialGrid (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch, absrel.current_branch_estimates), absrel.likelihood_function_id);
-
         absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
-
+        
+        
+        
         Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id);
+        
         absrel.current_test_score = math.GetIC (absrel.stepup.mles[1][0], absrel.current_parameter_count + 2, absrel.codon_data_info[terms.data.sample_size]);
 
         absrel.provisional_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
@@ -608,13 +612,13 @@ lfunction absrel.ComputeOnAGrid (grid_definition, lfname) {
         absrel.SetValues (current_state);
 
         LFCompute (^lfname, try_value);
-
+        
         if (try_value > best_val) {
             best_state  = current_state;
             best_val = try_value;
         }
     }
-
+    
     absrel.SetValues (best_state);
     LFCompute(^lfname,LF_DONE_COMPUTE);
 

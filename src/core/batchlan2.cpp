@@ -387,7 +387,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CHOICE_LIST,
                                   (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ChoiceList(", HY_HBL_COMMAND_CHOICE_LIST,false),
                                                               -5,
-                                                              _String ("ChoiceList(store_here {ID}, title {String}, how many choices (0 for any number >= 1) {Integer}, [SKIP_NODE | list of indices not to show as options], [source object | comma separated list of 'key', 'description' pairs]"),
+                                                              _String ("ChoiceList(store_here {ID}, title {String}, how many choices (0 for any number >= 1) {Integer}, [NO_SKIP or SKIP_NONE | list of indices not to show as options], [source object | comma separated list of 'key', 'description' pairs]"),
                                                               ','));
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FPRINTF,

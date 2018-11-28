@@ -91,7 +91,6 @@ void    _CalcNode::InitializeCN     ( _String const& parms, int, _VariableContai
     _List          parameters;
     _ElementaryCommand::ExtractConditions(parms, 0, parameters, ',');
 
-
     InitializeVarCont (kEmptyString, *(_String*)parameters.GetItem(0), theP, aCache);
     
     // parse and instantiate all model expressions
@@ -141,8 +140,9 @@ void    _CalcNode::InitializeCN     ( _String const& parms, int, _VariableContai
             }
         }
     }
-
+    
     variablePtrs.Replace(theIndex, this, true);
+    
         /** TODO check equivalence **
          
             BaseRef temp =  variablePtrs(theIndex);
@@ -400,7 +400,7 @@ hyFloat  _CalcNode::ComputeBranchLength (void) {
         result += fabs(ComputeModelMatrix()->ExpNumberOfSubs (freqMx, mbf))*weight;
     });
 
-    if (freqMx->GetSize()  >= hy_env::EnvVariableGetNumber(kLargeMatrixBranchLengthDimension, 20.)) {
+    if (freqMx->GetSize()  > hy_env::EnvVariableGetNumber(kLargeMatrixBranchLengthDimension, 20.)) {
         result /= hy_env::EnvVariableGetNumber(kLargeMatrixBranchLengthModifier, 3.);
     }
     

@@ -4321,7 +4321,7 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
 
     _String modelID (source,mark1+1,mark2-1);
 
-    if (mark1==-1 || mark2==-1 || !modelID.IsValidIdentifier(fIDAllowCompound)) {
+    if (mark1==-1 || mark2==-1 || !modelID.IsValidIdentifier(fIDAllowCompound|fIDAllowFirstNumeric)) {
         HandleApplicationError ("Model declaration missing a valid identifier.");
         return false;
     }
@@ -4577,31 +4577,26 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 //____________________________________________________________________________________
 bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&target) {
 // syntax: return <statement>
-    long    mark1 = source.FirstNonSpaceIndex(blReturn.length(),-1,kStringDirectionForward);
 
-    _ElementaryCommand ret;
+    long    mark1 = source.FirstNonSpaceIndex(blReturn.length(),kStringEnd,kStringDirectionForward);
 
-    ret.code = 14;
+    _ElementaryCommand * return_statement = new _ElementaryCommand (14);
 
-    if (mark1!=-1) {
-        _String cut_s;
+    if (mark1 != kNotFound) { // not a trivial return statement;
         if (source (-1) ==';') {
-            cut_s = source.Cut (mark1,source.length () - 2L);
+            return_statement->parameters.AppendNewInstance (new _String (source, mark1, source.length () - 2L));
         } else {
-            cut_s = source.Cut (mark1,-1);
+            return_statement->parameters.AppendNewInstance (new _String (source, mark1, kStringEnd));
         }
-
-        ret.parameters&&(&cut_s);
     }
-
 
     if (isInFunction) {
         returnlist<<target.lLength;
     } else {
-        ret.simpleParameters << -1;
+        return_statement->simpleParameters << -1;
     }
-
-    target&&(&ret);
+                                                            
+    return_statement->addAndClean (target);
     return true;
 }
 
