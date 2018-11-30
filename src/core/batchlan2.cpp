@@ -295,7 +295,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_INTEGRATE,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Integrate(", HY_HBL_COMMAND_INTEGRATE,false),
                                                                 5,
-                                                                "FindRoot (<receptacle>, <expression>, <variable to solve for>,<left bound>,<right bound>)",','));
+                                                                "Integrate (<receptacle>, <expression>, <variable to integrate over for>,<left bound>,<right bound>)",','));
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_OPTIMIZE,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Optimize(", HY_HBL_COMMAND_OPTIMIZE,false),

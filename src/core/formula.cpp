@@ -1637,8 +1637,6 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
                 if (stack_depth >=0L ) {
                     ConvertFromSimple(fvidx);
                     BatchDeleteArray (stack, vvals);
-                    delete (stack);
-                    delete (vvals);
                 }
                 return ss;
             }

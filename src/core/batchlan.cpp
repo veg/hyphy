@@ -1662,6 +1662,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               case HY_HBL_COMMAND_MPI_SEND:
               case HY_HBL_COMMAND_MPI_RECEIVE:
               case HY_HBL_COMMAND_FIND_ROOT:
+              case HY_HBL_COMMAND_INTEGRATE:
               case HY_HBL_COMMAND_ALIGN_SEQUENCES:
               case HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX:
               case HY_HBL_COMMAND_DO_SQL:
@@ -2916,7 +2917,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
-    
+        
   switch (code) {
 
     case 0: // formula reparser
@@ -3290,7 +3291,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 
     case HY_HBL_COMMAND_INTEGRATE:
     case HY_HBL_COMMAND_FIND_ROOT:
-        return HandleFindRootOrIntegrate(chain);
+        return HandleFindRootOrIntegrate(chain, code == HY_HBL_COMMAND_INTEGRATE);
         break;
 
 

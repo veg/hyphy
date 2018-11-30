@@ -156,6 +156,10 @@ public:
         return true;
     }
     
+    private :
+        _MathObject* _null_handler ();
+    
+    
     
 };
 
