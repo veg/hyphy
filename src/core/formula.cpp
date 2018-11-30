@@ -761,7 +761,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
                 return          newNode;
             }
         }
-    } catch (long cleanup_length) {
+    } catch (int cleanup_length) {
         for (long i = 0L; i < cleanup_length; i++) {
             if (created_nodes [i]) {
                 created_nodes[i]->delete_tree(true);

@@ -1655,7 +1655,8 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
       case HY_OP_CODE_LEQ: // <=
         return K_Means(arg0);
       case HY_OP_CODE_EQ: // ==
-        return ProfileMeanFit(arg0);
+        return new _Constant (Equal (arg0));
+        //return ProfileMeanFit(arg0);
       case HY_OP_CODE_GREATER: // >
         return NeighborJoin (!CheckEqual(arg0->Value(),0.0));
       case HY_OP_CODE_GEQ: // >=
@@ -6284,157 +6285,12 @@ HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes) {
    return new _Matrix;
 }
 
+
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::ProfileMeanFit (HBLObjectRef classes) {
-
-    // Profile mean fit
-    /*
-     
-     TODO: 20171027 SLKP NEED TO REVIEW WHAT THIS DOES AND IF STILL NEEDED
-     
-     */
-    
-    static const _String kProfileMeanVarMult ("PROFILE_MEAN_VAR_MULT");
-
-    try {
-        _Matrix     *   arg;
-        long            weight_classes;
-
-        hyFloat         data_points = 0.;
-
-        if (theIndex) {
-            CheckIfSparseEnough (true);
-        }
-
-        if (!is_numeric()) {
-            throw "Only numeric matrices are supported";
-        } else {
-            if (GetHDim () != 2) {
-                throw "The first argument of ProfileMeanFit must be an 2xN matrix, with samples in the first row, and counts in the 2nd.";
-            } else if (classes->ObjectClass () != MATRIX) {
-                throw  _String("Invalid second argument: must be a matrix. ") & _String((_String*)classes->toStr());
-            } else {
-                arg = (_Matrix*)classes->Compute();
-                if (!arg->is_column() || arg->is_empty()) {
-                    throw _String ("Invalid second argument: must be a column vector. ") & _String((_String*)classes->toStr());
-                } else {
-                    weight_classes = arg->GetHDim ();
-
-                    for (long i=0; i<hDim; i++) {
-                        long p_count = get (1,i);
-                        if (p_count <= 0.) {
-                            throw _String("Invalid count entry in matrix passed to ProfileMeanFit (must be a positive integer): row ") & i & ", value " & p_count ;
-                        }
-                        data_points += p_count;
-                    }
-                }
-            }
-        }
-
-
-        _Matrix * res           = new _Matrix (4, weight_classes, false, true);
-
-        hyFloat      runningSum      = 0.,
-                     targetSum       = arg->theData[0],
-                     valueSum        = 0.,
-                     logLikelihood   = 0.,
-                     var_mult        = hy_env::EnvVariableGetNumber(kProfileMeanVarMult, 1.);
-
-        long            currentIndex    = 0,
-                        currentSlider = 0,
-                        runningSize     = 1,
-                        currentSpan      = theData[vDim+currentIndex],
-                        runningOffset = 0;
-
-        while (currentIndex < vDim - 1) {
-            runningSum = runningSum + theData[vDim+currentIndex]/data_points;
-
-            if ((runningSum >= targetSum)||(vDim-currentIndex <= weight_classes - currentSlider)) {
-                res->theData[currentSlider]                 = currentIndex;
-                res->theData[weight_classes+currentSlider]   = runningSize;
-                res->theData[weight_classes*2+currentSlider] =
-                    (theData[currentIndex]*theData[vDim+currentIndex]+valueSum)/(currentSpan+theData[vDim+currentIndex]);
-
-                //splitRuns.lData[currentSlider] = currentSpan;
-                runningSize   = 1;
-                valueSum      = 0.;
-                currentSlider ++;
-                targetSum     = targetSum + arg->theData[currentSlider];
-                currentSpan   = 0;
-            } else {
-                valueSum    +=  theData[currentIndex]*theData[vDim+currentIndex];
-                runningSize ++;
-                currentSpan +=  theData[vDim+currentIndex];
-            }
-            currentIndex++;
-        }
-
-        currentSpan += theData[vDim+currentIndex];
-        valueSum    += theData[currentIndex]*theData[vDim+currentIndex];
-
-        res->theData[currentSlider]                 = currentIndex;
-        res->theData[weight_classes+currentSlider]   = runningSize;
-        res->theData[2*weight_classes+currentSlider] = valueSum/currentSpan;
-        //splitRuns.lData[currentSlider] = currentSpan;
-
-        currentSlider   = 0;
-        runningOffset   = 0;
-
-        _Matrix          REWEIGHTED_MATRIX (vDim,1,false,true);
-
-        while (currentSlider < weight_classes) {
-            long        classSize   = res->theData[weight_classes+currentSlider];
-            hyFloat  classWeight = arg->theData[currentSlider];//splitRuns.lData[currentSlider]/dataPoints;
-
-            if (classWeight > 0.0) {
-                if (classSize == 1) {
-                    logLikelihood += theData[vDim+runningOffset] * log (classWeight);
-                } else {
-                    hyFloat      classMean       = res->theData[2*weight_classes+currentSlider],
-                                    //classNorm         = 0.,
-                                    classVar        = (fabs(classMean)>0.05)?0.5/(var_mult*fabs(classMean)):0.5/(var_mult*0.025);
-
-                    currentIndex    = runningOffset+classSize;
-
-                    for (long   reslider = runningOffset; reslider < currentIndex; reslider = reslider+1) {
-                        targetSum = theData[reslider]-classMean;
-                        targetSum = -targetSum*targetSum*classVar;
-                        REWEIGHTED_MATRIX.theData[reslider] = targetSum;
-                        //classNorm += exp(targetSum);
-                    }
-
-                    classWeight = log (classWeight);
-                    {
-                        for (long reslider = runningOffset; reslider < currentIndex; reslider = reslider+1) {
-                            logLikelihood += (REWEIGHTED_MATRIX.theData[reslider]+classWeight)*theData[vDim+reslider];
-                        }
-                    }
-                }
-            } else {
-                if (classSize>0) {
-                    logLikelihood = -1e100;
-                    break;
-                }
-            }
-            runningOffset += classSize;
-            currentSlider++;
-        }
-
-        res->theData[3*weight_classes] = logLikelihood;
-        return res;
-    } catch (_String const err) {
-        HandleApplicationError (err);
+void            _Matrix::PopulateConstantMatrix (hyFloat v) {
+    if (is_numeric()) {
+        InitializeArray(theData, lDim, (hyFloat&&)v);
     }
-    return new _Matrix;
-}
-
-//_____________________________________________________________________________________________
-void            _Matrix::PopulateConstantMatrix (const hyFloat v)
-{
-    if (storageType == 1)
-        for (long r=0; r<lDim; r++) {
-            theData[r] =v;
-        }
 }
 
 //_____________________________________________________________________________________________

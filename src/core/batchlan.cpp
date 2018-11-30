@@ -3931,8 +3931,7 @@ bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionL
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ProcessInclude      (_String&source, _ExecutionList&target)
-{
+bool    _ElementaryCommand::ProcessInclude      (_String&source, _ExecutionList&target) {
 
     _String         fileName (source, blInclude.length (),(long)source.length () - 2L);
   
@@ -4427,9 +4426,8 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain)
+bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain) {
 // syntax: function <ident> (comma separated list of parameters) {body}
-{
 
 
     bool    isFFunction = source.BeginsWith (blFFunction),

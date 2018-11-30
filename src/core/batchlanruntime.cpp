@@ -265,7 +265,8 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
 
         _Formula parsed_expression;
         _CheckExpressionForCorrectness (parsed_expression, expression, currentProgram);
-         _Variable * target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
+        _Variable * target_variable = _ValidateStorageVariable (currentProgram, 2); // create variable if it doesn't exist
+        target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
 
         if (!parsed_expression.DependsOnVariable(target_variable->get_index())) {
             throw (expression & " does not depend on the variable " & target_variable->GetName()->Enquote());

@@ -381,7 +381,7 @@ public:
         return sizeof(_Matrix)+lDim*(storageType==_NUMERICAL_TYPE?sizeof(hyFloat):sizeof(hyPointer));
     }
 
-    void        PopulateConstantMatrix      (const hyFloat);
+    void        PopulateConstantMatrix      (hyFloat);
     /* SLKP 20090818
             fill out a numeric matrix with a fixed value
             if the matrix is sparse, only will out the non-void entries
@@ -579,8 +579,6 @@ private:
 
      The return value is the \sum_ j = 0 ^ {K-1} Prob {A_j -> B_j | T_j}
      */
-
-    HBLObjectRef   ProfileMeanFit      (HBLObjectRef);
 
     _Matrix*    BranchLengthStencil (void) const;
 
