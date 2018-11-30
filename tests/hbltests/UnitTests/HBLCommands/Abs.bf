@@ -16,12 +16,7 @@ function runTest ()
   assert(Abs("HyPhy") == 5, "Return length of a string");
   Topology T = ((a,b)N1,c,d);
   parentPostOrderTraversalIndices = Abs(T);
-  assert(parentPostOrderTraversalIndices[0] == 2);
-  assert(parentPostOrderTraversalIndices[1] == 2);
-  assert(parentPostOrderTraversalIndices[2] == 5);
-  assert(parentPostOrderTraversalIndices[3] == 5);
-  assert(parentPostOrderTraversalIndices[4] == 5);
-  assert(parentPostOrderTraversalIndices[5] == -1);
+  assert(parentPostOrderTraversalIndices == {{ 2, 2, 5, 5, 5, -1 }}, "Return indices for a test case");
 	testResult = 1;
 	return testResult;
 }
