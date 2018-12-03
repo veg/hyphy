@@ -4435,22 +4435,22 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
             isLFunction = ! isFFunction && source.BeginsWith (blLFunction),
             isNameSpace = ! isFFunction && ! isLFunction && source.BeginsWith (blNameSpace);
 
+    _hy_nested_check save_state = isInFunction;
+    
     if (!isNameSpace) {
       if (isInFunction == _HY_FUNCTION) {
         HandleApplicationError ("Nested function declarations are not allowed");
         return false;
       }
     }
-
-
-
+    
+    
     long    mark1 = source.FirstNonSpaceIndex(isNameSpace ? blNameSpace.length(): ((isFFunction||isLFunction)?blFFunction.length():blFunction.length() ),-1,kStringDirectionForward),
             mark2 = source.Find (isNameSpace ? '{' : '(', mark1, -1);
 
 
     if ( mark1==-1 || mark2==-1 || mark1>mark2-1) {
         HandleApplicationError      (_String("Function declaration missing a valid function identifier or parameter list.\n-----------\n") & source & "\n-----------\n");
-        isInFunction = _HY_NO_FUNCTION;
         return false;
     }
 
@@ -4458,7 +4458,6 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
     if (!funcID->IsValidIdentifier(fIDAllowCompound)) {
       HandleApplicationError      (_String("Not a valid function/namespace identifier '") & *funcID & "'");
-      isInFunction = _HY_NO_FUNCTION;
       return false;
     }
 
@@ -4467,7 +4466,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     // now look for the opening paren
 
     if (!isNameSpace) {
-      isInFunction = _HY_FUNCTION;
+
 
 
       if ((mark1=FindBFFunctionName(*funcID)) >= 0L) {
@@ -4482,7 +4481,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
       if (upto==source.length() || source[upto]!='{' || source (-1)!='}') {
           HandleApplicationError (_String("Function declaration is missing a valid function body."));
-          isInFunction= _HY_NO_FUNCTION;
+          isInFunction= save_state;
           return false;
       }
 
@@ -4506,6 +4505,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       _String          sfunctionBody (source, upto+1,source.length ()-2);
       _ExecutionList * functionBody;
 
+      isInFunction = _HY_FUNCTION;
       if (isLFunction) {
           _String * existing_namespace = chain.GetNameSpace();
           if (existing_namespace) {
@@ -4520,20 +4520,18 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
           functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
       }
 
-
       //  take care of all the return statements
-      while (returnlist.nonempty()) {
-          ((_ElementaryCommand*)(*functionBody)(returnlist(0)))->simpleParameters<<functionBody->lLength;
-          returnlist.Delete(0);
-      }
-
+      returnlist.Each ([functionBody] (long value, unsigned long) -> void {
+        ((_ElementaryCommand*)functionBody->GetItem(value))->simpleParameters << functionBody->countitems();
+      });
+      returnlist.Clear();
 
       if (mark1>=0) {
           batchLanguageFunctions.Replace (mark1, functionBody, false);
           batchLanguageFunctionNames.Replace (mark1, funcID, false);
           batchLanguageFunctionParameterLists.Replace (mark1, &arguments, true);
           batchLanguageFunctionParameterTypes.Replace (mark1, &argument_types, true);
-        batchLanguageFunctionClassification.lData[mark1] = isLFunction ? kBLFunctionLocal :( isFFunction? kBLFunctionSkipUpdate :  kBLFunctionAlwaysUpdate);
+          batchLanguageFunctionClassification.lData[mark1] = isLFunction ? kBLFunctionLocal :( isFFunction? kBLFunctionSkipUpdate :  kBLFunctionAlwaysUpdate);
       } else {
           batchLanguageFunctions.AppendNewInstance(functionBody);
           batchLanguageFunctionNamesIndexed.Insert (new _String (*funcID), batchLanguageFunctions.countitems() - 1, false, true);
@@ -4545,7 +4543,6 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     } else {
       if (mark2 == source.length () || source[mark2]!='{' || source (-1L) !='}') {
         HandleApplicationError (_String("Namespace declaration is missing a body."));
-        isInFunction= _HY_NO_FUNCTION;
         return false;
       }
       _String          namespace_text (source, mark2+1,source.length()-2);
@@ -4567,7 +4564,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     }
 
 
-    isInFunction = _HY_NO_FUNCTION;
+    isInFunction = save_state;
     return true;
 }
 
@@ -4587,9 +4584,12 @@ bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&targ
         }
     }
 
-    if (isInFunction) {
-        returnlist<<target.lLength;
+    if (isInFunction == _HY_FUNCTION) {
+        returnlist<<target.countitems();
     } else {
+        if (isInFunction == _HY_NAMESPACE) {
+            HandleApplicationError("return statements are not allowed in namespaces");
+        }
         return_statement->simpleParameters << -1;
     }
                                                             
