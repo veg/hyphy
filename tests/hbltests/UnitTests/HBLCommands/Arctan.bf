@@ -28,19 +28,20 @@ function runTest()
     0.8960553845713439, 1.0303768265243125, 1.1232763516377269, 1.1902899496825317, 1.240498971965643,
     1.2793395323170296, 1.3101939350475558, 1.3352513460740334, 1.355980926393238, 1.373400766945016
   }};
-  for(i=0; i < 25; i = i+1) {
-    assert(Abs(Arctan(x[i]) - arctan_x[i]) < 1e-8, "Agrees with existing numerical computing frameworks");
-  }
+    
+  assert(Abs(x["Arctan(_MATRIX_ELEMENT_VALUE_)"] - arctan_x) < 1e-8, "Agrees with existing numerical computing frameworks");
+  
+
 
   //  Invalid types
   Topology T = ((1,2),(3,4),5);
   Tree TT = ((1,2),(3,4),5);
 
-  assert(runCommandWithSoftErrors('Arctan("");', "Operation 'Arctan' is not implemented/defined for a String"), "Arctan String argument is invalid");
-  assert(runCommandWithSoftErrors('Arctan({});', "Operation 'Arctan' is not implemented/defined for a AssociativeList"), "Arctan Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('Arctan({{1,2}{3,4}}});', "Operation 'Arctan' is not implemented/defined for a Matrix"), "Arctan Matrix argument is invalid");
-  assert(runCommandWithSoftErrors('Arctan(T});', "Operation 'Arctan' is not implemented/defined for a Topology"), "Arctan Topology argument is invalid");
-  assert(runCommandWithSoftErrors('Arctan(TT);', "Operation 'Arctan' is not implemented/defined for a Tree"), "Arctan Tree argument is invalid");
+  assert(runCommandWithSoftErrors('Arctan("")', "Operation 'Arctan' is not implemented/defined for a String"), "Arctan String argument is invalid");
+  assert(runCommandWithSoftErrors('Arctan({})', "Operation 'Arctan' is not implemented/defined for a AssociativeList"), "Arctan Associative list argument is invalid");
+  assert(runCommandWithSoftErrors('Arctan({{"a","b"}})', "evaluated with errors"), "Arctan Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('Arctan(T)', "Operation 'Arctan' is not implemented/defined for a Topology"), "Arctan Topology argument is invalid");
+  assert(runCommandWithSoftErrors('Arctan(TT)', "Operation 'Arctan' is not implemented/defined for a Tree"), "Arctan Tree argument is invalid");
 	testResult = 1;
 	return testResult;
 }

@@ -191,6 +191,7 @@ namespace terms{
         MLE        = "Maximum likelihood frequency estimator";
         predefined = "Based on a training set";
         binary     = "Binary character frequency estimator";
+        run_time   = "Run time frequency estimator via matrix inversion"
     }
 
     /* Terms accompanying tasks/genetic_code.bf */

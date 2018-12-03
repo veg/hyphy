@@ -16,7 +16,14 @@ function runTest ()
   assert(Abs("HyPhy") == 5, "Return length of a string");
   Topology T = ((a,b)N1,c,d);
   parentPostOrderTraversalIndices = Abs(T);
-  assert(parentPostOrderTraversalIndices == {{ 2, 2, 5, 5, 5, -1 }}, "Return indices for a test case");
-	testResult = 1;
-	return testResult;
+  
+  assert(parentPostOrderTraversalIndices == {{ 2, 2, 5, 5, 5, -1 }}, "Return parent indices for a test case");
+
+  
+  assert(runCommandWithSoftErrors ("Abs(None)", "Attempting to operate on an undefined value"), "Failed error checking Abs (None)");
+  assert(runCommandWithSoftErrors ("Abs(1,2)", "Unconsumed values on the stack"), "Failed error checking Abs (1,2)");
+
+
+  testResult = 1;
+  return testResult;
 }

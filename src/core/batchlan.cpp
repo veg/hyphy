@@ -4440,7 +4440,6 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
         HandleApplicationError ("Nested function declarations are not allowed");
         return false;
       }
-
     }
 
 
@@ -4523,7 +4522,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
 
       //  take care of all the return statements
-      while (returnlist.lLength) {
+      while (returnlist.nonempty()) {
           ((_ElementaryCommand*)(*functionBody)(returnlist(0)))->simpleParameters<<functionBody->lLength;
           returnlist.Delete(0);
       }
@@ -4552,10 +4551,9 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       _String          namespace_text (source, mark2+1,source.length()-2);
       bool             success = false;
 
-
+      isInFunction = _HY_NAMESPACE;
       _ExecutionList   * namespace_payload = new _ExecutionList (namespace_text, funcID, false, &success);
-        
-       DeleteObject (funcID);
+      DeleteObject (funcID);
         // 20180713 SLKP -- this was marked as deleted in one of the v2.3 branches
       if (success) {
         _ElementaryCommand * nested_list = new _ElementaryCommand (HY_HBL_COMMAND_NESTED_LIST);

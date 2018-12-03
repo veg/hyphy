@@ -1365,16 +1365,16 @@ HBLObjectRef   _Matrix::CholeskyDecompose (void) const
 
 
 //__________________________________________________________________________________
-HBLObjectRef   _Matrix::Log (void) {
+template <typename CALLBACK> HBLObjectRef   _Matrix::ApplyScalarOperation (CALLBACK && functor) const {
     if (storageType==_NUMERICAL_TYPE) {
         _Matrix* res = new _Matrix (*this);
       
-        res->ForEach ([&] (hyFloat&& value, unsigned long index, long hashed) -> void {res->theData[hashed] = log(value);},
+        res->ForEach ([&] (hyFloat&& value, unsigned long index, long hashed) -> void {res->theData[hashed] = functor(value);},
                       [&] (unsigned long index) -> hyFloat {return theData[index];});
       
         return res;
     }
-    HandleApplicationError ("Can't apply logs to non-numeric matrices.");
+    HandleApplicationError ("Can't apply scalar opetarations to non-numeric matrices.");
     return new _Matrix(1,1,false,true);
 }
 
@@ -1606,7 +1606,7 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
       case HY_OP_CODE_LUDECOMPOSE: // LUDecompose
         return LUDecompose();
       case HY_OP_CODE_LOG: // Log
-        return Log();
+        return ApplyScalarOperation ([] (hyFloat h) -> hyFloat {return log (h);});
       case HY_OP_CODE_ROWS: // Rows
         return new _Constant (hDim);
       case HY_OP_CODE_SIMPLEX: // Simplex

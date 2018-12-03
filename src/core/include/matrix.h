@@ -275,7 +275,9 @@ public:
     // otherwise returns the largest element
 
     hyFloat  AbsValue                        (void) const;
-    virtual     HBLObjectRef Log                   (void);
+    
+    template <typename CALLBACK>  HBLObjectRef ApplyScalarOperation (CALLBACK && functor) const;
+    
     // return the matrix of logs of every matrix element
     
     void        SwapRows (const long, const long);
