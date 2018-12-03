@@ -17,53 +17,51 @@ function runTest () {
   // SIMPLE FUNCTIONALITY
   //---------------------------------------------------------------------------------------------------------
   // Compare two numbers.
-  assert(Min(1,2) == 1);
-  assert(Min(5,4.999) == 4.999);
-  assert(Min(-1,-2) == -2);
+  assert(Min(1,2) == 1, "Failed to compute minimum of two numbers");
+  assert(Min(5,4.999) == 4.999, "Failed to compute minimum of two numbers that are similar in magnitude");
+  assert(Min(-1,-2) == -2, "Failed to compute minimum of two negative numbers");
   // Find min of array.
-  assert(Min({{1,2}{3,4}},2) == 1);
+  assert(Min({{1,2}{3,4}},2) == 1, "Failed to compute minimum value of an array");
   // Find min of array and it's index. 
-  assert(Min({{1,2}{3,4}},1) == {{1, 0}});
-
+  assert(Min({{1,2}{3,4}},1) == {{1, 0}}, "Failed to compute minimum value and index in an array");
+  // Min functions on dictionary; should only select among keys with numeric values
+  dict = {"0" : 1, "1" : {{2,3}}, "hai" : {"a" : 5, "b" : 7}, "beavis" : 42};
+  assert((Min(dict))["key"] == "0", "Failed to compute minimum value in a dictionary");
 
   //---------------------------------------------------------------------------------------------------------
   // TOPOLOGY
   //---------------------------------------------------------------------------------------------------------
   // Can't seem to get the topology function to work... 
   // getting the folowing error: The left hand side expression does not contain an object reference in the following context: 'Min(Topology  T1=<ERROR HERE>(1,2,3);,2)testResult=1'
+
   // Example from Docs: http://hyphy.org/w/index.php/Min
   //Min(Topology T1 = ((a,b)N1,c,d,((g,h)N3,e,f)N2);, 2);
+
   // Simpler example
   //Min (Topology T1 = (1,2);, 2);
+
+  // Other example. The below example returns the following error:
+  /*
+  'RPN:T|2|min|*' evaluated with errors. Unconsumed values on the stack
+  [2]------------------
+  0
+  [1]------------------
+  0
+  */
+  //Topology T = ((1,2),(3,4),5);
+  //min(T,2);
 
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
   //---------------------------------------------------------------------------------------------------------
-  /*
-  Trying to figure out how to use "runCommandWithSoftErrors...
-  Using the command: Min({{1,2}{3,4}}) as an example.
-  This command is missing the second argument and thus returns the following error to stdout when called:
-  "Operation 'Min' was called with an incorrect number of arguments (0) for Matrix"
-  */
+  Tree TT = ((1,2),(3,4),5);
+  Tree TTb = ((1,2),(3,4),5,6);
 
-  //Command that produces the error
-  //Min({{1,2}{3,4}});
-  
-  /*
-   Execute the runCommandWithSoftErrors on it's own:
-     prints:
-        Expected an error matching 'Operation 'Min' was called with an incorrect number of arguments (0) for Matrix', while executing 'Min({{1,2}{3,4}});'.
-        Had error
-        'Min({
-        {1, 2}
-        {3, 4}
-        })' evaluated with errors. in call to Min({{1,2}{3,4}});
-  */
-  //runCommandWithSoftErrors("Min({{1,2}{3,4}})", "Operation 'Min' was called with an incorrect number of arguments (0) for Matrix");
-
-  // Try to wrap it in an assert.
-  //assert( runCommandWithSoftErrors("Min({{1,2}{3,4}})", "Operation 'Min' was called with an incorrect number of arguments (0) for Matrix"), "What Text goes here?");
+  assert (runCommandWithSoftErrors ('Min ("abc",0)', "not implemented/defined for a String"), "Failed error checking for trying to take a minimum of a string");
+  assert (runCommandWithSoftErrors ('Min (None,0)', "Attempting to operate on an undefined value"), "Failed error checking for trying to take a minimum with None");
+  assert (runCommandWithSoftErrors ('Min (TT, TTb)', "Invalid power argument in call to COT finder"), "Failed error checking for trying to take a minimum of a tree");
+  assert (runCommandWithSoftErrors ('Min (1)',  "was called with an incorrect number of arguments"), "Too few arguments error check");
 
 
   testResult = 1;
