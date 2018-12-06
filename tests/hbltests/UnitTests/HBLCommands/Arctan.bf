@@ -10,8 +10,8 @@ function runTest()
 {
   testResult = 0;
   // Critical values
-  assert(4*Arctan(1) == 3.141592653589793, "Returns pi over 4 at 1");
-  assert(Arctan(0) == 0, "Returns 0 at 0");
+  assert(4*Arctan(1) == 3.141592653589793, "Arctan of pi over 4 is not 1");
+  assert(Arctan(0) == 0, "Arctan of 0 is not 0");
 
   // Comparison with NumPy
   x = {{ // np.linspace(-5, 5, 25)
@@ -29,7 +29,7 @@ function runTest()
     1.2793395323170296, 1.3101939350475558, 1.3352513460740334, 1.355980926393238, 1.373400766945016
   }};
     
-  assert(Abs(x["Arctan(_MATRIX_ELEMENT_VALUE_)"] - arctan_x) < 1e-8, "Agrees with existing numerical computing frameworks");
+  assert(Abs(x["Arctan(_MATRIX_ELEMENT_VALUE_)"] - arctan_x) < 1e-8, "Does not agree with existing numerical computing frameworks");
   
 
 
