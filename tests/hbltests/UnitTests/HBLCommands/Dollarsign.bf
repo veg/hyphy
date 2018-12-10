@@ -17,7 +17,7 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   // Integer division.
   assert(1$1 == 1, "Failed to correctly perform integer division on 1$1");
-  assert(90000$4 == 22500, "Failed to corretly perform integer diviion on 90000$4");
+  assert(90000$4 == 22500, "Failed to corretly perform integer divion on 90000$4");
   assert(9.99$3.99 == 3, "Failed to correctly perform integer division on 9.99$3.99");
   assert(8.99$3 == 2, "Failed to correctly perform integer division on 8.99$3");
   assert(4$9000 == 0, "Failed to correctly perform integer division on 4$9000");
@@ -41,7 +41,7 @@ function runTest () {
 
   assert (runCommandWithSoftErrors ('T$T', "2nd argument is call to"), "Failed error checking for trying integer divide/compare topologies ($)");
   assert (runCommandWithSoftErrors ('TT$TT', "2nd argument is call to"), "Failed error checking for trying integer divide/compare trees ($)");
-  assert (runCommandWithSoftErrors ('"Test"$4', "2nd argument in call to string"), "Failed error checking for trying integer divide/compare trees ($)");
+  assert (runCommandWithSoftErrors ('"Test"$4', "2nd argument in call to string"), "Failed error checking for trying integer divide/compare string$number");
  
 
   testResult = 1;
