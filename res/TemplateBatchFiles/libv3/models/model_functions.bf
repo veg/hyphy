@@ -219,6 +219,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
 
 
+ 
 	// Add data filter information to model description
 	if ( None != data_filter) {
 	    models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
@@ -237,6 +238,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
 													    id,
 													    data_filter);
+
 
 
 

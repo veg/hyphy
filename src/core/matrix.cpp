@@ -1380,7 +1380,7 @@ template <typename CALLBACK> HBLObjectRef   _Matrix::ApplyScalarOperation (CALLB
 
 //__________________________________________________________________________________
 HBLObjectRef   _Matrix::Inverse (void) const {
-    if (is_square_numeric(false)) {
+    if (!is_square_numeric(false)) {
         return    new _MathObject;
     }
   
@@ -1395,7 +1395,7 @@ HBLObjectRef   _Matrix::Inverse (void) const {
                 b.theData[i-1L]=0.0;
             }
             _Matrix* invVector = (_Matrix*)LUdec->LUSolve(&b);
-            _Matrix corrTerm;
+            _Matrix corrTerm (GetHDim(),1, false, true);
              Multiply(corrTerm, *invVector);
             corrTerm -= b;
             //_Matrix* corrTerm = (_Matrix*)(*this*(*invVector)-b).makeDynamic();

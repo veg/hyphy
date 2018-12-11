@@ -230,6 +230,10 @@ hyFloat _gamma (hyFloat alpha) {
 hyFloat _ln_gamma (hyFloat alpha) {
     // obtained from Numerical Recipes in C, p. 214 by afyp, February 7, 2007
     
+    if (alpha <= 0.) {
+        return NAN;
+    }
+    
     hyFloat static lngammaCoeff [6] = {
         76.18009172947146,
         -86.50532032941677,
