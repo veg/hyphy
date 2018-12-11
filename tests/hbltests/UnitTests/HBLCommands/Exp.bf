@@ -19,12 +19,10 @@ function runTest () {
   assert(Exp(0.0001) == 1.000100005000167, "Failed to compute exponential of a small number (0.0001)");
   assert(Exp(100) == 2.688117141816136e+43, "Failed to compute exponential of a large number (100)");
 
-  //NOT SURE WHY THE MATRIX TEST FAILS
   // Find exponent of matrix.
-  //fprintf (stdout, "Exp({{1,2}{2,1}}): ", Exp({{1,2}{2,1}}), "\n");
-  //assert(Exp({{1,2}{2,1}}) == {{10.22670818217949, 9.858828741008054}{9.858828741008054, 10.22670818217949}}, "Failed to compute exponential value of an array");
+  assert(Abs (Exp({{1,2}{2,1}}) - {{10.22670818217949, 9.858828741008054}{9.858828741008054, 10.22670818217949}}) < 1e-14, "Failed to compute exponential value of an array");
 
-  // Exp function on string; should return the Lempel Ziv Production History.
+  // Exp function on string; should return the length of the Lempel Ziv Production History.
   assert(Exp("1001111011000010") == 6, "Failed to compute exponential (Lempel Ziv Production History) of a string");
   
 
@@ -39,8 +37,9 @@ function runTest () {
   assert (runCommandWithSoftErrors ('Exp (TT)', "not implemented/defined for a Tree"), "Failed error checking for trying to take a exponential of a tree");
 
   // DOESNT PASS THE TOO MANY ARGUMENTS ERROR CHECK.
-  //fprintf (stdout, "Ext(1,3): ", Ext(1,3), "\n");
-  //assert (runCommandWithSoftErrors ('Exp (3,1)',  "was called with an incorrect number of arguments"), "Failed too many arguments error check");
+  assert (runCommandWithSoftErrors ('Exp (3,1)',  "Unconsumed values on the stack"), "Failed too many arguments error check");
+  assert (runCommandWithSoftErrors ('Exp ()',  "evaluated with errors"), "Failed too few arguments");
+  assert (runCommandWithSoftErrors ('Exp ({{1,2,3}{3,2,1}})',  "not defined for non-square matrices"), "Failed too few arguments");
  
 
   testResult = 1;

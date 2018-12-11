@@ -151,6 +151,7 @@ public:
     virtual bool        is_dense (void) const;
     virtual bool        is_expression_based (void) const {return storageType == _FORMULA_TYPE;}
     virtual bool        is_numeric (void) const {return storageType == _NUMERICAL_TYPE;}
+    virtual bool        is_polynomial (void) const {return storageType == _POLYNOMIAL_TYPE;}
 
     HBLObjectRef           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original
