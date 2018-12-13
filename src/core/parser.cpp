@@ -74,12 +74,12 @@ _AVLListX       variableNames (&varNamesSupportList);
 
 // indices of all independent variables
 
+_Trie           FunctionNameList;
+_List           BuiltInFunctions;
 
-_List           FunctionNameList,
-                BuiltInFunctions;
 
-_SimpleList     FunctionArgumentCount,
-                freeSlots,
+
+_SimpleList     freeSlots,
                 deferIsConstant,
                 *deferSetFormula = nil;
 
@@ -848,11 +848,11 @@ void    SetupOperationLists (void) {
     << package_ops (HY_OP_CODE_EXP, HY_OP_CODE_LOG)
     << package_ops (HY_OP_CODE_TAN, HY_OP_CODE_ARCTAN);
 
-    if (BuiltInFunctions.lLength==0)
+    if (BuiltInFunctions.empty()) {
         // construct a list of operations
         // don't forget to update SimplifyConstants, simpleOperationCodes, InternalDifferentiate, InternalSimplify, Formula::HasChanged and all Execute commands
         // also MAccess and MCoord codes are used in Parse to merge multiple matrix access operations
-    {
+
         //HY_OP_CODE_NOT
         BuiltInFunctions.AppendNewInstance (new _String ('!'));
 
@@ -928,39 +928,33 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_BETA
         BuiltInFunctions.AppendNewInstance (new _String ("Beta"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_BETA);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_BETA), 2L);
 
         //HY_OP_CODE_BRANCHCOUNT
         BuiltInFunctions.AppendNewInstance (new _String ("BranchCount"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHCOUNT);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_BRANCHCOUNT), 2L);
 
         //HY_OP_CODE_BRANCHLENGTH
         BuiltInFunctions.AppendNewInstance (new _String ("BranchLength"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHLENGTH);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_BRANCHLENGTH), 2L);
 
         //HY_OP_CODE_BRANCHNAME
         BuiltInFunctions.AppendNewInstance (new _String ("BranchName"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHNAME);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_BRANCHNAME), 2L);
       
 
         //HY_OP_CODE_CCHI2
         BuiltInFunctions.AppendNewInstance (new _String ("CChi2"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_CCHI2);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_CCHI2), 2L);
 
         //HY_OP_CODE_CGAMMADIST
         BuiltInFunctions.AppendNewInstance (new _String ("CGammaDist"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_CGAMMADIST);
-        FunctionArgumentCount << 3;
-
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_CGAMMADIST), 3L);
+ 
         //HY_OP_CODE_CALL
         BuiltInFunctions.AppendNewInstance (new _String ("Call"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_CALL);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_CALL), 1L + (0x7fff << 16));
+            // mimimum of 1 argument
 
         //HY_OP_CODE_COLUMNS
         BuiltInFunctions.AppendNewInstance (new _String ("Columns"));
@@ -970,8 +964,7 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_DIFF
         BuiltInFunctions.AppendNewInstance (new _String ("Differentiate"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_DIFF);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_DIFF), 2L);
 
         //HY_OP_CODE_EIGENSYSTEM
         BuiltInFunctions.AppendNewInstance (new _String ("Eigensystem"));
@@ -989,47 +982,40 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_FORMAT
         BuiltInFunctions.AppendNewInstance (new _String ("Format"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_FORMAT);
-        FunctionArgumentCount << 3;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_FORMAT), 3L);
 
         //HY_OP_CODE_GAMMA
         BuiltInFunctions.AppendNewInstance (new _String ("Gamma"));
 
         //HY_OP_CODE_GAMMADIST
         BuiltInFunctions.AppendNewInstance (new _String ("GammaDist"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_GAMMADIST);
-        FunctionArgumentCount << 3;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_GAMMADIST), 3L);
 
         //HY_OP_CODE_IBETA
         BuiltInFunctions.AppendNewInstance (new _String ("IBeta"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_IBETA);
-        FunctionArgumentCount << 3;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_IBETA), 3L);
 
         //HY_OP_CODE_IGAMMA
         BuiltInFunctions.AppendNewInstance (new _String ("IGamma"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_IGAMMA);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_IGAMMA), 2L);
 
         //HY_OP_CODE_INVCHI2
         BuiltInFunctions.AppendNewInstance (new _String ("InvChi2"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_INVCHI2);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_INVCHI2), 2L);
 
         //HY_OP_CODE_INVERSE
         BuiltInFunctions.AppendNewInstance (new _String ("Inverse"));
 
         //HY_OP_CODE_JOIN
         BuiltInFunctions.AppendNewInstance (new _String ("Join"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_JOIN);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_JOIN), 2L);
 
         //HY_OP_CODE_LUDECOMPOSE
         BuiltInFunctions.AppendNewInstance (new _String ("LUDecompose"));
 
         //HY_OP_CODE_LUSOLVE
         BuiltInFunctions.AppendNewInstance (new _String ("LUSolve"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_LUSOLVE);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_LUSOLVE), 2L);
 
         //HY_OP_CODE_LOG_GAMMA
         BuiltInFunctions.AppendNewInstance (new _String ("LnGamma"));
@@ -1052,34 +1038,33 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_MAX
         BuiltInFunctions.AppendNewInstance (new _String ("Max"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_MAX);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_MAX), 1L + ((2L) << 16)); // (1 or 2 arguments)
+        
         simpleOperationCodes<<HY_OP_CODE_MAX;
         simpleOperationFunctions<<(long)MaxNumbers;
 
         //HY_OP_CODE_MIN
         BuiltInFunctions.AppendNewInstance (new _String ("Min"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_MIN);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_MIN), 1L + ((2L) << 16)); // (1 or 2 arguments)
+
         simpleOperationCodes<<HY_OP_CODE_MIN;
         simpleOperationFunctions<<(long)MinNumbers;
 
         //HY_OP_CODE_PSTREESTRING
         BuiltInFunctions.AppendNewInstance (new _String ("PSTreeString"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_PSTREESTRING);
-        FunctionArgumentCount << 3;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_PSTREESTRING), 3L);
+
 
         //HY_OP_CODE_RANDOM
         BuiltInFunctions.AppendNewInstance (new _String ("Random"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_RANDOM);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_RANDOM), 2L);
+
         simpleOperationCodes<<HY_OP_CODE_RANDOM;
         simpleOperationFunctions<<(long)RandomNumber;
 
         //HY_OP_CODE_REROOTTREE
         BuiltInFunctions.AppendNewInstance (new _String ("RerootTree"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_REROOTTREE);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_REROOTTREE), 2L);
 
         //HY_OP_CODE_ROWS
         BuiltInFunctions.AppendNewInstance (new _String ("Rows"));
@@ -1089,8 +1074,7 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_EXPRESSION
         BuiltInFunctions.AppendNewInstance (new _String ("Simplify"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_SIMPLIFY);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_SIMPLIFY), 2L);
 
         //HY_OP_CODE_SIN
         BuiltInFunctions.AppendNewInstance (new _String ("Sin"));
@@ -1100,8 +1084,7 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_TEXTREESTRING
         BuiltInFunctions.AppendNewInstance (new _String ("TEXTreeString"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_TEXTREESTRING);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_TEXTREESTRING), 2L);
 
         //HY_OP_CODE_TAN
         BuiltInFunctions.AppendNewInstance (new _String ("Tan"));
@@ -1114,8 +1097,7 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_TIPNAME
         BuiltInFunctions.AppendNewInstance (new _String ("TipName"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_TIPNAME);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_TIPNAME), 2L);
 
         //HY_OP_CODE_TRANSPOSE
         BuiltInFunctions.AppendNewInstance (new _String ("Transpose"));

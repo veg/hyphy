@@ -589,7 +589,7 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
   
   _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
   
-  switch (opCode) { // next check operations without arguments or with one argument
+  switch (opCode) { // next check operations without arguments or with at least one argument
     case HY_OP_CODE_MUL: // *
       if (arg0) {
         // NOT a dereference
