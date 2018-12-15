@@ -2997,8 +2997,8 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             }
 
         } else {
-            hyFloat * _hprestrict_ argData = secondArg.theData;
-            hyFloat * _hprestrict_ stData  = storage.theData;
+            hyFloat _hprestrict_ * argData = secondArg.theData;
+            hyFloat _hprestrict_ * stData  = storage.theData;
             
             long    upto = secondArg.lDim - secondArg.lDim%4;
                        
@@ -3214,8 +3214,8 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
 
 {
     if (storageType == 1) { // numbers
-        hyFloat _hprestrict_ * destination = storage.theData;
-        hyFloat _hprestrict_           * source      = theData;
+        hyFloat * _hprestrict_  destination = storage.theData;
+        hyFloat const *  source      = theData;
             
         if (theIndex) {
             for (long k = 0; k < lDim; k++)
@@ -3586,8 +3586,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   
                   
                     hyFloat  value                           = theData[k];
-                    hyFloat  _hprestrict_ *res               = storage.theData    + (m-i);
-                    hyFloat  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                    hyFloat  * _hprestrict_ res               = storage.theData    + (m-i);
+                    hyFloat  * _hprestrict_ secArg            = secondArg.theData  + i*vDim;
                     
   #ifdef  _SLKP_USE_AVX_INTRINSICS
                       __m256d  value_op = _mm256_set1_pd (value);
@@ -3621,8 +3621,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           // in the form of A_rc * B_cc'
 
                           hyFloat  value                           = theData[k];
-                          hyFloat  _hprestrict_ *res               = storage.theData    + (m-i);
-                          hyFloat  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                          hyFloat  *_hprestrict_ res               = storage.theData    + (m-i);
+                          hyFloat  *_hprestrict_ secArg            = secondArg.theData  + i*vDim;
 
                           for (unsigned long i = 0UL; i < loopBound; i+=4) {
                               res[i]   += value * secArg[i];
@@ -5279,8 +5279,8 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
             // loop interchange rocks!
 
           
-            hyFloat  _hprestrict_ * column = stash+lDim;
-            hyFloat const  _hprestrict_ * source = theData;
+            hyFloat  * _hprestrict_ column = stash+lDim;
+            hyFloat const  * source = theData;
 
             for (long j = 0; j < vDim; j++) {
                 for (long c = 0; c < vDim; c++) {

@@ -636,7 +636,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
             if (runMode == _hyphyLFConditionProbsRawMatrixMode || runMode == _hyphyLFConditionProbsScaledMatrixMode)
                 // populate the matrix of conditionals and scaling factors
             {
-                hyFloat  _hprestrict_ *bufferForThisCategory = buffer + indexShifter;
+                hyFloat  * _hprestrict_ bufferForThisCategory = buffer + indexShifter;
 
                 ComputeBlock    (index, bufferForThisCategory, useThisPartitonIndex, branchIndex, branchValues);
                 if (usedCachedResults) {

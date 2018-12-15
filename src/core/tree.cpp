@@ -2985,7 +2985,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             // mark the parent for update and clear its conditionals if needed
         {
             taggedInternals.lData[parentCode]     = 1;
-            hyFloat      _hprestrict_ *localScalingFactor      = scalingAdjustments + parentCode*siteCount;
+            hyFloat    *  _hprestrict_ localScalingFactor      = scalingAdjustments + parentCode*siteCount;
             
             bool    matchSet   = (parentCode == setBranch);
             
@@ -3634,7 +3634,7 @@ void            _TheTree::ComputeBranchCache    (
         
         //printf ("isLeaf = %d, nodeCode = %ld, parentCode = %ld, matrix from %s, parent name %s\n", isLeaf, nodeCode, parentCode, currentTreeNode->GetName()->sData, ((_CalcNode    *)flatTree(parentCode))->GetName()->sData);
         
-        hyFloat  const * _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+        hyFloat  const *  transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
         
 #ifdef _SLKP_USE_AVX_INTRINSICS
         __m256d tmatrix_transpose [4] = {
