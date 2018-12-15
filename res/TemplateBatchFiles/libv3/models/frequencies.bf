@@ -75,10 +75,11 @@ lfunction frequencies.runtime.nucleotide(model, namespace, datafilter) {
         
     */
     
+    
     return model;
 }
 
-**
+/**
  * This is an function that computes stationary frequencies of Markov process based on its  
  * rate matrix
  * @param {Matrix} Q matrix
