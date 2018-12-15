@@ -37,6 +37,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+#include <ctype.h>
+
 #include "dataset_filter.h"
 #include "avllistxl_iterator.h"
 

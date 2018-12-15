@@ -46,6 +46,8 @@
 #include "global_things.h"
 #include "hbl_env.h"
 
+#include <ctype.h>
+
 using namespace hy_global;
 using namespace hy_env;
 
