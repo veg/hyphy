@@ -3388,7 +3388,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     
     // assemble the entire likelihood
     
-    hyFloat _hprestrict_ * rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount);
+    hyFloat * _hprestrict_ rootConditionals = iNodeCache + alphabetDimension * (siteFrom + (flatTree.lLength-1)  * siteCount);
     hyFloat                result = 0.0,
     correction = 0.0;
     
@@ -3871,7 +3871,7 @@ void            _TheTree::ComputeBranchCache    (
     
     //printf ("root name %s\n", ((_CalcNode    *)flatTree(rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength))->GetName()->sData);
     
-    hyFloat const _hprestrict_ *rootConditionals   = iNodeCache +  (rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength)  * siteCount * alphabetDimension;
+    hyFloat const *rootConditionals   = iNodeCache +  (rootPath.lData[rootPath.lLength-2] - flatLeaves.lLength)  * siteCount * alphabetDimension;
     
     state = cache + alphabetDimension * siteCount;
     const unsigned long site_bound = alphabetDimension*siteTo;
@@ -3941,8 +3941,8 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
         siteTo = siteCount;
     }
     
-    hyFloat const _hprestrict_ *branchConditionals = cache              + siteFrom * alphabetDimension;
-    hyFloat const _hprestrict_ *rootConditionals   = branchConditionals + siteCount * alphabetDimension;
+    hyFloat const * branchConditionals = cache              + siteFrom * alphabetDimension;
+    hyFloat const * rootConditionals   = branchConditionals + siteCount * alphabetDimension;
     hyFloat  result = 0.0,
     correction = 0.0;
     
@@ -3951,7 +3951,7 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
     
     _CalcNode const *givenTreeNode = GetNodeFromFlatIndex (brID);
     
-    hyFloat  const *   _hprestrict_ transitionMatrix = givenTreeNode->GetCompExp(catID)->theData;
+    hyFloat  const * transitionMatrix = givenTreeNode->GetCompExp(catID)->theData;
     
     
     // cases by alphabet dimension
@@ -4616,7 +4616,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         result->AppendNewInstance (new _String((unsigned long)siteCount*unitLength));
     }
     
-    hyFloat   _hprestrict_ * rootConditionals = iNodeCache + alphabetDimension * ((iNodeCount-1)  * patternCount);
+    hyFloat * _hprestrict_ rootConditionals = iNodeCache + alphabetDimension * ((iNodeCount-1)  * patternCount);
     _SimpleList  parentStates (stateCacheDim,0,0),
     conversion;
     

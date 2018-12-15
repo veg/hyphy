@@ -61,7 +61,7 @@
 using namespace hy_global;
 using namespace hyphy_global_objects;
 
-
+#include <ctype.h>
 //____________________________________________________________________________________
 /* various helper functions */
 
