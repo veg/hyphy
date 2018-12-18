@@ -75,7 +75,6 @@ lfunction frequencies.runtime.nucleotide(model, namespace, datafilter) {
         
     */
     
-    
     return model;
 }
 

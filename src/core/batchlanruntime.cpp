@@ -2064,9 +2064,6 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
                        kBGMConstraintMx ("BGM_CONSTRAINT_MATRIX"),
                        kBGMParameters   ("BGM_NETWORK_PARAMETERS");
 
-
-
-
   current_program.advance();
   
   _List dynamic_variable_manager;

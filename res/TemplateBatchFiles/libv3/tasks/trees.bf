@@ -393,6 +393,7 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     }
 
     GetInformation(modelMap, T);
+    
 
     leaves_internals = {};
     flat_tree = T ^ 0;
@@ -612,10 +613,67 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
 }
 
 /**
+ * Compute branch labeling using conjunction, i.e. node N is labeled 'X' iff 
+ * all of the nodes that are in the subtree rooted at 'N' are also labeled 'N'
+ * @name trees.ConjunctionLabel
+ * @param 	{String} tree ID
+ * @param 	{Dict} 	 leaf -> label
+ 					 labels may be missing for some of the leaves to induce partial labeling of the tree
+ * @returns {Dict} 	 {"labeled" : # of labeled internal  nodes, "labels" : Internal Branch -> label}
+ */
+  
+lfunction trees.ConjunctionLabel (tree_id, given_labels) {   
+   tree_avl = (^tree_id) ^ 0;
+   label_values = utility.Values (given_labels);
+   label_count  = utility.Array1D (label_values);
+   labels = {};
+   resulting_labels = {}; // internal nodes -> label
+   inodes_labeled = 0;
+   
+   // pass 1 to fill in the score matrix
+   for (k = 0; k < Abs (tree_avl) ; k += 1) {
+   	 	node_name = (tree_avl[k])["Name"];
+   	 	node_children = (tree_avl[k])["Children"];
+   	 	c_count = utility.Array1D (node_children);
+   	 	
+   	 	if (c_count) { // internal node
+   	 		// first check to see if all the children are labeled
+   	 	   	 	
+   	 	   	child_labels = {}; 	
+   	 	   	 	 	
+			for (c = 0; c < c_count; c+=1) {
+				c_name = (tree_avl[node_children[c]])["Name"];
+   	 			if (utility.Has (labels, c_name, "String") == FALSE)  {
+   	 				break;
+   	 			}
+   	 			child_labels [labels[c_name]] = TRUE;
+   	 			    
+   	 		}
+   	 		if (c == c_count) { // all children labeled
+    	 	   inodes_labeled += 1;
+    	 	   if (utility.Array1D (child_labels) == 1) {
+    	 	       labels [node_name] = (utility.Keys (child_labels))[0];
+    	 	       resulting_labels[node_name] = labels [node_name];
+    	 	   }	
+   	 	 	}
+   	 	} else { // leaf
+   	 		if (utility.Has (given_labels, node_name, "String")) {
+                labels[node_name] = given_labels[node_name];
+   	 		}
+   	 	}
+   }
+   
+   
+   
+   return {"labeled" : inodes_labeled, "labels" : resulting_labels};  
+   // pass 1 to choose the best state for subtree parents
+}
+
+/**
  * Annotate a tree string with using user-specified labels  
  * @name trees.ParsimonyLabel
  * @param 	{String} tree ID
- * @param 	{Dict} 	 node_name -> label
+ * @param 	{Dict/String} 	 node_name -> label OR (if string) (node_name) => name + annotation
  * @param {String} a pair of characters to enclose the label in 
  * @param {Bool} whether or not to include branch lentghs
  * @return {String} annotated string
@@ -651,12 +709,15 @@ lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
             }
         }
         
-        _ost * nodeInfo["Name"];
         
-        
-        if (labels / nodeInfo["Name"]) {
-            if (Abs(labels[nodeInfo["Name"]])) {
-                _ost * (chars[0] + labels[nodeInfo["Name"]] + chars[1]);
+        if (Type (labels) == "String") {
+            _ost * Call (labels, nodeInfo["Name"]);
+        } else {
+            _ost * nodeInfo["Name"];
+            if (labels / nodeInfo["Name"]) {
+                if (Abs(labels[nodeInfo["Name"]])) {
+                    _ost * (chars[0] + labels[nodeInfo["Name"]] + chars[1]);
+                }
             }
         }
 

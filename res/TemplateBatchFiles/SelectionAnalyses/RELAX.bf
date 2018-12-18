@@ -979,6 +979,8 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
 //------------------------------------------------------------------------------
 lfunction relax.select_branches(partition_info) {
 
+    kGroupMode = "Group mode";
+
     io.CheckAssertion("utility.Array1D (`&partition_info`) == 1", "RELAX only works on a single partition dataset");
     available_models = {};
 
@@ -1002,10 +1004,10 @@ lfunction relax.select_branches(partition_info) {
         
 	if (nontrivial_groups >= 3) { // could run as a group set
 		run_mode = io.SelectAnOption ({
-			{"Group mode", "Run the test for equality of selective regimes among  " + nontrivial_groups + " groups of branches"}
+			{kGroupMode, "Run the test for equality of selective regimes among  " + nontrivial_groups + " groups of branches"}
 			{"Classic mode", "Select one test and one reference group of branches, with the rest of the branches treated as unclassified"}
 		}, "Group test mode");
-		if (run_mode == "Group mode") {
+		if (run_mode == kGroupMode) {
 			 utility.SetEnvVariable ("relax.numbers_of_tested_groups", nontrivial_groups);
 			 utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "
 					if ('' == _value_ ) {
@@ -1017,7 +1019,7 @@ lfunction relax.select_branches(partition_info) {
 		}
 	}
 	
-	if (run_mode != "Group mode") {
+	if (run_mode != kGroupMode) {
 
 		selectTheseForTesting = {
 			option_count, 2
