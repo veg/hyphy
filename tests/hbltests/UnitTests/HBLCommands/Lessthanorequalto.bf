@@ -3,7 +3,7 @@ runATest ();
 
 
 function getTestName () {
-  return "<";
+  return "<=";
 }		
 
 
@@ -15,22 +15,28 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   // SIMPLE FUNCTIONALITY
   //---------------------------------------------------------------------------------------------------------
-  // Check if one integer is greater than another 
-  assert (1<2 == 1, "Failed to return true when evaluating a less than expression (1<2)");
-  assert (-1<1 == 1, "Failed to return true when evaluating a less than expresion (-1<1)");
-  assert (1<1 == 0, "Failed to return false when evaluationg a less than exprssion (1<1)");
-  assert(100<1 == 0, "Failed to return false when evaluating a less than expression (100<1)");
-  // Matrices (the docs state: Returns the Path Log Likelihood assuming that matrix A is a 3xK matrix, where each column is of the form A: integer in [0,N-1], B: integer in [0,N-1], T: real >= 0, and matrix B is an NxN RATE matrix for a Markov chain.)
-  matrix1 = {{1,2}{3,4}{5,6}};
-  allOnesRateMatrix = {{1,1,1,1}{1,1,1,1}{1,1,1,1}{1,1,1,1}};
-  x = matrix1<allOnesRateMatrix;
-  assert(x == 18.61370563681889, "Failed to return the path log likelihood");
-  // Strings: Lexicographic (Generalized alphabetic order) comparison between strings
-  assert("Battlestar Galactica"<"Bears" == 1, "Failed to return true for two strings in alphabetical order");
-  assert("zoro" < "Aladin" == 0, "Failed to return false for two strings not in alphabetical order");
+  // Check if one integer is less than or equal to another 
+  assert (1<=2 == 1, "Failed to return true when evaluating a less than expression (1<=2)");
+  assert (-1<=1 == 1, "Failed to return true when evaluating a less than expresion (-1<=1)");
+  assert (1<=1 == 1, "Failed to return false when evaluationg a less than exprssion (1<=1)");
+  assert(100<=1 == 0, "Failed to return false when evaluating a less than expression (100<=1)");
+  // Strings: Lexicographic (Generalized alphabetic order) less than or equal comparison between strings
+  assert("Battlestar Galactica"<="Bears" == 1, "Failed to return true for two strings in alphabetical order");
+  assert("zoro" <= "Aladin" == 0, "Failed to return false for two strings not in alphabetical order");
+  assert("abcde" <= "abcde" == 1, "Failed to return true for two identical strings");
   // Comparing to none
-  assert(1<none == 0, "Failed to return false for an int less than none");
-  assert(none<1 == 1, "Failed to return true for none less than an int");
+  assert(1<=none == 0, "Failed to return false for an int less than or equal to none");
+  assert(none<=1 == 1, "Failed to return true for none less than or equal to an int");
+  assert(none<=none == 1, "Failed to return true for none less than or equal to none");
+
+  // Matrices (seems to implement k-means clustering based on the error message; undocumented; potentially unimplemented)
+  matrix1 = {{1,2}{3,4}{5,6}};
+  // Error message indicating k-means
+  //x = matrix1<={{1,2}{3,4}};
+  // Trying to run it returns an empty matrix
+  y = matrix1<={{2,2}};
+  //fprintf (stdout, "y: ", y, "\n");
+
 
 
   //---------------------------------------------------------------------------------------------------------
