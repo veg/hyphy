@@ -1,0 +1,269 @@
+/********* gcpREV MODEL OF PROTEIN EVOLUTION ************/
+LoadFunctionLibrary("../empirical.bf");
+LoadFunctionLibrary("../../protein.bf");
+LoadFunctionLibrary("../../parameters.bf");
+LoadFunctionLibrary("../../frequencies.bf");
+LoadFunctionLibrary("../../../UtilityFunctions.bf");
+LoadFunctionLibrary("../../../all-terms.bf");
+
+
+
+/**
+ * @name models.protein.gcpREV.ModelDescription
+ * @description Create the baseline schema (dictionary) for the gcpREV model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.gcpREV.ModelDescription(type) {
+    models.protein.gcpREV.ModelDescription.model_definition = models.protein.empirical.ModelDescription(type);
+    models.protein.gcpREV.ModelDescription.model_definition [terms.model.empirical_rates] = models.protein.gcpREV.Rij;
+    models.protein.gcpREV.ModelDescription.model_definition [terms.model.frequency_estimator] = "models.protein.gcpREV.frequencies";
+    return models.protein.gcpREV.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.gcpREVF.ModelDescription
+ * @description Create the baseline schema (dictionary) for the gcpREV+F model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.gcpREVF.ModelDescription(type) {
+    models.protein.gcpREVF.ModelDescription.model_definition = models.protein.gcpREV.ModelDescription(type);
+    models.protein.gcpREVF.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.empirical.protein";
+    models.protein.gcpREVF.ModelDescription.model_definition [terms.model.efv_estimate_name] = utility.getGlobalValue("terms.frequencies._20x1");
+    return models.protein.gcpREVF.ModelDescription.model_definition;
+}
+
+/**
+ * @name models.protein.gcpREVML.ModelDescription
+ * @description Create the baseline schema (dictionary) for the gcpREV+ML model of protein evolution
+ * @returns {Dictionary} model description
+ * @param {String} type
+ */
+function models.protein.gcpREVML.ModelDescription(type) {
+    models.protein.gcpREVML.ModelDescription.model_definition = models.protein.gcpREV.ModelDescription(type);
+    models.protein.gcpREVML.ModelDescription.model_definition [terms.model.frequency_estimator] = "frequencies.ML.protein";
+    models.protein.gcpREVML.ModelDescription.model_definition [terms.model.efv_estimate_name]   =  utility.getGlobalValue("terms.frequencies.MLE");
+    return models.protein.gcpREVML.ModelDescription.model_definition;
+}
+
+/* Define a dictionary of amino-acid exchangeability rates for the gcpREV model of protein evolution. */ 
+models.protein.gcpREV.Rij = {
+'A': {'C': 699.4,
+       'D': 87.7,
+       'E': 288.3,
+       'F': 59.3,
+       'G': 677.9,
+       'H': 32.0,
+       'I': 39.5,
+       'K': 78.3,
+       'L': 33.8,
+       'M': 197.1,
+       'N': 59.1,
+       'P': 505.8,
+       'Q': 199.5,
+       'R': 12.2,
+       'S': 2443.9,
+       'T': 1646.2,
+       'V': 1143.8,
+       'W': 30.0,
+       'Y': 27.9},
+ 'C': {'D': 125.3,
+       'E': 102.4,
+       'F': 1540.1,
+       'G': 433.6,
+       'H': 574.8,
+       'I': 96.0,
+       'K': 89.2,
+       'L': 446.5,
+       'M': 288.5,
+       'N': 133.7,
+       'P': 124.9,
+       'Q': 195.1,
+       'R': 1867.9,
+       'S': 3029.8,
+       'T': 516.8,
+       'V': 722.2,
+       'W': 562.6,
+       'Y': 1571.2},
+ 'D': {'E': 3638.7,
+       'F': 15.9,
+       'G': 464.8,
+       'H': 527.7,
+       'I': 16.8,
+       'K': 78.3,
+       'L': 8.7,
+       'M': 33.1,
+       'N': 5083.8,
+       'P': 43.6,
+       'Q': 387.6,
+       'R': 40.6,
+       'S': 142.1,
+       'T': 66.1,
+       'V': 18.5,
+       'W': 35.0,
+       'Y': 272.1},
+ 'E': {'F': 30.7,
+       'G': 393.8,
+       'H': 144.6,
+       'I': 23.4,
+       'K': 1870.9,
+       'L': 26.8,
+       'M': 33.3,
+       'N': 230.9,
+       'P': 39.4,
+       'Q': 2965.3,
+       'R': 51.9,
+       'S': 156.7,
+       'T': 230.0,
+       'V': 103.8,
+       'W': 57.2,
+       'Y': 79.2},
+ 'F': {'G': 10.1,
+       'H': 87.2,
+       'I': 354.4,
+       'K': 9.0,
+       'L': 1585.8,
+       'M': 183.4,
+       'N': 13.4,
+       'P': 82.1,
+       'Q': 10.7,
+       'R': 26.1,
+       'S': 790.5,
+       'T': 29.8,
+       'V': 180.6,
+       'W': 558.3,
+       'Y': 2360.2},
+ 'G': {'H': 35.6,
+       'I': 11.8,
+       'K': 193.4,
+       'L': 4.3,
+       'M': 11.8,
+       'N': 446.5,
+       'P': 11.8,
+       'Q': 40.8,
+       'R': 391.2,
+       'S': 709.0,
+       'T': 65.5,
+       'V': 72.6,
+       'W': 92.6,
+       'Y': 20.6},
+ 'H': {'I': 38.1,
+       'K': 96.9,
+       'L': 46.1,
+       'M': 54.5,
+       'N': 2156.8,
+       'P': 185.1,
+       'Q': 1889.6,
+       'R': 1228.7,
+       'S': 277.0,
+       'T': 77.1,
+       'V': 22.8,
+       'W': 58.5,
+       'Y': 4117.5},
+ 'I': {'K': 125.7,
+       'L': 1657.9,
+       'M': 2493.4,
+       'N': 146.0,
+       'P': 63.1,
+       'Q': 48.5,
+       'R': 105.4,
+       'S': 75.6,
+       'T': 1227.2,
+       'V': 6006.5,
+       'W': 21.1,
+       'Y': 35.8},
+ 'K': {'L': 37.6,
+       'M': 220.1,
+       'N': 1930.8,
+       'P': 49.8,
+       'Q': 2571.2,
+       'R': 4666.4,
+       'S': 209.3,
+       'T': 648.5,
+       'V': 66.2,
+       'W': 15.9,
+       'Y': 84.2},
+ 'L': {'M': 1389.6,
+       'N': 11.6,
+       'P': 347.7,
+       'Q': 235.4,
+       'R': 124.9,
+       'S': 584.9,
+       'T': 62.9,
+       'V': 661.7,
+       'W': 218.2,
+       'Y': 82.0},
+ 'M': {'N': 41.4,
+       'P': 19.2,
+       'Q': 341.8,
+       'R': 112.1,
+       'S': 32.9,
+       'T': 1143.5,
+       'V': 465.7,
+       'W': 70.5,
+       'Y': 41.1},
+ 'N': {'P': 18.7,
+       'Q': 827.8,
+       'R': 313.0,
+       'S': 2505.4,
+       'T': 1373.3,
+       'V': 27.6,
+       'W': 19.9,
+       'Y': 316.2},
+ 'P': {'Q': 223.1,
+       'R': 89.4,
+       'S': 1154.5,
+       'T': 322.8,
+       'V': 75.5,
+       'W': 18.5,
+       'Y': 15.8},
+ 'Q': {'R': 2321.3,
+       'S': 246.9,
+       'T': 128.5,
+       'V': 50.2,
+       'W': 24.6,
+       'Y': 179.1},
+ 'R': {'S': 269.6, 'T': 173.4, 'V': 62.0, 'W': 257.8, 'Y': 137.0},
+ 'S': {'T': 2042.5, 'V': 61.2, 'W': 102.6, 'Y': 501.9},
+ 'T': {'V': 583.7, 'W': 22.0, 'Y': 64.6},
+ 'V': {'W': 10.8, 'Y': 37.3},
+ 'W': {'Y': 296.3},
+ 'Y': {}};
+
+
+/**
+ * @name models.protein.gcpREV.frequencies
+ * @param {Dictionary} Baseline gcpREV model
+ * @returns {Dictionary} Updated gcpREV model with empirical frequencies
+ * @description Define the empirical amino acid frequencies associated with the gcpREV model of protein evolution
+ */
+lfunction models.protein.gcpREV.frequencies (model, namespace, datafilter) {
+    model[utility.getGlobalValue("terms.efv_estimate")] =
+        {{0.07951}
+        {0.009051}
+        {0.03322}
+        {0.049675}
+        {0.047731}
+        {0.080233}
+        {0.02188}
+        {0.080496}
+        {0.049324}
+        {0.107512}
+        {0.020776}
+        {0.040459}
+        {0.039916}
+        {0.037505}
+        {0.056001}
+        {0.07382}
+        {0.053615}
+        {0.071781}
+        {0.016705}
+        {0.03079}};
+
+    model[utility.getGlobalValue("terms.model.efv_estimate_name")] = utility.getGlobalValue("terms.frequencies.predefined");
+    (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.model.empirical")] = 0;
+    return model;
+}
+
+
