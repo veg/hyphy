@@ -32,11 +32,7 @@ function runTest () {
   // Matrices (seems to implement k-means clustering based on the error message; undocumented; potentially unimplemented)
   matrix1 = {{1,2}{3,4}{5,6}};
   // Error message indicating k-means
-  //x = matrix1<={{1,2}{3,4}};
-  // Trying to run it returns an empty matrix
-  y = matrix1<={{2,2}};
-  //fprintf (stdout, "y: ", y, "\n");
-
+  //y = matrix1<=3;
 
 
   //---------------------------------------------------------------------------------------------------------
@@ -44,16 +40,14 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   Topology T2 = ((1,2),(3,4),5);
   Tree TT = ((1,2),(3,4),5);
-  oneDMatrix = {{1,2}};
-  twoDMatrix = {{3,4}{5,6}};
   list1 = {"key1": "val1"};
   list2 = {"key2": "val2"};
 
-  assert (runCommandWithSoftErrors ('T2<T2', "Operation '<' is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (<)");
-  assert (runCommandWithSoftErrors ('TT<TT', "Operation '<' is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (<)");
-  assert (runCommandWithSoftErrors ('list1<list2', "Operation '<' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to compare associateive lists (<)");
-  // Looks like an uncaught error for the line below: "libc++abi.dylib: terminating with uncaught exception of type char const*"
-  //assert (runCommandWithSoftErrors ('oneDMatrix < twoDMatrix', "Incompatible dimensions when trying to add or subtract matrices"), "Failed error checking for addig matrices of different dimensions");
+  // Both lines below result in, "HYPHYMP(70363,0x7fff96910380) malloc: *** error for object 0x7fad8de03fb0: pointer being freed was not allocated"
+  //assert (runCommandWithSoftErrors ('T2<=T2', "Operation '<' is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (<)");
+  //assert (runCommandWithSoftErrors ('TT<=TT', "Operation '<' is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (<)");
+
+  assert (runCommandWithSoftErrors ('list1<=list2', "Operation '<=' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to compare associateive lists (<=)");
   
 
   testResult = 1;

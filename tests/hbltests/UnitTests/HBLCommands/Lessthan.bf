@@ -15,7 +15,7 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   // SIMPLE FUNCTIONALITY
   //---------------------------------------------------------------------------------------------------------
-  // Check if one integer is greater than another 
+  // Check if one integer is less than another 
   assert (1<2 == 1, "Failed to return true when evaluating a less than expression (1<2)");
   assert (-1<1 == 1, "Failed to return true when evaluating a less than expresion (-1<1)");
   assert (1<1 == 0, "Failed to return false when evaluationg a less than exprssion (1<1)");
