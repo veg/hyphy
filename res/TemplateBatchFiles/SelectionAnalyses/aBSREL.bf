@@ -19,7 +19,7 @@ LoadFunctionLibrary("libv3/convenience/math.bf");
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
-
+utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
 
 /*------------------------------------------------------------------------------*/
 
@@ -114,6 +114,7 @@ absrel.base.results = estimators.FitMGREV (absrel.filter_names, absrel.trees, ab
     terms.run_options.retain_lf_object: TRUE,
     terms.run_options.retain_model_object : TRUE
 }, absrel.gtr_results);
+
 
 io.ReportProgressMessageMD("absrel", "base", "* " + selection.io.report_fit (absrel.base.results, 0, absrel.codon_data_info[terms.data.sample_size]));
 

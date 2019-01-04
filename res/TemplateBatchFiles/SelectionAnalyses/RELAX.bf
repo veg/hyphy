@@ -365,7 +365,7 @@ if (relax.model_set == "All") { // run all the models
 if (relax.numbers_of_tested_groups == 2) {
 	io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model to test K != 1");
 } else {
-	io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model to with individual K parameters for " + relax.numbers_of_tested_groups + " branch groups");
+	io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model with individual K parameters for " + relax.numbers_of_tested_groups + " branch groups");
 }
 
 

@@ -1042,21 +1042,23 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     LikelihoodFunction likelihoodFunction = (lf_components);
 
-
-
-    //fprintf (stdout, option["proportional-branch-length-scaler"], "\n");
-
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df += estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_id_to_object, initial_values, option[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
+    
+    /*GetString (res, likelihoodFunction, -1);
+    
+    utility.ForEach (res[utility.getGlobalValue ('terms.parameters.local_independent')], '_value_', '  
+        parameters.SetRange (_value_,terms.range_clamp_locals);
+    ');*/
+    
 
 
     //Export (lfe, likelihoodFunction);
     //console.log (lfe);
 
     Optimize(mles, likelihoodFunction);
-
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
@@ -1097,7 +1099,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
  * @returns MGREV results
  */
 lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_values) {
-    return estimators.FitCodonModel (codon_data, tree, "models.codon.MG_REV.ModelDescription", genetic_code, option, initial_value);
+    return estimators.FitCodonModel (codon_data, tree, "models.codon.MG_REV.ModelDescription", genetic_code, option, initial_values);
 }
 
 /**
