@@ -34,6 +34,12 @@ function runTest () {
   // Can't seem to get the topology function to work... 
   // getting the folowing error: The left hand side expression does not contain an object reference in the following context: 'Min(Topology  T1=<ERROR HERE>(1,2,3);,2)testResult=1'
 
+
+
+  Topology T1 = ((1:0.1, 2:0.2)N12 : 0.5, 3 : 1, 4 : 1);
+  
+  fprintf (stdout, Min (T1,2), "\n");
+ 
   // Example from Docs: http://hyphy.org/w/index.php/Min
   //Min(Topology T1 = ((a,b)N1,c,d,((g,h)N3,e,f)N2);, 2);
 

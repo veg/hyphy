@@ -1,0 +1,3985 @@
+{
+ "analysis":{
+   "authors":"Sergei L Kosakovsky Pond",
+   "citation":"A likelihood approach for comparing synonymous and nonsynonymous nucleotide substitution rates, with application to the chloroplast genome (1994). _Mol Biol Evol_ 11 (5): 715-724",
+   "contact":"spond@temple.edu",
+   "info":"This analysis applies the Muse Gaut 94 (MG94) model with the GTR nucleotide rate component 
+    to estimate the single dN/dS ratio for the alignment, and report its confidence intervals derived using profile likelihood.
+    There is an option to select a subset of branches for estimation, in which case a separate omega is estimated for the selected branches.
+    ",
+   "requirements":"in-frame codon alignment and a phylogenetic tree. Multiple partitions with a NEXUS file also supported",
+   "version":"0.1"
+  },
+ "branch attributes":{
+   "0":{
+     "AA393":{
+       "Global MG94xREV":0.002047273665784217,
+       "Nucleotide GTR":0.002035149359665939,
+       "original name":"AA393"
+      },
+     "AG207_796":{
+       "Global MG94xREV":0.002047757695044655,
+       "Nucleotide GTR":0.002037468201744293,
+       "original name":"AG207_796"
+      },
+     "AG3105_693":{
+       "Global MG94xREV":0.005101366288910687,
+       "Nucleotide GTR":0.005086262346804972,
+       "original name":"AG3105_693"
+      },
+     "AG3779_1094":{
+       "Global MG94xREV":0.005109344289536273,
+       "Nucleotide GTR":0.00509965760063625,
+       "original name":"AG3779_1094"
+      },
+     "AG39_796":{
+       "Global MG94xREV":0.002040022454713141,
+       "Nucleotide GTR":0.002029599931140523,
+       "original name":"AG39_796"
+      },
+     "AG4057_795":{
+       "Global MG94xREV":0.005108118993110469,
+       "Nucleotide GTR":0.005082257007559176,
+       "original name":"AG4057_795"
+      },
+     "AG601_796":{
+       "Global MG94xREV":0.004103375084865659,
+       "Nucleotide GTR":0.004086553192888779,
+       "original name":"AG601_796"
+      },
+     "AK10_295":{
+       "Global MG94xREV":0.001020262709654657,
+       "Nucleotide GTR":0.00101466745991947,
+       "original name":"AK10_295"
+      },
+     "AK16_995":{
+       "Global MG94xREV":0.002043451305861639,
+       "Nucleotide GTR":0.002035271995129806,
+       "original name":"AK16_995"
+      },
+     "AK18_493":{
+       "Global MG94xREV":0.002036011144420302,
+       "Nucleotide GTR":0.002028929894481416,
+       "original name":"AK18_493"
+      },
+     "AK2_796":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"AK2_796"
+      },
+     "AK9_1192":{
+       "Global MG94xREV":0.002035038742872393,
+       "Nucleotide GTR":0.002029076442946243,
+       "original name":"AK9_1192"
+      },
+     "AKI194":{
+       "Global MG94xREV":0.005104489741779011,
+       "Nucleotide GTR":0.005079547388414288,
+       "original name":"AKI194"
+      },
+     "AK_1284":{
+       "Global MG94xREV":0.001218202525845474,
+       "Nucleotide GTR":0.001187172833389309,
+       "original name":"AK_1284"
+      },
+     "AUC10896_97":{
+       "Global MG94xREV":0.001024209378045848,
+       "Nucleotide GTR":0.001020728615750566,
+       "original name":"AUC10896_97"
+      },
+     "AUC596":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"AUC596"
+      },
+     "AUC5_697":{
+       "Global MG94xREV":0.001019466924904897,
+       "Nucleotide GTR":0.001014489897116869,
+       "original name":"AUC5_697"
+      },
+     "BE17_197":{
+       "Global MG94xREV":0.001019872579733706,
+       "Nucleotide GTR":0.001013703997483697,
+       "original name":"BE17_197"
+      },
+     "BE24496_197":{
+       "Global MG94xREV":0.005146381010165658,
+       "Nucleotide GTR":0.005107862672851024,
+       "original name":"BE24496_197"
+      },
+     "BE281_1294":{
+       "Global MG94xREV":0.004083610567022874,
+       "Nucleotide GTR":0.004070430967686392,
+       "original name":"BE281_1294"
+      },
+     "BE32_192":{
+       "Global MG94xREV":0.001016066948039322,
+       "Nucleotide GTR":0.001013047017210446,
+       "original name":"BE32_192"
+      },
+     "BE353_1289":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"BE353_1289"
+      },
+     "BE46_292":{
+       "Global MG94xREV":0.001017491798498953,
+       "Nucleotide GTR":0.001013749424639676,
+       "original name":"BE46_292"
+      },
+     "BE47_292":{
+       "Global MG94xREV":0.003052676355889335,
+       "Nucleotide GTR":0.003047503488023841,
+       "original name":"BE47_292"
+      },
+     "BE4_189":{
+       "Global MG94xREV":0.002029796399767665,
+       "Nucleotide GTR":0.00202867333803053,
+       "original name":"BE4_189"
+      },
+     "BE57_189":{
+       "Global MG94xREV":0.002020918054029505,
+       "Nucleotide GTR":0.002023319734491678,
+       "original name":"BE57_189"
+      },
+     "BE62_297":{
+       "Global MG94xREV":0.003066211025010908,
+       "Nucleotide GTR":0.003050516763355784,
+       "original name":"BE62_297"
+      },
+     "BK122_694":{
+       "Global MG94xREV":0.004109555157556834,
+       "Nucleotide GTR":0.004085821513486023,
+       "original name":"BK122_694"
+      },
+     "BK197":{
+       "Global MG94xREV":0.008196763667844902,
+       "Nucleotide GTR":0.008154709134369973,
+       "original name":"BK197"
+      },
+     "BK25_785":{
+       "Global MG94xREV":0.002029787003769007,
+       "Nucleotide GTR":0.00202903771944591,
+       "original name":"BK25_785"
+      },
+     "BK_785":{
+       "Global MG94xREV":0.002029671971974874,
+       "Nucleotide GTR":0.00202755962287389,
+       "original name":"BK_785"
+      },
+     "BR184_696":{
+       "Global MG94xREV":0.003073959326915378,
+       "Nucleotide GTR":0.00305351908121844,
+       "original name":"BR184_696"
+      },
+     "BR309_796":{
+       "Global MG94xREV":0.001018202438328284,
+       "Nucleotide GTR":0.001013880865462767,
+       "original name":"BR309_796"
+      },
+     "BR3_496":{
+       "Global MG94xREV":0.0010179269366936,
+       "Nucleotide GTR":0.001014382127026138,
+       "original name":"BR3_496"
+      },
+     "BR43_697":{
+       "Global MG94xREV":0.002042339097244153,
+       "Nucleotide GTR":0.002035926260060557,
+       "original name":"BR43_697"
+      },
+     "BR45_696":{
+       "Global MG94xREV":0.003060280652282633,
+       "Nucleotide GTR":0.00304738117537571,
+       "original name":"BR45_696"
+      },
+     "BR51_897":{
+       "Global MG94xREV":0.001017033453912728,
+       "Nucleotide GTR":0.001011980469111395,
+       "original name":"BR51_897"
+      },
+     "BR597_796":{
+       "Global MG94xREV":0.004088615302136477,
+       "Nucleotide GTR":0.004067612506948129,
+       "original name":"BR597_796"
+      },
+     "BR87_596":{
+       "Global MG94xREV":0.001020992854241068,
+       "Nucleotide GTR":0.001017147164854605,
+       "original name":"BR87_596"
+      },
+     "BRI2296":{
+       "Global MG94xREV":0.001019387122898814,
+       "Nucleotide GTR":0.001014372867507578,
+       "original name":"BRI2296"
+      },
+     "BRIS3596":{
+       "Global MG94xREV":0.001017431471434798,
+       "Nucleotide GTR":0.001013772311966276,
+       "original name":"BRIS3596"
+      },
+     "BZ18_496":{
+       "Global MG94xREV":0.006174102478356917,
+       "Nucleotide GTR":0.006142333641871341,
+       "original name":"BZ18_496"
+      },
+     "BZ2_395":{
+       "Global MG94xREV":0.001018778434202779,
+       "Nucleotide GTR":0.001013791950601271,
+       "original name":"BZ2_395"
+      },
+     "BZ8_496":{
+       "Global MG94xREV":0.002039990673759903,
+       "Nucleotide GTR":0.002030604809636325,
+       "original name":"BZ8_496"
+      },
+     "BZ91":{
+       "Global MG94xREV":0.003064683900803462,
+       "Nucleotide GTR":0.003060798605318808,
+       "original name":"BZ91"
+      },
+     "CA10_797":{
+       "Global MG94xREV":0.005118820228622612,
+       "Nucleotide GTR":0.005089866051345594,
+       "original name":"CA10_797"
+      },
+     "CA13_1296":{
+       "Global MG94xREV":0.001018740890006731,
+       "Nucleotide GTR":0.001014567161423907,
+       "original name":"CA13_1296"
+      },
+     "CA271_1192":{
+       "Global MG94xREV":0.004074733703176751,
+       "Nucleotide GTR":0.004060636954822464,
+       "original name":"CA271_1192"
+      },
+     "CA4_794":{
+       "Global MG94xREV":0.006125572543748977,
+       "Nucleotide GTR":0.006105445306959493,
+       "original name":"CA4_794"
+      },
+     "CA5_1193":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"CA5_1193"
+      },
+     "CA5_395":{
+       "Global MG94xREV":0.005100914318841528,
+       "Nucleotide GTR":0.005088238387594961,
+       "original name":"CA5_395"
+      },
+     "CAEN184":{
+       "Global MG94xREV":0.004060220994920063,
+       "Nucleotide GTR":0.004064093915789196,
+       "original name":"CAEN184"
+      },
+     "CANBERRA5_897":{
+       "Global MG94xREV":0.002045079137431216,
+       "Nucleotide GTR":0.002031931636461334,
+       "original name":"CANBERRA5_897"
+      },
+     "CAR42297":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"CAR42297"
+      },
+     "CAR465_896":{
+       "Global MG94xREV":0.002035929117126495,
+       "Nucleotide GTR":0.002029576054610386,
+       "original name":"CAR465_896"
+      },
+     "CB_188":{
+       "Global MG94xREV":0.001011812489415431,
+       "Nucleotide GTR":0.001012189982017474,
+       "original name":"CB_188"
+      },
+     "CC185":{
+       "Global MG94xREV":0.002300614126546079,
+       "Nucleotide GTR":0.002167205572522896,
+       "original name":"CC185"
+      },
+     "CC485":{
+       "Global MG94xREV":0.001761686731781222,
+       "Nucleotide GTR":0.001894105238065336,
+       "original name":"CC485"
+      },
+     "CC893":{
+       "Global MG94xREV":0.00102322587555099,
+       "Nucleotide GTR":0.001016278171604306,
+       "original name":"CC893"
+      },
+     "CC_688":{
+       "Global MG94xREV":0.00509318107992217,
+       "Nucleotide GTR":0.005089959152378642,
+       "original name":"CC_688"
+      },
+     "CHR196":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"CHR196"
+      },
+     "CHW995_1294":{
+       "Global MG94xREV":0.004093343898073076,
+       "Nucleotide GTR":0.00407301792830245,
+       "original name":"CHW995_1294"
+      },
+     "CI2115_696":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"CI2115_696"
+      },
+     "CL170_1096":{
+       "Global MG94xREV":0.003080237258659483,
+       "Nucleotide GTR":0.002036419462168852,
+       "original name":"CL170_1096"
+      },
+     "CM_885":{
+       "Global MG94xREV":0.007665484244440341,
+       "Nucleotide GTR":0.007655947496609296,
+       "original name":"CM_885"
+      },
+     "CN101_197":{
+       "Global MG94xREV":0.004086522975711248,
+       "Nucleotide GTR":0.004069508930632483,
+       "original name":"CN101_197"
+      },
+     "CN10679_997":{
+       "Global MG94xREV":0.001020285218960302,
+       "Nucleotide GTR":0.001014413253347104,
+       "original name":"CN10679_997"
+      },
+     "CN124_295":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"CN124_295"
+      },
+     "CN147_495":{
+       "Global MG94xREV":0.005115239436785201,
+       "Nucleotide GTR":0.005087949176524317,
+       "original name":"CN147_495"
+      },
+     "CN17_196":{
+       "Global MG94xREV":0.003060775387446107,
+       "Nucleotide GTR":0.003048198393270653,
+       "original name":"CN17_196"
+      },
+     "CN2796_1295":{
+       "Global MG94xREV":0.002039772681420926,
+       "Nucleotide GTR":0.00203111259340696,
+       "original name":"CN2796_1295"
+      },
+     "CN61_296":{
+       "Global MG94xREV":0.001018498923077931,
+       "Nucleotide GTR":0.001013897583921816,
+       "original name":"CN61_296"
+      },
+     "CNIC22_195":{
+       "Global MG94xREV":0.00409087275781798,
+       "Nucleotide GTR":0.004068649185638825,
+       "original name":"CNIC22_195"
+      },
+     "CNIC35_196":{
+       "Global MG94xREV":0.002042526513873747,
+       "Nucleotide GTR":0.002031337439099949,
+       "original name":"CNIC35_196"
+      },
+     "CO11_1196":{
+       "Global MG94xREV":0.002045004853144055,
+       "Nucleotide GTR":0.002033945466649125,
+       "original name":"CO11_1196"
+      },
+     "CORD3278_796":{
+       "Global MG94xREV":0.003070018058478556,
+       "Nucleotide GTR":0.00305367758348583,
+       "original name":"CORD3278_796"
+      },
+     "CO_1187":{
+       "Global MG94xREV":0.005094706077213716,
+       "Nucleotide GTR":0.005088570244203477,
+       "original name":"CO_1187"
+      },
+     "CT_385":{
+       "Global MG94xREV":0.006148709138401969,
+       "Nucleotide GTR":0.006134128694280479,
+       "original name":"CT_385"
+      },
+     "CZ86":{
+       "Global MG94xREV":0.001012847934298435,
+       "Nucleotide GTR":0.001013514917063738,
+       "original name":"CZ86"
+      },
+     "DE3_1195":{
+       "Global MG94xREV":0.006169299762880884,
+       "Nucleotide GTR":0.00612956426593403,
+       "original name":"DE3_1195"
+      },
+     "DE4_397":{
+       "Global MG94xREV":0.004090302315043265,
+       "Nucleotide GTR":0.004070441211269623,
+       "original name":"DE4_397"
+      },
+     "DJ3109_1291":{
+       "Global MG94xREV":0.003056439278262203,
+       "Nucleotide GTR":0.003043628912716241,
+       "original name":"DJ3109_1291"
+      },
+     "DJ3946_1292":{
+       "Global MG94xREV":0.00101849124223216,
+       "Nucleotide GTR":0.001014763942357113,
+       "original name":"DJ3946_1292"
+      },
+     "DL19_389":{
+       "Global MG94xREV":0.006104678105731201,
+       "Nucleotide GTR":0.006098418365579803,
+       "original name":"DL19_389"
+      },
+     "EN26191":{
+       "Global MG94xREV":0.004073366466440242,
+       "Nucleotide GTR":0.004062368550245484,
+       "original name":"EN26191"
+      },
+     "ENG22093":{
+       "Global MG94xREV":0.00203506595385334,
+       "Nucleotide GTR":0.002029373152269851,
+       "original name":"ENG22093"
+      },
+     "ENG64889":{
+       "Global MG94xREV":0.004253768671860238,
+       "Nucleotide GTR":0.004247394158707714,
+       "original name":"ENG64889"
+      },
+     "ENG88":{
+       "Global MG94xREV":0.002035057902578835,
+       "Nucleotide GTR":0.002031498220695637,
+       "original name":"ENG88"
+      },
+     "FG39_1096":{
+       "Global MG94xREV":0.005104295660374071,
+       "Nucleotide GTR":0.005081320748615171,
+       "original name":"FG39_1096"
+      },
+     "FL4_1195":{
+       "Global MG94xREV":0.002034082959867382,
+       "Nucleotide GTR":0.0020206321099808,
+       "original name":"FL4_1195"
+      },
+     "FO_1185":{
+       "Global MG94xREV":0.005094071608604203,
+       "Nucleotide GTR":0.005085483927482443,
+       "original name":"FO_1185"
+      },
+     "FR110994":{
+       "Global MG94xREV":0.004082409741937339,
+       "Nucleotide GTR":0.004068497999682834,
+       "original name":"FR110994"
+      },
+     "FR120394":{
+       "Global MG94xREV":0.003058374970744451,
+       "Nucleotide GTR":0.003047987272320744,
+       "original name":"FR120394"
+      },
+     "FR7597":{
+       "Global MG94xREV":0.00510271813418422,
+       "Nucleotide GTR":0.005083959744073347,
+       "original name":"FR7597"
+      },
+     "FUJIAN133_596":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"FUJIAN133_596"
+      },
+     "FUJIAN47_396":{
+       "Global MG94xREV":0.004082740800335982,
+       "Nucleotide GTR":0.004065192308239029,
+       "original name":"FUJIAN47_396"
+      },
+     "FUK11496C":{
+       "Global MG94xREV":0.002042374988260538,
+       "Nucleotide GTR":0.002032251385699937,
+       "original name":"FUK11496C"
+      },
+     "FUK11496E":{
+       "Global MG94xREV":0.001021425931870056,
+       "Nucleotide GTR":0.00101694021132368,
+       "original name":"FUK11496E"
+      },
+     "GA3_393":{
+       "Global MG94xREV":0.001016944007939493,
+       "Nucleotide GTR":0.001014324326250306,
+       "original name":"GA3_393"
+      },
+     "GC_987":{
+       "Global MG94xREV":0.001013469936225605,
+       "Nucleotide GTR":0.001012851579031686,
+       "original name":"GC_987"
+      },
+     "GD04_393":{
+       "Global MG94xREV":0.003081588577186811,
+       "Nucleotide GTR":0.001013735528531554,
+       "original name":"GD04_393"
+      },
+     "GD1_396":{
+       "Global MG94xREV":0.005121688212714372,
+       "Nucleotide GTR":0.005094794585665714,
+       "original name":"GD1_396"
+      },
+     "GD25_693":{
+       "Global MG94xREV":0.003075859100839658,
+       "Nucleotide GTR":0.003056831740821176,
+       "original name":"GD25_693"
+      },
+     "GD27_594":{
+       "Global MG94xREV":0.003059559507560595,
+       "Nucleotide GTR":0.003047627516229804,
+       "original name":"GD27_594"
+      },
+     "GE491_396":{
+       "Global MG94xREV":0.002037297037119318,
+       "Nucleotide GTR":0.002030681134616559,
+       "original name":"GE491_396"
+      },
+     "GE578652_295":{
+       "Global MG94xREV":0.001016877464611707,
+       "Nucleotide GTR":0.001013002438365749,
+       "original name":"GE578652_295"
+      },
+     "GE767_495":{
+       "Global MG94xREV":0.001018232224209717,
+       "Nucleotide GTR":0.001014426393777108,
+       "original name":"GE767_495"
+      },
+     "GM_1185":{
+       "Global MG94xREV":0.001013896153961215,
+       "Nucleotide GTR":0.001013583900495471,
+       "original name":"GM_1185"
+      },
+     "GNX189_796":{
+       "Global MG94xREV":0.001020579372912588,
+       "Nucleotide GTR":0.001016291182409285,
+       "original name":"GNX189_796"
+      },
+     "GNX42_495":{
+       "Global MG94xREV":0.004114937729264398,
+       "Nucleotide GTR":0.004082980983460033,
+       "original name":"GNX42_495"
+      },
+     "GQ1014_1096":{
+       "Global MG94xREV":0.004087011544474402,
+       "Nucleotide GTR":0.004069634855326711,
+       "original name":"GQ1014_1096"
+      },
+     "GUA39_689":{
+       "Global MG94xREV":0.004067556466458407,
+       "Nucleotide GTR":0.004058343342471133,
+       "original name":"GUA39_689"
+      },
+     "GUA_389":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"GUA_389"
+      },
+     "GZ187":{
+       "Global MG94xREV":0.004063552713689904,
+       "Nucleotide GTR":0.004060570535524608,
+       "original name":"GZ187"
+      },
+     "GZ3_187":{
+       "Global MG94xREV":0.005788320948281572,
+       "Nucleotide GTR":0.005754353081460835,
+       "original name":"GZ3_187"
+      },
+     "GZ54_489":{
+       "Global MG94xREV":0.004944572563823606,
+       "Nucleotide GTR":0.004923555754334469,
+       "original name":"GZ54_489"
+      },
+     "GZH11_496":{
+       "Global MG94xREV":0.00101989832458044,
+       "Nucleotide GTR":0.001014289110576306,
+       "original name":"GZH11_496"
+      },
+     "GZH66_497":{
+       "Global MG94xREV":0.008226167671822797,
+       "Nucleotide GTR":0.00817830930326905,
+       "original name":"GZH66_497"
+      },
+     "GZH8_496":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"GZH8_496"
+      },
+     "HAR1592":{
+       "Global MG94xREV":0.002039251379875813,
+       "Nucleotide GTR":0.002030745405400243,
+       "original name":"HAR1592"
+      },
+     "HAR3_1296":{
+       "Global MG94xREV":0.001003306276757338,
+       "Nucleotide GTR":0.00100621884053318,
+       "original name":"HAR3_1296"
+      },
+     "HAR3_194":{
+       "Global MG94xREV":0.006154218657626664,
+       "Nucleotide GTR":0.00612217791773848,
+       "original name":"HAR3_194"
+      },
+     "HEBEI1293":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"HEBEI1293"
+      },
+     "HI1_997":{
+       "Global MG94xREV":0.002041299936737416,
+       "Nucleotide GTR":0.002030271533782955,
+       "original name":"HI1_997"
+      },
+     "HI2_796":{
+       "Global MG94xREV":0.001017658826430313,
+       "Nucleotide GTR":0.001014437138400881,
+       "original name":"HI2_796"
+      },
+     "HI3_1192":{
+       "Global MG94xREV":0.002033040236870085,
+       "Nucleotide GTR":0.002027169997024341,
+       "original name":"HI3_1192"
+      },
+     "HK1_694":{
+       "Global MG94xREV":0.001015167124616719,
+       "Nucleotide GTR":0.00101352166771814,
+       "original name":"HK1_694"
+      },
+     "HK23_792":{
+       "Global MG94xREV":0.004102332153735015,
+       "Nucleotide GTR":0.004076563923706217,
+       "original name":"HK23_792"
+      },
+     "HK34_490":{
+       "Global MG94xREV":0.002033817230510968,
+       "Nucleotide GTR":0.002027110525623356,
+       "original name":"HK34_490"
+      },
+     "HK357_696":{
+       "Global MG94xREV":0.002040896467051964,
+       "Nucleotide GTR":0.002029679773785546,
+       "original name":"HK357_696"
+      },
+     "HK358_796":{
+       "Global MG94xREV":0.001019742027463988,
+       "Nucleotide GTR":0.001014688365544401,
+       "original name":"HK358_796"
+      },
+     "HK387_797":{
+       "Global MG94xREV":0.001019476960951791,
+       "Nucleotide GTR":0.001014936730963762,
+       "original name":"HK387_797"
+      },
+     "HK38_895":{
+       "Global MG94xREV":0.003065863578855468,
+       "Nucleotide GTR":0.003052099870105685,
+       "original name":"HK38_895"
+      },
+     "HK391_797":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"HK391_797"
+      },
+     "HK3_195":{
+       "Global MG94xREV":0.001017810780094781,
+       "Nucleotide GTR":0.001013520614889574,
+       "original name":"HK3_195"
+      },
+     "HK42_396":{
+       "Global MG94xREV":0.003863327907394328,
+       "Nucleotide GTR":0.003934760011359903,
+       "original name":"HK42_396"
+      },
+     "HK434_1096":{
+       "Global MG94xREV":0.003061378798143336,
+       "Nucleotide GTR":0.003052240085839995,
+       "original name":"HK434_1096"
+      },
+     "HK55_794":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"HK55_794"
+      },
+     "HW1_291":{
+       "Global MG94xREV":0.003059515939090316,
+       "Nucleotide GTR":0.003054408980184178,
+       "original name":"HW1_291"
+      },
+     "ID3_1195":{
+       "Global MG94xREV":0.002039282117177142,
+       "Nucleotide GTR":0.002032205763236204,
+       "original name":"ID3_1195"
+      },
+     "ID4_1195":{
+       "Global MG94xREV":0.002037091795406819,
+       "Nucleotide GTR":0.002030375557953013,
+       "original name":"ID4_1195"
+      },
+     "II236_1193":{
+       "Global MG94xREV":0.001013009084615442,
+       "Nucleotide GTR":0.001010226159728466,
+       "original name":"II236_1193"
+      },
+     "II237_1193":{
+       "Global MG94xREV":0.002052057742269527,
+       "Nucleotide GTR":0.002041752502451441,
+       "original name":"II237_1193"
+      },
+     "IL5_195":{
+       "Global MG94xREV":0.001028270070368337,
+       "Nucleotide GTR":0.001025836157328111,
+       "original name":"IL5_195"
+      },
+     "IN1_1196":{
+       "Global MG94xREV":0.003071615312850813,
+       "Nucleotide GTR":0.003057156589015838,
+       "original name":"IN1_1196"
+      },
+     "IN3_991":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"IN3_991"
+      },
+     "JA416_297":{
+       "Global MG94xREV":0.003063540890600843,
+       "Nucleotide GTR":0.003047648558344329,
+       "original name":"JA416_297"
+      },
+     "JA8695_1294":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"JA8695_1294"
+      },
+     "JA99_196":{
+       "Global MG94xREV":0.002263215394300789,
+       "Nucleotide GTR":0.00225771001910782,
+       "original name":"JA99_196"
+      },
+     "JOH10_697":{
+       "Global MG94xREV":0.006165938291827701,
+       "Nucleotide GTR":0.006128578221077935,
+       "original name":"JOH10_697"
+      },
+     "JOH1795":{
+       "Global MG94xREV":0.004098446771300677,
+       "Nucleotide GTR":0.004072814996764298,
+       "original name":"JOH1795"
+      },
+     "JOH295":{
+       "Global MG94xREV":0.01125504447052797,
+       "Nucleotide GTR":0.01121638666776742,
+       "original name":"JOH295"
+      },
+     "JOH33_794":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"JOH33_794"
+      },
+     "JOH3_397":{
+       "Global MG94xREV":0.002040140050698337,
+       "Nucleotide GTR":0.002029201472019728,
+       "original name":"JOH3_397"
+      },
+     "JOH5396_97":{
+       "Global MG94xREV":0.01023173400449548,
+       "Nucleotide GTR":0.01019839953389729,
+       "original name":"JOH5396_97"
+      },
+     "JOH9_597":{
+       "Global MG94xREV":0.006135664176324599,
+       "Nucleotide GTR":0.006106530957595822,
+       "original name":"JOH9_597"
+      },
+     "KA149_1092":{
+       "Global MG94xREV":0.006141545506474635,
+       "Nucleotide GTR":0.006117485526006357,
+       "original name":"KA149_1092"
+      },
+     "KA206_1191":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"KA206_1191"
+      },
+     "KB_288":{
+       "Global MG94xREV":0.002032951461236773,
+       "Nucleotide GTR":0.002035064446987818,
+       "original name":"KB_288"
+      },
+     "KITA93":{
+       "Global MG94xREV":0.005103878027872323,
+       "Nucleotide GTR":0.005084194731545332,
+       "original name":"KITA93"
+      },
+     "KO45_296":{
+       "Global MG94xREV":0.001018438846371503,
+       "Nucleotide GTR":0.001014233334979065,
+       "original name":"KO45_296"
+      },
+     "KO572_297":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"KO572_297"
+      },
+     "KO671_297":{
+       "Global MG94xREV":0.001021101071038161,
+       "Nucleotide GTR":0,
+       "original name":"KO671_297"
+      },
+     "KWJ195_1194":{
+       "Global MG94xREV":0.001021066447458239,
+       "Nucleotide GTR":0.001015432639003074,
+       "original name":"KWJ195_1194"
+      },
+     "KY2_297":{
+       "Global MG94xREV":0.004908402138198712,
+       "Nucleotide GTR":0.004791374835871986,
+       "original name":"KY2_297"
+      },
+     "LA1_195":{
+       "Global MG94xREV":0.002036405872798434,
+       "Nucleotide GTR":0.002029440659140125,
+       "original name":"LA1_195"
+      },
+     "LA4_893":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"LA4_893"
+      },
+     "LA5_1195":{
+       "Global MG94xREV":0.005131440899317701,
+       "Nucleotide GTR":0.005109001073994426,
+       "original name":"LA5_1195"
+      },
+     "LA6_993":{
+       "Global MG94xREV":0.001017126442478068,
+       "Nucleotide GTR":0.001014277414271252,
+       "original name":"LA6_993"
+      },
+     "LA_1287":{
+       "Global MG94xREV":0.001013020100359702,
+       "Nucleotide GTR":0.001013535836058813,
+       "original name":"LA_1287"
+      },
+     "LN_286":{
+       "Global MG94xREV":0.003047002046079719,
+       "Nucleotide GTR":0.003043898216717255,
+       "original name":"LN_286"
+      },
+     "MA1_195":{
+       "Global MG94xREV":0.003059914610993369,
+       "Nucleotide GTR":0.003054724757108473,
+       "original name":"MA1_195"
+      },
+     "MEM196_1195":{
+       "Global MG94xREV":0.005301634803303395,
+       "Nucleotide GTR":0.00522933943457522,
+       "original name":"MEM196_1195"
+      },
+     "MI_185":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"MI_185"
+      },
+     "MN1_1196":{
+       "Global MG94xREV":0.002035479050945458,
+       "Nucleotide GTR":0.002028502416206111,
+       "original name":"MN1_1196"
+      },
+     "MN1_497":{
+       "Global MG94xREV":0.003074409989707663,
+       "Nucleotide GTR":0.003058508431519869,
+       "original name":"MN1_497"
+      },
+     "MN6_1195":{
+       "Global MG94xREV":0.005121719744136075,
+       "Nucleotide GTR":0.005089932018030804,
+       "original name":"MN6_1195"
+      },
+     "MO10_1196":{
+       "Global MG94xREV":0.002042495498990347,
+       "Nucleotide GTR":0.002034830491024007,
+       "original name":"MO10_1196"
+      },
+     "MO11_1196":{
+       "Global MG94xREV":0.002037513457428024,
+       "Nucleotide GTR":0.002030195564018921,
+       "original name":"MO11_1196"
+      },
+     "MO6_396":{
+       "Global MG94xREV":0.002036261076871126,
+       "Nucleotide GTR":0.002028425047727135,
+       "original name":"MO6_396"
+      },
+     "MON318_696":{
+       "Global MG94xREV":0.003060591798817492,
+       "Nucleotide GTR":0.00304860886815568,
+       "original name":"MON318_696"
+      },
+     "MOS2_197":{
+       "Global MG94xREV":0.004090779956498056,
+       "Nucleotide GTR":0.004074210970705672,
+       "original name":"MOS2_197"
+      },
+     "MS85":{
+       "Global MG94xREV":0.003046464644057934,
+       "Nucleotide GTR":0.003043973931416631,
+       "original name":"MS85"
+      },
+     "MX3255_194":{
+       "Global MG94xREV":0.001014608363027442,
+       "Nucleotide GTR":0.001012620573949921,
+       "original name":"MX3255_194"
+      },
+     "NCH12_1193":{
+       "Global MG94xREV":0.001014790019863346,
+       "Nucleotide GTR":0,
+       "original name":"NCH12_1193"
+      },
+     "NCH3332_493":{
+       "Global MG94xREV":0.001017646140891136,
+       "Nucleotide GTR":0.001014250310058386,
+       "original name":"NCH3332_493"
+      },
+     "NCH3396_593":{
+       "Global MG94xREV":0.004076560559967482,
+       "Nucleotide GTR":0.004063501528042039,
+       "original name":"NCH3396_593"
+      },
+     "NCH58_1293":{
+       "Global MG94xREV":0.001018291693915866,
+       "Nucleotide GTR":0.001016102256452462,
+       "original name":"NCH58_1293"
+      },
+     "NCH813_895":{
+       "Global MG94xREV":0.004085905060530775,
+       "Nucleotide GTR":0.004070434134999173,
+       "original name":"NCH813_895"
+      },
+     "NCH933_995":{
+       "Global MG94xREV":0.00203899628727265,
+       "Nucleotide GTR":0.00203111281595472,
+       "original name":"NCH933_995"
+      },
+     "NE11_395":{
+       "Global MG94xREV":0.001021616799922379,
+       "Nucleotide GTR":0.001014898753948606,
+       "original name":"NE11_395"
+      },
+     "NED37293":{
+       "Global MG94xREV":0.001016854985368483,
+       "Nucleotide GTR":0.001013519553620159,
+       "original name":"NED37293"
+      },
+     "NGX10_193":{
+       "Global MG94xREV":0.002045614938509505,
+       "Nucleotide GTR":0,
+       "original name":"NGX10_193"
+      },
+     "NJ10_195":{
+       "Global MG94xREV":0.001016405703443955,
+       "Nucleotide GTR":0.001013833336362396,
+       "original name":"NJ10_195"
+      },
+     "NJ11_1294":{
+       "Global MG94xREV":0.003057247107008129,
+       "Nucleotide GTR":0.003045492595602426,
+       "original name":"NJ11_1294"
+      },
+     "NJ8_1194":{
+       "Global MG94xREV":0.001019547021898813,
+       "Nucleotide GTR":0.001016465830748225,
+       "original name":"NJ8_1194"
+      },
+     "NJ8_1296":{
+       "Global MG94xREV":0.001019433802220972,
+       "Nucleotide GTR":0.001014228056455095,
+       "original name":"NJ8_1296"
+      },
+     "NJ_185":{
+       "Global MG94xREV":0.002031363098797973,
+       "Nucleotide GTR":0.002029236916783479,
+       "original name":"NJ_185"
+      },
+     "NO93":{
+       "Global MG94xREV":0.004077323399440555,
+       "Nucleotide GTR":0.004059281811860392,
+       "original name":"NO93"
+      },
+     "NODE1":{
+       "Global MG94xREV":0.00510390381104051,
+       "Nucleotide GTR":0.005085796627637941
+      },
+     "NODE10":{
+       "Global MG94xREV":0.006120643137543379,
+       "Nucleotide GTR":0.006114412275487241
+      },
+     "NODE105":{
+       "Global MG94xREV":0.003043784420610767,
+       "Nucleotide GTR":0.003044546556830645
+      },
+     "NODE11":{
+       "Global MG94xREV":0.001010897535931504,
+       "Nucleotide GTR":0.001007534444764074
+      },
+     "NODE110":{
+       "Global MG94xREV":0.002027003612657626,
+       "Nucleotide GTR":0.002028607232720018
+      },
+     "NODE113":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE114":{
+       "Global MG94xREV":0.004941400569362827,
+       "Nucleotide GTR":0.004923825196375063
+      },
+     "NODE115":{
+       "Global MG94xREV":0.001002985239988256,
+       "Nucleotide GTR":0.001007437585809395
+      },
+     "NODE117":{
+       "Global MG94xREV":0.001169368305294081,
+       "Nucleotide GTR":0.001179742768191823
+      },
+     "NODE12":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE121":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE124":{
+       "Global MG94xREV":0.003055089352560633,
+       "Nucleotide GTR":0.003048392899853495
+      },
+     "NODE129":{
+       "Global MG94xREV":0.002009832492242593,
+       "Nucleotide GTR":0.002021108095552343
+      },
+     "NODE13":{
+       "Global MG94xREV":0.001012910669031553,
+       "Nucleotide GTR":0.001012888550244402
+      },
+     "NODE130":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE131":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE132":{
+       "Global MG94xREV":0.001018787543307255,
+       "Nucleotide GTR":0.001017185853062583
+      },
+     "NODE133":{
+       "Global MG94xREV":0.001002093000428652,
+       "Nucleotide GTR":0.000997897014457257
+      },
+     "NODE134":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE135":{
+       "Global MG94xREV":0.001014518857398918,
+       "Nucleotide GTR":0.001012732523580759
+      },
+     "NODE139":{
+       "Global MG94xREV":0.006250351771619215,
+       "Nucleotide GTR":0.006257827738961514
+      },
+     "NODE14":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE140":{
+       "Global MG94xREV":0.0009774985598770436,
+       "Nucleotide GTR":0.0009919757264044609
+      },
+     "NODE141":{
+       "Global MG94xREV":0.001722823894258368,
+       "Nucleotide GTR":0.001668743323050615
+      },
+     "NODE143":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE144":{
+       "Global MG94xREV":0.001014814740171978,
+       "Nucleotide GTR":0.001012946971771283
+      },
+     "NODE147":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE15":{
+       "Global MG94xREV":0.001012910669031553,
+       "Nucleotide GTR":0.00101271100213918
+      },
+     "NODE155":{
+       "Global MG94xREV":0.009181141462156817,
+       "Nucleotide GTR":0.009146576435304768
+      },
+     "NODE156":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE157":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE158":{
+       "Global MG94xREV":0.003059550298580155,
+       "Nucleotide GTR":0.003048875953327877
+      },
+     "NODE16":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE160":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE161":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE162":{
+       "Global MG94xREV":0.00203261481812561,
+       "Nucleotide GTR":0.002029501475589931
+      },
+     "NODE163":{
+       "Global MG94xREV":0.001018420096823453,
+       "Nucleotide GTR":0
+      },
+     "NODE164":{
+       "Global MG94xREV":0.001014344210625128,
+       "Nucleotide GTR":0.001010406336104236
+      },
+     "NODE165":{
+       "Global MG94xREV":0.003063181401349185,
+       "Nucleotide GTR":0.002033952551655437
+      },
+     "NODE169":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0.001014959524931815
+      },
+     "NODE17":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE173":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE174":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE175":{
+       "Global MG94xREV":0.001008931928547876,
+       "Nucleotide GTR":0.001009092610053795
+      },
+     "NODE183":{
+       "Global MG94xREV":0.004090422427368232,
+       "Nucleotide GTR":0.004077929462473395
+      },
+     "NODE184":{
+       "Global MG94xREV":0.003061067087908926,
+       "Nucleotide GTR":0.00305340909592008
+      },
+     "NODE188":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE189":{
+       "Global MG94xREV":0.002037863585875033,
+       "Nucleotide GTR":0.002030933178553322
+      },
+     "NODE190":{
+       "Global MG94xREV":0.002041218570106355,
+       "Nucleotide GTR":0.002027184778117928
+      },
+     "NODE193":{
+       "Global MG94xREV":0.00204261636260868,
+       "Nucleotide GTR":0.002036199883634877
+      },
+     "NODE194":{
+       "Global MG94xREV":0.005113900758247332,
+       "Nucleotide GTR":0.005089261046998784
+      },
+     "NODE199":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE2":{
+       "Global MG94xREV":0.005107620821072579,
+       "Nucleotide GTR":0.00508103328993331
+      },
+     "NODE200":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE201":{
+       "Global MG94xREV":0.001018310211600008,
+       "Nucleotide GTR":0.001015220188206668
+      },
+     "NODE202":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE203":{
+       "Global MG94xREV":0.001017153064431594,
+       "Nucleotide GTR":0.001013883736521447
+      },
+     "NODE204":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE205":{
+       "Global MG94xREV":0.003057679957037013,
+       "Nucleotide GTR":0.003047297882774426
+      },
+     "NODE206":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0.001011236846383542
+      },
+     "NODE21":{
+       "Global MG94xREV":0.001017870749575339,
+       "Nucleotide GTR":0.001016031264524631
+      },
+     "NODE211":{
+       "Global MG94xREV":0.001013708337422544,
+       "Nucleotide GTR":0.00305602119726332
+      },
+     "NODE212":{
+       "Global MG94xREV":0.003062161505582299,
+       "Nucleotide GTR":0.003049389906069554
+      },
+     "NODE213":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0.002039480849169319
+      },
+     "NODE215":{
+       "Global MG94xREV":0.001016639393606421,
+       "Nucleotide GTR":0.001012726963747381
+      },
+     "NODE220":{
+       "Global MG94xREV":0.001017365102486644,
+       "Nucleotide GTR":0.001014488096307153
+      },
+     "NODE223":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE224":{
+       "Global MG94xREV":0.001018702926394832,
+       "Nucleotide GTR":0.001014106209142982
+      },
+     "NODE225":{
+       "Global MG94xREV":0.001017154902156653,
+       "Nucleotide GTR":0.001014592278641195
+      },
+     "NODE226":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE228":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE234":{
+       "Global MG94xREV":0.001016795051708621,
+       "Nucleotide GTR":0.001012394459498409
+      },
+     "NODE235":{
+       "Global MG94xREV":0.001017711066473149,
+       "Nucleotide GTR":0.001013799582226723
+      },
+     "NODE236":{
+       "Global MG94xREV":0.001016756660059908,
+       "Nucleotide GTR":0.001014158199558994
+      },
+     "NODE237":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE239":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE243":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE244":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE246":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE248":{
+       "Global MG94xREV":0.001020562856138699,
+       "Nucleotide GTR":0.001016548827881063
+      },
+     "NODE25":{
+       "Global MG94xREV":0.003050480905328026,
+       "Nucleotide GTR":0.003051032674781478
+      },
+     "NODE253":{
+       "Global MG94xREV":0.004084521004583485,
+       "Nucleotide GTR":0.004066828030275322
+      },
+     "NODE254":{
+       "Global MG94xREV":0.002040915258411532,
+       "Nucleotide GTR":0.002034887281598997
+      },
+     "NODE255":{
+       "Global MG94xREV":0.001016853430253408,
+       "Nucleotide GTR":0.001014089418670085
+      },
+     "NODE26":{
+       "Global MG94xREV":0.002031605477152738,
+       "Nucleotide GTR":0.002028761797645956
+      },
+     "NODE260":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE261":{
+       "Global MG94xREV":0.007206201499407046,
+       "Nucleotide GTR":0.007160215971092265
+      },
+     "NODE262":{
+       "Global MG94xREV":0.0009625291546405002,
+       "Nucleotide GTR":0.0009859868589178829
+      },
+     "NODE263":{
+       "Global MG94xREV":0.003053519666408915,
+       "Nucleotide GTR":0.003042936547846194
+      },
+     "NODE264":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE265":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE266":{
+       "Global MG94xREV":0.002037010088774872,
+       "Nucleotide GTR":0.002031939197401371
+      },
+     "NODE267":{
+       "Global MG94xREV":0.001016755194417451,
+       "Nucleotide GTR":0.001013290165047832
+      },
+     "NODE27":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE271":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE272":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE273":{
+       "Global MG94xREV":0.002036327762291912,
+       "Nucleotide GTR":0.002031104523332704
+      },
+     "NODE276":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE277":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE278":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE279":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE28":{
+       "Global MG94xREV":0.001006558283539359,
+       "Nucleotide GTR":0.001010955678089441
+      },
+     "NODE280":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE29":{
+       "Global MG94xREV":0.002056940950507999,
+       "Nucleotide GTR":0.002043581321339365
+      },
+     "NODE290":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE291":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE292":{
+       "Global MG94xREV":0.003052596575372106,
+       "Nucleotide GTR":0.003050714317848183
+      },
+     "NODE293":{
+       "Global MG94xREV":0.005935051069015066,
+       "Nucleotide GTR":0.005994107217951163
+      },
+     "NODE294":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE296":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE3":{
+       "Global MG94xREV":0.009264331553923467,
+       "Nucleotide GTR":0.009220590802945411
+      },
+     "NODE30":{
+       "Global MG94xREV":0.002029840265071705,
+       "Nucleotide GTR":0.002030279111964428
+      },
+     "NODE301":{
+       "Global MG94xREV":0.00101716725801045,
+       "Nucleotide GTR":0.001013817029393672
+      },
+     "NODE304":{
+       "Global MG94xREV":0.002032132962898545,
+       "Nucleotide GTR":0.002027644099187036
+      },
+     "NODE306":{
+       "Global MG94xREV":0.001017146008720455,
+       "Nucleotide GTR":0.001014382819792393
+      },
+     "NODE310":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE311":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE312":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE313":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE314":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE315":{
+       "Global MG94xREV":0.001018113709553429,
+       "Nucleotide GTR":0.001014514219718585
+      },
+     "NODE316":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE317":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE318":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE319":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE32":{
+       "Global MG94xREV":0.002018786702317367,
+       "Nucleotide GTR":0.002022263358288269
+      },
+     "NODE320":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE321":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE322":{
+       "Global MG94xREV":0.002027848404721388,
+       "Nucleotide GTR":0.002025011842500734
+      },
+     "NODE327":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE329":{
+       "Global MG94xREV":0.001015029797690006,
+       "Nucleotide GTR":0.00101317865903234
+      },
+     "NODE33":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE334":{
+       "Global MG94xREV":0.006158240232504715,
+       "Nucleotide GTR":0.006127878077406697
+      },
+     "NODE335":{
+       "Global MG94xREV":0.002028421303655768,
+       "Nucleotide GTR":0.002022368539427939
+      },
+     "NODE340":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE341":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE343":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE345":{
+       "Global MG94xREV":0.002035211533724045,
+       "Nucleotide GTR":0.002029507776652794
+      },
+     "NODE346":{
+       "Global MG94xREV":0.003055510242926369,
+       "Nucleotide GTR":0.003046538324319816
+      },
+     "NODE350":{
+       "Global MG94xREV":0.001016142976554067,
+       "Nucleotide GTR":0.001013352463871558
+      },
+     "NODE353":{
+       "Global MG94xREV":0.001016900451738398,
+       "Nucleotide GTR":0.001014609362962743
+      },
+     "NODE355":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE356":{
+       "Global MG94xREV":0.001017583773216923,
+       "Nucleotide GTR":0.001014652082100456
+      },
+     "NODE359":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE363":{
+       "Global MG94xREV":0.00203521768628091,
+       "Nucleotide GTR":0.00202819953327299
+      },
+     "NODE364":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE365":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE367":{
+       "Global MG94xREV":0.001016981411160481,
+       "Nucleotide GTR":0.001014435606881816
+      },
+     "NODE37":{
+       "Global MG94xREV":0.003052387904231153,
+       "Nucleotide GTR":0.003052509779549907
+      },
+     "NODE370":{
+       "Global MG94xREV":0.001019658732199719,
+       "Nucleotide GTR":0.00101640592167524
+      },
+     "NODE371":{
+       "Global MG94xREV":0.001016543557806338,
+       "Nucleotide GTR":0.001013273107019152
+      },
+     "NODE372":{
+       "Global MG94xREV":0.001016652905708836,
+       "Nucleotide GTR":0.001013282627802242
+      },
+     "NODE375":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE376":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE38":{
+       "Global MG94xREV":0.002017035576756802,
+       "Nucleotide GTR":0.002020516841128382
+      },
+     "NODE380":{
+       "Global MG94xREV":0.002006483548243991,
+       "Nucleotide GTR":0.001979647955135038
+      },
+     "NODE381":{
+       "Global MG94xREV":0.006180201225985732,
+       "Nucleotide GTR":0.006168288116644369
+      },
+     "NODE385":{
+       "Global MG94xREV":0.00101871254790675,
+       "Nucleotide GTR":0.001015304740438595
+      },
+     "NODE389":{
+       "Global MG94xREV":0.003078035797074601,
+       "Nucleotide GTR":0.003065424285858619
+      },
+     "NODE39":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE391":{
+       "Global MG94xREV":0.007175324993214576,
+       "Nucleotide GTR":0.007136528636977184
+      },
+     "NODE392":{
+       "Global MG94xREV":0.002038524670256498,
+       "Nucleotide GTR":0.00202950318091811
+      },
+     "NODE393":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE394":{
+       "Global MG94xREV":0.003074669289002051,
+       "Nucleotide GTR":0.003061639955985299
+      },
+     "NODE395":{
+       "Global MG94xREV":0.004093280155924974,
+       "Nucleotide GTR":0.004074130795709952
+      },
+     "NODE396":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE397":{
+       "Global MG94xREV":0.001017776423967588,
+       "Nucleotide GTR":0.00101336386727615
+      },
+     "NODE398":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE399":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE4":{
+       "Global MG94xREV":0.003071605142969427,
+       "Nucleotide GTR":0.003045776324312577
+      },
+     "NODE40":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE400":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":3.763559679788433e-21
+      },
+     "NODE401":{
+       "Global MG94xREV":0.001011734353169673,
+       "Nucleotide GTR":0.001011820077002819
+      },
+     "NODE402":{
+       "Global MG94xREV":0.001823447288136825,
+       "Nucleotide GTR":0.001808442088415557
+      },
+     "NODE403":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE404":{
+       "Global MG94xREV":0.001238879508312906,
+       "Nucleotide GTR":0.001235052706572238
+      },
+     "NODE405":{
+       "Global MG94xREV":0.002051316424711467,
+       "Nucleotide GTR":0.002041280302102471
+      },
+     "NODE406":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE407":{
+       "Global MG94xREV":0.001019969296128057,
+       "Nucleotide GTR":0.00101558130090425
+      },
+     "NODE408":{
+       "Global MG94xREV":0.001019650743957328,
+       "Nucleotide GTR":0.001014947455254583
+      },
+     "NODE409":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE41":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE410":{
+       "Global MG94xREV":0.00101988160984648,
+       "Nucleotide GTR":0.001014705583434561
+      },
+     "NODE411":{
+       "Global MG94xREV":0.001022028596357446,
+       "Nucleotide GTR":0.001016803378665866
+      },
+     "NODE412":{
+       "Global MG94xREV":0.001000042372421852,
+       "Nucleotide GTR":0.001005299191498789
+      },
+     "NODE413":{
+       "Global MG94xREV":0.004110971481119248,
+       "Nucleotide GTR":0.00407839500536891
+      },
+     "NODE414":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE415":{
+       "Global MG94xREV":0.001019689978048587,
+       "Nucleotide GTR":0.001015059268683636
+      },
+     "NODE417":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE418":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE42":{
+       "Global MG94xREV":0.004055806882186457,
+       "Nucleotide GTR":0.004058777543890873
+      },
+     "NODE420":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE422":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE426":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE427":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE429":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE431":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE438":{
+       "Global MG94xREV":0.001022028596357446,
+       "Nucleotide GTR":0.001018000710804741
+      },
+     "NODE44":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE441":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0.001012697079942582
+      },
+     "NODE442":{
+       "Global MG94xREV":0.002047569522778521,
+       "Nucleotide GTR":0.002039649081142227
+      },
+     "NODE443":{
+       "Global MG94xREV":0.003067184327998871,
+       "Nucleotide GTR":0.003050904570576969
+      },
+     "NODE445":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0.001015010863671313
+      },
+     "NODE450":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE451":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE452":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE453":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE454":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE455":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE456":{
+       "Global MG94xREV":0.001018834533417542,
+       "Nucleotide GTR":0.001014169755910254
+      },
+     "NODE464":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE465":{
+       "Global MG94xREV":0.002047569522778521,
+       "Nucleotide GTR":0.002037914345742585
+      },
+     "NODE466":{
+       "Global MG94xREV":0.001020354818232995,
+       "Nucleotide GTR":0.001011852584703052
+      },
+     "NODE468":{
+       "Global MG94xREV":0.001015730518028363,
+       "Nucleotide GTR":0.001013479451551598
+      },
+     "NODE47":{
+       "Global MG94xREV":0.006652983670700775,
+       "Nucleotide GTR":0.006652468917072506
+      },
+     "NODE471":{
+       "Global MG94xREV":0.003077626681836263,
+       "Nucleotide GTR":0.00305912099403362
+      },
+     "NODE475":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE476":{
+       "Global MG94xREV":0.001019873629770048,
+       "Nucleotide GTR":0.001014942334908136
+      },
+     "NODE477":{
+       "Global MG94xREV":0.00102057659511947,
+       "Nucleotide GTR":0.001014569244406945
+      },
+     "NODE480":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE483":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE486":{
+       "Global MG94xREV":0.005141482873907663,
+       "Nucleotide GTR":0.005103177128991572
+      },
+     "NODE489":{
+       "Global MG94xREV":0.002042106541262729,
+       "Nucleotide GTR":0.002031795716631011
+      },
+     "NODE49":{
+       "Global MG94xREV":0.01543998212739767,
+       "Nucleotide GTR":0.01539688517779787
+      },
+     "NODE491":{
+       "Global MG94xREV":0.002053064440676306,
+       "Nucleotide GTR":0.00203993445132886
+      },
+     "NODE494":{
+       "Global MG94xREV":0.004094483545681747,
+       "Nucleotide GTR":0.004077459481334665
+      },
+     "NODE495":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE496":{
+       "Global MG94xREV":0.001023064807851046,
+       "Nucleotide GTR":0.001015852357374492
+      },
+     "NODE5":{
+       "Global MG94xREV":0.004092449905077951,
+       "Nucleotide GTR":0.004093103722844011
+      },
+     "NODE500":{
+       "Global MG94xREV":0.002044313940751958,
+       "Nucleotide GTR":0.002033616731464796
+      },
+     "NODE501":{
+       "Global MG94xREV":0.0003451079223068605,
+       "Nucleotide GTR":0.0005239957852199029
+      },
+     "NODE502":{
+       "Global MG94xREV":0.002917620944098958,
+       "Nucleotide GTR":0.002822763564759034
+      },
+     "NODE507":{
+       "Global MG94xREV":0.007970020099908546,
+       "Nucleotide GTR":0.007932827435725088
+      },
+     "NODE508":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE513":{
+       "Global MG94xREV":0.003067750731131491,
+       "Nucleotide GTR":0.003054133206818562
+      },
+     "NODE517":{
+       "Global MG94xREV":0.001019496080163186,
+       "Nucleotide GTR":0.001014849354747804
+      },
+     "NODE518":{
+       "Global MG94xREV":0.002042905019194337,
+       "Nucleotide GTR":0.002034253091557703
+      },
+     "NODE519":{
+       "Global MG94xREV":0.003066298005876577,
+       "Nucleotide GTR":0.003053248589630764
+      },
+     "NODE523":{
+       "Global MG94xREV":0.001019123521717692,
+       "Nucleotide GTR":0.001015292655667871
+      },
+     "NODE524":{
+       "Global MG94xREV":0.001018713257743683,
+       "Nucleotide GTR":0.001014507049799253
+      },
+     "NODE526":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE527":{
+       "Global MG94xREV":0.002035252299370672,
+       "Nucleotide GTR":0.002027038840790919
+      },
+     "NODE529":{
+       "Global MG94xREV":0.001025711101289716,
+       "Nucleotide GTR":0.001020913443967624
+      },
+     "NODE53":{
+       "Global MG94xREV":0.003039006713653095,
+       "Nucleotide GTR":0.003045939359495017
+      },
+     "NODE530":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE531":{
+       "Global MG94xREV":0.001019013833997403,
+       "Nucleotide GTR":0.001013929622521164
+      },
+     "NODE532":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE533":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE536":{
+       "Global MG94xREV":0.001017986980503695,
+       "Nucleotide GTR":0.001011250833884072
+      },
+     "NODE54":{
+       "Global MG94xREV":0.00203859646879575,
+       "Nucleotide GTR":0.002030341986603157
+      },
+     "NODE542":{
+       "Global MG94xREV":0.002038413251340392,
+       "Nucleotide GTR":0.002029685583938231
+      },
+     "NODE543":{
+       "Global MG94xREV":0.001023256686325261,
+       "Nucleotide GTR":0.001016119283960674
+      },
+     "NODE546":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE549":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE55":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE550":{
+       "Global MG94xREV":0.00101877290721953,
+       "Nucleotide GTR":0.001014254577011704
+      },
+     "NODE551":{
+       "Global MG94xREV":0.002040299960843873,
+       "Nucleotide GTR":0.002031302839575159
+      },
+     "NODE557":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE558":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE559":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE565":{
+       "Global MG94xREV":0.001018684412220284,
+       "Nucleotide GTR":0.001015683299489385
+      },
+     "NODE566":{
+       "Global MG94xREV":0.001020214892753587,
+       "Nucleotide GTR":0.001013430158769395
+      },
+     "NODE567":{
+       "Global MG94xREV":0.002041358213858899,
+       "Nucleotide GTR":0.002033726842307641
+      },
+     "NODE568":{
+       "Global MG94xREV":0.001018071328239613,
+       "Nucleotide GTR":0.001014784527545727
+      },
+     "NODE569":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE570":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE572":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE576":{
+       "Global MG94xREV":0.001016999555129554,
+       "Nucleotide GTR":0.001014127309939678
+      },
+     "NODE577":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE578":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE579":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE580":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE582":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE588":{
+       "Global MG94xREV":0.001017982739591152,
+       "Nucleotide GTR":0.001014583661632716
+      },
+     "NODE589":{
+       "Global MG94xREV":0.004082293332741847,
+       "Nucleotide GTR":0.004069572032266734
+      },
+     "NODE593":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE597":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE598":{
+       "Global MG94xREV":0.001018310211600008,
+       "Nucleotide GTR":0.001014462426597907
+      },
+     "NODE599":{
+       "Global MG94xREV":0.001014361840149244,
+       "Nucleotide GTR":0.00101337334292163
+      },
+     "NODE6":{
+       "Global MG94xREV":0.0009983850375795478,
+       "Nucleotide GTR":0.0009862644588391016
+      },
+     "NODE602":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE609":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE61":{
+       "Global MG94xREV":0.003895771380297945,
+       "Nucleotide GTR":0.003911492427166156
+      },
+     "NODE610":{
+       "Global MG94xREV":0.001017135279248059,
+       "Nucleotide GTR":0.001013361947651723
+      },
+     "NODE611":{
+       "Global MG94xREV":0.00102186587993033,
+       "Nucleotide GTR":0.001016355641023071
+      },
+     "NODE612":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE613":{
+       "Global MG94xREV":0.001016455574842795,
+       "Nucleotide GTR":0.001011125294127069
+      },
+     "NODE614":{
+       "Global MG94xREV":0.001018021830649522,
+       "Nucleotide GTR":0.001017133191576315
+      },
+     "NODE615":{
+       "Global MG94xREV":0.002042624601667807,
+       "Nucleotide GTR":0.002031344498921478
+      },
+     "NODE617":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE618":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE619":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE62":{
+       "Global MG94xREV":0.001607223557084047,
+       "Nucleotide GTR":0.001640393901037752
+      },
+     "NODE626":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE627":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE628":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE629":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE63":{
+       "Global MG94xREV":0.004292683497628339,
+       "Nucleotide GTR":0.004246103495922804
+      },
+     "NODE630":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE631":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE633":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE638":{
+       "Global MG94xREV":0.001014402972525995,
+       "Nucleotide GTR":0.001012443559108541
+      },
+     "NODE64":{
+       "Global MG94xREV":0.002431296459887735,
+       "Nucleotide GTR":0.002414054982883693
+      },
+     "NODE641":{
+       "Global MG94xREV":0.001021905763372078,
+       "Nucleotide GTR":0.001018215696827344
+      },
+     "NODE645":{
+       "Global MG94xREV":0.001019034916002374,
+       "Nucleotide GTR":0.001015317957830415
+      },
+     "NODE648":{
+       "Global MG94xREV":0.003063930511823162,
+       "Nucleotide GTR":0.003051088559032702
+      },
+     "NODE649":{
+       "Global MG94xREV":0.001026499619047457,
+       "Nucleotide GTR":0.001018730966380576
+      },
+     "NODE650":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE655":{
+       "Global MG94xREV":0.001019726922974326,
+       "Nucleotide GTR":0.001014923169305081
+      },
+     "NODE656":{
+       "Global MG94xREV":0.003060406192870064,
+       "Nucleotide GTR":0.003048262945094058
+      },
+     "NODE657":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE659":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE660":{
+       "Global MG94xREV":0.003088807435718588,
+       "Nucleotide GTR":0.003068936003461367
+      },
+     "NODE663":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE664":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE665":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE666":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE671":{
+       "Global MG94xREV":0.001016277637698228,
+       "Nucleotide GTR":0.001013762979531336
+      },
+     "NODE674":{
+       "Global MG94xREV":0.001017494565104472,
+       "Nucleotide GTR":0.001013708901979925
+      },
+     "NODE675":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE676":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE677":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE678":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE679":{
+       "Global MG94xREV":0.001020834319622112,
+       "Nucleotide GTR":0.001016641960247755
+      },
+     "NODE685":{
+       "Global MG94xREV":0.002035211533724045,
+       "Nucleotide GTR":0.00202864405800133
+      },
+     "NODE688":{
+       "Global MG94xREV":0.001019432245623284,
+       "Nucleotide GTR":0.001014711700656492
+      },
+     "NODE691":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE693":{
+       "Global MG94xREV":0.001019485930934243,
+       "Nucleotide GTR":0.001015493234377848
+      },
+     "NODE7":{
+       "Global MG94xREV":0.002028671529362539,
+       "Nucleotide GTR":0.002030029563120007
+      },
+     "NODE71":{
+       "Global MG94xREV":0.00228312072095243,
+       "Nucleotide GTR":0.002154366068533286
+      },
+     "NODE72":{
+       "Global MG94xREV":0.003067728162577567,
+       "Nucleotide GTR":0.00306409345572234
+      },
+     "NODE76":{
+       "Global MG94xREV":0.001013228482005717,
+       "Nucleotide GTR":0.00101359310684117
+      },
+     "NODE78":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE79":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE8":{
+       "Global MG94xREV":0.00203272442488325,
+       "Nucleotide GTR":0.002029952445230463
+      },
+     "NODE81":{
+       "Global MG94xREV":0.001012183596876139,
+       "Nucleotide GTR":0.001013646204526344
+      },
+     "NODE82":{
+       "Global MG94xREV":0.001015441314484576,
+       "Nucleotide GTR":0.001013671984075003
+      },
+     "NODE83":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE85":{
+       "Global MG94xREV":0.002028654958631886,
+       "Nucleotide GTR":0.002027819285857877
+      },
+     "NODE9":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE90":{
+       "Global MG94xREV":0.002024760424164921,
+       "Nucleotide GTR":0.002022693252824181
+      },
+     "NODE93":{
+       "Global MG94xREV":0.00202284969170217,
+       "Nucleotide GTR":0.002031051621658343
+      },
+     "NODE96":{
+       "Global MG94xREV":0.001012985632251155,
+       "Nucleotide GTR":0.001012733119721051
+      },
+     "NODE97":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE98":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0
+      },
+     "NODE99":{
+       "Global MG94xREV":0.004067022359496862,
+       "Nucleotide GTR":0.004067426772049447
+      },
+     "NV1_1195":{
+       "Global MG94xREV":0.005111008824627187,
+       "Nucleotide GTR":0.005088894664394769,
+       "original name":"NV1_1195"
+      },
+     "NY1393":{
+       "Global MG94xREV":0.003057339518296503,
+       "Nucleotide GTR":0.003049351447824703,
+       "original name":"NY1393"
+      },
+     "NY15_894":{
+       "Global MG94xREV":0.01448978984460198,
+       "Nucleotide GTR":0.01441367989592812,
+       "original name":"NY15_894"
+      },
+     "NY16_1194":{
+       "Global MG94xREV":0.002038718160784902,
+       "Nucleotide GTR":0.00203140066167201,
+       "original name":"NY16_1194"
+      },
+     "NY17_1294":{
+       "Global MG94xREV":0.009225630498993559,
+       "Nucleotide GTR":0.009200342203216487,
+       "original name":"NY17_1294"
+      },
+     "NY26_293":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"NY26_293"
+      },
+     "NY28_1294":{
+       "Global MG94xREV":0.006169436251868541,
+       "Nucleotide GTR":0.006148343169242264,
+       "original name":"NY28_1294"
+      },
+     "NY37_1096":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"NY37_1096"
+      },
+     "NY38_193":{
+       "Global MG94xREV":0.003056807822833926,
+       "Nucleotide GTR":0.003045310593873884,
+       "original name":"NY38_193"
+      },
+     "NY3_293":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"NY3_293"
+      },
+     "NY4295_1194":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"NY4295_1194"
+      },
+     "NY43_1196":{
+       "Global MG94xREV":0.003061433084313345,
+       "Nucleotide GTR":0.003048027895331477,
+       "original name":"NY43_1196"
+      },
+     "NY50_1196":{
+       "Global MG94xREV":0.00101962835776425,
+       "Nucleotide GTR":0.001015779140151054,
+       "original name":"NY50_1196"
+      },
+     "NY55_1296":{
+       "Global MG94xREV":0.003060926985841649,
+       "Nucleotide GTR":0.003047123914531326,
+       "original name":"NY55_1296"
+      },
+     "NY63_1293":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"NY63_1293"
+      },
+     "NY64_1293":{
+       "Global MG94xREV":0.001017226980304519,
+       "Nucleotide GTR":0.0010140745504509,
+       "original name":"NY64_1293"
+      },
+     "NY9_196":{
+       "Global MG94xREV":0.002037008708763449,
+       "Nucleotide GTR":0.002030463222172777,
+       "original name":"NY9_196"
+      },
+     "OH3_195":{
+       "Global MG94xREV":0.001016135469329432,
+       "Nucleotide GTR":0.001012905039158976,
+       "original name":"OH3_195"
+      },
+     "OITA83":{
+       "Global MG94xREV":0.002026635106651601,
+       "Nucleotide GTR":0.002027268204377027,
+       "original name":"OITA83"
+      },
+     "PA09_1191":{
+       "Global MG94xREV":0.00439102465621489,
+       "Nucleotide GTR":0.004432558412873372,
+       "original name":"PA09_1191"
+      },
+     "PA15_295":{
+       "Global MG94xREV":0.003055809522802549,
+       "Nucleotide GTR":0.003047070191653942,
+       "original name":"PA15_295"
+      },
+     "PA2_297":{
+       "Global MG94xREV":0.001013699983928008,
+       "Nucleotide GTR":0.001013614137354327,
+       "original name":"PA2_297"
+      },
+     "PA7_1294":{
+       "Global MG94xREV":0.005196754578035692,
+       "Nucleotide GTR":0.005151505780854927,
+       "original name":"PA7_1294"
+      },
+     "PA993_1294":{
+       "Global MG94xREV":0.009244060690804768,
+       "Nucleotide GTR":0.009208183871487925,
+       "original name":"PA993_1294"
+      },
+     "PARIS36395":{
+       "Global MG94xREV":0.006335130438738659,
+       "Nucleotide GTR":0.006243431643808808,
+       "original name":"PARIS36395"
+      },
+     "PARIS8395":{
+       "Global MG94xREV":0.001013994993393907,
+       "Nucleotide GTR":0.001013243167161536,
+       "original name":"PARIS8395"
+      },
+     "PERTH01_492":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"PERTH01_492"
+      },
+     "PR1_1090":{
+       "Global MG94xREV":0.001015251857810796,
+       "Nucleotide GTR":0.001013261022186195,
+       "original name":"PR1_1090"
+      },
+     "PR1_797":{
+       "Global MG94xREV":0.001019780264079412,
+       "Nucleotide GTR":0.001014311255587687,
+       "original name":"PR1_797"
+      },
+     "PS192SPF":{
+       "Global MG94xREV":0.003057843704224925,
+       "Nucleotide GTR":0.003049053001155953,
+       "original name":"PS192SPF"
+      },
+     "PS688_193":{
+       "Global MG94xREV":0.001019394978961348,
+       "Nucleotide GTR":0.001014031273427227,
+       "original name":"PS688_193"
+      },
+     "PS8091":{
+       "Global MG94xREV":0.005095097841235746,
+       "Nucleotide GTR":0.00508726503373473,
+       "original name":"PS8091"
+      },
+     "QD53_392":{
+       "Global MG94xREV":0.003050324670729312,
+       "Nucleotide GTR":0.003042987580187782,
+       "original name":"QD53_392"
+      },
+     "QL_987":{
+       "Global MG94xREV":0.001010939099472661,
+       "Nucleotide GTR":0.001012059964130878,
+       "original name":"QL_987"
+      },
+     "RI7_397":{
+       "Global MG94xREV":0.006131562323409836,
+       "Nucleotide GTR":0.00610467649841231,
+       "original name":"RI7_397"
+      },
+     "RO160_194":{
+       "Global MG94xREV":0.004075809960312682,
+       "Nucleotide GTR":0.004060815376818945,
+       "original name":"RO160_194"
+      },
+     "RO182_194":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"RO182_194"
+      },
+     "RU3193":{
+       "Global MG94xREV":0.007191185976049588,
+       "Nucleotide GTR":0.007155046336692738,
+       "original name":"RU3193"
+      },
+     "RU58_393":{
+       "Global MG94xREV":0.001016673565898586,
+       "Nucleotide GTR":0.001013605086540321,
+       "original name":"RU58_393"
+      },
+     "SAITAMA8096_97":{
+       "Global MG94xREV":0.002042924651293383,
+       "Nucleotide GTR":0.002031897710727897,
+       "original name":"SAITAMA8096_97"
+      },
+     "SANT7198_894":{
+       "Global MG94xREV":0.01024687448649522,
+       "Nucleotide GTR":0.01020901246330584,
+       "original name":"SANT7198_894"
+      },
+     "SANTAFE208_896":{
+       "Global MG94xREV":0.004089525744786378,
+       "Nucleotide GTR":0.004064822628905442,
+       "original name":"SANTAFE208_896"
+      },
+     "SAP_1292":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"SAP_1292"
+      },
+     "SAS36_592":{
+       "Global MG94xREV":0.004019997371356094,
+       "Nucleotide GTR":0.003959575249680389,
+       "original name":"SAS36_592"
+      },
+     "SAS68_692":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"SAS68_692"
+      },
+     "SAUS54_797":{
+       "Global MG94xREV":0.002040537262555952,
+       "Nucleotide GTR":0.002030078656621709,
+       "original name":"SAUS54_797"
+      },
+     "SD1_491":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"SD1_491"
+      },
+     "SEOUL45_1191":{
+       "Global MG94xREV":0.004065601055888121,
+       "Nucleotide GTR":0.004060816138576004,
+       "original name":"SEOUL45_1191"
+      },
+     "SH19_896":{
+       "Global MG94xREV":0.002043788119058049,
+       "Nucleotide GTR":0.002031065367968926,
+       "original name":"SH19_896"
+      },
+     "SH24_890":{
+       "Global MG94xREV":0.003056390749593798,
+       "Nucleotide GTR":0.003051249459191259,
+       "original name":"SH24_890"
+      },
+     "SH6_490":{
+       "Global MG94xREV":0.002044834892512119,
+       "Nucleotide GTR":0.002040332840695002,
+       "original name":"SH6_490"
+      },
+     "SHA16_989":{
+       "Global MG94xREV":0.001015662443294061,
+       "Nucleotide GTR":0.001015012225946838,
+       "original name":"SHA16_989"
+      },
+     "SHA1_289":{
+       "Global MG94xREV":0.003044445510870317,
+       "Nucleotide GTR":0.003041274663866796,
+       "original name":"SHA1_289"
+      },
+     "SHA9_995":{
+       "Global MG94xREV":0.003059279773954701,
+       "Nucleotide GTR":0.003048142559842263,
+       "original name":"SHA9_995"
+      },
+     "SHA_887":{
+       "Global MG94xREV":0.001012983241210624,
+       "Nucleotide GTR":0.001012477882060084,
+       "original name":"SHA_887"
+      },
+     "SHD5_894":{
+       "Global MG94xREV":0.002042280855838431,
+       "Nucleotide GTR":0.002032225786795158,
+       "original name":"SHD5_894"
+      },
+     "SHD9_393":{
+       "Global MG94xREV":0.003056832081274572,
+       "Nucleotide GTR":0.003043114064135995,
+       "original name":"SHD9_393"
+      },
+     "SHIGA291":{
+       "Global MG94xREV":0.001014746481418323,
+       "Nucleotide GTR":0.001013558417931659,
+       "original name":"SHIGA291"
+      },
+     "SHZH157_796":{
+       "Global MG94xREV":0.003062737101933157,
+       "Nucleotide GTR":0.002035048212071244,
+       "original name":"SHZH157_796"
+      },
+     "SHZH43_396":{
+       "Global MG94xREV":0.003071924381932603,
+       "Nucleotide GTR":0.003052204687026084,
+       "original name":"SHZH43_396"
+      },
+     "SH_185":{
+       "Global MG94xREV":0.004090577735687641,
+       "Nucleotide GTR":0.00407987826849333,
+       "original name":"SH_185"
+      },
+     "SIC4_593":{
+       "Global MG94xREV":0.001016992422495675,
+       "Nucleotide GTR":0.001014360888615259,
+       "original name":"SIC4_593"
+      },
+     "SIC89":{
+       "Global MG94xREV":0.001023424359236887,
+       "Nucleotide GTR":0.001020971180384195,
+       "original name":"SIC89"
+      },
+     "SIC_487":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"SIC_487"
+      },
+     "SN27_595":{
+       "Global MG94xREV":0.002042792942706438,
+       "Nucleotide GTR":0.002032409788745988,
+       "original name":"SN27_595"
+      },
+     "SN28_595":{
+       "Global MG94xREV":0.003059039645011872,
+       "Nucleotide GTR":0.003047373443340045,
+       "original name":"SN28_595"
+      },
+     "SN7_694":{
+       "Global MG94xREV":0.004082136132008771,
+       "Nucleotide GTR":0.004070573197702468,
+       "original name":"SN7_694"
+      },
+     "SN8_492":{
+       "Global MG94xREV":0.00204088192179963,
+       "Nucleotide GTR":0.003055658050219526,
+       "original name":"SN8_492"
+      },
+     "SN91":{
+       "Global MG94xREV":0.005112686291441653,
+       "Nucleotide GTR":0.005100066767629963,
+       "original name":"SN91"
+      },
+     "SOFIA15593":{
+       "Global MG94xREV":0.002031005396344605,
+       "Nucleotide GTR":0.0020285350950553,
+       "original name":"SOFIA15593"
+      },
+     "SP118_293":{
+       "Global MG94xREV":0.006122527666631621,
+       "Nucleotide GTR":0.006099459370993093,
+       "original name":"SP118_293"
+      },
+     "SP125_293":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"SP125_293"
+      },
+     "SP190_393":{
+       "Global MG94xREV":0.001017326238329896,
+       "Nucleotide GTR":0.001013846491722807,
+       "original name":"SP190_393"
+      },
+     "SP214_197":{
+       "Global MG94xREV":0.004091342660184766,
+       "Nucleotide GTR":0.004067041454410917,
+       "original name":"SP214_197"
+      },
+     "SP351_195":{
+       "Global MG94xREV":0.002033653787805728,
+       "Nucleotide GTR":0.002027878430523149,
+       "original name":"SP351_195"
+      },
+     "SP378_195":{
+       "Global MG94xREV":0.001015790050223621,
+       "Nucleotide GTR":0.001014224781109329,
+       "original name":"SP378_195"
+      },
+     "ST1_193":{
+       "Global MG94xREV":0.001017507737651907,
+       "Nucleotide GTR":0.001013773132566473,
+       "original name":"ST1_193"
+      },
+     "ST_185":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"ST_185"
+      },
+     "SYD497":{
+       "Global MG94xREV":0.003069450301603274,
+       "Nucleotide GTR":0.003050317633000678,
+       "original name":"SYD497"
+      },
+     "SYD597":{
+       "Global MG94xREV":0.004098701305495347,
+       "Nucleotide GTR":0.004070604824460147,
+       "original name":"SYD597"
+      },
+     "SYD697":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"SYD697"
+      },
+     "SYD_1287":{
+       "Global MG94xREV":0.002028346637561124,
+       "Nucleotide GTR":0.002027470276718599,
+       "original name":"SYD_1287"
+      },
+     "TAS1_797":{
+       "Global MG94xREV":0.002034463694461123,
+       "Nucleotide GTR":0.002030064274736527,
+       "original name":"TAS1_797"
+      },
+     "TD4796":{
+       "Global MG94xREV":0.003078803755140019,
+       "Nucleotide GTR":0.003067286721391556,
+       "original name":"TD4796"
+      },
+     "TD5096":{
+       "Global MG94xREV":0.001018634610324269,
+       "Nucleotide GTR":0.001011908391452373,
+       "original name":"TD5096"
+      },
+     "TD5196":{
+       "Global MG94xREV":0.00307214417344767,
+       "Nucleotide GTR":0.003058126119622172,
+       "original name":"TD5196"
+      },
+     "TG_885":{
+       "Global MG94xREV":0.005097423959883655,
+       "Nucleotide GTR":0.005090952075589468,
+       "original name":"TG_885"
+      },
+     "TH7594":{
+       "Global MG94xREV":0.004098002107768148,
+       "Nucleotide GTR":0.00407819644399023,
+       "original name":"TH7594"
+      },
+     "TH78_397":{
+       "Global MG94xREV":0.001017843474910276,
+       "Nucleotide GTR":0.001013772382830425,
+       "original name":"TH78_397"
+      },
+     "TH79_397":{
+       "Global MG94xREV":0.001017379415818361,
+       "Nucleotide GTR":0.001013772382830425,
+       "original name":"TH79_397"
+      },
+     "TH9496_97":{
+       "Global MG94xREV":0.003058013564024981,
+       "Nucleotide GTR":0.003047501614279697,
+       "original name":"TH9496_97"
+      },
+     "TIANJIN3392":{
+       "Global MG94xREV":0.002039863497776111,
+       "Nucleotide GTR":0.00203176359399386,
+       "original name":"TIANJIN3392"
+      },
+     "TIANJING51_297":{
+       "Global MG94xREV":0.002043932285138414,
+       "Nucleotide GTR":0.002031907716713869,
+       "original name":"TIANJING51_297"
+      },
+     "TIANJING55_896":{
+       "Global MG94xREV":0.001018873547711594,
+       "Nucleotide GTR":0.001014202728787003,
+       "original name":"TIANJING55_896"
+      },
+     "TW114391_192":{
+       "Global MG94xREV":0.006125076568122507,
+       "Nucleotide GTR":0.006102831935613345,
+       "original name":"TW114391_192"
+      },
+     "TW523_596":{
+       "Global MG94xREV":0.003067457394088239,
+       "Nucleotide GTR":0.003051360598218016,
+       "original name":"TW523_596"
+      },
+     "TX1196_97":{
+       "Global MG94xREV":0.003075706928660488,
+       "Nucleotide GTR":0.003055447487792558,
+       "original name":"TX1196_97"
+      },
+     "TX57_1293":{
+       "Global MG94xREV":0.003055445644749889,
+       "Nucleotide GTR":0.003045065570940593,
+       "original name":"TX57_1293"
+      },
+     "TX5_1294":{
+       "Global MG94xREV":0.00203371132968463,
+       "Nucleotide GTR":0.002028478518791268,
+       "original name":"TX5_1294"
+      },
+     "TX_12764_483":{
+       "Global MG94xREV":0.002046610822420559,
+       "Nucleotide GTR":0.002038429336359573,
+       "original name":"TX_12764_483"
+      },
+     "TX_12835_583":{
+       "Global MG94xREV":0.006562427677743912,
+       "Nucleotide GTR":0.006584520637627491,
+       "original name":"TX_12835_583"
+      },
+     "TX_17988_184":{
+       "Global MG94xREV":0.005099667633224949,
+       "Nucleotide GTR":0.005103123124714322,
+       "original name":"TX_17988_184"
+      },
+     "TX_18088_184":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"TX_18088_184"
+      },
+     "TX_18733_184":{
+       "Global MG94xREV":0.002026022448956013,
+       "Nucleotide GTR":0.002026166848174873,
+       "original name":"TX_18733_184"
+      },
+     "TX_24752_185":{
+       "Global MG94xREV":0.005090454022743813,
+       "Nucleotide GTR":0.005076999300119622,
+       "original name":"TX_24752_185"
+      },
+     "TX_24753_185":{
+       "Global MG94xREV":0.00101474038493692,
+       "Nucleotide GTR":0.001013818089085311,
+       "original name":"TX_24753_185"
+      },
+     "TX_25784_385":{
+       "Global MG94xREV":0.00304218175565865,
+       "Nucleotide GTR":0.003043832742330917,
+       "original name":"TX_25784_385"
+      },
+     "TX_25887_285":{
+       "Global MG94xREV":0.009415274418173481,
+       "Nucleotide GTR":0.009416632479781681,
+       "original name":"TX_25887_285"
+      },
+     "TX_39989_288":{
+       "Global MG94xREV":0.01437588522860326,
+       "Nucleotide GTR":0.01435585072197317,
+       "original name":"TX_39989_288"
+      },
+     "TY5_1287":{
+       "Global MG94xREV":0.002032236888235293,
+       "Nucleotide GTR":0.002027457141170978,
+       "original name":"TY5_1287"
+      },
+     "TY6_1287":{
+       "Global MG94xREV":0.001017674980351581,
+       "Nucleotide GTR":0.001016171216008538,
+       "original name":"TY6_1287"
+      },
+     "UDE44_394":{
+       "Global MG94xREV":0.005101969407474468,
+       "Nucleotide GTR":0.005077576121977382,
+       "original name":"UDE44_394"
+      },
+     "UK897_696":{
+       "Global MG94xREV":0.00204843793909375,
+       "Nucleotide GTR":0.002034534936495286,
+       "original name":"UK897_696"
+      },
+     "UMEA1_1192":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"UMEA1_1192"
+      },
+     "UMEA2_1192":{
+       "Global MG94xREV":0.001017633405305028,
+       "Nucleotide GTR":0.001014197939462421,
+       "original name":"UMEA2_1192"
+      },
+     "UR41_197":{
+       "Global MG94xREV":0.007200624222325594,
+       "Nucleotide GTR":0.007147385300807566,
+       "original name":"UR41_197"
+      },
+     "UR46967_294":{
+       "Global MG94xREV":0.006140715884393583,
+       "Nucleotide GTR":0.006118872337558643,
+       "original name":"UR46967_294"
+      },
+     "US85":{
+       "Global MG94xREV":0.003658068915862434,
+       "Nucleotide GTR":0.003681953935748174,
+       "original name":"US85"
+      },
+     "UY3_688":{
+       "Global MG94xREV":0.01618102652711447,
+       "Nucleotide GTR":0.01628104342461474,
+       "original name":"UY3_688"
+      },
+     "VA25_1294":{
+       "Global MG94xREV":0.007165102377713589,
+       "Nucleotide GTR":0.00714610214027632,
+       "original name":"VA25_1294"
+      },
+     "VAL_491":{
+       "Global MG94xREV":0.004077287807011685,
+       "Nucleotide GTR":0.004068940815464968,
+       "original name":"VAL_491"
+      },
+     "VIC193":{
+       "Global MG94xREV":0.004078265036678672,
+       "Nucleotide GTR":0.004062304743740187,
+       "original name":"VIC193"
+      },
+     "VIC29_392":{
+       "Global MG94xREV":0.00408143955842198,
+       "Nucleotide GTR":0.004069428516296192,
+       "original name":"VIC29_392"
+      },
+     "VIC3097":{
+       "Global MG94xREV":0.002035423764009621,
+       "Nucleotide GTR":0.002028436305735059,
+       "original name":"VIC3097"
+      },
+     "VIC4797":{
+       "Global MG94xREV":0.001016786639820319,
+       "Nucleotide GTR":0.001013693287380501,
+       "original name":"VIC4797"
+      },
+     "VIC589":{
+       "Global MG94xREV":0.008213567800205619,
+       "Nucleotide GTR":0.008197559516586699,
+       "original name":"VIC589"
+      },
+     "VIC68_792":{
+       "Global MG94xREV":0.002032790776154196,
+       "Nucleotide GTR":0.002027717023379891,
+       "original name":"VIC68_792"
+      },
+     "VIC87":{
+       "Global MG94xREV":0.001012420042092339,
+       "Nucleotide GTR":0.001012366533096686,
+       "original name":"VIC87"
+      },
+     "VT3_194":{
+       "Global MG94xREV":0.00101716640010507,
+       "Nucleotide GTR":0.001014066160118232,
+       "original name":"VT3_194"
+      },
+     "WA1591":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"WA1591"
+      },
+     "WA186_1294":{
+       "Global MG94xREV":0.005122627318360239,
+       "Nucleotide GTR":0.005106757258734438,
+       "original name":"WA186_1294"
+      },
+     "WA2693":{
+       "Global MG94xREV":0.006124016419135942,
+       "Nucleotide GTR":0.006101414185536063,
+       "original name":"WA2693"
+      },
+     "WA41_1293":{
+       "Global MG94xREV":0.005095274731550833,
+       "Nucleotide GTR":0.005082852317560652,
+       "original name":"WA41_1293"
+      },
+     "WA596":{
+       "Global MG94xREV":0.003061584480942435,
+       "Nucleotide GTR":0.003049939974621337,
+       "original name":"WA596"
+      },
+     "WAIK2093":{
+       "Global MG94xREV":0.005127686304624833,
+       "Nucleotide GTR":0.005105136703127931,
+       "original name":"WAIK2093"
+      },
+     "WE397":{
+       "Global MG94xREV":0.002042286760009077,
+       "Nucleotide GTR":0.002030150325755862,
+       "original name":"WE397"
+      },
+     "WE4896":{
+       "Global MG94xREV":0.002036155318381071,
+       "Nucleotide GTR":0.002031330819595345,
+       "original name":"WE4896"
+      },
+     "WE66_692":{
+       "Global MG94xREV":0.003069461406311774,
+       "Nucleotide GTR":0.003064233091727769,
+       "original name":"WE66_692"
+      },
+     "WI3_896":{
+       "Global MG94xREV":0.003060519426130363,
+       "Nucleotide GTR":0.003047477963493382,
+       "original name":"WI3_896"
+      },
+     "WUH359_995":{
+       "Global MG94xREV":0.001018596780306418,
+       "Nucleotide GTR":0.001013651037657826,
+       "original name":"WUH359_995"
+      },
+     "WUZ1_794":{
+       "Global MG94xREV":0.009252792225347023,
+       "Nucleotide GTR":0.00919801976683147,
+       "original name":"WUZ1_794"
+      },
+     "WUZ4_493":{
+       "Global MG94xREV":0,
+       "Nucleotide GTR":0,
+       "original name":"WUZ4_493"
+      },
+     "WV1_395":{
+       "Global MG94xREV":0.001019951109482262,
+       "Nucleotide GTR":0.001015955850524936,
+       "original name":"WV1_395"
+      },
+     "WY1_1193":{
+       "Global MG94xREV":0.004086311301354812,
+       "Nucleotide GTR":0.004078487345616239,
+       "original name":"WY1_1193"
+      },
+     "WZH1_596":{
+       "Global MG94xREV":0.003066011839290226,
+       "Nucleotide GTR":0.003050968603765079,
+       "original name":"WZH1_596"
+      },
+     "YG_585":{
+       "Global MG94xREV":0.001020510809797248,
+       "Nucleotide GTR":0.00102196041792002,
+       "original name":"YG_585"
+      },
+     "YH_1085":{
+       "Global MG94xREV":0.004068852525220858,
+       "Nucleotide GTR":0.004068571098531407,
+       "original name":"YH_1085"
+      },
+     "YN_1185":{
+       "Global MG94xREV":0.00203797866410614,
+       "Nucleotide GTR":0.002032986501793116,
+       "original name":"YN_1185"
+      },
+     "YOKOHAMA6896_97":{
+       "Global MG94xREV":0.001017157061618292,
+       "Nucleotide GTR":0.001013143971273067,
+       "original name":"YOKOHAMA6896_97"
+      },
+     "YOKOHAMA7392":{
+       "Global MG94xREV":0.004078765372380733,
+       "Nucleotide GTR":0.004062081153742712,
+       "original name":"YOKOHAMA7392"
+      }
+    },
+   "attributes":{
+     "Global MG94xREV":{
+       "attribute type":"branch length",
+       "display order":1
+      },
+     "Nucleotide GTR":{
+       "attribute type":"branch length",
+       "display order":0
+      },
+     "original name":{
+       "attribute type":"node label",
+       "display order":-1
+      }
+    }
+  },
+ "data partitions":{
+   "0":{
+     "coverage":      [
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328]
+      ],
+     "name":"single_omega.filter.default"
+    }
+  },
+ "fits":{
+   "Global MG94xREV":{
+     "AIC-c":24230.01900825342,
+     "Equilibrium frequencies":      [
+[0.03991344967102715]
+      [0.02985493097457043]
+      [0.02316868847901828]
+      [0.03309606902325821]
+      [0.02541679043195376]
+      [0.01901154949510466]
+      [0.01475376607404316]
+      [0.02107549854545016]
+      [0.02795170881954877]
+      [0.02090764753001728]
+      [0.01622521830195109]
+      [0.02317744249205595]
+      [0.026692979746426]
+      [0.01996612857078175]
+      [0.01549455978921837]
+      [0.02213370949906706]
+      [0.0194030624418177]
+      [0.01451333058581103]
+      [0.01126295804944503]
+      [0.01608893992200154]
+      [0.01235582431201824]
+      [0.009242054620926246]
+      [0.007172225070649073]
+      [0.01024539892292612]
+      [0.01358812019635822]
+      [0.01016380177308792]
+      [0.007887539825288638]
+      [0.01126721362401917]
+      [0.0129762162140056]
+      [0.009706102643927876]
+      [0.007532345952971219]
+      [0.01075982534757437]
+      [0.02749315484302529]
+      [0.02056465293972105]
+      [0.0159590400006403]
+      [0.02279721141248262]
+      [0.01750757603559566]
+      [0.01309552239615526]
+      [0.01016267895996681]
+      [0.01451721035590217]
+      [0.01925367676903266]
+      [0.01440159133534919]
+      [0.01117624366758849]
+      [0.01596506993385645]
+      [0.01838663987800938]
+      [0.013753054895947]
+      [0.0106729519753518]
+      [0.01524612649430084]
+      [0.01826136847839929]
+      [0.02024387569795582]
+      [0.01554669062914621]
+      [0.01162879629402418]
+      [0.009024437502524995]
+      [0.01289125220662049]
+      [0.01278858275999193]
+      [0.009924480827196422]
+      [0.01417694846103837]
+      [0.01632729746892165]
+      [0.01221268376834315]
+      [0.009477558864983334]
+      [0.01353852820160894]
+      ],
+     "Log Likelihood":-11400.58561489702,
+     "Rate Distributions":{
+       "0":        [
+[0.4594404399646024, 1]
+        ]
+      },
+     "display order":1,
+     "estimated parameters":710
+    },
+   "Nucleotide GTR":{
+     "AIC-c":24533.12344092144,
+     "Equilibrium frequencies":      [
+[0.3280975564439103]
+      [0.2191986227598801]
+      [0.2231817033766189]
+      [0.2295221174195908]
+      ],
+     "Log Likelihood":-11562.12201415485,
+     "Rate Distributions":{
+       "Substitution rate from nucleotide A to nucleotide C":0.3488525449513765,
+       "Substitution rate from nucleotide A to nucleotide G":1,
+       "Substitution rate from nucleotide A to nucleotide T":0.1624692485630763,
+       "Substitution rate from nucleotide C to nucleotide G":0.07008047931744089,
+       "Substitution rate from nucleotide C to nucleotide T":0.8778746853813278,
+       "Substitution rate from nucleotide G to nucleotide T":0.2323132091869365
+      },
+     "display order":0,
+     "estimated parameters":703
+    },
+   "omega":{
+     "non-synonymous/synonymous rate ratio for *test*":{
+       "LB":0.4271148901179047,
+       "MLE":0.4594404399646024,
+       "UB":0.4923274558529747
+      }
+    }
+  },
+ "input":{
+   "file name":"/Users/sergei/Development/hyphy-develop/tests/hbltests/data/fluHA_codon.nex",
+   "number of sequences":349,
+   "number of sites":329,
+   "partition count":1,
+   "trees":{
+     "0":"((((((((((((((((((CO_1187,SHA_887)NODE17,LA_1287)NODE16,(GZ187,QL_987)NODE21)NODE15,VIC87)NODE14,((((((TX_12764_483,((TX_24753_185,TX_25784_385)NODE33,MS85)NODE32)NODE30,((((((TX_18088_184,(TX_18733_184,TX_17988_184)NODE44)NODE42,(CM_885,(GZ3_187,TX_12835_583)NODE49)NODE47)NODE41,OITA83)NODE40,(((MI_185,NJ_185)NODE55,TX_24752_185)NODE54,CT_385)NODE53)NODE39,CAEN184)NODE38,((((VAL_491,SH_185)NODE64,US85)NODE63,TX_25887_285)NODE62,AK_1284)NODE61)NODE37)NODE29,TG_885)NODE28,((CC185,CC485)NODE72,UY3_688)NODE71)NODE27,(BK_785,((BK25_785,(((LN_286,(ST_185,CZ86)NODE85)NODE83,GM_1185)NODE82,YH_1085)NODE81)NODE79,(YG_585,CC_688)NODE90)NODE78)NODE76)NODE26,(YN_1185,FO_1185)NODE93)NODE25)NODE13,((((TY6_1287,TY5_1287)NODE99,SYD_1287)NODE98,CB_188)NODE97,TX_39989_288)NODE96)NODE12,(GC_987,SIC_487)NODE105)NODE11,KB_288)NODE10,DL19_389)NODE9,(ENG88,BE4_189)NODE110)NODE8,(((GZ54_489,(SIC89,BE57_189)NODE117)NODE115,ENG64889)NODE114,(SHA16_989,SHA1_289)NODE121)NODE113)NODE7,(GUA39_689,GUA_389)NODE124)NODE6,VIC589)NODE5,BE353_1289)NODE4,(((((((SHIGA291,IN3_991)NODE135,PR1_1090)NODE134,(((SOFIA15593,((MX3255_194,SD1_491)NODE144,(SEOUL45_1191,WA1591)NODE147)NODE143)NODE141,PA09_1191)NODE140,SAS36_592)NODE139)NODE133,BZ91)NODE132,HW1_291)NODE131,SH6_490)NODE130,((((VIC68_792,((((((UMEA2_1192,UMEA1_1192)NODE165,SN8_492)NODE164,(DJ3946_1292,RU3193)NODE169)NODE163,TW114391_192)NODE162,(((VIC29_392,WE66_692)NODE175,SAS68_692)NODE174,BE47_292)NODE173)NODE161,SP118_293)NODE160)NODE158,PS8091)NODE157,EN26191)NODE156,((II236_1193,II237_1193)NODE184,KA149_1092)NODE183)NODE155)NODE129)NODE3,(((SN91,SH24_890)NODE190,((PERTH01_492,PS192SPF)NODE194,HK34_490)NODE193)NODE189,KA206_1191)NODE188)NODE2,((((((((NCH3332_493,NCH12_1193)NODE206,NCH58_1293)NODE205,HAR1592)NODE204,(((SIC4_593,(RU58_393,WUZ4_493)NODE215)NODE213,NGX10_193)NODE212,GD04_393)NODE211)NODE203,(HEBEI1293,HK23_792)NODE220)NODE202,((((PS688_193,(SHD9_393,YOKOHAMA7392)NODE228)NODE226,SAP_1292)NODE225,NY1393)NODE224,NCH3396_593)NODE223)NODE201,((((AK9_1192,(HI3_1192,QD53_392)NODE239)NODE237,CA271_1192)NODE236,((TIANJIN3392,(VIC193,(DJ3109_1291,BE32_192)NODE248)NODE246)NODE244,KITA93)NODE243)NODE235,BE46_292)NODE234)NODE200,(((FR110994,NY64_1293)NODE255,NY63_1293)NODE254,UR46967_294)NODE253)NODE199)NODE1,((((((((CA5_395,JA8695_1294)NODE267,SP378_195)NODE266,(((LA1_195,NJ8_1194)NODE273,(((((SP351_195,IL5_195)NODE280,TX5_1294)NODE279,OH3_195)NODE278,NJ10_195)NODE277,CN124_295)NODE276)NODE272,PA15_295)NODE271)NODE265,NY28_1294)NODE264,MA1_195)NODE263,(((((HK42_396,(MEM196_1195,PARIS8395)NODE296)NODE294,PARIS36395)NODE293,NY17_1294)NODE292,(AG3779_1094,JOH33_794)NODE301)NODE291,(HK434_1096,(HK1_694,HK55_794)NODE306)NODE304)NODE290)NODE262,PA7_1294)NODE261,(((((((((((((GD25_693,WUZ1_794)NODE322,UDE44_394)NODE321,NY38_193)NODE320,(NO93,(WAIK2093,CC893)NODE329)NODE327)NODE319,GD27_594)NODE318,AA393)NODE317,((TH7594,BK122_694)NODE335,SN7_694)NODE334)NODE316,AG3105_693)NODE315,((GA3_393,(TX57_1293,((LA4_893,LA6_993)NODE346,NY3_293)NODE345)NODE343)NODE341,(NY26_293,AK18_493)NODE350)NODE340)NODE314,(CA4_794,((SP125_293,WY1_1193)NODE356,(SP190_393,ST1_193)NODE359)NODE355)NODE353)NODE313,ENG22093)NODE312,(((PA993_1294,(CA5_1193,WA41_1293)NODE367)NODE365,(((AKI194,RO182_194)NODE372,((VT3_194,SANT7198_894)NODE376,RO160_194)NODE375)NODE371,((NY4295_1194,NY16_1194)NODE381,NY15_894)NODE380)NODE370)NODE364,(NED37293,FR120394)NODE385)NODE363)NODE311,WA2693)NODE310)NODE260,(HAR3_194,(((((((((((((((((((((((((WE397,((CN10679_997,(SYD697,(HI1_997,AUC5_697)NODE422)NODE420)NODE418,SYD597)NODE417)NODE415,((HK391_797,(PR1_797,(SAUS54_797,CANBERRA5_897)NODE431)NODE429)NODE427,HK387_797)NODE426)NODE414,SYD497)NODE413,UR41_197)NODE412,SAITAMA8096_97)NODE411,(BE17_197,BE62_297)NODE438)NODE410,(((KO671_297,(KO572_297,JA416_297)NODE445)NODE443,CL170_1096)NODE442,SHZH157_796)NODE441)NODE409,(((((((CI2115_696,NY55_1296)NODE456,GZH8_496)NODE455,TIANJING55_896)NODE454,GZH11_496)NODE453,HK357_696)NODE452,SP214_197)NODE451,(((CORD3278_796,(GNX189_796,TD4796)NODE468)NODE466,(AG207_796,AG601_796)NODE471)NODE465,AG39_796)NODE464)NODE450)NODE408,(((TIANJING51_297,SH19_896)NODE477,(FUJIAN133_596,SANTAFE208_896)NODE480)NODE476,(JOH3_397,HK358_796)NODE483)NODE475)NODE407,(HAR3_1296,BE24496_197)NODE486)NODE406,(TX1196_97,(TD5196,TD5096)NODE491)NODE489)NODE405,(((SHZH43_396,WZH1_596)NODE496,GD1_396)NODE495,(((CO11_1196,IN1_1196)NODE502,KY2_297)NODE501,NJ8_1296)NODE500)NODE494)NODE404,((VIC4797,VIC3097)NODE508,TAS1_797)NODE507)NODE403,JA99_196)NODE402,(FUK11496E,FUK11496C)NODE513)NODE401,RI7_397)NODE400,(((BR51_897,BR43_697)NODE519,BR309_796)NODE518,((GQ1014_1096,((JOH10_697,(((((CA10_797,NY43_1196)NODE533,(MN1_497,MO10_1196)NODE536)NODE532,CA13_1296)NODE531,JOH9_597)NODE530,NY50_1196)NODE529)NODE527,((CN101_197,PA2_297)NODE543,(MO11_1196,MOS2_197)NODE546)NODE542)NODE526)NODE524,(((WI3_896,NY37_1096)NODE551,AK2_796)NODE550,TW523_596)NODE549)NODE523)NODE517)NODE399,SHA9_995)NODE398,(((FG39_1096,NY9_196)NODE559,TH9496_97)NODE558,FR7597)NODE557)NODE397,WA596)NODE396,((((((BRIS3596,(CAR42297,CAR465_896)NODE572)NODE570,BK197)NODE569,(((((MN1_1196,(WE4896,DE4_397)NODE582)NODE580,YOKOHAMA6896_97)NODE579,AUC596)NODE578,HI2_796)NODE577,((TH78_397,TH79_397)NODE589,CHR196)NODE588)NODE576)NODE568,(AUC10896_97,BRI2296)NODE593)NODE567,MON318_696)NODE566,(((CNIC35_196,NCH813_895)NODE599,(FUJIAN47_396,WUH359_995)NODE602)NODE598,NCH933_995)NODE597)NODE565)NODE395,GZH66_497)NODE394,CNIC22_195)NODE393,GNX42_495)NODE392,(((((((BZ18_496,(((BR3_496,BR45_696)NODE619,BR87_596)NODE618,BZ8_496)NODE617)NODE615,BR184_696)NODE614,BR597_796)NODE613,((((((NJ11_1294,(CN147_495,SN28_595)NODE633)NODE631,GE767_495)NODE630,JOH295)NODE629,(SN27_595,HK38_895)NODE638)NODE628,(WA186_1294,VA25_1294)NODE641)NODE627,HK3_195)NODE626)NODE612,(WV1_395,GE578652_295)NODE645)NODE611,(((NE11_395,AK10_295)NODE650,KWJ195_1194)NODE649,CHW995_1294)NODE648)NODE610,(((CN17_196,((FL4_1195,LA5_1195)NODE660,((((KO45_296,BZ2_395)NODE666,CN61_296)NODE665,GE491_396)NODE664,(UK897_696,MN6_1195)NODE671)NODE663)NODE659)NODE657,((((((DE3_1195,NV1_1195)NODE679,ID4_1195)NODE678,MO6_396)NODE677,JOH5396_97)NODE676,(AK16_995,JOH1795)NODE685)NODE675,(ID3_1195,CN2796_1295)NODE688)NODE674)NODE656,(AG4057_795,(SHD5_894,BE281_1294)NODE693)NODE691)NODE655)NODE609)NODE391)NODE389)"
+    }
+  },
+ "tested":{
+   "0":{
+     "AA393":"test",
+     "AG207_796":"test",
+     "AG3105_693":"test",
+     "AG3779_1094":"test",
+     "AG39_796":"test",
+     "AG4057_795":"test",
+     "AG601_796":"test",
+     "AK10_295":"test",
+     "AK16_995":"test",
+     "AK18_493":"test",
+     "AK2_796":"test",
+     "AK9_1192":"test",
+     "AKI194":"test",
+     "AK_1284":"test",
+     "AUC10896_97":"test",
+     "AUC596":"test",
+     "AUC5_697":"test",
+     "BE17_197":"test",
+     "BE24496_197":"test",
+     "BE281_1294":"test",
+     "BE32_192":"test",
+     "BE353_1289":"test",
+     "BE46_292":"test",
+     "BE47_292":"test",
+     "BE4_189":"test",
+     "BE57_189":"test",
+     "BE62_297":"test",
+     "BK122_694":"test",
+     "BK197":"test",
+     "BK25_785":"test",
+     "BK_785":"test",
+     "BR184_696":"test",
+     "BR309_796":"test",
+     "BR3_496":"test",
+     "BR43_697":"test",
+     "BR45_696":"test",
+     "BR51_897":"test",
+     "BR597_796":"test",
+     "BR87_596":"test",
+     "BRI2296":"test",
+     "BRIS3596":"test",
+     "BZ18_496":"test",
+     "BZ2_395":"test",
+     "BZ8_496":"test",
+     "BZ91":"test",
+     "CA10_797":"test",
+     "CA13_1296":"test",
+     "CA271_1192":"test",
+     "CA4_794":"test",
+     "CA5_1193":"test",
+     "CA5_395":"test",
+     "CAEN184":"test",
+     "CANBERRA5_897":"test",
+     "CAR42297":"test",
+     "CAR465_896":"test",
+     "CB_188":"test",
+     "CC185":"test",
+     "CC485":"test",
+     "CC893":"test",
+     "CC_688":"test",
+     "CHR196":"test",
+     "CHW995_1294":"test",
+     "CI2115_696":"test",
+     "CL170_1096":"test",
+     "CM_885":"test",
+     "CN101_197":"test",
+     "CN10679_997":"test",
+     "CN124_295":"test",
+     "CN147_495":"test",
+     "CN17_196":"test",
+     "CN2796_1295":"test",
+     "CN61_296":"test",
+     "CNIC22_195":"test",
+     "CNIC35_196":"test",
+     "CO11_1196":"test",
+     "CORD3278_796":"test",
+     "CO_1187":"test",
+     "CT_385":"test",
+     "CZ86":"test",
+     "DE3_1195":"test",
+     "DE4_397":"test",
+     "DJ3109_1291":"test",
+     "DJ3946_1292":"test",
+     "DL19_389":"test",
+     "EN26191":"test",
+     "ENG22093":"test",
+     "ENG64889":"test",
+     "ENG88":"test",
+     "FG39_1096":"test",
+     "FL4_1195":"test",
+     "FO_1185":"test",
+     "FR110994":"test",
+     "FR120394":"test",
+     "FR7597":"test",
+     "FUJIAN133_596":"test",
+     "FUJIAN47_396":"test",
+     "FUK11496C":"test",
+     "FUK11496E":"test",
+     "GA3_393":"test",
+     "GC_987":"test",
+     "GD04_393":"test",
+     "GD1_396":"test",
+     "GD25_693":"test",
+     "GD27_594":"test",
+     "GE491_396":"test",
+     "GE578652_295":"test",
+     "GE767_495":"test",
+     "GM_1185":"test",
+     "GNX189_796":"test",
+     "GNX42_495":"test",
+     "GQ1014_1096":"test",
+     "GUA39_689":"test",
+     "GUA_389":"test",
+     "GZ187":"test",
+     "GZ3_187":"test",
+     "GZ54_489":"test",
+     "GZH11_496":"test",
+     "GZH66_497":"test",
+     "GZH8_496":"test",
+     "HAR1592":"test",
+     "HAR3_1296":"test",
+     "HAR3_194":"test",
+     "HEBEI1293":"test",
+     "HI1_997":"test",
+     "HI2_796":"test",
+     "HI3_1192":"test",
+     "HK1_694":"test",
+     "HK23_792":"test",
+     "HK34_490":"test",
+     "HK357_696":"test",
+     "HK358_796":"test",
+     "HK387_797":"test",
+     "HK38_895":"test",
+     "HK391_797":"test",
+     "HK3_195":"test",
+     "HK42_396":"test",
+     "HK434_1096":"test",
+     "HK55_794":"test",
+     "HW1_291":"test",
+     "ID3_1195":"test",
+     "ID4_1195":"test",
+     "II236_1193":"test",
+     "II237_1193":"test",
+     "IL5_195":"test",
+     "IN1_1196":"test",
+     "IN3_991":"test",
+     "JA416_297":"test",
+     "JA8695_1294":"test",
+     "JA99_196":"test",
+     "JOH10_697":"test",
+     "JOH1795":"test",
+     "JOH295":"test",
+     "JOH33_794":"test",
+     "JOH3_397":"test",
+     "JOH5396_97":"test",
+     "JOH9_597":"test",
+     "KA149_1092":"test",
+     "KA206_1191":"test",
+     "KB_288":"test",
+     "KITA93":"test",
+     "KO45_296":"test",
+     "KO572_297":"test",
+     "KO671_297":"test",
+     "KWJ195_1194":"test",
+     "KY2_297":"test",
+     "LA1_195":"test",
+     "LA4_893":"test",
+     "LA5_1195":"test",
+     "LA6_993":"test",
+     "LA_1287":"test",
+     "LN_286":"test",
+     "MA1_195":"test",
+     "MEM196_1195":"test",
+     "MI_185":"test",
+     "MN1_1196":"test",
+     "MN1_497":"test",
+     "MN6_1195":"test",
+     "MO10_1196":"test",
+     "MO11_1196":"test",
+     "MO6_396":"test",
+     "MON318_696":"test",
+     "MOS2_197":"test",
+     "MS85":"test",
+     "MX3255_194":"test",
+     "NCH12_1193":"test",
+     "NCH3332_493":"test",
+     "NCH3396_593":"test",
+     "NCH58_1293":"test",
+     "NCH813_895":"test",
+     "NCH933_995":"test",
+     "NE11_395":"test",
+     "NED37293":"test",
+     "NGX10_193":"test",
+     "NJ10_195":"test",
+     "NJ11_1294":"test",
+     "NJ8_1194":"test",
+     "NJ8_1296":"test",
+     "NJ_185":"test",
+     "NO93":"test",
+     "NODE1":"test",
+     "NODE10":"test",
+     "NODE105":"test",
+     "NODE11":"test",
+     "NODE110":"test",
+     "NODE113":"test",
+     "NODE114":"test",
+     "NODE115":"test",
+     "NODE117":"test",
+     "NODE12":"test",
+     "NODE121":"test",
+     "NODE124":"test",
+     "NODE129":"test",
+     "NODE13":"test",
+     "NODE130":"test",
+     "NODE131":"test",
+     "NODE132":"test",
+     "NODE133":"test",
+     "NODE134":"test",
+     "NODE135":"test",
+     "NODE139":"test",
+     "NODE14":"test",
+     "NODE140":"test",
+     "NODE141":"test",
+     "NODE143":"test",
+     "NODE144":"test",
+     "NODE147":"test",
+     "NODE15":"test",
+     "NODE155":"test",
+     "NODE156":"test",
+     "NODE157":"test",
+     "NODE158":"test",
+     "NODE16":"test",
+     "NODE160":"test",
+     "NODE161":"test",
+     "NODE162":"test",
+     "NODE163":"test",
+     "NODE164":"test",
+     "NODE165":"test",
+     "NODE169":"test",
+     "NODE17":"test",
+     "NODE173":"test",
+     "NODE174":"test",
+     "NODE175":"test",
+     "NODE183":"test",
+     "NODE184":"test",
+     "NODE188":"test",
+     "NODE189":"test",
+     "NODE190":"test",
+     "NODE193":"test",
+     "NODE194":"test",
+     "NODE199":"test",
+     "NODE2":"test",
+     "NODE200":"test",
+     "NODE201":"test",
+     "NODE202":"test",
+     "NODE203":"test",
+     "NODE204":"test",
+     "NODE205":"test",
+     "NODE206":"test",
+     "NODE21":"test",
+     "NODE211":"test",
+     "NODE212":"test",
+     "NODE213":"test",
+     "NODE215":"test",
+     "NODE220":"test",
+     "NODE223":"test",
+     "NODE224":"test",
+     "NODE225":"test",
+     "NODE226":"test",
+     "NODE228":"test",
+     "NODE234":"test",
+     "NODE235":"test",
+     "NODE236":"test",
+     "NODE237":"test",
+     "NODE239":"test",
+     "NODE243":"test",
+     "NODE244":"test",
+     "NODE246":"test",
+     "NODE248":"test",
+     "NODE25":"test",
+     "NODE253":"test",
+     "NODE254":"test",
+     "NODE255":"test",
+     "NODE26":"test",
+     "NODE260":"test",
+     "NODE261":"test",
+     "NODE262":"test",
+     "NODE263":"test",
+     "NODE264":"test",
+     "NODE265":"test",
+     "NODE266":"test",
+     "NODE267":"test",
+     "NODE27":"test",
+     "NODE271":"test",
+     "NODE272":"test",
+     "NODE273":"test",
+     "NODE276":"test",
+     "NODE277":"test",
+     "NODE278":"test",
+     "NODE279":"test",
+     "NODE28":"test",
+     "NODE280":"test",
+     "NODE29":"test",
+     "NODE290":"test",
+     "NODE291":"test",
+     "NODE292":"test",
+     "NODE293":"test",
+     "NODE294":"test",
+     "NODE296":"test",
+     "NODE3":"test",
+     "NODE30":"test",
+     "NODE301":"test",
+     "NODE304":"test",
+     "NODE306":"test",
+     "NODE310":"test",
+     "NODE311":"test",
+     "NODE312":"test",
+     "NODE313":"test",
+     "NODE314":"test",
+     "NODE315":"test",
+     "NODE316":"test",
+     "NODE317":"test",
+     "NODE318":"test",
+     "NODE319":"test",
+     "NODE32":"test",
+     "NODE320":"test",
+     "NODE321":"test",
+     "NODE322":"test",
+     "NODE327":"test",
+     "NODE329":"test",
+     "NODE33":"test",
+     "NODE334":"test",
+     "NODE335":"test",
+     "NODE340":"test",
+     "NODE341":"test",
+     "NODE343":"test",
+     "NODE345":"test",
+     "NODE346":"test",
+     "NODE350":"test",
+     "NODE353":"test",
+     "NODE355":"test",
+     "NODE356":"test",
+     "NODE359":"test",
+     "NODE363":"test",
+     "NODE364":"test",
+     "NODE365":"test",
+     "NODE367":"test",
+     "NODE37":"test",
+     "NODE370":"test",
+     "NODE371":"test",
+     "NODE372":"test",
+     "NODE375":"test",
+     "NODE376":"test",
+     "NODE38":"test",
+     "NODE380":"test",
+     "NODE381":"test",
+     "NODE385":"test",
+     "NODE389":"test",
+     "NODE39":"test",
+     "NODE391":"test",
+     "NODE392":"test",
+     "NODE393":"test",
+     "NODE394":"test",
+     "NODE395":"test",
+     "NODE396":"test",
+     "NODE397":"test",
+     "NODE398":"test",
+     "NODE399":"test",
+     "NODE4":"test",
+     "NODE40":"test",
+     "NODE400":"test",
+     "NODE401":"test",
+     "NODE402":"test",
+     "NODE403":"test",
+     "NODE404":"test",
+     "NODE405":"test",
+     "NODE406":"test",
+     "NODE407":"test",
+     "NODE408":"test",
+     "NODE409":"test",
+     "NODE41":"test",
+     "NODE410":"test",
+     "NODE411":"test",
+     "NODE412":"test",
+     "NODE413":"test",
+     "NODE414":"test",
+     "NODE415":"test",
+     "NODE417":"test",
+     "NODE418":"test",
+     "NODE42":"test",
+     "NODE420":"test",
+     "NODE422":"test",
+     "NODE426":"test",
+     "NODE427":"test",
+     "NODE429":"test",
+     "NODE431":"test",
+     "NODE438":"test",
+     "NODE44":"test",
+     "NODE441":"test",
+     "NODE442":"test",
+     "NODE443":"test",
+     "NODE445":"test",
+     "NODE450":"test",
+     "NODE451":"test",
+     "NODE452":"test",
+     "NODE453":"test",
+     "NODE454":"test",
+     "NODE455":"test",
+     "NODE456":"test",
+     "NODE464":"test",
+     "NODE465":"test",
+     "NODE466":"test",
+     "NODE468":"test",
+     "NODE47":"test",
+     "NODE471":"test",
+     "NODE475":"test",
+     "NODE476":"test",
+     "NODE477":"test",
+     "NODE480":"test",
+     "NODE483":"test",
+     "NODE486":"test",
+     "NODE489":"test",
+     "NODE49":"test",
+     "NODE491":"test",
+     "NODE494":"test",
+     "NODE495":"test",
+     "NODE496":"test",
+     "NODE5":"test",
+     "NODE500":"test",
+     "NODE501":"test",
+     "NODE502":"test",
+     "NODE507":"test",
+     "NODE508":"test",
+     "NODE513":"test",
+     "NODE517":"test",
+     "NODE518":"test",
+     "NODE519":"test",
+     "NODE523":"test",
+     "NODE524":"test",
+     "NODE526":"test",
+     "NODE527":"test",
+     "NODE529":"test",
+     "NODE53":"test",
+     "NODE530":"test",
+     "NODE531":"test",
+     "NODE532":"test",
+     "NODE533":"test",
+     "NODE536":"test",
+     "NODE54":"test",
+     "NODE542":"test",
+     "NODE543":"test",
+     "NODE546":"test",
+     "NODE549":"test",
+     "NODE55":"test",
+     "NODE550":"test",
+     "NODE551":"test",
+     "NODE557":"test",
+     "NODE558":"test",
+     "NODE559":"test",
+     "NODE565":"test",
+     "NODE566":"test",
+     "NODE567":"test",
+     "NODE568":"test",
+     "NODE569":"test",
+     "NODE570":"test",
+     "NODE572":"test",
+     "NODE576":"test",
+     "NODE577":"test",
+     "NODE578":"test",
+     "NODE579":"test",
+     "NODE580":"test",
+     "NODE582":"test",
+     "NODE588":"test",
+     "NODE589":"test",
+     "NODE593":"test",
+     "NODE597":"test",
+     "NODE598":"test",
+     "NODE599":"test",
+     "NODE6":"test",
+     "NODE602":"test",
+     "NODE609":"test",
+     "NODE61":"test",
+     "NODE610":"test",
+     "NODE611":"test",
+     "NODE612":"test",
+     "NODE613":"test",
+     "NODE614":"test",
+     "NODE615":"test",
+     "NODE617":"test",
+     "NODE618":"test",
+     "NODE619":"test",
+     "NODE62":"test",
+     "NODE626":"test",
+     "NODE627":"test",
+     "NODE628":"test",
+     "NODE629":"test",
+     "NODE63":"test",
+     "NODE630":"test",
+     "NODE631":"test",
+     "NODE633":"test",
+     "NODE638":"test",
+     "NODE64":"test",
+     "NODE641":"test",
+     "NODE645":"test",
+     "NODE648":"test",
+     "NODE649":"test",
+     "NODE650":"test",
+     "NODE655":"test",
+     "NODE656":"test",
+     "NODE657":"test",
+     "NODE659":"test",
+     "NODE660":"test",
+     "NODE663":"test",
+     "NODE664":"test",
+     "NODE665":"test",
+     "NODE666":"test",
+     "NODE671":"test",
+     "NODE674":"test",
+     "NODE675":"test",
+     "NODE676":"test",
+     "NODE677":"test",
+     "NODE678":"test",
+     "NODE679":"test",
+     "NODE685":"test",
+     "NODE688":"test",
+     "NODE691":"test",
+     "NODE693":"test",
+     "NODE7":"test",
+     "NODE71":"test",
+     "NODE72":"test",
+     "NODE76":"test",
+     "NODE78":"test",
+     "NODE79":"test",
+     "NODE8":"test",
+     "NODE81":"test",
+     "NODE82":"test",
+     "NODE83":"test",
+     "NODE85":"test",
+     "NODE9":"test",
+     "NODE90":"test",
+     "NODE93":"test",
+     "NODE96":"test",
+     "NODE97":"test",
+     "NODE98":"test",
+     "NODE99":"test",
+     "NV1_1195":"test",
+     "NY1393":"test",
+     "NY15_894":"test",
+     "NY16_1194":"test",
+     "NY17_1294":"test",
+     "NY26_293":"test",
+     "NY28_1294":"test",
+     "NY37_1096":"test",
+     "NY38_193":"test",
+     "NY3_293":"test",
+     "NY4295_1194":"test",
+     "NY43_1196":"test",
+     "NY50_1196":"test",
+     "NY55_1296":"test",
+     "NY63_1293":"test",
+     "NY64_1293":"test",
+     "NY9_196":"test",
+     "OH3_195":"test",
+     "OITA83":"test",
+     "PA09_1191":"test",
+     "PA15_295":"test",
+     "PA2_297":"test",
+     "PA7_1294":"test",
+     "PA993_1294":"test",
+     "PARIS36395":"test",
+     "PARIS8395":"test",
+     "PERTH01_492":"test",
+     "PR1_1090":"test",
+     "PR1_797":"test",
+     "PS192SPF":"test",
+     "PS688_193":"test",
+     "PS8091":"test",
+     "QD53_392":"test",
+     "QL_987":"test",
+     "RI7_397":"test",
+     "RO160_194":"test",
+     "RO182_194":"test",
+     "RU3193":"test",
+     "RU58_393":"test",
+     "SAITAMA8096_97":"test",
+     "SANT7198_894":"test",
+     "SANTAFE208_896":"test",
+     "SAP_1292":"test",
+     "SAS36_592":"test",
+     "SAS68_692":"test",
+     "SAUS54_797":"test",
+     "SD1_491":"test",
+     "SEOUL45_1191":"test",
+     "SH19_896":"test",
+     "SH24_890":"test",
+     "SH6_490":"test",
+     "SHA16_989":"test",
+     "SHA1_289":"test",
+     "SHA9_995":"test",
+     "SHA_887":"test",
+     "SHD5_894":"test",
+     "SHD9_393":"test",
+     "SHIGA291":"test",
+     "SHZH157_796":"test",
+     "SHZH43_396":"test",
+     "SH_185":"test",
+     "SIC4_593":"test",
+     "SIC89":"test",
+     "SIC_487":"test",
+     "SN27_595":"test",
+     "SN28_595":"test",
+     "SN7_694":"test",
+     "SN8_492":"test",
+     "SN91":"test",
+     "SOFIA15593":"test",
+     "SP118_293":"test",
+     "SP125_293":"test",
+     "SP190_393":"test",
+     "SP214_197":"test",
+     "SP351_195":"test",
+     "SP378_195":"test",
+     "ST1_193":"test",
+     "ST_185":"test",
+     "SYD497":"test",
+     "SYD597":"test",
+     "SYD697":"test",
+     "SYD_1287":"test",
+     "TAS1_797":"test",
+     "TD4796":"test",
+     "TD5096":"test",
+     "TD5196":"test",
+     "TG_885":"test",
+     "TH7594":"test",
+     "TH78_397":"test",
+     "TH79_397":"test",
+     "TH9496_97":"test",
+     "TIANJIN3392":"test",
+     "TIANJING51_297":"test",
+     "TIANJING55_896":"test",
+     "TW114391_192":"test",
+     "TW523_596":"test",
+     "TX1196_97":"test",
+     "TX57_1293":"test",
+     "TX5_1294":"test",
+     "TX_12764_483":"test",
+     "TX_12835_583":"test",
+     "TX_17988_184":"test",
+     "TX_18088_184":"test",
+     "TX_18733_184":"test",
+     "TX_24752_185":"test",
+     "TX_24753_185":"test",
+     "TX_25784_385":"test",
+     "TX_25887_285":"test",
+     "TX_39989_288":"test",
+     "TY5_1287":"test",
+     "TY6_1287":"test",
+     "UDE44_394":"test",
+     "UK897_696":"test",
+     "UMEA1_1192":"test",
+     "UMEA2_1192":"test",
+     "UR41_197":"test",
+     "UR46967_294":"test",
+     "US85":"test",
+     "UY3_688":"test",
+     "VA25_1294":"test",
+     "VAL_491":"test",
+     "VIC193":"test",
+     "VIC29_392":"test",
+     "VIC3097":"test",
+     "VIC4797":"test",
+     "VIC589":"test",
+     "VIC68_792":"test",
+     "VIC87":"test",
+     "VT3_194":"test",
+     "WA1591":"test",
+     "WA186_1294":"test",
+     "WA2693":"test",
+     "WA41_1293":"test",
+     "WA596":"test",
+     "WAIK2093":"test",
+     "WE397":"test",
+     "WE4896":"test",
+     "WE66_692":"test",
+     "WI3_896":"test",
+     "WUH359_995":"test",
+     "WUZ1_794":"test",
+     "WUZ4_493":"test",
+     "WV1_395":"test",
+     "WY1_1193":"test",
+     "WZH1_596":"test",
+     "YG_585":"test",
+     "YH_1085":"test",
+     "YN_1185":"test",
+     "YOKOHAMA6896_97":"test",
+     "YOKOHAMA7392":"test"
+    }
+  },
+ "timers":{
+   "Total time":{
+     "order":0,
+     "timer":277
+    }
+  }
+}

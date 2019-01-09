@@ -219,6 +219,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
 
 
+ 
 	// Add data filter information to model description
 	if ( None != data_filter) {
 	    models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
@@ -239,7 +240,6 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 													    data_filter);
 
 
-
     // Define id's for frequencies, Q, and id
 	model.generic.DefineModel.model [terms.model.matrix_id] = "`id`_" + terms.model.rate_matrix;
 	model.generic.DefineModel.model [terms.model.efv_id] = "`id`_" + terms.model.efv_matrix;
@@ -254,11 +254,9 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	    utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 	}
 
-
 	model.define_from_components (id, 	model.generic.DefineModel.model [terms.model.matrix_id], model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
 
     if (Type (model.generic.DefineModel.model[terms.model.post_definition]) == "String") {
-
        Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
 

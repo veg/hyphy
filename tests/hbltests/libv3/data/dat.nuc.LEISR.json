@@ -1,0 +1,176 @@
+{
+ "MLE":{
+   "content":{
+     "0":      [
+[0.570562929088465, 0.1333497807584771, 1.833004222067008, -12.94782751041132, -12.51854526896768]
+      [0.6568215723105455, 0.1480311010574118, 2.443139849528537, -14.040502768049, -13.82338579743635]
+      [1.035159750473438, 0.2872321715426518, 3.637143614490959, -15.33986669954094, -15.33815827102963]
+      [1.139544392072012, 0.2942796929698176, 6.031385274104765, -16.01863386457895, -15.9916175878502]
+      [1.701128578914814, 0.4348526001250598, 29.609176233397, -19.24344435908563, -18.99141468010826]
+      [0.4097885764725855, 0.06516428093608773, 1.522452933767312, -14.15497550185157, -13.30229781723376]
+      [1.908675192494094, 0.533079753423364, 29.6091334803626, -18.67054955599659, -18.14593708433602]
+      [0.9981029708196029, 0.2597649318133017, 4.681228570602239, -16.55804947232372, -16.55799828454667]
+      [1.436351518465124, 0.4679022438714769, 29.60906808796869, -18.75404786476332, -18.47595249484484]
+      [1.734304444120967, 0.3943888476431114, 17.4960708810273, -18.09686370409776, -17.80398978535068]
+      ]
+    },
+   "headers":    [
+["MLE", "Relative rate estimate at a site"],
+    ["Lower", "Lower bound of 95% profile likelihood CI"],
+    ["Upper", "Upper bound of 95% profile likelihood CI"],
+    ["LogL global", "Site log likelihood under the global (average rate) model fit"],
+    ["LogL local", "Site log likelihood under the local (site-specific rate) model fit"],
+    ]
+  },
+ "analysis":{
+   "authors":"Sergei L Kosakovsky Pond and Stephanie J Spielman",
+   "citation":"Spielman, S.J. and Kosakovsky Pond, S.L. (2018). Relative evolutionary rate inference in HyPhy with PeerJ 6:e4339. DOI 10.7717/peerj.4339 ; Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
+   "contact":"{spond,stephanie.spielman}@temple.edu",
+   "info":"LEISR (Likelihood Estimation of Individual Site Rates) infer relative amino-acid or nucleotide rates from a fixed nucleotide or amino-acid alignment and tree, with possibility for partitions. Relative site-specific substitution rates are
+    inferred by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler.",
+   "version":"0.4"
+  },
+ "branch attributes":{
+   "0":{
+     "Node10":{
+       "HKY85":0.4551821333359445
+      },
+     "Node13":{
+       "HKY85":0
+      },
+     "Node14":{
+       "HKY85":0
+      },
+     "Node16":{
+       "HKY85":0.4616166252111789
+      },
+     "Node2":{
+       "HKY85":0.1094991201044228
+      },
+     "Node20":{
+       "HKY85":1.598614669387618
+      },
+     "Node23":{
+       "HKY85":0
+      },
+     "Node26":{
+       "HKY85":0
+      },
+     "Node4":{
+       "HKY85":0
+      },
+     "Node5":{
+       "HKY85":0.5525356978629691
+      },
+     "Node6":{
+       "HKY85":0
+      },
+     "Node9":{
+       "HKY85":0.3304362550239794
+      },
+     "t1":{
+       "HKY85":0.2672701690499124,
+       "original name":"t1"
+      },
+     "t10":{
+       "HKY85":0.218451920640767,
+       "original name":"t10"
+      },
+     "t11":{
+       "HKY85":0,
+       "original name":"t11"
+      },
+     "t12":{
+       "HKY85":0.9650888861016619,
+       "original name":"t12"
+      },
+     "t13":{
+       "HKY85":0,
+       "original name":"t13"
+      },
+     "t14":{
+       "HKY85":0.5685907988625749,
+       "original name":"t14"
+      },
+     "t15":{
+       "HKY85":368.5033177806769,
+       "original name":"t15"
+      },
+     "t2":{
+       "HKY85":0,
+       "original name":"t2"
+      },
+     "t3":{
+       "HKY85":0.3991050495770374,
+       "original name":"t3"
+      },
+     "t4":{
+       "HKY85":0,
+       "original name":"t4"
+      },
+     "t5":{
+       "HKY85":214.1608064013714,
+       "original name":"t5"
+      },
+     "t6":{
+       "HKY85":131.4891061984801,
+       "original name":"t6"
+      },
+     "t7":{
+       "HKY85":0,
+       "original name":"t7"
+      },
+     "t8":{
+       "HKY85":0.3877661323895439,
+       "original name":"t8"
+      },
+     "t9":{
+       "HKY85":0,
+       "original name":"t9"
+      }
+    },
+   "attributes":{
+     "HKY85":{
+       "attribute type":"branch length",
+       "display order":0
+      },
+     "original name":{
+       "attribute type":"node label",
+       "display order":-1
+      }
+    }
+  },
+ "data partitions":{
+   "0":{
+     "coverage":      [
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+      ],
+     "name":"leisr.filter.default"
+    }
+  },
+ "fits":{
+   "HKY85":{
+     "AIC-c":406.4630819234314,
+     "Equilibrium frequencies":      [
+[0.2666666666666667]
+      [0.2533333333333334]
+      [0.2666666666666667]
+      [0.2133333333333333]
+      ],
+     "Log Likelihood":-163.8247613006988,
+     "Rate Distributions":{
+       "Transitition/transversion ratio":2.370371372423658
+      },
+     "estimated parameters":31
+    }
+  },
+ "input":{
+   "file name":"/Users/sergei/Development/hyphy-develop/tests/hbltests/libv3/data/dat.nuc",
+   "number of sequences":15,
+   "number of sites":10,
+   "partition count":1,
+   "trees":{
+     "0":"((t12:0.6007418204,(((t13:0.02560783178,t7:0.06241315883)Node6:0.3850171629,((t1:0.3803801907,t4:0.2644045493)Node10:0.288204158,((t8:0.2050027882,(t10:0.2882345759,t2:0.2495629364)Node16:0.4606286683)Node14:0.5220576057,t5:0.8048256311999999)Node13:0.05435458641)Node9:0.2048651455)Node5:0.4364210158,(t6:0.5203341169,t9:0.4957795972)Node20:0.9166075331)Node4:0.5339687597)Node2:0.2889535469,(t15:0.8320546720999999,t14:0.7063525459)Node23:0.2664719955,(t3:0.4359256458,t11:0.7989921882)Node26:0.04232083797)"
+    }
+  }
+}

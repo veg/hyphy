@@ -395,9 +395,9 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
       long arguments = GetBFFunctionArgumentCount (opCode);
 
       if (theScrap.StackDepth()<arguments) {
-        return ReportOperationExecutionError (_String("User-defined function:") &
-                                              GetBFFunctionNameByIndex (opCode)
-                                              &" needs "&_String(long(arguments))& " parameters: "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
+        return ReportOperationExecutionError (_String("User-defined function ") &
+                                              GetBFFunctionNameByIndex (opCode).Enquote()
+                                              &" needs "&_String(long(arguments))& " parameters, but "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
       }
 
       _List       displacedVars,

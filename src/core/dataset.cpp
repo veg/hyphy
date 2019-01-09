@@ -37,6 +37,8 @@
 
  */
 
+#include <ctype.h>
+
 #include "dataset.h"
 #include "translation_table.h"
 #include "batchlan.h"

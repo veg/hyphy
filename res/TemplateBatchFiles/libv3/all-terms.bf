@@ -82,6 +82,11 @@ namespace terms{
         upper_bound: "1e25"
     };
 
+    range_clamp_locals = {
+        lower_bound: "0",
+        upper_bound: "100"
+    };
+
 
 
 

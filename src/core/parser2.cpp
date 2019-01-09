@@ -65,7 +65,7 @@ extern   _SimpleList BinOps,
          FunctionArgumentCount,
          associativeOps;
 
-extern    _List         FunctionNameList;
+extern    _Trie         FunctionNameList;
 
 
 
@@ -195,7 +195,7 @@ void        WarnNotDefined (HBLObjectRef p, long opCode, _hyExecutionContext* co
 
 void        WarnWrongNumberOfArguments (HBLObjectRef p, long opCode, _hyExecutionContext* context, _List * args) {
   _FString * t = (_FString*)p->Type();
-  context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' was called with an incorrect number of arguments (" & (long) (args ? args->lLength : 0L) & ") for " & t->get_str());
+  context->ReportError  (_String("Operation '")&*(_String*)BuiltInFunctions(opCode)&"' was called with an incorrect number of arguments (" & (long) (args ? args->countitems() + 1L : 1L) & ") for " & t->get_str());
   DeleteObject (t);
 }
 
@@ -755,8 +755,32 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                     _Operation* function_call = (_Operation*)levelOps->GetItem(0);
                     if (function_call->IsHBLFunctionCall()) {
                       function_call->SetTerms(-argument_count-1L);
-                    } else {
+                    } else { // built-in
+                      long op_terms = function_call->GetNoTerms();
+                      if (op_terms < 0) { // variable # of arguments
+                          if (argument_count < -op_terms - 1) {
+                              return HandleFormulaParsingError (_String("Expected a minimum of ") & (-op_terms - 1) & " arguments", parsingContext.errMsg(), s, i);
+                          }
+                      } else {
+                          long max_ops = op_terms >> 16;
+                          if (max_ops > 0) {
+                              long min_ops = op_terms - (max_ops << 16);
+                              if (argument_count < min_ops || argument_count > max_ops) {
+                                  return HandleFormulaParsingError (_String ("Expected between ") & min_ops & " and " & max_ops & " arguments" , parsingContext.errMsg(), s, i);
+                              }
+                              
+                          } else { // fixed # of arguments
+                              if (argument_count != op_terms) {
+                                  return HandleFormulaParsingError (_String ("Expected ") & op_terms & " arguments" , parsingContext.errMsg(), s, i);
+                              }
+                              
+                          }
+                      }
+                        
                       function_call->SetTerms(argument_count);
+                        
+                      // need to check that the number of arguments is allowed for the built-in
+                      //function_call->SetTerms(argument_count);
                     }
 
                     f->PushTerm (function_call);
@@ -1309,13 +1333,13 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 continue;
             } else { // a variable
                 // check if this is a function defined  in the list of "standard functions"
-                long bLang = noneObject?-1:FunctionNameList.BinaryFindObject (&curOp);
+                long bLang = noneObject?-1:FunctionNameList.FindKey (curOp);
                 if (bLang>=0) {
                     if (takeVarReference) {
                         return HandleFormulaParsingError ("Cannot make a reference from a built-in function", parsingContext.errMsg(), s, i);
                     }
                     // built-in function
-                    _Operation * built_in_call = new _Operation (curOp,FunctionArgumentCount(bLang));
+                    _Operation * built_in_call = new _Operation (curOp,FunctionNameList.GetValue (bLang));
                     _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags, f->NumberOperations());
                     levelOps->AppendNewInstance (built_in_call);
                     continue;

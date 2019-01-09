@@ -726,7 +726,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                   revisedTreeString<<':';
                   char c = file_tree_string->char_at (lastNode);
                   
-                  while (isnumber (c) || c=='.' || c=='-' || c=='e' || c=='E') {
+                  while (isdigit (c) || c=='.' || c=='-' || c=='e' || c=='E') {
                     if (lastNode<file_tree_string->length()) {
                       lastNode++;
                       revisedTreeString<<c;

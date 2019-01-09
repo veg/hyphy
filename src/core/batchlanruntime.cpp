@@ -61,7 +61,7 @@
 using namespace hy_global;
 using namespace hyphy_global_objects;
 
-
+#include <ctype.h>
 //____________________________________________________________________________________
 /* various helper functions */
 
@@ -268,7 +268,7 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
         _Variable * target_variable = _ValidateStorageVariable (currentProgram, 2); // create variable if it doesn't exist
         target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
 
-        if (!parsed_expression.DependsOnVariable(target_variable->get_index())) {
+        if (!parsed_expression.DependsOnVariable(target_variable->get_index()) && !do_integrate) {
             throw (expression & " does not depend on the variable " & target_variable->GetName()->Enquote());
         }
 
@@ -289,7 +289,7 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
                 receptacle->SetValue (new _Constant (parsed_expression.Brent (target_variable, lb, ub)), false);
             }
         } else {
-            receptacle->SetValue (new _Constant (parsed_expression.Integral (target_variable, lb, ub, ub-lb>1e10)), false);
+            receptacle->SetValue (new _Constant (parsed_expression.Integral (target_variable, lb, ub, ub-lb>100)), false);
         }
 
         if (derivative) {
@@ -2063,9 +2063,6 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
                        kBGMScores    ("BGM_SCORE_CACHE"),
                        kBGMConstraintMx ("BGM_CONSTRAINT_MATRIX"),
                        kBGMParameters   ("BGM_NETWORK_PARAMETERS");
-
-
-
 
   current_program.advance();
   

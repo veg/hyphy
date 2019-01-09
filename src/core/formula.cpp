@@ -1554,19 +1554,21 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
     if (infinite) { // tweak "right" here
         hyFloat value = 1.0, step = 1.0, right1= -1.;
         right = left;
-        while (value>kMachineEpsilon) {
+        while (value>1e-8) {
             right+=step;
             dx->SetValue(right);
             value = fabs(Compute()->Value());
-            if ( value<0.001 && right1<0.) {
+            if ( value < 1e-4 && right1 < 0.) { // SLKP 20181205 why is this here?
                 right1 = right;
             }
             step *= 2;
-            if (step > 1.e7) { // integrand decreasing too slowly
+            if (step > 100000) { // integrand decreasing too slowly
                 HandleApplicationError (_String(*(_String*)toStr(kFormulaStringConversionNormal)).Enquote() & " decreases too slowly to be integrated over an infinite interval");
                 return 0.0;
             }
         }
+        
+        
         if (right1<right-kMachineEpsilon) {
             return Integral(dx,left,right1,false)+Integral(dx,right1,right,false);
         } else {
@@ -1605,25 +1607,36 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
 
     if (AmISimple (stack_depth,fvidx)) {
         stack = new _SimpleFormulaDatum [stack_depth];
-        vvals = new _SimpleFormulaDatum [fvidx.countitems()];
+        
         ConvertToSimple (fvidx);
-        fvidx.ReorderList();
-        long dx_index = dx->get_index();
-        for (long vi = 0; vi < fvidx_aux.countitems(); vi++) {
-            _Variable* variable_in_expression = LocateVar (fvidx_aux.Element(vi));
-            if (variable_in_expression->CheckFForDependence (dx_index,true)) {
-                changing_vars << fvidx_aux.Element(vi);
-                idx_map << vi;
+        if (fvidx.countitems()) { // could be a constant expression with no variable dependancies
+            vvals = new _SimpleFormulaDatum [fvidx.countitems()];
+            //fvidx.ReorderList();
+            long dx_index = dx->get_index();
+            for (long vi = 0; vi < fvidx_aux.countitems(); vi++) {
+                _Variable* variable_in_expression = LocateVar (fvidx_aux.Element(vi));
+                if (variable_in_expression->CheckFForDependence (dx_index,true)) {
+                    changing_vars << fvidx_aux.Element(vi);
+                    idx_map << vi;
+                }
+                vvals[vi].value = variable_in_expression->Compute()->Value();
             }
-            vvals[vi].value = variable_in_expression->Compute()->Value();
+            
+            long depends_on_dx = fvidx.FindLong(dx_index);
+            
+            if (depends_on_dx >= 0) {
+                changing_vars.InsertElement ((BaseRef)dx_index,0,false,false);
+                idx_map.InsertElement ((BaseRef)fvidx.FindLong(dx_index),0,false,false);
+            }
+        } else {
+            vvals = new _SimpleFormulaDatum [1L];
         }
-        changing_vars.InsertElement ((BaseRef)dx_index,0,false,false);
-        idx_map.InsertElement ((BaseRef)fvidx.FindLong(dx_index),0,false,false);
     } else {
         stack_depth = -1L;
     }
 
     for (long step = 0L; step < max_iterations; step ++) {
+      //printf ("%d\n", step);
       if (stack_depth >=0) { // compiled
           s[step] = TrapezoidLevelKSimple(*this, dx, left, right, step+1L, stack, vvals,changing_vars,idx_map);
         } else {
@@ -1698,109 +1711,93 @@ hyFloat  InterpolateValue (hyFloat* theX, hyFloat* theY, long n, hyFloat *c , hy
   //__________________________________________________________________________________
 
 hyFloat  TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, hyFloat left, hyFloat right, long k, _SimpleFormulaDatum * stack, _SimpleFormulaDatum* values, _SimpleList& changingVars, _SimpleList& varToStack) {
-  hyFloat x,
-  tnm,
-  sum,
-  del,
-  ddel;
-  
-  static hyFloat s;
-  
+    
+    hyFloat x,
+    tnm,
+    sum,
+    del,
+    ddel;
+    
+    static hyFloat s;
+    
     //_Constant dummy;
-  
-  long        it,
-  j;
-  
-  if (k==1) {
-    if (changingVars.lLength == 1) {
-      values[varToStack.lData[0]].value = (left+right)*0.5;
-    } else {
-      xvar->SetValue  (new _Constant ((left+right)*0.5), false);
-      for (long vi = 0; vi < changingVars.lLength; vi++) {
-        values[varToStack.lData[vi]].value = LocateVar(changingVars.lData[vi])->Compute()->Value();
-      }
+    
+    auto set_and_compute = [&] (hyFloat x) -> hyFloat {
+        if (changingVars.countitems() == 1L) {
+            values[varToStack.get(0)].value = x;
+        } else {
+            xvar->SetNumericValue  (x);
+            changingVars.Each ([&] (long v, unsigned long vi) -> void {
+                values[varToStack.get(vi)].value = LocateVar(v)->Compute()->Value();
+            });
+        }
+        return f.ComputeSimple(stack, values);
+    };
+    
+    
+    if (k==1) {
+        s = set_and_compute ((left+right)*0.5);
+        return s;
     }
-    s = f.ComputeSimple(stack, values);
+    
+    long        it =1;
+    
+    for (long j=1L; j<k-1; j++) {
+        it *= 3L;
+    }
+    
+    tnm = it;
+    del = (right-left)/(3.0*tnm);
+    ddel = del+del;
+    x   = left+del*.5;
+    sum = 0.;
+    for (long j=1L; j<=it; j++, x+=del) {
+        sum += set_and_compute (x);
+        x+=ddel;
+        sum += set_and_compute (x);
+    }
+    s = (s+(right-left)*sum/tnm)/3.0;
     return s;
-  }
-  
-  for (it=1, j=1; j<k-1; j++) {
-    it*=3;
-  }
-  
-  tnm = it;
-  del = (right-left)/(3.0*tnm);
-  ddel = del+del;
-  x   = left+del*.5;
-  for (sum=0.0, j=1; j<=it; j++, x+=del) {
-    if (changingVars.lLength == 1) {
-      values[varToStack.lData[0]].value = x;
-    } else {
-      xvar->SetValue(new _Constant (x), false);
-      for (long vi = 0; vi < changingVars.lLength; vi++) {
-        values[varToStack.lData[vi]].value = LocateVar(changingVars.lData[vi])->Compute()->Value();
-      }
-    }
-    sum += f.ComputeSimple(stack, values);
-    
-    x+=ddel;
-    
-    if (changingVars.lLength == 1) {
-      values[varToStack.lData[0]].value = x;
-    } else {
-      xvar->SetValue(new _Constant (x), false);
-      for (long vi = 0; vi < changingVars.lLength; vi++) {
-        values[varToStack.lData[vi]].value = LocateVar(changingVars.lData[vi])->Compute()->Value();
-      }
-    }
-    sum += f.ComputeSimple(stack, values);
-  }
-  s = (s+(right-left)*sum/tnm)/3.0;
-  return s;
 }
 
   //__________________________________________________________________________________
-hyFloat  TrapezoidLevelK (_Formula&f, _Variable* xvar, hyFloat left, hyFloat right, long k)
-{
-  hyFloat x,
-  tnm,
-  sum,
-  del,
-  ddel;
-  
-  static hyFloat s;
-  
-  _Constant dummy;
-  
-  long        it,
-  j;
-  
-  if (k==1) {
-    dummy.SetValue((left+right)/2);
-    xvar->SetValue (&dummy);
-    s = f.Compute()->Value();
+hyFloat  TrapezoidLevelK (_Formula&f, _Variable* xvar, hyFloat left, hyFloat right, long k) {
+    hyFloat x,
+    tnm,
+    sum,
+    del,
+    ddel;
+    
+    static hyFloat s;
+    
+    long        it = 1L;
+    
+    if (k==1L) {
+        xvar -> SetNumericValue((left + right) * 0.5);
+        return s = f.Compute()->Value();
+    }
+    
+    for (long j = 1L; j < k-1; j++) {
+        it *= 3L;
+    }
+    
+    
+    tnm = it;
+    del = (right-left)/(3.0*tnm);
+    ddel = del+del;
+    x   = left+del*.5;
+    
+    sum = 0.0;
+    
+    for (long j=1L; j<=it; j++, x+=del) {
+        xvar->SetNumericValue(x);
+        sum += f.Compute()->Value();
+        x+=ddel;
+        xvar->SetNumericValue(x);
+        sum += f.Compute()->Value();
+    }
+    s = (s+(right-left)*sum/tnm)/3.0;
     return s;
-  }
-  
-  for (it=1, j=1; j<k-1; j++) {
-    it*=3;
-  }
-  
-  tnm = it;
-  del = (right-left)/(3.0*tnm);
-  ddel = del+del;
-  x   = left+del*.5;
-  for (sum=0.0, j=1; j<=it; j++, x+=del) {
-    dummy.SetValue(x);
-    xvar->SetValue(&dummy);
-    sum += f.Compute()->Value();
-    x+=ddel;
-    dummy.SetValue(x);
-    xvar->SetValue(&dummy);
-    sum += f.Compute()->Value();
-  }
-  s = (s+(right-left)*sum/tnm)/3.0;
-  return s;
 }
 
 //__________________________________________________________________________________

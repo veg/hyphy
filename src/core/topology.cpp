@@ -46,6 +46,8 @@
 #include "global_things.h"
 #include "hbl_env.h"
 
+#include <ctype.h>
+
 using namespace hy_global;
 using namespace hy_env;
 
@@ -364,6 +366,9 @@ bool    _TreeTopology::MainTreeConstructor  (_String const& parms, _TreeTopology
                     
                     
                     FinalizeNode (parentNode, nodeNumbers.get (lastNode), nodeName, nodeParameters, nodeValue, &nodeComment, parse_settings);
+                    
+                    nodeParameters.Clear();
+                    nodeComment.Clear();
                     
                     pop_node ();
                     
@@ -2846,8 +2851,8 @@ void        _TreeTopology::ComputeClusterTable (_SimpleList& result, _SimpleList
                 row = L;
             }
             
-            result.lData[row*3]   = L;
-            result.lData[row*3+1] = R;
+            result[row*3]   = L;
+            result[row*3+1L] = R;
         }
     }
 }
@@ -2885,9 +2890,78 @@ _String*        _TreeTopology::ConvertFromPSW                       (_AVLListX& 
     result->Flip();
     return result;
 }
-
+/*
+ if (reference == false) {
+ nodeMap.Clear();
+ }
+ 
+ pswRepresentation.Clear();
+ 
+ long    leafIndex  = 0,
+ iNodeCount = -1;
+ 
+ _SimpleList levelBuffer;
+ 
+ node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+ 
+ while (node<long> * currentNode = ni.Next (&levelBuffer)) {
+ _String nodeName = GetNodeName (currentNode);
+ 
+ while (levelBuffer.countitems() <= ni.Level()) {
+ levelBuffer << 0;
+ }
+ 
+ if (currentNode->is_leaf()) {
+ pswRepresentation << leafIndex;
+ pswRepresentation << 0;
+ if (reference) {
+ long remapped = nodeMap.Find(&nodeName);
+ if (remapped < 0) {
+ return false;
+ } else {
+ remapped = nodeMap.GetXtra (remapped);
+ if (remapped >= 0) {
+ pswRepresentation << remapped;
+ } else {
+ return false;
+ }
+ }
+ 
+ leafIndex++;
+ } else {
+ nodeMap.Insert(nodeName.makeDynamic(), leafIndex++, false);
+ }
+ } else {
+ pswRepresentation << iNodeCount;
+ pswRepresentation << levelBuffer.lData[ni.Level()];
+ if (reference) {
+ pswRepresentation << 0;
+ } else {
+ (*inames) && &nodeName;
+ }
+ 
+ iNodeCount--;
+ }
+ if (ni.Level()) {
+ levelBuffer.lData[ni.Level()-1] += levelBuffer.lData[ni.Level()]+1;
+ }
+ levelBuffer.lData[ni.Level()]   = 0;
+ }
+ 
+ for (long k = 0; k < pswRepresentation.lLength; k+=(reference?3:2))
+ if (pswRepresentation.lData[k] < 0) {
+ pswRepresentation.lData[k] = leafIndex-pswRepresentation.lData[k]-1;
+ }
+ 
+ pswRepresentation << leafIndex;
+ pswRepresentation << (-iNodeCount-1);
+ 
+ return true;
+ 
+*/
 //__________________________________________________________________________________
 bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _SimpleList& pswRepresentation, bool reference) const {
+    
     if (reference == false) {
         nodeMap.Clear();
     }
@@ -2895,7 +2969,7 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
     pswRepresentation.Clear();
     
     long    leafIndex  = 0L,
-    iNodeCount = -1;
+            iNodeCount = -1L;
     
     _SimpleList levelBuffer;
     
@@ -2937,14 +3011,14 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
             iNodeCount--;
         }
         if (ni.Level()) {
-            levelBuffer.lData[ni.Level()-1] += levelBuffer.get(ni.Level())+1;
+            levelBuffer[ni.Level()-1] += levelBuffer.get(ni.Level())+1;
         }
-        levelBuffer.lData[ni.Level()]   = 0;
+        levelBuffer[ni.Level()]   = 0;
     }
     
     for (long k = 0; k < pswRepresentation.lLength; k+=(reference?3:2)) {
         if (pswRepresentation.get(k) < 0L) {
-            pswRepresentation.lData[k] = leafIndex-pswRepresentation.get(k)-1;
+            pswRepresentation[k] = leafIndex-pswRepresentation.get(k)-1;
         }
     }
     

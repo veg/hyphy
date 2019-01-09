@@ -42,6 +42,7 @@
 
 #include "baseobj.h"
 #include "list.h"
+#include "trie.h"
 #include "hy_strings.h"
 #include "mathobj.h"
 #include "global_things.h"

@@ -1380,7 +1380,7 @@ template <typename CALLBACK> HBLObjectRef   _Matrix::ApplyScalarOperation (CALLB
 
 //__________________________________________________________________________________
 HBLObjectRef   _Matrix::Inverse (void) const {
-    if (is_square_numeric(false)) {
+    if (!is_square_numeric(false)) {
         return    new _MathObject;
     }
   
@@ -1395,7 +1395,7 @@ HBLObjectRef   _Matrix::Inverse (void) const {
                 b.theData[i-1L]=0.0;
             }
             _Matrix* invVector = (_Matrix*)LUdec->LUSolve(&b);
-            _Matrix corrTerm;
+            _Matrix corrTerm (GetHDim(),1, false, true);
              Multiply(corrTerm, *invVector);
             corrTerm -= b;
             //_Matrix* corrTerm = (_Matrix*)(*this*(*invVector)-b).makeDynamic();
@@ -3214,8 +3214,8 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
 
 {
     if (storageType == 1) { // numbers
-        hyFloat _hprestrict_ * destination = storage.theData;
-        hyFloat _hprestrict_           * source      = theData;
+        hyFloat * _hprestrict_  destination = storage.theData;
+        hyFloat const *  source      = theData;
             
         if (theIndex) {
             for (long k = 0; k < lDim; k++)
@@ -3486,11 +3486,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
 #endif
                      for (long r = 0; r < hDim; r ++) {
 #ifdef _OPENMP                     
-#if GCC_VERSION > 40400
 #pragma omp parallel for default(none) shared(r,secondArg,storage) schedule(static) if (nt>1)  num_threads (nt)
-#else
-#pragma omp parallel for default(none) shared(r) schedule(static) if (nt>1)  num_threads (nt)
-#endif
 #endif
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
                              hyFloat cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
@@ -3586,8 +3582,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   
                   
                     hyFloat  value                           = theData[k];
-                    hyFloat  _hprestrict_ *res               = storage.theData    + (m-i);
-                    hyFloat  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                    hyFloat  * _hprestrict_ res               = storage.theData    + (m-i);
+                    hyFloat  * _hprestrict_ secArg            = secondArg.theData  + i*vDim;
                     
   #ifdef  _SLKP_USE_AVX_INTRINSICS
                       __m256d  value_op = _mm256_set1_pd (value);
@@ -3621,8 +3617,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           // in the form of A_rc * B_cc'
 
                           hyFloat  value                           = theData[k];
-                          hyFloat  _hprestrict_ *res               = storage.theData    + (m-i);
-                          hyFloat  _hprestrict_ *secArg            = secondArg.theData  + i*vDim;
+                          hyFloat  *_hprestrict_ res               = storage.theData    + (m-i);
+                          hyFloat  *_hprestrict_ secArg            = secondArg.theData  + i*vDim;
 
                           for (unsigned long i = 0UL; i < loopBound; i+=4) {
                               res[i]   += value * secArg[i];
@@ -3911,7 +3907,7 @@ void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
 {
     r = c = 10.;
 
-    if (storageType == 1) { // numeric matrix
+    if (is_numeric()) { // numeric matrix
         hyFloat  *maxScratch = cache;
         r = c = 0.;
 
@@ -4282,156 +4278,165 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash)
 
 //_____________________________________________________________________________________________
 
-_Matrix*    _Matrix::Exponentiate (void)
-{
+_Matrix*    _Matrix::Exponentiate (void) {
     // find the maximal elements of the matrix
-    long i,
-         power2 = 0;
-
+    
+    try {
+        if (!is_square()) {
+            throw _String ("Exponentiate is not defined for non-square matrices");
+        }
+        
+        long i,
+        power2 = 0;
+        
 #ifndef _OPENMP
-    matrix_exp_count++;
+        matrix_exp_count++;
 #endif
-
-    hyFloat max     = 1.0,
-               *stash  = new hyFloat[hDim*(1+vDim)];
-
-    if (storageType) {
-        hyFloat t;
-        RowAndColumnMax (max, t, stash);
-        max *= t;
-        if (max > .1) {
-            max             = sqrt (10.*max);
-            power2          = (long)((log (max)/log ((hyFloat)2.0)))+1;
-            max             = exp (power2 * log ((hyFloat)2.0));
-            (*this)         *= 1.0/max;
+        
+        hyFloat max     = 1.0,
+        *stash  = new hyFloat[hDim*(1+vDim)];
+        
+        if (!is_polynomial()) {
+            hyFloat t;
+            RowAndColumnMax (max, t, stash);
+            max *= t;
+            if (max > .1) {
+                max             = sqrt (10.*max);
+                power2          = (long)((log (max)/log ((hyFloat)2.0)))+1;
+                max             = exp (power2 * log ((hyFloat)2.0));
+                (*this)         *= 1.0/max;
+            } else {
+                power2 = 0;
+            }
+            
+            if (theIndex) {
+                // transpose sparse matrix
+                CompressSparseMatrix (true,stash);
+            }
+            
         } else {
-            power2 = 0;
+            max = 1.;
         }
-
+        
+        _Matrix *result = new _Matrix(hDim, vDim , is_polynomial(), !is_polynomial()),
+        temp    (*this);
+        
+        // put ones on the diagonal
+        
+        if (!is_polynomial()) {
+            for (i=0; i<result->lDim; i+=vDim+1) {
+                result->theData[i]=1.0;
+            }
+        } else {
+            for (i=0; i<(*result).hDim*(*result).vDim; i+=vDim+1) {
+                (*result).StoreObject(i,new _Polynomial (1.),true);
+            }
+        }
+        
+        if (max == 0.0) {
+            delete [] stash;
+            return result;
+        }
+        
+        (*result) += (*this);
+        
+        i = 2;
+        
+        if (precisionArg || is_polynomial()) {
+            if (!is_polynomial())
+                for (; i<=precisionArg; i++) {
+                    temp      *= (*this);
+                    temp      *= 1.0/i;
+                    (*result) += temp;
+                }
+            else {
+                while (temp.IsMaxElement (polynomialExpPrecision)) {
+                    if (i>maxPolynomialExpIterates) {
+                        break;
+                    }
+                    temp        *= (*this);
+                    temp        *= 1.0/i;
+                    (*result)   += temp;
+                    i++;
+                }
+                if (i>maxPolynomialExpIterates) {
+                    _String   wM ("Polynomial Matrix Exponential Failed to achieve accuracy POLYNOMIAL_EXP_PRECISION in under MAX_POLYNOMIAL_EXP_ITERATES. Either decrease the precision, or increase the maximum number of iterates.");
+                    ReportWarning (wM);
+                }
+            }
+        } else {
+            hyFloat tMax = MAX(MinElement()*sqrt ((hyFloat)hDim),truncPrecision);
+            
+            i=2;
+            
+            _Matrix tempS (hDim, vDim, false, temp.storageType);
+            do {
+                temp.MultbyS        (*this,theIndex!=nil, &tempS, stash);
+                temp      *= 1.0/i;
+                (*result) += temp;
+                i         ++;
+#ifndef _OPENMP
+                taylor_terms_count++;
+#endif
+            } while (temp.IsMaxElement(tMax*truncPrecision*i));
+            
+            // use Pade (4,4) here
+            
+            /*_Matrix temp (*this), top (result) , bottom (result);
+             temp *= .5;
+             top+=temp;
+             bottom-=temp;
+             temp *= *this;
+             temp *= 3.0/14.0;
+             top+=temp;
+             bottom+=temp;
+             temp *= *this;
+             temp *= 1.0/9.0;
+             top+=temp;
+             bottom-=temp;
+             temp *= 1.0/20.0;
+             top+=temp;
+             bottom+=temp;
+             _Matrix* inv = (_Matrix*)bottom.Inverse();
+             top *= *inv;
+             DeleteObject (inv);
+             result = top;*/
+        }
+        
+        if (power2) {
+            (*this)*=max;
+        }
+        
         if (theIndex)
-            // transpose sparse matrix
+            // transpose back
         {
-            CompressSparseMatrix (true,stash);
+            for (i=0; i<lDim; i++) {
+                long k = theIndex[i];
+                if  (k!=-1) {
+                    theIndex[i] = (k%vDim)*vDim + k/vDim;
+                }
+            }
+            result->Transpose();
         }
-
-    } else {
-        max = 1.;
-    }
-
-    _Matrix *result = new _Matrix(hDim, vDim , !storageType, storageType),
-    temp    (*this);
-
-    // put ones on the diagonal
-
-    if (storageType) {
-        for (i=0; i<result->lDim; i+=vDim+1) {
-            result->theData[i]=1.0;
+        
+        
+        for (long s = 0; s<power2; s++) {
+#ifndef _OPENMP
+            squarings_count++;
+#endif
+            if (result->Sqr(stash) < DBL_EPSILON * 1.e3) {
+                break;
+            }
         }
-    } else {
-        _Polynomial one (1.0);
-        for (i=0; i<(*result).hDim*(*result).vDim; i+=vDim+1) {
-            (*result).StoreObject(i,&one,true);
-        }
-    }
-
-    if (max == 0.0) {
         delete [] stash;
         return result;
     }
-
-    (*result) += (*this);
-
-    i = 2;
-
-    if (precisionArg||!storageType) {
-        if (storageType)
-            for (; i<=precisionArg; i++) {
-                temp      *= (*this);
-                temp      *= 1.0/i;
-                (*result) += temp;
-            }
-        else {
-            while (temp.IsMaxElement (polynomialExpPrecision)) {
-                if (i>maxPolynomialExpIterates) {
-                    break;
-                }
-                temp        *= (*this);
-                temp        *= 1.0/i;
-                (*result)   += temp;
-                i++;
-            }
-            if (i>maxPolynomialExpIterates) {
-                _String   wM ("Polynomial Matrix Exponential Failed to achieve accuracy POLYNOMIAL_EXP_PRECISION in under MAX_POLYNOMIAL_EXP_ITERATES. Either decrease the precision, or increase the maximum number of iterates.");
-                ReportWarning (wM);
-            }
-        }
-    } else {
-        hyFloat tMax = MAX(MinElement()*sqrt ((hyFloat)hDim),truncPrecision);
-
-        i=2;
-
-        _Matrix tempS (hDim, vDim, false, temp.storageType);
-        do {
-            temp.MultbyS        (*this,theIndex!=nil, &tempS, stash);
-            temp      *= 1.0/i;
-            (*result) += temp;
-            i         ++;
-#ifndef _OPENMP
-            taylor_terms_count++;
-#endif
-        } while (temp.IsMaxElement(tMax*truncPrecision*i));
-
-        // use Pade (4,4) here
-
-        /*_Matrix temp (*this), top (result) , bottom (result);
-        temp *= .5;
-        top+=temp;
-        bottom-=temp;
-        temp *= *this;
-        temp *= 3.0/14.0;
-        top+=temp;
-        bottom+=temp;
-        temp *= *this;
-        temp *= 1.0/9.0;
-        top+=temp;
-        bottom-=temp;
-        temp *= 1.0/20.0;
-        top+=temp;
-        bottom+=temp;
-        _Matrix* inv = (_Matrix*)bottom.Inverse();
-        top *= *inv;
-        DeleteObject (inv);
-        result = top;*/
+    catch (const _String e) {
+        HandleApplicationError(e);
+        
     }
-
-    if (power2) {
-        (*this)*=max;
-    }
-
-    if (theIndex)
-        // transpose back
-    {
-        for (i=0; i<lDim; i++) {
-            long k = theIndex[i];
-            if  (k!=-1) {
-                theIndex[i] = (k%vDim)*vDim + k/vDim;
-            }
-        }
-        result->Transpose();
-    }
-
-
-    for (long s = 0; s<power2; s++) {
-#ifndef _OPENMP
-        squarings_count++;
-#endif
-        if (result->Sqr(stash) < DBL_EPSILON * 1.e3) {
-            break;
-        }
-    }
-    delete [] stash;
-
-    return result;
+    return new _Matrix;
+    
 }
 
 //_____________________________________________________________________________________________
@@ -5270,8 +5275,8 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
             // loop interchange rocks!
 
           
-            hyFloat  _hprestrict_ * column = stash+lDim;
-            hyFloat const  _hprestrict_ * source = theData;
+            hyFloat  * _hprestrict_ column = stash+lDim;
+            hyFloat const  * source = theData;
 
             for (long j = 0; j < vDim; j++) {
                 for (long c = 0; c < vDim; c++) {
