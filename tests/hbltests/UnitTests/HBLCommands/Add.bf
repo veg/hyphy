@@ -51,7 +51,7 @@ function runTest () {
   // Adding different types (string and matrix)
   //stringPlusMatrix = "string" + {{1,2}};
   //fprintf (stdout, "stringPlusMatrix: ", stringPlusMatrix, "\n");
-  //assert(stringPlusMatrix == "test{{1,2}}", "Failed to add a string and a matrix (in that order); should convert the matrix to a string and concatenate it to the end of the string");
+  //assert(stringPlusMatrix == "string{{1,2}}", "Failed to add a string and a matrix (in that order); should convert the matrix to a string and concatenate it to the end of the string");
    
  
   //---------------------------------------------------------------------------------------------------------
