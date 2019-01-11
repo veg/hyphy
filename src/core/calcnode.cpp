@@ -1736,7 +1736,7 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
         if (nodeParameters.sLength) {
             ReportWarning ((_String("Model ")&nodeParameters&_String(" assigned to ")& nodeName));
         } else {
-            ReportWarning (_String("No nodel was assigned to ")& nodeName);
+            ReportWarning (_String("No model was assigned to ")& nodeName);
         }
 
     }
