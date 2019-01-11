@@ -69,7 +69,7 @@ const char hy_help_message [] =
 "  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
 "                           upon analysis completion\n\n"
 "optional keyword arguments:\n"
-"  BASEPATH=directory path  defines the base directory for all most path operations (default is pwd)\n"
+"  BASEPATH=directory path  defines the base directory for most path operations (default is pwd)\n"
 "  CPU=integer              if compiled with OpenMP multithreading support, requests this many threads; HyPhy could use fewer than this\n"
 "                           but never more; default is the number of CPU cores (as computed by OpenMP) on the system\n"
 "  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
