@@ -163,8 +163,8 @@ namespace hy_global {
   
   
     int _reg_exp_err_code = 0;
-    regex_t * hy_float_regex                 = _String::PrepRegExp ("\ *[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?", _reg_exp_err_code, true),
-            * hy_replicate_constraint_regexp = _String::PrepRegExp ("^this([0-9]+)\.(.+)$", _reg_exp_err_code, true);
+    regex_t * hy_float_regex                 = _String::PrepRegExp ("\\ *[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?", _reg_exp_err_code, true),
+            * hy_replicate_constraint_regexp = _String::PrepRegExp ("^this([0-9]+)\\.(.+)$", _reg_exp_err_code, true);
   
   
 

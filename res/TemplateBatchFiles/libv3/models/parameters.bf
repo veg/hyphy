@@ -432,7 +432,7 @@ lfunction parameters.IsIndependent(parameter) {
 }
 
 lfunction parameters.GetConstraint(parameter) {
-    GetString(info, ^ parameter, -2);
+    GetString(info, ^parameter, -2);
     return info;
 }
 

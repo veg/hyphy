@@ -2350,14 +2350,19 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
         if (!print_to_stdout && destination_file) {
           fclose (destination_file);
           destination_file = doFileOpen (destination.get_str(), "w");
-          _String* destination_copy = new _String (destination);
-          if (open_file_handles.UpdateValue(destination_copy, (long)destination_file, 1) >= 0) { // did not insert value
-            DeleteObject (destination_copy);
-          }
+            if (!do_close) {
+              _String* destination_copy = new _String (destination);
+            
+              if (open_file_handles.UpdateValue(destination_copy, (long)destination_file, 1) >= 0) { // did not insert value
+                DeleteObject (destination_copy);
+              }
+            }
+          
         }
       } else if (*current_argument == kFprintfKeepOpen) {
         if (!print_to_stdout) {
           open_file_handles.Insert (new _String (destination), (long)destination_file, false, true);
+          do_close = false;
         }
       } else if (*current_argument == kFprintfCloseFile) {
         open_file_handles.Delete (&destination, true);

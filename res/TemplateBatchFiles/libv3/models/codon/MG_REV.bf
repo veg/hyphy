@@ -139,7 +139,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
     models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
     models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
-
+    
 
     if (Type(value) == "AssociativeList") {
         if (value[terms.model.branch_length_scaler] == terms.model.branch_length_constrain) {
@@ -178,22 +178,22 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
             return models.codon.MG_REV.set_branch_length.lp;
         }
     } else {
-        if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
-            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
+
+        if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) { // alpha is unconstrained; 
+            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) { // beta is unconstrained; 
                 models.codon.MG_REV.set_branch_length.lp = parameters.NormalizeRatio(Eval(models.codon.MG_REV.set_branch_length.beta.p), Eval(models.codon.MG_REV.set_branch_length.alpha.p));
                 parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
                 ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                 Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
                 parameters.RemoveConstraint(models.codon.MG_REV.set_branch_length.beta);
                 Eval ("`models.codon.MG_REV.set_branch_length.beta.p` =" + Eval(models.codon.MG_REV.set_branch_length.beta));
-            } else {
-                parameters.SetConstraint (models.codon.MG_REV.set_branch_length.beta, parameters.GetConstraint (models.codon.MG_REV.set_branch_length.alpha.p),"");
-                parameters.SetConstraint (models.codon.MG_REV.set_branch_length.alpha, models.codon.MG_REV.set_branch_length.alpha.p,"");
+            } else { // beta IS constrained
+                //parameters.SetConstraint (models.codon.MG_REV.set_branch_length.beta, parameters.GetConstraint (models.codon.MG_REV.set_branch_length.alpha.p),"");
+                //parameters.SetConstraint (models.codon.MG_REV.set_branch_length.alpha, models.codon.MG_REV.set_branch_length.alpha.p,"");
                 ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                 Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
                 messages.log ("models.codon.MG_REV.set_branch_length: " + models.codon.MG_REV.set_branch_length.alpha.p + "=" + models.codon.MG_REV.set_branch_length.lp);
-                parameters.RemoveConstraint (models.codon.MG_REV.set_branch_length.alpha);
-                parameters.RemoveConstraint (models.codon.MG_REV.set_branch_length.beta);
+                
             }
         }
     }

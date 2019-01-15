@@ -186,19 +186,19 @@ template <class node_data> void node<node_data>::delete_tree(bool delSelf){
 
   //-------------------------------------------------------------
 template <class node_data> node<node_data>* node<node_data>::duplicate_tree(void (callback) (node<node_data>*)) {
-  
- 	node<node_data>* result = new node<node_data>;
-  
- 	for (int i=1; i<=get_num_nodes(); i++) {
-    result->add_node(*(go_down(i)->duplicate_tree()));
- 	}
-
-  if (callback) {
-    callback (result);
-  }
-
-  result->in_object = in_object;
- 	return result;
+    
+    node<node_data>* result = new node<node_data>;
+    
+    for (int i=1; i<=get_num_nodes(); i++) {
+        result->add_node(*(go_down(i)->duplicate_tree()));
+    }
+    
+    if (callback) {
+        callback (result);
+    }
+    
+    result->in_object = in_object;
+    return result;
 }
 
   //-------------------------------------------------------------

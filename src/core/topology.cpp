@@ -64,7 +64,7 @@ _TreeTopology::_TreeTopology () {
 }
 
 //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), kEmptyString) {
+_TreeTopology::_TreeTopology (_TheTree const *top):_CalcNode (*top->GetName(), kEmptyString) {
     PreTreeConstructor   (false);
     if (top->theRoot) {
         isDefiningATree         = kTreeIsBeingParsed;
@@ -88,6 +88,22 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), kEmptyS
         return;
     }
 }
+
+//_______________________________________________________________________________________________
+_TreeTopology::_TreeTopology (_TreeTopology const &top) {
+    //PreTreeConstructor   (false);
+    if (top.theRoot) {
+        theRoot                 = top.theRoot->duplicate_tree ();
+        
+        flatTree.Duplicate(&top.flatTree),
+        flatCLeaves.Duplicate(&top.flatCLeaves);
+        rooted = top.rooted;
+    } else {
+        HandleApplicationError ("Can't create an empty tree");
+        return;
+    }
+}
+
 
 //_______________________________________________________________________________________________
 _TreeTopology::_TreeTopology    (_String const & name, _String const & parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,kEmptyString)
@@ -902,10 +918,14 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                     return TipName(arg0);
                 case HY_OP_CODE_MIN: // COT (Min)
                     return FindCOT (arg0);
-                case HY_OP_CODE_REROOTTREE: // RerootTree
+                case HY_OP_CODE_MAX: // Maximum parsimony
+                    return MaximumParsimony (arg0);
+               case HY_OP_CODE_REROOTTREE: // RerootTree
                     return RerootTree(arg0);
                 case HY_OP_CODE_POWER: //^
                     return AVLRepresentation (arg0);
+                case HY_OP_CODE_RANDOM:
+                    return RandomizeTips (arg0);
                 case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument
                     if (arg0->ObjectClass()!=NUMBER) {
                         throw _String ("Invalid (not a number) 2nd argument is call to $ (split)for trees.");
@@ -1095,6 +1115,43 @@ void _TreeTopology::FindCOTHelper2 (node<long>* aNode, _Matrix& branchSpans, _Ma
     }
 }
 
+//__________________________________________________________________________________
+
+HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
+    static const _String
+        kMPScore ("score"),
+        kMPLabels("labels"),
+        kMPOutSubstitutions ("substitutions");
+    
+    try {
+        CheckArgumentType(parameters, ASSOCIATIVE_LIST, true);
+        _AssociativeList * arguments = (_AssociativeList *)parameters;
+        
+        _AssociativeList * labels    = (_AssociativeList *)arguments->GetByKeyException(kMPLabels, ASSOCIATIVE_LIST),
+                         * scores    = (_AssociativeList *)arguments->GetByKeyException(kMPScore, ASSOCIATIVE_LIST);
+        
+        _List           id2name; // integer label -> string label
+        
+        _Trie           unique_labels, // label -> unique integer ID
+                        mapped_labels; // node_name -> integer label
+        
+        for (AVLListXLIteratorKeyValue key_value : labels->ListIterator()) {
+            HBLObjectRef node_label = (HBLObjectRef)key_value.get_object();
+            _String const * current_key = key_value.get_key();
+            if (node_label->ObjectClass() != STRING) {
+                throw _String ("Not a string-valued label for node ") & current_key->Enquote();
+            }
+        }
+        
+        // check required arguments
+        
+    } catch (const _String err) {
+        HandleApplicationError(err);
+    }
+    return new  _MathObject;
+    
+    
+}
 //__________________________________________________________________________________
 
 _AssociativeList* _TreeTopology::FindCOT (HBLObjectRef p) {
@@ -1788,8 +1845,7 @@ HBLObjectRef _TreeTopology::BranchCount (void) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::FlatRepresentation (void)
-{
+HBLObjectRef _TreeTopology::FlatRepresentation (void) {
     _SimpleList     flatTree;
 
     unsigned long      count = 0UL;
@@ -1899,6 +1955,103 @@ HBLObjectRef _TreeTopology::TipName (HBLObjectRef p) {
     }
     return new _FString (kEmptyString);
 }
+
+//__________________________________________________________________________________
+
+bool _recurse_and_reshuffle (node<long>* root, long& from, long &to, long &leaf_index, _SimpleList& leaf_order, hyFloat shuffle_rate) {
+    int children = root->get_num_nodes();
+    if (children) {
+        long my_start = leaf_index;
+        for (int k = 1; k <= root->get_num_nodes(); k ++) {
+            long start, end;
+            node<long>* kth_child = root->go_down (k);
+            if (_recurse_and_reshuffle (kth_child, start, end, leaf_index, leaf_order, shuffle_rate)) {
+                // reshuffled this child, lock the leaves
+                for (long element = start; element <= end; element ++) {
+                    if (leaf_order.get (element) >= 0) {
+                        leaf_order[element] = -leaf_order.get (element) - 1;
+                    }
+                }
+            }
+        }
+        from = my_start;
+        to = leaf_index-1;
+
+        if (to-from >= 2 && genrand_real1() <= shuffle_rate) { // not a cherry and selected
+            _SimpleList reshuffled_subset;
+            for (long element = from; element <= to; element ++) {
+                if (leaf_order.get (element) >= 0L) {
+                    reshuffled_subset << leaf_order.get (element);
+                }
+            }
+            reshuffled_subset.Permute(1L);
+            long hits = 0;
+            for (long element = from; element <= to; element ++) {
+                if (leaf_order.get (element) >= 0L) {
+                    leaf_order[element] = reshuffled_subset.get (hits++);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+    leaf_index ++;
+    return false;
+}
+//__________________________________________________________________________________
+HBLObjectRef _TreeTopology::RandomizeTips (HBLObjectRef rate) {
+    _TreeTopology * reshuffled = nil;
+    
+    try {
+        if (CheckArgumentType (rate, NUMBER, true)) {
+            hyFloat shuffle_rate = rate->Compute()->Value();
+            if (CheckRange (shuffle_rate, 0, 1, true)) {
+                reshuffled = new _TreeTopology (*this);
+                
+                long leaves, ints;
+                EdgeCount (leaves, ints);
+                
+                _SimpleList leaf_order;
+                
+                /* this will store the reshuffled order of leaves
+                 leaf_order[i] = the index of the original leaf i (in post-order traversal) in the reshuffled tree
+                 a negative value indicates that the particular leaf has been permuted already, and is locked for subsequent permutations
+                 */
+                
+                node_iterator<long> ni (reshuffled->theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+                while (node<long>* iterator = ni.Next()) {
+                    if (iterator->is_leaf()) {
+                        leaf_order << iterator->in_object;
+                    }
+                }
+                
+                long leaf_index = 0;
+                long f,t;
+                _recurse_and_reshuffle (&reshuffled->GetRoot(),f,t,leaf_index,leaf_order,shuffle_rate);
+                ni.Reset(reshuffled->theRoot);
+                f = 0;
+                //node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+                while (node<long>* iterator = ni.Next()) {
+                    if (iterator->is_leaf()){
+                        iterator->in_object = leaf_order.get (f++);
+                        if (iterator->in_object < 0) {
+                            iterator->in_object = -iterator->in_object - 1;
+                        }
+                    }
+                }
+                
+                
+                
+                return reshuffled;
+            }
+        }
+
+    } catch (const _String e) {
+        HandleApplicationError(e);
+    }
+    return new _MathObject;
+}
+
 
 //__________________________________________________________________________________
 HBLObjectRef _TreeTopology::BranchLength (HBLObjectRef p) {

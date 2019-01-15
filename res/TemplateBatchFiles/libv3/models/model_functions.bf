@@ -230,6 +230,8 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 
     // Define type of frequency estimator
+    
+    
 	if (None != estimator_type) {
 		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
 	}

@@ -1,4 +1,4 @@
-RequireVersion ("2.3.3");
+RequireVersion ("2.4.0");
 
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
@@ -13,12 +13,15 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
+LoadFunctionLibrary("libv3/models/rate_variation.bf");
+
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
+//utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.001);
 
 
-busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection.",
-                           terms.io.version : "1.2",
+busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2)",
+                           terms.io.version : "2.0",
                            terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
                            terms.io.authors : "Sergei L Kosakovsky Pond",
                            terms.io.contact : "spond@temple.edu",
@@ -29,6 +32,7 @@ io.DisplayAnalysisBanner (busted.analysis_description);
 
 busted.FG = "Test";
 busted.BG = "Background";
+busted.SRV = "Synonymous site-to-site rates";
 busted.background = "background";
 busted.unconstrained = "unconstrained";
 busted.constrained = "constrained";
@@ -39,6 +43,7 @@ busted.json.background = busted.background;
 busted.json.site_logl  = "Site Log Likelihood";
 busted.json.evidence_ratios  = "Evidence Ratios";
 busted.rate_classes = 3;
+busted.synonymous_rate_classes = 3;
 
 busted.json    = { terms.json.analysis: busted.analysis_description,
                    terms.json.input: {},
@@ -66,7 +71,11 @@ namespace busted {
     load_file ("busted");
 }
 
-
+busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch)", 
+                                    "No"  : "Synonymous substitution rates are constant across sites. This is the 'classic' behavior, i.e. the original published test"},
+                                    "Synonymous rate variation"
+                                    ) == "Yes";
+    
 io.ReportProgressMessageMD('BUSTED',  'selector', 'Branches to test for selection in the BUSTED analysis');
 
 utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
@@ -121,18 +130,27 @@ selection.io.json_store_lf_withEFV (busted.json,
                             utility.ArrayToDict (utility.Map (busted.global_dnds, "_value_", "{'key': _value_[terms.description], 'value' : Eval({{_value_ [terms.fit.MLE],1}})}")),
                             (busted.final_partitioned_mg_results[terms.efv_estimate])["VALUEINDEXORDER"][0],
                             busted.display_orders[busted.MG94]);
+                            
 utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
     'selection.io.json_store_branch_attribute(busted.json, busted.MG94, terms.branch_length, busted.display_orders[busted.MG94],
                                              _key_,
                                              selection.io.extract_branch_info((busted.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 
 
+busted.model_generator = "models.codon.BS_REL.ModelDescription";
 
 
+if (busted.do_srv) {
+    lfunction busted.model.with.GDD (type, code, rates) {        
+        def = models.codon.BS_REL.ModelDescription (type, code, rates);
+        def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory ({utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("busted.synonymous_rate_classes")});
+        return def;
+    }
+    busted.model_generator = "busted.model.with.GDD";
+}
 
 
-
-busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
+busted.test.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generator,
         "busted.test", {
             "0": parameters.Quote(terms.global),
             "1": busted.codon_data_info[terms.code],
@@ -142,7 +160,7 @@ busted.test.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL
         None);
 
 
-busted.background.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
+busted.background.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generator,
         "busted.background", {
             "0": parameters.Quote(terms.global),
             "1": busted.codon_data_info[terms.code],
@@ -151,17 +169,31 @@ busted.background.bsrel_model =  model.generic.DefineMixtureModel("models.codon.
         busted.filter_names,
         None);
 
+/*
+
+    busted.distribution_for_json [busted.BG] = utility.Map (utility.Range (busted.rate_classes, 0, 1),
+                                                         "_index_",
+                                                         "{terms.json.omega_ratio : busted.inferred_background_distribution [_index_][0],
+                                                           terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
+
+*/
 
 models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
+
+if (busted.do_srv) {
+    models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, "GDD rate category");
+    models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " for GDD category ");
+}
+
 
 busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
             "_value_[terms.fit.MLE]"));
 
 
-
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
 parameters.SetStickBreakingDistribution (busted.distribution, busted.test_guess);
 
+//VERBOSITY_LEVEL = 1;
 
 if (busted.has_background) {
     busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
@@ -227,6 +259,17 @@ if (busted.has_background) {
                                                            terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
 }
 
+if (busted.do_srv) {
+    busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
+    io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
+    selection.io.report_distribution (busted.srv_info);
+
+     busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
+                                                             "_index_",
+                                                             "{terms.json.rate :busted.srv_info [_index_][0],
+                                                               terms.json.proportion : busted.srv_info [_index_][1]}"));
+
+}
 
 
 
@@ -291,7 +334,18 @@ if (!busted.run_test) {
                                                                terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
     }
 
+    if (busted.do_srv) {
+        busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
+        io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
+        selection.io.report_distribution (busted.srv_info);
 
+         busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
+                                                                 "_index_",
+                                                                 "{terms.json.rate :busted.srv_info [_index_][0],
+                                                                   terms.json.proportion : busted.srv_info [_index_][1]}"));
+
+    }
+    
     selection.io.json_store_lf (busted.json,
                             "Constrained model",
                             busted.null_results[terms.fit.log_likelihood],
@@ -325,7 +379,7 @@ lfunction busted.ComputeSiteLikelihoods (id) {
 
 function busted.ComputeLRT (ha, h0) {
     return {terms.LRT : 2*(ha-h0),
-            terms.p_value : 1-CChi2 (2*(ha-h0),2)};
+            terms.p_value : 0.5*(1-CChi2 (2*(ha-h0),2))};
 }
 
 //------------------------------------------------------------------------------

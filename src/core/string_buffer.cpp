@@ -364,8 +364,15 @@ _StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const _String& s) {
 
 _StringBuffer& _StringBuffer::SanitizeAndAppend(const char c) {
   switch (c) {
-    //case '\n':
-    //case '\t':
+    case '\n':
+          this->PushChar ('\\');
+          this->PushChar ('n');
+          break;
+    case '\t':
+        this->PushChar ('\\');
+        this->PushChar ('t');
+        break;
+
     case '"':
     case '\\':
       this->PushChar('\\');

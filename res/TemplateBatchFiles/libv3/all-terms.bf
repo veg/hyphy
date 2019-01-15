@@ -287,6 +287,7 @@ namespace terms{
         version               = "version";
         convergence_failures  = "convergence failures";
         omega_ratio           = "omega";
+        rate                  = "rate";
         proportion            = "proportion";
         positive              = "positive test results";
     }

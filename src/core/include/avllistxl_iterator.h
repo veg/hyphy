@@ -48,10 +48,12 @@ class AVLListXLIteratorKeyValue {
 private:
   long      index;
   BaseRef   object;
+  const     _String * key;
 public:
-  AVLListXLIteratorKeyValue (long idx, BaseRef obj) : index (idx), object (obj) {}
+  AVLListXLIteratorKeyValue (long idx, const _String* k, BaseRef obj) : index (idx), key (k), object (obj) {}
   long get_index (void) const {return index;}
   BaseRef get_object (void) const {return object;}
+  _String const* get_key (void) {return key;}
   
 };
 

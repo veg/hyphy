@@ -161,6 +161,8 @@ void        SplitVariablesIntoClasses
 (_SimpleList&, _SimpleList&, _SimpleList&, _SimpleList&);
 
 bool        CheckEqual      (hyFloat,hyFloat,hyFloat = hy_global::kMachineEpsilon);
+bool        CheckRange      (hyFloat value,hyFloat lb, hyFloat ub, bool exeptions = false);
+bool        CheckArgumentType  (HBLObjectRef object, long type, bool exceptions = false);
 
 extern      _AVLListX       _hyApplicationGlobals;
 
