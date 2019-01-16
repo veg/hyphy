@@ -27,7 +27,7 @@ function runTest () {
   assert(1>none == 1, "Failed to return true for an int greater than none");
   assert(none>1 == 0, "Failed to return false for none greater than an int");
   
-  // Matrix (Neighbor Join) 
+  // TODO: Matrix (Neighbor Join) 
   // NOTE: the results do not match the docs... I'm unsure of what method of neighbor join produces a 10x3 matrix from a 4x4 input
   exampleSquare4x4Matrix = {{0,7,11,14}{7,0,6,9}{11,6,0,7}{14,9,7,0}};
   neighborJoinedMatrix = exampleSquare4x4Matrix>1;

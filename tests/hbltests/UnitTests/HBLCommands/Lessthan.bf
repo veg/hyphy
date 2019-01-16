@@ -46,7 +46,7 @@ function runTest () {
   assert (runCommandWithSoftErrors ('T2<T2', "Operation '<' is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (<)");
   assert (runCommandWithSoftErrors ('TT<TT', "Operation '<' is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (<)");
   assert (runCommandWithSoftErrors ('list1<list2', "Operation '<' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to compare associateive lists (<)");
-  // Looks like an uncaught error for the line below: "libc++abi.dylib: terminating with uncaught exception of type char const*"
+  // TODO: Looks like an uncaught error for the line below: "libc++abi.dylib: terminating with uncaught exception of type char const*"
   //assert (runCommandWithSoftErrors ('oneDMatrix < twoDMatrix', "Incompatible dimensions when trying to add or subtract matrices"), "Failed error checking for addig matrices of different dimensions");
   
 

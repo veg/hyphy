@@ -15,7 +15,7 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   // SIMPLE FUNCTIONALITY
   //---------------------------------------------------------------------------------------------------------
-  // Format a number to a specified number of sigfigs and decimal places (the sigfigs argument doesn't seem to have an effect).
+  // TODO: Format a number to a specified number of sigfigs and decimal places (the sigfigs argument doesn't seem to have an effect).
   unformattedX = 51.123456;
   formattedX1 = Format(unformattedX, 3, 3);
   formattedX2 = Format(unformattedX, 4, 3);
@@ -36,7 +36,7 @@ function runTest () {
   // None is treated like zero.
   assert(Format(none, 2, 2) == '0.00', "Failed to format 'none' as if it were zero");
 
-  // Inputing a string the string will be treated as a number (according to docs).
+  // TODO: Inputing a string the string will be treated as a number (according to docs).
   //assert(Format('0.116', 2, 2 == '0.12', "Failed to format a string"));
 
   // Format a Topology in an easy to read string (topology, internalNodeNames*, branchLengths*) *: if there's a number, show, if not don't.

@@ -31,7 +31,7 @@ function runTest () {
   assert("string1"/"*tri*" == 1, "Failed to compare two strings with the second string having a multipe characters replaced with * (more than one consecutive characters was repalced with just one *)");
   // Divide Matrices (element wise division) (NOT IN DOCS)
   assert({{4,2}{10,8}} / {{1,1}{5,2}} =={{4,2}{2,4}}, "Failed to perform element wise division on matrices");
-  // Divide two associative lists (I'm not sure what this is supposed to do) (NOT IN DOCS)
+  // TODO: Divide two associative lists (I'm not sure what this is supposed to do) (NOT IN DOCS)
   list1 = {"key": "val"};
   list2 = {"otherKey": "otherVal"};
   x = list1/list2;

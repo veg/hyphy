@@ -19,6 +19,7 @@ function runTest () {
   erf1 = Erf(0.75);
   expectedErf1 = 0.7111556336535151315989378345914107773742059540965372; // From wolfram alpha
   assert(Abs(erf1 - expectedErf1) < 1e-6, "Failed to compute error function of 0.75 within 6 digits");
+  // TODO: minor issue below.
   //assert(Abs(erf1 - expectedErf1) < 1e-11, "Failed to compute error function of 0.75 within 11 digits");
   erf2 = Erf(-0.1);
   expectedErf2 = -0.112462916018284892203275071743968383221696299159702; // From wolfram alpha

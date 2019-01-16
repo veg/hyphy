@@ -22,7 +22,7 @@ function runTest () {
 
   ACCEPT_ROOTED_TREES = 0;
   unrooted = BranchCount(TT);
-  //assert(unrooted == 2, "Failed to calculate the number of internal branches in an unrooted tree");
+  //TODO: assert(unrooted == 2, "Failed to calculate the number of internal branches in an unrooted tree");
   assert(BranchCount(T) == BranchCount(TT), "Branch count of matching tree and topology are the same");
   assert(BranchCount(largeT) == 4, "Branch count of larger tree is correct");
 
@@ -39,12 +39,11 @@ function runTest () {
   list1 = {"key1": "val1"};
   matrix1 = {{1,2}{3,4}};
 
-  //x = BranchCount(none);
   assert (runCommandWithSoftErrors ('BranchCount(none)', "Operation 'BranchCount' is not implemented/defined for a Number"), "Failed error checking for running BranchCount on none");
   assert (runCommandWithSoftErrors ('BranchCount(10)', "Operation 'BranchCount' is not implemented/defined for a Number"), "Failed error checking for running BranchCount on a number");
   assert (runCommandWithSoftErrors ('BranchCount(list1)', "Operation 'BranchCount' is not implemented/defined for a AssociativeList"), "Failed error checking for running BranchCount on an associative list");
 
-  // Not sure why the assert two lines below doesn't work... the line below throws the error that I have listed but the assert doesn't work.
+  // TODO: Not sure why the assert two lines below doesn't work... the line below throws the error that I have listed but the assert doesn't work.
   //BranchCount(matrix1);
   //assert (runCommandWithSoftErrors ('BranchCount(matrix1)', "Operation 'BranchCount' is not implemented/defined for a matrix"), "Failed error checking for running BranchCount on a number");
 

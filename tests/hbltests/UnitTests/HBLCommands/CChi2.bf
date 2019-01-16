@@ -19,6 +19,7 @@ function runTest () {
   twoCategories = CChi2({{1,2}{3,0}},5);
   assert((Abs(tw0Categories) - 4) < 1e-6, "Failed to return the expected value for a two category chi squared test");
 
+  // TODO: see below
   fprintf (stdout, 'there doesnt seem to be a difference between a number greater than or less than one (i.e. it looks like its always computing Cochran-Armitage).\n');
   threeCategoriesMatrixTrend = {{1,2,3}{10,21,29}};
   threeCategoriesMatrixNoTrend = {{1,3,2}{29,21,10}};
@@ -51,7 +52,7 @@ function runTest () {
   Tree TT = ((1,2),(3,4),5);
 
   
-  // Not sure why the below doesn't work.
+  // TODO: Not sure why the below doesn't work.
   //assert (runCommand with SoftErrors ('CChi2(list1, 1)', "Operation'CChi2' is not implemented/devined for a AssociativeList"), "Failed error checking for trying to take Chi squared of associative list");
   //assert (runCommand with SoftErrors ('CChi2(TT,1)', "Operation 'CChi2' is not implemented/defined for a Tree"), "Failed error checking for trying to take Chi squared of Tree");
   //assert (runCommand with SoftErrors ('CChi2(T,1)', "Operation 'CChi2' is not implemented/defined for a Topology"), "Failed error checking for trying to take Chi squared of Topology");

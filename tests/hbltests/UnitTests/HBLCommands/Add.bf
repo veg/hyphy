@@ -39,7 +39,7 @@ function runTest () {
   assert(1 + "test" + 2 == 3, "Failed to add a number, a string and another number (in that order; i.e. number first); should return the sum of the numbers");
 
 
-  // Can't get the two tests below to work
+  // TODO: Can't get the two tests below to work
   // Add topologies
   //Topology T = ((a,b)N1,c,d);
   //t = T + {"NAME":"e", "WHERE": "b", "PARENT": "f"};
@@ -48,7 +48,7 @@ function runTest () {
   //expectedNewTopology = ((a,(b,e)f)N1,c,d);
   //assert(T == expectedNewTopology, "Failed to add a node to a topology");
 
-  // Adding different types (string and matrix)
+  // TODO: Adding different types (string and matrix)
   //stringPlusMatrix = "string" + {{1,2}};
   //fprintf (stdout, "stringPlusMatrix: ", stringPlusMatrix, "\n");
   //assert(stringPlusMatrix == "string{{1,2}}", "Failed to add a string and a matrix (in that order); should convert the matrix to a string and concatenate it to the end of the string");

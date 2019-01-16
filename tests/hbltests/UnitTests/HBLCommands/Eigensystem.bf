@@ -22,6 +22,8 @@ function runTest () {
   eigenValues1 = eigenSystem["1"];
   expectedEigenVector1 = {{20}{25}};
   expectedEigenValues1 = {{0}{0}};
+
+  // TODO: see below.
   fprintf(stdout, 'The eigen values and eigen vectors are printing as <HyPhy Base Object> which I dont know how to assert against\n');
   fprintf (stdout, 'eigenSystem1: ', eigenSystem1, '\n');
   fprintf (stdout, 'eigenValues1: ', eigenValues1, '\n');

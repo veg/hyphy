@@ -29,7 +29,7 @@ function runTest () {
   assert(none<=1 == 1, "Failed to return true for none less than or equal to an int");
   assert(none<=none == 1, "Failed to return true for none less than or equal to none");
 
-  // Matrices (seems to implement k-means clustering based on the error message; undocumented; potentially unimplemented)
+  // TODO: Matrices (seems to implement k-means clustering based on the error message; undocumented; potentially unimplemented)
   matrix1 = {{1,2}{3,4}{5,6}};
   // Error message indicating k-means
   //y = matrix1<=3;
@@ -43,7 +43,7 @@ function runTest () {
   list1 = {"key1": "val1"};
   list2 = {"key2": "val2"};
 
-  // Both lines below result in, "HYPHYMP(70363,0x7fff96910380) malloc: *** error for object 0x7fad8de03fb0: pointer being freed was not allocated"
+  // TODO: Both lines below result in, "HYPHYMP(70363,0x7fff96910380) malloc: *** error for object 0x7fad8de03fb0: pointer being freed was not allocated"
   //assert (runCommandWithSoftErrors ('T2<=T2', "Operation '<' is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (<)");
   //assert (runCommandWithSoftErrors ('TT<=TT', "Operation '<' is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (<)");
 

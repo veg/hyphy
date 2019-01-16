@@ -25,7 +25,7 @@ function runTest () {
   assert(node1BranchNameTree == 'Node1', "Failed to correctly get branch name by traversal of index of a Tree");
   
   
-  // The Three functions below don't work as documented
+  // TODO: The Three functions below don't work as documented
   // The "expected*" is what is shown in the docs.
 
   // Get all branch names.
@@ -68,7 +68,7 @@ function runTest () {
   assert (runCommandWithSoftErrors ('BranchName(1)', "Operation 'BranchName' is not implemented/defined for a Number"), "Failed error checking for running BranchName on Number");
   assert (runCommandWithSoftErrors ('BranchName(none)', "Operation 'BranchName' is not implemented/defined for a Number"), "Failed error checking for running BranchName on none");
   
-  // Not sure why the below assert fails... 
+  // TODO: Not sure why the below assert fails... 
   //assert (runCommandWithSoftErrors ('BranchName(matrix1)', "Operation 'BranchName' is not implemented/defined for a Matrix"), "Failed error checking for running BranchName on Matrix");
 
   

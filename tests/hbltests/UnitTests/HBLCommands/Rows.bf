@@ -23,7 +23,7 @@ function runTest () {
   assert(Rows(none) == 0, "Failed to return zero for a non-matrix (none)");
 
   // Undocumented functionality: return the keys of an AssociativeList.
-  // The function works but the assert is failing for some reason.
+  // TODO: The function works but the assert is failing for some reason.
   list1 = {"key1": "val1"};
   list1Rows = Rows(list1);
   expectedList1Rows = {{"key1"}};

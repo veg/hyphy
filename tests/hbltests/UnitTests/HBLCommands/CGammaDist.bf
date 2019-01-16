@@ -35,7 +35,7 @@ function runTest () {
   assert (runCommandWithSoftErrors ('CGammaDist(TT,1,1)', "Operation 'CGammaDist' is not implemented/defined for a Tree"), "Failed error checking for trying to take CGammaDist of trees");
   assert (runCommandWithSoftErrors ('CGammaDist(list1,1,1)', "Operation 'CGammaDist' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to take CGammaDist of lists");
 
-  // Not sure why the assert below doesn't work.
+  // TODO: Not sure why the assert below doesn't work.
   //assert (runCommandWithSoftErrors ('CGammaDist(matrix1,1,1)', "Operation 'CGammaDist' is not implemented/defined for a Matrix"), "Failed error checking for trying to take CGammaDist of matrices");
   
 
