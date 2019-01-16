@@ -52,10 +52,9 @@ function runTest () {
   Tree TT = ((1,2),(3,4),5);
 
   
-  // TODO: Not sure why the below doesn't work.
-  //assert (runCommand with SoftErrors ('CChi2(list1, 1)', "Operation'CChi2' is not implemented/devined for a AssociativeList"), "Failed error checking for trying to take Chi squared of associative list");
-  //assert (runCommand with SoftErrors ('CChi2(TT,1)', "Operation 'CChi2' is not implemented/defined for a Tree"), "Failed error checking for trying to take Chi squared of Tree");
-  //assert (runCommand with SoftErrors ('CChi2(T,1)', "Operation 'CChi2' is not implemented/defined for a Topology"), "Failed error checking for trying to take Chi squared of Topology");
+  assert (runCommandWithSoftErrors ('CChi2(list1, 1)', "Operation 'CChi2' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to take Chi squared of associative list");
+  assert (runCommandWithSoftErrors ('CChi2(TT,1)', "Operation 'CChi2' is not implemented/defined for a Tree"), "Failed error checking for trying to take Chi squared of Tree");
+  assert (runCommandWithSoftErrors ('CChi2(T,1)', "Operation 'CChi2' is not implemented/defined for a Topology"), "Failed error checking for trying to take Chi squared of Topology");
 
   testResult = 1;
 
