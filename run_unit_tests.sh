@@ -19,20 +19,26 @@ for filename in ./tests/hbltests/UnitTests/HBLCommands/*.bf; do
   
 done
 
-echo "\n\n------------------------SUMMARY (Failed Tests)----------------------------\n"
-echo "\n The following tests failed:"
+if [ $testFailed ]
+then
+  echo "\n\n------------------------SUMMARY (Failed Tests)----------------------------\n"
+  echo "\n The following tests failed:"
 
-for failedTest in "${failedTests[@]}"; do
-  $failedTest
-done
+  for failedTest in "${failedTests[@]}"; do
+    $failedTest
+  done
 
-echo "\n The output of the failed tests is below: \n"
-for failedTest in "${failedTests[@]}"; do
-  echo "--------------------------------------------------------------"
-  $HYPHYMP $failedTest
-  echo "\n"
-done
+  echo "\n The output of the failed tests is below: \n"
+  for failedTest in "${failedTests[@]}"; do
+    echo "--------------------------------------------------------------"
+    $HYPHYMP $failedTest
+    echo "\n"
+  done
 
-echo "\n\n------------------------SUMMARY (Failed Tests)----------------------------\n"
-echo "$testFailed Tests Failed"
-echo "of $testsRun Tests Run"
+  echo "\n\n------------------------SUMMARY (Failed Tests)----------------------------\n"
+  echo "$testFailed Tests Failed"
+  echo "of $testsRun Tests Run"
+  exit 1
+else
+  echo "\n\n------------------------ALL TEST PASED------------------------------------\n"
+fi
