@@ -127,6 +127,43 @@ lfunction selection.io.extract_global_MLE(fit, id) {
     return ((fit[utility.getGlobalValue("terms.global")])[id])[utility.getGlobalValue("terms.fit.MLE")];
 }
 
+//------------------------------------------------------------------------------
+
+lfunction selection.io.report_distribution (distribution) {
+
+    // TODO remove hardcoding
+    settings = {"header" : TRUE, "column-widths": {
+            "0": 35,
+            "1": 15,
+            "2": 35
+            }};
+
+    fprintf (stdout, "\n", io.FormatTableRow ({{"Rate", "Proportion, %", "Notes"}}, settings));
+    rates = Rows (distribution);
+    settings ["header"] = FALSE;
+    for (i = 0; i < rates; i += 1) {
+        row_matrix = {1,3};
+
+        row_matrix [0] =  Format (distribution [i][0], 6, 3);
+        row_matrix [1] =  Format (distribution [i][1] * 100, 6, 3);
+        row_matrix [2] = "";
+
+        if (distribution [i][1] < 1e-4) {
+            row_matrix [2] = "Not supported by data";
+        } else {
+            if (i > 0) {
+                if (distribution [i-1][0] == distribution [i][0] || parameters.NormalizeRatio (Abs(distribution [i-1][0] - distribution [i][0]), Max (distribution [i-1][0], distribution [i][0])) < 0.05) {
+                    row_matrix [2] = "Collapsed rate class";
+                }
+            }
+        }
+
+        fprintf (stdout, io.FormatTableRow (row_matrix, settings));
+
+    }
+    fprintf (stdout, "\n");
+    return row_matrix;
+}
 
 //------------------------------------------------------------------------------
 

@@ -86,13 +86,10 @@ lfunction rate_variation_define_gdd(options, namespace) {
 	utility.ForEachPair (rates, "_key_", "_value_", '(`&globals`)["GDD rate category " + (1+_key_)] = _value_');
 	
 	weights = parameters.GenerateSequentialNames (parameters.ApplyNameSpace("rv_gdd_weights", namespace), categories-1, "_");
-	utility.ForEachPair (weights, "_key_", "_value_", '(`&globals`)[utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " " + (1+_key_)] = _value_');
+	utility.ForEachPair (weights, "_key_", "_value_", '(`&globals`)[utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " for GDD category " + (1+_key_)] = _value_');
 
 	parameters.DeclareGlobalWithRanges (weights, 1/categories, 0, 1);
 	parameters.DeclareGlobal (rates, {});
-	//console.log (rates);
-	//utility.ForEach ({1,categories}["_MATRIX_ELEMENT_COLUMN_"], "_index_", '^(`&rates`[_index_])=_index_+1');
-	//console.log (rates);
 	if (utility.Has (options, utility.getGlobalValue("terms.initial_values"), "String")) {
 		if (options[utility.getGlobalValue("terms.initial_values")] == "Randomize") {
 			utility.ForEachPair (rates, "_key_", "_value_", '^_key_ = Random (0,1)');
@@ -108,7 +105,7 @@ lfunction rate_variation_define_gdd(options, namespace) {
 	parameters.SetConstraint (normalizer, mean, utility.getGlobalValue("terms.global"));
 	
 	definition = {utility.getGlobalValue("terms.id"): parameters.ApplyNameSpace("rv_gdd", namespace),
-				  utility.getGlobalValue("terms.description") : "Discretized unit mean Gamma distribution with " + categories + " categories", 
+				  utility.getGlobalValue("terms.description") : "General discrete unit mean variable on " + categories + " categories", 
 				  utility.getGlobalValue("terms.category.category_parameters") : {
 				  		utility.getGlobalValue("terms.category.bins") : ""+categories,
 				  		utility.getGlobalValue("terms.category.weights") : "{{" + Join (",", weight_vector) + "}}",
@@ -120,7 +117,7 @@ lfunction rate_variation_define_gdd(options, namespace) {
 				  utility.getGlobalValue("terms.rate_variation.before") : None,
 				  utility.getGlobalValue("terms.rate_variation.after") : None,
 				  };
-				  
+				
 	return {utility.getGlobalValue("terms.global") : globals,
 		    utility.getGlobalValue("terms.category") : definition};
 
@@ -183,4 +180,16 @@ lfunction rate_variation_define_gamma_inv (options, namespace) {
 
 }
 
-
+lfunction rate_variation.extract_category_information (model) {
+    if (utility.Has (model[^"terms.parameters"], ^"terms.category", "AssociativeList")) {
+        info = {};
+        utility.ForEachPair ((model[^"terms.parameters"])[^"terms.category"], "_k_", "_v_", 
+        "
+            GetInformation (`&v_info`, ^_k_);
+            (`&info`)[_k_] = `&v_info`;
+            
+        ");
+        return info;
+    }
+    return None;
+}

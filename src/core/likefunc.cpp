@@ -4794,6 +4794,31 @@ bool CheckEqual (hyFloat a, hyFloat b, hyFloat tolerance) {
 }
     
 //_______________________________________________________________________________________
+bool CheckRange (hyFloat value, hyFloat lb, hyFloat ub, bool exceptions) {
+    if (value >= lb && value <= ub) {
+        return true;
+    }
+    if (exceptions) {
+        throw (_String ("Value ") & value & " is outside the expected interval [" & lb &
+               "-" & ub & "]");
+    }
+    return false;
+}
+    
+//_______________________________________________________________________________________
+bool CheckArgumentType (HBLObjectRef object, long type, bool exceptions) {
+    
+    if (object->ObjectClass() & type) {
+        return true;
+    }
+    
+    if (exceptions) {
+        throw (_String ("Unsupported agrument type ") & FetchObjectNameFromType (object->ObjectClass()).Enquote());
+    }
+    return false;
+}
+
+//_______________________________________________________________________________________
 hyFloat _LikelihoodFunction::SetParametersAndCompute (long index, hyFloat value, _Matrix* baseLine, _Matrix* direction, bool skip_compute)
 {
     if (index >= 0) {

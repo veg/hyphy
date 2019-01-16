@@ -1111,8 +1111,7 @@ void _SimpleList::Offset (long shift) {
     }
 }
 
-_SimpleList* _SimpleList::Subset (unsigned long size, bool replacement)
-{
+_SimpleList* _SimpleList::Subset (unsigned long size, bool replacement) {
     _SimpleList* result = new _SimpleList;
     if (size > 0) {
         size = MIN(size, lLength);
@@ -1137,28 +1136,31 @@ _SimpleList* _SimpleList::Subset (unsigned long size, bool replacement)
 
 // Create a permutation of the list's elements
 void  _SimpleList::Permute (long blockLength) {
+    
     unsigned long blockCount = lLength/blockLength;
 
-    if (blockLength>1) {
+    if (blockCount > 1) {
+        if (blockLength>1) {
 
-        for (unsigned long k=0; k<blockCount-1; k=k+1) {
-            unsigned long k2 = genrand_real2()*(blockCount-k);
-            if (k2) {
-                k2 += k;
-                k2 *= blockLength;
+            for (unsigned long k=0; k<blockCount-1; k=k+1) {
+                unsigned long k2 = genrand_real2()*(blockCount-k);
+                if (k2) {
+                    k2 += k;
+                    k2 *= blockLength;
 
-                for (long j = 0; j<blockLength; j++) {
-                    EXCHANGE (lData[k2+j], lData[k*blockLength+j])
+                    for (long j = 0; j<blockLength; j++) {
+                        EXCHANGE (lData[k2+j], lData[k*blockLength+j])
+                    }
                 }
             }
-        }
 
-    } else {
-        for (unsigned long k=0; k<blockCount-1; k=k+1) {
-            unsigned long k2 = genrand_real2()*(blockCount-k);
-            if (k2) {
-                k2+=k;
-                EXCHANGE (lData[k2], lData[k]);
+        } else {
+            for (unsigned long k=0; k<blockCount-1; k=k+1) {
+                unsigned long k2 = genrand_real2()*(blockCount-k);
+                if (k2) {
+                    k2+=k;
+                    EXCHANGE (lData[k2], lData[k]);
+                }
             }
         }
     }

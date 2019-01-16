@@ -181,6 +181,48 @@ HBLObjectRef _AssociativeList::MAccess (HBLObjectRef p) {
 }
 
 //_____________________________________________________________________________________________
+HBLObjectRef _AssociativeList::Random (HBLObjectRef p) {
+    bool with_replacement = false;
+    
+    try {
+        if (p->ObjectClass() == NUMBER) {
+            _AssociativeList * result = new _AssociativeList;
+            with_replacement = !CheckEqual(0.0, p->Compute()->Value());
+            
+            //unsigned long items = countitems();
+            _SimpleList  reshuffled (countitems(), 0, 1);
+            if (with_replacement) {
+                reshuffled.PermuteWithReplacement(1);
+            } else {
+                reshuffled.Permute(1);
+            }
+            
+            _List copied_values;
+            
+            for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
+                copied_values << key_value.get_object();
+            }
+
+            long index = 0L;
+            for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
+                result->MStore (*(_String*)avl.Retrieve(key_value.get_index()),
+                                (HBLObjectRef)copied_values.GetItem(reshuffled.get (index++)),
+                                true
+                               );
+            }
+
+            return result;
+            
+        } else {
+            throw (_String ("Unsupported argument type"));
+        }
+    } catch (const _String err) {
+        HandleApplicationError (err);
+    }
+    return new _MathObject;
+}
+
+//_____________________________________________________________________________________________
 HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
     
     const _String     kAVLIteratorOrder          = "INDEXORDER",
@@ -288,6 +330,15 @@ HBLObjectRef _AssociativeList::GetByKey (_String const& key, long objType) const
       return res;
     }
     return nil;
+}
+
+//_____________________________________________________________________________________________
+HBLObjectRef _AssociativeList::GetByKeyException (_String const& key, long objType) const {
+    HBLObjectRef res = GetByKey(key, objType);
+    if (res) {
+        return res;
+    }
+    throw key.Enquote() & " was not associated with a value of type " & FetchObjectNameFromType (objType).Enquote();
 }
 
 
@@ -681,7 +732,10 @@ HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _
         DeleteByKey (arg0);
         return new _Constant (avl.countitems());
         
-      case HY_OP_CODE_DIV:
+        case HY_OP_CODE_RANDOM:
+            return Random (arg0);
+
+        case HY_OP_CODE_DIV:
         
         if (arg0->ObjectClass () == STRING) {
           if (avl.Find (&((_FString*)arg0)->get_str()) >= 0L) {

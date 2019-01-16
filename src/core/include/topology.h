@@ -189,7 +189,8 @@ public:
     _TreeTopology                       (void);
     _TreeTopology                       (_String const&, _String const&, bool = true, _AssociativeList* mapping = nil);
     _TreeTopology                       (_String const*);
-    _TreeTopology                       (_TheTree*);
+    _TreeTopology                       (_TheTree const*);
+    _TreeTopology                       (const _TreeTopology& );
 
     virtual                 ~_TreeTopology                      (void);
 
@@ -216,6 +217,9 @@ public:
  
     virtual _AssociativeList*
     FindCOT                             (HBLObjectRef);
+
+    virtual HBLObjectRef
+    MaximumParsimony                    (HBLObjectRef);
 
     node<long>      *FindNodeByName                     (_String const*) const;
     /*
@@ -257,6 +261,18 @@ public:
   
     const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
     void            SubTreeString                       (node<long>* root, _StringBuffer & result, _TreeTopologyParseSettings const& settings, bool all_names = false, hyTopologyBranchLengthMode mode = kTopologyBranchLengthNone, long branch_length_variable = -1, _AVLListXL * substitutions  = nil) const;
+
+    virtual HBLObjectRef       RandomizeTips            (HBLObjectRef);
+    /**
+        Shuffle the order of tips in the tree by permuting the order of children of
+        each node with certain probability
+     
+        The argument controls the rate at which this shuffling occurs
+        if it's a number (between 0 and 1), then each internal node will be shuffled
+        with this probability
+     
+        Returns a Topology object representing the reshuffled tree
+     */
 
     _String         CompareTrees                        (_TreeTopology*) const;
     const _String         MatchTreePattern                    (_TreeTopology const*) const;

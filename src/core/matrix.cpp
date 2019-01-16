@@ -6733,7 +6733,7 @@ void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned l
                     parameterToCharBuffer ((*this)(i,j), number_buffer, 255, doJSON);
                     res << number_buffer;
                 }
-                res << closeBracket << kStringFileWrapperNewLine;
+                res << closeBracket << (doJSON && i != hDim -1 ? ',' : ' ') << kStringFileWrapperNewLine;
              }
         } else {
             for (long i = 0L; i<hDim; i++) {
@@ -6759,7 +6759,7 @@ void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned l
                     res << '"';
 
                 }
-                res << closeBracket << (doJSON ? ',' : ' ') << '\n';
+                res << closeBracket << (doJSON && i != hDim -1  ? ',' : ' ') << kStringFileWrapperNewLine;
             }
         }
         res << padder << closeBracket;
