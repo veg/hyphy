@@ -1,3 +1,4 @@
+#!/bin/bash
 # A simple script to run all unit tests against the currently checked out version
 
 currentDir=$PWD
