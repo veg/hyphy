@@ -1128,20 +1128,30 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
         _AssociativeList * arguments = (_AssociativeList *)parameters;
         
         _AssociativeList * labels    = (_AssociativeList *)arguments->GetByKeyException(kMPLabels, ASSOCIATIVE_LIST),
-                         * scores    = (_AssociativeList *)arguments->GetByKeyException(kMPScore, ASSOCIATIVE_LIST);
+                         * scores    = (_AssociativeList *)arguments->GetByKey(kMPScore, ASSOCIATIVE_LIST);
         
         _List           id2name; // integer label -> string label
         
         _Trie           unique_labels, // label -> unique integer ID
                         mapped_labels; // node_name -> integer label
         
+        
         for (AVLListXLIteratorKeyValue key_value : labels->ListIterator()) {
             HBLObjectRef node_label = (HBLObjectRef)key_value.get_object();
-            _String const * current_key = key_value.get_key();
+            _String const * node_name = key_value.get_key();
             if (node_label->ObjectClass() != STRING) {
-                throw _String ("Not a string-valued label for node ") & current_key->Enquote();
+                throw _String ("Not a string-valued label for node ") & node_name->Enquote();
             }
+            _String const * label_value = &((_FString*)node_label)->get_str();
+            bool did_insert = false;
+            long label_index  = unique_labels.GetValue (unique_labels.InsertExtended (*label_value, unique_labels.countitems(), false, &did_insert));
+            if (did_insert) {
+                id2name < new _String (*label_value);
+            }
+            mapped_labels.Insert (*node_name, label_index);
         }
+        
+        //printf ("%s\n", _String ((_String*)id2name.toStr(0)).get_str());
         
         // check required arguments
         

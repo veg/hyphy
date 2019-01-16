@@ -80,7 +80,12 @@ utility.ForEachPair (sm.partitions, "_regexp_", "_leaves_",
 );
 
 
+console.log (T);
+console.log (sm.node_labels);
+
 sm.score = (trees.ParsimonyLabel ("T", sm.node_labels))["score"];
+
+console.log (sm.score);
 
 io.ReportProgressMessageMD('SM',  'result', 'Inferred **' +  sm.score + '** migration events');
 

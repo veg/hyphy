@@ -733,3 +733,17 @@ lfunction parameters.SetLocalModelParameters (model, tree, node) {
 
 }
 
+/**
+ * Set category variables to their mean values for branch length calculations
+ * @name parameters.SetLocalModelParameters
+ * @param {Dict} model - model description
+*/
+
+lfunction parameters.SetCategoryVariables (model) {
+    utility.ForEachPair ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")], "_parameter_", "_description_",
+    '
+        parameters.SetValue (_parameter_, rate_variation.compute_mean (_parameter_));
+    ');
+
+}
+

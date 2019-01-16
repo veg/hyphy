@@ -54,7 +54,7 @@ void _Trie::InitializeTrie (const _String* alphabet) {
     AppendNewInstance(new _SimpleList);
     payload << 0L;
     parents <<-1L;
-  
+    inserted_values = 0UL;
 }
 
 
@@ -71,6 +71,7 @@ void _Trie::Clear (bool all){
     payload.Clear(all);
     emptySlots.Clear(all);
     AppendNewInstance(new _SimpleList);
+    inserted_values = 0UL;
     payload << 0L;
     parents <<-1L;
 }
@@ -123,15 +124,16 @@ BaseRef _Trie::makeDynamic (void) const {
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void _Trie::Duplicate (BaseRefConst storage) {
-    _Trie* newTrie = (_Trie*)storage;
-    _String myAlphabet = newTrie->Alphabet();
-    newTrie->SetAlphabet (&myAlphabet, true);
-    newTrie->_List::Duplicate ((_List*)this);
-    newTrie->charMap.Duplicate (&charMap);
-    newTrie->emptySlots.Duplicate (&emptySlots);
-    newTrie->payload.Duplicate(&payload);
-    newTrie->parents.Duplicate(&parents);
+void _Trie::Duplicate (BaseRefConst t) {
+    _Trie* source = (_Trie*)t;
+    _String a (source->Alphabet());
+    SetAlphabet(&a, true);
+    _List::Duplicate ((_List*)source);
+    charMap.Duplicate (&source->charMap);
+    emptySlots.Duplicate (&source->emptySlots);
+    payload.Duplicate(&source->payload);
+    parents.Duplicate(&source->parents);
+    inserted_values = source->inserted_values;
           
 }        
     
@@ -265,6 +267,12 @@ _Trie& _Trie::operator < (const char* key) {
 //----------------------------------------------------------------------------------------------------------------------
 
 long    _Trie::Insert (const _String& key, const long value) {
+    return InsertExtended (key, value);
+}
+    
+//----------------------------------------------------------------------------------------------------------------------
+
+long    _Trie::InsertExtended (const _String& key, const long value, bool update_value, bool * did_insert) {
     // the root is always at index 0
     long current_index  = 0L,
          current_char   = 0L,
@@ -278,8 +286,13 @@ long    _Trie::Insert (const _String& key, const long value) {
     if (next_index == kTrieInvalidLetter)
         return kTrieInvalidLetter;
     
-    if (current_char == key.length() && next_index >= 0)
+    if (current_char > key.length() ) { // key already present
+        if (update_value) {
+            UpdateValue (next_index, value);
+        }
+        if (did_insert) *did_insert = false;
         return next_index;
+    }
     
     current_char --;
     
@@ -295,9 +308,10 @@ long    _Trie::Insert (const _String& key, const long value) {
         //printf ("\nInserting %c\n", key.sData[current_char]);
         current_index = InsertNextLetter (key.char_at (current_char), current_index);
         //DumpRaw ();
-   }
-    
+    }
+    inserted_values ++;
     UpdateValue (current_index, value);
+    if (did_insert) *did_insert = true;
 
     return current_index;
 }
@@ -308,9 +322,10 @@ unsigned long    _Trie::Insert (const _List& key, const _SimpleList* values) {
     unsigned long how_many = 0;
     for (long k = 0; k < key.lLength; k++) {
         _String serializedKey ((_String*)((BaseRef*)key.lData)[k]->toStr());
+        bool did_insert = false;
         
-        long this_index = Insert (serializedKey, values?values->lData[k]:0);
-        if (this_index >= 0) {
+        InsertExtended (serializedKey, values?values->lData[k]:0, false, &did_insert);
+        if (did_insert) {
             how_many ++;
         }
     }
@@ -335,6 +350,7 @@ bool    _Trie::Delete (const _String& key){
                 parentList->Delete (parentNode);
                 DeleteObject (current_list);
                 ((_SimpleList**)lData)[history.lData[k]] = nil;
+                inserted_values--;
             }
         }
         return true;
