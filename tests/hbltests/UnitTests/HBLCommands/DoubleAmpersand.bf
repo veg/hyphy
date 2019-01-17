@@ -36,7 +36,7 @@ function runTest () {
   lowerTest = "HyPhy"&&7;
   assert(lowerTest == "hyphy", "Failed to convert string to lowercase");
 
-  // 2 and 5 don't seem to work... see below
+  // 2 and 3 don't seem to work... see below
   // 2. Escape special characgters with a '\'
   escapeTest = "hyphy\\'"&&2;
   fprintf (stdout, "escpaeTest: ", escpaeTest, "\n");
