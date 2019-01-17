@@ -80,12 +80,14 @@ utility.ForEachPair (sm.partitions, "_regexp_", "_leaves_",
 );
 
 
-console.log (T);
-console.log (sm.node_labels);
+//console.log (T);
+//console.log (sm.node_labels);
 
-sm.score = (trees.ParsimonyLabel ("T", sm.node_labels))["score"];
+sm.mp = //trees.ParsimonyLabel ("T", sm.node_labels);
+Max (T, {"labels": sm.node_labels});
+//console.log (sm.mp);
 
-console.log (sm.score);
+sm.score = sm.mp ["score"];
 
 io.ReportProgressMessageMD('SM',  'result', 'Inferred **' +  sm.score + '** migration events');
 
@@ -93,13 +95,17 @@ sm.resampled_distribution = {sm.replicates , 2};
 sm.resampled_p_value = 0;
 sm.resampled_sum = 0;
 
+sm.shuffling_probability = Max (0.2, 10 / (BranchCount (T) + TipCount (T)));
+
 for (sm.k = 0; sm.k < sm.replicates ; ) {
     //if (sm.method == "Restricted") {
         sm.reshuffled_tree = "" + Random (T, 0.25);
         Topology SimT = sm.reshuffled_tree;
-        sm.resampled_distribution[sm.k][1] = (trees.ParsimonyLabel ("SimT", sm.node_labels))["score"];
+        sm.resampled_distribution[sm.k][1] = Max (SimT, {"labels": sm.node_labels})["score"];
+        //(trees.ParsimonyLabel ("SimT", sm.node_labels))["score"];
     //} else {    
-        sm.resampled_distribution[sm.k][0] = (trees.ParsimonyLabel ("T", Random (sm.node_labels,0)))["score"];
+        sm.resampled_distribution[sm.k][0] =  Max (SimT, {"labels": Random (sm.node_labels,0)})["score"];
+        //(trees.ParsimonyLabel ("T", Random (sm.node_labels,0)))["score"];
     //}
     
     if ( sm.resampled_distribution[sm.k][0] <= sm.score) {
