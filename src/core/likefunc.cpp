@@ -721,9 +721,8 @@ void     _LikelihoodFunction::Clear (void)
 
     //unsigned long partition_count = CountObjects(kLFCountPartitions);
 
-    theTrees.Clear();
     UnregisterListeners ();
-
+    theTrees.Clear();
 
     theDataFilters.Clear();
     theProbabilities.Clear();

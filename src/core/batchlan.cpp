@@ -2831,7 +2831,6 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
                 long    root_state = new_filter->Translate2Frequencies (root_char,holder,false);
                 if (root_state<0) {
                     throw (root_char & " found in the root state string at position " & _String ((long)site_idex) & " is an invalid/ambiguous state");
-                    break;
                 } else {
                     root_states->theData[cc] = root_state;
                 }
@@ -2847,11 +2846,6 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
         _String filter_specification = *GetFilterName (filter_id) & spawning_tree->GetName()->Enquote(',') & *freq_var->GetName();
 
-        _LikelihoodFunction lf (filter_specification, nil);
-
-        if (terminate_execution) {
-            return;
-        }
 
         bool    do_internals = parameters.countitems() > 5 ? (ProcessNumericArgument ((_String*)parameters (5),chain.nameSpacePrefix)>0.5) : nil;
 
@@ -2893,12 +2887,20 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         _Matrix*    category_names       = new _Matrix (1,1,false,true);
 
         SetStatusLine ("Simulating Data");
-        lf.Simulate (*sim_dataset, exclusions, category_values, category_names, root_states, do_internals?(main_file?&spool_file:&kEmptyString):nil);
-        SetStatusLine ("Idle");
-
+        { // lf must be deleted before the referenced datafilters
+            _LikelihoodFunction lf (filter_specification, nil);
+            if (terminate_execution) {
+                return;
+            }
+            lf.Simulate (*sim_dataset, exclusions, category_values, category_names, root_states, do_internals?(main_file?&spool_file:&kEmptyString):nil);
+            SetStatusLine ("Idle");
+        }
+        
+        
         category_values_id->SetValue(category_values, false);
         category_names_id->SetValue(category_names, false);
 
+        
         StoreADataSet (sim_dataset, sim_name);
         DeleteObject (sim_name);
         DeleteDataFilter (filter_id);

@@ -341,6 +341,7 @@ namespace hyphy_global_objects {
       if (_IsObjectLocked(index, HY_BL_DATASET_FILTER)) {
         return false;
       }
+      _NotifyDataFilterListeners (index, kNotificationTypeDelete);
       _KillDataFilterParameters( *GetFilterName (index));
       _data_filters.Delete ((BaseRef)GetFilterName(index), true);
     }
