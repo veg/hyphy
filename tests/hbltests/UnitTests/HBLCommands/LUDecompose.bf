@@ -3,7 +3,7 @@ runATest ();
 
 
 function getTestName () {
-  return "GammaDist";
+  return "LUDecompose";
 }		
 
 
