@@ -88,7 +88,7 @@ fel.table_headers = {{"alpha", "Synonymous substitution rate at a site"}
                      {"beta", "Non-synonymous substitution rate at a site"}
                      {"alpha=beta", "The rate estimate under the neutral model"}
                      {"LRT", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
-                     {"p-value", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
+                     {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
                      {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
 
 
