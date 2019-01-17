@@ -90,10 +90,15 @@ public:
 
      */
 
-    virtual void        Duplicate       (BaseRefConst);
-    HBLObjectRef           MAccess         (HBLObjectRef);
+    virtual void        Duplicate           (BaseRefConst);
+    HBLObjectRef           Random           (HBLObjectRef);
+    /* Randomize key - value assignments, sampling values with
+        (argument is truthy) or without replacement
+     
+     */
+    HBLObjectRef           MAccess          (HBLObjectRef);
 
-    HBLObjectRef           MIterator       (HBLObjectRef, HBLObjectRef);
+    HBLObjectRef           MIterator        (HBLObjectRef, HBLObjectRef);
     /* perform a function call (ID stored in the first argument)
        having performed [an optional] conditional check on the associated key (either empty for noop or a function ID)
        Both functional IDs MUST be defined and take TWO and ONE argumens respectively
@@ -102,6 +107,7 @@ public:
     */
 
     HBLObjectRef           GetByKey        (_String const&, long) const;
+    HBLObjectRef           GetByKeyException        (_String const&, long) const;
     HBLObjectRef           GetByKey        (_String const&) const;
     HBLObjectRef           GetByKey        (long, long) const;
     void                DeleteByKey     (HBLObjectRef);

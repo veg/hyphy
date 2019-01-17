@@ -230,6 +230,8 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 
     // Define type of frequency estimator
+    
+    
 	if (None != estimator_type) {
 		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
 	}
@@ -238,8 +240,6 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
 													    id,
 													    data_filter);
-
-
 
 
     // Define id's for frequencies, Q, and id
@@ -256,11 +256,9 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	    utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 	}
 
-
 	model.define_from_components (id, 	model.generic.DefineModel.model [terms.model.matrix_id], model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
 
     if (Type (model.generic.DefineModel.model[terms.model.post_definition]) == "String") {
-
        Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
 

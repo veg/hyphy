@@ -497,7 +497,7 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
    for (k = 0; k < Abs (tree_avl) ; k += 1) {
    	 	node_name = (tree_avl[k])["Name"];
    	 	node_children = (tree_avl[k])["Children"];
-   	 	c_count = utility.Array1D (node_children);
+   	 	c_count = Abs (node_children);
    	 	if (c_count) { // internal node
    	 		// first check to see if all the children are labeled
    	 	
@@ -566,7 +566,7 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
    for (k = 0; k < Abs (tree_avl); k += 1) {
    	 	node_name = (tree_avl[k])["Name"];
    	 	node_children = (tree_avl[k])["Children"];
-   	 	c_count = utility.Array1D (node_children);
+   	 	c_count = Abs (node_children);
    	 	if (c_count) { // internal node
    	 		parent = (tree_avl[k])["Parent"];
    	 		if (parent > 0) {
@@ -734,4 +734,180 @@ lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
 	return _ost;
 }
 
+
+/**
+ * Generate a symmetric binary tree on N leaves (only perfectly symmetric if N is a power of 2)
+ * @name trees.GenerateSymmetricTree
+ * @param 	{Number} N : number of leavers
+ * @param   {Bool} rooted : whether the tree is rooted
+ * @param 	{None/String} branch_name   : if a string, then it is assumed to be a function with an integer argument (node index) that generates branch names
+                                        default is to use numeric names
+ * @param 	{None/String} branch_length : if a string, then it is assumed to be a function with no arguments that generates branch lengths
+ * @return  {String} Newick tree string
+ */
+
+lfunction tree.GenerateSymmetricTree (N, rooted, branch_name, branch_length) {
+    assert (N>=2, "Can't generate trees with fewer than 2 leaves");
+    internal_nodes = N-2;
+    if (rooted) {
+        internal_nodes += 1;
+    }
+    
+    total_nodes = N + internal_nodes;
+    flat_tree  = {total_nodes, 4}["-1"];
+    
+    
+    // each row represents the corresponding node (in its' index), [parent, child 1, child 2, child 3] record
+    // each node is represented with a [0, total_nodes-1] integer
+    // -1 means NULL
+    // for example ((1,2),(3,4)) will be represented as 
+        /* 
+           {4,-1,-1,-1}
+           {4,-1,-1,-1}
+           {5,-1,-1,-1}
+           {5,-1,-1,-1}
+           {6,0,1,-1}
+           {6,2,3,-1}
+           {-1,4,5,-1}
+        */
+    
+    current_parent_node = N;
+    current_child_node  = 0;
+    
+    
+    while (current_parent_node < total_nodes) {
+        flat_tree[current_child_node][0] = current_parent_node;
+        flat_tree[current_child_node+1][0] = current_parent_node;
+        flat_tree[current_parent_node][1] = current_child_node;
+        if (current_child_node < total_nodes-2) {
+            flat_tree[current_parent_node][2] = current_child_node + 1;
+        }
+        current_parent_node += 1;
+        current_child_node += 2;
+        if (current_child_node == N-1) {
+            // if the number of leaves in not divisible for 2, we skip the unpaired leaf and attach it to the root
+            flat_tree[total_nodes-1][3-(rooted!=FALSE)] = N-1;
+            flat_tree[current_child_node][0] = total_nodes-1;
+            current_child_node += 1;
+        }
+    }
+    
+    
+    if (current_child_node < total_nodes - 1) { // rooted tree
+        /*
+        {
+            {4, -1, -1, -1} 
+            {4, -1, -1, -1} 
+            {5, -1, -1, -1} 
+            {5, -1, -1, -1} 
+            {-1, 0, 1, -1} 
+            {-1, 2, 3, -1} 
+            }
+        */
+        if (flat_tree[total_nodes-1][3] < 0) { // doesn't already have the 3rd leaf attached
+            flat_tree[total_nodes-1][3] = total_nodes-2;
+            flat_tree[total_nodes-2][0] = total_nodes-1;
+            flat_tree[flat_tree[total_nodes-1][1]] = total_nodes-1;
+            flat_tree[flat_tree[total_nodes-1][2]] = total_nodes-1;
+        }
+    }
+    
+    return tree._NewickFromMatrix (&flat_tree, total_nodes-1, branch_name, branch_length);
+    
+}
+
+
+/**
+ * Generate a ladder tree on N leaves
+ * @name trees.GenerateSymmetricTree
+ * @param 	{Number} N : number of leavers
+ * @param   {Bool} rooted : whether the tree is rooted
+ * @param 	{None/String} branch_name   : if a string, then it is assumed to be a function with an integer argument (node index) that generates branch names
+                                        default is to use numeric names
+ * @param 	{None/String} branch_length : if a string, then it is assumed to be a function with no arguments that generates branch lengths
+ * @return  {String} Newick tree string
+ */
+
+lfunction tree.GenerateLadderTree (N, rooted, branch_name, branch_length) {
+    assert (N>=2, "Can't generate trees with fewer than 2 leaves");
+    internal_nodes = N-2;
+    if (rooted) {
+        internal_nodes += 1;
+    }
+    
+    total_nodes = N + internal_nodes;
+    flat_tree  = {total_nodes, 4}["-1"];
+    
+    
+    current_parent_node = N;
+    current_child_node  = 0;
+    
+    // create the first cherry
+    
+    flat_tree[current_child_node][0] = current_parent_node;
+    flat_tree[current_child_node+1][0] = current_parent_node;
+    flat_tree[current_parent_node][1] = current_child_node;
+    flat_tree[current_parent_node][2] = current_child_node + 1;
+    current_child_node = 2;
+    current_parent_node += 1;
+    
+    
+    while (current_parent_node < total_nodes) {
+        flat_tree[current_child_node][0] = current_parent_node;
+        flat_tree[current_parent_node-1][0] = current_parent_node;
+        flat_tree[current_parent_node][1] = current_parent_node-1;
+        flat_tree[current_parent_node][2] = current_child_node;
+        current_parent_node += 1;
+        current_child_node += 1;
+
+    }
+    
+    
+    if (current_child_node < N) { // unrooted tree
+        flat_tree[total_nodes-1][3] = N-1;
+        flat_tree[N-1][0] = total_nodes-1;        
+    }
+    
+    return tree._NewickFromMatrix (&flat_tree, total_nodes-1, branch_name, branch_length);
+    
+}
+
+lfunction tree._NewickFromMatrix (flat_tree, index, branch_name, branch_length) {
+    if ((^flat_tree)[index][0] >= 0) { // not a root
+        if ((^flat_tree)[index][1] < 0) { // a leaf
+            if (branch_name) {
+                name = Call (branch_name, index);
+            } else {
+                name = "" + index;
+            }
+            if (branch_length) {
+                return name + ":" + Call (branch_length);
+            }
+            return name;
+        } else {
+            if (branch_length) {
+                return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+                        "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+                        "):" + Call (branch_length);
+            
+            } else {
+                return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+                        "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+                        ")";
+            }
+        }
+    }  else {
+        if ((^flat_tree)[index][3] < 0) { // 2 root children
+            return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+                    "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+                    ")";        
+        } else {
+            return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+            "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+            "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][3], branch_name, branch_length) +
+            ")";
+        }
+    }
+    return None;
+}
 

@@ -65,6 +65,7 @@ function frequencies.empirical.nucleotide(model, namespace, datafilter) {
  */
  
 lfunction frequencies.runtime.nucleotide(model, namespace, datafilter) {
+
     /*
         The run-time calculation depends on the current value of the rate matrix and
         proceeds by 
@@ -73,7 +74,10 @@ lfunction frequencies.runtime.nucleotide(model, namespace, datafilter) {
         (2) inverting the modified matrix 
         (3) reading off equilibrium frequencies from the last row of the inverse
         
+        This function needs to have the rate matrix instantiated before it can set 
+        up the dependancies.        
     */
+    
     
     return model;
 }

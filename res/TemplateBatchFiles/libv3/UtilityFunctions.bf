@@ -338,7 +338,7 @@ function utility.First (object_utility_first, lambda_name, condition) {
      if (Type (object_utility_first) == "AssociativeList") {
         utility.First.keys = Rows (object_utility_first);
         ^(lambda_name) := object_utility_first [utility.First.keys[utility.First.k]];
-        for (utility.First.k = 0; utility.First.k < Abs (object); utility.First.k += 1) {
+        for (utility.First.k = 0; utility.First.k < Abs (object_utility_first); utility.First.k += 1) {
             if (Eval (condition)) {
                 utility.First.return_object = ^(lambda_name);
                 break;
@@ -350,6 +350,7 @@ function utility.First (object_utility_first, lambda_name, condition) {
         utility.First.rows = Rows (object_utility_first);
         utility.First.columns = Columns (object_utility_first);
         ^(lambda_name) := object_utility_first [utility.First.r][utility.First.c];
+        
         for (utility.First.r = 0; utility.First.r < utility.First.rows; utility.First.r += 1) {
             for (utility.First.c = 0; utility.First.c < utility.First.columns; utility.First.c += 1) {
                 if (Eval (condition)) {
@@ -361,6 +362,7 @@ function utility.First (object_utility_first, lambda_name, condition) {
     }
     
     Eval ("`lambda_name` = None");
+    
     return utility.First.return_object;
 }
 

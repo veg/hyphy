@@ -64,7 +64,7 @@ _TreeTopology::_TreeTopology () {
 }
 
 //_______________________________________________________________________________________________
-_TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), kEmptyString) {
+_TreeTopology::_TreeTopology (_TheTree const *top):_CalcNode (*top->GetName(), kEmptyString) {
     PreTreeConstructor   (false);
     if (top->theRoot) {
         isDefiningATree         = kTreeIsBeingParsed;
@@ -88,6 +88,22 @@ _TreeTopology::_TreeTopology (_TheTree *top):_CalcNode (*top->GetName(), kEmptyS
         return;
     }
 }
+
+//_______________________________________________________________________________________________
+_TreeTopology::_TreeTopology (_TreeTopology const &top) {
+    //PreTreeConstructor   (false);
+    if (top.theRoot) {
+        theRoot                 = top.theRoot->duplicate_tree ();
+        
+        flatTree.Duplicate(&top.flatTree),
+        flatCLeaves.Duplicate(&top.flatCLeaves);
+        rooted = top.rooted;
+    } else {
+        HandleApplicationError ("Can't create an empty tree");
+        return;
+    }
+}
+
 
 //_______________________________________________________________________________________________
 _TreeTopology::_TreeTopology    (_String const & name, _String const & parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,kEmptyString)
@@ -902,10 +918,14 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                     return TipName(arg0);
                 case HY_OP_CODE_MIN: // COT (Min)
                     return FindCOT (arg0);
-                case HY_OP_CODE_REROOTTREE: // RerootTree
+                case HY_OP_CODE_MAX: // Maximum parsimony
+                    return MaximumParsimony (arg0);
+               case HY_OP_CODE_REROOTTREE: // RerootTree
                     return RerootTree(arg0);
                 case HY_OP_CODE_POWER: //^
                     return AVLRepresentation (arg0);
+                case HY_OP_CODE_RANDOM:
+                    return RandomizeTips (arg0);
                 case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument
                     if (arg0->ObjectClass()!=NUMBER) {
                         throw _String ("Invalid (not a number) 2nd argument is call to $ (split)for trees.");
@@ -1095,6 +1115,218 @@ void _TreeTopology::FindCOTHelper2 (node<long>* aNode, _Matrix& branchSpans, _Ma
     }
 }
 
+//__________________________________________________________________________________
+
+HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
+    static const _String
+        kMPScore ("score"),
+        kMPLabels("labels"),
+        kMPOutSubstitutions ("substitutions");
+    
+    
+    try {
+        CheckArgumentType(parameters, ASSOCIATIVE_LIST, true);
+        _AssociativeList * arguments = (_AssociativeList *)parameters;
+        
+        _AssociativeList * labels    = (_AssociativeList *)arguments->GetByKeyException(kMPLabels, ASSOCIATIVE_LIST),
+                         * scores    = (_AssociativeList *)arguments->GetByKey(kMPScore, ASSOCIATIVE_LIST);
+        
+        _List           id2name; // integer label -> string label
+        
+        _Trie           unique_labels, // label -> unique integer ID
+                        mapped_labels; // node_name -> integer label
+        
+        _Matrix         * score_matrix = nil;
+        
+        auto            score_pair = [&] (unsigned long from, unsigned long to) -> hyFloat {
+            if (score_matrix) {
+                return (*score_matrix)(from,to);
+            }
+            return from == to ? 0.0 : 1.0;
+        };
+        
+        for (AVLListXLIteratorKeyValue key_value : labels->ListIterator()) {
+            HBLObjectRef node_label = (HBLObjectRef)key_value.get_object();
+            _String const * node_name = key_value.get_key();
+            if (node_label->ObjectClass() != STRING) {
+                throw _String ("Not a string-valued label for node ") & node_name->Enquote();
+            }
+            _String const * label_value = &((_FString*)node_label)->get_str();
+            bool did_insert = false;
+            long label_index  = unique_labels.GetValue (unique_labels.InsertExtended (*label_value, unique_labels.countitems(), false, &did_insert));
+            if (did_insert) {
+                id2name < new _String (*label_value);
+            }
+            mapped_labels.Insert (*node_name, label_index);
+        }
+        
+        unsigned long unique_label_count = unique_labels.countitems();
+        
+        _Vector     conditional_scores;
+        _SimpleList conditional_labels;
+        
+        /*
+            for each node, in post-order traversal, these lists store K (== unique_label_count)
+            in a serialized vector (for scores), and list (for integer labels)
+        */
+
+        _SimpleList has_labels;
+        /*
+            for each node, in post-order traversal
+            stores whether or not the subtree starting at this node can be fully labeled
+         (-1 : not labeled)
+            only such trees are used for labeling
+        */
+        
+        _SimpleList store_values;
+        /*
+            store node<long> values, because they will be overwritten
+            temporarily during MP inference
+        */
+
+        node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+        
+        // perform the first pass to
+        
+        long post_order_index = 0L;
+        
+        while (node<long>* iterator = ni.Next()) {
+            
+            if (iterator->is_leaf()) {
+               
+                long index = mapped_labels.FindKey (GetNodeName (iterator));
+                if (index >= 0) {
+                    index = mapped_labels.GetValue(index);
+                    for (unsigned long parent_state = 0UL; parent_state < unique_label_count; parent_state++) {
+                        conditional_scores << score_pair (parent_state, index);
+                    }
+                } else {
+                    conditional_scores.AppendRange(unique_label_count, 0., 0.);
+                }
+                has_labels << index;
+                conditional_labels.AppendRange(unique_label_count, index, 0);
+            } else {
+                conditional_labels.AppendRange(unique_label_count, 0, 0);
+                conditional_scores.AppendRange(unique_label_count, 0., 0.);
+                bool node_has_labels = true;
+                for (unsigned long i = 1UL; i <= iterator->get_num_nodes(); i++) {
+                    node_has_labels = node_has_labels && (has_labels.get (iterator->go_down(i)->in_object) >= 0);
+                }
+                has_labels << (node_has_labels ? 1 : -1);
+            }
+            store_values << iterator->in_object;
+            iterator->in_object = post_order_index++;
+        }
+
+        ni.Reset(theRoot);
+        
+        while (node<long>* iterator = ni.Next()) {
+            long my_index = iterator->in_object;
+            long label = has_labels.get (my_index);
+            if (label >= 0) {
+                if (!iterator->is_leaf()) {
+                    long offset = my_index * unique_label_count;
+                    for (unsigned long parent_state = 0UL; parent_state < unique_label_count; parent_state++) {
+                        hyFloat best_score = 1.e100;
+                        long best_state = -1L;
+                        
+                        for (unsigned long my_state = 0UL; my_state < unique_label_count; my_state++) {
+                            hyFloat running_score = 0.;
+                            for (unsigned long i = 1UL; i <= iterator->get_num_nodes(); i++) {
+                                long child_postorder_offset = iterator->go_down(i)->in_object * unique_label_count;
+                                running_score += conditional_scores.get(0, child_postorder_offset + my_state);
+                            }
+                            if (StoreIfLess (best_score, running_score + score_pair (parent_state, my_state))) {
+                                best_state = my_state;
+                            }
+                        }
+                        conditional_labels [offset+parent_state] = best_state;
+                        conditional_scores [offset+parent_state] = best_score;
+                    }
+                }
+            }
+        }
+        
+        node_iterator<long> ni_pre (theRoot, _HY_TREE_TRAVERSAL_PREORDER);
+        
+        hyFloat            total_score = 0.;
+        _AssociativeList * inferred_labels          = new _AssociativeList;
+        _AssociativeList * inferred_substitutions   = new _AssociativeList;
+
+        
+        
+        while (node<long>* iterator = ni_pre.Next()) {
+            long my_index = iterator->in_object;
+            long label = has_labels.get (my_index);
+            
+            if (!iterator->is_leaf () && label >= 0) { // labeled node
+                long my_label;
+                if (!iterator->parent || has_labels.get (iterator->parent->in_object) < 0) {
+                    // either a root or not a part of the labeled tree
+                    
+                    long offset = my_index * unique_label_count;
+                    hyFloat best_score = 1.e100;
+                    for (unsigned long k = 0UL; k < unique_label_count; k++) {
+                        if (StoreIfLess (best_score, conditional_scores.get (0,offset + k))) {
+                            my_label = k;
+                        }
+                    }
+                    
+                    total_score +=best_score;
+                
+                } else {
+                    // read off the label for this node based on the state of the parent
+                    my_label     = conditional_labels.get (my_index * unique_label_count + has_labels.get (iterator->parent->in_object));
+                    
+                }
+                has_labels[my_index] = my_label;
+                iterator->in_object = store_values.get (iterator->in_object);
+                inferred_labels->MStore (GetNodeName(iterator), (*(_String*)id2name.GetItem(my_label)));
+                iterator->in_object = my_index;
+            }
+            
+            if (label >= 0 && iterator->parent) {
+                long parent_label = has_labels.get (iterator->parent->in_object);
+                if (parent_label >= 0) {
+                    // not root, has labeled parent
+                    long my_label = has_labels.get (my_index);
+                    if (my_label != parent_label) {
+                        iterator->in_object = store_values.get (iterator->in_object);
+                        _AssociativeList * substitution_record = new _AssociativeList;
+                        *substitution_record << (_associative_list_key_value){"from", new _FString  ((*(_String*)id2name.GetItem(parent_label)))}
+                                             << (_associative_list_key_value){"to", new _FString  ((*(_String*)id2name.GetItem(my_label)))};
+                        inferred_substitutions->MStore (GetNodeName(iterator), substitution_record, false);
+                        iterator->in_object = my_index;
+                    }
+                }
+            }
+            
+            //iterator->in_object = store_values.get (iterator->in_object);
+        }
+        
+        _AssociativeList * result = new _AssociativeList;
+        result->MStore (kMPScore, new _Constant (total_score), false);
+        result->MStore (kMPLabels, inferred_labels, false);
+        result->MStore (kMPOutSubstitutions, inferred_substitutions, false);
+
+        //printf ("%s\n", _String ((_String*)conditional_scores.toStr(0)).get_str());
+        
+        ni.Reset(theRoot);
+        
+        while (node<long>* iterator = ni.Next()) {
+            iterator->in_object = store_values.get (iterator->in_object);
+            // restore node values
+        }
+        
+        return result;
+        
+    } catch (const _String err) {
+        HandleApplicationError(err);
+    }
+    return new  _MathObject;
+    
+    
+}
 //__________________________________________________________________________________
 
 _AssociativeList* _TreeTopology::FindCOT (HBLObjectRef p) {
@@ -1788,8 +2020,7 @@ HBLObjectRef _TreeTopology::BranchCount (void) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::FlatRepresentation (void)
-{
+HBLObjectRef _TreeTopology::FlatRepresentation (void) {
     _SimpleList     flatTree;
 
     unsigned long      count = 0UL;
@@ -1899,6 +2130,103 @@ HBLObjectRef _TreeTopology::TipName (HBLObjectRef p) {
     }
     return new _FString (kEmptyString);
 }
+
+//__________________________________________________________________________________
+
+bool _recurse_and_reshuffle (node<long>* root, long& from, long &to, long &leaf_index, _SimpleList& leaf_order, hyFloat shuffle_rate) {
+    int children = root->get_num_nodes();
+    if (children) {
+        long my_start = leaf_index;
+        for (int k = 1; k <= root->get_num_nodes(); k ++) {
+            long start, end;
+            node<long>* kth_child = root->go_down (k);
+            if (_recurse_and_reshuffle (kth_child, start, end, leaf_index, leaf_order, shuffle_rate)) {
+                // reshuffled this child, lock the leaves
+                for (long element = start; element <= end; element ++) {
+                    if (leaf_order.get (element) >= 0) {
+                        leaf_order[element] = -leaf_order.get (element) - 1;
+                    }
+                }
+            }
+        }
+        from = my_start;
+        to = leaf_index-1;
+
+        if (to-from >= 2 && genrand_real1() <= shuffle_rate) { // not a cherry and selected
+            _SimpleList reshuffled_subset;
+            for (long element = from; element <= to; element ++) {
+                if (leaf_order.get (element) >= 0L) {
+                    reshuffled_subset << leaf_order.get (element);
+                }
+            }
+            reshuffled_subset.Permute(1L);
+            long hits = 0;
+            for (long element = from; element <= to; element ++) {
+                if (leaf_order.get (element) >= 0L) {
+                    leaf_order[element] = reshuffled_subset.get (hits++);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+    leaf_index ++;
+    return false;
+}
+//__________________________________________________________________________________
+HBLObjectRef _TreeTopology::RandomizeTips (HBLObjectRef rate) {
+    _TreeTopology * reshuffled = nil;
+    
+    try {
+        if (CheckArgumentType (rate, NUMBER, true)) {
+            hyFloat shuffle_rate = rate->Compute()->Value();
+            if (CheckRange (shuffle_rate, 0, 1, true)) {
+                reshuffled = new _TreeTopology (*this);
+                
+                long leaves, ints;
+                EdgeCount (leaves, ints);
+                
+                _SimpleList leaf_order;
+                
+                /* this will store the reshuffled order of leaves
+                 leaf_order[i] = the index of the original leaf i (in post-order traversal) in the reshuffled tree
+                 a negative value indicates that the particular leaf has been permuted already, and is locked for subsequent permutations
+                 */
+                
+                node_iterator<long> ni (reshuffled->theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+                while (node<long>* iterator = ni.Next()) {
+                    if (iterator->is_leaf()) {
+                        leaf_order << iterator->in_object;
+                    }
+                }
+                
+                long leaf_index = 0;
+                long f,t;
+                _recurse_and_reshuffle (&reshuffled->GetRoot(),f,t,leaf_index,leaf_order,shuffle_rate);
+                ni.Reset(reshuffled->theRoot);
+                f = 0;
+                //node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+                while (node<long>* iterator = ni.Next()) {
+                    if (iterator->is_leaf()){
+                        iterator->in_object = leaf_order.get (f++);
+                        if (iterator->in_object < 0) {
+                            iterator->in_object = -iterator->in_object - 1;
+                        }
+                    }
+                }
+                
+                
+                
+                return reshuffled;
+            }
+        }
+
+    } catch (const _String e) {
+        HandleApplicationError(e);
+    }
+    return new _MathObject;
+}
+
 
 //__________________________________________________________________________________
 HBLObjectRef _TreeTopology::BranchLength (HBLObjectRef p) {

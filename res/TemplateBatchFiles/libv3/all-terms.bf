@@ -82,6 +82,11 @@ namespace terms{
         upper_bound: "1e25"
     };
 
+    range_clamp_locals = {
+        lower_bound: "0",
+        upper_bound: "100"
+    };
+
 
 
 
@@ -282,6 +287,7 @@ namespace terms{
         version               = "version";
         convergence_failures  = "convergence failures";
         omega_ratio           = "omega";
+        rate                  = "rate";
         proportion            = "proportion";
         positive              = "positive test results";
     }
