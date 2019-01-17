@@ -53,9 +53,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 //_____________________________________________________________________________
-class _Trie: public _List
-{
+class _Trie: public _List {
     protected:
+        unsigned long inserted_values;
         // data members
         _SimpleList charMap,
             /** charMap[c] maps a valid character to the internal index (0..validChars.sLength)
@@ -71,6 +71,7 @@ class _Trie: public _List
             parents;
             /** the index of the parent nodes (in 'nodes') for each node
              */
+
             
     
         /* base class will store the lunear representation of this trie */
@@ -104,6 +105,10 @@ class _Trie: public _List
         template <typename... values> _Trie (values... data) {
             InitializeTrie (nil);
             Insert (data...);
+        }
+    
+        virtual unsigned long countitems () const {
+            return inserted_values;
         }
        
         virtual BaseRef toStr(unsigned long);
@@ -165,14 +170,19 @@ class _Trie: public _List
          * @return the value associated with the key if found, kNotFound otherwise  
          */
 
-        long    Insert (const _String& key, const long value);
+        long    InsertExtended (const _String& key, const long value, bool update_value = false, bool* did_insert = nil);
         /**
          * Insert the key into the trie
+         * If the key already exists,
          * @param key -- the string to insert
          * @param value -- the value to associate with the key
-         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise kNotFound/kTrieInvalidLetter 
+         * @param update_value -- if the key already exists, and update_value is set, the value will be updated
+         * @param did_insert -- if not null, will set to T/F based on whether the value was instered
+         * @return non-negative index if the insert was successful (also returned if key is already in this trie), otherwise kNotFound/kTrieInvalidLetter
          */
-  
+
+        long    Insert (const _String& key, const long value);
+
         _Trie&     operator < (const char * key);
         /**
          * Insert the key into the trie (value is 0)
@@ -227,7 +237,8 @@ class _Trie: public _List
          * @param key -- the string to delete
          * @return True if the delete was successful (also returned if key is not in this trie), otherwise False 
          */
-                 unsigned long    Delete (const _List& key);
+    
+        unsigned long    Delete (const _List& key);
         /**
          * Delete all keys in the list from the trie
          * @param key -- the list of strings (non string objects will be cast to strings) to delete

@@ -89,6 +89,13 @@ public:
         Store (p);
         return *this;
     }
+    _Vector&   AppendRange (unsigned long how_many, hyFloat start, hyFloat add) {
+        for (unsigned long i = 0; i < how_many; i++) {
+            Store (start);
+            start += add;
+        }
+        return *this;
+    }
 
 private:
     unsigned long   used;

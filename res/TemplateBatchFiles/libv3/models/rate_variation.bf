@@ -193,3 +193,9 @@ lfunction rate_variation.extract_category_information (model) {
     }
     return None;
 }
+
+lfunction rate_variation.compute_mean (rv) {
+    GetInformation (info, rv);
+    return + (info[0][-1]$info[1][-1]);
+    
+}
