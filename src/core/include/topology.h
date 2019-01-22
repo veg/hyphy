@@ -212,7 +212,7 @@ public:
     virtual unsigned long   ObjectClass                         (void) const {
         return TOPOLOGY;
     }
-    virtual bool IsDegenerate(void) { return theRoot && theRoot->get_num_nodes() == 1L; }
+    virtual bool IsDegenerate(void) { return theRoot && theRoot->get_num_nodes() == 1L && theRoot->go_down(1)->get_num_nodes() == 0L; }
   
  
     virtual _AssociativeList*
