@@ -34,14 +34,10 @@ function runTest () {
   Topology T = ((1,2),(3,4),5);
   Tree TT = ((1,2),(3,4),5);
 
-
-  assert (runCommandWithSoftErrors ('LUSolve(list1)', "Operation 'LUSolve' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to take LUSolve of associative list");
-  assert (runCommandWithSoftErrors ('LUSolve(T)', "Operation 'LUSolve' is not implemented/defined for a Topology"), "Failed error checking for trying to take LUSolve of Topology");
-  assert (runCommandWithSoftErrors ('LUSolve(TT)', "Operation 'LUSolve' is not implemented/defined for a Tree"), "Failed error checking for trying to take LUSolve of Tree");
-
-  // TODO: Fix error message for running LUSolve on a number (was working with the earlier (~1/16/2019) version of HYPHYMP)
-  assert (runCommandWithSoftErrors ('LUSolve(1)', "Operation 'LUSolve' is not implemented/defined for a Number"), "Failed error checking for trying to take LUSolve of a number");
-  assert (runCommandWithSoftErrors ('LUSolve(1)', "Error compiling the statement: LUSolve(1) in call to LUSolve(1)"), "Failed error checking for trying to take LUSolve of a number");
+  assert (runCommandWithSoftErrors ('LUSolve(list1, list1)', "Operation 'LUSolve' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to take LUSolve of associative lists");
+  assert (runCommandWithSoftErrors ('LUSolve(T, T)', "Operation 'LUSolve' is not implemented/defined for a Topology"), "Failed error checking for trying to take LUSolve of Topologies");
+  assert (runCommandWithSoftErrors ('LUSolve(TT, TT)', "Operation 'LUSolve' is not implemented/defined for a Tree"), "Failed error checking for trying to take LUSolve of Trees");
+  assert (runCommandWithSoftErrors ('LUSolve(1, 1)', "Operation 'LUSolve' is not implemented/defined for a Number"), "Failed error checking for trying to take LUSolve of numbers");
 
   testResult = 1;
 

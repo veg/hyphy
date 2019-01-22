@@ -82,13 +82,10 @@ function runTest () {
   Topology exampleTopology = ((1,2),(3,4),5);
   exampleList = {"key1": "val1", "key2": "val2"};
 
-  assert (runCommandWithSoftErrors ('Random(exampleList)', "Operation 'Random' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to run Random(AssociativeList)");
-  assert (runCommandWithSoftErrors ('Random(exampleTree)', "Operation 'Random' is not implemented/defined for a Tree"), "Failed error checking for trying to run Random(Tree)");
-  assert (runCommandWithSoftErrors ('Random(exampleTopology)', "Operation 'Random' is not implemented/defined for a Topology"), "Failed error checking for trying to run Random(Topology)");
-
-  // TODO: Fix error message for running Random on a string (was working with the earlier (~1/16/2019) version of HYPHYMP)
-  //assert (runCommandWithSoftErrors ('Random(exampleString)', "Operation 'Random' is not implemented/defined for a String"), "Failed error checking for trying to run Random(string)");
-  //assert (runCommandWithSoftErrors ('Random(exampleString)', "Error compiling the statement: Random(exampleString) in call to Random(exampleString)"), "Failed error checking for trying to run Random(string)");
+  assert (runCommandWithSoftErrors ('Random(exampleList, exampleList)', "Unsupported argument type"), "Failed error checking for trying to run Random(AssociativeList, AssociativeList)");
+  assert (runCommandWithSoftErrors ('Random(exampleTree, exampleTree)', "Unsupported agrument type 'Tree'"), "Failed error checking for trying to run Random(Tree, Tree)");
+  assert (runCommandWithSoftErrors ('Random(exampleTopology, exampleTopology)', "Unsupported agrument type 'Topology'"), "Failed error checking for trying to run Random(Topology, Topology)");
+  assert (runCommandWithSoftErrors ('Random(exampleString, exampleString)', "Operation 'Random' is not implemented/defined for a String"), "Failed error checking for trying to run Random(string, string)");
 
   testResult = 1;
 
