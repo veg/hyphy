@@ -35,7 +35,6 @@ function runTest () {
   Tree TT = ((1,2),(3,4),5);
 
   
-  // TODO: The three lines below should be correct but I'm getting 'Unconsumed values on the stack'.
   assert (runCommandWithSoftErrors ('GammaDist(list1)', "GammaDist' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to take GammaDist of associative list");
   assert (runCommandWithSoftErrors ('GammaDist(T)', "Operation 'GammaDist' is not implemented/defined for a Topology"), "Failed error checking for trying to take GammaDist of Topology");
   assert (runCommandWithSoftErrors ('GammaDist(TT,1)', "Operation 'GammaDist' is not implemented/defined for a Tree"), "Failed error checking for trying to take GammaDist of Tree");

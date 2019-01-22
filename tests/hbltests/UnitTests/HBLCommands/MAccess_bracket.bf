@@ -58,12 +58,19 @@ function runTest () {
 
   assert(exampleTopologyFirst == "(1,2)Node1", "Failed element access on a topology");
   assert(exampleTopologySecond == "(3,4)Node4", "Failed element acess on a topology");
+
+  // Associative list. Access via the quoted key.
+  exampleList = {"key1": "val1", "key2": "val2", "key3": {"subkey1": "subvalue1", "subkey2": "subvalue2"}};
+  assert(exampleList["key1"] == "val1", "Failed to access a value from an associative list with the `list['key']` syntax");
+  // TODO: Should nested associative lists be accessable without having to wrap the first call in parenthesis? See below.
+  assert((exampleList["key3"])["subkey1"] == "subvalue1", "Failed to access a value from a nested associative list when using parentesis `(list['key1'])[key2']` synatax");
+
+
   
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
   //---------------------------------------------------------------------------------------------------------
-  exampleList = {"key1": "val1", "key2": "val2"};
   exampleNumber = 5;
   
   // TODO: error handling for trying element access lists or numbers should be improved.
@@ -72,7 +79,7 @@ function runTest () {
   assert(exampleList[0] == 0, "Failed to return zero when trying element access on list");
   assert(exampleList[100] == 0, "Failed to return zero when trying out of range element access on lilst");
 
-  // Show current behaviour for number (retruns <HyPhy Base Object>)
+  // Show current behaviour for number (returns <HyPhy Base Object>)
   //elementAccessOnNumber = exampleNumber[0];
   //fprintf (stdout, 'elementAccessOnNumber: ', elementAccessOnNumber, '\n');
 

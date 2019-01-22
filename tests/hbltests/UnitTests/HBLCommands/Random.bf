@@ -20,7 +20,7 @@ function runTest () {
 
   // Generate random number between two values. Random(Number min,Number max). Returns a random float out to 4 decimal places between the min and the max.
   assert(Random(1,2) < 2, "Random number generated greater than max");
-  assert(Random(1,2) > 1, "Random number generated less than max");
+  assert(Random(1,2) > 1, "Random number generated less than min");
   assert(Random(-2,-1) < -1, "Negative random number generated greater than max");
   assert(Random(0,100) != Random(0,100), "Two randomly generated numbers were equal (not impossible but extremly rare)");
 
