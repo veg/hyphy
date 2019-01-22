@@ -81,8 +81,30 @@ function runTest () {
      "Parent":1
     }
   };
-  //Operation '==' is not implemented/defined for a AssociativeList; would be nice
+
+  //Operation '==' is not implemented/defined for a AssociativeList; would be nice instead of the following copy/paste
   //assert(avl_caret == avl_true, "failed test");
+  assert((avl_caret["0"])["Name"] == (avl_true["0"])["Name"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["0"])["Root"] == (avl_true["0"])["Root"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["1"])["Depth"] == (avl_true["1"])["Depth"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["1"])["Length"] == (avl_true["1"])["Length"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["1"])["Name"] == (avl_true["1"])["Name"], "AVL tree does not match pre-computed value");
+  assert(((avl_caret["1"])["Children"])["0"] == ((avl_true["1"])["Children"])["0"], "AVL tree does not match pre-computed value");
+  assert(((avl_caret["1"])["Children"])["1"] == ((avl_true["1"])["Children"])["1"], "AVL tree does not match pre-computed value");
+  assert(((avl_caret["1"])["Children"])["2"] == ((avl_true["1"])["Children"])["2"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["2"])["Depth"] == (avl_true["2"])["Depth"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["2"])["Length"] == (avl_true["2"])["Length"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["2"])["Name"] == (avl_true["2"])["Name"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["2"])["Parent"] == (avl_true["2"])["Parent"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["3"])["Depth"] == (avl_true["3"])["Depth"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["3"])["Length"] == (avl_true["3"])["Length"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["3"])["Name"] == (avl_true["3"])["Name"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["3"])["Parent"] == (avl_true["3"])["Parent"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["4"])["Depth"] == (avl_true["4"])["Depth"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["4"])["Length"] == (avl_true["4"])["Length"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["4"])["Name"] == (avl_true["4"])["Name"], "AVL tree does not match pre-computed value");
+  assert((avl_caret["4"])["Parent"] == (avl_true["4"])["Parent"], "AVL tree does not match pre-computed value");
+
   testResult = 1;
 
   return testResult;
