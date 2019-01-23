@@ -114,13 +114,13 @@ protected:
         return nil;
     }
 
-    virtual void            PreTreeConstructor                  (bool);
-    virtual bool            MainTreeConstructor                 (_String const&, _TreeTopologyParseSettings & settings, bool = true, _AssociativeList* mapping = nil);
-    virtual void            PostTreeConstructor                 (bool);
-    node<long>*     prepTree4Comparison                 (_List&, _SimpleList&, node<long>* = nil) const;
-    void            destroyCompTree                     (node<long>*) const;
-    _List*          SplitTreeIntoClustersInt            (node<long>*, _List*, _AVLListX&, long, long) const;
-    char            internalTreeCompare                 (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology const*, bool = false) const;
+    virtual void                PreTreeConstructor                 (bool);
+    virtual _AssociativeList*  MainTreeConstructor                 (_String const&, _TreeTopologyParseSettings & settings, bool = true, _AssociativeList* mapping = nil);
+    virtual void            PostTreeConstructor                    (bool, _AssociativeList* );
+    node<long>*     prepTree4Comparison                            (_List&, _SimpleList&, node<long>* = nil) const;
+    void            destroyCompTree                                (node<long>*) const;
+    _List*          SplitTreeIntoClustersInt                       (node<long>*, _List*, _AVLListX&, long, long) const;
+    char            internalTreeCompare                            (node<long>*, node<long>*, _SimpleList*, char, long, node<long>*, _TreeTopology const*, bool = false) const;
     
     /**
         Compare two nodes on the same (subset) of leaves and report if they create the same subpartition
@@ -166,6 +166,7 @@ protected:
     
   
     virtual void _RemoveNodeList (_SimpleList const& list);
+    static const _String kMeta;
 
 public:
     // class constants
@@ -197,7 +198,7 @@ public:
     virtual  _FString*      Compare                             (HBLObjectRefConst) const;
     virtual  BaseRef        makeDynamic                         (void) const;
     node<long>* CopyTreeStructure                   (node<long>*, bool) const;
-    virtual  bool           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _String*, _TreeTopologyParseSettings const & settings);
+    virtual  const _String           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const & settings);
 
 
     virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);

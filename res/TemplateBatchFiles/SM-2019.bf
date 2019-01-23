@@ -53,6 +53,21 @@ utility.ForEachPair (sm.partitions , "_key_", "_value_", '
 ');
 
 
+sm.bootstrap = trees.BootstrapSupport (sm.tree);
+
+sm.bootstrap_weighting = {"default" : 0.2};
+
+if (utility.Array1D (sm.bootstrap )) {
+   if (io.SelectAnOption ({"No" : "Each internal branch has the same probability of being randomized in structured permutations", 
+                                "Yes"  : "For branches with bootstrap support, determine the probability of randomization based on the bootstrap (higher -> more likely)"},
+                                "Use bootstrap weighting"
+                                ) == "Yes") {
+                                
+        sm.bootstrap_weighting * utility.Map (sm.bootstrap, "_bs_", "Max(0.2,(_bs_>1)*_bs_/100+(_bs_<=1)*_bs_^2_)");
+   }
+ 
+}
+
 /*
 sm.method = io.SelectAnOption ({"Standard" : "Permute leaf labels freely (unconstrained)", 
                                 "Restricted"  : "Permute leaf labels in subtrees defined by randomly chosen internal branches (rate 1/4)"},
@@ -99,7 +114,7 @@ sm.shuffling_probability = Max (0.2, 10 / (BranchCount (T) + TipCount (T)));
 
 for (sm.k = 0; sm.k < sm.replicates ; ) {
     //if (sm.method == "Restricted") {
-        sm.reshuffled_tree = "" + Random (T, 0.25);
+        sm.reshuffled_tree = "" + Random (T, sm.bootstrap_weighting);
         Topology SimT = sm.reshuffled_tree;
         sm.resampled_distribution[sm.k][1] = Max (SimT, {"labels": sm.node_labels})["score"];
         //(trees.ParsimonyLabel ("SimT", sm.node_labels))["score"];

@@ -240,8 +240,8 @@ namespace hyphy_global_objects {
           if (listener_index >= 0) {
             //StringToConsole(_String("UnregisterChangeListenerForDataFilter ") & index & " " & (long)listener & "\n");
             current_listeners->Delete (listener_index);
-            return true;
           }
+         return true;
         }
       }
        hy_global::HandleApplicationError (_String("Not a supported listener type in call to ") & _String (__PRETTY_FUNCTION__));

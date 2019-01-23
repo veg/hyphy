@@ -90,12 +90,13 @@ lfunction trees.GetTreeString._sanitize(string) {
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", "intNode");
     }
-    string = string ^ {
+    /* this strips bootstrap values; not necessary for 2.4 */
+    /* string = string ^ {
         {
             "\\)[0-9]+(\\.[0-9]*)?\:",
             "):"
         }
-    };
+    }; */
 
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", None);
@@ -379,7 +380,7 @@ lfunction trees.RootTree(tree_info, root_on) {
 lfunction trees.ExtractTreeInfo(tree_string) {
 
     Topology T = tree_string;
-
+    
     branch_lengths = BranchLength(T, -1);
     branch_names   = BranchName(T, -1);
     branch_count   = utility.Array1D (branch_names) - 1;
@@ -415,7 +416,8 @@ lfunction trees.ExtractTreeInfo(tree_string) {
         ^"terms.trees.model_map": modelMap,
         ^"terms.trees.partitioned": leaves_internals,
         ^"terms.trees.model_list": Columns(modelMap),
-        ^"terms.trees.rooted" : rooted
+        ^"terms.trees.rooted" : rooted,
+        ^"terms.trees.meta" : T.__meta,
     };
 }
 
@@ -427,6 +429,17 @@ lfunction trees.ExtractTreeInfo(tree_string) {
 
 lfunction trees.HasBranchLengths (tree_info) {
     return utility.Array1D (tree_info [^"terms.trees.partitioned"]) == utility.Array1D (tree_info [^"terms.branch_length"]);
+}
+
+/**
+ * @name trees.BootstrapSupport 
+ * @param {Dictionary} tree information object (e.g. as returned by LoadAnnotatedTopology)
+ * @returns a {Dictionary} (could be empty or partially filled) with "node name" -> bootstrap support
+ */
+
+lfunction trees.BootstrapSupport (tree_info) {
+    return utility.Map (utility.Filter (tree_info[^"terms.trees.meta"], "_value_", "(_value_/'bootstrap')"), "_value_",
+                        "_value_['bootstrap']");
 }
 
 /**

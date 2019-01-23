@@ -9,7 +9,7 @@ function getTestName () {
 
 function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
-	testResult = 0;
+	testResult = TRUE;
   
 
   //---------------------------------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ function runTest () {
   assert("test" + 1 == "test1", "Failed to add a string and number (in that order); should convert the number to a string and concatenate it to the end of the string");
   assert("test" + 1 + 2 == "test12", "Failed to add a string and two numbers (in that order); should just return the sum of the two numbers");
   assert(1 + "test" == 1, "Failed to add a number and a string (in that order); should just return the number");
-  assert(1 + "test" + 2 == 3, "Failed to add a number, a string and another number (in that order; i.e. number first); should return the sum of the numbers");
+  assert(1 + "4" + 2 == 7, "Failed to add a number, a string (which is converted to a number) and another number (in that order; i.e. number first); should return the sum of the numbers");
 
 
   // TODO: Can't get the two tests below to work
@@ -49,9 +49,13 @@ function runTest () {
   //assert(T == expectedNewTopology, "Failed to add a node to a topology");
 
   // TODO: Adding different types (string and matrix)
-  //stringPlusMatrix = "string" + {{1,2}};
-  //fprintf (stdout, "stringPlusMatrix: ", stringPlusMatrix, "\n");
-  //assert(stringPlusMatrix == "string{{1,2}}", "Failed to add a string and a matrix (in that order); should convert the matrix to a string and concatenate it to the end of the string");
+  stringPlusMatrix = "string+" + {{1,2}};
+  fprintf (stdout, "stringPlusMatrix: ", stringPlusMatrix, "\n");
+  assert(stringPlusMatrix == 
+"string+{
+{1,2}
+}
+", "Failed to add a string and a matrix (in that order); should convert the matrix to a string and concatenate it to the end of the string");
    
  
   //---------------------------------------------------------------------------------------------------------

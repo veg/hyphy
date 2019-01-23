@@ -306,8 +306,9 @@ _TheTree::_TheTree              (_String const & name, _String const & parms, bo
   PreTreeConstructor   (make_a_copy);
   _TreeTopologyParseSettings settings = CollectParseSettings();
   settings.AllocateCache();
-  if (MainTreeConstructor  (parms, settings)) {
-    PostTreeConstructor  (make_a_copy);
+  
+  if (_AssociativeList * meta = MainTreeConstructor  (parms, settings)) {
+    PostTreeConstructor  (make_a_copy, meta);
   }
 }
 
@@ -338,7 +339,7 @@ _TheTree::_TheTree              (_String const & name, _TreeTopology* top):_Tree
             nodeVS = stored_branch_length;
           }
           
-          FinalizeNode (iterator, 0, nodeName, *nodeSpec, nodeVS, NULL, parse_settings);
+          FinalizeNode (iterator, 0, nodeName, *nodeSpec, nodeVS, parse_settings);
           DeleteObject (nodeSpec);
           return false;
         },
@@ -346,7 +347,7 @@ _TheTree::_TheTree              (_String const & name, _TreeTopology* top):_Tree
       );
 
     isDefiningATree         = kTreeNotBeingDefined;
-    PostTreeConstructor      (false);
+    PostTreeConstructor      (false, nil);
   } else {
     HandleApplicationError ("Can't create an empty tree");
     return;
@@ -370,7 +371,7 @@ void    _TheTree::delete_associated_calcnode (node<long> * n) const {
 
 //_______________________________________________________________________________________________
 
-void    _TheTree::PostTreeConstructor (bool make_copy) {
+void    _TheTree::PostTreeConstructor (bool make_copy, _AssociativeList* meta) {
   // TODO: SLKP 20180311, extensive duplication with the same function from _TreeToology, consider
   // a possible refactor
   
@@ -384,7 +385,7 @@ void    _TheTree::PostTreeConstructor (bool make_copy) {
     // existing variable is a CalcNode
     
     variablePtrs.Replace (get_index(), make_copy ? this->makeDynamic() : this, false);
-    
+      setParameter (WrapInNamespace (_TreeTopology::kMeta, GetName()), meta ? meta : new _MathObject, nil, false);
   };
   
   bool accept_rooted = EnvVariableTrue(accept_rooted_trees);
@@ -438,7 +439,7 @@ void    _TheTree::PostTreeConstructor (bool make_copy) {
       }
       
       if (recurse) {
-        PostTreeConstructor (make_copy);
+        PostTreeConstructor (make_copy, nil);
         return;
       }
     }
@@ -466,7 +467,7 @@ _TheTree::_TheTree              (_String const &name, _TheTree* otherTree):_Tree
         }
 
         isDefiningATree         = kTreeNotBeingDefined;
-        PostTreeConstructor      (false);
+        PostTreeConstructor      (false, nil);
     } else {
         HandleApplicationError(kTreeErrorMessageEmptyTree);
         return;
@@ -563,7 +564,7 @@ bool _MainTreeConstructor_error (const _String& error, const _String& tree_strin
 //_______________________________________________________________________________________________
 
 
-bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeName, _String const& nodeParameters, _String& nodeValue, _String* nodeComment, _TreeTopologyParseSettings const& settings)
+const _String    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeName, _String const& nodeParameters, _String& nodeValue, _TreeTopologyParseSettings const& settings)
 {
     
     static const _String kCommentSuffix ("_comment");
@@ -653,23 +654,18 @@ bool    _TheTree::FinalizeNode (node<long>* nodie, long number , _String nodeNam
 
     _CalcNode *nodeVar = (_CalcNode*)LocateVar(cNt.get_index());
 
-    if (nodeVar == NULL) return false;
+    if (nodeVar == NULL) return kEmptyString;
 
     nodeVar->SetValue (&val);
 
-    nodeName       = kEmptyString;
-    node_parameters = kEmptyString;
-    nodeValue      = kEmptyString;
-    if (nodeComment && nodeComment->nonempty()) {
-        CheckReceptacleAndStore(WrapInNamespace (kCommentSuffix, nodeVar->GetName()), kEmptyString, false, new _FString (*nodeComment));
-        *nodeComment    = kEmptyString;
-    }
+    node_parameters.Clear();
+    nodeValue.Clear();
 
     nodeVar->categoryVariables.TrimMemory();
     nodeVar->categoryIndexVars.TrimMemory();
     nodeVar->_VariableContainer::TrimMemory();
 
-    return true;
+    return nodeName;
 }
 
 //_______________________________________________________________________________________________

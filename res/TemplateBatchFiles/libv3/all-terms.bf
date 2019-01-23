@@ -462,15 +462,16 @@ namespace terms{
 
     /* Terms associated with tree structures */
     namespace trees {
-        newick = "string";
+        newick              = "string";
         newick_with_lengths = "string_with_lengths";
-        newick_annotated = "annotated_string";
-        model_map = "model_map";
-        partitioned = "partitioned";
-        model_list = "model_list";
-        rooted = "rooted";
-        root   = "root";
-        branches = "branches";
+        newick_annotated    = "annotated_string";
+        model_map           = "model_map";
+        partitioned         = "partitioned";
+        model_list          = "model_list";
+        rooted              = "rooted";
+        root                = "root";
+        branches            = "branches";
+        meta                = "meta";
 
         //node_name = "Name";
         //children = "Children";

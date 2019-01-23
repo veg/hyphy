@@ -97,7 +97,7 @@ public:
     virtual void            MarkDone                    (void);
     bool            HasChanged2                 (void);
 
-    virtual  bool           FinalizeNode                (node<long>*, long, _String, _String const&, _String&, _String*, _TreeTopologyParseSettings const&);
+    virtual  const _String           FinalizeNode                (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const&);
     virtual  BaseRef        makeDynamic                 (void) const;
 
     virtual  BaseRef        makeDynamicCopy             (_String const*) const;
@@ -301,7 +301,7 @@ protected:
     bool        IntPopulateLeaves   (_DataSetFilter const*, long) const;
 
     virtual     void                PreTreeConstructor                  (bool);
-    virtual     void                PostTreeConstructor                 (bool);
+    virtual     void                PostTreeConstructor                 (bool, _AssociativeList*);
 
 
     // all of the following members exist to speed-up the pruning algorithm
