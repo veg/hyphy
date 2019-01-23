@@ -249,6 +249,15 @@ function selection.io.report_fit (fit, xp, ss) {
 //------------------------------------------------------------------------------
 
 
+lfunction selection.io.ensure_not_null(object) {
+    if (Type (object) == "Undefined") {
+        return {};
+    }
+    return object;
+}
+//------------------------------------------------------------------------------
+
+
 function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution, display_order) {
 
 
@@ -258,7 +267,7 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution, d
             terms.json.log_likelihood: ll,
             terms.json.parameters: df,
             terms.json.AICc: selection.io.getIC(ll, df, ss),
-            terms.json.rate_distribution: rate_distribution,
+            terms.json.rate_distribution: selection.io.ensure_not_null(rate_distribution),
             terms.json.display_order: display_order
     });
 
@@ -276,7 +285,7 @@ function selection.io.json_store_lf_withEFV (json, name, ll, df, ss, rate_distri
             terms.json.parameters: df,
             terms.json.AICc: selection.io.getIC(ll, df, ss),
             terms.json.frequencies: frequencies,
-            terms.json.rate_distribution: rate_distribution,
+            terms.json.rate_distribution: selection.io.ensure_not_null(rate_distribution),
             terms.json.display_order: display_order
     });
 
