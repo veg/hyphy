@@ -33,7 +33,7 @@ function runTest () {
   assert (runCommandWithSoftErrors ('T||T', "is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (||)");
   assert (runCommandWithSoftErrors ('TT||TT', "is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (||)");
   assert (runCommandWithSoftErrors ('4||"String"', "where 'X' is not a number"), "Failed error checking for trying to compare number||string");
-  // Fails error checking for matrices. Not sure why.
+  // TODO: Fails error checking for matrices. Not sure why.
   //assert (runCommandWithSoftErrors ('matrix||matrix', "is not implemented/defined for a Matrix"), "Failed error checking for trying to compare matrix||matrix");
 
   testResult = 1;
