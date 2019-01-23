@@ -44,7 +44,7 @@ function runTest () {
   assert("abc"^{{"b","d"}} == "adc", "Fails to handle a single character replacement regex");
   assert("abcd"^{{"b|d","e"}} == "aece", "Fails to handle a logical or character replacement regex");
 
-  // avl_true comes from fprintf(stdout, avl_caret). Why do a,b and c all have the same parent?
+  // TODO: avl_true comes from fprintf(stdout, avl_caret). Why do a,b and c all have the same parent?
   Topology T = ((a:.2,b:.4):.6,c:.8);
   avl_caret = T^1;
   avl_true = {
@@ -82,8 +82,8 @@ function runTest () {
     }
   };
 
-  //Operation '==' is not implemented/defined for a AssociativeList; would be nice instead of the following copy/paste
-  //assert(avl_caret == avl_true, "failed test");
+  //TODO: Operation '==' is not implemented/defined for a AssociativeList; would be nice instead of the following copy/paste
+  //TODO: assert(avl_caret == avl_true, "failed test");
   assert((avl_caret["0"])["Name"] == (avl_true["0"])["Name"], "AVL tree does not match pre-computed value");
   assert((avl_caret["0"])["Root"] == (avl_true["0"])["Root"], "AVL tree does not match pre-computed value");
   assert((avl_caret["1"])["Depth"] == (avl_true["1"])["Depth"], "AVL tree does not match pre-computed value");
