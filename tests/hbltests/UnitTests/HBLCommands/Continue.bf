@@ -56,8 +56,8 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
   //---------------------------------------------------------------------------------------------------------
-  assert (runCommandWithSoftErrors ('continue;', "'continue;' only makes sense in the context of a loop."), "Failed error checking for trying to execute `break` outside a loop.");
-  assert (runCommandWithSoftErrors ('if(1==1){continue;}', "'continue;' only makes sense in the context of a loop."), "Failed error check for trying to execute `break` inside an if statment.");
+  assert (runCommandWithSoftErrors ('continue;', "'continue;' only makes sense in the context of a loop."), "Failed error checking for trying to execute `continue` outside a loop.");
+  assert (runCommandWithSoftErrors ('if(1==1){continue;}', "'continue;' only makes sense in the context of a loop."), "Failed error check for trying to execute `continue` inside an if statment.");
   
   testResult = 1;
 
