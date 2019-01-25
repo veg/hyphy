@@ -44,6 +44,7 @@
     #include <curl/curl.h>
 #endif
 
+#include "global_object_lists.h"
 #include "likefunc.h"
 #include "hy_string_buffer.h"
 #include "hbl_env.h"
@@ -267,7 +268,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
                     long type = HY_BL_LIKELIHOOD_FUNCTION, index;
                     
-                    _LikelihoodFunction *lf = (_LikelihoodFunction *)_HYRetrieveBLObjectByName    (lfID->get_str(), type, &index, false, false);
+                    _LikelihoodFunction *lf = (_LikelihoodFunction *)hyphy_global_objects::_HYRetrieveBLObjectByName    (lfID->get_str(), type, &index, false, false);
 
                     if (lf == nil) {
                         HandleApplicationError (_String("[MPI] Malformed MPI likelihood function optimization request - '") & lfID->get_str() &"' did not refer to a well-defined likelihood function.\n\n\n");
