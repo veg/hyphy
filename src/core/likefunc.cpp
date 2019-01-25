@@ -2039,7 +2039,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                 _DataSetFilter const * thisBlockFilter      = GetIthFilter(partID);
                 thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + blockWidth*theTrees.lLength, bySiteResults->theData + partID*blockWidth, blockWidth, 1.);
                 _SimpleList* blockScalers = ((_SimpleList*)partScalingCache(partID));
-                thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + (blockWidth*theTrees.lLength+blockPatternSize), blockScalers->lData, blockWidth, -1, 0.);
+                thisBlockFilter->PatternToSiteMapper (bySiteResults->theData + (blockWidth*theTrees.lLength+blockPatternSize), blockScalers->lData, blockWidth, 0L);
                 totalSent--;
             }
         } else
