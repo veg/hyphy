@@ -493,7 +493,11 @@ _StringBuffer * _AssociativeList::Serialize (unsigned long padding) const {
                 out_string->SanitizeAndAppend(_String ((_String*)anObject->toStr(padding+2)));
                 (*out_string) << '"';
             } else {
-                out_string->AppendNewInstance((_String*)anObject->toStr(padding+2));
+                if (anObject->ObjectClass() != HY_UNDEFINED) {
+                    out_string->AppendNewInstance((_String*)anObject->toStr(padding+2));
+                } else {
+                    (*out_string) << kNullToken;
+                }
             }
             doComma = true;
         }

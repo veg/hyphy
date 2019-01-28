@@ -740,7 +740,7 @@ lfunction parameters.SetLocalModelParameters (model, tree, node) {
 */
 
 lfunction parameters.SetCategoryVariables (model) {
-    utility.ForEachPair ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")], "_parameter_", "_description_",
+    utility.ForEach ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")], "_parameter_", 
     '
         parameters.SetValue (_parameter_, rate_variation.compute_mean (_parameter_));
     ');

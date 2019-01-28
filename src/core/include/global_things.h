@@ -304,7 +304,8 @@ namespace hy_global {
   kErrorStringMatrixExportError,           // -200
   kErrorStringNullOperand,                  // -666
   kErrorStringUnterminatedMatrix,
-  kNoneToken
+  kNoneToken,
+  kNullToken
   ;
   
   extern  _String  hy_base_directory,

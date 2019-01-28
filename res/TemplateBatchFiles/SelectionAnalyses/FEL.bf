@@ -261,17 +261,17 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     Optimize (results, ^lf);
 
-    null = estimators.ExtractMLEs (lf, model_mapping);
+    Null = estimators.ExtractMLEs (lf, model_mapping);
 
 
-    null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+    Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
     /*
     Export (lfs, ^lf);
     fprintf (MESSAGE_LOG, lfs);
     assert (0);
     */
-    return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.null"): null};
+    return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null};
 }
 
 /* echo to screen calls */
@@ -340,12 +340,12 @@ lfunction fel.store_results (node, result, arguments) {
 
     if (None != result) { // not a constant site
 
-        lrt = math.DoLRT ((result[utility.getGlobalValue("terms.null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
+        lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           1);
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
         result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_beta");
-        result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.null")], ^"fel.site_beta");
+        result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.Null")], ^"fel.site_beta");
         result_row [3] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [4] = lrt [utility.getGlobalValue("terms.p_value")];
 

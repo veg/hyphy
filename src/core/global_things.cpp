@@ -57,8 +57,6 @@
 
 using     namespace hy_env;
 
-#define __HYPHY_MPI_MESSAGE_LOGGING__
-
 extern _SimpleList freeSlots;
 
 
@@ -128,7 +126,8 @@ namespace hy_global {
                                       Replace("Dec", "12", true)
                                         & _String(__DATE__).Cut (4,5).Replace (" ", "0", true) & "alpha",
     
-                    kNoneToken = "None";
+                    kNoneToken = "None",
+                    kNullToken = "null";
   
     _String
                      hy_base_directory,

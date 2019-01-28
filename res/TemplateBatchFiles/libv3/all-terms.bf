@@ -49,7 +49,7 @@ namespace terms{
     efv_estimate   = "EFV";
     branch_length  = "branch length";
     alternative    = "alternative";
-    null           = "null";
+    Null           = "null";
     LRT            = "LRT";
     p_value        = "p-value";
 

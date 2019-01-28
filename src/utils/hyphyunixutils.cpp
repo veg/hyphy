@@ -278,7 +278,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     lf->SerializeLF(*resStr,hy_env::EnvVariableTrue (shortMPIReturn) ? _hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                 }
             } else {
-                // ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
+                //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 _ExecutionList exL (*theMessage);
                 //ReportWarning (_String ((_String*)batchLanguageFunctionNames.toStr()));
                 HBLObjectRef res = exL.Execute();

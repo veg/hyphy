@@ -1969,8 +1969,8 @@ bool      _ElementaryCommand::HandleMPIReceive (_ExecutionList& current_program)
 
 #ifdef __HYPHYMPI__
 
-    receptacle = _ValidateStorageVariable (current_program, 1UL);
-    _Variable* node_index_storage = _ValidateStorageVariable (current_program, 2UL);
+    receptacle = _ValidateStorageVariable (current_program, 2UL);
+    _Variable* node_index_storage = _ValidateStorageVariable (current_program, 1UL);
 
     long target_node = _ProcessNumericArgumentWithExceptions(*GetIthParameter(0UL), current_program.nameSpacePrefix),
     node_count  = hy_env::EnvVariableGetNumber(hy_env::mpi_node_count);

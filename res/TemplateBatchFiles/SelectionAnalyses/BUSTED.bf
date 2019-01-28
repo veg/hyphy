@@ -17,7 +17,7 @@ LoadFunctionLibrary("libv3/models/rate_variation.bf");
 
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
-utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.25);
+utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
 
 
 busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2)",
@@ -193,7 +193,7 @@ busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_g
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
 parameters.SetStickBreakingDistribution (busted.distribution, busted.test_guess);
 
-//VERBOSITY_LEVEL = 10;
+VERBOSITY_LEVEL = 10;
 
 if (busted.has_background) {
     busted.model_object_map = { "busted.background" : busted.background.bsrel_model,

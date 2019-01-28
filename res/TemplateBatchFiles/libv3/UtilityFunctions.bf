@@ -579,8 +579,8 @@ function utility.PopulateDict (from, to, value, lambda) {
  */
 function utility.ForEachPair(object, key_name, value_name, transform) {
 
-    io.CheckAssertion ("!utility.ForEachPair.warn_non_rentrant", "utility.ForEachPair is non re-entrant");
-    utility.ForEachPair.warn_non_rentrant = TRUE;
+    io.CheckAssertion ("!utility.ForEachPair.warn_non_reentrant", "utility.ForEachPair is non re-entrant");
+    utility.ForEachPair.warn_non_reentrant = TRUE;
 
     Eval ("`key_name` = None");
     Eval ("`value_name` = None");
@@ -617,7 +617,7 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
     Eval ("`value_name` = None"); 
     // reset bindings here to avoid calls on stale formula in subsequent invocations
 
-    utility.ForEachPair.warn_non_rentrant = FALSE;
+    utility.ForEachPair.warn_non_reentrant = FALSE;
 
 }
 

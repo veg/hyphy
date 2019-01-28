@@ -1316,11 +1316,11 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
 
             bool noneObject = false;
-            if (curOp == kNoneToken) {
+            if (curOp == kNoneToken || curOp == kNullToken) {
                  if (takeVarReference) {
                     return HandleFormulaParsingError (_String("Cannot make a reference from a reserved word ") & kNoneToken, parsingContext.errMsg(), s, i);
                 }
-               noneObject = true;
+                noneObject = true;
                 globalKey  = true;
             }
 

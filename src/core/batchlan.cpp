@@ -241,8 +241,7 @@ _List const _ElementaryCommand::fscanf_allowed_formats (new _String ("Number"),
 
 //____________________________________________________________________________________
 
-void    ReportMPIError      (int code, bool send)
-{
+void    ReportMPIError      (int code, bool send) {
     if (code != MPI_SUCCESS) {
         _String errMsg = "MPI Error while ";
         if (send) {
@@ -251,7 +250,7 @@ void    ReportMPIError      (int code, bool send)
             errMsg = errMsg & "receiving";
         }
 
-        errMsg = errMsg & _String(" code:") & (long)code;
+        errMsg = errMsg & _String(" with code ") & (long)code;
         HandleApplicationError (errMsg);
     }
 }
@@ -315,6 +314,8 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
     MPI_Status  status;
   
     // nonagressive polling mode
+    
+    //ReportWarning ("Step 1");
   
     int message_received = 0;
     while (! message_received) {
@@ -322,6 +323,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
       usleep (100);
     }
 
+    //ReportWarning ("Step 2");
     // nonagressive polling mode
   
   
@@ -332,6 +334,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
         messageLength = -messageLength;
     }
     
+    //ReportWarning ("Step 3");
     //printf ("MPIRecvString size tag %ld (size chunk %ld) \n",messageLength, MPI_SEND_CHUNK);
 
     if (!isError) {
@@ -364,6 +367,9 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
             }
             //return    nil;
         }
+        
+        //ReportWarning ("Step 4");
+
         //ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD,&status),false);
 
         if (isError) {
@@ -564,7 +570,7 @@ _String const ExportBFFunction (long idx, bool recursive) {
 
       for (long i = 0; i < hbl_functions.lLength; i++) {
         _String * a_name = (_String*)hbl_functions (i);
-        if (! a_name -> Equal( &hbf_name)) {
+        if (! a_name -> Equal( hbf_name)) {
           bf << "\n/*----- Called function '"
           << *a_name
           << "' ------*/\n"
