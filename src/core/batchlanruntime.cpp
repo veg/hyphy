@@ -1969,21 +1969,17 @@ bool      _ElementaryCommand::HandleMPIReceive (_ExecutionList& current_program)
 
 #ifdef __HYPHYMPI__
 
-
-
-
     receptacle = _ValidateStorageVariable (current_program, 1UL);
     _Variable* node_index_storage = _ValidateStorageVariable (current_program, 2UL);
 
     long target_node = _ProcessNumericArgumentWithExceptions(*GetIthParameter(0UL), current_program.nameSpacePrefix),
-    node_count  = hy_env::EnvVariableGetDefaultNumber(hy_env::mpi_node_count);
+    node_count  = hy_env::EnvVariableGetNumber(hy_env::mpi_node_count);
 
     if (target_node < -1L || target_node >= node_count) {
-      throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") is not a valid MPI node index (or -1 to accept from any node");
+      throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") must be a valid MPI node index (or -1 to accept from any node");
     }
 
     long received_from;
-
     receptacle->SetValue(new _FString (MPIRecvString (target_node,received_from)), false);
     node_index_storage->SetValue (new _Constant (received_from), false);
 
@@ -2009,10 +2005,10 @@ bool      _ElementaryCommand::HandleMPISend (_ExecutionList& current_program){
 
 #ifdef __HYPHYMPI__
    long target_node = _ProcessNumericArgumentWithExceptions(*GetIthParameter(0UL), current_program.nameSpacePrefix),
-         node_count  = hy_env::EnvVariableGetDefaultNumber(hy_env::mpi_node_count);
+         node_count  = hy_env::EnvVariableGetNumber(hy_env::mpi_node_count);
 
     if (target_node < 0L || target_node >= node_count) {
-      throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") is not a valid MPI node index");
+        throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") is not a valid MPI node index; valud range is " & target_node & " to " & (node_count-1));
     }
 
     _StringBuffer message_to_send (1024UL);
@@ -2039,7 +2035,7 @@ bool      _ElementaryCommand::HandleMPISend (_ExecutionList& current_program){
     if (message_to_send.nonempty()) {
       MPISendString(message_to_send, target_node);
     } else {
-      throw ("An ivalid (empty) MPI message");
+      throw (_String ("An invalid (empty) MPI message"));
     }
 #else
     throw ("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");

@@ -57,6 +57,8 @@
 
 using     namespace hy_env;
 
+#define __HYPHY_MPI_MESSAGE_LOGGING__
+
 extern _SimpleList freeSlots;
 
 
@@ -356,6 +358,13 @@ namespace hy_global {
         has_terminal_stdout = isatty (STDOUT_FILENO);
         has_terminal_stderr = isatty (STDERR_FILENO);
         
+
+        
+#ifdef __HYPHYMPI__
+        hy_env :: EnvVariableSet (hy_env::mpi_node_id, new _Constant (hy_mpi_node_rank), false);
+        hy_env :: EnvVariableSet (hy_env::mpi_node_count, new _Constant (hy_mpi_node_count), false);
+#endif
+
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
         if (hy_mpi_node_rank == 0L) {
 #endif

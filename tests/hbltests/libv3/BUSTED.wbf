@@ -2,5 +2,5 @@ LoadFunctionLibrary("SelectionAnalyses/BUSTED.bf", {
     "0": "Universal",
     "1": PATH_TO_CURRENT_BF + "data/CD2.nex",
     "2": "GROUP3",
-    "3": "All"
+    "3": "No"
 });

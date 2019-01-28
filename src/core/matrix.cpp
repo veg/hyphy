@@ -6067,7 +6067,7 @@ HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
             _String             pdfkey      ("PDF"),
                                 * arg0      = (_String *)keys->GetItem(0L);
             DeleteObject (keys);
-            if (arg0->Equal(&pdfkey)) {
+            if (arg0->Equal(pdfkey)) {
                 _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
                             arg ("ARG0");
                 

@@ -263,7 +263,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 {
 
     long    messageLength = theMessage.length(),
-            transferCount = 0;
+            transferCount = 0L;
 
     if (isError) {
         messageLength = -messageLength;
@@ -271,7 +271,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 
     ReportMPIError(MPI_Send(&messageLength, 1, MPI_LONG, destID, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD),true);
 
-    if (messageLength == 0) {
+    if (messageLength == 0L) {
         return;
     }
 
@@ -300,8 +300,8 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 //____________________________________________________________________________________
 _String*    MPIRecvString       (long senderT, long& senderID) {
     _String*    theMessage = nil;
-    long        messageLength = 0,
-                transferCount = 0;
+    long        messageLength = 0L,
+                transferCount = 0L;
 
     int         actualReceived = 0;
     bool        isError       = false;
@@ -329,6 +329,8 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
         isError = true;
         messageLength = -messageLength;
     }
+    
+    //printf ("MPIRecvString size tag %ld (size chunk %ld) \n",messageLength, MPI_SEND_CHUNK);
 
     if (!isError) {
         //MPI_Get_count (&status,MPI_CHAR,&actualReceived);
@@ -352,6 +354,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
         }
 
         if (messageLength-transferCount) {
+            //printf ("Clause 2 %d %d\n", messageLength-transferCount, theMessage->length());
             ReportMPIError(MPI_Recv((void*)(theMessage->get_str()+transferCount), messageLength-transferCount, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
             MPI_Get_count (&status,MPI_CHAR,&actualReceived);
             if (actualReceived!=messageLength-transferCount) {
