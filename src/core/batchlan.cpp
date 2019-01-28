@@ -37,6 +37,7 @@
 
  */
 
+
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
@@ -280,6 +281,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
     }
 
     while (messageLength-transferCount>MPI_SEND_CHUNK) {
+        printf("%s",theMessage.get_str());
         ReportMPIError(MPI_Send(theMessage.get_str()+transferCount, MPI_SEND_CHUNK, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
         transferCount += MPI_SEND_CHUNK;
     }
@@ -2647,14 +2649,6 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
         CheckReceptacleAndStore (&newCorpus," SimulateDataSet (SCFG)", true, new _FString(((Scfg*)scfgList (s2))->SpawnRandomString()), false);
     }
 }
-
-
-
-
-
-
-
-
 
 //____________________________________________________________________________________
 
