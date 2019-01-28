@@ -59,7 +59,7 @@
 BaseObj::BaseObj() { reference_counter = 1L; }
 
 //______________________________________________________________________________
-BaseRef BaseObj::toStr(unsigned long) { return new _String("<HyPhy Base Object>"); }
+BaseRef BaseObj::toStr(unsigned long) { return new _String(kNullToken); }
 
 //______________________________________________________________________________
 BaseRef BaseObj::toErrStr(void) { return toStr(); }
