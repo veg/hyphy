@@ -37,7 +37,7 @@ fprintf (stdout, "\nBase composition:\n\tA: ", Format (baseFreqs[0][0],10,5),","
 ChoiceList (modelKind, "Model", 1, SKIP_NONE,
 					   "Alternative", "Fit Model A with 4 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Positive in FG. Class 4: Neutral evolution in BG, Positive in FG",
 					   "Null for Test 1", "Fit a model with 2 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG.",
-					   "Null for Test 2", "Fit Model A with 3 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Neutral in FG.",
+					   "Null for Test 2", "Fit Model A with 3 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Neutral in FG."
 );					   
 
 if (modelKind < 0)

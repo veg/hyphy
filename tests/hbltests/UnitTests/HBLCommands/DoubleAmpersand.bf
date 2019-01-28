@@ -15,7 +15,7 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   // SIMPLE FUNCTIONALITY
   //---------------------------------------------------------------------------------------------------------
-  // Check if two numbers are not zero (really is checking that both numbers are >=1)
+  // Check if two numbers are not zero (TODO: really is checking that both numbers are >=1)
   assert(29&&0 == 0, "Failed to return a 0 for one non-zero and one zero (29&&0)");
   oneNonZero = 0&&5;
   oneLessThanOne = 29&&0.9;
@@ -36,7 +36,7 @@ function runTest () {
   lowerTest = "HyPhy"&&7;
   assert(lowerTest == "hyphy", "Failed to convert string to lowercase");
 
-  // 2 and 3 don't seem to work... see below
+  // TODO: 2 and 3 don't seem to work... see below
   // 2. Escape special characgters with a '\'
   escapeTest = "hyphy\\'"&&2;
   fprintf (stdout, "escpaeTest: ", escpaeTest, "\n");
@@ -59,7 +59,7 @@ function runTest () {
   assert (runCommandWithSoftErrors ('TT&&TT', "is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (&&)");
   assert (runCommandWithSoftErrors ('4&&"String"', "where 'X' is not a number"), "Failed error checking for trying to compare number&&string");
 
-  // Fails error checking for matrices. Not sure why.
+  // TODO: Fails error checking for matrices. Not sure why.
   //matrix&&matrix; //Running this commad returns "Error: Invalid baseline p-value (must be in (0,1))"
   //None of the tests below pass
   //assert (runCommandWithSoftErrros ('matrix&&matrix', "Invalid baseline p-value"), "Failed error checking for matrices");

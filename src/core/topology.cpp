@@ -394,7 +394,7 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                     if (parentNode->get_num_nodes()) {
                         // internal node, check to see if the node name is a bootstrap value
                         _SimpleList numerical_match (nodeName.RegExpMatch(hy_float_regex, 0));
-                        if (numerical_match.nonempty()) {
+                        if (numerical_match.nonempty() && numerical_match(0) == 0) {
                             nodeBootstrap = nodeName.Cut (numerical_match(0), numerical_match(1));
                             nodeName.Clear();
                         }

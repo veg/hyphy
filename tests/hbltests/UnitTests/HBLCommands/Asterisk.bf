@@ -66,13 +66,13 @@ function runTest () {
   Tree TT = ((1,2),(3,4),5);
   matrix = {{0.3,0.4}};
 
-  // T*T; this command casues the script to hang.
+  // TODO: T*T; this command casues the script to hang.
   //assert (runCommandWithSoftErrors ('T*T', "is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (&&)");
-  // TT*TT; also causes the script to hang.
+  // TODO: TT*TT; also causes the script to hang.
   //assert (runCommandWithSoftErrors ('TT*TT', "is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (&&)");
   assert (runCommandWithSoftErrors ('4*"String"', "where 'X' is not a number"), "Failed error checking for trying to compare number&&string");
 
-  /*
+  /* TODO:
   assert(None*4 == 0, "Failed to multiply a number and none");
   assert(4*None == 0, "Failed to multiply a number and none");
   */

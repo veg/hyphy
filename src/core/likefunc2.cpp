@@ -79,8 +79,9 @@ void    _LikelihoodFunction::ComputeParameterPenalty (void){
   smoothingPenalty = 0.0;
   if (smoothingTerm > 0.0) {
       //printf ("\n_LikelihoodFunction::ComputeParameterPenalty\n");
+      
       for (unsigned long k = 0; k < indexInd.lLength; k ++) {
-        hyFloat lb = GetIthIndependentBound(k, true),
+        hyFloat    lb = GetIthIndependentBound(k, true),
                    ub = GetIthIndependentBound(k, false),
                    mp = 0.5*(lb+ub),
                    span = ub-lb,
@@ -93,6 +94,8 @@ void    _LikelihoodFunction::ComputeParameterPenalty (void){
        smoothingPenalty += term;
         // (2.*(v-mp)/span)^50
       }
+      
+      smoothingPenalty *= smoothingTerm;
   }
 }
 
