@@ -193,7 +193,7 @@ busted.test_guess = busted.DistributionGuess(utility.Map (selection.io.extract_g
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
 parameters.SetStickBreakingDistribution (busted.distribution, busted.test_guess);
 
-VERBOSITY_LEVEL = 10;
+//VERBOSITY_LEVEL = 10;
 
 if (busted.has_background) {
     busted.model_object_map = { "busted.background" : busted.background.bsrel_model,

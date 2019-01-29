@@ -1797,9 +1797,9 @@ bool     _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _Si
                     childLeaves->Each ([&] (long value, unsigned long) -> void {
                         long lookup = reindexer ? reindexer->get (value) : value;
                         if (lookup >= 0L) {
-                            all_descendants [lookup] = 1L;
+                            (*all_descendants) [lookup] = 1L;
                             if (complement) {
-                                complement [lookup] = 0L;
+                                (*complement) [lookup] = 0L;
                             }
                         } else {
                             throw 0;
