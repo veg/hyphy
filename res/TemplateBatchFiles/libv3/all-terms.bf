@@ -36,7 +36,8 @@ namespace terms{
     three_way           = "three-way";
     reduced             = "reduced";
     substitutions       = "substitutions";
-
+    search_grid         = "search_grid";
+    
     parameters     = "parameters";
     local          = "local";
    // global         = "global"; // Defined at the top of file

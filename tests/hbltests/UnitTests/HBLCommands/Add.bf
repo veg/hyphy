@@ -64,7 +64,6 @@ function runTest () {
   assert (runCommandWithSoftErrors ('T + {"NAME":"Z"}', "Missing/invalid mandatory argument"), "Failed error checking when not specifying all required arguments");
   assert (runCommandWithSoftErrors ('T + {"WHERE":"X"}', "Either 'NAME' or 'PARENT'"), "Failed error checking when not specifying all required arguments");
  
-  
   Tree T = ((a:0.1,b:0.2)N1:0.3,c:0.1,d:0.2);
   T + {"NAME":"e", "WHERE": "b", "LENGTH" : 0.05, "PARENT_LENGTH" : 0.01, "PARENT": "p_of_b"};
   assert(BranchLength (T, "e") == 0.05, "Incorrectly set branch length for an added branch");
