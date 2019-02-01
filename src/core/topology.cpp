@@ -3365,11 +3365,12 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
     
     node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
     
-    while (node<long> * currentNode = ni.Next (&levelBuffer)) {
+    while (node<long> * currentNode = ni.Next ()) {
         _String nodeName = GetNodeName (currentNode);
         
-        while (levelBuffer.countitems() <= ni.Level()) {
-            levelBuffer << 0;
+        
+        if (levelBuffer.countitems() <= ni.Level()) {
+            levelBuffer.AppendRange(ni.Level() - levelBuffer.countitems() + 1 , 0, 0);
         }
         
         if (currentNode->is_leaf()) {

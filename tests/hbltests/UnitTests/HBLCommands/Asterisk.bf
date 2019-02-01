@@ -9,7 +9,7 @@ function getTestName () {
 
 function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
-	testResult = 0;
+	testResult = FALSE;
   
 
   //---------------------------------------------------------------------------------------------------------
@@ -49,25 +49,24 @@ function runTest () {
   // duplicate keys receive updated values 
   list1 = {"key1":1, "key2":2};
   list2 = {"key2":3, "key4":4};
-  merged_list = list1*list2;
+  merged_list_length = list1*list2;
   list2key3 = list2["key2"];
   list1key3 = list1["key2"];
   
   assert(list2["key2"] == list1["key2"] && (list1 / "key4"), "Failed to join two associated lists");
-  assert(merged_list == 3, "Failed to return the length of the jointed list when joining two lists");
-
-
+  assert(merged_list_length == 3, "Failed to return the length of the jointed list when joining two lists");
 
   
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
   //---------------------------------------------------------------------------------------------------------
-  Topology T = ((1,2),(3,4),5);
-  Tree TT = ((1,2),(3,4),5);
-  matrix = {{0.3,0.4}};
+  Topology T  = ((1,2),(3,4),((5,6),7));
+  Topology T2 = ((3,4),(2,1),((5,6),7));
+
+  fprintf (stdout, T*T2, "\n", Format (T2, 1, 1));
 
   // TODO: T*T; this command casues the script to hang.
-  //assert (runCommandWithSoftErrors ('T*T', "is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (&&)");
+  assert (runCommandWithSoftErrors ('T*T', "is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (&&)");
   // TODO: TT*TT; also causes the script to hang.
   //assert (runCommandWithSoftErrors ('TT*TT', "is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (&&)");
   assert (runCommandWithSoftErrors ('4*"String"', "where 'X' is not a number"), "Failed error checking for trying to compare number&&string");
@@ -78,7 +77,7 @@ function runTest () {
   */
   
 
-  testResult = 1;
+  testResult = TRUE;
 
   return testResult;
 }

@@ -31,8 +31,6 @@ function runTest()
     
   assert(Abs(x["Arctan(_MATRIX_ELEMENT_VALUE_)"] - arctan_x) < 1e-8, "Does not agree with existing numerical computing frameworks");
   
-
-
   //  Invalid types
   Topology T = ((1,2),(3,4),5);
   Tree TT = ((1,2),(3,4),5);

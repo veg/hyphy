@@ -159,7 +159,6 @@ busted.test.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generat
         busted.filter_names,
         None);
 
-
 busted.background.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generator,
         "busted.background", {
             "0": parameters.Quote(terms.global),
@@ -233,6 +232,9 @@ selection.io.startTimer (busted.json [terms.json.timers], "Unconstrained BUSTED 
 
 io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 allowed) branch-site model fit");
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {"retain-lf-object": TRUE});
+//io.SpoolLF(busted.full_model[utility.getGlobalValue("terms.likelihood_function")], "/Users/sergei/Desktop/BUSTED", "alt");
+
+
 io.ReportProgressMessageMD("BUSTED", "main", "* " + selection.io.report_fit (busted.full_model, 9, busted.codon_data_info[terms.data.sample_size]));
 io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the following rate distribution for branch-site combinations was inferred");
 

@@ -740,10 +740,16 @@ lfunction parameters.SetLocalModelParameters (model, tree, node) {
 */
 
 lfunction parameters.SetCategoryVariables (model) {
-    utility.ForEach ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")], "_parameter_", 
-    '
-        parameters.SetValue (_parameter_, rate_variation.compute_mean (_parameter_));
-    ');
-
+    
+    cat_vars      = (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")];
+    cat_var_count = utility.Array1D (cat_vars);
+    
+    if (cat_var_count) {
+        cat_vars = Rows (cat_vars);
+        for (i = 0; i < cat_var_count; i+=1) {
+            parameters.SetValue (cat_vars[i], rate_variation.compute_mean (cat_vars[i]));
+        }
+    }
+   
 }
 
