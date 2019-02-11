@@ -1756,7 +1756,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                           lastif.Delete(lastif.countitems()-1);
                       }
                   } else {
-                      throw ("'else' w/o an if to latch on to...");
+                      throw (_String ("'else' w/o an 'if' to latch on to..."));
                   }
 
               } else if (currentLine.BeginsWith (blDo)) { // do {} while statement

@@ -1,6 +1,7 @@
 LoadFunctionLibrary("../models/model_functions.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
+LoadFunctionLibrary("mpi.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 
@@ -696,7 +697,14 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
     }
 
-    //assert (0);
+    if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
+        grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
+        best_value   = Max (grid_results, 1);
+        parameters.SetValues ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+        //console.log (best_value);
+        //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+        //assert (0);
+    }
     
     
     //utility.SetEnvVariable ("VERBOSITY_LEVEL" ,10);
@@ -1130,3 +1138,97 @@ lfunction estimators.ComputeLF (id) {
 	LFCompute (^id,LF_DONE_COMPUTE);
 	return logl;
 }
+
+/**
+ * @name estimators.CreateInitialGrid
+ * @description prepare a Dict object suitable for seeding initial LF values
+ * @param {Dict} values : "parameter_id" -> {{initial values}} [row matrix], e.g.
+    ...
+        "busted.test.bsrel_mixture_aux_0":  {
+        {0.1, 0.25, 0.4, 0.55, 0.7, 0.85, 0.9} 
+          },
+         "busted.test.bsrel_mixture_aux_1":  {
+        {0.1, 0.25, 0.4, 0.55, 0.7, 0.85, 0.9} 
+          }
+    ...
+
+ * @param {int} N how many points to sample
+ * @param {Dict/null} init if not null, taken to be the initial template for variables
+                      i.e. random draws will be one index change from this vector
+ * @returns {Dict} like in 
+ 
+ {
+ "0":{
+   "busted.test.bsrel_mixture_aux_0":{
+     "ID":"busted.test.bsrel_mixture_aux_0",
+     "MLE":0.4
+    },
+   "busted.test.bsrel_mixture_aux_1":{
+     "ID":"busted.test.bsrel_mixture_aux_1",
+     "MLE":0.7
+    },
+   "busted.test.omega1":{
+     "ID":"busted.test.omega1",
+     "MLE":0.01
+    },
+   "busted.test.omega2":{
+     "ID":"busted.test.omega2",
+     "MLE":0.1
+    },
+   "busted.test.omega3":{
+     "ID":"busted.test.omega3",
+     "MLE":1.5
+    }
+  }
+  ....
+ */
+lfunction estimators.CreateInitialGrid (values, N, init) {
+	result = {};
+	var_count = utility.Array1D (values);
+	var_names = utility.Keys (values);
+	var_dim = {var_count,1};
+	for (v = 0; v < var_count; v += 1) {
+	    var_dim [v] = utility.Array1D (values[var_names[v]]);
+    }
+
+    if (null != init) {
+        
+        toggle = Max (init[0], 0.5);
+        
+        for (i = 0; i < N; i+=1) { 
+            entry = {};
+            for (v = 0; v < var_count; v += 1) {
+                if (Random (0,1) < toggle) {
+                    entry [var_names[v]] = {
+                        ^"terms.id" : var_names[v],
+                        ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
+                    };
+                } else {
+                   entry [var_names[v]] = {
+                        ^"terms.id" : var_names[v],
+                        ^"terms.fit.MLE" : (values[var_names[v]])[init[var_names[v]]]
+                    };
+                
+                }
+            }
+            result + entry;
+        }
+    } else {
+    
+   
+        for (i = 0; i < N; i+=1) { 
+            entry = {};
+            for (v = 0; v < var_count; v += 1) {
+                entry [var_names[v]] = {
+                    ^"terms.id" : var_names[v],
+                    ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
+                };
+            }
+            result + entry;
+        }
+    }
+
+	
+    return result;
+}
+

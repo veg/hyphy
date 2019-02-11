@@ -1,10 +1,12 @@
 LoadFunctionLibrary("SelectionAnalyses/BUSTED.bf", {
     "0": "Universal",
     "1": PATH_TO_CURRENT_BF + "data/CD2.nex",
-    "2": "GROUP3",
+    //"2": "GROUP3",
+    "2" : "All",
     "3": "Yes"
 });
 
+/*
 ALWAYS_RELOAD_FUNCTION_LIBRARIES = TRUE;
 
 LoadFunctionLibrary("SelectionAnalyses/BUSTED.bf", {
@@ -13,3 +15,4 @@ LoadFunctionLibrary("SelectionAnalyses/BUSTED.bf", {
     "2": "GROUP3",
     "3": "No"
 });
+*/
