@@ -254,7 +254,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 "GetInformation(<receptacle>, <DataSet or DataSetFilter or LikelihoodFunction or Model or Variable or Regexp or String>",
                                                                 ','));
 
-    lengthOptions.Clear();lengthOptions.Populate (3,2,1); // 2, 3, 4
+    lengthOptions.Clear();lengthOptions.Populate (4,2,1); // 2, 3, 4, 5
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_DATA_INFO,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetDataInfo(", HY_HBL_COMMAND_GET_DATA_INFO,false),
                                                                 -1,
@@ -335,7 +335,13 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 1, 
                                                                 "UseModel (<model ID>)",','));
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SET_PARAMETER, 
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_ALIGN_SEQUENCES,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("AlignSequences(", HY_HBL_COMMAND_ALIGN_SEQUENCES,false),
+                                                                3,
+                                                                "AlignSequences (result, sequences, options)",','));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SET_PARAMETER,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SetParameter(", HY_HBL_COMMAND_SET_PARAMETER,false),
                                                                 3, 
                                                                 "SetParameter(<object>, <parameter index>, <value>)",','));

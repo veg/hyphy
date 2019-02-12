@@ -37,6 +37,7 @@
 
  */
 
+
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
@@ -132,8 +133,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 kBGMData                         ("BGM_DATA_MATRIX"),
 
                                 gdiDFAtomSize                   ("ATOM_SIZE"),
-                                marginalAncestors               ("MARGINAL"),
-                                doLeavesAncestors               ("DOLEAVES"),
+
                                  dialogPrompt,
                                 defFileNameValue;
 
@@ -240,8 +240,7 @@ _List const _ElementaryCommand::fscanf_allowed_formats (new _String ("Number"),
 
 //____________________________________________________________________________________
 
-void    ReportMPIError      (int code, bool send)
-{
+void    ReportMPIError      (int code, bool send) {
     if (code != MPI_SUCCESS) {
         _String errMsg = "MPI Error while ";
         if (send) {
@@ -250,7 +249,7 @@ void    ReportMPIError      (int code, bool send)
             errMsg = errMsg & "receiving";
         }
 
-        errMsg = errMsg & _String(" code:") & (long)code;
+        errMsg = errMsg & _String(" with code ") & (long)code;
         HandleApplicationError (errMsg);
     }
 }
@@ -263,7 +262,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 {
 
     long    messageLength = theMessage.length(),
-            transferCount = 0;
+            transferCount = 0L;
 
     if (isError) {
         messageLength = -messageLength;
@@ -271,7 +270,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 
     ReportMPIError(MPI_Send(&messageLength, 1, MPI_LONG, destID, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD),true);
 
-    if (messageLength == 0) {
+    if (messageLength == 0L) {
         return;
     }
 
@@ -280,6 +279,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
     }
 
     while (messageLength-transferCount>MPI_SEND_CHUNK) {
+        printf("%s",theMessage.get_str());
         ReportMPIError(MPI_Send(theMessage.get_str()+transferCount, MPI_SEND_CHUNK, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
         transferCount += MPI_SEND_CHUNK;
     }
@@ -300,8 +300,8 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 //____________________________________________________________________________________
 _String*    MPIRecvString       (long senderT, long& senderID) {
     _String*    theMessage = nil;
-    long        messageLength = 0,
-                transferCount = 0;
+    long        messageLength = 0L,
+                transferCount = 0L;
 
     int         actualReceived = 0;
     bool        isError       = false;
@@ -313,6 +313,8 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
     MPI_Status  status;
   
     // nonagressive polling mode
+    
+    //ReportWarning ("Step 1");
   
     int message_received = 0;
     while (! message_received) {
@@ -320,6 +322,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
       usleep (100);
     }
 
+    //ReportWarning ("Step 2");
     // nonagressive polling mode
   
   
@@ -329,6 +332,9 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
         isError = true;
         messageLength = -messageLength;
     }
+    
+    //ReportWarning ("Step 3");
+    //printf ("MPIRecvString size tag %ld (size chunk %ld) \n",messageLength, MPI_SEND_CHUNK);
 
     if (!isError) {
         //MPI_Get_count (&status,MPI_CHAR,&actualReceived);
@@ -352,6 +358,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
         }
 
         if (messageLength-transferCount) {
+            //printf ("Clause 2 %d %d\n", messageLength-transferCount, theMessage->length());
             ReportMPIError(MPI_Recv((void*)(theMessage->get_str()+transferCount), messageLength-transferCount, MPI_CHAR, senderT, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD,&status),false);
             MPI_Get_count (&status,MPI_CHAR,&actualReceived);
             if (actualReceived!=messageLength-transferCount) {
@@ -359,6 +366,9 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
             }
             //return    nil;
         }
+        
+        //ReportWarning ("Step 4");
+
         //ReportMPIError(MPI_Recv(&messageLength, 1, MPI_LONG, senderT, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD,&status),false);
 
         if (isError) {
@@ -559,7 +569,7 @@ _String const ExportBFFunction (long idx, bool recursive) {
 
       for (long i = 0; i < hbl_functions.lLength; i++) {
         _String * a_name = (_String*)hbl_functions (i);
-        if (! a_name -> Equal( &hbf_name)) {
+        if (! a_name -> Equal( hbf_name)) {
           bf << "\n/*----- Called function '"
           << *a_name
           << "' ------*/\n"
@@ -1745,7 +1755,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                           lastif.Delete(lastif.countitems()-1);
                       }
                   } else {
-                      throw ("'else' w/o an if to latch on to...");
+                      throw (_String ("'else' w/o an 'if' to latch on to..."));
                   }
 
               } else if (currentLine.BeginsWith (blDo)) { // do {} while statement
@@ -2644,14 +2654,6 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
         CheckReceptacleAndStore (&newCorpus," SimulateDataSet (SCFG)", true, new _FString(((Scfg*)scfgList (s2))->SpawnRandomString()), false);
     }
 }
-
-
-
-
-
-
-
-
 
 //____________________________________________________________________________________
 
@@ -3995,141 +3997,110 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
     // then the data set file name
 
     // look for the data set name first
+    
+    const _String kConcat  ("Concatenate"),
+                  kCombine ("Combine"),
+                  kReadDataFile ("ReadDataFile"),
+                  kReadFromString ("ReadFromString"),
+                  kPurge ("purge"),
+                  kReconstructAncestors ("ReconstructAncestors"),
+                  kSampleAncestors ("SampleAncestors"),
+                  kMarginalAncestors               ("MARGINAL"),
+                  kDoLeavesAncestors               ("DOLEAVES"),
+                  kSimulate ("Simulate");
+    
+    try {
 
-    long    mark1 = source.FirstNonSpaceFollowingSpace(),
-            mark2 = source.FindTerminator(mark1, '='); ;
-
-
-    if (mark1==-1 || mark2==-1 || mark2 - 1 <= mark1 ) {
-        HandleErrorWhileParsing ("DataSet declaration missing a valid identifier", source);
-        return false;
-    }
-
-    _String dsID (source,mark1,mark2-1);
-    // now look for the opening paren
-
-    mark1 = source.Find ('(',mark2,-1);
-
-    _ElementaryCommand dsc;
-    _String            oper (source,mark2+1,mark1-1);
-
-    if (oper ==  _String("ReadDataFile") || oper == _String ("ReadFromString")) { // a switch statement if more than 1
-        _List pieces;
-        ExtractConditions (source,mark1+1,pieces,',');
-        if (pieces.lLength!=1UL) {
-            HandleErrorWhileParsing ("DataSet declaration missing a valid filename", source);
-            return false;
+        long op_start;
+        _String ds_id = ExtractStatementAssignment (source, op_start, false);
+        
+        long paren_start = op_start,
+             paren_end  = source.ExtractEnclosedExpression(paren_start, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
+        
+        if (paren_end == kNotFound) {
+            throw _String ("Missing () enclosed argument list");
         }
+        // now look for the opening paren
 
-        _ElementaryCommand * dsc = makeNewCommand (5);
+        /*_List local_ref_manager;
+        _ElementaryCommand * dataset_op = new _ElementaryCommand;
+        local_ref_manager < dataset_op;*/
+        
+        _String            operation_type (source,op_start,paren_start-1L);
+        _List pieces (new _String (ds_id));
+        ExtractConditions (source,paren_start+1,pieces,',');
 
-        dsc->parameters&&(&dsID);
-        dsc->parameters&&(pieces(0));
-
-        if (oper == _String ("ReadFromString")) {
-            dsc->simpleParameters << 1;
-        }
-
-        dsc->addAndClean (target);
-        return true;
-    } else if (oper == blSimulateDataSet) {
-        _List pieces;
-        ExtractConditions (source,mark1+1,pieces,',');
-        if ( pieces.lLength>4UL || pieces.lLength==0UL ) {
-            HandleErrorWhileParsing (blSimulateDataSet & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).",
-                                   source);
-            return false;
-        }
-
-        dsc.code = 12;
-        dsc.parameters&&(&dsID);
-        dsc.parameters&&(pieces(0));
-        for (mark2 = 1; mark2 < pieces.lLength; mark2++) {
-            dsc.parameters&&(pieces(mark2));
-        }
-
-        target&&(&dsc);
-        return true;
-    } else if ( oper ==  _String("Concatenate") || oper ==  _String("Combine")) {
-        _List pieces;
-        ExtractConditions (source,mark1+1,pieces,',');
-        if (pieces.lLength==0UL) {
-            HandleErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
-            return false;
-        }
-
-
-        dsc.code = 16;
-        dsc.parameters&&(&dsID);
-
-        long i=0;
-
-        dsc.simpleParameters<<((oper==_String("Concatenate"))?1:2);
-
-        _String purge ("purge");
-        if (purge.Equal ((_String*)pieces(0))) {
-            dsc.simpleParameters[0]*=-1;
-            i++;
-        }
-
-        for (; i<pieces.lLength; i++) {
-            dsc.parameters<<pieces (i);
-        }
-
-        if (dsc.parameters.lLength<=1) {
-            HandleErrorWhileParsing("DataSet merging operation missing a valid list of arguments.",source);
-            return false;
-        }
-
-        target&&(&dsc);
-        return true;
-
-    } else {
-        if (oper ==  _String("ReconstructAncestors") || oper ==  _String("SampleAncestors")) {
-            _List pieces;
-            ExtractConditions (source,mark1+1,pieces,',');
-            if (pieces.lLength>3UL || pieces.lLength==0UL) {
-                HandleErrorWhileParsing("ReconstructAncestors and SampleAncestors expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.",
-                                      source);
-                return false;
+        if (operation_type ==  kReadDataFile || operation_type == kReadFromString) {
+            if (pieces.countitems () != 2UL) {
+                throw _String ("DataSet declaration missing a valid filename/string or has extra arguments");
             }
 
-            dsc.code                    = (oper == _String("ReconstructAncestors"))?38:50;
-            dsc.parameters              &&(&dsID);
-            dsc.parameters              << pieces(0);
-            for (long optP = 1; optP < pieces.lLength; optP++)
-                if (((_String*)pieces(optP))->Equal(marginalAncestors)) {
-                    dsc.simpleParameters << -1;
-                } else if (((_String*)pieces(optP))->Equal(doLeavesAncestors)) {
-                    dsc.simpleParameters << -2;
-                } else {
-                    dsc.parameters  << pieces(optP);
+            _ElementaryCommand * dsc = new _ElementaryCommand (5);
+            
+            if (operation_type == kReadFromString) {
+                dsc->simpleParameters << 1;
+            }
+            dsc->addAndClean (target, &pieces, 0L);
+        } else if (operation_type == blSimulateDataSet) {
+            if ( pieces.countitems()>5UL || pieces.countitems()==1UL ) {
+                throw blSimulateDataSet.Enquote() & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).";
+            }
+
+            _ElementaryCommand * dsc = new _ElementaryCommand (12);
+            dsc->addAndClean (target, &pieces, 0L);
+        } else if ( operation_type ==  kConcat || operation_type ==  kCombine) {
+            _ElementaryCommand * dsc = new _ElementaryCommand (16);
+            dsc->simpleParameters<<((operation_type==kConcat)?1:2);
+
+            if ((*(_String*)pieces.GetItem(1)) == kPurge) {
+                dsc->simpleParameters[0] = - dsc->simpleParameters[0];
+                pieces.Delete (1);
+            }
+
+            if (pieces == 1UL) {
+                delete (dsc);
+                throw _String ("DataSet merging operation missing a valid list of arguments.");
+            }
+            dsc->addAndClean (target, &pieces, 0L);
+            return true;
+
+        } else {
+            if (operation_type ==  kReconstructAncestors || operation_type == kSampleAncestors) {
+                if (pieces.countitems()>4UL || pieces.lLength==1L) {
+                    throw  operation_type.Enquote() & " expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.";
+                }
+                _ElementaryCommand * dsc = new _ElementaryCommand (operation_type ==  kReconstructAncestors ? 38 : 50);
+                dsc->parameters << pieces (0) << pieces (1);
+               for (long optP = 2L; optP < pieces.lLength; optP++) {
+                    _String * current_term = (_String*)pieces.GetItem(optP);
+                    
+                    if (*current_term == kMarginalAncestors) {
+                        dsc->simpleParameters << -1;
+                    } else if (*current_term == kDoLeavesAncestors) {
+                        dsc->simpleParameters << -2;
+                    } else {
+                        dsc->parameters  << current_term;
+                    }
                 }
 
-            target&&(&dsc);
-            return true;
-        } else if (oper ==  _String("Simulate")) {
-            _List pieces;
-            ExtractConditions (source,mark1+1,pieces,',');
-            if ((pieces.lLength>7)||(pieces.lLength<4UL)) {
-                HandleErrorWhileParsing ("Simulate expects 4-6 parameters: tree with attached models, equilibrium frequencies, character map, number of sites|root sequence, <save internal node sequences>, <file name for direct storage>",
-                                       source);
-                return false;
+                dsc->addAndClean (target);
+                return true;
+            } else if (operation_type ==  kSimulate) {
+                if ((pieces.countitems()>8)||(pieces.countitems()<5UL)) {
+                    throw kSimulate.Enquote() & " expects 4-6 parameters: tree with attached models, equilibrium frequencies, character map, number of sites|root sequence, <save internal node sequences>, <file name for direct storage>";
+                    
+                 }
+
+                _ElementaryCommand * dsc = new _ElementaryCommand (52);
+                dsc->addAndClean (target, &pieces, 0);
+                return true;
+            } else {
+                throw _String ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);");
             }
-
-            dsc.code = 52;
-            dsc.parameters&&(&dsID);
-
-            for (mark2 = 0; mark2 < pieces.lLength; mark2++) {
-                dsc.parameters&&(pieces(mark2));
-            }
-
-            target&&(&dsc);
-            return true;
-        } else {
-            HandleErrorWhileParsing ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);",
-                                   source);
         }
+    } catch (const _String err) {
+        HandleErrorWhileParsing (err, source);
+        return false;
     }
 
     return false;

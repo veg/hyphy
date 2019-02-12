@@ -141,6 +141,8 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
             SetDialogPrompt("Please select a tree file for the data:");
             fscanf(PROMPT_FOR_FILE, REWIND, "Raw", treeString);
             fprintf(stdout, "\n");
+            
+            look_for_newick_tree = utility.getGlobalValue ("LAST_FILE_PATH");
 
             if (regexp.Find(treeString, "^#NEXUS")) {
                 ExecuteCommands(treeString);
@@ -196,7 +198,11 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
         }
     }
 
-    return treeString;
+    return 
+    {
+        utility.getGlobalValue("terms.data.file"): look_for_newick_tree,
+        utility.getGlobalValue("terms.data.tree"): treeString
+    };
 }
 
 
@@ -379,6 +385,13 @@ lfunction trees.RootTree(tree_info, root_on) {
  */
 lfunction trees.ExtractTreeInfo(tree_string) {
 
+    if (Type (tree_string) == "AssociativeList") {
+        file_name   = tree_string[^"terms.data.file"];
+        tree_string = tree_string[^"terms.data.tree"];
+    } else {
+        file_name = None;
+    }
+
     Topology T = tree_string;
     
     branch_lengths = BranchLength(T, -1);
@@ -418,6 +431,8 @@ lfunction trees.ExtractTreeInfo(tree_string) {
         ^"terms.trees.model_list": Columns(modelMap),
         ^"terms.trees.rooted" : rooted,
         ^"terms.trees.meta" : T.__meta,
+        ^"terms.data.file" : file_name
+        
     };
 }
 

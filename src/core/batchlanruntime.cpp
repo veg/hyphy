@@ -65,6 +65,42 @@ using namespace hyphy_global_objects;
 //____________________________________________________________________________________
 /* various helper functions */
 
+const _String   _ElementaryCommand::ExtractStatementAssignment (_String const& source, long& end_at, const bool validate, const bool exceptions, const long offset) {
+    
+    _String id;
+    
+    try {
+        long id_start = source.FirstNonSpaceFollowingSpace(offset);
+        
+        end_at = id_start != kNotFound ? source.FindTerminator(id_start, '=') : kNotFound;
+        
+        if (id_start == kNotFound || end_at == kNotFound) {
+            throw _String ("Missing an ID in 'Type <ID> = statement'");
+        }
+        
+        id = source.Cut (id_start, end_at - 1);
+        if (validate) {
+            if (!id.IsValidIdentifier(fIDAllowCompound)) {
+                throw id.Enquote() & "is not a valid storage variable identifier";
+            }
+        }
+        
+        end_at ++;
+        
+    } catch (const _String err) {
+        if (exceptions) {
+            throw err;
+        }
+        id.Clear();
+        end_at = kNotFound;
+    }
+    
+    return id;
+    
+}
+
+//____________________________________________________________________________________
+
 void _CheckExpressionForCorrectness (_Formula& parsed_expression, _String const& exp, _ExecutionList& program, long desired_type = HY_ANY_OBJECT) {
     _String error_message;
 
@@ -601,7 +637,7 @@ bool      _ElementaryCommand::HandleGetInformation (_ExecutionList& current_prog
         } else {
             _Variable* source_object = FetchVar(LocateVarByName (source_name));
 
-            if (source_object->ObjectClass()==STRING) {
+            if (source_object && source_object->ObjectClass()==STRING) {
                 source_object    = FetchVar (LocateVarByName (_String((_String*)source_object->Compute()->toStr())));
             }
             if (source_object) {
@@ -841,8 +877,9 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
         _FString        * char_vector        = (_FString*)          _EnsurePresenceOfKey (alignment_options, kCharacterMap, STRING);
 
         unsigned          long     char_count = 0UL;
-        long              character_map_to_integers [256] = {-1L};
-
+        long              character_map_to_integers [256];
+        InitializeArray(character_map_to_integers, 256, -1L);
+        
         for (unsigned long cc = 0UL; cc < char_vector->get_str().length(); cc++) {
             unsigned char this_char = char_vector->get_str().get_uchar(cc);
             if (character_map_to_integers [this_char]>=0) {
@@ -1068,15 +1105,19 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                     delete [] str1r;
                     delete [] str2r;
                 } else {
-                    throw ( "Internal Error in AlignStrings" );
+                    throw _String( "Internal Error in AlignStrings" );
                 }
                 pairwise_alignment->MStore ("0", new _Constant (score), false);
                 aligned_strings->MStore (_String((long)index2-1L), pairwise_alignment, false);
             }
         }
+        receptacle->SetValue(aligned_strings, false);
+        
     } catch (const _String& error) {
         return  _DefaultExceptionHandler (receptacle, error, current_program);
     }
+    
+    
     return true;
 }
 //____________________________________________________________________________________
@@ -1969,21 +2010,17 @@ bool      _ElementaryCommand::HandleMPIReceive (_ExecutionList& current_program)
 
 #ifdef __HYPHYMPI__
 
-
-
-
-    receptacle = _ValidateStorageVariable (current_program, 1UL);
-    _Variable* node_index_storage = _ValidateStorageVariable (current_program, 2UL);
+    receptacle = _ValidateStorageVariable (current_program, 2UL);
+    _Variable* node_index_storage = _ValidateStorageVariable (current_program, 1UL);
 
     long target_node = _ProcessNumericArgumentWithExceptions(*GetIthParameter(0UL), current_program.nameSpacePrefix),
-    node_count  = hy_env::EnvVariableGetDefaultNumber(hy_env::mpi_node_count);
+    node_count  = hy_env::EnvVariableGetNumber(hy_env::mpi_node_count);
 
     if (target_node < -1L || target_node >= node_count) {
-      throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") is not a valid MPI node index (or -1 to accept from any node");
+      throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") must be a valid MPI node index (or -1 to accept from any node");
     }
 
     long received_from;
-
     receptacle->SetValue(new _FString (MPIRecvString (target_node,received_from)), false);
     node_index_storage->SetValue (new _Constant (received_from), false);
 
@@ -2009,10 +2046,10 @@ bool      _ElementaryCommand::HandleMPISend (_ExecutionList& current_program){
 
 #ifdef __HYPHYMPI__
    long target_node = _ProcessNumericArgumentWithExceptions(*GetIthParameter(0UL), current_program.nameSpacePrefix),
-         node_count  = hy_env::EnvVariableGetDefaultNumber(hy_env::mpi_node_count);
+         node_count  = hy_env::EnvVariableGetNumber(hy_env::mpi_node_count);
 
     if (target_node < 0L || target_node >= node_count) {
-      throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") is not a valid MPI node index");
+        throw (GetIthParameter(1UL)->Enquote () & " (=" & node_count & ") is not a valid MPI node index; valud range is " & target_node & " to " & (node_count-1));
     }
 
     _StringBuffer message_to_send (1024UL);
@@ -2039,7 +2076,7 @@ bool      _ElementaryCommand::HandleMPISend (_ExecutionList& current_program){
     if (message_to_send.nonempty()) {
       MPISendString(message_to_send, target_node);
     } else {
-      throw ("An ivalid (empty) MPI message");
+      throw (_String ("An invalid (empty) MPI message"));
     }
 #else
     throw ("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");

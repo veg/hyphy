@@ -600,33 +600,27 @@ int main (int argc, char* argv[])
 #endif
 
 #ifdef  __HYPHYMPI__
-    int            rank,
-                   size;
-
     MPI_Init       (&argc, &argv);
+    int            rank,
+    size;
+    
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    hy_env :: EnvVariableSet (hy_env::mpi_node_id, new _Constant (rank), false);
-    hy_env :: EnvVariableSet (hy_env::mpi_node_count, new _Constant (size), false);
-    
     hy_mpi_node_rank  = rank;
     hy_mpi_node_count = size;
-
-    if (rank == 0) {
-        mpiNodesThatCantSwitch.Populate (size,1,0);
-    }
-  
-    /*
-    int i = 0;
-    char hostname[256];
-    gethostname(hostname, sizeof(hostname));
-    printf("PID %d on %s ready for attach\n", getpid(), hostname);
-    fflush(stdout);
-    while (0 == i)
-      sleep(5);
-    printf("PID %d on continuing\n", getpid());
-     */
+    
+   
+    
+    /*if (rank == 0) {
+        int i = 0;
+        char hostname[256];
+        gethostname(hostname, sizeof(hostname));
+        printf("PID %d on %s ready for attach\n", getpid(), hostname);
+        fflush(stdout);
+        while (0 == i)
+          sleep(5);
+        printf("PID %d on continuing\n", getpid());
+    }*/
   
 #endif
 

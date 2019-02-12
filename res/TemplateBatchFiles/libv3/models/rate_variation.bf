@@ -82,9 +82,7 @@ lfunction rate_variation_define_gdd(options, namespace) {
 	globals = {};
 		
 	rates   = parameters.GenerateSequentialNames (parameters.ApplyNameSpace("rv_gdd_rates", namespace), categories, "_");
-	
 	utility.ForEachPair (rates, "_key_", "_value_", '(`&globals`)["GDD rate category " + (1+_key_)] = _value_');
-	
 	weights = parameters.GenerateSequentialNames (parameters.ApplyNameSpace("rv_gdd_weights", namespace), categories-1, "_");
 	utility.ForEachPair (weights, "_key_", "_value_", '(`&globals`)[utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " for GDD category " + (1+_key_)] = _value_');
 

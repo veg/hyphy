@@ -156,7 +156,7 @@ if (!IS_TREE_PRESENT_IN_DATA)
 	{
 		if (END_OF_FILE)
 		{
-			fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file.\n").
+			fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file.\n");
 			return;
 		}
 		fscanf (LAST_FILE_PATH, "String", treeString);
@@ -239,7 +239,7 @@ if (rI==0)
 	SetDialogPrompt ("Save MLEs to:");
 	fprintf (PROMPT_FOR_FILE, CLEAR_FILE);
 	Optimize (res,lf);
-	mi				   = LIKELIHOOD_FUNCTION_OUTPUT;
+	mi = LIKELIHOOD_FUNCTION_OUTPUT;
 	fprintf (stdout, lf);
 	LIKELIHOOD_FUNCTION_OUTPUT = 4;
 	fprintf (LAST_FILE_PATH, lf);

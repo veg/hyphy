@@ -61,7 +61,6 @@ void            mpiNormalLoop    (int, int, _String &);
 void            mpiOptimizerLoop (int, int);
 
 void            mpiBgmLoop (int, int);
-_SimpleList     mpiNodesThatCantSwitch;
 #endif
 
 extern _List batchLanguageFunctionNames;
@@ -242,7 +241,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
             ReportWarning           ("[MPI] Returned from mpiOptimizer loop");
             hyphyMPIOptimizerMode   = _hyphyLFMPIModeNone;
             PushFilePath(baseDir, false, false);
-        } else if ( theMessage->Equal (&mpiLoopSwitchToBGM) ) {
+        } else if ( *theMessage == mpiLoopSwitchToBGM) {
             ReportWarning       ("[MPI] Received signal to switch to mpiBgmLoop");
             MPISendString       (mpiLoopSwitchToBGM, senderID); // feedback to source to confirm receipt of message
             mpiBgmLoop          (rank, size);
@@ -279,7 +278,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     lf->SerializeLF(*resStr,hy_env::EnvVariableTrue (shortMPIReturn) ? _hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                 }
             } else {
-                // ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
+                //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 _ExecutionList exL (*theMessage);
                 //ReportWarning (_String ((_String*)batchLanguageFunctionNames.toStr()));
                 HBLObjectRef res = exL.Execute();
@@ -291,8 +290,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
             }
 
             MPISendString(*resStr,senderID);
-
-
+            
             if (hy_env::EnvVariableTrue (preserveSlaveNodeState) == false) {
                 PurgeAll (true);
                 InitializeGlobals ();

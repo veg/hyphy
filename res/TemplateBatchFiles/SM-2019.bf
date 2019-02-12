@@ -53,8 +53,9 @@ utility.ForEachPair (sm.partitions , "_key_", "_value_", '
 ');
 
 
-sm.bootstrap = trees.BootstrapSupport (sm.tree);
+sm.replicates = io.PromptUser(">How many bootstrap replicates", 100, 1, 1000000, TRUE);
 
+sm.bootstrap = trees.BootstrapSupport (sm.tree);
 sm.bootstrap_weighting = {"default" : 0.2};
 
 if (utility.Array1D (sm.bootstrap )) {
@@ -68,15 +69,7 @@ if (utility.Array1D (sm.bootstrap )) {
  
 }
 
-/*
-sm.method = io.SelectAnOption ({"Standard" : "Permute leaf labels freely (unconstrained)", 
-                                "Restricted"  : "Permute leaf labels in subtrees defined by randomly chosen internal branches (rate 1/4)"},
-                                "Resampling method"
-                                );
-*/
 
-
-sm.replicates = io.PromptUser(">How many bootstrap replicates", 100, 1, 1000000, TRUE);
 
 sm.tree.string = sm.tree[terms.trees.newick_with_lengths];
 sm.node_labels = {};
@@ -95,13 +88,8 @@ utility.ForEachPair (sm.partitions, "_regexp_", "_leaves_",
 );
 
 
-//console.log (T);
-//console.log (sm.node_labels);
 
-sm.mp = //trees.ParsimonyLabel ("T", sm.node_labels);
-Max (T, {"labels": sm.node_labels});
-//console.log (sm.mp);
-
+sm.mp = Max (T, {"labels": sm.node_labels});
 sm.score = sm.mp ["score"];
 
 io.ReportProgressMessageMD('SM',  'result', 'Inferred **' +  sm.score + '** migration events');
@@ -148,7 +136,6 @@ sm.dist.structured.cutoff = sm.dist.structured [sm.replicates * 90 $ 100];
 
 sm.structured.p = +sm.dist.shuffled["_MATRIX_ELEMENT_VALUE_<= sm.dist.structured.cutoff"];
 
-
 sm.sampled_stats = math.GatherDescriptiveStats (sm.resampled_distribution[-1][0]);
 sm.sampled_stuctured_stats = math.GatherDescriptiveStats (sm.resampled_distribution[-1][1]);
 
@@ -167,6 +154,9 @@ io.ReportProgressMessageMD('SM',  'reshuffled', 'Based on **' + sm.replicates + 
          + Format ( sm.structured.p /(sm.replicates+1), 6, 3));
 io.ReportProgressMessageMD('SM',  'reshuffled', '\n> This p-value is derived by comparing the distribution of migration events from the panmictic reshuffle to the 90% percentile of the simulated distribution of expected migrations if leaf labels are permuted partially respecting subtree structure (block permutations), which results in **' + sm.dist.structured.cutoff + '** expected migrations');
 
+sm.json_path = sm.tree[terms.data.file] + ".json";
+io.ReportProgressMessageMD('SM',  'file', 'Saving detailed report as a JSON file to \`' + sm.json_path + '\`');
+
 sm.json = {
     'replicates' : sm.replicates,
     'compartments' : sm.group_count, 
@@ -178,7 +168,9 @@ sm.json = {
     'simulations' : {
         'panmictic' : sm.dist.shuffled,
         'structured' : sm.dist.structured   
-    }
+    },
+    "events" : sm.mp["substitutions"]
 };
 
+io.SpoolJSON (sm.json, sm.json_path);
 return sm.json;

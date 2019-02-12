@@ -36,7 +36,8 @@ namespace terms{
     three_way           = "three-way";
     reduced             = "reduced";
     substitutions       = "substitutions";
-
+    search_grid         = "search_grid";
+    
     parameters     = "parameters";
     local          = "local";
    // global         = "global"; // Defined at the top of file
@@ -49,7 +50,7 @@ namespace terms{
     efv_estimate   = "EFV";
     branch_length  = "branch length";
     alternative    = "alternative";
-    null           = "null";
+    Null           = "null";
     LRT            = "LRT";
     p_value        = "p-value";
 

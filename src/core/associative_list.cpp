@@ -249,10 +249,10 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
                         filter    = FindBFFunctionName (*filter_id);
 
                 if (callback < 0L || GetBFFunctionArgumentCount(callback) != 2L) {
-                    throw ("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)");
+                    throw (_String("The first argument in an iterator call for Associative Arrays must be a valid identifier of a function taking two arguments (key, value)"));
                 } else {
                     if (filter >= 0L && GetBFFunctionArgumentCount (filter) != 1L) {
-                        throw ("The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument");
+                        throw (_String("The second argument in an iterator call for Associative Arrays must be either empty or a valid identifier of a function taking a single argument"));
                     }
 
                     _Formula      testFormula,
@@ -493,7 +493,11 @@ _StringBuffer * _AssociativeList::Serialize (unsigned long padding) const {
                 out_string->SanitizeAndAppend(_String ((_String*)anObject->toStr(padding+2)));
                 (*out_string) << '"';
             } else {
-                out_string->AppendNewInstance((_String*)anObject->toStr(padding+2));
+                if (anObject->ObjectClass() != HY_UNDEFINED) {
+                    out_string->AppendNewInstance((_String*)anObject->toStr(padding+2));
+                } else {
+                    (*out_string) << kNullToken;
+                }
             }
             doComma = true;
         }
