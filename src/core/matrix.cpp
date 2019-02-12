@@ -483,15 +483,17 @@ void    _Matrix::CreateMatrix    (_Matrix* populate_me, long rows, long columns,
             populate_me->theData =(hyFloat*)MatrixMemAllocate (sizeof(hyFloat)*populate_me->lDim);
             memset (populate_me->theData, 0, populate_me->lDim*sizeof(hyFloat));
         }
+        populate_me->hDim = rows;
+        populate_me->vDim = columns;
+        populate_me->SetupSparseMatrixAllocations ();
     } else {
         populate_me->lDim      = 0L;
         populate_me->theIndex  = nil;
         populate_me->theData   = nil;
+        populate_me->hDim = 0UL;
+        populate_me->vDim = 0UL;
     }
     
-    populate_me->hDim = rows;
-    populate_me->vDim = columns;
-    populate_me->SetupSparseMatrixAllocations ();
 }
 
 

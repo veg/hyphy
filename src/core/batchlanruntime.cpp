@@ -637,7 +637,7 @@ bool      _ElementaryCommand::HandleGetInformation (_ExecutionList& current_prog
         } else {
             _Variable* source_object = FetchVar(LocateVarByName (source_name));
 
-            if (source_object->ObjectClass()==STRING) {
+            if (source_object && source_object->ObjectClass()==STRING) {
                 source_object    = FetchVar (LocateVarByName (_String((_String*)source_object->Compute()->toStr())));
             }
             if (source_object) {
