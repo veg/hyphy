@@ -17,6 +17,8 @@ sum := estPiA+estPiC+estPiG+estPiT;
 
 EMBED_FREQUENCY_DEPENDENCE = 1;
 
+#include "TemplateModels/TrN.mdl";
+
 SelectTemplateModel(filteredData);
 
 estPiA = .25;
