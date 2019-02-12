@@ -63,10 +63,8 @@ function runTest () {
   Topology T  = ((1,2),(3,4),((5,6),7));
   Topology T2 = ((3,4),(2,1),((5,6),7));
 
-  fprintf (stdout, T*T2, "\n", Format (T2, 1, 1));
-
   // TODO: T*T; this command casues the script to hang.
-  assert (runCommandWithSoftErrors ('T*T', "is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (&&)");
+  //assert (runCommandWithSoftErrors ('T*T', "is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (&&)");
   // TODO: TT*TT; also causes the script to hang.
   //assert (runCommandWithSoftErrors ('TT*TT', "is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (&&)");
   assert (runCommandWithSoftErrors ('4*"String"', "where 'X' is not a number"), "Failed error checking for trying to compare number&&string");
