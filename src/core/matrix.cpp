@@ -483,15 +483,17 @@ void    _Matrix::CreateMatrix    (_Matrix* populate_me, long rows, long columns,
             populate_me->theData =(hyFloat*)MatrixMemAllocate (sizeof(hyFloat)*populate_me->lDim);
             memset (populate_me->theData, 0, populate_me->lDim*sizeof(hyFloat));
         }
+        populate_me->hDim = rows;
+        populate_me->vDim = columns;
+        populate_me->SetupSparseMatrixAllocations ();
     } else {
         populate_me->lDim      = 0L;
         populate_me->theIndex  = nil;
         populate_me->theData   = nil;
+        populate_me->hDim = 0UL;
+        populate_me->vDim = 0UL;
     }
     
-    populate_me->hDim = rows;
-    populate_me->vDim = columns;
-    populate_me->SetupSparseMatrixAllocations ();
 }
 
 
@@ -5823,16 +5825,16 @@ HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp) {
         _Matrix                 *m          = nil;
 
         if (! is_numeric() || hDim != 3) {
-            throw ("First argument must be a numeric 3xN matrix");
+            throw (_String("First argument must be a numeric 3xN matrix"));
         } else {
             //errMsg = "Second argument in call to < (PathLogLikelihood) must be a square matrix";
             if (mp->ObjectClass () == MATRIX) {
                 m = (_Matrix*)mp->Compute();
                 if (m->GetHDim() != m->GetVDim()) {
-                    throw ("Second argument must be a square matrix");
+                    throw (_String("Second argument must be a square matrix"));
                 }
             } else {
-                throw ("Second argument must be a matrix");
+                throw (_String("Second argument must be a matrix"));
             }
         }
 

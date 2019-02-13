@@ -65,6 +65,42 @@ using namespace hyphy_global_objects;
 //____________________________________________________________________________________
 /* various helper functions */
 
+const _String   _ElementaryCommand::ExtractStatementAssignment (_String const& source, long& end_at, const bool validate, const bool exceptions, const long offset) {
+    
+    _String id;
+    
+    try {
+        long id_start = source.FirstNonSpaceFollowingSpace(offset);
+        
+        end_at = id_start != kNotFound ? source.FindTerminator(id_start, '=') : kNotFound;
+        
+        if (id_start == kNotFound || end_at == kNotFound) {
+            throw _String ("Missing an ID in 'Type <ID> = statement'");
+        }
+        
+        id = source.Cut (id_start, end_at - 1);
+        if (validate) {
+            if (!id.IsValidIdentifier(fIDAllowCompound)) {
+                throw id.Enquote() & "is not a valid storage variable identifier";
+            }
+        }
+        
+        end_at ++;
+        
+    } catch (const _String err) {
+        if (exceptions) {
+            throw err;
+        }
+        id.Clear();
+        end_at = kNotFound;
+    }
+    
+    return id;
+    
+}
+
+//____________________________________________________________________________________
+
 void _CheckExpressionForCorrectness (_Formula& parsed_expression, _String const& exp, _ExecutionList& program, long desired_type = HY_ANY_OBJECT) {
     _String error_message;
 
@@ -601,7 +637,7 @@ bool      _ElementaryCommand::HandleGetInformation (_ExecutionList& current_prog
         } else {
             _Variable* source_object = FetchVar(LocateVarByName (source_name));
 
-            if (source_object->ObjectClass()==STRING) {
+            if (source_object && source_object->ObjectClass()==STRING) {
                 source_object    = FetchVar (LocateVarByName (_String((_String*)source_object->Compute()->toStr())));
             }
             if (source_object) {
@@ -841,8 +877,9 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
         _FString        * char_vector        = (_FString*)          _EnsurePresenceOfKey (alignment_options, kCharacterMap, STRING);
 
         unsigned          long     char_count = 0UL;
-        long              character_map_to_integers [256] = {-1L};
-
+        long              character_map_to_integers [256];
+        InitializeArray(character_map_to_integers, 256, -1L);
+        
         for (unsigned long cc = 0UL; cc < char_vector->get_str().length(); cc++) {
             unsigned char this_char = char_vector->get_str().get_uchar(cc);
             if (character_map_to_integers [this_char]>=0) {
@@ -1068,15 +1105,19 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                     delete [] str1r;
                     delete [] str2r;
                 } else {
-                    throw ( "Internal Error in AlignStrings" );
+                    throw _String( "Internal Error in AlignStrings" );
                 }
                 pairwise_alignment->MStore ("0", new _Constant (score), false);
                 aligned_strings->MStore (_String((long)index2-1L), pairwise_alignment, false);
             }
         }
+        receptacle->SetValue(aligned_strings, false);
+        
     } catch (const _String& error) {
         return  _DefaultExceptionHandler (receptacle, error, current_program);
     }
+    
+    
     return true;
 }
 //____________________________________________________________________________________

@@ -388,7 +388,6 @@ lfunction parameters.GetRange(id) {
  * @returns nothing
  */
 function parameters.SetRange(id, ranges) {
-
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {

@@ -409,7 +409,22 @@ protected:
 
 
 private:
-    _Variable* _ValidateStorageVariable (_ExecutionList& program, unsigned long argument_index = 0UL) const;
+    _Variable*      _ValidateStorageVariable (_ExecutionList& program, unsigned long argument_index = 0UL) const;
+    
+    /**
+        Extract the identifier from an expression like
+        Type <id> = (...);
+     
+        @param ([in] _String) the source text to scan
+        @param ([out] long) a positive integer to the first character following the '='; kNotFound if missing
+        @param ([in] bool) if true, validate the identifier
+        @param ([in] bool) if true, throw _String exceptions on errors
+        @param ([in] long) start searching at this position in the string
+     
+        @return the identifier, or empty string if failed
+        @version 0.1 SLKP 20190211
+    */
+    static const _String   ExtractStatementAssignment (_String const& source, long& end_at, const bool validate = true, const bool exceptions = true, const long offset = 0L);
 
 protected:  // data members
 

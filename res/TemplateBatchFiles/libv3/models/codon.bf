@@ -58,10 +58,8 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 
 	if (None != __rate_variation) {
-
 		__rp = Call (__rate_variation[terms.rate_variation.distribution], __rate_variation[terms.rate_variation.options], namespace);
 		__rate_variation [terms.id] = (__rp[terms.category])[terms.id];
-
 		parameters.DeclareCategory   (__rp[terms.category]);
         parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 	}
