@@ -4011,27 +4011,13 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
     
     try {
 
-        long op_start;
-        _String ds_id = ExtractStatementAssignment (source, op_start, false);
+        _String operation_type;
+        _List   arguments;
         
-        long paren_start = op_start,
-             paren_end  = source.ExtractEnclosedExpression(paren_start, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
-        
-        if (paren_end == kNotFound) {
-            throw _String ("Missing () enclosed argument list");
-        }
-        // now look for the opening paren
-
-        /*_List local_ref_manager;
-        _ElementaryCommand * dataset_op = new _ElementaryCommand;
-        local_ref_manager < dataset_op;*/
-        
-        _String            operation_type (source,op_start,paren_start-1L);
-        _List pieces (new _String (ds_id));
-        ExtractConditions (source,paren_start+1,pieces,',');
+        ProcessProcedureCall (source, operation_type, arguments);
 
         if (operation_type ==  kReadDataFile || operation_type == kReadFromString) {
-            if (pieces.countitems () != 2UL) {
+            if (arguments.countitems () != 2UL) {
                 throw _String ("DataSet declaration missing a valid filename/string or has extra arguments");
             }
 
@@ -4040,39 +4026,39 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
             if (operation_type == kReadFromString) {
                 dsc->simpleParameters << 1;
             }
-            dsc->addAndClean (target, &pieces, 0L);
+            dsc->addAndClean (target, &arguments, 0L);
         } else if (operation_type == blSimulateDataSet) {
-            if ( pieces.countitems()>5UL || pieces.countitems()==1UL ) {
+            if ( arguments.countitems()>5UL || arguments.countitems()==1UL ) {
                 throw blSimulateDataSet.Enquote() & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).";
             }
 
             _ElementaryCommand * dsc = new _ElementaryCommand (12);
-            dsc->addAndClean (target, &pieces, 0L);
+            dsc->addAndClean (target, &arguments, 0L);
         } else if ( operation_type ==  kConcat || operation_type ==  kCombine) {
             _ElementaryCommand * dsc = new _ElementaryCommand (16);
             dsc->simpleParameters<<((operation_type==kConcat)?1:2);
 
-            if ((*(_String*)pieces.GetItem(1)) == kPurge) {
+            if ((*(_String*)arguments.GetItem(1)) == kPurge) {
                 dsc->simpleParameters[0] = - dsc->simpleParameters[0];
-                pieces.Delete (1);
+                arguments.Delete (1);
             }
 
-            if (pieces == 1UL) {
+            if (arguments.countitems() == 1UL) {
                 delete (dsc);
                 throw _String ("DataSet merging operation missing a valid list of arguments.");
             }
-            dsc->addAndClean (target, &pieces, 0L);
+            dsc->addAndClean (target, &arguments, 0L);
             return true;
 
         } else {
             if (operation_type ==  kReconstructAncestors || operation_type == kSampleAncestors) {
-                if (pieces.countitems()>4UL || pieces.lLength==1L) {
+                if (arguments.countitems()>4UL || arguments.countitems()==1L) {
                     throw  operation_type.Enquote() & " expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.";
                 }
                 _ElementaryCommand * dsc = new _ElementaryCommand (operation_type ==  kReconstructAncestors ? 38 : 50);
-                dsc->parameters << pieces (0) << pieces (1);
-               for (long optP = 2L; optP < pieces.lLength; optP++) {
-                    _String * current_term = (_String*)pieces.GetItem(optP);
+                dsc->parameters << arguments (0) << arguments (1);
+               for (long optP = 2L; optP < arguments.lLength; optP++) {
+                    _String * current_term = (_String*)arguments.GetItem(optP);
                     
                     if (*current_term == kMarginalAncestors) {
                         dsc->simpleParameters << -1;
@@ -4086,13 +4072,13 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
                 dsc->addAndClean (target);
                 return true;
             } else if (operation_type ==  kSimulate) {
-                if ((pieces.countitems()>8)||(pieces.countitems()<5UL)) {
+                if ((arguments.countitems()>8)||(arguments.countitems()<5UL)) {
                     throw kSimulate.Enquote() & " expects 4-6 parameters: tree with attached models, equilibrium frequencies, character map, number of sites|root sequence, <save internal node sequences>, <file name for direct storage>";
                     
                  }
 
                 _ElementaryCommand * dsc = new _ElementaryCommand (52);
-                dsc->addAndClean (target, &pieces, 0);
+                dsc->addAndClean (target, &arguments, 0);
                 return true;
             } else {
                 throw _String ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);");
@@ -4229,52 +4215,44 @@ bool    _ElementaryCommand::ConstructTree (_String&source, _ExecutionList&target
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionList&target) {
 // DataSetFilter      dataSetFilterid = CreateFilter (datasetid;unit;vertical partition; horizontal partition; alphabet exclusions);
-
-{
     // first we must segment out the data set name
+    
+    const _String kCreateFilter ("CreateFilter"),
+                  kPermute ("Permute"),
+                  kBootstrap ("Bootstrap");
+    
+    _ElementaryCommand * datafilter_command = nil;
 
-    long  mark1 = source.FirstNonSpaceFollowingSpace (0,-1,kStringDirectionForward),
-          mark2 = source.FindTerminator(mark1+1, "=");
+    try {
 
-    _String dsID    (source,mark1,mark2-1),
-            command;
+        _String operation_type;
+        _List   arguments;
+        
+        ProcessProcedureCall (source, operation_type, arguments);
 
-    if ( mark1==-1 || mark2==-1 || dsID.empty()) {
-        HandleApplicationError ("DataSetFilter declaration missing a valid identifier");
+        if (operation_type == kCreateFilter) {
+            datafilter_command = new _ElementaryCommand(6);
+        } else if (operation_type == kPermute) {
+            datafilter_command = new _ElementaryCommand(27);
+        } else if (operation_type == kBootstrap) {
+            datafilter_command = new _ElementaryCommand(28);
+        } else {
+            throw _String ("Expected: DataSetFilter	  dataSetFilterid = CreateFilter (datasetid,unit,vertical partition,horizontal partition,alphabet exclusions); or Permute/Bootstrap (dataset/filter,<atom>,<column partition>)");
+        }
+
+        if (!(arguments.countitems()>=3UL || (arguments.countitems() == 2UL && datafilter_command->code == 6))) {
+            throw _String ("Parameter(s) missing in DataSetFilter definition.");
+        }
+
+        datafilter_command->addAndClean (target,&arguments);
+    } catch (const _String err) {
+        HandleErrorWhileParsing (err, source);
+        DeleteObject (datafilter_command);
         return false;
     }
-
-    // now look for the opening paren
-
-    mark1 = source.Find ('(',mark2,-1);
-    command = source.Cut (mark2+1,mark1-1);
-
-    _ElementaryCommand *dsf;
-
-    _List pieces;
-
-    if (command == _String("CreateFilter")) {
-        dsf = new _ElementaryCommand(6);
-    } else if (command == _String("Permute")) {
-        dsf = new _ElementaryCommand(27);
-    } else if (command == _String("Bootstrap")) {
-        dsf = new _ElementaryCommand(28);
-    } else {
-        HandleApplicationError ("Expected: DataSetFilter	  dataSetFilterid = CreateFilter (datasetid,unit,vertical partition,horizontal partition,alphabet exclusions); or Permute/Bootstrap (dataset/filter,<atom>,<column partition>)");
-        return false;
-    }
-
-
-    ExtractConditions (source,mark1+1,pieces,',');
-    if (!(pieces.lLength>=2UL || (pieces.lLength == 1UL && dsf->code == 6))) {
-        HandleApplicationError ("Parameter(s) missing in DataSetFilter definition.");
-        return false;
-    }
-
-    dsf->parameters&&(&dsID);
-    dsf->addAndClean (target,&pieces);
+    
     return true;
 }
 

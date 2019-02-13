@@ -426,6 +426,22 @@ private:
     */
     static const _String   ExtractStatementAssignment (_String const& source, long& end_at, const bool validate = true, const bool exceptions = true, const long offset = 0L);
 
+    /**
+     Process declaration of the form
+     Type <id> = procedure (...);
+     
+     @param ([in] _String) the source text to scan
+     @param ([out] procedure) the string for the procedure name (e.g. CreateFilter)
+     @param ([out] pieces) comma separated arguments from the parentheses
+     
+     @return the identifier, or empty string if failed
+     
+     Throws _String exceptions
+     
+     @version 0.1 SLKP 20190212
+     */
+    static const _String   ProcessProcedureCall (_String const& source, _String& procedure, _List& pieces);
+
 protected:  // data members
 
     _List       parameters;        // a list of parameters

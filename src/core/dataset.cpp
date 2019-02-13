@@ -757,6 +757,489 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
 
 //_________________________________________________________
 
+_Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps) const {
+    
+    if (hSegmentation.empty () || vSegmentation.countitems() < unit) { // revert to default (all data)
+        if (hSegmentation.empty ()) {
+            hSegmentation.Populate (NoOfSpecies(),0,1);
+        }
+        if (vSegmentation.countitems () <unit) {
+            vSegmentation.Clear();
+            vSegmentation.Populate (GetNoTypes(),0,1);
+        }
+    }
+    
+    if (unit%atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
+        HandleApplicationError (_String("Atom must divide unit, had ") & _String ((long)unit) & "/" & _String ((long)atom));
+        return new _Matrix (1,1);
+    }
+    
+    _Matrix   *  out = new _Matrix (ComputePower (theTT->LengthOfAlphabet(), atom),
+                                    posSpec?unit/atom:1,
+                                    false,
+                                    true);
+    
+    long     positions  =   unit/atom,
+    static_store [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
+    
+    _String unit_for_counting ((unsigned long)atom);
+    
+    for (unsigned long site_pattern = 0UL; site_pattern + unit <= vSegmentation.lLength;  site_pattern +=unit) { // loop over the set of segments
+        // make sure the partition is kosher
+        
+        /*
+         if (site_pattern + unit > vSegmentation.lLength) {
+            break;
+        }
+        */
+        
+        for (unsigned long primary_site = site_pattern; primary_site < site_pattern+unit; primary_site += atom) {
+            
+            long   index_in_pattern = (primary_site-site_pattern)/atom;
+            
+            for (unsigned long sequence_index = 0; sequence_index <hSegmentation.lLength; sequence_index ++) {
+                // loop down each column
+                
+                unsigned long mapped_sequence_index = hSegmentation.lData[sequence_index];
+                // build atomic probabilities
+                
+                for (unsigned long m = 0UL; m<atom; m++ ) {
+                    unit_for_counting.set_char (m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
+                }
+                
+                long resolution_count = theTT->MultiTokenResolutions(unit_for_counting, static_store, countGaps);
+                
+                if (resolution_count > 0UL) {
+                    
+                    hyFloat    normalized = 1./resolution_count;
+                    
+                    for (long resolution_index = 0UL; resolution_index < resolution_count; resolution_index ++) {
+                        out->theData[posSpec? static_store[resolution_index]*positions+index_in_pattern: static_store[resolution_index]] += normalized;
+                    }
+                }
+            }
+        }
+    }
+    
+    //scale the matrix now
+    
+    unsigned long row_count    = out->GetHDim(),
+    column_count = out->GetVDim();
+    
+    for (unsigned long column =0UL; column < column_count; column++) { // normalize each _column_ to sum to 1.
+        hyFloat sum = 0.0;
+        
+        for (unsigned long row = 0UL; row < row_count; row++) {
+            sum += out->theData [row*column_count + column];
+        }
+        
+        for (unsigned long row = 0UL; row < row_count; row++) {
+            out->theData [row*column_count + column] /= sum;
+        }
+    }
+    
+    
+    return out;
+}
+
+
+
+
+//_______________________________________________________________________
+
+void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & target , bool isVertical, int unit_length, _SimpleList const* additionalFilter, _SimpleList const* otherDimension, _String const* scope) const {
+    // TODO SLKP : 20170928 this needs serious cleanup and testing
+    
+    if (input2.empty()) {
+        return;
+    }
+    // decide if the input is an enumeration or a formula
+    long totalLength;
+    
+    if (additionalFilter) {
+        totalLength = additionalFilter->countitems();
+    } else {
+        totalLength = isVertical?theMap.countitems():noOfSpecies;
+    }
+    
+    _String input (input2);
+    
+    if (!input.IsALiteralArgument(true)) { // not a literal argument
+        
+        _Formula fmla, lhs;
+        _FormulaParsingContext fpc;
+        fpc.setScope (scope);
+        
+        long     outcome = Parse (&fmla, input, fpc,&lhs);
+        
+        if (outcome!=HY_FORMULA_EXPRESSION) {
+            HandleApplicationError(input.Enquote() & _String(" is an invalid partition specification"));
+            return;
+        }
+        HBLObjectRef   fV = fmla.Compute();
+        if (fV && fV->ObjectClass()==STRING) {
+            ProcessPartition (((_FString*)fV)->get_str().Enquote(), target, isVertical, unit_length, additionalFilter, nil, scope);
+        } else {
+            _DataSet::MatchIndices (fmla, target, isVertical, totalLength, scope);
+        }
+    } else { // an explicit enumeration or a regular expression
+        
+        // check to see if argument is a callback
+        
+        bool is_regexp   = input (0) =='/' && input (-1) == '/';
+        long is_hbl_function = -1L;
+        
+        if (!is_regexp) {
+            is_hbl_function = hyphy_global_objects::FindBFFunctionName (input);
+            if (is_hbl_function >= 0) {
+                if (GetBFFunctionArgumentCount (is_hbl_function) !=  2 && (GetBFFunctionArgumentCount (is_hbl_function) !=  2 && isVertical)) {
+                    HandleApplicationError(input.Enquote() & _String(" is not a valid callback function: must have one argument for sequences and two arguments for sites"));
+                    return;
+                }
+                
+            }
+        }
+        
+        if (is_regexp || is_hbl_function >= 0L) {
+            // a regular expression or a callback
+            regex_t*   regex = nil;
+            _Formula   filter_formula;
+            
+            if (is_regexp) {
+                input.Trim(1,input.length()-2);
+                int   errCode;
+                regex = _String::PrepRegExp (&input, errCode, true);
+                if (errCode) {
+                    HandleApplicationError(_String::GetRegExpError(errCode));
+                    return;
+                }
+            }
+            // now set do the matching
+            // using only the sites that are specced in the additionalFilter
+            
+            if (!isVertical) { // partitioning sequences
+                
+               _FString * string_object = nil;
+               if (!is_regexp) {
+                        filter_formula.GetList() < new _Operation()
+                                                 < new _Operation(kEmptyString,-is_hbl_function-1L);
+                   string_object = new _FString;
+               }
+                
+                const long loop_limit = additionalFilter ? additionalFilter->lLength : totalLength;
+                
+                for (long specCount = 0L; specCount < loop_limit; specCount++) {
+                    _String pattern ((unsigned long)theMap.countitems());
+                    long    seqPos = additionalFilter ? additionalFilter->Element (specCount) : specCount;
+                    
+                    
+                    if (otherDimension) {
+                        for (long seqSlider = 0L; seqSlider < otherDimension->lLength; seqSlider ++) {
+                            pattern.set_char(seqSlider, GetSite(otherDimension->Element(seqSlider))->get_char (seqPos));
+                        }
+                    }
+                    else {
+                        for (long seqSlider = 0L; seqSlider < theMap.lLength; seqSlider ++) {
+                            pattern.set_char(seqSlider, GetSite(seqSlider)->get_char (seqPos));
+                        }
+                    }
+                    
+                    if (is_regexp) {
+                        if (pattern.RegExpMatch (regex, 0L).countitems())
+                        target << specCount;
+                    } else {
+                        string_object->SetStringContent(new _StringBuffer (pattern));
+                        filter_formula.GetIthTerm(0)->SetNumber(string_object);
+                        if (!CheckEqual(0.,filter_formula.Compute()->Value())) {
+                            target << specCount;
+                        }
+                    }
+                }
+                            
+                if (!is_regexp) {
+                    filter_formula.GetIthTerm(0)->SetNumber(nil);
+                    DeleteObject (string_object);
+                }
+            } else {
+                
+                auto map_site = [] (const _Site* site, _String& buffer, _SimpleList const * mapper) -> void {
+                    mapper->Each ([&] (long value, unsigned long index) -> void {
+                        buffer.set_char (index, site->char_at (value));
+                    });
+                };
+                
+                bool         *eligibleMarks = nil;
+                
+        
+                
+                if (is_regexp) {
+                    eligibleMarks = new bool[lLength];
+                    if (additionalFilter) {
+                        InitializeArray(eligibleMarks, lLength, false);
+                        for (long siteIndex = 0; siteIndex < additionalFilter->lLength; siteIndex ++) {
+                            eligibleMarks[theMap.lData[additionalFilter->lData[siteIndex]]] = true;
+                        }
+                    }
+                    else {
+                        InitializeArray(eligibleMarks, lLength, true);
+                    }
+                    
+                    _String     *tempString = nil;
+                    _SimpleList matches;
+                    if (otherDimension) {
+                        tempString = new _String (otherDimension->countitems());
+                    }
+                    
+                    for (long siteCounter = 0; siteCounter < lLength; siteCounter ++)
+                        if (eligibleMarks[siteCounter]) {
+                            matches.Clear();
+                            if (otherDimension) {
+                                map_site ((_Site*)GetItem(siteCounter), *tempString, otherDimension);
+                                matches = tempString->RegExpMatch (regex, 0L);
+                            } else {
+                                matches = ((_Site**)lData)[siteCounter]->RegExpMatch (regex, 0L);
+                            }
+                            if (matches.empty()) {
+                                eligibleMarks[siteCounter] = false;
+                            }
+                        }
+                    
+                    DeleteObject (tempString);
+                    if (additionalFilter) {
+                        for (long afi = 0; afi < additionalFilter->lLength; afi++) {
+                            if (eligibleMarks[theMap.lData[additionalFilter->lData[afi]]]) {
+                                target << afi;
+                            }
+                        }
+                    } else {
+                        theMap.Each  ([&target, eligibleMarks] (long site_pattern, unsigned long index) -> void {
+                            if (eligibleMarks [site_pattern]) {
+                                target << index;
+                            }
+                        });
+                    }
+                } else {
+                    
+                    
+                    long freq_dimension = ComputePower (GetCharDimension(), unit_length);
+                    
+                    if (freq_dimension > 0xffff) {
+                        HandleApplicationError("The dimension of the character space is too high for callback filtering");
+                        return;
+                    }
+                    eligibleMarks = new bool[theMap.lLength];
+                    
+                    if (additionalFilter) {
+                        InitializeArray(eligibleMarks, theMap.lLength, false);
+                        for (long siteIndex = 0; siteIndex < additionalFilter->lLength; siteIndex ++) {
+                            eligibleMarks[additionalFilter->lData[siteIndex]] = true;
+                        }
+                    }
+                    else {
+                        InitializeArray(eligibleMarks, theMap.lLength, true);
+                    }
+
+                    filter_formula.GetList() < new _Operation()
+                                             < new _Operation()
+                                             < new _Operation(kEmptyString,-is_hbl_function-1L);
+                    
+                    _Matrix * strings     = nil,
+                            * frequencies = nil;
+                    
+                    
+                    
+                    _List string_list,
+                          string_storage;
+                    
+                    
+                    if (otherDimension) {
+                        for (int i = 0; i < unit_length; i++) {
+                            string_storage < new _String (otherDimension->countitems());
+                        }
+                    }
+                    
+                    _SimpleList sites (unit_length, 0, 0),
+                                sequences;
+                    
+                    if (otherDimension) {
+                        sequences = *otherDimension;
+                    } else {
+                        sequences.Populate((unsigned long)NoOfSpecies(), 0, 1);
+                    }
+                    
+                    for (long siteCounter = 0L; siteCounter + unit_length <= theMap.lLength; siteCounter += unit_length) {
+                        long unit_space = 0L;
+                        string_list.Clear();
+                        for (; unit_space < unit_length; unit_space++) {
+                            if (eligibleMarks[siteCounter + unit_space]) {
+                                sites[unit_space] = siteCounter + unit_space;
+                                if (otherDimension) {
+                                    map_site ((_Site*)GetSite(siteCounter + unit_space), *(_String*)string_storage.GetItem (unit_space), otherDimension);
+                                } else {
+                                    string_list << GetSite (siteCounter + unit_space);
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        if (unit_space == unit_length) {
+                            //eligibleMarks[siteCounter + unit_space]
+                            BatchDelete(strings, frequencies);
+                            if (otherDimension) {
+                                strings = new _Matrix (string_storage);
+                            } else {
+                                strings = new _Matrix (string_list);
+                            }
+                            
+                            filter_formula.GetIthTerm(0)->SetNumber(strings);
+                            
+                            //(unsigned char unit, unsigned char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps)
+                            frequencies = HarvestFrequencies (unit_space, unit_space, false, sequences, sites, false);
+                            filter_formula.GetIthTerm(1)->SetNumber(frequencies);
+                            
+                            if (!CheckEqual(0.,filter_formula.Compute()->Value())) {
+                                continue;
+                            }
+                       }
+                        
+                        for (unit_space = 0L; unit_space < unit_length; unit_space++) {
+                            eligibleMarks[siteCounter + unit_space] = false;
+                        }
+                    }
+                    
+                    theMap.Each  ([&target, eligibleMarks] (long site_pattern, unsigned long index) -> void {
+                        if (eligibleMarks [index]) {
+                            target << index;
+                        }
+                    });
+                    // strings && frequencies will be cleaned up by the destructor of filter_formula
+                }
+               
+                delete [] eligibleMarks;
+            }
+            if (regex) {
+                _String::FlushRegExp (regex);
+            }
+        } else {
+            input = input.KillSpaces ();
+            // now process the string
+            long count = 0L,anchor;
+            
+            _SimpleList numbers,
+            links;
+            
+            numbers.RequestSpace (1024);
+            links.RequestSpace (1024);
+            
+            // first check if it is has a comb filter
+            
+            if ( input (0) =='<' && input (-1) =='>') {
+                for (count=1; count<input.length()-1; count++) {
+                    if (input.char_at(count) != '0') {
+                        numbers<<count-1;
+                    }
+                }
+                if (numbers.countitems()) {
+                    long k = input.length()-2; // step size
+                    anchor = 0;
+                    if (totalLength == -1) {
+                        totalLength = theMap.lLength;
+                    }
+                    while (anchor<totalLength-k) {
+                        for (count = 0; count< numbers.lLength; count++) {
+                            target<<anchor+numbers.lData[count];
+                        }
+                        anchor+=k;
+                    }
+                    if ( (k=totalLength-1-anchor) ) {
+                        for (count = 0; count< numbers.lLength; count++) {
+                            if (numbers.lData[count]>k) {
+                                break;
+                            }
+                            target<<anchor+numbers.lData[count];
+                        }
+                    }
+                    return;
+                    
+                }
+            }
+            
+            while (count<input.length()) {
+                anchor = count;
+                
+                for (; count<input.length() && isdigit(input.char_at (count)); count++) ;
+                
+                long    aNumber = (input.Cut (anchor,count-1)).to_long();
+                
+                if (aNumber < 0) {
+                    _String warnMsg ("A negative number was found in partition specification: ");
+                    ReportWarning (warnMsg & input.Cut (0,anchor-1) & '?' & input.Cut (anchor,-1));
+                    target.Clear();
+                    return;
+                }
+                numbers<< aNumber;
+                
+                char current_char = input.char_at (count);
+                
+                if (current_char == '<' || current_char == '>') {
+                    ReportWarning (_String  ("A comb partition cannot be combined with other types. The entire partition is reset to first..last") & input.Cut (0,anchor-1) & '?' & input.Cut (anchor,-1));
+                    target.Clear();
+                    return;
+                }
+                
+                if (current_char == '&') {
+                    links << numbers.lLength;
+                }
+                
+                // TODO SLKP 20171001 this needs to be checked for correctness
+                if (current_char == ',' || count == input.length()) { // wrap it up dude
+                    if (numbers.countitems() == 1) {
+                        target<<numbers(0);
+                    } else {
+                        if (links.empty()) {
+                            if (numbers[0]>numbers[1]) { // backward order
+                                for (long k = numbers[0]; k>=numbers[1]; k--) {
+                                    target<<k;
+                                }
+                            } else {
+                                for (long k = numbers[0]; k<=numbers[1]; k++) {
+                                    target<<k;
+                                }
+                            }
+                        } else {
+                            // linked locations
+                            if (links.countitems() != (numbers.countitems()-2) / 2) {
+                                ReportWarning ("A part of the partition specification has not been understood and is being skipped.");
+                                target.Clear();
+                                return;
+                            } else {
+                                _SimpleList signs;
+                                signs<<(numbers(0)<numbers(1)?1:-1);
+                                for (long k = 0; k<links.lLength; k+=2) {
+                                    signs<<(numbers(links(k))<numbers(links(k+1))?1:-1);
+                                }
+                                
+                                for (long k=numbers(0), l=0 ; signs(0)*k<=signs(0)*numbers(1); k+=signs(0), l++) {
+                                    target<<numbers(0)+l*signs(0);
+                                    for (long m=0; m<links.lLength; m++) {
+                                        target<<numbers(links(m))+l*signs(m+1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    numbers.Clear();
+                    links.Clear();
+                }
+                count++;
+            }
+        }
+    }
+}
+
+//_________________________________________________________
+
 _DataSet *_DataSet::Concatenate(_SimpleList const &ref)
 
 // concatenates (adds columns together) several datasets

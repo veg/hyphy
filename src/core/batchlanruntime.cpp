@@ -101,6 +101,26 @@ const _String   _ElementaryCommand::ExtractStatementAssignment (_String const& s
 
 //____________________________________________________________________________________
 
+const _String   _ElementaryCommand::ProcessProcedureCall (_String const& source,_String& procedure, _List& pieces) {
+    long op_start;
+    _String id = ExtractStatementAssignment (source, op_start, false);
+    
+    long paren_start = op_start,
+    paren_end  = source.ExtractEnclosedExpression(paren_start, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
+    
+    if (paren_end == kNotFound) {
+        throw _String ("Missing () enclosed argument list");
+    }
+    
+    procedure = source.Cut (op_start,paren_start-1L);
+    pieces < new _String (id);
+    ExtractConditions (source,paren_start+1,pieces,',');
+    
+    return id;
+}
+
+//____________________________________________________________________________________
+
 void _CheckExpressionForCorrectness (_Formula& parsed_expression, _String const& exp, _ExecutionList& program, long desired_type = HY_ANY_OBJECT) {
     _String error_message;
 
@@ -1148,8 +1168,8 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& current_
 
                 _DataSet const * dataset = (_DataSet const*)source_object;
                 _SimpleList     processed_sequence_partition, processed_site_partition;
-                dataset->ProcessPartition (horizontal_partition,processed_sequence_partition,false);
-                dataset->ProcessPartition (vertical_partition,processed_site_partition,true);
+                dataset->ProcessPartition (horizontal_partition,processed_sequence_partition,false, 1);
+                dataset->ProcessPartition (vertical_partition,processed_site_partition,true, 1);
 
                 receptacle->SetValue (dataset->HarvestFrequencies(unit,atom,position_specific,processed_sequence_partition, processed_site_partition,include_gaps), false);
             }

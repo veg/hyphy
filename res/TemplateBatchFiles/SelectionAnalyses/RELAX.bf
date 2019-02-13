@@ -30,7 +30,8 @@ LoadFunctionLibrary     ("libv3/tasks/mpi.bf");
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
-
+utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
+utility.SetEnvVariable ("LF_SMOOTHING_SCALER",0.05);
 
 
 /*------------------------------------------------------------------------------*/
