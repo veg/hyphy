@@ -524,48 +524,10 @@ for (p1=0; p1<4; p1=p1+1)
 
 labels[3] = cL;
 
-OpenWindow (CHARTWINDOW,
-	{{"Codon Frequencies"}
-	{"labels"}
-	{"cfm"}
-	{"Bar Chart"}
-	{"Index"}
-	{labels[0]+";"+labels[1]+";"+labels[2]}
-	{"Codon Position"}
-	{""}
-	{"Proportion"}
-	{"3"}
-	{""}
-	{""}
-	{"10;1.309;0.785398"}
-	{"Times:12:0;Times:10:0;Times:14:2"}
-	{"0;0;16777215;5000268;0;0;6750054;11842740;13158600;14474460;0;3947580;13421772;8388608;32768;4194432;1644825;7018159;1460610;16748822;11184810;14173291;14173291"}
-	{"16"}
-	},
-	"(SCREEN_WIDTH-30);(SCREEN_HEIGHT-80)/2;20;SCREEN_HEIGHT/2");
-	
 
 fm = Transpose (observedFreq);
 labels = {{"A","C", "G","T","Position;1;2;3"}};
-OpenWindow (CHARTWINDOW,
-	{{"Nucleotide Frequencies"}
-	{"labels"}
-	{"fm"}
-	{"Bar Chart"}
-	{"Index"}
-	{"A;C;G;T"}
-	{"Codon Position"}
-	{""}
-	{"Proportion"}
-	{"3"}
-	{""}
-	{""}
-	{"10;1.309;0.785398"}
-	{"Times:12:0;Times:10:0;Times:14:2"}
-	{"0;0;16777215;5000268;0;0;6750054;11842740;13158600;14474460;0;3947580;13421772;8388608;32768;4194432;1644825;7018159;1460610;16748822;11184810;14173291;14173291"}
-	{"16"}
-	},
-	"(SCREEN_WIDTH-30)/2;(SCREEN_HEIGHT-80)/2;20;40");
+
 
 fprintf (stdout,"\n0). Read the data\n",ds);
 MG94Matrix = 0;
@@ -646,26 +608,6 @@ for (k=0; k < filteredData.sites; k=k+1)
 }
 
 labels = {{"MG94 Log L","GY94 Log L", "MG94-GY94 Log L difference"}};
-OpenWindow (CHARTWINDOW,
-	{{"Site by site comparison"}
-	{"labels"}
-	{"siteWiseLikelihoods"}
-	{"Bar Chart"}
-	{"Index"}
-	{labels[2]}
-	{"Codon"}
-	{"LRT"}
-	{"Log L difference"}
-	{""}
-	{""}
-	{""}
-	{"10;1.309;0.785398"}
-	{"Times:12:0;Times:10:0;Times:14:2"}
-	{"0;0;16777215;5000268;0;0;6750054;11842740;13158600;14474460;0;3947580;13421772;5000268;11776947;10066329;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-	{"16"}
-	},
-	"(SCREEN_WIDTH-30)/2;(SCREEN_HEIGHT-80)/2;20+(SCREEN_WIDTH)/2;40");
-}
 
 fprintf (stdout,"\n4). Site-by-site fits\n\tMG94 is better on ", MGbetter, "/", filteredData.sites, " codon columns\n");
 
