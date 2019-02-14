@@ -3,20 +3,20 @@ runATest ();
 
 
 function getTestName () {
-  return "ffunction";
+  return "lfunction";
 }		
 
 
-ffunction sum (a,b) {
+lfunction sum (a,b) {
     return a + b;
 }
 
-ffunction addTwoByValue (x) {
+lfunction addTwoByValue (x) {
   x = x + 2;
   return x;
 }
 
-ffunction addTwoByRef (y&) {
+lfunction addTwoByRef (y&) {
   y = y + 2;
   return y;
 }
@@ -28,15 +28,15 @@ function runTest () {
 
 
   testSum = sum(3,4);
-  assert(testSum == 7, "Failed to successfully define and execute a sum ffunction");
+  assert(testSum == 7, "Failed to successfully define and execute a sum lfunction");
 
   testNum1 = 5;
   testNum1Plus2 = addTwoByValue(testNum1);
-  assert(testNum1Plus2 - testNum1 == 2, "Failed to successfully define and execute an ffunction using parameter by value");
+  assert(testNum1Plus2 - testNum1 == 2, "Failed to successfully define and execute an lfunction using parameter by value");
 
   testNum2 = 6;
   testNum2Plus2 = addTwoByRef('testNum2');
-  assert(testNum2Plus2 == testNum2, "Failed to successfully define and execute an ffunction using parameter by refernce");
+  assert(testNum2Plus2 == testNum2, "Failed to successfully define and execute an lfunction using parameter by refernce");
 
   testResult = 1;
 
