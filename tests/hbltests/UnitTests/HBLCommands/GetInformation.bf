@@ -6,25 +6,26 @@ function getTestName () {
   return "GetInformation";
 }	
 
-// Simple example likelihood function for use later.
-DataSet         nucleotideSequences = ReadDataFile ("./../../data/CD2_reduced.fna");
-DataSetFilter   filteredData = CreateFilter (nucleotideSequences,1);
-HarvestFrequencies (observedFreqs, filteredData, 1, 1, 1);
-F81RateMatrix = 
-        {{*,mu,mu,mu}
-         {mu,*,mu,mu}
-         {mu,mu,*,mu}
-         {mu,mu,mu,*}};
-Model   F81 = (F81RateMatrix, observedFreqs);
-Tree    givenTree = DATAFILE_TREE;
-LikelihoodFunction  LF = (filteredData, givenTree);
-Optimize (paramValues, LF);
+
 
 
 function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult = 0;
   
+  // Simple example likelihood function for use later.
+  DataSet         nucleotideSequences = ReadDataFile ("./../../data/CD2_reduced.fna");
+  DataSetFilter   filteredData = CreateFilter (nucleotideSequences,1);
+  HarvestFrequencies (observedFreqs, filteredData, 1, 1, 1);
+  F81RateMatrix = 
+        {{*,mu,mu,mu}
+         {mu,*,mu,mu}
+         {mu,mu,*,mu}
+         {mu,mu,mu,*}};
+  Model   F81 = (F81RateMatrix, observedFreqs);
+  Tree    givenTree = DATAFILE_TREE;
+  LikelihoodFunction  LF = (filteredData, givenTree);
+  Optimize (paramValues, LF);
 
   //---------------------------------------------------------------------------------------------------------
   // SIMPLE FUNCTIONALITY
