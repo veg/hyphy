@@ -62,19 +62,27 @@ function runTest () {
   //---------------------------------------------------------------------------------------------------------
   Topology T  = ((1,2),(3,4),((5,6),7));
   Topology T2 = ((3,4),(2,1),((5,6),7));
+  
+  /* Topology*Topology generates a strict consensus between them */
 
-  fprintf (stdout, T*T2, "\n", Format (T2, 1, 1));
+  strict_consensus = T*T2;
+    
+  assert (strict_consensus["CONSENSUS"] == Format (T,0,0), "Incorrect strict consensus obtained (fully resolved trees)");
+  
+  Topology T2 = ((1,2),(3,4),(5,6,7));
+  strict_consensus = T*T2;
+  
+  assert (strict_consensus["CONSENSUS"] == "((1,2),(3,4),(5,6,7))", "Incorrect strict consensus obtained (one partially resolved tree)");
 
-  // TODO: T*T; this command casues the script to hang.
-  assert (runCommandWithSoftErrors ('T*T', "is not implemented/defined for a Topology"), "Failed error checking for trying to compare topologies (&&)");
-  // TODO: TT*TT; also causes the script to hang.
-  //assert (runCommandWithSoftErrors ('TT*TT', "is not implemented/defined for a Tree"), "Failed error checking for trying to compare trees (&&)");
-  assert (runCommandWithSoftErrors ('4*"String"', "where 'X' is not a number"), "Failed error checking for trying to compare number&&string");
+  Topology T2 = ((1,2),(3,8),(5,6,7));
+  strict_consensus = T*T2;
+  assert (strict_consensus["CONSENSUS"] == "", "Incorrect strict consensus obtained (different label sets)");
+    
+  Tree T  = ((1,2,3,4),((5,6),7));
+  Tree T2 = ((3,4,2,1),(5,7,6));
 
-  /* TODO:
-  assert(None*4 == 0, "Failed to multiply a number and none");
-  assert(4*None == 0, "Failed to multiply a number and none");
-  */
+  strict_consensus = T*T2;
+  assert (strict_consensus["CONSENSUS"] == "(1,2,3,4,(5,6,7))", "Incorrect strict consensus obtained (both partially resolved trees)");
   
 
   testResult = TRUE;

@@ -576,115 +576,113 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
     long            dfDim = df->GetDimension(true);
 
     _List           tips;
+    
+    try {
 
-    while (_CalcNode* iterator = ti.Next()) {
-        if (ti.IsAtLeaf()) {
-            tips.AppendNewInstance (new _String (iterator->ContextFreeName ()));
+        while (_CalcNode* iterator = ti.Next()) {
+            if (ti.IsAtLeaf()) {
+                tips.AppendNewInstance (new _String (iterator->ContextFreeName ()));
+            }
+            if (iterator->GetModelIndex () == HY_NO_MODEL) {
+                throw _String ("Model is not associated with the node:") & iterator->ContextFreeName();
+            } else if (iterator->GetModelDimension() != dfDim) {
+                throw _String ("The dimension of the transition matrix at node ") & iterator->ContextFreeName ().Enquote() & " is not equal to the state count in the data filter associated with the tree.";
+            }
         }
-        if (iterator->GetModelIndex () == HY_NO_MODEL) {
-            HandleOrStoreApplicationError (errorMessage, _String ("Model is not associated with the node:") & iterator->ContextFreeName());
-            return false;
-        } else if (iterator->GetModelDimension() != dfDim) {
-            _String warnMsg ("The dimension of the transition matrix at node ");
-            warnMsg = warnMsg & iterator->ContextFreeName ()
-                      &" is not equal to the state count in the data filter associated with the tree.";
-            HandleOrStoreApplicationError (errorMessage, warnMsg);
-            return false;
-        }
-    }
 
-    // now that "tips" contains all the names of tree tips we can
-    // scan thru the names in the datafilter and check whether there is a 1-1 match
+        // now that "tips" contains all the names of tree tips we can
+        // scan thru the names in the datafilter and check whether there is a 1-1 match
         
-    if ((t->IsDegenerate()?2:tips.lLength)!=df->NumberSpecies()) {
-        HandleOrStoreApplicationError (errorMessage,_String("The number of tree tips in ")&*t->GetName()& " (" & _String((long)tips.lLength)
-                   & ") is not equal to the number of species in the data filter associated with the tree " &
-                   '(' & _String((long)df->NumberSpecies()) & ")." );
-        return false;
-    }
+        if ((t->IsDegenerate()?2:tips.lLength) != df->NumberSpecies()) {
+            throw _String("The number of tree tips in ")&t->GetName()->Enquote () & _String((long)tips.lLength).Enquote('(', ')')
+            & " is not equal to the number of sequences in the data filter associated with the tree " &
+            '(' & _String((long)df->NumberSpecies()) & ").";
+        }
 
-    if (!t->IsDegenerate()) {
-        long        j,
-                    k;
+        if (!t->IsDegenerate()) {
+            long        j,
+                        k;
 
-        _SimpleList tipMatches;
-        // produce a sorted list of sequence names
+            _SimpleList tipMatches;
+            // produce a sorted list of sequence names
 
-        j = df->FindSpeciesName (tips, tipMatches);
+            j = df->FindSpeciesName (tips, tipMatches);
 
-        if (j != tips.lLength) { // try numeric match
-            if (hy_env::EnvVariableTrue(hy_env::try_numeric_sequence_match)) {
+            if (j != tips.lLength) { // try numeric match
+                if (hy_env::EnvVariableTrue(hy_env::try_numeric_sequence_match)) {
 
-                try {
-                    tipMatches.Clear();
+                    try {
+                        tipMatches.Clear();
 
 
-                    for (j=0L; j<tips.lLength; j++) {
-                        _String *thisName = (_String*)tips(j);
-                        long numeric_value = thisName->to_long();
-                        if (numeric_value<=tips.lLength && numeric_value >= 0L && _String(numeric_value).Equal(thisName)) {
-                            tipMatches<<numeric_value;
-                        } else {
-                            throw (j);
-                        }
-                    }
-
-                    if (j==tips.lLength) {
-                        if (tipMatches.Find(0L) < 0) // map to indexing from 0
-                            tipMatches.Offset (-1L);
-
-                        _SimpleList const *dfMap = (_SimpleList const*)df->GetMap();
-
-                        if (dfMap) {
-                            for (unsigned long k = 0UL; k < tips.lLength; k++) {
-                                tipMatches.lData[k] = dfMap->lData[tipMatches.lData[k]];
+                        for (j=0L; j<tips.lLength; j++) {
+                            _String *thisName = (_String*)tips(j);
+                            long numeric_value = thisName->to_long();
+                            if (numeric_value<=tips.lLength && numeric_value >= 0L && _String(numeric_value).Equal(thisName)) {
+                                tipMatches<<numeric_value;
+                            } else {
+                                throw (j);
                             }
                         }
-                    }
-                } catch (unsigned long i) {
-                    j = -1L;
-                }
-            }
-        }
 
-        if (j==tips.lLength) { // all matched
-            /*
-                20100913: SLKP need to check that reusing the datafilter will not mess up existing likelihood function dependendancies
-            */
+                        if (j==tips.lLength) {
+                            if (tipMatches.Find(0L) < 0) // map to indexing from 0
+                                tipMatches.Offset (-1L);
 
-            _SimpleList * currentMap = (_SimpleList *)df->GetMap();
-            if (! currentMap || ! currentMap->Equal (tipMatches)) {
-                for (unsigned long lfID = 0UL; lfID < likeFuncList.lLength; lfID++) {
-                    _LikelihoodFunction* lfp = (_LikelihoodFunction*)likeFuncList(lfID);
-                    if (lfp && lfp != this && lfp->DependOnDF (theDataFilters.lData[f])) {
-                        HandleOrStoreApplicationError (errorMessage, _String ("Cannot reuse the filter '") & *GetObjectNameByType (HY_BL_DATASET_FILTER, theDataFilters.lData[f], false) &
-                                   "' because it is already being used by likelihood function '" &
-                                   *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID, false) & "', and the two likelihood functions impose different leaf-to-sequence mapping. " &
-                                   "Create a copy the filter and pass it to the second likelihood function to resolve this issue.");
+                            _SimpleList const *dfMap = (_SimpleList const*)df->GetMap();
 
-                        return false;
+                            if (dfMap) {
+                                for (unsigned long k = 0UL; k < tips.lLength; k++) {
+                                    tipMatches.lData[k] = dfMap->lData[tipMatches.lData[k]];
+                                }
+                            }
+                        }
+                    } catch (unsigned long i) {
+                        j = -1L;
                     }
                 }
-                df->SetMap(tipMatches);
             }
-            ReportWarning (_String ("The tips of the tree:") & *t->GetName() &" were matched with the species names from the data in the following numeric order (0-based) "& _String ((_String*)tipMatches.toStr()));
-        } else {
-            _String warnMsg = _String ("The leaf of the tree:") & *t->GetName() &" labeled " &*(_String*)tips(j)
-                              &" had no match in the data. Please make sure that all leaf names correspond to a sequence name in the data file.";
-            hyFloat asmm = 0.0;
-            checkParameter (allowSequenceMismatch, asmm, 0.0);
-            if (asmm<.5) {
-                HandleApplicationError (warnMsg);
-                return false;
+
+            if (j==tips.lLength) { // all matched
+                /*
+                    20100913: SLKP need to check that reusing the datafilter will not mess up existing likelihood function dependendancies
+                */
+
+                _SimpleList * currentMap = (_SimpleList *)df->GetMap();
+                if (! currentMap || ! currentMap->Equal (tipMatches)) {
+                    for (unsigned long lfID = 0UL; lfID < likeFuncList.lLength; lfID++) {
+                        _LikelihoodFunction* lfp = (_LikelihoodFunction*)likeFuncList(lfID);
+                        if (lfp && lfp != this && lfp->DependOnDF (theDataFilters.lData[f])) {
+                           throw _String ("Cannot reuse the filter '") & *GetObjectNameByType (HY_BL_DATASET_FILTER, theDataFilters.lData[f], false) &
+                                       "' because it is already being used by likelihood function '" &
+                                       *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, lfID, false) & "', and the two likelihood functions impose different leaf-to-sequence mapping. " &
+                                       "Create a copy the filter and pass it to the second likelihood function to resolve this issue.";
+                        }
+                    }
+                    df->SetMap(tipMatches);
+                }
+                ReportWarning (_String ("The tips of the tree:") & *t->GetName() &" were matched with the species names from the data in the following numeric order (0-based) "& _String ((_String*)tipMatches.toStr()));
+            } else {
+                _String warnMsg = _String ("The leaf of the tree ") & *t->GetName() &" labeled " &(*(_String*)tips(j)).Enquote()
+                                  &" had no match in the data filter. Please make sure that all leaf names correspond to a sequence name in the data file.";
+
+                if (! hy_env::EnvVariableTrue(allowSequenceMismatch)) {
+                    throw (warnMsg);
+                }
+                ReportWarning (warnMsg);
             }
-            ReportWarning (warnMsg);
         }
-    }
-    if (leafScan) {
-        ((_SimpleList*)leafSkips(f))->Clear();
-        df->MatchStartNEnd(*(_SimpleList*)optimalOrders(f),*(_SimpleList*)leafSkips(f));
+        if (leafScan) {
+            ((_SimpleList*)leafSkips(f))->Clear();
+            df->MatchStartNEnd(*(_SimpleList*)optimalOrders(f),*(_SimpleList*)leafSkips(f));
+        }
+    } catch (const _String err) {
+        HandleOrStoreApplicationError (errorMessage, err);
+        return false;
+        
     }
     return true;
+
 }
 
 //_______________________________________________________________________________________
@@ -4285,7 +4283,7 @@ DecideOnDivideBy (this);
 
                     prec = Minimum (Maximum (prec, precision), 1.);
 
-                    if (gradientBlocks.lLength) {
+                    if (gradientBlocks.nonempty()) {
                         for (long b = 0; b < gradientBlocks.lLength; b++) {
                             maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
                         }

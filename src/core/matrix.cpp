@@ -2097,7 +2097,7 @@ void    _Matrix:: ScanForVariables(_AVLList& theReceptacle, bool inclG, _AVLList
 //_____________________________________________________________________________________________
 
 void    _Matrix:: ScanForVariables2(_AVLList& theReceptacle, bool inclG, long modelID, bool inclCat, _AVLListX* tagger, long weights) const {
-    if (storageType == 2) { // a formula based matrix, there is stuff to do
+    if (is_expression_based()) { // a formula based matrix, there is stuff to do
         if (modelID >= 0) {
             _AssociativeList*      definedCache = nil;
             _Variable*             cachedDeps = FetchVar(LocateVarByName (CACHE_FORMULA_DEPENDANCY));

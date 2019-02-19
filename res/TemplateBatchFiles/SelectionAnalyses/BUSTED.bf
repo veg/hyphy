@@ -200,12 +200,24 @@ busted.initial_grid_presets = {"0" : 0.25};
 
 busted.init_grid_setup (busted.distribution);
 
+/** setup parameter optimization groups */
+
+PARAMETER_GROUPING = {};
+PARAMETER_GROUPING + busted.distribution["rates"];
+PARAMETER_GROUPING + busted.distribution["weights"];
+
+
+
 
 if (busted.has_background) {
     busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
                                 "busted.test" :       busted.test.bsrel_model };
     busted.background_distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.background.bsrel_model);
     busted.init_grid_setup (busted.background_distribution);
+
+    PARAMETER_GROUPING = {};
+    PARAMETER_GROUPING + busted.background_distribution["rates"];
+    PARAMETER_GROUPING + busted.background_distribution["weights"];
     
 } else {
     busted.model_object_map = { "busted.test" :       busted.test.bsrel_model };
@@ -222,11 +234,12 @@ if (busted.do_srv)  {
         'weights' : utility.Values (utility.Map (busted.srv_distribution [busted.srv_weight_regex ]  , "_value_", '((busted.test.bsrel_model[terms.parameters])[terms.global])[_value_]'))
     };
     
+    PARAMETER_GROUPING + busted.srv_distribution["rates"];
+    PARAMETER_GROUPING + busted.srv_distribution["weights"];
+
     busted.init_grid_setup (busted.srv_distribution);
     
 }
-
-
 
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
 busted.initial_grid         = estimators.CreateInitialGrid (busted.initial_grid, 500, busted.initial_grid_presets);
@@ -245,9 +258,6 @@ if (busted.has_background) {GDD rate category
     );
 }
 
-
-
-//VERBOSITY_LEVEL = 10;
 
 
 busted.model_map = {};

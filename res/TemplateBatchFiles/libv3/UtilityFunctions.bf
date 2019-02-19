@@ -232,8 +232,8 @@ function utility.Map (object, lambda_name, transform) {
     if (Type (object) == "AssociativeList") {
         utility.Map.return_object = {};
         utility.Map.keys = Rows (object);
-        ^(lambda_name) := object [utility.Map.keys[utility.Map.k]];
         for (utility.Map.k = 0; utility.Map.k < Abs (object); utility.Map.k += 1) {
+            ^(lambda_name) = object [utility.Map.keys[utility.Map.k]];
             utility.Map.return_object [utility.Map.keys[utility.Map.k]] = Eval (transform);
         }
     } else {
@@ -297,9 +297,9 @@ function utility.Filter (object, lambda_name, condition) {
     utility.Filter.return_object = {};
     if (Type (object) == "AssociativeList") {
         utility.Filter.keys = Rows (object);
-        ^(lambda_name) := object [utility.Filter.keys[utility.Filter.k]];
         for (utility.Filter.k = 0; utility.Filter.k < Abs (object); utility.Filter.k += 1) {
-            if (Eval (condition)) {
+           ^(lambda_name) = object [utility.Filter.keys[utility.Filter.k]];
+           if (Eval (condition)) {
                 utility.Filter.return_object [utility.Filter.keys[utility.Filter.k]] = ^(lambda_name);
             }
         }
@@ -337,8 +337,8 @@ function utility.First (object_utility_first, lambda_name, condition) {
 
      if (Type (object_utility_first) == "AssociativeList") {
         utility.First.keys = Rows (object_utility_first);
-        ^(lambda_name) := object_utility_first [utility.First.keys[utility.First.k]];
         for (utility.First.k = 0; utility.First.k < Abs (object_utility_first); utility.First.k += 1) {
+            ^(lambda_name) = object_utility_first [utility.First.keys[utility.First.k]];
             if (Eval (condition)) {
                 utility.First.return_object = ^(lambda_name);
                 break;
@@ -398,10 +398,10 @@ function utility.ForEach (object, lambda_name, transform) {
         utility.ForEach.keys = Rows (object);
         utility.ForEach.size = Abs (object);
 
-        ^(lambda_name) := object [utility.ForEach.keys[utility.ForEach.k]];
 
         for (utility.ForEach.k = 0; utility.ForEach.k < utility.ForEach.size; utility.ForEach.k += 1) {
-            ExecuteCommands (transform, enclosing_namespace);
+          ^(lambda_name) = object [utility.ForEach.keys[utility.ForEach.k]];
+           ExecuteCommands (transform, enclosing_namespace);
         }
     } else {
 
@@ -588,9 +588,11 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
 
     if (Type (object) == "AssociativeList") {
         utility.ForEachPair.keys = Rows (object);
-        ^(key_name) := utility.ForEachPair.keys[utility.ForEachPair.k];
-        ^(value_name) := object [utility.ForEachPair.keys[utility.ForEachPair.k]];
+        //^(key_name) := utility.ForEachPair.keys[utility.ForEachPair.k];
+        //^(value_name) := object [utility.ForEachPair.keys[utility.ForEachPair.k]];
+        ^(value_name) := object [^(key_name)];
         for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {
+            ^(key_name) = utility.ForEachPair.keys[utility.ForEachPair.k];
             ExecuteCommands (transform, enclosing_namespace);
         }
     } else {
@@ -605,6 +607,7 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
 
                 for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
                     for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
+                        
                         ExecuteCommands (transform, enclosing_namespace);
 
                     }
