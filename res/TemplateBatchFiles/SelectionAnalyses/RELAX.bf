@@ -273,6 +273,11 @@ if (relax.model_set == "All") { // run all the models
         }
 
         relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
+        
+        PARAMETER_GROUPING = {};
+        PARAMETER_GROUPING + relax.distribution["rates"];
+        PARAMETER_GROUPING + relax.distribution["weights"];
+
 
         parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
 
