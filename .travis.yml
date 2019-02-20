@@ -17,17 +17,6 @@ branches:
     - beta
     - develop
 
-env:
-  - METHOD_TEST=tests/hbltests/libv3/SLAC.wbf
-  - METHOD_TEST=tests/hbltests/libv3/SLAC-partitioned.wbf
-  - METHOD_TEST=tests/hbltests/libv3/FEL.wbf
-  - METHOD_TEST=tests/hbltests/libv3/MEME.wbf
-  - METHOD_TEST=tests/hbltests/libv3/MEME-partitioned.wbf
-  - METHOD_TEST=tests/hbltests/libv3/FUBAR.wbf
-  - METHOD_TEST=tests/hbltests/libv3/RELAX.wbf
-  - METHOD_TEST=tests/hbltests/libv3/aBSREL.wbf
-  - METHOD_TEST=tests/hbltests/libv3/BUSTED.wbf
-
 language: c++
 compiler: 
   - gcc
@@ -52,5 +41,11 @@ script:
   - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/math.bf
   - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/iofunctions.bf
   - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/utilityfunctions.bf
-  - ./HYPHYMP LIBPATH=`pwd`/res/ $METHOD_TEST
+  # testiphy
+  - cd
+  - git clone https://gitlab.com/testiphy/testiphy.git
+  - cd testiphy
+  - ./testiphy hyphymp
+  # HBL Unit Tests
   - bash ./run_unit_tests.sh
+
