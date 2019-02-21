@@ -323,6 +323,7 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
             DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3,  , "" + alignments.LoadCodonDataFile.i , data_info[terms.stop_codons]);
             if (^"`datafilter_name`.sites"*3 != ^"`dataset_name`.sites") {
                 alignments.LoadCodonDataFile.name = alignments.GetIthSequenceOriginalName (dataset_name, alignments.LoadCodonDataFile.i);
+                
                 alignments.LoadCodonDataFile.site_map = ^"`datafilter_name`.site_map";
 
                 alignments.LoadCodonDataFile.annotation_string = utility.PopulateDict (0, ^"`dataset_name`.sites",

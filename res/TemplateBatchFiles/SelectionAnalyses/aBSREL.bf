@@ -21,6 +21,7 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 1/2);
 utility.SetEnvVariable ("LF_SMOOTHING_REDUCTION",4);
+utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
 
 
 /*------------------------------------------------------------------------------*/
