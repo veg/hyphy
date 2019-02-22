@@ -100,7 +100,7 @@ function ReceiveJobs (sendOrNot)
 					fprintf (stdout," | (",0, resultCache[h][0], resultCache[h][1], resultCache[h][2], resultCache[h][3], resultCache[h][4],") | ");
 					fprintf (stdout,Format (np,5,0));
 					PRINT_DIGITS = 8;
-					fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
+					fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  " );
 					
 					PRINT_DIGITS = 15;
 					if (LRT==0)
@@ -162,7 +162,7 @@ function ReceiveJobs (sendOrNot)
 	fprintf (stdout," | (",vv1,vv2,vv3,vv4,vv5,vv6,") | ");
 	fprintf (stdout,Format (np,5,0));
 	PRINT_DIGITS = 8;
-	fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
+	fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  " );
 	
 	
 	PRINT_DIGITS = 15;
@@ -982,8 +982,8 @@ if (rejectCount<202)
 			fprintf (BASE_PATH," | (",0,resultCache[v2][0],resultCache[v2][1],resultCache[v2][2],resultCache[v2][3],resultCache[v2][4],") | ");
 			fprintf (BASE_PATH,Format (np,5,0));
 			PRINT_DIGITS = 8;
-			fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
-			fprintf (BASE_PATH, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
+			fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  " );
+			fprintf (BASE_PATH, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  " );
 			PRINT_DIGITS = 15;
 			if (LRT==0)
 			{

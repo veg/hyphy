@@ -44,18 +44,6 @@ for (seqCounter = 0; seqCounter < Rows(actualSequences); seqCounter = seqCounter
 }
 
 labels[3] = seqNameLabel;
-OpenWindow (CHARTWINDOW,{{"Sequence Complexity"}
-						   {"labels"},
-						   {"LZContent"},
-						   {"Bar Chart"},
-						   {"Index"},
-						   {labels[2]},
-						   {""},
-						   {""},
-						   {labels[2]},
-						   {""}},
-						   "SCREEN_WIDTH-300;SCREEN_HEIGHT-200;100;100");
-
 
 stringOfSpaces = "";
 stringOfSpaces * maxLength;
