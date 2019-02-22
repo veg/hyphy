@@ -1393,7 +1393,7 @@ void MPISwitchNodesToMPIMode (long totalNodeCount)
     for (long ni = 1; ni <= totalNodeCount; ni++) {
         long fromNode = ni;
         _String t (MPIRecvString (ni,fromNode));
-        if (!t.Equal (&mpiLoopSwitchToOptimize)) {
+        if (t != mpiLoopSwitchToOptimize) {
             HandleApplicationError (_String("[MPI] Failed to confirm MPI mode switch at node ") & ni);
             return;
         } else {

@@ -743,13 +743,20 @@ lfunction parameters.SetCategoryVariables (model) {
     
     cat_vars      = (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")];
     cat_var_count = utility.Array1D (cat_vars);
+    cat_var_substitutions = {};
     
     if (cat_var_count) {
         cat_vars = Rows (cat_vars);
         for (i = 0; i < cat_var_count; i+=1) {
-            parameters.SetValue (cat_vars[i], rate_variation.compute_mean (cat_vars[i]));
+            cv = rate_variation.compute_mean (cat_vars[i]);
+            cat_var_substitutions [cat_vars[i]] = cv;
+            parameters.SetValue (cat_vars[i], cv);
         }
     }
+    
+    return cat_var_substitutions;
+    
+     
    
 }
 

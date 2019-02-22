@@ -408,6 +408,7 @@ lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) 
 lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix, data_info) {
     part_count = utility.Array1D(partitions);
     filters = {};
+        
     if (utility.CheckKey(data_info, utility.getGlobalValue("terms.code"), "Matrix")) {
 
 
