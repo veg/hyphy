@@ -243,7 +243,7 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
 
     } else {
         numberOfTerms = 0L;
-        if (stuff == kNoneToken)
+        if (stuff == kNoneToken || stuff == kNullToken)
             theNumber = new _MathObject;
         else
             theNumber = new _Constant (stuff);

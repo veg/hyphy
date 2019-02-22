@@ -1797,9 +1797,9 @@ bool     _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _Si
                     childLeaves->Each ([&] (long value, unsigned long) -> void {
                         long lookup = reindexer ? reindexer->get (value) : value;
                         if (lookup >= 0L) {
-                            all_descendants [lookup] = 1L;
+                            (*all_descendants) [lookup] = 1L;
                             if (complement) {
-                                complement [lookup] = 0L;
+                                (*complement) [lookup] = 0L;
                             }
                         } else {
                             throw 0;
@@ -3365,11 +3365,12 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
     
     node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
     
-    while (node<long> * currentNode = ni.Next (&levelBuffer)) {
+    while (node<long> * currentNode = ni.Next ()) {
         _String nodeName = GetNodeName (currentNode);
         
-        while (levelBuffer.countitems() <= ni.Level()) {
-            levelBuffer << 0;
+        
+        if (levelBuffer.countitems() <= ni.Level()) {
+            levelBuffer.AppendRange(ni.Level() - levelBuffer.countitems() + 1 , 0, 0);
         }
         
         if (currentNode->is_leaf()) {

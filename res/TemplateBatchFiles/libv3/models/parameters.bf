@@ -388,7 +388,6 @@ lfunction parameters.GetRange(id) {
  * @returns nothing
  */
 function parameters.SetRange(id, ranges) {
-
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {
@@ -425,6 +424,7 @@ lfunction parameters.IsIndependent(parameter) {
     //console.log(parameter);
 
     GetString(info, ^ parameter, -1);
+    
     if (Type(info) == "AssociativeList") {
         return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;
     }
@@ -740,10 +740,16 @@ lfunction parameters.SetLocalModelParameters (model, tree, node) {
 */
 
 lfunction parameters.SetCategoryVariables (model) {
-    utility.ForEachPair ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")], "_parameter_", "_description_",
-    '
-        parameters.SetValue (_parameter_, rate_variation.compute_mean (_parameter_));
-    ');
-
+    
+    cat_vars      = (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")];
+    cat_var_count = utility.Array1D (cat_vars);
+    
+    if (cat_var_count) {
+        cat_vars = Rows (cat_vars);
+        for (i = 0; i < cat_var_count; i+=1) {
+            parameters.SetValue (cat_vars[i], rate_variation.compute_mean (cat_vars[i]));
+        }
+    }
+   
 }
 

@@ -30,7 +30,8 @@ LoadFunctionLibrary     ("libv3/tasks/mpi.bf");
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
-
+utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
+utility.SetEnvVariable ("LF_SMOOTHING_SCALER",0.05);
 
 
 /*------------------------------------------------------------------------------*/
@@ -272,6 +273,11 @@ if (relax.model_set == "All") { // run all the models
         }
 
         relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
+        
+        PARAMETER_GROUPING = {};
+        PARAMETER_GROUPING + relax.distribution["rates"];
+        PARAMETER_GROUPING + relax.distribution["weights"];
+
 
         parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
 

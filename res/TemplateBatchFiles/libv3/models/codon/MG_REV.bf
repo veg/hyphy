@@ -183,6 +183,8 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) { // beta is unconstrained; 
                 models.codon.MG_REV.set_branch_length.lp = parameters.NormalizeRatio(Eval(models.codon.MG_REV.set_branch_length.beta.p), Eval(models.codon.MG_REV.set_branch_length.alpha.p));
                 parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
+                
+                
                 ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                 Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
                 parameters.RemoveConstraint(models.codon.MG_REV.set_branch_length.beta);
@@ -190,8 +192,16 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
             } else { // beta IS constrained
                 //parameters.SetConstraint (models.codon.MG_REV.set_branch_length.beta, parameters.GetConstraint (models.codon.MG_REV.set_branch_length.alpha.p),"");
                 //parameters.SetConstraint (models.codon.MG_REV.set_branch_length.alpha, models.codon.MG_REV.set_branch_length.alpha.p,"");
+                
+                /** the branch length expression is going to be in terms of ** template ** parameters, but constraints will be in 
+                    terms of instantiated parameters, so the expression to solve for needs to be temporarily bound to the global variable **/
+                
+
+                parameters.SetConstraint ( models.codon.MG_REV.set_branch_length.beta,  models.codon.MG_REV.set_branch_length.beta.p, "");
+                
                 ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                 Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
+                parameters.RemoveConstraint ( models.codon.MG_REV.set_branch_length.beta);
                 messages.log ("models.codon.MG_REV.set_branch_length: " + models.codon.MG_REV.set_branch_length.alpha.p + "=" + models.codon.MG_REV.set_branch_length.lp);
                 
             }

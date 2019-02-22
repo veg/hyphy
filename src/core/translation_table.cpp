@@ -232,7 +232,7 @@ long _TranslationTable::MultiTokenResolutions(_String const &tokens,
 
     long *large_store, large_store_static[HYPHY_SITE_DEFAULT_BUFFER_SIZE];
 
-    if (baseLength * tokens.length() + tokens.length() >=
+    if ((baseLength + 1)* tokens.length()  >=
         HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
       large_store = new long[baseLength * tokens.length() + tokens.length()];
     } else {

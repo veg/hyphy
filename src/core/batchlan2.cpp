@@ -254,7 +254,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 "GetInformation(<receptacle>, <DataSet or DataSetFilter or LikelihoodFunction or Model or Variable or Regexp or String>",
                                                                 ','));
 
-    lengthOptions.Clear();lengthOptions.Populate (3,2,1); // 2, 3, 4
+    lengthOptions.Clear();lengthOptions.Populate (4,2,1); // 2, 3, 4, 5
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_DATA_INFO,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetDataInfo(", HY_HBL_COMMAND_GET_DATA_INFO,false),
                                                                 -1,
@@ -335,7 +335,13 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 1, 
                                                                 "UseModel (<model ID>)",','));
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SET_PARAMETER, 
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_ALIGN_SEQUENCES,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("AlignSequences(", HY_HBL_COMMAND_ALIGN_SEQUENCES,false),
+                                                                3,
+                                                                "AlignSequences (result, sequences, options)",','));
+
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_SET_PARAMETER,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("SetParameter(", HY_HBL_COMMAND_SET_PARAMETER,false),
                                                                 3, 
                                                                 "SetParameter(<object>, <parameter index>, <value>)",','));
@@ -571,9 +577,9 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
                     categoryCount = (long) ProcessNumericArgument((_String*)parameters(2),nil);
                 }
 
-                _String namesKey ("FILTER_NAMES"),
-                        dataKey  ("FILTER_ARRAYS"),
-                        freqKey  ("FILTER_FREQS");
+                _String const namesKey ("FILTER_NAMES"),
+                              dataKey  ("FILTER_ARRAYS"),
+                              freqKey  ("FILTER_FREQS");
 
                 _Matrix* sequenceNames = (_Matrix*)numericFilter->GetByKey (namesKey,MATRIX);
                 _List seqNames;
@@ -656,85 +662,74 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
 
     // build the formula from the 2nd parameter (unit size)
 
-    char                unit = ProcessNumericArgument((_String*)parameters(2),chain.nameSpacePrefix);
+    unsigned char                unit = ProcessNumericArgument((_String*)parameters(2),chain.nameSpacePrefix);
     // here's our unit
 
     _String             dataFilterID (chain.AddNameSpaceToID(*(_String*)parameters(0))),
-                        hSpecs,
-                        vSpecs;
+                        site_partition,
+                        sequence_partition;
 
 
 
-    if (parameters.lLength>3) {
-        vSpecs = *(_String*)parameters(3);
+    if (parameters.countitems()>3) {
+        sequence_partition = *(_String*)parameters(3);
     }
-    if (parameters.lLength>4) {
-        hSpecs = *(_String*)parameters(4);
-    } else {
-        hSpecs = kEmptyString;
+    
+    if (parameters.countitems()>4) {
+        site_partition = *(_String*)parameters(4);
     }
 
     _DataSet            *dataset;
 
-    _SimpleList         hL,
-                        vL;
+    _SimpleList         site_list,
+                        sequence_list;
 
-    hL.RequestSpace (1024);
-    vL.RequestSpace (1024);
+    site_list.RequestSpace (1024UL);
+    sequence_list.RequestSpace (1024UL);
+    
+    auto ensure_site_partition = [] (_String& site_part, const long code, const long max_site) -> void {
+        if (code != 6 && site_part.empty () ) {
+            site_part = _String ("0-") & _String (max_site - 1L);
+        }
+    };
 
     if (!isFilter) {
         dataset = (_DataSet*)dataSetList(dsID);
-        dataset -> ProcessPartition (hSpecs,hL,false, nil, nil, chain.GetNameSpace());
-        if (code!=6 && vSpecs.empty()==0) {
-            vSpecs = _String("0-")&_String((long)dataset->NoOfColumns()-1);
-        }
-        dataset->ProcessPartition (vSpecs,vL,true,nil, nil, chain.GetNameSpace());
+        dataset -> ProcessPartition (site_partition,site_list,false, unit, nil, nil, chain.GetNameSpace());
+        ensure_site_partition (site_partition, code, dataset->NoOfColumns());
+        dataset->ProcessPartition (sequence_partition,sequence_list,true, unit, nil, nil, chain.GetNameSpace());
 
     } else {
         const _DataSetFilter * dataset1 = GetDataFilter (dsID);
-        dataset1->GetData()->ProcessPartition (hSpecs,hL,false, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
-
-        if (code!=6 && vSpecs.empty()==0) {
-            vSpecs = _String("0-")&_String(dataset1->GetSiteCount()-1);
-        }
-
-        dataset1->GetData()->ProcessPartition (vSpecs,vL,true,  &dataset1->theOriginalOrder, &dataset1->theNodeMap, chain.GetNameSpace());
+        dataset1->GetData()->ProcessPartition (site_partition,site_list,false, unit, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
+        ensure_site_partition (site_partition, code, dataset1->GetSiteCount());
+        dataset1->GetData()->ProcessPartition (sequence_partition,sequence_list ,true,  unit, &dataset1->theOriginalOrder, &dataset1->theNodeMap, chain.GetNameSpace());
         dataset = (_DataSet*)dataset1;
     }
 
     if (code!=6) {
-        if (vL.lLength%unit) {
-            vSpecs = (_String)"Unit size of "& unit & " doesn't divide the length of specified partition in call to ";
-            if (code==27) { // Permute
-                vSpecs = vSpecs & "Permute";
-            } else {
-                vSpecs = vSpecs & "Bootstrap";
-            }
-
-            vSpecs = vSpecs & ". The partition has been trimmed at the end.";
-            ReportWarning (vSpecs);
-          
-            for (long chop = vL.lLength%unit; chop>0; chop--) {
-                vL.Pop();
+        if (sequence_list.countitems() % unit) {
+            ReportWarning ((_String)"Unit size of "& _String((long)unit) & " doesn't divide the length of specified partition. The partition has been trimmed at the end.");
+            for (long chop = sequence_list.countitems(); chop>0; chop--) {
+                sequence_list.Pop();
             }
         }
         if (code == 27) {
-            vL.Permute (unit);
+            sequence_list.Permute (unit);
         } else {
-            vL.PermuteWithReplacement(unit);
+            sequence_list.PermuteWithReplacement(unit);
         }
 
     }
 
     _DataSetFilter * thedf = new _DataSetFilter;
-    thedf->SetFilter (dataset, unit, hL, vL, isFilter);
+    thedf->SetFilter (dataset, unit, site_list, sequence_list, isFilter);
 
     if (parameters.lLength>5) {
-        hSpecs = GetStringFromFormula((_String*)parameters(5),chain.nameSpacePrefix);
-        thedf->SetExclusions (hSpecs);
+        thedf->SetExclusions (GetStringFromFormula((_String*)parameters(5),chain.nameSpacePrefix));
     } else if ( code!=6 && isFilter ) {
         const _DataSetFilter * df1 = GetDataFilter (dsID);
-        if (df1->theExclusions.lLength) {
+        if (df1->theExclusions.nonempty()) {
             thedf->theExclusions << df1->theExclusions;
             thedf->SetDimensions();
         }

@@ -84,7 +84,7 @@ namespace hyphy_global_objects {
     setParameter (WrapInNamespace ("species", &name), filter.NumberSpecies());
     setParameter (WrapInNamespace ("sites", &name), filter.GetSiteCountInUnits());
     
-    hyFloat size_cutoff = hy_env::EnvVariableGetDefaultNumber(hy_env::dataset_save_memory_size);
+    hyFloat size_cutoff = hy_env::EnvVariableGetNumber(hy_env::dataset_save_memory_size);
     if (filter.GetSiteCount() < size_cutoff) {
       setParameter(WrapInNamespace("site_map", &name), new _Matrix (filter.theOriginalOrder), nil, false);
       setParameter(WrapInNamespace("site_freqs", &name), new _Matrix (filter.theFrequencies), nil, false);

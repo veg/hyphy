@@ -476,7 +476,7 @@ bool _List::Equal(_List const & l2) const
     }
 
     for (unsigned long i=0; i<lLength; i++)
-        if (!((_String*)lData[i])->Equal ((_String*)l2.lData[i])) {
+        if (!((_String*)lData[i])->Equal (*(_String*)l2.lData[i])) {
             return false;
         }
 

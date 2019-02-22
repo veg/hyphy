@@ -9,7 +9,7 @@ function getTestName () {
 
 function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
-	testResult = TRUE;
+	testResult = FALSE;
   
 
   //---------------------------------------------------------------------------------------------------------
@@ -39,23 +39,50 @@ function runTest () {
   assert(1 + "4" + 2 == 7, "Failed to add a number, a string (which is converted to a number) and another number (in that order; i.e. number first); should return the sum of the numbers");
 
 
-  // TODO: Can't get the two tests below to work
-  // Add topologies
-  //Topology T = ((a,b)N1,c,d);
-  //t = T + {"NAME":"e", "WHERE": "b", "PARENT": "f"};
-  //fprintf (stdout, "t: ", t, "\n");
-  //fprintf (stdout, "T: ", T, "\n");
-  //expectedNewTopology = ((a,(b,e)f)N1,c,d);
-  //assert(T == expectedNewTopology, "Failed to add a node to a topology");
+  Topology T = ((a,b)N1,c,d);
+  // + on topologies works in place
+  T + {"NAME":"e", "WHERE": "b", "PARENT": "f"};
+  Topology expectedNewTopology = ((a,(b,e)f)N1,c,d);
+  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology");
+  T + {"NAME":"Z", "WHERE": "f", "PARENT": "N2"};
+  Topology expectedNewTopology = ((a,((b,e)f,Z)N2)N1,c,d);
+  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology");
+
+  T + {"NAME":"Z", "WHERE": "f"};
+  Topology expectedNewTopology = ((a,((b,e,Z)f,Z)N2)N1,c,d);
+  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology without creating a new parent (internal node): " + T + " != " + expectedNewTopology);
+
+  T + {"NAME":"X", "WHERE": "Z"};
+  Topology expectedNewTopology = ((a,((b,e,(X)Z)f,Z)N2)N1,c,d);
+  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology without creating a new parent (terminal node): " + T + " != " + expectedNewTopology);
+
+  T + {"PARENT":"XZ", "WHERE": "Z"};
+  Topology expectedNewTopology = ((a,((b,e,((X)Z)XZ)f,Z)N2)N1,c,d);
+  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology without creating a new parent (terminal node): " + T + " != " + expectedNewTopology);
+
+  assert (runCommandWithSoftErrors ('T + {"NAME":"Z", "WHERE": "missing", "PARENT": "N2"}', "Attachment node must be an exiting non-root node "), "Failed error adding a node to a non-existing node");
+  assert (runCommandWithSoftErrors ('T + {"NAME":"Z"}', "Missing/invalid mandatory argument"), "Failed error checking when not specifying all required arguments");
+  assert (runCommandWithSoftErrors ('T + {"WHERE":"X"}', "Either 'NAME' or 'PARENT'"), "Failed error checking when not specifying all required arguments");
+ 
+  Tree T = ((a:0.1,b:0.2)N1:0.3,c:0.1,d:0.2);
+  T + {"NAME":"e", "WHERE": "b", "LENGTH" : 0.05, "PARENT_LENGTH" : 0.01, "PARENT": "p_of_b"};
+  assert(BranchLength (T, "e") == 0.05, "Incorrectly set branch length for an added branch");
+  assert(BranchLength (T, "p_of_b") == 0.01, "Incorrectly set branch length for the parent of an added branch");
+  T + {"NAME":"k", "WHERE": "b", "PARENT_LENGTH" : 0.011, "PARENT": "p_of_k"};
+  assert(BranchLength (T, "k") == -1, "Incorrectly set missing branch length value for added branch");
+  assert(BranchLength (T, "p_of_k") == 0.011, "Incorrectly set branch length for the parent of an added branch [no new branch length specified]");
+  T + {"NAME":"n", "WHERE": "k", "LENGTH" : 0.012, "PARENT": "p_of_n"};
+  assert(BranchLength (T, "p_of_n") == -1, "Incorrectly set missing branch length value for the parent of an added branch");
+  assert(BranchLength (T, "n") == 0.012, "Incorrectly set branch length for an added branch [no parent branch length specified]");
+  
+
 
   // TODO: Adding different types (string and matrix)
   stringPlusMatrix = "string+" + {{1,2}};
-  fprintf (stdout, "stringPlusMatrix: ", stringPlusMatrix, "\n");
   assert(stringPlusMatrix == 
 "string+{
-{1,2}
-}
-", "Failed to add a string and a matrix (in that order); should convert the matrix to a string and concatenate it to the end of the string");
+{1, 2} 
+}", "Failed to add a string and a matrix (in that order); should convert the matrix to a string and concatenate it to the end of the string");
    
  
   //---------------------------------------------------------------------------------------------------------
@@ -71,7 +98,7 @@ function runTest () {
   assert (runCommandWithSoftErrors ('oneDMatrix + twoDMatrix', "Incompatible dimensions when trying to add or subtract matrices"), "Failed error checking for adding matrices of different dimensions");
   
 
-  testResult = 1;
+  testResult = TRUE;
 
   return testResult;
 }

@@ -14,6 +14,8 @@ notifications:
 branches:
   only:
     - master
+    - beta
+    - develop
 
 env:
   - METHOD_TEST=tests/hbltests/libv3/SLAC.wbf
@@ -44,13 +46,17 @@ install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
   - cmake . 
   - make HYPHYMP
-  - make HYPHYGTEST
 
 script: 
   - export OMP_NUM_THREADS=4
-  - ./HYPHYGTEST
   - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/math.bf
   - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/iofunctions.bf
   - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/utilityfunctions.bf
   - ./HYPHYMP LIBPATH=`pwd`/res/ $METHOD_TEST
   - bash ./run_unit_tests.sh
+  # testiphy
+  - export PATH=$PATH:$(pwd)
+  - cd
+  - git clone https://gitlab.com/rdvelazquez/testiphy.git
+  - cd testiphy
+  - ./testiphy HYPHYMP

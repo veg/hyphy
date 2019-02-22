@@ -30,21 +30,15 @@ namespace foo {
 ExecuteAFile (PATH_TO_CURRENT_BF + "TestTools.ibf");
 runATest ();
 
-lfunction getTestName () {
+function getTestName () {
 	return "namespace";
 }
 
-lfunction getTestedFunctions () {
-	return {{}};
-}
-
-
 
 function runTest () {
-    testResult = FALSE;
-    
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
-	
+    testResult = 0;
+    
 	assert (foo.x == "foo", "Failed scoping outer namespace (had '" + foo.x + "'" + ")");
 	assert (foo.bar.x == "foo", "Failed scoping second-level namespace (had '" + foo.bar.x + "'" + ")");
 	assert (foo.bar.baz.x == "foo", "Failed scoping inner namespace (had '" + foo.bar.baz.x + "'" + ")");
@@ -59,6 +53,6 @@ function runTest () {
 	
     assert (runCommandWithSoftErrors ("namespace bad-id {}", "Not a valid function/namespace identifier"), "Failed error checking for an invalid namespace ID");
 
-    testResult = TRUE;
+    testResult = 1;
 	return testResult;
 }

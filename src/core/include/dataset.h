@@ -174,7 +174,7 @@ public:
   static _TranslationTable *CheckCompatibility(_SimpleList const &ref,
                                                char concatOrCombine);
 
-  void ProcessPartition(_String const &, _SimpleList &, bool,
+  void ProcessPartition(_String const &, _SimpleList &, bool, int unit_length,
                         _SimpleList const * = nil, _SimpleList const * = nil,
                         _String const *scope = nil) const;
 
