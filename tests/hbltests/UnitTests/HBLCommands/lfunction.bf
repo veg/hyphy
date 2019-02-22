@@ -6,6 +6,10 @@ function getTestName () {
   return "lfunction";
 }		
 
+lfunction redefine () {
+  thisIsNotRedefined = 0;
+  return null;
+}
 
 lfunction sum (a,b) {
     return a + b;
@@ -26,6 +30,10 @@ function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult = TRUE;
 
+  // Test to confirm that variables declared within an lfunction are at local scope only (function variables {note the lack of the `l` are at global scope})
+  thisIsNotRedefined = 1;
+  redefine();
+  assert(thisIsNotRedefined, "A variable defined in an lfunction leaked into the global scope");
 
   testSum = sum(3,4);
   assert(testSum == 7, "Failed to successfully define and execute a sum lfunction");
