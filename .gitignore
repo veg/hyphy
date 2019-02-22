@@ -44,10 +44,8 @@ gmon.out
 messages.log
 errors.log
 tests/hbltests/libv3/data/CD2.nex.*.json
-<<<<<<< HEAD
 tests/hbltests/data/tempFileTesting*
-=======
+
 
 #Utility function
 remake_hyphymp.sh
->>>>>>> d160d883... add personal utility function to gitignore
