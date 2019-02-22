@@ -59,5 +59,4 @@ script:
   - cd
   - git clone https://gitlab.com/rdvelazquez/testiphy.git
   - cd testiphy
-  - git checkout noTwoNodeTrees
   - ./testiphy HYPHYMP
