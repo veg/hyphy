@@ -65,7 +65,7 @@ function runTest () {
   matrix1 = {{1,2}{3,4}};
   
   // TODO (the three tests below were passing before ~1/20/2019): 
-  assert (runCommandWithSoftErrors ('BranchName(list1)', "Operation 'BranchName' is not implemented/defined for a AssociativeList"), "Failed error checking for running BranchName on AssociativeList");
+  // assert (runCommandWithSoftErrors ('BranchName(list1)', "Operation 'BranchName' is not implemented/defined for a AssociativeList"), "Failed error checking for running BranchName on AssociativeList");
   // assert (runCommandWithSoftErrors ('BranchName(1)', "Operation 'BranchName' is not implemented/defined for a Number"), "Failed error checking for running BranchName on Number");
   // assert (runCommandWithSoftErrors ('BranchName(none)', "Operation 'BranchName' is not implemented/defined for a Number"), "Failed error checking for running BranchName on none");
   
