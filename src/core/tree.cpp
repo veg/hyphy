@@ -50,7 +50,7 @@
 #include "category.h"
 #include "likefunc.h"
 
-const _String kTreeErrorMessageEmptyTree ("Cannot contstuct empty trees");
+const _String kTreeErrorMessageEmptyTree ("Cannot constuct empty trees");
 
 
 using namespace hy_global;
