@@ -64,7 +64,7 @@ if (utility.Array1D (sm.bootstrap )) {
                                 "Use bootstrap weighting"
                                 ) == "Yes") {
                                 
-        sm.bootstrap_weighting * utility.Map (sm.bootstrap, "_bs_", "Max(0.2,(_bs_>1)*_bs_/100+(_bs_<=1)*_bs_^2_)");
+        sm.bootstrap_weighting * utility.Map (sm.bootstrap, "_bs_", "Max(0.2,(_bs_>1)*(_bs_/100)^2+(_bs_<=1)*_bs_^2)");
    }
  
 }

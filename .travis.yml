@@ -54,3 +54,9 @@ script:
   - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/utilityfunctions.bf
   - ./HYPHYMP LIBPATH=`pwd`/res/ $METHOD_TEST
   - bash ./run_unit_tests.sh
+  # testiphy
+  - export PATH=$PATH:$(pwd)
+  - cd
+  - git clone https://gitlab.com/rdvelazquez/testiphy.git
+  - cd testiphy
+  - ./testiphy HYPHYMP
