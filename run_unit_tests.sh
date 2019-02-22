@@ -41,5 +41,5 @@ then
   echo "of $testsRun Tests Run"
   exit 1
 else
-  echo "\n\n------------------------ALL TEST PASED------------------------------------\n"
+  echo "\n\n------------------------ALL TEST PASSED------------------------------------\n"
 fi

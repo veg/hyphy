@@ -44,3 +44,8 @@ gmon.out
 messages.log
 errors.log
 tests/hbltests/libv3/data/CD2.nex.*.json
+tests/hbltests/data/tempFileTesting*
+
+
+#Utility function
+remake_hyphymp.sh
