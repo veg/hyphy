@@ -48,6 +48,9 @@ function runTest () {
   testNum2Plus2 = addTwoByRef('testNum2');
   assert(testNum2Plus2 == testNum2, "Failed to successfully define and execute a function using parameter by refernce");
 
+  //TODO: Overloading a function causes an 'Unconsumed values on the stack' error:
+  //testOverload = sum(1,2,3);
+
   testResult = 1;
 
   return testResult;
