@@ -3677,6 +3677,8 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                 _String user_choice;
                 try {
                     user_choice =(current_program.FetchFromStdinRedirect(&dialog_title, required > 1)); // handle multiple selections
+                    StringToConsole(user_choice);
+                    NLToConsole();
                 } catch (const _String e) {
                     if (e == kNoKWMatch) {
                         break;
@@ -3701,6 +3703,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                 if (variable_number && user_choice.empty()) {
                     break;
                 }
+                
                 long    match_found = validate_choice (user_choice);
                 if (match_found == kNotFound) {
                     report_key_error (user_choice);
@@ -3708,7 +3711,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                 selections << match_found;
             }
             
-            need_to_prompt_user = selections.countitems() != required;
+            need_to_prompt_user = selections.countitems() != required && !variable_number || variable_number && selections.empty();
         }
         
         if (need_to_prompt_user) {

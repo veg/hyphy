@@ -1132,6 +1132,8 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
         }
         _String *sendBack = (_String*)stdinRedirect->GetXtra (d);
         sendBack->AddAReference();
+        //StringToConsole(*sendBack);
+        //NLToConsole();
         stdinRedirect->Delete ((*(_List*)stdinRedirect->dataList)(d),true);
         return sendBack;
     }
