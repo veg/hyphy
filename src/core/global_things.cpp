@@ -84,7 +84,9 @@ namespace hy_global {
             when HyPhy exits */
     
                      terminate_execution = false,
-                     has_terminal_stdout = true, has_terminal_stderr = true;
+                     has_terminal_stdout = true,
+                     has_terminal_stderr = true,
+                     ignore_kw_defaults  = false;
     
     FILE            *hy_error_log_file,
                     *hy_message_log_file;
@@ -127,7 +129,8 @@ namespace hy_global {
                                         & _String(__DATE__).Cut (4,5).Replace (" ", "0", true) & "alpha",
     
                     kNoneToken = "None",
-                    kNullToken = "null";
+                    kNullToken = "null",
+                    kNoKWMatch = "__input_value_not_given__";
   
     _String
                      hy_base_directory,
@@ -492,7 +495,7 @@ namespace hy_global {
     
     //____________________________________________________________________________________
     
-    void PopulateCurrentCallStack      (_List& calls, _List& stdins, _List& contexts) {
+    void PopulateCurrentCallStack      (_List& calls, _List& stdins, _List& contexts, _List& kwargs) {
     /**
         Fill out the list of execution lists (calls) and standard inputs (stdins)
      
@@ -518,6 +521,12 @@ namespace hy_global {
                 } else {
                     stdins.AppendNewInstance (new _String);
                 }
+                
+                if (currentLevel->kwargs && currentLevel->kwargs->countitems()) {
+                    kwargs.AppendNewInstance ((_String*)currentLevel->kwargs->toStr());
+                }else {
+                    kwargs.AppendNewInstance (new _String);
+                }
             }
         }
     }
@@ -532,9 +541,11 @@ namespace hy_global {
         
         _List    calls,
                  stdins,
-                 contexts;
+                 contexts,
+                 kwargs;
         
-        PopulateCurrentCallStack	 (calls, stdins, contexts);
+        
+        PopulateCurrentCallStack	 (calls, stdins, contexts, kwargs);
         
         _FString * error_formatting_expression = (_FString*) EnvVariableGet(error_report_format_expression, STRING);
         
@@ -572,14 +583,25 @@ namespace hy_global {
                     }
                     (*error_message) << (*(_String*)calls(k)) << '\n';
                     
-                    _String* redir = (_String*)stdins (k);
-                    if (!redir->empty()) {
-                        (*error_message) << "\tStandard input redirect:\n\t\t"
-                                  << redir->Replace ("\n","\n\t\t",true);
+                    if (k == 0) {
+                        _String* redir = (_String*)stdins (k);
+                        if (redir->nonempty()) {
+                            (*error_message) << "\tStandard input redirect:\n\t\t"
+                                      << redir->Replace ("\n","\n\t\t",true);
+                        }
+                        redir = (_String*)kwargs(k);
+                        if (redir->nonempty()) {
+                            (*error_message) << "\n\tKeyword arguments:\n\t\t"
+                            << redir->Replace ("\n","\n\t\t",true);
+                        }
+                        (*error_message) << "\n";
                     }
+                    
                     (*error_message) << "-------\n";
                     
                 }
+            } else {
+                (*error_message) << "\n";
             }
         }
         
@@ -760,7 +782,7 @@ namespace hy_global {
   }
   
   //____________________________________________________________________________________
-  bool    ProcessFileName (_String & path_name, bool isWrite, bool acceptStringVars, hyPointer theP, bool assume_platform_specific, _ExecutionList * caller) {
+  bool    ProcessFileName (_String & path_name, bool isWrite, bool acceptStringVars, hyPointer theP, bool assume_platform_specific, _ExecutionList * caller, bool relative_to_base) {
     _String errMsg;
     
     try {
@@ -782,12 +804,12 @@ namespace hy_global {
 #endif
         } else {
           if (!isWrite) {
-            path_name = ReturnFileDialogInput();
+            path_name = ReturnFileDialogInput(&hy_base_directory);
           } else {
-            path_name = WriteFileDialogInput ();
+            path_name = WriteFileDialogInput (&hy_base_directory);
           }
         }
-        ProcessFileName(path_name, false,false,theP,false,caller);
+        ProcessFileName(path_name, false,false,theP,false,caller,true);
         CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (path_name, false), false);
         return true;
       }
@@ -832,7 +854,8 @@ namespace hy_global {
     
     if (path_name.get_char(0) != '/') { // relative path
       if (pathNames.lLength) {
-        _String*    lastPath = (_String*)pathNames(pathNames.lLength-1);
+        _String*    lastPath = relative_to_base ? & hy_base_directory : (_String*)pathNames(pathNames.lLength-1);
+
         long        f = (long)lastPath->length ()-2L,
                     k = 0L;
         
@@ -874,7 +897,7 @@ namespace hy_global {
     if (path_name.Find(':') == kNotFound && path_name.Find("\\\\",0,1) == kNotFound) { // relative path
       
       if (pathNames.lLength) {
-        _String* lastPath = (_String*)pathNames(pathNames.lLength-1);
+        _String*    lastPath = relative_to_base ? & hy_base_directory : (_String*)pathNames(pathNames.lLength-1);
         long f = (long)lastPath->length() - 2L, k = 0L;
         // check the last stored absolute path and reprocess this relative path into an absolute.
         while (path_name.BeginsWith("..\\")) {

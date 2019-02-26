@@ -47,7 +47,7 @@
 "NALN","Align nucleotide sequences to reference (assuming star topology). Designed with whole-genome HIV sequences in mind.","SeqAlignmentNuc.bf";
 "CLG","Remove 'gappy' sites from alignments based on a user-specified gap threshold.","CleanGaps.bf";
 "CLN","Convert sequence names to HyPhy valid identifiers if needed and replace stop codons with gaps in codon data if any are present.","CleanStopCodons.bf";
-"CLST","Partition sequences into clusters based on a distance matrix.","ClusterByDistanceRange.bf";
+"CLSR","Partition sequences into clusters based on a distance matrix.","ClusterByDistanceRange.bf";
 "CONV","Translate an in-frame codon alignment to proteins.","CodonToProtein.bf";
 "DTR","Read sequence data (#,PHYLIP,NEXUS) and convert to a different format","ConvertDataFile.bf";
 "MH","Merge two datafiles by combining sites (horizontal merge).","MergeSites.bf";
@@ -99,12 +99,10 @@
 "BSREL","Use the random effects branch-site model (2010) to find lineages subject to episodic selection.","BranchSiteREL.bf";
 "BST","Use the improved branch-site REL method of Yang and Nielsen (2005) to look for episodic selection in sequences.","YangNielsenBranchSite2005.bf";
 "BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf";
-"BUSTED","Run the Branch-site Unrestricted Statistical Test for Episodic Diversification to test for evidence of episodic alignment-wide selective pressure","SelectionAnalyses/BUSTED.bf";
 "PSD","Test whether sites in two populations are evolving under different selective pressures.","CompareSelectivePressure.bf";
 "PSDI","Test whether sites in two populations are evolving under different selective pressures along internal tree branches.","CompareSelectivePressureIVL.bf";
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 "PSM","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1. Multiple subsets of one data set with shared dN/dS.","MFPositiveSelection.bf";
-"RELAX","Test whether selected branches are under relaxed or intensified selection against reference branches","SelectionAnalyses/RELAX.bf";
 "SSD","Use approximate likelihoods at a site to test for subtree specific selective pressure.","SubtreeSelectionComparison.bf";
 "DST","Perform a random effects (D)irectional (E)volution on (P)rotein (S)equences test to identify sites which evolve directionally towards a given residue [MPI enabled].","DirectionalREL.bf";
 "MEDS","Test for Episodic Directional Selection on a set of labeled branches","MEDS.bf";
@@ -117,10 +115,6 @@
 "SPL","Plot genetic distances (similarity) of one sequence against all others in an alignment, using a sliding window. Optionally, determine NJ-based clustering and bootstrap support in every window. This is a HyPhy adaptation of the excellent (but Windows only tool) SimPlot (and/or VarPlot) written by Stuart Ray (http://sray.med.som.jhmi.edu/SCRoftware/simplot/)","SimilarityPlot.bf";
 
 "","Test for selection in presence of recombination.","!Selection/Recombination";
-"FUBAR","Detect site-specific pervasive diversifying and purifying selection using the FUBAR (Fast Unbiased Bayesian AppRoximate) method on a multiple partition data set, e.g. produced by GARD.","FUBAR.bf";
-"MEME","Detect site-specific episodic diversifying selection using MEME on a multiple partition data set, e.g. produced by GARD.","MEME_mf.bf";
-"SLAC/FEL","Detect site-specific diversifying/purifying selection using SLAC or FEL on a multiple partition data set, e.g. produced by GARD.","QuickSelectionDetectionMF.bf";
-"REL","Detect site-specific selection using REL on a multiple partition data set, e.g. produced by GARD.","dNdSRateAnalysis_MF.bf";
 "PARRIS","A PARtitioning approach for Robust Inference of Selection (written by K. Scheffler)","PARRIS.bf";
 
 "","Perform relative rate tests.","!Relative Rate";

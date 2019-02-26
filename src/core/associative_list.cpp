@@ -387,6 +387,11 @@ void _AssociativeList::DeleteByKey (HBLObjectRef p) {
     }
 }
 
+//_____________________________________________________________________________________________
+void _AssociativeList::DeleteByKey (_String const& key) {
+    avl.Delete (&key,true);
+}
+
 
 //_____________________________________________________________________________________________
 void _AssociativeList::MStore (HBLObjectRef p, HBLObjectRef inObject, bool repl, long opCode) {

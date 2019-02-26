@@ -110,7 +110,8 @@ public:
     HBLObjectRef           GetByKeyException        (_String const&, long) const;
     HBLObjectRef           GetByKey        (_String const&) const;
     HBLObjectRef           GetByKey        (long, long) const;
-    void                DeleteByKey     (HBLObjectRef);
+    void                   DeleteByKey     (HBLObjectRef);
+    void                   DeleteByKey     (_String const&);
     HBLObjectRef           MCoord          (HBLObjectRef);
     void                MStore          (HBLObjectRef, HBLObjectRef, bool = true, long = HY_OP_CODE_NONE);
     // SLKP 20100811: see the comment for _Matrix::MStore

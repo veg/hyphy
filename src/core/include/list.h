@@ -136,6 +136,19 @@ class _List:public _SimpleList {
             mapper ( ((BaseRef*)(lData))[i], i );
           }
         }
+    
+        template <typename MAPPER> const _List Map (MAPPER mapper, long startAt = 0, long endAt = -1L) const {
+            _List result;
+            if (endAt < 0) {
+                endAt = lLength;
+            } else if (endAt > lLength) {
+                endAt = lLength;
+            }
+            for (unsigned long i = startAt; i<endAt; i++) {
+                result < mapper ( ((BaseRef*)(lData))[i], i );
+            }
+            return result;
+        }
 
         /**
         * Append operator

@@ -210,26 +210,26 @@ void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
 
 //____________________________________________________________________________________
 
-_String ReturnDialogInput(bool dispPath) {
-  
-  bool do_markdown     = hy_env :: EnvVariableTrue(hy_env :: produce_markdown_output);
-
+_String const ReturnDialogInput(bool dispPath, _String const * rel_path) {
+    bool do_markdown     = hy_env :: EnvVariableTrue(hy_env :: produce_markdown_output);
     NLToConsole ();
 
     if (do_markdown) {
       BufferToConsole("\n>");
     }
-
     StringToConsole (dialogPrompt);
-
     if (dispPath) {
       BufferToConsole (" (`");
-      if (PeekFilePath()) {
-            StringToConsole(*PeekFilePath());
+        if (rel_path) {
+            StringToConsole (*rel_path);
         } else {
-            StringToConsole (hy_base_directory);
+              if (PeekFilePath()) {
+                    StringToConsole(*PeekFilePath());
+                } else {
+                    StringToConsole (hy_base_directory);
+                }
         }
-      BufferToConsole ("`)");
+        BufferToConsole ("`)");
     }
     BufferToConsole (" ");
     return StringFromConsole();
@@ -238,36 +238,31 @@ _String ReturnDialogInput(bool dispPath) {
 
 //____________________________________________________________________________________
 
-_String ReturnFileDialogInput(void) {
-    if (currentExecutionList && currentExecutionList->has_stdin_redirect()) {
-        _String dialog_string = (currentExecutionList->FetchFromStdinRedirect());
-        if (dialog_string.nonempty()) {
-            return dialog_string;
+_String const ReturnFileDialogInput(_String const * rel_path) {
+    if (currentExecutionList && (currentExecutionList->has_stdin_redirect() || currentExecutionList->has_keyword_arguments())) {
+        try {
+            _String dialog_string (currentExecutionList->FetchFromStdinRedirect());
+            if (dialog_string.nonempty()) {
+                return dialog_string;
+            }
+        } catch (_String const e) {
+            if (e != kNoKWMatch) {
+                HandleApplicationError (e);
+                return kEmptyString;
+            }
         }
     }
 
-    _String resolvedFilePath;
-
-#ifdef __HEADLESS__
-    WarnError ("Unhandled standard input call in headless HYPHY. Only redirected standard input (via ExecuteAFile) is allowed");
-    return empty;
-#endif
-
-
-    _String file_path = ReturnDialogInput(true);
-
-  if (file_path.empty()) {
-        terminate_execution = true;
-    }
-
+    _String file_path = ReturnDialogInput(true, rel_path);
+    terminate_execution = file_path.empty();
     return file_path;
 }
 
 
 //____________________________________________________________________________________
 
-_String WriteFileDialogInput(void) {
-  return ReturnFileDialogInput();
+_String const WriteFileDialogInput(_String const * rel_path) {
+  return ReturnFileDialogInput(rel_path);
 }
 
 
