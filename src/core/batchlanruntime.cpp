@@ -2508,10 +2508,12 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
   _List dynamic_reference_manager;
 
   try {
-    bool has_redirected_input = false;
+    bool has_redirected_input = false,
+         has_user_kwargs      = false;
 
-    _List      _aux_argument_list;
-    _AVLListXL argument_list (&_aux_argument_list);
+    _List               _aux_argument_list;
+    _AVLListXL          argument_list (&_aux_argument_list);
+    _AssociativeList    * user_kwargs = nil;
 
 
     if (do_load_from_file) {
@@ -2604,22 +2606,33 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
 
       if (input_arguments) {
 
-        has_redirected_input = true;
+         
 
         _List        *keys = input_arguments->GetKeys();
+        dynamic_reference_manager < keys;
         keys->ForEach ([&] (BaseRef item, unsigned long) -> void {
           _String * key = (_String*) item;
           if (key) {
-            _FString * payload = (_FString *)input_arguments->GetByKey (*key, STRING);
+            HBLObjectRef payload = input_arguments->GetByKey (*key, STRING | ASSOCIATIVE_LIST);
             if (!payload) {
-              DeleteObject (keys);
-              throw ((_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & key->Enquote()));
+              throw ((_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings or associative lists (for keyword arguments). The following key was not: ") & key->Enquote()));
             }
-            argument_list.Insert (new _String (*key), (long)new _String (payload->get_str()), false);
+            if (key->BeginsWith ("--") && key->length() > 2) {
+                if (!user_kwargs) {
+                     dynamic_reference_manager < (user_kwargs = new _AssociativeList);
+                }
+                user_kwargs->MStore(new _FString (key->Cut (2, kStringEnd), false), payload, true);
+                has_user_kwargs = true;
+            } else {
+                argument_list.Insert (new _String (*key), (long)new _String (((_FString*)payload)->get_str()), false);
+                if (payload->ObjectClass() != STRING) {
+                    throw ((_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & key->Enquote()));
+                }
+                has_redirected_input = true;
+          }
           }
         });
 
-        DeleteObject (keys);
 
 
         if (parameter_count() > 3UL) {
@@ -2672,15 +2685,20 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
            code.stdinRedirectAux = current_program.stdinRedirectAux;
         }
           
-        if (current_program.has_keyword_arguments()) {
-            code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
-            code.kwargs = stash_kw = current_program.kwargs;
-            if (stash_kw_tags) current_program.kwarg_tags->AddAReference();
-            if (stash_kw) current_program.kwargs->AddAReference();
-            code.currentKwarg = current_program.currentKwarg;
-            update_kw = true;
-
-        }
+          if (has_user_kwargs) {
+              code.SetKWArgs(user_kwargs);
+          } else {
+              if (current_program.has_keyword_arguments()) {
+              code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
+                  code.kwargs = stash_kw = current_program.kwargs;
+                  if (stash_kw_tags) current_program.kwarg_tags->AddAReference();
+                  if (stash_kw) current_program.kwargs->AddAReference();
+                  code.currentKwarg = current_program.currentKwarg;
+                  update_kw = true;
+              }
+          }
+          
+        
 
         if (!simpleParameters.empty() && code.TryToMakeSimple()) {
           ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)code.toStr()) );
