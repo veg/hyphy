@@ -15,6 +15,7 @@ fprintf(stdout,"\n",nreplicates," bootstrap replicates will be performed\n");
 
 SetDialogPrompt ("Please locate a partitioned NEXUS file:");
 DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
+fprintf (stdout, "error 5");
 DataSetFilter filteredData = CreateFilter (ds,1);
 fprintf (stdout, "\nLoaded a ", filteredData.species, " sequence alignment with ", filteredData.sites," sites\n");
 
@@ -60,6 +61,7 @@ globalLk	=	{ntree,1};
 /*GET LIKELIHOOD FOR TREES FOR ALL PARTITIONS AND CHOOSE THE BEST TREE*/
 for (part=0; part<partitionsFound; part=part+1)
 {
+  fprintf (stdout, "error 1");
   DataSetFilter dsf=CreateFilter (ds,1,DATA_FILE_PARTITION_MATRIX[1][part]);
   if (FREQUENCY_SENSITIVE) /*get the base frequency independently for each partition*/
   {
@@ -153,7 +155,8 @@ for (replicate=0;replicate<nreplicates;replicate=replicate+1)
 	lk2=0;
 	for (part=0; part<partitionsFound; part=part+1)
 	{
-		DataSetFilter dsf=CreateFilter (ds,1,DATA_FILE_PARTITION_MATRIX[1][part]);
+    fprintf (stdout, "error 2");
+		DataSetFilter dsf = CreateFilter (ds,1,DATA_FILE_PARTITION_MATRIX[1][part]);
 		if (FREQUENCY_SENSITIVE)
 		{
 			HarvestFrequencies (baseFreqs, dsf, 1,1,1);
@@ -166,7 +169,8 @@ for (replicate=0;replicate<nreplicates;replicate=replicate+1)
 
 		/*simulate constrained different partition*/
 		DataSet simData = SimulateDataSet(lf);
-		DataSetFilter simDataf=CreateFilter (simData,1);
+    fprintf (stdout, "error 3");
+		DataSetFilter simDataf = CreateFilter (simData,1);
 		if (FREQUENCY_SENSITIVE)
 		{
 			HarvestFrequencies (baseFreqs, simDataf, 1,1,1);
@@ -184,6 +188,7 @@ for (replicate=0;replicate<nreplicates;replicate=replicate+1)
 		for (i=0; i<ntree; i=i+1)
 		{
 			Tree uniqueTree=NEXUS_FILE_TREE_MATRIX[i][1];
+      fprintf (stdout, "error 4");
 		    DataSetFilter simDataf2=CreateFilter (simData,1);
 			LikelihoodFunction lfsim2 = (simDataf2,uniqueTree);
 			Optimize (mles,lfsim2);

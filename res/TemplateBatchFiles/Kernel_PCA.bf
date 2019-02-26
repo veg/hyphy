@@ -1,3 +1,4 @@
+/* Kernel Analaysis file are being deprecated */
 ExecuteAFile 			("Kernel_support.ibf");
 read_kernel_matrix 		(0);
 

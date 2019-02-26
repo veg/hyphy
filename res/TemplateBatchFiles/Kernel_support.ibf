@@ -1,3 +1,6 @@
+/* Kernel Analysis files are being deprecated */
+
+
 /*----------------------------------------------*/
 
 function diag (v)
@@ -54,18 +57,18 @@ function table (vec1, vec2)
 		for (_r = 0; _r < rd; _r = _r+1)
 		{
 			maxV = Max (maxV, Max(vec1[_r],vec2[_r]));
-		}	
+		}
 		tableOut = {maxV+1, maxV+1};
 		for (_r = 0; _r < rd; _r = _r+1)
 		{
 			tableOut[vec1[_r]][vec2[_r]] = tableOut[vec1[_r]][vec2[_r]] + 1;
-		}	
+		}
 		return tableOut;
 	}
 	else
 	{
 		return 0;
-	} 
+	}
 }
 
 /*-----------------------------------------------*/
@@ -75,7 +78,7 @@ function read_kernel_matrix (dummy)
 	SetDialogPrompt ("Please locate a .csv with the kernel matrix");
 	ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "Utility" + DIRECTORY_SEPARATOR + "ReadDelimitedFiles.bf");
 	kern_AVL = ReadCSVTable ("",2);
-	
+
 	kernel_matrix = kern_AVL[1];
 	names		  = kern_AVL[0];
 	points		  = Rows(kernel_matrix);
@@ -91,14 +94,14 @@ function matrix_to_kernel (distances)
 	points		   = Rows (distances);
 	norm_distances = distances-
 					 distances["_MATRIX_ELEMENT_VALUE_ * (_MATRIX_ELEMENT_ROW_ == _MATRIX_ELEMENT_COLUMN_)"];
-	
+
 	/* convert to a kernel matrix */
-	
+
 	sigma 		  = 1;
 	kernel_matrix = norm_distances["Exp (-(_MATRIX_ELEMENT_VALUE_^2)/(2*sigma))"];
-	
+
 	/* check for eigen negative eigenvalues */
-	
+
 	kernel_eig    = Eigensystem(kernel_matrix);
 	min_ev		  = 1e100;
 	for (k=0; k < points; k=k+1)
@@ -108,7 +111,7 @@ function matrix_to_kernel (distances)
 	if (min_ev < 0)
 	{
 		scaled_diag = {points, points};
-		
+
 		for (k=0; k < points; k=k+1)
 		{
 			scaled_diag[k][k] = (kernel_eig[0])[k] - min_ev;
@@ -126,9 +129,9 @@ function perform_kernel_PCA (kernel_matrix)
 	points = Rows (kernel_matrix);
 
 	one_matrix = {points,points} ["1/points__"];
-	K_hat 	   = kernel_matrix - one_matrix*kernel_matrix-kernel_matrix * one_matrix 
+	K_hat 	   = kernel_matrix - one_matrix*kernel_matrix-kernel_matrix * one_matrix
 							   + one_matrix*kernel_matrix*one_matrix;
-							   
+
 	for (r=0; r<points; r=r+1)
 	{
 		for (c=r+1; c<points; c=c+1)
@@ -138,7 +141,7 @@ function perform_kernel_PCA (kernel_matrix)
 			K_hat[c][r] = m;
 		}
 	}
-							   
+
 	pca  				   = Eigensystem (K_hat);
 	eval 				   = pca[0];
 	evect				   = pca[1];
@@ -150,28 +153,28 @@ function perform_kernel_PCA (kernel_matrix)
 		k=k+1;
 	}
 	components = k;
-		
+
 	/* normalize the eigenvectors */
 	normEV 		= {components, points};
 	normEigs	= {components, 1};
-	
+
 	evalSum = (((Transpose(eval))["1"])*eval)[0];
-	
+
 	for (k=0; k<components; k=k+1)
 	{
 		evk 		= (evect[-1][k])*(1/eval[k]);
-		normEigs[k] = eval[k]/evalSum; 
+		normEigs[k] = eval[k]/evalSum;
 		for (k2=0; k2<points; k2=k2+1)
 		{
 			normEV [k][k2] = evk[k2];
 		}
 	}
-	
+
 	kPCA_AVL = {};
 	kPCA_AVL ["E-Values"]  = normEigs;
 	kPCA_AVL ["E-Vectors"] = normEV;
 	kPCA_AVL ["Rotated"]   = Transpose(normEV*K_hat);
-	
+
 	return    kPCA_AVL;
-	
+
 }
