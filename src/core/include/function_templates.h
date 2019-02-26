@@ -268,10 +268,18 @@ unsigned long DrawFromDiscreteGenerator (FUNCTOR&& generator, unsigned long dime
 
 template <typename ARG_TYPE> void BatchDelete(ARG_TYPE first) { delete first; }
 
+template <typename ARG_TYPE> void BatchDeleteObject(ARG_TYPE first) { DeleteObject (first); }
+
 template <typename ARG_TYPE, typename... Args>
 void BatchDelete(ARG_TYPE first, const Args &... args) {
   delete first;
   BatchDelete(args...);
+}
+
+template <typename ARG_TYPE, typename... Args>
+void BatchDeleteObject(ARG_TYPE first, const Args &... args) {
+    DeleteObject (first);
+    BatchDeleteObject(args...);
 }
 
 template <typename ARG_TYPE>

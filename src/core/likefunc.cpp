@@ -618,7 +618,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
                         for (j=0L; j<tips.lLength; j++) {
                             _String *thisName = (_String*)tips(j);
                             long numeric_value = thisName->to_long();
-                            if (numeric_value<=tips.lLength && numeric_value >= 0L && _String(numeric_value).Equal(thisName)) {
+                            if (numeric_value<=tips.lLength && numeric_value >= 0L && _String(numeric_value) == *thisName) {
                                 tipMatches<<numeric_value;
                             } else {
                                 throw (j);
@@ -6473,7 +6473,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                 BufferToConsole (buf);
             }
 
-            if (fabs(X-XM) <= brentPrec) {
+            if (fabs(X-XM) <= brentPrec || outcome == 0) {
               break;
             }
 

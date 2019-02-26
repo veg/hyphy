@@ -1552,6 +1552,7 @@ void SetStatusLineUser(_String const);
 void StringToConsole(_String const &, void *extra = nil);
 void BufferToConsole(const char *, void *extra = nil);
 void NLToConsole(void *extra = nil);
+void ObjectToConsole(BaseRef, void *extra = nil);
 
 _String *StringFromConsole(void);
 

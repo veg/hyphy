@@ -56,12 +56,15 @@ const char hy_usage[] =
 "usage: HYPHYMP or HYPHYMPI [-h] "
 "[-c] "
 "[-d] "
+"[-i] "
 "[-p] "
 "[BASEPATH=directory path] "
 "[CPU=integer] "
 "[LIBPATH=library path] "
 "[USEPATH=library path] "
-"[path to hyphy batch file [analysis arguments]]\n";
+"[--keyword value ... ]"
+"[<analysis keyword> or <path to hyphy batch file> [--keyword value ... --keyword value] [positional arguments]"
+"\n";
 
 
 const char hy_help_message [] =
@@ -71,19 +74,32 @@ const char hy_help_message [] =
 "  -h                       show this help message and exit\n"
 "  -c                       calculator mode; causes HyPhy to drop into an expression evaluation until 'exit' is typed\n"
 "  -d                       debug mode; causes HyPhy to drop into an expression evaluation mode upon script error\n"
+"  -i                       interactive mode; causes HyPhy to always prompt the user for analysis options, even when defaults are available\n"
 "  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
 "                           upon analysis completion\n\n"
-"optional keyword arguments:\n"
+"optional global arguments:\n"
 "  BASEPATH=directory path  defines the base directory for all most path operations (default is pwd)\n"
 "  CPU=integer              if compiled with OpenMP multithreading support, requests this many threads; HyPhy could use fewer than this\n"
 "                           but never more; default is the number of CPU cores (as computed by OpenMP) on the system\n"
 "  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
 "                           or as configured during CMake installation\n"
 "  USEPATH=directory path   specifies the optional working and relative path directory (default is BASEPATH)\n\n"
-"optional positional arguments (must follow flags and keywords)\n"
+"optional keyword arguments\n"
 "  batch file to run        if specified, execute this file, otherwise drop into an interactive mode\n"
-"  analysis arguments       if batch file is present, all remaining positional arguments are interpreted as inputs to analysis prompts\n"
+"  analysis arguments       if batch file is present, all remaining positional arguments are interpreted as inputs to analysis prompts\n\n"
+"optional keyword arguments (can appear anywhere); will be consumed by the requested analysis\n"
+"  --keyword value          will be passed to the analysis (which uses KeywordArgument directives)\n"
+"                           multiple values for the same keywords are treated as an array of values for multiple selectors\n"
+"  --help                   query the analysis for its options\n"
+"\n"
+"usage examples:\n\n"
+"Select a standard analysis from the list : \n\tHYPHYMP -i \n"
+"Run a standard analysis with default options and one required user argument; \n\tHYPHYMP busted --alignment path/to/file\n"
+"Run a standard analysis with additional keyword arguments \n\tHYPHYMP busted --alignment path/to/file --srv No\n"
+"See whcih arguments are understood by a standard analysis \n\tHYPHYMP busted --help\n"
+"Run a custom analysis and pass it some arguments \n\tHYPHYMP path/to/hyphy.script argument1 'argument 2' \n"
 ;
+
 
 #ifdef _MINGW32_MEGA_
   #include <Windows.h>
@@ -128,19 +144,25 @@ _List   availableTemplateFiles,
         availablePostProcessors,
         loggedUserInputs;
 
+_Trie   availableTemplateFilesAbbreviations;
+
 _String baseArgDir,
-        libArgDir,
-        loggedFileEntry ("__USER_ENTRY__");
+        libArgDir;
+
+const   _String kLoggedFileEntry ("__USER_ENTRY__"),
+                kHelpKeyword     ("--help");
 
 void    ReadInTemplateFiles         (void);
 long    DisplayListOfChoices        (void);
 void    ProcessConfigStr            (_String const&);
+void    ProcessKWStr                (_String const& arg, _String const& arg2, _AssociativeList& kwargs);
 void    ReadInPostFiles             (void);
 long    DisplayListOfPostChoices    (void);
 _String getLibraryPath              (void);
 
 
-long    mainArgCount = 0;
+
+
 
 bool    usePostProcessors = false,
         calculatorMode    = false,
@@ -265,9 +287,7 @@ void    ReadInTemplateFiles(void) {
     fclose (modelList);
     
     if (theData.length()) {
-      
         _List extracted_files;
-      
         _ElementaryCommand::ExtractConditions(theData,0,extracted_files);
         extracted_files.ForEach([] (BaseRef item, unsigned long) -> void {
             _String* thisString = (_String*)item;
@@ -276,6 +296,15 @@ void    ReadInTemplateFiles(void) {
             if (thisFile->countitems() == 3L) {
                 thisFile->ForEach ([] (BaseRef item, unsigned long) -> void { ((_String*)item)->StripQuotes();});
                 availableTemplateFiles.AppendNewInstance(thisFile);
+                bool did_insert = false;
+                if (((_String*)thisFile->GetItem(0))->nonempty()) {
+                    _String to_insert (((_String*)thisFile->GetItem(0))->ChangeCase(kStringLowerCase));
+                    availableTemplateFilesAbbreviations.InsertExtended(to_insert, availableTemplateFiles.countitems()-1, false, &did_insert);
+                    if (!did_insert) {
+                        HandleApplicationError(_String("Duplicate analysis keyword (not case sensitive) in ") & _String ((_String*)thisFile->toStr()));
+                        return;
+                    }
+                }
             } else {
               DeleteObject (thisFile);
             }
@@ -287,7 +316,7 @@ void    ReadInTemplateFiles(void) {
 
 //__________________________________________________________________________________
 void    ReadInPostFiles(void) {
-    static _String separator ("SEPARATOR");
+    static _String kSeparator ("SEPARATOR");
     //if (!likeFuncList.lLength)
     //  return;
  
@@ -318,7 +347,7 @@ void    ReadInPostFiles(void) {
             for (long j = 0; j<3; j++) {
                 ((_String*)thisFile(j))->StripQuotes();
             }
-            if ( *(_String*)thisFile(0)!= separator) {
+            if ( *(_String*)thisFile(0) != kSeparator) {
                 fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & *(_String*)thisFile(1);
                 FILE* dummyFile = fopen (fileIndex,"r");
                 if (!dummyFile) {
@@ -351,9 +380,8 @@ void    ReadInPostFiles(void) {
 
 //__________________________________________________________________________________
 long    DisplayListOfChoices (void) {
-    ReadInTemplateFiles();
+    
   
- 
     if (!availableTemplateFiles.lLength) {
         return -1;
     }
@@ -526,6 +554,13 @@ void    ProcessConfigStr (_String const & conf) {
               hy_drop_into_debug_mode = true;
               break;
           }
+                
+         case 'i' :
+         case 'I' : {
+             ignore_kw_defaults = true;
+             break;
+         }
+                
           case 'u':
           case 'U': {
               updateMode = true;
@@ -545,6 +580,29 @@ void    ProcessConfigStr (_String const & conf) {
           default: {
               ReportWarning (_String ("Option" ) & _String (c).Enquote() & " is not valid command line option and will be ignored");
           }
+        }
+    }
+}
+
+//__________________________________________________________________________________
+
+void    ProcessKWStr (_String const & conf, _String const & conf2, _AssociativeList & kwargs) {
+    if (conf.length() == 2) {
+        HandleApplicationError ("Cannot have an empty (--) keyword as a command line argument");
+    } else {
+        // check to see if the kw already exists and append subsequent ones
+        _String key = conf.Cut (2, kStringEnd);
+        HBLObjectRef existing_value = kwargs.GetByKey(key);
+        if (existing_value) {
+            if (existing_value->ObjectClass() == ASSOCIATIVE_LIST) {
+                (*(_AssociativeList*)existing_value) < _associative_list_key_value {nil, new _FString (conf2)};
+            } else {
+                _AssociativeList * replacement_list = new _AssociativeList;
+                (*replacement_list) << _associative_list_key_value {nil, existing_value} < _associative_list_key_value {nil, new _FString (conf2)};
+                kwargs.MStore(key, replacement_list, false);
+            }
+        } else {
+            kwargs.MStore(key, new _FString (conf2), false);
         }
     }
 }
@@ -591,9 +649,7 @@ void    SetStatusLineUser   (_String const s) {
 //__________________________________________________________________________________
 
 #ifndef __UNITTEST__
-int main (int argc, char* argv[])
-{
-    mainArgCount = argc - 1;
+int main (int argc, char* argv[]) {
 
 #ifdef _COMPARATIVE_LF_DEBUG_DUMP
     FILE * comparative_lf_debug_matrix_content_file = doFileOpen (_COMPARATIVE_LF_DEBUG_DUMP, "w");
@@ -633,6 +689,7 @@ int main (int argc, char* argv[])
   
     char    curWd[4096],
             dirSlash = get_platform_directory_char();
+    
     getcwd (curWd,4096);
   
     _String baseDir (curWd);
@@ -658,89 +715,92 @@ int main (int argc, char* argv[])
     hy_base_directory = baseDir;
     baseArgDir    = hy_base_directory;
     
+    bool          run_help_message = false;
+    
 #ifdef _OPENMP
     system_CPU_count = omp_get_max_threads();
 #endif
 
-#ifdef _MINGW32_MEGA_
-    {
-        char pid[16];
-        snprintf (pid,16,"%u", GetCurrentProcessId());
-
-        _String pipeName = _String("\\\\.\\pipe\\MEGAPipe") & pid;
-        printf ("Pipe name = %s\n", pipeName.sData);
-        if ((_HY_MEGA_Pipe = CreateFile(pipeName.sData, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL)) == INVALID_HANDLE_VALUE) {
-            char* lpMsgBuf;
-            FormatMessage(
-                FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                FORMAT_MESSAGE_FROM_SYSTEM |
-                FORMAT_MESSAGE_IGNORE_INSERTS,
-                NULL,
-                GetLastError(),
-                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                (LPTSTR) &lpMsgBuf,
-                0, NULL );
-            FlagError (_String("Failed to create a pipe named '") & pipeName & "' to send data from HyPhy to MEGA. Error: "&lpMsgBuf);
-        }
-    }
-#endif
-
     _List positional_arguments;
+    _AssociativeList kwargs;
   
-    {
-    
-      const _String path_consts [] = {"BASEPATH=", "LIBPATH=", "USEPATH=", "CPU="};
-      
-      for (unsigned long i=1UL; i<argc; i++) {
-          _String thisArg (argv[i]);
-        
-          if (thisArg.get_char(0)=='-') { // -[LETTER] arguments
-              ProcessConfigStr (thisArg);
-          } else if (thisArg.BeginsWith (path_consts[0])) { // BASEPATH
-              baseArgDir = thisArg.Cut(path_consts[0].length(),kStringEnd);
-              if (baseArgDir.length()) {
-                  if (baseArgDir (-1L) != dirSlash) {
-                      baseArgDir = baseArgDir & dirSlash;
-                  }
-                  hy_base_directory = baseArgDir;
-                  pathNames.Delete    (0);
-                  pathNames&&         &hy_base_directory;
-             }
-          } else if (thisArg.BeginsWith (path_consts[1])) { // LIBPATH
-              libArgDir = thisArg.Cut(path_consts[1].length(),kStringEnd);
-              if (libArgDir.length()) {
-                  if (libArgDir (-1L) != dirSlash) {
-                      libArgDir = libArgDir & dirSlash;
-                  }
-                  hy_lib_directory = libArgDir;
-                  pathNames.Delete    (0);
-                  pathNames&&         &hy_lib_directory;
-             }
-          } else if (thisArg.BeginsWith (path_consts[2])) {
-              baseDir                      = thisArg.Cut(path_consts[2].length(),kStringEnd);
-              hy_error_log_name            = baseDir & hy_error_log_name;
-              hy_messages_log_name         = baseDir & hy_messages_log_name;
-              pathNames.Delete    (0);
-              pathNames&&         &baseDir;
-          } else if (thisArg.BeginsWith (path_consts[3])) {
-              system_CPU_count  = Maximum (1L, thisArg.Cut(path_consts[3].length(),kStringEnd).to_long());
-          } else
-          //argFile = thisArg;
-          positional_arguments && &thisArg;
-      }
-    }
+    const _String path_consts [] = {"BASEPATH=", "LIBPATH=", "USEPATH=", "CPU="};
 
+    for (unsigned long i=1UL; i<argc; i++) {
+      _String thisArg (argv[i]);
+
+      if (thisArg.get_char(0)=='-') { // -[LETTER] arguments
+          if (thisArg.get_char (1) == '-') {
+              if (thisArg == kHelpKeyword) {
+                  run_help_message = true;
+                  continue;
+              }
+              if (i + 1 < argc) {
+                  _String payload (argv[++i]);
+                  ProcessKWStr (thisArg, payload, kwargs);
+              } else {
+                  HandleApplicationError ("A keyword (--) command line argument must be followed by a value");
+              }
+          } else {
+              ProcessConfigStr (thisArg);
+          }
+      } else if (thisArg.BeginsWith (path_consts[0])) { // BASEPATH
+          baseArgDir = thisArg.Cut(path_consts[0].length(),kStringEnd);
+          if (baseArgDir.length()) {
+              if (baseArgDir (-1L) != dirSlash) {
+                  baseArgDir = baseArgDir & dirSlash;
+              }
+              hy_base_directory = baseArgDir;
+              pathNames.Delete    (0);
+              pathNames&&         &hy_base_directory;
+         }
+      } else if (thisArg.BeginsWith (path_consts[1])) { // LIBPATH
+          libArgDir = thisArg.Cut(path_consts[1].length(),kStringEnd);
+          if (libArgDir.length()) {
+              if (libArgDir (-1L) != dirSlash) {
+                  libArgDir = libArgDir & dirSlash;
+              }
+              hy_lib_directory = libArgDir;
+              pathNames.Delete    (0);
+              pathNames&&         &hy_lib_directory;
+         }
+      } else if (thisArg.BeginsWith (path_consts[2])) {
+          baseDir                      = thisArg.Cut(path_consts[2].length(),kStringEnd);
+          hy_error_log_name            = baseDir & hy_error_log_name;
+          hy_messages_log_name         = baseDir & hy_messages_log_name;
+          pathNames.Delete    (0);
+          pathNames&&         &baseDir;
+      } else if (thisArg.BeginsWith (path_consts[3])) {
+          system_CPU_count  = Maximum (1L, thisArg.Cut(path_consts[3].length(),kStringEnd).to_long());
+      } else
+      //argFile = thisArg;
+      positional_arguments && &thisArg;
+    }
+    
     GlobalStartup();
+    ReadInTemplateFiles();
+    //ObjectToConsole(&availableTemplateFilesAbbreviations);
     
     if (positional_arguments.Count()) {
         argFile = *(_String*) positional_arguments.GetItem(0UL);
+        _String locase (argFile.ChangeCase(kStringLowerCase));
+        long is_shortcut = availableTemplateFilesAbbreviations.FindKey(locase);
+        
+        if (is_shortcut != kNotFound) {
+            argFile = baseArgDir & hy_standard_library_directory & dirSlash & *(_String*) availableTemplateFiles.GetItem(availableTemplateFilesAbbreviations.GetValue(is_shortcut), 2);
+        }
+        // check to see if this is an analysis key
     }
   
-    
-
     _ExecutionList ex;
-  
-  
+    
+#ifdef __HYPHYMPI__
+    if (hy_mpi_node_rank == 0L) 
+#endif
+    ex.SetKWArgs (&kwargs);
+    
+    
+    
     if (calculatorMode) {
         if (argFile.length()) {
           PushFilePath  (argFile);
@@ -796,7 +856,7 @@ int main (int argc, char* argv[])
                 dialogPrompt = "Batch file to run:";
                 _String fStr (ReturnDialogInput (true));
                 if (logInputMode) {
-                    _String tts = loggedFileEntry&fStr;
+                    _String tts = kLoggedFileEntry&fStr;
                     loggedUserInputs && & tts;
                 }
 
@@ -823,7 +883,7 @@ int main (int argc, char* argv[])
             if (positional_arguments.Count () > 1) {
                 ex.stdinRedirectAux = new _List;
                 ex.stdinRedirect = new _AVLListXL (ex.stdinRedirectAux);
-                for (unsigned long i = 1UL; i < positional_arguments.Count (); i++) {
+                for (unsigned long i = 1UL; i < positional_arguments.countitems (); i++) {
                     char buf[256];
                     snprintf(buf, 255, "%012ld", i);
                     ex.stdinRedirect->Insert (new _String(buf), (long)positional_arguments.GetItem (i), true);
@@ -846,7 +906,22 @@ int main (int argc, char* argv[])
             ReadBatchFile (argFile,ex);
         }
 
-        
+        if (run_help_message) {
+#ifdef __HYPHYMPI__
+            if (hy_mpi_node_rank == 0L) {
+#endif
+            BufferToConsole("\nAnalysis options description");
+            BufferToConsole("\n----------------------------\n");
+            StringToConsole(ex.GenerateHelpMessage());
+            NLToConsole();
+#ifdef __HYPHYMPI__
+            }
+#endif
+            PurgeAll                    (true);
+            GlobalShutdown              ();
+            return 0;
+        }
+
         ex.Execute();
 
         if (usePostProcessors && (!updateMode)) {
