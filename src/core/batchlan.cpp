@@ -941,6 +941,9 @@ void _ExecutionList::Init (_String* namespaceID) {
     stdinRedirectAux    = nil;
     doProfile           = 0;
     nameSpacePrefix     = nil;
+    kwargs              = nil;
+    kwarg_tags          = nil;
+    currentKwarg        = 0;
 
     if (currentExecutionList) {
         errorHandlingMode  = currentExecutionList->errorHandlingMode;
@@ -957,6 +960,14 @@ void _ExecutionList::Init (_String* namespaceID) {
 }
 
 //____________________________________________________________________________________
+void _ExecutionList::SetKWArgs(_AssociativeList* kwarg_list) {
+    DeleteAndZeroObject(kwargs);
+    if (kwarg_list && kwarg_list->countitems()) {
+        kwargs = (_AssociativeList*)kwarg_list->makeDynamic();
+    }
+}
+
+//____________________________________________________________________________________
 void _ExecutionList::ClearExecutionList (void) {
     if (cli) {
         delete [] cli->values;
@@ -965,14 +976,12 @@ void _ExecutionList::ClearExecutionList (void) {
         cli = nil;
     }
     
-    if (profileCounter) {
-        DeleteObject (profileCounter);
-        profileCounter = nil;
-    }
-    
-    DeleteObject (stdinRedirect);
-    DeleteObject (stdinRedirectAux);
-    DeleteObject (nameSpacePrefix);
+    DeleteAndZeroObject (profileCounter);
+    DeleteAndZeroObject (stdinRedirect);
+    DeleteAndZeroObject (stdinRedirectAux);
+    DeleteAndZeroObject (nameSpacePrefix);
+    DeleteAndZeroObject (kwargs);
+    DeleteAndZeroObject (kwarg_tags);
     
     ResetFormulae();
     DeleteAndZeroObject (result);
@@ -1048,23 +1057,86 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
 }
 
 //____________________________________________________________________________________
-_String*    _ExecutionList::FetchFromStdinRedirect (void)
+_String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, bool handle_multi_choice) {
 // grab a string from the front of the input queue
 // complain if nothing is left
-{
-    if (!stdinRedirect) {
-        HandleApplicationError ("No input buffer was given for a redirected standard input read.");
+    if (! (has_stdin_redirect() || has_keyword_arguments())) {
+        throw _String ("No input buffer / keyword arguments was given for a redirected standard input read.");
         return new _String;
     }
-    long d = stdinRedirect->First();
-    if (d<0) {
-        HandleApplicationError ("Ran out of input in buffer during a redirected standard input read.");
-        return new _String;
+    
+    /**
+        if keyword arguments are present, try them first
+    */
+    
+    HBLObjectRef user_argument = nil;
+    _List        ref_manager;
+    
+    try {
+        if (has_keyword_arguments()) {
+            if (kwarg_tags && kwarg_tags->countitems() > currentKwarg) {
+                _List* current_tag = (_List*)kwarg_tags->GetItem(currentKwarg++);
+                
+                
+                // check to see if we need to match with the current dialog prompt
+                if (current_tag -> countitems() > 3UL) {
+                    _String check_against = dialog_tag ? *dialog_tag : dialogPrompt;
+                    
+                    if (check_against != *(_String*)current_tag->GetItem(3)) {
+                        throw (1L);
+                    }
+                }
+     
+                if (kwargs) {
+                    user_argument = kwargs->GetByKey(*(_String*)current_tag->GetItem(0));
+                }
+
+                if (user_argument) { // user argument provided
+                    user_argument -> AddAReference();
+                    kwargs->DeleteByKey(*(_String*)current_tag->GetItem(0));
+                    ref_manager < user_argument;
+                } else { // see if there are defaults
+                    if (current_tag->countitems() > 2 && ! ignore_kw_defaults) {
+                        _String * default_value = (_String*)current_tag->GetItem(2);
+                        if (default_value) {
+                            user_argument = new _FString (*(_String*)current_tag->GetItem(2));
+                            ref_manager < user_argument;
+                        }
+                    }
+                }
+                
+                //printf ("%ld => %s\n", currentKwarg - 1, user_argument ? _String ((_String*)user_argument->toStr()).get_str() : "''");
+            }
+        }
+    } catch (long) {
+        return FetchFromStdinRedirect (dialog_tag);
     }
-    _String *sendBack = (_String*)stdinRedirect->GetXtra (d);
-    sendBack->AddAReference();
-    stdinRedirect->Delete ((*(_List*)stdinRedirect->dataList)(d),true);
-    return sendBack;
+    
+    if (user_argument) {
+        if (user_argument->ObjectClass() == STRING) {
+            return new _String (((_FString*)user_argument)->get_str());
+        } else {
+            if (handle_multi_choice) {
+                user_argument->AddAReference();
+                throw (user_argument);
+            } else {
+                throw _String ("Multi-choice keyword arguement not supported in this context");
+            }
+        }
+    }
+    
+    if (has_stdin_redirect()) {
+        long d = stdinRedirect->First();
+        if (d<0) {
+            throw _String ("Ran out of input in buffer during a redirected standard input read.");
+        }
+        _String *sendBack = (_String*)stdinRedirect->GetXtra (d);
+        sendBack->AddAReference();
+        stdinRedirect->Delete ((*(_List*)stdinRedirect->dataList)(d),true);
+        return sendBack;
+    }
+    
+    throw kNoKWMatch;
 }
 
 //____________________________________________________________________________________
@@ -1090,6 +1162,41 @@ void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool rec
 
 //____________________________________________________________________________________
 
+_StringBuffer const       _ExecutionList::GenerateHelpMessage(void)  const {
+    _StringBuffer help_message;
+    
+    auto simplify_string = [] (_String const * s) -> const _String {
+        _String sc (*s);
+        if (sc.IsALiteralArgument(true)) {
+            return sc;
+        }
+        return sc & " [computed at run time]";
+    };
+
+    ForEach ([&help_message, simplify_string] (BaseRef command, unsigned long index) -> void {
+        _ElementaryCommand * this_command = (_ElementaryCommand * )command;
+        if (this_command->code == HY_HBL_COMMAND_KEYWORD_ARGUMENT) {
+            _String * def_value = this_command->GetIthParameter(2L, false);
+            help_message << simplify_string(this_command->GetIthParameter(0L)) << (def_value == nil ? " [required]" : "") << '\n'
+                         << '\t' << simplify_string(this_command->GetIthParameter(1L)) << '\n';
+            
+            if (def_value) {
+                help_message << "\tdefaut value: " << simplify_string(def_value) << '\n';
+            }
+            help_message << '\n';
+        }
+        
+    });
+    
+    if (help_message.empty()) {
+        help_message << "No annotated keyword arguments are available for this analysis\n";
+    }
+    
+    return help_message;
+}
+
+//____________________________________________________________________________________
+
 HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
 
   //setParameter(_hyLastExecutionError, new _MathObject, nil, false);
@@ -1100,14 +1207,27 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
     executionStack       << this;
     
     _AVLListXL * stash1 = nil;
-    _List* stash2 = nil; // recursion
-    
-    if (parent && stdinRedirect == nil) {
-        stash1 = stdinRedirect = parent->stdinRedirect;
-        stash2 = stdinRedirectAux = parent->stdinRedirectAux;
-        if (stash1) {
-            stash1->AddAReference();
-            stash2->AddAReference();
+    _List* stash2 = nil,
+         * stash_kw_tags = nil;// recursion
+    _AssociativeList * stash_kw = nil;
+      
+    currentKwarg         = stashCEL ? stashCEL->currentKwarg : 0;
+
+    if (parent && (stdinRedirect == nil || kwargs == nil)) {
+        if (!stdinRedirect) {
+            stash1 = stdinRedirect = parent->stdinRedirect;
+            stash2 = stdinRedirectAux = parent->stdinRedirectAux;
+            if (stash1) {
+                stash1->AddAReference();
+                stash2->AddAReference();
+            }
+        }
+        if (!kwargs) {
+            stash_kw_tags = kwarg_tags = parent->kwarg_tags;
+            stash_kw = kwargs = parent->kwargs;
+            if (stash_kw_tags) stash_kw_tags->AddAReference();
+            if (stash_kw) stash_kw->AddAReference();
+            currentKwarg = parent->currentKwarg;
         }
     } else {
       parent = nil;
@@ -1154,6 +1274,10 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
     currentCommand = callPoints.lData[callPoints.lLength-1];
     callPoints.Delete (callPoints.lLength-1);
     currentExecutionList = stashCEL;
+      
+    if (currentExecutionList) {
+      currentExecutionList->currentKwarg = currentKwarg;
+    }
 
     if (stashed) {
         hy_env::EnvVariableSet(hy_env::path_to_current_bf, stashed, false);
@@ -1167,8 +1291,10 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
     if (parent) {
       stdinRedirect = nil;
       stdinRedirectAux = nil;
-      DeleteObject(stash1);
-      DeleteObject(stash2);
+      kwargs = nil;
+      kwarg_tags = nil;
+      parent->currentKwarg = currentKwarg;
+      BatchDeleteObject (stash1, stash2, stash_kw, stash_kw_tags);
     }
   } catch (const _String err) {
     HandleApplicationError(err);
@@ -1675,6 +1801,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               case HY_HBL_COMMAND_INTEGRATE:
               case HY_HBL_COMMAND_ALIGN_SEQUENCES:
               case HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX:
+              case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
               case HY_HBL_COMMAND_DO_SQL:
               {
                     _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
@@ -1994,6 +2121,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_DO_SQL:
         case HY_HBL_COMMAND_CHOICE_LIST:
         case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
+        case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
         case HY_HBL_COMMAND_SIMULATE_DATA_SET: {
             (*string_form) << procedure (code);
         }
@@ -2051,7 +2179,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
         case HY_HBL_COMMAND_FSCANF: // fscanf
         case HY_HBL_COMMAND_SSCANF: { // sscanf
-            (*string_form) << (code == HY_HBL_COMMAND_FSCANF ? "fscanf" : "sscanf")
+            (*string_form) << (code == HY_HBL_COMMAND_FSCANF ? "fscanf(" : "sscanf(")
                         << parameter_to_string (0)
                         << ",\"";
 
@@ -2062,7 +2190,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
                 if (theFormat < 0) {
                     (*string_form) << "REWIND";
                 } else {
-                    (*string_form) << ((_String*)_ElementaryCommand::fscanf_allowed_formats.GetItem (theFormat))->Enquote('(',')');
+                    (*string_form) << *((_String*)_ElementaryCommand::fscanf_allowed_formats.GetItem (theFormat));
                 }
                 if (p) {
                     (*string_form) << ", ";
@@ -2918,6 +3046,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
 
 
+
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
@@ -3261,6 +3390,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         HandleGetString (chain);
         break;
 
+    case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
+        HandleKeywordArgument (chain);
+        break;
+          
     case HY_HBL_COMMAND_SET_PARAMETER:
         return HandleSetParameter(chain);
 
@@ -3937,18 +4070,14 @@ bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionL
 //____________________________________________________________________________________
 
 bool    _ElementaryCommand::ProcessInclude      (_String&source, _ExecutionList&target) {
-
     _String         fileName (source, blInclude.length (),(long)source.length () - 2L);
-  
     ProcessFileName(fileName, false,false,(hyPointer)target.nameSpacePrefix);
     if (terminate_execution) {
         return false;
     }
-
     PushFilePath  (fileName);
     ReadBatchFile (fileName, target);
     PopFilePath   ();
-
     return true;
 }
 

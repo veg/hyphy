@@ -87,18 +87,14 @@ public:
     _ExecutionList (_String&, _String* = nil, bool = false, bool* = nil);
     void Init (_String* = nil);
 
-    virtual
-    ~_ExecutionList (void);
+    virtual     ~_ExecutionList (void);
 
-    virtual
-    BaseRef     makeDynamic (void) const;
-
-    virtual
-    BaseRef     toStr (unsigned long = 0UL);
-
-    virtual
-    void        Duplicate                   (BaseRefConst);
+    virtual     BaseRef     makeDynamic (void) const;
+    virtual     BaseRef     toStr (unsigned long = 0UL);
+    virtual     void        Duplicate       (BaseRefConst);
     bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
+    
+    void        SetKWArgs   (_AssociativeList*);
 
     HBLObjectRef   Execute                     (_ExecutionList* parent = nil);
         // if parent is specified, copy stdin redirects from it
@@ -121,8 +117,10 @@ public:
     _String     TrimNameSpaceFromID         (_String&);
   
     bool        has_stdin_redirect         (void) const {return stdinRedirect != nil;}
+    bool        has_keyword_arguments      (void) const {return kwargs && kwargs -> countitems() || kwarg_tags && kwarg_tags->countitems();}
   
-    _String*    FetchFromStdinRedirect      (void);
+    _String*    FetchFromStdinRedirect     (_String const * dialog_tag = nil, bool handle_multi_choice = false);
+    
     _ElementaryCommand* FetchLastCommand (void) {
         if (currentCommand - 1 < lLength && currentCommand > 0) {
             return (_ElementaryCommand*)(*this)(currentCommand - 1);
@@ -136,6 +134,8 @@ public:
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
     }
+    
+    _StringBuffer const GenerateHelpMessage         (void) const;
     
     bool        IsErrorState    (void)     {
             return errorState;
@@ -171,23 +171,33 @@ public:
     // data fields
     // _____________________________________________________________
 
-    long                            currentCommand;
+    long                            currentCommand,
+                                    currentKwarg;
+    
     char                            doProfile;
     int                             errorHandlingMode; // how does this execution list handle errors
     bool                            errorState;
 
-    HBLObjectRef                       result;
+    HBLObjectRef                    result;
 
     _VariableContainer*             nameSpacePrefix;
+    _AssociativeList*               kwargs;
 
     _AVLListXL                      *stdinRedirect;
-
-    _List                           *stdinRedirectAux;
+    _List                           *stdinRedirectAux,
+                                    *kwarg_tags;
+    
+    /** SLKP 20190223
+        kwarg_tags, if set, stores the ordered list of tagged inputs, which are created by
+        invoking the
+            KeywordArgument ("keyword", "description", "default");
+        procedure. They are inherited down the call chain, like stdinRedirect and stdinRedirectAux
+     */
 
     _String                         sourceFile,
                                     sourceText,
                                     enclosingNamespace;
-
+    
     _SimpleList                     callPoints,
                                     lastif;
 
@@ -259,6 +269,7 @@ public:
     bool      HandleMolecularClock                  (_ExecutionList&);
     bool      HandleGetURL                          (_ExecutionList&);
     bool      HandleGetString                       (_ExecutionList&);
+    bool      HandleKeywordArgument                 (_ExecutionList&);
     bool      HandleExport                          (_ExecutionList&);
     bool      HandleDifferentiate                   (_ExecutionList&);
     bool      HandleFindRootOrIntegrate             (_ExecutionList&, bool do_integrate = false);
@@ -634,11 +645,10 @@ void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, boo
     for variables to permit the use of explicit (formula-based) model definitions
  */
 
-void    ReadBatchFile                (_String&, _ExecutionList&);
-_String ReturnDialogInput            (bool dispPath = false);
-_String ReturnFileDialogInput        (void);
-_String*ProcessCommandArgument       (_String*);
-_String WriteFileDialogInput         (void);
+void    ReadBatchFile                      (_String&, _ExecutionList&);
+_String const ReturnDialogInput            (bool dispPath = false, _String const * rel_path = nil);
+_String const ReturnFileDialogInput        (_String const* rel_path = nil);
+_String const WriteFileDialogInput         (_String const* rel_path = nil);
 
 
 hyFloat

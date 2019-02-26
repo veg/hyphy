@@ -181,6 +181,7 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("NeuralNet ",                           HY_HBL_COMMAND_NEURAL_NET);
     _HY_ValidHBLExpressions.Insert ("BGM ",                                 HY_HBL_COMMAND_BGM);
     _HY_ValidHBLExpressions.Insert ("SimulateDataSet",                      HY_HBL_COMMAND_SIMULATE_DATA_SET);
+    _HY_ValidHBLExpressions.Insert ("KeywordArgument",                      HY_HBL_COMMAND_KEYWORD_ARGUMENT);
 /*
 const long cut, const long conditions, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb, length options
 */
@@ -424,6 +425,17 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                         false,
                                         false,
                                         &lengthOptions));
+
+    lengthOptions.Clear();lengthOptions.Populate (3,2,1);
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_KEYWORD_ARGUMENT,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("KeywordArgument(", HY_HBL_COMMAND_KEYWORD_ARGUMENT,false),
+                                                                -1,
+                                                                "KeywordArgument (keyword, description, [default value, [dialog reference]])",
+                                                                ',',
+                                                                true,
+                                                                false,
+                                                                false,
+                                                                &lengthOptions));
 
     lengthOptions.Clear();lengthOptions.Populate (2,3,1); // 3 or 4
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_STRING, 

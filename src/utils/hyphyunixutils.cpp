@@ -212,6 +212,12 @@ void    NLToConsole (void * extra) {
     BufferToConsole ("\n", extra);
 }
 
+//__________________________________________________________________________________
+
+void    ObjectToConsole (BaseRef obj,  void * extra) {
+    StringToConsole (_String (((_String*)obj->toStr())), extra );
+}
+
 #endif
 
 #ifdef __HYPHYMPI__

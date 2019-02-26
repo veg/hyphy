@@ -314,6 +314,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_ASSERT                                         564L
 #define   HY_HBL_COMMAND_REPLICATE_CONSTRAINT                           565L
 #define   HY_HBL_COMMAND_NESTED_LIST                                    566L
+#define   HY_HBL_COMMAND_KEYWORD_ARGUMENT                               567L
 
 
 

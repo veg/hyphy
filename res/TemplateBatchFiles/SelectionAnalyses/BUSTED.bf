@@ -20,13 +20,14 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
 
 
-busted.analysis_description = {terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point",
-                           terms.io.version : "2.1",
-                           terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
-                           terms.io.authors : "Sergei L Kosakovsky Pond",
-                           terms.io.contact : "spond@temple.edu",
-                           terms.io.requirements : "in-frame codon alignment and a phylogenetic tree (optionally annotated with {})"
-                          };
+busted.analysis_description = {
+                               terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point",
+                               terms.io.version : "2.1",
+                               terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
+                               terms.io.authors : "Sergei L Kosakovsky Pond",
+                               terms.io.contact : "spond@temple.edu",
+                               terms.io.requirements : "in-frame codon alignment and a phylogenetic tree (optionally annotated with {})"
+                              };
 
 io.DisplayAnalysisBanner (busted.analysis_description);
 
@@ -66,15 +67,42 @@ busted.display_orders = {terms.original_name: -1,
 
 selection.io.startTimer (busted.json [terms.json.timers], "Overall", 0);
 
+KeywordArgument ("code",      "Which genetic code should be used", "Universal");
+    /**
+        keyword, description (for inline documentation and help messages), default value
+    */
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+    /**
+        keyword, description (for inline documentation and help messages), no default value,
+        meaning that it will be required
+    */
+
+KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+    /** the use of null as the default argument means that the default expectation is for the 
+        argument to be missing, i.e. the tree is expected to be in the file
+        the fourth, optional argument, can match this keyword with the dialog prompt / choice list title,
+        meaning that it can only be consumed when this dialog prompt / choice list is invoked
+        This allows handling some branching logic conditionals
+    */
+    
+KeywordArgument ("branches",  "Branches to test", "All");
+KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
+
+
+
 namespace busted {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("busted");
 }
 
+
 busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch)", 
                                     "No"  : "Synonymous substitution rates are constant across sites. This is the 'classic' behavior, i.e. the original published test"},
                                     "Synonymous rate variation"
                                     ) == "Yes";
+                                    
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'BUSTED.json')", busted.codon_data_info [terms.json.json]);
+busted.codon_data_info [terms.json.json] = io.PromptUserForString ("Save the resulting JSON file to");
     
 io.ReportProgressMessageMD('BUSTED',  'selector', 'Branches to test for selection in the BUSTED analysis');
 
@@ -251,7 +279,7 @@ busted.initial_grid = utility.Map (busted.initial_grid, "_v_",
     'busted._renormalize (_v_, "busted.distribution", busted.initial.test_mean)'
 );
 
-if (busted.has_background) {GDD rate category
+if (busted.has_background) { //GDD rate category
     busted.initial.background_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+background.+"))["0"])[terms.fit.MLE];
     busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
         'busted._renormalize (_v_, "busted.background_distribution", busted.initial.background_mean)'

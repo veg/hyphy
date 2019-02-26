@@ -492,30 +492,54 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
 
       HBLObjectRef ret;
       
-      if (currentExecutionList && currentExecutionList->has_stdin_redirect()) {
+      bool update_kw = false;
+      if (currentExecutionList && (currentExecutionList->has_stdin_redirect() || currentExecutionList->has_keyword_arguments())) {
           // 20180620: SLKP, need to split this off because if Execute fails
           // then there will be a double free on stdinRedirect
 
         auto stash1 = currentExecutionList->stdinRedirect;
         auto stash2 = currentExecutionList->stdinRedirectAux;
+        auto stash_kw_tags = currentExecutionList->kwarg_tags;
+        auto stash_kw = currentExecutionList->kwargs;
           
-        function_body -> stdinRedirect    = currentExecutionList->stdinRedirect;
-        function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
+        if (currentExecutionList->has_stdin_redirect()) {
+            function_body -> stdinRedirect    = currentExecutionList->stdinRedirect;
+            function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
           
-        currentExecutionList->stdinRedirect->AddAReference();
-        currentExecutionList->stdinRedirectAux->AddAReference();
+            currentExecutionList->stdinRedirect->AddAReference();
+            currentExecutionList->stdinRedirectAux->AddAReference();
+        }
+          
+          
+        if (currentExecutionList->has_keyword_arguments()) {
+            function_body -> kwarg_tags    = currentExecutionList->kwarg_tags;
+            function_body -> kwargs = currentExecutionList->kwargs;
+            function_body -> currentKwarg = currentExecutionList->currentKwarg;
+            
+            if (stash_kw_tags) currentExecutionList->kwarg_tags->AddAReference();
+            if (stash_kw) currentExecutionList->kwargs->AddAReference();
+            update_kw = true;
+            
+        }
 
         ret = function_body->Execute();
           
-        stash1 -> RemoveAReference();
-        stash2 -> RemoveAReference();
-         
+        if (stash1) stash1 -> RemoveAReference();
+        if (stash2) stash2 -> RemoveAReference();
+        if (stash_kw_tags) stash_kw_tags->RemoveAReference();
+        if (stash_kw) stash_kw->RemoveAReference();
+
       } else {
           ret = function_body->Execute();
       }
 
       function_body -> stdinRedirect    = nil;
       function_body -> stdinRedirectAux = nil;
+      if (update_kw) {
+          function_body -> kwarg_tags    = nil;
+          function_body -> kwargs = nil;
+          currentExecutionList->currentKwarg = function_body->currentKwarg;
+      }
 
       if (terminate_execution) {
         theScrap.Push (new _Constant (0.0));

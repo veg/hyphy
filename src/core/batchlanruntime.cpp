@@ -1864,7 +1864,7 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& current_program) {
   //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current_program) {
-  static _String last_model_used;
+  static _String last_model_used, kPromptText ("Select a standard model");
 
   current_program.advance();
   try {
@@ -1926,20 +1926,34 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       }
 
       long model_id = kNotFound;
+      bool need_to_prompt_user = true;
 
-      if (current_program.stdinRedirect) {
-        _String const option = current_program.FetchFromStdinRedirect ();
+      if (current_program.has_stdin_redirect() || current_program.has_keyword_arguments()) {
+        _String option;
+        bool    has_input = true;
+        try {
+            option = (current_program.FetchFromStdinRedirect (&kPromptText));
+        } catch (const _String e) {
+            if (e != kNoKWMatch) {
+                throw (e);
+            }
+            has_input = false;
+        } 
+        if (has_input) {
+            model_id = matching_models.FindOnCondition( [&] (long index, unsigned long) -> bool {
+              return option == * (_String*) templateModelList.GetItem (index,0);
+            });
 
-        model_id = matching_models.FindOnCondition( [&] (long index, unsigned long) -> bool {
-          return option == * (_String*) templateModelList.GetItem (index,0);
-        });
 
-
-        if (model_id == kNotFound) {
-          throw (option.Enquote() & " is not a valid model (with input redirect)");
-          return false;
+            if (model_id == kNotFound) {
+              throw (option.Enquote() & " is not a valid model (with input redirect)");
+            }
+            
+            need_to_prompt_user = false;
         }
-      } else {
+      }
+          
+      if (need_to_prompt_user) {
         #ifdef __HEADLESS__
           throw ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
         #endif
@@ -1948,7 +1962,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
 
         for (int i = 0; i < kMaxDialogPrompts; i++) {
           printf ("\n\n               +--------------------------+\n");
-          printf (    "               | Select a standard model. |\n");
+          printf (    "               | %s. |\n", kPromptText.get_str());
           printf (    "               +--------------------------+\n\n\n");
 
           for (model_id = 0; model_id<matching_models.lLength; model_id++) {
@@ -2637,7 +2651,12 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
           
 
         _AVLListXL * stash1 = nil;
-        _List      * stash2 = nil;
+        _List      * stash2 = nil,
+                   * stash_kw_tags = nil;
+          
+        _AssociativeList * stash_kw = nil;
+          
+        bool update_kw = false;
           
         if (has_redirected_input) {
           code.stdinRedirectAux = &_aux_argument_list;
@@ -2652,6 +2671,16 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
            code.stdinRedirect = current_program.stdinRedirect;
            code.stdinRedirectAux = current_program.stdinRedirectAux;
         }
+          
+        if (current_program.has_keyword_arguments()) {
+            code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
+            code.kwargs = stash_kw = current_program.kwargs;
+            if (stash_kw_tags) current_program.kwarg_tags->AddAReference();
+            if (stash_kw) current_program.kwargs->AddAReference();
+            code.currentKwarg = current_program.currentKwarg;
+            update_kw = true;
+
+        }
 
         if (!simpleParameters.empty() && code.TryToMakeSimple()) {
           ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)code.toStr()) );
@@ -2664,9 +2693,17 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
           stash1->RemoveAReference();
           stash2->RemoveAReference();
         }
+          
+        if (stash_kw_tags) stash_kw_tags->RemoveAReference();
+        if (stash_kw) stash_kw->RemoveAReference();
 
         code.stdinRedirectAux = nil;
         code.stdinRedirect    = nil;
+        if (update_kw) {
+            code.kwarg_tags       = nil;
+            code.kwargs           = nil;
+            current_program.currentKwarg = code.currentKwarg;
+        }
 
         if (code.result) {
           DeleteObject (current_program.result);
@@ -2801,6 +2838,70 @@ bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
   }
 
   return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleKeywordArgument (_ExecutionList& current_program) {
+    current_program.advance ();
+#ifdef __HYPHYMPI__
+    // ignore keyword options for MPI nodes
+    if (hy_mpi_node_rank > 0L) {
+        return true;
+    }
+#endif
+    
+    try {
+        _String keyword     = _ProcessALiteralArgument(*GetIthParameter(0UL), current_program),
+                description = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program),
+                *default_value = nil;
+        
+        
+        
+        _List   reference_manager;
+        if (parameter_count () > 2) {
+            HBLObjectRef default_expression = _ProcessAnArgumentByType (*GetIthParameter(2UL), STRING|HY_UNDEFINED, current_program, nil);
+            if (default_expression) {
+                reference_manager < default_expression;
+                if (default_expression->ObjectClass () == STRING) {
+                    default_value = new _String (((_FString*)default_expression)->get_str());
+                    reference_manager < default_value;
+                } else {
+                    // null values are handled separately
+                }
+            } else {
+                throw _String ("Not a valid type for the default expression value");
+            }
+        }
+        
+        if (!current_program.kwarg_tags) {
+            current_program.kwarg_tags = new _List;
+        }
+        
+        _List * new_tagged_keyword = new _List (new _String (keyword), new _String (description));
+        if (default_value) {
+            (*new_tagged_keyword) << default_value;
+        } else {
+            if (parameter_count () > 2) {
+                (*new_tagged_keyword) < (_String*)nil;
+            }
+        }
+
+        if (parameter_count () > 3) {
+            (*new_tagged_keyword) < new _String(_ProcessALiteralArgument(*GetIthParameter(3UL), current_program));
+        }
+
+        
+        (*current_program.kwarg_tags) < new_tagged_keyword;
+        
+        //printf ("%s\n", _String ((_String*)current_program.kwarg_tags->toStr()).get_str());
+        
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (nil, error, current_program);
+    }
+    
+    return true;
+
 }
 
 //____________________________________________________________________________________
@@ -3116,7 +3217,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
     catch (const _String& error) {
         return  _DefaultExceptionHandler (receptacle, error, current_program);
     }
-
+    
     return true;
 
 }
@@ -3144,17 +3245,27 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     
     _String source_name = *GetIthParameter(0UL);
     if (source_name == kFscanfStdin) {
-      if (current_program.has_stdin_redirect ()) {
-        _String * redirected = current_program.FetchFromStdinRedirect();
-        input_data = redirected;
-        // echo the input if there is no fprintf redirect in effect
+    bool need_to_ask_user = true;
+      if (current_program.has_stdin_redirect () || current_program.has_keyword_arguments()) {
+          try {
+            _String * redirected = current_program.FetchFromStdinRedirect();
+            input_data = redirected;
+            // echo the input if there is no fprintf redirect in effect
 
-        _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
-        if (!(redirect && redirect->has_data())) {
-          StringToConsole (*input_data); NLToConsole();
-        }
-        dynamic_reference_manager < redirected;
-      } else { // read from stdin
+            _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
+            if (!(redirect && redirect->has_data())) {
+              StringToConsole (*input_data); NLToConsole();
+            }
+            dynamic_reference_manager < redirected;
+            need_to_ask_user = false;
+          } catch (const _String e) {
+              if (e != kNoKWMatch) {
+                  throw (e);
+              }
+          }
+      }
+        
+      if (need_to_ask_user){ // read from stdin
         if (hy_env::EnvVariableTrue(hy_env::end_of_file) == false && source_name == hy_scanf_last_file_path)  {
           throw ("Ran out of standard input");
         }
@@ -3545,20 +3656,62 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
         };
         
         long required = variable_number ? available_choices->countitems() : number_of_choices;
+        bool need_to_prompt_user = true;
 
-        if (current_program.has_stdin_redirect()) {
+        if (current_program.has_stdin_redirect() || current_program.has_keyword_arguments()) {
+            
+            auto report_key_error = [&] (const _String & bad_key) -> void {
+                _String choice_list_echo = available_choices->Map ([] (BaseRef object, unsigned long index) -> BaseRef {
+                    BaseRef title = ((_List*)object)->GetItem (0);
+                    title->AddAReference();
+                    return title;
+                }, 0, MIN (32, available_choices->countitems())).Join(", ");
+                if (available_choices->countitems() > 32) {
+                    choice_list_echo = choice_list_echo & " and " & _String(available_choices->countitems()-32) & " additional options";
+                }
+                
+                throw (bad_key.Enquote() & " is not a valid choice passed to '" & dialog_title & "' ChoiceList using redirected stdin input or keyword arguments. Valid choices are\n\t") & choice_list_echo & "\n";
+            };
+            
             while (selections.countitems() < required) {
-                _String user_choice (current_program.FetchFromStdinRedirect());
+                _String user_choice;
+                try {
+                    user_choice =(current_program.FetchFromStdinRedirect(&dialog_title, required > 1)); // handle multiple selections
+                } catch (const _String e) {
+                    if (e == kNoKWMatch) {
+                        break;
+                    } else {
+                        throw (e);
+                    }
+                } catch (HBLObjectRef multiple_choice) {
+                    if (multiple_choice->ObjectClass() == ASSOCIATIVE_LIST) {
+                        _List option_list;
+                        ((_AssociativeList*)multiple_choice)->FillInList (option_list);
+                        option_list.ForEach([&] (BaseRef item, unsigned long) -> void {
+                            long    match_found = validate_choice (_String ((_String*)item->toStr()));
+                            if (match_found == kNotFound)  {
+                                report_key_error (_String ((_String*)item->toStr()));
+                            } else {
+                                selections << match_found;
+                            }
+                        });
+                    }
+                }
+                
                 if (variable_number && user_choice.empty()) {
                     break;
                 }
                 long    match_found = validate_choice (user_choice);
                 if (match_found == kNotFound) {
-                    throw (user_choice.Enquote() & " is not a valid choice passed to '" & dialog_title & "' ChoiceList using redirected stdin input");
+                    report_key_error (user_choice);
                 }
                 selections << match_found;
             }
-        } else {
+            
+            need_to_prompt_user = selections.countitems() != required;
+        }
+        
+        if (need_to_prompt_user) {
 #ifdef  __HEADLESS__
             throw (_String("Unhandled request for data from standard input (headless HyPhy)"));
 #endif
@@ -3619,7 +3772,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                }
              
                if (wrong_selections > maximum_wrong_choices) {
-                throw ("Too many invalid imputs");
+                throw _String ("Too many invalid imputs");
                }
             }
           

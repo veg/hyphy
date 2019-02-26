@@ -233,7 +233,7 @@ namespace hy_global {
    */
   
   
-  bool  ProcessFileName (_String & path, bool isWrite = false, bool acceptStringVars = false, hyPointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil);
+  bool  ProcessFileName (_String & path, bool isWrite = false, bool acceptStringVars = false, hyPointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil, bool relative_to_base = false);
   
   void    ConsoleLog (void);
   
@@ -271,7 +271,8 @@ namespace hy_global {
   hy_need_extra_nl,
   terminate_execution,
   has_terminal_stdout,
-  has_terminal_stderr;
+  has_terminal_stderr,
+  ignore_kw_defaults;
   
   extern  int      hy_mpi_node_rank,
   hy_mpi_node_count;
@@ -305,7 +306,8 @@ namespace hy_global {
   kErrorStringNullOperand,                  // -666
   kErrorStringUnterminatedMatrix,
   kNoneToken,
-  kNullToken
+  kNullToken,
+  kNoKWMatch
   ;
   
   extern  _String  hy_base_directory,
