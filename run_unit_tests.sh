@@ -9,6 +9,7 @@ testsFailed=0
 failedTests=()
 
 for filename in ./tests/hbltests/UnitTests/HBLCommands/*.bf; do
+  echo $filename
 
   # Run the test checking to see if it faield
   if $HYPHYMP $filename | grep -q "TEST FAILED"; then

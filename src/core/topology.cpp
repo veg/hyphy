@@ -2505,8 +2505,8 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
 
               while (node_objects[0] != node_objects[1]) {
                 for (long i = 0L; i < 2L; i++) {
-                  node_objects[i] = node_objects[i]->parent;
                   partial_paths[i] < new _String (GetNodeName(node_objects[i]));
+                  node_objects[i] = node_objects[i]->parent;
                }
              }
               partial_paths[1].Flip();

@@ -80,8 +80,12 @@ _MathObject* _MathObject:: Raise      (_MathObject*)     {
     return _null_handler();
 }
 
-bool _MathObject::         Equal      (_MathObject*)     {
-    HandleApplicationError (kErrorStringNullOperand);
+bool _MathObject::         Equal      (_MathObject* rhs)     {
+    if (rhs->ObjectClass() == HY_UNDEFINED) {
+        return true;
+    }
+    return false;
+    // null is equal to null, otherwise false\
     return false;
 }
 _MathObject* _MathObject:: Abs        (void)             {
@@ -112,9 +116,9 @@ _MathObject* _MathObject:: Erf        (void)             {
     return _null_handler();
 }
 _MathObject* _MathObject:: LnGamma    (void)             {
-    HandleApplicationError (kErrorStringNullOperand);    // <-- added by afyp, February 7, 2007
-    return this;
+    return _null_handler();
 }
+
 _MathObject* _MathObject:: Beta       (_MathObject*)     {
     return _null_handler();
 }

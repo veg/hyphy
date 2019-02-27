@@ -89,6 +89,8 @@ public:
 
 
      */
+    
+    virtual bool        Equal               (HBLObjectRef);
 
     virtual void        Duplicate           (BaseRefConst);
     HBLObjectRef           Random           (HBLObjectRef);

@@ -8,15 +8,15 @@ function getTestName () {
 
 
 function runTest () {
-	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
-	testResult = 0;
+   ASSERTION_BEHAVIOR = TRUE; /* print warning to console and go to the end of the execution list */
+   testResult = FALSE;
   
 
   //---------------------------------------------------------------------------------------------------------
   // SIMPLE FUNCTIONALITY
   //---------------------------------------------------------------------------------------------------------
   Topology T =  (((a:0.1,b:0.2)ab:0.4,e:0.1):0.2,c:0.15,d:0.33);
-  Tree TT = (((a:0.1,b:0.2)ab:0.4,e:0.1):0.2,c:0.15,d:0.33);
+  Tree     TT = (((a:0.1,b:0.2)ab:0.4,e:0.1):0.2,c:0.15,d:0.33);
 
   // Get branch name by traversal index.
   node1BranchName = BranchName (T,1);
@@ -25,38 +25,31 @@ function runTest () {
   assert(node1BranchNameTree == 'Node1', "Failed to correctly get branch name by traversal of index of a Tree");
   
   
-  // TODO: The Three functions below don't work as documented
-  // The "expected*" is what is shown in the docs.
-
+  // SLKP 20190227 : the new behavior is expected because default node naming has changed 
+  
   // Get all branch names.
   allBranchNames = BranchName (T,-1);
-  expectedAllBranchNames = {{"a","b","ab","e","Node1","c","d","Node0"}};
-  actualAllBranchNames = {{"a", "b", "ab", "e", "Node1", "c", "d", "Node7"}};
-  //assert(allBranchNames == expectedAllBranchNames, "Failed to correctly get all the branch names from a Topology");
+  expectedAllBranchNames = {{"a", "b", "ab", "e", "Node1", "c", "d", "Node7"}};
+  assert(allBranchNames == expectedAllBranchNames, "Failed to correctly get all the branch names from a Topology");
   allBranchNamesTree = BranchName (TT,-1);
-  expectedAllBranchNamesTree = {{"a","b","ab","e","Node1","c","d","Node0"}};
-  actualAllBranchNamesTree = {{"a", "b", "ab", "e", "Node1", "c", "d", "Node7"}};
-  //assert(allBranchNamesTree == expectedAllBranchNamesTree, "Failed to correctly get all the branch names from a Tree");
+  assert(allBranchNamesTree == expectedAllBranchNames, "Failed to correctly get all the branch names from a Tree");
   
   // Get all branch names along a path.
   alongPathBranchNames = BranchName (T,"d;a");
+  
   expectedAlongPathBranchNames = {{"d","Node1","ab","a"}};
-  actualAlongPathBranchNames = {{"Node7", "Node7", "ab", "a"}};
-  //assert(alongPathBranchNames == expectedAlongPathBranchNames, "Failed to correctly get the branch names along a path" from a Topology);
+  assert(alongPathBranchNames == expectedAlongPathBranchNames, "Failed to correctly get the branch names along a path" from a Topology);
   alongPathBranchNamesTree = BranchName (TT,"d;a");
-  expectedAlongPathBranchNamesTree = {{"d","Node1","ab","a"}};
-  actualAlongPathBranchNamesTree = {{"Node7", "Node7", "ab", "a"}};
-  //assert(alongPathBranchNamesTree == expectedAlongPathBranchNamesTree, "Failed to correctly get the branch names along a path" from a Tree);
+  //assert(alongPathBranchNamesTree == expectedAlongPathBranchNames, "Failed to correctly get the branch names along a path" from a Tree);
 
   // Get subtree information.
-  subtreeInformation = BranchName (T,"Node1");
+  subtreeInformation = BranchName (T,"ab");
+  
   expectedSubtreeInformation = {"ab":2, "a":1, "b":1};
-  actualSubtreeInformation = {"Node1":2, "a":1, "ab":2, "b":1, "e":1 };
-  //assert(subtreeInformation["Node1"] == expectedSubtreeInformation["Node1"], "Failed to correctly get the subtree information from a Topology");
-  subtreeInformationTree = BranchName (TT,"Node1");
-  expectedSubtreeInformationTree = {"ab":2, "a":1, "b":1};
-  actualSubtreeInformationTree = {"Node1":2, "a":1, "ab":2, "b":1, "e":1 };
-  //assert(subtreeInformationTree["Node1"] == expectedSubtreeInformationTree["Node1"], "Failed to correctly get the subtree information from a Tree");
+  assert(subtreeInformation == expectedSubtreeInformation, "Failed to correctly get the subtree information from a Topology");
+  subtreeInformation = BranchName (TT,"Node1");
+  expectedSubtreeInformationTree = {"Node1" : 2, "e" : 1, "ab":2, "a":1, "b":1};
+  assert(subtreeInformation == expectedSubtreeInformationTree, "Failed to correctly get the subtree information from a Tree");
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
