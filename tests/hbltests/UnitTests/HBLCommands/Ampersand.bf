@@ -22,6 +22,9 @@ function runTest () {
 
   // TODO, the expression below results in the following error: Syntax error  in the following context: 'T&T<ERROR HERE>'
   // T&T;
+  // TT&TT;
+  // True&True;
+  // 1&2;
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING

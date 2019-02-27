@@ -6,6 +6,9 @@ function getTestName () {
   return "Call";
 }		
 
+function addTwo(a) {
+  return a+2;
+}
 
 function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
@@ -18,6 +21,18 @@ function runTest () {
   // TODO: Not in docs. I'm not sure what the expected functionality should be.
   // Used in `/libv3/models/protein/REF.bf like this:
   //__rp = Call (__rate_variation[terms.rate_variation.distribution], __rate_variation[terms.rate_variation.options], namespace);
+
+  // Looks like it expects the first arument to be a HBL function.
+  //Call('string'); returns "The first argument ('string') to 'Call' was not an HBL function name "
+  // One of the subsequent arguments is presumably an argument or list of arguments.
+  //Call(Cos); returns "Expected between 1 and 32767 arguments in the following context: 'Call(Cos)<ERROR HERE>' "
+  // Buit I'm not sure what form these arguments should take.
+  // The below four lines all return "Operation Cos with 1 arguments needs 1 arguments; 0 were supplied."
+  //Call(Cos,3);
+  //Call(Cos,3,4); 
+  //Call(Cos,{{3,4}});
+  //Call(Cos,{'key1': 3, 'key2': 4});
+
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING
