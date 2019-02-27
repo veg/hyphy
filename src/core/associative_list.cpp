@@ -181,6 +181,25 @@ HBLObjectRef _AssociativeList::MAccess (HBLObjectRef p) {
 }
 
 //_____________________________________________________________________________________________
+bool _AssociativeList::Equal (HBLObjectRef p) {
+    if (p->ObjectClass() == ASSOCIATIVE_LIST) {
+        _AssociativeList * rhs = (_AssociativeList*) p;
+        if (countitems() == rhs->countitems()) {
+            for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
+                _String const* my_key = key_value.get_key();
+                HBLObjectRef my_object = (HBLObjectRef)key_value.get_object();
+                HBLObjectRef rhs_object = rhs->GetByKey(*my_key, my_object->ObjectClass());
+                if (!rhs_object || !my_object->Equal(rhs_object)) {
+                        return false;
+                }
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+//_____________________________________________________________________________________________
 HBLObjectRef _AssociativeList::Random (HBLObjectRef p) {
     bool with_replacement = false;
     
@@ -713,7 +732,7 @@ HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _
       return ExtremeValue (true);
      
 
-      
+    
   }
   
   _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
@@ -730,6 +749,12 @@ HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _
 
   if (arg0) {
     switch (opCode) { // operations that require exactly one argument
+       case HY_OP_CODE_EQ:
+        return new _Constant (Equal(arg0));
+            
+       case HY_OP_CODE_NEQ:
+        return new _Constant (!Equal(arg0));
+            
       case HY_OP_CODE_MCOORD: // MCoord
         return MCoord (arg0);
         

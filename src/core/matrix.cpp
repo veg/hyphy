@@ -6381,30 +6381,47 @@ bool       _Matrix::Equal(HBLObjectRef mp)
 
     _Matrix * m = (_Matrix*)mp;
     
-    if (m->storageType == storageType && storageType == 1 && (bool) m->theIndex == (bool) theIndex && m->hDim == hDim && m->vDim == vDim) {
-        if (theIndex) {
-        
-            _SimpleList       nonZeroThis ((unsigned long)lDim),
-                              nonZeroOther((unsigned long)m->lDim),
-                              shared;
-                        
-            NonZeroEntries    (nonZeroThis);
-            m->NonZeroEntries (nonZeroOther);
-    
-            shared.Intersect(nonZeroThis, nonZeroOther);
-            for (long elementID = 0; elementID < lDim; elementID ++) {
-            
-            }
-                        
-        } else {
-            for (long elementID = 0; elementID < lDim; elementID ++) {
-                if (!CheckEqual(theData[elementID], m->theData[elementID])) {
-                    return false;
+    if (m->storageType == storageType && m->hDim == hDim && m->vDim == vDim) {
+        if (is_numeric()) {
+            if (theIndex || m->theIndex) {
+                for (long r = 0L; r < hDim; r ++) {
+                    for (long c = 0L; c < vDim; c++) {
+                        if (!CheckEqual((*this)(r,c), (*m)(r,c))) {
+                            return false;
+                        }
+                    }
+                }
+                
+            } else {
+                for (long elementID = 0; elementID < lDim; elementID ++) {
+                    if (!CheckEqual(theData[elementID], m->theData[elementID])) {
+                        return false;
+                    }
                 }
             }
+            
+            return true;
+        } else {
+            if (IsAStringMatrix() && m->IsAStringMatrix()) {
+                for (long r = 0L; r < hDim; r ++) {
+                    for (long c = 0L; c < vDim; c++) {
+                        _Formula * f1 = GetFormula(r,c),
+                                 * f2 = GetFormula(r,c);
+                        
+                        if (f1 && f2) {
+                            if (((_FString*)f1->Compute())->get_str() != ((_FString*)f2->Compute())->get_str()) {
+                                return false;
+                            }
+                        } else {
+                            if (f1 || f2) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
         }
-        
-        return true;
     }
     
     return false;
