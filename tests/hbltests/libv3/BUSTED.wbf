@@ -1,6 +1,0 @@
-LoadFunctionLibrary("SelectionAnalyses/BUSTED.bf", {
-    "--code": "Universal",
-    "--alignment": PATH_TO_CURRENT_BF + "data/CD2.nex",
-    "--branches" : "Internal",
-    "--srv": "No"
-});
