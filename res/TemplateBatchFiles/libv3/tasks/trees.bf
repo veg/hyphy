@@ -1,4 +1,3 @@
-
 LoadFunctionLibrary("../IOFunctions.bf");
 LoadFunctionLibrary("../all-terms.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
@@ -87,7 +86,7 @@ lfunction trees.GetTreeString._sanitize(string) {
     if (utility.GetEnvVariable("_DO_TREE_REBALANCE_")) {
         string = RerootTree(string, 0);
     }
- 
+
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", "intNode");
     }
