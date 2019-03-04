@@ -31,26 +31,26 @@ function computeSimmondsD (leafAssignmentVector, mapVec, catCount)
 			{
 				(treeAVL[_parentNode])["N"] = (treeAVL[_parentNode])["N"]+_currentNode["N"];
 				_currentCounts = _currentNode["Counts"];
-				(treeAVL[_parentNode])["Counts"] = (treeAVL[_parentNode])["Counts"] + 
+				(treeAVL[_parentNode])["Counts"] = (treeAVL[_parentNode])["Counts"] +
 												  _currentCounts;
-												  
+
 				maxV = 0;
 				sumV = 0;
 				_currentCounts ["compute1mf(_MATRIX_ELEMENT_VALUE_)"];
 				/*fprintf (stdout, 1-maxV/sumV, "\n");*/
 				_d = _d + (1-maxV/sumV)*2^(1-_currentNode["N"]);
-			
+
 			}
 			else /* terminal node */
 			{
 				(treeAVL[_parentNode])["N"] = (treeAVL[_parentNode])["N"]+1;
 				((treeAVL[_parentNode])["Counts"])[leafAssignmentVector[mapVec[_currentLeaf]]] =
-				((treeAVL[_parentNode])["Counts"])[leafAssignmentVector[mapVec[_currentLeaf]]] + 1; 
+				((treeAVL[_parentNode])["Counts"])[leafAssignmentVector[mapVec[_currentLeaf]]] + 1;
 				_currentLeaf = _currentLeaf + 1;
 			}
 		}
 	}
-	
+
 	return _d;
 }
 
@@ -115,7 +115,7 @@ while (goOn)
 
 		st     = "";
 		aClade = {};
-		
+
 		if (defClades < kindCount-1)
 		{
 			fprintf (stdout,"\nEnter a reg exp used to define clade ",defClades+1,":");
@@ -125,7 +125,7 @@ while (goOn)
 			{
 				GetString (specName, ds, specIndex);
 				specMatch = specName $ theRegExp;
-				
+
 				if (specMatch[0]>=0 && matchedSoFar[specIndex] == 0)
 				{
 					aClade [specName] = 1;
@@ -137,7 +137,7 @@ while (goOn)
 					{
 						st = specName;
 					}
-					
+
 					matchedSoFar [specIndex] = 1;
 					leafAllocs   [specIndex] = defClades;
 				}
@@ -162,9 +162,9 @@ while (goOn)
 					matchedSoFar [specIndex] = 1;
 					leafAllocs   [specIndex] = kindCount-1;
 				}
-			}		
+			}
 		}
-		
+
 		if (Abs(aClade) == 0)
 		{
 			fprintf (stdout, "ERROR: an empty clade for reg-exp ", goOn, "\n");
@@ -173,7 +173,7 @@ while (goOn)
 		}
 		else
 		{
-			fprintf (stdout, "Matched: ",st,"\n");	
+			fprintf (stdout, "Matched: ",st,"\n");
 		}
 		strings[Abs(strings)] = st;
 		clades [Abs(clades) ] = aClade;
@@ -193,7 +193,7 @@ while (goOn)
 				fprintf (stdout, "\t", cladeKeys[specIndex],"\n");
 			}
 		}
-		
+
 		fprintf (stdout, "\nIs this partitioning correct (y/n)");
 		fscanf (stdin, "String", goOn);
 		goOn = (goOn[0] == "n" || goOn[0] == "N");
@@ -287,32 +287,14 @@ fprintf (stdout, "\n\nAssociation Index: ", meanO/meanS, "\nBootstrap significan
 
 columnHeaders = {{"Observed","Mean Control","Proportion Control d > Observed d"}};
 
-OpenWindow (CHARTWINDOW,{{"Simmonds AI Summary"}
-		{"columnHeaders"}
-		{"totalRes"}
-		{"Scatterplot"}
-		{"Observed"}
-		{"Mean Control"}
-		{"Observed d"}
-		{""}
-		{"Control d"}
-		{"0"}
-		{"_x_"}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:12:2"}
-		{"0;0;16777215;0;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		},
-		"925;642;70;70");
-		
+
 ACCEPT_ROOTED_TREES = 0;
 
 /*************************************************************************************************/
 
 function runATreeSample () {
 
-   
+
 	mapVec	    = {1,leafCount}["_MATRIX_ELEMENT_COLUMN_"];
 	myLeafAlloc = {1,leafCount};
 	for (_k = 0; _k < leafCount; _k = _k + 1)
@@ -329,7 +311,7 @@ function runATreeSample () {
 		rsD			= computeSimmondsD (myLeafAlloc, Random(mapVec,0), kindCount);
 		gte += (rsD > baseD);
 		meanRat		+= rsD;
-	}	
+	}
 	outMx = {{baseD, meanRat/shuffleIt, gte/shuffleIt}};
 	return outMx;
 }

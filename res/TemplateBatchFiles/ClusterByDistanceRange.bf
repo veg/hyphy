@@ -67,16 +67,16 @@ function	PrintASCIITable (dataMatrix, titleMatrix)
 		fprintf (stdout,"-");
 	}
 	fprintf (stdout,"+\n| ");
-	
+
 	for (counter1=0; counter1<Columns(titleMatrix); counter1 = counter1+1)
 	{
 		fprintf (stdout, titleMatrix[counter1]);
 		dummy = PadString (columnWidths[0][counter1]-Abs(titleMatrix[counter1])," ");
 		fprintf (stdout, " | ");
 	}
-	
+
 	fprintf (stdout, "\n");
-	
+
 	for (counter1=-1; counter1<Rows(dataMatrix); counter1 = counter1 + 1)
 	{
 		if (counter1>=0)
@@ -99,7 +99,7 @@ function	PrintASCIITable (dataMatrix, titleMatrix)
 		}
 		fprintf (stdout, "+\n");
 	}
-	
+
 	return 1;
 }
 
@@ -108,7 +108,7 @@ function	PrintASCIITable (dataMatrix, titleMatrix)
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0) 
+if (dataType<0)
 {
 	return;
 }
@@ -157,7 +157,7 @@ dDim = mDim*(mDim-1)/2;
 
 ChoiceList (doHist,"Histogram",1,SKIP_NONE,"Generate","Compute and report distribution statistics of pairwise distances.",
 				     "Skip","Skip this step");
-	
+
 if (doHist<0)
 {
 	return 0;
@@ -217,8 +217,8 @@ if (doHist == 0)
 			t     = distanceMatrix[r][c];
 			sum2  = sum2+(t-sum)^2;
 			t	  = Max(0,Min(((t-b25)/h$1),bm1));
-			
-			
+
+
 			histogramTable[t][2] = histogramTable[t][2] + 1;
 		}
 	}
@@ -249,8 +249,8 @@ else
 			distanceMatrix[c][r] = t;
 			distanceMatrix[r][c] = t;
 		}
-	}*/	
-	
+	}*/
+
 	max = Max(distanceMatrix,0);
 
 }
@@ -261,12 +261,12 @@ clumpingL = -1;
 ChoiceList (clusteringType,"Clustering algorithm",1,SKIP_NONE,
 						   "At least one","A sequence in a cluster is sufficiently close to AT LEAST ONE of the other sequences in the cluster.",
 						   "All",		  "A sequence in a cluster is sufficiently close to ALL OTHER sequences in the cluster.");
-						   
+
 if (clusteringType < 0)
 {
 		return 0;
-}	
-		
+}
+
 while (clumpingL < 0)
 {
 	fprintf (stdout, "Please enter the lower distance bound (>=0, or -1 to plot clusters vs cutoff):");
@@ -282,86 +282,69 @@ if (clumpingL>=0)
 	do
 	{
 		SetDialogPrompt ("Set comma separated results to:");
-		DEFAULT_FILE_SAVE_NAME = "Clustering.csv";	
-		fprintf (PROMPT_FOR_FILE,CLEAR_FILE);	
+		DEFAULT_FILE_SAVE_NAME = "Clustering.csv";
+		fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
 		outFile = LAST_FILE_PATH;
 		outString = "";
 		outString * 8192;
 		clumpingU	 = prompt_for_a_value ("Please enter the upper distance bound", clumpingL + 0.01, clumpingL, max, 0);
 		clusterCount = doClustering (clumpingL, clumpingU, clusteringType);
-		
-		
+
+
 		fprintf (stdout, "\nFound ", clusterCount, " clusters on total ", totalEdgeCount," edges\n");
-		
+
 		sortedCluster = {mDim,2};
 		degreeDistro  = {};
 		ones		  = {mDim,1}["1"];
 		maxDegree	  = 0;
-		
+
 		for (k=0; k<mDim; k=k+1)
 		{
 			sortedCluster[k][0] = visited[k];
 			sortedCluster[k][1] = k;
 			thisRow 			= ((gatedDistances[k][-1])*ones)[0] + 1;
 			degreeDistro[thisRow] = degreeDistro[thisRow] + 1;
-		}	
-		
+		}
+
 		diffDegrees = Abs(degreeDistro);
 		logLog 		= {diffDegrees,2};
 		keys		= Rows (degreeDistro);
-		
+
 		for (k=0; k<diffDegrees; k=k+1)
 		{
 			logLog[k][0] = 0+keys[k];
 			logLog[k][1] = degreeDistro[keys[k]];
 		}
-	
-		
+
+
 		logLog = logLog % 0;
 		logLog[diffDegrees-1][1] = logLog[diffDegrees-1][1] / mDim;
 		for (k=diffDegrees-2; k>=0; k=k-1)
 		{
 			logLog[k][1] = logLog[k][1]/mDim+logLog[k+1][1];
 		}
-		
+
 		logLog = Log(logLog);
-		
+
 columnHeaders = {{"Log[Degree]","Log[Prob]"}};
-OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
-		{"columnHeaders"}
-		{"logLog"}
-		{"Scatterplot"}
-		{"Log[Degree]"}
-		{"Log[Prob]"}
-		{"Log(Degree)"}
-		{""}
-		{"Log(Probability)"}
-		{"0"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:12:2"}
-		{"0;0;16777215;8355711;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		},
-		"480;665;70;70");
-		
+
+
 		sortedCluster = sortedCluster % 0;
-		
+
 		stringLabel = "";
 		graphVizSt  = ""; graphVizSt * 128;
-		
+
 		edgesPrinted = 0;
 		nodesMade	 = {};
-		
+
 		outString  * ("SequenceID,ClusterID_"+clumpingL+"_"+clumpingU);
-		
+
 		lastClusterID     = 1;
 		clusterSpan	      = 0;
 		clusterSizes      = {};
 		clusterMembership = {};
 		definedNode = {};
-		
+
 		for (k=0; k<=mDim; k=k+1)
 		{
 			if (k < mDim)
@@ -375,22 +358,22 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 			else
 			{
 				clusterID 		= lastClusterID+1;
-			}	
-			
+			}
+
 			if (lastClusterID != clusterID)
 			{
 				clusterSize						= k-clusterSpan;
 				clusterSizes[clusterSize]		= clusterSizes[clusterSize] + 1;
 				clusterMembership[clusterSize]  = clusterMembership[clusterSize] + clusterSize;
-				
+
 				graphVizSt * ("\n\n/* cluster " + lastClusterID + "*/\n\n");
-				
-				
+
+
 				for (n1 = 0; n1 < clusterSize; n1=n1+1)
 				{
 					id1  = sortedCluster[clusterSpan + n1][1];
-					GetString		(seqName, ds,id1); 
-										
+					GetString		(seqName, ds,id1);
+
 					for (n2 = n1 + 1; n2 < clusterSize; n2 = n2+1)
 					{
 						id2 = sortedCluster[clusterSpan + n2][1];
@@ -403,7 +386,7 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 								graphVizSt * ("\"" + seqName + "\" [label = \"\"];\n");
 								definedNode[seqName]  = 1;
 							}
-							GetString		(seqName2, ds,id2); 
+							GetString		(seqName2, ds,id2);
 							if (Abs(definedNode[seqName2]) == 0)
 							{
 								graphVizSt * ("\"" + seqName2 + "\" [label = \"\"];\n");
@@ -420,48 +403,31 @@ OpenWindow (CHARTWINDOW,{{"Log-Log degree plot"}
 				lastClusterID = clusterID;
 			}
 		}
-		
+
 		outString * 0;
 		fprintf (outFile, outString);
 		fprintf (stdout, "Graphviz edges/nodes = ", edgesPrinted, "/", Abs(nodesMade), "\n");
-		
+
 		fprintf (stdout, "\nCluster size distribution\n");
 		_printAnAVLNumericTotal (clusterSizes, ".");
 
 		fprintf (stdout, "\nCluster membership distribution\n");
 		_printAnAVLNumericTotal (clusterMembership, ".");
-		
+
 		graphVizSt * 0;
-		
+
 		SetDialogPrompt ("Save GraphViz file to:");
 		fprintf			(PROMPT_FOR_FILE, CLEAR_FILE, "graph G{\n", graphVizSt, "\n};");
-		
+
 		fprintf (stdout, "Continue with another threshold (y/n)?");
 		fscanf  (stdin,"String", shouldCont);
-		
+
 	}
 	while (shouldCont[0] != "n" && shouldCont[0] != "N");
-	
+
 	columnHeaders = {{"Cluster ID",  stringLabel}};
 
-	OpenWindow (CHARTWINDOW,{{"Cluster Allocation"}
-		{"columnHeaders"}
-		{"visited"}
-		{"None"}
-		{"Cutoff"}
-		{"Clusters"}
-		{"Cutoff"}
-		{""}
-		{"Cluster Count"}
-		{"0"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:14:0;Times:10:0;Times:14:1"}
-		{"0;0;16777215;8421504;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;0;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		},
-		"SCREEN_WIDTH-100;SCREEN_HEIGHT-100;50;50");
+
 }
 else
 {
@@ -476,21 +442,21 @@ else
 	outString * 8192;
 
 	maxSteps = 500;
-	
+
 	distanceMx = {maxSteps,2} ["(_MATRIX_ELEMENT_COLUMN_==0)*(_MATRIX_ELEMENT_ROW_)*max/maxSteps"];
-	
+
 	/*size 	 = mDim*(mDim-1)/2;
 	sizeStep = size$maxSteps;
-	
+
 	if (sizeStep<1)
 	{
 		sizeStep = 1;
 	}
 
 	size = Min(maxSteps,size);
-	
+
 	distanceMx = {size,2};
-	
+
 	k  = 0;
 	k2 = 0;
 	for (r=0; r< mDim; r=r+1)
@@ -505,7 +471,7 @@ else
 			}
 		}
 	}*/
-	
+
 	lastTime = Time (0);
 	outString * "Cutoff, Cluster Count";
 
@@ -530,28 +496,11 @@ else
 		}
 		outString * ("\n"+distanceMx[rz][0]+","+distanceMx[rz][1]);
 	}
-	
+
 	outString * 0;
 	fprintf (outFile, outString);
 	columnHeaders = {{"Cutoff","Clusters"}};
-	OpenWindow (CHARTWINDOW,{{"Cluster Count Plot"}
-		{"columnHeaders"}
-		{"distanceMx"}
-		{"Line Plot"}
-		{"Cutoff"}
-		{"Clusters"}
-		{"Cutoff"}
-		{""}
-		{"Cluster Count"}
-		{"0"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:14:0;Times:10:0;Times:14:1"}
-		{"0;0;16777215;8421504;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;0;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		},
-		"SCREEN_WIDTH-100;SCREEN_HEIGHT-100;50;50");
+
 }
 
 
@@ -566,10 +515,10 @@ function doClustering (from, to, clusteringAlg)
 	clusterCount = 1;
 	done		 = 0;
 	vertexCount  = 0;
-	
+
 	totalEdgeCount = (+gatedDistances) $ 2;
-	
-	if (clusteringAlg == 0)	
+
+	if (clusteringAlg == 0)
 	{
 		for (currentVertex=0; currentVertex < mDim; currentVertex=currentVertex+1)
 		{
@@ -627,10 +576,10 @@ function doClustering (from, to, clusteringAlg)
 			{
 				//fprintf (stdout, currentVertex, " assigned to a new cluster: ", clusterCount, "\n");
 				visited[currentVertex] = clusterCount;
-				clusterCount += 1;			
+				clusterCount += 1;
 			}
 		}
-		
+
 	}
 	return clusterCount-1;
 }
