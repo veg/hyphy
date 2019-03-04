@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -45,283 +45,425 @@
 #include "stdlib.h"
 #include "time.h"
 
+#include "mersenne_twister.h"
 #include "constant.h"
 
 //SW: This should be just helper functions
 #include "parser.h"
+#include "global_things.h"
+
+using namespace hy_global;
 
 _Formula *chi2 = nil,
          *derchi2 = nil;
 
 
-extern _Parameter machineEps;
-extern _Parameter tolerance;
+extern hyFloat tolerance;
 
 long            lastMatrixDeclared = -1,
                 dummyVariable1,
                 dummyVariable2,
                 expressionsParsed = 0;
 
-
-
-
-
-//__________________________________________________________________________________
-
-
-_Parameter _gamma (_Parameter alpha) {
-  _Parameter static gammaCoeff [7] = {
-    2.50662827463100050,
-    190.9551718944012,
-    -216.8366818451899,
-    60.19441758801798,
-    -3.087513097785903,
-    0.003029460875352382,
-    -0.00001345152485367085
-  };
+//___________________________________________________________________________________________
+hyFloat  gaussDeviate (void) {
+  /*
+   Use Box-Muller transform to generate random deviates from Gaussian distribution with
+   zero mean and unit variance (Numerical Recipes).
+   */
   
-  _Parameter theV = alpha >=1.0? alpha : 2.-alpha,
-  result = gammaCoeff[0],
-  temp = theV;
+  static int      iset = 0;
+  static double   gset;
+  double          fac, rsq, v1, v2;
   
-  for (int i = 1; i < 7; ++i , temp += 1.) {
-    result += gammaCoeff[i] / temp;
+  if (iset == 0) {
+    do {
+      v1 = 2.0 * genrand_real2() - 1.0;   // uniform random number on (0,1), i.e. no endpoints
+      v2 = 2.0 * genrand_real2() - 1.0;
+      rsq = v1*v1 + v2*v2;
+    } while (rsq >= 1.0 || rsq == 0.0);
+    
+    fac = sqrt(-2.0 * log(rsq)/rsq);
+    gset = v1 * fac;
+    iset = 1;           // set flag to indicate second deviate available
+    
+    return (hyFloat) (v2 * fac);
+  } else {
+    iset = 0;
+    return (hyFloat) gset;       // use second deviate
   }
-  
-  temp = theV + 4.5;
-  result *= exp(-temp+log(temp)*(theV-.5));
-  
-  if (alpha >= 1.0) {
-    return result;
-  }
-  temp = pi_const * (1-alpha);
-  return temp / result / sin (temp);
 }
 
-  //__________________________________________________________________________________
 
-
-_Parameter _ln_gamma (_Parameter alpha) {
-  // obtained from Numerical Recipes in C, p. 214 by afyp, February 7, 2007
-
-  _Parameter static lngammaCoeff [6] = {
-    76.18009172947146,
-    -86.50532032941677,
-    24.01409824083091,
-    -1.231739572450155,
-    0.1208650973866179e-2,
-    -0.5395239384953e-5
-  };
-  
-  
-  _Parameter  x, y, tmp, ser;
-  
-  y = x = alpha;
-  tmp = x + 5.5;
-  tmp -= (x+0.5) * log(tmp);
-  ser = 1.000000000190015;
-  
-  for (int j = 0; j < 6 ; ++j ) {
-    ser += lngammaCoeff[j] / ( y += 1. );
-  }
-  
-  return -tmp + log(2.506628274631005*ser/x);
-
- 
+//__________________________________________________________________________________________________________
+hyFloat  exponDeviate (void) {
+  return -log(1.0-genrand_real2());   // uniform random number on interval (0,1]
 }
 
-//__________________________________________________________________________________
 
-_Parameter _ibeta (_Parameter x, _Parameter a, _Parameter b) {
-    // check ranges
-  if (x > 0. && x < 1.) { // in range
-    
- 
-    _Parameter  aa,
-                c,
-                d,
-                del,
-                h,
-                qab,
-                qam,
-                qap,
-                FPMIN = 1e-100;
-
-    
-    bool        swap = false;
-    
-    
-    if (x >= (a+1.)/(a+b+2.)) {
-      swap = true;
-      c = b;
-      b = a;
-      a = c;
-      x = 1. - x;
-    }
-    
-    qab = a+b;
-    qap = a+1.;
-    qam = a-1.;
-    c   = 1.;
-    d   = 1. - qab*x/qap;
-    if  ((d<FPMIN)&&(d>-FPMIN)) {
-      d = FPMIN;
-    }
-    d   = 1./d;
-    h   = d;
-    
-    for (int m=1; m<100; m++) {
-      _Parameter m2 = 2*m;
-      aa = m*(b-m)*x / ((qam+m2)*(a+m2));
-      d = 1.+aa*d;
-      if  ((d<FPMIN)&&(d>-FPMIN)) {
-        d = FPMIN;
-      }
-      c = 1.+aa/c;
-      if  ((c<FPMIN)&&(c>-FPMIN)) {
-        c = FPMIN;
-      }
-      d = 1./d;
-      h*= d*c;
-      aa = -(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
-      d = 1.+aa*d;
-      if  ((d<FPMIN)&&(d>-FPMIN)) {
-        d = FPMIN;
-      }
-      c = 1.+aa/c;
-      if  ((c<FPMIN)&&(c>-FPMIN)) {
-        c = FPMIN;
-      }
-      d = 1./d;
-      del = d*c;
-      h*= del;
-      del -= 1.;
-      if  ((del<1.e-14)&&(del>-1.e-14))   {
-        break;
-      }
-    }
-    
-    c = exp (a*log(x)+b*log(1.-x)+_ln_gamma(a+b)-_ln_gamma(a)-_ln_gamma(b));
-    
-    if (swap) {
-      return 1.-c*h/a;
-    } else {
-      return c*h/a;
-    }
-  }
+//__________________________________________________________________________________________________________
+hyFloat  gammaDeviate (hyFloat a, hyFloat scale) {
   
+  /* -----------------------------------------
+   GS algorithm from GNU GPL rgamma.c
+   *  Mathlib : A C Library of Special Functions
+   *  Copyright (C) 1998 Ross Ihaka
+   *  Copyright (C) 2000--2008 The R Development Core Team
+   
+   * Ziggurat algorithm from Marsaglia and Tsang (2000) "A Simple Method
+   *  for Generating Gamma Variables" ACM Trans Math Soft 26(3) 363-372
+   ----------------------------------------- */
   
-  if (x <= 0.) {
-    if ( x < 0.) {
-      ReportWarning (_String ("IBeta is defined for x in [0,1]. Had x = ") & x);
-    }
+  const static double exp_m1 = 0.36787944117144232159;    /* exp(-1) = 1/e */
+  
+  double              e, x, p;
+  
+  if (a < 0.0) {
+    ReportWarning ("NaN in gammaDeviate()");
     return 0.;
+  } else if (a == 0.0) {
+    return 0.;
+  } else if (a < 1.0) {   // GS algorithm for parameters 0 < a < 1
+    if(a == 0) {
+      return 0.;
+    }
+    
+    e = 1.0 + exp_m1 * a;
+    
+    while (1) {
+      p = e * genrand_real2();    // should be uniform random number on open interval (0,1)
+                                  // but genrand_real3 scoping (baseobj.cpp) is insufficient
+      if (p >= 1.0) {
+        x = -log((e - p) / a);
+        if (exponDeviate() >= (1.0 - a) * log(x)) {
+          break;
+        }
+      } else {
+        x = exp(log(p) / a);
+        if (exponDeviate() >= x) {
+          break;
+        }
+      }
+    }
+    
+    return x*scale;
   }
   
-  if ( x > 1.) {
-    ReportWarning (_String ("IBeta is defined for x in [0,1]. Had x = ") & x);
+  else if (a == 1.0) {
+    return exponDeviate() * scale;
   }
   
-  return 1.;
+  else {  // a > 1., Ziggurat algorithm
+    double  x, v, u,
+    d   = a - 1./3.,
+    c = 1. / sqrt(9.*d);
+    
+    for (;;) {
+      do {
+        x = gaussDeviate();
+        v = 1. + c * x;
+      } while (v <= 0.);
+      
+      v = v * v * v;
+      u = genrand_real2();
+      
+      if (u < 1. - 0.0331 * (x*x)*(x*x) ) {
+        return (d * v * scale);
+      }
+      
+      if ( log(u) < 0.5*x*x + d*(1.-v+log(v)) ) {
+        return (d * v * scale);
+      }
+    }
+  }
+}
+
+
+
+//__________________________________________________________________________________
+hyFloat  chisqDeviate (double df) {
+  if (df < 0.0) {
+    HandleApplicationError (_String("ERROR in chisqDeviate(): require positive degrees of freedom"));
+    return HY_INVALID_RETURN_VALUE;
+  }
+  
+  return gammaDeviate(df/2.0, 2.0);   // chi-square distribution is special case of gamma
+}
+
+
+
+//__________________________________________________________________________________
+
+
+hyFloat _gamma (hyFloat alpha) {
+    hyFloat static gammaCoeff [7] = {
+        2.50662827463100050,
+        190.9551718944012,
+        -216.8366818451899,
+        60.19441758801798,
+        -3.087513097785903,
+        0.003029460875352382,
+        -0.00001345152485367085
+    };
+    
+    hyFloat theV = alpha >=1.0? alpha : 2.-alpha,
+    result = gammaCoeff[0],
+    temp = theV;
+    
+    for (int i = 1; i < 7; ++i , temp += 1.) {
+        result += gammaCoeff[i] / temp;
+    }
+    
+    temp = theV + 4.5;
+    result *= exp(-temp+log(temp)*(theV-.5));
+    
+    if (alpha >= 1.0) {
+        return result;
+    }
+    temp = pi_const * (1-alpha);
+    return temp / result / sin (temp);
 }
 
 //__________________________________________________________________________________
 
-_Parameter _igamma (_Parameter a, _Parameter x) {
-  _Parameter sum = 0.;
-  if (x>1e25) {
-    x=1.e25;
-  } else if (x<0.) {
-    WarnError ("The domain of x is {x>0} for IGamma (a,x)");
-    return 0.0;
-  } else if (x==0.0) {
-    return 0.0;
-  }
-  
-  
-  _Parameter gamma = _gamma (a);
-  
-  if (x <= a + 1.) {
-      // use the series representation
-      // IGamma (a,x)=exp(-x) x^a \sum_{n=0}^{\infty} \frac{\Gamma((a)}{\Gamma(a+1+n)} x^n
+
+hyFloat _ln_gamma (hyFloat alpha) {
+    // obtained from Numerical Recipes in C, p. 214 by afyp, February 7, 2007
     
-    _Parameter term = 1.0/a, den = a+1.;
-    
-    for (int count = 0; fabs (term) >= fabs (sum) * machineEps && count < 500; ++ count) {
-      sum+=term;
-      term*=x/den;
-      den += 1.0;
+    if (alpha <= 0.) {
+        return NAN;
     }
     
-    return sum * exp (-x + a * log (x)) / gamma;
+    hyFloat static lngammaCoeff [6] = {
+        76.18009172947146,
+        -86.50532032941677,
+        24.01409824083091,
+        -1.231739572450155,
+        0.1208650973866179e-2,
+        -0.5395239384953e-5
+    };
+  
+    static hyFloat lookUpTable [20] = {   0.       ,  0.       ,  0.6931472,  1.7917595,  3.1780538,
+      4.7874917,  6.5792512,  8.5251614, 10.6046029, 12.8018275,
+      15.1044126, 17.5023078, 19.9872145, 22.5521639, 25.1912212,
+      27.8992714, 30.6718601, 33.5050735, 36.3954452, 39.3398842
+    };
+  
+    if (alpha <= 20. && floor (alpha) == alpha) {
+      return lookUpTable [(long) alpha - 1];
+    }
+
     
-  }
+    hyFloat  x, y, tmp, ser;
+    
+    y = x = alpha;
+    tmp = x + 5.5;
+    tmp -= (x+0.5) * log(tmp);
+  
+    ser = 1.000000000190015 +
+          lngammaCoeff[0] / (y + 1.) +
+          lngammaCoeff[1] / (y + 2.) +
+          lngammaCoeff[2] / (y + 3.) +
+          lngammaCoeff[3] / (y + 4.) +
+          lngammaCoeff[4] / (y + 5.) +
+          lngammaCoeff[5] / (y + 6.);
+
+    /*
+    for (int j = 0; j < 6 ; ++j ) {
+        ser += lngammaCoeff[j] / ( y += 1. );
+    }
+    */
+    
+    return -tmp + log(2.506628274631005*ser/x);
+    
+    
+}
+
+//__________________________________________________________________________________
+
+hyFloat _ibeta (hyFloat x, hyFloat a, hyFloat b) {
+    // check ranges
+    if (x > 0. && x < 1.) { // in range
+        
+        
+        hyFloat  aa,
+        c,
+        d,
+        del,
+        h,
+        qab,
+        qam,
+        qap,
+        FPMIN = 1e-100;
+        
+        
+        bool        swap = false;
+        
+        
+        if (x >= (a+1.)/(a+b+2.)) {
+            swap = true;
+            c = b;
+            b = a;
+            a = c;
+            x = 1. - x;
+        }
+        
+        qab = a+b;
+        qap = a+1.;
+        qam = a-1.;
+        c   = 1.;
+        d   = 1. - qab*x/qap;
+        if  ((d<FPMIN)&&(d>-FPMIN)) {
+            d = FPMIN;
+        }
+        d   = 1./d;
+        h   = d;
+        
+        for (int m=1; m<100; m++) {
+            hyFloat m2 = 2*m;
+            aa = m*(b-m)*x / ((qam+m2)*(a+m2));
+            d = 1.+aa*d;
+            if  ((d<FPMIN)&&(d>-FPMIN)) {
+                d = FPMIN;
+            }
+            c = 1.+aa/c;
+            if  ((c<FPMIN)&&(c>-FPMIN)) {
+                c = FPMIN;
+            }
+            d = 1./d;
+            h*= d*c;
+            aa = -(a+m)*(qab+m)*x/((a+m2)*(qap+m2));
+            d = 1.+aa*d;
+            if  ((d<FPMIN)&&(d>-FPMIN)) {
+                d = FPMIN;
+            }
+            c = 1.+aa/c;
+            if  ((c<FPMIN)&&(c>-FPMIN)) {
+                c = FPMIN;
+            }
+            d = 1./d;
+            del = d*c;
+            h*= del;
+            del -= 1.;
+            if  ((del<1.e-14)&&(del>-1.e-14))   {
+                break;
+            }
+        }
+        
+        c = exp (a*log(x)+b*log(1.-x)+_ln_gamma(a+b)-_ln_gamma(a)-_ln_gamma(b));
+        
+        if (swap) {
+            return 1.-c*h/a;
+        } else {
+            return c*h/a;
+        }
+    }
+    
+    
+    if (x <= 0.) {
+        if ( x < 0.) {
+            ReportWarning (_String ("IBeta is defined for x in [0,1]. Had x = ") & x);
+        }
+        return 0.;
+    }
+    
+    if ( x > 1.) {
+        ReportWarning (_String ("IBeta is defined for x in [0,1]. Had x = ") & x);
+    }
+    
+    return 1.;
+}
+
+//__________________________________________________________________________________
+
+hyFloat _igamma (hyFloat a, hyFloat x) {
+    hyFloat sum = 0.;
+    if (x>1e25) {
+        x=1.e25;
+    } else if (x<0.) {
+        HandleApplicationError ("The domain of x is {x>0} for IGamma (a,x)");
+        return 0.0;
+    } else if (x==0.0) {
+        return 0.0;
+    }
+    
+    
+    hyFloat gamma = _gamma (a);
+    
+    if (x <= a + 1.) {
+        // use the series representation
+        // IGamma (a,x)=exp(-x) x^a \sum_{n=0}^{\infty} \frac{\Gamma((a)}{\Gamma(a+1+n)} x^n
+        
+        hyFloat term = 1.0/a, den = a+1.;
+        
+        for (int count = 0; fabs (term) >= fabs (sum) * kMachineEpsilon && count < 500; ++ count) {
+            sum+=term;
+            term*=x/den;
+            den += 1.0;
+        }
+        
+        return sum * exp (-x + a * log (x)) / gamma;
+        
+    }
     // use the continue fraction representation
     // IGamma (a,x)=exp(-x) x^a 1/x+/1-a/1+/1/x+/2-a/1+/2/x+...
-  
-  _Parameter lastTerm = 0., a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
-  for (int count = 1; count<500; ++count) {
-    an = count;
-    ana = an - a;
-    a0 = (a1+a0*ana)*factor;
-    b0 = (b1+b0*ana)*factor;
-    anf = an*factor;
-    a1  = x*a0+anf*a1;
-    b1  = x*b0+anf*b1;
-    if (a1!=0.0) {
-      factor=1.0/a1;
-      sum = b1*factor;
-      if (fabs(sum-lastTerm)/sum<machineEps) {
-        break;
-      }
-      lastTerm = sum;
+    
+    hyFloat lastTerm = 0., a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
+    for (int count = 1; count<500; ++count) {
+        an = count;
+        ana = an - a;
+        a0 = (a1+a0*ana)*factor;
+        b0 = (b1+b0*ana)*factor;
+        anf = an*factor;
+        a1  = x*a0+anf*a1;
+        b1  = x*b0+anf*b1;
+        if (a1!=0.0) {
+            factor=1.0/a1;
+            sum = b1*factor;
+            if (fabs(sum-lastTerm)/sum < kMachineEpsilon) {
+                break;
+            }
+            lastTerm = sum;
+        }
     }
-  }
-  
-  return 1.0 - sum * exp (-x + a * log (x)) / gamma;
-  
+    
+    return 1.0 - sum * exp (-x + a * log (x)) / gamma;
+    
 }
 
 //__________________________________________________________________________________
-_Constant::_Constant (_Parameter value)
-{
+_Constant::_Constant (hyFloat value) {
     theValue = value;
 }
 //__________________________________________________________________________________
 
-void _Constant::Initialize (bool)
-{
+void _Constant::Initialize (bool) {
     BaseObj::Initialize();
-    theValue = 0;
+    theValue = 0.;
 }
 //__________________________________________________________________________________
 
-void _Constant::Duplicate (BaseRef c)
-{
+void _Constant::Duplicate (BaseRefConst c) {
     BaseObj::Initialize();
-    theValue = ((_Constant*)c)->theValue;
+    theValue = ((_Constant const*)c)->theValue;
 }
 
 //__________________________________________________________________________________
 
-BaseRef _Constant::makeDynamic (void)
-{
-    _Constant * res = (_Constant*)checkPointer(new _Constant);
+BaseRef _Constant::makeDynamic (void) const{
+    _Constant * res = new _Constant;
     res->Duplicate(this);
     return res;
 }
 
 //__________________________________________________________________________________
 
-_Constant::_Constant (_String& s)
-{
-    theValue = atof (s.sData);
+_Constant::_Constant (_String& s) {
+    theValue = s.to_float();
 }
 
 //__________________________________________________________________________________
-_Constant::_Constant (void)
-{
-    theValue = 0;
+_Constant::_Constant (void) : theValue(0.0) {
 }
 
 //__________________________________________________________________________________
@@ -329,145 +471,126 @@ _Constant::_Constant (void)
 //}
 
 //__________________________________________________________________________________
-_Parameter    _Constant::Value (void) {
+hyFloat    _Constant::Value (void) {
     return theValue;
 }
-
 //__________________________________________________________________________________
-BaseRef _Constant::toStr(unsigned long)
-{
+BaseRef _Constant::toStr(unsigned long) {
     return parameterToString(Value());
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Add (_PMathObj theObj) {
-  
+HBLObjectRef _Constant::Add (HBLObjectRef theObj) {
     if (theObj->ObjectClass() == STRING) {
-        return new _Constant ((theValue+((_FString*)theObj)->theString->toNum()));
+        return new _Constant (theValue+((_FString*)theObj)->get_str().to_float());
     }
-
-    return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a + b;});
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a + b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sub (_PMathObj theObj) {
-  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a - b;});
+HBLObjectRef _Constant::Sub (HBLObjectRef theObj) {
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a - b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Minus (void) {
+HBLObjectRef _Constant::Minus (void) {
     return     new  _Constant (-Value());
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sum (void) {
+HBLObjectRef _Constant::Sum (void) {
     return     new  _Constant (Value());
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Mult (_PMathObj theObj) {
-  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a * b;});
-
+HBLObjectRef _Constant::Mult (HBLObjectRef theObj) {
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a * b;});
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Div (_PMathObj theObj) {
-  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a / b;});
-}
-//__________________________________________________________________________________
-_PMathObj _Constant::lDiv (_PMathObj theObj) {
-  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {
-    long       denom = b;
-    return     denom != 0L ? (long(a) % denom): a;
-  });
-}
-//__________________________________________________________________________________
-_PMathObj _Constant::longDiv (_PMathObj theObj) {
-  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {
-    long       denom = b;
-    return     denom != 0L ? (long(a) / denom): 0.0;
-  });
+HBLObjectRef _Constant::Div (HBLObjectRef theObj) {
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a / b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Raise (_PMathObj theObj) {
-  return _check_type_and_compute (theObj, [] (_Parameter base, _Parameter expon) -> _Parameter {
-    if (base>0.0) {
-      if (expon == 1.) {
-        return base;
-      }
-      return    exp (log(base)*(expon));
-    } else {
-      if (base<0.0) {
-        if (CheckEqual (expon, (long)expon)) {
-          return ((((long)expon)%2)?-1:1)*exp (log(-base)*(expon));
+HBLObjectRef _Constant::lDiv (HBLObjectRef theObj) { // %
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {
+            long       denom = b;
+            return     denom != 0L ? (long(a) % denom): a;
+    });
+}
+//__________________________________________________________________________________
+HBLObjectRef _Constant::longDiv (HBLObjectRef theObj)  {// div
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {
+        long       denom = b;
+        return     denom != 0L ? (long(a) / denom): 0.0;
+    });
+}
+//__________________________________________________________________________________
+HBLObjectRef _Constant::Raise (HBLObjectRef theObj) {
+    return _check_type_and_compute (theObj, [] (hyFloat base, hyFloat expon) -> hyFloat {
+        if (base>0.0) {
+            if (expon == 1.) {
+                return base;
+            }
+            return    exp (log(base)*(expon));
         } else {
-          _String errMsg ("An invalid base/exponent pair passed to ^");
-          WarnError (errMsg.sData);
+            if (base<0.0) {
+                if (CheckEqual (expon, (long)expon)) {
+                    return ((((long)expon)%2)?-1:1)*exp (log(-base)*(expon));
+                } else {
+                    HandleApplicationError("An invalid base/exponent pair passed to ^");
+                }
+            }
+            
+            if (expon != 0.0)
+                return     0.0;
+            else
+                return     1.0;
         }
-      }
-      
-      if (expon != 0.0)
-        return     0.0;
-      else
-        return     1.0;
-    }
-  });
+    });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Random (_PMathObj theObj) {
- 
-  return _check_type_and_compute (theObj, [] (_Parameter l, _Parameter u) -> _Parameter {
-      _Parameter r = l;
-      if (u>l) {
-          r=genrand_int32();
-          r/=RAND_MAX_32;
-          r =l+(u-l)*r;
-      }
-      return r;
-  });
+HBLObjectRef _Constant::Random (HBLObjectRef upperB) {
+    return _check_type_and_compute (upperB, [] (hyFloat l, hyFloat u) -> hyFloat {
+        hyFloat r = l;
+        if (u>l) {
+            r = l + (u-l) * genrand_real1();
+        }
+        return r;
+    });
 }
 
 //__________________________________________________________________________________
-void     _Constant::Assign (_PMathObj theObj)
-{
-    this->~_Constant ();
-    theValue = ((_Constant*)theObj)->theValue;
-}
-
-//__________________________________________________________________________________
-bool     _Constant::Equal (_PMathObj theObj) {
+bool     _Constant::Equal (HBLObjectRef theObj) {
     return theValue==((_Constant*)theObj)->theValue;
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Abs (void) {
+HBLObjectRef _Constant::Abs (void) {
     return     new _Constant (fabs(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Sin (void) {
+HBLObjectRef _Constant::Sin (void){
     return     new  _Constant (sin(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Cos (void){
+HBLObjectRef _Constant::Cos (void){
     return     new _Constant  (cos(theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Tan (void)
-{
+HBLObjectRef _Constant::Tan (void){
     return     new _Constant  (tan(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Exp (void)
-{
+HBLObjectRef _Constant::Exp (void){
     return     new _Constant  (exp(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
-{
+HBLObjectRef _Constant::FormatNumberString (HBLObjectRef p, HBLObjectRef p2) {
     long       a1 = p->Value(),
                a2 = p2->Value();
 
@@ -508,200 +631,189 @@ _PMathObj _Constant::FormatNumberString (_PMathObj p, _PMathObj p2)
     return     new _FString (new _String (buffer));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Log (void) {
+HBLObjectRef _Constant::Log (void) {
     return     new _Constant  (log(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Sqrt (void) {
+HBLObjectRef _Constant::Sqrt (void) {
     return     new _Constant  (sqrt(theValue));
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::Arctan (void) {
+HBLObjectRef _Constant::Arctan (void) {
     return     new _Constant  (atan(theValue));
 }
 
-
 //__________________________________________________________________________________
-
-_PMathObj _Constant::Gamma (void) {
-  return new _Constant (_gamma (theValue));
+HBLObjectRef _Constant::Gamma (void) {
+    return new _Constant (_gamma (theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LnGamma (void) {
-  return new _Constant (_ln_gamma (theValue));
+HBLObjectRef _Constant::LnGamma (void) {
+   return new _Constant (_ln_gamma (theValue));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Beta (_PMathObj arg) {
-    return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
-      return exp (_ln_gamma (a) + _ln_gamma (b) - _ln_gamma (a + b));
+HBLObjectRef _Constant::Beta (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
+        return exp (_ln_gamma (a) + _ln_gamma (b) - _ln_gamma (a + b));
     });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::IBeta (_PMathObj arg1, _PMathObj arg2) {
-  return _check_type_and_compute_3 (arg1, arg2, [] (_Parameter a, _Parameter b, _Parameter c) -> _Parameter {
-    return _ibeta(a,b,c);
-  });
+HBLObjectRef _Constant::IBeta (HBLObjectRef arg1, HBLObjectRef arg2) {
+    return _check_type_and_compute_3 (arg1, arg2, [] (hyFloat a, hyFloat b, hyFloat c) -> hyFloat {
+        return _ibeta(a,b,c);
+    });
 }
 
 
 //__________________________________________________________________________________
-_PMathObj _Constant::IGamma (_PMathObj arg) {
-  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter { return _igamma(a, b);});
+HBLObjectRef _Constant::IGamma (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return _igamma(a, b);});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Erf (void) {
-  
-    _Parameter ig = _igamma (0.5, theValue * theValue);
+HBLObjectRef _Constant::Erf (void) {
+    hyFloat ig = _igamma (0.5, theValue * theValue);
     if (theValue < 0.) {
-      ig = -ig;
+        ig = -ig;
     }
     return new _Constant (ig);
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::ZCDF (void) {
-    _Parameter ig = _igamma (0.5, theValue * theValue * 0.5);
-  
-    if (theValue > 0) {
-      return new _Constant (0.5 * (ig + 1.));
+HBLObjectRef _Constant::ZCDF (void) {
+    hyFloat ig = _igamma (0.5, theValue * theValue * 0.5);
+    
+    if (theValue > 0.) {
+        return new _Constant (0.5 * (ig + 1.));
     }
     return new _Constant (0.5 * ( 1. - ig));
- }
+}
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Time (void) {
+HBLObjectRef _Constant::Time (void) {
     _Constant * result = new _Constant;
     if (theValue<1.0) {
-        result->theValue = ((_Parameter)clock()/CLOCKS_PER_SEC);
+        result->theValue = ((hyFloat)clock()/CLOCKS_PER_SEC);
     } else {
         time_t tt;
-        result->theValue = ((_Parameter)time(&tt));
+        result->theValue = ((hyFloat)time(&tt));
     }
     return     result;
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Less (_PMathObj theObj) {
-    return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a < b;});
+HBLObjectRef _Constant::Less (HBLObjectRef theObj) {
+   return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a < b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Greater (_PMathObj theObj) {
-  return _check_type_and_compute (theObj, [] (_Parameter a, _Parameter b) -> _Parameter {return a > b;});
+HBLObjectRef _Constant::Greater (HBLObjectRef theObj) {
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a > b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::GammaDist (_PMathObj alpha, _PMathObj beta) {
-  return _check_type_and_compute_3 (alpha, beta, [] (_Parameter x, _Parameter a, _Parameter b) -> _Parameter {
-    _Parameter gamma_dist = exp(a * log(b) -b*x +(a-1.)*log(x));
-    return gamma_dist / _gamma (a);
-  });
-}
-
-//__________________________________________________________________________________
-_PMathObj _Constant::CGammaDist (_PMathObj alpha, _PMathObj beta) {
-    return _check_type_and_compute_3 (alpha, beta, [] (_Parameter x, _Parameter a, _Parameter b) -> _Parameter {
-      return _igamma (a, b * x);
-    });
- }
-
-//__________________________________________________________________________________
-_PMathObj _Constant::CChi2 (_PMathObj theObj) {
-    return _check_type_and_compute (theObj, [] (_Parameter x, _Parameter b) -> _Parameter {
-      if (x < 0.0 || b <= 0.) {
-        ReportWarning ("CChi2(x,n) only makes sense for both arguments positive");
-        return 0.0;
-      }
-      return _igamma( b*0.5 , x * 0.5);
+HBLObjectRef _Constant::GammaDist (HBLObjectRef alpha, HBLObjectRef beta) {
+    return _check_type_and_compute_3 (alpha, beta, [] (hyFloat x, hyFloat a, hyFloat b) -> hyFloat {
+        hyFloat gamma_dist = exp(a * log(b) -b*x +(a-1.)*log(x));
+        return gamma_dist / _gamma (a);
     });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::InvChi2 (_PMathObj n) {
+HBLObjectRef _Constant::CGammaDist (HBLObjectRef alpha, HBLObjectRef beta) {
+    return _check_type_and_compute_3 (alpha, beta, [] (hyFloat x, hyFloat a, hyFloat b) -> hyFloat {
+        return _igamma (a, b * x);
+    });
+}
+
+//__________________________________________________________________________________
+HBLObjectRef _Constant::CChi2 (HBLObjectRef n) {
+// chi^2 n d.f. probability up to x
+    return _check_type_and_compute (n, [] (hyFloat x, hyFloat b) -> hyFloat {
+        if (x < 0.0 || b <= 0.) {
+            ReportWarning ("CChi2(x,n) only makes sense for both arguments positive");
+            return 0.0;
+        }
+        return _igamma( b*0.5 , x * 0.5);
+    });
+}
+
+//__________________________________________________________________________________
+HBLObjectRef _Constant::InvChi2 (HBLObjectRef n) {
 // chi^2 n d.f. probability up to x
     if (!chi2) {
-        _String fla ("IGamma(_n_,_x_)");
-        chi2 = new _Formula (fla, nil);
-        fla = "_x_^(_n_-1)/Gamma(_n_)/Exp(_x_)";
-        derchi2 = new _Formula (fla,nil);
+        chi2 = new _Formula (_String ("IGamma(") &  kNVariableName & "," & kXVariableName & ")", nil);
+        derchi2 = new _Formula (kXVariableName & "^(" & kNVariableName & "-1)/Gamma(" & kNVariableName & ")/Exp(" & kXVariableName & ")",nil);
     }
     _Constant halfn (((_Constant*)n)->theValue*.5);
-    if ((theValue<0)||(halfn.theValue<0)||(theValue>1.0)) {
-        _String warnMsg ("InvChi2(x,n) only makes sense for n positive, and x in [0,1]");
-        ReportWarning (warnMsg);
+    if (theValue<0. || halfn.theValue< 0.|| theValue> 1.0) {
+        ReportWarning ("InvChi2(x,n) is defined for n > 0, and x in [0,1]");
         return new _Constant (0.0);
     }
     LocateVar(dummyVariable2)->SetValue (&halfn);
     halfn.SetValue(chi2->Newton(*derchi2,theValue,1e-25,1.e100,LocateVar(dummyVariable1))*2);
-    return (_PMathObj)halfn.makeDynamic();
+    return (HBLObjectRef)halfn.makeDynamic();
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LessEq (_PMathObj arg) {
-    return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter { return a <= b;});
+HBLObjectRef _Constant::LessEq (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return a <= b;});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::GreaterEq (_PMathObj arg) {
-  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter { return a >= b;});
+HBLObjectRef _Constant::GreaterEq (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return a >= b;});
 }
 //__________________________________________________________________________________
-_PMathObj _Constant::AreEqual (_PMathObj arg) {
-  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
-    if (a==0.0) {
-      return b==0.0;
-    }
-    
-    return fabs ((a-b)/a)<tolerance;
-  
-  });
-  
-}
-
-//__________________________________________________________________________________
-_PMathObj _Constant::NotEqual (_PMathObj arg) {
-  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
-    if (a==0.0) {
-      return b!=0.0;
-    }
-    
-    return fabs ((a-b)/a)>=tolerance;
-  });
-}
-
-//__________________________________________________________________________________
-_PMathObj _Constant::LAnd (_PMathObj arg) {
-    return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
-      return long (a) && long (b);
+HBLObjectRef _Constant::AreEqual (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
+        if (a==0.0) {
+            return b==0.0;
+        }
+        return fabs ((a-b)/a)<tolerance;
     });
 }
-
-  //__________________________________________________________________________________
-_PMathObj _Constant::LOr (_PMathObj arg) {
-  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
+//__________________________________________________________________________________
+HBLObjectRef _Constant::NotEqual (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
+        if (a==0.0) {
+            return b!=0.0;
+        }
+        
+        return fabs ((a-b)/a)>=tolerance;
+    });
+}
+//__________________________________________________________________________________
+HBLObjectRef _Constant::LAnd (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
+        return long (a) && long (b);
+    });
+}
+//__________________________________________________________________________________
+HBLObjectRef _Constant::LOr (HBLObjectRef arg) {
+return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
     return long (a) || long (b);
-  });
+});
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::LNot () {
+HBLObjectRef _Constant::LNot () {
     return new _Constant (CheckEqual(theValue, 0.0));
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Min (_PMathObj arg) {
-    return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
-      return a < b ? a : b;
+HBLObjectRef _Constant::Min (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
+        return a < b ? a : b;
     });
 }
 
 //__________________________________________________________________________________
-_PMathObj _Constant::Max (_PMathObj arg) {
-  return _check_type_and_compute (arg, [] (_Parameter a, _Parameter b) -> _Parameter {
-    return a > b ? a : b;
-  });
+HBLObjectRef _Constant::Max (HBLObjectRef arg) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
+        return a > b ? a : b;
+    });
 }

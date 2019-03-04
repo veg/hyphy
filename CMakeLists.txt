@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(HyPhy)
 cmake_policy(VERSION 3.0.0)
-cmake_policy(SET CMP0026 NEW)
+cmake_policy(SET CMP0026 OLD)
 
 set(CMAKE_CONFIGURATION_TYPES Release)
 
@@ -20,9 +20,9 @@ macro(PCL_CHECK_FOR_SSE3)
   include(CheckCXXSourceRuns)
   set(CMAKE_REQUIRED_FLAGS)
 
-  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
       set(CMAKE_REQUIRED_FLAGS "-msse3")
-  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
 
   check_cxx_source_runs("
       #include <pmmintrin.h>
@@ -46,9 +46,9 @@ macro(PCL_CHECK_FOR_AVX)
   include(CheckCXXSourceRuns)
   set(CMAKE_REQUIRED_FLAGS)
 
-  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
       set(CMAKE_REQUIRED_FLAGS "-march=corei7-avx -mtune=corei7-avx")
-  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
 
   check_cxx_source_runs("
       #include <immintrin.h>
@@ -71,32 +71,47 @@ endmacro(PCL_CHECK_FOR_AVX)
 set(CMAKE_MODULE_PATH cmake)
 set(HYPHY_VERSION 2.1)
 
-
 #-------------------------------------------------------------------------------
 # setup the files we'll be using
 #-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
 file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
+file(GLOB SRC_CONTRIB src/contrib/*.cpp)
 
 set(SRC_LINK src/lib/link/THyPhy.cpp)
 set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS})
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_CONTRIB})
 
 
 #-------------------------------------------------------------------------------
 # make it fast, scotty
 #-------------------------------------------------------------------------------
 
-set(DEFAULT_WARNING_FLAGS "-w")
+set(DEFAULT_WARNING_FLAGS " -w  ")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
 
 
-macro(CHECK_CPU_EXTENSIONS)
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    execute_process(
+        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
+        OUTPUT_VARIABLE GCC_VERSION
+    )
+
+    if (${GCC_VERSION} VERSION_LESS 4.9)
+        message(FATAL_ERROR "Require at least gcc-4.9")
+    endif()
+
+    if(${GCC_VERSION} VERSION_LESS 6.0)
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
+    else(${GCC_VERSION} VERSION_LESS 6.0)
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=c++14")
+    endif(${GCC_VERSION} VERSION_LESS 6.0)
+
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
         if(NOSSE3)
@@ -121,27 +136,6 @@ macro(CHECK_CPU_EXTENSIONS)
             endif(${HAVE_SSE3_EXTENSIONS})
         endif(${HAVE_AVX_EXTENSIONS})
     endif(NOAVX)
-endmacro()
-
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    execute_process(
-        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-        OUTPUT_VARIABLE GCC_VERSION
-    )
-
-    if (${GCC_VERSION} VERSION_LESS 4.9)
-        message(FATAL_ERROR "Require at least gcc-4.9")
-    endif()
-
-
-    if(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
-    else(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
-    endif(${GCC_VERSION} VERSION_LESS 6.0)
-
-    CHECK_CPU_EXTENSIONS()
-
 
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
@@ -149,14 +143,25 @@ endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
-    CHECK_CPU_EXTENSIONS()
+    PCL_CHECK_FOR_AVX()
+    if(${HAVE_AVX_EXTENSIONS})
+        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
+        add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
+    else(${HAVE_AVX_EXTENSIONS})
+        PCL_CHECK_FOR_SSE3()
+        if(${HAVE_SSE3_EXTENSIONS})
+            add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+        endif(${HAVE_SSE3_EXTENSIONS})
+    endif (${HAVE_AVX_EXTENSIONS})
+
     set_property(
-     SOURCE ${SRC_CORE}
+     SOURCE ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_UNIXMAIN}
      APPEND_STRING PROPERTY  COMPILE_FLAGS " -std=c++14 "
     )
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
-set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}")
+set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g ")
 MESSAGE ("Set compiler flags to ${DEFAULT_COMPILE_FLAGS}")
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
@@ -170,14 +175,6 @@ endif(NOT DEFINED DEFAULT_LINK_FLAGS)
 if(NOT DEFINED DEFAULT_WARNING_FLAGS)
     set(DEFAULT_WARNING_FLAGS "")
 endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
-
-include (CheckLibraryExists)
-
-CHECK_LIBRARY_EXISTS( "libamdlibm.so" "amd_log" "" HAS_AMD_LIBM)
-if(HAS_AMD_LIBM)
-    set(DEFAULT_LINK_FLAGS "${DEFAULT_LINK_FLAGS} -lamdlibm")
-    add_definitions(-D__USEAMDLOG__)
-endif(HAS_AMD_LIBM)
 
 
 #-------------------------------------------------------------------------------
@@ -276,6 +273,7 @@ endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 include_directories(
     src/core/include
+    src/contrib
     src/lib/Link src/new/include
     contrib/SQLite-3.8.2 # SQLite
     contrib/gtest-1.7.0/include
@@ -293,6 +291,7 @@ install(DIRECTORY res/ DESTINATION lib/hyphy)
 #-------------------------------------------------------------------------------
 add_executable(
     HYPHYMP
+    EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
 
@@ -320,6 +319,12 @@ if(${OPENCL_FOUND})
 
     include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl)
     target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
+
+    install(
+        TARGETS HYPHYOCL
+        RUNTIME DESTINATION bin
+        OPTIONAL
+    )
 
     add_custom_target(OCL DEPENDS HYPHYOCL)
     set_property(
@@ -354,6 +359,7 @@ if(${MPI_FOUND})
 
     add_executable(
         HYPHYMPI
+        EXCLUDE_FROM_ALL
         ${SRC_COMMON} ${SRC_UNIXMAIN}
     )
 
@@ -401,8 +407,8 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg -O0 "
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-arcs -ftest-coverage -pg -O0 "
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
+    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
 )
 
 

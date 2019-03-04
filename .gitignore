@@ -7,6 +7,7 @@ src/ocl/opencl_kernels.h
 *.cxx
 tags
 .ctags
+*.plist
 
 # CMake generated files
 CMakeCache.txt
@@ -15,6 +16,10 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 cmake_uninstall.cmake
+CMakeScripts/
+HyPhy.build/
+HyPhy.xcodeproj
+
 
 # HYPHY binaries
 HYPHYMP
@@ -23,11 +28,13 @@ HyPhy.app
 iHyPhyDebug.app
 HYPHYDEBUG
 HYPHYDEBUG.dSYM
-HYPHYMP.dSYM
 
 # GTEST 
 HYPHYGTEST
 contrib/gtest-1.7.0/libgtest.a
+contrib/gtest-1.7.0/CMakeScripts
+contrib/gtest-1.7.0/HyPhy.build
+contrib/gtest-1.7.0/gtest.xcodeproj/
 gmon.out
 
 #HyPhy generated files
@@ -37,4 +44,8 @@ gmon.out
 messages.log
 errors.log
 tests/hbltests/libv3/data/CD2.nex.*.json
-tests/hbltests/libv3/data/CD2.prot.BGM.json
+tests/hbltests/data/tempFileTesting*
+
+
+#Utility function
+remake_hyphymp.sh

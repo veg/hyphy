@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -38,17 +38,15 @@
  */
 
 #include "hy_strings.h"
-#include "errorfns.h"
+#include "hy_string_buffer.h"
 #include "parser.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
 
 //______________________________________________________________
 
@@ -85,8 +83,7 @@ void    _AVLListXL::SetXtra (long i, BaseRef d, bool dup) {
 
 BaseRef _AVLListXL::toStr (unsigned long)
 {
-    _String * str = new _String (128L, true);
-    checkPointer (str);
+    _StringBuffer * str = new _StringBuffer (128L);
 
     if (countitems() == 0) {
         (*str) << "Empty Associative List";
@@ -106,10 +103,22 @@ BaseRef _AVLListXL::toStr (unsigned long)
         }
     }
 
-    str->Finalize();
     return str;
 }
+//______________________________________________________________
 
+_AVLListXL&  _AVLListXL::PushPairCopyKey  (_String const key, BaseRef data) {
+    UpdateValue (new _String (key), data, false, false);
+    return *this;
+}
+//______________________________________________________________
+
+_AVLListXL&  _AVLListXL::PushPair          (_String* key, BaseRef data) {
+    if (UpdateValue (key, data, false, false) >= 0) {
+        DeleteObject (key);
+    }
+    return *this;
+}
 
 //______________________________________________________________
 

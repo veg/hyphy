@@ -364,24 +364,6 @@ if (resample)
 
 	labels = {{"Events","Count","Cumulative Weight"}};
 
-	OpenWindow (CHARTWINDOW,{{"Simulated distribution of migration events"}
-			{"labels"}
-			{"countMatrix"}
-			{"Bar Chart"}
-			{"Events"}
-			{"Count"}
-			{"Number of Events"}
-			{""}
-			{"Counts"}
-			{""}
-			{""}
-			{"-1;-1"}
-			{"10;1.309;0.785398"}
-			{"Times:14:0;Times:12:0;Times:14:1"}
-			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-			{"16"}
-			},
-			"SCREEN_WIDTH-100;SCREEN_HEIGHT-100;50;50");
 
 	returnAVL["p"] = pVal/sampleCount;
 }

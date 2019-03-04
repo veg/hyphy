@@ -1,5 +1,6 @@
 RequireVersion("2.3");
 
+
 /*------------------------------------------------------------------------------
     Load library files
 */
@@ -222,6 +223,7 @@ slac.report_negative_site = {{"" + (1+((slac.filter_specification[slac.i])[terms
                                     slac.row[5],
                                     slac.row[6],
                                     "Neg. p = " + slac.row[9]}};
+
 
 
 for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
@@ -608,6 +610,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
                              // this implies that the ancestor is fully resolved
                         resolution = lookup [-this_state-2]; // column vector with 1's for possible resolutions
                         resolution_count = + resolution;
+                                                
 
                         av = Eval (averaged);
                         for (k = 0; k < 4; k += 1) {

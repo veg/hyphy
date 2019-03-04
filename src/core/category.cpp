@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,17 +37,20 @@
  
  */
 
-#include  "category.h"
-#include  "math.h"
-#include  "function_templates.h"
+#include  <math.h>
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+#include  "category.h"
+#include  "function_templates.h"
+#include  "global_things.h"
+#include  "global_object_lists.h"
+
+using namespace hy_global;
+using namespace hyphy_global_objects;
+
 
 //___________________________________________________________________________________________
 
-_String    defaultEqual         ("EQUAL"),
+const _String    defaultEqual         ("EQUAL"),
            medianRep          ("MEDIAN"),
            scaledMedianRep        ("SCALED_MEDIAN"),
            maxCatIvals            ("MAX_CATEGORY_INTERVALS"),
@@ -60,9 +63,6 @@ unsigned long maxCategoryIntervals = 100UL;
 #else
 #define    SLIGHT_SHIFT  1e-150
 #endif
-
-_Variable  *_x_ = nil,
-            *_n_ = nil;
 
 extern     _List        modelNames;
 extern     _SimpleList  modelMatrixIndices,
@@ -86,7 +86,7 @@ bool _CategoryVariable::checkWeightMatrix(_Matrix& w, long row)
 {
     bool    check = true;
     _Constant iterate;
-    _Parameter sumCheck = 0;
+    hyFloat sumCheck = 0;
     if (row>=0) {
         long shift = w.GetVDim()*row;
         for (long i=0; i<intervals; i++) {
@@ -118,28 +118,16 @@ bool _CategoryVariable::checkWeightMatrix(_Matrix& w, long row)
 
 //___________________________________________________________________________________________
 
-void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
+void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) {
 // main workhorse constructor
 // expects a list of strings containing the following
 // number of intervals
 // types of representation (MEAN or MEDIAN)
 // probability weight formula or "EQUAL"
-// probability density function (must contain at least _x_)
-// (optional) cumulative distribution f-n (must contain at least _x_)
-// range for _x_
+// probability density function (must contain at least hy_x_variable)
+// (optional) cumulative distribution f-n (must contain at least hy_x_variable)
+// range for hy_x_variable
 
-{
-
-    _String xname ("_x_");
-    if (_hyApplicationGlobals.Find (&xname) < 0) {
-        _hyApplicationGlobals.Insert (new _String (xname));
-    }
-    _x_ = CheckReceptacle (&xname,emptyString,false,false);
-    xname = "_n_";
-    if (_hyApplicationGlobals.Find (&xname) < 0) {
-        _hyApplicationGlobals.Insert (new _String (xname));
-    }
-    _n_ = CheckReceptacle (&xname,emptyString,false,false);
 
     _String     errorMsg = _String ("While attempting to construct category variable ") & *GetName() & ": ";
 
@@ -161,28 +149,26 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
     _String*            param = (_String*)parameters(0);
     intervals                 = ProcessNumericArgument(param,theP);
     if (intervals<=0) {
-        WarnError (errorMsg & _String("Category variable must have a positive number of classes - had ")
+        HandleApplicationError (errorMsg & _String("Category variable must have a positive number of classes - had ")
                    & *param);
         return;
     }
 
     if (intervals>maxCategoryIntervals) {
         intervals = maxCategoryIntervals;
-        errorMsg = errorMsg & _String("Category variable cannot have more than ")&maxCatIvals&" classes - had "
-                   & *param&". Reset to "& _String(intervals);
-        ReportWarning (errorMsg);
+        ReportWarning (errorMsg & _String("Category variable cannot have more than ")&maxCatIvals&" classes - had "
+                       & *param&". Reset to "& _String(intervals));
     }
 
-    checkPointer(values             = new _Matrix (intervals, 1, false, true));
-    checkPointer(intervalEnds       = new _Matrix (intervals, 1, false, true));
-    checkPointer(weights            = new _Matrix (intervals, 1, false, true));
+    values             = new _Matrix (intervals, 1, false, true);
+    intervalEnds       = new _Matrix (intervals, 1, false, true);
+    weights            = new _Matrix (intervals, 1, false, true);
 
     // construct the formula for interval weights
     param = (_String*)parameters (1);
     check = false;
-    if (!param->Equal(&defaultEqual))
+    if (*param != defaultEqual) {
         // do something here, otherwise they are just equal
-    {
         _String             splitterName (AppendContainerName(*param,theP));
         f = LocateVarByName (splitterName);
 
@@ -190,24 +176,23 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             _CategoryVariable * iSplitter = (_CategoryVariable*)FetchVar(f);
             if (!CheckEqual (iSplitter->GetMinX(),SLIGHT_SHIFT) ||
                     !CheckEqual (iSplitter->GetMaxX(),1.0) ||
-                    theName->Equal(&splitterName) ||
+                    *theName == splitterName ||
                     (intervals = iSplitter->GetNumberOfIntervals()+1) < 2) {
-                WarnError (errorMsg & _String("Category variables which specify interval splitting options must be supported on [0,1], and not result in circular dependance"));
+                HandleApplicationError (errorMsg & _String("Category variables which specify interval splitting options must be supported on [0,1], and not result in circular dependance"));
                 return;
             }
 
-            intervalSplitter = iSplitter->GetAVariable();
+            intervalSplitter = iSplitter->get_index();
 
             _AVLList      ivl (&scannedVarsList);
             iSplitter->ScanForVariables (ivl, true);
             ivl.ReorderList();
+            
+            BatchDelete(values, intervalEnds, weights);
 
-            DeleteObject (values);
-            DeleteObject (intervalEnds);
-            DeleteObject (weights);
-            checkPointer(values             = new _Matrix (intervals, 1, false, true));
-            checkPointer(intervalEnds       = new _Matrix (intervals, 1, false, true));
-            checkPointer(weights            = new _Matrix (intervals, 1, false, true));
+            values             = new _Matrix (intervals, 1, false, true);
+            intervalEnds       = new _Matrix (intervals, 1, false, true);
+            weights            = new _Matrix (intervals, 1, false, true);
             check = true;
         } else {
             _Formula      probabilities(*param,theP);
@@ -275,17 +260,16 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             } else {
                 if (scannedVarsList.lLength) {
                     if(scannedVarsList.lLength==1) {
-                        if (scannedVarsList[0]==_n_->GetAVariable()) {
-                              for (unsigned long i=0; i<intervals; i++) {
-                                _n_->SetValue(new _Constant ((_Parameter)i), false);
+                        if (scannedVarsList[0]==hy_n_variable->get_index()) {
+                              for (unsigned long i=0UL; i<intervals; i++) {
+                                hy_n_variable->SetValue(new _Constant ((hyFloat)i), false);
                                 (*weights)[i]= probabilities.Compute()->Value();
                             }
                             check = checkWeightMatrix (*weights);
                         }
                     }
                     if (!check) {
-                        errorMsg = errorMsg & _String("Interval weights must be specified in terms of _n_.");
-                        ReportWarning (errorMsg);
+                        ReportWarning (errorMsg & _String("Interval weights must be specified in terms of ") & hy_n_variable->GetName()->Enquote());
                     }
                     scannedVarsList.Clear();
                 }
@@ -309,9 +293,9 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
     // set the representation mode
 
     param = (_String*)parameters(2);
-    if (medianRep.Equal(param)) {
+    if (medianRep == *param) {
         representation = MEDIAN;
-    } else if (scaledMedianRep.Equal(param)) {
+    } else if (scaledMedianRep == *param) {
         representation = SCALED_MEDIAN;
     } else {
         representation = MEAN;
@@ -328,8 +312,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 
     if (!density.IsEmpty()) {
         if (covariantVar) {
-            errorMsg = errorMsg & "Continuous distributions are not supported by non-independent category variables - specify a discrete range.";
-            WarnError (errorMsg);
+            HandleApplicationError (errorMsg & "Continuous distributions are not supported by non-independent category variables - specify a discrete range.");
             return;
         }
 
@@ -343,7 +326,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             scannedVarsList.Union (densityVars,existingVars);
         }
 
-        f = scannedVarsList.Find(_x_->GetAVariable());
+        f = scannedVarsList.Find(hy_x_variable->get_index());
         if (f!=-1) { // no dummy variable
             check = true;
             scannedVarsList.Delete(f);
@@ -355,7 +338,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
         // get the cumulative probability
 
         param = (_String*)parameters(4);
-        if (!param->Length()) { // no cumul. dist'n specified - integration is yet to be implemented
+        if (param->empty ()) { // no cumul. dist'n specified - integration is yet to be implemented
             ReportWarning (errorMsg & _String("Runtime integration of probability density can be _very_ slow - please provide the analytic form for cumulative distribution if known."));
         } else {
             if(check) {
@@ -370,9 +353,9 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                     sv.ReorderList();
                     scannedVarsList.Union (densityVars,existingVars);
                 }
-                f = scannedVarsList.BinaryFind(_x_->GetAVariable());
+                f = scannedVarsList.BinaryFind(hy_x_variable->get_index());
                 if (f<0) { // no dummy variable
-                    WarnError (errorMsg & _String("Cumulative distribution must be specified in terms of _x_. Had:")&*param);
+                    HandleApplicationError (errorMsg & _String("Cumulative distribution must be specified in terms of ") & hy_x_variable->GetName()->Enquote() & ". Had: " &param->Enquote());
                     return;
                 } else {
                     scannedVarsList.Delete(f);
@@ -383,14 +366,13 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 
         // get the bounds here
         param = (_String*)parameters(5);
-        x_min = param->toNum()+SLIGHT_SHIFT;
+        x_min = param->to_float()+SLIGHT_SHIFT;
 
         param = (_String*)parameters(6);
-        x_max = param->toNum()-SLIGHT_SHIFT;
+        x_max = param->to_float()-SLIGHT_SHIFT;
 
         if (x_max<=x_min) {
-            errorMsg = errorMsg & _String("Bad variable bounds. Had:")&*(_String*)parameters(5)&" and "&*param;
-            WarnError (errorMsg);
+            HandleApplicationError (errorMsg & _String("Bad variable bounds. Had:")&*(_String*)parameters(5)&" and "&*param);
             return;
         }
 
@@ -400,17 +382,17 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
 
         if (!check) { // uniform distribution
             if (x_max==INFINITE_BOUND) {
-                WarnError ( errorMsg & _String("Can't have uniform distributions over infinite intervals. "));
+                HandleApplicationError ( errorMsg & _String("Can't have uniform distributions over infinite intervals. "));
                 return;
             } else {
-                errorMsg = errorMsg & _String("Since density ")&*(_String*)parameters(3)& " contains no _x_, the distribution was set to uniform over ["&_String(x_min)&","&_String(x_max)&"]";
+                errorMsg = errorMsg & _String("Since density ")&*(_String*)parameters(3)& " contains no " & kXVariableName.Enquote() &", the distribution was set to uniform over ["&_String(x_min)&","&_String(x_max)&"]";
                 ReportWarning (errorMsg);
                 density.Clear();
-                _Parameter dns = 1.0/(x_max-x_min);
+                hyFloat dns = 1.0/(x_max-x_min);
                 errorMsg = _String(dns);
                 _FormulaParsingContext fpc;
                 Parse(&density, errorMsg,fpc, nil);
-                errorMsg = _String(dns)&"*(_x_-"&_String(x_min)&")";
+                errorMsg = _String(dns)&"*(" & kXVariableName &"-"&_String(x_min)&")";
                 Parse(&cumulative, errorMsg,fpc, nil);
             }
         }
@@ -434,14 +416,12 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             }
 
             if (!check) {
-                errorMsg  = errorMsg & *param & " must be the identifier of an existing, independent category variable.";
-                WarnError (errorMsg);
+                HandleApplicationError ( errorMsg & *param & " must be the identifier of an existing, independent category variable.");
                 return;
             } else {
                 covariant = variableNames.GetXtra (f);
                 if (((_CategoryVariable*)FetchVar (f))->GetNumberOfIntervals() != weights->GetHDim()) {
-                    errorMsg  = errorMsg & *param & " is incompatible with the conditional probability matrix for " & *GetName() &". The number of possible values of " & *param &" must match the row count of the matrix.";
-                    WarnError (errorMsg );
+                    HandleApplicationError (errorMsg & *param & " is incompatible with the conditional probability matrix for " & *GetName() &". The number of possible values of " & *param &" must match the row count of the matrix.");
                     return;
                 }
             }
@@ -458,13 +438,12 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             scannedVarsList.Union (densityVars,existingVars);
         }
         // check to see if it is a matrix spec
-        _PMathObj  tryMatrix = cumulative.GetTheMatrix();
+        HBLObjectRef  tryMatrix = cumulative.GetTheMatrix();
         if (tryMatrix) {
             _Matrix* catMatrix = (_Matrix*)tryMatrix;
             if (!( ((catMatrix->GetHDim()==1)&&(catMatrix->GetVDim()==intervals))||
                     ((catMatrix->GetHDim()==intervals)&&(catMatrix->GetVDim()==1)))) {
-                errorMsg = errorMsg & ("Dimension of category representatives matrix is not the same as the number of categories");
-                WarnError (errorMsg );
+                HandleApplicationError (errorMsg & ("Dimension of category representatives matrix is not the same as the number of categories"));
                 return;
             } else {
                 values->Duplicate(catMatrix);
@@ -492,7 +471,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                 }
             }
         } else {
-            WarnError (errorMsg & ("Expected an explicit enumeration of category representatives in place of cumulative distribution. Had:") & _String((_String*)cumulative.toStr()) );
+            HandleApplicationError (errorMsg & ("Expected an explicit enumeration of category representatives in place of cumulative distribution: ") & ((_String*)cumulative.toStr(kFormulaStringConversionNormal))->Enquote() );
             return;
         }
     }
@@ -501,8 +480,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
     for (long i=0; i<scannedVarsList.lLength; i++) {
         _Variable * curVar = (_Variable*)variablePtrs (scannedVarsList.lData[i]);
         if (curVar->IsCategory()) {
-            errorMsg = errorMsg & _String("Can't have a category variable depend on a category variable.");
-            WarnError (errorMsg);
+            HandleApplicationError (errorMsg & _String("Can't create a category variable that depends on another category variable, ") & curVar->GetName()->Enquote());
             return;
         }
     }
@@ -525,15 +503,15 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
             _String hmmModelName = AppendContainerName(*(_String*)parameters(8),theP);
             f = FindModelName(hmmModelName);
             if (f==-1) {
-                if (constantOnPartition.Equal ((_String*)parameters (8))) {
+                if (constantOnPartition == *(_String*)parameters (8)) {
                     flags = CONSTANT_ON_PARTITION;
                 } else {
-                    WarnError (errorMsg & (*(_String*)parameters(8))& " is not an existing model identifier in call to 'category'");
+                    HandleApplicationError (errorMsg & (*(_String*)parameters(8))& " is not an existing model identifier in call to 'category'");
                     return;
                 }
             } else {
                 if (covariantVar) {
-                    WarnError (errorMsg & "Non-independent random variables can't also be hidden Markov.");
+                    HandleApplicationError (errorMsg & "Non-independent random variables can't also be hidden Markov.");
                     return;
                 }
                 long mindex = f;
@@ -569,7 +547,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP)
                 }
 
                 if (!mbf) {
-                    WarnError (errorMsg & (*(_String*)parameters(8))& " is not a valid HMM-component model (square matrix of dimension "&_String (f) & ") identifier in call to 'category'");
+                    HandleApplicationError (errorMsg & (*(_String*)parameters(8))& " is not a valid HMM-component model (square matrix of dimension "&_String (f) & ") identifier in call to 'category'");
                 }
             }
         }
@@ -636,8 +614,7 @@ bool _CategoryVariable::IsLayered (void)
 
 //___________________________________________________________________________________________
 
-void _CategoryVariable::ChangeNumberOfIntervals (long newi)
-{
+void _CategoryVariable::ChangeNumberOfIntervals (long newi) {
     if (newi==intervals) {
         return;
     }
@@ -649,9 +626,6 @@ void _CategoryVariable::ChangeNumberOfIntervals (long newi)
     values = new _Matrix (intervals, 1, false, true);
     intervalEnds = new _Matrix (intervals, 1, false, true);
     weights = new _Matrix (intervals, 1, false, true);
-    checkPointer(values);
-    checkPointer(intervalEnds);
-    checkPointer(weights);
     covariant = -1;
     intervalSplitter = -1;
 
@@ -664,22 +638,19 @@ void _CategoryVariable::ChangeNumberOfIntervals (long newi)
 
 //___________________________________________________________________________________________
 
-BaseRef     _CategoryVariable::makeDynamic(void)
-{
+BaseRef     _CategoryVariable::makeDynamic(void) const {
     _CategoryVariable* result = new _CategoryVariable();
-    checkPointer(result);
     result->Duplicate(this);
     return result;
 }
 //___________________________________________________________________________________________
-void        _CategoryVariable::Duplicate(BaseRef s)
-{
-    _CategoryVariable* cv = (_CategoryVariable*)s;
+void        _CategoryVariable::Duplicate(BaseRefConst s) {
+    _CategoryVariable const* cv = (_CategoryVariable const*)s;
     Clear();
     intervals = cv->intervals;
-    density.Duplicate ((BaseRef)&cv->density);
-    cumulative.Duplicate ((BaseRef)&cv->cumulative);
-    meanC.Duplicate ((BaseRef)&cv->meanC);
+    density.Duplicate (&cv->density);
+    cumulative.Duplicate (&cv->cumulative);
+    meanC.Duplicate (&cv->meanC);
     representation = cv->representation;
     x_min = cv->x_min;
     x_max = cv->x_max;
@@ -735,37 +706,37 @@ void    _CategoryVariable::Clear (void)
 BaseRef _CategoryVariable::toStr (unsigned long)
 {
     UpdateIntervalsAndValues(true);
-    _String result (32UL,true);
+    _StringBuffer * result  = new _StringBuffer (256UL);
     if (weights) {
-        result<< "\nClass weights are:";
+        *result<< "\nClass weights are:";
         _Matrix* cw =(_Matrix*)weights->ComputeNumeric();
         checkWeightMatrix(*cw);
-        result.AppendNewInstance((_String*)cw->toStr());
-        result<<'\n';
+        result->AppendNewInstance((_String*)cw->toStr());
+        *result<<'\n';
     }
     if (values) {
-        result<<"Classes represented by:";
-        result.AppendNewInstance((_String*)values->toStr());
+        *result<<"Classes represented by:";
+        result->AppendNewInstance((_String*)values->toStr());
     }
     if (intervalEnds) {
-        result<< "Interval ends:";
-        result.AppendNewInstance((_String*)intervalEnds->toStr());
+        *result<< "Interval ends:";
+        result->AppendNewInstance((_String*)intervalEnds->toStr());
     }
     if (!density.IsEmpty()) {
-        result << "\nSupported on [";
-        result << _String(x_min);
-        result << ',';
-        result << _String(x_max);
-        result << "]\n";
+        *result << "\nSupported on [";
+        *result << _String(x_min);
+        *result << ',';
+        *result << _String(x_max);
+        *result << "]\n";
     }
-    result.Finalize();
-    return result.makeDynamic();
+    result->TrimSpace ();
+    return result;
 }
 
 //___________________________________________________________________________________________
-_Parameter  _CategoryVariable::SetIntervalValue (long ival, bool recalc)
+hyFloat  _CategoryVariable::SetIntervalValue (long ival, bool recalc)
 {
-    _Parameter newIntervalValue;
+    hyFloat newIntervalValue;
     if (recalc) {
         newIntervalValue  = GetValues()->theData[ival];
     } else {
@@ -776,7 +747,7 @@ _Parameter  _CategoryVariable::SetIntervalValue (long ival, bool recalc)
 }
 
 //___________________________________________________________________________________________
-_Parameter  _CategoryVariable::GetIntervalValue (long ival)
+hyFloat  _CategoryVariable::GetIntervalValue (long ival)
 {
     if (values) {
         return GetValues()->theData[ival];
@@ -786,7 +757,7 @@ _Parameter  _CategoryVariable::GetIntervalValue (long ival)
 }
 
 //___________________________________________________________________________________________
-_Parameter  _CategoryVariable::GetIntervalWeight (long ival)
+hyFloat  _CategoryVariable::GetIntervalWeight (long ival)
 {
     if (weights) {
         if (covariant >= 0 || intervalSplitter >= 0) {
@@ -815,7 +786,7 @@ _Matrix*    _CategoryVariable::GetValues (void)
 long        _CategoryVariable::GetCurrentState (void)
 {
     _Matrix         *v  = GetValues();
-    _Parameter      cv  = Compute()->Value();
+    hyFloat      cv  = Compute()->Value();
 
     for (long res = 0; res < intervals; res ++)
         if (CheckEqual (cv, v->theData[res])) {
@@ -834,7 +805,7 @@ _Matrix*    _CategoryVariable::GetWeights (bool covAll)
     if (intervalSplitter>=0) {
         _CategoryVariable * iSplitter = (_CategoryVariable*)LocateVar (intervalSplitter);
         cw = iSplitter->GetValues();
-        _Parameter      minusMe = 0.0;
+        hyFloat      minusMe = 0.0;
         for (long k=0; k<intervals-1; k++) {
             weights->theData[k] = cw->theData[k] - minusMe;
             minusMe = cw->theData[k];
@@ -865,7 +836,7 @@ _Matrix*    _CategoryVariable::GetWeights (bool covAll)
             _Matrix * cw2 = cv->GetWeights ();
 
             for (long k=0; k<intervals; k++) {
-                _Parameter sum = 0.0;
+                hyFloat sum = 0.0;
                 for (long j=0; j<iv2; j++) {
                     sum += cw2->theData[j]* (*cw)(j,k);
                 }
@@ -911,15 +882,13 @@ _Matrix*    _CategoryVariable::ComputeHiddenMarkovFreqs (void)
 }
 
 //___________________________________________________________________________________________
-_Matrix*    _CategoryVariable::GetHiddenMarkov (void)
-{
+_Matrix*    _CategoryVariable::GetHiddenMarkov (void) const {
     _Variable* theMX = LocateVar (modelMatrixIndices.lData[hiddenMarkovModel]);
     return (_Matrix*)theMX->GetValue();
 }
 
 //___________________________________________________________________________________________
-_Matrix*    _CategoryVariable::GetHiddenMarkovFreqs (void)
-{
+_Matrix*    _CategoryVariable::GetHiddenMarkovFreqs (void) const {
     long       fIndex = modelFrequenciesIndices.lData[hiddenMarkovModel];
     if (fIndex<0) {
         fIndex = -fIndex-1;
@@ -960,8 +929,7 @@ bool    _CategoryVariable::IsGlobal (void)
 }
 
 //___________________________________________________________________________________________
-void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals, _AVLListX * tagger, long weight)
-{
+void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals, _AVLListX * tagger, long weight) const {
     density.ScanFForVariables(l,true, false, true, false, tagger, weight);
     weights->ScanForVariables(l,true,tagger, weight);
     values->ScanForVariables(l,true,tagger, weight);
@@ -975,7 +943,7 @@ void      _CategoryVariable::ScanForVariables (_AVLList& l, bool globals, _AVLLi
     }
 
     if (globals) {
-        l.Delete ((BaseRef)(_x_->GetAVariable()));
+        l.Delete ((BaseRef)(hy_x_variable->get_index()));
     }
 
 }
@@ -997,7 +965,7 @@ void      _CategoryVariable::ScanForGVariables (_AVLList& l)
         tempA.ReorderList();
     }
 
-    long xi = _x_->GetAVariable();
+    long xi = hy_x_variable->get_index();
 
     for (long i=0; i<temp.lLength; i++) {
         if (temp.lData[i]!=xi) {
@@ -1011,16 +979,13 @@ void      _CategoryVariable::ScanForGVariables (_AVLList& l)
 }
 
 //___________________________________________________________________________________________
-_Parameter      _CategoryVariable::Mean (void)
+hyFloat      _CategoryVariable::Mean (void)
 {
-    _Parameter mean = 0.;
-    
-    UpdateIntervalsAndValues ();
-    
+    hyFloat mean = 0.;
     _Matrix * wts = GetWeights(),
               * val = GetValues();
 
-    for (long ii = 0; ii < intervals; ii++) {        
+    for (long ii = 0; ii < intervals; ii++) {
         mean += wts->theData[ii] * val->theData[ii];
     }
 
@@ -1028,8 +993,7 @@ _Parameter      _CategoryVariable::Mean (void)
 }
 
 //___________________________________________________________________________________________
-bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
-{
+bool        _CategoryVariable::UpdateIntervalsAndValues (bool force) {
     if (density.IsEmpty()) {
         return false;
     }
@@ -1057,33 +1021,33 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
         }
 
         if (!weights->IsIndependent() && !checkWeightMatrix(*ew)) {
-            WarnError (_String("Matrix of category weights invalid at runtime: ") & _String((_String*)ew->toStr()));
+            HandleApplicationError (_String("Matrix of category weights invalid at runtime: ") & _String((_String*)ew->toStr()));
         }
 
-        _Parameter currentBase = 0.0,
+        hyFloat currentBase = 0.0,
                    currentLeft = x_min;
 
         for (i = 0; i<intervals-1; i++) {
-            _Parameter    currentProb  = (*ew)[i];
+            hyFloat    currentProb  = (*ew)[i];
             currentBase+=currentProb;
 
             if (!cumulative.IsEmpty()) {
-                (*intervalEnds)[i] = cumulative.Newton (density, currentBase, currentLeft,x_max, _x_);    // get the next interval point
+                (*intervalEnds)[i] = cumulative.Newton (density, currentBase, currentLeft,x_max, hy_x_variable);    // get the next interval point
             } else {
-                (*intervalEnds)[i] = density.Newton ( _x_, currentBase,x_min, currentLeft);    // get the next interval point
+                (*intervalEnds)[i] = density.Newton ( hy_x_variable, currentBase,x_min, currentLeft);    // get the next interval point
             }
 
             if (currentProb) {
                 if (representation == MEAN) { // compute the MEAN
                     // need to perform integration here of p(x) dx
                     if (meanC.IsEmpty()) {
-                        values->theData[i] = density.MeanIntegral (_x_,currentLeft,(*intervalEnds)[i])/(*ew)[i];
+                        values->theData[i] = density.MeanIntegral (hy_x_variable,currentLeft,(*intervalEnds)[i])/(*ew)[i];
                     } else {
                         _Constant    currentRight ((*intervalEnds)[i]);
-                        _x_->SetValue(&currentRight);
+                        hy_x_variable->SetValue(&currentRight);
                         values->theData[i] = meanC.Compute()->Value();
                         currentRight.SetValue(currentLeft);
-                        _x_->SetValue(&currentRight);
+                        hy_x_variable->SetValue(&currentRight);
                         values->theData[i] = x_min+((*values)[i]- meanC.Compute()->Value())/(*ew)[i];
                         if (values->theData[i]>x_max) {
                             values->theData[i] = x_max;
@@ -1099,9 +1063,9 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
 
                 } else { // compute the MEDIAN
                     if (!cumulative.IsEmpty()) {
-                        (*values)[i] = cumulative.Newton (density,currentBase-(*ew)[i]/2, currentLeft, x_max ,_x_);
+                        (*values)[i] = cumulative.Newton (density,currentBase-(*ew)[i]/2, currentLeft, x_max ,hy_x_variable);
                     } else {
-                        (*values)[i] = density.Newton (_x_, currentBase-(*ew)[i]/2,x_min, currentLeft);
+                        (*values)[i] = density.Newton (hy_x_variable, currentBase-(*ew)[i]/2,x_min, currentLeft);
                     }
                 }
             } else {
@@ -1112,18 +1076,18 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
         }
         // finally do something special for the last interval, since it may be over (a,infinity)
 
-        _Parameter    lastProb  = (*ew)[i];
+        hyFloat    lastProb  = (*ew)[i];
         if (lastProb) {
             if (representation == MEAN) { // compute the MEAN
                 // need to perform integration here of p(x) dx
                 if (meanC.IsEmpty()) {
-                    (*values)[i] = density.MeanIntegral (_x_,currentLeft,(*intervalEnds)[i],true)/(*ew)[i];
+                    (*values)[i] = density.MeanIntegral (hy_x_variable,currentLeft,(*intervalEnds)[i],true)/(*ew)[i];
                 } else {
                     _Constant    currentRight (x_max);
-                    _x_->SetValue(&currentRight);
+                    hy_x_variable->SetValue(&currentRight);
                     values->theData[i] = meanC.Compute()->Value();
                     currentRight.SetValue(currentLeft);
-                    _x_->SetValue(&currentRight);
+                    hy_x_variable->SetValue(&currentRight);
                     values->theData[i] = x_min+((*values)[i]- meanC.Compute()->Value())/(*ew)[i];
                     if (values->theData[i]>x_max) {
                         values->theData[i] = x_max;
@@ -1140,9 +1104,9 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
                 }
             } else { // compute the MEDIAN
                 if (!cumulative.IsEmpty()) {
-                    (*values)[i] = cumulative.Newton (density,currentBase+(*ew)[i]/2, currentLeft, x_max, _x_);
+                    (*values)[i] = cumulative.Newton (density,currentBase+(*ew)[i]/2, currentLeft, x_max, hy_x_variable);
                 } else {
-                    (*values)[i] = density.Newton (_x_, currentBase+(*ew)[i]/2,x_min, currentLeft);
+                    (*values)[i] = density.Newton (hy_x_variable, currentBase+(*ew)[i]/2,x_min, currentLeft);
                 }
             }
         } else {
@@ -1151,13 +1115,13 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
 
         if (representation == SCALED_MEDIAN) {
 
-            _Parameter distMean,discMean = 0;
+            hyFloat distMean,discMean = 0;
 
             if (meanC.IsEmpty()) {
-                distMean = density.MeanIntegral (_x_,x_min,x_max, true);
+                distMean = density.MeanIntegral (hy_x_variable,x_min,x_max, true);
             } else {
                 _Constant    currentRight (x_max);
-                _x_->SetValue(&currentRight);
+                hy_x_variable->SetValue(&currentRight);
                 distMean = meanC.Compute()->Value();
             }
 
@@ -1170,18 +1134,17 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force)
             }
         }
     }
-    _x_->MarkDone();
+    hy_x_variable->MarkDone();
 
     return force;
 }
 
 
 //___________________________________________________________________________________________
-void _CategoryVariable::SerializeCategory (_String& rec)
+void _CategoryVariable::SerializeCategory (_StringBuffer & rec)
 {
     _String     weightNames = *GetName()&'.'&"weights",
-                catNames    = *GetName()&'.'&"points",
-                *theFS;
+                catNames    = *GetName()&'.'&"points";
 
     if (intervalSplitter>=0) {
         ((_CategoryVariable*)LocateVar(intervalSplitter))->SerializeCategory(rec);
@@ -1213,7 +1176,7 @@ void _CategoryVariable::SerializeCategory (_String& rec)
     if (intervalSplitter==-1) {
         rec << weightNames;
     } else {
-        rec << LocateVar(intervalSplitter)->GetName();
+        rec << *LocateVar(intervalSplitter)->GetName();
     }
 
     rec << ',';
@@ -1230,13 +1193,9 @@ void _CategoryVariable::SerializeCategory (_String& rec)
     }
     rec << ',';
     if (hasDensity) {
-        theFS = (_String*)density.toStr();
-        rec << *theFS;
-        DeleteObject (theFS);
+        rec.AppendNewInstance((_String*)density.toStr(kFormulaStringConversionNormal));
         rec << ',';
-        theFS = (_String*)cumulative.toStr();
-        rec << *theFS;
-        DeleteObject (theFS);
+        rec.AppendNewInstance((_String*)cumulative.toStr(kFormulaStringConversionNormal));
     } else {
         if (IsUncorrelated()) {
             rec << ',';
@@ -1251,9 +1210,7 @@ void _CategoryVariable::SerializeCategory (_String& rec)
     rec << ',';
     rec << _String(x_max+SLIGHT_SHIFT);
     rec << ',';
-    theFS = (_String*)meanC.toStr();
-    rec << *theFS;
-    DeleteObject (theFS);
+    rec.AppendNewInstance ((_String*)meanC.toStr(kFormulaStringConversionNormal));
 
     if ((hiddenMarkovModel != HY_NO_MODEL)||(flags&CONSTANT_ON_PARTITION)) {
         rec << ',';

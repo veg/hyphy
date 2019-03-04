@@ -1,0 +1,57 @@
+/* Array of available empirical models */
+plusF_helper.empirical_model_generators = {"LG": "models.protein.LG.ModelDescription",
+                                           "WAG": "models.protein.WAG.ModelDescription",
+                                           "JTT": "models.protein.JTT.ModelDescription",
+                                           "JC": "models.protein.JC.ModelDescription"};
+
+plusF_helper.Rij_options = {"LG":  models.protein.empirical.LG.empirical_R,
+                            "WAG": models.protein.empirical.WAG.empirical_R,
+                            "JTT": models.protein.empirical.JTT.empirical_R,
+                            "JC":  models.protein.empirical.JC.empirical_R};
+
+
+// This code is elegant and I will hear nothing to the contrary.
+lfunction plusF_helper.BuildCustomNormalizedQ(EFV, rij, alphabet){
+
+    dim  = utility.Array1D (alphabet);
+
+    // Create Q from R, EFV
+    Q = {dim,dim};
+    rowSums = {dim,1};
+
+    for (i = 0; i < dim; i +=1 ){
+        rowSum = 0;
+        for ( j = 0; j < dim; j += 1){
+            Q[i][j] = rij[i][j] * EFV[j];
+            rowSum += rij[i][j] * EFV[j];
+        }
+        rowSums[i] = -1 * rowSum;
+    }
+
+    // Fill in diagonal
+    for (i = 0; i < dim; i += 1){
+        Q[i][i] = rowSums[i];
+    }
+
+    // normalize
+    scalar = 0;
+    for (i = 0; i < dim; i +=1 ){
+        scalar += Q[i][i] * EFV[i];
+    }
+    scalar = -1*scalar;
+    for (i = 0; i < dim; i +=1 ){
+        for ( j = 0; j < dim; j += 1){
+            Q[i][j] = Q[i][j] / scalar;
+        }
+    }
+    // Now convert it BACK TO hyphy dictionary.
+    finalQ  = {};
+    for (l1 = 0; l1 < dim - 1; l1 += 1) {
+        finalQ[alphabet[l1]] = {};
+        for (l2 = l1 + 1; l2 < dim; l2 += 1) {
+            (finalQ[alphabet[l1]])[alphabet[l2]] = Q [l1][l2];
+        }
+    }
+
+    return finalQ;
+}

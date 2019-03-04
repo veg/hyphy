@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -52,9 +52,9 @@
 // this class defines a computational (or storage) class which, as a variable, may contain
 // other variables locally.
 
+
 class _Matrix;
-class   _VariableContainer: public _Variable
-{
+class   _VariableContainer: public _Variable {
 
     friend class _Operation;
     friend class _Variable;
@@ -62,12 +62,12 @@ class   _VariableContainer: public _Variable
 public:
 
     _VariableContainer (void);
-    _VariableContainer (_String theName, _String theTmplt = "", _VariableContainer* theP = nil);
+    _VariableContainer (_String const & theName, _String theTmplt = "", _VariableContainer* theP = nil);
     // name, matrix constructor, the parent (if there is one)
     virtual ~_VariableContainer(void);
 
-    void                    InitializeVarCont       (_String&, _String&, _VariableContainer*, _AVLListXL* = nil);
-    void                    ScanModelBasedVariables (_String&, _AVLListXL*);
+    void                    InitializeVarCont       (_String const&, _String&, _VariableContainer*, _AVLListXL* = nil);
+    void                    ScanModelBasedVariables (_String const&, _AVLListXL*);
     virtual     void        SetModel                (long,_AVLListXL*);
 
     virtual     void        MarkDone (void);
@@ -87,10 +87,9 @@ public:
     virtual     void        ScanForDVariables           (_AVLList&,_AVLList&) const;
     virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0) const;
 
-    virtual     bool        IsModelVar                  (long);
     virtual     bool        IsConstant                  (void);
-    virtual     BaseRef     makeDynamic                 (void);
-    virtual     void        Duplicate                   (BaseRef);
+    virtual     BaseRef     makeDynamic                 (void) const;
+    virtual     void        Duplicate                   (BaseRefConst);
 
     virtual     BaseRef     toStr                       (unsigned long);
 
@@ -98,17 +97,18 @@ public:
 
     virtual     bool        RemoveDependance            (long);
     virtual     long        SetDependance               (long);
-    bool        SetMDependance              (_SimpleList&);
+    bool        SetMDependance              (_SimpleList const&);
 
     virtual     void        Clear                       (void);
     virtual     void        ClearConstraints            (void);
 
-    long        CountIndependents           (void);
-    long        CountAll                    (void);
+    long        CountIndependents           (void) const;
+    long        CountDependents           (void) const;
+    long        CountAll                    (void) const;
 
-    virtual     _Variable*  GetIthIndependent           (long);
-    virtual     _Variable*  GetIthDependent             (long);
-    virtual     _Variable*  GetIthParameter             (long);
+    virtual     _Variable*  GetIthIndependent           (long) const;
+    virtual     _Variable*  GetIthDependent             (long) const;
+    virtual     _Variable*  GetIthParameter             (long) const;
 
     long        CheckAndAddUserExpression   (_String&, long startWith = 0);
     void        KillUserExpression          (long);
@@ -120,13 +120,13 @@ public:
     bool        HasExplicitFormModel        (void) const;
     _Formula*   GetExplicitFormModel        (void) const;
 
-    long        GetModelIndex               (void) {
+    long        GetModelIndex               (void) const {
         return theModel;
     }
     
     _String const*    GetModelName                (void) const;
     
-    long        GetModelDimension           (void);
+    long              GetModelDimension           (void);
     /* 20100316 SLKP
         return the dimension of the model; needed to handle the case
         of explicit model exponentials
@@ -139,7 +139,7 @@ public:
     _VariableContainer* GetTheParent                (void) {
         return theParent;
     }
-
+    
 protected: // data members
 
     _SimpleList         *iVariables,
@@ -147,6 +147,52 @@ protected: // data members
                         *gVariables;
 
     void               SortVars (void);
+    
+    void                PushGlobalVariable (long var_ref);
+    void                PushIndVariable (long var_ref, long local_ref);
+    void                PushDepVariable (long var_ref, long local_ref);
+    bool                HasIndVariable  (long var_ref) const;
+    bool                HasDepVariable  (long var_ref) const;
+    void                RemoveLocalVariable  (_SimpleList* & array, long array_index);
+    void                RemoveGlobalVariable (long array_index);
+    long                InsertVariableInSortedList (_SimpleList * & list, _String const&  var_name, long var_idx, long ref_idx);
+
+    static              void                CopyModelParameterValue (long var_idx, long ref_index, unsigned long);
+    
+    template <typename LAMBDA> void ForEachLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
+        if (array) {
+            unsigned long array_l = array->countitems();
+            for (unsigned long index = 0UL; index < array_l; index += 2UL) {
+                cb (array->get (index), array->get (index+1), index);
+            }
+        }
+    };
+ 
+    template <typename LAMBDA> long FindLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
+        if (array) {
+            unsigned long array_l = array->countitems();
+            for (long index = 0UL; index < array_l; index += 2UL) {
+                if (cb (array->get (index), array->get (index+1), index)) {
+                    return index >> 1;
+                }
+            }
+        }
+        return kNotFound;
+    };
+
+    template <typename LAMBDA> bool AnyLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
+        if (array) {
+            unsigned long array_l = array->countitems();
+            for (unsigned long index = 0UL; index < array_l; index += 2UL) {
+                if ((cb) (array->get (index), array->get (index+1), index)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    
 
     long                theModel;   // model template for the container
     _VariableContainer  *theParent; // a higher level container, if there is one.

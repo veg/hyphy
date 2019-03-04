@@ -46,7 +46,7 @@ lfunction selection.io.defineBranchSets(partition_info) {
             selectTheseForTesting[3 + k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
         }
     }
-
+    
     ChoiceList(testSet, "Choose the set of branches to test for selection", 1, NO_SKIP, selectTheseForTesting);
 
     io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
@@ -127,6 +127,43 @@ lfunction selection.io.extract_global_MLE(fit, id) {
     return ((fit[utility.getGlobalValue("terms.global")])[id])[utility.getGlobalValue("terms.fit.MLE")];
 }
 
+//------------------------------------------------------------------------------
+
+lfunction selection.io.report_distribution (distribution) {
+
+    // TODO remove hardcoding
+    settings = {"header" : TRUE, "column-widths": {
+            "0": 35,
+            "1": 15,
+            "2": 35
+            }};
+
+    fprintf (stdout, "\n", io.FormatTableRow ({{"Rate", "Proportion, %", "Notes"}}, settings));
+    rates = Rows (distribution);
+    settings ["header"] = FALSE;
+    for (i = 0; i < rates; i += 1) {
+        row_matrix = {1,3};
+
+        row_matrix [0] =  Format (distribution [i][0], 6, 3);
+        row_matrix [1] =  Format (distribution [i][1] * 100, 6, 3);
+        row_matrix [2] = "";
+
+        if (distribution [i][1] < 1e-4) {
+            row_matrix [2] = "Not supported by data";
+        } else {
+            if (i > 0) {
+                if (distribution [i-1][0] == distribution [i][0] || parameters.NormalizeRatio (Abs(distribution [i-1][0] - distribution [i][0]), Max (distribution [i-1][0], distribution [i][0])) < 0.05) {
+                    row_matrix [2] = "Collapsed rate class";
+                }
+            }
+        }
+
+        fprintf (stdout, io.FormatTableRow (row_matrix, settings));
+
+    }
+    fprintf (stdout, "\n");
+    return row_matrix;
+}
 
 //------------------------------------------------------------------------------
 
@@ -212,6 +249,15 @@ function selection.io.report_fit (fit, xp, ss) {
 //------------------------------------------------------------------------------
 
 
+lfunction selection.io.ensure_not_null(object) {
+    if (Type (object) == "Undefined") {
+        return {};
+    }
+    return object;
+}
+//------------------------------------------------------------------------------
+
+
 function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution, display_order) {
 
 
@@ -221,7 +267,7 @@ function selection.io.json_store_lf(json, name, ll, df, ss, rate_distribution, d
             terms.json.log_likelihood: ll,
             terms.json.parameters: df,
             terms.json.AICc: selection.io.getIC(ll, df, ss),
-            terms.json.rate_distribution: rate_distribution,
+            terms.json.rate_distribution: selection.io.ensure_not_null(rate_distribution),
             terms.json.display_order: display_order
     });
 
@@ -239,7 +285,7 @@ function selection.io.json_store_lf_withEFV (json, name, ll, df, ss, rate_distri
             terms.json.parameters: df,
             terms.json.AICc: selection.io.getIC(ll, df, ss),
             terms.json.frequencies: frequencies,
-            terms.json.rate_distribution: rate_distribution,
+            terms.json.rate_distribution: selection.io.ensure_not_null(rate_distribution),
             terms.json.display_order: display_order
     });
 

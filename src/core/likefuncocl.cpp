@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -165,17 +165,17 @@ _SimpleList     updateNodes,
                 flatLeaves,
                 flatTree,
                 theFrequencies;
-_Parameter      *iNodeCache,
+hyFloat      *iNodeCache,
                 *theProbs;
 _SimpleList taggedInternals;
-_GrowingVector* lNodeResolutions;
+_Vector* lNodeResolutions;
 float scalar;
 
 void *node_cache, *nodRes_cache, *nodFlag_cache, *scalings_cache, *prob_cache, *freq_cache, *root_cache, *result_cache, *root_scalings, *model;
 
 void _OCLEvaluator::init(   long esiteCount,
                                     long ealphabetDimension,
-                                    _Parameter* eiNodeCache)
+                                    hyFloat* eiNodeCache)
 {
     clean = false;
     contextSet = false;
@@ -204,7 +204,7 @@ int _OCLEvaluator::setupContext(void)
 
     //long nodeResCount = sizeof(lNodeResolutions->theData)/sizeof(lNodeResolutions->theData[0]);
     long nodeFlagCount = flatLeaves.lLength*siteCount;
-    long nodeResCount = lNodeResolutions->GetUsed();
+    long nodeResCount = lNodeResolutions->get_used();
     int roundCharacters = roundUpToNextPowerOfTwo(alphabetDimension);
 //    long nodeCount = flatLeaves.lLength + flatNodes.lLength + 1;
 //    long iNodeCount = flatNodes.lLength + 1;
@@ -695,7 +695,7 @@ double _OCLEvaluator::oclmain(void)
 */
     long nodeCode, parentCode;
     bool isLeaf;
-    _Parameter* tMatrix;
+    hyFloat* tMatrix;
     int a1, a2;
     //printf("updateNodes.lLength: %i", updateNodes.lLength);
     //#pragma omp parallel for default(none) shared(updateNodes, flatParents, flatLeaves, flatCLeaves, flatTree, alphabetDimension, model, roundCharacters) private(nodeCode, parentCode, isLeaf, tMatrix, a1, a2)
@@ -1046,11 +1046,11 @@ double _OCLEvaluator::launchmdsocl( _SimpleList& eupdateNodes,
                                     _SimpleList& eflatCLeaves,
                                     _SimpleList& eflatLeaves,
                                     _SimpleList& eflatTree,
-                                    _Parameter* etheProbs,
+                                    hyFloat* etheProbs,
                                     _SimpleList& etheFrequencies,
                                     long* elNodeFlags,
                                     _SimpleList& etaggedInternals,
-                                    _GrowingVector* elNodeResolutions)
+                                    _Vector* elNodeResolutions)
 {
 #ifdef __OCLPOSIX__
     clock_gettime(CLOCK_MONOTONIC, &mainStart);

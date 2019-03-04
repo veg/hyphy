@@ -370,7 +370,7 @@ lfunction parameters.GenerateSequentialNames(prefix, count, delimiter) {
 lfunction parameters.GetRange(id) {
 
     if (Type(id) == "String") {
-        GetInformation (range, ^id, 0);
+        GetInformation (range, ^id);
         return  {
             ^"terms.lower_bound" : range[1],
             ^"terms.upper_bound" : range[2]
@@ -388,7 +388,6 @@ lfunction parameters.GetRange(id) {
  * @returns nothing
  */
 function parameters.SetRange(id, ranges) {
-
     if (Type(id) == "String") {
         if (Abs(id)) {
             if (Type(ranges) == "AssociativeList") {
@@ -425,6 +424,7 @@ lfunction parameters.IsIndependent(parameter) {
     //console.log(parameter);
 
     GetString(info, ^ parameter, -1);
+    
     if (Type(info) == "AssociativeList") {
         return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;
     }
@@ -432,7 +432,7 @@ lfunction parameters.IsIndependent(parameter) {
 }
 
 lfunction parameters.GetConstraint(parameter) {
-    GetString(info, ^ parameter, -2);
+    GetString(info, ^parameter, -2);
     return info;
 }
 
@@ -505,7 +505,6 @@ function parameters.ConstrainSets(set1, set2) {
 function parameters.RemoveConstraint(id) {
     if (Type(id) == "String") {
         if (Abs(id)) {
-            //console.log ("RemoveConstraint `id` = " + Eval(id));
             Eval("`id` = " + Eval(id));
         }
     } else {
@@ -732,5 +731,32 @@ lfunction parameters.SetLocalModelParameters (model, tree, node) {
     	^_parameter_ = ^(`&node_name` + _parameter_);
     ');
 
+}
+
+/**
+ * Set category variables to their mean values for branch length calculations
+ * @name parameters.SetLocalModelParameters
+ * @param {Dict} model - model description
+*/
+
+lfunction parameters.SetCategoryVariables (model) {
+    
+    cat_vars      = (model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.category")];
+    cat_var_count = utility.Array1D (cat_vars);
+    cat_var_substitutions = {};
+    
+    if (cat_var_count) {
+        cat_vars = Rows (cat_vars);
+        for (i = 0; i < cat_var_count; i+=1) {
+            cv = rate_variation.compute_mean (cat_vars[i]);
+            cat_var_substitutions [cat_vars[i]] = cv;
+            parameters.SetValue (cat_vars[i], cv);
+        }
+    }
+    
+    return cat_var_substitutions;
+    
+     
+   
 }
 

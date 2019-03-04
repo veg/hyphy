@@ -30,7 +30,8 @@ LoadFunctionLibrary     ("libv3/tasks/mpi.bf");
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
-
+utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
+utility.SetEnvVariable ("LF_SMOOTHING_SCALER",0.05);
 
 
 /*------------------------------------------------------------------------------*/
@@ -272,6 +273,11 @@ if (relax.model_set == "All") { // run all the models
         }
 
         relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
+        
+        PARAMETER_GROUPING = {};
+        PARAMETER_GROUPING + relax.distribution["rates"];
+        PARAMETER_GROUPING + relax.distribution["weights"];
+
 
         parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
 
@@ -365,7 +371,7 @@ if (relax.model_set == "All") { // run all the models
 if (relax.numbers_of_tested_groups == 2) {
 	io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model to test K != 1");
 } else {
-	io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model to with individual K parameters for " + relax.numbers_of_tested_groups + " branch groups");
+	io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model with individual K parameters for " + relax.numbers_of_tested_groups + " branch groups");
 }
 
 
@@ -523,10 +529,6 @@ function relax.report_multi_class_rates (model_fit, distributions) {
 //------------------------------------
 
 function relax.FitMainTestPair () {
-
-	console.log ("*** relax.FitMainTestPair ***");
-
-	console.log (relax.general_descriptive.fit);
 
 	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
 	io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
@@ -983,6 +985,8 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
 //------------------------------------------------------------------------------
 lfunction relax.select_branches(partition_info) {
 
+    kGroupMode = "Group mode";
+
     io.CheckAssertion("utility.Array1D (`&partition_info`) == 1", "RELAX only works on a single partition dataset");
     available_models = {};
 
@@ -1006,10 +1010,10 @@ lfunction relax.select_branches(partition_info) {
         
 	if (nontrivial_groups >= 3) { // could run as a group set
 		run_mode = io.SelectAnOption ({
-			{"Group mode", "Run the test for equality of selective regimes among  " + nontrivial_groups + " groups of branches"}
+			{kGroupMode, "Run the test for equality of selective regimes among  " + nontrivial_groups + " groups of branches"}
 			{"Classic mode", "Select one test and one reference group of branches, with the rest of the branches treated as unclassified"}
 		}, "Group test mode");
-		if (run_mode == "Group mode") {
+		if (run_mode == kGroupMode) {
 			 utility.SetEnvVariable ("relax.numbers_of_tested_groups", nontrivial_groups);
 			 utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "
 					if ('' == _value_ ) {
@@ -1021,7 +1025,7 @@ lfunction relax.select_branches(partition_info) {
 		}
 	}
 	
-	if (run_mode != "Group mode") {
+	if (run_mode != kGroupMode) {
 
 		selectTheseForTesting = {
 			option_count, 2

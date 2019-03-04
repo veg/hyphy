@@ -37,7 +37,7 @@ fprintf (stdout, "\nBase composition:\n\tA: ", Format (baseFreqs[0][0],10,5),","
 ChoiceList (modelKind, "Model", 1, SKIP_NONE,
 					   "Alternative", "Fit Model A with 4 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Positive in FG. Class 4: Neutral evolution in BG, Positive in FG",
 					   "Null for Test 1", "Fit a model with 2 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG.",
-					   "Null for Test 2", "Fit Model A with 3 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Neutral in FG.",
+					   "Null for Test 2", "Fit Model A with 3 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Neutral in FG."
 );					   
 
 if (modelKind < 0)
@@ -234,7 +234,7 @@ if (modelKind != 1)
 	mxTreeSpec [2] = "10,40,-10,-175,1";
 	mxTreeSpec [3] = "";
 	mxTreeSpec [4] = "";
-	OpenWindow 		(TREEWINDOW, mxTreeSpec,"(SCREEN_WIDTH-50)/2;(SCREEN_HEIGHT-50)/2;30+(SCREEN_WIDTH-30)/2;45");				
+				
 
 	leafNodes	  = TipCount   (givenTree);			
 	internalNodes = BranchCount(givenTree);
@@ -263,7 +263,7 @@ if (modelKind != 1)
 	{
 		fprintf (stdout, choiceMatrix[stOption[bc]][0], "\n");
 	}
-	OpenWindow (CLOSEWINDOW, "Tree givenTree");
+	
 }
 	
 /* 15. Constrain dS and dN in the tree to based upon different models */
@@ -470,25 +470,7 @@ for (k = 0; k < rateClasses; k=k+1)
 	disributionInfo = disributionInfo + ":" + siteProfile[0][k];
 }
 
-OpenWindow (DISTRIBUTIONWINDOW,{{"Conditional probabilities by site"}
-		{"headers"}
-		{"posteriorMatrix"}
-		{"None"}
-		{"Index"}
-		{"None"}
-		{""}
-		{""}
-		{""}
-		{"0"}
-		{""}
-		{"0;0"}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:12:2"}
-		{"0;0;13816530;16777215;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		{disributionInfo}
-		},
-		"600;600;50;50");
+
 		
 _MARGINAL_MATRIX_ = Transpose(posteriorMatrix);
 _CATEGORY_VARIABLE_CDF_ = siteProfile[1][-1];

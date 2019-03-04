@@ -1,6 +1,7 @@
 LoadFunctionLibrary("../models/model_functions.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
+LoadFunctionLibrary("mpi.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 
@@ -696,15 +697,22 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
     }
 
-    //assert (0);
-    //Export (lf,likelihoodFunction);
-    //console.log (lf);   
-	//utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
-	
-	//console.log ("\n****Initial LF value = " + estimators.ComputeLF (lf_id) + "\n*****");
+    if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
+        grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
+        best_value   = Max (grid_results, 1);
+        parameters.SetValues ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+        //console.log (best_value);
+        //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+        //assert (0);
+    }
     
+    
+    //utility.SetEnvVariable ("VERBOSITY_LEVEL" ,10);
+
    	Optimize (mles, likelihoodFunction);
 
+    //Export (lf,likelihoodFunction);
+    //console.log (lf);
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
@@ -818,11 +826,10 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options, None);
 
 
-    /*
-    Export (lfe, likelihoodFunction);
-    fprintf ("/tmp/pogo-dump.fit", CLEAR_FILE, lfe);
-    */
-
+    
+    //Export (lfe, likelihoodFunction);
+    //fprintf ("/tmp/pogo-dump.fit", CLEAR_FILE, lfe);
+    
    	Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
@@ -1044,21 +1051,23 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     LikelihoodFunction likelihoodFunction = (lf_components);
 
-
-
-    //fprintf (stdout, option["proportional-branch-length-scaler"], "\n");
-
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df += estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_id_to_object, initial_values, option[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
+    
+    /*GetString (res, likelihoodFunction, -1);
+    
+    utility.ForEach (res[utility.getGlobalValue ('terms.parameters.local_independent')], '_value_', '  
+        parameters.SetRange (_value_,terms.range_clamp_locals);
+    ');*/
+    
 
 
     //Export (lfe, likelihoodFunction);
     //console.log (lfe);
 
     Optimize(mles, likelihoodFunction);
-
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
@@ -1099,20 +1108,20 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
  * @returns MGREV results
  */
 lfunction estimators.FitMGREV(codon_data, tree, genetic_code, option, initial_values) {
-    return estimators.FitCodonModel (codon_data, tree, "models.codon.MG_REV.ModelDescription", genetic_code, option, initial_value);
+    return estimators.FitCodonModel (codon_data, tree, "models.codon.MG_REV.ModelDescription", genetic_code, option, initial_values);
 }
 
 /**
  * @name estimators.FitMGREV
  * @description compute the asymptotic (chi^2) p-value for the LRT
  * @param {Number} alternative log likelihood for the alternative (more general model)
- * @param {Number} null log likelihood for the null
+ * @param {Number} Null log likelihood for the null
  * @param {Number} df degrees of freedom
  * @returns p-value
  */
-lfunction estimators.LRT (alternative, null, df) {
-    if (alternative > null) {
-        return 1-CChi2 (2*(alternative-null), df);
+lfunction estimators.LRT (alternative, Null, df) {
+    if (alternative > Null) {
+        return 1-CChi2 (2*(alternative-Null), df);
     }
     return 1;
 }
@@ -1129,3 +1138,97 @@ lfunction estimators.ComputeLF (id) {
 	LFCompute (^id,LF_DONE_COMPUTE);
 	return logl;
 }
+
+/**
+ * @name estimators.CreateInitialGrid
+ * @description prepare a Dict object suitable for seeding initial LF values
+ * @param {Dict} values : "parameter_id" -> {{initial values}} [row matrix], e.g.
+    ...
+        "busted.test.bsrel_mixture_aux_0":  {
+        {0.1, 0.25, 0.4, 0.55, 0.7, 0.85, 0.9} 
+          },
+         "busted.test.bsrel_mixture_aux_1":  {
+        {0.1, 0.25, 0.4, 0.55, 0.7, 0.85, 0.9} 
+          }
+    ...
+
+ * @param {int} N how many points to sample
+ * @param {Dict/null} init if not null, taken to be the initial template for variables
+                      i.e. random draws will be one index change from this vector
+ * @returns {Dict} like in 
+ 
+ {
+ "0":{
+   "busted.test.bsrel_mixture_aux_0":{
+     "ID":"busted.test.bsrel_mixture_aux_0",
+     "MLE":0.4
+    },
+   "busted.test.bsrel_mixture_aux_1":{
+     "ID":"busted.test.bsrel_mixture_aux_1",
+     "MLE":0.7
+    },
+   "busted.test.omega1":{
+     "ID":"busted.test.omega1",
+     "MLE":0.01
+    },
+   "busted.test.omega2":{
+     "ID":"busted.test.omega2",
+     "MLE":0.1
+    },
+   "busted.test.omega3":{
+     "ID":"busted.test.omega3",
+     "MLE":1.5
+    }
+  }
+  ....
+ */
+lfunction estimators.CreateInitialGrid (values, N, init) {
+	result = {};
+	var_count = utility.Array1D (values);
+	var_names = utility.Keys (values);
+	var_dim = {var_count,1};
+	for (v = 0; v < var_count; v += 1) {
+	    var_dim [v] = utility.Array1D (values[var_names[v]]);
+    }
+
+    if (null != init) {
+        
+        toggle = Max (init[0], 0.5);
+        
+        for (i = 0; i < N; i+=1) { 
+            entry = {};
+            for (v = 0; v < var_count; v += 1) {
+                if (Random (0,1) < toggle) {
+                    entry [var_names[v]] = {
+                        ^"terms.id" : var_names[v],
+                        ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
+                    };
+                } else {
+                   entry [var_names[v]] = {
+                        ^"terms.id" : var_names[v],
+                        ^"terms.fit.MLE" : (values[var_names[v]])[init[var_names[v]]]
+                    };
+                
+                }
+            }
+            result + entry;
+        }
+    } else {
+    
+   
+        for (i = 0; i < N; i+=1) { 
+            entry = {};
+            for (v = 0; v < var_count; v += 1) {
+                entry [var_names[v]] = {
+                    ^"terms.id" : var_names[v],
+                    ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
+                };
+            }
+            result + entry;
+        }
+    }
+
+	
+    return result;
+}
+

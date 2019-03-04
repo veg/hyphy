@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
 
  Module Developers:
@@ -45,21 +45,24 @@
 #include "polynoml.h"
 #include "batchlan.h"
 #include "parser.h"
+#include "global_things.h"
+
+using namespace hy_global;
+
 
 extern _SimpleList BinOps,
        opPrecedence,
        FunctionArgumentCount,
        associativeOps;
 
+_SimpleList     _Operation::ListOfInverseOps;
+
+
 //__________________________________________________________________________________
 
-_Operation::_Operation  (void)
-{
-    numberOfTerms = 0;
-    theData = -1;
-    theNumber = nil;
-    opCode = -1;
-}
+_Operation::_Operation  (void) {
+    Initialize();
+ }
 
 //__________________________________________________________________________________
 void    _Operation::Initialize(bool)
@@ -71,18 +74,28 @@ void    _Operation::Initialize(bool)
 }
 
 //__________________________________________________________________________________
-BaseRef _Operation::makeDynamic (void)
-{
+BaseRef _Operation::makeDynamic (void) const {
     _Operation * res = new _Operation;
-    //memcpy ((char*)res, (char*)this, sizeof (_Operation));
     res->Duplicate(this);
     return res;
 }
 
 //__________________________________________________________________________________
-void    _Operation::Duplicate(BaseRef r)
-{
-    _Operation * o = (_Operation*)r;
+
+_Operation::_Operation (_Operation const& rhs) {
+    numberOfTerms  = rhs.numberOfTerms;
+    theData        = rhs.theData;
+    theNumber      = rhs.theNumber;
+    opCode         = rhs.opCode;
+    if (theNumber) {
+        theNumber->AddAReference();
+    }
+}
+
+
+//__________________________________________________________________________________
+void    _Operation::Duplicate(BaseRefConst r) {
+    _Operation const * o = (_Operation const*)r;
     numberOfTerms  = o->numberOfTerms;
     theData        = o->theData;
     theNumber      = o->theNumber;
@@ -95,13 +108,12 @@ void    _Operation::Duplicate(BaseRef r)
 
 //__________________________________________________________________________________
 BaseRef _Operation::toStr (unsigned long) {
-
-
+    
     if (theData != -1) {
         return new _String (_String("Variable ")& *LocateVar(GetAVariable())->GetName());
     } else if (theNumber) {
         _FString * type = (_FString*)theNumber->Type();
-        _String res = _String("Constant (")& *type->theString & ")" & _String((_String*)theNumber->toStr());
+        _String res = _String("Constant (")& type->get_str() & ")" & _String((_String*)theNumber->toStr());
         DeleteObject(type);
         return new _String (res);
     } else {
@@ -136,8 +148,8 @@ _Operation::_Operation  (_String const& opc, const long opNo = 2) {
         opCode = -opNo-1;
     }
 
-    if (opCode<0) {
-        WarnError(_String ("Operation: '") & opc &"' is not defined." );
+    if (opCode<0L) {
+        HandleApplicationError (_String ("Operation: ") & opc.Enquote() &" is not defined." );
         opCode = 0;
     }
 
@@ -146,14 +158,19 @@ _Operation::_Operation  (_String const& opc, const long opNo = 2) {
     theNumber     = nil;
 }
 //__________________________________________________________________________________
-_Operation::_Operation  (_PMathObj theObj)
-// construct the operation by its symbol and, if relevant -
-// number of operands
-{
+_Operation::_Operation  (HBLObjectRef theObj) {
     numberOfTerms = 0;
     theData       = -1;
     opCode        = -1;
     theNumber     = theObj;
+}
+
+//__________________________________________________________________________________
+_Operation::_Operation  (_Variable const & v) {
+    numberOfTerms = 0;
+    theData       = v.get_index();
+    opCode        = -1;
+    theNumber     = nil;
 }
 
 //__________________________________________________________________________________
@@ -226,7 +243,7 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
 
     } else {
         numberOfTerms = 0L;
-        if (stuff.Equal (&noneToken))
+        if (stuff == kNoneToken || stuff == kNullToken)
             theNumber = new _MathObject;
         else
             theNumber = new _Constant (stuff);
@@ -247,9 +264,8 @@ _Operation::~_Operation (void)
 }
 
 //__________________________________________________________________________________
-bool _Operation::IsAVariable(bool deep)
-{
-    if (theData==-1 || theData == -2) {
+bool _Operation::IsAVariable(bool deep) {
+    if (theData == -1 || theData == -2) {
         if (deep&&theNumber) {
             return theNumber->IsVariable();
         }
@@ -317,9 +333,9 @@ bool        _Operation::EqualOp (_Operation* otherOp)
 
 long     _Operation::BinOpCode           (_String const & op_token, long index) {
   if (index >= 0)
-    return BinOps.Find (op_token.getChar(index-1L) * 256L + op_token.getChar (index));
-
-  return BinOps.Find (op_token.sLength == 2 ? op_token.getChar(0) * 256L + op_token.getChar (1) : op_token.getChar (0));
+    return BinOps.Find (op_token.char_at (index-1L) * 256L + op_token.char_at (index));
+  
+  return BinOps.Find (op_token.length () == 2 ? op_token.char_at(0) * 256L + op_token.char_at (1) : op_token.char_at (0));
 }
 
 
@@ -331,7 +347,7 @@ bool        _Operation::ReportOperationExecutionError(_String text, _String * er
     if (errMsg) {
         *errMsg = theError;
     } else {
-        WarnError (theError);
+        HandleApplicationError (theError);
     }
 
     return false;
@@ -379,9 +395,9 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
       long arguments = GetBFFunctionArgumentCount (opCode);
 
       if (theScrap.StackDepth()<arguments) {
-        return ReportOperationExecutionError (_String("User-defined function:") &
-                                              GetBFFunctionNameByIndex (opCode)
-                                              &" needs "&_String(long(arguments))& " parameters: "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
+        return ReportOperationExecutionError (_String("User-defined function ") &
+                                              GetBFFunctionNameByIndex (opCode).Enquote()
+                                              &" needs "&_String(long(arguments))& " parameters, but "&_String(theScrap.StackDepth())&" were supplied ", errMsg);
       }
 
       _List       displacedVars,
@@ -399,10 +415,10 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
       //printf ("***** Calling %s\n", GetBFFunctionNameByIndex (opCode).sData);
 
       for (long k = arguments-1L; k >= 0; k--) {
-        bool            isRefVar = (funcVarTypes->Element (k) == BL_FUNCTION_ARGUMENT_REFERENCE);
-
+        bool            isRefVar = (funcVarTypes->Element (k) == kBLFunctionArgumentReference);
+        
         _String         *argument_k = (_String*)funcVarList->Element(k);
-        _PMathObj       nthterm = theScrap.Pop();
+        HBLObjectRef       nthterm = theScrap.Pop();
 
         //printf ("\tArgument %d : %s (%s)\n", k, argument_k->sData, _String((_String*)nthterm->toStr()).sData);
 
@@ -414,18 +430,18 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             & GetBFFunctionNameByIndex(opCode)
             &"' expected a string for the reference variable '"
             & *argument_k
-            &"' but was passed a " & *type->theString
+            &"' but was passed a " & type->get_str()
             & " with the value of " & _String((_String*)nthterm->toStr());
 
             DeleteObject (type);
             return ReportOperationExecutionError (errText, errMsg);
           }
         }
-
-        _Variable* argument_var = CheckReceptacle (argument_k, emptyString, false, false);
-
+        
+        _Variable* argument_var = CheckReceptacle (argument_k, kEmptyString, false, false, false);
+        
         if (!isRefVar) {
-          if (argument_var->IsIndependent()) {
+          if (argument_var->IsIndependent() && (argument_var->ObjectClass() & (TREE|TOPOLOGY)) == 0) {
             // if the variable exists and is independent then
             // simply swap the value of the var, otherwise
             // duplicate the entire variable
@@ -436,33 +452,34 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             displacedValues<<argument_var->varValue;
             argument_var->varFlags |= HY_VARIABLE_CHANGED;
             argument_var->varValue = nthterm;
-            existingIVars<<argument_var->GetAVariable();
+            existingIVars<<argument_var->get_index();
           } else {
             _Variable *newV = new _Variable (*argument_k);
             newV->SetValue(nthterm,false);
-            //nthterm->AddAReference();
-            existingDVars<<argument_var->GetAVariable();
+            existingDVars<<argument_var->get_index();
             displacedVars<<argument_var; // 2 references
             argument_var->AddAReference(); // 3 references
-            variablePtrs.Replace (argument_var->GetAVariable(),newV,false); // 2 references
+            variablePtrs.Replace (argument_var->get_index(),newV,false); // 2 references
           }
         } else {
 
-          long new_index = argument_var->GetAVariable();
+          long new_index = argument_var->get_index();
 
           referenceArgs << argument_var->GetName();
           displacedReferences<<new_index;
 
-          _String * refArgName = ((_FString*)nthterm)->theString;
-
+          _String const * refArgName = &((_FString*)nthterm)->get_str();
+            
+          _Variable* reference_var;
+          // TODO SLKP 20170928 Check that this doesn't break reference variable calls
+          // used to write namespaced variable to nthterm
           if (nameSpace) {
-            *refArgName = AppendContainerName (*refArgName, nameSpace);
+              reference_var =  CheckReceptacle (&AppendContainerName (*refArgName, nameSpace), kEmptyString, false, false, false);
+          } else {
+              reference_var =  CheckReceptacle (refArgName, kEmptyString, false, false, false);
           }
-
-          _Variable* reference_var = CheckReceptacle (refArgName, emptyString, false, false);
-
-          variableNames.SetXtra (new_index, reference_var->GetAVariable());
-
+          
+          variableNames.SetXtra (new_index, reference_var->get_index());
           DeleteObject (nthterm);
         }
       }
@@ -473,34 +490,58 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         function_body->ResetFormulae();
       }
 
-      _PMathObj ret;
-
-      if (currentExecutionList && currentExecutionList->stdinRedirect) {
+      HBLObjectRef ret;
+      
+      bool update_kw = false;
+      if (currentExecutionList && (currentExecutionList->has_stdin_redirect() || currentExecutionList->has_keyword_arguments())) {
           // 20180620: SLKP, need to split this off because if Execute fails
           // then there will be a double free on stdinRedirect
 
         auto stash1 = currentExecutionList->stdinRedirect;
-        auto stash2 = currentExecutionList->stdinRedirectAux;;
-          // for recursive calls, both function_body and currentExecutionList can be reset to null
-
-        function_body -> stdinRedirect    = currentExecutionList->stdinRedirect;
-        function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
-
-        currentExecutionList -> stdinRedirect -> AddAReference();
-        currentExecutionList -> stdinRedirectAux -> AddAReference();
+        auto stash2 = currentExecutionList->stdinRedirectAux;
+        auto stash_kw_tags = currentExecutionList->kwarg_tags;
+        auto stash_kw = currentExecutionList->kwargs;
+          
+        if (currentExecutionList->has_stdin_redirect()) {
+            function_body -> stdinRedirect    = currentExecutionList->stdinRedirect;
+            function_body -> stdinRedirectAux = currentExecutionList->stdinRedirectAux;
+          
+            currentExecutionList->stdinRedirect->AddAReference();
+            currentExecutionList->stdinRedirectAux->AddAReference();
+        }
+          
+          
+        if (currentExecutionList->has_keyword_arguments()) {
+            function_body -> kwarg_tags    = currentExecutionList->kwarg_tags;
+            function_body -> kwargs = currentExecutionList->kwargs;
+            function_body -> currentKwarg = currentExecutionList->currentKwarg;
+            
+            if (stash_kw_tags) currentExecutionList->kwarg_tags->AddAReference();
+            if (stash_kw) currentExecutionList->kwargs->AddAReference();
+            update_kw = true;
+            
+        }
 
         ret = function_body->Execute();
+          
+        if (stash1) stash1 -> RemoveAReference();
+        if (stash2) stash2 -> RemoveAReference();
+        if (stash_kw_tags) stash_kw_tags->RemoveAReference();
+        if (stash_kw) stash_kw->RemoveAReference();
 
-        stash1 -> RemoveAReference();
-        stash2-> RemoveAReference();
       } else {
-        ret = function_body->Execute();
+          ret = function_body->Execute();
       }
 
       function_body -> stdinRedirect    = nil;
       function_body -> stdinRedirectAux = nil;
+      if (update_kw) {
+          function_body -> kwarg_tags    = nil;
+          function_body -> kwargs = nil;
+          currentExecutionList->currentKwarg = function_body->currentKwarg;
+      }
 
-      if (terminateExecution) {
+      if (terminate_execution) {
         theScrap.Push (new _Constant (0.0));
         return true;
       }
@@ -518,14 +559,14 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
       }
 
       for (unsigned long dv = 0UL; dv < displacedVars.lLength; dv++) {
-        variablePtrs.Replace (existingDVars.lData[dv],(_PMathObj)displacedVars(dv), false);
+        variablePtrs.Replace (existingDVars.lData[dv],(HBLObjectRef)displacedVars(dv), false);
       }
 
 
       for (unsigned long dv2 = 0; dv2 < displacedValues.lLength; dv2++) {
         _Variable* theV = LocateVar (existingIVars.lData[dv2]);
         DeleteObject(theV->varValue);
-        theV->varValue = ((_PMathObj)displacedValues(dv2));
+        theV->varValue = ((HBLObjectRef)displacedValues(dv2));
       }
 
       return true;
@@ -538,27 +579,28 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
 
   }
 
-  _PMathObj arg0 = ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
+  HBLObjectRef arg0 = ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
             temp;
 
   _hyExecutionContext localContext (nameSpace, errMsg);
 
   if (numberOfTerms > 1) {
-    _List arguments ((unsigned long)(numberOfTerms-1));
+    _List arguments;
 
     for (long k = numberOfTerms-1; k >= 1; k --) {
-      arguments.AppendNewInstance ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
+      arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
     }
 
     temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
     theScrap.theStack.lLength -= (numberOfTerms);
 
   } else {
-    temp =  ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
+    temp =  ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
     theScrap.theStack.lLength--;
   }
 
   DeleteObject (arg0);
+
 
   if (temp) {
     theScrap.theStack.Place(temp);
@@ -586,19 +628,18 @@ void        _Operation::StackDepth (long& depth)
 
 
 //__________________________________________________________________________________
-bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg)
-{
+bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer* nameSpace, _String* errMsg) {
     if (theData<=-2 || numberOfTerms < 0) {
         return false;
     }
 
     _Polynomial*p = nil;
     if (theNumber) {
-        p= (_Polynomial*)checkPointer(new _Polynomial(theNumber->Value()));
+        p= new _Polynomial(theNumber->Value());
     }
 
     if (theData>-1) {
-        p= (_Polynomial*)checkPointer(new _Polynomial(*LocateVar(theData>-1?theData:-theData-2)));
+        p=  new _Polynomial(*LocateVar(theData>-1?theData:-theData-2));
     }
 
     if (p) {
@@ -614,7 +655,7 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
     }
 
 
-    _PMathObj arg0 = ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
+    HBLObjectRef arg0 = ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
     temp;
 
     _hyExecutionContext localContext (nameSpace, errMsg);
@@ -623,14 +664,14 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
       _List arguments;
 
       for (long k = numberOfTerms-1; k >= 1; k --) {
-        arguments.AppendNewInstance ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
+        arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
       }
 
       temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
       theScrap.theStack.lLength -= (numberOfTerms);
 
     } else {
-      temp =  ((_PMathObj)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
+      temp =  ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
       theScrap.theStack.lLength--;
     }
 
@@ -641,8 +682,8 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
       theScrap.theStack.Place(temp);
       return true;
     } else {
-      DeleteObject (temp);
-      return false;
+     DeleteObject (temp);
+     return false;
     }
 
 

@@ -270,12 +270,14 @@ function doGTR (prefix) {
                                         terms.nucleotideRate ("G","T") : { utility.getGlobalValue ("terms.fit.MLE") : 0.25}
                                     }
                                  });
+            
 
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
 
     gtr_results = estimators.FitGTR(filter_names,
                                          trees,
                                          gtr_results);
-
+                                         
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
         selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.sample_size")));
 
@@ -344,6 +346,7 @@ function doPartitionedMG (prefix, keep_lf) {
         utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
         utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
     }, gtr_results);
+
 
 
     io.ReportProgressMessageMD("`prefix`", "codon-fit", "* " + selection.io.report_fit (partitioned_mg_results, 0, (^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));

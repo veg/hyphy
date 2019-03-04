@@ -46,6 +46,13 @@ function runTest ()
 			   {t,t*kappa,t,*}};
 
 	freqs	= {{0.4}{0.3}{0.2}{0.1}};
+	
+	global  A :< 1;
+	global  C :< 1;
+	global  G :< 1;
+	A = freqs[0]; C = freqs[1]; G = freqs[2];
+	
+	mle_freqs = {{A}{C}{G}{1-A-C-G}};
 
 	Model HKY85 = (Q_HKY85, freqs, 1);
 
@@ -56,10 +63,22 @@ function runTest ()
 	LARGE_MATRIX_BRANCH_LENGTH_MODIFIER_DIMENSION = 21;
 
 	Tree  T = ((a:0.1,b:0.2):0.4,c:0.15,d:0.33);
+	
+	Model HKY85_mlf = (Q_HKY85, mle_freqs, 1);
+	Tree  T2 = ((a:0.1,b:0.2):0.4,c:0.15,d:0.33);
 
-	assert 	   (BranchLength (T,0) == 0.136, "Retrieve a branch length by a valid index, when there is a valid (HKY85) model attached to the node");
+	assert 	   (BranchLength (T,0) == 0.136,  "Retrieve a branch length by a valid index, when there is a valid (HKY85) model attached to the node");
+	assert 	   (BranchLength (T2,0) == 0.136, "Retrieve a branch length by a valid index, when there is a valid (HKY85) model with parametric frequencies attached to the node");
+	
+	
+	
 	assert 	   (BranchLength (T,"a;EXPECTED_NUMBER_OF_SUBSTITUTIONS") == "0.48*t+0.22*kappa*t",
 								  "Retrieve the branch length expression for a valid node name; no BRANCH_LENGTH_STENCIL");
+								  
+	assert 	   (BranchLength (T2,"a;EXPECTED_NUMBER_OF_SUBSTITUTIONS") == "2*t*G-2*t*G^2+2*t*A-4*t*A*G-2*t*A^2+2*kappa*t*C-2*kappa*t*C*G-2*kappa*t*C^2+2*kappa*t*A*G-2*kappa*t*A*C",
+								  "Retrieve the branch length expression for a valid node name and parametric equilibrium frequencies; no BRANCH_LENGTH_STENCIL");
+
+
 
 	/* using BRANCH_LENGTH_STENCIL we can specify
 	WHICH substitutions to count in the branch length;
@@ -74,8 +93,10 @@ function runTest ()
 	assert 	   (BranchLength (T,"a;EXPECTED_NUMBER_OF_SUBSTITUTIONS") == "0.22*kappa*t", "Retrieve the branch length expression for a valid node name subject to BRANCH_LENGTH_STENCIL");
 	assert 	   (BranchLength (T,0) == 0.088, "Retrieve a branch length by a valid index, conditioned by BRANCH_LENGTH_STENCIL (transitions)");
 
-	BRANCH_LENGTH_STENCIL = BRANCH_LENGTH_STENCIL ["_MATRIX_ELEMENT_VALUE_==0"];
+	assert 	   (BranchLength (T2,"a;EXPECTED_NUMBER_OF_SUBSTITUTIONS") == "2*kappa*t*C-2*kappa*t*C*G-2*kappa*t*C^2+2*kappa*t*A*G-2*kappa*t*A*C",
+								  "Retrieve the branch length expression for a valid node name and parametric equilibrium frequencies; conditioned by BRANCH_LENGTH_STENCIL (transitions)");
 
+	BRANCH_LENGTH_STENCIL = BRANCH_LENGTH_STENCIL ["_MATRIX_ELEMENT_VALUE_==0"];
 	assert 	   (BranchLength (T,0) == 0.048, "Retrieve a branch length by a valid index, conditioned by BRANCH_LENGTH_STENCIL (transversions)");
 
 	/*

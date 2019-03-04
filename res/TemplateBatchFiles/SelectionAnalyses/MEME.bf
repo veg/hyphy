@@ -446,7 +446,6 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 //----------------------------------------------------------------------------------------
 lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
 
-
     GetString   (lfInfo, ^lf_fel,-1);
 
 
@@ -527,13 +526,13 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         ^"meme.site_beta_plus" := ^"meme.site_alpha";
         Optimize (results, ^lf_bsrel);
 
-        null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
-        null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+        Null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
+        Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
 
 
     } else {
-        null = alternative;
+        Null = alternative;
         utility.ForEach (^bsrel_tree_id, "_node_name_",
         '
             if ((meme.selected_branches [^"`&partition_index`"])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
@@ -550,7 +549,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
             utility.getGlobalValue("terms.posterior") : branch_posterior,
             utility.getGlobalValue("terms.empirical_bayes_factor") : branch_ebf,
             utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information, //TODO: keep this attr?
-            utility.getGlobalValue("terms.null"): null};
+            utility.getGlobalValue("terms.Null"): Null};
 }
 
 /* echo to screen calls */
@@ -602,7 +601,7 @@ lfunction meme.store_results (node, result, arguments) {
     if (None != result) { // not a constant site
 
 
-        lrt = {utility.getGlobalValue("terms.LRT") : 2*((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")]-(result[utility.getGlobalValue("terms.null")])[utility.getGlobalValue("terms.fit.log_likelihood")])};
+        lrt = {utility.getGlobalValue("terms.LRT") : 2*((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")]-(result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")])};
         lrt [utility.getGlobalValue("terms.p_value")] = 2/3-2/3*(0.45*CChi2(lrt[utility.getGlobalValue("terms.LRT")],1)+0.55*CChi2(lrt[utility.getGlobalValue("terms.LRT")],2));
 
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.parameter_site_alpha"));

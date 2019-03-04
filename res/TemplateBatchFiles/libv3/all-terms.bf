@@ -36,7 +36,8 @@ namespace terms{
     three_way           = "three-way";
     reduced             = "reduced";
     substitutions       = "substitutions";
-
+    search_grid         = "search_grid";
+    
     parameters     = "parameters";
     local          = "local";
    // global         = "global"; // Defined at the top of file
@@ -49,7 +50,7 @@ namespace terms{
     efv_estimate   = "EFV";
     branch_length  = "branch length";
     alternative    = "alternative";
-    null           = "null";
+    Null           = "null";
     LRT            = "LRT";
     p_value        = "p-value";
 
@@ -80,6 +81,11 @@ namespace terms{
     range_any = {
         lower_bound: "0",
         upper_bound: "1e25"
+    };
+
+    range_clamp_locals = {
+        lower_bound: "0",
+        upper_bound: "100"
     };
 
 
@@ -191,6 +197,7 @@ namespace terms{
         MLE        = "Maximum likelihood frequency estimator";
         predefined = "Based on a training set";
         binary     = "Binary character frequency estimator";
+        run_time   = "Run time frequency estimator via matrix inversion"
     }
 
     /* Terms accompanying tasks/genetic_code.bf */
@@ -281,6 +288,7 @@ namespace terms{
         version               = "version";
         convergence_failures  = "convergence failures";
         omega_ratio           = "omega";
+        rate                  = "rate";
         proportion            = "proportion";
         positive              = "positive test results";
     }
@@ -385,7 +393,8 @@ namespace terms{
         synonymous_rate               = "synonymous rate";
         nonsynonymous_rate            = "non-synonymous rate";
         omega_ratio                   = "non-synonymous/synonymous rate ratio";
-        multiple_hit_rate             = "rate at which multiple nucleotides are changed instantly within a single codon";
+        multiple_hit_rate             = "rate at which 2 nucleotides are changed instantly within a single codon";
+        triple_hit_rate               = "rate at which 3 nucleotides are changed instantly within a single codon";
 
         one                           = "1";
         theta                         = "theta";
@@ -455,15 +464,16 @@ namespace terms{
 
     /* Terms associated with tree structures */
     namespace trees {
-        newick = "string";
+        newick              = "string";
         newick_with_lengths = "string_with_lengths";
-        newick_annotated = "annotated_string";
-        model_map = "model_map";
-        partitioned = "partitioned";
-        model_list = "model_list";
-        rooted = "rooted";
-        root   = "root";
-        branches = "branches";
+        newick_annotated    = "annotated_string";
+        model_map           = "model_map";
+        partitioned         = "partitioned";
+        model_list          = "model_list";
+        rooted              = "rooted";
+        root                = "root";
+        branches            = "branches";
+        meta                = "meta";
 
         //node_name = "Name";
         //children = "Children";

@@ -91,7 +91,6 @@ leisr.use_rate_variation = io.SelectAnOption( {{"Gamma", "Use a four-category di
                                                     },
                                                     "Optimize branch lengths with rate variation?");
 
-
 function leisr.Baseline.ModelDescription(type){
     def = Call( leisr.generators[leisr.baseline_model], type);
     return def;
@@ -144,7 +143,7 @@ leisr.alignment_wide_MLES = estimators.FitSingleModel_Ext (
                                                           leisr.baseline_model_desc,
                                                           None,
                                                           {terms.run_options.retain_lf_object: TRUE});
-                                                          
+                                                                  
 /* reconstruct ancestral states - */
 
 // SW20180516 - NOT YET SUPPORTED

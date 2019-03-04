@@ -1,9 +1,10 @@
+/* Kernel Analysis files are being deprecated */
 ExecuteAFile 	("Kernel_support.ibf");
 read_kernel_matrix (0);
 
 fprintf (stdout, "How many clusters?");
 fscanf (stdin,"Number",rateClassesCount);
-	
+
 DEFAULT_FILE_SAVE_NAME = "K-means.csv";
 
 SetDialogPrompt ("Write CSV clusters to:");
@@ -80,18 +81,18 @@ OpenWindow (CHARTWINDOW,{{"Kernel k-means cluster allocation"}
 						{"16,0,0"}
 						},
 						"572;516;37;51");
-		
+
 fprintf (stdout, "Cluster size report:\n");
 
 for (k=0; k<rateClassesCount; k=k+1)
 {
-	fprintf (stdout, "\tCluster ", Format(k+1,3,0), " has ", Format (byCluster[k],5,0), " points\n"); 
+	fprintf (stdout, "\tCluster ", Format(k+1,3,0), " has ", Format (byCluster[k],5,0), " points\n");
 }
 
 fprintf (LAST_FILE_PATH,CLOSE_FILE);
 
 /*------------------------------------------------------------------------------*/
-	
+
 function dualMeans (K,N,initVector)
 {
 	K_dim = Rows(K);
@@ -103,7 +104,7 @@ function dualMeans (K,N,initVector)
 		distances[_k][0] = initVector[_k];
 		A[_k][distances[_k][0]] = 1;
 	}
-	
+
 	goOn = 1;
 
 	while (goOn)
@@ -112,12 +113,12 @@ function dualMeans (K,N,initVector)
 	  /*E = A * diag(1./sum(A));*/
 	  E = A * diag ((sum(A))["1./_MATRIX_ELEMENT_VALUE_"]);
 	  Z = {K_dim,1}["1"] * Transpose(mx_diag (Transpose(E)*K*E)) - K*E*2.0;
-	  
+
 	  for (k = 0; k < K_dim; k=k+1)
 	  {
 	  		min     = 1e100;
 	  		min_idx = 0;
-	  		
+
 	  		for (k2 = 0; k2 < N; k2=k2+1)
 	  		{
 	  			if (Z[k][k2] < min)
@@ -126,10 +127,10 @@ function dualMeans (K,N,initVector)
 	  				min_idx = k2;
 	  			}
 	  		}
-	  		
-	  		
+
+
 	  		distances[k][1] = min;
-	  		
+
 	  		if (min_idx != distances[k][0])
 	  		{
 	  			A[k][min_idx] 		  = 1;
@@ -139,7 +140,7 @@ function dualMeans (K,N,initVector)
 	  		}
 	  }
 	}
-	
+
 	return  -Abs(k_trace+distances[-1][1]);
 }
 
@@ -152,7 +153,7 @@ function MatrixToString (rateMatrix)
 	outString * 256;
 	for (h=0; h<stateVectorDimension; h=h+1)
 	{
-		outString * (","+rateMatrix[h]);				
+		outString * (","+rateMatrix[h]);
 	}
 	outString * 0;
 	return outString;
@@ -167,7 +168,7 @@ function SpawnRandomString (clsCnt)
 	{
 		rModel[h] = Random(0,clsCnt)$1;
 	}
-	
+
 	return MakeStringCanonical(rModel,clsCnt);
 }
 
@@ -191,7 +192,7 @@ function RunASample (modelDF, jobIndex)
 {
 	sampleString = MatrixToString (cString);
 	myAIC 		 = MasterList[sampleString];
-	
+
 	if (myAIC > 0.1)
 	{
 		if (resultProcessingContext==0)
@@ -200,11 +201,11 @@ function RunASample (modelDF, jobIndex)
 		}
 		else
 		{
-			intermediateProbs[jobIndex][0] = myAIC;	
-		}			
+			intermediateProbs[jobIndex][0] = myAIC;
+		}
 		return 0;
 	}
-	
+
 	myAIC   = dualMeans (kernel_matrix,rateClassesCount,cString);
 	ReceiveJobs (1, jobIndex);
 	return 0;
@@ -227,7 +228,7 @@ function ReceiveJobs (sendOrNot, ji)
 	}
 	else
 	{
-		intermediateProbs[ji][0] = myAIC;	
+		intermediateProbs[ji][0] = myAIC;
 	}
 	if (ji>=0)
 	{
@@ -242,4 +243,3 @@ function ReceiveJobs (sendOrNot, ji)
 	}
 	return fromNode-1;
 }
-

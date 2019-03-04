@@ -7,6 +7,7 @@ LoadFunctionLibrary ("SelectionAnalyses/SLAC.bf", {"0" : "Universal", "1" : PATH
 
 margin_of_error = .05;
 
+
 function check_keys() {
     // Ensure that all top-level keys exists
     assert(utility.KeyExists(slac.json, terms.json.fits), "fits not found");

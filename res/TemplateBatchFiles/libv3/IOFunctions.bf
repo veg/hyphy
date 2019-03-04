@@ -711,7 +711,7 @@ lfunction io.SelectAnOption  (options, description) {
         }
 
         ChoiceList  (selection,description,1,NO_SKIP,option_set);
-
+        
         if (selection >= 0) {
             return option_set[selection][0];
         } else {

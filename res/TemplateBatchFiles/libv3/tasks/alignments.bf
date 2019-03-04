@@ -103,7 +103,7 @@ lfunction alignments.ReadNucleotideDataSet_aux(dataset_name) {
             partitions = Transpose(dfpm);
         }
     }
-
+    
     return {
         utility.getGlobalValue("terms.data.sequences"): Eval("`dataset_name`.species"),
         utility.getGlobalValue("terms.data.sites"): Eval("`dataset_name`.sites"),
@@ -323,6 +323,7 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
             DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3,  , "" + alignments.LoadCodonDataFile.i , data_info[terms.stop_codons]);
             if (^"`datafilter_name`.sites"*3 != ^"`dataset_name`.sites") {
                 alignments.LoadCodonDataFile.name = alignments.GetIthSequenceOriginalName (dataset_name, alignments.LoadCodonDataFile.i);
+                
                 alignments.LoadCodonDataFile.site_map = ^"`datafilter_name`.site_map";
 
                 alignments.LoadCodonDataFile.annotation_string = utility.PopulateDict (0, ^"`dataset_name`.sites",
@@ -407,6 +408,7 @@ lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) 
 lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix, data_info) {
     part_count = utility.Array1D(partitions);
     filters = {};
+        
     if (utility.CheckKey(data_info, utility.getGlobalValue("terms.code"), "Matrix")) {
 
 

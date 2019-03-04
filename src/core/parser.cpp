@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -40,51 +40,46 @@
 #include <math.h>
 #include <float.h>
 #include <limits.h>
+#include "stdlib.h"
+#include "string.h"
+#include <stdio.h>
+#include <time.h>
+#include <ctype.h>
 
 #include "likefunc.h"
 #include "parser.h"
 #include "matrix.h"
-#include "stdlib.h"
-#include "string.h"
-
-#include <stdio.h>
-#include "time.h"
-
-#include "ctype.h"
 #include "polynoml.h"
 #include "batchlan.h"
+#include "global_things.h"
+
+using namespace hy_global;
 
 
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
+
 
 extern
 _SimpleList     simpleOperationCodes,
                 simpleOperationFunctions;
 
-_List           globalNamesSupportList,
-                hyReservedWords,
+_List           hyReservedWords,
                 varNamesSupportList,
                 variablePtrs;   // stores all the variables declared so far
 
 _AVLList        *lookAside = nil;
+_AVLListX       variableNames (&varNamesSupportList);
 
-_AVLListX       variableNames (&varNamesSupportList),
-                _hyApplicationGlobals (&globalNamesSupportList);
-
-long            printDigits;
 
 
 
 // indices of all independent variables
 
+_Trie           FunctionNameList;
+_List           BuiltInFunctions;
 
-_List           FunctionNameList,
-                BuiltInFunctions;
 
-_SimpleList     FunctionArgumentCount,
-                freeSlots,
+
+_SimpleList     freeSlots,
                 deferIsConstant,
                 *deferSetFormula = nil;
 
@@ -99,8 +94,8 @@ _SimpleList opPrecedence,
             BinOps,
             associativeOps;
 
-_Parameter pi_const = 3.141592653589793,
-long_max = (_Parameter)LONG_MAX;
+hyFloat pi_const = 3.141592653589793,
+long_max = (hyFloat)LONG_MAX;
 
 /**********************************/
 /* Defining Globals here for now */
@@ -108,17 +103,9 @@ long_max = (_Parameter)LONG_MAX;
  
 //Used in formula, and constant
 
-_Parameter  machineEps = 2.*DBL_EPSILON,
-            tolerance  = DBL_EPSILON;
-
-//Used in formula
-_String         intPrecFact ("INTEGRATION_PRECISION_FACTOR"),
-                intMaxIter  ("INTEGRATION_MAX_ITERATES");
+hyFloat  tolerance  = DBL_EPSILON;
 
 
-//Used in parser2 and formula
-_Parameter sqrtPi = 1.77245385090551603;
-_Parameter twoOverSqrtPi = 2./sqrtPi;
 
 /*********************************/
 /*          End Globals         */
@@ -136,7 +123,7 @@ _Variable * LocateVar (long index) {
 }
 
 //__________________________________________________________________________________
-void     parameterToCharBuffer (_Parameter value, char* dump, long length, bool json)
+void     parameterToCharBuffer (hyFloat value, char* dump, long length, bool json)
 {
     if (json) {
       if (isnan (value)) {
@@ -149,7 +136,7 @@ void     parameterToCharBuffer (_Parameter value, char* dump, long length, bool 
       }
     }
   
-    long digs = printDigits;
+    long digs = print_digit_specification;
     if (digs<=0 || digs>15) {
         if (round(value) == value && fabs (value) < long_max) {
             snprintf (dump,length, "%ld",lrint (value));
@@ -163,13 +150,13 @@ void     parameterToCharBuffer (_Parameter value, char* dump, long length, bool 
 #else
         format = format&_String(digs)&'g';
 #endif
-        snprintf (dump,length,(const char*)format.sData,value);
+        snprintf (dump,length,(const char*)format,value);
     }
 }
 
 
 //__________________________________________________________________________________
-BaseRef     parameterToString (_Parameter value)
+BaseRef     parameterToString (hyFloat value)
 {
     char dump [256];
     parameterToCharBuffer (value, dump, 256);
@@ -191,30 +178,52 @@ void SplitVariableIDsIntoLocalAndGlobal (const _SimpleList& theList, _List& spli
 
 //__________________________________________________________________________________
 _String FetchObjectNameFromType (const unsigned long objectClass) {
-    switch (objectClass) {
-        case HY_UNDEFINED:
-            return "Undefined";
-        case NUMBER:
-            return "Number";
-        case MATRIX:
-            return "Container variable";
-        case TREE_NODE:
-            return "Tree node";
-        case TREE:
-            return "Tree";
-        case STRING:
-            return "String";
-        case ASSOCIATIVE_LIST:
-            return "Associative Array";
-        case TOPOLOGY:
-            return "Topology";
-        case POLYNOMIAL:
-            return "Polynomial";
-        case HY_ANY_OBJECT:
-            return "Any HyPhy object";
+    
+    
+    if (objectClass == HY_ANY_OBJECT) {
+        return "Any object";
+    }
+    _StringBuffer result;
+    
+    auto push_with_spacer = [&result] (const char * v) -> void {
+        if (result.nonempty()) {
+            result << " or ";
+        }
+        result << v;
+    };
+    
+    if (objectClass & HY_UNDEFINED) {
+        result << "Undefined";
+    }
+    if (objectClass & NUMBER) {
+        push_with_spacer ("Number");
+    }
+    if (objectClass & MATRIX) {
+        push_with_spacer ("Matrix");
+    }
+    if (objectClass & CONTAINER) {
+        push_with_spacer ("Variable container");
+    }
+    if (objectClass & TREE_NODE) {
+        push_with_spacer ("Tree Node");
+    }
+    if (objectClass & TREE) {
+        push_with_spacer ("Tree");
+    }
+    if (objectClass & STRING) {
+        push_with_spacer ("String");
+    }
+    if (objectClass & ASSOCIATIVE_LIST) {
+        push_with_spacer ("Associative Array");
+    }
+    if (objectClass & TOPOLOGY) {
+        push_with_spacer ("Topology");
+    }
+    if (objectClass & POLYNOMIAL) {
+        push_with_spacer ("Polynomial");
     }
     
-    return emptyString;
+    return result;
 }
 
 //__________________________________________________________________________________
@@ -240,15 +249,15 @@ _String*   FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, co
 }
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objectClass, long command_id, _String *errMsg) {
-  _PMathObj v = f.Compute();
+HBLObjectRef   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objectClass, long command_id, _String *errMsg) {
+  HBLObjectRef v = f.Compute();
   if (v) {
     if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
       return v;
     }
     if (command_id >= 0 || errMsg) {
       if (command_id >= 0) {
-        WarnError (_String ("'") & _String ((_String*)f.toStr()) & ("' must evaluate to a ") & FetchObjectNameFromType (objectClass) & " in call to "
+        HandleApplicationError (_String ((_String*)f.toStr(kFormulaStringConversionNormal)).Enquote() & (" must evaluate to a ") & FetchObjectNameFromType (objectClass) & " in call to "
                    &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
       }
     }
@@ -257,18 +266,18 @@ _PMathObj   FetchObjectFromFormulaByType (_Formula& f, const unsigned long objec
 }
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg) {
+HBLObjectRef   FetchObjectFromVariableByType (_String const* id, const unsigned long objectClass, long command_id, _String *errMsg) {
     if (id) {
         _Variable * v = FetchVar (LocateVarByName (*id));
-        if (v && (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass)) {
+        if (v && (objectClass == HY_ANY_OBJECT || (v->ObjectClass () & objectClass))) {
             return v->Compute();
         }
         if (command_id >= 0 || errMsg) {
             if (command_id >= 0) {
-                WarnError (_String ("'") & *id & ("' must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to " 
+                HandleApplicationError (id->Enquote() & (" must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to "
                                          &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
             } else {
-                WarnError (errMsg->Replace ("_VAR_NAME_ID_", *id, true));
+                HandleApplicationError (errMsg->Replace ("_VAR_NAME_ID_", *id, true));
             }
         }
     }
@@ -277,7 +286,7 @@ _PMathObj   FetchObjectFromVariableByType (_String const* id, const unsigned lon
 
 
 //__________________________________________________________________________________
-_PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg) {
+HBLObjectRef   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long objectClass, long command_id, _String *errMsg) {
     _Variable * v = FetchVar (idx);
     if (v) {
         if (objectClass == HY_ANY_OBJECT || v->ObjectClass () == objectClass) {
@@ -285,10 +294,10 @@ _PMathObj   FetchObjectFromVariableByTypeIndex (long idx, const unsigned long ob
         }
         if (command_id >= 0 || errMsg) {
             if (command_id >= 0) {
-                WarnError (_String ("'") & *v->GetName() & ("' must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to " 
+                HandleApplicationError (v->GetName()->Enquote() & (" must refer to a ") & FetchObjectNameFromType (objectClass) & " in call to "
                                          &_HY_ValidHBLExpressions.RetrieveKeyByPayload(command_id) & '.');
             } else {
-                WarnError (errMsg->Replace ("_VAR_NAME_ID_", *v->GetName(), true));
+                HandleApplicationError (errMsg->Replace ("_VAR_NAME_ID_", *v->GetName(), true));
             }
         }
     }
@@ -301,17 +310,24 @@ long LocateVarByName (_String const& name) {
 }
 
 //__________________________________________________________________________________
-_Variable* FetchVar (long index) {
-    return index>=0?(_Variable *)variablePtrs.GetItemRangeCheck(variableNames.GetXtra(index)):nil;
+_Variable* FetchVar (long index, unsigned long type_check) {
+    if (index >= 0) {
+        _Variable * var = (_Variable *)variablePtrs.GetItemRangeCheck(variableNames.GetXtra(index));
+        if (var) {
+            if (type_check == HY_ANY_OBJECT || (var->ObjectClass() & type_check)) {
+                return var;
+            }
+        }
+    }
+    return nil;
 }
 
 //__________________________________________________________________________________
-void       UpdateChangingFlas (long vN)
-{
+void       UpdateChangingFlas (long vN) {
     // check to see if formulae contain a reference to this var
     // if so: "decompile" them
 
-    long topLimit = compiledFormulaeParameters.lLength;
+    long topLimit = compiledFormulaeParameters.countitems();
 
     _SimpleList * toDelete = nil;
 
@@ -323,7 +339,7 @@ void       UpdateChangingFlas (long vN)
           
 
             if (!toDelete) {
-                checkPointer(toDelete = new _SimpleList);
+                toDelete = new _SimpleList;
             }
 
             *toDelete << k;
@@ -351,7 +367,7 @@ void       UpdateChangingFlas (_SimpleList & involvedVariables)
             ((_ElementaryCommand*)listOfCompiledFormulae.lData[k])->DecompileFormulae();
 
             if (!toDelete) {
-                checkPointer(toDelete = new _SimpleList);
+                toDelete = new _SimpleList;
             }
 
             *toDelete << k;
@@ -366,13 +382,12 @@ void       UpdateChangingFlas (_SimpleList & involvedVariables)
 }
 
 //__________________________________________________________________________________
-void DeleteVariable (long dv, bool deleteself)
-{
-    if (dv>=0) {
+void DeleteVariable (long dv, bool deleteself, bool do_checks) {
+    if (dv>=0L) {
 
-        _String *name  = (_String*)variableNames.Retrieve (dv);
-        _String myName = *name&'.';
-        long    vidx   = variableNames.GetXtra (dv);
+        _String *name   = (_String*)variableNames.Retrieve (dv);
+        _String my_name = *name&'.';
+        long    vidx    = variableNames.GetXtra (dv);
 
         UpdateChangingFlas (vidx);
 
@@ -380,30 +395,31 @@ void DeleteVariable (long dv, bool deleteself)
         variableNames.Find (name,recCache);
         _String     nextVarID;// = *(_String*)variableNames.Retrieve(variableNames.Next (dv,recCache));
         long        nvid;
-        if ((nvid = variableNames.Next (dv,recCache))>=0) {
+        if ((nvid = variableNames.Next (dv,recCache))>=0L) {
             nextVarID = *(_String*)variableNames.Retrieve(nvid);
         }
 
         if (deleteself) {
-            _SimpleList tcache;
-            long        iv,
-                        k = variableNames.Traverser (tcache, iv, variableNames.GetRoot());
-
-            for (; k>=0; k = variableNames.Traverser (tcache, iv)) {
-                _Variable * thisVar = FetchVar(k);
-
-                if (thisVar->CheckFForDependence (vidx,false)) {
-                    _PMathObj curValue = thisVar->Compute();
-                    curValue->nInstances++; // this could be a leak 01/05/2004.
-                    thisVar->SetValue (curValue);
-                    DeleteObject (curValue);
+            
+            
+            _Variable * self_variable = FetchVar(dv);
+            
+            if (do_checks) {
+                for (AVLListXIteratorKeyValue variable_iterator : AVLListXIterator (&variableNames)) {
+                    _Variable * check_variable = FetchVar(variable_iterator.get_value());
+                    if (self_variable != check_variable && check_variable->CheckFForDependence (vidx,false)) {
+                        HBLObjectRef current_variable_value = check_variable->Compute();
+                        current_variable_value->AddAReference(); // if this isn't done; the object will be deleted when the formula is cleared in SetValue
+                        check_variable->SetValue (current_variable_value);
+                        DeleteObject (current_variable_value);
+                    }
                 }
             }
-
-            DeleteObject (FetchVar(dv));
+        
 
             variableNames.Delete (variableNames.Retrieve(dv),true);
-            (*((_SimpleList*)&variablePtrs))[vidx]=0;
+            variablePtrs[vidx] = nil;
+            DeleteObject (self_variable);
             freeSlots<<vidx;
         } else {
             _Variable* delvar = (FetchVar(dv));
@@ -412,7 +428,7 @@ void DeleteVariable (long dv, bool deleteself)
                 dc->Clear();
             }
         }
-
+        
         _List       toDelete;
 
         recCache.Clear();
@@ -420,7 +436,7 @@ void DeleteVariable (long dv, bool deleteself)
 
         for (; nextVar>=0; nextVar = variableNames.Next (nextVar, recCache)) {
             _String dependent = *(_String*)variableNames.Retrieve (nextVar);
-            if (dependent.startswith(myName)) {
+            if (dependent.BeginsWith(my_name)) {
                 toDelete && & dependent;
             } else {
                 break;
@@ -461,8 +477,8 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
                 _Variable * thisVar = FetchVar(k);
 
                 if (thisVar->CheckFForDependence (vidx,false)) {
-                    _PMathObj curValue = thisVar->Compute();
-                    curValue->nInstances++;
+                    HBLObjectRef curValue = thisVar->Compute();
+                    curValue->AddAReference();
                     thisVar->SetValue (curValue);
                     DeleteObject (curValue);
                 }
@@ -484,12 +500,12 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
             long nextVar = variableNames.Find (&nextVarID,recCache);
             for (; nextVar>=0; nextVar = variableNames.Next (nextVar, recCache)) {
                 _String dependent = *(_String*)variableNames.Retrieve (nextVar);
-                if (dependent.startswith(myName)) {
-                    if (dependent.Find ('.', myName.sLength+1, -1)>=0) {
+                if (dependent.BeginsWith(myName)) {
+                    if (dependent.Find ('.', myName.length()+1, -1)>=0) {
                         _Variable * checkDep = FetchVar (nextVar);
                         if (!checkDep->IsIndependent()) {
-                            _PMathObj curValue = checkDep->Compute();
-                            curValue->nInstances++;
+                            HBLObjectRef curValue = checkDep->Compute();
+                            curValue->AddAReference();
                             checkDep->SetValue (curValue);
                             DeleteObject (curValue);
                         }
@@ -522,15 +538,26 @@ void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
 }
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal)
-{
-    if (checkValid && (!name->IsValidIdentifier())) {
-        _String errMsg = *name & " is not a valid variable identifier in call to " & fID;
-        WarnError (errMsg);
+_Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal, bool clear_trees) {
+    if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
+        HandleApplicationError(name->Enquote() & " is not a valid variable identifier");
         return nil;
     }
 
     long    f = LocateVarByName (*name);
+
+    if (f>=0L) {
+      _Variable * existing = FetchVar (f);
+    
+      if (clear_trees && (existing->ObjectClass() == TREE || existing->ObjectClass() == TOPOLOGY)) {
+        DeleteVariable (*existing->GetName());
+        f = -1L;
+      }
+      else {
+        return existing;
+      }
+    }
+
     if ( f<0L ) {
         _Variable dummy (*name, isGlobal);
         f = LocateVarByName (*name);
@@ -539,31 +566,51 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
     return FetchVar(f);
 }
 
+//__________________________________________________________________________________
+_Variable* CheckReceptacleCommandIDException (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context) {
+    // TODO: allow ^name and such to constitute valid run-time references
+   if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
+    throw  (name->Enquote('\'') & " is not a valid variable identifier");
+   }
+  
+  long    f = LocateVarByName (*name);
+  
+  if (f>=0L) {
+    _Variable * existing = FetchVar (f);
+    if (existing->ObjectClass() == TREE) {
+      DeleteVariable (*existing->GetName());
+      f = -1L;
+    }
+    else {
+      return existing;
+    }
+  }
+  
+  if (f<0L) {
+    _Variable (*name, isGlobal);
+    f = LocateVarByName (*name);
+  }
+  
+  return FetchVar(f);
+}
+
 
 //__________________________________________________________________________________
-_Variable* CheckReceptacleCommandID (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context)
-{
-    if (checkValid && (!name->IsValidIdentifier())) {
-        _String errMsg = _String ("'") & *name & "' is not a valid variable identifier in call to " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(id) & '.';
-        if (context) {
-            context->ReportAnExecutionError(errMsg);
-        } else {
-            WarnError (errMsg);
-        }
-        return nil;
+_Variable* CheckReceptacleCommandID (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context) {
+  try {
+    return CheckReceptacleCommandIDException (name, id, checkValid, isGlobal, context);
+  } catch (_String const& err_msg) {
+    if (context) {
+      context->ReportAnExecutionError(err_msg);
+    } else {
+      HandleApplicationError (err_msg);
     }
-    
-    long    f = LocateVarByName (*name);
-    if (f<0) {
-        _Variable dummy (*name, isGlobal);
-        f = LocateVarByName (*name);
-    }
-    
-    return FetchVar(f);
+  }
+  return nil;
 }
 
 //__________________________________________________________________________________
-bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool checkValid, _PMathObj v, bool dup, bool isGlobal)
+bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool checkValid, HBLObjectRef v, bool dup, bool isGlobal)
 {
     _Variable *theV = CheckReceptacleCommandID (name, id, checkValid, isGlobal);
     if (theV) {
@@ -578,7 +625,7 @@ bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool 
 
 
 //__________________________________________________________________________________
-bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid, _PMathObj v, bool dup) {
+bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid, HBLObjectRef v, bool dup) {
     _Variable * theV = CheckReceptacle(name, fID, checkValid);
     if (theV) {
         theV->SetValue (v, dup);
@@ -591,17 +638,17 @@ bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid,
 }
 
 //__________________________________________________________________________________
-bool CheckReceptacleAndStore (_String name, _String fID, bool checkValid, _PMathObj v, bool dup)
+bool CheckReceptacleAndStore (_String name, _String fID, bool checkValid, HBLObjectRef v, bool dup)
 {
     return CheckReceptacleAndStore (&name, fID, checkValid, v, dup);
 }
 
 //__________________________________________________________________________________
-void  InsertVar (_Variable* theV)
-{
+void  InsertVar (_Variable* theV) {
+        
     long pos = variableNames.Insert (theV->theName);
 
-    if (pos < 0 && isDefiningATree > 1)
+    if (pos < 0 && isDefiningATree == kTreeNodeBeingCreated)
         // automatically fix duplicate autogenerated tree node name
     {
         long trySuffix  = 1;
@@ -616,15 +663,15 @@ void  InsertVar (_Variable* theV)
     }
 
     if (pos < 0) {
-        if (isDefiningATree == 1) {
-            WarnError(_String("Error while creating a tree: duplicate node name '") & *theV->GetName() & "'");
+        if (isDefiningATree == kTreeIsBeingParsed) {
+            HandleApplicationError(_String("Error while creating a tree: duplicate node name ") & *theV->GetName()->Enquote());
             return;
         }
 
         theV->theIndex = variableNames.GetXtra(-pos-1);
         return;
     } else {
-        theV->theName->nInstances++;
+        theV->theName->AddAReference();
     }
 
     if (freeSlots.lLength) {
@@ -646,15 +693,14 @@ _String const&  AppendContainerName (_String const& inString, _VariableContainer
 //__________________________________________________________________________________
 _String const&  AppendContainerName (_String const& inString, _String const* namescp) {
     static _String returnMe;
-
-    if (_hyApplicationGlobals.Find (&inString) >= 0) {
+    
+    if (_hy_application_globals.Find (&inString) >= 0) {
         return inString;
     }
     
-    unsigned char reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && namescp -> sLength? namescp : nil);
+    hy_reference_type reference_type = inString.ProcessVariableReferenceCases (returnMe, namescp && !namescp -> empty() ? namescp : nil);
     
-
-    if (reference_type != HY_STRING_INVALID_REFERENCE) {
+    if (reference_type != kStringInvalidReference) {
         return returnMe;
     }
     return inString;
@@ -677,7 +723,7 @@ void  RenameVariable (_String* oldName, _String* newName)
         xtras    << variableNames.GetXtra (f);
         f = variableNames.Next (f, traverser);
 
-        for  (; f>=0 && ((_String*)variableNames.Retrieve (f))->startswith (oldNamePrefix); f = variableNames.Next (f, traverser)) {
+        for  (; f>=0 && ((_String*)variableNames.Retrieve (f))->BeginsWith (oldNamePrefix); f = variableNames.Next (f, traverser)) {
             toRename << variableNames.Retrieve (f);
             xtras << variableNames.GetXtra (f);
         }
@@ -694,7 +740,7 @@ void  RenameVariable (_String* oldName, _String* newName)
 
         variableNames.Delete (toRename (k), true);
         variableNames.Insert (thisVar->GetName(),xtras.lData[k]);
-        thisVar->GetName()->nInstances++;
+        thisVar->GetName()->AddAReference();
     }
 }
 
@@ -714,6 +760,12 @@ void  ReplaceVar (_Variable* theV) {
 //__________________________________________________________________________________
 void    SetupOperationLists (void) {
 
+    auto package_ops = [] (long op1, long op2) -> long {
+        if (op1 < op2) {
+            return (op1 << 16) + op2;
+        }
+        return (op2 << 16) + op1;
+    };
   
     UnOps  < "-" <
              "!" <
@@ -791,11 +843,16 @@ void    SetupOperationLists (void) {
     BinOps<<'+'*256+'=';
     opPrecedence<<8;
 
-    if (BuiltInFunctions.lLength==0)
+    _Operation::ListOfInverseOps
+    << package_ops(HY_OP_CODE_NOT, HY_OP_CODE_NOT)
+    << package_ops (HY_OP_CODE_EXP, HY_OP_CODE_LOG)
+    << package_ops (HY_OP_CODE_TAN, HY_OP_CODE_ARCTAN);
+
+    if (BuiltInFunctions.empty()) {
         // construct a list of operations
         // don't forget to update SimplifyConstants, simpleOperationCodes, InternalDifferentiate, InternalSimplify, Formula::HasChanged and all Execute commands
         // also MAccess and MCoord codes are used in Parse to merge multiple matrix access operations
-    {
+
         //HY_OP_CODE_NOT
         BuiltInFunctions.AppendNewInstance (new _String ('!'));
 
@@ -871,39 +928,33 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_BETA
         BuiltInFunctions.AppendNewInstance (new _String ("Beta"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_BETA);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_BETA), 2L);
 
         //HY_OP_CODE_BRANCHCOUNT
         BuiltInFunctions.AppendNewInstance (new _String ("BranchCount"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHCOUNT);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_BRANCHCOUNT), 2L);
 
         //HY_OP_CODE_BRANCHLENGTH
         BuiltInFunctions.AppendNewInstance (new _String ("BranchLength"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHLENGTH);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_BRANCHLENGTH), 2L);
 
         //HY_OP_CODE_BRANCHNAME
         BuiltInFunctions.AppendNewInstance (new _String ("BranchName"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_BRANCHNAME);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_BRANCHNAME), 2L);
       
 
         //HY_OP_CODE_CCHI2
         BuiltInFunctions.AppendNewInstance (new _String ("CChi2"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_CCHI2);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_CCHI2), 2L);
 
         //HY_OP_CODE_CGAMMADIST
         BuiltInFunctions.AppendNewInstance (new _String ("CGammaDist"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_CGAMMADIST);
-        FunctionArgumentCount << 3;
-
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_CGAMMADIST), 3L);
+ 
         //HY_OP_CODE_CALL
         BuiltInFunctions.AppendNewInstance (new _String ("Call"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_CALL);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_CALL), 1L + (0x7fff << 16));
+            // mimimum of 1 argument
 
         //HY_OP_CODE_COLUMNS
         BuiltInFunctions.AppendNewInstance (new _String ("Columns"));
@@ -913,8 +964,7 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_DIFF
         BuiltInFunctions.AppendNewInstance (new _String ("Differentiate"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_DIFF);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_DIFF), 2L);
 
         //HY_OP_CODE_EIGENSYSTEM
         BuiltInFunctions.AppendNewInstance (new _String ("Eigensystem"));
@@ -932,47 +982,40 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_FORMAT
         BuiltInFunctions.AppendNewInstance (new _String ("Format"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_FORMAT);
-        FunctionArgumentCount << 3;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_FORMAT), 3L);
 
         //HY_OP_CODE_GAMMA
         BuiltInFunctions.AppendNewInstance (new _String ("Gamma"));
 
         //HY_OP_CODE_GAMMADIST
         BuiltInFunctions.AppendNewInstance (new _String ("GammaDist"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_GAMMADIST);
-        FunctionArgumentCount << 3;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_GAMMADIST), 3L);
 
         //HY_OP_CODE_IBETA
         BuiltInFunctions.AppendNewInstance (new _String ("IBeta"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_IBETA);
-        FunctionArgumentCount << 3;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_IBETA), 3L);
 
         //HY_OP_CODE_IGAMMA
         BuiltInFunctions.AppendNewInstance (new _String ("IGamma"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_IGAMMA);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_IGAMMA), 2L);
 
         //HY_OP_CODE_INVCHI2
         BuiltInFunctions.AppendNewInstance (new _String ("InvChi2"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_INVCHI2);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_INVCHI2), 2L);
 
         //HY_OP_CODE_INVERSE
         BuiltInFunctions.AppendNewInstance (new _String ("Inverse"));
 
         //HY_OP_CODE_JOIN
         BuiltInFunctions.AppendNewInstance (new _String ("Join"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_JOIN);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_JOIN), 2L);
 
         //HY_OP_CODE_LUDECOMPOSE
         BuiltInFunctions.AppendNewInstance (new _String ("LUDecompose"));
 
         //HY_OP_CODE_LUSOLVE
         BuiltInFunctions.AppendNewInstance (new _String ("LUSolve"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_LUSOLVE);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_LUSOLVE), 2L);
 
         //HY_OP_CODE_LOG_GAMMA
         BuiltInFunctions.AppendNewInstance (new _String ("LnGamma"));
@@ -995,34 +1038,33 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_MAX
         BuiltInFunctions.AppendNewInstance (new _String ("Max"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_MAX);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_MAX), 1L + ((2L) << 16)); // (1 or 2 arguments)
+        
         simpleOperationCodes<<HY_OP_CODE_MAX;
         simpleOperationFunctions<<(long)MaxNumbers;
 
         //HY_OP_CODE_MIN
         BuiltInFunctions.AppendNewInstance (new _String ("Min"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_MIN);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_MIN), 1L + ((2L) << 16)); // (1 or 2 arguments)
+
         simpleOperationCodes<<HY_OP_CODE_MIN;
         simpleOperationFunctions<<(long)MinNumbers;
 
         //HY_OP_CODE_PSTREESTRING
         BuiltInFunctions.AppendNewInstance (new _String ("PSTreeString"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_PSTREESTRING);
-        FunctionArgumentCount << 3;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_PSTREESTRING), 3L);
+
 
         //HY_OP_CODE_RANDOM
         BuiltInFunctions.AppendNewInstance (new _String ("Random"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_RANDOM);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_RANDOM), 2L);
+
         simpleOperationCodes<<HY_OP_CODE_RANDOM;
         simpleOperationFunctions<<(long)RandomNumber;
 
         //HY_OP_CODE_REROOTTREE
         BuiltInFunctions.AppendNewInstance (new _String ("RerootTree"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_REROOTTREE);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_REROOTTREE), 2L);
 
         //HY_OP_CODE_ROWS
         BuiltInFunctions.AppendNewInstance (new _String ("Rows"));
@@ -1032,8 +1074,7 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_EXPRESSION
         BuiltInFunctions.AppendNewInstance (new _String ("Simplify"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_SIMPLIFY);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_SIMPLIFY), 2L);
 
         //HY_OP_CODE_SIN
         BuiltInFunctions.AppendNewInstance (new _String ("Sin"));
@@ -1043,8 +1084,7 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_TEXTREESTRING
         BuiltInFunctions.AppendNewInstance (new _String ("TEXTreeString"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_TEXTREESTRING);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_TEXTREESTRING), 2L);
 
         //HY_OP_CODE_TAN
         BuiltInFunctions.AppendNewInstance (new _String ("Tan"));
@@ -1057,8 +1097,7 @@ void    SetupOperationLists (void) {
 
         //HY_OP_CODE_TIPNAME
         BuiltInFunctions.AppendNewInstance (new _String ("TipName"));
-        FunctionNameList << BuiltInFunctions (HY_OP_CODE_TIPNAME);
-        FunctionArgumentCount << 2;
+        FunctionNameList.Insert (*(_String*)BuiltInFunctions (HY_OP_CODE_TIPNAME), 2L);
 
         //HY_OP_CODE_TRANSPOSE
         BuiltInFunctions.AppendNewInstance (new _String ("Transpose"));
@@ -1079,95 +1118,44 @@ void    SetupOperationLists (void) {
 
         hyReservedWords << BuiltInFunctions;
         hyReservedWords.AppendNewInstance (new _String("global"));
+      
+      
         hyReservedWords.Sort();
+        /*hyReservedWords.ForEach ([] (BaseRef item, unsigned long index) -> void {
+            printf ("%d %s\n", index, ((_String*)item)->get_str());
+        });*/
     }
 
 
 
 }
 
-//__________________________________________________________________________________
-void    CompileListOfUserExpressions (_SimpleList& varRefs,_List& rec, bool doAll)
-{
-    rec.Clear();
-    if (varRefs.lLength == 0) {
-        return;
-    }
-
-    long i;
-    _SimpleList startVars;
-    _VariableContainer*  firstVar = (_VariableContainer*)LocateVar(varRefs.lData[0]);
-
-    firstVar->ScanAndAttachVariables();
-
-    {
-        _AVLList sA (&startVars);
-        if (doAll) {
-
-            firstVar->ScanContainerForVariables (sA,sA);
-            firstVar->ScanForGVariables (sA,sA);
-        }
-
-        firstVar->ScanForDVariables (sA,sA);
-        sA.ReorderList ();
-    }
-
-    if (!doAll) {
-        for (i=startVars.lLength-1; i>=0; i--) {
-            if (firstVar->IsModelVar(i)) {
-                startVars.Delete(i);
-            }
-        }
-    }
-
-    for (i=0; i<startVars.lLength; i++) {
-        _String thisName (LocateVar(startVars.lData[i])->GetName()->Cut
-                          (LocateVar(startVars.lData[i])->GetName()->FindBackwards('.',0,-1),-1));
-        rec && &thisName;
-    }
-
-    for (i=varRefs.lLength-1; i>=1; i--) {
-        firstVar = (_VariableContainer*)LocateVar(varRefs.lData[i]);
-        firstVar->ScanAndAttachVariables();
-        firstVar->MatchParametersToList (rec,doAll);
-    }
-
-    for (i=rec.lLength-1; i>=0; i--) {
-        _String* thisLine = ((_String*)rec(i));
-        thisLine->Trim(1,-1);
-        if (doAll)
-            if (LocateVarByName(*thisLine)<0) {
-                *thisLine = _String('!')&*thisLine;
-            }
-    }
-
-}
 
 
 //__________________________________________________________________________________
 
-void  FinishDeferredSF (void)
-{
-    if (deferSetFormula->lLength) {
+void  FinishDeferredSF (void) {
+    if (deferSetFormula->nonempty()) {
         SortLists (deferSetFormula, &deferIsConstant);
-        _SimpleList tcache;
-        long        iv,
-                    i = variableNames.Traverser (tcache,iv,variableNames.GetRoot());
-
-        for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
-            _Variable* theV = FetchVar(i);
+        
+        for (AVLListXIteratorKeyValue variable_record : AVLListXIterator (&variableNames)) {
+            _Variable * theV = LocateVar(variable_record.get_value());
             if (theV->IsContainer()) {
                 ((_VariableContainer*)theV)->SetMDependance (*deferSetFormula);
             }
         }
-
-        for (long j = 0; j<likeFuncList.lLength; j++)
-            if (((_String*)likeFuncNamesList(j))->sLength) {
-                _LikelihoodFunction * lf = (_LikelihoodFunction*)likeFuncList(j);
-                for (long k = 0; k < deferSetFormula->lLength; k++) {
-                    lf->UpdateIndependent(deferSetFormula->lData[k],deferIsConstant.lData[k]);
+        
+        likeFuncList.ForEach([] (BaseRef lf_object, unsigned long idx) -> void {
+            if (((_String*)likeFuncNamesList(idx))->nonempty()) {
+                _LikelihoodFunction * lf = (_LikelihoodFunction*)lf_object;
+                for (long k = 0L; k < deferSetFormula->countitems(); k++) {
+                    lf->UpdateIndependent(deferSetFormula->get(k),deferIsConstant.get(k));
                 }
             }
+        });
+        
+
+       
     }
     DeleteObject (deferSetFormula);
     deferSetFormula = nil;

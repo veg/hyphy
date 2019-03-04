@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
@@ -38,16 +38,26 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "trie.h"
+#include "global_things.h"
+#include "hy_string_buffer.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
 _Trie::_Trie (const _String* alphabet) {
+    InitializeTrie(alphabet);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void _Trie::InitializeTrie (const _String* alphabet) {
     SetAlphabet (alphabet, false);
     AppendNewInstance(new _SimpleList);
     payload << 0L;
     parents <<-1L;
+    inserted_values = 0UL;
 }
-       
+
+
 //----------------------------------------------------------------------------------------------------------------------
 
 _Trie::~_Trie (void){
@@ -61,20 +71,19 @@ void _Trie::Clear (bool all){
     payload.Clear(all);
     emptySlots.Clear(all);
     AppendNewInstance(new _SimpleList);
+    inserted_values = 0UL;
     payload << 0L;
     parents <<-1L;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-_String _Trie::Alphabet (void)
-{
-    _String result (256L, true);
-    for (unsigned long charIndex = 0; charIndex < 256; charIndex++) {
+_String _Trie::Alphabet (void) {
+    _StringBuffer result (256UL);
+    for (unsigned long charIndex = 0UL; charIndex < 256UL; charIndex++) {
         if (charMap.lData[charIndex] >= 0)
             result << char (charIndex);
     }
-    result.Finalize();
     return result;
 }
 
@@ -91,8 +100,8 @@ void _Trie::SetAlphabet (const _String* alphabet, bool doClear)
         charMap.Populate (256,-1,0);
         unsigned long charCounter = 0;
         charMap.lData[0] = 1; // always allow the '\0' character
-        for (unsigned long charIndex = 0; charIndex < alphabet->sLength; charIndex++) {
-            charMap.lData [(unsigned char)alphabet->sData[charIndex]] = 1;
+        for (unsigned long charIndex = 0; charIndex < alphabet->length(); charIndex++) {
+            charMap.lData [(unsigned char)alphabet->char_at(charIndex)] = 1;
         }
         // now sort alphabetically
         for (unsigned long charIndex = 0; charIndex < 256; charIndex++) {
@@ -106,24 +115,25 @@ void _Trie::SetAlphabet (const _String* alphabet, bool doClear)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-BaseRef _Trie::makeDynamic (void) {
+BaseRef _Trie::makeDynamic (void) const {
     _Trie *newTrie = new _Trie ();
-    newTrie->Duplicate (newTrie);
+    newTrie->Duplicate (this);
     return newTrie;
           
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void _Trie::Duplicate (BaseRef storage) {
-    _Trie* newTrie = (_Trie*)storage;
-    _String myAlphabet = Alphabet();
-    newTrie->SetAlphabet (&myAlphabet, true);
-    newTrie->_List::Duplicate ((_List*)this);
-    newTrie->charMap.Duplicate (&charMap);
-    newTrie->emptySlots.Duplicate (&emptySlots);
-    newTrie->payload.Duplicate(&payload);
-    newTrie->parents.Duplicate(&parents);
+void _Trie::Duplicate (BaseRefConst t) {
+    _Trie* source = (_Trie*)t;
+    _String a (source->Alphabet());
+    SetAlphabet(&a, true);
+    _List::Duplicate ((_List*)source);
+    charMap.Duplicate (&source->charMap);
+    emptySlots.Duplicate (&source->emptySlots);
+    payload.Duplicate(&source->payload);
+    parents.Duplicate(&source->parents);
+    inserted_values = source->inserted_values;
           
 }        
     
@@ -135,10 +145,10 @@ long    _Trie::FindNextLetter (const char letter, const unsigned long current_in
         _SimpleList* thisList = ((_SimpleList**)lData)[current_index];
         letterKey = thisList->FindStepping (letterKey, 2, 0);
         if (letterKey < 0)
-            return HY_TRIE_NOTFOUND;
+            return kNotFound;
         return thisList->lData[letterKey+1];
     }
-    return HY_TRIE_INVALID_LETTER;
+    return kTrieInvalidLetter;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -172,24 +182,30 @@ long    _Trie::InsertNextLetter (const char letter, const unsigned long current_
         parents.lData[next_index] = current_index;
         return next_index;
     }
-    return HY_TRIE_INVALID_LETTER;
+    return kTrieInvalidLetter;
 }
 
 
 //----------------------------------------------------------------------------------------------------------------------
-long     _Trie::FindKey (const _String& key, _SimpleList* path, bool prefixOK) const{
-    long current_index = 0,
-         next_index    = 0;
-    for (long k = 0; k <= key.sLength && current_index >= 0; k++){
-       next_index = FindNextLetter (key.sData[k], current_index);
+long     _Trie::FindKey (const _String& key, _SimpleList* path, bool prefixOK, unsigned long * start_index) const{
+    long current_index = 0L,
+         next_index    = 0L;
+    for (unsigned long k = start_index ? *start_index : 0UL; k <= key.length() && current_index >= 0L; k++){
+       next_index = FindNextLetter (key.char_at(k), current_index);
        if (path)
             (*path) << next_index;
        if (next_index < 0 && prefixOK) {
            next_index = FindNextLetter (0, current_index);
            current_index = next_index;
-           break;
+           if (start_index) {
+             *start_index = k;
+           }
+           return current_index;
        }
        current_index = next_index;
+    }
+    if (start_index) {
+      *start_index = key.length();
     }
     return current_index;
 }
@@ -209,10 +225,10 @@ long     _Trie::FindKey (const char key, bool prefixOK) const {
 //----------------------------------------------------------------------------------------------------------------------
 long     _Trie::GetValueFromString (const _String& key){
     long keyIndex = FindKey (key);
-    if (keyIndex != HY_TRIE_NOTFOUND) {
+    if (keyIndex != kNotFound) {
         return GetValue (keyIndex);
     }
-    return HY_TRIE_NOTFOUND;
+    return kNotFound;
 }
 
 
@@ -223,7 +239,7 @@ void     _Trie::UpdateValue(const long key, const long value) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-long     _Trie::GetValue(const long key) {
+long     _Trie::GetValue(const long key) const{
     if (key >= 0 && key < payload.lLength)
         return payload.lData[key];
     
@@ -236,7 +252,7 @@ long    _Trie::Insert (const char* key, const long value, bool return_index) {
     _String key_string(key);
     long ret_value = Insert  (key_string, value);
     if (ret_value >= 0 && return_index == false) {
-        return key_string.sLength;
+        return key_string.length();
     }
     return ret_value;
 }
@@ -251,39 +267,51 @@ _Trie& _Trie::operator < (const char* key) {
 //----------------------------------------------------------------------------------------------------------------------
 
 long    _Trie::Insert (const _String& key, const long value) {
-    // the root is always at index 0
-    long current_index  = 0, 
-         current_char   = 0,
-         next_index     = FindNextLetter(key.sData[current_char++], current_index);
+    return InsertExtended (key, value);
+}
     
-    while (next_index >= 0 && current_char <= key.sLength) {
+//----------------------------------------------------------------------------------------------------------------------
+
+long    _Trie::InsertExtended (const _String& key, const long value, bool update_value, bool * did_insert) {
+    // the root is always at index 0
+    long current_index  = 0L,
+         current_char   = 0L,
+         next_index     = FindNextLetter(key.char_at (current_char++), current_index);
+    
+    while (next_index >= 0L && current_char <= key.length()) {
         current_index = next_index;
-        next_index     = FindNextLetter(key.sData[current_char++], current_index);
+        next_index     = FindNextLetter(key.char_at (current_char++), current_index);
     }
     
-    if (next_index == HY_TRIE_INVALID_LETTER)
-        return HY_TRIE_INVALID_LETTER;
+    if (next_index == kTrieInvalidLetter)
+        return kTrieInvalidLetter;
     
-    if (current_char == key.sLength && next_index >= 0)
+    if (current_char > key.length() ) { // key already present
+        if (update_value) {
+            UpdateValue (next_index, value);
+        }
+        if (did_insert) *did_insert = false;
         return next_index;
+    }
     
     current_char --;
     
     // validate the rest of the string
     
-    for (long k = current_char; k <= key.sLength; k++) {
-        if (charMap[key.sData[k]] < 0)
-            return HY_TRIE_INVALID_LETTER;
+    for (long k = current_char; k <= key.length(); k++) {
+        if (charMap[key.char_at(k)] < 0)
+            return kTrieInvalidLetter;
     }
     
      // insert the rest of the string
-    for (; current_char <= key.sLength; current_char++) {
+    for (; current_char <= key.length(); current_char++) {
         //printf ("\nInserting %c\n", key.sData[current_char]);
-        current_index = InsertNextLetter (key.sData[current_char], current_index);      
+        current_index = InsertNextLetter (key.char_at (current_char), current_index);
         //DumpRaw ();
-   }
-    
+    }
+    inserted_values ++;
     UpdateValue (current_index, value);
+    if (did_insert) *did_insert = true;
 
     return current_index;
 }
@@ -294,9 +322,10 @@ unsigned long    _Trie::Insert (const _List& key, const _SimpleList* values) {
     unsigned long how_many = 0;
     for (long k = 0; k < key.lLength; k++) {
         _String serializedKey ((_String*)((BaseRef*)key.lData)[k]->toStr());
+        bool did_insert = false;
         
-        long this_index = Insert (serializedKey, values?values->lData[k]:0);
-        if (this_index >= 0) {
+        InsertExtended (serializedKey, values?values->lData[k]:0, false, &did_insert);
+        if (did_insert) {
             how_many ++;
         }
     }
@@ -321,6 +350,7 @@ bool    _Trie::Delete (const _String& key){
                 parentList->Delete (parentNode);
                 DeleteObject (current_list);
                 ((_SimpleList**)lData)[history.lData[k]] = nil;
+                inserted_values--;
             }
         }
         return true;
@@ -350,22 +380,28 @@ unsigned long     _Trie::Delete (const _List& key){
 }
 
  //----------------------------------------------------------------------------------------------------------------------
-_String*         _Trie::RetrieveStringFromPath (const _SimpleList& path, _String* alphabet) {
-    _String* this_string = new _String (128L,true),
-           * my_alph      = alphabet? alphabet : new _String (Alphabet());
-    
+_String*         _Trie::RetrieveStringFromPath (const _SimpleList& path, _String const * alphabet) {
+  
+    _StringBuffer * this_string = new _StringBuffer (128UL);
+  
+  
+    _String     * local_alph      = nil;
+    _String  const * read_from = alphabet;
+  
+    if (!read_from) {
+      local_alph = new _String (Alphabet());
+      read_from = local_alph;
+    }
+  
     
     for (long k = 0; k < path.lLength - 4; k+=2) {
          _SimpleList* current_list     = ((_SimpleList**)lData)[path.lData[k]];
          long         current_position = path.lData[k+1];
-         (*this_string) << my_alph->sData[current_list->lData[current_position]];
+         (*this_string) << read_from->char_at (current_list->lData[current_position]);
     }
     
-    this_string->Finalize();
-    
-    if (!alphabet)
-        DeleteObject(my_alph);
-    
+  
+    DeleteObject(local_alph);
     return this_string;
 }
   
@@ -389,9 +425,10 @@ void    _Trie::DumpRaw() {
 //----------------------------------------------------------------------------------------------------------------------
 
 BaseRef     _Trie::toStr(unsigned long) {
-    _String         * serialized = new _String (128L, true),
-                      alph       = Alphabet();
-                      
+
+    _StringBuffer * serialized = new _StringBuffer (128UL);
+    _String const   alph       = Alphabet();
+  
     _SimpleList       traversal_history, 
                         // 2 indices per entry: node and current position (in multiples of 2)
                       *root_list = ((_SimpleList**)lData)[0];
@@ -416,10 +453,7 @@ BaseRef     _Trie::toStr(unsigned long) {
            }
         } else {
             _String * this_string = RetrieveStringFromPath(traversal_history, &alph);
-            (*serialized) << '"';
-            (*serialized) << this_string;
-            (*serialized) << "\":";
-            (*serialized) << _String (GetValue (traversal_history.lData[traversal_history.lLength-2]));
+            (*serialized) << '"' << this_string << "\":" << _String (GetValue (traversal_history.lData[traversal_history.lLength-2]));
             if (doComma) {
                 (*serialized) << ',';
             } else {
@@ -433,13 +467,12 @@ BaseRef     _Trie::toStr(unsigned long) {
     }
     
     (*serialized) << '}';
-    serialized->Finalize();
     return serialized;
 }
  
 //----------------------------------------------------------------------------------------------------------------------
 
-_String  _Trie::RetrieveKeyByPayload (const long key){
+_String  const _Trie::RetrieveKeyByPayload (const long key){
     long key_index = payload.Find (key);
     if (key_index >= 0) {
         _SimpleList parent_indices,
@@ -464,7 +497,7 @@ _String  _Trie::RetrieveKeyByPayload (const long key){
         return _String(RetrieveStringFromPath(traversal_history, &alph));
         
     }
-    return emptyString;
+    return hy_global::kEmptyString;
 }
 
 

@@ -56,6 +56,48 @@ function frequencies.empirical.nucleotide(model, namespace, datafilter) {
 }
 
 /**
+ * Compute equilibrium frequencies at run-time using Q inversion
+ * @name frequencies.empirical.nucleotide
+ * @param {Dictionary} model
+ * @param {String} namespace
+ * @param {DataSetFilter} datafilter
+ * @returns {Dictionary} updated model
+ */
+ 
+lfunction frequencies.runtime.nucleotide(model, namespace, datafilter) {
+
+    /*
+        The run-time calculation depends on the current value of the rate matrix and
+        proceeds by 
+        
+        (1) setting the LAST column of the Q matrix to all 1s
+        (2) inverting the modified matrix 
+        (3) reading off equilibrium frequencies from the last row of the inverse
+        
+        This function needs to have the rate matrix instantiated before it can set 
+        up the dependancies.        
+    */
+    
+    
+    return model;
+}
+
+/**
+ * This is an function that computes stationary frequencies of Markov process based on its  
+ * rate matrix
+ * @param {Matrix} Q matrix
+*/
+
+lfunction frequencies._aux.invert_model (Q) {
+    dim = Rows(Q);
+    for (i = 0; i < dim; i++) {
+        Q[i][dim-1] = 1;
+    }
+    return (Inverse (Q))[{{dim-1,0}}][{{dim-1,dim-1}}];
+}
+
+
+/**
  * Sets model's equilibrium frequency estimator to ML for binary data
  * @name frequencies.empirical.binary
  * @param {Dictionary} model
@@ -265,6 +307,7 @@ lfunction frequencies._aux.empirical.collect_data(datafilter, unit, stride, posi
     } else {
         site_count = 0;
         dim = utility.Array1D(datafilter);
+    
 
         for (i = 0; i < dim; i += 1) {
 
@@ -283,6 +326,7 @@ lfunction frequencies._aux.empirical.collect_data(datafilter, unit, stride, posi
         }
         return __f_composite * (1 / site_count);
     }
+    
 
     return __f;
 }

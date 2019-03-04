@@ -1,7 +1,6 @@
-RequireVersion("2.26");
+RequireVersion("2.3");
 
 
-VERBOSITY_LEVEL = 0;
 
 
 LoadFunctionLibrary("libv3/all-terms.bf");
@@ -23,8 +22,11 @@ LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
 // namespace 'estimators' for various estimator related functions
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
 
-// namespace 'ancestral' for ancestral reconstruction functions
-LoadFunctionLibrary("libv3/tasks/ancestral.bf");
+// namespace 'alignments' for ancestral reconstruction functions
+LoadFunctionLibrary("libv3/tasks/alignments.bf");
+
+// namespace 'trees' for ancestral reconstruction functions
+LoadFunctionLibrary("libv3/tasks/trees.bf");
 
 // namespace 'stats' for various descriptive stats functions
 LoadFunctionLibrary("libv3/stats.bf");
@@ -32,9 +34,6 @@ LoadFunctionLibrary("libv3/stats.bf");
 
 /*------------------------------------------------------------------------------*/
 
-
-console.log("ERROR: DEPRECATED TEST");
-exit();
 
 io.DisplayAnalysisBanner({
     terms.io.info: "Load a pre-specified codon file with a tree that has given branch lengths,
@@ -50,27 +49,33 @@ io.DisplayAnalysisBanner({
 
 
 
-codon_data_info = utility.loadGeneticCodeAndAlignment("codon_data", "codon_filter", PATH_TO_CURRENT_BF + "../data/CD2.nex");
-
+codon_data_info  = alignments.LoadGeneticCodeAndAlignment("codon_data", "codon_filter", PATH_TO_CURRENT_BF + "../data/CD2.nex");
+codon_data_info  = alignments.EnsureMapping ("codon_data",codon_data_info);
+ 
 io.ReportProgressMessageMD ("", "data", ">Loaded an MSA with **" + codon_data_info[terms.data.sequences] + "** sequences and **" + codon_data_info[terms.data.sites] + "** codons from \`" + codon_data_info[terms.data.file] + "\`");
-codon_frequencies = utility.defineFrequencies("codon_filter");
-tree = utility.loadAnnotatedTopology(1);
+
+partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.data.partitions")], codon_data_info[utility.getGlobalValue("terms.data.name_mapping")]);
+
+filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, "codon_data" , "filter.", codon_data_info);
+trees = utility.Map (partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
+filter_names = utility.Map (filter_specification, "_partition_", '_partition_[terms.data.name]'); 
 
 io.ReportProgressMessageMD ("", "fixed", "* Fitting the **fixed branch lengths** model");
 
 fit_options = {
-    terms.run_options.model_type: terms.local,
+    terms.run_options.model_type: terms.global,
     terms.run_options.proportional_branch_length_scaler: {
     }
 };
 
 
-(fit_options[terms.run_options.proportional_branch_length_scaler])[0] = terms.branch_length_constrain;
+(fit_options[terms.run_options.proportional_branch_length_scaler])[0] = terms.model.branch_length_constrain;
 
-constrained_mg_results = estimators.FitMGREV(codon_data_info,
-                                             tree,
+constrained_mg_results = estimators.FitMGREV(filter_names,
+                                             trees,
+                                             codon_data_info [terms.code]
                                              fit_options ,
-                                             parameters.helper.tree_lengths_to_initial_values (tree[terms.branch_lengths], terms.codon)
+                                             parameters.helper.tree_lengths_to_initial_values (trees, None)
                                              );
 
 io.ReportProgressMessageMD ("", "fixed",  "* Log(L) = **" + Format(constrained_mg_results[terms.fit.log_likelihood],8,2) + "**");
@@ -80,6 +85,10 @@ io.ReportProgressMessageMD ("", "free", "* Fitting the **free branch length** mo
 
 fit_options - terms.run_options.proportional_branch_length_scaler;
 
-unconstrained_mg_results = estimators.FitMGREV(codon_data_info, tree, fit_options , constrained_mg_results);
+unconstrained_mg_results = estimators.FitMGREV(filter_names,
+                                             trees,
+                                             codon_data_info [terms.code], 
+                                             fit_options , 
+                                             constrained_mg_results);
 io.ReportProgressMessageMD ("", "free",  "* Log(L) = **" + Format(unconstrained_mg_results[terms.fit.log_likelihood],8,2) + "**");
 io.ReportProgressMessageMD ("", "free", "*" + (unconstrained_mg_results[terms.fit.trees])[0]);

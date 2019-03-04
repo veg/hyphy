@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (sergeilkp@mac.com)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@temple.edu)
   
 Module Developers:
@@ -37,10 +37,41 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#ifndef     __DEFINES__
-#define     __DEFINES__
 
-#define  HY_UNDEFINED       0x000UL
+#ifndef     __HY_DEFINES__
+#define     __HY_DEFINES__
+
+#include    <math.h>
+
+#ifndef FALSE
+    #define FALSE 0
+#endif
+
+#ifndef TRUE
+    #define TRUE  1
+#endif
+
+#ifndef nil
+#define nil   NULL
+#endif
+
+#ifdef __GNUC__
+#define _hprestrict_ __restrict
+#else
+#define _hprestrict_
+#endif
+
+#define  HY_WIDTH_OF_LONG          ((long)(sizeof(long)*8))
+
+#define  PRINTF_FORMAT_STRING    "%.16g"
+
+#define  fNone              0L      // default 0 bit flags
+
+#define  kNotFound          (-1L)
+
+#define  kMaxDialogPrompts  10L
+
+#define  HY_UNDEFINED       0x400UL
 #define  NUMBER             0x001UL
 #define  MATRIX             0x004UL
 #define  CONTAINER          0x008UL
@@ -50,6 +81,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  ASSOCIATIVE_LIST   0x080UL
 #define  TOPOLOGY           0x100UL
 #define  POLYNOMIAL         0x200UL
+
 #define  HY_ANY_OBJECT      0xFFFFUL
 #define  HY_MUTABLE_OBJECT  (NUMBER | STRING | HY_UNDEFINED)
 
@@ -185,7 +217,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_INVALID_RETURN_VALUE                        NAN
 #define  HY_CONSTANT_FALSE                              _Constant (0.0)
 #define  HY_CONSTANT_TRUE                               _Constant (1.0)
-
+#define  HY_NULL_RETURN                                 _MathObject ()
 
 //!  Batch Language 'Object' type codes
 /*!
@@ -254,14 +286,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_USE_MODEL                                      532L
 #define   HY_HBL_COMMAND_MODEL                                          533L
 #define   HY_HBL_COMMAND_SET_PARAMETER                                  534L
-#define   HY_HBL_COMMAND_SET_CHOICE_LIST                                535L
-#define   HY_HBL_COMMAND_OPEN_DATA_PANEL                                536L
+#define   HY_HBL_COMMAND_CHOICE_LIST                                    535L
 #define   HY_HBL_COMMAND_GET_INFORMATION                                537L
 #define   HY_HBL_COMMAND_EXECUTE_COMMANDS                               538L
 #define   HY_HBL_COMMAND_EXECUTE_A_FILE                                 539L
 #define   HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY                          541L
-#define   HY_HBL_COMMAND_OPEN_WINDOW                                    542L
-#define   HY_HBL_COMMAND_SPAWN_LIKELIHOOD_FUNCTION                      543L
 #define   HY_HBL_COMMAND_DIFFERENTIATE                                  544L
 #define   HY_HBL_COMMAND_FIND_ROOT                                      545L
 #define   HY_HBL_COMMAND_MPI_RECEIVE                                    546L
@@ -285,6 +314,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_ASSERT                                         564L
 #define   HY_HBL_COMMAND_REPLICATE_CONSTRAINT                           565L
 #define   HY_HBL_COMMAND_NESTED_LIST                                    566L
+#define   HY_HBL_COMMAND_KEYWORD_ARGUMENT                               567L
+
+
 
 
 //!  HyPhy standard directory locations 
@@ -300,5 +332,16 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define   HY_HBL_GET_STRING_BGM_SCORE                                   0L
 #define   HY_HBL_GET_STRING_BGM_SERIALIZE                               1L
+
+
+//TODO 20170413: not sure where to put the conditional includes below
+
+#ifdef _SLKP_USE_SSE_INTRINSICS
+#include <pmmintrin.h>
+#endif
+
+#ifdef _SLKP_USE_AVX_INTRINSICS
+#include <immintrin.h>
+#endif
 
 #endif

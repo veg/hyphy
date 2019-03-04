@@ -45,13 +45,17 @@ By default, HyPhy installs into `/usr/local`
 but it can be installed on any location of your system 
 by providing an installation prefix
 
-`cmake -DCMAKE_INSTALL_PREFIX=/location/of/choice`
+`cmake -DINSTALL_PREFIX=/location/of/choice`
 
 For example, this configuration will install hyphy at /opt/hyphy
 
 `mkdir -p /opt/hyphy`
 
-`cmake -DCMAKE_INSTALL_PREFIX=/opt/hyphy .`
+`cmake -DINSTALL_PREFIX=/opt/hyphy .`
+
+If you are on an OS X platform, you can specify which OS X SDK to use
+
+`cmake -DCMAKE_OSX_SYSROOT=/Developer/SDKs/MacOSX10.9.sdk/ .`
 
 If building on a hetereogenous cluster with some nodes that do not support auto-vectorization
 `cmake -DNOAVX=ON .`.

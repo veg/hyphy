@@ -11,7 +11,6 @@ LoadFunctionLibrary("LEISR.bf", {
     "4": "Gamma"
 });
 
-
 LoadFunctionLibrary("LEISR.bf", {
     "0": PATH_TO_CURRENT_BF + "data/dat.prot",
     "1": "Y",

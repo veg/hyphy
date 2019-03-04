@@ -1512,6 +1512,7 @@ OPTIMIZATION_PRECISION = 0.001;
 OPTIMIZATION_METHOD    = 0;
 VERBOSITY_LEVEL        = 1;
 
+
 Optimize (res, tdIyVulQ.likelihoodFunction);
 
 fprintf (stdout, "Log(L) = ", res[1][0], "\n", tdIyVulQ.likelihoodFunction, "\n");

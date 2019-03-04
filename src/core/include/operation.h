@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
 
  Module Developers:
@@ -42,8 +42,10 @@
 
 #include "baseobj.h"
 #include "list.h"
+#include "trie.h"
 #include "hy_strings.h"
 #include "mathobj.h"
+#include "global_things.h"
 
 extern  _List BuiltInFunctions;
 
@@ -53,7 +55,7 @@ class _VariableContainer;
 class _Variable;
 class _Formula;
 
-_Variable * FetchVar (long);
+_Variable * FetchVar (long, unsigned long = HY_ANY_OBJECT);
 
 //__________________________________________________________________________________
 class   _Operation : public BaseObj
@@ -69,15 +71,20 @@ public:
     // construct the operation by its symbol and, if relevant -
     // number of operands
     _Operation  (const long,const long);
+    _Operation  (const _Operation&);
 
     _Operation  (bool, _String&, bool isG = false, _VariableContainer const*  = nil, bool take_a_reference = false);
     // store a variable or a constant
-    _Operation  (_PMathObj);
+    _Operation  (HBLObjectRef);
     // store a non-numeric constant
+    _Operation  (_Variable const&);
+    // create an operation that references a variable
+
 
     virtual ~_Operation (void);
 
-    virtual   BaseObj*      makeDynamic         (void);
+    virtual   BaseObj*      makeDynamic         (void) const;
+    virtual   void          Duplicate           (BaseRefConst);
 
     bool            Execute             (_Stack&, _VariableContainer const* = nil, _String* errMsg = nil); //execute this operation
     // see the commend for _Formula::ExecuteFormula for the second argument
@@ -87,9 +94,8 @@ public:
     virtual   BaseObj*      toStr               (unsigned long = 0UL);    //convert the op to string
 
     virtual   void          Initialize          (bool = false);
-    virtual   void          Duplicate           (BaseRef);
-    _String&    GetCode             (void) {
-        return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode):emptyString;
+    const _String&    GetCode             (void) {
+        return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode): hy_global::kEmptyString;
     }
     long&       TheCode             (void) {
         return opCode;
@@ -105,17 +111,35 @@ public:
     // return a non-neg number (function index) if this is a user function,
     // otherwise, return -1
 
-    virtual  long           GetAVariable        (void) {    // return the index of the variable
-        return theData>=-2?theData:-theData-3;
+    virtual  long           GetAVariable        (void) const{
+        if (theData >= -1) {
+            return theData;
+        }
+        if (theData < -2) {
+            return -theData - 3;
+        }
+        return -numberOfTerms-1;
+        // return the index of the variable
+    }
+
+    virtual  long           IsValueSubstitution        (void) const{
+        return theData == -2;
     }
 
     virtual  void           SetAVariable        (long d) {  // return the index of the variable
         theData=d;
     }
 
-    _Variable *             RetrieveVar         (void) {
+    _Variable *             RetrieveVar         (void) const {
       if (theData != -1) {
-        return FetchVar(GetAVariable());
+        long var_idx = GetAVariable();
+        if (var_idx >= 0) {
+            return FetchVar(var_idx);
+        } else {
+            if (var_idx == -2) {
+                return FetchVar (-numberOfTerms-1);
+            }
+        }
       }
       return nil;
     }
@@ -132,11 +156,11 @@ public:
 
     long                    StackDepth          (void) const;
 
-    virtual  _PMathObj      GetANumber          (void) {
+    virtual  HBLObjectRef      GetANumber          (void) {
         return theNumber;
     }
 
-    virtual  void           SetNumber           (_PMathObj d) {
+    virtual  void           SetNumber           (HBLObjectRef d) {
         theNumber=d;
     }
 
@@ -153,15 +177,22 @@ public:
     virtual bool            EqualOp             (_Operation*);
 
     static  long            BinOpCode           (_String const &, long = -1);
-
+    
+    static bool             AreOpsInverse       (long op_code1, long op_code2) {
+        long compose = op_code1 < op_code2 ? (op_code1 << 16) + (op_code2) : (op_code2 << 16) + (op_code1);
+        return ListOfInverseOps.Find (compose) != kNotFound;
+    }
+    
+    static      _SimpleList         ListOfInverseOps;
 protected:
+
 
     bool        ReportOperationExecutionError ( _String, _String*);
 
     long        opCode;         // internal operation code
     long        numberOfTerms,  // 1 - unary, 2 - binary, etc
                 theData;
-    _PMathObj   theNumber;
+    HBLObjectRef   theNumber;
 };
 
 #endif
