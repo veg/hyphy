@@ -25,11 +25,11 @@ function BuildCodonFrequencies (obsF)
 		first = h$16;
 		second = h%16$4;
 		third = h%4;
-		if (_Genetic_Code[h]==10) 
+		if (_Genetic_Code[h]==10)
 		{
 			hshift = hshift+1;
 			PIStop = PIStop-obsF[first][0]*obsF[second][1]*obsF[third][2];
-			continue; 
+			continue;
 		}
 		result[h-hshift][0]=obsF[first][0]*obsF[second][1]*obsF[third][2];
 	}
@@ -48,25 +48,25 @@ function MakeModelConstraints (dummy)
 		{
 			if (modelDesc[customLoopCounter2]==modelDesc[customLoopCounter])
 			{
-				ModelTitle  = ModelTitle+modelDesc[customLoopCounter2];	
+				ModelTitle  = ModelTitle+modelDesc[customLoopCounter2];
 				if (rateBiasTerms[customLoopCounter2] == "1")
 				{
 					modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter]+":="+rateBiasTerms[customLoopCounter2]+";";
 				}
 				else
 				{
-					modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";			
+					modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";
 				}
 				break;
 			}
 		}
 		if (customLoopCounter==customLoopCounter2)
 		{
-			ModelTitle = ModelTitle+modelDesc[customLoopCounter2];	
+			ModelTitle = ModelTitle+modelDesc[customLoopCounter2];
 		}
 	}
 	return 0;
-}	
+}
 
 
 /*------------------------------------------------------------------------*/
@@ -79,19 +79,19 @@ function ReportSite2 (siteI, siteM)
 		{
 			doneSites[siteI][k] = doneSites[siteM][k];
 		}
-	}					 
+	}
 
 	fprintf (stdout, "| Codon: ", 		Format(siteI+1,4,0),
-					 "| Sample 1 (dS,dN Int, dN Leaf): ", 		
+					 "| Sample 1 (dS,dN Int, dN Leaf): ",
 					 					Format(doneSites[siteI][0],6,2),
 					 					Format(doneSites[siteI][1],6,2),
 					 					Format(doneSites[siteI][2],8,2),
-					 "| Sample 2 (dS,dN Int, dN Leaf): ", 		
+					 "| Sample 2 (dS,dN Int, dN Leaf): ",
 					 					Format(doneSites[siteI][3],6,2),
 					 					Format(doneSites[siteI][4],6,2),
 					 					Format(doneSites[siteI][5],8,2),
 					 "| LRT: ",			Format(doneSites[siteI][11],7,2),
-					 "| p: ",			Format(doneSites[siteI][12],5,2), "\n");		
+					 "| p: ",			Format(doneSites[siteI][12],5,2), "\n");
 
 
 	return 0;
@@ -103,28 +103,28 @@ function ReportSite2 (siteI, siteM)
 function ReceiveJobs2 (sendOrNot, nullAlt)
 {
 	MPIReceive (-1, fromNode, result_String);
-	
+
 	siteIndex = MPINodeState[fromNode-1][1];
 	siteNA	  = MPINodeState[fromNode-1][2];
-	
+
 	if (sendOrNot)
 	{
 		MPISend (fromNode,siteLikelihood);
-		MPINodeState[fromNode-1][1] = siteCount;			
-		MPINodeState[fromNode-1][2] = nullAlt;			
+		MPINodeState[fromNode-1][1] = siteCount;
+		MPINodeState[fromNode-1][2] = nullAlt;
 	}
 	else
 	{
 		MPINodeState[fromNode-1][0] = 0;
-		MPINodeState[fromNode-1][1] = -1;		
+		MPINodeState[fromNode-1][1] = -1;
 	}
-	
+
 	siteMap = siteIndex;
-	
+
 	/*fprintf ("../dump",CLEAR_FILE,result_String);*/
-		
+
 	ExecuteCommands (result_String);
-	
+
 	sRateV = siteLikelihood_MLE_VALUES["sRate"];
 	dNdS_IV = siteLikelihood_MLE_VALUES["dNdS_I"];
 	dNdS_LV = siteLikelihood_MLE_VALUES["dNdS_L"];
@@ -148,7 +148,7 @@ function ReceiveJobs2 (sendOrNot, nullAlt)
 		doneSites[siteMap][8] = dNdS_IV;
 		doneSites[siteMap][9] = dNdS_LV;
 		doneSites[siteMap][10] = dNdS_2_IV;
-		doneSites[siteMap][11] = doneSites[siteMap][11]-2*siteLikelihood_MLES[1][0];	
+		doneSites[siteMap][11] = doneSites[siteMap][11]-2*siteLikelihood_MLES[1][0];
 	}
 
 	if (doneSites[siteMap][12] == 0)
@@ -159,11 +159,11 @@ function ReceiveJobs2 (sendOrNot, nullAlt)
 	{
 		if (doneSites[siteMap][12] == (-1))
 		{
-			doneSites[siteMap][12] = 1-CChi2(doneSites[siteMap][11],1);						
+			doneSites[siteMap][12] = 1-CChi2(doneSites[siteMap][11],1);
 			dummy = ReportSite2 (siteIndex, siteMap);
 		}
 	}
-	
+
 	return fromNode-1;
 }
 
@@ -177,16 +177,16 @@ global AT 	= 1;
 global CG 	= 1;
 global CT 	= 1;
 global GT 	= 1;
-global dNdS_I = 1;	
-global dNdS_L = 1;	
+global dNdS_I = 1;
+global dNdS_L = 1;
 
 global AC_2 	= 1;
 global AT_2 	= 1;
 global CG_2 	= 1;
 global CT_2 	= 1;
 global GT_2 	= 1;
-global dNdS_2_I   = 1;		
-global dNdS_2_L   = 1;		
+global dNdS_2_I   = 1;
+global dNdS_2_L   = 1;
 
 
 NucleotideMatrix	 = {{*,AC*t,t,AT*t}{AC*t,*,CG*t,CT*t}{t,CG*t,*,GT*t}{AT*t,CT*t,GT*t,*}};
@@ -225,7 +225,7 @@ treeString_2 = ""+givenTree;
 ChoiceList (modelChoice, "Model Options",1,SKIP_NONE,
 			"Default","Use HKY85 and MG94xHKY85.",
 			"Custom", "Use any reversible nucleotide model crossed with MG94.");
-			
+
 if (modelChoice < 0)
 {
 	return;
@@ -241,10 +241,10 @@ if (modelChoice)
 		fprintf (stdout,"\nPlease enter a 6 character model designation for the first data set(e.g:010010 defines HKY85):");
 		fscanf  (stdin,"String", modelDesc);
 		if (Abs(modelDesc)==6)
-		{	
+		{
 			done = 1;
 		}
-	}			
+	}
 
 	done = 0;
 	while (!done)
@@ -252,10 +252,10 @@ if (modelChoice)
 		fprintf (stdout,"\nPlease enter a 6 character model designation for the second data set(e.g:010010 defines HKY85):");
 		fscanf  (stdin,"String", modelDesc2);
 		if (Abs(modelDesc2)==6)
-		{	
+		{
 			done = 1;
 		}
-	}			
+	}
 }
 else
 {
@@ -300,26 +300,26 @@ LikelihoodFunction 	nucLF_2 = (nucData_2,givenTree_2);
 Optimize (res_2, nucLF_2);
 
 fprintf (stdout, "\nNucleotide fit for the second data set\n\n",nucLF_2,"\n\n");
-				
+
 CodonMatrix = {ModelMatrixDimension,ModelMatrixDimension};
 
 hshift = 0;
 
 for (h=0; h<64; h=h+1)
 {
-	if (_Genetic_Code[h]==10) 
+	if (_Genetic_Code[h]==10)
 	{
 		hshift = hshift+1;
-		continue; 
+		continue;
 	}
 	vshift = hshift;
 	for (v = h+1; v<64; v=v+1)
 	{
 		diff = v-h;
-		if (_Genetic_Code[v]==10) 
+		if (_Genetic_Code[v]==10)
 		{
 			vshift = vshift+1;
-			continue; 
+			continue;
 		}
 		nucPosInCodon = 2;
 		if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
@@ -354,12 +354,12 @@ for (h=0; h<64; h=h+1)
 				trSM = transition2;
 				trLG = transition;
 			}
-			
+
 			if (trSM==0)
 			{
 				if (trLG==1)
 				{
-					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+					if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 					{
 						CodonMatrix[h-hshift][v-vshift] := AC__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
 						CodonMatrix[v-vshift][h-hshift] := AC__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
@@ -374,7 +374,7 @@ for (h=0; h<64; h=h+1)
 				{
 					if (trLG==2)
 					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 						{
 							CodonMatrix[h-hshift][v-vshift] := synRate*positionFrequencies__[transition__][nucPosInCodon__];
 							CodonMatrix[v-vshift][h-hshift] := synRate*positionFrequencies__[transition2__][nucPosInCodon__];
@@ -383,11 +383,11 @@ for (h=0; h<64; h=h+1)
 						{
 							CodonMatrix[h-hshift][v-vshift] := nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
 							CodonMatrix[v-vshift][h-hshift] := nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}							
+						}
 					}
 					else
 					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 						{
 							CodonMatrix[h-hshift][v-vshift] := AT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
 							CodonMatrix[v-vshift][h-hshift] := AT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
@@ -396,7 +396,7 @@ for (h=0; h<64; h=h+1)
 						{
 							CodonMatrix[h-hshift][v-vshift] := AT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
 							CodonMatrix[v-vshift][h-hshift] := AT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}							
+						}
 					}
 				}
 			}
@@ -406,7 +406,7 @@ for (h=0; h<64; h=h+1)
 				{
 					if (trLG==2)
 					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 						{
 							CodonMatrix[h-hshift][v-vshift] := CG__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
 							CodonMatrix[v-vshift][h-hshift] := CG__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
@@ -419,7 +419,7 @@ for (h=0; h<64; h=h+1)
 					}
 					else
 					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 						{
 							CodonMatrix[h-hshift][v-vshift] := CT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
 							CodonMatrix[v-vshift][h-hshift] := CT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
@@ -428,12 +428,12 @@ for (h=0; h<64; h=h+1)
 						{
 							CodonMatrix[h-hshift][v-vshift] := CT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
 							CodonMatrix[v-vshift][h-hshift] := CT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-						}							
+						}
 					}
 				}
 				else
 				{
-					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+					if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 					{
 						CodonMatrix[h-hshift][v-vshift] := GT__*synRate*positionFrequencies__[transition__][nucPosInCodon__];
 						CodonMatrix[v-vshift][h-hshift] := GT__*synRate*positionFrequencies__[transition2__][nucPosInCodon__];
@@ -442,12 +442,12 @@ for (h=0; h<64; h=h+1)
 					{
 						CodonMatrix[h-hshift][v-vshift] := GT__*nonSynRate*positionFrequencies__[transition__][nucPosInCodon__];
 						CodonMatrix[v-vshift][h-hshift] := GT__*nonSynRate*positionFrequencies__[transition2__][nucPosInCodon__];
-					}							
+					}
 				}
 			}
 		}
    }
-}		
+}
 
 CodonMatrix_2 = {ModelMatrixDimension,ModelMatrixDimension};
 
@@ -455,19 +455,19 @@ hshift = 0;
 
 for (h=0; h<64; h=h+1)
 {
-	if (_Genetic_Code[h]==10) 
+	if (_Genetic_Code[h]==10)
 	{
 		hshift = hshift+1;
-		continue; 
+		continue;
 	}
 	vshift = hshift;
 	for (v = h+1; v<64; v=v+1)
 	{
 		diff = v-h;
-		if (_Genetic_Code[v]==10) 
+		if (_Genetic_Code[v]==10)
 		{
 			vshift = vshift+1;
-			continue; 
+			continue;
 		}
 		nucPosInCodon = 2;
 		if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0))
@@ -502,12 +502,12 @@ for (h=0; h<64; h=h+1)
 				trSM = transition2;
 				trLG = transition;
 			}
-			
+
 			if (trSM==0)
 			{
 				if (trLG==1)
 				{
-					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+					if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 					{
 						CodonMatrix_2[h-hshift][v-vshift] := AC_2__*synRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 						CodonMatrix_2[v-vshift][h-hshift] := AC_2__*synRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
@@ -522,7 +522,7 @@ for (h=0; h<64; h=h+1)
 				{
 					if (trLG==2)
 					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 						{
 							CodonMatrix_2[h-hshift][v-vshift] := synRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 							CodonMatrix_2[v-vshift][h-hshift] := synRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
@@ -531,11 +531,11 @@ for (h=0; h<64; h=h+1)
 						{
 							CodonMatrix_2[h-hshift][v-vshift] := nonSynRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 							CodonMatrix_2[v-vshift][h-hshift] := nonSynRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
-						}							
+						}
 					}
 					else
 					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 						{
 							CodonMatrix_2[h-hshift][v-vshift] := AT_2__*synRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 							CodonMatrix_2[v-vshift][h-hshift] := AT_2__*synRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
@@ -544,7 +544,7 @@ for (h=0; h<64; h=h+1)
 						{
 							CodonMatrix_2[h-hshift][v-vshift] := AT_2__*nonSynRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 							CodonMatrix_2[v-vshift][h-hshift] := AT_2__*nonSynRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
-						}							
+						}
 					}
 				}
 			}
@@ -554,7 +554,7 @@ for (h=0; h<64; h=h+1)
 				{
 					if (trLG==2)
 					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 						{
 							CodonMatrix_2[h-hshift][v-vshift] := CG_2__*synRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 							CodonMatrix_2[v-vshift][h-hshift] := CG_2__*synRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
@@ -567,7 +567,7 @@ for (h=0; h<64; h=h+1)
 					}
 					else
 					{
-						if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+						if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 						{
 							CodonMatrix_2[h-hshift][v-vshift] := CT_2__*synRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 							CodonMatrix_2[v-vshift][h-hshift] := CT_2__*synRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
@@ -576,12 +576,12 @@ for (h=0; h<64; h=h+1)
 						{
 							CodonMatrix_2[h-hshift][v-vshift] := CT_2__*nonSynRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 							CodonMatrix_2[v-vshift][h-hshift] := CT_2__*nonSynRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
-						}							
+						}
 					}
 				}
 				else
 				{
-					if (_Genetic_Code[0][h]==_Genetic_Code[0][v]) 
+					if (_Genetic_Code[0][h]==_Genetic_Code[0][v])
 					{
 						CodonMatrix_2[h-hshift][v-vshift] := GT_2__*synRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 						CodonMatrix_2[v-vshift][h-hshift] := GT_2__*synRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
@@ -590,7 +590,7 @@ for (h=0; h<64; h=h+1)
 					{
 						CodonMatrix_2[h-hshift][v-vshift] := GT_2__*nonSynRate*positionFrequencies_2__[transition__][nucPosInCodon__];
 						CodonMatrix_2[v-vshift][h-hshift] := GT_2__*nonSynRate*positionFrequencies_2__[transition2__][nucPosInCodon__];
-					}							
+					}
 				}
 			}
 		}
@@ -614,7 +614,7 @@ doneSites    = {nucData.sites/3,13};
 smipv = MAXIMUM_ITERATIONS_PER_VARIABLE;
 MAXIMUM_ITERATIONS_PER_VARIABLE = 5000;
 
-labels = {{"dS 1","dN Internal 1","dN  Leaves 1","dS 2","dN Internal 2", "dN Leaves 2", "Joint dS 1","Joint dS 2","Joint dN Internal", 
+labels = {{"dS 1","dN Internal 1","dN  Leaves 1","dS 2","dN Internal 2", "dN Leaves 2", "Joint dS 1","Joint dS 2","Joint dN Internal",
 		  "Joint dN Leaves 1","Joint dN Leaves 2","LRT","p-value"}};
 
 ClearConstraints (codonTree);
@@ -637,15 +637,15 @@ if (MPI_NODE_COUNT<=1)
 	{
 		siteMap   = dupInfo[siteCount];
 		siteMap_2 = dupInfo_2[siteCount];
-		
+
 		mapKey = ""+siteMap+","+siteMap_2;
-		
+
 		mapIndex = donePairs[mapKey];
-		
+
 		if (mapIndex == 0)
 		{
 			siteMap = siteCount;
-			
+
 			filterString = "";
 			filterString = filterString + (siteCount*3) + "-" + (siteCount*3+2);
 			filterString = "";
@@ -654,7 +654,7 @@ if (MPI_NODE_COUNT<=1)
 			DataSetFilter filteredData_2 = CreateFilter (jointDS,3,filterString,speciesIndex>=nucData.species,GeneticCodeExclusions);
 
 			/* check to see if the site is constant in the first data set */
-			
+
 			HarvestFrequencies (f1, filteredData, 3, 3, 0);
 			m1 = 0;
 			for (mpiNode=0; mpiNode < 64; mpiNode=mpiNode+1)
@@ -664,7 +664,7 @@ if (MPI_NODE_COUNT<=1)
 					m1=m1+1;
 				}
 			}
-			
+
 			/* check to see if the site is constant in the first data set */
 			HarvestFrequencies (f1, filteredData_2, 3, 3, 0);
 			m2 = 0;
@@ -675,7 +675,7 @@ if (MPI_NODE_COUNT<=1)
 					m2=m2+1;
 				}
 			}
-			
+
 			if (m1>1 || m2>1)
 			/* at least one site is not constant */
 			{
@@ -686,7 +686,7 @@ if (MPI_NODE_COUNT<=1)
 				dNdS_L   = 1;
 				dNdS_2_I = 1;
 				dNdS_2_L = 1;
-				
+
 				if (m1 > 1)
 				{
 					if (m2 > 1)
@@ -699,7 +699,7 @@ if (MPI_NODE_COUNT<=1)
 						ReplicateConstraint("this1.?.synRate:=sRate_2*this2.?.t__",codonTree_2,givenTree_2);
 						ReplicateConstraint("this1.Node?.nonSynRate:=dNdS_2_I*this2.Node?.t__",codonTree_2,givenTree_2);
 						ReplicateConstraint("this1.?.nonSynRate:=dNdS_2_L*this2.?.t__",codonTree_2,givenTree_2);
-						LikelihoodFunction siteLikelihood = (filteredData, codonTree,filteredData_2,codonTree_2);				
+						LikelihoodFunction siteLikelihood = (filteredData, codonTree,filteredData_2,codonTree_2);
 						Optimize (site_res, siteLikelihood);
 					}
 					else
@@ -708,7 +708,7 @@ if (MPI_NODE_COUNT<=1)
 						ReplicateConstraint("this1.?.synRate:=sRate*this2.?.t__",codonTree,givenTree);
 						ReplicateConstraint("this1.Node?.nonSynRate:=dNdS_I*this2.Node?.t__",codonTree,givenTree);
 						ReplicateConstraint("this1.?.nonSynRate:=dNdS_L*this2.?.t__",codonTree,givenTree);
-						LikelihoodFunction siteLikelihood = (filteredData, codonTree);				
+						LikelihoodFunction siteLikelihood = (filteredData, codonTree);
 						Optimize (site_res, siteLikelihood);
 						sRate_2   = 0;
 						dNdS_2_I  = 0;
@@ -721,13 +721,13 @@ if (MPI_NODE_COUNT<=1)
 					ReplicateConstraint("this1.?.synRate:=sRate_2*this2.?.t__",codonTree_2,givenTree_2);
 					ReplicateConstraint("this1.Node?.nonSynRate:=dNdS_2_I*this2.Node?.t__",codonTree_2,givenTree_2);
 					ReplicateConstraint("this1.?.nonSynRate:=dNdS_2_L*this2.?.t__",codonTree_2,givenTree_2);
-					LikelihoodFunction siteLikelihood = (filteredData_2,codonTree_2);				
-					Optimize (site_res, siteLikelihood);				
+					LikelihoodFunction siteLikelihood = (filteredData_2,codonTree_2);
+					Optimize (site_res, siteLikelihood);
 					sRate   = 0;
 					dNdS_I  = 0;
 					dNdS_L  = 0;
 				}
-				
+
 				doneSites[siteMap][0] = sRate;
 				doneSites[siteMap][1] = dNdS_I;
 				doneSites[siteMap][2] = dNdS_L;
@@ -740,7 +740,7 @@ if (MPI_NODE_COUNT<=1)
 				dNdS_I  = 1;
 				dNdS_L  = 1;
 				dNdS_2_L= 1;
-				
+
 				ClearConstraints (codonTree);
 				ReplicateConstraint("this1.?.synRate:=sRate*this2.?.t__",codonTree,givenTree);
 				ReplicateConstraint("this1.Node?.nonSynRate:=dNdS_I*sRate*this2.Node?.t__",codonTree,givenTree);
@@ -758,21 +758,21 @@ if (MPI_NODE_COUNT<=1)
 				doneSites[siteMap][10] = dNdS_2_L;
 				doneSites[siteMap][11] = 2*(site_res[1][0]-site_resN[1][0]);
 				doneSites[siteMap][12] = 1-CChi2(doneSites[siteMap][11],1);
-		
+
 			}
 			else
 			{
 				doneSites[siteMap][11] = 0;
-				doneSites[siteMap][12] = 1;					
-			}					
+				doneSites[siteMap][12] = 1;
+			}
 			donePairs [mapKey] = siteCount+1;
-			ReportSite2 (siteCount, siteCount);	
+			ReportSite2 (siteCount, siteCount);
 		}
 		else
 		{
-			dummy = ReportSite2 (siteCount, mapIndex-1);				 
+			dummy = ReportSite2 (siteCount, mapIndex-1);
 		}
-	}	
+	}
 }
 else
 {
@@ -781,17 +781,17 @@ else
 	{
 		siteMap   = dupInfo[siteCount];
 		siteMap_2 = dupInfo_2[siteCount];
-		mapKey = ""+siteMap+","+siteMap_2;		
+		mapKey = ""+siteMap+","+siteMap_2;
 		mapIndex = donePairs[mapKey];
-		
+
 		if (mapIndex == 0)
 		{
-			
+
 			filterString = "";
 			filterString = filterString + (siteCount*3) + "-" + (siteCount*3+2);
 			DataSetFilter filteredData   = CreateFilter (jointDS,3,filterString,speciesIndex<nucData.species,GeneticCodeExclusions);
 			DataSetFilter filteredData_2 = CreateFilter (jointDS,3,filterString,speciesIndex>=nucData.species,GeneticCodeExclusions);
-			
+
 			HarvestFrequencies (f1, filteredData, 3, 3, 0);
 			m1 = 0;
 			for (mpiNode=0; mpiNode < 64; mpiNode=mpiNode+1)
@@ -801,7 +801,7 @@ else
 					m1=m1+1;
 				}
 			}
-			
+
 			/* check to see if the site is constant in the first data set */
 			HarvestFrequencies (f1, filteredData_2, 3, 3, 0);
 			m2 = 0;
@@ -812,7 +812,7 @@ else
 					m2=m2+1;
 				}
 			}
-			
+
 			if (m1>1 || m2>1)
 			{
 				siteMap = siteCount;
@@ -822,7 +822,7 @@ else
 				dNdS_L   = 1;
 				dNdS_2_I = 1;
 				dNdS_2_L = 1;
-				
+
 				ClearConstraints (codonTree);
 				ReplicateConstraint("this1.?.synRate:=sRate*this2.?.t__",codonTree,givenTree);
 				ReplicateConstraint("this1.Node?.nonSynRate:=dNdS_I*this2.Node?.t__",codonTree,givenTree);
@@ -831,16 +831,16 @@ else
 				ReplicateConstraint("this1.?.synRate:=sRate_2*this2.?.t__",codonTree_2,givenTree_2);
 				ReplicateConstraint("this1.Node?.nonSynRate:=dNdS_2_I*this2.Node?.t__",codonTree_2,givenTree_2);
 				ReplicateConstraint("this1.?.nonSynRate:=dNdS_2_L*this2.?.t__",codonTree_2,givenTree_2);
-				LikelihoodFunction siteLikelihood = (filteredData, codonTree,filteredData_2,codonTree_2);				
+				LikelihoodFunction siteLikelihood = (filteredData, codonTree,filteredData_2,codonTree_2);
 
 				for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
 				{
 					if (MPINodeState[mpiNode][0]==0)
 					{
-						break;	
+						break;
 					}
 				}
-				
+
 				if (mpiNode==MPI_NODE_COUNT-1)
 				{
 					mpiNode = ReceiveJobs2 (1,1);
@@ -852,13 +852,13 @@ else
 					MPINodeState[mpiNode][1] = siteCount;
 					MPINodeState[mpiNode][2] = 1;
 				}
-				
+
 				sRate   = 1;
 				sRate_2 = 1;
 				dNdS_I  = 1;
 				dNdS_L  = 1;
 				dNdS_2_L  = 1;
-				
+
 				ClearConstraints (codonTree);
 				ReplicateConstraint("this1.?.synRate:=sRate*this2.?.t__",codonTree,givenTree);
 				ReplicateConstraint("this1.Node?.nonSynRate:=dNdS_I*sRate*this2.Node?.t__",codonTree,givenTree);
@@ -870,13 +870,13 @@ else
 
 				DataSetFilter filteredData   = CreateFilter (jointDS,3,filterString,speciesIndex<nucData.species,GeneticCodeExclusions);
 				DataSetFilter filteredData_2 = CreateFilter (jointDS,3,filterString,speciesIndex>=nucData.species,GeneticCodeExclusions);
-				LikelihoodFunction siteLikelihood = (filteredData, codonTree,filteredData_2,codonTree_2);				
+				LikelihoodFunction siteLikelihood = (filteredData, codonTree,filteredData_2,codonTree_2);
 
 				for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
 				{
 					if (MPINodeState[mpiNode][0]==0)
 					{
-						break;	
+						break;
 					}
 				}
 				if (mpiNode==MPI_NODE_COUNT-1)
@@ -890,21 +890,21 @@ else
 					MPINodeState[mpiNode][1] = siteCount;
 					MPINodeState[mpiNode][2] = 0;
 				}
-				
+
 			}
 			else
 			{
 				doneSites[siteCount][11] = 0;
-				doneSites[siteCount][12] = 1;					
-				ReportSite2 (siteCount, siteCount);	
-			}					
+				doneSites[siteCount][12] = 1;
+				ReportSite2 (siteCount, siteCount);
+			}
 			donePairs [mapKey] = siteCount+1;
 		}
 		else
 		{
 			doneSites[siteCount][0] = -mapIndex;
 		}
-	}					
+	}
 	while (1)
 	{
 		for (nodeCounter = 0; nodeCounter < MPI_NODE_COUNT-1; nodeCounter = nodeCounter+1)
@@ -912,15 +912,15 @@ else
 			if (MPINodeState[nodeCounter][0]==1)
 			{
 				fromNode = ReceiveJobs2 (0,0);
-				break;	
+				break;
 			}
 		}
 		if (nodeCounter == MPI_NODE_COUNT-1)
 		{
 			break;
 		}
-	}			
-			
+	}
+
 
 	fprintf (stdout, "\n\n\n");
 
@@ -929,27 +929,17 @@ else
 		nodeCounter = doneSites[siteCount][0];
 		if (nodeCounter < (-0.5))
 		{
-			ReportSite2 (siteCount, -nodeCounter-1);	
-		} 
+			ReportSite2 (siteCount, -nodeCounter-1);
+		}
 		else
 		{
-			ReportSite2 (siteCount, siteCount);	
-		}			 
+			ReportSite2 (siteCount, siteCount);
+		}
 	}
 }
 
-OpenWindow (CHARTWINDOW,{{"Pairwise Comparison Results"}
-					   {"labels"},
-					   {"doneSites"},
-					   {"Bar Chart"},
-					   {"Index"},
-					   {labels[10]},
-					   {"Site Index"},
-					   {""},
-					   {labels[10]},
-					   {"0"}},
-					   "SCREEN_WIDTH-60;SCREEN_HEIGHT-50;30;50");
-					   
+
+
 SetDialogPrompt ("Save site-by-site LRT results to:");
 
 fprintf (PROMPT_FOR_FILE,CLEAR_FILE,"dS 1,dN Internal 1,dN  Leaves 1,dS 2,dN Internal 2,dN Leaves 2,Joint dS 1,Joint dS 2,Joint dN Internal,Joint dN Leaves 1,Joint dN Leaves 2,LRT,p-value");

@@ -12,13 +12,13 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 {
 	DT_String = "";
 	DT_String * 8192;
-	
+
 
 	treePostOrderAVL = Eval(treeNameID+"^0");
 	treePreOrderAVL  = Eval(treeNameID+"^1");
 	internalNodeCount = Eval("BranchCount(`treeNameID`)");
 	nodeCount        =  Abs(treePostOrderAVL);
-	
+
 	rateAVL          = {};
 	doneAssignment   = {};
 
@@ -34,21 +34,21 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 	}
 
 	timeStops				  = {};
-    
-    
+
+
 
 	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex += 1)
 	{
 		nodeInfo 	= treePostOrderAVL[nodeIndex];
 		nodeNameS	= nodeInfo["Name"];
 		timeStops[nodeNameS] = 1e100;
-	
+
 		if (Abs(nodeInfo["Children"]))
 		{
 			DT_String * ("\n\n`treeNameID`.`nodeNameS`.T = 1;\n`treeNameID`.`nodeNameS`.T:>(0);\n");
 			if (Abs(nodeInfo["Parent"]) == 0)
 			{
-				
+
 				if (minV > 0)
 				{
 					minV = minV/2;
@@ -57,7 +57,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 				{
 					minV = minV*2;
 				}
-                
+
 				DT_String * ("`treeNameID`.`nodeNameS`.T = " + minV + ";");
 				timeStops[nodeNameS] = minV;
 			}
@@ -71,9 +71,9 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 			treePostOrderAVL[nodeIndex] = nodeInfo;
 		}
 	}
-	
+
 	descendantsList 		  = {};
-	
+
     PARAMETER_GROUPING = {internalNodeCount,1};
     PARAMETER_GROUPING [0] = "";
     internalsHit = 0;
@@ -96,32 +96,32 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 			{
 				descendantsList[pName] = {};
 			}
-			
+
 			rateClass = rateAVL[nodeIndex-1];
-						
+
 			if (Abs(nodeInfo["Children"]))
 			{
 			    PARAMETER_GROUPING [internalsHit] =  "`treeNameID`.`nodeNameS`.BL";
 			    internalsHit += 1;
 				DT_String * ("\n`treeNameID`.`nodeNameS`.`parameterToConstrain`:=`treeNameID`_scaler_"+rateClass+"*("+
 							 "`treeNameID`.`nodeNameS`.BL);\n`treeNameID`.`nodeNameS`.T:=`treeNameID`."+nodeParent["Name"]+".T+`treeNameID`."+nodeNameS+".BL;\n");
-							 
+
 				(descendantsList[pName])[insIndex] = treeNameID+"."+nodeNameS+".T";
 				timeStops[pName] = Min (timeStops[pName],timeStops[nodeNameS]);
 			}
 			else
 			{
 				DT_String * ("\n" + treeNameID+"."+nodeNameS+"."+parameterToConstrain+":="+treeNameID+"_scaler_"+rateClass+"*("+
-							 tipDateAVL[nodeNameS]+"-"+treeNameID+"."+nodeParent["Name"]+".T);\n");			
+							 tipDateAVL[nodeNameS]+"-"+treeNameID+"."+nodeParent["Name"]+".T);\n");
 				(descendantsList[pName])[insIndex] = tipDateAVL[nodeNameS];
 				timeStops[pName] = Min (timeStops[pName],tipDateAVL[nodeNameS]);
 			}
 		}
 	}
-	
+
 	fprintf (stdout, PARAMETER_GROUPING, "\n");
 	PARAMETER_GROUPING = {"0": PARAMETER_GROUPING};
-	
+
 	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex = nodeIndex+1)
 	{
 		nodeInfo 	= treePreOrderAVL[nodeIndex];
@@ -129,10 +129,10 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 		{
 			nodeNameS	= nodeInfo["Name"];
 			pName		= timeStops[(treePreOrderAVL[(nodeInfo["Parent"])])["Name"]];
-    
-    
+
+
             rateClass = initialGuesses[nodeNameS] - pName;
-            
+
             fprintf (stdout, nodeNameS, " initial guess = ", initialGuesses[nodeNameS], ":", rateClass, "\n");
 
             if (rateClass < 0 || initialGuesses[nodeNameS] >= timeStops[nodeNameS])
@@ -140,20 +140,20 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
                 rateClass = Random(0.2,0.8)*(timeStops[nodeNameS] - pName);
             }
 			DT_String * (treeNameID+"."+nodeNameS+".BL = " + rateClass + ";\n");
-			timeStops[nodeNameS] = pName + rateClass;			
+			timeStops[nodeNameS] = pName + rateClass;
 		}
 	}
 
 
-	rateClass 			= Rows (descendantsList); 
+	rateClass 			= Rows (descendantsList);
 	minTimeByNode		= {};
-	
+
 	for (nodeIndex = 0; nodeIndex < Columns (rateClass); nodeIndex = nodeIndex + 1)
 	{
 		pName 				= rateClass[nodeIndex];
 		nodePT				= descendantsList[pName];
 		doneAssignment		= 1e100;
-		
+
 		for (nodeInfo = 0; nodeInfo< Abs (nodePT); nodeInfo = nodeInfo + 1)
 		{
 			nodeNameS = nodePT[nodeInfo];
@@ -180,11 +180,11 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
 				pName		= (treePostOrderAVL[nodeInfo["Parent"]])["Name"];
 				minTimeByNode[pName] = Min(minTimeByNode[pName], minTimeByNode[nodeNameS]);
 			}
-			
+
 			DT_String * (treeNameID+"."+nodeNameS+".T:<"+minTimeByNode[nodeNameS]+";\n");
 		}
 	}
-	
+
 	if (initialGuesses["Root"] > 0.0)
 	{
 	    DT_String * ("\n`treeNameID`.Node0.T = 0.5*" + initialGuesses["Root"] + ";");
@@ -196,7 +196,7 @@ function generateDatedTipConstraints (treeNameID, parameterToConstrain, tipDateA
  	}
  	DT_String * 0;
  	fprintf (stdout, DT_String, "\n");
- 	 	
+
 	return DT_String;
 }
 
@@ -206,7 +206,7 @@ function generateBLVector (treeNameID)
 {
 	ExecuteCommands ("treePostOrderAVL = "+treeNameID+"^0;");
 	_blVector = {};
-		
+
 	for (nodeIndex = 1; nodeIndex < nodeCount; nodeIndex = nodeIndex+1)
 	{
 		nodeInfo 	= treePostOrderAVL[nodeIndex];
@@ -226,13 +226,13 @@ function generateBLVector (treeNameID)
 			}
 			else
 			{
-				ExecuteCommands ("_thisBL = "+ tipDateAVL[nodeNameS] +" -" + treeNameID+"."+pName+".T;");			
+				ExecuteCommands ("_thisBL = "+ tipDateAVL[nodeNameS] +" -" + treeNameID+"."+pName+".T;");
 			}
 			_blVector [nodeNameS] = _thisBL;
 		}
 	}
-	
-	
+
+
 	return _blVector;
 }
 
@@ -248,7 +248,7 @@ fprintf(stdout,"\n ---- RUNNING MOLECULAR CLOCK ANALYSIS WITH DATED TIPS---- \n"
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0) 
+if (dataType<0)
 {
 	return;
 }
@@ -277,7 +277,7 @@ else
 		ChoiceList (byPosition,"By codon position",1,SKIP_NONE,"Single Partition","Do not split the alignment into codon positions.",
 				    		   "Three Partitions","Allow each codon position to evolve at its own rates");
 
-		if (byPosition<0) 
+		if (byPosition<0)
 		{
 			return;
 		}
@@ -298,9 +298,9 @@ ChoiceList			   (df, "Date Format", 1, SKIP_NONE,
 if (df<0)
 {
 	return 0;
-}			
+}
 else
-{	
+{
     tipDateAVL = Eval ("getTipDatesFromNames" + (df+1) + "(\"aTree\")");
 }
 
@@ -384,7 +384,7 @@ if (Rows("LAST_MODEL_PARAMETER_LIST")>1)
 }
 else
 {
-	GetString (parameter2ConstrainString,LAST_MODEL_PARAMETER_LIST,0);	
+	GetString (parameter2ConstrainString,LAST_MODEL_PARAMETER_LIST,0);
 }
 
 
@@ -418,7 +418,7 @@ returnAVL = {"Free Log(L)": fullModelLik,
 
 _initialGuesses = PathDistanceToRoot (givenTree^0, "");
 
-// SLKP -- this needs to be updated to deal with partitions 
+// SLKP -- this needs to be updated to deal with partitions
 
 linearXY = {filteredData.species, 2};
 
@@ -528,25 +528,8 @@ chartLabels [0] = "Date (" + dateUnit + ")";
 chartLabels [1] = DT_String;
 bScaleFactor 	= ttl/trl;
 
-OpenWindow (CHARTWINDOW,{{"Inferred Dates"}
-		{"chartLabels"}
-		{"scaledBT"}
-		{"None"}
-		{"Index"}
-		{"None"}
-		{""}
-		{""}
-		{""}
-		{"0"}
-		{""}
-		{"0;0"}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:12:2"}
-		{"0;0;13816530;16777215;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		},
-		"735;540;70;70");
-		
+
+
 datedTree = PostOrderAVL2StringDistances (treePostOrderAVL,blv);
 
 returnAVL ["Dated Tree"] = datedTree;
@@ -588,7 +571,7 @@ mxTreeSpec [3] = "";
 mxTreeSpec [4] = "";
 mxTreeSpec [1] = "8211";
 mxTreeSpec [2] = "100,100,-300,-300,1";
-OpenWindow (TREEWINDOW, mxTreeSpec );
+
 
 VERBOSITY_LEVEL 				= 0;
 USE_DISTANCES 	 				= sud;

@@ -634,83 +634,9 @@ if (resample > 0)
 
 	labels = {{"Cumulative Weight","F_ST"}};
 
-	OpenWindow (CHARTWINDOW,{{"Hudson, Slatkin and Madison F_ST"}
-			{"labels"}
-			{"F_ST_1"}
-			{"Step Plot"}
-			{"F_ST"}
-			{"Cumulative Weight"}
-			{"F_ST"}
-			{""}
-			{"Cumulative Probability"}
-			{"3"}
-			{""}
-			{"-1;-1"}
-			{"10;1.309;0.785398"}
-			{"Times:14:0;Times:12:0;Times:14:1"}
-			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-			{"16"}
-			},
-			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50;50");
-
-	OpenWindow (CHARTWINDOW,{{"Slatkin F_ST"}
-			{"labels"}
-			{"F_ST_2"}
-			{"Step Plot"}
-			{"F_ST"}
-			{"Cumulative Weight"}
-			{"F_ST"}
-			{""}
-			{"Cumulative Probability"}
-			{"3"}
-			{""}
-			{"-1;-1"}
-			{"10;1.309;0.785398"}
-			{"Times:14:0;Times:12:0;Times:14:1"}
-			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-			{"16"}
-			},
-			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50+SCREEN_WIDTH/2;50");
-
-	OpenWindow (CHARTWINDOW,{{"Hudson, Boos and Kaplan F_ST"}
-			{"labels"}
-			{"F_ST_3"}
-			{"Step Plot"}
-			{"F_ST"}
-			{"Cumulative Weight"}
-			{"F_ST"}
-			{""}
-			{"Cumulative Probability"}
-			{"3"}
-			{""}
-			{"-1;-1"}
-			{"10;1.309;0.785398"}
-			{"Times:14:0;Times:12:0;Times:14:1"}
-			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-			{"16"}
-			},
-			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50+SCREEN_WIDTH/2;100+SCREEN_HEIGHT/2");
 
 	labels = {{"Cumulative Weight","S_NN"}};
 
-	OpenWindow (CHARTWINDOW,{{"Hudson S_NN"}
-			{"labels"}
-			{"F_ST_4"}
-			{"Step Plot"}
-			{"S_NN"}
-			{"Cumulative Weight"}
-			{"S_NN"}
-			{""}
-			{"Cumulative Probability"}
-			{"3"}
-			{""}
-			{"-1;-1"}
-			{"10;1.309;0.785398"}
-			{"Times:14:0;Times:12:0;Times:14:1"}
-			{"16777215;16777215;16512;11776947;0;16777215;16711680;11842740;13158600;14474460;0;3947580;79;16744448;16777215;2984993;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-			{"16"}
-			},
-			"SCREEN_WIDTH/2-50;SCREEN_HEIGHT/2-100;50;100+SCREEN_HEIGHT/2");
 }
 
 return resultAVL;

@@ -206,7 +206,11 @@ endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 #-------------------------------------------------------------------------------
 find_package(CURL)
 if(${CURL_FOUND} AND NOT APPLE)
-    set(DEFAULT_LIBRARIES dl pthread crypto curl ssl)
+    if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+        set(DEFAULT_LIBRARIES pthread crypto curl ssl)
+    else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+        set(DEFAULT_LIBRARIES dl pthread crypto curl ssl)
+    endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     add_definitions (-D__HYPHYCURL__)
 endif(${CURL_FOUND} AND NOT APPLE)
 
