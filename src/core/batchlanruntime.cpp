@@ -2878,17 +2878,24 @@ bool      _ElementaryCommand::HandleKeywordArgument (_ExecutionList& current_pro
         
         _List   reference_manager;
         if (parameter_count () > 2) {
-            HBLObjectRef default_expression = _ProcessAnArgumentByType (*GetIthParameter(2UL), STRING|HY_UNDEFINED, current_program, nil);
-            if (default_expression) {
-                reference_manager < default_expression;
-                if (default_expression->ObjectClass () == STRING) {
-                    default_value = new _String (((_FString*)default_expression)->get_str());
-                    reference_manager < default_value;
-                } else {
-                    // null values are handled separately
+            try {
+                HBLObjectRef default_expression = _ProcessAnArgumentByType (*GetIthParameter(2UL), STRING|HY_UNDEFINED|NUMBER, current_program, nil);
+                if (default_expression) {
+                    reference_manager < default_expression;
+                    if (default_expression->ObjectClass () == STRING) {
+                        default_value = new _String (((_FString*)default_expression)->get_str());
+                        reference_manager < default_value;
+                    } else {
+                        if (default_expression->ObjectClass () == NUMBER) {
+                            default_value = new _String (((_Constant*)default_expression)->Value());
+                            reference_manager < default_value;
+                        } else {
+                            // null values are handled separately
+                        }
+                    }
                 }
-            } else {
-                throw _String ("Not a valid type for the default expression value");
+            } catch (_String const e){
+                    throw _String ("Not a valid type for the default expression value");
             }
         }
         

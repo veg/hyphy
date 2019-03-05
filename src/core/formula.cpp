@@ -2423,7 +2423,7 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
     }
   };
 
-  ConvertToTree();
+  ConvertToTree(false);
 
   if (theTree) {
 
