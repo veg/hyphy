@@ -7,16 +7,17 @@
 #   Global variables
 #*******************************************************************************
 # File type combinations
-declare -a fileTypes=( "--alignment ./tests/hbltests/data/CD2.nex" # nexus with tree
+declare -a fileTypes=(  "--alignment ./tests/hbltests/data/CD2.nex" # nexus with tree
                         "--alignment ./tests/hbltests/data/CD2_noTree.nex --tree ./tests/hbltests/data/CD2.newick" # nexus with tree separate
                         "--alignment ./tests/hbltests/data/CD2_reduced.fna" # fasta with tree
                         "--alignment ./tests/hbltests/data/CD2_reduced.fasta --tree ./tests/hbltests/data/CD2_reduced.nhx" # fasta with tree separate
+                        "--alignment ./tests/hbltests/data/CD2.phylip --tree ./tests/hbltests/data/CD2.newick" # phylip
                         )
 
 declare -a universalArgs=(  "--code Universal"
                             "--branches All"
                             "--branches Internal"
-                            "--output ./testBustedOutput"
+                            "--output ./testMethodOutput"
                             )
 
 
@@ -41,7 +42,6 @@ evaluateMethod() {
     echo "Testing $methodName"
     echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
-    echo $expectedOutput
     for fileType in "${fileTypes[@]}"
     do
         # Run the command
