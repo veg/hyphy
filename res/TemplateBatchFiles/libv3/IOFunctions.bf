@@ -67,6 +67,16 @@ lfunction io.PromptUserForString(prompt) {
 }
 
 /**
+ * @name io.PromptUserForFilePath
+ * @param prompt
+ */
+lfunction io.PromptUserForFilePath(prompt) {
+    SetDialogPrompt (prompt);
+    fprintf (PROMPT_FOR_FILE, CLEAR_FILE);
+    return  ^"LAST_FILE_PATH";
+}
+
+/**
  * @name io._reportMessageHelper
  * @param analysis
  * @param text

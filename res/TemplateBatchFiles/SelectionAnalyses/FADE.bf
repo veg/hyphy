@@ -132,7 +132,7 @@ fade.alignment_info                  = alignments.ReadProteinDataSet ("fade.data
 //*******************************************************************************************//
 KeywordArgument ("output",   "Save FADE results (JSON) to [default is alignment+.FADE.json]", fade.alignment_info[terms.data.file] + ".FADE.json");
 //*******************************************************************************************//
-fade.alignment_info[terms.json.json] = io.PromptUserForString ("Save FADE results (JSON) to");
+fade.alignment_info[terms.json.json] =  io.PromptUserForFilePath ("Save FADE results (JSON) to");
 
 
 
