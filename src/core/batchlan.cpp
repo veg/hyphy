@@ -280,12 +280,12 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 
     while (messageLength-transferCount>MPI_SEND_CHUNK) {
         printf("%s",theMessage.get_str());
-        ReportMPIError(MPI_Send(theMessage.get_str()+transferCount, MPI_SEND_CHUNK, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
+        ReportMPIError(MPI_Send((void*)(theMessage.get_str()+transferCount), MPI_SEND_CHUNK, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
         transferCount += MPI_SEND_CHUNK;
     }
 
     if (messageLength-transferCount) {
-        ReportMPIError(MPI_Send(theMessage.get_str()+transferCount, messageLength-transferCount, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
+        ReportMPIError(MPI_Send((void*)(theMessage.get_str()+transferCount), messageLength-transferCount, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
     }
 
     //ReportMPIError(MPI_Send(&messageLength, 1, MPI_LONG, destID, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD),true);
@@ -1164,8 +1164,17 @@ void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool rec
 
 //____________________________________________________________________________________
 
-_StringBuffer const       _ExecutionList::GenerateHelpMessage(void)  const {
+_StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned_functions)  const {
     _StringBuffer help_message;
+    
+    _List ref_manager;
+    bool  nested = true;
+    if (!scanned_functions) {
+        _List * _aux_list = new _List;
+        scanned_functions = new _AVLList (_aux_list);
+        ref_manager < _aux_list < scanned_functions;
+        nested = false;
+    }
     
     auto simplify_string = [] (_String const * s) -> const _String {
         _String sc (*s);
@@ -1175,7 +1184,7 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(void)  const {
         return sc & " [computed at run time]";
     };
 
-    ForEach ([&help_message, simplify_string] (BaseRef command, unsigned long index) -> void {
+    ForEach ([&help_message, simplify_string, this, scanned_functions] (BaseRef command, unsigned long index) -> void {
         _ElementaryCommand * this_command = (_ElementaryCommand * )command;
         if (this_command->code == HY_HBL_COMMAND_KEYWORD_ARGUMENT) {
             _String * def_value = this_command->GetIthParameter(2L, false);
@@ -1186,11 +1195,27 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(void)  const {
                 help_message << "\tdefaut value: " << simplify_string(def_value) << '\n';
             }
             help_message << '\n';
+        } else {
+            if (this_command->code == HY_HBL_COMMAND_FORMULA) {
+                _List      hbl_functions;
+                _AVLListX other_functions (&hbl_functions);
+                this_command->BuildListOfDependancies(other_functions, true, *this);
+                
+                for (AVLListXIteratorKeyValue function_iterator : AVLListXIterator (&other_functions)) {
+                    _String * function_name = (_String *)other_functions.Retrieve (function_iterator.get_index());
+                    if (scanned_functions->Insert (new _String (*function_name),0,true, true) >= 0) {
+                        long idx = FindBFFunctionName(*function_name);
+                        if (idx >= 0) {
+                            help_message << GetBFFunctionBody(idx).GenerateHelpMessage(scanned_functions);
+                        }
+                    }
+                }
+            }
         }
         
     });
     
-    if (help_message.empty()) {
+    if (help_message.empty() && !nested) {
         help_message << "No annotated keyword arguments are available for this analysis\n";
     }
     
@@ -2043,7 +2068,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
     auto procedure = [&] (long i) -> _String const {
         return _StringBuffer (_HY_ValidHBLExpressions.RetrieveKeyByPayload(i))
-                << _String ((_String*)parameters.Join (", ")) << ");";
+                << '(' << _String ((_String*)parameters.Join (", ")) << ");";
     };
 
     auto assignment = [&] (long i, const _String& call) -> _String const {

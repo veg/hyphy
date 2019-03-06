@@ -1212,12 +1212,12 @@ _String const _HYHBLTypeToText (long type) {
 //____________________________________________________________________________________
 
 
-void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expression, _ExecutionList& chain, bool recursive, _AVLListX& collection ) {
+void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expression, _ExecutionList const& chain, bool recursive, _AVLListX& collection ) {
   
   _Formula f, f2;
   
-  
-  _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+  _String err_msg;
+  _FormulaParsingContext fpc (&err_msg, chain.nameSpacePrefix);
   fpc.buildComplexObjects() = false;
   
   long     parseCode = Parse(&f,*expression,fpc,&f2);
@@ -1232,7 +1232,7 @@ void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expressio
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection, bool recursive, _ExecutionList& chain) {
+void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection, bool recursive, _ExecutionList const & chain) {
   
   switch (code) {
       
