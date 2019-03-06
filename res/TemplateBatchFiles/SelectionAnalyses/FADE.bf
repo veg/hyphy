@@ -55,8 +55,8 @@ namespace terms.fade {
 
     namespace methods {
         MH  = "Metropolis-Hastings";
-        VB0 = "Variational Bayes";
-        CG  = "Collapsed Gibbs";
+        VB0 = "Variational-Bayes";
+        CG  = "Collapsed-Gibbs";
     }
 
 };
