@@ -280,12 +280,12 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 
     while (messageLength-transferCount>MPI_SEND_CHUNK) {
         printf("%s",theMessage.get_str());
-        ReportMPIError(MPI_Send(theMessage.get_str()+transferCount, MPI_SEND_CHUNK, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
+        ReportMPIError(MPI_Send((void*)(theMessage.get_str()+transferCount), MPI_SEND_CHUNK, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
         transferCount += MPI_SEND_CHUNK;
     }
 
     if (messageLength-transferCount) {
-        ReportMPIError(MPI_Send(theMessage.get_str()+transferCount, messageLength-transferCount, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
+        ReportMPIError(MPI_Send((void*)(theMessage.get_str()+transferCount), messageLength-transferCount, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
     }
 
     //ReportMPIError(MPI_Send(&messageLength, 1, MPI_LONG, destID, HYPHY_MPI_DONE_TAG, MPI_COMM_WORLD),true);
