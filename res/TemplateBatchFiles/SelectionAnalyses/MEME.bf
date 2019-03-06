@@ -1,4 +1,5 @@
-RequireVersion("2.3.3");
+RequireVersion("2.4.0");
+
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -22,10 +23,9 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
 
 
-
-/*------------------------------------------------------------------------------ Display analysis information
+/*------------------------------------------------------------------------------ 
+    Display analysis information
 */
-
 
 meme.analysis_description = {
     terms.io.info: "MEME (Mixed Effects Model of Evolution)
@@ -51,18 +51,16 @@ meme.analysis_description = {
 io.DisplayAnalysisBanner(meme.analysis_description);
 
 
-
 /*------------------------------------------------------------------------------
     Environment setup
 */
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
+
 /*------------------------------------------------------------------------------
     Globals
 */
-
-
 
 meme.parameter_site_alpha = "Site relative synonymous rate";
 meme.parameter_site_omega_minus = "Omega ratio on (tested branches); negative selection or neutral evolution (&omega;- <= 1;)";
@@ -86,10 +84,26 @@ meme.display_orders =   {terms.original_name: -1,
                         terms.json.global_mg94xrev: 1
                        };
 
-
-
-
 selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
+
+
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+   
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+    
+KeywordArgument ("branches",  "Branches to test", "All");
+
+KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
+
+// One additional KeywordArgument ("output") is called below after namespace meme.
+
+
 meme.scaler_prefix = "MEME.scaler";
 
 meme.table_headers = {{"alpha;", "Synonymous substitution rate at a site"}
@@ -118,6 +132,10 @@ namespace meme {
 }
 
 meme.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",meme.pvalue,0,1,FALSE);
+
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'MEME.json')", meme.codon_data_info [terms.json.json]);
+meme.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
 io.ReportProgressMessageMD('MEME',  'selector', 'Branches to include in the MEME analysis');
 
 utility.ForEachPair (meme.selected_branches, "_partition_", "_selection_",
