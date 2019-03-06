@@ -1727,7 +1727,7 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
       WarnNotDefined (this, opCode,context);
   }
 
-  return nil;
+   return new _MathObject;
 }
 
 //_____________________________________________________________________________________________

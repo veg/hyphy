@@ -2310,9 +2310,10 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
           _Formula f,
                    f2;
 
-          _String* theFla     = (_String*)parameters(0);
+          _String* theFla     = (_String*)parameters(0),
+                   err_msg;
 
-          _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
+          _FormulaParsingContext fpc (&err_msg, chain.nameSpacePrefix);
 
           long     parseCode = Parse(&f,(*theFla),fpc,&f2);
           
@@ -2337,7 +2338,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
                   return;
               }
           } else {
-            errMsg = new _String ("Error compiling the statement: ");
+             errMsg = new _String (_String ("Parsing error ") & _String (err_msg.Enquote('(',')') & " while compiling the statement: "));
             throw 0;
           }
       }

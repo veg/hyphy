@@ -1985,7 +1985,10 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
             }
         }
         if (scrap_here->StackDepth() != 1L || !wellDone) {
-            _String errorText = _String ("'") & _String((_String*)toStr(kFormulaStringConversionNormal)) & _String("' evaluated with errors.");
+            _String errorText = _String ("'") & _String((_String*)toStr(kFormulaStringConversionNormal)) & _String("' evaluated with errors ");
+            if (errMsg && errMsg->nonempty()) {
+                errorText = errorText & " " & errMsg->Enquote('(',')');
+            }
 
             if (scrap_here->StackDepth() > 1 && wellDone) {
                 errorText = errorText & " Unconsumed values on the stack";

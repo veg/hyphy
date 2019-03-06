@@ -2444,7 +2444,7 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
         if (twoIDs.countitems() == 2UL || twoIDs.countitems() == 1UL) {
 
           _String * nodes[2] = {(_String*) twoIDs.GetItem(0),
-                                (_String*)(twoIDs.countitems() >= 1L?twoIDs.GetItem(1):nil)};
+                                (_String*)(twoIDs.countitems() > 1L?twoIDs.GetItem(1):nil)};
 
 
 
