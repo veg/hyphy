@@ -1031,7 +1031,7 @@ hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * pattern
         }
 
         if (max <= 0.0) {
-            return -A_LARGE_NUMBER;
+            return -INFINITY;
         }
 
         correctionFactor -= log (max);

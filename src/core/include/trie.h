@@ -245,7 +245,7 @@ class _Trie: public _List {
          * @return the number of elements successfully deleted (including those not present)
          */
 
-        _String*          RetrieveStringFromPath (const _SimpleList& path, _String const * alphabet);
+        _String*          RetrieveStringFromPath (const _SimpleList& path, _String const * alphabet) const;
          /**
          * Given a traversal path of the trie (and an optional cached alphabet), retrive the _String object spelling the path
          * @param path -- the traversal path (pairs of node index, character index)
@@ -253,7 +253,7 @@ class _Trie: public _List {
          * @return the number of elements successfully deleted (including those not present)
          */
        
-        _String  Alphabet (void);
+        _String  Alphabet (void) const;
         /**
          * Return the valid alphabet for this Trie
          * @return The string containing all the letters allowed for strings in this trie. The ordering of the letters is ASCII-alphabetical. 
@@ -265,7 +265,7 @@ class _Trie: public _List {
          * @param key -- the key for which we fish to retrieve the path
          * @return The string spelling the path from the root to the node tagged with value 'key'. Empty string is returned if 'key' is not in this trie
          */
-
+    
  private:
         
         void SetAlphabet        (const _String*, bool);

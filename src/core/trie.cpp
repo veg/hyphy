@@ -78,7 +78,7 @@ void _Trie::Clear (bool all){
 
 //----------------------------------------------------------------------------------------------------------------------
 
-_String _Trie::Alphabet (void) {
+_String _Trie::Alphabet (void) const {
     _StringBuffer result (256UL);
     for (unsigned long charIndex = 0UL; charIndex < 256UL; charIndex++) {
         if (charMap.lData[charIndex] >= 0)
@@ -380,7 +380,7 @@ unsigned long     _Trie::Delete (const _List& key){
 }
 
  //----------------------------------------------------------------------------------------------------------------------
-_String*         _Trie::RetrieveStringFromPath (const _SimpleList& path, _String const * alphabet) {
+_String*         _Trie::RetrieveStringFromPath (const _SimpleList& path, _String const * alphabet) const {
   
     _StringBuffer * this_string = new _StringBuffer (128UL);
   

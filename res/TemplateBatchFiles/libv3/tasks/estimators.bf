@@ -827,9 +827,6 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
 
 
     
-    //Export (lfe, likelihoodFunction);
-    //fprintf ("/tmp/pogo-dump.fit", CLEAR_FILE, lfe);
-    
    	Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
@@ -902,22 +899,21 @@ function estimators.FitMGREV.set_partition_omega(key, value) {
  * @param {String} key
  * @param {String} value
  */
-function estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_results) {
+lfunction estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_results) {
 
     //extract fitted trees with branch lengths scaled on synonymous and non-synonymous
     //substitutions per site
 
-    estimators.FitMGREVExtractComponentBranchLengths.stencils = genetic_code.ComputeBranchLengthStencils(codon_data[terms.code]);
+    stencils = genetic_code.ComputeBranchLengthStencils(codon_data[^"terms.code"]);
+    
+    utility.SetEnvVariable ("BRANCH_LENGTH_STENCIL", stencils[^"terms.genetic_code.synonymous"]);
+    fit_results[^"terms.fit.synonymous_trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
 
+    utility.SetEnvVariable ("BRANCH_LENGTH_STENCIL", stencils[^"terms.genetic_code.nonsynonymous"]);
+     fit_results[^"terms.fit.nonsynonymous_trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
 
-    BRANCH_LENGTH_STENCIL = estimators.FitMGREVExtractComponentBranchLengths.stencils["synonymous"];
-    fit_results["synonymous-trees"] = (estimators.ExtractMLEs(fit_results[terms.likelihood_function], fit_results[terms.model]))[terms.fit.trees];
-
-    BRANCH_LENGTH_STENCIL = estimators.FitMGREVExtractComponentBranchLengths.stencils["non-synonymous"];
-    fit_results["non-synonymous-trees"] = (estimators.ExtractMLEs(fit_results[terms.likelihood_function], fit_results[terms.model]))[terms.fit.trees];
-
-    BRANCH_LENGTH_STENCIL = None;
-
+    utility.SetEnvVariable ("BRANCH_LENGTH_STENCIL", None);
+ 
     return fit_results;
 }
 
@@ -932,7 +928,6 @@ function estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_result
  * @returns MGREV results
  */
 lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, option, initial_values) {
-
 
 
 
@@ -1080,6 +1075,10 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
     results[utility.getGlobalValue("terms.fit.log_likelihood")] = mles[1][0];
     results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + (mg_rev [utility.getGlobalValue("terms.parameters")]) [utility.getGlobalValue("terms.model.empirical")] + df;
 
+
+    if (option[utility.getGlobalValue("terms.run_options.retain_model_object")]) {
+        results[utility.getGlobalValue("terms.model")] = model_id_to_object;
+    } 
 
     if (option[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
         results[utility.getGlobalValue("terms.likelihood_function")] = & likelihoodFunction;

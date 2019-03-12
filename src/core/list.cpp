@@ -359,12 +359,16 @@ long  _List::BinaryInsert (BaseRef s)
     if (pos<0) {
         return -pos+2;
     }
-    _String *s1 = (_String*)s->toStr(), *s2 =(_String*) ((*this)(pos))->toStr();
-    if (*s2<*s1) {
-        pos++;
+    
+    if (pos < lLength) {
+        _String *s1 = (_String*)s->toStr(),
+                *s2 = (_String*) ((*this)(pos))->toStr();
+        if (*s2<*s1) {
+            pos++;
+        }
+        DeleteObject(s1);
+        DeleteObject(s2);
     }
-    DeleteObject(s1);
-    DeleteObject(s2);
     InsertElement (s,pos,true);
     return pos>=lLength?lLength-1:pos;
 

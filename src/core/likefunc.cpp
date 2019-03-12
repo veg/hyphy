@@ -1879,7 +1879,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
     hyFloat result = 0.;
 
     if (!PreCompute()) {
-        return -A_LARGE_NUMBER;
+        return -INFINITY;
     }
 
     /* GUI flag to verify whether MLEs have been altered
@@ -2144,7 +2144,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 #endif
         if (isnan (result)) {
             ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
-            return -A_LARGE_NUMBER;
+            return -INFINITY;
         }
         
         if (result >= 0.) {
@@ -2164,7 +2164,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
     }
 
     HandleApplicationError ("Sorry; this likelihood feature has not yet been ported to the v2.0 LF engine in HyPhy");
-    return -A_LARGE_NUMBER;
+    return -INFINITY;
 
 
 }
@@ -3682,7 +3682,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
     hyFloat  intermediateP,
                 wobble              = 0.,
-                maxSoFar           = -A_LARGE_NUMBER,
+                maxSoFar           = -INFINITY,
                 bestVal,
                 lastMax,
                 currentPrecision   = 0.1,
@@ -3890,11 +3890,11 @@ DecideOnDivideBy (this);
 
         GetAllIndependent (bestSoFar);
 
-        if (fnDim<21) {
+        //if (fnDim<21) {
             checkParameter (intermediatePrecision,intermediateP,.1);
-        } else {
-            checkParameter (intermediatePrecision,intermediateP,.1);
-        }
+        //} else {
+        //    checkParameter (intermediatePrecision,intermediateP,.1);
+        //}
 
         if (verbosity_level>20) {
             snprintf (buffer, sizeof(buffer),"\nGradient Precision %g  Opt Precision = %g", intermediateP, precision);
@@ -3902,7 +3902,14 @@ DecideOnDivideBy (this);
         }
 
         if (optMethod!=7) {
-            ConjugateGradientDescent (0.5, bestSoFar, true, 10);
+            //ConjugateGradientDescent (0.5, bestSoFar, true, 10);
+            if (gradientBlocks.nonempty()) {
+                for (long b = 0; b < gradientBlocks.lLength; b++) {
+                    maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
+                }
+            } else {
+                maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,nil,maxSoFar);
+            }
         } else {
             hyFloat current_precision = MAX(1., precision);
             while (current_precision > precision) {
@@ -4823,7 +4830,7 @@ hyFloat _LikelihoodFunction::SetParametersAndCompute (long index, hyFloat value,
     } else {
         if (value < 0.) {
             HandleApplicationError ("Internal error in gradient bracket function\n");
-            return -A_LARGE_NUMBER;
+            return -INFINITY;
         }
         _Matrix newValue (*baseLine);
         newValue.AplusBx (*direction, value);
@@ -4831,7 +4838,7 @@ hyFloat _LikelihoodFunction::SetParametersAndCompute (long index, hyFloat value,
 
     }
     if (skip_compute) {
-        return -A_LARGE_NUMBER;
+        return -INFINITY;
     }
     hyFloat logL = Compute();
     //if (index >=0)
@@ -5851,7 +5858,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
                 initial_value     = maxSoFar,
                 currentPrecision = localOnly?precision:.01;
 
-    if (check_value != A_LARGE_NUMBER) {
+    if (check_value != INFINITY) {
         if (!CheckEqual(check_value, maxSoFar)) {
             _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]";
             if (check_value - 0.01 > maxSoFar) {
@@ -7934,7 +7941,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
                 // check results
 
-                if (sum > -A_LARGE_NUMBER) {
+                if (sum > -INFINITY) {
                    hyFloat checksum = t->ComputeLLWithBranchCache (*sl,
                                                      doCachedComp,
                                                      bc,
@@ -7969,7 +7976,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                          +                                       " ) reversible model cached likelihood = "& _String (checksum, "%20.16g") & ", directly computed likelihood = " & _String (sum, "%20.16g") &
                                          +                                       ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
 
-                     return -A_LARGE_NUMBER;
+                     return -INFINITY;
                   }
                 }
 
@@ -10116,7 +10123,7 @@ hyFloat _CustomFunction::Compute (void) {
         hyFloat result = GetIthIndependent(i);
 
         if (result<GetIthIndependentBound (i,true) || result>GetIthIndependentBound (i,false)) {
-            return -A_LARGE_NUMBER;
+            return -INFINITY;
         }
     }
 

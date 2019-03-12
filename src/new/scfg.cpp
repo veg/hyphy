@@ -702,7 +702,7 @@ hyFloat      Scfg::Compute (void) {
  
         if (temp == 0.) {
             ReportWarning (_String("Underflow detected for string ") & stringID & ". Spiking optimizer to avoid this region of parameter space.");
-            return (-A_LARGE_NUMBER);
+            return (-INFINITY);
         }
 
         ip = log (temp);

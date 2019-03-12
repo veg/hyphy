@@ -326,6 +326,8 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
             verticalList.Clear();
             verticalList.Populate (isFilteredAlready ? firstOne->GetSiteCount() : ds->GetNoTypes(),0,1);
         }
+        horizontalList.TrimMemory();
+        verticalList.TrimMemory();
     }
     
     if (!isFilteredAlready) {
@@ -413,8 +415,12 @@ void    _DataSetFilter::SetFilter (_DataSet const * ds, unsigned char unit, _Sim
             }
         
         colIndex = siteHolder.Adler32();
+        /*StringToConsole(siteHolder);
+        BufferToConsole("=");
+        StringToConsole(_String (colIndex));
+        NLToConsole();*/
         
-        long        f = siteIndices.Find ((BaseRef)colIndex);
+        long        f = siteIndices.FindLong(colIndex);
         _SimpleList * sameScore = nil;
         
         if (f>=0) {
@@ -536,8 +542,9 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
         }
       
         
+        
         if (patterns_to_be_removed.countitems() == GetPatternCount()) {
-            ReportWarning("All the sites in the datafilter have deletions and removing them creates an emptyString filter");
+            ReportWarning("All the sites in the datafilter have deletions and removing them creates an empty filter");
         }
         
         _SimpleList data_sites_to_be_deleted, // e.g. nucleotides
@@ -564,29 +571,30 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
           
           long        skip_offset = 0L;
           
-          
+            
           duplicateMap.Each ( [&](long value, unsigned long index) -> void {
             long delete_this_entry = patterns_to_be_removed.BinaryFind(value);
             if (delete_this_entry >= 0) {
-              if (running_indexer.countitems() <= delete_this_entry) { // first time across this site pattern
+              /** deleting this entry because it maps to a filtered pattern **/
+              if (running_indexer.countitems() <= value) { // first time across this site pattern
                 running_indexer << -1L;
                 skip_offset ++;
               }
               data_sites_to_be_deleted.AppendRange (unitLength, index*unitLength, 1L);
             } else {
-              if (running_indexer.countitems() <= delete_this_entry) { // first time across this site pattern
+              if (running_indexer.countitems() <= value) {
                 running_indexer << value - skip_offset;
               }
               remapped_duplicates << running_indexer.get (value);
             }
-          });
+           });
+           duplicateMap.Duplicate(&remapped_duplicates);
         }
         
-        //printf ("%s\n", _String ((_String*)data_sites_to_be_deleted.toStr()).get_str());
         filter_sites_to_be_deleted.Clear();
         theOriginalOrder.DeleteList (data_sites_to_be_deleted);
         theFrequencies.DeleteList (patterns_to_be_removed);
-      
+        
         
         for (unsigned long i=0UL; i<patterns_to_be_removed.countitems(); i++) {
             long pattern_index = patterns_to_be_removed.get(i);
@@ -596,8 +604,11 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
                 filter_sites_to_be_deleted << pattern_index*unitLength+j;
             }
         }
+
         
+        //printf ("%s\n", _String ((_String*)data_sites_to_be_deleted.toStr()).get_str());
         
+ 
         if (data_sites_to_be_deleted.countitems()) {
             /*allDeleted.Sort();*/
             
@@ -612,7 +623,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
         
         // this seems to be an old debugging code snippet
         // TODO SLKP 20171002 : review this
-        _SimpleList saveMap (theMap);
+        //_SimpleList saveMap (theMap);
         theMap.DeleteList (filter_sites_to_be_deleted);
         for (long k=0; k<theMap.lLength; k++) {
            if (theMap.get (k) < 0) {
@@ -918,6 +929,7 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage) con
     }
     
     delete [] store;
+    
     return outcome;
 }
 

@@ -14,6 +14,14 @@ function sumThreeArgs(a,b,c) {
   return a+b+c;
 }
 
+function nonNumericArguments (a,b) {
+  return (+a) + (+b);
+}
+
+function noArguments () {
+  return TRUE;
+}
+
 function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult = TRUE;
@@ -27,6 +35,12 @@ function runTest () {
 
   six = Call('sumThreeArgs', 1, 2, 3);
   assert(six == 6, "Failed to `Call` a function with multiple arguments as expected");
+
+  forty_two = Call('nonNumericArguments', {{10,9,8,7}}, {"0": 6, "10" : 2});
+  assert(forty_two == 42, "Failed to `Call` a function with multiple non-numeric arguments as expected");
+
+  assert(Call ("noArguments") == TRUE, "Failed to `Call` a function without arguments");
+
 
   //---------------------------------------------------------------------------------------------------------
   // ERROR HANDLING

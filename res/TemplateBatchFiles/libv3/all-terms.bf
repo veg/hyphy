@@ -193,6 +193,8 @@ namespace terms{
         _4x1       = "Nucleotide 4x1 estimator";
         equal      = "Equal frequencies";
         CF3x4      = "Corrected 3x4 frequency estimator";
+        F3x4      = "Standard F3x4 codon frequency estimator";
+        F1x4      = "Standard F1x4 codon frequency estimator";
         _20x1      = "Protein 20x1 estimator";
         MLE        = "Maximum likelihood frequency estimator";
         predefined = "Based on a training set";

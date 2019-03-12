@@ -654,7 +654,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix const& yb, _Matrix cons
     } catch (_String const & err) {
       HandleApplicationError(err);
     }
-  return -A_LARGE_NUMBER;
+  return -INFINITY;
 }
 
 //___________________________________________________________________________________________________
@@ -718,7 +718,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
   
   
   
-  hyFloat log_score = -A_LARGE_NUMBER;
+  hyFloat log_score = -INFINITY;
   
   try {
     
@@ -1474,7 +1474,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
   
   } catch (const _String & err) {
     HandleApplicationError(err);
-    return -A_LARGE_NUMBER;
+    return -INFINITY;
   }
   
   return (log_score);

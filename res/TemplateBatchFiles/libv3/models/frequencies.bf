@@ -162,37 +162,18 @@ function frequencies.ML.protein (model, namespace, datafilter) {
     return frequencies.mle (model, namespace, datafilter);
 }
 
+
 /**
- * @name frequencies.empirical.corrected.CF3x4
+ * Multiplies nucleotide frequencies into the empirical codon estimate
+ * @name frequencies.empirical.protein
  * @param {Dictionary} model
- * @param {String} namespace
- * @param {DataSetFilter} datafilter
+ * @param {Matrix} __estimates 4x3 matrix of frequency estimates
  * @returns {Dictionary} updated model
  */
-function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
-
+function frequencies.codon.multiply_in_frequencies (model, __estimates) {
 
     __dimension = model.Dimension(model);
-    __alphabet = model[terms.alphabet];
-
-    if (Type (model[terms.model.rate_matrix]) == "AssociativeList") {
-        utility.ForEach (model[terms.model.rate_matrix], "_q_matrix_", '
-            assert(Type(_q_matrix_) == "Matrix" && Rows(_q_matrix_) == __dimension && Columns(_q_matrix_) == __dimension,
-            "`terms.model.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4")
-        ');
-    } else {
-        assert(Type(model[terms.model.rate_matrix]) == "Matrix" && Rows(model[terms.model.rate_matrix]) == __dimension && Columns(model[terms.model.rate_matrix]) == __dimension,
-            "`terms.model.rate_matrix` must be defined prior to calling frequencies.empirical.corrected.CF3x4");
-    }
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
-    __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
-
-    //TODO
-    __estimates = frequencies._aux.CF3x4(__f, model[terms.bases], __alphabet, model[terms.stop_codons]);
-    model[terms.efv_estimate] = __estimates[terms.codons];
-    __estimates = __estimates[terms.bases];
-
+    __alphabet = model[^"terms.alphabet"];
 
     if (Type (model[terms.model.rate_matrix]) == "AssociativeList") { // handle mixture models
         __components = Rows (model[terms.model.rate_matrix]);
@@ -227,10 +208,131 @@ function frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
             }
         }
     }
+    return model;
+}
 
 
-    model[terms.model.efv_estimate_name] = terms.frequencies.CF3x4;
-    (model[terms.parameters])[terms.model.empirical] = 9;
+
+lfunction frequencies._aux.validate (model) {
+
+    __dimension = model.Dimension(model);
+    __alphabet = model[^"terms.alphabet"];
+
+    if (Type (model[^"terms.model.rate_matrix"]) == "AssociativeList") {
+        utility.ForEach (model[^"terms.model.rate_matrix"], "_q_matrix_", '
+            assert(Type(_q_matrix_) == "Matrix" && Rows(_q_matrix_) == __dimension && Columns(_q_matrix_) == __dimension,
+            "`^'terms.model.rate_matrix'` must be defined prior to calling frequency estimators")
+        ');
+    } else {
+        assert(Type(model[^"terms.model.rate_matrix"]) == "Matrix" && Rows(model[^"terms.model.rate_matrix"]) == __dimension && Columns(model[^"terms.model.rate_matrix"]) == __dimension,
+            "`^'terms.model.rate_matrix'` must be defined prior to calling frequency estimators");
+    }
+
+}
+
+lfunction frequencies.empirical.codon_from_nuc (model, nuc_dict) {
+
+ 
+    result = {model.Dimension (model),1};
+    corrector = 1;
+    utility.ForEach (model[^"terms.stop_codons"], "codon",
+    '
+        `&corrector` += - (`&nuc_dict`[codon[0]])[0] * (`&nuc_dict`[codon[1]])[1] * (`&nuc_dict`[codon[2]])[2];
+    ');
+
+    utility.ForEachPair (model[^"terms.alphabet"], "index", "codon",
+    '
+        (`&result`)[index[1]] =  (`&nuc_dict`[codon[0]])[0] * (`&nuc_dict`[codon[1]])[1] * (`&nuc_dict`[codon[2]])[2] / `&corrector`;
+    ');
+    
+    return (result);
+}
+/**
+ * @name frequencies.empirical.F3x4
+ * @param {Dictionary} model
+ * @param {String} namespace
+ * @param {DataSetFilter} datafilter
+ * @returns {Dictionary} updated model
+ */
+ 
+lfunction frequencies.empirical.F3x4(model, namespace, datafilter) {
+
+    frequencies._aux.validate (model);
+
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", FALSE);
+    __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    __alphabet = model[^"terms.bases"];
+    nuc_dict = {};
+    utility.ForEachPair (__alphabet, "index","base",
+    '
+        `&nuc_dict`[base] = `&__f`[index[1]][-1];
+    ');    
+    
+    frequencies.codon.multiply_in_frequencies  (model, nuc_dict);
+    model[^"terms.model.efv_estimate_name"] = ^"terms.frequencies.F3x4";
+    model[^"terms.efv_estimate"] = frequencies.empirical.codon_from_nuc  (model, nuc_dict);
+    (model[^"terms.parameters"])[^"terms.model.empirical"] = 9;
+    
+    return model;
+}     
+
+/**
+ * @name frequencies.empirical.F1x4
+ * @param {Dictionary} model
+ * @param {String} namespace
+ * @param {DataSetFilter} datafilter
+ * @returns {Dictionary} updated model
+ */
+
+lfunction frequencies.empirical.F1x4(model, namespace, datafilter) {
+
+    frequencies._aux.validate (model);
+
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", FALSE);
+    __f1 = frequencies._aux.empirical.collect_data(datafilter, 1, 1, 1);
+    __f = {4,3} ["__f1[_MATRIX_ELEMENT_ROW_][0]"];
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    __alphabet = model[^"terms.bases"];
+    nuc_dict = {};
+    utility.ForEachPair (__alphabet, "index","base",
+    '
+        `&nuc_dict`[base] = `&__f`[index[1]][-1];
+    ');    
+    
+    frequencies.codon.multiply_in_frequencies  (model, nuc_dict);
+    model[^"terms.model.efv_estimate_name"] = ^"terms.frequencies.F1x4";
+    model[^"terms.efv_estimate"] = frequencies.empirical.codon_from_nuc  (model, nuc_dict);
+    (model[^"terms.parameters"])[^"terms.model.empirical"] = 3;
+    return model;
+}       
+
+
+/**
+ * @name frequencies.empirical.corrected.CF3x4
+ * @param {Dictionary} model
+ * @param {String} namespace
+ * @param {DataSetFilter} datafilter
+ * @returns {Dictionary} updated model
+ */
+lfunction frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
+
+    frequencies._aux.validate (model);
+    
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
+    __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
+    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+
+    //TODO
+    __alphabet = model[^"terms.alphabet"];
+    __estimates = frequencies._aux.CF3x4(__f, model[^"terms.bases"], __alphabet, model[^"terms.stop_codons"]);
+    
+    model[^"terms.efv_estimate"] = __estimates[^"terms.codons"];
+        
+    frequencies.codon.multiply_in_frequencies  (model, __estimates[^"terms.bases"]);
+
+    model[^"terms.model.efv_estimate_name"] = ^"terms.frequencies.CF3x4";
+    (model[^"terms.parameters"])[^"terms.model.empirical"] = 9;
     return model;
 }
 

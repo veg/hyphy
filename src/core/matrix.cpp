@@ -3845,7 +3845,7 @@ hyFloat  _Matrix::MaxElement  (char runMode, long* indexStore) const {
              doMaxElement = runMode == 0 || runMode == 3;
 
         if (doMaxElement) {
-            max = -A_LARGE_NUMBER;
+            max = -INFINITY;
         }
 
         if (theIndex) {

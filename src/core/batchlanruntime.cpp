@@ -3273,14 +3273,12 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     bool need_to_ask_user = true;
       if (current_program.has_stdin_redirect () || current_program.has_keyword_arguments()) {
           try {
-            _String * redirected = current_program.FetchFromStdinRedirect();
+            _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
+            _String  * redirected = current_program.FetchFromStdinRedirect(nil, false, !(redirect && redirect->has_data()));
             input_data = redirected;
             // echo the input if there is no fprintf redirect in effect
 
-            _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
-            if (!(redirect && redirect->has_data())) {
-              StringToConsole (*input_data); NLToConsole();
-            }
+            
             dynamic_reference_manager < redirected;
             need_to_ask_user = false;
           } catch (const _String e) {
@@ -3701,9 +3699,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
             while (selections.countitems() < required) {
                 _String user_choice;
                 try {
-                    user_choice =(current_program.FetchFromStdinRedirect(&dialog_title, required > 1)); // handle multiple selections
-                    StringToConsole(user_choice);
-                    NLToConsole();
+                    user_choice =(current_program.FetchFromStdinRedirect(&dialog_title, required > 1, true)); // handle multiple selections
                 } catch (const _String e) {
                     if (e == kNoKWMatch) {
                         break;

@@ -3417,7 +3417,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             storageVec [siteOrdering.lData[siteID]] = accumulator;
         } else {
             if (accumulator <= 0.0) {
-                result = -A_LARGE_NUMBER;
+                result = -INFINITY;
 #pragma omp critical
                 {
                     hy_global::ReportWarning (_String("Site ") & (1L+siteOrdering.lData[siteID]) & " evaluated to a 0 probability in ComputeTreeBlockByBranch");
@@ -4177,7 +4177,7 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
         {
             hy_global::ReportWarning (_String("Site ") & _String(site) & " evaluated to a 0 probability in ComputeLLWithBranchCache");
         }
-        return -A_LARGE_NUMBER;
+        return -INFINITY;
     }
     return result;
 }
@@ -4305,7 +4305,7 @@ hyFloat      _TheTree::ComputeTwoSequenceLikelihood
             storageVec [siteOrdering.lData[siteID]] = sum;
         } else {
             if (sum <= 0.0) {
-                return -A_LARGE_NUMBER;
+                return -INFINITY;
             } else {
                 //printf ("%d: %g\n", siteID, sum);
                 result += log(sum) * theFilter->theFrequencies.get (siteOrdering.lData[siteID]);
@@ -4741,7 +4741,7 @@ hyFloat   _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, long
         
         
         if (result<=0.0) {
-            return -A_LARGE_NUMBER;
+            return -INFINITY;
         }
         
         long patternFreq = dsf->theFrequencies[patternIndex];

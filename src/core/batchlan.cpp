@@ -1057,7 +1057,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
 }
 
 //____________________________________________________________________________________
-_String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, bool handle_multi_choice) {
+_String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, bool handle_multi_choice, bool do_echo) {
 // grab a string from the front of the input queue
 // complain if nothing is left
     if (! (has_stdin_redirect() || has_keyword_arguments())) {
@@ -1071,6 +1071,18 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
     
     HBLObjectRef user_argument = nil;
     _List        ref_manager;
+    _String*     kwarg_used = nil;
+    
+    auto echo_argument = [] (_String const * kwarg, _String const& value) -> void {
+        if (kwarg) {
+            bool do_markdown = hy_env :: EnvVariableTrue(hy_env :: produce_markdown_output);
+            if (do_markdown) {
+                NLToConsole(); BufferToConsole(">"); StringToConsole(*kwarg); BufferToConsole( " –> "); BufferToConsole(value); NLToConsole();
+            } else {
+                StringToConsole(*kwarg); BufferToConsole( ": "); BufferToConsole(value); NLToConsole();
+            }
+        }
+    };
     
     try {
         if (has_keyword_arguments()) {
@@ -1093,11 +1105,13 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
 
                 if (user_argument) { // user argument provided
                     user_argument -> AddAReference();
-                    kwargs->DeleteByKey(*(_String*)current_tag->GetItem(0));
+                    kwarg_used = (_String*)current_tag->GetItem(0);
+                    kwargs->DeleteByKey(*kwarg_used);
                     ref_manager < user_argument;
                 } else { // see if there are defaults
                     if (current_tag->countitems() > 2 && ! ignore_kw_defaults) {
                         _String * default_value = (_String*)current_tag->GetItem(2);
+                        kwarg_used = (_String*)current_tag->GetItem(0);
                         if (default_value) {
                             user_argument = new _FString (*(_String*)current_tag->GetItem(2));
                             ref_manager < user_argument;
@@ -1114,9 +1128,11 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
     
     if (user_argument) {
         if (user_argument->ObjectClass() == STRING) {
+            echo_argument (kwarg_used, ((_FString*)user_argument)->get_str());
             return new _String (((_FString*)user_argument)->get_str());
         } else {
             if (handle_multi_choice) {
+                echo_argument (kwarg_used, _String ((_String*)user_argument->toStr()));
                 user_argument->AddAReference();
                 throw (user_argument);
             } else {
@@ -1132,8 +1148,10 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
         }
         _String *sendBack = (_String*)stdinRedirect->GetXtra (d);
         sendBack->AddAReference();
-        //StringToConsole(*sendBack);
-        //NLToConsole();
+        if (do_echo) {
+            StringToConsole(*sendBack);
+            NLToConsole();
+        }
         stdinRedirect->Delete ((*(_List*)stdinRedirect->dataList)(d),true);
         return sendBack;
     }
@@ -2067,8 +2085,17 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
     };
 
     auto procedure = [&] (long i) -> _String const {
-        return _StringBuffer (_HY_ValidHBLExpressions.RetrieveKeyByPayload(i))
-                << '(' << _String ((_String*)parameters.Join (", ")) << ");";
+        
+        _String command (_HY_ValidHBLExpressions.RetrieveKeyByPayload(i));
+        
+        if (command.EndsWith(')')) {
+            return _StringBuffer (command)
+            << _String ((_String*)parameters.Join (", ")) << ");";
+
+        } else {
+            return _StringBuffer (command)
+                        << '(' << _String ((_String*)parameters.Join (", ")) << ");";
+        }
     };
 
     auto assignment = [&] (long i, const _String& call) -> _String const {

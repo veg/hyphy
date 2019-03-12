@@ -33,6 +33,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "global_things.h"
 #include "function_templates.h"
+#include "trie_iterator.h"
 
 using namespace hy_global;
 
@@ -53,7 +54,7 @@ using namespace hy_global;
 
 
 const char hy_usage[] =
-"usage: HYPHYMP or HYPHYMPI [-h] "
+"usage: HYPHYMP or HYPHYMPI [-h] [--help]"
 "[-c] "
 "[-d] "
 "[-i] "
@@ -72,6 +73,7 @@ const char hy_help_message [] =
 "\n"
 "optional flags:\n"
 "  -h                       show this help message and exit\n"
+"  --help                   show the list of stanard analysis keywords and exit\n"
 "  -c                       calculator mode; causes HyPhy to drop into an expression evaluation until 'exit' is typed\n"
 "  -d                       debug mode; causes HyPhy to drop into an expression evaluation mode upon script error\n"
 "  -i                       interactive mode; causes HyPhy to always prompt the user for analysis options, even when defaults are available\n"
@@ -779,6 +781,22 @@ int main (int argc, char* argv[]) {
     
     GlobalStartup();
     ReadInTemplateFiles();
+    
+    if (positional_arguments.empty () && run_help_message) {
+        
+        BufferToConsole("\nAVAILABLE ANALYSES AND THEIR SHORTHAND KEYWORDS (to use in 'HYPHY keyword' invokations)\n");
+        
+        for (TrieIteratorKeyValue t : TrieIterator (&availableTemplateFilesAbbreviations)) {
+            BufferToConsole("\n");
+            StringToConsole(t.get_key());
+            BufferToConsole("\n\t");
+            StringToConsole(*(_String*) availableTemplateFiles.GetItem(availableTemplateFilesAbbreviations.GetValue(t.get_value()), 1));
+        }
+        BufferToConsole("\n");
+        GlobalShutdown();
+        return 0;
+    }
+    
     //ObjectToConsole(&availableTemplateFilesAbbreviations);
     
     if (positional_arguments.Count()) {

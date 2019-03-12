@@ -130,7 +130,7 @@ lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
 
         */
 
-    sense_codons = CountSenseCodons (genCode);
+    sense_codons = genetic_code.CountSense (genCode);
     SS = {sense_codons, sense_codons};
     NS = {sense_codons, sense_codons};
 
@@ -161,7 +161,7 @@ lfunction genetic_code.ComputeBranchLengthStencils(genCode) {
     matrix.Symmetrize(SS);
     matrix.Symmetrize(NS);
 
-    return {^"genetic_code.synonymous" : SS, ^"genetic_code.non-synonymous" : NS};
+    return {^"terms.genetic_code.synonymous" : SS, ^"terms.genetic_code.nonsynonymous" : NS};
 
 }
 

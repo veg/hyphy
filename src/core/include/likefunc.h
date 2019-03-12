@@ -47,7 +47,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "matrix.h"
 #include "vector.h"
 
-#define   A_LARGE_NUMBER          1.e100
+//#define   NUMERICAL_INFINITY          INFINITY
 
 #define   DEFAULTPARAMETERLBOUND  0.0
 #define   DEFAULTPARAMETERUBOUND  10000.0
@@ -372,7 +372,7 @@ protected:
     void            GradientLocateTheBump (hyFloat, hyFloat&, _Matrix&, _Matrix&);
     void            GradientDescent       (hyFloat& , _Matrix& );
     hyFloat            ConjugateGradientDescent
-    (hyFloat , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hyFloat check_lf = A_LARGE_NUMBER);
+    (hyFloat , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hyFloat check_lf = -INFINITY);
 
     hyFloat      SetParametersAndCompute
     (long, hyFloat, _Matrix* = nil, _Matrix* = nil,  bool skip_compute = false);

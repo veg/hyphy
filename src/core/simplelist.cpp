@@ -290,7 +290,7 @@ long  _SimpleList::BinaryInsert (long n)
         return -pos+2;
     }
 
-    if (lData[pos]<n) {
+    if (pos < lLength && lData[pos]<n) {
         pos++;
     }
 

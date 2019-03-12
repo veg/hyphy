@@ -1072,7 +1072,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
         if (banned_edges(parents.lData[par], node_id) > 0) {
             // score should never be used
             ReportWarning(_String("Skipping node score for family containing banned edge ") & parents.lData[par] & "->" & node_id & "\n");
-            return (-A_LARGE_NUMBER);
+            return (-INFINITY);
         }
     }
 
