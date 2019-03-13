@@ -40,7 +40,7 @@ meme.analysis_description = {
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    terms.io.version: "2.0.1",
+    terms.io.version: "2.1.1",
     terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
     terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
     terms.io.contact: "spond@temple.edu",

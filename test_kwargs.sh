@@ -137,6 +137,6 @@ declare -a fadeArgs=( "${universalArgs[@]}"
                         "--method Variational-Bayes"
                         "--concentration_parameter 0.5"
                         "--method Variational-Bayes --grid 50 --model WAG --concentration_parameter 0.01"
-                        "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-lenght 1900000 --burn-in 1200000 --samples 125"
+                        "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-length 1900000 --burn-in 1200000 --samples 125"
                         )                     
 evaluateMethod "fade" "Fitting the baseline" "${fadeArgs[@]}"

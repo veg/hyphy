@@ -1,4 +1,4 @@
-RequireVersion ("2.3.12");
+RequireVersion ("2.4.0");
 
 
 LoadFunctionLibrary     ("libv3/all-terms.bf");
@@ -93,7 +93,7 @@ fade.analysis_description = {terms.io.info :
                             evolve towards a particular residue along a subset of branches at accelerated rates compared to reference model.
                             FADE uses a random effects model and latent Dirichlet allocation (LDA) - inspired approximation methods to allocate sites to rate classes.",
 
-                           terms.io.version : "0.1",
+                           terms.io.version : "0.2",
                            terms.io.reference : "TBD",
                            terms.io.authors : "Sergei L Kosakovsky Pond",
                            terms.io.contact : "spond@temple.edu",

@@ -22,7 +22,7 @@ utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
 
 busted.analysis_description = {
                                terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point",
-                               terms.io.version : "2.1",
+                               terms.io.version : "2.2",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
