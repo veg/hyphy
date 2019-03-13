@@ -185,7 +185,7 @@ const _SimpleList& _SimpleList::operator = (_SimpleList const &l) {
 }
 
 //Append operator
-_SimpleList _SimpleList::operator & (_SimpleList l) {
+_SimpleList _SimpleList::operator & (_SimpleList const& l) {
     _SimpleList res (l.lLength + lLength);
     if (!res.laLength) {
         return res;

@@ -108,7 +108,7 @@ class _SimpleList:public BaseObj {
         virtual _SimpleList const & operator = (_SimpleList const&);
 
         // append operator
-        virtual _SimpleList operator & (_SimpleList);
+        virtual _SimpleList operator & (_SimpleList const&);
 
         // append number to this
         _SimpleList& operator << (long);

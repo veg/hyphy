@@ -4666,13 +4666,6 @@ DecideOnDivideBy (this);
     result.Store (1,1,indexInd.lLength);
     result.Store (1,2,CountObjects(kLFCountGlobalVariables));
 
-    HBLObjectRef pm;
-    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
-        result.Store(0,i,GetIthIndependent(i));
-    }
-    for (unsigned long i=0UL; i<indexDep.lLength; i++) {
-      result.Store(0,i+indexInd.lLength,GetIthDependent(i));
-    }
 
 
   #if !defined __UNIX__ || defined __HEADLESS__
@@ -4680,6 +4673,14 @@ DecideOnDivideBy (this);
   #endif
 
     CleanUpOptimize();
+
+    HBLObjectRef pm;
+    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+        result.Store(0,i,GetIthIndependent(i));
+    }
+    for (unsigned long i=0UL; i<indexDep.lLength; i++) {
+        result.Store(0,i+indexInd.lLength,GetIthDependent(i));
+    }
 
     return (_Matrix*)result.makeDynamic();
 }
@@ -6480,7 +6481,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                 BufferToConsole (buf);
             }
 
-            if (fabs(X-XM) <= brentPrec || outcome == 0) {
+            if (fabs(X-XM) <= brentPrec && outcome > 0) {
               break;
             }
 
