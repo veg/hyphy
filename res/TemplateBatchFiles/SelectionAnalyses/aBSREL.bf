@@ -1,4 +1,4 @@
-RequireVersion ("2.3.3");
+RequireVersion ("2.4.0");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -57,7 +57,7 @@ absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site ran
                             uses an adaptive random effects branch-site model framework
                             to test whether each branch has evolved under positive selection,
                             using a procedure which infers an optimal number of rate categories per branch.",
-                           terms.io.version : "2.0",
+                           terms.io.version : "2.1",
                            terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353",
                            terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                            terms.io.contact : "spond@temple.edu",
@@ -78,13 +78,31 @@ absrel.json    = {
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Overall", 0);
 
+
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:"); 
+KeywordArgument ("branches",  "Branches to test", "All");
+// One additional KeywordArgument ("output") is called below after namespace absrel.
+
+/*------------------------------------------------------------------------------
+    Continued Analysis Setup
+*/
+
 namespace absrel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("absrel");
 }
 
-io.CheckAssertion("utility.Array1D (absrel.partitions_and_trees) == 1", "aBSREL only works on a single partition dataset");
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'ABSREL.json')", absrel.codon_data_info [terms.json.json]);
 
+absrel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
+io.CheckAssertion("utility.Array1D (absrel.partitions_and_trees) == 1", "aBSREL only works on a single partition dataset");
 
 utility.ForEachPair (absrel.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');

@@ -99,6 +99,11 @@ removeTempFiles() {
 #  Nucleotide Methods
 #*******************************************************************************
 
+# aBSREL
+declare -a absrelArgs=( "${universalArgs[@]}"
+                        )                     
+evaluateMethod "absrel" "Obtaining branch lengths" "${absrelArgs[@]}"
+
 # BUSTED
 declare -a bustedArgs=( "${universalArgs[@]}"
                         "--srv Yes"

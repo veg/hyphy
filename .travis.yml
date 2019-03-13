@@ -25,7 +25,7 @@ env:
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC-partitioned.wbf"
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/FEL.wbf"
   - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/data/CD2.nex"
-  #- envSpecificTest=./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/MEME-partitioned.wbf
+  - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/libv3/data/CD2.nex --branches GROUP1"
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/FUBAR.wbf"
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/RELAX.wbf"
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/aBSREL.wbf"
