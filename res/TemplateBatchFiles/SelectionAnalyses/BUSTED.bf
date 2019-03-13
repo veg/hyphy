@@ -307,7 +307,7 @@ utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 
 selection.io.startTimer (busted.json [terms.json.timers], "Unconstrained BUSTED model fitting", 2);
 
-VERBOSITY_LEVEL = 10;
+//VERBOSITY_LEVEL = 10;
 
 io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 allowed) branch-site model fit");
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
