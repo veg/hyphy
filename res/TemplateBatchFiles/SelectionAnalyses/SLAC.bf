@@ -86,6 +86,18 @@ slac.display_orders =   {terms.original_name: -1,
 
 selection.io.startTimer (slac.json [terms.json.timers], "Total time", 0);
 
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:"); 
+KeywordArgument ("branches",  "Branches to test", "All");
+KeywordArgument ("samples",  "number of samples to assess ancestral reconstruction uncertainty", "100");
+KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
+// One additional KeywordArgument ("output") is called below after namespace absrel.
+
 slac.scaler_prefix = "SLAC.scaler";
 
 slac.by_site   = "by-site";
@@ -121,6 +133,9 @@ namespace slac {
 
 slac.samples = io.PromptUser ("\n>Select the number of samples used to assess ancestral reconstruction uncertainty [select 0 to skip]",100,0,100000,TRUE);
 slac.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
+
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'SLAC.json')", slac.codon_data_info [terms.json.json]);
+slac.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
 io.ReportProgressMessageMD('SLAC',  'selector', 'Branches to include in the SLAC analysis');
 

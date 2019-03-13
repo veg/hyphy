@@ -118,6 +118,16 @@ declare -a memeArgs=( "${universalArgs[@]}"
                         )                     
 evaluateMethod "meme" "Obtaining branch lengths" "${memeArgs[@]}"
 
+# SLAC
+declare -a slacArgs=( "${universalArgs[@]}"
+                        "--samples 0"
+                        "--samples 100"
+                        "--samples 100000"
+                        "--pvalue 0.1"
+                        "--pvalue 0.4"
+                        )                     
+evaluateMethod "slac" "Obtaining branch lengths" "${slacArgs[@]}"
+
 
 #*******************************************************************************
 #  Amino Acid Methods
