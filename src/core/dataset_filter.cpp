@@ -168,8 +168,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
         hyFloat      *translatedVector = new hyFloat [vd],
         *translatedVector2= new hyFloat [vd];
         
-        _String         state1 (unit,false),
-        state2 (unit,false);
+        _String         state1 (unit), state2 (unit);
         
         sites = sites / unit;
         
