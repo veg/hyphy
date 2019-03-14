@@ -23,7 +23,7 @@ env:
   - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC.wbf"
   - envSpecificTest="./HYPHYMP SLAC --alignment ./tests/hbltests/libv3/data/partitioned.nex --branches Internal"
-  - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/FEL.wbf"
+  - envSpecificTest="./HYPHYMP FEL --alignment ./tests/hbltests/libv3/data/CD2.nex"
   - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/data/CD2.nex"
   - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/libv3/data/CD2.nex --branches GROUP1"
   - envSpecificTest="./HYPHYMP FUBAR --alignment ./tests/hbltests/libv3/data/CD2.nex"
