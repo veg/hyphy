@@ -12,7 +12,7 @@
 "FEL-Contrast","Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/FEL-contrast.bf";
 
 "","Evolutionary rates on non-coding data.","!Relative evolutionary rate inference";
-"LEISR","[LEISR] Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";
+"LEISR","Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";
 
 "","Identify pairs or networks of sites that co-evolve.","!Coevolutionary analysis";
 "BGM","[BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.","BGM.bf";
@@ -108,7 +108,7 @@
 "MEDS","Test for Episodic Directional Selection on a set of labeled branches","MEDS.bf";
 
 "","Test for recombination.","!Recombination";
-"GARD","Screen an alignment using GARD (requires an MPI environment).","GARD.bf";
+"GARD","[GARD] Screen an alignment using GARD (requires an MPI environment).","GARD.bf";
 "GRDR","Process GARD results.","GARDProcessor.bf";
 "LHT","A Likelihood Ratio Test to detect conflicting phylogenetic signal Huelsenbeck and Bull, 1996. [Contributed by Olivier Fedrigo].","LHT.bf";
 "SBL","Search an alignment for a single breakpoint.","SingleBreakpointRecomb.bf";
