@@ -1,4 +1,4 @@
-RequireVersion  ("2.3.3");
+RequireVersion  ("2.4.0");
 
 LoadFunctionLibrary("libv3/all-terms.bf");
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
@@ -42,8 +42,8 @@ namespace terms.fubar {
 
     namespace methods {
         MH  = "Metropolis-Hastings";
-        VB0 = "Variational Bayes";
-        CG  = "Collapsed Gibbs";
+        VB0 = "Variational-Bayes";
+        CG  = "Collapsed-Gibbs";
     }
 };
 
@@ -102,7 +102,7 @@ fubar.analysis_description = {terms.io.info :
     provide checkpointing so that a partially completed analysis can be
     restarted.",
 
-           terms.io.version : "2.1",
+           terms.io.version : "2.2",
            terms.io.reference : "FUBAR: a fast, unconstrained bayesian approximation for inferring selection (2013), Mol Biol Evol. 30(5):1196-205",
            terms.io.authors : "Sergei L Kosakovsky Pond",
            terms.io.contact : "spond@temple.edu",
@@ -113,6 +113,17 @@ io.DisplayAnalysisBanner ( fubar.analysis_description );
 
 fubar.json[terms.json.analysis] = fubar.analysis_description;
 
+
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+// Additional Keyword Arguments ("output" and "cache") called below after namespace fubar.
+// Additional Keyword Arguments ("grid", "method", "chain", "chain-length", "burn-in", "samples" and "concentration") called from within the "fubar.RunPrompts" function.
+
+
 namespace fubar {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     LoadFunctionLibrary ("modules/grid_compute.ibf");
@@ -120,13 +131,20 @@ namespace fubar {
 
 }
 
-
 selection.io.startTimer (fubar.json [terms.json.timers], "Overall", 0);
 
 fubar.path.base = (fubar.json [terms.json.input])[terms.json.file];
-fubar.path.cache = fubar.path.base + ".fubar.cache";
-fubar.cache = io.LoadCacheFromFile (fubar.path.cache);
 
+KeywordArgument ("cache",   "Save FUBAR cache to [default is alignment+.FUBAR.cache]", fubar.path.base + ".FUBAR.cache");
+KeywordArgument ("output",   "Save FUBAR results (JSON) to [default is alignment+.FUBARjson]", fubar.codon_data_info[terms.data.file] + ".FUBAR.json");
+
+
+/*------------------------------------------------------------------------------
+    Continued Analysis Setup
+*/
+
+fubar.path.cache = io.PromptUserForString ("Save FUBAR cache to");
+fubar.cache = io.LoadCacheFromFile (fubar.path.cache);
 
 fubar.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
 
@@ -662,11 +680,14 @@ lfunction fubar.ComputeENFP_CI (p_i,sig_level) {
 
 function     fubar.RunPrompts (prompts) {
      if (prompts["grid"]) {
+        KeywordArgument ("grid", "The number of grid points", "20");
         fubar.run_settings["grid size"] = io.PromptUser ("> Number of grid points per dimension (total number is D^2)",fubar.run_settings["grid size"],5,50,TRUE);
         prompts["grid"] = FALSE;
     }
 
     if (prompts["method"]) {
+        // TODO: can we replace the default with `variational-bayes`?
+        KeywordArgument ("method", "Inference method to use", "`terms.fubar.methods.VB0`");
         fubar.run_settings["method"] = io.SelectAnOption  ({
                                                                 terms.fubar.methods.MH : "Full Metropolis-Hastings MCMC algorithm (slowest, original 2013 paper implementation)",
                                                                 terms.fubar.methods.CG : "Collapsed Gibbs sampler (intermediate speed)",
@@ -677,15 +698,20 @@ function     fubar.RunPrompts (prompts) {
 
     if (prompts["chain"]) {
         if (fubar.run_settings["method"] ==  terms.fubar.methods.MH) {
+            KeywordArgument ("chains", "How many MCMC chains to run", fubar.run_settings["chains"]);
             fubar.run_settings["chains"] = io.PromptUser ("> Number of MCMC chains to run",fubar.run_settings["chains"],2,20,TRUE);
         } else {
             fubar.run_settings["chains"] = 1;
         }
         if (fubar.run_settings["method"] !=  terms.fubar.methods.VB0) {
+            KeywordArgument ("chain-length", "MCMC chain length", fubar.run_settings["chain-length"]);
             fubar.run_settings["chain-length"] = io.PromptUser ("> The length of each chain",fubar.run_settings["chain-length"],5e3,5e7,TRUE);
+            KeywordArgument ("burn-in", "MCMC chain burn in", fubar.run_settings["chain-length"]$2);
             fubar.run_settings["burn-in"] = io.PromptUser ("> Use this many samples as burn-in",fubar.run_settings["chain-length"]$2,fubar.run_settings["chain-length"]$20,fubar.run_settings["chain-length"]*95$100,TRUE);
+            KeywordArgument ("samples", "MCMC samples to draw", fubar.run_settings["samples"]);
             fubar.run_settings["samples"] = io.PromptUser ("> How many samples should be drawn from each chain",fubar.run_settings["samples"],50,fubar.run_settings["chain-length"]-fubar.run_settings["burn-in"],TRUE);
         }
+        KeywordArgument ("concentration_parameter", "The concentration parameter of the Dirichlet prior", fubar.run_settings["concentration"]);
         fubar.run_settings["concentration"] = io.PromptUser  ("> The concentration parameter of the Dirichlet prior",fubar.run_settings["concentration"],0.001,1,FALSE);
         prompts["chain"] = FALSE;
     }

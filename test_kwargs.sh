@@ -86,11 +86,11 @@ evaluateMethod() {
 }
 
 removeTempFiles() {
-    if [ -f ./res/TemplateBatchFiles/SelectionAnalyses/tempCache.txt ]; then
-        rm ./res/TemplateBatchFiles/SelectionAnalyses/tempCache.txt
+    if [ -f ./res/TemplateBatchFiles/SelectionAnalyses/tempCache.cache ]; then
+        rm ./res/TemplateBatchFiles/SelectionAnalyses/tempCache.cache
     fi 
-    if [ -f ./tests/hbltests/data/CD2_AA.fna.FADE.cache ]; then
-        rm ./tests/hbltests/data/CD2_AA.fna.FADE.cache
+    if [ -f ./tests/hbltests/data/*.cache ]; then
+        rm ./tests/hbltests/data/*.cache
     fi
     sleep .5s
 }
@@ -110,6 +110,20 @@ declare -a bustedArgs=( "${universalArgs[@]}"
                         "--srv No"
                         )                     
 evaluateMethod "busted" "Obtaining branch lengths" "${bustedArgs[@]}"
+
+# FUBAR
+declare -a fubarArgs=( "${universalArgs[@]}"
+                        "--cache tempCache.cache"
+                        "--grid 25"
+                        "--model LG"
+                        "--method Metropolis-Hastings"
+                        "--method Collapsed-Gibbs"
+                        "--method Variational-Bayes"
+                        "--concentration_parameter 0.5"
+                        "--method Variational-Bayes --grid 50 --model WAG --concentration_parameter 0.01"
+                        "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-length 1900000 --burn-in 1200000 --samples 120"
+                        )                    
+evaluateMethod "fubar" "Computing the phylogenetic likelihood function" "${fubarArgs[@]}"
 
 # MEME
 declare -a memeArgs=( "${universalArgs[@]}"
@@ -144,7 +158,7 @@ declare -a universalArgs=(  "--branches All"
 
 # FADE
 declare -a fadeArgs=( "${universalArgs[@]}"
-                        "--cache tempCache.txt"
+                        "--cache tempCache.cache"
                         "--grid 25"
                         "--model LG"
                         "--method Metropolis-Hastings"
