@@ -48,9 +48,7 @@ function runTest () {
   assert (runCommandWithSoftErrors ('Beta(T2,T2)', "Operation 'Beta' is not implemented/defined for a Topology"), "Failed error checking for trying to take Beta of topologies");
   assert (runCommandWithSoftErrors ('Beta(TT,TT)', "Operation 'Beta' is not implemented/defined for a Tree"), "Failed error checking for trying to take Beta of trees");
   assert (runCommandWithSoftErrors ('Beta(list1,list2)', "Operation 'Beta' is not implemented/defined for a AssociativeList"), "Failed error checking for trying to take Beta of lists");
-
-  // TODO: Not sure why the assert two lines below doesn't work... the line below throws the error that I have listed but the assert doesn't work.
-  assert (runCommandWithSoftErrors ('Beta(matrix1, matrix2)', " evaluated with errors"), "Failed error checking for trying to take Beta of matrices");
+  assert (runCommandWithSoftErrors ('Beta(matrix1, matrix2)', "Operation 'Beta' is not implemented/defined for a Matrix"), "Failed error checking for trying to take Beta of matrices");
   
   testResult = TRUE;
 

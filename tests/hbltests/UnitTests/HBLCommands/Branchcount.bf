@@ -42,9 +42,7 @@ function runTest () {
   assert (runCommandWithSoftErrors ('BranchCount(none)', "Operation 'BranchCount' is not implemented/defined for a Number"), "Failed error checking for running BranchCount on none");
   assert (runCommandWithSoftErrors ('BranchCount(10)', "Operation 'BranchCount' is not implemented/defined for a Number"), "Failed error checking for running BranchCount on a number");
   assert (runCommandWithSoftErrors ('BranchCount(list1)', "Operation 'BranchCount' is not implemented/defined for a AssociativeList"), "Failed error checking for running BranchCount on an associative list");
-
-  // TODO: Not sure why the assert two lines below doesn't work... the line below throws the error that I have listed but the assert doesn't work.
-  assert (runCommandWithSoftErrors ('BranchCount(matrix1)', " evaluated with errors"), "Failed error checking for running BranchCount on a number");
+  assert (runCommandWithSoftErrors ('BranchCount(matrix1)', "Operation 'BranchCount' is not implemented/defined for a Matrix"), "Failed error checking for running BranchCount on a matrix");
 
 
   testResult = TRUE;

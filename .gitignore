@@ -46,6 +46,8 @@ errors.log
 tests/hbltests/libv3/data/CD2.nex.*.json
 tests/hbltests/data/tempFileTesting*
 tempOutput.txt
+tests/hbltests/data/CD2*.json
+testMethodOutput
 
 
 #Utility function
