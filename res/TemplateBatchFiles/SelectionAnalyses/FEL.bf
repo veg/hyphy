@@ -1,4 +1,4 @@
-RequireVersion("2.3");
+RequireVersion("2.4.0");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -37,7 +37,7 @@ fel.analysis_description = {
     Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    terms.io.version: "2.00",
+    terms.io.version: "2.1",
     terms.io.reference: "Not So Different After All: A Comparison of Methods for Detecting Amino Acid Sites Under Selection (2005). _Mol Biol Evol_ 22 (5): 1208-1222",
     terms.io.authors: "Sergei L Kosakovsky Pond and Simon DW Frost",
     terms.io.contact: "spond@temple.edu",
@@ -55,7 +55,6 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 /*------------------------------------------------------------------------------
     Globals
 */
-
 
 
 fel.site_alpha = "Site relative synonymous rate";
@@ -84,6 +83,18 @@ fel.display_orders =   {terms.original_name: -1,
 selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
 
 
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+KeywordArgument ("branches",  "Branches to test", "All");
+KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
+KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
+// One additional KeywordArgument ("output") is called below after namespace fel.
+
+
 fel.table_headers = {{"alpha", "Synonymous substitution rate at a site"}
                      {"beta", "Non-synonymous substitution rate at a site"}
                      {"alpha=beta", "The rate estimate under the neutral model"}
@@ -97,16 +108,14 @@ This table is meant for HTML rendering in the results web-app; can use HTML char
 is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
 the next set of variables.
 */
+
 fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
 fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
-
 
 namespace fel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("fel");
 }
-
-
 
 /* Prompt for one-rate or two-rate analysis */
 fel.srv = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS := 1 at each site)."}},
@@ -120,6 +129,8 @@ if (fel.srv == "Yes"){
 /* Prompt for p value threshold */
 fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
 
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
+fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
 fel.partition_count = Abs (fel.filter_specification);
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to include in the FEL analysis');

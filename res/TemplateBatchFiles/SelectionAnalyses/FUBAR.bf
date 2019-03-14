@@ -136,7 +136,7 @@ selection.io.startTimer (fubar.json [terms.json.timers], "Overall", 0);
 fubar.path.base = (fubar.json [terms.json.input])[terms.json.file];
 
 KeywordArgument ("cache",   "Save FUBAR cache to [default is alignment+.FUBAR.cache]", fubar.path.base + ".FUBAR.cache");
-KeywordArgument ("output",   "Save FUBAR results (JSON) to [default is alignment+.FUBARjson]", fubar.codon_data_info[terms.data.file] + ".FUBAR.json");
+KeywordArgument ("output",   "Save FUBAR results (JSON) to [default is alignment+.FUBAR.json]", fubar.codon_data_info[terms.data.file] + ".FUBAR.json");
 
 
 /*------------------------------------------------------------------------------

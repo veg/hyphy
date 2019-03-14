@@ -49,7 +49,7 @@ evaluateMethod() {
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
-        sleep 2s
+        sleep 4s
         killall HYPHYMP
 
         # Confirm that the expected output is there
@@ -70,7 +70,7 @@ evaluateMethod() {
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
-        sleep 2s
+        sleep 4s
         killall HYPHYMP
 
         # Confirm that the expected output is there
@@ -110,6 +110,13 @@ declare -a bustedArgs=( "${universalArgs[@]}"
                         "--srv No"
                         )                     
 evaluateMethod "busted" "Obtaining branch lengths" "${bustedArgs[@]}"
+
+# FEL
+declare -a felArgs=( "${universalArgs[@]}"
+                        "--srv Yes"
+                        "--srv No"
+                        )                     
+evaluateMethod "fel" "Obtaining branch lengths" "${felArgs[@]}"
 
 # FUBAR
 declare -a fubarArgs=( "${universalArgs[@]}"
