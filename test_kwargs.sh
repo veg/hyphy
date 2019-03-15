@@ -130,7 +130,7 @@ declare -a fubarArgs=( "${universalArgs[@]}"
                         "--method Variational-Bayes --grid 50 --model WAG --concentration_parameter 0.01"
                         "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-length 1900000 --burn-in 1200000 --samples 120"
                         )                    
-evaluateMethod "fubar" "Computing the phylogenetic likelihood function" "${fubarArgs[@]}"
+evaluateMethod "fubar" "Obtaining branch lengths" "${fubarArgs[@]}"
 
 # MEME
 declare -a memeArgs=( "${universalArgs[@]}"
