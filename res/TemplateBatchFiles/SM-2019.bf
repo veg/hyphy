@@ -44,11 +44,16 @@ sm.regexp_to_name = utility.SwapKeysAndValues (sm.regular_expressions);
 assert (Abs (sm.regular_expressions) == Abs (sm.regexp_to_name), "All regular expressions must be distinct");
 
 sm.partitions = regexp.PartitionByRegularExpressions (utility.Keys (sm.leaves), sm.regular_expressions);
+sm.partitions_with_labels = {};
+
+sm.partition_counts = {};
 
 utility.ForEachPair (sm.partitions , "_key_", "_value_", '
     if (Abs (_key_)) {
         assert (Abs (_value_) > 0, "Empty branch set for _" + sm.regexp_to_name[_key_] + "_");
         io.ReportProgressMessageMD ("SM", "data", "* Branch set _" + sm.regexp_to_name[_key_] + "_ has " + Abs (_value_) + " branches.");
+        sm.partition_counts[(sm.regexp_to_name[_key_])] = Abs(_value_);
+        sm.partitions_with_labels[(sm.regexp_to_name[_key_])] = _value_;
     }
 ');
 
@@ -158,9 +163,14 @@ sm.json_path = sm.tree[terms.data.file] + ".json";
 io.ReportProgressMessageMD('SM',  'file', 'Saving detailed report as a JSON file to \`' + sm.json_path + '\`');
 
 sm.json = {
+    'partitions' : sm.partitions_with_labels,
+    'tree' : sm.tree,
+    'leaf-count' : sm.leaf_count,
+    'partition-counts' : sm.partition_counts,
     'replicates' : sm.replicates,
     'compartments' : sm.group_count, 
     'migrations' : sm.score,
+    'structured-cutoff': sm.dist.structured.cutoff,
     'p-value' : {
         'panmictic'  :  sm.resampled_p_value/(sm.replicates+1), 
         'structured' :  sm.structured.p /(sm.replicates+1)
