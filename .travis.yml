@@ -1,5 +1,5 @@
 # OpenMP projects should set the environment variable OMP_NUM_THREADS to a reasonably small value (say, 4). 
-dist: trusty
+dist: xenial
 sudo : false
 
 notifications:
