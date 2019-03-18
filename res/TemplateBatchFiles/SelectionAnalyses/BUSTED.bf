@@ -90,7 +90,6 @@ KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes")
 KeywordArgument ("rates", "The number omega rate classes to include in the model [2-10, default 3]", busted.rate_classes);
 
 
-
 namespace busted {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("busted");
@@ -151,7 +150,6 @@ utility.ForEach (busted.global_dnds, "_value_", 'io.ReportProgressMessageMD ("BU
 
 selection.io.stopTimer (busted.json [terms.json.timers], "Preliminary model fitting");
 
-
 //Store MG94 to JSON
 selection.io.json_store_lf_withEFV (busted.json,
                             busted.MG94,
@@ -210,7 +208,6 @@ if (busted.do_srv) {
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
 
-
 // set up parameter constraints
 
 for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
@@ -226,7 +223,6 @@ busted.initial_grid = {};
 
 /* if populated, use this as a baseline to generate the distributions from */
 busted.initial_grid_presets = {"0" : 0.25};
-
 
 
 busted.init_grid_setup (busted.distribution);
@@ -315,8 +311,9 @@ busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted
     terms.search_grid : busted.initial_grid
 });
 
-//io.SpoolLF(busted.full_model[utility.getGlobalValue("terms.likelihood_function")], "/Users/sergei/Desktop/BUSTED", "alt");
 
+KeywordArgument ("save-fit", "Save BUSTED model fit to this file (default is not to save)", "/dev/null");
+io.SpoolLFToPath(busted.full_model[terms.likelihood_function], io.PromptUserForFilePath ("Save BUSTED model fit to this file ['/dev/null' to skip]"));
 
 io.ReportProgressMessageMD("BUSTED", "main", "* " + selection.io.report_fit (busted.full_model, 9, busted.codon_data_info[terms.data.sample_size]));
 io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the following rate distribution for branch-site combinations was inferred");

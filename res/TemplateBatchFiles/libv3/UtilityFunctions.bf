@@ -882,6 +882,28 @@ lfunction utility.GetListOfLoadedModules (filter) {
 }
 
 /**
+ * Returns the list of likelihood function IDs that are currently available
+ * param: {String} filter, if provided, will filter the list of library paths via a regexp
+ * @returns a string matrix with (absolute) file paths for loaded modules
+ */
+lfunction utility.GetListOfLoadedLikelihoodFunctions (filter) {
+    
+    lf_count = Rows ("LikelihoodFunction");
+    
+    res = {lf_count, 1};
+    
+    for (k = 0; k < lf_count; k+=1) {
+        GetString (lf_id, LikelihoodFunction, k);
+        res[k] = lf_id;
+    }
+    
+    if (None != filter) {
+        return utility.Values (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
+    }
+    return res;
+}
+
+/**
  * Execute some commands in the global namespace
  * @param commands {String} : the commands to execture
  * @returns None

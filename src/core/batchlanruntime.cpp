@@ -2494,250 +2494,256 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current_program, bool do_load_from_file, bool do_load_library) {
-  current_program.advance ();
-  _String * source_code = nil;
-  bool    pop_path = false;
-
-  auto cleanup = [&] () -> void {
-    if (pop_path) {
-      PopFilePath();
-    }
-    DeleteObject(source_code);
-  };
-  
-  _List dynamic_reference_manager;
-
-  try {
-    bool has_redirected_input = false,
-         has_user_kwargs      = false;
-
-    _List               _aux_argument_list;
-    _AVLListXL          argument_list (&_aux_argument_list);
-    _AssociativeList    * user_kwargs = nil;
-
-
-    if (do_load_from_file) {
-      _String file_path = _ProcessALiteralArgument(*GetIthParameter(0UL), current_program),
-              original_path (file_path);
-
-      FILE * source_file = nil;
-      
-      bool        reload          = hy_env::EnvVariableTrue(hy_env::always_reload_libraries);
-
-
-      if (do_load_library) {
-        bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound;
- 
-        for (unsigned long p = 0; !source_file && p < _hy_standard_library_paths.countitems(); p++) {
-          for (unsigned long e = 0; !source_file && e < _hy_standard_library_extensions.countitems(); e++) {
-            _String try_path = *((_String*)_hy_standard_library_paths(p)) & file_path & *((_String*)_hy_standard_library_extensions(e));
-
-
-            ProcessFileName (try_path, false, false, (hyPointer)current_program.nameSpacePrefix);
-
-            if (loadedLibraryPaths.Find(&try_path) >= 0 && parameter_count() == 2UL && !reload) {
-              ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & try_path);
-              return true;
-            }
-            if ((source_file = doFileOpen (try_path.get_str (), "rb"))) {
-              file_path = try_path;
-              break;
-            }
-            if (has_extension) {
-              break;
-            }
-          }
+    current_program.advance ();
+    _String * source_code = nil;
+    bool    pop_path = false;
+    
+    auto cleanup = [&] () -> void {
+        if (pop_path) {
+            PopFilePath();
         }
-      }
- 
-      if (source_file == nil) {
-        ProcessFileName (file_path, false,false,(hyPointer)current_program.nameSpacePrefix);
+        DeleteObject(source_code);
+    };
+    
+    _List dynamic_reference_manager;
+    
+    try {
+        bool has_redirected_input = false,
+        has_user_kwargs      = false;
+        
+        _List               _aux_argument_list;
+        _AVLListXL          argument_list (&_aux_argument_list);
+        _AssociativeList    * user_kwargs = nil;
+        
+        
+        if (do_load_from_file) {
+            _String file_path (*GetIthParameter(0UL));
+            
+            if (file_path == kPromptForFilePlaceholder ){
+                ProcessFileName (file_path, false, false, (hyPointer)current_program.nameSpacePrefix);
+            } else {
+                file_path = _ProcessALiteralArgument(file_path, current_program);
+            }
+            _String original_path (file_path);
 
-        if (do_load_library && loadedLibraryPaths.Find(&file_path) >= 0 && parameter_count() == 2UL && !reload) {
-          ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & file_path);
-          return true;
+            FILE * source_file = nil;
+            
+            bool        reload          = hy_env::EnvVariableTrue(hy_env::always_reload_libraries);
+            
+            
+            if (do_load_library) {
+                bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound;
+                
+                for (unsigned long p = 0; !source_file && p < _hy_standard_library_paths.countitems(); p++) {
+                    for (unsigned long e = 0; !source_file && e < _hy_standard_library_extensions.countitems(); e++) {
+                        _String try_path = *((_String*)_hy_standard_library_paths(p)) & file_path & *((_String*)_hy_standard_library_extensions(e));
+                        
+                        
+                        ProcessFileName (try_path, false, false, (hyPointer)current_program.nameSpacePrefix);
+                        
+                        if (loadedLibraryPaths.Find(&try_path) >= 0 && parameter_count() == 2UL && !reload) {
+                            ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & try_path);
+                            return true;
+                        }
+                        if ((source_file = doFileOpen (try_path.get_str (), "rb"))) {
+                            file_path = try_path;
+                            break;
+                        }
+                        if (has_extension) {
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (source_file == nil) {
+                ProcessFileName (file_path, false,false,(hyPointer)current_program.nameSpacePrefix);
+                
+                if (do_load_library && loadedLibraryPaths.Find(&file_path) >= 0 && parameter_count() == 2UL && !reload) {
+                    ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & file_path);
+                    return true;
+                }
+                
+                if ((source_file = doFileOpen (file_path.get_str (), "rb")) == nil) {
+                    throw (_String("Could not read command file from '") &
+                           original_path & "' (expanded to '" & file_path & "')");
+                }
+            }
+            
+            if (do_load_from_file && source_file) {
+                ReportWarning (_String("Loaded ") & original_path.Enquote() & " from " & file_path.Enquote());
+                loadedLibraryPaths.Insert (new _String (file_path),0,false,true);
+            }
+            
+            source_code = new _String (source_file);
+            
+            if (fclose       (source_file) ) { // failed to fclose
+                DeleteObject (source_code);
+                throw (_String("Internal error: failed in a call to fclose ") & file_path.Enquote());
+            }
+            pop_path = true;
+            PushFilePath (file_path);
+        } else { // commands are not loaded from a file
+            source_code = new _String (_ProcessALiteralArgument(*GetIthParameter(0UL), current_program));
         }
-          
-        if ((source_file = doFileOpen (file_path.get_str (), "rb")) == nil) {
-          throw (_String("Could not read command file from '") &
-                 original_path & "' (expanded to '" & file_path & "')");
+        
+        
+        if (!source_code || source_code->empty()) {
+            throw _String("Empty/missing source code string");
         }
-      }
-
-      if (do_load_from_file && source_file) {
-        ReportWarning (_String("Loaded ") & original_path.Enquote() & " from " & file_path.Enquote());
-        loadedLibraryPaths.Insert (new _String (file_path),0,false,true);
-      }
-
-      source_code = new _String (source_file);
-
-      if (fclose       (source_file) ) { // failed to fclose
-        DeleteObject (source_code);
-        throw (_String("Internal error: failed in a call to fclose ") & file_path.Enquote());
-      }
-      pop_path = true;
-      PushFilePath (file_path);
-    } else { // commands are not loaded from a file
-       source_code = new _String (_ProcessALiteralArgument(*GetIthParameter(0UL), current_program));
+        
+        if (!do_load_from_file && GetIthParameter(1UL)->nonempty()) {
+            pop_path = true;
+            PushFilePath (*GetIthParameter(1UL), false, false);
+        }
+        
+        _String * use_this_namespace = nil;
+        
+        if (parameter_count() >= 3UL) { // stdin redirect (and/or name space prefix)
+            _AssociativeList * input_arguments = nil;
+            try {
+                input_arguments =  (_AssociativeList *)_ProcessAnArgumentByType(*GetIthParameter(2UL), ASSOCIATIVE_LIST, current_program, &dynamic_reference_manager);
+            } catch (const _String& err) {
+                if (parameter_count() == 3UL) {
+                    throw (err);
+                }
+            }
+            
+            
+            if (input_arguments) {
+                
+                
+                
+                _List        *keys = input_arguments->GetKeys();
+                dynamic_reference_manager < keys;
+                keys->ForEach ([&] (BaseRef item, unsigned long) -> void {
+                    _String * key = (_String*) item;
+                    if (key) {
+                        HBLObjectRef payload = input_arguments->GetByKey (*key, STRING | ASSOCIATIVE_LIST);
+                        if (!payload) {
+                            throw ((_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings or associative lists (for keyword arguments). The following key was not: ") & key->Enquote()));
+                        }
+                        if (key->BeginsWith ("--") && key->length() > 2) {
+                            if (!user_kwargs) {
+                                dynamic_reference_manager < (user_kwargs = new _AssociativeList);
+                            }
+                            user_kwargs->MStore(new _FString (key->Cut (2, kStringEnd), false), payload, true);
+                            has_user_kwargs = true;
+                        } else {
+                            argument_list.Insert (new _String (*key), (long)new _String (((_FString*)payload)->get_str()), false);
+                            if (payload->ObjectClass() != STRING) {
+                                throw ((_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & key->Enquote()));
+                            }
+                            has_redirected_input = true;
+                        }
+                    }
+                });
+                
+                
+                
+                if (parameter_count() > 3UL) {
+                    _String const namespace_for_code = _ProcessALiteralArgument (*GetIthParameter(3UL),current_program);
+                    if (namespace_for_code.nonempty()) {
+                        if (!namespace_for_code.IsValidIdentifier(fIDAllowCompound)) {
+                            throw (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & GetIthParameter(3UL)->Enquote());
+                        }
+                        use_this_namespace = new _String (namespace_for_code);
+                    }
+                }
+            }
+        }
+        
+        if (parameter_count () < 4UL && current_program.nameSpacePrefix) {
+            use_this_namespace = new _String (*current_program.nameSpacePrefix->GetName());
+        }
+        
+        if (source_code->BeginsWith ("#NEXUS")) {
+            ReadDataSetFile (nil,1,source_code,nil,use_this_namespace);
+        } else {
+            bool result = false;
+            
+            _ExecutionList code (*source_code, use_this_namespace, false, &result);
+            
+            if (!result) {
+                throw (_String("Encountered an error while parsing HBL"));
+            } else {
+                
+                
+                _AVLListXL * stash1 = nil;
+                _List      * stash2 = nil,
+                * stash_kw_tags = nil;
+                
+                _AssociativeList * stash_kw = nil;
+                
+                bool update_kw = false;
+                
+                if (has_redirected_input) {
+                    code.stdinRedirectAux = &_aux_argument_list;
+                    code.stdinRedirect = &argument_list;
+                } else {
+                    if (current_program.has_stdin_redirect()) {
+                        stash1 = current_program.stdinRedirect;
+                        stash2 = current_program.stdinRedirectAux;
+                        current_program.stdinRedirect->AddAReference();
+                        current_program.stdinRedirectAux->AddAReference();
+                    }
+                    code.stdinRedirect = current_program.stdinRedirect;
+                    code.stdinRedirectAux = current_program.stdinRedirectAux;
+                }
+                
+                if (has_user_kwargs) {
+                    code.SetKWArgs(user_kwargs);
+                } else {
+                    if (current_program.has_keyword_arguments()) {
+                        code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
+                        code.kwargs = stash_kw = current_program.kwargs;
+                        if (stash_kw_tags) current_program.kwarg_tags->AddAReference();
+                        if (stash_kw) current_program.kwargs->AddAReference();
+                        code.currentKwarg = current_program.currentKwarg;
+                        update_kw = true;
+                    }
+                }
+                
+                
+                
+                if (!simpleParameters.empty() && code.TryToMakeSimple()) {
+                    ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)code.toStr()) );
+                    code.ExecuteSimple ();
+                } else {
+                    code.Execute();
+                }
+                
+                if (stash1) {
+                    stash1->RemoveAReference();
+                    stash2->RemoveAReference();
+                }
+                
+                if (stash_kw_tags) stash_kw_tags->RemoveAReference();
+                if (stash_kw) stash_kw->RemoveAReference();
+                
+                code.stdinRedirectAux = nil;
+                code.stdinRedirect    = nil;
+                if (update_kw) {
+                    code.kwarg_tags       = nil;
+                    code.kwargs           = nil;
+                    current_program.currentKwarg = code.currentKwarg;
+                }
+                
+                if (code.result) {
+                    DeleteObject (current_program.result);
+                    current_program.result = code.result;
+                    code.result = nil;
+                }
+            }
+        }
+    } catch (const _String& error) {
+        cleanup ();
+        return  _DefaultExceptionHandler (nil, error, current_program);
     }
     
-
-      if (!source_code || source_code->empty()) {
-        throw _String("Empty/missing source code string");
-      }
-
-      if (!do_load_from_file && GetIthParameter(1UL)->nonempty()) {
-        pop_path = true;
-        PushFilePath (*GetIthParameter(1UL), false, false);
-      }
-
-    _String * use_this_namespace = nil;
-
-    if (parameter_count() >= 3UL) { // stdin redirect (and/or name space prefix)
-      _AssociativeList * input_arguments = nil;
-      try {
-        input_arguments =  (_AssociativeList *)_ProcessAnArgumentByType(*GetIthParameter(2UL), ASSOCIATIVE_LIST, current_program, &dynamic_reference_manager);
-      } catch (const _String& err) {
-        if (parameter_count() == 3UL) {
-          throw (err);
-        }
-      }
-
-
-      if (input_arguments) {
-
-         
-
-        _List        *keys = input_arguments->GetKeys();
-        dynamic_reference_manager < keys;
-        keys->ForEach ([&] (BaseRef item, unsigned long) -> void {
-          _String * key = (_String*) item;
-          if (key) {
-            HBLObjectRef payload = input_arguments->GetByKey (*key, STRING | ASSOCIATIVE_LIST);
-            if (!payload) {
-              throw ((_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings or associative lists (for keyword arguments). The following key was not: ") & key->Enquote()));
-            }
-            if (key->BeginsWith ("--") && key->length() > 2) {
-                if (!user_kwargs) {
-                     dynamic_reference_manager < (user_kwargs = new _AssociativeList);
-                }
-                user_kwargs->MStore(new _FString (key->Cut (2, kStringEnd), false), payload, true);
-                has_user_kwargs = true;
-            } else {
-                argument_list.Insert (new _String (*key), (long)new _String (((_FString*)payload)->get_str()), false);
-                if (payload->ObjectClass() != STRING) {
-                    throw ((_String("All entries in the associative array used as input redirect argument to ExecuteCommands/ExecuteAFile must be strings. The following key was not: ") & key->Enquote()));
-                }
-                has_redirected_input = true;
-          }
-          }
-        });
-
-
-
-        if (parameter_count() > 3UL) {
-          _String const namespace_for_code = _ProcessALiteralArgument (*GetIthParameter(3UL),current_program);
-          if (namespace_for_code.nonempty()) {
-            if (!namespace_for_code.IsValidIdentifier(fIDAllowCompound)) {
-              throw (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & GetIthParameter(3UL)->Enquote());
-            }
-            use_this_namespace = new _String (namespace_for_code);
-          }
-        }
-      }
-    }
-
-    if (parameter_count () < 4UL && current_program.nameSpacePrefix) {
-      use_this_namespace = new _String (*current_program.nameSpacePrefix->GetName());
-    }
-
-    if (source_code->BeginsWith ("#NEXUS")) {
-      ReadDataSetFile (nil,1,source_code,nil,use_this_namespace);
-    } else {
-      bool result = false;
-
-      _ExecutionList code (*source_code, use_this_namespace, false, &result);
-
-      if (!result) {
-        throw (_String("Encountered an error while parsing HBL"));
-      } else {
-          
-
-        _AVLListXL * stash1 = nil;
-        _List      * stash2 = nil,
-                   * stash_kw_tags = nil;
-          
-        _AssociativeList * stash_kw = nil;
-          
-        bool update_kw = false;
-          
-        if (has_redirected_input) {
-          code.stdinRedirectAux = &_aux_argument_list;
-          code.stdinRedirect = &argument_list;
-        } else {
-           if (current_program.has_stdin_redirect()) {
-               stash1 = current_program.stdinRedirect;
-               stash2 = current_program.stdinRedirectAux;
-               current_program.stdinRedirect->AddAReference();
-               current_program.stdinRedirectAux->AddAReference();
-           }
-           code.stdinRedirect = current_program.stdinRedirect;
-           code.stdinRedirectAux = current_program.stdinRedirectAux;
-        }
-          
-          if (has_user_kwargs) {
-              code.SetKWArgs(user_kwargs);
-          } else {
-              if (current_program.has_keyword_arguments()) {
-              code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
-                  code.kwargs = stash_kw = current_program.kwargs;
-                  if (stash_kw_tags) current_program.kwarg_tags->AddAReference();
-                  if (stash_kw) current_program.kwargs->AddAReference();
-                  code.currentKwarg = current_program.currentKwarg;
-                  update_kw = true;
-              }
-          }
-          
-        
-
-        if (!simpleParameters.empty() && code.TryToMakeSimple()) {
-          ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)code.toStr()) );
-          code.ExecuteSimple ();
-        } else {
-          code.Execute();
-        }
-        
-        if (stash1) {
-          stash1->RemoveAReference();
-          stash2->RemoveAReference();
-        }
-          
-        if (stash_kw_tags) stash_kw_tags->RemoveAReference();
-        if (stash_kw) stash_kw->RemoveAReference();
-
-        code.stdinRedirectAux = nil;
-        code.stdinRedirect    = nil;
-        if (update_kw) {
-            code.kwarg_tags       = nil;
-            code.kwargs           = nil;
-            current_program.currentKwarg = code.currentKwarg;
-        }
-
-        if (code.result) {
-          DeleteObject (current_program.result);
-          current_program.result = code.result;
-          code.result = nil;
-        }
-      }
-    }
-  } catch (const _String& error) {
     cleanup ();
-    return  _DefaultExceptionHandler (nil, error, current_program);
-  }
-
-  cleanup ();
-  return true;
-
+    return true;
+    
 }
 
 //____________________________________________________________________________________
@@ -2975,6 +2981,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
       if (!return_value) {
 
         //  next, handle cases like GetString (res, LikelihoodFunction, index)
+          
         long       type_index = _HY_GetStringGlobalTypes.Find (GetIthParameter(1UL));
 
         if (type_index != kNotFound) {

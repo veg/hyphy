@@ -96,7 +96,7 @@ ancestral._bacCacheInstanceCounter = 0;
  * @example
  */
 function ancestral.build (_lfID, _lfComponentID, options) {
-    return ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, options["sample"]);
+    return ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, options["sample"], options["marginal"]);
 }
 
 
@@ -110,7 +110,7 @@ function ancestral.build (_lfID, _lfComponentID, options) {
  * @returns an integer index to reference
  * the opaque structure for subsequent operations
  */
-lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample) {
+lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample, doMarginal) {
 
     /* 1; grab the information AVL from the likelihood function */
 
@@ -132,11 +132,19 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
             }
         });
     } else {
-        DataSet _bac_ancDS = ReconstructAncestors( ^ _lfID, {
-            {
-                _lfComponentID
-            }
-        });
+        if (doMarginal) {
+            DataSet _bac_ancDS = ReconstructAncestors( ^ _lfID, {
+                {
+                    _lfComponentID
+                }
+            }, MARGINAL);
+        } else {
+            DataSet _bac_ancDS = ReconstructAncestors( ^ _lfID, {
+                {
+                    _lfComponentID
+                }
+            });
+        }
     }
 
     _bac_tree_avl = ( ^ _bac_treeID) ^ 0;

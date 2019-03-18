@@ -1838,19 +1838,19 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
 //_____________________________________________________________________________________________
 
 bool    _Matrix::IsReversible(_Matrix* freqs) {
-    if (hDim != vDim || (freqs && freqs->hDim * freqs->vDim != hDim)
-            || (storageType != 1 && storageType != 2) ||
-            (freqs && freqs->storageType != 1 && freqs->storageType != 2)) {
+    if (!is_square() || (freqs && freqs->GetHDim () * freqs->GetVDim () != GetHDim())
+            || (!is_numeric() && !is_expression_based() ) ||
+            (freqs && !freqs->is_numeric() && !freqs->is_expression_based())) {
         return false;
     }
 
-    bool   needAnalytics = storageType == 2 || (freqs && freqs->storageType == 2);
+    bool   needAnalytics = is_expression_based() || (freqs && freqs->is_expression_based());
     if (needAnalytics) {
         if (freqs) {
             for (long r = 0; r < hDim; r++)
                 for (long c = r+1; c < hDim; c++) {
                     bool compResult = true;
-                    if (storageType == 2) {
+                    if (is_expression_based()) {
                         _Formula* rc = GetFormula(r,c),
                                   * cr = GetFormula(c,r);
 
@@ -1862,7 +1862,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                 HBLObjectRef     tr = nil,
                                               tc = nil;
 
-                                if (freqs->storageType == 2) {
+                                if (freqs->is_expression_based()) {
                                     if (freqs->GetFormula(r,0)) {
                                         tr = freqs->GetFormula(r,0)->ConstructPolynomial();
                                         if (tr) {
@@ -1887,9 +1887,17 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                 }
                                 if (tr && tc) {
                                     _Polynomial        * rcpF = (_Polynomial*)rcp->Mult(tr),
-                                                         * crpF = (_Polynomial*)crp->Mult(tc);
+                                                       * crpF = (_Polynomial*)crp->Mult(tc);
 
                                     compResult         = rcpF->Equal(crpF);
+                                    
+                                    /*if (!compResult) {
+                                        ObjectToConsole(rcpF);
+                                        NLToConsole();
+                                        ObjectToConsole(crpF);
+                                        NLToConsole();
+                                    }*/
+                                    
                                     DeleteObject (rcpF);
                                     DeleteObject (crpF);
                                 } else {

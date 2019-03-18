@@ -2088,7 +2088,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         
         _String command (_HY_ValidHBLExpressions.RetrieveKeyByPayload(i));
         
-        if (command.EndsWith(')')) {
+        if (command.EndsWith('(')) {
             return _StringBuffer (command)
             << _String ((_String*)parameters.Join (", ")) << ");";
 
@@ -3875,6 +3875,14 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
         double_quote = 2
     } quote_type = normal_text;
 
+    auto strip_last_space = [] (_String const& source, long from, long to) -> _String* {
+        if (to > from) {
+            if (source.char_at(to-1L) == ' ') {
+                return new _String (source, from, to-2L);
+            }
+        }
+        return new _String (source, from, to-1L);
+    };
 
     for (; index<source.length(); index++) {
         char c = source.char_at (index);
@@ -3916,14 +3924,14 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
                 continue;
             }
 
-            receptacle < new _String (source,last_delim,index-1);
+            receptacle < strip_last_space (source,last_delim,index);
             last_delim = index+1;
             continue;
         }
     }
 
     if (include_empty_conditions || last_delim <= index-1) {
-        receptacle < new _String(source,last_delim,index-1);
+        receptacle < strip_last_space (source,last_delim,index);
     }
     return index+1L;
 }

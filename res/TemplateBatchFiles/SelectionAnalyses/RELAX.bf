@@ -24,7 +24,7 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
-LoadFunctionLibrary     ("libv3/tasks/mpi.bf");
+LoadFunctionLibrary("libv3/tasks/mpi.bf");
 
 
 
@@ -233,6 +233,8 @@ utility.ForEachPair (relax.filter_specification, "_key_", "_value_",
 selection.io.stopTimer (relax.json [terms.json.timers], "Preliminary model fitting");
 
 parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
+
+//VERBOSITY_LEVEL = 10;
 
 if (relax.model_set == "All") { // run all the models
 
