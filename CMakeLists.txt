@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.12)
 project(HyPhy)
 cmake_policy(VERSION 3.0.0)
 cmake_policy(SET CMP0026 OLD)
@@ -295,7 +295,10 @@ add_executable(
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
 
-target_link_libraries(HYPHYMP ${DEFAULT_LIBRARIES})
+find_package(OpenMP REQUIRED)
+
+target_link_libraries(HYPHYMP PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+
 
 add_custom_target(MP DEPENDS HYPHYMP)
 
