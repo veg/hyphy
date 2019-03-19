@@ -470,7 +470,7 @@ set_target_properties(
 
 macro(makeLink src dest target)
   add_custom_command(TARGET ${target} POST_BUILD 
-    COMMAND ln -s ${dest} ${src} DEPENDS ${dest} COMMENT "mklink ${src} -> ${dest}")
+    COMMAND ln -sf ${dest} ${src} DEPENDS ${dest} COMMENT "mklink ${src} -> ${dest}")
 endmacro()
 makeLink(HYPHYMP hyphy hyphy)
 
