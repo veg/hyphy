@@ -49,7 +49,7 @@ addons:
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
   - cmake . 
-  - make HYPHYMP
+  - make
 
 script: 
   - export OMP_NUM_THREADS=4
