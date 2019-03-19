@@ -6,7 +6,6 @@ notifications:
     slack: veg-igem:rqQd95zjTuZoRNElekQx2CLf
     email:
         recipients:
-            - spond@temple.edu
             - steven@stevenweaver.org
         on_success: change
         on_failure: always
@@ -52,4 +51,4 @@ install:
 
 script: 
   - export OMP_NUM_THREADS=4
-  - eval $envSpecificTest
+  - travis_wait 20 eval $envSpecificTest
