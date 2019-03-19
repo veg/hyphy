@@ -361,7 +361,7 @@ if(${MPI_FOUND})
 
     include_directories(${MPI_INCLUDE_PATH})
 
-    target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
+    target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES} OpenMP::OpenMP_CXX)
 
     install(
         TARGETS HYPHYMPI
@@ -395,7 +395,7 @@ add_executable(
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
 
-target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
+target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
 
