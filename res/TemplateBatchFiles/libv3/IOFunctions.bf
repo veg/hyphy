@@ -83,6 +83,7 @@ lfunction io.PromptUserForFilePath(prompt) {
 function io.LoadFile(prompt) {
    SetDialogPrompt (prompt);
    ExecuteAFile (PROMPT_FOR_FILE);
+   return  ^"LAST_FILE_PATH";
 }
 
 

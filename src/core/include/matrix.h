@@ -262,7 +262,7 @@ public:
 // square the matrix by Strassen's Multiplication
 
 
-    _Matrix*    Exponentiate (void);                // exponent of a matrix
+    _Matrix*    Exponentiate (hyFloat scale_to = 1.0, bool check_transition = false);                // exponent of a matrix
     void        Transpose (void);                   // transpose a matrix
     _Matrix     Gauss   (void);                     // Gaussian Triangularization process
     HBLObjectRef   LUDecompose (void) const;

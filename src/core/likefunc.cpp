@@ -44,7 +44,6 @@
 #include <math.h>
 #include <time.h>
 #include <math.h>
-#include <signal.h>
 
 
 #include "likefunc.h"
@@ -4703,11 +4702,8 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_te
       fclose (out);
     }
 
-    if (sig_term) {
-        raise (SIGTERM);
-    }
-  
     HandleApplicationError (err & '\n' & error, true);
+
 }
 //_______________________________________________________________________________________
 

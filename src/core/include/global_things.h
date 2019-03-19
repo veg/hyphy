@@ -201,7 +201,7 @@ namespace hy_global {
    @param message the error message
    @param force_exit force application exit
    */
-  void      HandleApplicationError (_String const & message, bool force_exit = false);
+  void      HandleApplicationError (_String const & message, bool force_exit = false, bool dump_core = false);
   
   /**
       When HyPhy encounters an error in a particular expression, it may be useful

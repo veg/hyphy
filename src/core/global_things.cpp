@@ -54,6 +54,8 @@
 
 #include <time.h>
 #include <float.h>
+#include <signal.h>
+
 
 using     namespace hy_env;
 
@@ -676,7 +678,7 @@ namespace hy_global {
     }
   
     //____________________________________________________________________________________
-    void HandleApplicationError (const _String & message, bool force_exit) {
+    void HandleApplicationError (const _String & message, bool force_exit, bool dump_core) {
 
         if (!force_exit && currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
             currentExecutionList->ReportAnExecutionError(message, true);
@@ -735,7 +737,11 @@ namespace hy_global {
 #ifdef _HY_ABORT_ON_ERROR
             abort ();
 #else
+        if (dump_core) {
+            raise (SIGTERM);
+        } else {
             exit(1);
+        }
 #endif
     }
   

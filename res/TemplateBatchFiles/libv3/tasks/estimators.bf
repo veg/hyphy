@@ -1045,6 +1045,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
 
     LikelihoodFunction likelihoodFunction = (lf_components);
+    
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);

@@ -324,7 +324,7 @@ lfunction ancestral._branch_filter_helper (ancestral_data, branch_filter, select
                         continue;
                     }
                 } else {
-                    if (Call (branch_filter, node_name) == FALSE) {
+                    if (Call (branch_filter, ((ancestral_data["TREE_AVL"])[k])) == FALSE) {
                         continue;
                     }
                 }
@@ -336,6 +336,53 @@ lfunction ancestral._branch_filter_helper (ancestral_data, branch_filter, select
 
     return Abs (selected_branches);
 }
+
+/*******************************************/
+
+
+lfunction ancestral._select_internal (node) {
+    return Abs (node["Children"]);
+}
+
+/*******************************************/
+/**
+ * @name ancestral.Sequences
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ 
+ * @returns
+        {
+         "Node Name" :  {String} inferred ancestral sequence,
+        }
+
+ */
+
+lfunction ancestral.Sequences (ancestral_data) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+    
+    branches =  ancestral._branch_filter_helper (ancestral_data, "ancestral._select_internal", selected_branches, selected_branch_names) + 1;    
+    sites  = (ancestral_data["DIMENSIONS"])["SITES"];
+    result = {};
+    selected_branches + {{(Abs(ancestral_data["TREE_AVL"])-2),0}};
+    selected_branch_names + "root";
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];    
+        seq_string = ""; seq_string * sites;
+        
+        for (s = 0; s < sites; s += 1) {
+            own_state    = (ancestral_data["MATRIX"])[self][s];
+            seq_string * (ancestral_data["CHARS"])[own_state];
+            
+        }   
+        seq_string * 0;
+        result[selected_branch_names[b]] = seq_string;
+    }
+    
+    return result;
+}
+
+
 
 /*******************************************/
 /**
@@ -373,7 +420,7 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
     selected_branches       = {};
     selected_branch_names   = {};
 
-    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);;
+    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);
 
     sites  = (ancestral_data["DIMENSIONS"])["SITES"];
     counts = {branches,sites};
