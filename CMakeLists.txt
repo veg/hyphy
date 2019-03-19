@@ -180,11 +180,7 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 # OpenMP support
 #-------------------------------------------------------------------------------
-find_package(OpenMP)
-
-if(NOT ${OPENMP_FOUND})
-    set(OpenMP_CXX_FLAGS "")
-endif(NOT ${OPENMP_FOUND})
+find_package(OpenMP REQUIRED)
 
 #-------------------------------------------------------------------------------
 # default installation prefix
@@ -290,20 +286,17 @@ install(DIRECTORY res/ DESTINATION lib/hyphy)
 # HYPHYMP target
 #-------------------------------------------------------------------------------
 add_executable(
-    HYPHYMP
-    EXCLUDE_FROM_ALL
+    hyphy
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
 
-find_package(OpenMP REQUIRED)
 
-target_link_libraries(HYPHYMP PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
 
-
-add_custom_target(MP DEPENDS HYPHYMP)
+add_custom_target(MP DEPENDS hyphy)
 
 install(
-    TARGETS HYPHYMP
+    TARGETS hyphy
     RUNTIME DESTINATION bin
     OPTIONAL
 )
@@ -446,18 +439,18 @@ set_target_properties(
 
 if(UNIX)
     set_property(
-        TARGET HYPHYMP HYPHYGTEST HYPHYDEBUG
+        TARGET hyphy HYPHYGTEST HYPHYDEBUG
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
 endif(UNIX)
 
 set_property(
-    TARGET HYPHYMP
+    TARGET hyphy
     APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__
 )
 
 set_property(
-    TARGET HYPHYMP HYPHYGTEST HYPHYDEBUG
+    TARGET hyphy HYPHYGTEST HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
 
@@ -467,9 +460,15 @@ set_property(
 )
 
 set_target_properties(
-    HYPHYMP
+    hyphy
     PROPERTIES
     COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${OpenMP_CXX_FLAGS}"
     LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
 )
+
+macro(makeLink src dest target)
+  add_custom_command(TARGET ${target} POST_BUILD 
+    COMMAND ln -s ${dest} ${src} DEPENDS ${dest} COMMENT "mklink ${src} -> ${dest}")
+endmacro()
+makeLink(HYPHYMP hyphy hyphy)
 
