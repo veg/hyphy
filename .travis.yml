@@ -7,6 +7,8 @@ notifications:
     email:
         recipients:
             - steven@stevenweaver.org
+            - spond@temple.edu
+            - tuj86312@temple.edu
         on_success: change
         on_failure: always
 
@@ -51,4 +53,4 @@ install:
 
 script: 
   - export OMP_NUM_THREADS=4
-  - travis_wait 20 eval $envSpecificTest
+  - travis_wait 60 eval $envSpecificTest
