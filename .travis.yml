@@ -1,13 +1,14 @@
 # OpenMP projects should set the environment variable OMP_NUM_THREADS to a reasonably small value (say, 4). 
-dist: trusty
+dist: xenial
 sudo : false
 
 notifications:
     slack: veg-igem:rqQd95zjTuZoRNElekQx2CLf
     email:
         recipients:
-            - spond@temple.edu
             - steven@stevenweaver.org
+            - spond@temple.edu
+            - tuj86312@temple.edu
         on_success: change
         on_failure: always
 
@@ -48,8 +49,8 @@ addons:
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
   - cmake . 
-  - make HYPHYMP
+  - make
 
 script: 
   - export OMP_NUM_THREADS=4
-  - eval $envSpecificTest
+  - travis_wait 60 eval $envSpecificTest
