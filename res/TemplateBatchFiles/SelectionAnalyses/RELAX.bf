@@ -1,5 +1,5 @@
 
-RequireVersion("2.3.3");
+RequireVersion("2.4.0");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -39,7 +39,7 @@ utility.SetEnvVariable ("LF_SMOOTHING_SCALER",0.05);
 relax.analysis_description = {
                                terms.io.info : "RELAX (a random effects test of selection relaxation) uses a random effects branch-site model framework to test whether a set of 'Test' branches evolves under relaxed selection relative to a set of 'Reference' branches (R), as measured by the relaxation parameter (K).
                                                 Version 2.1 adds a check for stability in K estimates to try to mitigate convergence problems. Version 3 provides support for >2 branch sets.",
-                               terms.io.version : "3.0",
+                               terms.io.version : "3.1",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                                terms.io.contact : "spond@temple.edu",
@@ -112,12 +112,29 @@ io.DisplayAnalysisBanner ( relax.analysis_description );
 
 selection.io.startTimer (relax.json [terms.json.timers], "Overall", 0);
 
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (annotated with {})", null);
+// One additional KeywordArgument ("output") is called below after namespace meme.
+
+/* TODO
+KeywordArgument ("test-branches", "The regular expression to select the set of branches for the test set (if not supplied, branches annotated with {} and not selected as reference will be used as test set(s)", null);
+KeywordArgument ("reference-branches", "the regular expression to select the set of brances as reference [required]")
+*/
+
+
 namespace relax {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ({utility.getGlobalValue("terms.prefix"): "relax", utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "relax.select_branches"}});
     LoadFunctionLibrary ("modules/grid_compute.ibf");
 }
 
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'RELAX.json')", relax.codon_data_info [terms.json.json]);
+relax.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
 io.ReportProgressMessageMD('RELAX',  'selector', 'Branch sets for RELAX analysis');
 
@@ -988,7 +1005,7 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
 //------------------------------------------------------------------------------
 lfunction relax.select_branches(partition_info) {
 
-    kGroupMode = "Group mode";
+    kGroupMode = "group-mode";
 
     io.CheckAssertion("utility.Array1D (`&partition_info`) == 1", "RELAX only works on a single partition dataset");
     available_models = {};
@@ -1014,8 +1031,8 @@ lfunction relax.select_branches(partition_info) {
 	if (nontrivial_groups >= 3) { // could run as a group set
 		run_mode = io.SelectAnOption ({
 			{kGroupMode, "Run the test for equality of selective regimes among  " + nontrivial_groups + " groups of branches"}
-			{"Classic mode", "Select one test and one reference group of branches, with the rest of the branches treated as unclassified"}
-		}, "Group test mode");
+			{"classic-mode", "Select one test and one reference group of branches, with the rest of the branches treated as unclassified"}
+		}, "group-test-mode");
 		if (run_mode == kGroupMode) {
 			 utility.SetEnvVariable ("relax.numbers_of_tested_groups", nontrivial_groups);
 			 utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "

@@ -28,7 +28,7 @@ env:
   - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/data/CD2.nex"
   - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/libv3/data/CD2.nex --branches GROUP1"
   - envSpecificTest="./HYPHYMP FUBAR --alignment ./tests/hbltests/libv3/data/CD2.nex"
-  - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/RELAX.wbf"
+  - envSpecificTest="./HYPHYMP RELAX --alignment ./tests/hbltests/libv3/data/CD2.nex --test-branches GROUP1 --reference-branches GROUP2
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/aBSREL.wbf"
   - envSpecificTest="./HYPHYMP BUSTED --alignment ./tests/hbltests/data/CD2.nex --srv No --branches Internal"
 
