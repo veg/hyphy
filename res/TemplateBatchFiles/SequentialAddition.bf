@@ -7,7 +7,7 @@ RequireVersion ("0.99.20061122");
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0) 
+if (dataType<0)
 {
 	return;
 }
@@ -132,8 +132,8 @@ if (pCount > 0)
 				"Estimate always", "Re-estimate global model parameters (e.g. rate variation parameters, substitution biases etc) for each tree. This option can be quite slow, and global parameter estimates may be unreliable for small trees, leading to possible biases.",
 				"Get from a user tree", "Estimate global model parameters (e.g. rate variation parameters, substitution biases etc) from a user tree (e.g. NJ), and hold them constant for the rest of the search. This option has the advantage of big speed gains, and is based on the assumption that global model parameters are robust to some errors in the tree. This assumption could be wrong in pathological cases, however."
 				);
-		
-			
+
+
 	if (globalParameters < 0)
 	{
 		return ;
@@ -146,7 +146,7 @@ if (pCount > 0)
 		fprintf					(stdout, "\n[OBTAINING GLOBAL PARAMETER ESTIMATES]\n");
 		LikelihoodFunction 		apprxLF = (filteredData, givenTree);
 		Optimize 			    (arg, apprxLF);
-		
+
 		for (k=0; k<pCount; k=k+1)
 		{
 			ExecuteCommands ("_param_val = " + globalParamList[k] + ";");
@@ -170,7 +170,7 @@ if (l)
 	fprintf (stdout, "\n",lf,"\n\n***********Save this tree to a file (y/n)?");
 
 	fscanf  (stdin, "String", resp);
-	OpenWindow (TREEWINDOW, {{"Inferred_Tree"}});
+
 
 	if ((resp!="n")&&(resp!="N"))
 	{
@@ -185,7 +185,3 @@ if (l)
 		saveTreeNodes[i][1] = bestTreeNodes[i][1];
 	}
 }
-
-
-
-

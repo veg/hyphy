@@ -73,9 +73,7 @@
 "MT","Select an evolutionary model for nucleotide data, using the methods of 'ModelTest' - a program by David Posada and Keith Crandall.","ModelTest.bf";
 "NUC","Compare all 203 reversible nucleotide models and perform LRT and AIC model selection.","NucModelCompare.bf";
 "Protein","Compare the fit of several amino-acid substitution models to an alignment using AIC and c-AIC.","AAModelComparison.bf";
-"","Tools for data analysis and pattern extraction based on kernel technqiues.","!Kernel Analysis Tools";
-"KMEANS","GA driven kernel k-means clustering.","Kernel_k_means.bf";
-"KPCA","Kernel principal component analysis.","Kernel_PCA.bf";
+
 
 "","Molecular Clock Tests.","!Molecular Clock";
 "DTMC","Test for the presence of a global molecular clock with DATED sequences. Evolutionary rates and dates for internal nodes are estimated as well. This analysis is effectively an extended version of Andrew Rabmaut's TipDate methodogoly.","DatedTipsMolecularClock.bf";
@@ -96,7 +94,7 @@
 "TSC","Perform an exhaustive tree space search (subject to a topology contraint) for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearchConstrained.bf";
 
 "","Perform codon-based positive selection tests.","!Positive Selection";
-"BSREL","Use the random effects branch-site model (2010) to find lineages subject to episodic selection.","BranchSiteREL.bf";
+
 "BST","Use the improved branch-site REL method of Yang and Nielsen (2005) to look for episodic selection in sequences.","YangNielsenBranchSite2005.bf";
 "BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf";
 "PSD","Test whether sites in two populations are evolving under different selective pressures.","CompareSelectivePressure.bf";
