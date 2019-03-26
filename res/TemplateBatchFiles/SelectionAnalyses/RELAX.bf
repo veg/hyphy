@@ -832,13 +832,11 @@ return relax.json;
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 //------------------------------------------------------------------------------
-
 lfunction relax.extract.k(branch_info) {
     return (branch_info[utility.getGlobalValue("terms.relax.k")])[utility.getGlobalValue("terms.fit.MLE")];
 }
 
 //------------------------------------------------------------------------------
-
 lfunction relax.set.k (tree_name, node_name, model_description) {
     if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.relax.k"), "String")) {
         k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];
@@ -851,7 +849,6 @@ lfunction relax.set.k (tree_name, node_name, model_description) {
 }
 
 //------------------------------------------------------------------------------
-
 lfunction relax.set.k2 (tree_name, node_name, model_description) {
     if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.relax.k"), "String")) {
         k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];
@@ -860,9 +857,7 @@ lfunction relax.set.k2 (tree_name, node_name, model_description) {
     return tree_name + "." + node_name + "." + k;
 }
 
-
 //------------------------------------------------------------------------------
-
 lfunction relax.init.k (lf_id, components, data_filter, tree, model_map, initial_values, model_objects) {
 
     parameter_set = estimators.TraverseLocalParameters (lf_id, model_objects, "relax.set.k");
@@ -884,7 +879,6 @@ lfunction relax.init.k (lf_id, components, data_filter, tree, model_map, initial
 }
 
 //------------------------------------------------------------------------------
-
 lfunction relax.BS_REL.ModelDescription (type, code, components) {
     model = models.codon.BS_REL.ModelDescription(utility.getGlobalValue ('terms.global'), code, components);
     model [utility.getGlobalValue("terms.model.defineQ")] = "relax.BS_REL._DefineQ";
@@ -892,7 +886,6 @@ lfunction relax.BS_REL.ModelDescription (type, code, components) {
 }
 
 //------------------------------------------------------------------------------
-
 lfunction relax.DistributionGuess (mean) {
     rc = utility.getGlobalValue ("relax.rate_classes");
 
@@ -912,7 +905,6 @@ lfunction relax.DistributionGuess (mean) {
 }
 
 //------------------------------------------------------------------------------
-
 lfunction relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, omega, omega_term) {
 
 
@@ -958,7 +950,6 @@ lfunction relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _
 }
 
 //------------------------------------------------------------------------------
-
 lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
     rate_matrices = {};
 
@@ -996,8 +987,6 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
     parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
     return bs_rel;
 }
-
-
 
 //------------------------------------------------------------------------------
 lfunction relax.select_branches(partition_info) {
@@ -1141,7 +1130,6 @@ lfunction relax.select_branches(partition_info) {
 }
 
 //------------------------------------------------------------------------------
-
 lfunction relax.grid.MatrixToDict (grid) {
     return utility.Map (utility.MatrixToListOfRows (grid), "_value_",
                                                                 '{  terms.relax.k : {

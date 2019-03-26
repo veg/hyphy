@@ -45,12 +45,12 @@ evaluateMethod() {
     for fileType in "${fileTypes[@]}"
     do
         # Run the command
-        hyphyCall="./HYPHYMP $methodName $fileType"
+        hyphyCall="./hyphy $methodName $fileType"
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
         sleep 4s
-        killall HYPHYMP
+        killall hyphy
 
         # Confirm that the expected output is there
         if grep -q "$expectedOutput" ./tempOutput.txt; then
@@ -66,12 +66,12 @@ evaluateMethod() {
     for arguments in "${methodSpecificArgs[@]}"
     do
         # Run the command
-        hyphyCall="./HYPHYMP $methodName ${fileTypes[0]} $arguments"
+        hyphyCall="./hyphy $methodName ${fileTypes[0]} $arguments"
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
         sleep 4s
-        killall HYPHYMP
+        killall hyphy
 
         # Confirm that the expected output is there
         if grep -q "$expectedOutput" ./tempOutput.txt; then
@@ -148,6 +148,35 @@ declare -a slacArgs=( "${universalArgs[@]}"
                         "--pvalue 0.4"
                         )                     
 evaluateMethod "slac" "Obtaining branch lengths" "${slacArgs[@]}"
+
+# RELAX
+# Requires redefining the filetypes and different args for different types of relax (i.e. group vs. classic)
+# --- Classic Mode with tree with only one set of labeled branches ---
+declare -a fileTypes=("--alignment ./tests/hbltests/data/CD2_reduced_test.fna")
+declare -a relaxArgsMaster=(  "--code Universal"
+                        "--output ./testMethodOutput"
+                        "--modelSet All"
+                        "--modelSet Minimal")
+evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}"
+
+# --- Classic Mode with tree with two sets of labeled branches ---
+declare -a fileTypes=("--alignment ./tests/hbltests/data/CD2_reduced_test_ref.fna")
+declare -a relaxArgs=(  "${relaxArgsMaster[@]}"
+                        "--testBranches test --referenceBranches reference"
+                        "--testBranches test" # When referenceBranches isn't specified, the unlabeled branches serve as the reference
+                        )
+evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}"
+
+# --- Classic Mode with tree with three sets of labeled branches ---
+declare -a fileTypes=("--alignment ./tests/hbltests/data/CD2_reduced_groups.fna")
+declare -a relaxArgs=(  "${relaxArgsMaster[@]}"
+                        "--testBranches group1 --referenceBranches group2"
+                        "--testBranches group1" # When referenceBranches isn't specified, the unlabeled branches serve as the reference
+                        )
+evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}"
+
+# --- Group Mode with tree with three sets of labeled branches ---
+evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}" # To run relax in group mode simply provide tree with more than 3 sets of labels and don't provide testBranches or referenceBranches key word args
 
 
 #*******************************************************************************
