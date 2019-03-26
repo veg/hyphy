@@ -27,7 +27,6 @@ LoadFunctionLibrary("libv3/convenience/math.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
 
 
-
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
@@ -46,16 +45,16 @@ relax.analysis_description = {
                                terms.io.requirements : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"
                               };
 
-relax.json    = { terms.json.analysis: relax.analysis_description,
-                  terms.json.input: {},
-                  terms.json.fits : {},
-                  terms.json.timers : {},
-                  terms.json.test_results : {}
-                  };
+relax.json = { 
+				terms.json.analysis: relax.analysis_description,
+            	terms.json.input: {},
+                terms.json.fits : {},
+                terms.json.timers : {},
+                terms.json.test_results : {}
+                };
 
-relax.relaxation_parameter        = "relax.K";
-relax.rate_classes     = 3;
-
+relax.relaxation_parameter = "relax.K";
+relax.rate_classes = 3;
 
 relax.MG94_name = terms.json.mg94xrev_sep_rates;
 relax.general_descriptive_name = "General descriptive";
@@ -69,19 +68,18 @@ relax.numbers_of_tested_groups = 2;
    then run the group test, i.e. K_1 = K_2 == .. K_{N-1} vs unconstrained alternative
 */
 
-
-terms.relax.k          = "relaxation or intensification parameter";
-terms.relax.k_range    = {
+terms.relax.k = "relaxation or intensification parameter";
+terms.relax.k_range = {
         terms.lower_bound: "0",
         terms.upper_bound: "50"
     };
 
-terms.relax.k_range1    = {
+terms.relax.k_range1 = {
         terms.lower_bound: "1",
         terms.upper_bound: "50"
     };
 
-terms.relax.t_range    = {
+terms.relax.t_range = {
         terms.lower_bound: "0",
         terms.upper_bound: "1e26"
     };
@@ -96,48 +94,56 @@ relax.unclassified_branches_name = "Unclassified";
 relax.display_orders = {terms.original_name: -1,
                         terms.json.nucleotide_gtr: 0,
                         relax.MG94_name: 1,
-                        relax.general_descriptive_name: 4,
                         relax.alternative_name: 2,
                         relax.null_name: 3,
+                        relax.general_descriptive_name: 4,
                         relax.partitioned_descriptive_name: 5
                        };
-
-
-/*------------------------------------------------------------------------------*/
-
-
 
 
 io.DisplayAnalysisBanner ( relax.analysis_description );
 
 selection.io.startTimer (relax.json [terms.json.timers], "Overall", 0);
 
+
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    User defined analysis parameters
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 /*------------------------------------------------------------------------------
     Key word arguments
 */
-
 KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 KeywordArgument ("tree", "A phylogenetic tree (annotated with {})", null);
-// One additional KeywordArgument ("output") is called below after namespace meme.
+// additional keyword arguments called below and TODO: within the branch_selection function.
 
-/* TODO
-KeywordArgument ("test-branches", "The regular expression to select the set of branches for the test set (if not supplied, branches annotated with {} and not selected as reference will be used as test set(s)", null);
-KeywordArgument ("reference-branches", "the regular expression to select the set of brances as reference [required]")
+
+/*------------------------------------------------------------------------------
+    Select genetic code and alignment
 */
-
-
 namespace relax {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
-    load_file ({utility.getGlobalValue("terms.prefix"): "relax", utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "relax.select_branches"}});
+    load_file ({
+		utility.getGlobalValue("terms.prefix"): "relax", 
+		utility.getGlobalValue("terms.settings") : {
+													utility.getGlobalValue("terms.settings.branch_selector") : "relax.select_branches"}
+													});
     LoadFunctionLibrary ("modules/grid_compute.ibf");
 }
 
+
+/*------------------------------------------------------------------------------
+    Select json output location
+*/
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'RELAX.json')", relax.codon_data_info [terms.json.json]);
 relax.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
-io.ReportProgressMessageMD('RELAX',  'selector', 'Branch sets for RELAX analysis');
 
+/*------------------------------------------------------------------------------
+    Print out the sets of branches available
+*/
+io.ReportProgressMessageMD('RELAX',  'selector', 'Branch sets for RELAX analysis');
 
 if (relax.numbers_of_tested_groups == 2) {
 	relax.branch_sets = {relax.test_branches_name : "test",
@@ -164,23 +170,7 @@ function relax.echo_group (group, description) {
 
 };
 
-
 relax.branch_sets ["relax.echo_group"][""];
-
-if (relax.numbers_of_tested_groups > 2) {
-	relax.reference_set_name = io.SelectAnOption (relax.group_choices, "Select the set of branches to use as reference");
-	if (relax.branch_sets [relax.reference_set_name] > 0) {
-		relax.k = utility.Keys (relax.branch_sets);
-		for (relax.i = 0; relax.i < relax.numbers_of_tested_groups; relax.i += 1) {
-			if (relax.k [relax.i] != relax.reference_set_name ) {
-				relax.branch_sets [relax.k [relax.i]] = relax.branch_sets [relax.reference_set_name];
-				break;
-			}
-		}
-		relax.branch_sets [relax.reference_set_name] = 0;
-	}	
-}
-
 
 utility.ForEachPair (relax.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == relax.unclassified_branches_name');
@@ -189,11 +179,20 @@ utility.ForEachPair (relax.selected_branches, "_partition_", "_selection_",
         io.ReportProgressMessageMD('RELAX',  'selector', '* ' + Abs(_selection_) + ' branches are in the unclassified (nuisance) set: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')
      }");
 
-relax.model_set = io.SelectAnOption ({
+
+/*------------------------------------------------------------------------------
+    Select analysis type (All or Minimal) [default is Minimal]
+*/
+KeywordArgument ("modelSet", "modelSet description", "Minimal");
+relax.modelSet = io.SelectAnOption ({
                                         {"All", "[Default] Fit descriptive models AND run the relax test (4 models)"}
                                         {"Minimal", "Run only the RELAX test (2 models)"}
                                     }, "RELAX analysis type");
 
+
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    Main Analysis
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 selection.io.startTimer (relax.json [terms.json.timers], "Preliminary model fitting", 1);
 
 namespace relax {
@@ -254,7 +253,7 @@ parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
 
 //VERBOSITY_LEVEL = 10;
 
-if (relax.model_set == "All") { // run all the models
+if (relax.modelSet == "All") { // run all the models
 
     relax.ge_guess = None;
 
@@ -470,7 +469,7 @@ relax.model_map = utility.Map (relax.model_to_group_name, "_groupid_", 'utility.
 
 // constrain the proportions to be the same
 
-if (relax.model_set != "All") {
+if (relax.modelSet != "All") {
     relax.ge_guess = relax.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
             "_value_[terms.fit.MLE]"));
 
@@ -769,7 +768,7 @@ do {
 	
 } while (relax.convergence_loop && relax.loop_passes <= 5);
 
-if (relax.model_set == "All") {
+if (relax.modelSet == "All") {
     selection.io.startTimer (relax.json [terms.json.timers], "RELAX partitioned descriptive", 5);
 
     io.ReportProgressMessageMD ("RELAX", "pe", "Fitting the partitioned descriptive model (completely separate rate distributions for branch sets)");
@@ -828,10 +827,9 @@ io.SpoolJSON (relax.json, relax.codon_data_info [terms.json.json]);
 return relax.json;
 
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    Relax Functions
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 //------------------------------------------------------------------------------
 
@@ -894,7 +892,6 @@ lfunction relax.BS_REL.ModelDescription (type, code, components) {
 }
 
 //------------------------------------------------------------------------------
-
 
 lfunction relax.DistributionGuess (mean) {
     rc = utility.getGlobalValue ("relax.rate_classes");
@@ -1004,30 +1001,76 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
 
 //------------------------------------------------------------------------------
 lfunction relax.select_branches(partition_info) {
+    /*------------------------------------------------------------------------------
+    	Initial setup
+	*/
+	io.CheckAssertion("utility.Array1D (`&partition_info`) == 1", "RELAX only works on a single partition dataset");
 
     kGroupMode = "group-mode";
-
-    io.CheckAssertion("utility.Array1D (`&partition_info`) == 1", "RELAX only works on a single partition dataset");
     available_models = {};
-
     return_set = {};
     tree_configuration = {};
 
     tree_for_analysis = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
     utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
-    list_models   = utility.sortStrings(utility.Keys(available_models)); // get keys
-    option_count  = Abs (available_models);
-
+	
+	list_models   = utility.sortStrings(utility.Keys(available_models)); // get keys
+	option_count  = Abs (available_models);
     io.CheckAssertion	("`&option_count` >= 2", "RELAX requires at least one designated set of branches in the tree.");
-    
+
+	// nontrivial_groups will be the number of available groups excluding the unlabeled set (i.e. "")
     nontrivial_groups = option_count;
-    
     if (utility.Has (available_models, "", "Number")) {
     	nontrivial_groups += -1;
     }
         
-    run_mode = None;   
-        
+    run_mode = None;
+
+	// -------------
+	// TO REPLACE "OLD WAY" FOR KWARGS
+	// -------------
+	/*------------------------------------------------------------------------------
+    	Get the branch sets for test and ref
+	*/
+
+	/* Variables that likely need to be set within the if else below once it replaces the "OLD WAY":
+	run_mode [group-mode or classic-mode]
+	utility.SetEnvVariable ("relax.numbers_of_tested_groups", nontrivial_groups); //Only if in group mode
+	*/
+
+	// modelSet = classic to start
+	if (nontrivial_groups == 1) {
+		fprintf (stdout, 'nontrivial_groups == 1', '\n');
+		// set that group to test and unlabeled as ref
+	} else if (nontrivial_groups == 2) {
+		fprintf (stdout, 'nontrivial_groups == 2', '\n');
+		// test_set = test
+		// ref_set = ref
+	} else if (nontrivial_groups > 2) {
+		fprintf (stdout, 'nontrivial_groups > 2', '\n');
+		if (1 == 2) { // testBranches and refBranches kwargs exist (replace 1 == 1 with this)
+			fprintf (stdout, 'testBranches kwarg exists', '\n');
+			// test_set = test
+			// ref_set = ref
+		} else {
+			fprintf (stdout, 'testBranches kwarg does not exists', '\n');
+			// modelSet = group;
+			// ref_set = ref
+			utility.SetEnvVariable ("relax.numbers_of_tested_groups", nontrivial_groups);
+			 utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "
+					if ('' == _value_ ) {
+						`&tree_configuration`[_key_] = utility.getGlobalValue('relax.unclassified_branches_name');
+					} else {
+						`&tree_configuration`[_key_] = _value_;
+					}
+				");	
+		}
+	}
+
+	
+	// -------------
+	// OLD WAY
+	// -------------
 	if (nontrivial_groups >= 3) { // could run as a group set
 		run_mode = io.SelectAnOption ({
 			{kGroupMode, "Run the test for equality of selective regimes among  " + nontrivial_groups + " groups of branches"}
@@ -1044,7 +1087,7 @@ lfunction relax.select_branches(partition_info) {
 				");			 
 		}
 	}
-	
+
 	if (run_mode != kGroupMode) {
 
 		selectTheseForTesting = {
