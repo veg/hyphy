@@ -995,7 +995,6 @@ lfunction relax.select_branches(partition_info) {
 	*/
 	io.CheckAssertion("utility.Array1D (`&partition_info`) == 1", "RELAX only works on a single partition dataset");
 
-    kGroupMode = "group-mode";
     available_models = {};
     return_set = {};
     tree_configuration = {};
@@ -1013,59 +1012,23 @@ lfunction relax.select_branches(partition_info) {
     	nontrivial_groups += -1;
     }
         
-    run_mode = None;
-
-	// -------------
-	// TO REPLACE "OLD WAY" FOR KWARGS
-	// -------------
-	/*------------------------------------------------------------------------------
-    	Get the branch sets for test and ref
+    /*------------------------------------------------------------------------------
+    	Determine if classicMode or groupMode
 	*/
-
-	/* Variables that likely need to be set within the if else below once it replaces the "OLD WAY":
-	run_mode [group-mode or classic-mode]
-	utility.SetEnvVariable ("relax.numbers_of_tested_groups", nontrivial_groups); //Only if in group mode
-	*/
-
-	// modelSet = classic to start
-	if (nontrivial_groups == 1) {
-		fprintf (stdout, 'nontrivial_groups == 1', '\n');
-		// set that group to test and unlabeled as ref
-	} else if (nontrivial_groups == 2) {
-		fprintf (stdout, 'nontrivial_groups == 2', '\n');
-		// test_set = test
-		// ref_set = ref
-	} else if (nontrivial_groups > 2) {
-		fprintf (stdout, 'nontrivial_groups > 2', '\n');
-		if (1 == 2) { // testBranches and refBranches kwargs exist (replace 1 == 1 with this)
-			fprintf (stdout, 'testBranches kwarg exists', '\n');
-			// test_set = test
-			// ref_set = ref
-		} else {
-			fprintf (stdout, 'testBranches kwarg does not exists', '\n');
-			// modelSet = group;
-			// ref_set = ref
-			utility.SetEnvVariable ("relax.numbers_of_tested_groups", nontrivial_groups);
-			 utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "
-					if ('' == _value_ ) {
-						`&tree_configuration`[_key_] = utility.getGlobalValue('relax.unclassified_branches_name');
-					} else {
-						`&tree_configuration`[_key_] = _value_;
-					}
-				");	
-		}
+	if (nontrivial_groups >= 3) { // could run as a group set
+		runMode = io.SelectAnOption ({
+			{"groupMode", "Run the test for equality of selective regimes among  " + nontrivial_groups + " groups of branches"}
+			{"classicMode", "Select one test and one reference group of branches, with the rest of the branches treated as unclassified"}
+		}, "group-test-mode");
+	} else {
+		runMode = "classicMode";
 	}
 
-	
-	// -------------
-	// OLD WAY
-	// -------------
-	if (nontrivial_groups >= 3) { // could run as a group set
-		run_mode = io.SelectAnOption ({
-			{kGroupMode, "Run the test for equality of selective regimes among  " + nontrivial_groups + " groups of branches"}
-			{"classic-mode", "Select one test and one reference group of branches, with the rest of the branches treated as unclassified"}
-		}, "group-test-mode");
-		if (run_mode == kGroupMode) {
+
+    /*------------------------------------------------------------------------------
+    	groupMode branch selection
+	*/
+	if (runMode == "groupMode") {
 			 utility.SetEnvVariable ("relax.numbers_of_tested_groups", nontrivial_groups);
 			 utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "
 					if ('' == _value_ ) {
@@ -1075,9 +1038,12 @@ lfunction relax.select_branches(partition_info) {
 					}
 				");			 
 		}
-	}
 
-	if (run_mode != kGroupMode) {
+
+    /*------------------------------------------------------------------------------
+    	classicMode branch selection
+	*/
+	if (runMode == "classicMode") {
 
 		selectTheseForTesting = {
 			option_count, 2
@@ -1088,27 +1054,29 @@ lfunction relax.select_branches(partition_info) {
 				selectTheseForTesting[k][0] = list_models[k];
 				selectTheseForTesting[k][1] = "Set " + list_models[k] + " with " + available_models[list_models[k]] + " branches";
 			} else {
-				selectTheseForTesting[k][0] = "Unlabeled branches";
+				selectTheseForTesting[k][0] = "unlabeledBranches";
 				selectTheseForTesting[k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
 			}
 		}
+		fprintf (stdout, 'selecttheseForTesting: ', selectTheseForTesting, '\n');
 
+		KeywordArgument("testSet", "testSet kwarg");
 		ChoiceList(testSet, "Choose the set of branches to use as the _test_ set", 1, NO_SKIP, selectTheseForTesting);
 		io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
 		if (option_count > 2) {
+			KeywordArgument("referenceSet", "referenceSet kwarg");
 			ChoiceList(referenceSet, "Choose the set of branches to use as the _reference_ set", 1, testSet, selectTheseForTesting);
 			io.CheckAssertion ("`&referenceSet` >= 0", "User cancelled branch selection; analysis terminating");
 		} else {
 			referenceSet = 1-testSet;
 		}
 
-
 		tag_test = selectTheseForTesting [testSet][0];
-		if (tag_test == "Unlabeled branches") {
+		if (tag_test == "unlabeledBranches") {
 			tag_test = "";
 		}
 		tag_reference = selectTheseForTesting [referenceSet][0];
-		if (tag_reference == "Unlabeled branches") {
+		if (tag_reference == "unlabeledBranches") {
 			tag_reference = "";
 		}
 
