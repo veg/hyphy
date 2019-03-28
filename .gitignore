@@ -22,6 +22,7 @@ HyPhy.xcodeproj
 
 
 # HYPHY binaries
+hyphy
 HYPHYMP
 HYPHYMPI
 HyPhy.app
@@ -51,4 +52,4 @@ testMethodOutput
 
 
 #Utility function
-remake_hyphymp.sh
+remake_hyphy.sh
