@@ -1,4 +1,4 @@
-RequireVersion("2.3.12");
+RequireVersion("2.4.0");
 
 // ---- load library files --------------------------------
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
@@ -33,7 +33,7 @@ distribution given the data.  Each node in the network
 represents a codon site in the alignment, and links (edges)
 between nodes indicate high posterior support for correlated
 substitutions at the two sites over time, which implies coevolution.",
-    terms.io.version: "1.0",
+    terms.io.version: "1.1",
     terms.io.reference: "Spidermonkey: rapid detection of co-evolving sites using Bayesian graphical models (2008). _Bioinformatics_ 24(17): 1949-1950",
     terms.io.authors: "Art FY Poon, Fraser I Lewis, Simon DW Frost and Sergei L Kosakovsky Pond",
     terms.io.contact: "apoon42@uwo.ca",
@@ -60,7 +60,7 @@ selection.io.startTimer (bgm.json [terms.json.timers], "Overall", 0);
 bgm.data_types = {terms.nucleotide  : "Nucleotide multiple sequence alignment",
                  terms.amino_acid   : "Protein multiple sequence alignment",
                  terms.codon        : "Codon multiple sequence alignment"};
-
+KeywordArgument ("run_type", "nucleotide, amino-acid or codon", "codon");
 bgm.run_type = io.SelectAnOption (bgm.data_types, "Data type");
 
 SetDialogPrompt ("Specify a `bgm.run_type` multiple sequence alignment file");
@@ -78,6 +78,10 @@ bgm.run_settings = {
     "threshold" : bgm.reporting_thershold
 };
 
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+KeywordArgument ("branches",  "Branches to test", "All");
 
 if (bgm.run_type == "nucleotide") {
    bgm.alignment_info = alignments.ReadNucleotideDataSet ("bgm.dataset", None);
@@ -139,6 +143,13 @@ bgm.initial_values = parameters.helper.tree_lengths_to_initial_values (bgm.trees
 console.log ( "\n> BGM will write result file to `bgm.alignment_info[terms.json.json]`\n");
 
 bgm.selected_branches = selection.io.defineBranchSets ( bgm.partitions_and_trees );
+
+
+KeywordArgument ("steps", "The number of MCMC steps to sample", 100000);
+KeywordArgument ("burn-in", "The number of MCMC steps to discard as burn-in", 10000);
+KeywordArgument ("samples", "The number of steps to extract from the chain sample", 100);
+KeywordArgument ("max-parents", "The maximum number of parents allowed per node", 1);
+KeywordArgument ("min-subs", "The minium number of substitutions per site to include it in the analysis", 1);
 
 
 bgm.run_settings["steps"]      = io.PromptUser("\n>Select the number of MCMC steps to sample", bgm.run_settings["steps"] , 0, 1e9, TRUE);

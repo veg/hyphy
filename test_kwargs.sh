@@ -104,6 +104,17 @@ declare -a absrelArgs=( "${universalArgs[@]}"
                         )                     
 evaluateMethod "absrel" "Obtaining branch lengths" "${absrelArgs[@]}"
 
+# GM
+declare -a bgmArgs=( "${universalArgs[@]}"
+                        "--steps 200000"
+                        "--burn-in 20000"
+                        "--burn-in 0"
+                        "--samples 0"
+                        "--max-parents 3"
+                        "--min-subs 5"
+                        )                     
+evaluateMethod "bgm" "Performing initial model fit" "${bgmArgs[@]}"
+
 # BUSTED
 declare -a bustedArgs=( "${universalArgs[@]}"
                         "--srv Yes"
