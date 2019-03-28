@@ -102,21 +102,21 @@ removeTempFiles() {
 # aBSREL
 declare -a absrelArgs=( "${universalArgs[@]}"
                         )                     
-evaluateMethod "absrel" "Obtaining branch lengths" "${absrelArgs[@]}"
+#evaluateMethod "absrel" "Obtaining branch lengths" "${absrelArgs[@]}"
 
 # BUSTED
 declare -a bustedArgs=( "${universalArgs[@]}"
                         "--srv Yes"
                         "--srv No"
                         )                     
-evaluateMethod "busted" "Obtaining branch lengths" "${bustedArgs[@]}"
+#evaluateMethod "busted" "Obtaining branch lengths" "${bustedArgs[@]}"
 
 # FEL
 declare -a felArgs=( "${universalArgs[@]}"
                         "--srv Yes"
                         "--srv No"
                         )                     
-evaluateMethod "fel" "Obtaining branch lengths" "${felArgs[@]}"
+#evaluateMethod "fel" "Obtaining branch lengths" "${felArgs[@]}"
 
 # FUBAR
 declare -a fubarArgs=( "${universalArgs[@]}"
@@ -130,14 +130,14 @@ declare -a fubarArgs=( "${universalArgs[@]}"
                         "--method Variational-Bayes --grid 50 --model WAG --concentration_parameter 0.01"
                         "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-length 1900000 --burn-in 1200000 --samples 120"
                         )                    
-evaluateMethod "fubar" "Obtaining branch lengths" "${fubarArgs[@]}"
+#evaluateMethod "fubar" "Obtaining branch lengths" "${fubarArgs[@]}"
 
 # MEME
 declare -a memeArgs=( "${universalArgs[@]}"
                         "--pvalue 0.1"
                         "--pvalue 0.4"
                         )                     
-evaluateMethod "meme" "Obtaining branch lengths" "${memeArgs[@]}"
+#evaluateMethod "meme" "Obtaining branch lengths" "${memeArgs[@]}"
 
 # SLAC
 declare -a slacArgs=( "${universalArgs[@]}"
@@ -147,36 +147,30 @@ declare -a slacArgs=( "${universalArgs[@]}"
                         "--pvalue 0.1"
                         "--pvalue 0.4"
                         )                     
-evaluateMethod "slac" "Obtaining branch lengths" "${slacArgs[@]}"
+#evaluateMethod "slac" "Obtaining branch lengths" "${slacArgs[@]}"
 
 # RELAX
 # Requires redefining the filetypes and different args for different types of relax (i.e. group vs. classic)
-# --- Classic Mode with tree with only one set of labeled branches ---
-declare -a fileTypes=("--alignment ./tests/hbltests/data/CD2_reduced_test.fna")
-declare -a relaxArgsMaster=(  "--code Universal"
-                        "--output ./testMethodOutput"
-                        "--modelSet All"
-                        "--modelSet Minimal")
-evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}"
-
 # --- Classic Mode with tree with two sets of labeled branches ---
 declare -a fileTypes=("--alignment ./tests/hbltests/data/CD2_reduced_test_ref.fna")
-declare -a relaxArgs=(  "${relaxArgsMaster[@]}"
-                        "--testBranches test --referenceBranches reference"
-                        "--testBranches test" # When referenceBranches isn't specified, the unlabeled branches serve as the reference
-                        )
-evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}"
+declare -a relaxArgs=(  "--testBranches test --referenceBranches reference --code Universal"
+                        "--testBranches test --referenceBranches reference --output ./testMethodOutput"
+                        "--testBranches test --referenceBranches reference --modelSet All"
+                        "--testBranches test --referenceBranches reference --modelSet Minimal"
+                        "--testBranches test --referenceBranches unlabeledBranches"
+                    )
+evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgs[@]}"
 
 # --- Classic Mode with tree with three sets of labeled branches ---
 declare -a fileTypes=("--alignment ./tests/hbltests/data/CD2_reduced_groups.fna")
-declare -a relaxArgs=(  "${relaxArgsMaster[@]}"
-                        "--testBranches group1 --referenceBranches group2"
-                        "--testBranches group1" # When referenceBranches isn't specified, the unlabeled branches serve as the reference
-                        )
-evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}"
+declare -a relaxArgs=(  "--testBranches group1 --refernceBranches group2"
+                        "--testBranches unlabeledBranches --referenceBranches group3"
+                     )
+#TODO: need groupMode kwarg working first
+#evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgs[@]}"
 
 # --- Group Mode with tree with three sets of labeled branches ---
-evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}" # To run relax in group mode simply provide tree with more than 3 sets of labels and don't provide testBranches or referenceBranches key word args
+#evaluateMethod "relax" "Obtaining branch lengths" "${relaxArgsMaster[@]}" # To run relax in group mode simply provide tree with more than 3 sets of labels and don't provide testBranches or referenceBranches key word args
 
 
 #*******************************************************************************

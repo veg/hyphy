@@ -1058,24 +1058,23 @@ lfunction relax.select_branches(partition_info) {
 				selectTheseForTesting[k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
 			}
 		}
-		fprintf (stdout, 'selecttheseForTesting: ', selectTheseForTesting, '\n');
 
-		KeywordArgument("testSet", "testSet kwarg");
-		ChoiceList(testSet, "Choose the set of branches to use as the _test_ set", 1, NO_SKIP, selectTheseForTesting);
-		io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
+		KeywordArgument("testBranches", "testBranches kwarg");
+		ChoiceList(testBranches, "Choose the set of branches to use as the _test_ set", 1, NO_SKIP, selectTheseForTesting);
+		io.CheckAssertion ("`&testBranches` >= 0", "User cancelled branch selection; analysis terminating");
 		if (option_count > 2) {
-			KeywordArgument("referenceSet", "referenceSet kwarg");
-			ChoiceList(referenceSet, "Choose the set of branches to use as the _reference_ set", 1, testSet, selectTheseForTesting);
-			io.CheckAssertion ("`&referenceSet` >= 0", "User cancelled branch selection; analysis terminating");
+			KeywordArgument("referenceBranches", "referenceBranches kwarg");
+			ChoiceList(referenceBranches, "Choose the set of branches to use as the _reference_ set", 1, testBranches, selectTheseForTesting);
+			io.CheckAssertion ("`&referenceBranches` >= 0", "User cancelled branch selection; analysis terminating");
 		} else {
-			referenceSet = 1-testSet;
+			referenceBranches = 1-testBranches;
 		}
 
-		tag_test = selectTheseForTesting [testSet][0];
+		tag_test = selectTheseForTesting [testBranches][0];
 		if (tag_test == "unlabeledBranches") {
 			tag_test = "";
 		}
-		tag_reference = selectTheseForTesting [referenceSet][0];
+		tag_reference = selectTheseForTesting [referenceBranches][0];
 		if (tag_reference == "unlabeledBranches") {
 			tag_reference = "";
 		}
