@@ -9,7 +9,9 @@ HyPhy is an open-source software package for the analysis of genetic sequences u
 
 #### Run with Command Line Arguments
 `hyphy <method_name> --alignment <path_to_alignment_file> <additional_method_specific_arguments>`  
-_where <method_name> is the name of the analysis you wish to run (can be: absrel, bgm, busted, fade, fel, fubar, gard, meme, relax or slac)_
++ _`<method_name>` is the name of the analysis you wish to run (can be: absrel, bgm, busted, fade, fel, fubar, gard, meme, relax or slac)_
++ _`<path_to_alignment_file>` is the relative or absolute path to a fasta, nexus or phylib file containing an alignment and tree_
++ _A list of the available `<additional_method_specific_arguments>` can be seen by running `hyphy <method_name> --help`_
 
 or  
 
