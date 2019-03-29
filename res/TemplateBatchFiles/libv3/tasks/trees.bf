@@ -742,9 +742,15 @@ lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
         }
 
         if (doLengths) {
-            if (nodeIndex < treeSize - 1) {
+            
+             if (nodeIndex < treeSize - 1) {
                 _ost * ":";
-                _ost * (""+nodeInfo ["Length"]); 
+                if (Type (doLengths) == "String") {
+                    _ost * Call (doLengths, nodeInfo); 
+                } else {
+                    _ost * (""+nodeInfo ["Length"]); 
+                
+                }
             }
         }
         lastDepth = myDepth;

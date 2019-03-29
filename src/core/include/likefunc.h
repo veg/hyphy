@@ -411,7 +411,7 @@ protected:
     */
   
     void            ComputeParameterPenalty     (void);
-    void            _TerminateAndDump           (const _String& error);
+    void            _TerminateAndDump           (const _String& error, bool sig_term = false);
 
 
     bool            SendOffToMPI                (long);

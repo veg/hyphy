@@ -783,14 +783,27 @@ int main (int argc, char* argv[]) {
     ReadInTemplateFiles();
     
     if (positional_arguments.empty () && run_help_message) {
+        // General help message when calling `HYPHY --help`.
+        BufferToConsole("\nHyPhy can be used from the command line in one of two ways:\n");
+        BufferToConsole("\n  1. An interactive command line prompt for access to a currated set of analyses (via simply: `HYPHY`).\n");
+        BufferToConsole("\n  2. Command line invocation with key word arguments for a select set of analyses as described below (simple example being: `HYPHY slac --alignment ./tests/hbltests/data/CD2.nex`):\n\n");
+        BufferToConsole("   Analyses which support command line arguments can be invoked with `HYPHY <analysisName> --alignment <pathToAlignment> <additionalKeyWordArguments>` where:\n");
+        BufferToConsole("  \t <analysesName> is the shorthand name of the analysis (such as `absrel`) [case insensitive]\n");
+        BufferToConsole("  \t <pathToAlignment> is the path to the multiple sequence alignment file [can be absolute or relative]\n");
+        BufferToConsole("  \t   If the alignment file does not contain a phylogenetic tree, one must be provided via the `--tree` key word argument (such as `--tree ./pathToTreeFile/treeFile.nhx`)\n");
+        BufferToConsole("  \t <additionalKeyWordArguments> are any of the optional (or in some cases required) key word arguments associated with the particular analysis\n");
+        BufferToConsole("  \t   To view a list of the key word arguments associated with a particular analysis you can run `HYPHY <analysisName> --help`\n");
+        BufferToConsole("\n  Available Analyses and Their [analysisName] are listed below:\n");
         
-        BufferToConsole("\nAVAILABLE ANALYSES AND THEIR SHORTHAND KEYWORDS (to use in 'HYPHY keyword' invokations)\n");
-        
+        // List of analyses that support command line arguments
         for (TrieIteratorKeyValue t : TrieIterator (&availableTemplateFilesAbbreviations)) {
-            BufferToConsole("\n");
-            StringToConsole(t.get_key());
-            BufferToConsole("\n\t");
-            StringToConsole(*(_String*) availableTemplateFiles.GetItem(availableTemplateFilesAbbreviations.GetValue(t.get_value()), 1));
+            _String batchFileDescription = *(_String*) availableTemplateFiles.GetItem(availableTemplateFilesAbbreviations.GetValue(t.get_value()), 1);
+            
+            if (_String(batchFileDescription).BeginsWith("[")) {
+                BufferToConsole("\n\t");
+                StringToConsole(batchFileDescription);
+            }
+            
         }
         BufferToConsole("\n");
         GlobalShutdown();

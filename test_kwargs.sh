@@ -49,7 +49,7 @@ evaluateMethod() {
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
-        sleep 2s
+        sleep 4s
         killall HYPHYMP
 
         # Confirm that the expected output is there
@@ -70,7 +70,7 @@ evaluateMethod() {
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
-        sleep 2s
+        sleep 4s
         killall HYPHYMP
 
         # Confirm that the expected output is there
@@ -86,11 +86,11 @@ evaluateMethod() {
 }
 
 removeTempFiles() {
-    if [ -f ./res/TemplateBatchFiles/SelectionAnalyses/tempCache.txt ]; then
-        rm ./res/TemplateBatchFiles/SelectionAnalyses/tempCache.txt
+    if [ -f ./res/TemplateBatchFiles/SelectionAnalyses/tempCache.cache ]; then
+        rm ./res/TemplateBatchFiles/SelectionAnalyses/tempCache.cache
     fi 
-    if [ -f ./tests/hbltests/data/CD2_AA.fna.FADE.cache ]; then
-        rm ./tests/hbltests/data/CD2_AA.fna.FADE.cache
+    if [ -f ./tests/hbltests/data/*.cache ]; then
+        rm ./tests/hbltests/data/*.cache
     fi
     sleep .5s
 }
@@ -104,12 +104,44 @@ declare -a absrelArgs=( "${universalArgs[@]}"
                         )                     
 evaluateMethod "absrel" "Obtaining branch lengths" "${absrelArgs[@]}"
 
+# GM
+declare -a bgmArgs=( "${universalArgs[@]}"
+                        "--steps 200000"
+                        "--burn-in 20000"
+                        "--burn-in 0"
+                        "--samples 0"
+                        "--max-parents 3"
+                        "--min-subs 5"
+                        )                     
+evaluateMethod "bgm" "Performing initial model fit" "${bgmArgs[@]}"
+
 # BUSTED
 declare -a bustedArgs=( "${universalArgs[@]}"
                         "--srv Yes"
                         "--srv No"
                         )                     
 evaluateMethod "busted" "Obtaining branch lengths" "${bustedArgs[@]}"
+
+# FEL
+declare -a felArgs=( "${universalArgs[@]}"
+                        "--srv Yes"
+                        "--srv No"
+                        )                     
+evaluateMethod "fel" "Obtaining branch lengths" "${felArgs[@]}"
+
+# FUBAR
+declare -a fubarArgs=( "${universalArgs[@]}"
+                        "--cache tempCache.cache"
+                        "--grid 25"
+                        "--model LG"
+                        "--method Metropolis-Hastings"
+                        "--method Collapsed-Gibbs"
+                        "--method Variational-Bayes"
+                        "--concentration_parameter 0.5"
+                        "--method Variational-Bayes --grid 50 --model WAG --concentration_parameter 0.01"
+                        "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-length 1900000 --burn-in 1200000 --samples 120"
+                        )                    
+evaluateMethod "fubar" "Obtaining branch lengths" "${fubarArgs[@]}"
 
 # MEME
 declare -a memeArgs=( "${universalArgs[@]}"
@@ -144,7 +176,7 @@ declare -a universalArgs=(  "--branches All"
 
 # FADE
 declare -a fadeArgs=( "${universalArgs[@]}"
-                        "--cache tempCache.txt"
+                        "--cache tempCache.cache"
                         "--grid 25"
                         "--model LG"
                         "--method Metropolis-Hastings"

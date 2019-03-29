@@ -1,13 +1,14 @@
 # OpenMP projects should set the environment variable OMP_NUM_THREADS to a reasonably small value (say, 4). 
-dist: trusty
+dist: xenial
 sudo : false
 
 notifications:
     slack: veg-igem:rqQd95zjTuZoRNElekQx2CLf
     email:
         recipients:
-            - spond@temple.edu
             - steven@stevenweaver.org
+            - spond@temple.edu
+            - tuj86312@temple.edu
         on_success: change
         on_failure: always
 
@@ -22,14 +23,16 @@ env:
   - envSpecificTest="bash ./run_unit_tests.sh"
   - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC.wbf"
-  - envSpecificTest="./HYPHYMP slac --alignment ./tests/hbltests/libv3/data/partitioned.nex --branches Internal"
-  - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/FEL.wbf"
+  - envSpecificTest="./HYPHYMP SLAC --alignment ./tests/hbltests/libv3/data/partitioned.nex --branches Internal"
+  - envSpecificTest="./HYPHYMP FEL --alignment ./tests/hbltests/libv3/data/CD2.nex"
   - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/data/CD2.nex"
   - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/libv3/data/CD2.nex --branches GROUP1"
-  - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/FUBAR.wbf"
+  - envSpecificTest="./HYPHYMP FUBAR --alignment ./tests/hbltests/libv3/data/CD2.nex"
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/RELAX.wbf"
   - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/aBSREL.wbf"
   - envSpecificTest="./HYPHYMP BUSTED --alignment ./tests/hbltests/data/CD2.nex --srv No --branches Internal"
+  - envSpecificTest="./HYPHYMP BGM --alignment ./tests/hbltests/data/CD2.nex"
+
 
 language: c++
 compiler: 
@@ -48,8 +51,8 @@ addons:
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
   - cmake . 
-  - make HYPHYMP
+  - make
 
 script: 
   - export OMP_NUM_THREADS=4
-  - eval $envSpecificTest
+  - travis_wait 60 eval $envSpecificTest

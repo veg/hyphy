@@ -922,7 +922,7 @@ public:
 
   /**
    * Checks to see if String begins with substring
-   * \n\n \b Example: \code _String("hyphy").beginswith("h")\endcode
+   * \n\n \b Example: \code _String("hyphy").BeginsWith("h")\endcode
    * @param pattern Substring
    * @param case_sensitive If true, it will be case sensitive. Default is case
    sensitive.
@@ -940,7 +940,7 @@ public:
 
   /**
    * Checks to see if String ends with substring
-   * \n\n \b Example: \code _String("hyphy").endswith("hy")\endcode
+   * \n\n \b Example: \code _String("hyphy").EndsWith("hy")\endcode
    * @param pattern Substring
    * @param case_sensitive If true, it will be case sensitive. Default is case
    sensitive.

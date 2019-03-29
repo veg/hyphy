@@ -2765,9 +2765,9 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 #pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
         if (isExplicitForm.lData[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
-            ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(), catID);
+            ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true), catID);
         } else {
-            (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate();
+            (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
         }
     }
  

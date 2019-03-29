@@ -40,8 +40,15 @@ DataSet ds = ReadDataFile(USE_NEXUS_FILE_DATA);
 DataSetFilter filteredData = CreateFilter(ds,1);
 
 HarvestFrequencies (nucFreqs, filteredData, 1, 1, 1);
+
 global kappa = 1;
-HKY_Q = {{*,t,t*kappa,t}{t,*,t,t*kappa}{t,t*kappa,*,t}{t,t*kappa,t,*}};
+HKY_Q = {
+         {*,t,t*kappa,t}
+         {t,*,t,t*kappa}
+         {t,t*kappa,*,t}
+         {t,t*kappa,t,*}
+         };
+         
 Model HKY85 = (HKY_Q, nucFreqs, 1);
 
 Tree givenTree=(((D_CD_83_ELI_ACC_K03454,D_CD_83_NDK_ACC_M27323)Node3,D_UG_94_94UG114_ACC_U88824)Node2,D_CD_84_84ZR085_ACC_U88822,(B_US_83_RF_ACC_M17451,((B_FR_83_HXB2_ACC_K03455,B_US_86_JRFL_ACC_U63632)Node11,B_US_90_WEAU160_ACC_U21135)Node10)Node8);

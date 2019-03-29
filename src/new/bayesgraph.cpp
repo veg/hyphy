@@ -1405,7 +1405,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
               throw(kHYBgm_MCMC_BURNIN & " must be positive and less than " & kHYBgm_MCMC_MAXSTEPS);
           }
 
-          if (mcmc_samples < 0 || mcmc_samples > (mcmc_burnin - mcmc_burnin))   {
+          if (mcmc_samples < 0 || mcmc_samples > (mcmc_steps - mcmc_burnin))   {
               throw(kHYBgm_MCMC_SAMPLES & " must be positive and less than " & kHYBgm_MCMC_MAXSTEPS & " - " & kHYBgm_MCMC_BURNIN);
           }
 

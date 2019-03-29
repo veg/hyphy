@@ -24,6 +24,7 @@ namespace terms{
     original_name           = "original name";
     replicates              = "replicates";
     data_type               = "datatype";
+    devnull                 = "/dev/null";
 
     category            = "category";
     mixture             = "mixture";

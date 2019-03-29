@@ -7,9 +7,10 @@ HyPhy is an open-source software package for the analysis of genetic sequences u
 
 Requirements
 ------------
-* cmake >= 3.0
+* cmake >= 3.12
 * gcc >= 4.9
 * libcurl
+* openmp (can be installed on mac via `brew install libomp`)
 
 Installation
 ------------
@@ -64,9 +65,6 @@ If you're on a UNIX-compatible system,
 and you're comfortable with GNU make,
 then run `make` with one of the following build targets:
 
-+   MAC - build a Mac Carbon application
-+   HYPHYGTK - HYPHY with GTK
-+   SP - build a HyPhy executable (HYPHYSP) without multiprocessing
 +   MP - build a HyPhy executable (HYPHYMP) using pthreads to do multiprocessing
 +   MPI - build a HyPhy executable (HYPHYMPI) using MPI to do multiprocessing
 +   HYPHYMPI - build a HyPhy executable (HYPHYMPI) using openMPI 
@@ -90,7 +88,7 @@ And then run make install to install the software
 
 `make install`
 
-+   HYPHYMP(I) will be installed at  `/location/of/choice/bin`
++   hyphy will be installed at  `/location/of/choice/bin`
 +   libhyphy_mp.(so/dylib/dll) will be installed at `/location/of/choice/lib`
 +   HyPhy's standard library of batchfiles will go into `/location/of/choice/lib/hyphy`
 

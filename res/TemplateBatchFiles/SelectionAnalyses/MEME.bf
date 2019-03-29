@@ -92,15 +92,10 @@ selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
 */
 
 KeywordArgument ("code", "Which genetic code should be used", "Universal");
-   
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
-
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
-    
 KeywordArgument ("branches",  "Branches to test", "All");
-
 KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
-
 // One additional KeywordArgument ("output") is called below after namespace meme.
 
 

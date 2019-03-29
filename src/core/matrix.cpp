@@ -1838,19 +1838,19 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
 //_____________________________________________________________________________________________
 
 bool    _Matrix::IsReversible(_Matrix* freqs) {
-    if (hDim != vDim || (freqs && freqs->hDim * freqs->vDim != hDim)
-            || (storageType != 1 && storageType != 2) ||
-            (freqs && freqs->storageType != 1 && freqs->storageType != 2)) {
+    if (!is_square() || (freqs && freqs->GetHDim () * freqs->GetVDim () != GetHDim())
+            || (!is_numeric() && !is_expression_based() ) ||
+            (freqs && !freqs->is_numeric() && !freqs->is_expression_based())) {
         return false;
     }
 
-    bool   needAnalytics = storageType == 2 || (freqs && freqs->storageType == 2);
+    bool   needAnalytics = is_expression_based() || (freqs && freqs->is_expression_based());
     if (needAnalytics) {
         if (freqs) {
             for (long r = 0; r < hDim; r++)
                 for (long c = r+1; c < hDim; c++) {
                     bool compResult = true;
-                    if (storageType == 2) {
+                    if (is_expression_based()) {
                         _Formula* rc = GetFormula(r,c),
                                   * cr = GetFormula(c,r);
 
@@ -1862,7 +1862,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                 HBLObjectRef     tr = nil,
                                               tc = nil;
 
-                                if (freqs->storageType == 2) {
+                                if (freqs->is_expression_based()) {
                                     if (freqs->GetFormula(r,0)) {
                                         tr = freqs->GetFormula(r,0)->ConstructPolynomial();
                                         if (tr) {
@@ -1887,9 +1887,17 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                 }
                                 if (tr && tc) {
                                     _Polynomial        * rcpF = (_Polynomial*)rcp->Mult(tr),
-                                                         * crpF = (_Polynomial*)crp->Mult(tc);
+                                                       * crpF = (_Polynomial*)crp->Mult(tc);
 
                                     compResult         = rcpF->Equal(crpF);
+                                    
+                                    /*if (!compResult) {
+                                        ObjectToConsole(rcpF);
+                                        NLToConsole();
+                                        ObjectToConsole(crpF);
+                                        NLToConsole();
+                                    }*/
+                                    
                                     DeleteObject (rcpF);
                                     DeleteObject (crpF);
                                 } else {
@@ -4280,7 +4288,7 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash)
 
 //_____________________________________________________________________________________________
 
-_Matrix*    _Matrix::Exponentiate (void) {
+_Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
     // find the maximal elements of the matrix
     
     try {
@@ -4303,7 +4311,7 @@ _Matrix*    _Matrix::Exponentiate (void) {
             RowAndColumnMax (max, t, stash);
             max *= t;
             if (max > .1) {
-                max             = sqrt (10.*max);
+                max             = scale_to*sqrt (10.*max);
                 power2          = (long)((log (max)/log ((hyFloat)2.0)))+1;
                 max             = exp (power2 * log ((hyFloat)2.0));
                 (*this)         *= 1.0/max;
@@ -4321,7 +4329,7 @@ _Matrix*    _Matrix::Exponentiate (void) {
         }
         
         _Matrix *result = new _Matrix(hDim, vDim , is_polynomial(), !is_polynomial()),
-        temp    (*this);
+                temp    (*this);
         
         // put ones on the diagonal
         
@@ -4421,22 +4429,65 @@ _Matrix*    _Matrix::Exponentiate (void) {
             result->Transpose();
         }
         
+       
+        _Matrix stash_mx (*result);
         
         for (long s = 0; s<power2; s++) {
 #ifndef _OPENMP
             squarings_count++;
 #endif
+           /* for (i = 0; i < hDim; i++) {
+                if ((*result)(i,i) > 1.) {
+                    printf ("\n%ld\n", s);
+                    ObjectToConsole(result);
+                    NLToConsole();
+                    ObjectToConsole(&stash_mx);
+                    NLToConsole();
+                    _Matrix cp = *this;
+                    cp.CheckIfSparseEnough(true);
+                    ObjectToConsole(&cp);
+                    abort();
+                }
+            }*/
+            
             if (result->Sqr(stash) < DBL_EPSILON * 1.e3) {
                 break;
             }
         }
         delete [] stash;
+        
+        if (check_transition) {
+            bool pass = true;
+            if (result->is_dense()) {
+                for (unsigned long r = 0L; r < result->lDim; r += result->vDim) {
+                    if (result->theData[r] > 1.) {
+                        pass = false;
+                        break;
+                    }
+                }
+            } else {
+                for (unsigned long r = 0L; r < result->hDim; r ++) {
+                    if ((*result)(r,r) > 1.) {
+                        pass = false;
+                        break;
+                    }
+                }
+            }
+            if (!pass) {
+                if (scale_to < 1.e100) {
+                    DeleteObject (result);
+                    return this->Exponentiate(scale_to * 100, true);
+                }
+                HandleApplicationError("Failed to compute a valid transition matrix; this is usually caused by ill-conditioned rate matrices (e.g. very large rate values)");
+            }
+        }
+        
         return result;
     }
     catch (const _String e) {
         HandleApplicationError(e);
-        
     }
+    
     return new _Matrix;
     
 }

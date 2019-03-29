@@ -774,6 +774,18 @@ lfunction alignments.StripGaps (sequence) {
 }
 
 /**
+ * @name alignments.Strip
+ * strip non-letters from start and end
+ * @param {String} sequence - the input sequence
+ * @returns {String} the sequence with all gaps removed
+ */
+
+lfunction alignments.Strip (sequence) {
+    sequence = sequence ^ {{"[^a-zA-Z]+$",""}};
+    return sequence ^ {{"^[^a-zA-Z]+",""}}
+}
+
+/**
  * @name alignments.alignment.MapCodonsToAA
  * Map in-frame nucleotides onto a protein alignment string
 

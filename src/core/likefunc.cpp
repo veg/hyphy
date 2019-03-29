@@ -45,6 +45,7 @@
 #include <time.h>
 #include <math.h>
 
+
 #include "likefunc.h"
 #include "calcnode.h"
 #include "site.h"
@@ -2150,8 +2151,8 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         if (result >= 0.) {
             if (result >= __DBL_EPSILON__ * 1.e4) {
                 char buffer [2048];
-                snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood (%g) at evaluation %ld, mode %ld, template %ld", likeFuncEvalCallCount-1, result, computeMode, templateKind);
-                HandleApplicationError (buffer);
+                snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood (%g) at evaluation %ld, mode %ld, template %ld. This is usually a consequence of 'infinite-like' parameter values", likeFuncEvalCallCount-1, result, computeMode, templateKind);
+                _TerminateAndDump(buffer, true);
             } else {
                 result = 0.;
             }
@@ -4686,7 +4687,7 @@ DecideOnDivideBy (this);
 }
 //_______________________________________________________________________________________
     
-void    _LikelihoodFunction::_TerminateAndDump(const _String &error) {
+void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_term) {
   
     FILE * out = doFileOpen ("/tmp/hyphy.dump", "w");
   
@@ -4701,8 +4702,8 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error) {
       fclose (out);
     }
 
-  
     HandleApplicationError (err & '\n' & error, true);
+
 }
 //_______________________________________________________________________________________
 
@@ -4829,10 +4830,10 @@ hyFloat _LikelihoodFunction::SetParametersAndCompute (long index, hyFloat value,
     if (index >= 0) {
         SetIthIndependent (index,value);
     } else {
-        if (value < 0.) {
-            HandleApplicationError ("Internal error in gradient bracket function\n");
+        /*if (value < 0.) {
+            _TerminateAndDump (_String ("Negative value for parameter ") & *GetIthIndependentName(index));
             return -INFINITY;
-        }
+        }*/
         _Matrix newValue (*baseLine);
         newValue.AplusBx (*direction, value);
         SetAllIndependent (&newValue);
@@ -6218,7 +6219,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
               hyFloat tol1 = fabs (X) * MIN (gPrecision, 1e-7) + kMachineEpsilon,
               tol2 = 2.*tol1;
 
-              if (fabs(X-XM) <= tol2) {
+              if (fabs(X-XM) <= tol2 && outcome > 0) {
                 break;
               }
 
