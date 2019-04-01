@@ -49,7 +49,7 @@ evaluateMethod() {
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
-        sleep 4s
+        sleep 8s
         killall HYPHYMP
 
         # Confirm that the expected output is there
@@ -70,7 +70,7 @@ evaluateMethod() {
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
-        sleep 4s
+        sleep 8s
         killall HYPHYMP
 
         # Confirm that the expected output is there
@@ -92,7 +92,7 @@ removeTempFiles() {
     if [ -f ./tests/hbltests/data/*.cache ]; then
         rm ./tests/hbltests/data/*.cache
     fi
-    sleep .5s
+    sleep 1s
 }
 
 #*******************************************************************************
