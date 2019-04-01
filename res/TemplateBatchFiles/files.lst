@@ -80,8 +80,7 @@
 "MCLK","Test for the presence of a global molecular clock on the tree using its root (the resulting clock tree is unrooted, but one of the root branches can be divided in such a way as to enforce the clock).","MolecularClock.bf";
 "LCLK","Test for the presence of a local molecular clock. Every subtree of the given tree is subjected to the clock constraint, while the remainder of the tree is free of the clock constraint.","LocalMolClock.bf";
 "RCLK","Test for the presence of a global molecular clock on the tree. The tree is rooted at every possible branch.","MolClockAllRoots.bf";
-"RLXMC","Infer dates of ancestral nodes for a sample of DATED sequences using a rate-distribution genetic algorithm to allow for multiple substituion rates. This is a frequentist alternative to the relaxed clock analyses implemented by Drummond and Rambaut in BEAST. [MPI Enabled]","GADatedClock.bf";
-"RLXMCP","Process a .samples file generated with GADatedClock","GADatedClockProcessor.bf";
+
 
 "","Reconstruct a phylogenetic tree using either distance or ML based heuristic methods.","!Phylogeny Reconstruction";
 "CLST","Apply clustering methods for phylogeny reconstruction (UPGMA,WPGMA,complete or minimal linkage) to nucleotide, protein and codon data, using MLE of pairwise distances with user-selectable models. These methods produce trees with global molecular clock.","ClusterAnalysis.bf";
@@ -96,13 +95,10 @@
 "","Perform codon-based positive selection tests.","!Positive Selection";
 
 "BST","Use the improved branch-site REL method of Yang and Nielsen (2005) to look for episodic selection in sequences.","YangNielsenBranchSite2005.bf";
-"BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf";
-"PSD","Test whether sites in two populations are evolving under different selective pressures.","CompareSelectivePressure.bf";
-"PSDI","Test whether sites in two populations are evolving under different selective pressures along internal tree branches.","CompareSelectivePressureIVL.bf";
+"BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf"; 
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 "PSM","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1. Multiple subsets of one data set with shared dN/dS.","MFPositiveSelection.bf";
 "SSD","Use approximate likelihoods at a site to test for subtree specific selective pressure.","SubtreeSelectionComparison.bf";
-"DST","Perform a random effects (D)irectional (E)volution on (P)rotein (S)equences test to identify sites which evolve directionally towards a given residue [MPI enabled].","DirectionalREL.bf";
 "MEDS","Test for Episodic Directional Selection on a set of labeled branches","MEDS.bf";
 
 "","Test for recombination.","!Recombination";
@@ -123,5 +119,3 @@
 "RRT","Use relative ratio test on 2 datasets and a variety of standard models","RelativeRatio.bf";
 "PRRTI","Given a list of files (and optinally genetic code tables), perform relative ratio tests on all possible pair of the data files.","PairwiseRelativeRatio.bf";
 
-"","Various tools for estimating the distribution of substitution rates.","!Substitution Rates";
-"SR","DNARates like site specific rate estimation. Other model parameters are inferred from the entire alignment.","SiteRates.bf";
