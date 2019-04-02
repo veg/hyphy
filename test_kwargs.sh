@@ -49,7 +49,7 @@ evaluateMethod() {
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
-        sleep 4s
+        sleep 8s
         killall HYPHYMP
 
         # Confirm that the expected output is there
@@ -70,7 +70,7 @@ evaluateMethod() {
         echo "      ***************************************************************************************************"
         echo "      calling: $hyphyCall"
         eval $hyphyCall > tempOutput.txt &
-        sleep 4s
+        sleep 8s
         killall HYPHYMP
 
         # Confirm that the expected output is there
@@ -92,7 +92,7 @@ removeTempFiles() {
     if [ -f ./tests/hbltests/data/*.cache ]; then
         rm ./tests/hbltests/data/*.cache
     fi
-    sleep .5s
+    sleep 1s
 }
 
 #*******************************************************************************
@@ -103,6 +103,17 @@ removeTempFiles() {
 declare -a absrelArgs=( "${universalArgs[@]}"
                         )                     
 evaluateMethod "absrel" "Obtaining branch lengths" "${absrelArgs[@]}"
+
+# GM
+declare -a bgmArgs=( "${universalArgs[@]}"
+                        "--steps 200000"
+                        "--burn-in 20000"
+                        "--burn-in 0"
+                        "--samples 0"
+                        "--max-parents 3"
+                        "--min-subs 5"
+                        )                     
+evaluateMethod "bgm" "Performing initial model fit" "${bgmArgs[@]}"
 
 # BUSTED
 declare -a bustedArgs=( "${universalArgs[@]}"
