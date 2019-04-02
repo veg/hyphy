@@ -1152,14 +1152,14 @@ hyFloat   Scfg::ComputeOutsideProb(long from, long to, long stringIndex, long nt
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-_Matrix*     Scfg::Optimize (void)  /* created by AFYP, 2006-06-20 */ {
+_Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFYP, 2006-06-20 */ {
   // SLKP 20180820 : TODO check to see if this is functional
   
   const static _String kSCFGOptimizationMethod  ("SCFG_OPTIMIZATION_METHOD");
   
   if (hy_env::EnvVariableGetNumber(kSCFGOptimizationMethod, 0.0)) {
     // fall back to default optimization; do not use EM
-    return _LikelihoodFunction::Optimize();
+    return _LikelihoodFunction::Optimize(options);
   }
  
     //char    buf [256];

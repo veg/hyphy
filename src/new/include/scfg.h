@@ -146,7 +146,7 @@ public:
 
     virtual hyFloat          Compute                 (void);
     // compute the derivation probability of the current corpus
-    virtual _Matrix*            Optimize                ();
+    virtual _Matrix*            Optimize                (_AssociativeList const* options = nil);
     // train the grammar using current corpus
 
     virtual void                AddSCFGInfo             (_AssociativeList*);

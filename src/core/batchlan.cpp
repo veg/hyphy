@@ -3074,9 +3074,6 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         SetStatusLine ("Simulating Data");
         { // lf must be deleted before the referenced datafilters
             _LikelihoodFunction lf (filter_specification, nil);
-            if (terminate_execution) {
-                return;
-            }
             lf.Simulate (*sim_dataset, exclusions, category_values, category_names, root_states, do_internals?(main_file?&spool_file:&kEmptyString):nil);
             SetStatusLine ("Idle");
         }

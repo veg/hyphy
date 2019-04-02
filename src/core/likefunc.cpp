@@ -81,10 +81,9 @@ using namespace hy_global;
 
 
 
-void    DecideOnDivideBy (_LikelihoodFunction*);
+void         BenchmarkThreads (_LikelihoodFunction*);
 
-long         siteEvalCount  =   0,
-             divideBy      =   10000000;
+long         siteEvalCount  =   0;
 
 
 
@@ -135,24 +134,23 @@ long      likeFuncEvalCallCount = 0L,
 
 // some string constants
 
-_String
-
-globalStartingPoint             ("GLOBAL_STARTING_POINT"),
-                                randomStartingPerturbations     ("RANDOM_STARTING_PERTURBATIONS"),
-                                optimizationPrecision           ("OPTIMIZATION_PRECISION"),
-                                startingPrecision               ("STARTING_PRECISION"),
-                                optimizationMethod              ("OPTIMIZATION_METHOD"),
-                                useLastResults                  ("USE_LAST_RESULTS"),
-                                allowBoundary                   ("ALLOW_BOUNDARY"),
-                                bracketingPersistence           ("BRACKETING_PERSISTENCE"),
-                                intermediatePrecision           ("INTERMEDIATE_PRECISION"),
+_String  const
+                                kOptimizationHardLimit          ("OPTIMIZATION_TIME_HARD_LIMIT"),
+                                kMaximumIterationsPerVariable   ("MAXIMUM_ITERATIONS_PER_VARIABLE"),
+                                kUseLastResults                 ("USE_LAST_RESULTS"),
+                                // the hard limit, in seconds, for the an optimizer to run
+                                kGlobalStartingPoint            ("GLOBAL_STARTING_POINT"),
+                                kRandomStartingPerturbations    ("RANDOM_STARTING_PERTURBATIONS"),
+                                kStartingPrecision              ("STARTING_PRECISION"),
+                                kAllowBoundary                  ("ALLOW_BOUNDARY"),
+                                kBracketingPersistence          ("BRACKETING_PERSISTENCE"),
+                                kIntermediatePrecision          ("INTERMEDIATE_PRECISION"),
                                 keepOptimalOrder                ("KEEP_OPTIMAL_ORDER"),
                                 optimizeSummationOrder          ("OPTIMIZE_SUMMATION_ORDER"),
                                 optimizePartitionSize           ("OPTIMIZE_SUMMATION_ORDER_PARTITION"),
-                                maximumIterationsPerVariable    ("MAXIMUM_ITERATIONS_PER_VARIABLE"),
                                 likefuncOutput                  ("LIKELIHOOD_FUNCTION_OUTPUT"),
                                 categorySimulationMethod        ("CATEGORY_SIMULATION_METHOD"),
-                                useInitialDistanceGuess         ("USE_DISTANCES"),
+                                kUseInitialDistanceGuess        ("USE_DISTANCES"),
                                 covariancePrecision             ("COVARIANCE_PRECISION"),
                                 cacheSubtrees                   ("CACHE_SUBTREES"),
                                 likeFuncCountVar                ("LF_CALL_COUNT"),
@@ -165,7 +163,7 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 allowSequenceMismatch           ("ALLOW_SEQUENCE_MISMATCH"),
                                 shortMPIReturn                  ("SHORT_MPI_RETURN"),
                                 mpiPrefixCommand                ("MPI_PREFIX_COMMAND"),
-                                skipConjugateGradient           ("SKIP_CONJUGATE_GRADIENT"),
+                                kSkipConjugateGradient          ("SKIP_CONJUGATE_GRADIENT"),
                                 useIntervalMapping              ("USE_INTERVAL_MAPPING"),
                                 intervalMappingMethod           ("INTERVAL_MAPPING_METHOD"),
                                 useAdaptiveVariableStep         ("USE_ADAPTIVE_VARIABLE_STEP"),
@@ -175,7 +173,7 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 autoParalellizeLF               ("AUTO_PARALLELIZE_OPTIMIZE"),
                                 lfExtraLFExportCode             ("LF_NEXUS_EXPORT_EXTRA"),
                                 optimizationStringTemplate      ("OPTIMIZATION_PROGRESS_TEMPLATE"),
-                                produceOptimizationLog          ("PRODUCE_OPTIMIZATION_LOG"),
+                                kMaximumIterations              ("MAXIMUM_OPTIMIZATION_ITERATIONS"),
                                 // use
                                 // $1 for status
                                 // $2 for log L
@@ -187,11 +185,12 @@ globalStartingPoint             ("GLOBAL_STARTING_POINT"),
                                 optimizationStringQuantum       ("OPTIMIZATION_PROGRESS_QUANTUM"),
                                 categoryMatrixScalers           (".site_scalers"),
                                 categoryLogMultiplier           (".log_scale_multiplier"),
-                                optimizationHardLimit           ("OPTIMIZATION_TIME_HARD_LIMIT"),
                                 minimumSitesForAutoParallelize  ("MINIMUM_SITES_FOR_AUTO_PARALLELIZE"),
                                 userSuppliedVariableGrouping    ("PARAMETER_GROUPING"),
-                                addLFSmoothing                  ("LF_SMOOTHING_SCALER"),
-                                reduceLFSmoothing               ("LF_SMOOTHING_REDUCTION");
+                                kAddLFSmoothing                 ("LF_SMOOTHING_SCALER"),
+                                kOptimizationPrecision          ("OPTIMIZATION_PRECISION"),
+                                kOptimizationMethod             ("OPTIMIZATION_METHOD"),
+                                kReduceLFSmoothing              ("LF_SMOOTHING_REDUCTION");
 
 
 
@@ -223,8 +222,7 @@ long        bracketFCount   = 0,
             oneDFCount       = 0,
             oneDCount         = 0,
             categID       = 0,
-            offsetCounter   = 1,
-            go2Bound = 1;
+            offsetCounter   = 1;
 
 extern      _List
 dataSetList,
@@ -243,8 +241,7 @@ hyFloat  myLog (hyFloat);
 //__________________________________________________________________________________
 
 
-void         DecideOnDivideBy (_LikelihoodFunction* lf)
-{
+void         BenchmarkThreads (_LikelihoodFunction* lf) {
     long         alterIndex = 0;
 
     if      (lf->HasComputingTemplate()) {
@@ -291,21 +288,16 @@ hyFloat            tdiff = timer.TimeSinceStart();
             }
         }
         lf->SetThreadCount (bestTC);
-        divideBy              = MAX(1.0,0.5 / minDiff);
         ReportWarning       (_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
-    } else
+    } 
 #endif
-        divideBy              = MAX(1.0, 0.5 / tdiff);
-    ReportWarning       (_String("Set GUI update interval to every ") & divideBy & "-th LF evaluation.");
-
-
 }
 
 
 #if defined  __UNIX__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
 
-void        UpdateOptimizationStatus (hyFloat, long, char, bool, _String * fileName = nil);
-
+void        UpdateOptimizationStatus    (hyFloat, long, char, bool, _String * fileName = nil);
+    
 //_______________________________________________________________________________________
 
 _CustomFunction::_CustomFunction (_String const & arg, _VariableContainer const * context ) {
@@ -329,7 +321,87 @@ _CustomFunction::_CustomFunction (_String const & arg, _VariableContainer const 
         throw (_String ("Error while parsing ") & arg.Enquote() & " in CustomFunction " & error);
     }
 }
+    
+//__________________________________________________________________________________
 
+class  _OptimiztionProgress {
+private:
+    hyFloat bigLastMax,
+            sigma,
+            s,
+            sX,
+            sXX,
+            sY,
+            sYY,
+            sXY,
+            nPercentDone,
+            percentDone;
+    
+    long    loopCounter;
+public:
+    _OptimiztionProgress (void) {
+        loopCounter = 0L;
+        bigLastMax  = 0.;
+        sigma = 0.;
+        s = 0.;
+        sX = 0.;
+        sXX = 0.;
+        sY = 0.;
+        sYY = 0.;
+        sXY = 0.;
+        nPercentDone = 0.;
+        percentDone = 0.;
+    }
+    
+    hyFloat PushValue (hyFloat max) {
+        loopCounter++;
+        if (loopCounter == 1L) {
+            bigLastMax = max;
+            return get();
+        }
+        nPercentDone = max - bigLastMax;
+        if (nPercentDone == 0.) {
+            nPercentDone = kMachineEpsilon;
+        }
+        sigma = 2.0/nPercentDone;
+        s+= sigma;
+        sX+= sigma*(loopCounter);
+        sXX += sigma*(loopCounter)*(loopCounter);
+        sY+=nPercentDone*sigma;
+        sXY+=(loopCounter)*nPercentDone*sigma;
+
+        if (loopCounter>1.0) {
+            nPercentDone = (sX*sY-s*sXY);
+            if (nPercentDone != 0.0) {
+                nPercentDone = (sXX*sY-sX*sXY)/nPercentDone;
+            }
+            if (nPercentDone != 0.0) {
+                nPercentDone = loopCounter/nPercentDone;
+            }
+            nPercentDone -= .05;
+            if ((nPercentDone>0.0)&&(nPercentDone<.9999)) {
+                nPercentDone = pow (nPercentDone,4)*100.0;
+                if (nPercentDone>percentDone) {
+                    percentDone = nPercentDone;
+                } else {
+                    if (percentDone<50.0) {
+                        percentDone+=1.0;
+                    }
+                }
+            } else if (percentDone<50.0) {
+                percentDone+=1.0;
+            }
+        }
+        bigLastMax = max;
+        return get();
+    }
+    
+    hyFloat  get (void) const {
+        return percentDone;
+    }
+};
+    
+    
 //__________________________________________________________________________________
 
 void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool optimization, _String const* fileName) {
@@ -2705,7 +2777,7 @@ inline hyFloat sqr (hyFloat x)
 }
 
 
-    //_______________________________________________________________________________________
+//_______________________________________________________________________________________
   void        _LikelihoodFunction::GetInitialValues (void) const {
       // compute pairwise distances for block index
     for (long partition_index=0UL; partition_index<theTrees.lLength; partition_index++) {
@@ -2951,8 +3023,7 @@ inline hyFloat sqr (hyFloat x)
         DeleteObject(trvrEst);
         DeleteObject(jcEst);
       } else {
-        hyFloat      initValue = 0.1;
-        checkParameter  (globalStartingPoint, initValue, 0.1);
+        hyFloat      initValue = hy_env::EnvVariableGetNumber(kGlobalStartingPoint, 0.1);
 
         _SimpleList     indeps;
         _AVLList        iavl (&indeps);
@@ -3617,15 +3688,119 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
   }
 }
 
+//_______________________________________________________________________________________________
+
+void _LikelihoodFunction::SetupParameterMapping (void) {
+    parameterTransformationFunction.Clear();
+    parameterValuesAndRanges = new _Matrix (indexInd.lLength, 4, false, true);
+    smoothingPenalty   = hy_env::EnvVariableGetNumber(kAddLFSmoothing, 0.0);
+    smoothingReduction = hy_env::EnvVariableGetNumber(kReduceLFSmoothing, 0.8);
+    if (smoothingPenalty < 0.0) {
+        smoothingPenalty = 0.0;
+    }
+    if (smoothingReduction <= 0.0 || smoothingReduction >= 1.0) {
+        smoothingReduction = 0.8;
+    }
+    
+    for (unsigned long pIndex = 0; pIndex < indexInd.lLength; pIndex++) {
+        _Variable* cv        = GetIthIndependentVar(pIndex);
+        hyFloat thisLB    = cv->GetLowerBound(),
+        thisUB    = cv->GetUpperBound(),
+        thisValue = cv->Compute()->Value();
+        
+        //parameterTransformationFunction << _hyphyIntervalMapID;
+        if (thisLB >= 0.0 && thisUB <= 1.0) {
+            parameterTransformationFunction << _hyphyIntervalMapID;
+        } else if (thisLB >=0.0) {
+            parameterTransformationFunction << _hyphyIntervalMapSqueeze;
+        } else {
+            parameterTransformationFunction << _hyphyIntervalMapExpit;
+        }
+        
+        
+        parameterValuesAndRanges->Store(pIndex,0,thisValue);
+        parameterValuesAndRanges->Store(pIndex,1,mapParameterToInverval(thisValue,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,2,mapParameterToInverval(thisLB,parameterTransformationFunction.Element(-1),false));
+        parameterValuesAndRanges->Store(pIndex,3,mapParameterToInverval(thisUB,parameterTransformationFunction.Element(-1),false));
+    }
+    
+}
+
+//_______________________________________________________________________________________________
+
+void _LikelihoodFunction::CleanupParameterMapping (void)
+{
+    smoothingPenalty = 0.0;
+    smoothingTerm    = 0.0;
+    DeleteObject (parameterValuesAndRanges);
+    parameterValuesAndRanges = nil;
+    parameterTransformationFunction.Clear();
+}
+
 //_______________________________________________________________________________________
 
-_Matrix*        _LikelihoodFunction::Optimize () {
+_Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options) {
+    // various optimization-only env variables
+    
+    
+    static const _String
+    
+        kProduceOptimizationLog                        ("PRODUCE_OPTIMIZATION_LOG"),
+        kMethodCoordinate                              ("coordinate-wise"),
+        kMethodNedlerMead                              ("nedler-mead"),
+        kMethodHybrid                                  ("hybrid"),
+        kMethodGradientDescent                         ("gradient-descent");
+
+        // optimization setting to produce a detailed log of optimization runs
+
+    auto   get_optimization_setting = [options] (const _String& arg, const hyFloat def_value) -> hyFloat {
+        if (options) {
+            try {
+                return options->GetNumberByKey(arg);
+            } catch (const _String err) {
+            }
+        }
+        return hy_env::EnvVariableGetNumber(arg, def_value);
+    };
+
+    auto   get_optimization_setting_string = [options] (const _String& arg) -> _FString* {
+        if (options) {
+            _FString * res = (_FString*)options->GetByKey(arg, STRING);
+            if (res) {
+                return res;
+            }
+        }
+        return (_FString *)hy_env::EnvVariableGet(arg, STRING);
+    };
+    
+    
+    enum   optimization_mode_enum {
+        kOptimizationCoordinateWise,
+        kOptimizationNedlerMead,
+        kOptimizationGradientDescent,
+        kOptimizationHybrid
+    } optimization_mode = kOptimizationHybrid;
+    
+    auto get_opt_method_string = [&] () -> const _String {
+        if (optimization_mode == kOptimizationCoordinateWise)
+            return kMethodCoordinate;
+        if (optimization_mode == kOptimizationHybrid)
+            return kMethodHybrid;
+        if (optimization_mode == kOptimizationGradientDescent)
+            return kMethodGradientDescent;
+        if (optimization_mode == kOptimizationNedlerMead)
+            return kMethodNedlerMead;
+    };
 
     if (lockedLFID != -1) {
         HandleApplicationError ("Optimize() could not be executed, because another optimization is already in progress.");
         return new _Matrix (1,1,false,true);
     }
 
+    /*if (options) {
+        ObjectToConsole((_AssociativeList*)options);
+    }*/
+    
     char           buffer [1024];
 
     RescanAllVariables ();
@@ -3635,8 +3810,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
       optimizatonHistory = nil;
     }
 
-    bool         keepOptimizationLog;
-    checkParameter(produceOptimizationLog, keepOptimizationLog, false);
+    bool         keepOptimizationLog = ! CheckEqual (get_optimization_setting (kProduceOptimizationLog, 0.0), 0);
 
     if (keepOptimizationLog) {
       optimizatonHistory = new _AssociativeList;
@@ -3648,12 +3822,8 @@ _Matrix*        _LikelihoodFunction::Optimize () {
       < (_associative_list_key_value){"Phases", new _AssociativeList};
       /*
        0 - N-1 indices
-
-
        */
     }
-
-
 
 
     if (indexInd.empty()) {
@@ -3680,19 +3850,14 @@ _Matrix*        _LikelihoodFunction::Optimize () {
     }
 
 
-
-    hyFloat  intermediateP,
-                wobble              = 0.,
-                maxSoFar           = -INFINITY,
+    hyFloat     intermediateP,
+                maxSoFar            = -INFINITY,
                 bestVal,
                 lastMax,
-                currentPrecision   = 0.1,
-                keepStartingPoint,
+                currentPrecision    = 0.1,
                 bP,
-                optMethodP,
-                percentDone      = 0.0,
-                bigLastMax;
-
+                percentDone         = 0.0;
+    
     long        fnDim               = MaximumDimension(),
                 evalsIn             = likeFuncEvalCallCount,
                 exponentiationsIn   = matrix_exp_count;
@@ -3700,8 +3865,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
 
     TimeDifference timer;
 
-    hyFloat              hardLimitOnOptimizationValue;
-    checkParameter          (optimizationHardLimit, hardLimitOnOptimizationValue, (hyFloat) INFINITY);
+    hyFloat                 hardLimitOnOptimizationValue = hy_env::EnvVariableGetNumber(kOptimizationHardLimit, (hyFloat) INFINITY);
 
     hardLimitOnOptimizationValue = MAX (hardLimitOnOptimizationValue, 0.0);
     if (hardLimitOnOptimizationValue != INFINITY) {
@@ -3771,7 +3935,7 @@ _Matrix*        _LikelihoodFunction::Optimize () {
     if (hy_mpi_node_rank == 0) {
 #endif
 
-DecideOnDivideBy (this);
+    BenchmarkThreads (this);
 
 
 #ifdef __HYPHYMPI__
@@ -3779,12 +3943,11 @@ DecideOnDivideBy (this);
 #endif
 
 
-    int            skipCG = 0;
-    checkParameter (skipConjugateGradient,skipCG,0);
-    checkParameter (randomStartingPerturbations,wobble,0.0);
-    checkParameter (useLastResults,keepStartingPoint,0.0);
-    checkParameter (allowBoundary,go2Bound,1L);
-    checkParameter (useInitialDistanceGuess,precision,1.);
+    bool            skipCG                  = ! CheckEqual (get_optimization_setting (kSkipConjugateGradient, 0.0), 0.0),
+                    keepStartingPoint       = ! CheckEqual (get_optimization_setting (kUseLastResults, 0.0), 0.0),
+                    go2Bound                = ! CheckEqual (get_optimization_setting (kAllowBoundary, 1.0), 0.0);
+                    //use_distances           = ! CheckEqual (get_optimization_setting (kAllowBoundary, 1.0), 0.0);
+
     
     _FString * custom_convergence_callback_name = (_FString *)hy_env::EnvVariableGet(hy_env::lf_convergence_criterion, STRING);
     long custom_convergence_callback = custom_convergence_callback_name ?  FindBFFunctionName(*custom_convergence_callback_name->get_str()) : -1L;
@@ -3795,33 +3958,34 @@ DecideOnDivideBy (this);
          }
     }
     
-    if (CheckEqual (keepStartingPoint,1.0)) {
-      for (unsigned long i=0UL; i<indexInd.lLength; i++) {
-        _Variable *iv = GetIthIndependentVar (i);
-        if (iv->HasBeenInitialized()) {
-          iv->MarkModified();
-        }
-      }
+    if (keepStartingPoint) {
+        indexInd.Each ([this] (long v, unsigned long i) -> void {
+            _Variable *iv = GetIthIndependentVar (i);
+            if (iv->HasBeenInitialized()) {
+                iv->MarkModified();
+            }
+        });
     }
-
-    if (!CheckEqual(precision, 0.0)) {
+    
+    if (! CheckEqual (get_optimization_setting (kUseInitialDistanceGuess, 1.0), 0.0)) {
         GetInitialValues();
     }
 
-    checkParameter  (globalStartingPoint,precision,0.1);
-    _Constant     c (precision);
+    
 
-    if (fabs(keepStartingPoint) < 0.5) {
-        if (CheckEqual (wobble, 0.0)) {
+    if (!keepStartingPoint) {
+        hyFloat  global_starting_point = get_optimization_setting (kGlobalStartingPoint, 0.1);
+        
+        if (CheckEqual (get_optimization_setting (kRandomStartingPerturbations, 0.0), 0.0)) {
             for (unsigned long i=0UL; i<indexInd.lLength; i++) {
                 _Variable *iv = GetIthIndependentVar (i);
                 if (iv->IsGlobal()) {
                     if (iv->Value() < 1.e-10) {
-                        iv->SetValue(&c);
+                        iv->SetValue(global_starting_point);
                     }
                 } else {
                     if (!iv->HasChanged()) {
-                        iv->SetValue(&c);
+                        iv->SetValue(global_starting_point);
                     }
                 }
             }
@@ -3829,9 +3993,7 @@ DecideOnDivideBy (this);
             for (unsigned long i=0UL; i<indexInd.lLength; i++) {
                 _Variable *iv = GetIthIndependentVar (i);
                 if (!iv->HasChanged()) {
-                    hyFloat newV = precision*(1.0+genrand_real1());
-                    c.SetValue(newV);
-                    iv->SetValue(&c);
+                    iv->SetValue(global_starting_point*(1.0+genrand_real1()));
                 }
             }
         }
@@ -3843,21 +4005,59 @@ DecideOnDivideBy (this);
 
     CheckDependentBounds();
 
-    checkParameter (startingPrecision,currentPrecision,0.1);
-    checkParameter (optimizationMethod,optMethodP,4.0);
-    checkParameter (optimizationPrecision,precision,0.001);
-    checkParameter (maximumIterationsPerVariable,maxItersPerVar,5000.);
-
-    ReportWarning  (_String("Optimization settings:\n\t") & optimizationMethod & " = " & optMethodP &
-                    "\n\t" & optimizationPrecision & " = " & precision &
-                    "\n\t" & maximumIterationsPerVariable & " = " & maxItersPerVar
-                    &"\n\nInitial parameter values\n");
-
-    for (unsigned long i = 0UL; i < indexInd.lLength; i++) {
-        ReportWarning (*LocateVar (indexInd.lData[i])->GetName() & " = " & GetIthIndependent (i));
+    currentPrecision    = get_optimization_setting (kStartingPrecision, 0.1);
+    precision           = get_optimization_setting (kOptimizationPrecision, 0.001);
+    maxItersPerVar      = get_optimization_setting (kMaximumIterationsPerVariable, 5000.);
+    
+    
+    
+    _FString * method_string = get_optimization_setting_string (kOptimizationMethod);
+    
+    //optimization_mode
+    if (method_string) {
+        _StringBuffer const * sm  = &method_string->get_str();
+        if (*sm == kMethodCoordinate) {
+            optimization_mode = kOptimizationCoordinateWise;
+        } else if (*sm == kMethodNedlerMead) {
+            optimization_mode = kOptimizationNedlerMead;
+        } else if (*sm == kMethodHybrid) {
+            optimization_mode = kOptimizationHybrid;
+        } else if (*sm == kMethodGradientDescent) {
+            optimization_mode = kOptimizationGradientDescent;
+        }
+    } else {
+        switch ((long) get_optimization_setting (kOptimizationMethod, -1.)) {
+            case 0:
+                optimization_mode = kOptimizationCoordinateWise;
+                break;
+            case 3:
+                optimization_mode = kOptimizationNedlerMead;
+                break;
+            case 4:
+                optimization_mode = kOptimizationHybrid;
+                break;
+            case 7:
+                optimization_mode = kOptimizationGradientDescent;
+                break;
+        }
+        
     }
+    
+    _OptimiztionProgress progress_tracker;
+    //checkParameter (optimizationMethod,optMethodP,4.0);
 
-    maxItersPerVar *= indexInd.lLength;
+    
+    ReportWarning  (_String("Optimization settings:\n\t") & kOptimizationMethod & " = " & get_opt_method_string () &
+                    "\n\t" & kOptimizationPrecision & " = " & precision &
+                    "\n\t" & kMaximumIterationsPerVariable & " = " & maxItersPerVar
+                    &"\n\nInitial parameter values\n");
+    
+    
+    indexInd.Each([this] (long index, unsigned long idx) -> void {
+        ReportWarning (*this->GetIthIndependentName(idx) & " = " & this->GetIthIndependent(idx));
+    });
+    
+    maxItersPerVar *= indexInd.countitems();
 
 #if !defined __UNIX__ || defined __HEADLESS__
 #ifdef __HYPHYMPI__
@@ -3869,40 +4069,35 @@ DecideOnDivideBy (this);
         }
 #endif
 
-    int optMethod = optMethodP;
 
     SetupParameterMapping   ();
     _Matrix variableValues;
     GetAllIndependent (variableValues);
 
 
-    if (optMethod == 4L && indexInd.lLength == 1) {
-        optMethod = 0L;
+    if (optimization_mode == kOptimizationHybrid && indexInd.countitems() == 1) {
+        optimization_mode = kOptimizationCoordinateWise;
     }
 
-    if (optMethod != 0L) {
-        checkParameter (bracketingPersistence,bP,2.5);
+    
+    if (optimization_mode != kOptimizationCoordinateWise) {
+        bP = get_optimization_setting (kBracketingPersistence, 2.5);
     } else {
-        checkParameter (bracketingPersistence,bP,3.0);
+        bP = get_optimization_setting (kBracketingPersistence, 2.5);
     }
 
-    if (optMethod == 4L || optMethod == 6L || optMethod == 7L) { // gradient descent
+    if (optimization_mode == kOptimizationHybrid || optimization_mode == kOptimizationGradientDescent) { // gradient descent
         _Matrix bestSoFar;
 
         GetAllIndependent (bestSoFar);
-
-        //if (fnDim<21) {
-            checkParameter (intermediatePrecision,intermediateP,.1);
-        //} else {
-        //    checkParameter (intermediatePrecision,intermediateP,.1);
-        //}
-
+        intermediateP = get_optimization_setting (kIntermediatePrecision, 0.1);
+        
         if (verbosity_level>20) {
             snprintf (buffer, sizeof(buffer),"\nGradient Precision %g  Opt Precision = %g", intermediateP, precision);
             BufferToConsole (buffer);
         }
 
-        if (optMethod!=7) {
+        if (optimization_mode != kOptimizationGradientDescent) {
             //ConjugateGradientDescent (0.5, bestSoFar, true, 10);
             if (gradientBlocks.nonempty()) {
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
@@ -3932,108 +4127,15 @@ DecideOnDivideBy (this);
 #endif
 #endif
         maxSoFar = Compute();
-        if (optMethod != 7) {
-            optMethod = optMethod!=6?0:5;
+        if (optimization_mode != kOptimizationGradientDescent) {
+            optimization_mode = kOptimizationCoordinateWise;
         }
-        currentPrecision = optMethod==7?sqrt(precision):intermediateP;
+        currentPrecision = kOptimizationGradientDescent==7?sqrt(precision):intermediateP;
         percentDone = 10.0;
     }
 
-    if (optMethod==5) { // randomized bracketing method
-        _SimpleList passOrder;
-        _Matrix optimizationStats (5, indexInd.lLength, false,true);
 
-        // initialize the statsMatrix
-
-        for (unsigned long var_id=0; var_id<indexInd.lLength; var_id++) {
-            optimizationStats.Store(0,var_id,0); // number of passes
-            optimizationStats.Store(1,var_id,0); // average X change
-            optimizationStats.Store(2,var_id,0); // average Y change
-            optimizationStats.Store(3,var_id,currentPrecision); // bracketing precision
-            optimizationStats.Store(4,var_id,1); // probability of optimizing over this leaf
-        }
-
-        long    totalPasses, passesDone = 0, lastPassed = -1, counterR = 0;
-        totalPasses = indexInd.lLength*bP;
-        while (passesDone<totalPasses) {
-            counterR++;
-            RandomizeList (passOrder,indexInd.lLength);
-            hyFloat passThresh = genrand_real2();
-            if (passesDone>=indexInd.lLength) {
-                passThresh/=exp((hyFloat)indexInd.lLength*log((hyFloat)(passesDone+1)/(hyFloat)indexInd.lLength));
-            }
-            for (unsigned long j=0UL; j<indexInd.lLength; j++) {
-                if (optimizationStats(4,passOrder[j])>=passThresh) {
-                    long jj = passOrder[j];
-                    if (passOrder[j]==lastPassed) {
-                        continue;
-                    }
-                    hyFloat oldXValue = GetIthIndependent(passOrder[j]),
-                               oldYValue = passesDone?lastMax:Compute();
-                    if (!passesDone) {
-                        maxSoFar = oldYValue;
-                    }
-                    bestVal = oldXValue;
-                    lastMax = maxSoFar;
-                    LocateTheBump (jj,optimizationStats(3,jj), maxSoFar, bestVal);
-#ifdef __HYPHYMPI__
-                    if (hy_mpi_node_rank == 0)
-#endif
-                        if (terminate_execution) {
-                            CleanUpOptimize();
-                            return new _Matrix (1,1,false,true);
-                        }
-                    if (verbosity_level>1) {
-                        _String *s = (_String*)LocateVar(indexInd(passOrder[j]))->GetName();
-                        BufferToConsole ("\nAt ");
-                        StringToConsole (*s);
-                        snprintf (buffer, sizeof(buffer)," with bracketing precision %g current Max = %g. Prior value = %g, current value = %g, %ld", optimizationStats(3,jj), maxSoFar, oldXValue, GetIthIndependent(passOrder[j]), counterR);
-                        BufferToConsole (buffer);
-                    }
-                    passesDone++;
-                    hyFloat currentThresh = optimizationStats(4,jj);
-                    if (optimizationStats(1,jj)&&(optimizationStats(1,jj)<fabs(oldXValue-GetIthIndependent(jj)))) {
-                        currentThresh*=2;
-                    }
-                    if (optimizationStats(2,passOrder[j])&&(optimizationStats(2,passOrder[j])<fabs(oldYValue-maxSoFar))) {
-                        currentThresh*=2;
-                    }
-                    if (optimizationStats(0,jj)>totalPasses/passesDone) {
-                        currentThresh/=indexInd.lLength;
-                    }
-                    currentThresh/=indexInd.lLength;
-                    if (currentThresh>.5) {
-                        currentThresh = .5;
-                    }
-                    optimizationStats.Store(0,jj,optimizationStats(0,jj)+1);
-                    optimizationStats.Store(1,jj,(optimizationStats(1,jj)*(optimizationStats(0,jj)-1)+fabs(oldXValue-GetIthIndependent(jj)))/optimizationStats(0,jj));
-                    optimizationStats.Store(2,jj,(optimizationStats(1,jj)*(optimizationStats(0,jj)-1)+fabs(oldYValue-maxSoFar))/optimizationStats(0,jj));
-                    optimizationStats.Store(4,jj,currentThresh);
-                    optimizationStats.Store(3,jj,currentPrecision/exp(log((hyFloat)10.0)*optimizationStats(0,jj)));
-                    lastPassed = jj;
-
-                    break;
-                }
-
-            }
-        }
-
-        //control pass
-        RandomizeList (passOrder,indexInd.lLength);
-        for (unsigned long j=0UL; j<indexInd.lLength; j++) {
-            bestVal = GetIthIndependent(j);
-            lastMax = maxSoFar;
-            LocateTheBump (j,precision, maxSoFar, bestVal);
-            if (verbosity_level>1) {
-                snprintf (buffer, sizeof(buffer),"\nControl Pass At Var#%ld with precision %g current Max = %g. Prior value = %g, current value = %g", j, currentPrecision, maxSoFar, bestVal, GetIthIndependent(j));
-                BufferToConsole (buffer);
-            }
-        }
-
-
-    }
-
-    if (optMethod == 0) {
+    if (optimization_mode == kOptimizationCoordinateWise) {
         bool      forward = false;
 
         hyFloat averageChange = 0,
@@ -4041,21 +4143,13 @@ DecideOnDivideBy (this);
                    oldAverage      = -1.0,
                    stdFactor   = 10,
                    loopCounter    = 0.0,
-                   sY              = 0.0,
-                   sXY           = 0.0,
-                   s           = 0.0,
-                   sX           = 0.0,
-                   sXX            = 0.0,
-                   nPercentDone,
-                   sigma,
                    lastMaxValue,
                    averageChange2 = 0.0,
                    //currentPrecision2 = precision,
                    doShuffle,
                    useAdaptiveStep = 0.0;
 
-        long       stayPut      = 0,
-                   inCount       = 0,
+        long       inCount       = 0,
                    termFactor,
                    lfCount         = likeFuncEvalCallCount;
 
@@ -4223,7 +4317,6 @@ DecideOnDivideBy (this);
 
             averageChange  = 1e-25;
 
-            bigLastMax = maxSoFar;
 
             if (verbosity_level>1) {
                 snprintf (buffer, sizeof(buffer),"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
@@ -4428,12 +4521,12 @@ DecideOnDivideBy (this);
 
                 if (useAdaptiveStep>0.5) {
                     if (convergenceMode < 2) {
-                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, precisionStep);
+                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, go2Bound, precisionStep);
                     } else {
-                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, convergenceMode == 2? precisionStep*0.25: precisionStep*0.0625);
+                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, go2Bound, convergenceMode == 2? precisionStep*0.25: precisionStep*0.0625);
                     }
                 } else {
-                    LocateTheBump (current_index,brackStep, maxSoFar, bestVal);
+                    LocateTheBump (current_index,brackStep, maxSoFar, bestVal, go2Bound);
                 }
 
                 hyFloat  cj = GetIthIndependent(current_index),
@@ -4507,69 +4600,19 @@ DecideOnDivideBy (this);
             }
 
 
-#if !defined __UNIX__ && ! defined __HEADLESS__
-#ifdef __HYPHYMPI__
-            if (hy_mpi_node_rank == 0)
-#endif
-                if (feedbackTreePanel)
-                    if (windowObjectRefs.Find ((long)feedbackTreePanel) >= 0) {
-                        feedbackTreePanel->BuildTree (true);
-                        feedbackTreePanel->RenderTree();
-                    } else {
-                        feedbackTreePanel = nil;
-                    }
-#endif
 
             forward = true;
-            loopCounter+=1;
-            nPercentDone = lastMax-bigLastMax;
-            if (nPercentDone == 0) {
-                nPercentDone = kMachineEpsilon;
+            percentDone = progress_tracker.PushValue (maxSoFar);
+            
+            if (verbosity_level==1) {
+                UpdateOptimizationStatus (maxSoFar,percentDone,1,true,progressFileString);
             }
 
-            sigma = 2.0/nPercentDone;
-            s+= sigma;
-            sX+= sigma*(loopCounter);
-            sXX += sigma*(loopCounter)*(loopCounter);
-            sY+=nPercentDone*sigma;
-            sXY+=(loopCounter)*nPercentDone*sigma;
-
-            if (loopCounter>1.0) {
-                nPercentDone = (sX*sY-s*sXY);
-                if (nPercentDone != 0.0) {
-                    nPercentDone = (sXX*sY-sX*sXY)/nPercentDone;
-                }
-                if (nPercentDone != 0.0) {
-                    nPercentDone = loopCounter/nPercentDone;
-                }
-                nPercentDone -= .05;
-                if ((nPercentDone>0.0)&&(nPercentDone<.9999)) {
-                    nPercentDone = pow (nPercentDone,4)*100.0;
-                    if (nPercentDone>percentDone) {
-                        stayPut = 0;
-                        percentDone = nPercentDone;
-                    } else {
-                        if (percentDone<50.0) {
-                            percentDone+=1.0;
-                        }
-                        stayPut++;
-                    }
-                } else if (percentDone<50.0) {
-                    stayPut++;
-                    percentDone+=1.0;
-                }
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-                SetStatusBarValue (percentDone,maxSoFar,(likeFuncEvalCallCount-evalsIn)/TimerDifferenceFunction(true));
-#else
-                if (verbosity_level==1) {
-                    UpdateOptimizationStatus (maxSoFar,percentDone,1,true,progressFileString);
-                }
-#endif
-            }
             logLHistory.Store(maxSoFar);
+            loopCounter += 1.;
 
             if (verbosity_level>5) {
-                snprintf (buffer, sizeof(buffer),"\nAverage Variable Change: %g, percent done: %g, divFactor: %g, oldAverage/averageChange: %g, stayPut: %ld", averageChange, nPercentDone,divFactor,oldAverage/averageChange,stayPut);
+                snprintf (buffer, sizeof(buffer),"\nAverage Variable Change: %g, percent done: %g, divFactor: %g, oldAverage/averageChange: %g", averageChange, percentDone,divFactor,oldAverage/averageChange);
                 BufferToConsole (buffer);
                 snprintf (buffer, sizeof(buffer),"\nDiff: %g, Precision: %16.12g, termFactor: %ld", maxSoFar-lastMaxValue, precision, termFactor);
                 BufferToConsole (buffer);
@@ -4632,21 +4675,17 @@ DecideOnDivideBy (this);
 
         ReportWarning (_String("Optimization finished in ") & loopCounter & " loop passes.\n" & _String ((long)likeFuncEvalCallCount-evalsIn) & " likelihood evaluation calls and " & _String ((long)matrix_exp_count - exponentiationsIn) & " matrix exponentiations calls were made\n");
 
-        if (optMethod == 7) {
+        if (optimization_mode == kOptimizationGradientDescent) {
             _Matrix bestMSoFar (indexInd.lLength,1,false,true);
             GetAllIndependent(bestMSoFar);
             maxSoFar = ConjugateGradientDescent (currentPrecision*.01, bestMSoFar);
         }
-
         DeleteObject (stepHistory);
 
-    } else if (optMethod==1) {
-        SimplexMethod (precision);
+    } else if (optimization_mode== kOptimizationNedlerMead) {
+        SimplexMethod (precision, get_optimization_setting (kMaximumIterations, 10000000), maxItersPerVar);
     }
-    if (optMethod==2) {
-        Anneal (precision);
-    }
-
+    
     if (keepOptimizationLog) {
         ((_Vector*)optimizatonHistory->GetByKey("LogL"))->Trim();
         _AssociativeList* variable_traces = ((_AssociativeList*)optimizatonHistory->GetByKey("Parameters"));
@@ -4785,9 +4824,6 @@ void _LikelihoodFunction::CleanUpOptimize (void) {
     lockedLFID       = -1;
     DeleteObject     (nonConstantDep);
     nonConstantDep = nil;
-#ifndef __UNIX__
-    divideBy = 0x0fffffff;
-#endif
 }
 
 //_______________________________________________________________________________________
@@ -4872,7 +4908,7 @@ void _LikelihoodFunction::GetAllIndependent (_Matrix & storage) const {
 
 
 //_______________________________________________________________________________________
-long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle, hyFloat& right,  hyFloat& leftValue, hyFloat& middleValue, hyFloat& rightValue, hyFloat& initialStep, _Matrix* gradient)
+long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle, hyFloat& right,  hyFloat& leftValue, hyFloat& middleValue, hyFloat& rightValue, hyFloat& initialStep, bool go2Bound, _Matrix* gradient)
 {
     _Variable* curVar = index >= 0 ? GetIthIndependentVar (index) : nil;
 
@@ -5514,7 +5550,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         totalCount += (parameterList->lLength*(parameterList->lLength-1)/2);
     }
 
-    DecideOnDivideBy (this);
+    BenchmarkThreads(this);
 #endif
 
     // fill in funcValues with L(...,x_i\pm h,...) and 1st derivatives and get 2nd derivatives
@@ -6148,7 +6184,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
     middle_vector = bestVal;
       
-    int  outcome = Bracket(-1, left,middle,right,leftValue, middleValue, rightValue,bp, &gradient);
+    int  outcome = Bracket(-1, left,middle,right,leftValue, middleValue, rightValue,bp, true, &gradient);
 
     if (middleValue < initialValue) {
       SetAllIndependent (&bestVal);
@@ -6369,7 +6405,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFloat& maxSoFar, hyFloat& bestVal, hyFloat bracketSetting) {
+void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFloat& maxSoFar, hyFloat& bestVal, bool go2Bound, hyFloat bracketSetting) {
     hyFloat left,
                right,
                middle           = bestVal,
@@ -6388,7 +6424,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
     }*/
 
     unsigned long        inCount = likeFuncEvalCallCount;
-    int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp);
+    int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp, go2Bound);
     unsigned long        bracketCount = likeFuncEvalCallCount - inCount;
 
     if (outcome != -1) { // successfull bracket
@@ -6669,8 +6705,271 @@ hyFloat      _LikelihoodFunction::replaceAPoint (_Matrix&m, long row, _Matrix&p,
 
 
 //_______________________________________________________________________________________
-hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision)
-{
+hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned long iterations, unsigned long max_evaluations) {
+    
+#define DEFAULT_STEP 0.05
+#define DEFAULT_STEP_OFF_BOUND 0.00025
+    
+    /** "Implementing the Nelder-Mead simplex algorithm with adaptive parameters"
+         DOI 10.1007/s10589-010-9329-3
+     
+        "CONVERGENCE PROPERTIES OF THE NELDER–MEAD SIMPLEX METHOD IN LOW DIMENSIONS"
+         SIAM J. OPTIM. Vol. 9, No. 1, pp. 112–147
+     **/
+     
+    // the dimension of the problem
+    
+    _OptimiztionProgress progress_tracker;
+    
+    long  N = indexInd.countitems(),
+          lf_evaluations = 0L;
+    
+    hyFloat N_inv = 1./N,
+            simplex_alpha = 1.,
+            simplex_beta  = 1. + 2. * N_inv,
+            simplex_gamma = .75 - 0.5*N_inv,
+            simplex_delta = 1. - N_inv;
+    
+    _Constant zero (0.);
+    
+    // allocate the points of the simplex + scratch
+    _Matrix * simplex = new _Matrix [N+1],
+    centroid (N, 1, false, true),
+    function_values = _Matrix (N+1, 2, false, true);
+
+    auto replace_point = [&] (_Matrix const& new_point, hyFloat new_value, long index, long sorted_index) -> void {
+        simplex[index] = new_point;
+        function_values.Store (sorted_index, 0, new_value);
+    };
+    
+    auto set_point_and_compute = [this,&lf_evaluations] (_Matrix& v) -> hyFloat {
+        lf_evaluations++;
+        SetAllIndependent (&v);
+        return -Compute();
+    };
+    
+    auto resort_values = [&zero] (_Matrix& v) -> void {
+        _Matrix *sorted = (_Matrix *)v.SortMatrixOnColumn(&zero);
+        v = *sorted;
+        DeleteObject (sorted);
+    };
+
+    GetAllIndependent(simplex[0]);
+    
+    // current FEASIBLE point
+    function_values.Store (0,0, set_point_and_compute (simplex[0]));
+                            
+    for (long i = 0L; i < N; i++) {
+        simplex[i+1] = simplex[0];
+        
+        
+        hyFloat ith_coordinate = GetIthIndependent(i),
+                lb = GetIthIndependentBound(i, true),
+                ub = GetIthIndependentBound(i, false);
+        
+#ifdef NEDLER_MEAD_DEBUG
+        printf ("\nCoordinate %ld, value %g, range [%g, %g]\n", i, ith_coordinate, lb, ub);
+#endif
+
+        if (CheckEqual(ith_coordinate, lb)) {
+            simplex[i+1][i] += MIN(DEFAULT_STEP_OFF_BOUND, (ub-lb)*0.5);
+        }
+        if (ub - ith_coordinate > DEFAULT_STEP) {
+            simplex[i+1][i] += DEFAULT_STEP;
+        } else {
+            if (ub - ith_coordinate > ith_coordinate - lb) {
+                simplex[i+1][i] += (ub - ith_coordinate)*0.5;
+            } else {
+                simplex[i+1][i] -= (ith_coordinate - lb)*0.5;
+            }
+        }
+        
+#ifdef NEDLER_MEAD_DEBUG
+       ObjectToConsole(&simplex[i+1]);
+#endif
+        //SetAllIndependent(&simplex[i+1]);
+        function_values.Store(i+1,0, set_point_and_compute (simplex[i+1]));
+        function_values.Store(i+1,1, i+1);
+    }
+    
+    resort_values (function_values);
+#ifdef NEDLER_MEAD_DEBUG
+    printf ("\n**********\nSimplex iteration in\n");
+    ObjectToConsole(&function_values);
+#endif
+    for (long it_count = 0L; it_count <= iterations && lf_evaluations <= max_evaluations; it_count ++) {
+        /** compute the centroid of all EXCEPT the WORST point **/
+        
+       long worst_index = function_values (N,1);
+       for (long k = 0L; k < N; k++) {
+            hyFloat kth_coordinate = 0.;
+            for (long c = 0L; c <= N; c++) {
+                if (c != worst_index) {
+                    kth_coordinate += simplex[c](k,0);
+                }
+            }
+            centroid[k] = kth_coordinate * N_inv;
+        }
+        
+        /** reflection
+         x[r] = ¯x +α(¯x −x[n+1]).
+        */
+        
+        _Matrix new_point (centroid);
+        _Matrix t (centroid);
+        t -= simplex [worst_index];
+        t *= simplex_alpha;
+        new_point += t;
+        hyFloat trial_value = set_point_and_compute (new_point);
+
+#ifdef NEDLER_MEAD_DEBUG
+        printf ("\tTrial point value %g\n", trial_value);
+#endif
+        bool  do_shrink = false;
+
+        if (trial_value >= function_values(0,0) && trial_value < function_values (N-1,0)) {
+            // accept the reflection
+#ifdef NEDLER_MEAD_DEBUG
+            printf ("### ACCEPT REFLECTION replace %d\n", (long)function_values(N,1));
+#endif
+            replace_point (new_point, trial_value, (long)function_values(N,1), N);
+        } else {
+            if (trial_value < function_values(0,0)) { // try expansion
+                // x[e] = ¯x +β(x[r] − ¯x)
+#ifdef NEDLER_MEAD_DEBUG
+                printf ("--- Trying expansion\n");
+#endif
+                _Matrix expansion (centroid),
+                        t (new_point);
+                t -= centroid;
+                t *= simplex_beta;
+                expansion += t;
+                hyFloat expansion_value = set_point_and_compute (expansion);
+                if (expansion_value < trial_value) {
+#ifdef NEDLER_MEAD_DEBUG
+                    printf ("### ACCEPT EXPANSION\n");
+#endif
+                    replace_point (expansion, expansion_value, (long)function_values(N,1), N);
+                } else {
+#ifdef NEDLER_MEAD_DEBUG
+                    printf ("### REJECT EXPANSION, ACCEPT REFLECTION\n");
+#endif
+                    replace_point (new_point, trial_value, (long)function_values(N,1), N);
+                }
+            } else {
+                //if (trial_value >= function_values (N,0)) {
+                    long worst_index = function_values (N,1);
+#ifdef NEDLER_MEAD_DEBUG
+                    printf ("--- Trying CONTRACTION\n");
+#endif
+                    // x[ic] = x ̄− γ (x ̄−x[n+1])
+                    // x[oc] = ¯x ̄+γ alpha (x ̄−x[n+1])
+                    _Matrix cv (centroid),
+                            t (centroid);
+                
+                    t -= simplex [worst_index];
+                    t *= simplex_gamma;
+                    bool inside = false;
+                    if (trial_value >= function_values (N,0)) { // INSIDE
+#ifdef NEDLER_MEAD_DEBUG
+                        printf ("--- INSIDE contraction\n");
+#endif
+                        inside = true;
+                        cv -= t;
+                    } else {
+#ifdef NEDLER_MEAD_DEBUG
+                        printf ("--- OUTSIDE contraction\n");
+#endif
+                         t *= simplex_alpha;
+                        cv += t;
+                    }
+                
+                    hyFloat contraction_value = set_point_and_compute (cv);
+                
+#ifdef NEDLER_MEAD_DEBUG
+                    printf ("--Contraction value = %g (relected = %g, worst = %g)\n", contraction_value, trial_value, function_values (N,0));
+#endif
+                    if ((inside && contraction_value < function_values (N,0)) || (!inside && contraction_value < trial_value))  {
+#ifdef NEDLER_MEAD_DEBUG
+                        printf ("### ACCEPT contraction\n");
+#endif
+                        replace_point (cv, contraction_value, worst_index, N);
+                    } else {
+#ifdef NEDLER_MEAD_DEBUG
+                        printf ("### REJECT contraction\n");
+#endif
+                        do_shrink = true;
+                    }
+            }
+        }
+        if (do_shrink) {
+            long best_idx = function_values(0,1);
+#ifdef NEDLER_MEAD_DEBUG
+            printf ("### PEFRORM SHRINKAGE\n");
+            BufferToConsole("\nBest point\n");
+            ObjectToConsole(&simplex[best_idx]);
+#endif
+            //x[i] = x[1] + δ(x[i] − x[1]).
+            for (long i = 1L; i <= N; i++) {
+                long idx = function_values(i,1);
+                _Matrix t (simplex[idx]);
+                t -= simplex[best_idx];
+                t *= simplex_delta;
+#ifdef NEDLER_MEAD_DEBUG
+                BufferToConsole("\nOld point\n");
+                ObjectToConsole(&simplex[idx]);
+#endif
+                simplex[idx] = simplex[best_idx];
+                simplex[idx] += t;
+#ifdef NEDLER_MEAD_DEBUG
+                BufferToConsole("\nMoved point\n");
+                ObjectToConsole(&simplex[idx]);
+#endif
+                function_values.Store (i, 0, set_point_and_compute(simplex[idx]));
+            }
+        }
+        resort_values (function_values);
+        
+        if (verbosity_level==1) {
+            UpdateOptimizationStatus (-function_values (0,0),progress_tracker.PushValue (-function_values (0,0)),1,true,progressFileString);
+        } else {
+            if (verbosity_level>5) {
+                char buffer [2048];
+                snprintf (buffer, sizeof(buffer),"Simplex iteration %10ld; current max %12.6g, current value spread %12.6g [precision %g]\n", it_count, -function_values(0,0), fabs (function_values (N,0) - function_values (1,0)), gPrecision);
+                BufferToConsole (buffer);
+            }
+        }
+        
+        if (fabs (function_values (N,0) - function_values (1,0)) < gPrecision) {
+            break;
+        }
+        
+#ifdef NEDLER_MEAD_DEBUG
+        for (long i = 0; i < N; i++) {
+            for (long j = i + 1L; j <= N; j++) {
+                if (simplex[i].Equal(&simplex[j])) {
+                    printf ("COLLAPSED SIMPLEX %ld == %ld\n\n", i, j);
+                    exit (1);
+                }
+            }
+        }
+        printf ("\n\n**********\nSimplex iteration %ld \n", it_count);
+        ObjectToConsole(&function_values);
+        BufferToConsole("\nBest point\n");
+        ObjectToConsole(&simplex[(long)function_values(0,1)]);
+#endif
+    }
+    
+    
+    long best_idx = function_values(0,1);
+    
+    N_inv = -set_point_and_compute (simplex[best_idx]);
+    
+    delete [] simplex;
+    return N_inv;
+    
+    /*
+    
     _Matrix     points (indexInd.lLength+1, indexInd.lLength, false, true), //the matrix of points
                 functionalEvaluations (1, indexInd.lLength+1,false, true),
                 scratch1 (1, indexInd.lLength,false, true),
@@ -6901,7 +7200,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision)
     }
 
     return true;
-
+    */
 }
 
 
@@ -8732,10 +9031,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     }
 
     if (opt == _hyphyLFSerializeModeOptimize) {
-        hyFloat p1, p2;
-        checkParameter(useLastResults, p1, 0.0);
-        checkParameter(useInitialDistanceGuess, p2, 1.0);
-        if (CheckEqual(p1, 0.0) && p2 > .1) {
+         if (! hy_env::EnvVariableTrue(kUseLastResults) && hy_env::EnvVariableTrue(kUseInitialDistanceGuess)) {
             for (unsigned long i = 0; i < indexInd.lLength; i++) {
                 LocateVar(indexInd.lData[i])->MarkDone();
             }
@@ -8954,20 +9250,15 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
 
     if (opt == _hyphyLFSerializeModeOptimize) {
         rec << ");\n";
-        hyFloat pv;
-        checkParameter(optimizationPrecision, pv, 0.001);
-        rec.AppendAnAssignmentToBuffer(&optimizationPrecision, new _String(pv));
-        checkParameter(optimizationMethod, pv, 4.);
-        rec.AppendAnAssignmentToBuffer(&optimizationMethod, new _String(pv));
-        checkParameter(useInitialDistanceGuess, pv, 1.);
-        rec.AppendAnAssignmentToBuffer(&useInitialDistanceGuess,
-                                       new _String(pv));
-        checkParameter(useLastResults, pv, 0.);
-        rec.AppendAnAssignmentToBuffer(&useLastResults, new _String(pv));
-        checkParameter(optimizationHardLimit, pv, -1.);
-        if (pv > 0.) {
-            rec.AppendAnAssignmentToBuffer(&optimizationHardLimit,
-                                           new _String(pv));
+        rec.AppendAnAssignmentToBuffer(&kOptimizationPrecision, new _String(hy_env::EnvVariableGetNumber(kOptimizationPrecision, 0.01)));
+        rec.AppendAnAssignmentToBuffer(&kOptimizationMethod, new _String(hy_env::EnvVariableGetNumber(kOptimizationMethod, 4.)));
+        rec.AppendAnAssignmentToBuffer(&kUseInitialDistanceGuess, new _String(hy_env::EnvVariableGetNumber(kUseInitialDistanceGuess, 1.)));
+        rec.AppendAnAssignmentToBuffer(&kUseLastResults, new _String(hy_env::EnvVariableGetNumber(kUseLastResults, 1.)));
+        
+        hyFloat hard_limit = hy_env::EnvVariableGetNumber(kOptimizationHardLimit, -1.);
+        if (hard_limit > 0.) {
+            rec.AppendAnAssignmentToBuffer(&kOptimizationHardLimit,
+                                           new _String(hard_limit));
         }
         rec << "Optimize(";
         rec << lfName;
@@ -8982,8 +9273,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
         rec << "=\"";
         rec << lfName;
         rec << "\";\n";
-        checkParameter(shortMPIReturn, pv, 0.0);
-        rec.AppendAnAssignmentToBuffer(&shortMPIReturn, new _String(pv));
+        rec.AppendAnAssignmentToBuffer(&shortMPIReturn, new _String(hy_env::EnvVariableGetNumber(shortMPIReturn, 0.)));
     } else if (opt == _hyphyLFSerializeModeLongMPI) {
         rec << ");\n";
         rec.AppendAnAssignmentToBuffer(
