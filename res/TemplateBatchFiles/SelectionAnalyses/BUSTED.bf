@@ -317,6 +317,8 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
     for the rate distribution parameters
 */
 
+//VERBOSITY_LEVEL = 10;
+
 
 parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
 busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
@@ -334,7 +336,6 @@ busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.tree
     terms.search_grid : busted.initial_grid
 });
     
-
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
         "retain-lf-object": TRUE,
         terms.run_options.optimization_settings : 
