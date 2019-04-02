@@ -241,7 +241,7 @@ function models.codon.BS_REL.post_definition(model) {
 function models.codon.BS_REL.get_branch_length(model, tree, node) {
 	parameters.SetLocalModelParameters (model, tree, node);
 	parameters.SetCategoryVariables   (model);
-	bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]);
+	bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]) / 3;
 	//console.log ("Branch length = " + bl);
 	return bl;
 }

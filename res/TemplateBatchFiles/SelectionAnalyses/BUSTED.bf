@@ -21,7 +21,14 @@ utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
 
 
 busted.analysis_description = {
-                               terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point",
+                               terms.io.info : 
+"BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted 
+jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. 
+Assuming there is evidence of positive selection (i.e. there is an omega > 1),  BUSTED will also perform a quick evidence-ratio 
+style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, 
+and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point.
+Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead.
+",
                                terms.io.version : "2.2",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
@@ -220,10 +227,11 @@ parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model ,
 
 /* create an initial grid to initialize the optimization */
 busted.initial_grid = {};
+busted.initial_grid.N = 250;
 
 /* if populated, use this as a baseline to generate the distributions from */
-busted.initial_grid_presets = {"0" : 0.25};
-
+busted.initial_grid_presets = {"0" : 0.1};
+busted.initial_ranges = {};
 
 busted.init_grid_setup (busted.distribution);
 
@@ -232,8 +240,6 @@ busted.init_grid_setup (busted.distribution);
 PARAMETER_GROUPING = {};
 PARAMETER_GROUPING + busted.distribution["rates"];
 PARAMETER_GROUPING + busted.distribution["weights"];
-
-
 
 
 if (busted.has_background) {
@@ -269,10 +275,9 @@ if (busted.do_srv)  {
 }
 
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
-busted.initial_grid         = estimators.CreateInitialGrid (busted.initial_grid, 500, busted.initial_grid_presets);
+busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
 
-
-
+//estimators.CreateInitialGrid (busted.initial_grid, busted.initial_grid.N, busted.initial_grid_presets);
 
 busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
     'busted._renormalize (_v_, "busted.distribution", busted.initial.test_mean)'
@@ -286,11 +291,9 @@ if (busted.has_background) { //GDD rate category
 }
 
 
-
 busted.model_map = {};
 
 for (busted.partition_index = 0; busted.partition_index < busted.partition_count; busted.partition_index += 1) {
-
     selection.io.json_store_branch_attribute(busted.json, terms.original_name, terms.json.node_label, 0,
                                              busted.partition_index,
                                              busted.name_mapping);
@@ -303,14 +306,43 @@ utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 
 selection.io.startTimer (busted.json [terms.json.timers], "Unconstrained BUSTED model fitting", 2);
 
-//VERBOSITY_LEVEL = 10;
+
 
 io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 allowed) branch-site model fit");
-busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
+
+
+/** 
+    perform the initial fit using a constrained branch length model and 
+    a low precision Nedler-Mead algorithm pass to find good initial values 
+    for the rate distribution parameters
+*/
+
+
+parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
+busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
     "retain-lf-object": TRUE,
+    terms.run_options.proportional_branch_length_scaler : 
+                                            {"0" : "busted.bl.scaler"},
+                                            
+    terms.run_options.optimization_settings : 
+        {
+            "OPTIMIZATION_METHOD" : "nedler-mead",
+            "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
+            "OPTIMIZATION_PRECISION" : -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood]
+        } ,
+                                     
     terms.search_grid : busted.initial_grid
 });
+    
 
+busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
+        "retain-lf-object": TRUE,
+        terms.run_options.optimization_settings : 
+            {
+                "OPTIMIZATION_METHOD" : "hybrid"
+            } 
+                                    
+    });
 
 KeywordArgument ("save-fit", "Save BUSTED model fit to this file (default is not to save)", "/dev/null");
 io.SpoolLFToPath(busted.full_model[terms.likelihood_function], io.PromptUserForFilePath ("Save BUSTED model fit to this file ['/dev/null' to skip]"));
@@ -512,11 +544,19 @@ function busted.init_grid_setup (omega_distro) {
                     }
                 }["_MATRIX_ELEMENT_VALUE_^(busted.rate_classes-_index_[0]-1)"];
                 busted.initial_grid_presets [_name_] = 0;
+                busted.initial_ranges [_name_] = {
+                    terms.lower_bound : 0,
+                    terms.upper_bound : 1
+                };
             }  else {
                 busted.initial_grid  [_name_] = {
                     {
                         1, 1.5, 2, 4, 10
                     }
+                };
+                busted.initial_ranges [_name_] = {
+                    terms.lower_bound : 1,
+                    terms.upper_bound : 10
                 };
                 busted.initial_grid_presets [_name_] = 2;
             }
@@ -532,6 +572,10 @@ function busted.init_grid_setup (omega_distro) {
                 }
             };
             busted.initial_grid_presets [_name_] = 3;
+            busted.initial_ranges [_name_] = {
+                terms.lower_bound : 0,
+                terms.upper_bound : 1
+            };
         '
     );
 

@@ -446,6 +446,7 @@ namespace terms{
         retain_model_object               = "retain-model-object";
         partitioned_omega                 = "partitioned-omega";
         apply_user_constraints            = "apply-user-constraints";
+        optimization_settings             = "optimization-settings";
     }
 
 

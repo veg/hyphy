@@ -82,7 +82,7 @@ public:
                          Compute (_SimpleList const &, _List *);	// compute likelihood of given node order
                     									//	return edge marginal probabilities at pointer
                     									
-    virtual _Matrix *       Optimize ();	// generic wrapper from HBL to different optimization methods
+    virtual _Matrix *       Optimize (_AssociativeList const * options = nil);	// generic wrapper from HBL to different optimization methods
     										// e.g., K2, structural MCMC, order MCMC (see next functions)
 	
     _Matrix*        GraphMetropolis (bool, long, long, long, hyFloat);

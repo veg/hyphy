@@ -1419,8 +1419,6 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
         existing_ds->NoOfUniqueColumns () != ds->NoOfUniqueColumns() ||
         existing_ds->GetTT () != ds->GetTT();
         
-        
-        
         for (AVLListXLIteratorKeyValue filter_key_value : ObjectIndexer (HY_BL_DATASET_FILTER)) {
             _DataSetFilter * filter = (_DataSetFilter*) filter_key_value.get_object();
             if (filter->GetData() == existing_ds) {
