@@ -21,7 +21,14 @@ utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
 
 
 busted.analysis_description = {
-                               terms.io.info : "BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. Assuming there is evidence of positive selection (i.e. there is an omega > 1), BUSTED will also perform a quick evidence-ratio style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point",
+                               terms.io.info : 
+"BUSTED (branch-site unrestricted statistical test of episodic diversification) uses a random effects branch-site model fitted 
+jointly to all or a subset of tree branches in order to test for alignment-wide evidence of episodic diversifying selection. 
+Assuming there is evidence of positive selection (i.e. there is an omega > 1),  BUSTED will also perform a quick evidence-ratio 
+style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, 
+and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point.
+Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead.
+",
                                terms.io.version : "2.2",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
@@ -310,13 +317,6 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
     for the rate distribution parameters
 */
 
-//VERBOSITY_LEVEL = 10;
-
-busted.best_scratch = -1e100;
-
-VERBOSITY_LEVEL = 10;
-
-
 
 parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
 busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
@@ -327,7 +327,7 @@ busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.tree
     terms.run_options.optimization_settings : 
         {
             "OPTIMIZATION_METHOD" : "nedler-mead",
-            "MAXIMUM_OPTIMIZATION_ITERATIONS" : 200,
+            "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
             "OPTIMIZATION_PRECISION" : -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood]
         } ,
                                      
