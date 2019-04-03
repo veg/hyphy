@@ -35,7 +35,7 @@ if (fileCount<=1)
 }
 
 /* read the first file */
-fprintf(stdout, "error 3");
+
 DataSet ds = ReadDataFile (stringMatrix[0]);
 
 referenceSpecCount = ds.species;
@@ -135,6 +135,7 @@ timer = Time(0);
 
 for (counter = 1; counter<= fileCount; counter = counter+1)
 {
+	
 	HarvestFrequencies (vectorOfFrequencies,filteredData,1,1,1);
 	/*fprintf (stdout,"\n",GeneticCodeExclusions,"\n",_Genetic_Code,"\n");*/
 	if (FREQUENCY_SENSITIVE)
@@ -162,8 +163,9 @@ for (counter = 1; counter<= fileCount; counter = counter+1)
 
 	if (counter<fileCount)
 	{
-		DeleteObject (lf);
-		DataSet ds = ReadDataFile (stringMatrix[counter]);
+
+		DataSet dsT = ReadDataFile (stringMatrix[counter]);
+
 		if (dataType)
 		{
 			if (codeTables)
@@ -171,11 +173,13 @@ for (counter = 1; counter<= fileCount; counter = counter+1)
 				dummy = ApplyGeneticCodeTable (codeTableMatrix[counter]);
 				ModelMatrixDimension = 0;
 			}
-			DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
+
+			DataSetFilter filteredData = CreateFilter (dsT,3,"","",GeneticCodeExclusions);
 		}
 		else
 		{
-			DataSetFilter filteredData = CreateFilter (ds,1);
+			DataSetFilter filteredData = CreateFilter (dsT,1);
+
 		}
 
 	}
@@ -183,10 +187,12 @@ for (counter = 1; counter<= fileCount; counter = counter+1)
 	{
 		fullParameterCount = res[1][1];
 	}
+
 	LikelihoodFunction lf = (filteredData,firstFileTree);
 	Optimize (res,lf);
 	singleFileResults [counter-1] = res[1][0];
 	fprintf (stdout,"\nFile ",stringMatrix[counter-1]," : ln-likelihood = ",res[1][0]);
+	DeleteObject(lf);
 	if (counter==1)
 	{
 		if (codeTables)
@@ -239,7 +245,7 @@ separator = "+--------+--------+--------------+--------------+";
 fprintf (stdout,separator,"\n| File 1 | File 2 |      LRT     |    P-Value   |\n",separator);
 for (counter = 0; counter< fileCount; counter = counter+1)
 {
-	fprintf(stdout, "Error 2");
+
 	DataSet ds = ReadDataFile (stringMatrix[counter]);
 	if (dataType)
 	{
