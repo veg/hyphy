@@ -17,10 +17,10 @@ SetDialogPrompt ("Load a coding alignment");
 DataSet 		myData = ReadDataFile (PROMPT_FOR_FILE);
 fprintf (stdout, "Loaded ", myData.species, " sequences with ", myData.sites, " sites from ",LAST_FILE_PATH,"\n");
 
-SetDialogPrompt ("Load an annotated tree file"); 
+SetDialogPrompt ("Load an annotated tree file");
 fscanf 			(PROMPT_FOR_FILE, "Raw", treeString);
 
-SetDialogPrompt ("Specify the output (.csv) file"); 
+SetDialogPrompt ("Specify the output (.csv) file");
 fprintf 		(PROMPT_FOR_FILE, CLEAR_FILE);
 
 outputFile 		= LAST_FILE_PATH;
@@ -68,7 +68,7 @@ customRateString = {{"*","","",""}
 					{"","","*",""}
 					{"","","","*"}
 				 };
-				 
+
 for (i=0; i<3; i+=1)
 {
 	shift = -(i == 0);
@@ -79,7 +79,7 @@ for (i=0; i<3; i+=1)
 	}
 }
 
-global AC = 1; global AT = 1; global CG = 1; global CT = 1; global GT = 1; 
+global AC = 1; global AT = 1; global CG = 1; global CT = 1; global GT = 1;
 
 /*To set up a nucleotide model, populate a string version of the rate matrix*/
 modelDefString = "";
@@ -167,34 +167,34 @@ treeString = newTreeString;
 /*---A function that converts a nucFreqMatrix to a vector of freqs--*/
 function BuildCodonFrequencies (nucFreqMatrix)
 {
-	
+
 	PIStop = 1.0; 		/* denominator */
 	result = {countSenseCodons,1};    /* resulting codon frequencies */
 	hshift = 0;         /* how many stop codons have been counted so far */
 
 	for (h=0; h<64; h=h+1) /* loop over all possible codons */
 	{
-		first  = h$16;    /* Decompose a codon into 3 nucleotides. 
+		first  = h$16;    /* Decompose a codon into 3 nucleotides.
 							 The index of the first nucleotide (A=0,C=1,G=2,T=3) is found here,
 							 by doing integer division by 16  */
-		second = h%16$4;  /* The index of the second nucleotide. 
+		second = h%16$4;  /* The index of the second nucleotide.
 							 First take the remainder of division by 16, i.e. positions 2 and 3
 							 and then extract position 2 by integer division by 4*/
 		third  = h%4;     /* The index of the third nucleotide.
 							 Remainder of integer division by 4*/
-							 
+
 						  /* in the end: h = 16*first + 4*second + third */
-							 
-		if (_Genetic_Code[h]==10) /* stop codon */ 
+
+		if (_Genetic_Code[h]==10) /* stop codon */
 		{
-			hshift = hshift+1; 
+			hshift = hshift+1;
 			PIStop = PIStop-nucFreqMatrix[first][0]*nucFreqMatrix[second][1]*nucFreqMatrix[third][2]; /* adjust the denominator */
 		}
 		else
 		{
-			result[h-hshift] = nucFreqMatrix[first][0]*nucFreqMatrix[second][1]*nucFreqMatrix[third][2]; 
+			result[h-hshift] = nucFreqMatrix[first][0]*nucFreqMatrix[second][1]*nucFreqMatrix[third][2];
 											/* store the frequency for codon h. Notice the substraction of hshift to compensate
-											  for the absense of stop codons. The first codon affected by it is 
+											  for the absense of stop codons. The first codon affected by it is
 											  TAC (h=49), which gets stored in result[48], because TAA (a stop codon) was skipped. */
 		}
 	}
@@ -218,16 +218,16 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,n
 {
 	ModelMatrixDimension = countSenseCodons;
 	_localNucBiasMult = customRateString;
-	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
+	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension};
 	modelDefString = "";
 	modelDefString*16384;
 	hshift = 0;
 	for (h=0; h<64; h=h+1)
 	{
-		if (_Genetic_Code[h]==10) 
+		if (_Genetic_Code[h]==10)
 		{
 			hshift = hshift+1;
-			continue; 
+			continue;
 		}
 		vshift = 0;
 		for (v = 0; v<64; v=v+1)
@@ -237,10 +237,10 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,n
 				continue;
 			}
 			diff = v-h;
-			if (_Genetic_Code[v]==10) 
+			if (_Genetic_Code[v]==10)
 			{
 				vshift = vshift+1;
-				continue; 
+				continue;
 			}
 			nucPosInCodon = 2;
 			if ((h$4==v$4)||((diff%4==0)&&(h$16==v$16))||(diff%16==0)) /* differ by one subsitution only */
@@ -272,7 +272,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,n
 				ps = Format(nucPosInCodon,0,0);
 				aa1 = _Genetic_Code[h];
 				aa2 = _Genetic_Code[v];
-				
+
 				synOrNon = "nonsyn"+ nonSynRateTag +"*";
 				if (aa1==aa2) {synOrNon = "syn*";}
 				targetAAmult = "";
@@ -280,7 +280,7 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,n
 				modelDefString*("ModelMatrixName["+hs+"]["+vs+"] := " + targetAAmult + synOrNon + "t*"+_localNucBiasMult[transition][transition2]+"EFV__["+ts+"]["+ps+"];\n");   /*EFV__["+ts+"]["+ps+"] multiplies the 3x4 equilibrium frequency of the column codon*/
 			}
 	    }
-    }		
+    }
 	modelDefString*0;
 	ExecuteCommands (modelDefString);
 	return 0;
@@ -291,13 +291,13 @@ function PopulateModelMatrix (ModelMatrixName&, EFV, targetAA,customRateString,n
 global syn = 1;
 global nonsyn=1;
 /*--Populate the transition matrix for the background codon model--*/
-PopulateModelMatrix ("MG94xCustomRateMatrix",nuc3by4,21,customRateString,"");   
+PopulateModelMatrix ("MG94xCustomRateMatrix",nuc3by4,21,customRateString,"");
 Model MG94xCustom = (MG94xCustomRateMatrix,estimatedCodonFreqs,0);
 
 /* -------------------Set up the foreground model-------------------------*/
 global nonsynFG=1;
 /*Populate the transition matrix for the foreground codon model*/
-PopulateModelMatrix ("MG94xCustomRateMatrixFG",nuc3by4,21,customRateString,"FG");  
+PopulateModelMatrix ("MG94xCustomRateMatrixFG",nuc3by4,21,customRateString,"FG");
 Model FG = (MG94xCustomRateMatrixFG,estimatedCodonFreqs,0);
 
 /*------------------Assign models to tree------------------------*/
@@ -320,7 +320,7 @@ Optimize (myRes, lf);
 fprintf (stdout, "\n", lf, "\n");
 
 /*--------Forever constrain nuc rates-------*/
-AC := AC__; AT := AT__; CG := CG__; CT := CT__; GT := GT__; 
+AC := AC__; AT := AT__; CG := CG__; CT := CT__; GT := GT__;
 
 /*--------------Setting up the output file--------------------------*/
 fprintf (outputFile,CLEAR_FILE,"Site,NullLL,NullBgNonSyn,NullSyn,DivLL,Div_p,DivFgNonSyn,DivBgNonSyn,DivSyn,0LL,0p,0w,0FgNonSyn,0BgNonSyn,0Syn,1LL,1p,1w,1FgNonSyn,1BgNonSyn,1Syn,2LL,2p,2w,2FgNonSyn,2BgNonSyn,2Syn,3LL,3p,3w,3FgNonSyn,3BgNonSyn,3Syn,4LL,4p,4w,4FgNonSyn,4BgNonSyn,4Syn,5LL,5p,5w,5FgNonSyn,5BgNonSyn,5Syn,6LL,6p,6w,6FgNonSyn,6BgNonSyn,6Syn,7LL,7p,7w,7FgNonSyn,7BgNonSyn,7Syn,8LL,8p,8w,8FgNonSyn,8BgNonSyn,8Syn,9LL,9p,9w,9FgNonSyn,9BgNonSyn,9Syn,10LL,10p,10w,10FgNonSyn,10BgNonSyn,10Syn,11LL,11p,11w,11FgNonSyn,11BgNonSyn,11Syn,12LL,12p,12w,12FgNonSyn,12BgNonSyn,12Syn,13LL,13p,13w,13FgNonSyn,13BgNonSyn,13Syn,14LL,14p,14w,14FgNonSyn,14BgNonSyn,14Syn,15LL,15p,15w,15FgNonSyn,15BgNonSyn,15Syn,16LL,16p,16w,16FgNonSyn,16BgNonSyn,16Syn,17LL,17p,17w,17FgNonSyn,17BgNonSyn,17Syn,18LL,18p,18w,18FgNonSyn,18BgNonSyn,18Syn,19LL,19p,19w,19FgNonSyn,19BgNonSyn,19Syn,20LL,20p,20w,20FgNonSyn,20BgNonSyn,20Syn");
@@ -332,12 +332,12 @@ fprintf (stdout, "\n\n[PHASE 3. Testing for Directional Selection on Foreground 
 for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 {
 	fprintf (stdout, "Working on site ", siteIn, "\n");
-	
+
 	/*-------------Allow user to select sites and options-------------*/
 	site = siteIn +siteShift;
 	siteString = "" + (site*3) + "-" + (site*3+2);
 	DataSetFilter siteFilter = CreateFilter (myData,3,siteString,"","TAA,TAG,TGA");
-	
+
 	/*-----Count Site Specific Codon and AA Freqs. This is just to exclude certain sites------*/
 	HarvestFrequencies (siteCodFreqs, siteFilter, 3, 3, 0);
 	AAfreqs = {21,1};
@@ -345,7 +345,7 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 	{
 		AAfreqs[ _Genetic_Code[h]] += siteCodFreqs[h];
 	}
-	
+
 	/*Count how many AA have frequencies greater than 0*/
 	numGrtZero = 0;
 	for (h=0; h<21; h=h+1) /* loop over all possible codons */
@@ -356,16 +356,16 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 		}
 	}
 	/*-------------Only test a site if there is more than one observed AA-------------*/
-	if(numGrtZero>1) 
+	if(numGrtZero>1)
 	{
 		AAlower = 0; AAupper = 20;
-	
+
 		AAlikes = {};
 		AAlikesOmegaTs = {};
 		AAlikesSyn = {};
 		AAlikesBgNonSyn = {};
 		AAlikesFgNonSyn = {};
-		
+
 		/*-------------------------loop over amino acid targets--------------------------------*/
 		for (AAcount=AAlower; AAcount<AAupper+1; AAcount=AAcount+1)
 		{
@@ -374,7 +374,7 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 			{
 				fprintf (stdout, "\tTesting target residue ", _hyphyAAOrdering[AAcount], "\n");
 				targetAA = AAcount;
-			
+
 				/* --------------------Construct Directional Model---------------------------------*/
 				global nonsynDIR=1;
 				global omegaT = 0.5; /*reparameterized. 0.5 = 1*/
@@ -383,17 +383,17 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 
 				UseModel(MG94xCustom); /*This assigns background model to all unlabeled branches*/
 				Tree myTreeFG = treeString;
-				
+
 				/*Forces all branch lengths to be those estimated by the nuc model*/
 				ReplicateConstraint ("this1.?.t:=this2.?.t__",myTreeFG,givenTree);
 				omegaT :<1; /*For the reparameterization*/
 				syn = 1; /*this is shared between foreground and background*/
 				nonsyn=1; /*background nonsyn rate*/
-				
+
 				LikelihoodFunction lf = (siteFilter, myTreeFG);
-				Optimize (mySiteRes, lf); 
+				Optimize (mySiteRes, lf);
 				/*fprintf (stdout, "\n", lf, "\n");*/
-				
+
 				unConstrainedRatio = mySiteRes[1][0];
 				AAlikes[AAcount] = unConstrainedRatio;
 				AAlikesOmegaTs[AAcount] = omegaT;
@@ -411,7 +411,7 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 				AAlikesFgNonSyn[AAcount] = -99;
 			}
 		}
-		
+
 		/*---------------------Set up model allowing non-neutral selection on FG---------------*/
 		syn = 1;
 		nonsyn=1;
@@ -424,33 +424,33 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 		DivBgNonSyn = nonsyn;
 		DivSyn = syn;
 		/*--End non-neutral model--*/
-		
+
 		/*---------------------Set up null model forcing neutral selection on FG----------------*/
 		syn = 1;
 		nonsyn=1;
 		nonsynDIR:=syn; /*Force neutral selection on FG*/
 		omegaT :=0.5; /*Constrain omegaT to 1 for null model - reparameterized*/
 		LikelihoodFunction lf = (siteFilter, myTreeFG);
-		Optimize (mySiteRes, lf); 
+		Optimize (mySiteRes, lf);
 		/*fprintf (stdout, "\n", lf, "\n");*/
 		constrainedRatioNoPos = mySiteRes[1][0];
 		/*--End null model--*/
-		
+
 		/*-----------------------Display and Write Results------------------------*/
 		/*---"Site,NullLL,NullBgNonSyn,NullSyn,DivLL,Div_p,DivFgNonSyn,DivBgNonSyn,DivSyn,0LL,0p,0w,0FgNonSyn,0BgNonSyn,0Syn"---*/
 		outputString = ""+siteIn;
 		outputString = outputString + "," + constrainedRatioNoPos + "," + nonsyn + "," + syn;
 		fprintf (stdout, "\nTests for site ", siteIn,"\n");
-		
+
 		/*--First a test for general positive selection at the site--*/
 		lrtPosVsNoPos = 2*(constrainedRatioPos-constrainedRatioNoPos);
 		pValPosVsNoPos = 1-CChi2 (lrtPosVsNoPos, 1);
 		fprintf (stdout, "\tLikelihood Ratio Test for diversifying selection");
 		fprintf (stdout, ": ", lrtPosVsNoPos);
 		fprintf (stdout, "  p-value: ", pValPosVsNoPos, "\n");
-		
+
 		outputString = outputString + "," + constrainedRatioNoPos + "," + pValPosVsNoPos + "," + DivFgNonSyn + "," + DivBgNonSyn + "," + DivSyn;
-		
+
 		/*--Now test for directional selection vs positive selection--*/
 		fprintf (stdout, "\tTesting for directional selection againts null allowing positive selection in foreground", "\n");
 		for (AAcount=AAlower; AAcount<AAupper+1; AAcount=AAcount+1)
@@ -468,12 +468,12 @@ for(siteIn=1;siteIn<=codonFilter.sites;siteIn += 1)
 		/*Testing for directional vs neutral selection can be done in post-processesing*/
 		fprintf (outputFile,"\n",outputString);
 		/*Clear constraints to test another site*/
-		ClearConstraints(omegaT)
+		ClearConstraints(omegaT);
 		ClearConstraints(nonsynDIR);
 	}
 	else
 	{
 		fprintf (stdout,"Skipped site ",siteIn," because it is invariable\n");
 	}
-	
+
 } /*End main loop*/
