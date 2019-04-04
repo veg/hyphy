@@ -53,3 +53,4 @@ testMethodOutput
 
 #Utility function
 remake_hyphy.sh
+remake_hyphydebug.sh
