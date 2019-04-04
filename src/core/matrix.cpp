@@ -1988,7 +1988,7 @@ void    _Matrix::CheckIfSparseEnough(bool force) {
                     tempData[theIndex[i]]=((hyPointer*)theData)[i];
                 }
             }
-            delete[] theData;
+            MatrixMemFree( theData);
             theData = (hyFloat*)tempData;
        } else {
             //objects
@@ -2001,12 +2001,12 @@ void    _Matrix::CheckIfSparseEnough(bool force) {
                     tempData [k] = ((hyFloat*)theData) [i];
                 }
             }
-           delete[] theData;
-           theData = (hyFloat*)tempData;
+            MatrixMemFree( theData);
+            theData = (hyFloat*)tempData;
 
         }
         lDim = square_dimension;
-        delete[] theIndex;
+        MatrixMemFree( theIndex);
         theIndex = nil;
     }
 }
