@@ -4418,7 +4418,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             large_change.Sort();
             
             if (!do_large_change_only) {
-                if (large_change.countitems () >= 2 && (large_change.countitems() < (indexInd.countitems() >> 3) || large_change.countitems() <= 4 )) {
+                if (large_change.countitems () >= 2 && (large_change.countitems() <= indexInd.countitems() / 8L || large_change.countitems() <= 4 )) {
                     // iterate only the variables that are changing a lot, until they stop changing
                     do_large_change_only = true;
                     last_large_change = large_change;

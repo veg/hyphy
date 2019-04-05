@@ -790,7 +790,7 @@ namespace hy_global {
   //____________________________________________________________________________________
   bool    ProcessFileName (_String & path_name, bool isWrite, bool acceptStringVars, hyPointer theP, bool assume_platform_specific, _ExecutionList * caller, bool relative_to_base) {
     _String errMsg;
-    
+          
     try {
       if (path_name == kPromptForFilePlaceholder || path_name == kEmptyString) {
         // prompt user for file

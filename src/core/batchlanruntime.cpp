@@ -921,7 +921,7 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
 
 
         long        codon_count        = char_count * char_count * char_count,
-                    expected_dimension = do_codon ? codon_count : char_count;
+                    expected_dimension = (do_codon ? codon_count : char_count) + 1UL;
 
         _Matrix *   score_matrix = (_Matrix*)_EnsurePresenceOfKey(alignment_options, kScoreMatrix, MATRIX);
 

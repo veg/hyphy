@@ -2511,7 +2511,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
             }
             ds = lastNexusDataMatrix;
         } else {
-            ProcessFileName(fName, false,true,(hyPointer)chain.nameSpacePrefix);
+            ProcessFileName(fName, false,true,(hyPointer)chain.nameSpacePrefix, false, &chain, true);
             if (terminate_execution) {
                 return;
             }
@@ -2521,7 +2521,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
             if (df==nil) {
                 // try reading this file as a string formula
                 fName = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
-                ProcessFileName(fName, false,false,(hyPointer)chain.nameSpacePrefix);
+                ProcessFileName(fName, false,false,(hyPointer)chain.nameSpacePrefix, false, &chain, true);
 
                 if (terminate_execution) {
                     return;

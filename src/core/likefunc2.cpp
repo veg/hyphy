@@ -893,7 +893,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
     _SimpleList  conversion;
     _AVLListXL   conversionAVL (&conversion);
-    _String      codeBuffer    (unitLength, false);
+    _String      codeBuffer    (unitLength);
     _List        *result       = new _List;
 
     for (long k = 0L; k < matrixSize; k++) {
