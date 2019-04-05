@@ -1,5 +1,5 @@
 LoadFunctionLibrary("libv3/all-terms.bf");
-oadFunctionLibrary ("CF3x4");
+LoadFunctionLibrary ("CF3x4");
 
 function BuildCodonFrequencies (obsF)
 {
