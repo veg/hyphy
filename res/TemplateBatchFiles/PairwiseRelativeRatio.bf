@@ -3,24 +3,21 @@ fprintf(stdout,"\n ---- RUNNING PAIRWISE RELATIVE RATIO ANALYSIS ---- \n");
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0)
-{
+if (dataType<0) {
 	return;
 }
 
-if (dataType)
-{
-	NICETY_LEVEL = 3;
+if (dataType) {
 	ChoiceList (codeTables,"Genetic Code",1,SKIP_NONE,"Same Code","All files use the same genetic code. The index file contains file names only. ",
 				     	"Different Codes","Each file name line in the index file is followed by a line with a HYPHY genetic table index. See Help for details.");
-	if (codeTables<0)
-	{
+	if (codeTables<0) {
 		return;
 	}
-	if (codeTables>0)
-	{
+	
+	if (codeTables>0) {
 		skipCodeSelectionStep = 1;
 	}
+	
 	#include "TemplateModels/chooseGeneticCode.def";
 }
 
@@ -28,16 +25,15 @@ if (dataType)
 
 fileCount = Rows(stringMatrix);
 
-if (fileCount<=1)
-{
+if (fileCount<=1) {
 	fprintf (stdout,"\n\n\n****** EMPTY INDEX FILE - NOTHING TO DO! **********\n\n\n");
 	return;
 }
 
 /* read the first file */
 
-DataSet ds = ReadDataFile (stringMatrix[0]);
 
+DataSet ds = ReadDataFile (stringMatrix[0]);
 referenceSpecCount = ds.species;
 
 treeRead = 0;
@@ -50,18 +46,15 @@ if (IS_TREE_PRESENT_IN_DATA)
 
 fprintf(stdout,"\n File 1:",stringMatrix[0]," - ", Format (ds.species,0,0)," sequences, ", Format (ds.sites,0,0)," sites.");
 
-for (counter = 1; counter<fileCount; counter = counter+1)
-{
+for (counter = 1; counter<fileCount; counter = counter+1) {
 	DataSet ds2 = ReadDataFile (stringMatrix[counter]);
-	if (ds2.species!=referenceSpecCount)
-	{
+	if (ds2.species!=referenceSpecCount) {
 		fprintf (stdout,"\n\n\n****** SEQUENCE COUNT MISMATCH **********\n");
 		fprintf (stdout,"\n\n File ",stringMatrix[counter]," had ",Format(ds2.species,0,0)," sequences, whereas ",Format(referenceSpecCount,0,0)," were expected.\n\n\n");
 		return;
 	}
 	fprintf(stdout,"\n File ",Format(counter+1,0,0),":",stringMatrix[counter]," - ", Format (ds2.species,0,0)," sequences, ", Format (ds2.sites,0,0)," sites.");
-	if (!treeRead)
-	{
+	if (!treeRead) {
 		if (IS_TREE_PRESENT_IN_DATA)
 		{
 			treeString = DATAFILE_TREE;
@@ -133,36 +126,33 @@ OPTIMIZATION_PRECISION = OPTIMIZATION_PRECISION/10;
 
 timer = Time(0);
 
-for (counter = 1; counter<= fileCount; counter = counter+1)
-{
+for (counter = 1; counter<= fileCount; counter += 1) {
 	HarvestFrequencies (vectorOfFrequencies,filteredData,1,1,1);
-	/*fprintf (stdout,"\n",GeneticCodeExclusions,"\n",_Genetic_Code,"\n");*/
-	if (FREQUENCY_SENSITIVE)
-	{
+	if (FREQUENCY_SENSITIVE) {
 		modelMatrix = 0;
-		if (USE_POSITION_SPECIFIC_FREQS)
-		{
+		if (USE_POSITION_SPECIFIC_FREQS) {
 			HarvestFrequencies (vectorOfFrequencies,filteredData,3,1,1);
 		}
 		MULTIPLY_BY_FREQS = PopulateModelMatrix ("modelMatrix",vectorOfFrequencies);
-		if (dataType)
-		{
+		if (dataType) {
 			CodonEFV = BuildCodonFrequencies (vectorOfFrequencies);
 			Model RRmodel = (modelMatrix,CodonEFV,MULTIPLY_BY_FREQS);
 		}
-		else
-		{
+		else {
 			Model RRmodel = (modelMatrix,vectorOfFrequencies,MULTIPLY_BY_FREQS);
 		}
 	}
+	
 	Tree firstFileTree = treeString;
 
 	LikelihoodFunction lf = (filteredData,firstFileTree);
 	Optimize (res,lf);
 	DeleteObject (lf);
 
-	if (counter<fileCount)
-	{
+
+	if (counter<fileCount) {
+		DeleteObject (lf, :shallow);
+
 		DataSet ds = ReadDataFile (stringMatrix[counter]);
 		if (dataType)
 		{
@@ -220,7 +210,7 @@ for (counter = 1; counter<= fileCount; counter = counter+1)
 
 timer = (Time(0)-timer)/fileCount;
 
-counter = fileCount*(fileCount+1)/2;
+counter = fileCount*(fileCount-1)/2;
 
 fprintf (stdout,"\n\n***** RUNNING PAIRWISE CONSTRAINED ANALYSES (",Format(counter,0,0), " PAIR) *****\n");
 
@@ -234,9 +224,10 @@ fprintf (stdout,"\n\n (*)   corresponds to the .05 significance level\n (**)  co
 
 separator = "+--------+--------+--------------+--------------+";
 fprintf (stdout,separator,"\n| File 1 | File 2 |      LRT     |    P-Value   |\n",separator);
-for (counter = 0; counter< fileCount; counter = counter+1)
-{
-	DataSet ds = ReadDataFile (stringMatrix[counter]);
+
+for (counter = 0; counter< fileCount; counter = counter+1) {
+    DataSet ds = ReadDataFile (stringMatrix[counter]);
+
 	if (dataType)
 	{
 		if (codeTables)

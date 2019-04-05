@@ -599,6 +599,7 @@ namespace hyphy_global_objects {
         if (type & HY_BL_TREE) {
             _Variable* tree_var = FetchVar (LocateVarByName(name));
             if (tree_var && tree_var->ObjectClass() == TREE) {
+                type = HY_BL_TREE;
                 return tree_var;
             }
         }

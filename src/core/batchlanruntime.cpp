@@ -788,12 +788,14 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
                 receptacle->SetValue(like_func->ConstructCategoryMatrix(included_partitions, run_mode ,true, receptacle->GetName()), false);
             }
             break;
+                
             case HY_BL_TREE: {
                 _TheTree  *source_tree       = (_TheTree*)source_object;
+                
 
                 long    which_partition   = 0L,
                         linked_likelihood_id = source_tree->IsLinkedToALF (which_partition);
-
+                
                 if (linked_likelihood_id >= 0) {
                     _LikelihoodFunction * linked_lf            = (_LikelihoodFunction*) likeFuncList (linked_likelihood_id);
                     const _DataSetFilter      * filter             = linked_lf->GetIthFilter (which_partition);
@@ -834,6 +836,7 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
                     );
                 }
             }
+            break;
         }
     } catch (const _String& error) {
         return  _DefaultExceptionHandler (receptacle, error, current_program);
@@ -1319,7 +1322,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                 if (!cn) {
                     throw (*GetIthParameter(k) & " is not a part of a tree object");
                 }
-                parent_object_names << this_object->ParentTree()->GetName();
+                parent_object_names << this_object->GetName();
                 traversers[k-1] = new _TreeIterator (this_object, cn, _HY_TREE_TRAVERSAL_POSTORDER);
             }
             templated_operations < new _List;
@@ -1760,7 +1763,12 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_progr
   //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& current_program){
+    
   current_program.advance();
+
+  const static _String kShallow (":shallow");
+    
+  bool do_shallow = parameter_count() >= 2 || *GetIthParameter(parameter_count()-1, false) == kShallow;
 
   for (unsigned long i = 0UL; i < parameter_count(); i++) {
     long       requested_type = HY_BL_LIKELIHOOD_FUNCTION,
@@ -1768,7 +1776,7 @@ bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& current_program
     BaseRef    source_object = _HYRetrieveBLObjectByNameMutable (AppendContainerName(*GetIthParameter(i),current_program.nameSpacePrefix), requested_type,&object_index,false);
 
     if  (source_object) {
-      KillLFRecord (object_index,true);
+      KillLFRecord (object_index,!do_shallow);
     } else {
       ReportWarning(GetIthParameter(i)->Enquote() & " is not a supported agrument type for " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(get_code()));
     }
@@ -3629,7 +3637,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                             });
                             handle_exclusions (model_indices.countitems(), excluded).Each (
                                                                                            [&] (long value, unsigned long) -> void {
-                                                                                               _String const * parameter_name = LocateVar(value)->GetName();
+                                                                                               _String const * parameter_name = LocateVar(model_indices.get(value))->GetName();
                                                                                                (*available_choices) < new _List (new _String (*parameter_name),
                                                                                                                                  new _String (_String ("Constrain parameter ") & *parameter_name & '.'));
                                                                                            }

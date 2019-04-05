@@ -897,7 +897,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
     _List        *result       = new _List;
 
     for (long k = 0L; k < matrixSize; k++) {
-        (*result) < new _String(siteCount*unitLength,false);
+        (*result) < new _String((unsigned long)siteCount*unitLength);
     }
 
     for (long siteID = 0L; siteID < patternCount; siteID++) {

@@ -1,9 +1,7 @@
 /*-------------------------------------------------------------------------------*/
 
-function PadString (padLength,padChar)
-{
-	for (padCounter=0;padCounter<padLength;padCounter=padCounter+1)
-	{
+function PadString (padLength,padChar) {
+	for (padCounter=0;padCounter<padLength;padCounter += 1) {
 		fprintf (stdout,padChar);
 	}
 	return padLength;
@@ -16,13 +14,11 @@ fprintf(stdout,"\n ---- RUNNING MOLECULAR CLOCKS ANALYSIS ---- \n");
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0) 
-{
+if (dataType<0)  {
 	return;
 }
-if (dataType)
-{
-	NICETY_LEVEL = 3;
+
+if (dataType) {
 	#include "TemplateModels/chooseGeneticCode.def";
 }
 
@@ -32,12 +28,10 @@ DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
 
 fprintf (stdout,"The following data was read:\n",ds,"\n");
 
-if (dataType)
-{
+if (dataType) {
 	DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
 }
-else
-{
+else {
 	DataSetFilter filteredData = CreateFilter (ds,1);
 }
 
@@ -51,12 +45,10 @@ if (Rows("LAST_MODEL_PARAMETER_LIST")>1)
 {
 	ChoiceList (parameter2Constrain, "Parameter(s) to constrain:",1,SKIP_NONE,LAST_MODEL_PARAMETER_LIST);
 
-	if (parameter2Constrain<0)
-	{
+	if (parameter2Constrain<0) {
 		return;
 	}
-	if (parameter2Constrain==0)
-	{
+	if (parameter2Constrain==0) {
 		parameter2ConstrainString = "";
 		for (parameter2Constrain=Rows("LAST_MODEL_PARAMETER_LIST")-1; parameter2Constrain; parameter2Constrain = parameter2Constrain-1)
 		{
@@ -66,25 +58,20 @@ if (Rows("LAST_MODEL_PARAMETER_LIST")>1)
 		GetString (funnyString,LAST_MODEL_PARAMETER_LIST,0);
 		parameter2ConstrainString = parameter2ConstrainString + funnyString;
 	}
-	else
-	{
+	else {
 		GetString (parameter2ConstrainString,LAST_MODEL_PARAMETER_LIST,parameter2Constrain-1);
 	}
 }
-else
-{
+else {
 	GetString (parameter2ConstrainString,LAST_MODEL_PARAMETER_LIST,0);
 }
 
 LikelihoodFunction lf = (filteredData,givenTree);
-
 Optimize (res,lf);
-
 fprintf (stdout, "\n\nRESULTS WITHOUT THE CLOCK:\n",lf);
 
 fullModelLik = res[1][0];
-
-fullVars = res[1][1];
+fullVars     = res[1][1];
 
 /* now specify the constraints */
 
@@ -94,31 +81,17 @@ intBranchCount  = BranchCount (givenTree);
 leafBranchCount = TipCount	  (givenTree);
 
 nodeLength = 11;
-
-for (nodeCounter = 0; nodeCounter < intBranchCount; nodeCounter = nodeCounter+1)
-{
-	anIntBranch   = BranchName (givenTree,nodeCounter);
-	anIntBranch   = Abs (anIntBranch)+2;
-	if (anIntBranch>nodeLength)
-	{
-		nodeLength = anIntBranch;
-	}
+for (nodeCounter = 0; nodeCounter < intBranchCount; nodeCounter += 1) {
+	nodeLength   = Max (nodeLength, Abs (BranchName (givenTree,nodeCounter))+2);
 }
 
-for (nodeCounter = 0; nodeCounter < leafBranchCount; nodeCounter = nodeCounter+1)
-{
-	anIntBranch   = TipName (givenTree,nodeCounter);
-	anIntBranch   = Abs (anIntBranch)+2;
-	if (anIntBranch>nodeLength)
-	{
-		nodeLength = anIntBranch;
-	}
+for (nodeCounter = 0; nodeCounter < leafBranchCount; nodeCounter += 1) {
+	nodeLength   = Max (nodeLength, Abs (TipName (givenTree,nodeCounter))+2);
 }
 
 separator = "+-----------";
 
-for (nodeCounter = 10; nodeCounter < nodeLength; nodeCounter = nodeCounter+1)
-{
+for (nodeCounter = 10; nodeCounter < nodeLength; nodeCounter += 1) {
 	separator = separator + "-";
 }
 
@@ -128,22 +101,20 @@ fprintf (stdout, separator, "| Rooted At ");
 dummy = PadString (nodeLength-10," ");
 fprintf (stdout, "| LR Statistic | Constraints |  P-Value   |\n",separator);
 
-if (MPI_NODE_COUNT>1)
-{
+if (MPI_NODE_COUNT>1) {
 	MPINodeState = {MPI_NODE_COUNT-1,1};
 	MPINodeRoot  = {MPI_NODE_COUNT-1,1};
 	MPINodeRoot[0]  = "";
 	OPTIMIZE_SUMMATION_ORDER = 0;
 }
 
-for (nodeCounter = 0; nodeCounter < intBranchCount+leafBranchCount; nodeCounter = nodeCounter+1)
-{
-	if (nodeCounter<intBranchCount)
-	{
+DeleteObject (lf, :shallow);
+
+for (nodeCounter = 0; nodeCounter < intBranchCount+leafBranchCount; nodeCounter = nodeCounter+1) {
+	if (nodeCounter<intBranchCount) {
 		anIntBranch   = BranchName (givenTree,nodeCounter);
 	}
-	else
-	{
+	else {
 		anIntBranch   = TipName (givenTree,nodeCounter-intBranchCount);	
 	}
 	
@@ -152,11 +123,9 @@ for (nodeCounter = 0; nodeCounter < intBranchCount+leafBranchCount; nodeCounter 
 	Tree		clockTree = aRerootedTree;
 	
 	ExecuteCommands ("MolecularClock (clockTree,"+parameter2ConstrainString+");");
-
 	LikelihoodFunction lfConstrained = (filteredData, clockTree);
 	
-	if (MPI_NODE_COUNT>1)
-	{
+	if (MPI_NODE_COUNT>1) {
 		for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
 		{
 			if (MPINodeState[mpiNode]==0)
@@ -165,29 +134,24 @@ for (nodeCounter = 0; nodeCounter < intBranchCount+leafBranchCount; nodeCounter 
 			}
 		}
 		
-		if (mpiNode==MPI_NODE_COUNT-1)
+		if (mpiNode==MPI_NODE_COUNT-1) {
 		/* all nodes busy */
-		{
 			mpiNode = ReceiveJobs (1);
 		}
-		else
-		{
+		else {
 			MPISend (mpiNode+1,lfConstrained);
 			MPINodeState[mpiNode] = 1;
 			MPINodeRoot[mpiNode] = anIntBranch;
 		}
 	}
-	else
-	{
+	else {
 		Optimize (lfConstrained_MLES,lfConstrained);
-		dummy = ReceiveJobs (0);
+		ReceiveJobs (0);
 	}
 }
 
-if (MPI_NODE_COUNT>1)
-{
-	while (1)
-	{
+if (MPI_NODE_COUNT>1) {
+	while (1) {
 		for (nodeCounter = 0; nodeCounter < MPI_NODE_COUNT-1; nodeCounter = nodeCounter+1)
 		{
 			if (MPINodeState[nodeCounter]==1)
@@ -206,8 +170,7 @@ if (MPI_NODE_COUNT>1)
 
 /*-------------------------------------------------------------------------------*/
 
-function ReceiveJobs (sendOrNot)
-{
+function ReceiveJobs (sendOrNot) {
 	if (MPI_NODE_COUNT>1)
 	{
 		MPIReceive (-1, fromNode, result_String);

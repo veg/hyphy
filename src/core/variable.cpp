@@ -503,6 +503,8 @@ void    _Variable::ClearConstraints (void)
                 }
         */
     } else {
+        //printf ("ClearConstraints %s %x\n", GetName()->get_str(), varFormula);
+
         if (!IsIndependent()) {
             SetValue ((HBLObjectRef)Compute()->makeDynamic(),false);
         }
