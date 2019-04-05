@@ -822,9 +822,11 @@ _Formula*   _CalcNode::RecurseMC (long varToConstrain, node<long>* whereAmI, boo
     
     if (k==descendants-start) { // all underlying branches are "simple"
         for (long n=1; n<descendants-start; n++) {
+            //printf ("Setting simple constraint at %s %s\n", LocateVar(nodeConditions[n]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
+            //        _String((_String*)nodeConditions[0]->toStr(kFormulaStringConversionNormal, nil, true)).get_str());
             LocateVar (nodeConditions[n]->GetIthTerm(0)->GetAVariable())->SetFormula (*nodeConditions[0]);
             delete (nodeConditions[n]);
-            nodeConditions[k] = nil;
+            nodeConditions[n] = nil;
         }
         k = 0;
     } else {
@@ -839,6 +841,9 @@ _Formula*   _CalcNode::RecurseMC (long varToConstrain, node<long>* whereAmI, boo
                 if (n==k) {
                     continue;
                 }
+                //printf ("Setting semi-simple constraint at %s : %s\n", LocateVar(nodeConditions[n]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
+                //                                                       _String((_String*)nodeConditions[k]->toStr(kFormulaStringConversionNormal, nil, true)).get_str());
+                
                 LocateVar (nodeConditions[n]->GetIthTerm(0)->GetAVariable())->SetFormula (*nodeConditions[k]);
                 delete (nodeConditions[n]);
                 nodeConditions[n] = nil;
@@ -850,6 +855,9 @@ _Formula*   _CalcNode::RecurseMC (long varToConstrain, node<long>* whereAmI, boo
                     continue;
                 }
                 if (nodeConditions[l]->Length()==1) {
+                    //printf ("Setting simple non-additive at %s %s\n", LocateVar(nodeConditions[l]->GetIthTerm(0)->GetAVariable())->GetName()->get_str(),
+                    //        _String((_String*)nodeConditions[k]->toStr(kFormulaStringConversionNormal, nil, true)).get_str());
+                    
                     LocateVar (nodeConditions[l]->GetIthTerm(0)->GetAVariable())->SetFormula (*nodeConditions[k]);
                 } else { // solve for a non-additive constraint
                     _Variable* nonAdd = LocateVar (nodeConditions[l]->GetIthTerm(0)->GetAVariable());
@@ -859,7 +867,7 @@ _Formula*   _CalcNode::RecurseMC (long varToConstrain, node<long>* whereAmI, boo
                     for (long m=0; m<nodeConditions[l]->GetList().lLength; m++) {
                         _Operation* curOp = (_Operation*)(*nodeConditions[l]).GetList()(m);
                         if (curOp->GetNoTerms()) {
-                            newConstraint.GetList().AppendNewInstance(new _Operation ('-', 2L));
+                            newConstraint.GetList().AppendNewInstance(new _Operation (HY_OP_CODE_SUB, 2L));
                         } else {
                             newConstraint.GetList()<<curOp;
                         }
@@ -867,6 +875,8 @@ _Formula*   _CalcNode::RecurseMC (long varToConstrain, node<long>* whereAmI, boo
                     delete (nodeConditions[l]);
                     nodeConditions[l] = nil;
                     nonAdd->SetFormula(newConstraint);
+                    //printf ("Setting complex non-additive at %s %s\n", nonAdd->GetName()->get_str(),
+                    //        _String((_String*)newConstraint.toStr(kFormulaStringConversionNormal, nil, true)).get_str());
                 }
             }
     }
@@ -874,14 +884,10 @@ _Formula*   _CalcNode::RecurseMC (long varToConstrain, node<long>* whereAmI, boo
     
     if(!first) {
         _Formula     *result = nodeConditions[k];
-        
         _Operation   *newVar = new _Operation;
-        
         newVar->SetAVariable (iVariables->lData[f-1]);
-        
         result->GetList().AppendNewInstance( newVar);
-        result->GetList().AppendNewInstance(new _Operation ('+', 2L));
-        
+        result->GetList().AppendNewInstance(new _Operation (HY_OP_CODE_ADD, 2L));
         
         delete [] nodeConditions;
         return result;

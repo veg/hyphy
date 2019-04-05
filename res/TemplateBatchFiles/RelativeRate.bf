@@ -8,18 +8,15 @@ fprintf(stdout,"\n ---- RUNNING RELATIVE RATE ANALYSIS ---- \n");
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0) 
-{
+if (dataType<0) {
 	return;
 }
-if (dataType)
-{
-	NICETY_LEVEL = 3;
+
+if (dataType) {
 	SetDialogPrompt ("Please choose a codon data file:");
 	#include "TemplateModels/chooseGeneticCode.def";
 }
-else
-{
+else {
 	SetDialogPrompt ("Please choose a nucleotide or amino-acid data file:");
 }
 

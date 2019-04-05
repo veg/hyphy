@@ -1319,7 +1319,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                 if (!cn) {
                     throw (*GetIthParameter(k) & " is not a part of a tree object");
                 }
-                parent_object_names << this_object->ParentTree()->GetName();
+                parent_object_names << this_object->GetName();
                 traversers[k-1] = new _TreeIterator (this_object, cn, _HY_TREE_TRAVERSAL_POSTORDER);
             }
             templated_operations < new _List;
@@ -1760,7 +1760,12 @@ bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_progr
   //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& current_program){
+    
   current_program.advance();
+
+  const static _String kShallow (":shallow");
+    
+  bool do_shallow = parameter_count() >= 2 || *GetIthParameter(parameter_count()-1, false) == kShallow;
 
   for (unsigned long i = 0UL; i < parameter_count(); i++) {
     long       requested_type = HY_BL_LIKELIHOOD_FUNCTION,
@@ -1768,7 +1773,7 @@ bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& current_program
     BaseRef    source_object = _HYRetrieveBLObjectByNameMutable (AppendContainerName(*GetIthParameter(i),current_program.nameSpacePrefix), requested_type,&object_index,false);
 
     if  (source_object) {
-      KillLFRecord (object_index,true);
+      KillLFRecord (object_index,!do_shallow);
     } else {
       ReportWarning(GetIthParameter(i)->Enquote() & " is not a supported agrument type for " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(get_code()));
     }
@@ -3629,7 +3634,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                             });
                             handle_exclusions (model_indices.countitems(), excluded).Each (
                                                                                            [&] (long value, unsigned long) -> void {
-                                                                                               _String const * parameter_name = LocateVar(value)->GetName();
+                                                                                               _String const * parameter_name = LocateVar(model_indices.get(value))->GetName();
                                                                                                (*available_choices) < new _List (new _String (*parameter_name),
                                                                                                                                  new _String (_String ("Constrain parameter ") & *parameter_name & '.'));
                                                                                            }
