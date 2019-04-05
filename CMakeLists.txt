@@ -104,8 +104,8 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
         OUTPUT_VARIABLE GCC_VERSION
     )
 
-    if (${GCC_VERSION} VERSION_LESS 4.9)
-        message(FATAL_ERROR "Require at least gcc-4.9")
+    if (${GCC_VERSION} VERSION_LESS 6.0)
+        message(FATAL_ERROR "Require at least gcc-6.0")
     endif()
 
     if(${GCC_VERSION} VERSION_LESS 6.0)

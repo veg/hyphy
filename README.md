@@ -22,7 +22,7 @@ or
 
 #### Requirements
 * cmake >= 3.12
-* gcc >= 4.9
+* gcc >= 6.0
 * libcurl
 * libpthread
 * openmp (can be installed on mac via `brew install libomp`)
