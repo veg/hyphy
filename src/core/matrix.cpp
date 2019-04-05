@@ -2661,7 +2661,7 @@ void        _Matrix::FillInList (_List& fillMe, bool convert_numbers) const {
                   if (entryFla) {
                       HBLObjectRef computedValue = FetchObjectFromFormulaByType (*entryFla, STRING);
                       if (computedValue) {
-                          fillMe && ((_FString*)computedValue)->get_str();
+                          fillMe < new _StringBuffer (((_FString*)computedValue)->get_str());
                       } else {
                         fillMe.Clear();
                         return;

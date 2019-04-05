@@ -319,6 +319,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
 
 //VERBOSITY_LEVEL = 10;
 
+busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
 
 parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
 busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
@@ -330,7 +331,7 @@ busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.tree
         {
             "OPTIMIZATION_METHOD" : "nedler-mead",
             "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
-            "OPTIMIZATION_PRECISION" : -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood]
+            "OPTIMIZATION_PRECISION" : busted.nm.precision
         } ,
                                      
     terms.search_grid : busted.initial_grid

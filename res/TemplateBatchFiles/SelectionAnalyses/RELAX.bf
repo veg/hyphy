@@ -38,8 +38,10 @@ utility.SetEnvVariable ("LF_SMOOTHING_SCALER",0.05);
 
 relax.analysis_description = {
                                terms.io.info : "RELAX (a random effects test of selection relaxation) uses a random effects branch-site model framework to test whether a set of 'Test' branches evolves under relaxed selection relative to a set of 'Reference' branches (R), as measured by the relaxation parameter (K).
-                                                Version 2.1 adds a check for stability in K estimates to try to mitigate convergence problems. Version 3 provides support for >2 branch sets.",
-                               terms.io.version : "3.0",
+                                                Version 2.1 adds a check for stability in K estimates to try to mitigate convergence problems. 
+                                                Version 3 provides support for >2 branch sets.
+                                                Version 3.1. adds LHC + Nedler-Mead initial fit phase and keyword support",
+                               terms.io.version : "3.1",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                                terms.io.contact : "spond@temple.edu",
@@ -54,8 +56,10 @@ relax.json    = { terms.json.analysis: relax.analysis_description,
                   };
 
 relax.relaxation_parameter        = "relax.K";
-relax.rate_classes     = 3;
+relax.rate_classes                = 3;
 
+relax.initial_ranges              = {};
+relax.initial_grid.N              = 500;
 
 relax.MG94_name = terms.json.mg94xrev_sep_rates;
 relax.general_descriptive_name = "General descriptive";
@@ -105,6 +109,29 @@ relax.display_orders = {terms.original_name: -1,
 
 /*------------------------------------------------------------------------------*/
 
+
+KeywordArgument ("code",      "Which genetic code should be used", "Universal");
+    /**
+        keyword, description (for inline documentation and help messages), default value
+    */
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+    /**
+        keyword, description (for inline documentation and help messages), no default value,
+        meaning that it will be required
+    */
+
+KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+    /** the use of null as the default argument means that the default expectation is for the 
+        argument to be missing, i.e. the tree is expected to be in the file
+        the fourth, optional argument, can match this keyword with the dialog prompt / choice list title,
+        meaning that it can only be consumed when this dialog prompt / choice list is invoked
+        This allows handling some branching logic conditionals
+    */
+    
+KeywordArgument ("branches",  "Branches to test");
+KeywordArgument ("mode",      "Run mode", "Classic", "Group test mode");
+KeywordArgument ("rates", "The number omega rate classes to include in the model [2-10, default 3]", relax.rate_classes);
+KeywordArgument ("models", "Which version of the test to run (All or Minimal)", "All");
 
 
 
@@ -172,6 +199,8 @@ utility.ForEachPair (relax.selected_branches, "_partition_", "_selection_",
         io.ReportProgressMessageMD('RELAX',  'selector', '* ' + Abs(_selection_) + ' branches are in the unclassified (nuisance) set: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')
      }");
 
+relax.rate_classes = io.PromptUser ("The number omega rate classes to include in the model", relax.rate_classes, 2, 10, TRUE);
+
 relax.model_set = io.SelectAnOption ({
                                         {"All", "[Default] Fit descriptive models AND run the relax test (4 models)"}
                                         {"Minimal", "Run only the RELAX test (2 models)"}
@@ -192,7 +221,6 @@ namespace relax {
 
 
 io.ReportProgressMessageMD ("RELAX", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
-
 
 
 relax.final_partitioned_mg_results = estimators.FitMGREV (relax.filter_names, relax.trees, relax.codon_data_info [terms.code], {
@@ -232,10 +260,7 @@ utility.ForEachPair (relax.filter_specification, "_key_", "_value_",
 
 
 selection.io.stopTimer (relax.json [terms.json.timers], "Preliminary model fitting");
-
 parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
-
-//VERBOSITY_LEVEL = 10;
 
 if (relax.model_set == "All") { // run all the models
 
@@ -256,53 +281,88 @@ if (relax.model_set == "All") { // run all the models
             parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range_almost_01);
         }
         parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
-        /*
-        for (relax.i = 1; relax.i <= relax.rate_classes; relax.i += 1) {
-            console.log (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
-            console.log (
-            parameters.GetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)))
-            );
-        }
-        */
+        
 
         relax.model_object_map = { "relax.ge" :       relax.ge.bsrel_model };
 
         io.ReportProgressMessageMD ("RELAX", "gd", "Fitting the general descriptive (separate k per branch) model");
         selection.io.startTimer (relax.json [terms.json.timers], "General descriptive model fitting", 2);
 
-        if (Type (relax.ge_guess) != "Matrix") {
-            relax.ge_guess = relax.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
-                    "_value_[terms.fit.MLE]"));
-        }
-
         relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
-        
         PARAMETER_GROUPING = {};
         PARAMETER_GROUPING + relax.distribution["rates"];
         PARAMETER_GROUPING + relax.distribution["weights"];
 
+        if (Type (relax.ge_guess) != "Matrix") {
+            // first time in 
+            relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE];
+            relax.init_grid_setup        (relax.distribution);
+            relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
+            relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
+                'relax._renormalize (_v_, "relax.distribution", relax.initial.test_mean)'
+            );
+            relax.nm.precision = -0.00025*relax.final_partitioned_mg_results[terms.fit.log_likelihood];
 
-        parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
+            parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
+                        
+                         
+            relax.grid_search.results =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : {"DEFAULT" : "relax.ge"}},
+                                        relax.final_partitioned_mg_results,
+                                        relax.model_object_map, 
+                                        {
+                                            "retain-lf-object": TRUE,
+                                            terms.run_options.apply_user_constraints: "relax.init.k",
+                                            terms.run_options.proportional_branch_length_scaler : 
+                                                                                    {"0" : "relax.bl.scaler"},
+                                            
+                                            terms.run_options.optimization_settings : 
+                                                {
+                                                    "OPTIMIZATION_METHOD" : "nedler-mead",
+                                                    "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
+                                                    "OPTIMIZATION_PRECISION" : relax.nm.precision
+                                                } ,
+                                     
+                                            terms.search_grid : relax.initial_grid
+                                        }
+            );
+            
 
-        relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
+            relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
                                         relax.trees,
                                         { "0" : {"DEFAULT" : "relax.ge"}},
-                                        relax.final_partitioned_mg_results,
+                                        relax.grid_search.results,
                                         relax.model_object_map,
                                         {
                                             terms.run_options.apply_user_constraints: "relax.init.k",
                                             terms.run_options.retain_lf_object : TRUE
 
                                         });
+                                        
+           
+      } else {
+            parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
+            relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
+                                            relax.trees,
+                                            { "0" : {"DEFAULT" : "relax.ge"}},
+                                            relax.final_partitioned_mg_results,
+                                            relax.model_object_map,
+                                            {
+                                                terms.run_options.apply_user_constraints: "relax.init.k",
+                                                terms.run_options.retain_lf_object : TRUE
 
-        //Export (lfe, ^relax.general_descriptive.fit [terms.likelihood_function]);
-        //console.log (lfe);
+                                            });
+       }
+
+
+
+
         
 
         estimators.TraverseLocalParameters (relax.general_descriptive.fit [terms.likelihood_function], relax.model_object_map, "relax.set.k2");
 
         relax.general_descriptive.fit = estimators.FitExistingLF (relax.general_descriptive.fit [terms.likelihood_function], relax.model_object_map);
 
+        
         selection.io.stopTimer (relax.json [terms.json.timers], "General descriptive model fitting");
 
         io.ReportProgressMessageMD("RELAX", "ge", "* " + selection.io.report_fit (relax.general_descriptive.fit, 9, relax.codon_data_info[terms.data.sample_size]));
@@ -453,12 +513,18 @@ relax.model_map = utility.Map (relax.model_to_group_name, "_groupid_", 'utility.
 
 // constrain the proportions to be the same
 
-if (relax.model_set != "All") {
-    relax.ge_guess = relax.DistributionGuess(utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"), "_value_",
-            "_value_[terms.fit.MLE]"));
+relax.do_lhc = FALSE;
 
+if (relax.model_set != "All") {
+    /*
+    relax.ge_guess = relax.DistributionGuess(((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE]);
+    */
+    relax.do_lhc = TRUE;
     relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.model_object_map[relax.reference_model_namespace]);
-    parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
+    relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE];
+    relax.init_grid_setup        (relax.distribution);
+   
+    //parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
 }
 
 if (relax.has_unclassified) {
@@ -473,6 +539,11 @@ if (relax.has_unclassified) {
 
     for (relax.i = 1; relax.i < relax.rate_classes-1; relax.i += 1) {
         parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range01);
+    }
+
+    if (relax.do_lhc) {
+        relax.distribution_uc = models.codon.BS_REL.ExtractMixtureDistribution(relax.unclassified.bsrel_model);
+        relax.init_grid_setup  (relax.distribution_uc);
     }
 
     parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
@@ -532,6 +603,31 @@ function relax.report_multi_class_rates (model_fit, distributions) {
 //------------------------------------
 
 function relax.FitMainTestPair () {
+
+    if (relax.do_lhc) {
+        relax.nm.precision = -0.00025*relax.final_partitioned_mg_results[terms.fit.log_likelihood];
+        parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
+                        
+        relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : relax.model_map},
+                                    relax.general_descriptive.fit,
+                                    relax.model_object_map, 
+                                    {
+                                        "retain-lf-object": TRUE,
+                                        terms.run_options.proportional_branch_length_scaler : 
+                                                                                {"0" : "relax.bl.scaler"},
+                                        
+                                        terms.run_options.optimization_settings : 
+                                            {
+                                                "OPTIMIZATION_METHOD" : "nedler-mead",
+                                                "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
+                                                "OPTIMIZATION_PRECISION" : relax.nm.precision
+                                            } ,
+                                 
+                                        terms.search_grid : relax.initial_grid
+                                    }
+        );
+        
+    }
 
 	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
 	io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
@@ -734,6 +830,7 @@ relax.loop_passes = 0;
 do {
 	relax.loop_passes += 1;
 	relax.FitMainTestPair ();
+	relax.do_lhc = FALSE;
 	if (relax.LRT [terms.LRT] < 0) {
 		io.ReportProgressMessageMD("RELAX", "refit", "* Detected convergence issues (negative LRT). Refitting the alterative/null model pair from a new starting point");
 		relax.general_descriptive.fit = relax.null_model.fit; // reset initial conditions
@@ -1090,4 +1187,50 @@ lfunction relax.grid.MatrixToDict (grid) {
                                                                         }
 
                                                                  }');
+}
+
+//------------------------------------------------------------------------------
+
+function relax.init_grid_setup (omega_distro) {
+    utility.ForEachPair (omega_distro[terms.parameters.rates], "_index_", "_name_", 
+        '
+            if (_index_[0] < relax.rate_classes - 1) { // not the last rate
+                  relax.initial_ranges [_name_] = {
+                    terms.lower_bound : 0,
+                    terms.upper_bound : 1
+                };
+            }  else {
+                relax.initial_ranges [_name_] = {
+                    terms.lower_bound : 1,
+                    terms.upper_bound : 10
+                };
+            }
+        '
+    );
+
+
+    utility.ForEachPair (omega_distro[terms.parameters.weights], "_index_", "_name_", 
+        '
+             relax.initial_ranges [_name_] = {
+                terms.lower_bound : 0,
+                terms.upper_bound : 1
+            };
+        '
+    );
+
+}
+
+//------------------------------------------------------------------------------
+
+lfunction relax._renormalize (v, distro, mean) {
+
+    parameters.SetValues (v);
+    m = parameters.GetStickBreakingDistribution (^distro);
+    d = Rows (m);
+    m = +(m[-1][0] $ m[-1][1]); // current mean
+    for (i = 0; i < d; i+=1) {
+        (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] / m * mean;
+    }
+    return v;
+    
 }
