@@ -287,6 +287,15 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 false,
                                                                 &lengthOptions));
 
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_OPTIMIZE,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Optimize(", HY_HBL_COMMAND_OPTIMIZE,false),
+                                                                -1,
+                                                                "Optimize (<receptacle>, <likelihood function/scfg/bgm>, [optional dictionary of arguments]",',',
+                                                                true,
+                                                                false,
+                                                                false,
+                                                                &lengthOptions));
+
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_FIND_ROOT,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("FindRoot(", HY_HBL_COMMAND_FIND_ROOT,false),
                                                                 5,
@@ -298,10 +307,6 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 5,
                                                                 "Integrate (<receptacle>, <expression>, <variable to integrate over for>,<left bound>,<right bound>)",','));
 
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_OPTIMIZE,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Optimize(", HY_HBL_COMMAND_OPTIMIZE,false),
-                                                                2, 
-                                                                "Optimize (<receptacle>, <likelihood function/scfg/bgm>)",','));
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_MPI_RECEIVE,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("MPIReceive(", HY_HBL_COMMAND_MPI_RECEIVE,false),

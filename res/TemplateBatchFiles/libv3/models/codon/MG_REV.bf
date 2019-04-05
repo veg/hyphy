@@ -12,8 +12,9 @@ LoadFunctionLibrary("../../UtilityFunctions.bf");
  * @param {String} code
  */
 lfunction models.codon.MG_REV.ModelDescription(type, code) {
-    codons = models.codon.MapCode(code);
 
+    codons = models.codon.MapCode(code);
+    
     return {
         utility.getGlobalValue("terms.alphabet"): codons[utility.getGlobalValue("terms.sense_codons")],
         utility.getGlobalValue("terms.bases"): utility.getGlobalValue("models.DNA.alphabet"),

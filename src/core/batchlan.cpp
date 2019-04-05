@@ -2511,7 +2511,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
             }
             ds = lastNexusDataMatrix;
         } else {
-            ProcessFileName(fName, false,true,(hyPointer)chain.nameSpacePrefix);
+            ProcessFileName(fName, false,true,(hyPointer)chain.nameSpacePrefix, false, &chain, true);
             if (terminate_execution) {
                 return;
             }
@@ -2521,7 +2521,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
             if (df==nil) {
                 // try reading this file as a string formula
                 fName = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
-                ProcessFileName(fName, false,false,(hyPointer)chain.nameSpacePrefix);
+                ProcessFileName(fName, false,false,(hyPointer)chain.nameSpacePrefix, false, &chain, true);
 
                 if (terminate_execution) {
                     return;
@@ -3074,9 +3074,6 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         SetStatusLine ("Simulating Data");
         { // lf must be deleted before the referenced datafilters
             _LikelihoodFunction lf (filter_specification, nil);
-            if (terminate_execution) {
-                return;
-            }
             lf.Simulate (*sim_dataset, exclusions, category_values, category_names, root_states, do_internals?(main_file?&spool_file:&kEmptyString):nil);
             SetStatusLine ("Idle");
         }

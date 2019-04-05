@@ -1346,8 +1346,7 @@ nodes = {};";
 
 
 //_________________________________________________________________________________________________________
-_Matrix *   _BayesianGraphicalModel::Optimize (void)
-{
+_Matrix *   _BayesianGraphicalModel::Optimize (_AssociativeList const * options ) {
     /* ---------------------------------------------------------------------------------------------
         OPTIMIZE()
         Wrapper function to access various optimization methods (K2, structural MCMC, order MCMC)
@@ -1367,6 +1366,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (void)
     if (!scores_cached) {
         CacheNodeScores();
     }
+    
 
 
     hyFloat      optMethod =   hy_env::EnvVariableGetNumber(kHYBgm_METHOD_KEY, 0.0);    // 0 = K2 fixed order

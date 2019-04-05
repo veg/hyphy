@@ -921,7 +921,7 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
 
 
         long        codon_count        = char_count * char_count * char_count,
-                    expected_dimension = do_codon ? codon_count + 1UL : char_count + 1UL;
+                    expected_dimension = (do_codon ? codon_count : char_count) + 1UL;
 
         _Matrix *   score_matrix = (_Matrix*)_EnsurePresenceOfKey(alignment_options, kScoreMatrix, MATRIX);
 
@@ -1206,7 +1206,12 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
         }
 
         if (do_optimize) {
-            receptacle -> SetValue(source_object->Optimize(),false);
+            if (parameters.countitems () > 2) { // have a restricting partition
+                _List ref;
+                receptacle -> SetValue(source_object->Optimize((_AssociativeList*)_ProcessAnArgumentByType(*GetIthParameter(2L), ASSOCIATIVE_LIST, current_program, &ref)),false);
+            } else {
+                receptacle -> SetValue(source_object->Optimize(),false);
+            }
         } else {
             HBLObjectRef     covariance_parameters = hy_env::EnvVariableGet(hy_env::covariance_parameter, ASSOCIATIVE_LIST|STRING);
             _SimpleList   *restrictor = nil;

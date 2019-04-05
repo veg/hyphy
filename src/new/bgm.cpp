@@ -1983,8 +1983,7 @@ hyFloat Bgm::Compute (_Matrix * g)
 
 
 //___________________________________________________________________________________________
-_Matrix *   Bgm::Optimize (void)
-{
+_Matrix *   Bgm::Optimize (_AssociativeList const * options) {
 #ifdef DEBUG_OPTIMIZE
     char        buf [255];
 #endif
