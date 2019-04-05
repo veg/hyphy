@@ -40,7 +40,7 @@ relax.analysis_description = {
                                terms.io.info : "RELAX (a random effects test of selection relaxation) uses a random effects branch-site model framework to test whether a set of 'Test' branches evolves under relaxed selection relative to a set of 'Reference' branches (R), as measured by the relaxation parameter (K).
                                                 Version 2.1 adds a check for stability in K estimates to try to mitigate convergence problems. 
                                                 Version 3 provides support for >2 branch sets.
-                                                Version 3.1. adds LHC + Nedler-Mead initial fit phase and keyword support",
+                                                Version 3.1 adds LHC + Nedler-Mead initial fit phase and keyword support",
                                terms.io.version : "3.1",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
@@ -127,9 +127,12 @@ KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {}
         meaning that it can only be consumed when this dialog prompt / choice list is invoked
         This allows handling some branching logic conditionals
     */
-    
-KeywordArgument ("branches",  "Branches to test");
-KeywordArgument ("mode",      "Run mode", "Classic", "Group test mode");
+
+KeywordArgument ("mode",      "Run mode", "Classic mode", "Group test mode");
+KeywordArgument ("reference-group", "The set of branches to use as reference", null, "Select the set of branches to use as reference");
+KeywordArgument ("test",  "Branches to use as the test set", null, "Choose the set of branches to use as the _test_ set");
+KeywordArgument ("reference",  "Branches to use as the reference test", null, "Choose the set of branches to use as the _reference_ set");
+
 KeywordArgument ("rates", "The number omega rate classes to include in the model [2-10, default 3]", relax.rate_classes);
 KeywordArgument ("models", "Which version of the test to run (All or Minimal)", "All");
 
@@ -295,7 +298,12 @@ if (relax.model_set == "All") { // run all the models
 
         if (Type (relax.ge_guess) != "Matrix") {
             // first time in 
-            relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE];
+            relax.initial.test_mean    =
+            
+            math.Mean ( 
+                utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+"), "_v_", "_v_[terms.fit.MLE]"));
+                
+            //console.log (relax.initial.test_mean);
             relax.init_grid_setup        (relax.distribution);
             relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
             relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
@@ -305,6 +313,7 @@ if (relax.model_set == "All") { // run all the models
 
             parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
                         
+            //VERBOSITY_LEVEL = 10;             
                          
             relax.grid_search.results =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : {"DEFAULT" : "relax.ge"}},
                                         relax.final_partitioned_mg_results,

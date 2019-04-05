@@ -1146,7 +1146,9 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
         if (d<0) {
             throw _String ("Ran out of input in buffer during a redirected standard input read.");
         }
+
         _String *sendBack = (_String*)stdinRedirect->GetXtra (d);
+        //printf ("Consumed stdin redrect %ld => %s\n", d, sendBack->get_str());
         sendBack->AddAReference();
         if (do_echo) {
             StringToConsole(*sendBack);

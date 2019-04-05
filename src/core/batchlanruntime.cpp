@@ -788,12 +788,14 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
                 receptacle->SetValue(like_func->ConstructCategoryMatrix(included_partitions, run_mode ,true, receptacle->GetName()), false);
             }
             break;
+                
             case HY_BL_TREE: {
                 _TheTree  *source_tree       = (_TheTree*)source_object;
+                
 
                 long    which_partition   = 0L,
                         linked_likelihood_id = source_tree->IsLinkedToALF (which_partition);
-
+                
                 if (linked_likelihood_id >= 0) {
                     _LikelihoodFunction * linked_lf            = (_LikelihoodFunction*) likeFuncList (linked_likelihood_id);
                     const _DataSetFilter      * filter             = linked_lf->GetIthFilter (which_partition);
@@ -834,6 +836,7 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
                     );
                 }
             }
+            break;
         }
     } catch (const _String& error) {
         return  _DefaultExceptionHandler (receptacle, error, current_program);
