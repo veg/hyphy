@@ -2785,7 +2785,7 @@ void    _Formula::ConvertToTree (bool err_msg) {
                     }
 
                     if (nTerms>nodeStack.lLength) {
-                        throw (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()) & " while converting " & _String ((_String*)toStr(kFormulaStringConversionNormal)).Enquote() & " to a parse tree");
+                        throw (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()) & " while converting " & toRPN(kFormulaStringConversionNormal).Enquote() & " to a parse tree");
                     }
 
                     node<long>* operationNode = new node<long>;
