@@ -27,6 +27,18 @@ function runTest () {
   // Min functions on dictionary; should only select among keys with numeric values
   dict = {"0" : 1, "1" : {{2,3}}, "hai" : {"a" : 5, "b" : 7}, "beavis" : 42};
   assert((Min(dict))["key"] == "0", "Failed to compute minimum value in a dictionary");
+  
+  // For string, Min returns absolute file paths (absolute filepaths aren't straightforward to test so shown here for documentation):
+  // with an empty string it returns a temp directory "/tmp/HYPHY-<6Characters_mixed_upper_and_lower_case>"
+  tempDir = Min("",0);
+  //fprintf (stdout, 'tempDir: ', tempDir, '\n');
+  // With a non-empty string it returns the current working directory pluss the string
+  // With second argument of zero it gets current working directory of the hbl script
+  workDirZero = Min("test",0);
+  //fprintf (stdout, 'workDirZero: ', workDirZero, '\n');
+  // With the second argument greater than zero it gets current working directory of the hyphy executable
+  workDirOne = Min("tests",1);
+  //fprintf (stdout, 'workDirOne: ', workDirOne, '\n');
 
   //---------------------------------------------------------------------------------------------------------
   // TOPOLOGY
@@ -38,7 +50,7 @@ function runTest () {
 
   Topology T1 = ((1:0.1, 2:0.2)N12 : 0.5, 3 : 1, 4 : 1);
   
-  fprintf (stdout, Min (T1,2), "\n");
+  //fprintf (stdout, Min (T1,2), "\n");
  
   // Example from Docs: http://hyphy.org/w/index.php/Min
   //Min(Topology T1 = ((a,b)N1,c,d,((g,h)N3,e,f)N2);, 2);
@@ -64,7 +76,6 @@ function runTest () {
   Tree TT = ((1,2),(3,4),5);
   Tree TTb = ((1,2),(3,4),5,6);
 
-  assert (runCommandWithSoftErrors ('Min ("abc",0)', "not implemented/defined for a String"), "Failed error checking for trying to take a minimum of a string");
   assert (runCommandWithSoftErrors ('Min (None,0)', "Attempting to operate on an undefined value"), "Failed error checking for trying to take a minimum with None");
   assert (runCommandWithSoftErrors ('Min (TT, TTb)', "Invalid power argument in call to COT finder"), "Failed error checking for trying to take a minimum of a tree");
   assert (runCommandWithSoftErrors ('Min (1)',  "was called with an incorrect number of arguments"), "Too few arguments error check");

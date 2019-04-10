@@ -1316,7 +1316,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
             _CalcNode * this_object = (_CalcNode *)_CheckForExistingVariableByType (*GetIthParameter(k), current_program, TREE | TREE_NODE);
             if (this_object->ObjectClass () == TREE) {
                 traversers[k-1] = new _TreeIterator ((_TheTree*)this_object, _HY_TREE_TRAVERSAL_POSTORDER);
-                parent_object_names << this_object->GetName();
+                parent_object_names << this_object->ParentTree()->GetName();
             } else {
                 node<long> * cn = this_object->LocateMeInTree();
                 if (!cn) {
