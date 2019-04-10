@@ -203,6 +203,16 @@ lfunction utility.DictToArray (object) {
     return result;
 }
 
+/**
+ * @name utility.DictToSortedArray
+ * @param object
+ */
+lfunction utility.DictToSortedArray (object) {
+    result = {Abs (object),2};
+    utility.ForEachPair(object, "_key_", "_value_", "(`&result`)[+_key_][0] = _value_;(`&result`)[+_key_][1] = +_key_;");
+    return result % 0;
+}
+
 
 /**
  * @name utility.Range

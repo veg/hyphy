@@ -50,7 +50,7 @@
 #include "category.h"
 #include "likefunc.h"
 
-const _String kTreeErrorMessageEmptyTree ("Cannot constuct empty trees");
+const _String kTreeErrorMessageEmptyTree ("Cannot construct empty trees");
 
 
 using namespace hy_global;
@@ -384,72 +384,74 @@ void    _TheTree::PostTreeConstructor (bool make_copy, _AssociativeList* meta) {
     /** TODO SLKP 20171211, make sure the semantics are unchanged */
     // existing variable is a CalcNode
     variablePtrs.Replace (get_index(), make_copy ? this->makeDynamic() : this, false);
-    //printf ("makecopy = %d [%ld]\n", make_copy, this->SingleReference());
     setParameter (WrapInNamespace (_TreeTopology::kMeta, GetName()), meta ? meta : new _MathObject, nil, false);
+    //printf ("makecopy = %d [%ld]\n", make_copy, this->SingleReference());
   };
   
   bool accept_rooted = EnvVariableTrue(accept_rooted_trees);
-  
-  if (theRoot->get_num_nodes() <= 2) { // rooted tree - check
-    if (accept_rooted == false) {
-      
-      long node_index = theRoot->get_data();
-      
-      bool recurse = false;
-      
-      if (theRoot->get_num_nodes() == 2) {
-        for (int i = 1; i<=2; i++) {
-          node<long> *node_temp = theRoot->go_down(i);
-          if (node_temp->get_num_nodes()) { // an internal node - make it a root
-            delete_associated_calcnode(theRoot);
+  try {
+      if (theRoot->get_num_nodes() <= 2) { // rooted tree - check
+        if (accept_rooted == false) {
+          
+          long node_index = theRoot->get_data();
+          bool recurse = false;
+          
+          if (theRoot->get_num_nodes() == 2) {
+            for (int i = 1; i<=2; i++) {
+              node<long> *node_temp = theRoot->go_down(i);
+              if (node_temp->get_num_nodes()) { // an internal node - make it a root
+                delete_associated_calcnode(theRoot);
+                node_temp->detach_parent();
+                node_temp->add_node(*theRoot->go_down(3-i));
+                delete theRoot;
+                theRoot = node_temp;
+                //delete_associated_calcnode (theRoot);
+                rooted = i == 1 ? ROOTED_LEFT : ROOTED_RIGHT;
+                ReportWarning (_String("Rooted topology. Removing one branch - the ") & (i==1 ? "left" : "right") & " root child has been promoted to be the new root");
+                break;
+              }
+            }
+            
+            if (rooted==UNROOTED) {
+              ReportWarning ("One branch tree supplied - hopefully this IS what you meant to do.");
+              node<long> *node_temp = theRoot->go_down(1);
+              delete_associated_calcnode(theRoot);
+              node_temp->detach_parent();
+              node_temp->add_node(*theRoot->go_down(2));
+              delete theRoot;
+              theRoot = node_temp;
+              rooted = ROOTED_LEFT;
+              //delete_associated_calcnode(theRoot);
+            }
+          } else {
+            if (theRoot->get_num_nodes() == 0) {
+              //delete this;
+              throw (kTreeErrorMessageEmptyTree);
+            }
+            node<long> *node_temp = theRoot->go_down(1);
             node_temp->detach_parent();
-            node_temp->add_node(*theRoot->go_down(3-i));
+            delete_associated_calcnode(theRoot);
             delete theRoot;
             theRoot = node_temp;
-            //delete_associated_calcnode (theRoot);
-            rooted = i == 1 ? ROOTED_LEFT : ROOTED_RIGHT;
-            ReportWarning (_String("Rooted topology. Removing one branch - the ") & (i==1 ? "left" : "right") & " root child has been promoted to be the new root");
-            break;
+            ReportWarning ("The root has a single child, which is be promoted to the root");
+            recurse = true;
+          }
+          
+          if (recurse) {
+            PostTreeConstructor (make_copy, meta);
+            return;
           }
         }
-        
-        if (rooted==UNROOTED) {
-          ReportWarning ("One branch tree supplied - hopefully this IS what you meant to do.");
-          node<long> *node_temp = theRoot->go_down(1);
-          delete_associated_calcnode(theRoot);
-          node_temp->detach_parent();
-          node_temp->add_node(*theRoot->go_down(2));
-          delete theRoot;
-          theRoot = node_temp;
-          rooted = ROOTED_LEFT;
-          //delete_associated_calcnode(theRoot);
-        }
-      } else {
-        if (theRoot->get_num_nodes() == 0) {
-          HandleApplicationError(kTreeErrorMessageEmptyTree);
-          return;
-        }
-        node<long> *node_temp = theRoot->go_down(1);
-        node_temp->detach_parent();
-        delete_associated_calcnode(theRoot);
-        delete theRoot;
-        theRoot = node_temp;
-        ReportWarning ("The root has a single child, which is be promoted to the root");
-        recurse = true;
       }
-      
-      if (recurse) {
-        PostTreeConstructor (make_copy, nil);
-        return;
+      if (!theRoot) {
+          //delete this;
+          throw _String ("Invalid tree/topology string specification.");
       }
-    }
+  } catch (const _String& e) {
+      HandleApplicationError (e);
   }
-  
-  if (!theRoot) {
-      HandleApplicationError ("Invalid tree/topology string specification.");
-  } else {
-      variable_handler ();
-  }
+    
+  variable_handler ();
 }
 
 //_______________________________________________________________________________________________

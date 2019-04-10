@@ -690,48 +690,72 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-            df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+        df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
     if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
         df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
     }
 
+    can_do_restarts = null;
+
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
         grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
-        best_value   = Max (grid_results, 1);
-        parameters.SetValues ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+        if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"),"Number")) {
+            restarts = run_options[utility.getGlobalValue("terms.search_restarts")];
+            if (restarts > 1) {
+                grid_results    = utility.DictToSortedArray (grid_results);
+                can_do_restarts = {};
+                for (i = 1; i <= restarts; i += 1) {
+                    can_do_restarts + (run_options [utility.getGlobalValue("terms.search_grid")])[grid_results[Rows(grid_results)-i][1]];
+                }
+            } 
+        } 
+        if (null == can_do_restarts) {
+            best_value   = Max (grid_results, 1);
+            parameters.SetValues ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+        }
         //console.log (best_value);
         //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
         //assert (0);
     }
     
     
-    //utility.SetEnvVariable ("VERBOSITY_LEVEL" ,10);
-    
-    //Export (lf,likelihoodFunction);
-    //console.log (lf);
-    
-    //fprintf (stdout, likelihoodFunction, "\n");
-    
-    //assert (0);
-
-    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
-        Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+    if (Type (can_do_restarts) == "AssociativeList") {
+        //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+        bestlog    = -1e100;
+        for (i = 0; i < Abs (can_do_restarts); i += 1) {
+            parameters.SetValues (can_do_restarts[i]);
+            if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+                Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+            } else {
+                Optimize (mles, likelihoodFunction);
+            }
+            if (mles[1][0] > bestlog) {
+            
+                //console.log ("\n\n**BEST LOG**\n\n");
+                bestlog = mles[1][0];
+                results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
+                results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
+            }
+        }
     } else {
-    	Optimize (mles, likelihoodFunction);
+        if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+            Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+        } else {
+            Optimize (mles, likelihoodFunction);
+        }
+        results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
+        results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
     }
 
-    //Export (lf,likelihoodFunction);
-    //console.log (lf);
+    
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
     }
 
-    results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
 
-    results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
     results[utility.getGlobalValue ("terms.parameters")] = mles[1][1] + df;
 
     results[utility.getGlobalValue ("terms.fit.filters")] = {

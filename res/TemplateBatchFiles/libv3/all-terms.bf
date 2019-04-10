@@ -38,6 +38,7 @@ namespace terms{
     reduced             = "reduced";
     substitutions       = "substitutions";
     search_grid         = "search_grid";
+    search_restarts     = "search_restarts";
     
     parameters     = "parameters";
     local          = "local";

@@ -52,6 +52,8 @@ busted.json.site_logl  = "Site Log Likelihood";
 busted.json.evidence_ratios  = "Evidence Ratios";
 busted.rate_classes = 3;
 busted.synonymous_rate_classes = 3;
+busted.initial_grid.N = 250;
+
 
 busted.json    = { terms.json.analysis: busted.analysis_description,
                    terms.json.input: {},
@@ -95,7 +97,8 @@ KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {}
 KeywordArgument ("branches",  "Branches to test", "All");
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
 KeywordArgument ("rates", "The number omega rate classes to include in the model [1-10, default 3]", busted.rate_classes);
-
+KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);
+KeywordArgument ("starting-points", "The number of initial random guesses to seed rate values optimization", 1);
 
 namespace busted {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
@@ -109,6 +112,8 @@ busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates
                                     ) == "Yes";
 
 busted.rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.rate_classes, 1, 10, TRUE);
+busted.initial_grid.N = io.PromptUser ("The number of points in the initial distributional guess for likelihood fitting", 250, 1, 10000, TRUE);
+busted.N.initial_guesses = io.PromptUser ("The number of initial random guesses to 'seed' rate values optimization", 1, 1, busted.initial_grid.N$10, TRUE);
                                     
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'BUSTED.json')", busted.codon_data_info [terms.json.json]);
 busted.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
@@ -227,7 +232,6 @@ parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model ,
 
 /* create an initial grid to initialize the optimization */
 busted.initial_grid = {};
-busted.initial_grid.N = 250;
 
 /* if populated, use this as a baseline to generate the distributions from */
 busted.initial_grid_presets = {"0" : 0.1};
@@ -306,10 +310,7 @@ utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 
 selection.io.startTimer (busted.json [terms.json.timers], "Unconstrained BUSTED model fitting", 2);
 
-
-
 io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 allowed) branch-site model fit");
-
 
 /** 
     perform the initial fit using a constrained branch length model and 
@@ -317,8 +318,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
     for the rate distribution parameters
 */
 
-//VERBOSITY_LEVEL = 10;
-
+ 
 busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
 
 parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
@@ -334,7 +334,8 @@ busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.tree
             "OPTIMIZATION_PRECISION" : busted.nm.precision
         } ,
                                      
-    terms.search_grid : busted.initial_grid
+    terms.search_grid     : busted.initial_grid,
+    terms.search_restarts : busted.N.initial_guesses
 });
     
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
