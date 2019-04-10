@@ -68,19 +68,20 @@ function echoCovariance (ps,values1,values2)
 
 SetDialogPrompt		("Choose a model fit:");
 
-//ExecuteAFile (PROMPT_FOR_FILE);
+ExecuteAFile (PROMPT_FOR_FILE);
 
-fscanf(PROMPT_FOR_FILE, "String", zzz);
+
 
 basePath		    = LAST_FILE_PATH;
 
-fprintf(stdout, LIST_ALL_VARIABLES);
+
 
 GetInformation		(vars,"^P_[0-9]+");
 
 
 rateCount			= Columns (vars)+1;
-fprintf(stdout, "butt");
+
+
 GetString			(lfInfo, lf, -1);
 fileCount			= Columns(lfInfo["Trees"])/rateCount;
 
@@ -330,7 +331,7 @@ for (fileID = 1; fileID <= fileCount; fileID = fileID+1)
 
 
 	mxTreeSpec [0] = "dNTree_"+fileID;
-	
+
 }
 
 logRates = {rateCount,3};

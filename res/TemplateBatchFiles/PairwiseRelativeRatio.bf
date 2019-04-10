@@ -31,6 +31,8 @@ if (fileCount<=1) {
 }
 
 /* read the first file */
+
+
 DataSet ds = ReadDataFile (stringMatrix[0]);
 referenceSpecCount = ds.species;
 
@@ -145,9 +147,12 @@ for (counter = 1; counter<= fileCount; counter += 1) {
 
 	LikelihoodFunction lf = (filteredData,firstFileTree);
 	Optimize (res,lf);
+	DeleteObject (lf);
+
 
 	if (counter<fileCount) {
 		DeleteObject (lf, :shallow);
+
 		DataSet ds = ReadDataFile (stringMatrix[counter]);
 		if (dataType)
 		{
@@ -162,14 +167,11 @@ for (counter = 1; counter<= fileCount; counter += 1) {
 		{
 			DataSetFilter filteredData = CreateFilter (ds,1);
 		}
-
 	}
 	else
 	{
 		fullParameterCount = res[1][1];
 	}
-	LikelihoodFunction lf = (filteredData,firstFileTree);
-	Optimize (res,lf);
 	singleFileResults [counter-1] = res[1][0];
 	fprintf (stdout,"\nFile ",stringMatrix[counter-1]," : ln-likelihood = ",res[1][0]);
 	if (counter==1)
@@ -222,8 +224,10 @@ fprintf (stdout,"\n\n (*)   corresponds to the .05 significance level\n (**)  co
 
 separator = "+--------+--------+--------------+--------------+";
 fprintf (stdout,separator,"\n| File 1 | File 2 |      LRT     |    P-Value   |\n",separator);
+
 for (counter = 0; counter< fileCount; counter = counter+1) {
     DataSet ds = ReadDataFile (stringMatrix[counter]);
+
 	if (dataType)
 	{
 		if (codeTables)

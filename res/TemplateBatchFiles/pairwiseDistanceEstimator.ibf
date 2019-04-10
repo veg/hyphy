@@ -14,14 +14,14 @@ _pddSNS 				   = 0;
 if (Abs(_Genetic_Code) && dataType == 1)
 {
 	ChoiceList (_pddSNS,"Codon Branch Length",1,SKIP_NONE,
-												"Total",      "Synonymous and non-synonymous distance",	
-												"Synonymous", "Synonymous distance",	
+												"Total",      "Synonymous and non-synonymous distance",
+												"Synonymous", "Synonymous distance",
 												"Non-synonymous", "Non-synonymous distance");
 	if (_pddSNS < 0)
 	{
 		return 0;
-	}				
-	
+	}
+
 	if (_pddSNS > 0)
 	{
 		ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"dSdNTreeTools.ibf");
@@ -31,7 +31,7 @@ if (Abs(_Genetic_Code) && dataType == 1)
 		}
 		else
 		{
-			BRANCH_LENGTH_STENCIL = (ComputeScalingStencils (0))["NonSyn"];		
+			BRANCH_LENGTH_STENCIL = (ComputeScalingStencils (0))["NonSyn"];
 		}
 	}
 }
@@ -46,7 +46,7 @@ if (MPI_NODE_COUNT > 1)
 	_pddMPIFirst = {};
 	Export (_pddModelExport, USE_LAST_MODEL);
 	DATA_FILE_PRINT_FORMAT = 6;
-}	
+}
 else
 {
 	Tree Inferred_Tree 	    = (1,2);
@@ -59,7 +59,7 @@ else
 	IF THERE EXISTS A TREE
 	SEE IF ONE NEEDS TO ESTIMATE GLOBAL
 	PARAMETERS FOR THE MODEL AND FIX THEM FOR PAIRWISE ESTIMATIONS
-	
+
 ------------------------------------------------------------------------------------------*/
 
 if (Abs(DATAFILE_TREE))
@@ -81,30 +81,30 @@ if (Abs(DATAFILE_TREE))
 	else
 	{
 		Tree _fileTree = DATAFILE_TREE;
-		if (Abs(_Genetic_Code) && dataType == 1)	
+		if (Abs(_Genetic_Code) && dataType == 1)
 		{
 			DataSetFilter copy_filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
 		}
 		else
 		{
-			DataSetFilter copy_filteredData = CreateFilter (ds,1);	
+			DataSetFilter copy_filteredData = CreateFilter (ds,1);
 		}
 		LikelihoodFunction lf = (copy_filteredData,_fileTree);
 		GetString (_pddNodeID, lf, -1);
-		
+
 		if (Columns (_pddNodeID["Global Independent"]))
 		{
 			ChoiceList (_paramOption,	"Global parameters",1,SKIP_NONE,
 						"Estimated",	"Estimate global model parameters using a provided tree",
 						"Manual",		"Enter parameter values by hand");
-					
+
 			if (_paramOption < 0)
 			{
 				return 0;
 			}
-			
+
 			LoadFunctionLibrary ("GrabBag.bf");
-            
+
 			if (_paramOption == 0)
 			{
 				if (Abs(_Genetic_Code) && dataType)
@@ -114,7 +114,7 @@ if (Abs(DATAFILE_TREE))
 					defineIfNeeded ("CG",1);
 					defineIfNeeded ("CT",1);
 					defineIfNeeded ("GT",1);
-					
+
 					_REVMX = {{*,AC*mu,mu,AT*mu}{AC*mu,*,CG*mu,CT*mu}{mu,CG*mu,*,GT*mu}{AT*mu,CT*mu,GT*mu,*}};
 
 					if (_pddVF)
@@ -124,9 +124,9 @@ if (Abs(DATAFILE_TREE))
 					DataSetFilter	 	_nucData = CreateFilter (ds,1);
 					HarvestFrequencies	(_nucF,_nucData,1,1,1);
 					Model _REVModel =   (_REVMX,_nucF,1);
-					
+
 					Tree 			 	_nucTree = DATAFILE_TREE;
-					
+
 					LikelihoodFunction nuc_lf = (_nucData,_nucTree);
 					Optimize 		  (res,nuc_lf);
 					global 			   _bsf = 0.33;
@@ -198,29 +198,29 @@ for (_pddi = 0; _pddi<ds.species-1; _pddi=_pddi+1)
 			_nexusJobShort = "";
 			_nexusJob      * 256;
 			_nexusJobShort * 256;
-            
+
             if (pairwiseAlign)
             {
-            _pddFilterExport = "alignOptions = " + alignOptions + ";\n" + 
-                               "inStr=" + inStr + ";\n" + 
-                                "AlignSequences(aligned, inStr, alignOptions);" + 
-                                "aligned = aligned[0];" + 
-                                "s1 = \">1\\n\" + aligned[1] + \"\\n>2\\n\" + aligned[2] + \"\\n\";" + 
+            _pddFilterExport = "alignOptions = " + alignOptions + ";\n" +
+                               "inStr=" + inStr + ";\n" +
+                                "AlignSequences(aligned, inStr, alignOptions);" +
+                                "aligned = aligned[0];" +
+                                "s1 = \">1\\n\" + aligned[1] + \"\\n>2\\n\" + aligned[2] + \"\\n\";" +
                                 "DataSet ds 			= ReadFromString (s1);";
-                                //"DataSetFilter twoSpecFilter = CreateFilter (realigned,1);";  
+                                //"DataSetFilter twoSpecFilter = CreateFilter (realigned,1);";
             }
             else
             {
-            _pddFilterExport = "aligned = aligned[0];" + 
-                                "s1 = \">1\\n\"" + s1 + "\"\\n>2\\n\"" + s2 + "\"\\n\";" + 
+            _pddFilterExport = "aligned = aligned[0];" +
+                                "s1 = \">1\\n\"" + s1 + "\"\\n>2\\n\"" + s2 + "\"\\n\";" +
                                 "DataSet ds 			= ReadFromString (s1);";
-                               // "DataSetFilter twoSpecFilter = CreateFilter (realigned,1);";  
+                               // "DataSetFilter twoSpecFilter = CreateFilter (realigned,1);";
             }
- 
+
 			_nexusJob * _pddFilterExport;
 			_nexusJobShort * _pddFilterExport;
-           
-			
+
+
 			_nexusJob      * ("\nBRANCH_LENGTH_STENCIL="+BRANCH_LENGTH_STENCIL+";\n");
 			_nexusJob      * _pddModelExport;
 			_nexusJob      * ("PRESERVE_SLAVE_NODE_STATE=1;TRY_NUMERIC_SEQUENCE_MATCH=1;Tree givenTree = (1,2);");
@@ -238,7 +238,7 @@ for (_pddi = 0; _pddi<ds.species-1; _pddi=_pddi+1)
 			_nexusJob * 0;
 			_nexusJobShort * "LikelihoodFunction lf = (twoSpecFilter,givenTree);Optimize(res,lf);return BranchLength (givenTree,0);\n";
 			_nexusJobShort * 0;
-            
+
             //fprintf (stdout, _nexusJobShort, "\n");
 		}
         else
@@ -250,11 +250,11 @@ for (_pddi = 0; _pddi<ds.species-1; _pddi=_pddi+1)
                 s1 = ">1\n" + aligned[1] + "\n>2\n" + aligned[2] + "\n";
                 //fprintf (stdout, s1, "\n");
                 DataSet realigned 			= ReadFromString (s1);
-                DataSetFilter twoSpecFilter = CreateFilter (realigned,1);  
+                DataSetFilter twoSpecFilter = CreateFilter (realigned,1);
             }
         }
-        
-		_pddSendJobs (_pddi,_pddj); 
+
+		_pddSendJobs (_pddi,_pddj);
 	}
 }
 
@@ -305,10 +305,10 @@ function _pddReceiveJobs (dummy)
 		_di 	= _pddi;
 		_dj		= _pddj;
 		_dk 	= BranchLength 		  (Inferred_Tree,0);
-        
+
         //fprintf (stdout, _dk, "\n");
 	}
-	
+
 	distanceMatrix[_dj][_di+1]  = _dk;
 	distanceMatrix[_di+1][_dj]  = _dk;
 	if (_pddVF)
@@ -322,7 +322,7 @@ function _pddReceiveJobs (dummy)
 			_pLastU	 = _pTimer2;
 			fprintf (stdout,"DONE WITH ",_pDone,"/", _pTotal, " EVALUATIONS. ETA: ",(_pTotal-_pDone)/_pDone*(_pTimer2-_pTimer)," seconds \n");
 		}
-	}	
+	}
 	return _pddFromNode;
 }
 
@@ -345,17 +345,17 @@ function _pddSendJobs (_di2,_dj2)
 		{
 			_pddNodeID = _pddReceiveJobs (0) - 1;
 		}
-		
+
 		_pddMPI [_pddNodeID][0] = _di2;
 		_pddMPI [_pddNodeID][1] = _dj2;
 		if (_pddMPIFirst[_pddNodeID] == 0)
-		{	
+		{
 			_pddMPIFirst[_pddNodeID] = 1;
 			MPISend (_pddNodeID+1,_nexusJob);
 		}
 		else
 		{
-			MPISend (_pddNodeID+1,_nexusJobShort);		
+			MPISend (_pddNodeID+1,_nexusJobShort);
 		}
 	}
 	else
