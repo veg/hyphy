@@ -73,7 +73,7 @@ maxLength = maxLength+6;
 fprintf(stdout,"\n\n In the summary table below, branch lengths denote");
 
 if (parameter2Constrain) {
-	fprintf (stdout," the value of parameter ", funnyString, " for that branch.");
+	fprintf (stdout," the value of parameter ", parameter_name, " for that branch.");
 }
 else {
 	fprintf (stdout," the expected number of substituions per that branch.");
@@ -173,15 +173,14 @@ for (firstSpec = 0; firstSpec < speciesCount; firstSpec += 1) {
 
 		LikelihoodFunction lf = (filteredData,threeTaxaTree);
 		Optimize (res,lf);
-
 		Tree constrained3TaxaTree = treeString;
 		/* now specify the constraint */
 
 		LikelihoodFunction lfConstrained = (filteredData,constrained3TaxaTree);
-		
-		ReplicateConstraint (constraintString,constrained3TaxaTree.FirstSpecies, constrained3TaxaTree.SecondSpecies);
-
+		ReplicateConstraint ("this1.FirstSpecies.`parameter_name`:=this2.SecondSpecies.`parameter_name`",constrained3TaxaTree.FirstSpecies, constrained3TaxaTree.SecondSpecies);
 		Optimize (res1,lfConstrained);
+		
+		ClearConstraints (constrained3TaxaTree);
 		
 	
 		lnLikDiff = -2(res1[1][0]-res[1][0]);

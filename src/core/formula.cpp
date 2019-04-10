@@ -247,7 +247,18 @@ void    _Formula::Clear (void) {
 
 //  theStack.Clear();
 }
-
+//__________________________________________________________________________________
+_StringBuffer const _Formula::toRPN (_hyFormulaStringConversionMode mode, _List* matched_names) {
+    _StringBuffer r;
+    if (theFormula.countitems()) {
+        SubtreeToString (r,nil,0,nil,GetIthTerm(0UL), mode);
+        for (unsigned long k=1UL; k<theFormula.countitems(); k++) {
+            r <<'|';
+            SubtreeToString (r,nil,0,nil,GetIthTerm(k), mode);
+        }
+    }
+    return r;
+}
 //__________________________________________________________________________________
 BaseRef _Formula::toStr (_hyFormulaStringConversionMode mode, _List* matched_names, bool drop_tree) {
     ConvertToTree(false);
@@ -261,12 +272,7 @@ BaseRef _Formula::toStr (_hyFormulaStringConversionMode mode, _List* matched_nam
         SubtreeToString (*result, theTree, -1, matched_names, nil, mode);
     } else {
         if (theFormula.countitems()) {
-            (*result) << "RPN:";
-            SubtreeToString (*result,nil,0,nil,GetIthTerm(0UL), mode);
-            for (unsigned long k=1UL; k<theFormula.countitems(); k++) {
-                (*result)<<'|';
-                SubtreeToString (*result,nil,0,nil,GetIthTerm(k), mode);
-            }
+            (*result) << "RPN:" << toRPN (mode, matched_names);
         }
     }
 
@@ -2761,47 +2767,51 @@ void    _Formula::ConvertToTree (bool err_msg) {
         _SimpleList nodeStack;
 
         unsigned long const upper_bound = NumberOperations();
+        theTree = nil;
+        try {
         
-        for (unsigned long i=0UL; i<upper_bound; i++) {
+            for (unsigned long i=0UL; i<upper_bound; i++) {
 
-            _Operation* currentOp = ItemAt(i);
+                _Operation* currentOp = ItemAt(i);
 
-            if (currentOp->theNumber || currentOp->theData >= 0L || currentOp->theData <= -2L) { // a data bit
-                node<long>* leafNode = new node<long>;
-                leafNode->init(i);
-                nodeStack<<(long)leafNode;
-            } else { // an operation
-                long nTerms = currentOp->GetNoTerms();
-                if (nTerms<0L) {
-                    nTerms = GetBFFunctionArgumentCount(currentOp->opCode);
-                }
-
-                if (nTerms>nodeStack.lLength) {
-                    if (err_msg) {
-                        HandleApplicationError (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()) & " while converting " & _String ((_String*)toStr(kFormulaStringConversionNormal)).Enquote() & " to a parse tree");
+                if (currentOp->theNumber || currentOp->theData >= 0L || currentOp->theData <= -2L) { // a data bit
+                    node<long>* leafNode = new node<long>;
+                    leafNode->init(i);
+                    nodeStack<<(long)leafNode;
+                } else { // an operation
+                    long nTerms = currentOp->GetNoTerms();
+                    if (nTerms<0L) {
+                        nTerms = GetBFFunctionArgumentCount(currentOp->opCode);
                     }
-                    theTree = nil;
-                    return;
-                }
 
-                node<long>* operationNode = new node<long>;
-                operationNode->init(i);
-                for (long j=0; j<nTerms; j++) {
-                    operationNode->prepend_node(*((node<long>*)nodeStack.Pop()));
+                    if (nTerms>nodeStack.lLength) {
+                        throw (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()) & " while converting " & _String ((_String*)toStr(kFormulaStringConversionNormal)).Enquote() & " to a parse tree");
+                    }
+
+                    node<long>* operationNode = new node<long>;
+                    operationNode->init(i);
+                    for (long j=0; j<nTerms; j++) {
+                        operationNode->prepend_node(*((node<long>*)nodeStack.Pop()));
+                    }
+                    nodeStack<<(long)operationNode;
                 }
-                nodeStack<<(long)operationNode;
             }
-        }
-        if (nodeStack.lLength!=1) {
+            if (nodeStack.lLength!=1) {
+                throw ((_String)"The expression '" & toRPN (kFormulaStringConversionNormal) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
+            } else {
+                theTree = (node<long>*)nodeStack(0);
+            }
+        } catch (_String const e) {
             if (err_msg) {
-                HandleApplicationError ((_String)"The expression '" & _String ((_String*)toStr(kFormulaStringConversionNormal)) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
+                HandleApplicationError(e);
             }
+            nodeStack.Each ([this] (long v, unsigned long) -> void {
+                node<long>* operationNode = (node<long>*)v;
+                operationNode->delete_tree();
+                delete (operationNode);
+            });
             theTree = nil;
-        } else {
-            theTree = (node<long>*)nodeStack(0);
         }
-
-
     }
 }
 //__________________________________________________________________________________

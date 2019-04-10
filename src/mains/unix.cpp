@@ -831,7 +831,6 @@ int main (int argc, char* argv[]) {
     ex.SetKWArgs (&kwargs);
     
     
-    
     if (calculatorMode) {
         if (argFile.length()) {
           PushFilePath  (argFile);
@@ -840,6 +839,7 @@ int main (int argc, char* argv[]) {
         }
         printf ("\nHYPHY is running in calculator mode. Type 'exit' when you are finished.\n");
         while (ExpressionCalculator()) ;
+        GlobalShutdown();
         return 0;
     }
 
@@ -851,6 +851,7 @@ int main (int argc, char* argv[]) {
         return 0;
     }
 
+    
     // try to read the preferences
     _String     prefFile (curWd);
     prefFile = prefFile & '/' & prefFileName;
@@ -952,6 +953,7 @@ int main (int argc, char* argv[]) {
             GlobalShutdown              ();
             return 0;
         }
+
 
         ex.Execute();
 

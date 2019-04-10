@@ -134,6 +134,7 @@ function InferTreeTopology(verbFlag)
 		}
 		else
 		{	
+	        fprintf (stdout, (distanceMatrix > methodIndex), "\n");
 			njm = (distanceMatrix > methodIndex)>=ds.species;
 				
 			treeNodes 		= {2*(ds.species+1),3};

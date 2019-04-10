@@ -9,11 +9,11 @@ if (Rows("LAST_MODEL_PARAMETER_LIST")>1) {
 }
 
 if (parameter2Constrain==0) {
-	funnyString = "?";
+	parameter_name = "?";
 }
 else {
-	GetString (funnyString,LAST_MODEL_PARAMETER_LIST,parameter2Constrain-1);
+	GetString (parameter_name,LAST_MODEL_PARAMETER_LIST,parameter2Constrain-1);
 }
 
 
-constraintString = "this1."+funnyString+relationString+"this2."+funnyString;
+constraintString = "this1.?."+parameter_name+relationString+"this2.?."+parameter_name;

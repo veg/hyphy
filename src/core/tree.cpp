@@ -383,9 +383,9 @@ void    _TheTree::PostTreeConstructor (bool make_copy, _AssociativeList* meta) {
   auto variable_handler = [&] (void) -> void {
     /** TODO SLKP 20171211, make sure the semantics are unchanged */
     // existing variable is a CalcNode
-    
     variablePtrs.Replace (get_index(), make_copy ? this->makeDynamic() : this, false);
-      setParameter (WrapInNamespace (_TreeTopology::kMeta, GetName()), meta ? meta : new _MathObject, nil, false);
+    //printf ("makecopy = %d [%ld]\n", make_copy, this->SingleReference());
+    setParameter (WrapInNamespace (_TreeTopology::kMeta, GetName()), meta ? meta : new _MathObject, nil, false);
   };
   
   bool accept_rooted = EnvVariableTrue(accept_rooted_trees);
@@ -842,7 +842,7 @@ _String const            _TheTree::GetBranchLengthString (node<long> * n, bool g
         RetrieveModelComponents(tree_node->GetModelIndex(), mm, fv, mbf);
 
         if (mm && fv && mm->ObjectClass() == MATRIX && fv->ObjectClass() == MATRIX) {
-            return *((_Matrix*)mm->GetValue())->BranchLengthExpression((_Matrix*)fv->GetValue(),mbf);
+            return _String (((_Matrix*)mm->GetValue())->BranchLengthExpression((_Matrix*)fv->GetValue(),mbf));
         } else {
             return kEmptyString;
         }

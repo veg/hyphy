@@ -2063,7 +2063,7 @@ _MathObject* _Polynomial::Mult (_MathObject* m)
                     }
                 }
 
-                delete newTerm;
+                delete []newTerm;
             } else {
                 _SimpleList merge1, merge2, joint;
                 joint.Merge (variableIndex, p2->variableIndex,&merge1,&merge2);

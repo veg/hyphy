@@ -375,7 +375,7 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& current_program){
     try {
       source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
     } catch (const _String& ) {
-      receptacle->SetValue(new _MathObject);
+      receptacle->SetValue(new _MathObject, false);
     }
 
 
@@ -383,22 +383,22 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& current_program){
       case HY_BL_LIKELIHOOD_FUNCTION: {
         _StringBuffer * serialized_object = new _StringBuffer (8192L);
         ((_LikelihoodFunction*)source_object)->SerializeLF (*serialized_object);
-        receptacle->SetValue(new _FString (serialized_object));
+        receptacle->SetValue(new _FString (serialized_object), false);
         break;
       }
       case HY_BL_DATASET_FILTER: {
-        receptacle->SetValue(new _FString (new _String ((_String*)((_DataSetFilter*)source_object)->toStr())));
+        receptacle->SetValue(new _FString (new _String ((_String*)((_DataSetFilter*)source_object)->toStr())), false);
         ReleaseDataFilterLock(object_index);
         break;
       }
       case HY_BL_MODEL: {
         _StringBuffer * serialized_object = new _StringBuffer (8192L);
         SerializeModel (*serialized_object,object_index,nil,true);
-        receptacle->SetValue(new _FString (serialized_object));
+        receptacle->SetValue(new _FString (serialized_object), false);
         break;
       }
       case HY_BL_HBL_FUNCTION: {
-        receptacle->SetValue(new _FString (new _String (ExportBFFunction (object_index))));
+        receptacle->SetValue(new _FString (new _String (ExportBFFunction (object_index))), false);
         break;
       }
     }
@@ -1316,25 +1316,27 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
             _CalcNode * this_object = (_CalcNode *)_CheckForExistingVariableByType (*GetIthParameter(k), current_program, TREE | TREE_NODE);
             if (this_object->ObjectClass () == TREE) {
                 traversers[k-1] = new _TreeIterator ((_TheTree*)this_object, _HY_TREE_TRAVERSAL_POSTORDER);
-                parent_object_names << this_object->GetName();
+                parent_object_names << this_object->ParentTree()->GetName();
             } else {
                 node<long> * cn = this_object->LocateMeInTree();
                 if (!cn) {
                     throw (*GetIthParameter(k) & " is not a part of a tree object");
                 }
-                parent_object_names << this_object->GetName();
+                parent_object_names << this_object->ParentTree()->GetName();
                 traversers[k-1] = new _TreeIterator (this_object, cn, _HY_TREE_TRAVERSAL_POSTORDER);
             }
             templated_operations < new _List;
         }
         
-        /*_CalcNode * check = traversers[1]->Next();
+        /*
+        _CalcNode * check = traversers[1]->Next();
         while (check) {
             printf ("%s\n", check->GetName()->get_str());
             check = traversers[1]->Next();
         }
         
-        throw (_String("BAIL"));*/
+        throw (_String("BAIL"));
+        */
 
         _String  const  constraint_pattern = _ProcessALiteralArgument (*GetIthParameter(0), current_program);
         
@@ -1447,9 +1449,9 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
             _CalcNode * reference_iteratee = traversers[reference_argument]->Next();
             node <long> * reference_node   = traversers[reference_argument]->GetNode();
             
-            //printf ("%s\n", reference_iteratee->GetName()->get_str());
             
             if (reference_iteratee) {
+                //printf ("%s\n", reference_iteratee->GetName()->get_str());
                 _List iteratees;
                 iteratees << reference_iteratee;
                 for (unsigned long i = 0UL; i < template_parameter_count; i++) {
@@ -1473,7 +1475,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                     
                     if (conditions->Every ([&local_name,&matched_conditions] (long condition, unsigned long i) -> bool {
                         _String const * match_pattern = (_String*)((_List*)condition)->GetItem (0);
-                        //printf ("[pattern] %s\n",match_pattern->get_str());
+                        //printf ("[name] %s [pattern] %s\n",local_name.get_str(), match_pattern->get_str());
                         if (i == 0) {
                             return local_name.EqualWithWildChar (*match_pattern,'?', 0, 0, &matched_conditions);
                             
@@ -1481,12 +1483,13 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                             return local_name.EqualWithWildChar (*match_pattern,'?');
                         }
                     })) {
-                        //printf ("[%ld] %s\n", condition_index,local_name.get_str());
+                        //printf ("[%ld] %s (%s, %s)\n", condition_index,local_k->GetName()->get_str(), local_name.get_str(), ((_String*)parent_object_names.GetItem(condition_index))->get_str());
                         *parameter_set << local_k;
                         _List * subexpressions = new _List;
                         for (long k = 0L; k < matched_conditions.countitems(); k+=2) {
                             subexpressions->AppendNewInstance (new _String (local_name, matched_conditions(k), matched_conditions (k+1)));
                         }
+                        //ObjectToConsole(subexpressions);
                         *matched_subexpressions < subexpressions;
                     }
                 };
@@ -1557,6 +1560,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                             _List * reference_subexpressions    = (_List*)matched_subexpressions.GetItem(reference_argument,i);
                             _List   local_substitution_variables;
                             
+                            //ObjectToConsole(reference_subexpressions);
                             
                             if   (parameter_sets.Every ([reference_argument, ref_var, &local_substitution_variables, matched_subexpressions, reference_subexpressions] (long template_i, unsigned long i2) -> bool {
                                 if (i2 != reference_argument) {
@@ -1567,6 +1571,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                                         _List *  check_subs = (_List*) matched_template_subexpressions->GetItem (i3);
                                         for (long i = 0; i < Minimum(check_subs->countitems(), reference_subexpressions->countitems()); i++) {
                                             if (*(_String*)check_subs->GetItem(i) != *(_String*)reference_subexpressions->GetItem(i) ) {
+                                               // printf ("[fail check] %s %s [%d]\n", ((_String*)check_subs->GetItem(i))->get_str(),((_String*)reference_subexpressions->GetItem(i))->get_str(), check_subs->countitems());
                                                 return false;
                                             }
                                         }
@@ -2463,17 +2468,16 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
 
           if (!managed_object_to_print) { // not an existing variable
-            try {
               long object_type = HY_BL_ANY, object_index;
-              managed_object_to_print = _GetHBLObjectByTypeMutable (namespaced_id, object_type, &object_index, false);
-              if (object_type == HY_BL_DATASET_FILTER) {
-                ReleaseDataFilterLock(object_index);
+              managed_object_to_print = //_GetHBLObjectByTypeMutable (namespaced_id, object_type, &object_index, false);
+                _HYRetrieveBLObjectByNameMutable (namespaced_id, object_type,&object_index,false, false);
+              if (managed_object_to_print) {
+                  if (object_type == HY_BL_DATASET_FILTER) {
+                    ReleaseDataFilterLock(object_index);
+                  }
+              } else {
+                   dynamic_object_to_print = _ProcessAnArgumentByType (*current_argument, HY_ANY_OBJECT, current_program, nil);
               }
-
-            } catch (const _String& error) {
-                // try to look up
-              dynamic_object_to_print = _ProcessAnArgumentByType (*current_argument, HY_ANY_OBJECT, current_program, nil);
-            }
           }
       }
 
@@ -2660,14 +2664,14 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                         if (!namespace_for_code.IsValidIdentifier(fIDAllowCompound)) {
                             throw (_String("Invalid namespace ID in call to ExecuteCommands/ExecuteAFile: ") & GetIthParameter(3UL)->Enquote());
                         }
-                        use_this_namespace = new _String (namespace_for_code);
+                        dynamic_reference_manager < (use_this_namespace = new _String (namespace_for_code));
                     }
                 }
             }
         }
         
         if (parameter_count () < 4UL && current_program.nameSpacePrefix) {
-            use_this_namespace = new _String (*current_program.nameSpacePrefix->GetName());
+            dynamic_reference_manager < (use_this_namespace = new _String (*current_program.nameSpacePrefix->GetName()));
         }
         
         if (source_code->BeginsWith ("#NEXUS")) {

@@ -211,8 +211,7 @@ bool _Operation::HasChanged (void)
 }
 
 //__________________________________________________________________________________
-_Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContainer const* theParent, bool take_a_reference)
-{
+_Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContainer const* theParent, bool take_a_reference) {
     if (isVar) { // creating a variable
         long f;
         _String theS (stuff);

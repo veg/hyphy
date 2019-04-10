@@ -667,7 +667,6 @@ void  InsertVar (_Variable* theV) {
             HandleApplicationError(_String("Error while creating a tree: duplicate node name ") & *theV->GetName()->Enquote());
             return;
         }
-
         theV->theIndex = variableNames.GetXtra(-pos-1);
         return;
     } else {
