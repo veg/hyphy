@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.12)
 project(HyPhy)
 cmake_policy(VERSION 3.0.0)
-cmake_policy(SET CMP0026 OLD)
-cmake_policy(SET CMP0004 OLD)
+#cmake_policy(SET CMP0026 OLD)
+#cmake_policy(SET CMP0004 OLD)
 
 
 set(CMAKE_CONFIGURATION_TYPES Release)
@@ -405,7 +405,7 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
+    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
     LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
 )
 

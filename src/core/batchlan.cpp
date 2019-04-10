@@ -3176,11 +3176,12 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         }
 
         if (!tr) {
+            DeleteObject (tr);
             HandleApplicationError("Illegal right hand side in call to Tree id = ...; it must be a string, a Newick tree spec or a topology");
             return false;
         }
 
-        if (leftOverVars.lLength) { // mod 02/03/2003 - the entire "if" block
+        if (leftOverVars.nonempty()) { // mod 02/03/2003 - the entire "if" block
             _SimpleList indep, dep, holder;
             {
                 _AVLList    indepA (&indep),
@@ -3213,9 +3214,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             }
 
             tr->Clear();
-
+ 
         }
-        SetStatusLine ("Idle");
 
     }
     break;
@@ -4599,7 +4599,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     _String*    funcID  = new _String(source.Cut (mark1,mark2-1));
 
     if (!funcID->IsValidIdentifier(fIDAllowCompound)) {
-      HandleApplicationError      (_String("Not a valid function/namespace identifier '") & *funcID & "'");
+      HandleApplicationError      (_String("Not a valid function/namespace identifier '") & _String(funcID) & "'");
       return false;
     }
 

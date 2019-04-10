@@ -463,6 +463,7 @@ void  _List::DeleteList (const _SimpleList& toDelete)
 }
 
 void    _List::Duplicate (BaseRefConst theRef) {
+    Clear();
     _SimpleList::Duplicate (theRef);
     if (lData) {
         for (unsigned long i = 0UL; i<lLength; i++) {

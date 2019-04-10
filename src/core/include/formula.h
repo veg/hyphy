@@ -120,6 +120,7 @@ public:
     void        DuplicateReference          (const _Formula*);
     virtual BaseRef     makeDynamic         (void) const;
     virtual BaseRef     toStr               (_hyFormulaStringConversionMode mode, _List* matchNames = nil, bool = false);
+    _StringBuffer const     toRPN               (_hyFormulaStringConversionMode mode, _List* matchNames = nil);
 
     virtual long        ObjectClass         (void);
 

@@ -621,8 +621,7 @@ void  _SimpleList::Displace (long start, long end, long delta)
     }
 }
 
-void _SimpleList::Duplicate(BaseRefConst theRef)
-{
+void _SimpleList::Duplicate(BaseRefConst theRef) {
     _SimpleList const* l  = (_SimpleList const*)theRef;
     lLength         = l->lLength;
     laLength        = l->laLength;

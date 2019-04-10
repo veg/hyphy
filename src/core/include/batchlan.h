@@ -117,7 +117,7 @@ public:
     _String     TrimNameSpaceFromID         (_String&);
   
     bool        has_stdin_redirect         (void) const {return stdinRedirect != nil;}
-    bool        has_keyword_arguments      (void) const {return kwargs && kwargs -> countitems() || kwarg_tags && kwarg_tags->countitems();}
+    bool        has_keyword_arguments      (void) const {return (kwargs && kwargs -> countitems()) || (kwarg_tags && kwarg_tags->countitems());}
   
     _String*    FetchFromStdinRedirect     (_String const * dialog_tag = nil, bool handle_multi_choice = false, bool do_echo = false);
     

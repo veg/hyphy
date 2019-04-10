@@ -37,7 +37,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('Arctan("")', "Operation 'Arctan' is not implemented/defined for a String"), "Arctan String argument is invalid");
   assert(runCommandWithSoftErrors('Arctan({})', "Operation 'Arctan' is not implemented/defined for a AssociativeList"), "Arctan Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('Arctan({{"a","b"}})', "evaluated with errors"), "Arctan Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('Arctan({{"a","b"}})', "Operation 'Arctan' is not implemented/defined for a Matrix"), "Arctan Matrix argument is invalid");
   assert(runCommandWithSoftErrors('Arctan(T)', "Operation 'Arctan' is not implemented/defined for a Topology"), "Arctan Topology argument is invalid");
   assert(runCommandWithSoftErrors('Arctan(TT)', "Operation 'Arctan' is not implemented/defined for a Tree"), "Arctan Tree argument is invalid");
 	testResult = 1;

@@ -94,7 +94,7 @@ KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {}
     
 KeywordArgument ("branches",  "Branches to test", "All");
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
-KeywordArgument ("rates", "The number omega rate classes to include in the model [2-10, default 3]", busted.rate_classes);
+KeywordArgument ("rates", "The number omega rate classes to include in the model [1-10, default 3]", busted.rate_classes);
 
 
 namespace busted {
@@ -108,7 +108,7 @@ busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates
                                     "Synonymous rate variation"
                                     ) == "Yes";
 
-busted.rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.rate_classes, 2, 10, TRUE);
+busted.rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.rate_classes, 1, 10, TRUE);
                                     
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'BUSTED.json')", busted.codon_data_info [terms.json.json]);
 busted.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");

@@ -34,7 +34,7 @@ function runTest () {
   matrix1 = {{0,7,11}{7,0,6}{11,6,0}};
   constructedTree = matrix1 >= 3;
   expectedTree = {{4, 0, 0, 0, -1}{0, 0, 0, 0, 0} {0, 0, 0, 0, 0} {0, 0, 0, 0, 0}{0, 0, 0, 11, 0}{1, 1, 0, 0, 0} {0, 0, 0, 0, 0} {0, 0, 0, 0, 0}};
-  assert(constructedTree == expectedTree, "Faild to construct a tree from a parent matrix");
+  assert(constructedTree == expectedTree, "Failed to construct a tree from a parent matrix");
 
 
   //---------------------------------------------------------------------------------------------------------

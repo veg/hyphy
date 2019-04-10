@@ -605,7 +605,7 @@ lfunction parameters.GetStickBreakingDistribution (parameters) {
  * @returns weights
  */
 lfunction parameters.helper.stick_breaking(parameters, initial_values) {
-    left_over = "";
+    left_over = "1*"; // handle the case of ONE component
     weights = {};
     accumulator = 1;
 

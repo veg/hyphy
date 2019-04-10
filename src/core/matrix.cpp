@@ -1022,8 +1022,8 @@ HBLObjectRef   _Matrix::Eigensystem (void) const {
                 cpy->EigenDecomp (*rl,*im);
                 DeleteObject (cpy);
 
-                return & ((*new _AssociativeList) << _associative_list_key_value {"0", rl}
-                       << _associative_list_key_value {"1", im});
+                return & ((*new _AssociativeList) < _associative_list_key_value {"0", rl}
+                       < _associative_list_key_value {"1", im});
             }
         }
     }
@@ -7476,120 +7476,143 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 
 //_____________________________________________________________________________________________
 _Matrix*        _Matrix::MakeTreeFromParent (long specCount) {
-    if (hDim == 0 || vDim == 0) {
+    if (is_empty()) {
         return new _Matrix;
     }
+    
+    try {
 
-    if(specCount<0) {
-        HandleApplicationError (_String ("Parameter to ") & __PRETTY_FUNCTION__ & " must be greater than or equal to 0");
-        return new _Matrix (1,1,false,true);
-    }
-
-    _Matrix     *tree = new _Matrix (2*(specCount+1),5,false,true),
-    CI  (2*(specCount+1),1,false,true);
-
-
-    for (long kk = 0; kk < specCount-1; kk++) {
-        tree->theData[kk*5+4] = -1;
-    }
-
-    long cladesMade = 0;
-
-    for (long nodeID2 = 0; nodeID2 < specCount; nodeID2 ++) {
-        long        nodeID       = nodeID2,
-                    nodeDepth    = 0,
-                    saveNodeID   = nodeID,
-                    parentID     = theData[nodeID*3],
-                    layoutOffset = cladesMade,
-                    m,
-                    n;
-
-        while (parentID>=0) {
-            n = tree->theData[(parentID-specCount)*5+4];
-            if (n >= 0) {
-                layoutOffset = n+tree->theData[(parentID-specCount)*5+3];
-                break;
-            }
-            parentID  = theData[parentID*3];
+        if (specCount<0L ) {
+            throw (_String ("Parameter to ") & __PRETTY_FUNCTION__ & " must be greater than or equal to 0");
+        }
+        
+        if (GetVDim () != 3) {
+            throw (_String ("Expected a matrix with 3 columns"));
+        }
+        if (GetHDim () <= 2*specCount + 1) {
+            throw (_String ("Expected a matrix with at least ") & (2*specCount + 1) & " columns");
         }
 
-        parentID   = theData[nodeID*3];
+        const long result_rows = 2*(specCount+1);
+        _Matrix     *tree = new _Matrix (result_rows,5,false,true),
+        CI  (2*(specCount+1),1,false,true);
 
-        while (parentID>=0) {
-            n = parentID-specCount;
-            m = theData[nodeID*3+2];
 
-            if (tree->theData[n*5+4] < 0)
-                /* this node hasn't been laid out yet */
-            {
-                if (theData[parentID*3]>=0) {
-                    tree->theData[n*5+4] = layoutOffset; /* where the layout for the clade begins */
-                    tree->theData[n*5+3]   = m; /* offset for that layout */
-                }
-
-                m += layoutOffset - 1;
-
-                tree->theData[m*5]   = nodeID;
-                tree->theData[m*5+2] = theData[nodeID*3+1];
-
-                CI.theData[nodeID] = m;
-            } else
-                /* it has been laid out */
-            {
-                m += tree->theData[n*5+3]+tree->theData[n*5+4] - 1;
-
-                tree->theData[m*5]   = nodeID;
-                tree->theData[m*5+2] = theData[nodeID*3+1];
-
-                tree->theData[n*5+3] = m + theData[nodeID*3+2];
-
-                CI.theData[nodeID]   = m;
-                nodeDepth ++;
-
-                break;
-            }
-            nodeDepth++;
-            nodeID    = parentID;
-            parentID  = theData[nodeID*3];
+        for (long kk = 0; kk < specCount-1; kk++) {
+            tree->theData[kk*5+4] = -1; // set parent records to
         }
 
-        /* update levels of nodes */
+        long cladesMade = 0L;
 
-        if (parentID<0) {
-            nodeID   = saveNodeID;
-            parentID = theData[nodeID*3];
+        for (long nodeID2 = 0L; nodeID2 < specCount; nodeID2 ++) {
+            long        nodeID       = nodeID2,
+                        nodeDepth    = 0,
+                        saveNodeID   = nodeID,
+                        parentID     = theData[nodeID*3],
+                        layoutOffset = cladesMade,
+                        m,
+                        n;
 
             while (parentID>=0) {
-                m = CI.theData[nodeID];
-                tree->theData[m*5+1] = nodeDepth;
-                nodeDepth --;
-                saveNodeID = nodeID;
-                nodeID     = parentID;
-                parentID   = theData[nodeID*3];
+                long idx = parentID-specCount;
+                if (idx < 0 || idx >= result_rows) {
+                    throw (_String ("Invalid parent index in row ") & nodeID2);
+                }
+                n = tree->theData[idx*5+4];
+                if (n >= 0) {
+                    layoutOffset = n+tree->theData[idx*5+3];
+                    break;
+                }
+                parentID  = theData[parentID*3];
             }
 
-            cladesMade += theData[3*saveNodeID+2];
-        } else {
-            m = CI.theData[parentID];
+            parentID   = theData[nodeID*3];
 
-            n = tree->theData[m*5+1];/* depth of the parent */
+            while (parentID>=0) {
+                n = parentID-specCount;
+                if (n < 0 || n >= result_rows) {
+                    throw (_String ("Invalid parent index in row ") & nodeID);
+                }
+                m = theData[nodeID*3+2];
 
-            nodeID   = saveNodeID;
+                if (tree->theData[n*5+4] < 0)
+                    /* this node hasn't been laid out yet */
+                {
+                    if (theData[parentID*3]>=0) {
+                        tree->theData[n*5+4] = layoutOffset; /* where the layout for the clade begins */
+                        tree->theData[n*5+3]   = m; /* offset for that layout */
+                    }
 
-            while (nodeDepth >= 0) {
-                m = CI.theData[nodeID];
+                    m += layoutOffset - 1;
 
-                tree->theData[m*5+1] = nodeDepth+n;
+                    tree->theData[m*5]   = nodeID;
+                    tree->theData[m*5+2] = theData[nodeID*3+1];
 
-                nodeDepth --;
-                nodeID  = theData[nodeID*3];
+                    CI.theData[nodeID] = m;
+                } else
+                    /* it has been laid out */
+                {
+                    m += tree->theData[n*5+3]+tree->theData[n*5+4] - 1;
+
+                    tree->theData[m*5]   = nodeID;
+                    tree->theData[m*5+2] = theData[nodeID*3+1];
+
+                    tree->theData[n*5+3] = m + theData[nodeID*3+2];
+
+                    CI.theData[nodeID]   = m;
+                    nodeDepth ++;
+
+                    break;
+                }
+                nodeDepth++;
+                nodeID    = parentID;
+                parentID  = theData[nodeID*3];
+            }
+
+            /* update levels of nodes */
+
+            if (parentID<0) {
+                nodeID   = saveNodeID;
+                parentID = theData[nodeID*3];
+
+                while (parentID>=0) {
+                    m = CI.theData[nodeID];
+                    if (m < 0 || m >= result_rows) {
+                        throw (_String ("Invalid parent index in row ") & nodeID);
+                    }
+                    tree->theData[m*5+1] = nodeDepth;
+                    nodeDepth --;
+                    saveNodeID = nodeID;
+                    nodeID     = parentID;
+                    parentID   = theData[nodeID*3];
+                }
+
+                cladesMade += theData[3*saveNodeID+2];
+            } else {
+                m = CI.theData[parentID];
+
+                n = tree->theData[m*5+1];/* depth of the parent */
+
+                nodeID   = saveNodeID;
+
+                while (nodeDepth >= 0) {
+                    m = CI.theData[nodeID];
+
+                    tree->theData[m*5+1] = nodeDepth+n;
+
+                    nodeDepth --;
+                    nodeID  = theData[nodeID*3];
+                }
             }
         }
+        tree->theData[cladesMade*5]      = 2*specCount-2;
+        tree->theData[cladesMade*5+1]    = 0;
+        tree->theData[(specCount-2)*5+4] = 0;
+        return tree;
+    } catch (const _String& error) {
+        HandleApplicationError(error);
+        return new _Matrix (1,1,false,true);
     }
-    tree->theData[cladesMade*5]      = 2*specCount-2;
-    tree->theData[cladesMade*5+1]    = 0;
-    tree->theData[(specCount-2)*5+4] = 0;
-    return tree;
 }
 
 
