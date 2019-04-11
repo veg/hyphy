@@ -112,6 +112,7 @@ function ancestral.build (_lfID, _lfComponentID, options) {
  */
 lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample, doMarginal) {
 
+
     /* 1; grab the information AVL from the likelihood function */
 
     GetString(_bac_lfInfo, ^_lfID, -1);

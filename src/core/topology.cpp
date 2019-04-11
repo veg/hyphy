@@ -2396,7 +2396,7 @@ HBLObjectRef _TreeTopology::BranchLength (HBLObjectRef p) {
 //__________________________________________________________________________________
 
 HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subtree, HBLObjectRef mapping_mode) {
-  _StringBuffer * branch_name = new _StringBuffer ();
+  _StringBuffer branch_name;
     
 
   if (node_ref) {
@@ -2424,9 +2424,9 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
                 DetermineBranchLengthMappingMode (t,mapMode);
                 DeleteObject (t);
               }
-              SubTreeString         (ith_internal_node, *branch_name,CollectParseSettings(), true,mapMode);
+              SubTreeString         (ith_internal_node, branch_name,CollectParseSettings(), true,mapMode);
             } else {
-              *branch_name = GetNodeName (ith_internal_node);
+              branch_name = GetNodeName (ith_internal_node);
             }
         }
       } else {
@@ -2521,7 +2521,7 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
       }
     }
   }
-  return new _FString (branch_name);
+  return new _FString (branch_name, false);
 
 }
 

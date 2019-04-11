@@ -442,6 +442,9 @@ hyFloat  ProcessNumericArgument (_String* data, _VariableContainer const* theP, 
 
 //____________________________________________________________________________________
 
+/** This function returns expects that the caller will handle reference counting on the returned object;
+    it will be returned with +1 reference, i.e. it needs to be deleted / managed by the caller */
+
 HBLObjectRef   ProcessAnArgumentByType (_String const* expression, _VariableContainer const* theP, long objectType, _ExecutionList* currentProgram) {
     _String   errMsg;
     _Formula  expressionProcessor (*expression, theP, currentProgram?&errMsg:nil);

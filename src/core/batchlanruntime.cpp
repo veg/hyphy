@@ -2644,7 +2644,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                             if (!user_kwargs) {
                                 dynamic_reference_manager < (user_kwargs = new _AssociativeList);
                             }
-                            user_kwargs->MStore(new _FString (key->Cut (2, kStringEnd), false), payload, true);
+                            user_kwargs->MStore(key->Cut (2, kStringEnd), payload, true);
                             has_user_kwargs = true;
                         } else {
                             argument_list.Insert (new _String (*key), (long)new _String (((_FString*)payload)->get_str()), false);
@@ -3880,13 +3880,12 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
       _String      * dsName           = new _String (AppendContainerName(*(_String*)parameters(0),chain.nameSpacePrefix));
       _LikelihoodFunction *lf         = ((_LikelihoodFunction*)likeFuncList(objectID));
       
-      local_object_manager < ds;
-      local_object_manager < dsName;
+      local_object_manager < ds < dsName;
       
       _Matrix * partitionList         = nil;
       if (parameters.lLength>2) {
         _String  secondArg = *GetIthParameter(2);
-        partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX);
+        local_object_manager < (partitionList = (_Matrix*)ProcessAnArgumentByType (&secondArg, chain.nameSpacePrefix, MATRIX));
       }
       _SimpleList                     partsToDo;
       
@@ -3895,7 +3894,6 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
       }
       
       ds->AddAReference();
-      dsName->AddAReference();
       StoreADataSet  (ds, dsName);
     
     } else {
