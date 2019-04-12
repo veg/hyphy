@@ -328,8 +328,7 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
             throw (expression & " does not depend on the variable " & target_variable->GetName()->Enquote());
         }
 
-        _Formula  * derivative = do_integrate ? nil : parsed_expression.Differentiate (*target_variable->GetName(),false);
-
+ 
         hyFloat    lb = _ProcessNumericArgumentWithExceptions (*GetIthParameter(3),currentProgram.nameSpacePrefix),
                    ub = _ProcessNumericArgumentWithExceptions (*GetIthParameter(4),currentProgram.nameSpacePrefix);
 
@@ -337,6 +336,8 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
             throw (_String ('[') & lb & ',' & ub & "] is not a valid interval");
             return false;
         }
+
+        _Formula  * derivative = do_integrate ? nil : parsed_expression.Differentiate (*target_variable->GetName(),false);
 
         if (!do_integrate) {
             if (derivative) {

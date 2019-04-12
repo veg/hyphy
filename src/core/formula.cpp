@@ -312,8 +312,6 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
 
     long dx_id = dx->get_index();
 
-    _Formula*     res = new _Formula ();
-
      ConvertToTree    ();
     
      //printf ("\n **** Diff %s on %s\n\n", _String ((_String*)toStr(kFormulaStringConversionNormal)).get_str(), var_name.get_str());
@@ -326,6 +324,7 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
         return new _Formula (new _Constant (0.0));
     }
 
+    _Formula*     res = new _Formula ();
     _Formula    ** dydx = new _Formula* [var_refs.countitems()] {0};// stores precomputed derivatives for all the
     
     auto dydx_cleanup = [&] () -> void {
@@ -349,6 +348,7 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
             } else {
                 dYdX = thisVar->varFormula->Differentiate (var_name, bail, false);
                 if (dYdX->IsEmpty()) {
+                    delete dYdX;
                     dydx_cleanup ();
                     return res;
                 }
@@ -363,7 +363,6 @@ _Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool con
 
         if (!(dTree = InternalDifferentiate (theTree, dx_id, var_refs, dydx, *res))) {
             throw (_String ("Differentiation of ") & _String((_String*)toStr(kFormulaStringConversionNormal)) & " failed.");
-            res->Clear();
         }
     } catch (_String const &e) {
         dydx_cleanup ();

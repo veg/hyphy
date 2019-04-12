@@ -386,7 +386,7 @@ lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) 
                              "_seq_idx_",
                              '
                                 GetString (_seq_name_, ^`&filter_in`, _seq_idx_);
-                                _seq_name_ += "|" + ((`&duplicate_info`)["UNIQUE_COUNTS"])[_idx_[1]];
+                                _seq_name_ += "_" + ((`&duplicate_info`)["UNIQUE_COUNTS"])[_idx_[1]];
                                 SetParameter (^`&filter_in`,_seq_idx_,_seq_name_);
                               ');
 
