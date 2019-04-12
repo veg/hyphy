@@ -103,7 +103,7 @@ lfunction alignments.ReadNucleotideDataSet_aux(dataset_name) {
             partitions = Transpose(dfpm);
         }
     }
-    
+
     return {
         utility.getGlobalValue("terms.data.sequences"): Eval("`dataset_name`.species"),
         utility.getGlobalValue("terms.data.sites"): Eval("`dataset_name`.sites"),
@@ -216,8 +216,43 @@ lfunction alignments.ReadNucleotideDataSet(dataset_name, file_name) {
 }
 
 /**
+ * Determine what type of data are in the filter
+ * @name alignments.FilterType
+ * @param {String} filter_name - the name of the dataset filter object
+ * @returns {String} one of the standard datatypes, or the alphabet string if it's non-standard
+ */
+
+lfunction alignments.FilterType(filter_name) {
+    GetDataInfo (parameters, ^filter_name, "PARAMETERS");
+    parameters = parameters["ATOM_SIZE"];
+
+    if (parameters == 1) {
+        GetDataInfo (alphabet, ^filter_name, "CHARACTERS");
+        type = alignments.AlphabetType (alphabet);
+        if (null != type) {
+            return type;
+        }
+    } else {
+        DataSetFilter throwaway = CreateFilter (^filter_name, 1);
+        size = parameters;
+        type =  alignments.FilterType(&throwaway);
+        DeleteObject (throwaway);
+        if (type == ^"terms.nucleotide") {
+            if (size == 2) {
+                return ^"terms.dinucleotide";
+            }
+            if (size == 3) {
+               return ^"terms.codon";
+            }
+        }
+        GetDataInfo (alphabet, ^filter_name, "CHARACTERS");
+    }
+    return Join ("", alphabet);
+}
+
+/**
  * Read a protein dataset from file_name
- * @name alignments.ReadNucleotideDataSet
+ * @name alignments.ReadProteinDataSet
  * @param dataset_name - the name of the dataset you wish to use
  * @param file_name - path to file
  * @returns {Dictionary} r - metadata pertaining to the dataset
@@ -248,6 +283,10 @@ lfunction alignments.AlphabetType (alphabet) {
     } else {
         if (alphabet == "ACDEFGHIKLMNPQRSTVWY") {
             return utility.getGlobalValue ("terms.amino_acid");
+        } else {
+            if (alphabet == "01") {
+                return utility.getGlobalValue ("terms.binary");
+            }
         }
     }
     return None;
@@ -323,7 +362,7 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
             DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3,  , "" + alignments.LoadCodonDataFile.i , data_info[terms.stop_codons]);
             if (^"`datafilter_name`.sites"*3 != ^"`dataset_name`.sites") {
                 alignments.LoadCodonDataFile.name = alignments.GetIthSequenceOriginalName (dataset_name, alignments.LoadCodonDataFile.i);
-                
+
                 alignments.LoadCodonDataFile.site_map = ^"`datafilter_name`.site_map";
 
                 alignments.LoadCodonDataFile.annotation_string = utility.PopulateDict (0, ^"`dataset_name`.sites",
@@ -408,7 +447,7 @@ lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) 
 lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix, data_info) {
     part_count = utility.Array1D(partitions);
     filters = {};
-        
+
     if (utility.CheckKey(data_info, utility.getGlobalValue("terms.code"), "Matrix")) {
 
 

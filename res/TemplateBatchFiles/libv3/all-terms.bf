@@ -17,6 +17,8 @@ namespace terms{
     codon                   = "codon";
     sense_codons            = "sense";
     nucleotide              = "nucleotide";
+    dinucleotide            = "dinucleotide";
+    binary                  = "binary";
     stop_codons             = "stop";
     translation_table       = "translation-table";
     synonymous_sub_count    = "synonymous substitution count";
@@ -39,7 +41,7 @@ namespace terms{
     substitutions       = "substitutions";
     search_grid         = "search_grid";
     search_restarts     = "search_restarts";
-    
+
     parameters     = "parameters";
     local          = "local";
    // global         = "global"; // Defined at the top of file
