@@ -49,6 +49,7 @@ tests/hbltests/data/tempFileTesting*
 tempOutput.txt
 tests/hbltests/data/CD2*.json
 testMethodOutput
+tests/hbltests/data/CD2*.cache
 
 
 #Utility function

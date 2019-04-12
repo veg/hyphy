@@ -54,7 +54,7 @@ using namespace hy_global;
 
 
 const char hy_usage[] =
-"usage: HYPHYMP or HYPHYMPI [-h] [--help]"
+"usage: hyphy or HYPHYMPI [-h] [--help]"
 "[-c] "
 "[-d] "
 "[-i] "
@@ -63,17 +63,14 @@ const char hy_usage[] =
 "[CPU=integer] "
 "[LIBPATH=library path] "
 "[USEPATH=library path] "
-"[--keyword value ... ]"
-"[<analysis keyword> or <path to hyphy batch file> [--keyword value ... --keyword value] [positional arguments]"
+"[<standard analysis name> or <path to hyphy batch file>] [--keyword value ...] [positional arguments ...]"
 "\n";
 
 
 const char hy_help_message [] =
-"Execute a HyPhy analysis, either interactively, or in batch mode"
-"\n"
+"Execute a HyPhy analysis, either interactively, or in batch mode\n"
 "optional flags:\n"
-"  -h                       show this help message and exit\n"
-"  --help                   show the list of stanard analysis keywords and exit\n"
+"  -h --help                show this help message and exit\n"
 "  -c                       calculator mode; causes HyPhy to drop into an expression evaluation until 'exit' is typed\n"
 "  -d                       debug mode; causes HyPhy to drop into an expression evaluation mode upon script error\n"
 "  -i                       interactive mode; causes HyPhy to always prompt the user for analysis options, even when defaults are available\n"
@@ -86,20 +83,32 @@ const char hy_help_message [] =
 "  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
 "                           or as configured during CMake installation\n"
 "  USEPATH=directory path   specifies the optional working and relative path directory (default is BASEPATH)\n\n"
-"optional keyword arguments\n"
 "  batch file to run        if specified, execute this file, otherwise drop into an interactive mode\n"
 "  analysis arguments       if batch file is present, all remaining positional arguments are interpreted as inputs to analysis prompts\n\n"
 "optional keyword arguments (can appear anywhere); will be consumed by the requested analysis\n"
 "  --keyword value          will be passed to the analysis (which uses KeywordArgument directives)\n"
 "                           multiple values for the same keywords are treated as an array of values for multiple selectors\n"
-"  --help                   query the analysis for its options\n"
 "\n"
 "usage examples:\n\n"
-"Select a standard analysis from the list : \n\tHYPHYMP -i \n"
-"Run a standard analysis with default options and one required user argument; \n\tHYPHYMP busted --alignment path/to/file\n"
-"Run a standard analysis with additional keyword arguments \n\tHYPHYMP busted --alignment path/to/file --srv No\n"
-"See whcih arguments are understood by a standard analysis \n\tHYPHYMP busted --help\n"
-"Run a custom analysis and pass it some arguments \n\tHYPHYMP path/to/hyphy.script argument1 'argument 2' \n"
+"Select a standard analysis from the list : \n\thyphy -i \n"
+"Run a standard analysis with default options and one required user argument; \n\thyphy busted --alignment path/to/file\n"
+"Run a standard analysis with additional keyword arguments \n\thyphy busted --alignment path/to/file --srv No\n"
+"See whcih arguments are understood by a standard analysis \n\thyphy busted --help\n"
+"Run a custom analysis and pass it some arguments \n\thyphy path/to/hyphy.script argument1 'argument 2' \n"
+;
+
+const char hy_available_cli_analyses [] =
+"Available standard analyses and their [analysisName] are listed below:\n\n"
+"        [MEME] Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).\n"
+"        [FEL] Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).\n"
+"        [FUBAR] Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).\n"
+"        [FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).\n"
+"        [SLAC] Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).\n"
+"        [BUSTED] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).\n"
+"        [BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.\n"
+"        [aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).\n"
+"        [RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).\n"
+"        [GARD] Screen an alignment using GARD (requires an MPI environment).\n\n"
 ;
 
 
@@ -537,7 +546,7 @@ void    ProcessConfigStr (_String const & conf) {
         switch (char c = conf.char_at (i)) {
             case 'h':
             case 'H': {
-                fprintf( stderr, "%s\n%s", hy_usage, hy_help_message );
+                fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
                 exit (0);
             }
 
@@ -573,12 +582,6 @@ void    ProcessConfigStr (_String const & conf) {
               logInputMode = true;
               break;
           }
-          //case 'i':
-          //case 'I':
-          //{
-          //pipeMode = true;
-          //break;
-          //}
           default: {
               ReportWarning (_String ("Option" ) & _String (c).Enquote() & " is not valid command line option and will be ignored");
           }
@@ -783,28 +786,8 @@ int main (int argc, char* argv[]) {
     ReadInTemplateFiles();
     
     if (positional_arguments.empty () && run_help_message) {
-        // General help message when calling `HYPHY --help`.
-        BufferToConsole("\nHyPhy can be used from the command line in one of two ways:\n");
-        BufferToConsole("\n  1. An interactive command line prompt for access to a currated set of analyses (via simply: `HYPHY`).\n");
-        BufferToConsole("\n  2. Command line invocation with key word arguments for a select set of analyses as described below (simple example being: `HYPHY slac --alignment ./tests/hbltests/data/CD2.nex`):\n\n");
-        BufferToConsole("   Analyses which support command line arguments can be invoked with `HYPHY <analysisName> --alignment <pathToAlignment> <additionalKeyWordArguments>` where:\n");
-        BufferToConsole("  \t <analysesName> is the shorthand name of the analysis (such as `absrel`) [case insensitive]\n");
-        BufferToConsole("  \t <pathToAlignment> is the path to the multiple sequence alignment file [can be absolute or relative]\n");
-        BufferToConsole("  \t   If the alignment file does not contain a phylogenetic tree, one must be provided via the `--tree` key word argument (such as `--tree ./pathToTreeFile/treeFile.nhx`)\n");
-        BufferToConsole("  \t <additionalKeyWordArguments> are any of the optional (or in some cases required) key word arguments associated with the particular analysis\n");
-        BufferToConsole("  \t   To view a list of the key word arguments associated with a particular analysis you can run `HYPHY <analysisName> --help`\n");
-        BufferToConsole("\n  Available Analyses and Their [analysisName] are listed below:\n");
-        
-        // List of analyses that support command line arguments
-        for (TrieIteratorKeyValue t : TrieIterator (&availableTemplateFilesAbbreviations)) {
-            _String batchFileDescription = *(_String*) availableTemplateFiles.GetItem(availableTemplateFilesAbbreviations.GetValue(t.get_value()), 1);
-            
-            if (_String(batchFileDescription).BeginsWith("[")) {
-                BufferToConsole("\n\t");
-                StringToConsole(batchFileDescription);
-            }
-            
-        }
+        // --help returns the message below
+        fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
         BufferToConsole("\n");
         GlobalShutdown();
         return 0;
