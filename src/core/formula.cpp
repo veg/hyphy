@@ -516,7 +516,6 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
                     throw (4);
                 }
 
-                node<long>*       full_expression = new node<long>;
                 node<long>*       y_raise_m2 = new node<long>;
                 node<long>*       yDx_minus_xDy = new node<long>;
                 node<long>*       xDy = new node<long>;

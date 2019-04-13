@@ -3663,13 +3663,15 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                         
                         _List choices;
                         target_variable->FillInList(choices, false);
-                        choices.bumpNInst();
+                        //choices.bumpNInst();
                         
                         handle_exclusions (target_variable->GetHDim(), excluded).Each (
                              [&] (long value, unsigned long ) -> void {
                                  _String const * parameter_name = LocateVar(value)->GetName();
-                                 (*available_choices) < new _List (choices.GetItem(value << 1),
-                                                                   choices.GetItem(1L + (value << 1)));
+                                 BaseRef key = choices.GetItem(value << 1),
+                                         description = choices.GetItem(1L + (value << 1));
+                                 key->AddAReference(); description->AddAReference();
+                                 (*available_choices) < new _List (key,description);
                              }
                              );
                                                                                        

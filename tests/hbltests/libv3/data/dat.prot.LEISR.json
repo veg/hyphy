@@ -2,16 +2,16 @@
  "MLE":{
    "content":{
      "0":      [
-[1.655941306390252, 0.5339261438197556, 6.386821437260043, -24.91661926103494, -24.54507094407873]
-      [1.361738476780031, 0.4555488832768237, 4.859663485392772, -22.98258011548061, -22.8499336311282]
-      [0.636222398545421, 0.1977234994098994, 1.968085662718205, -19.2173609401592, -18.97872855534302]
-      [0.8218099615006144, 0.2705499367840679, 2.209281771224088, -19.16325708786407, -19.08716558022542]
-      [0.728990293787667, 0.1976601047496697, 1.7333185332295, -15.34045402712676, -15.0114958156297]
-      [3.307087625292799, 0.9965183142688456, 4456.060666554378, -31.628739587193, -29.72020658639663]
-      [1.092351581115161, 0.3422162505440819, 3.727802728310578, -23.57803549140707, -23.55522827001379]
-      [0.528370238157117, 0.153737071141136, 1.356807605039581, -18.74899047854868, -17.88250046296711]
-      [0.9608950795821608, 0.3206816556778108, 2.533783114977904, -17.25520796757704, -17.24919437054395]
-      [0.8194920311978374, 0.1735632041876501, 3.011272213228841, -16.02110402747583, -15.98542577451401]
+[1.715487534448445, 0.5565916298884624, 6.627964632649008, -24.88596855983971, -24.42671978832058],
+      [1.599388037318444, 0.5293591834198474, 6.099531030641367, -23.4527499060725, -23.11262992360863],
+      [0.7147522990591239, 0.2083481534653699, 2.060938591191371, -19.1377721420267, -18.95160979030021],
+      [0.8285641199789452, 0.2751553232279397, 2.233609249505984, -19.02372844529375, -18.95525433898795],
+      [0.6967394370540271, 0.2109530811159355, 1.845755868572047, -15.40345994289457, -15.15491620296506],
+      [3.418415737597704, 1.020700353185239, 5634.608187164225, -31.6960615994788, -29.70345204077634],
+      [1.201836244378648, 0.3505910711973572, 4.125234904405897, -23.59874482622055, -23.54912541378558],
+      [0.5563773820157766, 0.1657285981981626, 1.448151835471455, -18.64385037674956, -17.95605994459094],
+      [0.9789693910590658, 0.326675048039315, 2.667329829896313, -17.25543029960451, -17.25445731921562],
+      [0.8268642825618099, 0.1885799950066251, 2.902182388120508, -15.74260501604206, -15.70104526645597] 
       ]
     },
    "headers":    [
@@ -19,33 +19,32 @@
     ["Lower", "Lower bound of 95% profile likelihood CI"],
     ["Upper", "Upper bound of 95% profile likelihood CI"],
     ["LogL global", "Site log likelihood under the global (average rate) model fit"],
-    ["LogL local", "Site log likelihood under the local (site-specific rate) model fit"],
+    ["LogL local", "Site log likelihood under the local (site-specific rate) model fit"] 
     ]
   },
  "analysis":{
    "authors":"Sergei L Kosakovsky Pond and Stephanie J Spielman",
    "citation":"Spielman, S.J. and Kosakovsky Pond, S.L. (2018). Relative evolutionary rate inference in HyPhy with PeerJ 6:e4339. DOI 10.7717/peerj.4339 ; Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
    "contact":"{spond,stephanie.spielman}@temple.edu",
-   "info":"LEISR (Likelihood Estimation of Individual Site Rates) infer relative amino-acid or nucleotide rates from a fixed nucleotide or amino-acid alignment and tree, with possibility for partitions. Relative site-specific substitution rates are
-    inferred by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler.",
+   "info":"LEISR (Likelihood Estimation of Individual Site Rates) infer relative amino-acid or nucleotide rates from a fixed nucleotide or amino-acid alignment and tree, with possibility for partitions. Relative site-specific substitution rates are\n    inferred by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler.",
    "version":"0.4"
   },
  "branch attributes":{
    "0":{
      "Node12":{
-       "WAGF":1.173634422070665
+       "WAGF":1.223386317380499
       },
      "Node13":{
-       "WAGF":0.236135504603089
+       "WAGF":0.1470196029970503
       },
      "Node14":{
-       "WAGF":0.5283570308405594
+       "WAGF":0.5110711901813726
       },
      "Node2":{
-       "WAGF":0.4534827289044138
+       "WAGF":0.2516867393338675
       },
      "Node3":{
-       "WAGF":0.6934897786007896
+       "WAGF":0.7540418755972672
       },
      "Node7":{
        "WAGF":0
@@ -54,7 +53,7 @@
        "WAGF":0
       },
      "t1":{
-       "WAGF":0.5577716356717441,
+       "WAGF":0.5890522265163631,
        "original name":"t1"
       },
      "t10":{
@@ -62,35 +61,35 @@
        "original name":"t10"
       },
      "t2":{
-       "WAGF":1.114615349776134,
+       "WAGF":0.9609269421395429,
        "original name":"t2"
       },
      "t3":{
-       "WAGF":0.7070572872649751,
+       "WAGF":0.6772638556290976,
        "original name":"t3"
       },
      "t4":{
-       "WAGF":0.5742310682604588,
+       "WAGF":0.4945788836557771,
        "original name":"t4"
       },
      "t5":{
-       "WAGF":2.244134600521202,
+       "WAGF":1.774746231555969,
        "original name":"t5"
       },
      "t6":{
-       "WAGF":0.3758215862442829,
+       "WAGF":0.5676460924303426,
        "original name":"t6"
       },
      "t7":{
-       "WAGF":0.0948002626945124,
+       "WAGF":0.07725977746583361,
        "original name":"t7"
       },
      "t8":{
-       "WAGF":1.229340169146833,
+       "WAGF":1.213441387314365,
        "original name":"t8"
       },
      "t9":{
-       "WAGF":0.1378505532357028,
+       "WAGF":0.1264773636070414,
        "original name":"t9"
       }
     },
@@ -108,37 +107,37 @@
  "data partitions":{
    "0":{
      "coverage":      [
-[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9] 
       ],
      "name":"leisr.filter.default"
     }
   },
  "fits":{
    "WAGF":{
-     "AIC-c":531.9904122534488,
+     "AIC-c":531.9664565141597,
      "Equilibrium frequencies":      [
-[0.1]
-      [0]
-      [0.02]
-      [0.07000000000000001]
-      [0.06]
-      [0.08]
-      [0.03]
-      [0.07000000000000001]
-      [0.08]
-      [0.09]
-      [0.09]
-      [0.04]
-      [0.01]
-      [0.05]
-      [0]
-      [0.02]
-      [0.05]
-      [0.05]
-      [0]
-      [0.09]
+[0.1],
+      [0],
+      [0.02],
+      [0.07000000000000001],
+      [0.06],
+      [0.08],
+      [0.03],
+      [0.07000000000000001],
+      [0.08],
+      [0.09],
+      [0.09],
+      [0.04],
+      [0.01],
+      [0.05],
+      [0],
+      [0.02],
+      [0.05],
+      [0.05],
+      [0],
+      [0.09] 
       ],
-     "Log Likelihood":-208.8523489838672,
+     "Log Likelihood":-208.8403711142227,
      "Rate Distributions":{
       },
      "estimated parameters":36
