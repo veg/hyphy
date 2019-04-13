@@ -1210,12 +1210,22 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned
     ForEach ([&help_message, simplify_string, this, scanned_functions] (BaseRef command, unsigned long index) -> void {
         _ElementaryCommand * this_command = (_ElementaryCommand * )command;
         if (this_command->code == HY_HBL_COMMAND_KEYWORD_ARGUMENT) {
-            _String * def_value = this_command->GetIthParameter(2L, false);
-            help_message << simplify_string(this_command->GetIthParameter(0L)) << (def_value == nil ? " [required]" : "") << '\n'
+            _String * def_value = this_command->GetIthParameter(2L, false),
+                    * applies_to = this_command->GetIthParameter(3L, false);
+
+            if (def_value && (*def_value == kNoneToken || *def_value == kNullToken)) {
+                def_value = nil;
+            }
+            
+            help_message << simplify_string(this_command->GetIthParameter(0L)) << (def_value == nil ? (applies_to ? " [conditionally required]" : " [required]"): "") << '\n'
                          << '\t' << simplify_string(this_command->GetIthParameter(1L)) << '\n';
+            
             
             if (def_value) {
                 help_message << "\tdefaut value: " << simplify_string(def_value) << '\n';
+            }
+             if (applies_to) {
+                help_message << "\tapplies to: " << simplify_string(applies_to) << '\n';
             }
             help_message << '\n';
         } else {

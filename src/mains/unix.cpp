@@ -67,6 +67,13 @@ const char hy_usage[] =
 "\n";
 
 
+const char analysis_help_message [] =
+"Available analysis command line options\n"
+"---------------------------------------\n"
+"Use --option VALUE syntax to invoke\n"
+"If a [reqired] option is not provided on the command line, the analysis will prompt for its value\n"
+"[conditionally required] options may or not be required based on the values of other options\n\n";
+
 const char hy_help_message [] =
 "Execute a HyPhy analysis, either interactively, or in batch mode\n"
 "optional flags:\n"
@@ -925,8 +932,8 @@ int main (int argc, char* argv[]) {
 #ifdef __HYPHYMPI__
             if (hy_mpi_node_rank == 0L) {
 #endif
-            BufferToConsole("\nAnalysis options description");
-            BufferToConsole("\n----------------------------\n");
+            NLToConsole();
+            BufferToConsole(analysis_help_message);
             StringToConsole(ex.GenerateHelpMessage());
             NLToConsole();
 #ifdef __HYPHYMPI__
