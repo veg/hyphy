@@ -1349,8 +1349,7 @@ void _SimpleList::RecursiveIndexSort (long from, long to, _SimpleList* index)
 }
 
 //Append & store operator
-void _SimpleList::RequestSpace (long slots)
-{
+void _SimpleList::RequestSpace (long slots) {
     if (slots>laLength) {
         laLength=(slots/MEMORYSTEP+1)*MEMORYSTEP;
         if (lData) {
@@ -1432,8 +1431,7 @@ BaseRef _SimpleList::toStr(unsigned long) {
 
 
 //Delete item at index (>=0)
-void  _SimpleList::TrimMemory (void)
-{
+void  _SimpleList::TrimMemory (void) {
     if (laLength>lLength) {
         laLength = lLength;
         if (laLength) {

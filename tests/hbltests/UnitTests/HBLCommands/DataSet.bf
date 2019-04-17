@@ -16,9 +16,9 @@ function runTest () {
   // SIMPLE FUNCTIONALITY
   //---------------------------------------------------------------------------------------------------------
   // Test that DataSet can load the supported filetypes without errors (correctness of the loaded files is tested in the DataSetFilter.bf test)  
-  DataSet cd2nex = ReadDataFile ('./../../data/CD2.nex');
-  DataSet 2fas = ReadDataFile ('./../../data/2.fas');
-  DataSet cd2Phylip = ReadDataFile('./../../data/CD2.phylip');
+  DataSet cd2nex = ReadDataFile (PATH_TO_CURRENT_BF + '/../../data/CD2.nex');
+  DataSet 2fas = ReadDataFile (PATH_TO_CURRENT_BF  + '/../../data/2.fas');
+  DataSet cd2Phylip = ReadDataFile(PATH_TO_CURRENT_BF  + '/../../data/CD2.phylip');
   
 
   //---------------------------------------------------------------------------------------------------------
@@ -35,8 +35,8 @@ function runTest () {
   assert (runCommandWithSoftErrors ('DataSet list_ds = ReadFromString(TT1);', "The format of the sequence file has not been recognized and may be invalid"), "Failed error checking for trying to create a data set with ReadFromString(tree)");
   
   assert (runCommandWithSoftErrors ("DataSet thisIsntAValidFilePath = ReadDataFile('./ThisFileDoesNotExist.txt');", "Could not find source dataset file"), "Failed error checking for trying to create a data set with ReadDataFile with an invalid path");
-  assert (runCommandWithSoftErrors ("DataSet thisFileIsntInAValidFormat = ReadDataFile('./assert.bf');", "The format of the sequence file has not been recognized and may be invalid"), "Failed error checking for trying to create a data set with ReadDataFile with a file in an invalid format");
-  assert (runCommandWithSoftErrors ("DataSet newickFile = ReadDataFile ('./../../data/CD2.newick');", "The format of the sequence file has not been recognized and may be invalid"), "Failed error checking for trying to create a data set with ReadDataFile with a file file containing a newick string but no sequences");
+  assert (runCommandWithSoftErrors ("DataSet thisFileIsntInAValidFormat = ReadDataFile(PATH_TO_CURRENT_BF + '/assert.bf');", "The format of the sequence file has not been recognized and may be invalid"), "Failed error checking for trying to create a data set with ReadDataFile with a file in an invalid format");
+  assert (runCommandWithSoftErrors ("DataSet newickFile = ReadDataFile (PATH_TO_CURRENT_BF + '/../../data/CD2.newick');", "The format of the sequence file has not been recognized and may be invalid"), "Failed error checking for trying to create a data set with ReadDataFile with a file file containing a newick string but no sequences");
   
   testResult = 1;
 

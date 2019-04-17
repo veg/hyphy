@@ -587,7 +587,8 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
               remapped_duplicates << running_indexer.get (value);
             }
            });
-           duplicateMap.Duplicate(&remapped_duplicates);
+           
+           duplicateMap = remapped_duplicates;
         }
         
         filter_sites_to_be_deleted.Clear();

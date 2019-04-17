@@ -2460,7 +2460,7 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
                   //resList->MStore(node_name,new _Constant (iterator->get_num_nodes()));
                 do {
                   // 20151203: SLKP this will store the root name twice; commented the line above
-                  resList->MStore(GetNodeName   (iterator),new _Constant (1L+(iterator->get_num_nodes()>0L)));
+                  resList->MStore(GetNodeName   (iterator),new _Constant (1L+(iterator->get_num_nodes()>0L)), false);
                   iterator = ni.Next();
                 } while (iterator && ni.Level() > masterLevel);
                 break;

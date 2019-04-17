@@ -18,7 +18,7 @@ function runTest () {
   // A Data Filter specifies a part or parts of a data set. HyPhy provides powerful tools to select sites and sequences from a data set to analyze.
   // Syntax: DataSetFilter dataSetFilterid = CreateFilter (datasetid;unit;vertical partition; horizontal partition; alphabet exclusions);
 
-  DataSet cd2nex = ReadDataFile ('./../../data/CD2.nex');
+  DataSet cd2nex = ReadDataFile (PATH_TO_CURRENT_BF + '/../../data/CD2.nex');
 
   DataSetFilter unChanged = CreateFilter (cd2nex,1,"","","");  
   DataSetFilter removedAAA = CreateFilter (cd2nex,3,"","","AAA");

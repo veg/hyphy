@@ -39,7 +39,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('Cos("")', "Operation 'Cos' is not implemented/defined for a String"), "Cos String argument is invalid");
   assert(runCommandWithSoftErrors('Cos({})', "Operation 'Cos' is not implemented/defined for a AssociativeList"), "Cos Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('Cos({{"a","b"}})', "evaluated with errors"), "Cos Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('Cos({{"a","b"}})', "Operation 'Cos' is not implemented/defined for a Matrix"), "Cos Matrix argument is invalid");
   assert(runCommandWithSoftErrors('Cos(T)', "Operation 'Cos' is not implemented/defined for a Topology"), "Cos Topology argument is invalid");
   assert(runCommandWithSoftErrors('Cos(TT)', "Operation 'Cos' is not implemented/defined for a Tree"), "Cos Tree argument is invalid");
 
