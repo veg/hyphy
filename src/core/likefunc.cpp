@@ -10067,14 +10067,14 @@ bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long par
 
       if (! curNode.is_leaf()) {
         if (iNodes) {
-          if (theExc.Find(myState)!=kNotFound) {
+          if (theExc.Find(myState) != kNotFound) {
             return false;
           }
           (*iNodes)<<myState;
           //return true;
         }
       } else {
-        if (theExc.Find(myState)!=-kNotFound) {
+        if (theExc.Find(myState) != kNotFound) {
           return false;
         }
         target<<myState;

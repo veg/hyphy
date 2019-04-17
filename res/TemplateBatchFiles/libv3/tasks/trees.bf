@@ -964,6 +964,7 @@ lfunction tree.infer.NJ (datafilter, distances) {
 
     N = ^(datafilter + ".species");
     assert (N == Rows (distances), "Incompatible dimensions for the distance matrix and datafilter");
+    
     if (N == 2) {
 		d1 = distances[0][1]/2;
 		treeNodes = {{0,1,d1__},
@@ -984,20 +985,14 @@ lfunction tree.infer.NJ (datafilter, distances) {
 			cladesInfo = {{3,0}};
 		}
 		else {
-			njm = (distanceMatrix > 0) >= ds.species;
-
+			njm = (distances > 0) >= N;
+			
 			treeNodes 		= {2*N,3};
-			cladesInfo	    = {N-1,2};
-
-            for (i = 0; i < 2*N; i += 1) {
-                treeNodes[i][0] = njm[i][0];
-                treeNodes[i][1] = njm[i][1];
-                treeNodes[i][2] = njm[i][2];
-            }
-
-            for (i = 0; i < N; i += 1) {
-                cladesInfo[i][0] = njm[i][3];
-				cladesInfo[i][1] = njm[i][4];
+			
+           for (i = 0; i < 2*N; i += 1) {
+                treeNodes[i][0] = njm[i][0]; // node index; leaves in [0,N), internal nodes N and higher
+                treeNodes[i][1] = njm[i][1]; // node depth relative to the root
+                treeNodes[i][2] = njm[i][2]; // branch length
             }
 
             DeleteObject (njm);
@@ -1008,69 +1003,71 @@ lfunction tree.infer.NJ (datafilter, distances) {
         DeleteObject (distances);
     }
 
-    return "HAI";
+    return tree._matrix2string (treeNodes, N, alignments.GetSequenceNames (datafilter), TRUE);
 
 }
 
 /* ____________________________________________*/
 
-function TreeMatrix2TreeString (doLengths)
-{
-	treeString = "";
-	p = 0;
-	k = 0;
-	m = treeNodes[0][1];
-	n = treeNodes[0][0];
-	d = treeString*(Rows(treeNodes)*25);
+/**
+ * Convert a matrix representation of a tree into Newick
+ * @name trees._matrix2string
+ * @param 	{Matrix} matrix_form : Kx3 matrix;
+            each row represents ?
+ * @param 	{Number} N : number of leaves
+ * @param 	{Matrix/Dict} names : leaf index -> name
+ * @param 	{Bool} do_lengths : include branch lengths in the output
+ 
+ * @return  {String} newick tree string
+ */
+ 
+lfunction tree._matrix2string (matrix_form, N, names, do_lengths) {
 
-	while (m)
-	{
-		if (m>p)
-		{
-			if (p)
-			{
-				d = treeString*",";
+	newick = ""; newick * 1024;
+	
+	p = 0;                 // tree depth of previous node
+	k = 0;                 // current row in matrix_form
+	
+	m = matrix_form[0][1]; // current tree depth (0 == root)
+	n = matrix_form[0][0]; // current node index 
+
+	while (m) {
+		if (m>p) { // going down in the tree
+			if (p) {
+				newick * ",";
 			}
-			for (j=p;j<m;j=j+1)
-			{
-				d = treeString*"(";
+			for (j=p; j<m; j += 1 ) {
+				newick * "(";
 			}
-		}
-		else
-		{
-			if (m<p)
-			{
-				for (j=m;j<p;j=j+1)
-				{
-					d = treeString*")";
+		} else { // going up in the tree
+			if (m<p) {
+				for (j=m;j<p; j += 1) {
+					newick * ")";
 				}
 			}
-			else
-			{
-				d = treeString*",";
+			else {
+				newick * ",";
 			}
 		}
-		if (n<ds.species)
-		{
-			GetString (nodeName, ds, n);
-			d = treeString*nodeName;
+		
+		if (n < N) {
+		    newick * names [n];
 		}
-		if (doLengths>.5)
-		{
-			nodeName = ":"+treeNodes[k][2];
-			d = treeString*nodeName;
+		
+		if (do_lengths) {
+			newick * (":"+matrix_form[k][2]);
 		}
-		k=k+1;
-		p=m;
-		n=treeNodes[k][0];
-		m=treeNodes[k][1];
+		
+		k += 1;
+		p = m;
+		n = matrix_form[k][0];
+		m = matrix_form[k][1];
 	}
 
-	for (j=m;j<p;j=j+1)
-	{
-		d = treeString*")";
+	for (j=m;j<p; j += 1) {
+		newick *")";
 	}
 
-	d=treeString*0;
-	return treeString;
+	newick *0;
+	return newick;
 }
