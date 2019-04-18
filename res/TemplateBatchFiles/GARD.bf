@@ -4,13 +4,11 @@
 *       1a. Initial Setup
 *       1b. User Input
 *       1c. Load and Filter Data
-*       1d. Checks
+*       1d. Baseline fit on entire alignment
+*       1e. Checks
 *   2. MAIN ANALYSIS
-*       2a. Fit on entire alignment
-*           2a-1. Infer NJ tree estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
-*           2a-2. Optain AIC score
-*       2b. Evaluation of single break points with brute force
-*       2c. Evaluation of multiple break points with genetic algorithm
+*       2a. Evaluation of single break points with brute force
+*       2b. Evaluation of multiple break points with genetic algorithm
 *   3. POST PROCESSING
 *
 *   GARD FUNCTIONS
@@ -94,36 +92,52 @@ if (gard.data_type == terms.gard.nucleotide) {
 
 
 /*------------------------------------------------------------------------------
-    1d. Checks
+    1d. Baseline fit on entire alignment
 */
 
-// Too few sites for c-AIC inference.
+// Define model to be used in each fit
+gard.model = model.generic.DefineModel (gard.model.generator, "gard.overall_model", {"0" : "terms.global"}, "gard.filter", null); 
+
+// Infer NJ tree, estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
+console.log ( "\n> Fitting a baseline model...\n");
+baseline_likelihood_info = gard.fit_partitioned_model (null, gard.model, null);
+
+// Calculate c-AIC
+// TODO: confirm that the calculation of c-AIC is correct.
+LogLikelihood = baseline_likelihood_info["LogL"];
+baseParams = baseline_likelihood_info["parameters"];
+numSites = gard.alignment['sites'];
+numSeqs = gard.alignment['sequences'];
+base_cAIC = gard.calculate_cAIC(logLikelihood, baseParams, numSites);
+
+
+/*------------------------------------------------------------------------------
+    1e. Checks
+*/
+// Too few sites for c-AIC inference?.
+// from paper: "Note that the use of AICc sensibly requires that there be more observations (alignment columns) 
+// than the number of estimated model parameters. The formal requirement for this setting is, consequently, 
+// N > 2(2S − 3) + bp"
+// TODO: Confirm that the check below is correct. It seems different than the old implementation.
+if (numSites < 2 * (2 * numSeqs - 2) + baseParams) {
+    console.log("ERROR: Too few sites for c-AIC inference.\n");
+    return 0;
+}
+
 
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     2. MAIN ANALYSIS
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-// WORKING SECTION
-gard.model = model.generic.DefineModel (gard.model.generator, "gard.overall_model", {"0" : "terms.global"}, "gard.filter", null); 
- 
-console.log (gard.fit_partitioned_model ({{100,200,300}}, gard.model, null)); 
 
 /*------------------------------------------------------------------------------
-    2a. Fit on entire alignment
-*/
-
-// 2a-1. Infer NJ tree estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
-
-// 2a-2. Optain AIC score
-
-/*------------------------------------------------------------------------------
-    2b. Evaluation of single break points with brute force
+    2a. Evaluation of single break points with brute force
 */
 
 
 /*------------------------------------------------------------------------------
-    2c. Evaluation of multiple break points with genetic algorithm
+    2b. Evaluation of multiple break points with genetic algorithm
 */
 
 
@@ -138,7 +152,7 @@ console.log (gard.fit_partitioned_model ({{100,200,300}}, gard.model, null));
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 /**
- * @name tgard.fit_partitioned_model
+ * @name gard.fit_partitioned_model
  * Given a list of partitions, specified as increasing breakpoint locations,
    fit the specified model to said partitions, using neighbor joining trees on each partition
    return LogL and IC values
@@ -195,6 +209,19 @@ lfunction gard.fit_partitioned_model (breakPoints, model, initial_values) {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df = estimators.ApplyExistingEstimates(&likelihoodFunction, model_objects, initial_values, None);
     }
+
+    return estimators.FitExistingLF (&likelihoodFunction, model_objects);
     
-    return estimators.FitExistingLF (&likelihoodFunction, model_objects);    
+}
+
+
+/**
+ * @name gard.calculate_cAIC   
+ * @param {Number} logLikelihood
+ * @param {Number} numParameters
+ * @param {Number} numObservations (will be the number of sites)
+ * @returns a {Number} the AICc score
+ */
+lfunction gard.calculate_cAIC (logLikelihood, numParameters, numObservations) {
+    return (-2*LogLikelihood + 2*numParameters * (numObservations/( numObservations-numParameters-1 )));
 }
