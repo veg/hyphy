@@ -1,3 +1,29 @@
+/**
+*   ---- OUTLINE ----
+*   1. SETUP
+*       1a. Initial Setup
+*       1b. User Input
+*       1c. Load and Filter Data
+*       1d. Checks
+*   2. MAIN ANALYSIS
+*       2a. Fit on entire alignment
+*           2a-1. Infer NJ tree estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
+*           2a-2. Optain AIC score
+*       2b. Evaluation of single break points with brute force
+*       2c. Evaluation of multiple break points with genetic algorithm
+*   3. POST PROCESSING
+*
+*   GARD FUNCTIONS
+*/
+
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    1. SETUP
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
+
+/*------------------------------------------------------------------------------
+    1a. Initial Setup
+*/
 LoadFunctionLibrary ("libv3/tasks/trees.bf");
 LoadFunctionLibrary ("libv3/tasks/alignments.bf");
 LoadFunctionLibrary ("libv3/tasks/estimators.bf");
@@ -32,6 +58,10 @@ namespace gard.parameters {
 
 gard.master_list = {}; // "model string" -> "model fitness"
 
+
+/*------------------------------------------------------------------------------
+    1b. User Input
+*/
 io.DisplayAnalysisBanner (gard.analysis_description);
 
 KeywordArgument ("type",        "The type of data to perform screening on", "Nucleotide");
@@ -44,6 +74,9 @@ gard.data_type = io.SelectAnOption  ({terms.gard.nucleotide : "A nucleotide (DNA
                                       "The type of data to perform screening on");
 
 
+/*------------------------------------------------------------------------------
+    1c. Load and Filter Data
+*/
 if (gard.data_type == terms.gard.nucleotide) {
     LoadFunctionLibrary ("libv3/models/DNA/GTR.bf");
     gard.model.generator = "models.DNA.GTR.ModelDescription";
@@ -59,12 +92,50 @@ if (gard.data_type == terms.gard.nucleotide) {
     }
 }
 
+
+/*------------------------------------------------------------------------------
+    1d. Checks
+*/
+
+// Too few sites for c-AIC inference.
+
+
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    2. MAIN ANALYSIS
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
+// WORKING SECTION
 gard.model = model.generic.DefineModel (gard.model.generator, "gard.overall_model", {"0" : "terms.global"}, "gard.filter", null); 
  
 console.log (gard.fit_partitioned_model ({{100,200,300}}, gard.model, null)); 
 
+/*------------------------------------------------------------------------------
+    2a. Fit on entire alignment
+*/
+
+// 2a-1. Infer NJ tree estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
+
+// 2a-2. Optain AIC score
+
+/*------------------------------------------------------------------------------
+    2b. Evaluation of single break points with brute force
+*/
+
+
+/*------------------------------------------------------------------------------
+    2c. Evaluation of multiple break points with genetic algorithm
+*/
+
+
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    3. POST PROCESSING
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 //--------------------------------------------------------------------------------------------------------------------
 
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    GARD FUNCTIONS
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 /**
  * @name tgard.fit_partitioned_model
@@ -127,5 +198,3 @@ lfunction gard.fit_partitioned_model (breakPoints, model, initial_values) {
     
     return estimators.FitExistingLF (&likelihoodFunction, model_objects);    
 }
-
-
