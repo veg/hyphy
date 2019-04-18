@@ -100,16 +100,19 @@ gard.model = model.generic.DefineModel (gard.model.generator, "gard.overall_mode
 
 // Infer NJ tree, estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
 console.log ( "\n> Fitting a baseline model...\n");
-baseline_likelihood_info = gard.fit_partitioned_model (null, gard.model, null);
+base_likelihood_info = gard.fit_partitioned_model (null, gard.model, null);
 
 // Calculate c-AIC
 // TODO: confirm that the calculation of c-AIC is correct.
-LogLikelihood = baseline_likelihood_info["LogL"];
-baseParams = baseline_likelihood_info["parameters"];
+base_logLikelihood = base_likelihood_info["LogL"];
+baseParams = base_likelihood_info["parameters"];
 numSites = gard.alignment['sites'];
 numSeqs = gard.alignment['sequences'];
-base_cAIC = gard.calculate_cAIC(logLikelihood, baseParams, numSites);
+base_cAIC = gard.calculate_cAIC(base_logLikelihood, baseParams, numSites);
 
+console.log("Done with single partition analysis.");
+console.log("   Log(L) = " + base_logLikelihood);
+console.log("   c-AIC  = " + base_cAIC);
 
 /*------------------------------------------------------------------------------
     1e. Checks
@@ -123,7 +126,6 @@ if (numSites < 2 * (2 * numSeqs - 2) + baseParams) {
     console.log("ERROR: Too few sites for c-AIC inference.\n");
     return 0;
 }
-
 
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -223,5 +225,7 @@ lfunction gard.fit_partitioned_model (breakPoints, model, initial_values) {
  * @returns a {Number} the AICc score
  */
 lfunction gard.calculate_cAIC (logLikelihood, numParameters, numObservations) {
-    return (-2*LogLikelihood + 2*numParameters * (numObservations/( numObservations-numParameters-1 )));
+    AIC = 2*numParameters - 2*logLikelihood;
+    correction = ( 2*numParameters*numParameters + 2*numParameters ) / ( numObservations - numParameters -1 );
+    return AIC + correction;
 }
