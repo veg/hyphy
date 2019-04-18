@@ -72,7 +72,7 @@ console.log (gard.fit_partitioned_model ({{100,200,300}}, gard.model, null));
    fit the specified model to said partitions, using neighbor joining trees on each partition
    return LogL and IC values
    
- * @param {Matrix} parts : sorted, 0-based breakpoints, e.g.
+ * @param {Matrix} breakPoints : sorted, 0-based breakpoints, e.g.
     {{100,200}} -> 3 partitions : 0-100, 101-200, 201-end
  * @param {Dict} model : an instantiated model to be used for all partitions
  * @param {Dict/null} initial_values : if provided, use as initial values
@@ -83,33 +83,34 @@ console.log (gard.fit_partitioned_model ({{100,200,300}}, gard.model, null));
 
  */
  
-lfunction gard.fit_partitioned_model (parts, model, initial_values) {
+lfunction gard.fit_partitioned_model (breakPoints, model, initial_values) {
 
     current_index = 0;
     current_start = 0;
-    part_count = utility.Array1D (parts);
-    lf_components = {2 * (part_count + 1), 1};
+    breakPoints_count = utility.Array1D (breakPoints);
+    part_count = breakPoints_count + 1;
+    lf_components = {2 * (part_count), 1};
     trees = {};
             
     for (p = 0; p < part_count; p += 1) {
+        last_partition = p >= breakPoints_count;
+        if (!last_partition) {
+            current_end = breakPoints[p];
+        } else {
+            current_end = ^"gard.filter.sites" - 1;
+        }
         lf_components [2*p] = "gard.filter.part_" + p;
         lf_components [2*p+1] = "gard.tree.part_" + p;
-        DataSetFilter ^(lf_components[2*p]) = CreateFilter (^"gard.filter", 1, "" + current_start + "-" + parts[p]);
-        current_start = parts[p] + 1;
+        DataSetFilter ^(lf_components[2*p]) = CreateFilter (^"gard.filter", 1, "" + current_start + "-" + current_end);
         trees[p] = trees.ExtractTreeInfo (tree.infer.NJ ( lf_components[2*p], null));
         model.ApplyModelToTree(lf_components[2 * p + 1], trees[p], {
             "default": model
         }, None);
-        
+        // Increment the current starting point
+        if (!last_partition) {
+            current_start = breakPoints[p];
+        }
     }
-
-    lf_components [2*p] = "gard.filter.part_" + p;
-    lf_components [2*p+1] = "gard.tree.part_" + p;
-    DataSetFilter ^(lf_components[2*p]) = CreateFilter (^"gard.filter", 1, "" + current_start + "-" + (^"gard.filter.sites" - 1));
-    trees[p] = trees.ExtractTreeInfo (tree.infer.NJ ( lf_components[2*p], null));
-    model.ApplyModelToTree(lf_components[2 * p + 1], trees[p], {
-        "default": model
-    }, None);
 
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
