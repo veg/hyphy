@@ -7,8 +7,9 @@
 *       1d. Baseline fit on entire alignment
 *       1e. Checks
 *   2. MAIN ANALYSIS
-*       2a. Evaluation of single break points with brute force
-*       2b. Evaluation of multiple break points with genetic algorithm
+*       2a. Set up some book keeping
+*       2b. Evaluation of single break points with brute force
+*       2c. Evaluation of multiple break points with genetic algorithm
 *   3. POST PROCESSING
 *
 *   GARD FUNCTIONS
@@ -94,12 +95,11 @@ if (gard.data_type == terms.gard.nucleotide) {
 /*------------------------------------------------------------------------------
     1d. Baseline fit on entire alignment
 */
-
+console.log ( "\n> Fitting a baseline model...\n");
 // Define model to be used in each fit
 gard.model = model.generic.DefineModel (gard.model.generator, "gard.overall_model", {"0" : "terms.global"}, "gard.filter", null); 
 
 // Infer NJ tree, estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
-console.log ( "\n> Fitting a baseline model...\n");
 base_likelihood_info = gard.fit_partitioned_model (null, gard.model, null);
 
 // Calculate c-AIC
@@ -113,6 +113,7 @@ base_cAIC = gard.calculate_cAIC(base_logLikelihood, baseParams, numSites);
 console.log("Done with single partition analysis.");
 console.log("   Log(L) = " + base_logLikelihood);
 console.log("   c-AIC  = " + base_cAIC);
+
 
 /*------------------------------------------------------------------------------
     1e. Checks
@@ -134,12 +135,22 @@ if (numSites < 2 * (2 * numSeqs - 2) + baseParams) {
 
 
 /*------------------------------------------------------------------------------
-    2a. Evaluation of single break points with brute force
+    2a. Set up some book keeping
+*/
+// Get a list of the variable/informative sites (this will be the list of potential breakpoints).
+variableSitesList = gard.getVariableSiteMatrix();
+numberOfPotentialBreakPoints = Abs(variableSitesList);
+bppSize = (Log(numberOfPotentialBreakPoints)/Log(2)+1)$1; // number of binary digits to represent a potential break point.
+console.log("\nThere are " + numberOfPotentialBreakPoints + " potential breakpoints. Bit size of the sample is " + bppSize + '\n');
+
+
+/*------------------------------------------------------------------------------
+    2b. Evaluation of single break points with brute force
 */
 
 
 /*------------------------------------------------------------------------------
-    2b. Evaluation of multiple break points with genetic algorithm
+    2c. Evaluation of multiple break points with genetic algorithm
 */
 
 
@@ -226,6 +237,36 @@ lfunction gard.fit_partitioned_model (breakPoints, model, initial_values) {
  */
 lfunction gard.calculate_cAIC (logLikelihood, numParameters, numObservations) {
     AIC = 2*numParameters - 2*logLikelihood;
-    correction = ( 2*numParameters*numParameters + 2*numParameters ) / ( numObservations - numParameters -1 );
+    correction = ( 2*numParameters*numParameters + 2*numParameters ) / ( numObservations - numParameters - 1 );
     return AIC + correction;
+}
+
+
+/**
+ * @name gard.getVariableSiteMatrix   
+ * @param {DataSetFilter} 
+ TODO: The old implementation had a zero as the last argument for HarvestFrequencies but this caused issues at sites that had gaps where it would
+        only read the frequencies above the first gap... changing the last argument to a 1 seems to have fixed this but need to confirm.
+ 
+ Also TODO-minor: I can't pass in the datasetfilter (I tired dereferencing, executing in global namespace, passing in as string, etc. but didn't work)
+        There's the same issue with gard.fit_partitioned_model...
+ * @returns a {Associative List} The variable sites in the form of {"0": siteIndex, "1": siteIndex, "2": siteIndex...}
+ */
+function gard.getVariableSiteMatrix () {
+    breakPoints = {};
+    breakPointNumber = 0;
+    for (siteIndex=0; siteIndex<gard.filter.sites; siteIndex=siteIndex+1) {
+        filterString =Format(siteIndex,20,0);
+        DataSetFilter siteFilter = CreateFilter (gard.filter, 1, filterString);
+        HarvestFrequencies (siteCharacterFrequencies, siteFilter, 1, 1, 1);
+        
+        maxFrequency = Abs(siteCharacterFrequencies);
+        variableSite = maxFrequency<1;
+        if (variableSite){
+            breakPoints[breakPointNumber] = siteIndex;
+            breakPointNumber = breakPointNumber+1;
+        }
+
+    }
+    return breakPoints;
 }
