@@ -415,8 +415,8 @@ function alignments.ReadNucleotideAlignment(file_name, dataset_name, datafilter_
  * @returns the number of unique sequences
  */
 lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) {
-    GetDataInfo (duplicate_info, ^filter_in, -2);
 
+    GetDataInfo (duplicate_info, ^filter_in, -2);    
     DataSetFilter ^filter_out = CreateFilter (^filter_in, 1, "", Join (",", duplicate_info["UNIQUE_INDICES"]));
 
     if (rename) {
