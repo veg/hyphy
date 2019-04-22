@@ -6,10 +6,10 @@
 *       1c. Load and Filter Data
 *       1d. Baseline fit on entire alignment
 *       1e. Checks
+*       1f. Set up some book keeping
 *   2. MAIN ANALYSIS
-*       2a. Set up some book keeping
-*       2b. Evaluation of single break points with brute force
-*       2c. Evaluation of multiple break points with genetic algorithm
+*       2a. Evaluation of single break points with brute force
+*       2b. Evaluation of multiple break points with genetic algorithm
 *   3. POST PROCESSING
 *
 *   GARD FUNCTIONS
@@ -33,10 +33,10 @@ LoadFunctionLibrary ("libv3/UtilityFunctions.bf");
 
 
 gard.analysis_description = {terms.io.info : "GARD : Genetic Algorithms for Recombination Detection. Implements a heuristic
-approach to screening alignments of sequences for recombination, by using the CHC genetic algorithm to search for phylogenetic
-incongruence among different partitions of the data. The number of partitions is determined using a step-up procedure, while the
-placement of breakpoints is searched for with the GA. The best fitting model (based on c-AIC) is returned; and additional post-hoc
-tests run to distinguish topological incongruence from rate-variation.",
+    approach to screening alignments of sequences for recombination, by using the CHC genetic algorithm to search for phylogenetic
+    incongruence among different partitions of the data. The number of partitions is determined using a step-up procedure, while the
+    placement of breakpoints is searched for with the GA. The best fitting model (based on c-AIC) is returned; and additional post-hoc
+    tests run to distinguish topological incongruence from rate-variation.",
                            terms.io.version : "0.1",
                            terms.io.reference : "**Automated Phylogenetic Detection of Recombination Using a Genetic Algorithm**, _Mol Biol Evol 23(10), 1891–1901",
                            terms.io.authors : "Sergei L Kosakovsky Pond",
@@ -129,14 +129,11 @@ if (numSites < 2 * (2 * numSeqs - 2) + baseParams) {
 }
 
 
-/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    2. MAIN ANALYSIS
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-
-
 /*------------------------------------------------------------------------------
-    2a. Set up some book keeping
+    1f. Set up some book keeping
 */
+minimumNumberOfVariableSitesInPartitoin = 2; // TODO: what should this number be?
+
 // Get a list of the variable/informative sites (this will be the list of potential breakpoints).
 variableSitesList = gard.getVariableSiteMatrix();
 numberOfPotentialBreakPoints = Abs(variableSitesList);
@@ -144,13 +141,50 @@ bppSize = (Log(numberOfPotentialBreakPoints)/Log(2)+1)$1; // number of binary di
 console.log("\nThere are " + numberOfPotentialBreakPoints + " potential breakpoints. Bit size of the sample is " + bppSize + '\n');
 
 
+/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    2. MAIN ANALYSIS
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
+
 /*------------------------------------------------------------------------------
-    2b. Evaluation of single break points with brute force
+    2a. Evaluation of single break points with brute force
 */
+console.log ( "\n> Fitting a two partition model...\n");
+// TODO: Improve this section
+// 
+// EVALUATION WITH Flu.fasta dataset:
+//                          2.3.11          2.4.0-alpha
+//  No BP cAIC              8887.4          8878.7              GOOD   
+//  Best single BP          696             696                 GOOD
+//  Best single BP cAIC     8764.7          8603                NOT-GOOD
+
+// Don't evaluate break points near the begining or end of the alignment that create partitions that are two small
+firstSinglePartitionBreakPointIndex = minimumNumberOfVariableSitesInPartitoin - 1;
+lastSingelPartitionBreakPointIndex = numberOfPotentialBreakPoints - minimumNumberOfVariableSitesInPartitoin;
+
+singleBreakPoint_best_cAIC = 10^25;
+for (breakPointIndex = firstSinglePartitionBreakPointIndex; breakPointIndex < lastSingelPartitionBreakPointIndex; breakPointIndex=breakPointIndex+1) {
+    siteIndex = variableSitesList[breakPointIndex];
+    singleBreakPoint_LikelihoodInfo = gard.fit_partitioned_model ({{siteIndex}}, gard.model, null);
+    singleBreakPoint_logL = singleBreakPoint_LikelihoodInfo["LogL"];
+    singleBreakPoint_numberParams = singleBreakPoint_LikelihoodInfo["parameters"];
+    singleBreakPoint_cAIC = gard.calculate_cAIC(singleBreakPoint_logL, singeleBreakPoint_numberParams, numSites);
+
+    if (singleBreakPoint_cAIC < singleBreakPoint_best_cAIC) {
+        singleBreakPoint_best_cAIC = singleBreakPoint_cAIC;
+        singleBreakPoint_best_location = siteIndex;
+        singleBreakPoint_best_LogL = singleBreakPoint_logL;
+    }
+}
+
+console.log("Done with two partition analysis.");
+console.log("   Best sinlge break point location: " + singleBreakPoint_best_location);
+console.log("   Log(L) = " + singleBreakPoint_best_LogL);
+console.log("   c-AIC  = " + singleBreakPoint_best_cAIC);
 
 
 /*------------------------------------------------------------------------------
-    2c. Evaluation of multiple break points with genetic algorithm
+    2b. Evaluation of multiple break points with genetic algorithm
 */
 
 
@@ -169,6 +203,9 @@ console.log("\nThere are " + numberOfPotentialBreakPoints + " potential breakpoi
  * Given a list of partitions, specified as increasing breakpoint locations,
    fit the specified model to said partitions, using neighbor joining trees on each partition
    return LogL and IC values
+   // TODO: currently just returning the log_likelihood info and then calculating the cAIC from that...
+   // If we were to change the function to execute how it is documented we wouldn't have access to the additional info (trees, parameteres, etc.)
+   // Not sure if we will need that moving forward but we can revisit this.
    
  * @param {Matrix} breakPoints : sorted, 0-based breakpoints, e.g.
     {{100,200}} -> 3 partitions : 0-100, 101-200, 201-end
