@@ -1,4 +1,4 @@
-RequireVersion("2.3.4");
+RequireVersion("2.4.0");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -29,7 +29,7 @@ fel.analysis_description = {
     terms.io.info: "FEL-contrast (Fixed Effects Likelihood) investigates whether or not selective pressures differ between two or more sets of
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
     and then beta rates are tested for equality at each site. LRT is used to assess significance.",
-    terms.io.version: "0.3",
+    terms.io.version: "0.4",
     terms.io.reference: "Kosakovsky Pond SL, Frost SDW, Grossman Z, Gravenor MB, Richman DD, Leigh Brown AJ (2006) Adaptation to Different Human Populations by HIV-1 Revealed by Codon-Based Analyses. PLoS Comput Biol 2(6): e62.",
     terms.io.authors: "Sergei L Kosakovsky Pond",
     terms.io.contact: "spond@temple.edu",
@@ -51,6 +51,7 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 */
 
 
+
 terms.fel.pairwise      = "pairwise";
 fel.site_alpha          = "Site relative synonymous rate";
 fel.site_beta_reference = "Site relative non-synonymous rate (reference branches)";
@@ -61,6 +62,15 @@ fel.alpha.scaler        = "fel.alpha_scaler";
 // default cutoff for printing to screen
 fel.p_value = 0.1;
 fel.scaler_prefix = "FEL.scaler";
+
+
+KeywordArgument ("code",      "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+KeywordArgument ("branch-set", "The set of branches to use for testing");
+KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
+KeywordArgument ("p-value", "p-values to test for significance", fel.p_value);
+
 
 // The dictionary of results to be written to JSON at the end of the run
 fel.json = {
@@ -78,6 +88,7 @@ fel.display_orders =   {terms.original_name: -1,
 
 
 selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
+
 
 
 namespace fel {
@@ -353,7 +364,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     }
 
 
-	
+
     ref_parameter = (^"fel.scaler_parameter_names")[(^"fel.branches.testable")["VALUEINDEXORDER"][0]];
 
     ^ref_parameter = sum /denominator;
@@ -480,7 +491,7 @@ lfunction fel.store_results (node, result, arguments) {
                  `&k` += 1;
            '
         );
-        
+
         lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           Max (1,^'fel.branch_class_counter' - 1));
@@ -488,7 +499,7 @@ lfunction fel.store_results (node, result, arguments) {
         p_values = {};
         p_values ["overall"] = lrt[^'terms.p_value'];
         test_keys = {};
-        
+
         if (^'fel.report.test_count' > 1) {
 
 			for (v = 0; v < ^'fel.branch_class_counter'; v += 1) {

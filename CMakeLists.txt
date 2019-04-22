@@ -163,7 +163,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     )
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
-set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g ")
+set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ")
 MESSAGE ("Set compiler flags to ${DEFAULT_COMPILE_FLAGS}")
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
@@ -182,7 +182,7 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 # OpenMP support
 #-------------------------------------------------------------------------------
-find_package(OpenMP REQUIRED)
+find_package(OpenMP)
 
 #-------------------------------------------------------------------------------
 # default installation prefix
@@ -292,8 +292,11 @@ add_executable(
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
 
-
-target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+if(${OPENMP_FOUND})
+    target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+else(${OPENMP_FOUND})
+    target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES})
+endif(${OPENMP_FOUND})
 
 add_custom_target(MP DEPENDS hyphy)
 
@@ -363,7 +366,11 @@ if(${MPI_FOUND})
 
     include_directories(${MPI_INCLUDE_PATH})
 
-    target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES} OpenMP::OpenMP_CXX)
+    if(${OPENMP_FOUND})
+        target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES} OpenMP::OpenMP_CXX)
+    else(${OPENMP_FOUND})
+        target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
+    endif(${OPENMP_FOUND})
 
     install(
         TARGETS HYPHYMPI
@@ -382,8 +389,13 @@ if(${MPI_FOUND})
     set_target_properties(
         HYPHYMPI
         PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+        if(${OPENMP_FOUND})
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+        else(${OPENMP_FOUND})
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS}"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}}"
+        endif(${OPENMP_FOUND})
     )
 endif(${MPI_FOUND})
 
@@ -397,7 +409,12 @@ add_executable(
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
 
-target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+if(${OPENMP_FOUND})
+    target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+else(${OPENMP_FOUND})
+    target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
+endif(${OPENMP_FOUND})
+
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
 
@@ -405,8 +422,13 @@ add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
+    if(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
+    else(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fsanitize=address -O0 "
+    endif(${OPENMP_FOUND})
 )
 
 
@@ -430,8 +452,13 @@ set_property(
 set_target_properties(
     HYPHYGTEST
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
-    LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    if(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    else(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
+    endif(${OPENMP_FOUND})
 )
 
 
@@ -464,12 +491,17 @@ set_property(
 set_target_properties(
     hyphy
     PROPERTIES
-    COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${OpenMP_CXX_FLAGS}"
-    LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+    if(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${OpenMP_CXX_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+    else(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS}"
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
+    endif(${OPENMP_FOUND})
 )
 
 macro(makeLink src dest target)
-  add_custom_command(TARGET ${target} POST_BUILD 
+  add_custom_command(TARGET ${target} POST_BUILD
     COMMAND ln -sf ${dest} ${src} DEPENDS ${dest} COMMENT "mklink ${src} -> ${dest}")
 endmacro()
 makeLink(HYPHYMP hyphy hyphy)

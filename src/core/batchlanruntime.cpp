@@ -3499,7 +3499,8 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
           _String object_data (*input_data, current_stream_position, lookahead);
           
           if (simpleParameters.lData[argument_index] != 2) { // matrix
-            store_here->SetValue (new _Matrix (object_data,simpleParameters.lData[argument_index]==4), false);
+            _FormulaParsingContext def;
+            store_here->SetValue (new _Matrix (object_data,simpleParameters.lData[argument_index]==4, def), false);
           } else {
             _TheTree (*store_here->GetName(), object_data);
           }

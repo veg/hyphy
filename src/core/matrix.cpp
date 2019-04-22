@@ -141,10 +141,15 @@ void _Matrix::Initialize (bool) {                            // default construc
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* theP) {
+_Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc) {
   // takes two separate formats
   // 1st : {{i11,...,i1n}{i21,...,i2n}....{in1,...,inn}} // all elements must be explicitly specified
   // 2st : {hor dim, <vert dim>,{hor index, vert index, value or formula}{...}...}
+  
+  bool                doErrors            = fpc.errMsg() == nil,
+                      compute_keys_values = fpc.buildComplexObjects();
+  
+  _VariableContainer const* theP = fpc.formulaScope();
   
   Initialize();
   
@@ -162,8 +167,22 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* th
   terminators [(unsigned char)','] = true;
   terminators [(unsigned char)'}'] = true;
   
-  try {
   
+  try {
+     auto  handle_numeric_parameter = [&] (_String& term) -> long {
+       if (compute_keys_values) {
+        return round (ProcessNumericArgument(&term, theP));
+       }
+       else {
+         _String   err_msg;
+         _Formula  exp (term,theP, &err_msg);
+         if (exp.IsConstant()) {
+           return round(exp.Compute()->Value());
+         }
+         return 1;
+       }
+     };
+
     if (j>i && s.length()>4) { // non-empty string
       _String term;
       if (s.char_at (i) == '{' && s.char_at (j) == '{') { // first type
@@ -218,7 +237,9 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* th
               j = s.FindTerminator (i, terminators);
               
               if (j<0) {
-                HandleApplicationError (kErrorStringUnterminatedMatrix & PrepareErrorContext(s, i));
+                if (doErrors) {
+                  HandleApplicationError (kErrorStringUnterminatedMatrix & PrepareErrorContext(s, i));
+                }
                 return;
               }
               
@@ -237,7 +258,15 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* th
                   lterm = kEmptyString;    // dummy element in probability matrix
                 }
                 
-                _Formula*  theTerm = new _Formula (lterm, theP);
+                _String errMsg;
+                _Formula*  theTerm;
+                
+                 if (doErrors) {
+                   theTerm = new _Formula (lterm, theP);
+                 } else {
+                   theTerm = new _Formula (lterm, theP, fpc.errMsg());
+                 }
+                   
                  isAConstant = isAConstant && theTerm->IsAConstant() && theTerm->ObjectClass() == NUMBER;
                 ((_Formula**)theData)[vDim*hPos+vPos] = theTerm;
               }
@@ -271,17 +300,17 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* th
               break;
             }
             term = s.Cut(1,i-1);
-            hDim = round(ProcessNumericArgument (&term,theP));
+            hDim = handle_numeric_parameter (term);
             j    = i+1;
           }
         }
         
         if (j) { // both hDim and vDim specified
           term = s.Cut(j,i-1);
-          vDim = ProcessNumericArgument (&term,theP);
+          vDim = handle_numeric_parameter (term);
         } else { // only one dim specified, matrix assumed to be square
           term = s.Cut(1,i-1);
-          hDim = ProcessNumericArgument (&term,theP);
+          hDim = handle_numeric_parameter (term);
           vDim = hDim;
         }
         
@@ -374,7 +403,9 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _VariableContainer const* th
       }
     }
   } catch (const _String& err) {
-    HandleApplicationError(err);
+    if (doErrors) {
+      HandleApplicationError(err);
+    }
   }
 }
 
@@ -6356,7 +6387,8 @@ HBLObjectRef       _Matrix::AddObj (HBLObjectRef mp)
 {
     if (_Matrix::ObjectClass()!=mp->ObjectClass()) {
         if (mp->ObjectClass () == STRING) {
-            _Matrix * convMatrix = new _Matrix (((_FString*)mp)->get_str()),
+            _FormulaParsingContext def;
+            _Matrix * convMatrix = new _Matrix (((_FString*)mp)->get_str(), false, def),
             * res;
             res = (_Matrix*)AddObj (convMatrix);
             DeleteObject (convMatrix);
