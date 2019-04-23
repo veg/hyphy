@@ -1126,7 +1126,7 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
             }
         }
     } catch (long) {
-        return FetchFromStdinRedirect (dialog_tag);
+        return FetchFromStdinRedirect (dialog_tag, handle_multi_choice, do_echo);
     }
     
     if (user_argument) {

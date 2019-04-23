@@ -110,6 +110,9 @@ if (fel.srv == "Yes"){
 /* Prompt for p value threshold */
 fel.p_value  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
 
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
+fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
 
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to use as the test set in the FEL-contrast analysis');
 
@@ -453,7 +456,7 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
 
         if (None != fel.print_row) {
             if (!fel.report.header_done) {
-                io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
+                io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.p_value + "\n");
                 fprintf (stdout,
                     io.FormatTableRow (fel.table_screen_output,fel.table_output_options));
                 fel.report.header_done = TRUE;
@@ -468,7 +471,6 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
 
 
 }
-
 
 lfunction fel.store_results (node, result, arguments) {
     //console.log (^"fel.table_headers");
@@ -639,7 +641,7 @@ fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
 
 
 for (fel.k = 0; fel.k < fel.report.test_count; fel.k += 1) {
-    io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[fel.k] + "_ " + io.SingularOrPlural (fel.report.counts[fel.k], "site", "sites") + " with different _" + fel.tests.key[fel.k][0] +"_ dN/dS at p <= " + fel.pvalue + "**");
+    io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[fel.k] + "_ " + io.SingularOrPlural (fel.report.counts[fel.k], "site", "sites") + " with different _" + fel.tests.key[fel.k][0] +"_ dN/dS at p <= " + fel.p_value + "**");
 }
 
 

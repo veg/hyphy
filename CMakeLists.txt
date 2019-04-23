@@ -66,6 +66,33 @@ macro(PCL_CHECK_FOR_AVX)
       HAVE_AVX_EXTENSIONS)
 endmacro(PCL_CHECK_FOR_AVX)
 
+#-------------------------------------------------------------------------------
+# FMA3 MACROS
+#-------------------------------------------------------------------------------
+
+macro(PCL_CHECK_FOR_FMA3)
+    include(CheckCXXSourceRuns)
+    set(CMAKE_REQUIRED_FLAGS)
+
+    if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+        set(CMAKE_REQUIRED_FLAGS "-march=corei7-avx -mtune=corei7-avx -mfma ")
+    endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+
+    check_cxx_source_runs("
+    #include <immintrin.h>
+    int main ()
+    {
+        __m256d a, b, c;
+        double vals[4] = {0.};
+        a = _mm256_loadu_pd (vals);
+        b = _mm256_loadu_pd (vals);
+        c = _mm256_loadu_pd (vals);
+        _mm256_fmadd_pd      (a, b, c);
+        return (0);
+    }"
+    HAVE_FMA3)
+endmacro(PCL_CHECK_FOR_FMA3)
+
 
 #-------------------------------------------------------------------------------
 # set the CMAKE_MODULE_PATH so we can import OpenCL
@@ -130,6 +157,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
        if(${HAVE_AVX_EXTENSIONS})
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
             add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
+            PCL_CHECK_FOR_FMA3()
+            if (${HAVE_AVX_EXTENSIONS})
+                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx -mfma")
+                add_definitions (-D_SLKP_USE_FMA3_INTRINSICS)
+            endif (${HAVE_AVX_EXTENSIONS})
         else(${HAVE_AVX_EXTENSIONS})
             PCL_CHECK_FOR_SSE3()
             if(${HAVE_SSE3_EXTENSIONS})
@@ -149,6 +181,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(${HAVE_AVX_EXTENSIONS})
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx")
         add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
+        PCL_CHECK_FOR_FMA3()
+        if (${HAVE_AVX_EXTENSIONS})
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=corei7-avx -mtune=corei7-avx -mfma")
+            add_definitions (-D_SLKP_USE_FMA3_INTRINSICS)
+        endif (${HAVE_AVX_EXTENSIONS})
     else(${HAVE_AVX_EXTENSIONS})
         PCL_CHECK_FOR_SSE3()
         if(${HAVE_SSE3_EXTENSIONS})

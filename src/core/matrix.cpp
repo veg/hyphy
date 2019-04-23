@@ -5375,7 +5375,16 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                     
                     __m256d   sum256 = _mm256_setzero_pd();
                     
-                    for (unsigned long k = 0; k < 60; k += 12) {
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+                    for (unsigned long k = 0UL; k < 60UL; k += 12UL) {
+                        
+                        sum256 =  _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k),
+                                                    _mm256_fmadd_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4),
+                                                    _mm256_fmadd_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8), sum256))
+                                                   );
+                    }
+#else
+                    for (unsigned long k = 0UL; k < 60UL; k += 12UL) {
                       __m256d term0 = _mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k));
                       __m256d term1 = _mm256_mul_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4));
                       __m256d term2 = _mm256_mul_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8));
@@ -5384,8 +5393,8 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                       __m256d plus2 = _mm256_add_pd(term2, sum256);
                       
                       sum256 = _mm256_add_pd (sum01, plus2);
-                    
                     }
+#endif
                     
                     stash[i+j] = _avx_sum_4(sum256) + row[60] * column [60];
                     

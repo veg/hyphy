@@ -1288,31 +1288,31 @@ lfunction estimators.LHC (ranges, samples) {
 
 
 	result = {};
-	var_count = utility.Array1D (ranges);
-	var_names = utility.Keys (ranges);
-	var_def   = {var_count,2};
+	var_count    = utility.Array1D (ranges);
+	var_names    = utility.Keys (ranges);
+	var_def      = {var_count,2};
+	var_samplers = {};
 	
 	for (v = 0; v < var_count; v += 1) {
 	    var_def [v][0] = (ranges[var_names[v]])[^"terms.lower_bound"];
 	    var_def [v][1] = ((ranges[var_names[v]])[^"terms.upper_bound"] - var_def [v][0]) / (samples-1);
+	    var_samplers[v] = Random ({1,samples}["_MATRIX_ELEMENT_COLUMN_"], 0);
     }
         
-	resampler = {1,samples}["_MATRIX_ELEMENT_COLUMN_"];
 
     result = {};
     
     for (i = 0; i < samples; i+=1) {
         entry = {};
-        resampler = Random (resampler, 0);
         for (v = 0; v < var_count; v += 1) {
             entry [var_names[v]] = {
                 ^"terms.id" : var_names[v],
-                ^"terms.fit.MLE" : var_def[v][0] + resampler[v]* var_def[v][1]
+                ^"terms.fit.MLE" : var_def[v][0] + (var_samplers[v])[i] * var_def[v][1]
             };
         }
         result + entry;
     }
-	
+    	
     return result;
 }
 
