@@ -259,9 +259,15 @@ lfunction frequencies.empirical.F3x4(model, namespace, datafilter) {
 
     frequencies._aux.validate (model);
 
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", FALSE);
-    __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    if (None != datafilter) {
+         utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", FALSE);
+        __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
+        utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    } else {
+        __f = model [^"terms.efv_estimate"];
+    }
+
+
     __alphabet = model[^"terms.bases"];
     nuc_dict = {};
     utility.ForEachPair (__alphabet, "index","base",
@@ -289,10 +295,15 @@ lfunction frequencies.empirical.F1x4(model, namespace, datafilter) {
 
     frequencies._aux.validate (model);
 
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", FALSE);
-    __f1 = frequencies._aux.empirical.collect_data(datafilter, 1, 1, 1);
-    __f = {4,3} ["__f1[_MATRIX_ELEMENT_ROW_][0]"];
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    if (None != datafilter) {
+        utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", FALSE);
+        __f1 = frequencies._aux.empirical.collect_data(datafilter, 1, 1, 1);
+        __f = {4,3} ["__f1[_MATRIX_ELEMENT_ROW_][0]"];
+        utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    } else {
+        __f = model [^"terms.efv_estimate"];
+    }
+
     __alphabet = model[^"terms.bases"];
     nuc_dict = {};
     utility.ForEachPair (__alphabet, "index","base",
@@ -319,10 +330,14 @@ lfunction frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
 
     frequencies._aux.validate (model);
     
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
-    __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
-
+    if (None != datafilter) {
+        utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
+        __f = frequencies._aux.empirical.collect_data(datafilter, 3, 1, 1);
+        utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    } else {
+        __f = model [^"terms.efv_estimate"];
+    }
+    
     //TODO
     __alphabet = model[^"terms.alphabet"];
     __estimates = frequencies._aux.CF3x4(__f, model[^"terms.bases"], __alphabet, model[^"terms.stop_codons"]);
@@ -409,14 +424,11 @@ lfunction frequencies._aux.empirical.collect_data(datafilter, unit, stride, posi
     } else {
         site_count = 0;
         dim = utility.Array1D(datafilter);
-    
 
         for (i = 0; i < dim; i += 1) {
 
-
             HarvestFrequencies(__f, ^ (datafilter[i]), unit, stride, position_specific);
             local_sites = frequencies._aux.empirical.character_count(datafilter[i]);
-
 
             if (i) {
                 __f_composite += __f * local_sites;
@@ -487,9 +499,6 @@ function frequencies._aux.CF3x4(observed_3x4, base_alphabet, sense_codons, stop_
     frequencies._aux.stop_count = Columns(stop_codons);
 
     frequencies._aux.CF3x4.stop_correction = {};
-
-
-
 
     for (frequencies._aux.CF3x4.i = 0; frequencies._aux.CF3x4.i < Columns(base_alphabet); frequencies._aux.CF3x4.i += 1) {
         frequencies._aux.CF3x4.stop_correction[base_alphabet[frequencies._aux.CF3x4.i]] = {

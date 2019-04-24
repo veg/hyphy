@@ -2164,6 +2164,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
     /* handle special cases */
     if (object_to_change == hy_env::random_seed) {
       hy_env::EnvVariableSet(hy_env::random_seed, new _Constant (hy_random_seed = _ProcessNumericArgumentWithExceptions (*GetIthParameter(1),current_program.nameSpacePrefix) ), false);
+      init_genrand(hy_random_seed);
       return true;
     }
 
@@ -3723,6 +3724,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                 
                 throw (bad_key.Enquote() & " is not a valid choice passed to '" & dialog_title & "' ChoiceList using redirected stdin input or keyword arguments. Valid choices are\n\t") & choice_list_echo & "\n";
             };
+            
             
             while (selections.countitems() < required) {
                 _String user_choice;

@@ -195,6 +195,7 @@ namespace hy_env {
           include_model_spec,
           lf_convergence_criterion,
           try_numeric_sequence_match,
+          short_mpi_return,
           kSCFGCorpus
     ;
   

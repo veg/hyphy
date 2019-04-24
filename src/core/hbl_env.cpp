@@ -278,6 +278,8 @@ _String const
         // populated by a successful call to 'ChoiceList', @see ExecuteCase32
     sitewise_matrix                                 ("SITE_LIKELIHOOD"),
         // this _template_ variable is used to define likelihood function evaluator templates
+    short_mpi_return                                ("SHORT_MPI_RETURN"),
+        // controls the return format of optimized functions from MPI slave nodes
     skip_omissions                                  ("SKIP_OMISSIONS"),
         // if set, will cause data filters to _EXCLUDE_ sites with gaps or other N-fold redundancies
     status_bar_update_string                        ("STATUS_BAR_STATUS_STRING"),

@@ -161,7 +161,6 @@ _String  const
                                 stateCountMatrix                ("STATE_COUNT_MATRIX"),
                                 wStateCountMatrix               ("WSTATE_COUNT_MATRIX"),
                                 allowSequenceMismatch           ("ALLOW_SEQUENCE_MISMATCH"),
-                                shortMPIReturn                  ("SHORT_MPI_RETURN"),
                                 mpiPrefixCommand                ("MPI_PREFIX_COMMAND"),
                                 kSkipConjugateGradient          ("SKIP_CONJUGATE_GRADIENT"),
                                 useIntervalMapping              ("USE_INTERVAL_MAPPING"),
@@ -9335,7 +9334,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
         rec << "=\"";
         rec << lfName;
         rec << "\";\n";
-        rec.AppendAnAssignmentToBuffer(&shortMPIReturn, new _String(hy_env::EnvVariableGetNumber(shortMPIReturn, 0.)));
+        rec.AppendAnAssignmentToBuffer(&hy_env::short_mpi_return, new _String(hy_env::EnvVariableGetNumber(hy_env::short_mpi_return, 0.)));
     } else if (opt == _hyphyLFSerializeModeLongMPI) {
         rec << ");\n";
         rec.AppendAnAssignmentToBuffer(
