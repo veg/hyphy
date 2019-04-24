@@ -8,6 +8,7 @@ src/ocl/opencl_kernels.h
 tags
 .ctags
 *.plist
+.vscode/
 
 # CMake generated files
 CMakeCache.txt

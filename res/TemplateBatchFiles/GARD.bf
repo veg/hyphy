@@ -61,7 +61,7 @@ gard.master_list = {}; // "model string" -> "model fitness"
 /*------------------------------------------------------------------------------
     1b. User Input
 */
-io.DisplayAnalysisBanner (gard.analysis_description);
+// TODO: turn this back on... io.DisplayAnalysisBanner (gard.analysis_description);
 
 KeywordArgument ("type",        "The type of data to perform screening on", "Nucleotide");
 KeywordArgument ("code",        "Genetic code to use (for codon alignments)", "Universal", "Choose Genetic Code");
@@ -135,7 +135,7 @@ if (numSites < 2 * (2 * numSeqs - 2) + baseParams) {
 minimumNumberOfVariableSitesInPartitoin = 2; // TODO: what should this number be? and should it be used at all? (not yet used in the GA stage)
 
 // Get a list of the variable/informative sites (this will be the list of potential breakpoints).
-variableSitesList = gard.getVariableSiteMatrix();
+variableSitesList = gard.getVariableSitesMatrix();
 numberOfPotentialBreakPoints = Abs(variableSitesList);
 bppSize = (Log(numberOfPotentialBreakPoints)/Log(2)+1)$1; // number of binary digits to represent a potential break point.
 console.log("\nThere are " + numberOfPotentialBreakPoints + " potential breakpoints. Bit size of the sample is " + bppSize + '\n');
@@ -163,7 +163,7 @@ firstSinglePartitionBreakPointIndex = minimumNumberOfVariableSitesInPartitoin - 
 lastSingelPartitionBreakPointIndex = numberOfPotentialBreakPoints - minimumNumberOfVariableSitesInPartitoin;
 
 singleBreakPoint_best_cAIC = 10^25;
-for (breakPointIndex = firstSinglePartitionBreakPointIndex; breakPointIndex < lastSingelPartitionBreakPointIndex; breakPointIndex=breakPointIndex+1) {
+for (breakPointIndex = firstSinglePartitionBreakPointIndex; breakPointIndex < 5 /*lastSingelPartitionBreakPointIndex*/; breakPointIndex=breakPointIndex+1) {
     siteIndex = variableSitesList[breakPointIndex];
     singleBreakPoint_LikelihoodInfo = gard.fit_partitioned_model ({{siteIndex}}, gard.model, null);
     singleBreakPoint_logL = singleBreakPoint_LikelihoodInfo["LogL"];
@@ -250,31 +250,31 @@ console.log("   c-AIC  = " + singleBreakPoint_best_cAIC);
 
 console.log ( "\n> [Work in progress] fitting multi break point models with a genetic algorithm...\n");
 numberOfBreakPointsBeingEvaluated = 2; // TODO: Iterate over increasing number of breakPoints until converged
-populationSize = 5; // TODO: change to something like 50... set low for debuging
+populationSize = 4; // TODO: change to something like 50... set low for debuging
 generation = 0;
 differenceThreshold = numberOfBreakPointsBeingEvaluated / 4;
 
 parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints);
 terminationCondition = 0;
 while(terminationCondition == 0) {
-    childModels = gard.GA.recombineModels(parentModels, populationSize);
-    unsortedInterGenerationalModels = gard.Helper.combineMatrices(parentModels, childModels);
-    interGenerationalModels = gard.Helper.sortSetOfMatrices(unsortedInterGenerationalModels);
-    modelPerformance = gard.GA.evaluateModels(interGenerationalModels, gard.model, null, numSites);
-    selectedModels = gard.GA.selectModels(modelPerformance, populationSize);
-    fprintf (stdout, 'selectedModels: ', selectedModels, '\n');
+    childModels = gard.GA.recombineModels(parentModels, populationSize, differenceThreshold);
+    interGenerationalModels = parentModels;
+    interGenerationalModels * childModels;
+    evaluatedModels = gard.GA.evaluateModels(interGenerationalModels, gard.model, null, numSites);
+    selectedModels = gard.GA.selectModels(evaluatedModels, populationSize, numberOfBreakPointsBeingEvaluated);
     console.log("\n\n --- LEFT OFF HERE ----\n\n");
+    return;
 
-    if (gard.modelSetsAreTheSame(selectedModels, parentModels)){
-        differenceThreshold = gard.differenceThreshold(differenceThreshold);
+    if (gard.GA.modelSetsAreTheSame(selectedModels, parentModels)){
+        differenceThreshold = gard.GA.decrementDifferenceThreshold(differenceThreshold);
     }
 
     if (differenceThreshold < 0) {
-        parentModels = gard.generateNewGenerationOfModelsByMutatingModelSet(parentModels);
-        differenceThreshold = gard.reinitializeDifferenceThreshold(numberOfBreakPointsBeingEvaluated);
+        parentModels = gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels);
+        differenceThreshold = gard.GA.reinitializeDifferenceThreshold(numberOfBreakPointsBeingEvaluated);
     }
 
-    terminationCondition = gard.evaluateConvergence();
+    terminationCondition = gard.GA.evaluateConvergence();
     generation = generation + 1;
 
 }
@@ -372,7 +372,7 @@ lfunction gard.calculate_cAIC (logLikelihood, numParameters, numObservations) {
 
 
 /**
- * @name gard.getVariableSiteMatrix   
+ * @name gard.getVariableSitesMatrix   
  * @param {DataSetFilter} 
  TODO: The old implementation had a zero as the last argument for HarvestFrequencies but this caused issues at sites that had gaps where it would
         only read the frequencies above the first gap... changing the last argument to a 1 seems to have fixed this but need to confirm.
@@ -381,7 +381,7 @@ lfunction gard.calculate_cAIC (logLikelihood, numParameters, numObservations) {
         There's the same issue with gard.fit_partitioned_model...
  * @returns a {Associative List} The variable sites in the form of {"0": siteIndex, "1": siteIndex, "2": siteIndex...}
  */
-function gard.getVariableSiteMatrix () {
+function gard.getVariableSitesMatrix () {
     breakPoints = {};
     breakPointNumber = 0;
     for (siteIndex=0; siteIndex<gard.filter.sites; siteIndex=siteIndex+1) {
@@ -407,17 +407,21 @@ function gard.getVariableSiteMatrix () {
  * @param {Number} numberOfBreakPoints
  * @param {Number} populationSize
  * @param {Number} numberOfPotentialBreakPoints
- * @returns a {matrix} models
+ * @returns a {Dictonary} initializedModels
  */
 function gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberOfPotentialBreakPoints) {
-    models = {populationSize, numberOfBreakPoints};
+
+    initializedModels = {};
     for (modelNumber=0; modelNumber < populationSize; modelNumber=modelNumber+1) {
-        for (breakPointNumber=0; breakPointNumber < numberOfBreakPoints; breakPointNumber=breakPointNumber+1) {
-            breakPoint = Random(0, numberOfPotentialBreakPoints)$1;
-            models[modelNumber][breakPointNumber] = breakPoint;
+        breakPoints = {1,numberOfBreakPoints};
+        for(breakPointIndex=0; breakPointIndex<numberOfBreakPoints; breakPointIndex=breakPointIndex+1) {
+            breakPoints[breakPointIndex] = Random(0, numberOfPotentialBreakPoints)$1;
         }
+        breakPoints = gard.Helper.sortedMatrix(breakPoints);
+        modelId = Join(",", breakPoints);
+        initializedModels[modelId] = {'breakPoints': breakPoints, 'cAIC': 'notEvaluated'};
     }
-    return models;
+    return initializedModels;
 }
 
 
@@ -425,44 +429,75 @@ function gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberOf
  * @name gard.GA.recombineModels
  Given a set of models create a new generation of models by iteratively recombining two random parent models. 
  The child model will have a random subset of the breakpoints from the parents
- // TODO: Ensure that the child doesn't exactly match a parent.
 
  * @param {Matrix} parentModels
  * @param {Number} populationSize
- * @returns a {Matrix} childModels
+ * @returns a {Dictonary} childModels
  */
-function gard.GA.recombineModels (parentModels, populationSize) {
-    numberOfBreakPoints = Columns(parentModels);
+function gard.GA.recombineModels (parentModels, populationSize, differenceThreshold) {
+    parentModelIds = utility.Keys(parentModels);
+    firstModelObject = parentModels[parentModelIds[0]];
+    numberOfBreakPoints = Columns(firstModelObject['breakPoints']);
 
-    childModels = {populationSize, numberOfBreakPoints};
-    for (modelNumber=0; modelNumber < populationSize; modelNumber=modelNumber+1) {
-        // This is different from the original CHC implementation...
-        modelParentIndex1 = Random(0, populationSize)$1;
-        modelParentIndex2 = Random(0, populationSize)$1;
-        while(modelParentIndex1 == modelParentIndex2) {
-            modelParentIndex2 = Random(0, populationSize)$1;
+    childModels = {};
+    for(modelIndex=0; modelIndex<populationSize; modelIndex=modelIndex+1) {
+        parentModel1 = parentModels[parentModelIds[Random(0, populationSize)$1]];
+        parentModel2 = parentModels[parentModelIds[Random(0, populationSize)$1]];
+
+        while(gard.GA.modelsDifferentEnough(parentModel1, parentModel2, differenceThreshold) == 0) {
+            parentModel2 = parentModels[parentModelIds[Random(0, populationSize)$1]];
         }
 
+        breakPoints = {1, numberOfBreakPoints};
         for (breakPointNumber=0; breakPointNumber < numberOfBreakPoints; breakPointNumber=breakPointNumber+1) {
             // TODO-Major: actually recombine... I'm just randomly generating new modesl for now.
             breakPoint = Random(0, numberOfPotentialBreakPoints)$1;
-            childModels[modelNumber][breakPointNumber] = breakPoint;
+            breakPoints[breakPointNumber] = breakPoint;
         }
+        breakPoints = gard.Helper.sortedMatrix(breakPoints);
+
+        modelId = Join(",", breakPoints);
+        childModels[modelId] = {'breakPoints': breakPoints, "cAIC": 'notEvaluated'};
 
     }
+
     return childModels;
 }
 
 
 /**
  * @name gard.GA.evaluateModels
- * @param {Matrix} models
+ * @param {Dictonary} models (some models may have cAIC scores already)
  * @param {Model} evolutionaryModel; to be used in fit_partitioned_model (i.e. gard.model)
  * @param {??} initial_values; The initial values for fit_partitioned_model (can be null)
  * @param {Number} numSites; the number of sites in the alignment, to be used in the cAIC calculation
- * @returns a {Dictionary} modelPerformance {"model": cAIC, etc.}
+ * @returns a {Dictionary} models (with cAIC for each model)
  */
 function gard.GA.evaluateModels (models, evolutionaryModel, initial_values, numSites) {
+    modelIds = utility.Keys(models);
+    numberOfModels = Columns(modelIds);
+    firstModelObject = models[modelIds[0]];
+    numberOfBreakPoints = Columns(firstModelObject['breakPoints']);
+
+    for(modelIndex=0; modelIndex<numberOfModels; modelIndex=modelIndex+1) {
+        modelId = modelIds[modelIndex];
+        modelObject = models[modelId];
+        cAIC = modelObject['cAIC'];
+
+        if (cAIC == 'notEvaluated') {
+            breakPoints = modelObject['breakPoints'];
+            modelLikelihoodInfo = gard.fit_partitioned_model(breakPoints, evolutionaryModel, initial_values);
+            model_cAIC = gard.calculate_cAIC(modelLikelihoodInfo["LogL"], modelLikelihoodInfo["parameters"], numSites);
+            
+            models[modelId] = {'breakPoints': breakPoints, 'cAIC': model_cAIC};
+        }
+
+    }
+
+    return models;
+
+
+    /*
     numberOfModels = Rows(models);
     numberOfBreakPoints = Columns(models);
 
@@ -477,55 +512,65 @@ function gard.GA.evaluateModels (models, evolutionaryModel, initial_values, numS
     }
 
     return modelPerformance;
+    */
+
 }
 
 
 /**
  * @name gard.GA.selectModels
- * @param {Dictionary} modelPerformance
+ * @param {Dictionary} evaluatedModels
  * @param {Number} numberOfModelsToKeep
  * @returns a {Matrix} selectedModels
  */
-function gard.GA.selectModels (modelPerformance, numberOfModelsToKeep) {
-    // TODO: RDV Left off (2019-04-22) need to make the returned models matrices instead of strings
+function gard.GA.selectModels (evaluatedModels, numberOfModelsToKeep, numberOfBreakPoints) {
+    modelIds = utility.Keys(evaluatedModels);
+    numberOfModels = Columns(modelIds);
+    firstModelObject = models[modelIds[0]];
+    numberOfBreakPoints = Columns(firstModelObject['breakPoints']);
     veryLargeNumber = 100000000;
-    modelPerformanceKeys = utility.Keys(modelPerformance);
+    
+    cAIC_scores = {1,numberOfModels};
+    for(modelIndex=0; modelIndex<numberOfModels; modelIndex=modelIndex+1) {
+        modelObject = evaluatedModels[modelIds[modelIndex]];
+        cAIC_scores[modelIndex] = modelObject["cAIC"];    
+    }
 
     selectedModels = {};
-    cAIC_scores = gard.Helper.getValues(modelPerformance);
     for(i=0; i<numberOfModelsToKeep; i=i+1) {
-        min_cAIC = Min(cAIC_scores,1);
-        selectedModels[i] = modelPerformanceKeys[min_cAIC[1]];
-        cAIC_scores[min_cAIC[1]] = veryLargeNumber;
+        lowest_cAIC_index = Min(cAIC_scores,1)[1];
+
+        selectedModelId = modelIds[lowest_cAIC_index];
+        selectedModelObject = evaluatedModels[selectedModelId];
+        selectedModels[selectedModelId] = selectedModelObject;
+
+        cAIC_scores[lowest_cAIC_index] = veryLargeNumber;   
     }
 
     return selectedModels;
 }
 
+
+/**
+ * @name gard.GA.modelsDifferentEnough
+ * @param {Matrix} model1
+ * @param {Matrix} model2
+ * @param {Number} differenceThreshold
+ * @returns a {Bolean} modelsDifferentEnough
+ */
+function gard.GA.modelsDifferentEnough (model1, model2, differenceThreshold) {
+    // TODO: Actually compare the models, not just make sure they aren't identical
+    if (model1 == model2) {
+        modelsDifferentEnough = 0;
+    } else {
+        modelsDifferentEnough = 1;
+    }
+    return modelsDifferentEnough;
+}
+
+
 // ---- HELPER FUNCTIONS ----
 // TODO: replace these helper functions with a more HBL way of dealing with matrices
-
-function gard.Helper.combineMatrices(matrix1, matrix2) {
-    rows = Rows(matrix1);
-    columns = Columns(matrix1);
-    combinedMatrix = {rows*2, columns};
-
-    for (i=0; i<rows*2; i=i+1) {
-        if (i<rows) {
-            matrixToAddFrom = matrix1;
-            matrixToAddFromIndex = i;
-        } else {
-            matrixToAddFrom = matrix2;
-            matrixToAddFromIndex = i-rows;
-        }
-
-        for (bp=0; bp<columns; bp=bp+1) {
-            combinedMatrix[i][bp] = matrixToAddFrom[matrixToAddFromIndex][bp];
-        }
-
-    }
-    return combinedMatrix
-}
 
 //sort numeric 1xn matrix into assending order.
 function gard.Helper.sortedMatrix(matrix) {
@@ -539,22 +584,6 @@ function gard.Helper.sortedMatrix(matrix) {
     }
 
     return sortedMatrix;
-}
-
-// sort each matrix in a matrix of matrices.
-function gard.Helper.sortSetOfMatrices(setOfMatrices) {
-    sortedMatrices = {Rows(setOfMatrices), Columns(setOfMatrices)};
-    
-    for(matrixIndex=0; matrixIndex<Rows(setOfMatrices); matrixIndex=matrixIndex+1) {
-        numberOfBreakPoints = Columns(setOfMatrices);
-        unsortedMatrix = gard.Helper.getNthMatrix(setOfMatrices, matrixIndex);
-        sortedMatrix = gard.Helper.sortedMatrix(unsortedMatrix);
-        for(breakPoint=0; breakPoint<numberOfBreakPoints; breakPoint=breakPoint+1) {
-            sortedMatrices[matrixIndex][breakPoint] = sortedMatrix[breakPoint];
-        }
-    }
-
-    return sortedMatrices;
 }
 
 // Return the nth matrix in a nxm matrix.
