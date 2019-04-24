@@ -1,5 +1,7 @@
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
+math.Infinity = 1/0;
+
 /** @module math */
 
 /**
