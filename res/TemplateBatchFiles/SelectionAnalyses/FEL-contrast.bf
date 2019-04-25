@@ -598,8 +598,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         );
     }
 
-    //Export   (lfe, ^lf);
-    //fprintf ("/Users/sergei/Desktop/strict_null.lf", CLEAR_FILE, lfe);
     Optimize (results, ^lf);
     Null = estimators.ExtractMLEs (lf, model_mapping);
     Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
@@ -613,10 +611,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
                 estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
                 parameters.SetConstraint ((^"fel.scaler_parameter_names")[v1n],(^"fel.scaler_parameter_names")[v2n], "");
-                //GetString (lfi, ^lf, -1);
-                //console.log (lfi);
-                //Export   (lfe, ^lf);
-                //fprintf ("/Users/sergei/Desktop/pair_null.lf", CLEAR_FILE, lfe);
                 Optimize (results, ^lf);
                 pairwise[v1n + "|" + v2n] = estimators.ExtractMLEs (lf, model_mapping);
                 (pairwise[v1n + "|" + v2n])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
