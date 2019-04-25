@@ -115,7 +115,6 @@ set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
 
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_CONTRIB})
-set_source_files_properties(${SRC_CONTRIB} PROPERTIES COMPILE_FLAGS -fpermissive)
 set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPILE_FLAGS "-Weffc++ -Wextra -Wall")
 
 #-------------------------------------------------------------------------------

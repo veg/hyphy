@@ -2563,7 +2563,6 @@ typedef struct {
    Also assumes the variables `fail_stack' and (if debugging), `bufp',
    `pend', `string1', `size1', `string2', and `size2'.  */
 
-#ifdef __HYPHY_64__
 #define POP_FAILURE_POINT(str, pat, low_reg, high_reg, regstart, regend, reg_info)\
 {                                   \
   DEBUG_STATEMENT (fail_stack_elt_t failure_id;)            \
@@ -2620,64 +2619,7 @@ typedef struct {
                                     \
   DEBUG_STATEMENT (nfailure_points_popped++);               \
 } /* POP_FAILURE_POINT */
-#else
-#define POP_FAILURE_POINT(str, pat, low_reg, high_reg, regstart, regend, reg_info)\
-{                                   \
-  DEBUG_STATEMENT (fail_stack_elt_t failure_id;)            \
-  int this_reg;                             \
-  const unsigned char *string_temp;                 \
-                                    \
-  assert (!FAIL_STACK_EMPTY ());                    \
-                                    \
-  /* Remove failure points and point to how many regs pushed.  */   \
-  DEBUG_PRINT1 ("POP_FAILURE_POINT:\n");                \
-  DEBUG_PRINT2 ("  Before pop, next avail: %d\n", fail_stack.avail);    \
-  DEBUG_PRINT2 ("                    size: %d\n", fail_stack.size); \
-                                    \
-  assert (fail_stack.avail >= NUM_NONREG_ITEMS);            \
-                                    \
-  DEBUG_POP (&failure_id);                      \
-  DEBUG_PRINT2 ("  Popping failure id: %u\n", failure_id);      \
-                                    \
-  /* If the saved string location is NULL, it came from an      \
-     on_failure_keep_string_jump opcode, and we want to throw away the  \
-     saved NULL, thus retaining our current position in the string.  */ \
-  string_temp = POP_FAILURE_ITEM ();                    \
-  if (string_temp != NULL)                      \
-    str = (const char *) string_temp;                   \
-                                    \
-  DEBUG_PRINT2 ("  Popping string 0x%x: `", str);           \
-  DEBUG_PRINT_DOUBLE_STRING (str, string1, size1, string2, size2);  \
-  DEBUG_PRINT1 ("'\n");                         \
-                                    \
-  pat = (unsigned char *) POP_FAILURE_ITEM ();              \
-  DEBUG_PRINT2 ("  Popping pattern 0x%x: ", pat);           \
-  DEBUG_PRINT_COMPILED_PATTERN (bufp, pat, pend);           \
-                                    \
-  /* Restore  info.  */                     \
-  high_reg = (unsigned) POP_FAILURE_ITEM ();                \
-  DEBUG_PRINT2 ("  Popping high active reg: %d\n", high_reg);       \
-                                    \
-  low_reg = (unsigned) POP_FAILURE_ITEM ();             \
-  DEBUG_PRINT2 ("  Popping  low active reg: %d\n", low_reg);        \
-                                    \
-  for (this_reg = high_reg; this_reg >= low_reg; this_reg--)        \
-    {                                   \
-      DEBUG_PRINT2 ("    Popping reg: %d\n", this_reg);         \
-                                    \
-      reg_info[this_reg].word = POP_FAILURE_ITEM ();            \
-      DEBUG_PRINT2 ("      info: 0x%x\n", reg_info[this_reg]);      \
-                                    \
-      regend[this_reg] = (const char *) POP_FAILURE_ITEM ();        \
-      DEBUG_PRINT2 ("      end: 0x%x\n", regend[this_reg]);     \
-                                    \
-      regstart[this_reg] = (const char *) POP_FAILURE_ITEM ();      \
-      DEBUG_PRINT2 ("      start: 0x%x\n", regstart[this_reg]);     \
-    }                                   \
-                                    \
-  DEBUG_STATEMENT (nfailure_points_popped++);               \
-} /* POP_FAILURE_POINT */
-#endif
+
 /* re_compile_fastmap computes a ``fastmap'' for the compiled pattern in
    BUFP.  A fastmap records which of the (1 << BYTEWIDTH) possible
    characters can start a string that matches the pattern.  This fastmap
@@ -3875,11 +3817,7 @@ restore_best_regs:
                             regstart[r] = old_regstart[r];
 
                             /* xx why this test?  */
-#ifdef __HYPHY_64__
                             if ((long) old_regend[r] >= (long) regstart[r])
-#else
-                            if ((int) old_regend[r] >= (int) regstart[r])
-#endif
                                 regend[r] = old_regend[r];
                         }
                     }
@@ -5001,7 +4939,7 @@ regexec (
 size_t
 regerror (
     int errcode,
-    const regex_t *,
+    const regex_t * rt,
     char *errbuf,
     size_t errbuf_size)
 {
