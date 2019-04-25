@@ -113,8 +113,10 @@ set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_CONTRIB})
 
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_CONTRIB})
+set_source_files_properties(${SRC_CONTRIB} PROPERTIES COMPILE_FLAGS -fpermissive)
+set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPILE_FLAGS "-Weffc++ -Wextra -Wall")
 
 #-------------------------------------------------------------------------------
 # make it fast, scotty
@@ -230,11 +232,6 @@ endif()
 if(NOT DEFINED INSTALL_PREFIX)
     set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
 endif()
-if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    set(DEFAULT_LIBRARIES pthread)
-else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    set(DEFAULT_LIBRARIES dl pthread)
-endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 
 #-------------------------------------------------------------------------------
 # LIBCurl support
@@ -242,9 +239,9 @@ endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 find_package(CURL)
 if(${CURL_FOUND} AND NOT APPLE)
     if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        set(DEFAULT_LIBRARIES pthread crypto curl ssl)
+        set(DEFAULT_LIBRARIES crypto curl ssl)
     else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        set(DEFAULT_LIBRARIES dl pthread crypto curl ssl)
+        set(DEFAULT_LIBRARIES crypto curl ssl)
     endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     add_definitions (-D__HYPHYCURL__)
 endif(${CURL_FOUND} AND NOT APPLE)
@@ -302,9 +299,6 @@ set_property(
 #-------------------------------------------------------------------------------
 add_definitions(-D_SLKP_LFENGINE_REWRITE_ -D__AFYP_REWRITE_BGM__)
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    add_definitions(-D__HYPHY_64__)
-endif(CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 include_directories(
     src/core/include
@@ -343,49 +337,6 @@ install(
     OPTIONAL
 )
 
-#-------------------------------------------------------------------------------
-# hyphy OpenCL target
-#-------------------------------------------------------------------------------
-find_package(OpenCL)
-if(${OPENCL_FOUND})
-
-    add_executable(
-        HYPHYOCL
-        EXCLUDE_FROM_ALL
-        ${SRC_COMMON} ${SRC_UNIXMAIN} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl/opencl_kernels.h
-    )
-
-    include_directories(${OPENCL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/ocl)
-    target_link_libraries(HYPHYOCL ${DEFAULT_LIBRARIES} ${OPENCL_LIBRARIES})
-
-    install(
-        TARGETS HYPHYOCL
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
-
-    add_custom_target(OCL DEPENDS HYPHYOCL)
-    set_property(
-        TARGET HYPHYOCL
-        APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__ __UNIX__ _HY_GPU_EXAMPLE_CALCULATOR MDSOCL
-    )
-    set_target_properties(
-        HYPHYOCL
-        PROPERTIES
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
-    )
-    add_executable(
-        cl2hdr
-        EXCLUDE_FROM_ALL
-        contrib/cl2hdr.c
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/src/ocl/opencl_kernels.h
-        COMMAND cl2hdr ${CMAKE_CURRENT_SOURCE_DIR}/src/ocl/opencl_kernels.cl ${CMAKE_CURRENT_BINARY_DIR}/src/ocl/opencl_kernels.h
-        DEPENDS cl2hdr ${CMAKE_CURRENT_SOURCE_DIR}/src/ocl/opencl_kernels.cl
-    )
-endif(${OPENCL_FOUND})
 
 
 #-------------------------------------------------------------------------------
@@ -422,6 +373,8 @@ if(${MPI_FOUND})
         TARGET HYPHYMPI
         APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
     )
+
+    message ("${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
 
     set_target_properties(
         HYPHYMPI

@@ -1354,6 +1354,8 @@ long    _LikelihoodFunction::SetAllIndependent (_Matrix* v)
     for (long k = 0; k < upto; k++) {
         set_this_many += CheckAndSetIthIndependent (k, v->theData[k]);
     }
+    //ObjectToConsole(v);
+    
     return set_this_many;
 }
 
@@ -1834,19 +1836,20 @@ bool    _LikelihoodFunction::PreCompute         (void)
 
     _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
 
+    
+    
     for (; i < arrayToCheck->lLength; i++) {
         _Variable* cornholio = LocateVar(arrayToCheck->lData[i]);
         hyFloat tp = cornholio->Compute()->Value();
-        if (!cornholio->IsValueInBounds(tp)){
+         if (!cornholio->IsValueInBounds(tp)){
             ReportWarning (_String ("Failing bound checks on ") & *cornholio->GetName() & " = " & _String (tp, "%25.16g"));
-            break;
         }
     }
 
     useGlobalUpdateFlag = false;
     // mod 20060125 to only update large globals once
 
-    for (unsigned long j=0UL; j<arrayToCheck->lLength; j++) {
+    for (unsigned long j=0UL; j < i; j++) {
         _Variable* cornholio = LocateVar(arrayToCheck->lData[j]);
         if (cornholio->varFlags&HY_DEP_V_COMPUTED) {
             cornholio->varFlags -= HY_DEP_V_COMPUTED;
@@ -6230,6 +6233,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
     bp          = gPrecision*.1,
     left = 0., right = 0., middle = 0.;
       
+    //ObjectToConsole(&bestVal);
       
     _Matrix                          left_vector        ;
     GetAllIndependent               (left_vector);
@@ -6290,6 +6294,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
         reset = true;
       } else {
           hyFloat U,V,W,X=middle,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
+          //ObjectToConsole(&prior_parameter_values);
           _Matrix current_best_vector (prior_parameter_values);
           current_best_vector.AplusBx(gradient, middle);
           W = .0;
@@ -6379,6 +6384,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
                      snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump (eval %ld) REJECT new try (%20.16g) (delta = %20.16g)", likeFuncEvalCallCount, U, FX-FU);
                      BufferToConsole (buf);
                     }
+                    current_best_vector = prior_parameter_values;
                     if (U<X) {
                       left = U;
                     } else {
@@ -6401,7 +6407,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
         if (verbosity_level > 50) {
          char buf [256];
-         snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %15.12g/%15.12g ]\n\n", gPrecision, X, -FX, middleValue, maxSoFar);
+            snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump AFTER BRENT: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %15.12g/%15.12g ]\n\n", gPrecision, middle, X, -FX, middleValue);
           BufferToConsole (buf);
         }
         middleValue = -FX;
@@ -6417,12 +6423,13 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
         } else {
           SetAllIndependent (&current_best_vector);
           maxSoFar    = Compute();
-          bestVal     = current_best_vector;
           if (verbosity_level > 50) {
             char buf [256];
             snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump moving parameter value (should trigger LL update) %15.12g ||L2|| move ]\n\n", (current_best_vector-bestVal).AbsValue());
             BufferToConsole (buf);
+            //ObjectToConsole(&current_best_vector);
           }
+          bestVal     = current_best_vector;
         }
 
         if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 100. * kMachineEpsilon)) {

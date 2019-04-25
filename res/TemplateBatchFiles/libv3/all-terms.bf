@@ -482,6 +482,7 @@ namespace terms{
         root                = "root";
         branches            = "branches";
         meta                = "meta";
+        comment             = "comment";
 
         //node_name = "Name";
         //children = "Children";
