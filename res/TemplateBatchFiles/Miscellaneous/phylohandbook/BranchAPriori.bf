@@ -37,7 +37,6 @@ ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"2Rat
 
 ChoiceList (freqs, "Alignment", 1, SKIP_NONE, "Flu H5N1 HA", 		"Use the example Influenza H5N1 heamagglutinin alignment (5 sequences)",
 											  "Drospophila adh", 	"Use the example Drosophila ADH alignment (6 sequences).",
-											  "Primate Lysozyme", 	"Use the example primate lysozyme alignment (7 sequences).",
 											  "Custom", 			"Load your own coding alignment.");
 													 
 if (freqs < 0)
@@ -45,7 +44,7 @@ if (freqs < 0)
 	return 0;
 }
 													 
-if (freqs == 3)
+if (freqs == 2)
 {
 	SetDialogPrompt     ("Choose a nucleotide alignment");
 	DataSet ds        = ReadDataFile (PROMPT_FOR_FILE);
@@ -54,20 +53,12 @@ else
 {
 	if (freqs == 1)
 	{
-		GetURL			(dataString, "http://www.hyphy.org/phylohandbook/data/Drosophila_adh.nex");	
+		DataSet ds = ReadDataFile (PATH_TO_CURRENT_BF + '/datasets/Drosophilia_adh.nex');
 	}
 	else
 	{
-		if (freqs == 0)
-		{
-			GetURL			(dataString, "http://www.hyphy.org/phylohandbook/data/H5N1_HA_5.nex");
-		}
-		else
-		{
-			GetURL			(dataString, "http://www.hyphy.org/gabranch/lysozyme_small.nex");		
-		}
-	}	
-	DataSet ds		 = ReadFromString (dataString);
+		DataSet ds = ReadDataFile (PATH_TO_CURRENT_BF + '/datasets/H5N1_HA_5.nex');
+	}
 }
 
 			  			  			  			  

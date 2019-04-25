@@ -50,13 +50,12 @@ else
 {
 	if (freqs == 1)
 	{
-		GetURL			(dataString, "http://www.hyphy.org/phylohandbook/data/Drosophila_adh.nex");	
+		DataSet ds = ReadDataFile (PATH_TO_CURRENT_BF + '/datasets/Drosophilia_adh.nex');
 	}
 	else
 	{
-		GetURL			(dataString, "http://www.hyphy.org/phylohandbook/data/H5N1_HA_5.nex");
+		DataSet ds = ReadDataFile (PATH_TO_CURRENT_BF + '/datasets/H5N1_HA_5.nex');
 	}	
-	DataSet ds		 = ReadFromString (dataString);
 }
 
 DataSetFilter	  	filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
@@ -189,27 +188,6 @@ fprintf (stdout, "\nTotal tree lengths:",
 				 "\n\tdN            : ", totalLength[3], "\n"); 
 				 
 
-columnHeaders = {{"E[syn]","E[nonsyn]","dS","dN","dN/dS","omega=beta/alpha",labelString}};
-
-OpenWindow (CHARTWINDOW,{{"Branch Report"}
-		{"columnHeaders"}
-		{"branchReport"}
-		{"Scatterplot"}
-		{"dS"}
-		{"dN"}
-		{"dS"}
-		{""}
-		{"dN"}
-		{"0"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:12:2"}
-		{"0;0;16777215;11776947;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		},
-		"(SCREEN_WIDTH-50)/2;(SCREEN_HEIGHT-50)/2;30+(SCREEN_WIDTH-30)/2;45");
-
 treeAVL = givenTree ^ 0;
 
 synTreeString 		= PostOrderAVL2StringDistances (treeAVL, synSubsAVL); 
@@ -239,16 +217,12 @@ mxTreeSpec [1] = "8211";
 mxTreeSpec [2] = "";
 
 
-OpenWindow (TREEWINDOW, mxTreeSpec,"(SCREEN_WIDTH-50)/4;(SCREEN_HEIGHT-50)/4;10;40");
 
 mxTreeSpec [0] = "synSubsTree";
-OpenWindow (TREEWINDOW, mxTreeSpec,"(SCREEN_WIDTH-50)/4;(SCREEN_HEIGHT-50)/4;30+(SCREEN_WIDTH-30)/4;40");
 
 mxTreeSpec [0] = "dSTree";
-OpenWindow (TREEWINDOW, mxTreeSpec,"(SCREEN_WIDTH-50)/4;(SCREEN_HEIGHT-50)/4;10;45+(SCREEN_HEIGHT-50)/4");
 
 mxTreeSpec [0] = "dNTree";
-OpenWindow (TREEWINDOW, mxTreeSpec,"(SCREEN_WIDTH-50)/4;(SCREEN_HEIGHT-50)/4;30+(SCREEN_WIDTH-30)/4;45+(SCREEN_HEIGHT-50)/4");
 
 /* start: constrain global parameters for pairwise estimates */
 
@@ -306,24 +280,3 @@ for (tax1 = 0; tax1 < filteredData.species; tax1=tax1+1)
 }
 
 VERBOSITY_LEVEL = 0;
-
-columnHeaders = {{"Tree based dS","Tree based dN","Pairwise dS","Pairwise dN",labelString}};
-
-OpenWindow (CHARTWINDOW,{{"Pairwise Report"}
-		{"columnHeaders"}
-		{"branchReport2"}
-		{"Scatterplot"}
-		{"Tree based dN"}
-		{"Pairwise dN"}
-		{"Tree based dN"}
-		{""}
-		{"Pairwise dN"}
-		{"0"}
-		{""}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:12:2"}
-		{"0;0;16777215;11776947;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;15670812;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		},
-		"(SCREEN_WIDTH-50)/2;(SCREEN_HEIGHT-50)/2;30+(SCREEN_WIDTH-30)/2;45+(SCREEN_HEIGHT-50)/2");

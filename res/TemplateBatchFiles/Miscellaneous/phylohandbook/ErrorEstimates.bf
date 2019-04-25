@@ -54,13 +54,12 @@ else
 {
 	if (freqs == 1)
 	{
-		GetURL			(dataString, "http://www.hyphy.org/phylohandbook/data/Drosophila_adh.nex");	
+		DataSet ds = ReadDataFile (PATH_TO_CURRENT_BF + '/datasets/Drosophilia_adh.nex');
 	}
 	else
 	{
-		GetURL			(dataString, "http://www.hyphy.org/phylohandbook/data/H5N1_HA_5.nex");
-	}	
-	DataSet ds		 = ReadFromString (dataString);
+		DataSet ds = ReadDataFile (PATH_TO_CURRENT_BF + '/datasets/H5N1_HA_5.nex');
+	}
 }
 
 			  			  			  			  

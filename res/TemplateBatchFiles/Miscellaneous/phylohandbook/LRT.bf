@@ -53,13 +53,12 @@ else
 {
 	if (freqs == 1)
 	{
-		GetURL			(dataString, "http://www.hyphy.org/phylohandbook/data/Drosophila_adh.nex");	
+		DataSet ds = ReadDataFile (PATH_TO_CURRENT_BF + '/datasets/Drosophilia_adh.nex');
 	}
 	else
 	{
-		GetURL			(dataString, "http://www.hyphy.org/phylohandbook/data/H5N1_HA_5.nex");
-	}	
-	DataSet ds		 = ReadFromString (dataString);
+		DataSet ds = ReadDataFile (PATH_TO_CURRENT_BF + '/datasets/H5N1_HA_5.nex');
+	}
 }
 
 			  			  			  			  
@@ -178,24 +177,3 @@ fprintf (stdout, "\n\nLR report:",
 				 "\n\tMean                       = ", dsc ["Mean"], 
 				 "\n\tMin                        = ", dsc ["Min"],
 				 "\n\tMax                        = ", dsc ["Max"],"\n");
-		
-columnHeaders = {{"LR","Proporion"}};
-
-OpenWindow (CHARTWINDOW,{{"LR Statistic Distribution"}
-		{"columnHeaders"}
-		{"LR_counts"}
-		{"Bar Chart"}
-		{"LR"}
-		{"Proporion"}
-		{"LR"}
-		{""}
-		{"Proportion"}
-		{"0"}
-		{"(0.5)^(DF/2)/Gamma(DF/2)_x_^(DF/2-1)Exp(-_x_/2)"}
-		{"-1;-1"}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Arial:14:0"}
-		{"0;0;16777215;5000268;0;0;6579300;11842740;13158600;14474460;0;3947580;16777215;0;6845928;16771158;2984993;9199669;7018159;1460610;16748822;11184810;14173291"}
-		{"16,0,0"}
-		},
-		"(SCREEN_WIDTH-50)/2;(SCREEN_HEIGHT-50)/2;30+(SCREEN_WIDTH-30)/2;45");
