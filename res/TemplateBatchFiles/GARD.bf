@@ -1,11 +1,11 @@
-meds/**
+/**
     ---- OUTLINE ----
     1. SETUP
         1a. Initial Setup
         1b. User Input
         1c. Load and Filter Data
-        1d. Baseline fit on entire alignment
-        1e. Checks
+        1d. Check that there are enough sites to permit cAIC
+        1e. Baseline fit on entire alignment
         1f. Set up some book keeping
     2. MAIN ANALYSIS
         2a. Evaluation of single break points with brute force
@@ -15,15 +15,11 @@ meds/**
     GARD FUNCTIONS
 */
 
-/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    1. SETUP
+/* 1. SETUP
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-
-/*------------------------------------------------------------------------------
-    1a. Initial Setup
-*/
-
+/* 1a. Initial Setup
+------------------------------------------------------------------------------*/
 LoadFunctionLibrary ("libv3/convenience/regexp.bf");
 LoadFunctionLibrary ("libv3/convenience/math.bf");
 LoadFunctionLibrary ("libv3/IOFunctions.bf");
@@ -53,22 +49,10 @@ namespace terms.gard {
     codon      = "Codon";
 };
 
-namespace gard.parameters {
 
-};
-
-gard.masterList = {};
-
-/**
-    "model string" -> "model fitness"
-**/
-
-
-/*------------------------------------------------------------------------------
-    1b. User Input
-*/
-
-io.DisplayAnalysisBanner (gard.analysis_description);
+/* 1b. User Input
+------------------------------------------------------------------------------*/
+//TODO: io.DisplayAnalysisBanner (gard.analysis_description);
 
 KeywordArgument ("type",        "The type of data to perform screening on", "Nucleotide");
 KeywordArgument ("code",        "Genetic code to use (for codon alignments)", "Universal", "Choose Genetic Code");
@@ -80,9 +64,8 @@ gard.data_type = io.SelectAnOption  ({terms.gard.nucleotide : "A nucleotide (DNA
                                       "The type of data to perform screening on");
 
 
-/*------------------------------------------------------------------------------
-    1c. Load and Filter Data
-*/
+/* 1c. Load and Filter Data
+------------------------------------------------------------------------------*/
 if (gard.data_type == terms.gard.nucleotide) {
     LoadFunctionLibrary ("libv3/models/DNA/GTR.bf");
     gard.model.generator = "models.DNA.GTR.ModelDescription";
@@ -98,20 +81,13 @@ if (gard.data_type == terms.gard.nucleotide) {
     }
 }
 
-
-
-/*------------------------------------------------------------------------------
-    1d. Baseline fit on entire alignment
-*/
-
-
-//console.log ( "\n> Fitting a baseline model...\n");
 // Define model to be used in each fit
 gard.model = model.generic.DefineModel (gard.model.generator, "gard.overall_model", {"0" : "terms.global"}, "gard.filter", null);
 
 gard.numSites               = gard.alignment[terms.data.sites];
 gard.numSeqs                = gard.alignment[terms.data.sequences];
 
+// Get a matrix of the variable sites {"0": site index, "1": site index ...}
 gard.variableSiteMap = {};
 utility.ForEach (alignments.Extract_site_patterns ("gard.filter"), "_pattern_", "
     if (_pattern_[terms.data.is_constant]==FALSE) {
@@ -121,13 +97,11 @@ utility.ForEach (alignments.Extract_site_patterns ("gard.filter"), "_pattern_", 
         ');
     }
 ");
-
 gard.variableSiteMap = Transpose (utility.DictToArray (gard.variableSiteMap)) % 0; // sort by 1st column
 gard.variableSites = Rows (gard.variableSiteMap);
-gard.breakpointLocations = gard.variableSites - 1;
+gard.numberOfPotentialBreakPoints = gard.variableSites - 1;
 
-
-io.ReportProgressMessage ("", ">Loaded a `gard.data_type` multiple sequence alignment with **`gard.numSeqs`** sequences, **`gard.numSites`** sites (`gard.variableSites` of which are variable) \`" +
+io.ReportProgressMessage ("", ">Loaded a `gard.data_type` multiple sequence alignment with **`gard.numSeqs`** sequences, **`gard.numSites`** sites (`gard.variableSites` of which are variable)\n \`" +
                                 gard.alignment[utility.getGlobalValue("terms.data.file")] + "\`");
 
 gard.baselineParameters     = (gard.model[terms.parameters])[terms.model.empirical] + // empirical parameters
@@ -136,23 +110,22 @@ gard.baselineParameters     = (gard.model[terms.parameters])[terms.model.empiric
 
 gard.min_expected_sites     = (gard.baselineParameters + 2);
 gard.minPartitionSize       = 2*gard.numSeqs-3;
-
-
-
-/**
+/** gard.minPartitionSize:
     a simple heuristic that requires that there c-AIC makes sense for each individual
     partition i.e. there are at least 2 more sites than branch lengths
 **/
 
 io.ReportProgressMessage ("", ">Minimum size of a partition is set to be `gard.minPartitionSize` sites");
 
+/* 1d. Check that there are enough sites to permit cAIC
+------------------------------------------------------------------------------*/
 io.CheckAssertion("gard.min_expected_sites <= gard.numSites", "The alignment is too short to permit c-AIC based model comparison. Need at least `gard.min_expected_sites` sites for `gard.numSeqs` sequences to fit a two-partiton model.");
 
-io.ReportProgressMessageMD('GARD', 'baseline-fit', 'Fitting the baseline (single-partition) model');
 
+/* 1e. Baseline fit on entire alignment
+------------------------------------------------------------------------------*/
+io.ReportProgressMessageMD('GARD', 'baseline-fit', 'Fitting the baseline (single-partition; no breakpoints) model');
 // Infer NJ tree, estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
-
-gard.createLikelihoodFunctionForExport ("gard.export", gard.model);
 
 gard.base_likelihood_info = gard.fit_partitioned_model (null, gard.model, null);
 gard.initial_values = gard.base_likelihood_info;
@@ -160,56 +133,46 @@ gard.globalParameterCount = utility.Array1D (estimators.fixSubsetOfEstimates(gar
 (gard.initial_values [terms.branch_length])[0] = null;
 (gard.initial_values [terms.branch_length])[1] = null;
 
-/**
-    HACK ; pending better export options -- define a
-**/
-
-gard.baseline_aic = math.GetIC (gard.base_likelihood_info[terms.fit.log_likelihood], gard.base_likelihood_info[terms.parameters], gard.numSites);
+gard.baseline_cAIC = math.GetIC (gard.base_likelihood_info[terms.fit.log_likelihood], gard.base_likelihood_info[terms.parameters], gard.numSites);
 io.ReportProgressMessageMD("GARD", "baseline-fit", "* " + selection.io.report_fit (gard.base_likelihood_info, 0, gard.numSites));
 
-/** store initial baseline AIC **/
 
-gard.masterList [{{}}] = gard.baseline_aic;
+/* 1f. Set up some book keeping
+------------------------------------------------------------------------------*/
+// Setup mpi queue
+gard.createLikelihoodFunctionForExport ("gard.export", gard.model);
+gard.queue = mpi.CreateQueue (
+                            {
+                            "LikelihoodFunctions" : {{"gard.export"}},
+                            "Headers" : {{"libv3/all-terms.bf"}},
+                            "Variables" : {{"gard.globalParameterCount", "gard.numSites"}}
+                            }
+                        );
+
+// Setup master list of evaluated models.
+gard.masterList = {};
+/** gard.masterList:
+    "model string": "model fitness (cAIC score)"
+    model string is in the format: "{\n{bp1} \n{bp2} ...\n}"
+    model fitness is either null or the numeric cAIC score
+**/
+
+gard.masterList [{{}}] = gard.baseline_cAIC;
 
 
-
-
-
-/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    2. MAIN ANALYSIS
+/* 2. MAIN ANALYSIS
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-
-/*------------------------------------------------------------------------------
-    2a. Evaluation of single break points with brute force
-*/
-
+/* 2a. Evaluation of single break points with brute force
+------------------------------------------------------------------------------*/
 io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Performing an exhaustive single breakpoint analysis');
-
-// TODO: Improve this section
-//
-// EVALUATION WITH Flu.fasta dataset:
-//                          2.3.11          2.4.0-alpha
-//  No BP cAIC              8887.4          8878.7              GOOD
-//  Best single BP          696             696                 GOOD
-//  Best single BP cAIC     8764.7          8603                NOT-GOOD
-
-// Don't evaluate break points near the begining or end of the alignment that create partitions that are two small
 
 namespace gard {
 
-    queue = mpi.CreateQueue (
-                             {
-                               "LikelihoodFunctions" : {{"gard.export"}},
-                               "Headers" : {{"libv3/all-terms.bf"}},
-                               "Variables" : {{"gard.globalParameterCount", "gard.numSites"}}
-                              }
-                            );
-
-    singleBreakPoint_best_cAIC = baseline_aic;
+    singleBreakPoint_best_cAIC = baseline_cAIC;
     singleBreakPoint_best_location = -1;
 
-    for (breakPointIndex = 0; breakPointIndex < variableSites - 1 ; breakPointIndex += 1) {
+    for (breakPointIndex = 0; breakPointIndex < variableSites - 1; breakPointIndex += 1) {
         siteIndex = variableSiteMap [breakPointIndex];
 
         io.ReportProgressBar ("GARD", "Breakpoint " +  (1+breakPointIndex) + " of " + (variableSites-1));
@@ -219,130 +182,101 @@ namespace gard {
             continue;
         }
 
-        mpi.QueueJob (queue, "gard.obtainModelAIC", {"0" : {{siteIndex__}},
+        mpi.QueueJob (queue, "gard.obtainModel_cAIC", {"0" : {{siteIndex__}},
                                                      "1" : model,
                                                      "2" : base_likelihood_info},
                                                      "gard.storeModelResults");
+                                                    
+    }
 
-      }
     mpi.QueueComplete (queue);
+
     io.ClearProgressBar();
-    console.log("Done with two partition analysis.");
-    console.log("   Best sinlge break point location: " + singleBreakPoint_best_location);
-    console.log("   c-AIC  = " + singleBreakPoint_best_cAIC);
+    io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Done with single breakpoint analysis.');
+    io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   Best sinlge break point location: " + singleBreakPoint_best_location));
+    io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   c-AIC  = " + singleBreakPoint_best_cAIC));
+
 }
 
 
-
-/*------------------------------------------------------------------------------
-    2b. Evaluation of multiple break points with genetic algorithm
+/* 2b. Evaluation of multiple break points with genetic algorithm
+------------------------------------------------------------------------------*/
+/* TODO:
+- Make sure models are valid (using gard.minPartitionSize)
+- Use the distance threshold (currently only avoiding mating models that arent the same)
+- Evaluate more than just two break points
+- Track models in the master list and don't evaluate ones that have been evaluated already
+- Make it work with mpi
 */
-/** Notes on implementing the genetic algorithm
-
-    ---- Pseudocode from CHC paper ----
-    Code:
-        t =0;
-        d = L/4;
-        initialize P(t);
-        evaluate structures in P(t);
-        while termination condition not satisfied do
-        begin
-            t = t+1;
-            select_r C(t) from P(t-1);
-            recombine structures in C(t) forming C'(t);
-            evaluate structures in C'(t);
-            select_s P(t) from C'(t) and P(t-1);
-            if P(t) equals P(t-1)
-                d--;
-            if d < 0
-            begin
-                diverge P(t);
-                d = r * (1.0 -r) * L;
-            end
-        end
-
-    Procedures:
-
-        select_r
-            copy all members of P(t-1) to C(t) in random order;
-
-        select_s
-            form P(t) from P(t-1)
-                by replacing the worst members of P(t-1) with the best members of C'(t)
-                until no remaning member of C'(t) is any better than any remaining member of P(t-1);
-
-        recombine
-            for each of the M/2 pairs of structures in C(t)
-            begin
-                determine the Hamming_distance
-                if (Hamming_distance/2) > d
-                    swap half the differing bits at random;
-                else
-                    delete the pair of structures from C(t)
-            end
-
-        diverge
-            replace P(t) with M copies of the best member of P(t-1);
-            for all but one member of P(t)
-            begin
-                flip r * L bits at random;
-                evaluate structure;
-            end
-
-    Variables:
-        M: populationSize
-        L: string length
-        t: generation
-        d: difference threshold
-        r: divergence rate
-
-*/
-
-
-console.log ( "\n> [Work in progress] fitting multi break point models with a genetic algorithm...\n");
+io.ReportProgressMessageMD('GARD', 'multi-breakpoint', 'Performing multi breakpoint analysis using a genetic algorithm');
 
 namespace gard {
     numberOfBreakPointsBeingEvaluated = 2; // TODO: Iterate over increasing number of breakPoints until converged
-    populationSize = 4; // TODO: change to something like 50... set low for debuging
+    populationSize = 20; // TODO: change to something like 50... set low for debuging
     generation = 0;
     differenceThreshold = numberOfBreakPointsBeingEvaluated / 4;
+    cAIC_improvementThreshold = 1;
+    numberOfGenerationsAtCurrentBest_cAIC = 0;
+    maxNumberOfGenerationsAllowedAtStagnent_cAIC = 30; // Is set to 100 in the GARD paper;
 
-    parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, breakpointLocations);
+    parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints);
 
-    console.log (parentModels);
+    terminationCondition = FALSE;
+    while(terminationCondition == FALSE) {
+        io.ReportProgressBar ("GARD", 'Genetic algorithm for ' + numberOfBreakPointsBeingEvaluated + ' breakpoint analysis: generation ' +  (1+generation) );
 
-    terminationCondition = 0;
-    while(terminationCondition == 0) {
+        // 1. Produce the next generation of models with recombination. 
         childModels = gard.GA.recombineModels(parentModels, populationSize, differenceThreshold);
+        
+        // 2. Select the fittest models. 
         interGenerationalModels = parentModels;
         interGenerationalModels * childModels;
-        evaluatedModels = gard.GA.evaluateModels(interGenerationalModels, gard.model, null, numSites);
-        selectedModels = gard.GA.selectModels(evaluatedModels, populationSize, numberOfBreakPointsBeingEvaluated);
-        console.log("\n\n --- LEFT OFF HERE ----\n\n");
+        evaluatedModels = gard.GA.evaluateModels(interGenerationalModels, model, null, numSites);
+        selectedModels = gard.GA.selectModels(evaluatedModels, populationSize);
 
+        // 3. Evaluate convergence for this number of break points; move on to n+1 break points if converged.
+        currentBest_cAIC = Min(gard.Helper.getValues(evaluatedModels),0);
+        if (previousBest_cAIC - currentBest_cAIC < cAIC_improvementThreshold) {
+            numberOfGenerationsAtCurrentBest_cAIC += 1;
+            if (numberOfGenerationsAtCurrentBest_cAIC >= maxNumberOfGenerationsAllowedAtStagnent_cAIC) {
+                terminationCondition = TRUE;
+            }
+        } else {
+            numberOfGenerationsAtCurrentBest_cAIC = 0;
+        }
+        previousBest_cAIC = currentBest_cAIC;
+
+        // 4. Evaluate convergence for this modelSet (any child models better than parent models); if converged:
+        //                                                  - decrement the differenceThreshold
+        //                                                  - if distance threshold is < 0, produce a new parent modelSet (keeping the current fitest)
         if (gard.GA.modelSetsAreTheSame(selectedModels, parentModels)){
             differenceThreshold = gard.GA.decrementDifferenceThreshold(differenceThreshold);
         }
-
         if (differenceThreshold < 0) {
-            parentModels = gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels);
-            differenceThreshold = gard.GA.reinitializeDifferenceThreshold(numberOfBreakPointsBeingEvaluated);
+            parentModels = gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints);
+            differenceThreshold = numberOfBreakPointsBeingEvaluated / 4;
+        } else {
+            parentModels = selectedModels;
         }
 
-        terminationCondition = gard.GA.evaluateConvergence();
         generation = generation + 1;
-
     }
+
+    io.ClearProgressBar();
+    // Report status of n-break point analysis.
+    statusString = gard.GA.getMultiBreakPointStatusString(evaluatedModels);
+    io.ReportProgressMessageMD('GARD', 'multi-breakpoint', statusString);
+
+
 }
 
-/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    3. POST PROCESSING
+
+/* 3. POST PROCESSING
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 //--------------------------------------------------------------------------------------------------------------------
 
-/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    GARD FUNCTIONS
+/* GARD FUNCTIONS
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 /**
@@ -417,14 +351,13 @@ lfunction gard.fit_partitioned_model (breakPoints, model, initial_values) {
 }
 
 /**
- * @name gard.obtainModelAIC
+ * @name gard.obtainModel_cAIC
  * Wrap a call to gard.fit_partitioned_model to compute c-AIC
 
    @returns c-AIC
 
  */
-
-lfunction gard.obtainModelAIC (breakPoints, model, initial_values) {
+lfunction gard.obtainModel_cAIC (breakPoints, model, initial_values) {
     /*if (utility.Has (^"gard.masterList", breakPoints, "Number")) {
         return (^"gard.masterList")[breakPoints];
     }*/
@@ -454,47 +387,27 @@ lfunction gard.createLikelihoodFunctionForExport (id,  model) {
 }
 
 /**
- * @name gard.calculate_cAIC
- * @param {Number} logLikelihood
- * @param {Number} numParameters
- * @param {Number} numObservations (will be the number of sites)
- * @returns a {Number} the AICc score
- */
-lfunction gard.calculate_cAIC (logLikelihood, numParameters, numObservations) {
-    AIC = 2*numParameters - 2*logLikelihood;
-    correction = ( 2*numParameters*numParameters + 2*numParameters ) / ( numObservations - numParameters - 1 );
-    return AIC + correction;
-}
+    definition is assumed to contain a SORTED list of 0-based
+    breakpoint locations
 
-
-/**
- * @name gard.getVariableSitesMatrix
- * @param {DataSetFilter}
- TODO: The old implementation had a zero as the last argument for HarvestFrequencies but this caused issues at sites that had gaps where it would
-        only read the frequencies above the first gap... changing the last argument to a 1 seems to have fixed this but need to confirm.
-
- Also TODO-minor: I can't pass in the datasetfilter (I tired dereferencing, executing in global namespace, passing in as string, etc. but didn't work)
-        There's the same issue with gard.fit_partitioned_model...
- * @returns a {Associative List} The variable sites in the form of {"0": siteIndex, "1": siteIndex, "2": siteIndex...}
- */
-function gard.getVariableSitesMatrix () {
-    breakPoints = {};
-    breakPointNumber = 0;
-    for (siteIndex=0; siteIndex<gard.filter.sites; siteIndex=siteIndex+1) {
-        filterString =Format(siteIndex,20,0);
-        DataSetFilter siteFilter = CreateFilter (gard.filter, 1, filterString);
-        HarvestFrequencies (siteCharacterFrequencies, siteFilter, 1, 1, 1);
-
-        maxFrequency = Abs(siteCharacterFrequencies);
-        variableSite = maxFrequency<1;
-        if (variableSite){
-            breakPoints[breakPointNumber] = siteIndex;
-            breakPointNumber = breakPointNumber+1;
+    If any of the individual partitions is < min_size, the function
+    returns FALSE, otherwise it returns TRUE
+*/
+lfunction gard.validatePartititon (definition, min_size, total_sites) {
+    lastBP = 0;
+    bpCount = utility.Array1D (definition);
+    for (i = 0; i < bpCount; i+=1) {
+        if (definition[i] - lastBP + 1 < min_size) {
+            return FALSE;
         }
-
+        lastBP = definition[i];
     }
-    return breakPoints;
+    if (total_sites - lastBP < min_size) {
+        return FALSE;
+    }
+    return TRUE;
 }
+
 
 // ---- Genetic Algorithm (GA) Functions ----
 
@@ -511,14 +424,13 @@ function gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberOf
     for (modelNumber=0; modelNumber < populationSize; modelNumber += 1) {
         // TODO : make sure that feasible solutions exist, i.e. that gard.validatePartititon doesn't just keep rejecting all models
         do {
-            breakPoints = ({numberOfBreakPoints,1} ["Random(0, numberOfPotentialBreakPoints)$1"]) % 0 ;
+            breakPoints = ({1,numberOfBreakPoints} ["Random(0, numberOfPotentialBreakPoints)$1"]) % 0 ;
         } while (gard.validatePartititon (breakPoints, gard.minPartitionSize, gard.numSites) == FALSE);
 
         initializedModels[breakPoints] = null;
     }
     return initializedModels;
 }
-
 
 /**
  * @name gard.GA.recombineModels
@@ -531,34 +443,44 @@ function gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberOf
  */
 function gard.GA.recombineModels (parentModels, populationSize, differenceThreshold) {
     parentModelIds = utility.Keys(parentModels);
-    firstModelObject = parentModels[parentModelIds[0]];
-    numberOfBreakPoints = Columns(firstModelObject['breakPoints']);
+    firstModel = gard.Helper.convertMatrixStringToMatrix(parentModelIds[0]);
+    numberOfBreakPoints = Columns(firstModel);
 
     childModels = {};
     for(modelIndex=0; modelIndex<populationSize; modelIndex=modelIndex+1) {
-        parentModel1 = parentModels[parentModelIds[Random(0, populationSize)$1]];
-        parentModel2 = parentModels[parentModelIds[Random(0, populationSize)$1]];
+        parentModel1 = gard.Helper.convertMatrixStringToMatrix(parentModelIds[Random(0, populationSize)$1]);
+        parentModel2 = gard.Helper.convertMatrixStringToMatrix(parentModelIds[Random(0, populationSize)$1]);
 
-        while(gard.GA.modelsDifferentEnough(parentModel1, parentModel2, differenceThreshold) == 0) {
-            parentModel2 = parentModels[parentModelIds[Random(0, populationSize)$1]];
+        while(gard.GA.modelsDifferentEnough(parentModel1, parentModel2, differenceThreshold) == FALSE) {
+            parentModel2 = gard.Helper.convertMatrixStringToMatrix(parentModelIds[Random(0, populationSize)$1]);
         }
 
         breakPoints = {1, numberOfBreakPoints};
         for (breakPointNumber=0; breakPointNumber < numberOfBreakPoints; breakPointNumber=breakPointNumber+1) {
-            // TODO-Major: actually recombine... I'm just randomly generating new modesl for now.
-            breakPoint = Random(0, numberOfPotentialBreakPoints)$1;
+            // TODO this is only set up for two break points right now.
+            // get first break point from parent1
+            // get second break point from parent2
+            // just randmoly get the rest
+
+            if (breakPointNumber == 0) {
+                breakPoint = parentModel1[Random(0, numberOfBreakPoints)$1]
+            } 
+            if (breakPointNumber == 1) {
+                breakPoint = parentModel2[Random(0, numberOfBreakPoints)$1]
+            }
+            if (breakPointNumber > 1) {
+
+            }
             breakPoints[breakPointNumber] = breakPoint;
         }
-        breakPoints = gard.Helper.sortedMatrix(breakPoints);
 
-        modelId = Join(",", breakPoints);
-        childModels[modelId] = {'breakPoints': breakPoints, "cAIC": 'notEvaluated'};
+        breakPoints = gard.Helper.sortedMatrix(breakPoints);
+        childModels[breakPoints] = null;
 
     }
 
     return childModels;
 }
-
 
 /**
  * @name gard.GA.evaluateModels
@@ -568,49 +490,24 @@ function gard.GA.recombineModels (parentModels, populationSize, differenceThresh
  * @param {Number} numSites; the number of sites in the alignment, to be used in the cAIC calculation
  * @returns a {Dictionary} models (with cAIC for each model)
  */
-function gard.GA.evaluateModels (models, evolutionaryModel, initial_values, numSites) {
+function gard.GA.evaluateModels (models, evolutionaryModel, initialValues, numSites) {
     modelIds = utility.Keys(models);
     numberOfModels = Columns(modelIds);
-    firstModelObject = models[modelIds[0]];
-    numberOfBreakPoints = Columns(firstModelObject['breakPoints']);
 
     for(modelIndex=0; modelIndex<numberOfModels; modelIndex=modelIndex+1) {
         modelId = modelIds[modelIndex];
-        modelObject = models[modelId];
-        cAIC = modelObject['cAIC'];
+        cAIC = models[modelId];
 
-        if (cAIC == 'notEvaluated') {
-            breakPoints = modelObject['breakPoints'];
-            modelLikelihoodInfo = gard.fit_partitioned_model(breakPoints, evolutionaryModel, initial_values);
-            model_cAIC = gard.calculate_cAIC(modelLikelihoodInfo["LogL"], modelLikelihoodInfo["parameters"], numSites);
-
-            models[modelId] = {'breakPoints': breakPoints, 'cAIC': model_cAIC};
+        if (cAIC == null) {
+            breakPoints = gard.Helper.convertMatrixStringToMatrix(modelId);
+            model_cAIC = gard.obtainModel_cAIC(breakPoints, evolutionaryModel, initialValues);
+            models[modelId] = model_cAIC;
         }
 
     }
 
     return models;
-
-
-    /*
-    numberOfModels = Rows(models);
-    numberOfBreakPoints = Columns(models);
-
-    modelPerformance = {};
-    for(modelIndex=0; modelIndex<numberOfModels; modelIndex=modelIndex+1) {
-        model = gard.Helper.getNthMatrix(models, modelIndex);
-        individualModelLikelihoodInfo = gard.fit_partitioned_model(model, evolutionaryModel, initial_values);
-        individualModel_cAIC = gard.calculate_cAIC(individualModelLikelihoodInfo["LogL"], individualModelLikelihoodInfo["parameters"], numSites);
-
-        modelId = Join(",", model);
-        modelPerformance[modelId] = individualModel_cAIC;
-    }
-
-    return modelPerformance;
-    */
-
 }
-
 
 /**
  * @name gard.GA.selectModels
@@ -618,33 +515,22 @@ function gard.GA.evaluateModels (models, evolutionaryModel, initial_values, numS
  * @param {Number} numberOfModelsToKeep
  * @returns a {Matrix} selectedModels
  */
-function gard.GA.selectModels (evaluatedModels, numberOfModelsToKeep, numberOfBreakPoints) {
+function gard.GA.selectModels (evaluatedModels, numberOfModelsToKeep) {
     modelIds = utility.Keys(evaluatedModels);
-    numberOfModels = Columns(modelIds);
-    firstModelObject = models[modelIds[0]];
-    numberOfBreakPoints = Columns(firstModelObject['breakPoints']);
+    cAIC_scores = gard.Helper.getValues(evaluatedModels);
     veryLargeNumber = 100000000;
 
-    cAIC_scores = {1,numberOfModels};
-    for(modelIndex=0; modelIndex<numberOfModels; modelIndex=modelIndex+1) {
-        modelObject = evaluatedModels[modelIds[modelIndex]];
-        cAIC_scores[modelIndex] = modelObject["cAIC"];
-    }
-
     selectedModels = {};
-    for(i=0; i<numberOfModelsToKeep; i=i+1) {
+    for(i=0; i<numberOfModelsToKeep; i+=1) {
         lowest_cAIC_index = Min(cAIC_scores,1)[1];
-
         selectedModelId = modelIds[lowest_cAIC_index];
-        selectedModelObject = evaluatedModels[selectedModelId];
-        selectedModels[selectedModelId] = selectedModelObject;
+        selectedModels[selectedModelId] = cAIC_scores[lowest_cAIC_index];
 
         cAIC_scores[lowest_cAIC_index] = veryLargeNumber;
     }
 
     return selectedModels;
 }
-
 
 /**
  * @name gard.GA.modelsDifferentEnough
@@ -663,9 +549,108 @@ function gard.GA.modelsDifferentEnough (model1, model2, differenceThreshold) {
     return modelsDifferentEnough;
 }
 
+/**
+ * @name gard.GA.modelSetsAreTheSame
+ * @param {Dictionary} modelSet1
+ * @param {Dictionary} modelSet2
+ * @returns a {Bolean} 
+ */
+function gard.GA.modelSetsAreTheSame(modelSet1, modelSet2) {
+    if(Abs(modelSet1) != Abs(modelSet2)){
+        return FALSE;
+    }
+
+    IdSet1 = utility.Keys(modelSet1);
+    for(i=0; i<Abs(modelSet1); i=i+1) {
+        if(utility.KeyExists(modelSet2, IdSet1[i]) == FALSE) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+/**
+ * @name gard.GA.decrementDifferenceThreshold
+ // TODO: Decide how we want to implement this currently just sets it to -1
+ * @param {Number} differenceThreshold
+ * @returns a {Number} the new differenceThreshold
+ */
+function gard.GA.decrementDifferenceThreshold(differenceThreshold) {
+    return -1;
+}
+
+/**
+ * @name gard.GA.generateNewGenerationOfModelsByMutatingModelSet
+ Keeps the current best performing model
+ Generates new random models for the rest of the population
+ // TODO: decide if we want some logic in here to more meaningfully mutate.
+ * @param {Dictonary} parentModels
+ * @param {Number} numberOfPotentialBreakPoints
+ * @returns a {Dictonary} the new generation of models
+ */
+function gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints) {
+    modelIds = utility.Keys(parentModels);
+    populationSize = Columns(modelIds);
+    firstModel = gard.Helper.convertMatrixStringToMatrix(modelIds[0]);
+    numberOfBreakPoints = Columns(firstModel);
+
+    // Generate a new random set of models
+    nextGenOfModels = gard.GA.initializeModels (numberOfBreakPoints, populationSize-1, numberOfPotentialBreakPoints);
+
+    // Add the most fit model from the previous set
+    cAIC_scores = gard.Helper.getValues(parentModels);
+    lowest_cAIC_index = Min(cAIC_scores,1)[1];
+    selectedModelId = modelIds[lowest_cAIC_index];
+    nextGenOfModels[selectedModelId] = cAIC_scores[lowest_cAIC_index];
+
+    return nextGenOfModels;
+}
+
+/**
+ * @name gard.GA.getMultiBreakPointStatusString
+ get the string to print out after the GA has finished n-breakpoint analysis
+ * @param {Dictonary} evaluatedModels: the set of models at the end of the analysis
+ * @returns a {String} the markdown string to log to console
+ */
+function gard.GA.getMultiBreakPointStatusString(evaluatedModels) {
+    best_cAIC_index = Min(gard.Helper.getValues(evaluatedModels),1)[1];
+    bestModel = gard.Helper.convertMatrixStringToMatrix(utility.Keys(evaluatedModels)[best_cAIC_index]);
+    best_cAIC = Min(gard.Helper.getValues(evaluatedModels),1)[0];
+    bestBreakPoints={1,Columns(bestModel)};
+    bestBreakPointsString = '';
+    for(i=0; i<Columns(bestModel); i=i+1) {
+        bestBreakPoints[i] = gard.variableSiteMap[bestModel[i]];
+        Eval("bestBreakPointsString += gard.variableSiteMap[bestModel[i]]");
+        if (i<Columns(bestModel)-1) {
+            bestBreakPointsString += ', ';
+        }
+    }
+    statusString = "Done with " + Columns(bestModel) + " breakpoint analysis.\n" +
+                   "    Best break point locations: " + bestBreakPointsString + "\n" +
+                   "    c-AIC = " + best_cAIC;
+    
+    return statusString;
+}
+
 
 // ---- HELPER FUNCTIONS ----
 // TODO: replace these helper functions with a more HBL way of dealing with matrices
+
+// Return the nth matrix in a nxm matrix.
+function gard.Helper.getNthMatrix(setOfMatrices, n) {
+    nthMatrix = {1, Columns(setOfMatrices)};
+    for(i=0; i<Columns(setOfMatrices); i=i+1) {
+        nthMatrix[i] = setOfMatrices[n][i];
+    }
+    return nthMatrix;
+}
+
+function gard.Helper.convertMatrixStringToMatrix(matrixString){
+    stringToEval = 'matrix = ' + matrixString;
+    Eval(stringToEval);
+    return matrix;
+}
 
 //sort numeric 1xn matrix into assending order.
 function gard.Helper.sortedMatrix(matrix) {
@@ -681,15 +666,6 @@ function gard.Helper.sortedMatrix(matrix) {
     return sortedMatrix;
 }
 
-// Return the nth matrix in a nxm matrix.
-function gard.Helper.getNthMatrix(setOfMatrices, n) {
-    nthMatrix = {1, Columns(setOfMatrices)};
-    for(i=0; i<Columns(setOfMatrices); i=i+1) {
-        nthMatrix[i] = setOfMatrices[n][i];
-    }
-    return nthMatrix;
-}
-
 // Return the values of a dictionary as a matrix; not just the unique values and not as strings
 function gard.Helper.getValues(dictionary) {
     keys = utility.Keys(dictionary);
@@ -698,27 +674,4 @@ function gard.Helper.getValues(dictionary) {
         values[i] = dictionary[keys[i]];
     }
     return values;
-}
-
-/**
-    definition is assumed to contain a SORTED list of 0-based
-    breakpoint locations
-
-    If any of the individual partitions is < min_size, the function
-    returns FALSE, otherwise it returns TRUE
-*/
-
-lfunction gard.validatePartititon (definition, min_size, total_sites) {
-    lastBP = 0;
-    bpCount = utility.Array1D (definition);
-    for (i = 0; i < bpCount; i+=1) {
-        if (definition[i] - lastBP + 1 < min_size) {
-            return FALSE;
-        }
-        lastBP = definition[i];
-    }
-    if (total_sites - lastBP < min_size) {
-        return FALSE;
-    }
-    return TRUE;
 }
