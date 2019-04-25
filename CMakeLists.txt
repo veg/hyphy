@@ -125,7 +125,6 @@ set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPIL
 set(DEFAULT_WARNING_FLAGS " -w  ")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
-set(DEFAULT_LIBRARIES dl)
 
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -234,6 +233,12 @@ if(NOT DEFINED INSTALL_PREFIX)
     set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
 endif()
 
+if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+	set(DEFAULT_LIBRARIES )
+else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+    set(DEFAULT_LIBRARIES dl)
+endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+
 #-------------------------------------------------------------------------------
 # LIBCurl support
 #-------------------------------------------------------------------------------
@@ -242,7 +247,7 @@ if(${CURL_FOUND} AND NOT APPLE)
     if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
         set(DEFAULT_LIBRARIES crypto curl ssl)
     else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        set(DEFAULT_LIBRARIES crypto curl ssl)
+        set(DEFAULT_LIBRARIES dl crypto curl ssl)
     endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     add_definitions (-D__HYPHYCURL__)
 endif(${CURL_FOUND} AND NOT APPLE)
