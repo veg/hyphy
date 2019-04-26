@@ -52,6 +52,12 @@ enum _hy_dataset_filter_ambiguity_resolution {
   kAmbiguityHandlingSkip
 };
 
+enum _hy_dataset_filter_unique_match {
+  kUniqueMatchExact = 0L,
+  kUniqueMatchExactOrGap = 1L,
+  kUniqueMatchSuperset = 2L,
+  kUniqueMatchPartialMatch = 3L
+};
 
 class _DataSetFilter : public BaseObj {
 
@@ -200,7 +206,7 @@ public:
   * @return The number of unique sequences.
   */
   unsigned long FindUniqueSequences(_SimpleList &indices, _SimpleList &map,
-                                    _SimpleList &counts, short mode = 0) const;
+                                    _SimpleList &counts,  _hy_dataset_filter_unique_match mode = kUniqueMatchExact) const;
 
   long CorrectCode(long code) const;
   virtual bool CompareTwoSites(unsigned long, unsigned long,

@@ -458,8 +458,7 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
             DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ source_data, 3, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")], , data_info[utility.getGlobalValue("terms.stop_codons")]);
             diff = test.sites - 3 * ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".sites");
 
-            //TODO: BELOW, IS THE "names" CORRECT OR SHOULD IT BE "name"????? SJS can't locate another time when the plural is used through libv3.
-            io.CheckAssertion("`&diff` == 0", "Partition " + (filters["names"])[i] + " is either has stop codons or is not in frame");
+            io.CheckAssertion("`&diff` == 0", "Partition " + this_filter[utility.getGlobalValue("terms.data.name")] + " is either has stop codons or is not in frame");
 
             this_filter[utility.getGlobalValue("terms.data.coverage")] = utility.DictToArray(utility.Map(utility.Filter( ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".site_map"), "_value_", "_value_%3==0"), "_value_", "_value_$3"));
             filters + this_filter;

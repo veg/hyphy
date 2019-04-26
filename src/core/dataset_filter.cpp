@@ -100,14 +100,14 @@ void    _DataSetFilter::SetDimensions (void) {
 }
 
 //_______________________________________________________________________
-unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _SimpleList& map, _SimpleList& counts, short mode) const {
+unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _SimpleList& map, _SimpleList& counts, _hy_dataset_filter_unique_match match_mode) const {
     indices.Clear(); map.Clear(); counts.Clear();
     
     unsigned long             sites  = theMap.lLength,
     seqs   = theNodeMap.lLength,
     unit   = GetUnitLength();
     
-    if (mode == 0) {
+    if (match_mode == kUniqueMatchExact) { // exact match
         _SimpleList hashSupport;
         _AVLListXL  sequenceHashes     (&hashSupport);
         
@@ -140,6 +140,19 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                     }
                     
                     if (fit) {
+                        /*
+                        StringToConsole (*GetSequenceName(sequenceIndex));
+                        BufferToConsole("==");
+                        StringToConsole (*GetSequenceName(f));
+                        NLToConsole();
+                        
+                        StringToConsole (*GetSequenceCharacters(sequenceIndex));
+                        NLToConsole();
+                        StringToConsole (*GetSequenceCharacters(f));
+                        NLToConsole();
+                        NLToConsole();
+                        */
+
                         map << f;
                         counts.lData[f] ++;
                         
@@ -165,66 +178,76 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
     else{
         long             vd  = GetDimension(true);
         
-        hyFloat      *translatedVector = new hyFloat [vd],
-        *translatedVector2= new hyFloat [vd];
+        hyFloat      *translatedVector  = new hyFloat [vd],
+                     *translatedVector2 = new hyFloat [vd];
         
         _String         state1 (unit), state2 (unit);
         
         sites = sites / unit;
         
         for (long sequenceIndex = 0; sequenceIndex < seqs; sequenceIndex++) {
-            bool checkState = false;
-            for (long idx=0; idx<indices.countitems(); idx++) {
-                for (long m=0; m<sites; m++) {
-                    RetrieveState (m,sequenceIndex, state1,false);
-                    RetrieveState (m,indices.lData[idx], state2,false);
+            bool check_state = false;
+            
+            for (long idx=0L; idx<indices.countitems(); idx++) {
+                check_state = true;
+                for (long m=0L; m<sites; m++) {
                     
-                    checkState = true;
+                    RetrieveState (m,sequenceIndex,    state1,false);
+                    RetrieveState (m,indices.get(idx), state2,false);
+                    
                     long idx1 = Translate2Frequencies (state1, translatedVector,  true),
-                    idx2 = Translate2Frequencies (state2, translatedVector2, true);
+                         idx2 = Translate2Frequencies (state2, translatedVector2, true);
                     
-                    //printf ("(%ld, %ld) %ld = %ld %ld\n", sequenceIndex, indices.lData[idx], m, idx1, idx2);
+                    /*if (idx == 85 && sequenceIndex == 88) {
+                        printf ("(%ld, %ld) %ld = %ld %ld\n", sequenceIndex, indices.lData[idx], m, idx1, idx2);
+                    }*/
                     
-                    if (idx2 >=0 && idx1 >=0) {
+                    if (idx2 >=0 && idx1 >=0) { // fully resolved
                         if (idx1==idx2) {
                             continue;
                         } else {
-                            checkState = false;
+                            check_state = false;
                             break;
                         }
                     } else {
                         
                         // check for equal ambigs
-                        long k = 0;
+                        long k = 0L;
                         for (; k < vd; k++){
                             if (translatedVector[k] != translatedVector2[k]){
                                 break;
                             }
                         }
                         
-                        if (k == vd)
+                        if (k == vd) { // resolutions matched -- this is always OK
                             continue;
+                        }
                         
-                        if (mode == 1){
+                        
+                        if (match_mode == kUniqueMatchExactOrGap) {
                             
-                            long count1 = 0,
-                            count2 = 0;
+                            long count1 = 0L,
+                                 count2 = 0L;
                             
-                            for (long t = 0; t<vd; t++) {
-                                count1 += translatedVector[t]>0.0;
-                                count2 += translatedVector2[t]>0.0;
+                            for (long t = 0L; t<vd; t++) {
+                                count1 += translatedVector[t]  > 0.0;
+                                count2 += translatedVector2[t] > 0.0;
                             }
                             
-                            if (count1 < vd && count2 < vd) {
-                                checkState = false;
+                            // Gaps can match resolved positions, but not the other way around
+                            // count2 is the number of resolutions in the currently stored sequence
+                            if (count2 > 1L && count2 < vd || count1 < vd) {
+                                check_state = false;
                                 break;
                             }
                             
+                            
                         } else {
-                            bool first  = mode==2,
-                            second = mode==2;
-                            if (mode == 2){
-                                for (long t = 0; (first||second)&&(t<vd); t++) {
+                            bool first  = (match_mode == kUniqueMatchSuperset),
+                                 second = first;
+                            
+                            if (match_mode == kUniqueMatchSuperset){
+                                for (long t = 0L; (first||second)&&(t<vd); t++) {
                                     if (translatedVector[t]>0.0) {
                                         second &= (translatedVector2[t]>0.0);
                                     }
@@ -233,11 +256,11 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                                     }
                                 }
                                 if (!(first||second)) {
-                                    checkState = false;
+                                    check_state = false;
                                     break;
                                 }
                             } else {
-                                for (long t = 0; t<vd; t++) {
+                                for (long t = 0L; t<vd; t++) {
                                     if (translatedVector[t]>0.0) {
                                         second |= (translatedVector2[t]>0.0);
                                     }
@@ -246,7 +269,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                                     }
                                 }
                                 if (!(first&&second)) {
-                                    checkState = false;
+                                    check_state = false;
                                     break;
                                 }
                             }
@@ -254,14 +277,25 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                     }
                 }
                 
-                if (checkState) {
+                if (check_state) {
+                    /*StringToConsole (*GetSequenceName(sequenceIndex));
+                    BufferToConsole("== [ref]");
+                    StringToConsole (*GetSequenceName(indices.get (idx)));
+                    NLToConsole();
+                    
+                    StringToConsole (*GetSequenceCharacters(sequenceIndex));
+                    NLToConsole();
+                    StringToConsole (*GetSequenceCharacters(indices.get (idx)));
+                    NLToConsole();
+                    NLToConsole();*/
+
                     map << idx;
                     counts.lData[idx] ++;
                     break;
                 }
             }
             
-            if (!checkState){
+            if (!check_state){
                 map     << indices.lLength;
                 indices << sequenceIndex;
                 counts  << 1;
