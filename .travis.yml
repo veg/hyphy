@@ -2,14 +2,21 @@
 dist: xenial
 sudo : false
 
-
+notifications:
+    slack: veg-igem:rqQd95zjTuZoRNElekQx2CLf
+    email:
+        recipients:
+            - steven@stevenweaver.org
+            - spond@temple.edu
+            - tuj86312@temple.edu
+        on_success: change
+        on_failure: always
 
 branches:
   only:
     - master
     - beta
     - develop
-    - origin/SelAn
 
 env:
   - envSpecificTest="bash ./test_kwargs.sh"
