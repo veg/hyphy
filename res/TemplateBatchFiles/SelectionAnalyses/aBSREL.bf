@@ -145,7 +145,7 @@ io.ReportProgressMessageMD("absrel", "base", "* " + selection.io.report_fit (abs
 absrel.baseline.branch_lengths = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "selection.io.branch.length");
 absrel.baseline.omegas = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "absrel.local.omega");
 
-absrel.omega_stats = math.GatherDescriptiveStats (utility.Map (utility.Values (absrel.baseline.omegas), "_value_", "0+_value_"));
+absrel.omega_stats = math.GatherDescriptiveStats (utility.Map (utility.UniqueValues (absrel.baseline.omegas), "_value_", "0+_value_"));
 
 io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.omega_ratio` distribution has median " +
                                              Format (absrel.omega_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (absrel.omega_stats[terms.math._2.5], 5,2) + " - " + Format (absrel.omega_stats[terms.math._97.5], 5,2));

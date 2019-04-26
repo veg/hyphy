@@ -204,7 +204,7 @@ mpi.QueueComplete (relative_prot_rates.queue);
 
 
 
-relative_prot_rates.site_rates = utility.Map( utility.Values(utility.Map (relative_prot_rates.rate_estimates, "_value_", "_value_[terms.fit.MLE]")), "_value_", "0+_value_");
+relative_prot_rates.site_rates = utility.Map( utility.UniqueValues(utility.Map (relative_prot_rates.rate_estimates, "_value_", "_value_[terms.fit.MLE]")), "_value_", "0+_value_");
 relative_prot_rates.stats = math.GatherDescriptiveStats(relative_prot_rates.site_rates);
 
 /*

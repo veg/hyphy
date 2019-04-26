@@ -450,7 +450,7 @@ lfunction fel.select_branches(partition_info) {
     tree_for_analysis = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
     utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
     list_models   = utility.Keys   (available_models); // get keys
-    branch_counts = utility.Values (available_models);
+    branch_counts = utility.UniqueValues (available_models);
     option_count  = Abs (available_models);
 
     io.CheckAssertion("`&option_count` >= 2", "FEL-contrast requires at least one designated set of branches in the tree.");

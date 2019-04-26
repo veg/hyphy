@@ -10,8 +10,8 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
  */
 function models.codon.MapCode (genetic_code) {
 
-	return {terms.sense_codons : utility.Values (genetic_code.ComputeCodonCodeToStringMap (genetic_code)),
-	        terms.stop_codons  : utility.Values (genetic_code.ComputeCodonCodeToStringMapStop (genetic_code)),
+	return {terms.sense_codons : utility.UniqueValues (genetic_code.ComputeCodonCodeToStringMap (genetic_code)),
+	        terms.stop_codons  : utility.UniqueValues (genetic_code.ComputeCodonCodeToStringMapStop (genetic_code)),
 	        terms.translation_table : genetic_code.DefineCodonToAAGivenCode (genetic_code) };
 }
 

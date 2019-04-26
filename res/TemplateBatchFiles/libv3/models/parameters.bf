@@ -210,7 +210,7 @@ function parameters.SetValues(set) {
  */
 lfunction parameters.ConstrainMeanOfSet (set, mean, namespace) {
     if (Type (set) == "AssociativeList") {
-        unscaled = utility.Map (utility.Values (set), "_name_", "_name_ + '_scaler_variable'");
+        unscaled = utility.Map (utility.UniqueValues (set), "_name_", "_name_ + '_scaler_variable'");
     } else {
         if (Type (set) == "Matrix") {
          unscaled = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");

@@ -149,7 +149,7 @@ namespace mpi {
 
                         for (m = 0; m < model_count; m+=1) {
                             model_name = (nodesetup[utility.getGlobalValue("terms.mpi.Models")])[m];
-                            model_globals = utility.Values(((^model_name)[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
+                            model_globals = utility.UniqueValues(((^model_name)[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
                             model_global_count = utility.Array1D (model_globals);
                             for (v = 0; v < model_global_count; v+=1) {
                                 globals_to_export [model_globals[v]] = 1;
