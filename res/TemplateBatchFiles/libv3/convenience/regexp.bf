@@ -112,5 +112,37 @@ lfunction regexp.PartitionByRegularExpressions(strings, rex) {
     return result;
 }
 
+/**
+ * @name regexp.PartitionByRegularExpressionsWithSub
+ * partition the set of strings by regular expressions; if a regular expression 
+ * contains subexpressions, then these will be added to the matched pattern 
+ * @param {Dict/Matrix} strings set of strings to partition (if Dict, will use the set of VALUES)
+ * @param {Dict/Matrix} rex - string matrix of regular expressions (if Dict, will use the set of VALUES)
+ * @returns {Dict} "reg-exp" : "set of matched strings" (as dict) PLUS a special key ("") which did not match any regular expression
+ */
+lfunction regexp.PartitionByRegularExpressionsWithSub(strings, rex) {
+    result = {};
+
+    result[""] = {};
+    matched_regexp = None;
+    subs = None;
+
+    utility.ForEach (strings, "_value_",
+    '
+        `&matched_regexp` = utility.First (`&rex`, "_regex_", "None!=regexp.Find (_value_, _regex_)");
+         if (None == `&matched_regexp`) {
+            `&result`[""] + _value_;
+        } else {
+             `&subs` = Join ("|",regexp.FindSubexpressions (_value_, `&matched_regexp`));
+             if (utility.Has (`&result`,`&subs`,"AssociativeList") == FALSE) {
+                `&result`[`&subs`] = {};
+             }
+             `&result`[`&subs`] + _value_;
+        }
+    ');
+
+    return result;
+}
+
 
 

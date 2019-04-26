@@ -281,7 +281,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                     }
                   
                     resStr       = new _StringBuffer (1024UL);
-                    lf->SerializeLF(*resStr,hy_env::EnvVariableTrue (shortMPIReturn) ? _hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
+                    lf->SerializeLF(*resStr,hy_env::EnvVariableTrue (hy_env::short_mpi_return) ? _hyphyLFSerializeModeShortMPI:_hyphyLFSerializeModeLongMPI);
                 }
             } else {
                 //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");

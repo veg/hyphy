@@ -73,6 +73,7 @@ namespace mpi {
          *      controls what gets passed to slave nodes
          *      "Headers" -> iterable (matrix/dict) of string paths of header files to load
          *      "Models" ->  matrix of model names to make available to slave nodes
+         *      "Filters" ->  matrix of filter names to make available to slave nodes
          *      "LikelihoodFunctions" -> iterable (matrix/dict) of LikelihoodFunction IDs to export to slave nodes
          * @return {Dict} an "opaque" queue structure
          */
@@ -124,6 +125,16 @@ namespace mpi {
                         utility.ForEach (nodesetup[utility.getGlobalValue("terms.mpi.Variables")], "_value_",
                             '
                                 `&send_to_nodes` * ("\n" + _value_ + " = " +  (parameters.Quote(^_value_)) + ";\n") ;
+                            '
+                        );
+                    }
+
+                    if (utility.Has (nodesetup, utility.getGlobalValue("terms.mpi.DataSetFilters"), None)) {
+                        utility.SetEnvVariable ("DATA_FILE_PRINT_FORMAT",9);
+                        utility.ForEach (nodesetup[utility.getGlobalValue("terms.mpi.DataSetFilters")], "_value_",
+                            '
+                                Export (serialized_filter, ^_value_);
+                                 `&send_to_nodes` * ("\nDataSet __private_" + _value_ + " = ReadFromString (\'" + (serialized_filter&&2)  + "\'); DataSetFilter " + _value_ + " = CreateFilter (__private_" + _value_ + ",1);");
                             '
                         );
                     }
@@ -192,7 +203,7 @@ namespace mpi {
 
 
     lfunction QueueJob (queue, job, arguments, result_callback) {
-    
+
         /**
             send the job function with provided arguments to
             the first available node.
@@ -266,8 +277,8 @@ namespace mpi {
             return from;
         }
     }
-    
-    
+
+
     //------------------------------------------------------------------------------
 
     lfunction ComputeOnGrid (lf_id, grid, handler, callback) {
@@ -309,11 +320,11 @@ namespace mpi {
         task_ids = utility.Keys (tasks);
         task_count = Abs (tasks);
         for (i = 0; i < task_count; i+=1) {
-        
+
             parameters.SetValues (tasks[task_ids[i]]);
             LFCompute (^lf_id, ll);
             results [task_ids[i]] = ll;
-        
+
         }
         LFCompute (^lf_id, LF_DONE_COMPUTE);
         return results;

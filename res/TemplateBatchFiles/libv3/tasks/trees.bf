@@ -951,6 +951,7 @@ lfunction tree._NewickFromMatrix (flat_tree, index, branch_name, branch_length) 
  */
 
 lfunction tree.infer.NJ (datafilter, distances) {
+
     flush_distances = FALSE;
     if (None == distances) { // use default distances
         type = alignments.FilterType (datafilter);
@@ -964,7 +965,7 @@ lfunction tree.infer.NJ (datafilter, distances) {
 
     N = ^(datafilter + ".species");
     assert (N == Rows (distances), "Incompatible dimensions for the distance matrix and datafilter");
-    
+
     if (N == 2) {
 		d1 = distances[0][1]/2;
 		treeNodes = {{0,1,d1__},
@@ -986,9 +987,9 @@ lfunction tree.infer.NJ (datafilter, distances) {
 		}
 		else {
 			njm = (distances > 0) >= N;
-			
+
 			treeNodes 		= {2*N,3};
-			
+
            for (i = 0; i < 2*N; i += 1) {
                 treeNodes[i][0] = njm[i][0]; // node index; leaves in [0,N), internal nodes N and higher
                 treeNodes[i][1] = njm[i][1]; // node depth relative to the root
@@ -1017,19 +1018,19 @@ lfunction tree.infer.NJ (datafilter, distances) {
  * @param 	{Number} N : number of leaves
  * @param 	{Matrix/Dict} names : leaf index -> name
  * @param 	{Bool} do_lengths : include branch lengths in the output
- 
+
  * @return  {String} newick tree string
  */
- 
+
 lfunction tree._matrix2string (matrix_form, N, names, do_lengths) {
 
 	newick = ""; newick * 1024;
-	
+
 	p = 0;                 // tree depth of previous node
 	k = 0;                 // current row in matrix_form
-	
+
 	m = matrix_form[0][1]; // current tree depth (0 == root)
-	n = matrix_form[0][0]; // current node index 
+	n = matrix_form[0][0]; // current node index
 
 	while (m) {
 		if (m>p) { // going down in the tree
@@ -1049,15 +1050,15 @@ lfunction tree._matrix2string (matrix_form, N, names, do_lengths) {
 				newick * ",";
 			}
 		}
-		
+
 		if (n < N) {
 		    newick * names [n];
 		}
-		
+
 		if (do_lengths) {
 			newick * (":"+matrix_form[k][2]);
 		}
-		
+
 		k += 1;
 		p = m;
 		n = matrix_form[k][0];

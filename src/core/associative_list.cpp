@@ -104,14 +104,13 @@ bool _AssociativeList::ParseStringRepresentation (_String& serialized_form, _For
             _ElementaryCommand::ExtractConditions (*(_String*)splitKeys(k), 0, key_value_pair, ':' , false);
             if (key_value_pair.countitems() == 2UL) {
                 
-                _String  key        (compute_keys_values ? ProcessLiteralArgument((_String*)key_value_pair(0),theP) : *(_String*)key_value_pair(0)),
-                         errMsg;
+                _String  key        (compute_keys_values ? ProcessLiteralArgument((_String*)key_value_pair(0),theP) : *(_String*)key_value_pair(0));
               
                 if (key.empty()) {
                   key = *(_String*)key_value_pair(0);
                 }
                 
-                _Formula value      (*(_String*)key_value_pair(1),theP, doErrors?nil :&errMsg);
+                _Formula value      (*(_String*)key_value_pair(1),theP, doErrors?nil :fpc.errMsg());
                 HBLObjectRef   valueC  = compute_keys_values ? value.Compute() : new _MathObject;
               
                 if (valueC) {

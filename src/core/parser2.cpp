@@ -1109,7 +1109,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
                 levelData->AppendNewInstance (new _Operation (theList));
             } else {
-                levelData->AppendNewInstance (new _Operation ( new _Matrix (matrixDef,false,parsingContext.formulaScope())));
+                levelData->AppendNewInstance (new _Operation ( new _Matrix (matrixDef,false,parsingContext)));
             }
 
             i = j;

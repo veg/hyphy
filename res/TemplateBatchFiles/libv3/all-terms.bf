@@ -382,6 +382,7 @@ namespace terms{
         Headers             = "Headers";
         Variables           = "Variables";
         Functions           = "Functions";
+        DataSetFilters      = "DataSetFilters";
     }
 
 

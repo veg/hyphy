@@ -3240,10 +3240,13 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         
                         for (long c = 0L; c < alphabetDimensionmod4; c+=4L) {
                             __m256d matrix_quad = _mm256_loadu_pd (tMatrix+c),
-                            child_quad = _mm256_loadu_pd (childVector+c),
-                            prod = _mm256_mul_pd (matrix_quad, child_quad);
-                            
+                            child_quad = _mm256_loadu_pd (childVector+c);
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+                            sum256 = _mm256_fmadd_pd (matrix_quad,child_quad, sum256);
+#else
+                            __m256d prod = _mm256_mul_pd (matrix_quad, child_quad);
                             sum256 = _mm256_add_pd (sum256,prod);
+#endif
                         }
                         
                         
