@@ -507,7 +507,7 @@ lfunction trees.BranchNames(tree) {
 
 lfunction trees.ParsimonyLabel(tree_id, given_labels) {
    tree_avl = (^tree_id) ^ 0;
-   label_values = utility.Values (given_labels);
+   label_values = utility.UniqueValues (given_labels);
    label_count  = utility.Array1D (label_values);
    labels = {};
    scores = {}; // node name -> score of optimal labeling staring at this now given parent state
@@ -645,7 +645,7 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
 
 lfunction trees.ConjunctionLabel (tree_id, given_labels) {
    tree_avl = (^tree_id) ^ 0;
-   label_values = utility.Values (given_labels);
+   label_values = utility.UniqueValues (given_labels);
    label_count  = utility.Array1D (label_values);
    labels = {};
    resulting_labels = {}; // internal nodes -> label

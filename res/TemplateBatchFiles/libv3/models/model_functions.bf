@@ -387,7 +387,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 models.generic.SetBranchLength.bl = Call (model [terms.model.time], model[terms.model.type]);
                 models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
                 if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) == FALSE) {
-                     models.generic.SetBranchLength.bl = utility.First (utility.Values ((model[terms.parameters])[terms.local]), "_name_",
+                     models.generic.SetBranchLength.bl = utility.First (utility.UniqueValues ((model[terms.parameters])[terms.local]), "_name_",
                             'parameters.IsIndependent (parameter + "." + _name_)');
 
                      if (None == models.generic.SetBranchLength.bl) {
@@ -398,7 +398,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 }
 
                 models.generic.SetBranchLength.substitution = {};
-                utility.ForEach (utility.Values ((model[terms.parameters])[terms.local]), "_name_",
+                utility.ForEach (utility.UniqueValues ((model[terms.parameters])[terms.local]), "_name_",
                             'if (_name_ != models.generic.SetBranchLength.bl) {
                                 models.generic.SetBranchLength.substitution [_name_] = Eval (parameter + "." + _name_);
                              }');
@@ -531,7 +531,7 @@ lfunction model.MatchAlphabets (a1, a2) {
 lfunction models.BindGlobalParameters (models, filter) {
     if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
         reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
-        candidate_set = utility.Values(utility.Filter (utility.Keys (reference_set), "_key_",
+        candidate_set = utility.UniqueValues(utility.Filter (utility.Keys (reference_set), "_key_",
             "regexp.Find (_key_,`&filter`)"
         ));
 

@@ -1035,7 +1035,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             Assumes that option["partitioned-omega"] is a dictionary where each partition has
             an entry (0-index based), which itself is a dictionary of the form: "branch-name" : "branch-set"
         */
-        utility.ForEach(option[utility.getGlobalValue("terms.run_options.partitioned_omega")], "_value_", "utility.AddToSet(`&partition_omega`,utility.Values(_value_))");
+        utility.ForEach(option[utility.getGlobalValue("terms.run_options.partitioned_omega")], "_value_", "utility.AddToSet(`&partition_omega`,utility.UniqueValues(_value_))");
     }
 
 
