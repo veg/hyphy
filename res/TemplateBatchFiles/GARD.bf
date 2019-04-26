@@ -56,7 +56,7 @@ namespace terms.gard {
 
 /* 1b. User Input
 ------------------------------------------------------------------------------*/
-//TODO: io.DisplayAnalysisBanner (gard.analysis_description);
+io.DisplayAnalysisBanner (gard.analysis_description);
 
 KeywordArgument ("type",        "The type of data to perform screening on", "Nucleotide");
 KeywordArgument ("code",        "Genetic code to use (for codon alignments)", "Universal", "Choose Genetic Code");
@@ -215,20 +215,22 @@ if (gard.singleBreakPoint_best_cAIC < gard.bestOverall_cAIC_soFar) {
 io.ReportProgressMessageMD('GARD', 'multi-breakpoint', 'Performing multi breakpoint analysis using a genetic algorithm');
 
 namespace gard {
+
+    populationSize = 20; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
+    mutationRate = 0.75; // the GARD paper said "15% of randomly selected bits were toggled"...
+    maxFailedAttemptsToMakeNewModel = 5;
+    cAIC_diversityThreshold = 0.001;
+    cAIC_improvementThreshold = 0.1; // I think this was basically 0 in the gard paper
+    maxGenerationsAllowedWithNoNewModelsAdded = 10; // Not in the GARD paper. use 10?
+    maxGenerationsAllowedAtStagnent_cAIC = 50; // Set to 100 in the GARD paper
     
     addingBreakPointsImproves_cAIC = TRUE;
     numberOfBreakPointsBeingEvaluated = 1;
     while(addingBreakPointsImproves_cAIC) {
     
         numberOfBreakPointsBeingEvaluated+=1;
-        populationSize = 20; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
-        mutationRate = 0.75; // the GARD paper said "15% of randomly selected bits were toggled"...
-        maxFailedAttemptsToMakeNewModel = 5;
-        cAIC_diversityThreshold = 0.001;
-        cAIC_improvementThreshold = 0.1; // I think this was basically 0 in the gard paper
-        maxGenerationsAllowedWithNoNewModelsAdded = 10; // Not in the GARD paper. use 10?
-        maxGenerationsAllowedAtStagnent_cAIC = 50; // Set to 100 in the GARD paper
-
+        generationsAtCurrentBest_cAIC = 0;
+        generationsNoNewModelsAdded = 0;
         parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints);
         
         terminationCondition = FALSE;
@@ -522,7 +524,7 @@ function gard.GA.recombineModels (parentModels, populationSize, differenceThresh
             }
 
             breakPoints = gard.Helper.sortedMatrix(breakPoints);
-            if ( (gard.modelIsNotInMasterList(gard.masterList, breakPoints)) && (gard.validatePartititon(breakPoints, gard.minPartitionSize, gard.numSites)) ) { // TODO: also check that no partition is too small
+            if ( (gard.modelIsNotInMasterList(gard.masterList, breakPoints)) && (gard.validatePartititon(breakPoints, gard.minPartitionSize, gard.numSites)) ) {
                 modelIsValid = TRUE;
             } else {
                 failedAttempts+=1;
@@ -597,7 +599,6 @@ function gard.GA.selectModels (evaluatedModels, numberOfModelsToKeep) {
  * @returns a {Bolean} modelsDifferentEnough
  */
 function gard.GA.modelsDifferentEnough (model1, model2, differenceThreshold) {
-    // TODO: Actually compare the models, not just make sure they aren't identical
     if (model1 == model2) {
         modelsDifferentEnough = 0;
     } else {
@@ -658,7 +659,7 @@ function gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, n
                     breakPoints[breakPointIndex] = Random(0,numberOfPotentialBreakPoints)$1;
                 }
             }
-            if ((gard.modelIsNotInMasterList(gard.masterList, breakPoints)) && (gard.validatePartititon(breakPoints, gard.minPartitionSize, gard.numSites)) ) { // TODO: also check that no partition is too small
+            if ((gard.modelIsNotInMasterList(gard.masterList, breakPoints)) && (gard.validatePartititon(breakPoints, gard.minPartitionSize, gard.numSites)) ) {
                 modelIsValid = TRUE;
             } else {
                 failedAttempts+=1;
