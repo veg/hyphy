@@ -411,3 +411,11 @@ lfunction random.dirichlet (alpha) {
      return Transpose (Random (alpha, {"PDF" : "Dirichlet"}));
 
 }
+
+lfunction random.TRUE_or_FALSE () {
+    if (Random(0,1) < 0.5){
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
