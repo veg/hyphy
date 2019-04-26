@@ -651,14 +651,19 @@ lfunction utility.Keys (object) {
 }
 
 /**
- * Returns values from a dictionary. Only returns unique values
+ * Returns values from a dictionary. Not just unique values and the values aren't coerced to strings.
  * @name utility.Values
  * @param object - {Dictionary} the object to return keys from
  * @returns {Matrix} List of keys in dictionary
  */
 lfunction utility.Values (object) {
     if (Type (object) == "AssociativeList") {
-        return Columns (object);
+        keys = utility.Keys(object);
+        values = {1,Abs(object)};
+        for(i=0; i<Abs(object); i=i+1) {
+            values[i] = object[keys[i]];
+        }
+        return values;
     }
     return None;
 }
@@ -886,7 +891,7 @@ lfunction utility.BinByValue (obj) {
 lfunction utility.GetListOfLoadedModules (filter) {
     GetString (res, LIST_OF_LOADED_LIBRARIES, -1);
     if (None != filter) {
-        return utility.Values (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
+        return utility.UniqueValues (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
     }
     return res;
 }
@@ -908,7 +913,7 @@ lfunction utility.GetListOfLoadedLikelihoodFunctions (filter) {
     }
     
     if (None != filter) {
-        return utility.Values (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
+        return utility.UniqueValues (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
     }
     return res;
 }

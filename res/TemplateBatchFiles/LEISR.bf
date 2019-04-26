@@ -300,7 +300,7 @@ for (leisr.partition_index = 0; leisr.partition_index < leisr.partition_count; l
 
 
 /* TODO: Update for compatibility with partitioning 
-leisr.site_rates = utility.Map( utility.Values(utility.Map (leisr.site_results, "_value_", "_value_[terms.fit.MLE]")), "_value_", "0+_value_");
+leisr.site_rates = utility.Map( utility.UniqueValues(utility.Map (leisr.site_results, "_value_", "_value_[terms.fit.MLE]")), "_value_", "0+_value_");
 leisr.stats = math.GatherDescriptiveStats(leisr.site_rates);
 
 io.ReportProgressMessageMD ("relative_rates", "Stats", "Rate distribution summary");

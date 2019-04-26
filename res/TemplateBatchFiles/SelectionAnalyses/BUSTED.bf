@@ -267,8 +267,8 @@ if (busted.do_srv)  {
 
     
     busted.srv_distribution = {
-        'rates' : utility.Values (utility.Map (busted.srv_distribution [busted.srv_rate_regex ]  , "_value_", '((busted.test.bsrel_model[terms.parameters])[terms.global])[_value_]')),
-        'weights' : utility.Values (utility.Map (busted.srv_distribution [busted.srv_weight_regex ]  , "_value_", '((busted.test.bsrel_model[terms.parameters])[terms.global])[_value_]'))
+        'rates' : utility.UniqueValues (utility.Map (busted.srv_distribution [busted.srv_rate_regex ]  , "_value_", '((busted.test.bsrel_model[terms.parameters])[terms.global])[_value_]')),
+        'weights' : utility.UniqueValues (utility.Map (busted.srv_distribution [busted.srv_weight_regex ]  , "_value_", '((busted.test.bsrel_model[terms.parameters])[terms.global])[_value_]'))
     };
     
     PARAMETER_GROUPING + busted.srv_distribution["rates"];

@@ -421,7 +421,7 @@ if (relax.model_set == "All") { // run all the models
 
         relax.k_estimates = selection.io.extract_branch_info((relax.general_descriptive.fit[terms.branch_length])[0], "relax.extract.k");
 
-        relax.k_stats = math.GatherDescriptiveStats (utility.Map (utility.Values (relax.k_estimates), "_value_", "0+_value_"));
+        relax.k_stats = math.GatherDescriptiveStats (utility.Map (utility.UniqueValues (relax.k_estimates), "_value_", "0+_value_"));
 
         io.ReportProgressMessageMD("RELAX", "ge", "* Branch-level `terms.relax.k` distribution has mean " + Format (relax.k_stats[terms.math.mean], 5,2) + ", median " +
                                                      Format (relax.k_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (relax.k_stats[terms.math._2.5], 5,2) + " - " + Format (relax.k_stats[terms.math._97.5], 5,2));
