@@ -49,7 +49,9 @@ SmallCodon_part_HKY85[3][1]:=t*SmallCodon_part_Categ;
 SmallCodon_part_HKY85[3][2]:=t*SmallCodon_part_Shared_TVTS*SmallCodon_part_Categ;
 
 
-DataSet 	  SmallCodon 	  = ReadDataFile	("../data/HMM4_synthetic.fas");
+VERBOSITY_LEVEL = 100;
+
+DataSet 	  SmallCodon 	  = ReadDataFile	(PATH_TO_CURRENT_BF + "../data/HMM4_synthetic.fas");
 DataSetFilter SmallCodon_part = CreateFilter	(SmallCodon,1,"","4,5,7,6,1,0,2,3");
 
 HarvestFrequencies 								(SmallCodon_part_Freqs,SmallCodon_part,1,1,1);
