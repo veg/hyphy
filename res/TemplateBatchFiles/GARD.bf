@@ -35,7 +35,7 @@ LoadFunctionLibrary ("libv3/tasks/mpi.bf");
 LoadFunctionLibrary ("libv3/convenience/random.bf");
 
 
-gard.analysis_description = {terms.io.info : "GARD : Genetic Algorithms for Recombination Detection. Implements a heuristic
+gard.analysisDescription = {terms.io.info : "GARD : Genetic Algorithms for Recombination Detection. Implements a heuristic
     approach to screening alignments of sequences for recombination, by using the CHC genetic algorithm to search for phylogenetic
     incongruence among different partitions of the data. The number of partitions is determined using a step-up procedure, while the
     placement of breakpoints is searched for with the GA. The best fitting model (based on c-AIC) is returned; and additional post-hoc
@@ -56,13 +56,13 @@ namespace terms.gard {
 
 /* 1b. User Input
 ------------------------------------------------------------------------------*/
-io.DisplayAnalysisBanner (gard.analysis_description);
+io.DisplayAnalysisBanner (gard.analysisDescription);
 
 KeywordArgument ("type",        "The type of data to perform screening on", "Nucleotide");
 KeywordArgument ("code",        "Genetic code to use (for codon alignments)", "Universal", "Choose Genetic Code");
 KeywordArgument ("alignment",   "Sequence alignment to screen for recombination");
 
-gard.data_type = io.SelectAnOption  ({terms.gard.nucleotide : "A nucleotide (DNA/RNA) alignment",
+gard.dataType = io.SelectAnOption  ({terms.gard.nucleotide : "A nucleotide (DNA/RNA) alignment",
                                       terms.gard.protein : "A protein alignment",
                                       terms.gard.codon : "An in-frame codon alignment"},
                                       "The type of data to perform screening on");
@@ -70,14 +70,14 @@ gard.data_type = io.SelectAnOption  ({terms.gard.nucleotide : "A nucleotide (DNA
 
 /* 1c. Load and Filter Data
 ------------------------------------------------------------------------------*/
-if (gard.data_type == terms.gard.nucleotide) {
+if (gard.dataType == terms.gard.nucleotide) {
     LoadFunctionLibrary ("libv3/models/DNA/GTR.bf");
     gard.model.generator = "models.DNA.GTR.ModelDescription";
     gard.alignment = alignments.ReadNucleotideDataSet ("gard.sequences", null);
     DataSetFilter gard.filter = CreateFilter (gard.sequences, 1);
 } else {
     // TODO: implement these branches
-    if (gard.data_type == terms.gard.protein) {
+    if (gard.dataType == terms.gard.protein) {
         gard.alignment = alignments.ReadProteinDataSet ("gard.sequences", null);
         DataSetFilter gard.filter = CreateFilter (gard.sequences, 1);
     } else {
@@ -86,7 +86,7 @@ if (gard.data_type == terms.gard.nucleotide) {
 }
 
 // Define model to be used in each fit
-gard.model = model.generic.DefineModel (gard.model.generator, "gard.overall_model", {"0" : "terms.global"}, "gard.filter", null);
+gard.model = model.generic.DefineModel (gard.model.generator, "gard.overallModel", {"0" : "terms.global"}, "gard.filter", null);
 
 gard.numSites               = gard.alignment[terms.data.sites];
 gard.numSeqs                = gard.alignment[terms.data.sequences];
@@ -105,14 +105,14 @@ gard.variableSiteMap = Transpose (utility.DictToArray (gard.variableSiteMap)) % 
 gard.variableSites = Rows (gard.variableSiteMap);
 gard.numberOfPotentialBreakPoints = gard.variableSites - 1;
 
-io.ReportProgressMessage ("", ">Loaded a `gard.data_type` multiple sequence alignment with **`gard.numSeqs`** sequences, **`gard.numSites`** sites (`gard.variableSites` of which are variable)\n \`" +
+io.ReportProgressMessage ("", ">Loaded a `gard.dataType` multiple sequence alignment with **`gard.numSeqs`** sequences, **`gard.numSites`** sites (`gard.variableSites` of which are variable)\n \`" +
                                 gard.alignment[utility.getGlobalValue("terms.data.file")] + "\`");
 
 gard.baselineParameters     = (gard.model[terms.parameters])[terms.model.empirical] + // empirical parameters
                               utility.Array1D ((gard.model[terms.parameters])[terms.global]) + // global parameters
                               utility.Array1D ((gard.model[terms.parameters])[terms.local]) * (2*gard.numSeqs-5) * 2; // local parameters X number of branches x at least 2 partitions
 
-gard.min_expected_sites     = (gard.baselineParameters + 2);
+gard.minExpectedSites     = (gard.baselineParameters + 2);
 gard.minPartitionSize       = 2*gard.numSeqs-3;
 /** gard.minPartitionSize:
     a simple heuristic that requires that there c-AIC makes sense for each individual
@@ -123,7 +123,7 @@ io.ReportProgressMessage ("", ">Minimum size of a partition is set to be `gard.m
 
 /* 1d. Check that there are enough sites to permit cAIC
 ------------------------------------------------------------------------------*/
-io.CheckAssertion("gard.min_expected_sites <= gard.numSites", "The alignment is too short to permit c-AIC based model comparison. Need at least `gard.min_expected_sites` sites for `gard.numSeqs` sequences to fit a two-partiton model.");
+io.CheckAssertion("gard.minExpectedSites <= gard.numSites", "The alignment is too short to permit c-AIC based model comparison. Need at least `gard.minExpectedSites` sites for `gard.numSeqs` sequences to fit a two-partiton model.");
 
 
 /* 1e. Baseline fit on entire alignment
@@ -131,23 +131,26 @@ io.CheckAssertion("gard.min_expected_sites <= gard.numSites", "The alignment is 
 io.ReportProgressMessageMD('GARD', 'baseline-fit', 'Fitting the baseline (single-partition; no breakpoints) model');
 // Infer NJ tree, estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
 
-gard.base_likelihood_info = gard.fit_partitioned_model (null, gard.model, null);
-gard.initial_values = gard.base_likelihood_info;
-gard.globalParameterCount = utility.Array1D (estimators.fixSubsetOfEstimates(gard.initial_values, gard.initial_values[terms.global]));
-(gard.initial_values [terms.branch_length])[0] = null;
-(gard.initial_values [terms.branch_length])[1] = null;
+gard.baseLikelihoodInfo = gard.fitPartitionedModel (null, gard.model, null);
+gard.initialValues = gard.baseLikelihoodInfo;
+gard.globalParameterCount = utility.Array1D (estimators.fixSubsetOfEstimates(gard.initialValues, gard.initialValues[terms.global]));
+// Set branch lenth = null in intialValues (need to have a null entry for each partition so just setting a bunch of them here)
+maxExpectedBreakPoints = 200;
+for(i=0; i<maxExpectedBreakPoints; i=i+1) {
+    (gard.initialValues [terms.branch_length])[i] = null;
+}
 
-gard.baseline_cAIC = math.GetIC (gard.base_likelihood_info[terms.fit.log_likelihood], gard.base_likelihood_info[terms.parameters], gard.numSites);
-io.ReportProgressMessageMD("GARD", "baseline-fit", "* " + selection.io.report_fit (gard.base_likelihood_info, 0, gard.numSites));
+gard.baseline_cAIC = math.GetIC (gard.baseLikelihoodInfo[terms.fit.log_likelihood], gard.baseLikelihoodInfo[terms.parameters], gard.numSites);
+io.ReportProgressMessageMD("GARD", "baseline-fit", "* " + selection.io.report_fit (gard.baseLikelihoodInfo, 0, gard.numSites));
 
 
 /* 1f. Set up some book keeping
 ------------------------------------------------------------------------------*/
 // Setup mpi queue
-gard.createLikelihoodFunctionForExport ("gard.export", gard.model);
+gard.createLikelihoodFunctionForExport ("gard.exportedModel", gard.model);
 gard.queue = mpi.CreateQueue (
                             {
-                            "LikelihoodFunctions" : {{"gard.export"}},
+                            "LikelihoodFunctions" : {{"gard.exportedModel"}},
                             "Headers" : {{"libv3/all-terms.bf"}},
                             "Variables" : {{"gard.globalParameterCount", "gard.numSites"}}
                             }
@@ -188,7 +191,7 @@ namespace gard {
 
         mpi.QueueJob (queue, "gard.obtainModel_cAIC", {"0" : {{siteIndex__}},
                                                      "1" : model,
-                                                     "2" : base_likelihood_info},
+                                                     "2" : baseLikelihoodInfo},
                                                      "gard.storeSingleBreakPointModelResults");
                                                     
     }
@@ -227,10 +230,11 @@ namespace gard {
     addingBreakPointsImproves_cAIC = TRUE;
     numberOfBreakPointsBeingEvaluated = 1;
     while(addingBreakPointsImproves_cAIC) {
-    
         numberOfBreakPointsBeingEvaluated+=1;
+
         generationsAtCurrentBest_cAIC = 0;
         generationsNoNewModelsAdded = 0;
+        
         parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints);
         
         terminationCondition = FALSE;
@@ -243,7 +247,7 @@ namespace gard {
             // 2. Select the fittest models. 
             interGenerationalModels = parentModels;
             interGenerationalModels * childModels;
-            gard.GA.evaluateModels(interGenerationalModels, model, null, numSites);
+            gard.GA.evaluateModels(interGenerationalModels);
             selectedModels = gard.GA.selectModels(interGenerationalModels, populationSize);
 
             // 3. Evaluate convergence for this modelSet initialization 
@@ -305,7 +309,7 @@ namespace gard {
 // ---- General GARD Functions ----
 
 /**
- * @name gard.fit_partitioned_model
+ * @name gard.fitPartitionedModel
  * Given a list of partitions, specified as increasing breakpoint locations,
    fit the specified model to said partitions, using neighbor joining trees on each partition
    return LogL and IC values
@@ -316,7 +320,7 @@ namespace gard {
  * @param {Matrix} breakPoints : sorted, 0-based breakpoints, e.g.
     {{100,200}} -> 3 partitions : 0-100, 101-200, 201-end
  * @param {Dict} model : an instantiated model to be used for all partitions
- * @param {Dict/null} initial_values : if provided, use as initial values
+ * @param {Dict/null} initialValues : if provided, use as initial values
 
  * @returns a {Dictionary} :
     terms.fit.log_likelihood -> log likelihood
@@ -324,49 +328,49 @@ namespace gard {
 
  */
 
-lfunction gard.fit_partitioned_model (breakPoints, model, initial_values) {
+lfunction gard.fitPartitionedModel (breakPoints, model, initialValues) {
 
-    current_index = 0;
-    current_start = 0;
-    breakPoints_count = utility.Array1D (breakPoints);
-    part_count = breakPoints_count + 1;
-    lf_components = {2 * (part_count), 1};
+    currentIndex = 0;
+    currentStart = 0;
+    breakPointsCount = utility.Array1D (breakPoints);
+    partCount = breakPointsCount + 1;
+    lfComponents = {2 * (partCount), 1};
     trees = {};
 
-    for (p = 0; p < part_count; p += 1) {
-        last_partition = p >= breakPoints_count;
-        if (!last_partition) {
-            current_end = breakPoints[p];
+    for (p = 0; p < partCount; p += 1) {
+        lastPartition = p >= breakPointsCount;
+        if (!lastPartition) {
+            currentEnd = breakPoints[p];
         } else {
-            current_end = ^"gard.filter.sites" - 1;
+            currentEnd = ^"gard.filter.sites" - 1;
         }
-        lf_components [2*p] = "gard.filter.part_" + p;
-        lf_components [2*p+1] = "gard.tree.part_" + p;
-        DataSetFilter ^(lf_components[2*p]) = CreateFilter (^"gard.filter", 1, "" + current_start + "-" + current_end);
-        trees[p] = trees.ExtractTreeInfo (tree.infer.NJ ( lf_components[2*p], null));
-        model.ApplyModelToTree(lf_components[2 * p + 1], trees[p], {
+        lfComponents [2*p] = "gard.filter.part_" + p;
+        lfComponents [2*p+1] = "gard.tree.part_" + p;
+        DataSetFilter ^(lfComponents[2*p]) = CreateFilter (^"gard.filter", 1, "" + currentStart + "-" + currentEnd);
+        trees[p] = trees.ExtractTreeInfo (tree.infer.NJ ( lfComponents[2*p], null));
+        model.ApplyModelToTree(lfComponents[2 * p + 1], trees[p], {
             "default": model
         }, None);
         // Increment the current starting point
-        if (!last_partition) {
-            current_start = breakPoints[p];
+        if (!lastPartition) {
+            currentStart = breakPoints[p];
         }
     }
 
     lf_id = &likelihoodFunction;
-    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
+    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lfComponents`)");
 
-    model_objects = {
-        "gard.overall_model" : model
+    modelObjects = {
+        "gard.overallModel" : model
     };
 
     df = 0;
-    if (Type(initial_values) == "AssociativeList") {
+    if (Type(initialValues) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-        df = estimators.ApplyExistingEstimates(&likelihoodFunction, model_objects, initial_values, None);
+        df = estimators.ApplyExistingEstimates(&likelihoodFunction, modelObjects, initialValues, None);
     }
 
-    res = estimators.FitExistingLF (&likelihoodFunction, model_objects);
+    res = estimators.FitExistingLF (&likelihoodFunction, modelObjects);
 
     DeleteObject (likelihoodFunction, :shallow);
 
@@ -377,19 +381,19 @@ lfunction gard.fit_partitioned_model (breakPoints, model, initial_values) {
 
 /**
  * @name gard.obtainModel_cAIC
- * Wrap a call to gard.fit_partitioned_model to compute c-AIC
+ * Wrap a call to gard.fitPartitionedModel to compute c-AIC
 
    @returns c-AIC
 
  */
-lfunction gard.obtainModel_cAIC (breakPoints, model, initial_values) {
+lfunction gard.obtainModel_cAIC (breakPoints, model, initialValues) {
     /*if (utility.Has (^"gard.masterList", breakPoints, "Number")) {
         return (^"gard.masterList")[breakPoints];
     }*/
-    fit = gard.fit_partitioned_model (breakPoints, model, initial_values);
-    c_aic = math.GetIC (fit[^"terms.fit.log_likelihood"], fit[^"terms.parameters"] + ^"gard.globalParameterCount", ^"gard.numSites");
-    //(^"gard.masterList")[breakPoints] = c_aic;
-    return c_aic;
+    fit = gard.fitPartitionedModel (breakPoints, model, initialValues);
+    c_AIC = math.GetIC (fit[^"terms.fit.log_likelihood"], fit[^"terms.parameters"] + ^"gard.globalParameterCount", ^"gard.numSites");
+    //(^"gard.masterList")[breakPoints] = c_AIC;
+    return c_AIC;
 }
 
 function gard.storeSingleBreakPointModelResults (node, result, arguments) {
@@ -415,19 +419,19 @@ lfunction gard.createLikelihoodFunctionForExport (id,  model) {
     definition is assumed to contain a SORTED list of 0-based
     breakpoint locations
 
-    If any of the individual partitions is < min_size, the function
+    If any of the individual partitions is < minSize, the function
     returns FALSE, otherwise it returns TRUE
 */
-lfunction gard.validatePartititon (definition, min_size, total_sites) {
+lfunction gard.validatePartititon (definition, minSize, totalSites) {
     lastBP = 0;
     bpCount = utility.Array1D (definition);
     for (i = 0; i < bpCount; i+=1) {
-        if (definition[i] - lastBP + 1 < min_size) {
+        if (definition[i] - lastBP + 1 < minSize) {
             return FALSE;
         }
         lastBP = definition[i];
     }
-    if (total_sites - lastBP < min_size) {
+    if (totalSites - lastBP < minSize) {
         return FALSE;
     }
     return TRUE;
@@ -543,12 +547,9 @@ function gard.GA.recombineModels (parentModels, populationSize, differenceThresh
 /**
  * @name gard.GA.evaluateModels
  * @param {Dictonary} models (some models may have cAIC scores already)
- * @param {Model} evolutionaryModel; to be used in fit_partitioned_model (i.e. gard.model)
- * @param {??} initial_values; The initial values for fit_partitioned_model (can be null)
- * @param {Number} numSites; the number of sites in the alignment, to be used in the cAIC calculation
  * @returns nothing... the gard.GA.storeMultiBreakPointModelResults function gets called which updates the intergenerationalModels object
  */
-function gard.GA.evaluateModels (models, evolutionaryModel, initialValues, numSites) {
+function gard.GA.evaluateModels (models) {
     modelIds = utility.Keys(models);
     numberOfModels = Columns(modelIds);
 
@@ -558,12 +559,12 @@ function gard.GA.evaluateModels (models, evolutionaryModel, initialValues, numSi
 
         if (cAIC == math.Infinity) {
             breakPoints = gard.Helper.convertMatrixStringToMatrix(modelId);
-            mpi.QueueJob (queue, "gard.obtainModel_cAIC", {"0" : breakPoints__,
-                                                     "1" : evolutionaryModel,
-                                                     "2" : base_likelihood_info},
+            mpi.QueueJob (gard.queue, "gard.obtainModel_cAIC", {"0" : breakPoints__,
+                                                     "1" : gard.model,
+                                                     "2" : gard.baseLikelihoodInfo},
                                                      "gard.GA.storeMultiBreakPointModelResults");
         }
-        mpi.QueueComplete (queue);
+        mpi.QueueComplete (gard.queue);
 
     }
 
@@ -722,14 +723,6 @@ function gard.GA.storeMultiBreakPointModelResults(node, result, arguments) {
 // ---- Helper Functions ----
 // TODO: replace these helper functions with a more HBL way of dealing with matrices
 
-// Return the nth matrix in a nxm matrix.
-function gard.Helper.getNthMatrix(setOfMatrices, n) {
-    nthMatrix = {1, Columns(setOfMatrices)};
-    for(i=0; i<Columns(setOfMatrices); i=i+1) {
-        nthMatrix[i] = setOfMatrices[n][i];
-    }
-    return nthMatrix;
-}
 
 function gard.Helper.convertMatrixStringToMatrix(matrixString){
     stringToEval = 'matrix = ' + matrixString;
