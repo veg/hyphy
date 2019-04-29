@@ -115,7 +115,7 @@ while (fitnessClassNumber<1)
 testEFV	   = 0;
 dummy = PopulateModelMatrix ("testMatrix","testEFV",0);*/
 
-SetDialogPrompt ("Please specify a nucleotide or amino-acid data file:");
+SetDialogPrompt ("Please specify an amino-acid data file:");
 
 DataSet ds 	= ReadDataFile (PROMPT_FOR_FILE);
 DataSetFilter filteredData = CreateFilter (ds,1);
