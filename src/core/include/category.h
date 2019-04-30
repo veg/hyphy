@@ -157,19 +157,17 @@ public:
         return UpdateIntervalsAndValues(force);
     }
 
-    hyFloat  GetMinX (void)  {
+    hyFloat  GetMinX (void)  const {
         return x_min;
     }
-    hyFloat  GetMaxX (void)  {
+    hyFloat  GetMaxX (void)  const {
         return x_max;
     }
-    bool        IsHiddenMarkov
-    (void)  {
+    bool        is_hidden_markov (void)  const {
         return (hiddenMarkovModel!=-1);
     }
 
-    bool        IsConstantOnPartition
-    (void)  {
+    bool        is_constant_on_partition (void) const {
         return (flags&CONSTANT_ON_PARTITION);
     }
 

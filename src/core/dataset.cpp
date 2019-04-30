@@ -892,8 +892,8 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
         if (!is_regexp) {
             is_hbl_function = hyphy_global_objects::FindBFFunctionName (input);
             if (is_hbl_function >= 0) {
-                if (GetBFFunctionArgumentCount (is_hbl_function) !=  2 && (GetBFFunctionArgumentCount (is_hbl_function) !=  2 && isVertical)) {
-                    HandleApplicationError(input.Enquote() & _String(" is not a valid callback function: must have one argument for sequences and two arguments for sites"));
+                if (GetBFFunctionArgumentCount (is_hbl_function) !=  2) {
+                    HandleApplicationError(input.Enquote() & _String(" is not a valid callback function: must have two arguments (name, sequence for sites; string, frequencies for sites)"));
                     return;
                 }
                 
@@ -919,11 +919,15 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
             
             if (!isVertical) { // partitioning sequences
                 
-               _FString * string_object = nil;
+               _FString * string_object = nil,
+                        * string_name = nil;
                if (!is_regexp) {
                         filter_formula.GetList() < new _Operation()
+                                                 < new _Operation()
                                                  < new _Operation(kEmptyString,-is_hbl_function-1L);
+                   
                    string_object = new _FString;
+                   string_name   = new _FString;
                }
                 
                 const long loop_limit = additionalFilter ? additionalFilter->lLength : totalLength;
@@ -949,7 +953,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                         target << specCount;
                     } else {
                         string_object->SetStringContent(new _StringBuffer (pattern));
-                        filter_formula.GetIthTerm(0)->SetNumber(string_object);
+                        string_name->SetStringContent  (new _StringBuffer (*GetSequenceName(seqPos)));
+                        filter_formula.GetIthTerm(1)->SetNumber(string_object);
+                        filter_formula.GetIthTerm(0)->SetNumber(string_name);
                         if (!CheckEqual(0.,filter_formula.Compute()->Value())) {
                             target << specCount;
                         }
@@ -958,7 +964,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                             
                 if (!is_regexp) {
                     filter_formula.GetIthTerm(0)->SetNumber(nil);
+                    filter_formula.GetIthTerm(1)->SetNumber(nil);
                     DeleteObject (string_object);
+                    DeleteObject (string_name);
                 }
             } else {
                 

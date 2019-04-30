@@ -503,12 +503,24 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                             receptacle->SetValue (new _FString (filter_source->GetSequenceCharacters(seqID)),false);
                         } else  if (seqID >= -4 && seqID <= -1) {
                             _SimpleList indices, map, counts;
-                            long uniqueSequences = filter_source->FindUniqueSequences(indices, map, counts, -seqID - 1);
+                            _hy_dataset_filter_unique_match match_mode = kUniqueMatchExact;
+                            switch (seqID) {
+                                case -2:
+                                    match_mode = kUniqueMatchExactOrGap;
+                                    break;
+                                case -3:
+                                    match_mode = kUniqueMatchSuperset;
+                                    break;
+                                case -4:
+                                    match_mode = kUniqueMatchPartialMatch;
+                                    break;
+                            }
+                            long uniqueSequences = filter_source->FindUniqueSequences(indices, map, counts, match_mode);
                             _AssociativeList * parameterInfo = new _AssociativeList;
-                            parameterInfo->MStore ("UNIQUE_SEQUENCES",             new _Constant (uniqueSequences), false);
-                            parameterInfo->MStore ("UNIQUE_INDICES",            new _Matrix (indices), false);
-                            parameterInfo->MStore ("SEQUENCE_MAP",          new _Matrix (map), false);
-                            parameterInfo->MStore ("UNIQUE_COUNTS",      new _Matrix  (counts), false);
+                            parameterInfo->MStore ("UNIQUE_SEQUENCES", new _Constant (uniqueSequences), false);
+                            parameterInfo->MStore ("UNIQUE_INDICES",   new _Matrix   (indices), false);
+                            parameterInfo->MStore ("SEQUENCE_MAP",     new _Matrix   (map), false);
+                            parameterInfo->MStore ("UNIQUE_COUNTS",    new _Matrix   (counts), false);
                             receptacle->SetValue (parameterInfo,false);
                         }
                     } else { // filter_source

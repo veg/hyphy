@@ -53,10 +53,13 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
 
 terms.fel.pairwise      = "pairwise";
+terms.fel.permutation   = "permutation";
+terms.fel.test_keys     = "test keys";
 fel.site_alpha          = "Site relative synonymous rate";
 fel.site_beta_reference = "Site relative non-synonymous rate (reference branches)";
 fel.site_tested_classes = {};
 fel.alpha.scaler        = "fel.alpha_scaler";
+fel.site.permutations   = 20;
 
 
 // default cutoff for printing to screen
@@ -133,6 +136,7 @@ fel.branch_class_counter = 0;
 fel.branches.testable = {};
 fel.branches.has_background = FALSE;
 
+
 utility.ForEachPair (fel.branch_sets, "_group_", "_branches_",
     "
      if (_group_ != terms.tree_attributes.background) {
@@ -157,7 +161,7 @@ if (fel.branch_class_counter > 2) {
     fel.test_count += fel.branch_class_counter * (fel.branch_class_counter-1) / 2;
 }
 
-fel.table_headers = {2 + utility.Array1D (fel.scaler_parameter_names) + fel.branch_class_counter + fel.test_count, 2};
+fel.table_headers = {3 + utility.Array1D (fel.scaler_parameter_names) + fel.branch_class_counter + fel.test_count, 2};
 fel.table_headers [0][0] = "alpha"; fel.table_headers [0][1] = "Synonymous substitution rate at a site";
 
 fel.k = 1;
@@ -213,10 +217,16 @@ for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
 }
 
 
+
 io.ReportProgressMessageMD('FEL',  'tests', '**' + fel.test_count + "** " + io.SingularOrPlural (fel.test_count , "test", "tests")+" will be performed at each site");
 
 
 fel.report.counts         = {fel.report.test_count,1};
+
+fel.table_headers [fel.k][0] = "Permutation p-value";
+fel.table_headers [fel.k][1] = "Label permutation test for significant sites";
+
+fel.k += 1;
 
 fel.table_headers [fel.k][0] = "Total branch length";
 fel.table_headers [fel.k][1] = "The total length of branches contributing to inference at this site, and used to scale beta-alpha";
@@ -228,9 +238,10 @@ is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Mar
 the next set of variables.
 */
 
-fel.table_screen_output  = {{"Codon", "alpha", "beta", "substitutions", "test", "p-value"}};
+fel.table_screen_output  = {{"Codon", "alpha", "beta", "substitutions", "test", "LRT p-value", "Permutation p-value"}};
+
 fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.align : "center",
-                            terms.table_options.column_widths : { "0" : 8, "1" : 16, "2" : 30, "3" : 30, "4" : 40, "5" : 10}};
+                            terms.table_options.column_widths : { "0" : 8, "1" : 16, "2" : 30, "3" : 30, "4" : 40, "5" : 10, "6" : 10}};
 
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
 estimators.fixSubsetOfEstimates(fel.gtr_results, fel.gtr_results[terms.global]);
@@ -323,14 +334,16 @@ fel.report.pairwise = {{"" + (1+((fel.filter_specification[fel.report.partition]
                                     Format(fel.report.row[fel.report.rate1_index],10,3) + " : " + Format(fel.report.row[fel.report.rate2_index],10,3),
                                     fel.report.substitutions,
                                     fel.report.test ,
-                                    Format(fel.report.row[fel.report.pvalue_index],6,4)}};
+                                    Format(fel.report.row[fel.report.pvalue_index],6,4),
+                                    Format(fel.report.row[fel.report.permutation_index],6,4)}};
 
 fel.report.overall = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
                                     Format(fel.report.row[0],10,3),
                                     Format(fel.report.rates[0],10,3) + " - " + Format(fel.report.rates[fel.report.rate_count-2],10,3),
                                     fel.report.substitutions,
                                     fel.report.test,
-                                    Format(fel.report.row[fel.report.pvalue_index],6,4)}};
+                                    Format(fel.report.row[fel.report.pvalue_index],6,4),
+                                    Format(fel.report.row[fel.report.permutation_index],6,4)}};
 
 
 
@@ -360,6 +373,7 @@ utility.ForEach (fel.case_respecting_node_names, "_node_",
     ');
 
 
+
 // create the likelihood function for this site
 ExecuteCommands (alignments.serialize_site_filter
                                    ((fel.filter_specification[fel.partition_index])[utility.getGlobalValue("terms.data.name")],
@@ -378,8 +392,9 @@ estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping
 
 fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                "Models" : {{"fel.site.mg_rev"}},
-                               "Headers" : {{"libv3/all-terms.bf","libv3/tasks/ancestral.bf"}},
-                               "Variables" : {{"fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise"}}
+                               "Headers" : {{"libv3/all-terms.bf","libv3/tasks/ancestral.bf", "libv3/convenience/math.bf"}},
+                               "Functions" : {{"fel.apply_proportional_site_constraint"}},
+                               "Variables" : {{"terms.fel.test_keys","fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations"}}
                              });
 
 
@@ -393,7 +408,8 @@ utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
                                                             "3" : _pattern_info_,
                                                             "4" : fel.site_model_mapping,
                                                             "5" : fel.selected_branches[fel.partition_index],
-                                                            "6" : fel.scaler_parameter_names
+                                                            "6" : fel.scaler_parameter_names,
+                                                            "7" : FALSE
                                                              });
         } else {
             mpi.QueueJob (fel.queue, "fel.handle_a_site", {"0" : "fel.site_likelihood",
@@ -404,7 +420,8 @@ utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
                                                             "3" : _pattern_info_,
                                                             "4" : fel.site_model_mapping,
                                                             "5" : fel.selected_branches[fel.partition_index],
-                                                            "6" : fel.scaler_parameter_names
+                                                            "6" : fel.scaler_parameter_names,
+                                                            "7" : FALSE
                                                             },
                                                             "fel.store_results");
         }
@@ -502,7 +519,6 @@ lfunction fel.select_branches(partition_info) {
 
 //----------------------------------------------------------------------------------------
 function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
-    //console.log (node_name + " -> " +  alpha_factor);
 
     fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
 
@@ -516,9 +532,16 @@ function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_par
 //----------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------
-lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, branch_sets, parameter_names) {
+lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, branch_sets, parameter_names, permutation) {
 
-    GetString (lfInfo, ^lf,-1);
+    utility.ForEach (utility.Keys (branch_sets), "_node_",
+        '_node_class_ = (`&branch_sets`)[_node_];
+         _beta_scaler = (`&parameter_names`)[_node_class_];
+         fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.alpha.scaler, _beta_scaler, 
+            (( fel.final_partitioned_mg_results[terms.branch_length])[partition_index])[_node_]);
+    ');
+
+    GetString (lfInfo, ^lf,-1);    
     ExecuteCommands (filter_data);
     __make_filter ((lfInfo["Datafilters"])[0]);
 
@@ -538,23 +561,23 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     '
     );
 
-    //Export   (lfe, ^lf);
-    //fprintf ("/Users/sergei/Desktop/alt.lf", CLEAR_FILE, lfe);
     Optimize (results, ^lf);
     
     /**
         infer and report ancestral substitutions
     */
     
-    ancestors   = ancestral._buildAncestralCacheInternal (lf, 0, FALSE, FALSE);
-    counts      = ancestral.ComputeSubstitutionCounts (ancestors, null, null, null);
-    branch_map  = utility.SwapKeysAndValues (counts["Branches"]);
-    counts_by_branch_set = {};
+    if (!permutation) {
+        ancestors   = ancestral._buildAncestralCacheInternal (lf, 0, FALSE, FALSE);
+        counts      = ancestral.ComputeSubstitutionCounts (ancestors, null, null, null);
+        branch_map  = utility.SwapKeysAndValues (counts["Branches"]);
+        counts_by_branch_set = {};
     
     
-    utility.ForEach (counts["Branches"], "_name_", '
-        `&counts_by_branch_set`[`&branch_sets`[_name_]] += ((`&counts`)["Counts"])[+`&branch_map`[_name_]];
-    ');
+        utility.ForEach (counts["Branches"], "_name_", '
+            `&counts_by_branch_set`[`&branch_sets`[_name_]] += ((`&counts`)["Counts"])[+`&branch_map`[_name_]];
+        ');
+    }
     
     
             
@@ -619,12 +642,65 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     } else {
         pairwise = None;
     }
+    
+    lrt = math.DoLRT (Null[utility.getGlobalValue("terms.fit.log_likelihood")],
+                      alternative[utility.getGlobalValue("terms.fit.log_likelihood")],
+                      Max (1,^'fel.branch_class_counter' - 1));
 
+    p_values = {};
+    p_values ["overall"] = lrt[^'terms.p_value'];
+    test_keys = {};
+
+    if (^'fel.report.test_count' > 1) {
+
+        for (v = 0; v < ^'fel.branch_class_counter'; v += 1) {
+            for (v2 = v + 1; v2 < ^'fel.branch_class_counter'; v2 += 1) {
+                test_key = (^'fel.branches.testable') [v] + "|" + (^'fel.branches.testable') [v2];
+                test_keys + test_key;
+                lrt = math.DoLRT ((pairwise[test_key])[utility.getGlobalValue("terms.fit.log_likelihood")],
+                                   alternative[utility.getGlobalValue("terms.fit.log_likelihood")],
+                                  1);
+                p_values [test_key] = lrt[^'terms.p_value'];
+            }
+        }
+    }
+    
+
+    p_values = math.HolmBonferroniCorrection (p_values);
+    
+    if (permutation == FALSE && (Min (p_values,0))["value"] <= ^'fel.p_value') {
+        result = {
+                    utility.getGlobalValue("terms.alternative") : alternative,
+                    utility.getGlobalValue("terms.Null"): Null,
+                    utility.getGlobalValue("terms.fel.pairwise"): pairwise,
+                    utility.getGlobalValue("terms.substitutions") : counts_by_branch_set,
+                    utility.getGlobalValue("terms.p_value") : p_values,
+                    utility.getGlobalValue("terms.fel.test_keys") : test_keys
+                };
+            
+        p_min = (Min (p_values,0))["value"];
+        console.log ("Entering permutation mode with p = " + p_min);
+        perm_p_values = {};
+        for (rep = 0; rep < ^'fel.site.permutations'; rep+=1) {
+            this_set = (fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, Random(branch_sets,0), parameter_names, 1))[utility.getGlobalValue("terms.p_value")];
+            console.log (this_set);
+            perm_p_values + this_set;
+            console.log ("" + rep + " => " + (Min (this_set,0))["value"]);
+            if ((Min (this_set,0))["value"] <= p_min) {
+                break;
+            }
+        }
+        result [utility.getGlobalValue("terms.fel.permutation")]= perm_p_values;
+        return result;
+    } 
+    
     return {
                 utility.getGlobalValue("terms.alternative") : alternative,
                 utility.getGlobalValue("terms.Null"): Null,
                 utility.getGlobalValue("terms.fel.pairwise"): pairwise,
-                utility.getGlobalValue("terms.substitutions") : counts_by_branch_set
+                utility.getGlobalValue("terms.substitutions") : counts_by_branch_set,
+                utility.getGlobalValue("terms.fel.test_keys") : test_keys,
+                utility.getGlobalValue("terms.p_value") : p_values
            };
 }
 
@@ -641,6 +717,9 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
             fel.report.test         = fel.tests.key[fel.k][0];
             fel.report.rate1_index  = fel.tests.key[fel.k][1];
             fel.report.pvalue_index = fel.tests.key[fel.k][3];
+            
+            fel.report.permutation_index = Columns (fel.report.row) - 2;
+            
             if (fel.report.rate1_index >= 0) {
                 fel.report.rate2_index = fel.tests.key[fel.k][2];
                 fel.print_row = fel.report.pairwise;
@@ -679,7 +758,7 @@ lfunction fel.store_results (node, result, arguments) {
     partition_index = arguments [2];
     pattern_info    = arguments [3];
 
-    array_size  = utility.getGlobalValue ("fel.report.rate_count") + utility.getGlobalValue ("fel.report.subs_kinds") + utility.getGlobalValue ("fel.report.test_count") + 1;
+    array_size  = utility.getGlobalValue ("fel.report.rate_count") + utility.getGlobalValue ("fel.report.subs_kinds") + utility.getGlobalValue ("fel.report.test_count") + 2;
     result_row  = { 1, array_size } ["_MATRIX_ELEMENT_COLUMN_>=^'fel.report.rate_count'&&_MATRIX_ELEMENT_COLUMN_<array_size-1"];
 
 
@@ -700,39 +779,34 @@ lfunction fel.store_results (node, result, arguments) {
                  `&k` += 1;
            '
         );
+        
 
-        lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                          (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                          Max (1,^'fel.branch_class_counter' - 1));
-
-        p_values = {};
-        p_values ["overall"] = lrt[^'terms.p_value'];
-        test_keys = {};
-
-        if (^'fel.report.test_count' > 1) {
-
-			for (v = 0; v < ^'fel.branch_class_counter'; v += 1) {
-				for (v2 = v + 1; v2 < ^'fel.branch_class_counter'; v2 += 1) {
-					test_key = (^'fel.branches.testable') [v] + "|" + (^'fel.branches.testable') [v2];
-					test_keys + test_key;
-					lrt = math.DoLRT (((result[utility.getGlobalValue("terms.fel.pairwise")])[test_key])[utility.getGlobalValue("terms.fit.log_likelihood")],
-									  (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
-									  1);
-					p_values [test_key] = lrt[^'terms.p_value'];
-				}
-			}
-		}
-
-        p_values = math.HolmBonferroniCorrection (p_values);
+        
+        p_values = result[^"terms.p_value"];
         result_row [k] = p_values ["overall"];
-
+        
+        test_keys = result[^"terms.fel.test_keys"];
+        
         for (v = 1; v < ^'fel.report.test_count'; v+=1) {
             k += 1;
             result_row [k] = p_values[test_keys[v-1]];
         }
+        
 
         k += 1;
+        
+        alternative_lengths = utility.Array1D(result[^"terms.fel.permutation"]);
 
+        if (alternative_lengths) {
+            result_row [k] = 1./alternative_lengths;
+        } else {
+            result_row [k] = -1;
+        }
+
+        k += 1;
+        
+        sum = 0;
+    
         alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
 
         utility.ForEach (^"fel.case_respecting_node_names", "_node_",
