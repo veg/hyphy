@@ -422,6 +422,7 @@ public:
      */
 
 
+    bool        IsValidTransitionMatrix     () const;
 
     bool        IsReversible                (_Matrix* = nil);
     // check if the matrix is reversible

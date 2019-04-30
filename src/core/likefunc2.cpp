@@ -133,11 +133,11 @@ long            _LikelihoodFunction::TotalRateClassesForAPartition    (long part
         _SimpleList * catVars = (_SimpleList*)(*myList)(0);
         for (long id = 0; id < catVars->lLength; id++)
           if (mode == 1) {
-            if (((_CategoryVariable*)catVars->lData[id])->IsHiddenMarkov()) {
+            if (((_CategoryVariable*)catVars->lData[id])->is_hidden_markov()) {
               hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
             }
           } else if (mode == 2) {
-            if (((_CategoryVariable*)catVars->lData[id])->IsConstantOnPartition()) {
+            if (((_CategoryVariable*)catVars->lData[id])->is_constant_on_partition()) {
               hmmCats *= ((_SimpleList*)((*myList)(1)))->Element(id);
             }
           }
@@ -199,8 +199,8 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
                     long                intervalCount = aCV->GetNumberOfIntervals();
                     (*catVarCounts)     << intervalCount;
 
-                    if (aCV->IsHiddenMarkov() || aCV->IsConstantOnPartition()) {
-                        if (aCV->IsConstantOnPartition()) {
+                    if (aCV->is_hidden_markov() || aCV->is_constant_on_partition()) {
+                        if (aCV->is_constant_on_partition()) {
                             if (catVarFlags & (_hyphyCategoryCOP|_hyphyCategoryHMM)) {
                                 break;
                             }
@@ -1051,7 +1051,7 @@ hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * pattern
     for (long k=0; k<ni; k++) {
         scrap += temp2.theData[k] * hmf.theData[k];
     }
-
+    
     return myLog(scrap) - correctionFactor;
 }
 
@@ -1197,7 +1197,7 @@ hyFloat _LikelihoodFunction::SumUpSiteLikelihoods (long index, const hyFloat * p
 */
 
     hyFloat       logL             = 0.;
-    _SimpleList      *catVarType      = (_SimpleList*)((*(_List*)categoryTraversalTemplate(index))(4));
+    _SimpleList      *catVarType      = (_SimpleList*)categoryTraversalTemplate.GetItem(index,4);
     long             cumulativeScaler = 0,
                      categoryType     = catVarType->Element (-1);
 
@@ -1206,10 +1206,10 @@ hyFloat _LikelihoodFunction::SumUpSiteLikelihoods (long index, const hyFloat * p
 
     // check to see if we need to handle HMM or COP variables
     if (categoryType & _hyphyCategoryHMM) {
-        _CategoryVariable*hmmVar = (_CategoryVariable*)((*(_List*)(*(_List*)categoryTraversalTemplate(index))(0))(0));
+        _CategoryVariable*hmmVar = (_CategoryVariable*)categoryTraversalTemplate.GetItem(index,0,0);
         _Matrix          *hmm    = hmmVar->ComputeHiddenMarkov(),
                           *hmf    = hmmVar->ComputeHiddenMarkovFreqs();
-
+        
         _SimpleList   const   *dmap   = & GetIthFilter(index)->duplicateMap;
 
         return           SumUpHiddenMarkov (patternLikelihoods,

@@ -991,7 +991,7 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
                         _Operation * firstOp = templateFormula.GetIthTerm (0);
                         if (firstOp->IsAVariable(false)) {
                             _Variable * hmmVar = LocateVar(firstOp->GetAVariable());
-                            if (hmmVar->IsCategory() && ((_CategoryVariable*)hmmVar)->IsHiddenMarkov()) {
+                            if (hmmVar->IsCategory() && ((_CategoryVariable*)hmmVar)->is_hidden_markov()) {
                                 templateKind = -hmmVar->get_index()-1;
                                 hasSiteMx    = true;
                             }
@@ -1594,7 +1594,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
                     // if a partition that does not depend on category variables
                     // then the matrix is already populated with zeros
                 {
-                    _SimpleList      *catVarType             = (_SimpleList*)((*(_List*)categoryTraversalTemplate(i))(4));
+                    _SimpleList      *catVarType             = (_SimpleList*)categoryTraversalTemplate.GetItem(i,4);
                     _SimpleList   const * duplicate_site_map = (_SimpleList   const*)GetIthFilter (i) -> GetDuplicateSiteMap();
 
                     long             categoryType        = catVarType->Element (-1),
@@ -1603,7 +1603,8 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
 
                     // check to see if we need to handle HMM or COP variables
                     if (categoryType & _hyphyCategoryHMM) {
-                        _CategoryVariable*hmmVar        = (_CategoryVariable*)((*(_List*)(*(_List*)categoryTraversalTemplate(i))(0))(0));
+                        _CategoryVariable*hmmVar        = (_CategoryVariable*)categoryTraversalTemplate.GetItem (i,0,0);
+
 
                         /*
                            run the Viterbi algorithm to reconstruct the most likely
@@ -1720,7 +1721,8 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
 
             allScalers << scalers;
             long        thisBlockSiteCount = BlockLength(whichParts.lData[whichPart]);
-            result->CopyABlock (holder, 0, maxPartSize, ((_SimpleList*)(*(_List*)categoryTraversalTemplate(whichParts.lData[whichPart]))(1))->Element(-1), thisBlockSiteCount);
+            result->CopyABlock (holder, 0, maxPartSize, ((_SimpleList*)categoryTraversalTemplate.GetItem (whichParts.lData[whichPart],1))->Element(-1), thisBlockSiteCount);
+//(*(_List*)categoryTraversalTemplate(whichParts.lData[whichPart]))(1))->Element(-1),
             maxPartSize += thisBlockSiteCount;
         }
         DoneComputing   ();
@@ -1833,7 +1835,7 @@ bool    _LikelihoodFunction::PreCompute         (void)
     useGlobalUpdateFlag = true;
     // mod 20060125 to only update large globals once
     unsigned long i = 0UL;
-
+    
     _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
 
     
@@ -2030,9 +2032,8 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 
         }
         for (unsigned long partID=0; partID<theTrees.lLength; partID++) {
-            if (blockDependancies.lData[partID])
+            if (blockDependancies.lData[partID]) {
                 // has category variables
-            {
                 if ( computationalResults.get_used()<=partID || HasBlockChanged(partID))
                     // first time computing or partition requires updating
                 {
@@ -2235,6 +2236,13 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         ComputeParameterPenalty ();
 
         hyFloat regularized_value = result - smoothingPenalty;
+        
+        /*
+        if (CheckEqual(regularized_value, -3270.172368116671)) {
+            //_TerminateAndDump("Checkpoint");
+            printf ("Checkpoint\n");
+        }
+        */
         return regularized_value;
     }
 
@@ -2261,7 +2269,7 @@ void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long
     _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
 
     if (index<highestIndex) {
-        if ((!CheckNthBit(dependance,index))||thisC->IsHiddenMarkov()) {
+        if ((!CheckNthBit(dependance,index))||thisC->is_hidden_markov()) {
             RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight);
         } else {
             thisC->Refresh();
@@ -2333,7 +2341,7 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
 {
     _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[index]);
     if (index<highestIndex) {
-        if ((!CheckNthBit(dependance,index))||thisC->IsHiddenMarkov())
+        if ((!CheckNthBit(dependance,index))||thisC->is_hidden_markov())
             RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight
 #ifdef _SLKP_LFENGINE_REWRITE_
                              ,siteMultipliers,runMode,runStorage
@@ -2358,7 +2366,7 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
             }
         }
     } else {
-        if (thisC->IsHiddenMarkov()) {
+        if (thisC->is_hidden_markov()) {
             if (offsetCounter == 1) { // this is the only categ for the block
                 ComputeBlock (blockIndex,siteResults->fastIndex());
             }
@@ -3134,7 +3142,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
 
         for (long i=0; i<indexCat.lLength; i++) {
             _CategoryVariable* thisCV = (_CategoryVariable*) LocateVar (indexCat.lData[i]);
-            if (thisCV->IsHiddenMarkov()||thisCV->IsConstantOnPartition()) {
+            if (thisCV->is_hidden_markov()||thisCV->is_constant_on_partition()) {
                 ReportWarning ("[MPI] Cannot initialize REL MPI because it does not support 'Hidden Markov' or 'Constant on Partition' category variables");
                 return;
             }
@@ -5956,7 +5964,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat precision, _Ma
                 initial_value     = maxSoFar,
                 currentPrecision = localOnly?precision:.01;
 
-    if (check_value != INFINITY) {
+    if (check_value != -INFINITY) {
         if (!CheckEqual(check_value, maxSoFar)) {
             _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]";
             if (check_value - 0.01 > maxSoFar) {
@@ -7494,7 +7502,7 @@ void    _LikelihoodFunction::ScanAllVariables (void) {
         _Variable* theV = (_Variable*)LocateVar(variableIndex);
         if (theV->IsCategory()) {
             if (((_CategoryVariable*)theV)->IsUncorrelated()) {
-                if (((_CategoryVariable*)theV)->IsConstantOnPartition()) {
+                if (((_CategoryVariable*)theV)->is_constant_on_partition()) {
                     indexCat << variableIndex;
                 } else {
                     cpCat << variableIndex;
@@ -7554,10 +7562,10 @@ void    _LikelihoodFunction::ScanAllVariables (void) {
 
         for (unsigned long i2 = 0; i2 < localCategVars.lLength; i2++) {
             _CategoryVariable * cvRef = (_CategoryVariable*)LocateVar (localCategVars.lData[i2]);
-            haveHMM                     = haveHMM || cvRef->IsHiddenMarkov();
-            haveConstantOnPartition     = haveConstantOnPartition || cvRef->IsConstantOnPartition();
+            haveHMM                     = haveHMM || cvRef->is_hidden_markov();
+            haveConstantOnPartition     = haveConstantOnPartition || cvRef->is_constant_on_partition();
             if (cvRef->IsUncorrelated()) {
-                if (cvRef->IsConstantOnPartition()) {
+                if (cvRef->is_constant_on_partition()) {
                     indexCat >> cvRef->get_index();
                 } else {
                     cpCat >> cvRef->get_index();
@@ -7711,7 +7719,7 @@ void    _LikelihoodFunction::ScanAllVariablesOnPartition (_SimpleList& pidx, _Si
                 _Variable* theV = ((_Variable*)LocateVar(allVariables(i)));
                 if (theV->IsCategory()) {
                     if (((_CategoryVariable*)theV)->IsUncorrelated()) {
-                        if (((_CategoryVariable*)theV)->IsConstantOnPartition()) {
+                        if (((_CategoryVariable*)theV)->is_constant_on_partition()) {
                             icat << allVariables(i);
                         } else {
                             cpCat << allVariables(i);
@@ -9636,7 +9644,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
       if (category_simulation_mode  == kLFSimulateCategoriesContinuous) {
         for (unsigned long cat_index = 0UL; cat_index < indexCat.lLength; cat_index ++) {
           _CategoryVariable* ith_category = GetIthCategoryVar(cat_index);
-          if (ith_category->IsHiddenMarkov()) {
+          if (ith_category->is_hidden_markov()) {
             HMM_category_variables << cat_index;
             HMM_state << 0L;
           } else if (ith_category->GetCumulative().IsEmpty()) {
@@ -10147,10 +10155,10 @@ long    _LikelihoodFunction::HasHiddenMarkov (long reference, bool hmm) const {
         if (bitshifter&reference) {
             _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.lData[count]);
             if (hmm) {
-                if (thisC->IsHiddenMarkov ()) {
+                if (thisC->is_hidden_markov()) {
                     hMarkov = count;
                 }
-            } else if (thisC->IsConstantOnPartition ()) {
+            } else if (thisC->is_constant_on_partition ()) {
                 return count;
             }
         }

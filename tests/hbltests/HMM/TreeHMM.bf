@@ -20,7 +20,7 @@ category HMM_variable			    =(2,{{0.5,0.5}},,{{0,1}},
 									  HMM_model);
  
 
-DataSet 	  SmallCodon 	  		= ReadDataFile	("../data/HMM2_synthetic.fas");
+DataSet 	  SmallCodon 	  		= ReadDataFile	(PATH_TO_CURRENT_BF + "/../data/HMM2_synthetic.fas");
 DataSetFilter SmallCodon_part 		= CreateFilter	(SmallCodon,1);
 
 global		  SmallCodon_part_Shared_TVTS = 1;
@@ -46,7 +46,12 @@ Tree tree1							=			((((D_CD_83_ELI_ACC_K03454,D_CD_83_NDK_ACC_M27323)Node3,D_U
 Tree tree2							=			((((D_CD_83_ELI_ACC_K03454:0.0252441,D_CD_83_NDK_ACC_M27323:0.0135632):0.00881346,D_UG_94_94UG114_ACC_U88824:0.0619783):0.000782367,D_CD_84_84ZR085_ACC_U88822:0.0207434):0.0351827,((B_FR_83_HXB2_ACC_K03455:0.0195062,B_US_86_JRFL_ACC_U63632:0.0157251):0.00159642,B_US_83_RF_ACC_M17451:0.0284274):0,B_US_90_WEAU160_ACC_U21135:0.0245537);
 LikelihoodFunction SmallCodon_LF 	= 			(SmallCodon_part,tree1,SmallCodon_part,tree2,"HMM_variable");
 
+
+
+Optimize										(res_SmallCodon_LF,SmallCodon_LF, {"OPTIMIZATION_METHOD" : "nedler-mead", "MAXIMUM_OPTIMIZATION_ITERATIONS" : 1000, "OPTIMIZATION_PRECISION" : 0.001});
+USE_LAST_RESULTS = TRUE;
 Optimize										(res_SmallCodon_LF,SmallCodon_LF);
+
 
 timer2 								= Time (1);
 expectedLL 							= -3580.54867;
@@ -55,7 +60,7 @@ fprintf 							(stdout, SmallCodon_LF, "\nTest optimization took ", timer2-timer
 
 ConstructCategoryMatrix				(mx, SmallCodon_LF, SHORT);
 
-expected = {"0":{{731,1,0}}};
+expected = {"0":{{731,0,1}}};
 
 switches = 0;
 

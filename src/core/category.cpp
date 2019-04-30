@@ -82,8 +82,7 @@ _CategoryVariable::_CategoryVariable (_String& name, _List* parms, _VariableCont
 }
 
 //___________________________________________________________________________________________
-bool _CategoryVariable::checkWeightMatrix(_Matrix& w, long row)
-{
+bool _CategoryVariable::checkWeightMatrix(_Matrix& w, long row) {
     bool    check = true;
     _Constant iterate;
     hyFloat sumCheck = 0;
@@ -101,7 +100,7 @@ bool _CategoryVariable::checkWeightMatrix(_Matrix& w, long row)
             }
         }
     } else {
-        for (long i=0; i<intervals; i++) {
+        for (long i=0L; i<intervals; i++) {
             sumCheck+=w.theData[i];
         }
         if (fabs(sumCheck-1.0)>=1e-8) {
@@ -743,6 +742,10 @@ hyFloat  _CategoryVariable::SetIntervalValue (long ival, bool recalc)
         newIntervalValue = ((_Matrix*)values->RetrieveNumeric())->theData[ival];
     }
     SetValue (new _Constant(newIntervalValue),false);
+    /*if (ival == 0) {
+        printf ("\n\n");
+    }
+    printf ("%ld => %g\n", ival, newIntervalValue);*/
     return newIntervalValue;
 }
 
@@ -864,10 +867,12 @@ _Matrix*    _CategoryVariable::GetIntervalEnds (void)
 }
 
 //___________________________________________________________________________________________
-_Matrix*    _CategoryVariable::ComputeHiddenMarkov (void)
-{
-    _Variable* theMX = LocateVar (modelMatrixIndices.lData[hiddenMarkovModel]);
-    return (_Matrix*)((_Matrix*)theMX->GetValue())->ComputeNumeric();
+_Matrix*    _CategoryVariable::ComputeHiddenMarkov (void) {
+    _Matrix *hmmr = (_Matrix*)((_Matrix*)LocateVar (modelMatrixIndices.lData[hiddenMarkovModel])->GetValue())->ComputeNumeric();
+    if (!hmmr->IsValidTransitionMatrix()) {
+        HandleApplicationError(_String ("Hidden Markov Model transition matrix variable did not compute to a valid transition matrix"));
+    }
+    return hmmr;
 }
 
 //___________________________________________________________________________________________
@@ -877,8 +882,9 @@ _Matrix*    _CategoryVariable::ComputeHiddenMarkovFreqs (void)
     if (fIndex<0) {
         fIndex = -fIndex-1;
     }
-    _Variable* theMX = LocateVar (fIndex);
-    return (_Matrix*)((_Matrix*)theMX->GetValue())->ComputeNumeric();
+    _Matrix * hmmf = (_Matrix*)((_Matrix*)LocateVar (fIndex)->GetValue())->ComputeNumeric();
+    checkWeightMatrix(*hmmf);
+    return hmmf;
 }
 
 //___________________________________________________________________________________________
@@ -898,9 +904,8 @@ _Matrix*    _CategoryVariable::GetHiddenMarkovFreqs (void) const {
 }
 
 //___________________________________________________________________________________________
-bool    _CategoryVariable::HaveParametersChanged (long catID)
-{
-    for (unsigned long i=0; i<parameterList.lLength; i++) {
+bool    _CategoryVariable::HaveParametersChanged (long catID) {
+    for (unsigned long i=0UL; i < parameterList.lLength; i++) {
         _Variable * p = LocateVar(parameterList.lData[i]);
         if (p->HasChanged())
             if (catID == -1 || ((_SimpleList**)affectedClasses.lData)[i]->lData[catID]) {
@@ -908,6 +913,10 @@ bool    _CategoryVariable::HaveParametersChanged (long catID)
             }
     }
 
+    if (catID == -1 && is_hidden_markov()) {
+        return GetHiddenMarkov()->HasChanged() || GetHiddenMarkovFreqs() -> HasChanged();
+    }
+    
     return false;
 }
 

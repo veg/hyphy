@@ -50,12 +50,12 @@ SmallCodon_part_Categ.weights={
 ;
 
 global						   lambda = 0.025;
-lambda :< 1;
+lambda :< 1/3;
 
-HMM_transition_matrix 		   = {{*,lambda,lambda,lambda}
-								  {lambda,*,lambda,lambda}
-								  {lambda,lambda,*,lambda}
-								  {lambda,lambda,lambda,*}};
+HMM_transition_matrix 		   = {{1-3*lambda,lambda,lambda,lambda}
+								  {lambda,1-3*lambda,lambda,lambda}
+								  {lambda,lambda,1-3*lambda,lambda}
+								  {lambda,lambda,lambda,1-3*lambda}};
 								  
 HMM_starting_frequencies	   = {{0.25,0.25,0.25,0.25}};	
 Model	HMM_model			   = (HMM_transition_matrix,HMM_starting_frequencies,0);
@@ -94,23 +94,11 @@ Model SmallCodon_part_HKY85_model=(SmallCodon_part_HKY85,SmallCodon_part_Freqs);
 UseModel (SmallCodon_part_HKY85_model);
 Tree SmallCodon_tree=((((D_CD_83_ELI_ACC_K03454,D_CD_83_NDK_ACC_M27323)Node3,D_UG_94_94UG114_ACC_U88824)Node2,D_CD_84_84ZR085_ACC_U88822)Node1,B_US_83_RF_ACC_M17451,((B_FR_83_HXB2_ACC_K03455,B_US_86_JRFL_ACC_U63632)Node10,B_US_90_WEAU160_ACC_U21135)Node9);
 
-SmallCodon_tree.Node2.t=0;
-SmallCodon_tree.D_CD_83_ELI_ACC_K03454.t=0;
-SmallCodon_tree.D_UG_94_94UG114_ACC_U88824.t=0;
-SmallCodon_tree.Node1.t=0;
-SmallCodon_tree.D_CD_84_84ZR085_ACC_U88822.t=0;
-SmallCodon_tree.D_CD_83_NDK_ACC_M27323.t=0;
-SmallCodon_tree.Node3.t=0;
-SmallCodon_tree.B_US_83_RF_ACC_M17451.t=0;
-SmallCodon_tree.B_FR_83_HXB2_ACC_K03455.t=0;
-SmallCodon_tree.B_US_86_JRFL_ACC_U63632.t=0;
-SmallCodon_tree.Node10.t=0;
-SmallCodon_tree.B_US_90_WEAU160_ACC_U21135.t=0;
-SmallCodon_tree.Node9.t=0;
 DataSet SmallCodon = ReadDataFile(USE_NEXUS_FILE_DATA);
 
 DataSetFilter SmallCodon_part = CreateFilter(SmallCodon,1,"","4,5,7,6,1,0,2,3");
 LikelihoodFunction SmallCodon_LF = (SmallCodon_part,SmallCodon_tree);
+
 
 Optimize(res_SmallCodon_LF,SmallCodon_LF);
 
@@ -118,6 +106,7 @@ timer2 = Time (1);
 expectedLL = -3286.0978773303;
 diffLL	   = Abs(expectedLL - res_SmallCodon_LF[1][0]);
 fprintf (stdout, SmallCodon_LF, "\nTest optimization took ", timer2-timer, " seconds.\n", diffLL , " difference between obtained and expected likelihood\n\n");
+
 
 
 END;
