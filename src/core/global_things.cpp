@@ -47,6 +47,7 @@
 
 #if defined   __UNIX__ 
     #include <unistd.h>
+    #include <sys/stat.h>
     #if !defined __MINGW32__
     #include <sys/utsname.h>
     #endif
@@ -359,20 +360,27 @@ namespace hy_global {
        
         init_genrand            (hy_random_seed);
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
-        has_terminal_stdout = isatty (STDOUT_FILENO);
-        has_terminal_stderr = isatty (STDERR_FILENO);
         
 
+        
         
 #ifdef __HYPHYMPI__
         hy_env :: EnvVariableSet (hy_env::mpi_node_id, new _Constant (hy_mpi_node_rank), false);
         hy_env :: EnvVariableSet (hy_env::mpi_node_count, new _Constant (hy_mpi_node_count), false);
+        has_terminal_stdout = false;
+        has_terminal_stderr = false;
+ #else
+        has_terminal_stdout = isatty (STDOUT_FILENO);
+        has_terminal_stderr = isatty (STDERR_FILENO);
 #endif
 
 #if not defined (__HYPHY_MPI_MESSAGE_LOGGING__) && defined (__HYPHYMPI__)
         if (hy_mpi_node_rank == 0L) {
+            struct stat sb;
+            fstat (STDERR_FILENO, &sb);
+            has_terminal_stderr = (sb.st_mode & S_IFMT) == S_IFIFO;
 #endif
-            
+        
             
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
             _String * prefix [2] = {&hy_error_log_name, &hy_messages_log_name};
