@@ -224,11 +224,19 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
     }
   
   // load transition matrix by column
-  
-  __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
-  sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), _mm256_mul_pd(c3,t3));
-  
-  _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+    __m256d sum01 = _mm256_fmadd_pd (c0, t0,_mm256_mul_pd(c1,t1)),
+            sum23 = _mm256_fmadd_pd (c2,t2, _mm256_mul_pd(c3,t3));
+    
+    _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
+
+#else
+    __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
+    sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), _mm256_mul_pd(c3,t3));
+    
+    _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
+
+#endif
     
     
     
@@ -3289,7 +3297,14 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                                 _mm256_loadu_pd(childVector+8UL),
                                 _mm256_loadu_pd(childVector+12UL),
                                 _mm256_loadu_pd(childVector+16UL)};
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+                            t_matrix[0] = _mm256_fmadd_pd(t_matrix[0], c_vector[0], _mm256_mul_pd(t_matrix[1], c_vector[1]));
+                            t_matrix[2] = _mm256_fmadd_pd(t_matrix[2], c_vector[2],
+                                                            _mm256_fmadd_pd (t_matrix[3], c_vector[3], _mm256_mul_pd(t_matrix[4], c_vector[4])));
                             
+                            tMatrix               += 20UL;
+                            sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[2])));
+#else
                             t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
                             t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
                             t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
@@ -3302,6 +3317,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                             
                             tMatrix               += 20UL;
                             sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
+#endif
                         }
                     } else
 #endif // _SLKP_USE_AVX_INTRINSICS

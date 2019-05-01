@@ -685,7 +685,7 @@ extern  long  ANALYTIC_COMPUTATION_FLAG;
 
 #ifdef  _SLKP_USE_AVX_INTRINSICS
     inline const double _avx_sum_4 (__m256d const & x) {
-      __m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
+      /*__m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
                                  // (x3,x3,x1,x1)
                                  _mm256_shuffle_pd (x, x, 0xf)
                                  // (x2,x2,x0,x0);
@@ -694,6 +694,10 @@ extern  long  ANALYTIC_COMPUTATION_FLAG;
                                        _mm256_castpd256_pd128 (t), // (x3+x2,x3+x2)
                                        _mm256_extractf128_pd(t,1)  // (x1+x0,x0+x1);
                                        ));
+       */
+        __m256d sum      = _mm256_hadd_pd(x, x);
+        __m128d sum_high = _mm256_extractf128_pd(sum, 1);
+        return _mm_cvtsd_f64(_mm_add_pd(sum_high, _mm256_castpd256_pd128(sum)));
       
     }
 #endif

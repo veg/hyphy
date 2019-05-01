@@ -3431,7 +3431,15 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       
                     hyFloat const * p = theData;
                     for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
-                      
+#ifdef _SLKP_USE_FMA3_INTRINSIC
+                        __m256d sum1 = _mm256_fmadd_pd (_mm256_loadu_pd(p), col_buffer[0], _mm256_mul_pd(_mm256_loadu_pd(p+4UL), col_buffer[1]));
+                        __m256d sum2 = _mm256_fmadd_pd (_mm256_loadu_pd(p+8UL), col_buffer[2],
+                                                        _mm256_fmadd_pd(_mm256_loadu_pd(p+12UL), col_buffer[3],
+                                                        _mm256_mul_pd(_mm256_loadu_pd(p+16UL), col_buffer[4])));
+                        
+                        dest[r*vDim + c] = _avx_sum_4  (_mm256_add_pd (sum1, sum2));
+                        
+#else
                       __m256d r0 = _mm256_mul_pd(_mm256_loadu_pd(p), col_buffer[0]);
                       __m256d r1 = _mm256_mul_pd(_mm256_loadu_pd(p+4UL), col_buffer[1]);
                       __m256d r2 = _mm256_mul_pd(_mm256_loadu_pd(p+8UL), col_buffer[2]);
@@ -3443,6 +3451,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       __m256d s234 = _mm256_add_pd(s23, r4);
  
                        dest[r*vDim + c] = _avx_sum_4 (_mm256_add_pd(s01, s234));
+#endif
                     }
                     continue;
                   }
@@ -5434,13 +5443,16 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                   for (unsigned long i = 0; i < lDim; i += vDim) {
                       hyFloat * row = theData + i;
                       
-                      
                       __m256d   sum256 = _mm256_setzero_pd();
                     
                       long k;
                       
                       for (k = 0; k < loopBound; k += 4) {
+#ifdef _SLKP_USE_FMA3_INTRINSIC
+                          sum256 = _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k), sum256);
+#else
                           sum256 = _mm256_add_pd (_mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k)), sum256);
+#endif
                       }
                     
                       hyFloat result = _avx_sum_4(sum256);
