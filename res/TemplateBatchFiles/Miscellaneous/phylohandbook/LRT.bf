@@ -138,10 +138,11 @@ for (it = 0; it < iterates; it = it+1)
 		ExecuteCommands (paramNames[k]+"=stashedValues[\""+paramNames[k]+"\"];");
 	}
 	R = 1;
+	DeleteObject (simLnLik, :shallow);
 	DataSet 			simData 		= 	SimulateDataSet (theLnLik);
 	DataSetFilter	  	simFilter 	= 	CreateFilter (simData,3,"","",GeneticCodeExclusions);
 	HarvestFrequencies (simFreq,simFilter,3,1,1);
-    PopulateModelMatrix ("MG94sim", simFreq);
+   	PopulateModelMatrix ("MG94sim", simFreq);
 	simCodonF = BuildCodonFrequencies (simFreq);
 	
 	Tree simTree = treeString;

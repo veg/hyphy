@@ -315,6 +315,7 @@ public:
     void    UnregisterListeners                  (void);
     void    DetermineLocalUpdatePolicy           (void);
     void    FlushLocalUpdatePolicy               (void);
+    void   _TerminateAndDump           (const _String& error, bool sig_term = false);
 
 protected:
 
@@ -411,7 +412,6 @@ protected:
     */
   
     void            ComputeParameterPenalty     (void);
-    void            _TerminateAndDump           (const _String& error, bool sig_term = false);
 
 
     bool            SendOffToMPI                (long);

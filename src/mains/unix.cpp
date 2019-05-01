@@ -203,8 +203,14 @@ void            mpiOptimizerLoop (int, int);
        if (hyphy_sigterm_in_progress)
            raise (sig);
            
-       hyphy_sigterm_in_progress = 1;
-       HandleApplicationError (_String("HyPhy killed by signal ") & (long)sig);
+        hyphy_sigterm_in_progress = 1;
+        if (lockedLFID != -1) {
+            ((_LikelihoodFunction*)likeFuncList(lockedLFID))->_TerminateAndDump(_String("HyPhy killed by signal ") & (long)sig);
+        } else {
+            HandleApplicationError (_String("HyPhy killed by signal ") & (long)sig);
+
+        }
+    
        
        signal (sig, SIG_DFL);
        raise  (sig);
