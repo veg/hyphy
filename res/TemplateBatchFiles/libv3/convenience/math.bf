@@ -219,4 +219,18 @@ lfunction math.HolmBonferroniCorrection(ps) {
   return corrected;
 };
 
+/**
+* Returns the range normalized to the lowest value
+* @name math.minNormalizedRange
+* @param {Matrix || Dictonary} if Dictonary, the values will be used
+* @returns {number}
+
+*/
+lfunction math.minNormalizedRange(object) {
+  if (Type (object) == "AssociativeList") {
+    object = utility.Values(object);
+  }
+  return (Max(object, 0) - Min(object, 0) ) / Min(object, 0);
+};
+
 
