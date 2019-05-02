@@ -1,0 +1,26 @@
+_sites 				= Columns (_MARGINAL_MATRIX_);
+_classes			= Rows	  (_MARGINAL_MATRIX_);
+
+_siteVector			= {1, _classes};
+
+STASH_MARGINAL_MATRIX = _MARGINAL_MATRIX_;
+
+_post :< 1e300;
+_norm :< 1e300;
+
+for (_counter = 0; _counter < _sites; _counter = _counter + 1)
+{
+	_norm = 0;
+	for (_counter2 = 0; _counter2 < _classes; _counter2 = _counter2 + 1)
+	{
+		_post 			 		= _MARGINAL_MATRIX_[_counter2][_counter] * _CATEGORY_VARIABLE_CDF_ [0][_counter2];
+		_norm 			 		= _norm + _post;
+		_siteVector [_counter2] = _post;
+	}
+	_siteVector = _siteVector * (1/_norm);
+
+	for (_counter2 = 0; _counter2 < _classes; _counter2 = _counter2 + 1)
+	{
+		_MARGINAL_MATRIX_[_counter2][_counter] = _siteVector [_counter2];
+	}
+}
