@@ -93,16 +93,5 @@ for (k = 0; k < varCount; k=k+1)
 	labelMatrix[k+1] = usedVars[k];	
 }
 
-/* open a chart window */
 
-OpenWindow (CHARTWINDOW,{{"Sampled parameter values"}
-					   {"labelMatrix"},
-					   {"sampledPoints"},
-					   {""},
-					   {"Index"},
-					   {""},
-					   {""},
-					   {""},
-					   {""},
-					   {"3"}},
-					   "(SCREEN_WIDTH-200);(SCREEN_HEIGHT-200);80;100");
+
