@@ -11,7 +11,7 @@ Simon DW Frost			 (sdfrost@ucsd.edu)
 */
 
 
-RequireVersion ("0.9920060830");
+//RequireVersion ("2.220140505");
 VERBOSITY_LEVEL = -1;
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -132,7 +132,7 @@ SAMPLE_M 			 = 100;
 LF_NAME  			 = "theLnLik";
 VERBOSITY_LEVEL 	 = 0;
 
-ExecuteAFile (HYPHY_LIB_DIRECTORY+"ChartAddIns"+DIRECTORY_SEPARATOR+"Samplers"+DIRECTORY_SEPARATOR+"lhc.bf");
+ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Samplers"+DIRECTORY_SEPARATOR+"lhc-ErrorEst.bf");
 
 pNames = Rows (cpm2);
 
