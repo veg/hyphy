@@ -278,7 +278,11 @@ namespace gard {
 if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
     gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
     gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
-    gard.best_cAIC_forNumberOfBreakPoints = {'0': gard.baseline_cAIC, '1': gard.singleBreakPointBest_cAIC};
+    gard.improvements = {'0': {
+                                "deltaAICc": gard.baseline_cAIC - gard.bestOverall_cAIC_soFar,
+                                "breakpoints": gard.bestOverallModelSoFar
+                              }
+                        };
 } else {
     gard.concludeAnalysis(gard.bestOverallModelSoFar);
     return 0;
@@ -300,8 +304,8 @@ namespace gard {
     maxFailedAttemptsToMakeNewModel = 5;
     cAIC_diversityThreshold = 0.001;
     cAIC_improvementThreshold = 0.1; // I think this was basically 0 in the gard paper
-    maxGenerationsAllowedWithNoNewModelsAdded = 10; // Not in the GARD paper. use 10?
-    maxGenerationsAllowedAtStagnent_cAIC = 50; // Set to 100 in the GARD paper
+    maxGenerationsAllowedWithNoNewModelsAdded = 10; // TODO: Not in the GARD paper. use 10?
+    maxGenerationsAllowedAtStagnent_cAIC = 50; // TODO: this is set to 100 in the GARD paper
     
     // GA.2: Loop over increasing number of break points
     addingBreakPointsImproves_cAIC = TRUE;
@@ -379,10 +383,14 @@ namespace gard {
 
         // GA.2.d Evaluate if the analysis should conclude or if the GA should run with breakpoints + 1
         if (previousBest_cAIC < bestOverall_cAIC_soFar) {
+            bestModel = gard.Helper.convertMatrixStringToMatrix(utility.Keys(selectedModels)[Min(utility.Values(selectedModels),1)[1]]);
+            improvements[numberOfBreakPointsBeingEvaluated-1] = {
+                                                                    "deltaAICc": bestOverall_cAIC_soFar - previousBest_cAIC,
+                                                                    "breakpoints": bestModel
+                                                                };
             bestOverall_cAIC_soFar = previousBest_cAIC;
             bestModel = gard.Helper.convertMatrixStringToMatrix(utility.Keys(selectedModels)[Min(utility.Values(selectedModels),1)[1]]);
             bestOverallModelSoFar = bestModel;
-            best_cAIC_forNumberOfBreakPoints[numberOfBreakPointsBeingEvaluated] = bestOverall_cAIC_soFar;
         } else {
             addingBreakPointsImproves_cAIC = FALSE;
             gard.concludeAnalysis(bestOverallModelSoFar);
@@ -555,10 +563,14 @@ lfunction gard.modelIsNotInMasterList(masterList, breakPoints) {
 function gard.concludeAnalysis(bestOverallModel) {
     (gard.json)['timeElapsed'] = Time(1) - gard.startTime;
     (gard.json)['siteBreakPointSupport'] = gard.getSiteBreakPointSupport(gard.masterList, gard.bestOverall_cAIC_soFar);
-    (gard.json)['cAIC_forNumberOfBreakPoints'] = gard.best_cAIC_forNumberOfBreakPoints;
     (gard.json)['singleTreeAICc'] = gard.getSingleTree_cAIC(bestOverallModel);
+    (gard.json)['totalModelCount'] = Abs(gard.masterList);
     
     gard.setBestModelTreeInfoToJson(bestOverallModel);
+
+    if(Abs((gard.json)['trees']) > 1) {
+        (gard.json)['improvements'] = gard.improvements;
+    }
     
     io.SpoolJSON (gard.json, gard.jsonFileLocation);
 
