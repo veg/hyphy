@@ -83,7 +83,24 @@ KeywordArgument ("type",        "The type of data to perform screening on", "Nuc
 KeywordArgument ("code",        "Genetic code to use (for codon alignments)", "Universal", "Choose Genetic Code");
 KeywordArgument ("alignment",   "Sequence alignment to screen for recombination");
 
+/* TODO:
+ChoiceList (rvChoice, "Rate variation options", 1, SKIP_NONE,
+                      "None",                     "Homogeneous rates across sites (fastest)",
+                      "General Discrete",         "General discrete distribution on N-bins",
+                      "Beta-Gamma",             "Adaptively discretized gamma N-bins. Try is GDD doesn't converge well, or if you suspect a lot of rate classes and do not want to overparameterize the model");
 
+if (rvChoice)
+{
+    rateClasses = 0;
+    while (rateClasses < 2 || rateClasses > 32)
+    {
+        fprintf (stdout, "How many distribution bins [2-32]?:");
+        fscanf  (stdin,  "Number", rateClasses);
+        rateClasses = rateClasses $ 1;
+    }
+    fprintf (stdout, "\nUsing ", rateClasses, " distribution bins\n");
+}
+*/
 
 gard.dataType = io.SelectAnOption  ({terms.gard.nucleotide : "A nucleotide (DNA/RNA) alignment",
                                       terms.gard.protein : "A protein alignment",
@@ -116,6 +133,7 @@ gard.jsonFileLocation = io.PromptUserForFilePath ("Save the resulting JSON file 
 gard.defaultFitFilePath = = (gard.alignment[terms.data.file] + '.best-gard');
 KeywordArgument ("output-lf", "Write the best fitting HyPhy analysis snapshot to (default is to save to the same path as the alignment file + 'best-gard')", gard.defaultFitFilePath);
 gard.lfFileLocation = io.PromptUserForFilePath ("Save the HyPhy analysis snapshot to");
+
 
 // Define model to be used in each fit
 gard.model = model.generic.DefineModel (gard.model.generator, "gard.overallModel", {"0" : "terms.global"}, "gard.filter", null);
@@ -177,8 +195,6 @@ for(i=0; i<maxExpectedBreakPoints; i=i+1) {
 gard.baseline_cAIC = math.GetIC (gard.baseLikelihoodInfo[terms.fit.log_likelihood], gard.baseLikelihoodInfo[terms.parameters], gard.numSites);
 io.ReportProgressMessageMD("GARD", "baseline-fit", "* " + selection.io.report_fit (gard.baseLikelihoodInfo, 0, gard.numSites));
 
-//console.log (gard.obtainModel_cAIC ({{605,1490}}, gard.model, gard.initialValues));
-//return 0;
 
 /* 1f. Set up some book keeping
 ------------------------------------------------------------------------------*/
@@ -214,7 +230,6 @@ gard.json[terms.json.input] = { terms.json.file: gard.alignment[terms.data.file]
                               };
 gard.json['potentialBreakpoints'] = gard.numberOfPotentialBreakPoints;
 gard.json['baselineScore'] = gard.baseline_cAIC;
-//TODO: add a rateMatrix to the json
 
 
 /* 2. MAIN ANALYSIS
@@ -229,7 +244,7 @@ namespace gard {
     // 2a1. Loop over every valid single break point 
     singleBreakPointBest_cAIC = ^"math.Infinity";
    
-    for (breakPointIndex = 0; breakPointIndex < variableSites - 1; breakPointIndex += 1) {
+    for (breakPointIndex = 0; breakPointIndex <variableSites - 1; breakPointIndex += 1) {
         siteIndex = variableSiteMap [breakPointIndex];
 
         if (singleBreakPointBest_cAIC < baseline_cAIC) {
@@ -262,8 +277,8 @@ namespace gard {
 // 2a3. Evaluate if the analyis should continue to the multi break point stage
 if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
     gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
-    //gard.singleBreakPointBestLocationIndex = utility.Find(gard.variableSiteMap, gard.singleBreakPointBestLocation);
     gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
+    gard.best_cAIC_forNumberOfBreakPoints = {'0': gard.baseline_cAIC, '1': gard.singleBreakPointBest_cAIC};
 } else {
     gard.concludeAnalysis(gard.bestOverallModelSoFar);
     return 0;
@@ -277,6 +292,9 @@ io.ReportProgressMessageMD('GARD', 'multi-breakpoint', 'Performing multi breakpo
 namespace gard {
     // GA.1: Setup global parameters
     populationSize = 20; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
+    if(populationSize < mpi.NodeCount()) {
+        populationSize = mpi.NodeCount();
+    }
     mutationRate = 0.75; // the GARD paper said "15% of randomly selected bits were toggled"...
     maxFailedAttemptsToMakeNewModel = 5;
     cAIC_diversityThreshold = 0.001;
@@ -296,6 +314,7 @@ namespace gard {
         
         // GA.2.b Loop over increasing generations for particular number of break points
         terminationCondition = FALSE;
+        generation = 0;
         while(terminationCondition == FALSE) {
 
             // GA.2.b.1 Produce the next generation of models with recombination. 
@@ -362,6 +381,7 @@ namespace gard {
             bestOverall_cAIC_soFar = previousBest_cAIC;
             bestModel = gard.Helper.convertMatrixStringToMatrix(utility.Keys(selectedModels)[Min(utility.Values(selectedModels),1)[1]]);
             bestOverallModelSoFar = bestModel;
+            best_cAIC_forNumberOfBreakPoints[numberOfBreakPointsBeingEvaluated] = bestOverall_cAIC_soFar;
         } else {
             addingBreakPointsImproves_cAIC = FALSE;
             gard.concludeAnalysis(bestOverallModelSoFar);
@@ -527,15 +547,15 @@ lfunction gard.modelIsNotInMasterList(masterList, breakPoints) {
 }
 
 function gard.concludeAnalysis(bestOverallModel) {
-    gard.elapsedTimeSeconds = Time(1) - gard.startTime;
-    (gard.json)['timeElapsed'] = gard.elapsedTimeSeconds;
-
-    console.log('here');
+    (gard.json)['timeElapsed'] = Time(1) - gard.startTime;
+    (gard.json)['siteBreakPointSupport'] = gard.getSiteBreakPointSupport(gard.masterList, gard.bestOverall_cAIC_soFar);
+    (gard.json)['cAIC_forNumberOfBreakPoints'] = gard.best_cAIC_forNumberOfBreakPoints;
+    
     gard.setBestModelTreeInfoToJson(bestOverallModel);
+    
     io.SpoolJSON (gard.json, gard.jsonFileLocation);
 
     console.log('The cAIC score was not improved by adding additional break points; the anlysis is complete.');
-    console.log('TODO: any book keeping to close the analysis can go here');
 }
 
 function gard.setBestModelTreeInfoToJson(bestModel) {
@@ -577,12 +597,39 @@ function gard.setBestModelTreeInfoToJson(bestModel) {
                                              });
         }
         gard.json['trees'] = gard.bestModelTrees;
-        //TODO: Can't get the below working... not sure why.
         gard.json['breakpointData'] = gard.bestModelBreakpointData;
-        //gard.json['breakpointData'] = 'placeholder. Still working on getting multibreakpoint data for this json field';
-        
     }
     return ;
+}
+
+function gard.getSiteBreakPointSupport(modelMasterList, best_cAIC_score) {
+    gard.masterListModels = utility.Keys(modelMasterList);
+    gard.masterList_cAIC_values = utility.Values(modelMasterList);
+    gard.numberOfModels = Columns(gard.masterList_cAIC_values);
+
+    gard.siteAkaikeWeights = {};
+    for(modelIndex=0; modelIndex<gard.numberOfModels; modelIndex=modelIndex+1) {
+        gard.cAIC_delta = best_cAIC_score - gard.masterList_cAIC_values[modelIndex];
+        gard.akaikeWeight = Exp(gard.cAIC_delta * 0.5);
+
+        if( Abs(gard.masterListModels[modelIndex]) > 3) {
+            gard.breakPointMatrix = gard.Helper.convertMatrixStringToMatrix(gard.masterListModels[modelIndex]);
+        } else {
+            gard.breakPointMatrix = 0;
+        }
+        gard.numberOfBreakPoints = Columns(gard.breakPointMatrix);
+
+        for(breakPointIndex=0; breakPointIndex<gard.numberOfBreakPoints; breakPointIndex=breakPointIndex+1) {
+            gard.siteAkaikeWeights[gard.breakPointMatrix[breakPointIndex]] += gard.akaikeWeight;
+        }
+    }
+    
+    gard.akaikeWeightScallingFactor = 1 / (Max(gard.siteAkaikeWeights)['value']);
+    gard.normalizedSiteAkaikeWeights = {};
+    utility.ForEachPair (gard.siteAkaikeWeights, "_key_", "_value_",
+        "gard.normalizedSiteAkaikeWeights[_key_] = _value_ * gard.akaikeWeightScallingFactor;");
+    
+    return gard.normalizedSiteAkaikeWeights;
 }
 
 
