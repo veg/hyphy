@@ -94,3 +94,7 @@ for (k = 0; k < varCount; k=k+1)
 }
 
 
+<<<<<<< HEAD:res/ChartAddIns/Samplers/srs.ibf
+=======
+
+>>>>>>> df30d3acef2bc2a5fb8401b0b98b82aa1d9b1c63:res/TemplateBatchFiles/Samplers/srs-ErrorEst.ibf

@@ -475,7 +475,7 @@ for (k = 0; k < rateClasses; k=k+1)
 _MARGINAL_MATRIX_ = Transpose(posteriorMatrix);
 _CATEGORY_VARIABLE_CDF_ = siteProfile[1][-1];
 
-ExecuteAFile(HYPHY_LIB_DIRECTORY+"ChartAddIns"+DIRECTORY_SEPARATOR+"DistributionAddIns"+DIRECTORY_SEPARATOR+"Includes"+DIRECTORY_SEPARATOR+"posteriors.ibf");
+ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"posteriors.ibf");
 ExecuteAFile(HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"WriteDelimitedFiles.bf");
 siteCount = Columns(_MARGINAL_MATRIX_);
 siteCounter = {};
