@@ -1149,11 +1149,11 @@ void _TreeTopology::FindCOTHelper2 (node<long>* aNode, _Matrix& branchSpans, _Ma
 
 HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
     static const _String
-        kMPScore ("score"),
-        kMPLabels("labels"),
-        kMPOutSubstitutions ("substitutions");
-    
-    
+        kMPScore                ("score"),
+        kMPLabels               ("labels"),
+        kMPOutNodeScore         ("node-scores"),
+        kMPOutSubstitutions     ("substitutions");
+  
     try {
         CheckArgumentType(parameters, ASSOCIATIVE_LIST, true);
         _AssociativeList * arguments = (_AssociativeList *)parameters;
@@ -1282,20 +1282,22 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
         hyFloat            total_score = 0.;
         _AssociativeList * inferred_labels          = new _AssociativeList;
         _AssociativeList * inferred_substitutions   = new _AssociativeList;
+        _AssociativeList * node_scores              = new _AssociativeList;
 
         
         
         while (node<long>* iterator = ni_pre.Next()) {
             long my_index = iterator->in_object;
             long label = has_labels.get (my_index);
-            
+          
+          
             if (!iterator->is_leaf () && label >= 0) { // labeled node
                 long my_label;
+                hyFloat best_score = 1.e100;
                 if (!iterator->parent || has_labels.get (iterator->parent->in_object) < 0) {
                     // either a root or not a part of the labeled tree
                     
                     long offset = my_index * unique_label_count;
-                    hyFloat best_score = 1.e100;
                     for (unsigned long k = 0UL; k < unique_label_count; k++) {
                         if (StoreIfLess (best_score, conditional_scores.get (0,offset + k))) {
                             my_label = k;
@@ -1307,12 +1309,15 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
                 } else {
                     // read off the label for this node based on the state of the parent
                     my_label     = conditional_labels.get (my_index * unique_label_count + has_labels.get (iterator->parent->in_object));
+                    best_score   = conditional_scores.get (my_index * unique_label_count + has_labels.get (iterator->parent->in_object),0);
                     
                 }
                 has_labels[my_index] = my_label;
                 iterator->in_object = store_values.get (iterator->in_object);
+              
                 inferred_labels->MStore (GetNodeName(iterator), (*(_String*)id2name.GetItem(my_label)));
                 iterator->in_object = my_index;
+                node_scores->MStore (GetNodeName (iterator), new _Constant (best_score), false);
             }
             
             if (label >= 0 && iterator->parent) {
@@ -1338,6 +1343,7 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
         result->MStore (kMPScore, new _Constant (total_score), false);
         result->MStore (kMPLabels, inferred_labels, false);
         result->MStore (kMPOutSubstitutions, inferred_substitutions, false);
+        result->MStore (kMPOutNodeScore, node_scores, false);
 
         //printf ("%s\n", _String ((_String*)conditional_scores.toStr(0)).get_str());
         

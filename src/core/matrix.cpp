@@ -3431,7 +3431,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       
                     hyFloat const * p = theData;
                     for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
-#ifdef _SLKP_USE_FMA3_INTRINSIC
+#ifdef _SLKP_USE_FMA3_INTRINSICS
                         __m256d sum1 = _mm256_fmadd_pd (_mm256_loadu_pd(p), col_buffer[0], _mm256_mul_pd(_mm256_loadu_pd(p+4UL), col_buffer[1]));
                         __m256d sum2 = _mm256_fmadd_pd (_mm256_loadu_pd(p+8UL), col_buffer[2],
                                                         _mm256_fmadd_pd(_mm256_loadu_pd(p+12UL), col_buffer[3],
@@ -3669,9 +3669,16 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       __m256d  value_op = _mm256_set1_pd (value);
                     
                       for (unsigned long i = 0UL; i < 60UL; i+=12UL) {
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+                        _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
+                        _mm256_storeu_pd (res+i+4, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i+4),_mm256_loadu_pd(res+i+4)));
+                        _mm256_storeu_pd (res+i+8, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i+8),_mm256_loadu_pd(res+i+8)));
+#else
                         _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
                         _mm256_storeu_pd (res+i+4, _mm256_add_pd (_mm256_loadu_pd(res+i+4),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i+4))));
                         _mm256_storeu_pd (res+i+8, _mm256_add_pd (_mm256_loadu_pd(res+i+8),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i+8))));
+
+#endif
                       }
   #else
                       for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
@@ -5448,7 +5455,7 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                       long k;
                       
                       for (k = 0; k < loopBound; k += 4) {
-#ifdef _SLKP_USE_FMA3_INTRINSIC
+#ifdef _SLKP_USE_FMA3_INTRINSICS
                           sum256 = _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k), sum256);
 #else
                           sum256 = _mm256_add_pd (_mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k)), sum256);
