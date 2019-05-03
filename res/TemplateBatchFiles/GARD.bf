@@ -183,7 +183,7 @@ io.ReportProgressMessageMD('GARD', 'baseline-fit', 'Fitting the baseline (single
 gard.startTime = Time(1);
 // Infer NJ tree, estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
 
-gard.baseLikelihoodInfo = gard.fitPartitionedModel (null, gard.model, null, null);
+gard.baseLikelihoodInfo = gard.fitPartitionedModel (null, gard.model, null, null, FALSE);
 gard.initialValues = gard.baseLikelihoodInfo;
 gard.globalParameterCount = utility.Array1D (estimators.fixSubsetOfEstimates(gard.initialValues, gard.initialValues[terms.global]));
 // Set branch lenth = null in intialValues (need to have a null entry for each partition so just setting a bunch of them here)
@@ -352,6 +352,7 @@ namespace gard {
             if (previousBest_cAIC - currentBest_cAIC < cAIC_improvementThreshold) {
                 generationsAtCurrentBest_cAIC += 1;
                 if (generationsAtCurrentBest_cAIC >= maxGenerationsAllowedAtStagnent_cAIC) {
+                    gard.GA.locallyOptimizeBestBreakPoints(currentBest_model, currentBest_cAIC);
                     terminationCondition = TRUE;
                 }
             } else {
@@ -402,23 +403,20 @@ namespace gard {
  * @name gard.fitPartitionedModel
  * Given a list of partitions, specified as increasing breakpoint locations,
    fit the specified model to said partitions, using neighbor joining trees on each partition
-   return LogL and IC values
-   // TODO: currently just returning the log_likelihood info and then calculating the cAIC from that...
-   // If we were to change the function to execute how it is documented we wouldn't have access to the additional info (trees, parameteres, etc.)
-   // Not sure if we will need that moving forward but we can revisit this.
+   return the likelihood information object
 
  * @param {Matrix} breakPoints : sorted, 0-based breakpoints, e.g.
     {{100,200}} -> 3 partitions : 0-100, 101-200, 201-end
  * @param {Dict} model : an instantiated model to be used for all partitions
  * @param {Dict/null} initialValues : if provided, use as initial values
+ * @param {String/null} saveToFile: if provided, save the resulting nexus file to this file location
+ * @param {Bolean} constrainToOneTopology: if provided, allow the branch lengths to vary across partitions but constrain the topology to the overall tree
 
- * @returns a {Dictionary} :
-    terms.fit.log_likelihood -> log likelihood
-    terms.fit.AICc -> small sample AIC
+ * @returns a {likelihood information object}
 
  */
 
-lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFile) {
+lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFile, constrainToOneTopology) {
 
     currentIndex = 0;
     currentStart = 0;
@@ -426,6 +424,10 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
     partCount = breakPointsCount + 1;
     lfComponents = {2 * (partCount), 1};
     trees = {};
+    
+    if (constrainToOneTopology == TRUE) {
+        overall_tree = trees.ExtractTreeInfo (tree.infer.NJ ( "gard.filter", null));
+    }
 
     for (p = 0; p < partCount; p += 1) {
         lastPartition = p >= breakPointsCount;
@@ -437,7 +439,11 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
         lfComponents [2*p] = "gard.filter.part_" + p;
         lfComponents [2*p+1] = "gard.tree.part_" + p;
         DataSetFilter ^(lfComponents[2*p]) = CreateFilter (^"gard.filter", 1, "" + currentStart + "-" + currentEnd);
-        trees[p] = trees.ExtractTreeInfo (tree.infer.NJ ( lfComponents[2*p], null));
+        if (constrainToOneTopology == TRUE) {
+            trees[p] = overall_tree;
+        } else {
+            trees[p] = trees.ExtractTreeInfo (tree.infer.NJ ( lfComponents[2*p], null));
+        }
         model.ApplyModelToTree(lfComponents[2 * p + 1], trees[p], {
             "default": model
         }, None);
@@ -481,7 +487,7 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
 
  */
 lfunction gard.obtainModel_cAIC (breakPoints, model, initialValues) {
-    fit = gard.fitPartitionedModel (breakPoints, model, initialValues, null);
+    fit = gard.fitPartitionedModel (breakPoints, model, initialValues, null, FALSE);
     c_AIC = math.GetIC (fit[^"terms.fit.log_likelihood"], fit[^"terms.parameters"] + ^"gard.globalParameterCount", ^"gard.numSites");
     //console.log ("\n" + breakPoints + "=>" + c_AIC);
     return c_AIC;
@@ -550,6 +556,7 @@ function gard.concludeAnalysis(bestOverallModel) {
     (gard.json)['timeElapsed'] = Time(1) - gard.startTime;
     (gard.json)['siteBreakPointSupport'] = gard.getSiteBreakPointSupport(gard.masterList, gard.bestOverall_cAIC_soFar);
     (gard.json)['cAIC_forNumberOfBreakPoints'] = gard.best_cAIC_forNumberOfBreakPoints;
+    (gard.json)['singleTreeAICc'] = gard.getSingleTree_cAIC(bestOverallModel);
     
     gard.setBestModelTreeInfoToJson(bestOverallModel);
     
@@ -571,7 +578,7 @@ function gard.setBestModelTreeInfoToJson(bestModel) {
     if (gard.bestModelNumberBreakPoints > 0) {
         // bestModel is a 1xn matrix with the the site index of the break points
         gard.bestModelBreakPoints = bestModel;
-        gard.bestModelMultiBreakpointLikelihoodInfo = gard.fitPartitionedModel(gard.bestModelBreakPoints, gard.model, gard.baseLikelihoodInfo, gard.lfFileLocation);
+        gard.bestModelMultiBreakpointLikelihoodInfo = gard.fitPartitionedModel(gard.bestModelBreakPoints, gard.model, gard.baseLikelihoodInfo, gard.lfFileLocation, FALSE);
         
         gard.bestModelTrees = {};
         gard.bestModelBps = {};
@@ -602,7 +609,13 @@ function gard.setBestModelTreeInfoToJson(bestModel) {
     return ;
 }
 
-function gard.getSiteBreakPointSupport(modelMasterList, best_cAIC_score) {
+lfunction gard.getSingleTree_cAIC(bestOverallModel) {
+    gard.singleTreeLikelihoodInfo = gard.fitPartitionedModel (bestOverallModel, ^"gard.model", ^"gard.initialValues", null, TRUE);
+    gard.singleTree_cAIC = math.GetIC (gard.singleTreeLikelihoodInfo[^"terms.fit.log_likelihood"], gard.singleTreeLikelihoodInfo[^"terms.parameters"] + ^"gard.globalParameterCount", ^"gard.numSites");
+    return gard.singleTree_cAIC;
+}
+
+lfunction gard.getSiteBreakPointSupport(modelMasterList, best_cAIC_score) {
     gard.masterListModels = utility.Keys(modelMasterList);
     gard.masterList_cAIC_values = utility.Values(modelMasterList);
     gard.numberOfModels = Columns(gard.masterList_cAIC_values);
@@ -626,8 +639,13 @@ function gard.getSiteBreakPointSupport(modelMasterList, best_cAIC_score) {
     
     gard.akaikeWeightScallingFactor = 1 / (Max(gard.siteAkaikeWeights)['value']);
     gard.normalizedSiteAkaikeWeights = {};
-    utility.ForEachPair (gard.siteAkaikeWeights, "_key_", "_value_",
-        "gard.normalizedSiteAkaikeWeights[_key_] = _value_ * gard.akaikeWeightScallingFactor;");
+
+    gard.potentialBreakPointList = utility.Keys(gard.siteAkaikeWeights);
+    gard.numberOfPotentialBreakPoints = Abs(gard.siteAkaikeWeights);
+    for(breakPointIndex=0; breakPointIndex<gard.numberOfPotentialBreakPoints; breakPointIndex+=1) {
+        siteIndex = gard.potentialBreakPointList[breakPointIndex];
+        gard.normalizedSiteAkaikeWeights[siteIndex] = gard.siteAkaikeWeights[siteIndex]*gard.akaikeWeightScallingFactor;
+    }
     
     return gard.normalizedSiteAkaikeWeights;
 }
@@ -882,6 +900,10 @@ lfunction gard.GA.getMultiBreakPointStatusString(evaluatedModels, variableSiteMa
 
 lfunction gard.GA.convertModelMatrixToCommaSeperatedString(matrix){
     return Join (", ", matrix);
+}
+
+lfunction gard.GA.locallyOptimizeBestBreakPoints(currentBest_model, currentBest_cAIC) {
+
 }
 
 
