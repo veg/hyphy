@@ -295,7 +295,8 @@ namespace gard {
     if(populationSize < mpi.NodeCount()) {
         populationSize = mpi.NodeCount();
     }
-    mutationRate = 0.75; // the GARD paper said "15% of randomly selected bits were toggled"...
+    mutationRate = 0.8; // the GARD paper said "15% of randomly selected bits were toggled"...
+    rateOfMutationsTharAreSmallShifts = 0.4; // some mutations are a new random break point; some are small shifts of the break point to an adjacent location.
     maxFailedAttemptsToMakeNewModel = 5;
     cAIC_diversityThreshold = 0.001;
     cAIC_improvementThreshold = 0.1; // I think this was basically 0 in the gard paper
@@ -334,7 +335,7 @@ namespace gard {
                 generationsNoNewModelsAdded = 0;
             }
             if ( (math.minNormalizedRange(selectedModels) < cAIC_diversityThreshold) || (generationsNoNewModelsAdded > maxGenerationsAllowedWithNoNewModelsAdded) ) {
-                parentModels = gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints, mutationRate);
+                parentModels = gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints, mutationRate, rateOfMutationsTharAreSmallShifts);
                 if (Abs(parentModels) == 1) {
                     parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints);
                 }
@@ -352,7 +353,6 @@ namespace gard {
             if (previousBest_cAIC - currentBest_cAIC < cAIC_improvementThreshold) {
                 generationsAtCurrentBest_cAIC += 1;
                 if (generationsAtCurrentBest_cAIC >= maxGenerationsAllowedAtStagnent_cAIC) {
-                    gard.GA.locallyOptimizeBestBreakPoints(currentBest_model, currentBest_cAIC);
                     terminationCondition = TRUE;
                 }
             } else {
@@ -835,9 +835,11 @@ lfunction gard.GA.modelSetsAreTheSame(modelSet1, modelSet2) {
  // TODO: decide if we want some logic in here to more meaningfully mutate.
  * @param {Dictonary} parentModels
  * @param {Number} numberOfPotentialBreakPoints
+ * @param {Number} mutationRate
+ * @param {Number} rateOfMutationsThatAreSmallShifts
  * @returns a {Dictonary} the new generation of models
  */
-lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints, mutationRate) {
+lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints, mutationRate, rateOfMutationsThatAreSmallShifts) {
     modelIds = utility.Keys(parentModels);
     populationSize = Columns(modelIds);
     firstModel = gard.Helper.convertMatrixStringToMatrix(modelIds[0]);
@@ -853,12 +855,26 @@ lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, 
             parentModel = gard.Helper.convertMatrixStringToMatrix(modelIds[i]);
             breakPoints = {1,numberOfBreakPoints};
             for(breakPointIndex=0; breakPointIndex<numberOfBreakPoints; breakPointIndex=breakPointIndex+1) {
-                if(Random(0,1) < mutationRate) {
+
+                if(Random(0,1) < mutationRate) { // keep the break point the same
                     breakPoints[breakPointIndex] = parentModel[breakPointIndex];
                 } else {
-                    breakPoints[breakPointIndex] = (^"gard.variableSiteMap")[Random(0,numberOfPotentialBreakPoints)$1];
+
+                    if(Random(0,1) < rateOfMutationsThatAreSmallShifts) { // move the break point by a random small amount
+                        distanceOfStep = random.poisson(2);
+                        if (random.TRUE_or_FALSE()) { // randomly decide if the break point moves right or left
+                            distanceOfStep = - distanceOfStep;
+                        }
+                        variableSiteMapIndexOfParentBreakPoint = utility.Find(^"gard.variableSiteMap", parentModel[breakPointIndex]);
+                        newBreakPoint = (^"gard.variableSiteMap")[variableSiteMapIndexOfParentBreakPoint + distanceOfStep];
+                        breakPoints[breakPointIndex] = newBreakPoint;
+                    } else { // select a completely new random break point
+                        breakPoints[breakPointIndex] = (^"gard.variableSiteMap")[Random(0,numberOfPotentialBreakPoints)$1];
+                    }
+
                 }
             }
+
             if ((gard.modelIsNotInMasterList(^"gard.masterList", breakPoints)) && (gard.validatePartititon(breakPoints, ^"gard.minPartitionSize", ^"gard.numSites")) ) {
                 modelIsValid = TRUE;
             } else {
@@ -870,6 +886,7 @@ lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, 
         if (modelIsValid) {
             nextGenOfModels[breakPoints] = ^"math.Infinity";
         }
+
     }
 
     // Add the most fit model from the previous set
@@ -900,10 +917,6 @@ lfunction gard.GA.getMultiBreakPointStatusString(evaluatedModels, variableSiteMa
 
 lfunction gard.GA.convertModelMatrixToCommaSeperatedString(matrix){
     return Join (", ", matrix);
-}
-
-lfunction gard.GA.locallyOptimizeBestBreakPoints(currentBest_model, currentBest_cAIC) {
-
 }
 
 
