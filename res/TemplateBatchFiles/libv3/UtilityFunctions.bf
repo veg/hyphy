@@ -637,18 +637,13 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
     io.CheckAssertion ("!utility.ForEachPair.warn_non_reentrant", "utility.ForEachPair is non re-entrant");
     utility.ForEachPair.warn_non_reentrant = TRUE;
 
-    Eval ("`key_name` = None");
-    Eval ("`value_name` = None");
-
+    ExecuteCommands ("function  utility.ForEachPair.CB (`key_name`, `value_name`) {`transform`}", enclosing_namespace);
 
     if (Type (object) == "AssociativeList") {
         utility.ForEachPair.keys = Rows (object);
-        //^(key_name) := utility.ForEachPair.keys[utility.ForEachPair.k];
-        //^(value_name) := object [utility.ForEachPair.keys[utility.ForEachPair.k]];
-        ^(value_name) := object [^(key_name)];
-        for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {
-            ^(key_name) = utility.ForEachPair.keys[utility.ForEachPair.k];
-            ExecuteCommands (transform, enclosing_namespace);
+         for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {            //ExecuteCommands (transform, enclosing_namespace);
+            utility.ForEachPair.key = utility.ForEachPair.keys[utility.ForEachPair.k];
+            Call ("utility.ForEachPair.CB",utility.ForEachPair.key , object [utility.ForEachPair.key]);
         }
     } else {
         if (Type (object) == "Matrix") {
@@ -657,13 +652,13 @@ function utility.ForEachPair(object, key_name, value_name, transform) {
 
             if (utility.ForEachPair.rows && utility.ForEachPair.columns) {
 
-                ^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
-                ^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
-
+                //^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
+                //^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
+                utility.ForEachPair.key = {{utility.ForEachPair.r,utility.ForEachPair.c}};
                 for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
                     for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
-
-                        ExecuteCommands (transform, enclosing_namespace);
+                        //ExecuteCommands (transform, enclosing_namespace);
+                        Call ("utility.ForEachPair.CB",utility.ForEachPair.key , object [utility.ForEachPair.r][utility.ForEachPair.c]);
 
                     }
                 }

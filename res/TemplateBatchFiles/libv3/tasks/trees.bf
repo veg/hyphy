@@ -696,7 +696,7 @@ lfunction trees.ConjunctionLabel (tree_id, given_labels) {
  * @param 	{String} tree ID
  * @param 	{Dict/String} 	 node_name -> label OR (if string) (node_name) => name + annotation
  * @param {String} a pair of characters to enclose the label in
- * @param {Bool} whether or not to include branch lentghs
+ * @param {Dict/String} node_name -> length OR (if string) (node_name) => length annotation
  * @return {String} annotated string
  */
 

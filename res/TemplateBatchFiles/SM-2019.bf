@@ -111,18 +111,20 @@ sm.shuffling_probability = Max (0.2, 10 / (BranchCount (T) + TipCount (T)));
 for (sm.k = 0; sm.k < sm.replicates ; ) {
     sm.reshuffled_tree = "" + Random (T, sm.bootstrap_weighting);
     Topology SimT = sm.reshuffled_tree;
+    
     sm.replicate_scores = Max (SimT, {"labels": sm.node_labels});
     sm.resampled_distribution[sm.k][1] = sm.replicate_scores ["score"];
     sm.replicate_scores_standard = Max (T, {"labels": Random (sm.node_labels,0)});
     sm.resampled_distribution[sm.k][0] = sm.replicate_scores_standard["score"];
     sm.replicate_scores = sm.replicate_scores["node-scores"];
 
+    
     utility.ForEachPair (sm.replicate_scores_standard["node-scores"], "_node_", "_value_", '
          (sm.node_scores_standard_replicates [_node_])[sm.k] = _value_;
          (sm.node_scores_replicates [_node_])[sm.k]         = (sm.replicate_scores[_node_]);
      '
     );
-
+    
     if ( sm.resampled_distribution[sm.k][0] <= sm.score) {
         sm.resampled_p_value += 1;
     }
@@ -227,6 +229,19 @@ utility.ForEachPair (sm.structured_node.p, "_node_", "_pvalue_",
 '
 );
 
+function sm.label_with_standard_p_values (node) {
+    if (sm.standard_node.p / node) {
+        return "" + sm.standard_node.p[node];
+    }
+    return node;
+}   
+
+function sm.label_with_p_values (node) {
+    if (sm.standard_node.p / node) {
+        return "" +sm.structured_node.p[node];
+    }
+    return node;
+}  
 
 sm.json_path = sm.tree[terms.data.file] + ".json";
 io.ReportProgressMessageMD('SM',  'file', 'Saving detailed report as a JSON file to \`' + sm.json_path + '\`');
@@ -234,6 +249,8 @@ io.ReportProgressMessageMD('SM',  'file', 'Saving detailed report as a JSON file
 sm.json = {
     'partitions' : sm.partitions_with_labels,
     'tree' : sm.tree,
+    'tree-p-structured' : tree.Annotate ("T", "sm.label_with_p_values", "[]", TRUE),
+    'tree-p-panmictic' : tree.Annotate ("T", "sm.label_with_standard_p_values", "[]", TRUE),
     'leaf-count' : sm.leaf_count,
     'partition-counts' : sm.partition_counts,
     'replicates' : sm.replicates,
