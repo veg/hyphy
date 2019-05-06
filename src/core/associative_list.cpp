@@ -437,10 +437,10 @@ void _AssociativeList::MStore (HBLObjectRef p, HBLObjectRef inObject, bool repl,
     } else { // insert new
         if (repl) {
             BaseRef br = inObject->makeDynamic();
-            avl.Insert (index->get_str().makeDynamic(),(long)br,false);
+            avl.Insert (index->toStr(),(long)br,false);
             //br->nInstances--;
         } else {
-            avl.Insert (index->get_str().makeDynamic(),(long)inObject,false);
+            avl.Insert (index->toStr(),(long)inObject,false);
         }
     }
 }

@@ -5,6 +5,8 @@ LoadFunctionLibrary ("libv3/convenience/math.bf");
 LoadFunctionLibrary ("libv3/IOFunctions.bf");
 LoadFunctionLibrary ("libv3/UtilityFunctions.bf");
 
+//#profile START;
+
 sm.analysis_description = {terms.io.info : "This analysis implements canonical and modified versions of the Slatkin-Maddison
 phylogeny based test for population segregation. The test estimates the minimum number of migration events using maximum
 parsimony, and then evaluating whether or not this number is lower than expected in a panmictic or unstructured population using
@@ -111,20 +113,20 @@ sm.shuffling_probability = Max (0.2, 10 / (BranchCount (T) + TipCount (T)));
 for (sm.k = 0; sm.k < sm.replicates ; ) {
     sm.reshuffled_tree = "" + Random (T, sm.bootstrap_weighting);
     Topology SimT = sm.reshuffled_tree;
-    
+
     sm.replicate_scores = Max (SimT, {"labels": sm.node_labels});
     sm.resampled_distribution[sm.k][1] = sm.replicate_scores ["score"];
     sm.replicate_scores_standard = Max (T, {"labels": Random (sm.node_labels,0)});
     sm.resampled_distribution[sm.k][0] = sm.replicate_scores_standard["score"];
     sm.replicate_scores = sm.replicate_scores["node-scores"];
 
-    
+
     utility.ForEachPair (sm.replicate_scores_standard["node-scores"], "_node_", "_value_", '
          (sm.node_scores_standard_replicates [_node_])[sm.k] = _value_;
          (sm.node_scores_replicates [_node_])[sm.k]         = (sm.replicate_scores[_node_]);
      '
     );
-    
+
     if ( sm.resampled_distribution[sm.k][0] <= sm.score) {
         sm.resampled_p_value += 1;
     }
@@ -234,14 +236,14 @@ function sm.label_with_standard_p_values (node) {
         return "" + sm.standard_node.p[node];
     }
     return node;
-}   
+}
 
 function sm.label_with_p_values (node) {
     if (sm.standard_node.p / node) {
         return "" +sm.structured_node.p[node];
     }
     return node;
-}  
+}
 
 sm.json_path = sm.tree[terms.data.file] + ".json";
 io.ReportProgressMessageMD('SM',  'file', 'Saving detailed report as a JSON file to \`' + sm.json_path + '\`');
@@ -274,4 +276,26 @@ sm.json = {
 };
 
 io.SpoolJSON (sm.json, sm.json_path);
+
+/*#profile _hyphy_profile_dump;
+
+
+
+stats  			= _hyphy_profile_dump["STATS"];
+_profile_summer = ({1,Rows(stats)}["1"]) * stats;
+_instructions   = _hyphy_profile_dump["INSTRUCTION"];
+_indices	    = _hyphy_profile_dump["INSTRUCTION INDEX"];
+
+fprintf (stdout, "\nTotal run time (seconds)      : ", Format(_profile_summer[1],15,6),
+                 "\nTotal number of steps         : ", Format(_profile_summer[0],15,0), "\n\n");
+
+to_sort        =  stats["-_MATRIX_ELEMENT_VALUE_*_MATRIX_ELEMENT_COLUMN_+(_MATRIX_ELEMENT_COLUMN_==0)*_MATRIX_ELEMENT_ROW_"] % 1;
+
+for (k=0; k<Columns(_instructions); k=k+1)
+{
+    k2 = to_sort[k][0];
+    fprintf (stdout, Format (_indices[k2],6,0), " : ", _instructions[k2], "\n\tCall count: ", stats[k2][0],
+                                                   "\n\tTime (seconds): ", stats[k2][1], "\n");
+}*/
+
 return sm.json;

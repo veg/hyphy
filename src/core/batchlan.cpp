@@ -1378,14 +1378,12 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                     formulaeToConvert,
                     parseCodes;
   
-  
     _AVLList        varList (&varListAux);
 
-    long            stackDepth  = 0;
-
+    long            stackDepth  = 0L;
     bool            status      = true;
-
-    for (unsigned long k = 0; k<lLength && status; k++) {
+    unsigned long   k = 0UL;
+    for (; k<lLength && status; k++) {
         _ElementaryCommand * aStatement = (_ElementaryCommand*)(*this)(k);
         switch (aStatement->code) {
         case 0: {
@@ -1414,7 +1412,6 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                             _Operation * last = f->GetIthTerm(assignment_length-1);
                             if (! (last->TheCode() == HY_OP_CODE_MCOORD && last->GetNoTerms() == 2)) throw 0;
 
-
                             f2->GetList() << f->GetList();
                             f->Clear();
 
@@ -1428,11 +1425,10 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                           status = false;
                           break;
                         }
+                      
                         aStatement->simpleParameters<<parseCode;
                         aStatement->simpleParameters<<(long)f;
                         aStatement->simpleParameters<<(long)f2;
-
-
                         aStatement->simpleParameters<<fpc.assignmentRefID();
 
 
@@ -1514,7 +1510,13 @@ bool        _ExecutionList::TryToMakeSimple     (void)
             }
             //printf ("\n%ld\n",  cli->storeResults.lData[ri]);
         }
-        cli->varList.Duplicate(&varList);
+        cli->varList.Duplicate(&varListAux);
+    } else {
+        // clean up partially converted statements
+      for (unsigned long k2 = 0UL; k2 < k; k2++) {
+        GetIthCommand(k2)->simpleParameters.Pop(3UL);
+      
+      }
     }
 
     return status;
@@ -1674,6 +1676,9 @@ void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
 
 void  _ExecutionList::BuildExecuteCommandInstruction (_List * pieces, long code) {
 
+  const _String kExecuteCompiled ("compiled"),
+                kExecuteEncloseingNamespace ("enclosing_namespace");
+  
   _ElementaryCommand * run_source = new _ElementaryCommand (code);
   run_source->parameters<<pieces->GetItem(0);
   
@@ -1684,10 +1689,10 @@ void  _ExecutionList::BuildExecuteCommandInstruction (_List * pieces, long code)
   }
   
   if (pieces->countitems() > 1UL) {
-    if (*(_String*)pieces->GetItem (1UL) == _String("compiled")) {
+    if (*(_String*)pieces->GetItem (1UL) == kExecuteCompiled) {
       run_source->simpleParameters << 1;
     } else {
-      if (*(_String*)pieces->GetItem (1UL) == _String("enclosing_namespace")) {
+      if (*(_String*)pieces->GetItem (1UL) == kExecuteEncloseingNamespace) {
         run_source->parameters.Delete(1UL);
         run_source->parameters < new _String;
       } else {

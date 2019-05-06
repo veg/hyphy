@@ -533,10 +533,11 @@ class _SimpleList:public BaseObj {
     
         /**
         * Retrive the last value and shorted the list by 1
-        * Example: SimpleList(1,3,5,7).Pop() = 7 
+        * Example: SimpleList(1,3,5,7).Pop() = 7
+        * @param discard; if provided, discard this many items off the end of the list before popping
         * @return Return last value from the list
         */
-        long Pop();
+        long Pop(unsigned long discard = 0UL);
 
         /**
         * Populate a Simple List with integers incrementally.

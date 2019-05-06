@@ -1225,9 +1225,9 @@ void  _SimpleList::PermuteWithReplacement (long blockLength)
 
 }
 
-long _SimpleList::Pop (void) {
-    if (lLength > 0L) {
-        return lData[--lLength];
+long _SimpleList::Pop (unsigned long discard) {
+    if (lLength > discard) {
+        return lData[lLength -= (discard+1UL)];
     }
     return 0L;
 }
