@@ -586,10 +586,10 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
   if (numberOfTerms > 1) {
     _List arguments;
 
-    for (long k = numberOfTerms-1; k >= 1; k --) {
-      arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
+    for (long k = 1; k < numberOfTerms; k ++) {
+      arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength - numberOfTerms + k]);
     }
-
+    
     temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
     theScrap.theStack.lLength -= (numberOfTerms);
 
@@ -599,7 +599,6 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
   }
 
   DeleteObject (arg0);
-
 
   if (temp) {
     theScrap.theStack.Place(temp);
