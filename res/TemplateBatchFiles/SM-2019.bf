@@ -5,7 +5,7 @@ LoadFunctionLibrary ("libv3/convenience/math.bf");
 LoadFunctionLibrary ("libv3/IOFunctions.bf");
 LoadFunctionLibrary ("libv3/UtilityFunctions.bf");
 
-#profile START;
+//#profile START;
 
 sm.analysis_description = {terms.io.info : "This analysis implements canonical and modified versions of the Slatkin-Maddison
 phylogeny based test for population segregation. The test estimates the minimum number of migration events using maximum
@@ -297,7 +297,7 @@ sm.json = {
 
 io.SpoolJSON (sm.json, sm.json_path);
 
-#profile _hyphy_profile_dump;
+/*#profile _hyphy_profile_dump;
 
 
 
@@ -317,6 +317,7 @@ for (k=0; k<Columns(_instructions); k=k+1)
     fprintf (stdout, Format (_indices[k2],6,0), " : ", _instructions[k2], "\n\tCall count: ", stats[k2][0],
                                                    "\n\tTime (seconds): ", stats[k2][1], "\n");
 }
+*/
 
 sm.json_file = sm.tree[terms.data.file] + "_SM.json";
 
