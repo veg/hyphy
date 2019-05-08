@@ -959,7 +959,12 @@ lfunction tree.infer.NJ (datafilter, distances) {
             distances = distances.nucleotide.tn93 (datafilter, null, null);
             flush_distances = TRUE;
         } else {
-            io.ReportAnExecutionError ("No default distance available for filter type of `type`");
+            if (type == ^"terms.amino_acid" || type == ^"terms.binary") {
+                distances = distances.p_distance (datafilter, null);
+                flush_distances = TRUE;
+            } else {
+                io.ReportAnExecutionError ("No default distance available for filter type of `type`");
+            }
         }
     }
 
