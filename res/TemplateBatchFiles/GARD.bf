@@ -12,7 +12,7 @@
         2a. Evaluation of single break points with brute force
             2a1. Loop over every valid single break point 
             2a2. Report the status of the sinlge break point analysis
-            2a3. Evaluate if the analyis should continue to the multi break point stage
+            2a3. Evaluate if the best single breakpoint is the overall best model
         2b. Evaluation of multiple break points with genetic algorithm
             GA.1: Setup global parameters
             GA.2: Loop over increasing number of break points
@@ -274,7 +274,7 @@ namespace gard {
     io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   c-AIC  = " + singleBreakPointBest_cAIC));
 }
 
-// 2a3. Evaluate if the analyis should continue to the multi break point stage
+// 2a3. Evaluate if the best single breakpoint is the overall best model
 if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
     gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
     gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
@@ -284,8 +284,7 @@ if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
                               }
                         };
 } else {
-    gard.concludeAnalysis(gard.bestOverallModelSoFar);
-    return 0;
+    gard.bestOverallModelSoFar = null;
 }
 
 
@@ -321,7 +320,6 @@ namespace gard {
         terminationCondition = FALSE;
         generation = 0;
         while(terminationCondition == FALSE) {
-
             // GA.2.b.1 Produce the next generation of models with recombination. 
             childModels = gard.GA.recombineModels(parentModels, populationSize);
             
@@ -497,7 +495,6 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
 lfunction gard.obtainModel_cAIC (breakPoints, model, initialValues) {
     fit = gard.fitPartitionedModel (breakPoints, model, initialValues, null, FALSE);
     c_AIC = math.GetIC (fit[^"terms.fit.log_likelihood"], fit[^"terms.parameters"] + ^"gard.globalParameterCount", ^"gard.numSites");
-    //console.log ("\n" + breakPoints + "=>" + c_AIC);
     return c_AIC;
 }
 
@@ -574,7 +571,6 @@ function gard.concludeAnalysis(bestOverallModel) {
     
     io.SpoolJSON (gard.json, gard.jsonFileLocation);
 
-    console.log('The cAIC score was not improved by adding additional break points; the anlysis is complete.');
 }
 
 function gard.setBestModelTreeInfoToJson(bestModel) {
@@ -789,7 +785,6 @@ function gard.GA.evaluateModels (models) {
  * @name gard.GA.storeMultiBreakPointModelResults
  // The call back function passed to mpi.QueueJob in the gard.GA.evaluateModels function
  * @param {Dictonary} evaluatedModels: the set of models at the end of the analysis
- * @returns a {String} the markdown string to log to console
  */
 function gard.GA.storeMultiBreakPointModelResults(node, result, arguments) {
     result = Eval (result);
