@@ -487,7 +487,12 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
         if (!lastPartition) {
             currentEnd = breakPoints[p];
         } else {
-            currentEnd = ^"gard.filter.sites" - 1;
+            if (^"gard.dataType" == ^"terms.gard.codon") {
+                currentEnd = ^"gard.filter.sites" * 3;
+            } else {
+                currentEnd = ^"gard.filter.sites";
+            }
+            currentEnd = currentEnd - 1;
         }
         lfComponents [2*p] = "gard.filter.part_" + p;
         lfComponents [2*p+1] = "gard.tree.part_" + p;
