@@ -162,7 +162,7 @@ protected:
 
 TEST_F(AVLListTest,FindTest){
     //AVL List always takes a pointer to a SimpleList
-    //Keeps going down through right children until lData is 0
+    //Keeps going down through right children until list_data is 0
     
     long info; 
     _SimpleList sl; 
@@ -180,7 +180,7 @@ TEST_F(AVLListTest,FindTest){
 
 TEST_F(AVLListTest,FindLongTest){
     //AVL List always takes a pointer to a SimpleList
-    //Keeps going down through right children until lData is 0
+    //Keeps going down through right children until list_data is 0
     
     long info; 
     _SimpleList sl; 
@@ -197,7 +197,7 @@ TEST_F(AVLListTest,FindLongTest){
 
 TEST_F(AVLListTest,FindBestTest){
     //AVL List always takes a pointer to a SimpleList
-    //Keeps going down through right children until lData is 0
+    //Keeps going down through right children until list_data is 0
     
     long info; 
     _SimpleList sl; 
@@ -215,7 +215,7 @@ TEST_F(AVLListTest,FindBestTest){
 TEST_F(AVLListTest,NextTest){
 
     //AVL List always takes a pointer to a SimpleList
-    //Keeps going down through right children until lData is 0
+    //Keeps going down through right children until list_data is 0
     long info; 
     _SimpleList sl; 
     _SimpleList hist;
@@ -234,7 +234,7 @@ TEST_F(AVLListTest,NextTest){
 TEST_F(AVLListTest,PrevTest){
 
     //AVL List always takes a pointer to a SimpleList
-    //Keeps going down through right children until lData is 0
+    //Keeps going down through right children until list_data is 0
     long info; 
     _SimpleList sl; 
     _SimpleList hist;
@@ -252,7 +252,7 @@ TEST_F(AVLListTest,PrevTest){
 
 TEST_F(AVLListTest,FirstTest){
     //AVL List always takes a pointer to a SimpleList
-    //Keeps going down through left children until lData is 0
+    //Keeps going down through left children until list_data is 0
 
     long index; 
     _SimpleList sl; 
@@ -270,7 +270,7 @@ TEST_F(AVLListTest,FirstTest){
 TEST_F(AVLListTest,LastTest){
 
     //AVL List always takes a pointer to a SimpleList
-    //Keeps going down through left children until lData is 0
+    //Keeps going down through left children until list_data is 0
     long index; 
     _SimpleList sl; 
     _AVLList al(&sl);
@@ -285,7 +285,7 @@ TEST_F(AVLListTest,LastTest){
 
 TEST_F(AVLListTest,GetByIndexTest){
     //AVL List always takes a pointer to a SimpleList
-    //Keeps going down through right children until lData is 0
+    //Keeps going down through right children until list_data is 0
     long info; 
     _SimpleList sl; 
 
@@ -413,10 +413,10 @@ TEST_F(AVLListTest,InsertTest){
     }
 
     al.Insert((BaseRef)13,4,false);
-    EXPECT_EQ(13,al.dataList->lData[11]);
+    EXPECT_EQ(13,al.dataList->list_data[11]);
     
     al.Insert((BaseRef)13,4,false);
-    EXPECT_FALSE(al.dataList->lData[12]==13);
+    EXPECT_FALSE(al.dataList->list_data[12]==13);
 }
 
 TEST_F(AVLListTest,InsertDataTest){
@@ -457,7 +457,7 @@ TEST_F(AVLListTest,DeleteTest){
     }
 
     al.Delete((BaseRef)1,false);
-    EXPECT_EQ(0, al.dataList->lData[1]);
+    EXPECT_EQ(0, al.dataList->list_data[1]);
 }
 
 TEST_F(AVLListTest,countitemsTest){
@@ -561,7 +561,7 @@ TEST_F(AVLListXTest,PopulateFromListTest){
     _List result_list = test_string.Tokenize(sub_string);
     
     alx.PopulateFromList(result_list);
-    _String* return_str = (_String*)alx.dataList->lData[2];
+    _String* return_str = (_String*)alx.dataList->list_data[2];
     EXPECT_STREQ("hyphy", return_str->getStr());
 }
 

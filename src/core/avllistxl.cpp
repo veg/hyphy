@@ -152,16 +152,16 @@ long  _AVLListXL::InsertData (BaseRef b, long xl, bool cp)
     BaseRef x = (BaseRef)xl;
 
     if (w>=0) {
-        n = emptySlots.lData[w];
+        n = emptySlots.list_data[w];
         emptySlots.Delete (w);
-        leftChild.lData[n] = -1;
-        rightChild.lData[n] = -1;
-        balanceFactor.lData[n] = 0;
-        ((BaseRef*)xtraD.lData)[n] = x;
+        leftChild.list_data[n] = -1;
+        rightChild.list_data[n] = -1;
+        balanceFactor.list_data[n] = 0;
+        ((BaseRef*)xtraD.list_data)[n] = x;
         if (cp) {
             x->AddAReference();
         }
-        ((BaseRef*)dataList->lData)[n] = b;
+        ((BaseRef*)dataList->list_data)[n] = b;
     } else {
         n = dataList->lLength;
         dataList->InsertElement (b,-1,false,false);
@@ -180,9 +180,8 @@ long  _AVLListXL::InsertData (BaseRef b, long xl, bool cp)
 
 //______________________________________________________________
 
-void _AVLListXL::DeleteXtra (long i)
-{
-    DeleteObject (((BaseRef*)xtraD.lData)[i]);
-    (((BaseRef*)xtraD.lData)[i]) = nil;
+void _AVLListXL::DeleteXtra (long i) {
+    DeleteObject (((BaseRef*)xtraD.list_data)[i]);
+    (((BaseRef*)xtraD.list_data)[i]) = nil;
 }
 

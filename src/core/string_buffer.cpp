@@ -45,6 +45,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 using namespace hy_global;
 
 #include <string.h> // for strlen
+#include <utility>  // for std::move
 
 
 /*
@@ -138,6 +139,12 @@ _StringBuffer::_StringBuffer(const _String& buffer) : _String () {
 }
 
 //=============================================================
+
+_StringBuffer::_StringBuffer(_String&& buffer) : _String (std::move (buffer)) {
+    sa_length = s_length;
+}
+
+//=============================================================
 _StringBuffer::_StringBuffer(const _StringBuffer &s): _String () {
   this->Initialize();
   this->Duplicate (&s);
@@ -167,6 +174,20 @@ BaseRef _StringBuffer::makeDynamic (void) const {
   _StringBuffer * r = new _StringBuffer;
   r->Duplicate(this);
   return r;
+}
+
+//=============================================================
+
+
+_StringBuffer& _StringBuffer::operator = (_StringBuffer && rhs) {
+    if (&rhs != this) {
+        Clear();
+        s_data = rhs.s_data;
+        s_length = rhs.s_length;
+        sa_length = rhs.sa_length;
+        rhs._String::Initialize();
+    }
+    return *this;
 }
 
 /*
@@ -428,7 +449,7 @@ void _StringBuffer::AppendAnAssignmentToBuffer(_String const* id, _String *value
 void _StringBuffer::AppendVariableValueAVL (_String const* id, _SimpleList const& var_numbers) {
   
   for (unsigned long k=0UL; k<var_numbers.countitems(); k++) {
-    _Variable *tiv = LocateVar(var_numbers.lData[k]);
+    _Variable *tiv = LocateVar(var_numbers.list_data[k]);
     if (tiv) {
       (*this) << id
               << "[\""

@@ -215,8 +215,7 @@ template <class node_data> void node_count_descendants (node<node_data>* n) {
 template <class node_data> bool node<node_data>::compare_subtree(node<node_data>* compareTo)
 {
   int nNodes = get_num_nodes();
-  if (nNodes==compareTo->get_num_nodes())
-  {
+  if (nNodes==compareTo->get_num_nodes()) {
     for (int i=1; i<=nNodes; i++)
       if (!go_down(i)->compare_subtree (compareTo->go_down(i)))
         return false;
@@ -339,45 +338,51 @@ node<node_data>* NodeTraverser  (node<node_data>* root)
 
 
 template <class node_data> void node<node_data>::replace_node(node<node_data>* existing, node<node_data>* newNode){
-  for (long j = 0; nodes.length; j++)
-  {
-    if (nodes.data[j] == existing)
-    {
-      nodes.data[j] = newNode;
-      break;
+    if (one == existing) {
+        one = newNode;
+        return;
+    } else {
+        if (two == existing) {
+            two == newNode;
+            return;
+        }
     }
-  }
+    for (long j = 0; nodes.length; j++) {
+        if (nodes.data[j] == existing) {
+          nodes.data[j] = newNode;
+          break;
+        }
+    }
 }
 
   //-----------------------------------Set Number 1----------------
-template <class node_data> int node<node_data>::get_child_num()
-{
-	 int num_siblings;
-	 if (parent != NULL)
-   {
-     num_siblings = (*parent).get_num_nodes();
-     for (int i=1; i<num_siblings+1; i++)
-     {
-       if ((*parent).get_node(i) == this) return (i);
-     }
-   }
- 	return -1;
+template <class node_data> int node<node_data>::get_child_num() {
+    int num_siblings;
+    if (parent) {
+        if (this == parent->one) return 1;
+        if (this == parent->two) return 2;
+        num_siblings = parent->get_num_nodes();
+        for (int i=1; i<num_siblings+1; i++) {
+            if ((*parent).get_node(i) == this) return (i+2);
+        }
+    }
+    return -1;
 }
   //----------------------------------end no 1--------------------
   //---------Public set no 2-------------------------------------
 
   //--Bool (T/F) responses to potential tree moves
-template <class node_data> int node<node_data>::down(int index)
+/*template <class node_data> int node<node_data>::down(int index)
 {
   if ((index > 0) && (index <= get_num_nodes())){
     return 1;
   }
   else return 0;
-} //Truth of decent
+} //Truth of decent*/
 
   //-------------------------------------------------------------
 
-template <class node_data> int node<node_data>::next(){
+/*template <class node_data> int node<node_data>::next(){
   
   if (get_parent() == NULL) return 0;
   if (get_child_num() < (get_parent())->get_num_nodes()) return 1;
@@ -386,10 +391,9 @@ template <class node_data> int node<node_data>::next(){
 
   //-------------------------------------------------------------
 template <class node_data> int node<node_data>::up(){
-  
   if (get_child_num() > 0) return 1;
   else return 0;
-}
+}*/
 
   //--------MOVERS MOVERS through the tree
 template <class node_data> node<node_data>* node<node_data>::go_up(){
@@ -398,25 +402,23 @@ template <class node_data> node<node_data>* node<node_data>::go_up(){
 
   //-------------------------------------------------------------
 template <class node_data> node<node_data>* node<node_data>::go_next(){
-  int marker1,marker2;
-  marker1 = get_child_num();
-  if (get_parent() == NULL) {
+    
+    int my_index = get_child_num();
+    if (my_index > 0) {
+        if (my_index < parent->get_num_nodes()) {
+            return parent->get_node (my_index + 1);
+        }
+    }
     return NULL;
-  }
-  marker2 = (get_parent())->get_num_nodes();
-  if (marker1 < marker2) return ((get_parent())->get_node(marker1+1));
-  return NULL;
 }
 
   //-------------------------------------------------------------
 template <class node_data> node<node_data>* node<node_data>::go_previous(){
-  int marker1;
-  if (get_parent() == NULL) {
+    int my_index = get_child_num();
+    if (my_index > 1) {
+        return parent->get_node (my_index - 1);
+    }
     return NULL;
-  }
-  marker1 = get_child_num();
-  if (marker1 > 1) return ((get_parent())->get_node(marker1-1));
-  return NULL;
 }
 
 

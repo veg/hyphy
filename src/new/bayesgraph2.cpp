@@ -106,9 +106,9 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
                 // report posterior Dirichlet PDFs
                 for (long j = 0; j < n_ij.GetHDim(); j++) {
                     rec << "\"Random({{";
-                    for (long k = 0; k < num_levels.lData[node]; k++) { // k indexes child node states
+                    for (long k = 0; k < num_levels.list_data[node]; k++) { // k indexes child node states
                         rec << _String(n_ijk(j,k));
-                        if (k < num_levels.lData[node]-1) {
+                        if (k < num_levels.list_data[node]-1) {
                             rec << ',';
                         }
                     }
@@ -192,7 +192,7 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
 
                     DeleteObject (tauinv);
 					
-                    hyFloat  rho = rho_prior + n_ij.lData[pa],
+                    hyFloat  rho = rho_prior + n_ij.list_data[pa],
                                 phi = phi_prior;
 
                     temp = zbpa;
@@ -311,7 +311,7 @@ bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export) cons
         for (long node = 0; node < num_nodes; node++) {
             this_list = (_List *) node_score_cache.GetItem (node);
 
-            for (long npar = 0; npar <= max_parents.lData[node]; npar++) {
+            for (long npar = 0; npar <= max_parents.list_data[node]; npar++) {
                 keyString = _String ("Node") & node & "NumParents" & npar;
                 _FString    aKey (keyString, false);
               
@@ -320,13 +320,13 @@ bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export) cons
                 //ReportWarning (_String("Inserting with key ") & keyString);
 
                 if (npar == 0) {
-                    orphan_score = (_Constant *) this_list->lData[npar];
+                    orphan_score = (_Constant *) this_list->list_data[npar];
                     cache_export->MStore (&aKey, orphan_score, true);   // make a dynamic copy
                 } else if (npar == 1) {
-                    single_parent_scores = (_Matrix *) this_list->lData[npar];
+                    single_parent_scores = (_Matrix *) this_list->list_data[npar];
                     cache_export->MStore (&aKey, single_parent_scores, true);   // make a dynamic copy
                 } else {
-                    family_scores = (_NTupleStorage *) this_list->lData[npar];
+                    family_scores = (_NTupleStorage *) this_list->list_data[npar];
                     cache_export->MStore (&aKey, family_scores, true);  // make a dynamic copy
                 }
             }
@@ -490,7 +490,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
             // populate zbpa matrix with (1, y_1, y_2, ..., y_m) entries for this parental combo
             zbpa.Store (count_n, 0, 1);
             for (long cpar = 0; cpar < continuous_parent_count; cpar++) {
-              zbpa.Store (count_n, cpar+1, theData(obs, c_parents.lData[cpar]));
+              zbpa.Store (count_n, cpar+1, theData(obs, c_parents.list_data[cpar]));
             }
             yb.Store (count_n, 0, theData(obs, node_id));
             count_n++;
@@ -504,7 +504,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
         ReportWarning (_String("mu=") & (_String *) mu.toStr());
         ReportWarning (_String("rho=") & rho);
           */
-        log_score += BottcherScore (yb, zbpa, tau, mu, rho, phi, n_ij.lData[pa]);
+        log_score += BottcherScore (yb, zbpa, tau, mu, rho, phi, n_ij.list_data[pa]);
       }
     } catch (const _String & err) {
       HandleApplicationError(err);
@@ -815,7 +815,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     for (long missing_idx = 0; missing_idx < is_missing.countitems(); missing_idx++) {
       long row     = is_missing.get(missing_idx) / family_size;
       long col     = is_missing.get(missing_idx) % family_size;
-      //fnode   = (col == 0) ? node_id : parents.lData[col-1];
+      //fnode   = (col == 0) ? node_id : parents.list_data[col-1];
       
       
       hyFloat urn = genrand_real2 ();
@@ -851,8 +851,8 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
       log_score = K2Score (r_i, n_ij, n_ijk); // compute initial score
       
       for (long row, col, pa_index, missing_idx = 0; missing_idx < is_missing.countitems(); missing_idx++) {
-        row         = is_missing.lData[missing_idx] / family_size;
-        col         = is_missing.lData[missing_idx] % family_size;
+        row         = is_missing.list_data[missing_idx] / family_size;
+        col         = is_missing.list_data[missing_idx] % family_size;
         pa_index    = 0;
         
         
@@ -909,7 +909,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
           n_ij.Store  (pa_index, 0, n_ij(pa_index,0) - 1);
           n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) - 1);
           
-          pa_index    -= parent_state * multipliers.lData[col-1];
+          pa_index    -= parent_state * multipliers.list_data[col-1];
           
           
           for (long pa_temp, lev = 0; lev < family_nlevels.get(col); lev++) {
@@ -925,7 +925,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
           // re-assign state
           hyFloat urn = genrand_real2();  // a uniform random number within interval [0,1)
           
-          for (long lev = 0; lev < family_nlevels.lData[col]; lev++) {
+          for (long lev = 0; lev < family_nlevels.list_data[col]; lev++) {
             hyFloat this_prob = exp((* (_Matrix *) reassign_probs) (lev, 0) - denom);
             
             if (urn < this_prob) {
@@ -1328,12 +1328,12 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
                 continue;    // skip this case
               }
               
-              if (pa_indices.lData[obs] == pa_index) {
+              if (pa_indices.list_data[obs] == pa_index) {
                 zbpa.Store (batch_count, 0, 1);
                 
                 for (long findex = 1; findex < family_size; findex++) {
                    if (is_node_continuous(family_index.get (findex))) {
-                    zbpa.Store (batch_count, parents_by_nodetype.lData[findex-1], data_deep_copy(obs, findex));
+                    zbpa.Store (batch_count, parents_by_nodetype.list_data[findex-1], data_deep_copy(obs, findex));
                   }
                 }
                 
@@ -1351,7 +1351,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
             
             hyFloat urn = genrand_real2() * (1.0 - observed_values(col, parent_state)); // rescale to omit original state
             
-            for (long lev = 0; lev < family_nlevels.lData[col]; lev++) {
+            for (long lev = 0; lev < family_nlevels.list_data[col]; lev++) {
               if (lev == parent_state) {
                 continue;
               }
@@ -1361,7 +1361,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
                 
                 /* BREAK */
                 
-                pa_index += (lev - parent_state) * multipliers.lData[parents_by_nodetype.lData[col-1]];
+                pa_index += (lev - parent_state) * multipliers.list_data[parents_by_nodetype.list_data[col-1]];
                 
                 
                 // compute summary stats
@@ -1379,7 +1379,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
                     
                     for (long findex = 1; findex < family_size; findex++) {
                       if (is_node_continuous(family_index.get (findex))) {
-                        zbpa.Store (batch_count, parents_by_nodetype.lData[findex-1], data_deep_copy(obs, findex));
+                        zbpa.Store (batch_count, parents_by_nodetype.list_data[findex-1], data_deep_copy(obs, findex));
                       }
                     }
                     yb.Store (batch_count, 0, data_deep_copy(obs, 0));
@@ -1401,16 +1401,16 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
             if (lk_ratio >= 1. || genrand_real2() < lk_ratio) {
               log_score = next_log_score;
               log_scores_by_pa.Store (pa_index, 0, next_log_score_by_pa (pa_index,0) );
-              log_scores_by_pa.Store (pa_indices.lData[row], 0, next_log_score_by_pa (pa_indices.lData[row],0) ); // contains the old index
+              log_scores_by_pa.Store (pa_indices.list_data[row], 0, next_log_score_by_pa (pa_indices.list_data[row],0) ); // contains the old index
               
-              pa_indices.lData[row] = pa_index;   // replace old pa index with new
+              pa_indices.list_data[row] = pa_index;   // replace old pa index with new
             } else {
               // revert to previous state
               data_deep_copy.Store (row, col, parent_state);
               
               n_ij.Store (pa_index, 0, n_ij(pa_index,0) - 1);
-              n_ij.Store (pa_indices.lData[row], 0, n_ij(pa_indices.lData[row],0) + 1);
-              // pa_index = pa_indices.lData[row];
+              n_ij.Store (pa_indices.list_data[row], 0, n_ij(pa_indices.list_data[row],0) + 1);
+              // pa_index = pa_indices.list_data[row];
             }
           }
           
@@ -1431,7 +1431,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
                 
                 for (long findex = 1; findex < family_size; findex++) {
                   if (is_node_continuous(family_index.get (findex))) {
-                    zbpa.Store (batch_count, parents_by_nodetype.lData[findex-1], data_deep_copy(obs, findex));
+                    zbpa.Store (batch_count, parents_by_nodetype.list_data[findex-1], data_deep_copy(obs, findex));
                   }
                 }
                 
@@ -1449,7 +1449,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
             if (lk_ratio >= 1. || genrand_real2() < lk_ratio) {
               log_score = next_log_score;
               log_scores_by_pa.Store (pa_index, 0, next_log_score_by_pa(pa_index,0));
-              pa_indices.lData[row] = pa_index;
+              pa_indices.list_data[row] = pa_index;
             } else {
               data_deep_copy.Store (row, col, parent_state);
             }

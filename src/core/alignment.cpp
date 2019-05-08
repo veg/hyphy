@@ -1647,9 +1647,9 @@ hyFloat      LinearSpaceAlign (_String const *s1,                  // first stri
 
     if (span1 == 1) {
         if (alignmentKind == 2) {
-            ops.lData[from1+1] = from2+maxIndex-1;
+            ops.list_data[from1+1] = from2+maxIndex-1;
         } else if (alignmentKind == 0 && maxIndex == 0/*&& to2 == s2->sLength && to1 == s1->sLength*/) {
-            ops.lData[from1+1]  = -3;
+            ops.list_data[from1+1]  = -3;
         }
     } else {
 
@@ -1665,7 +1665,7 @@ hyFloat      LinearSpaceAlign (_String const *s1,                  // first stri
                 LinearSpaceAlign (s1,s2,cmap,ccost,gopen,gextend,gopen2,gextend2,doLocal,doAffine,ops,check1, from1, midpoint, from2, from2 + maxIndex, buffer, gapCode, ha);
             } else if (from2 == 0)
                 for (long k = from1; k < midpoint; k++) {
-                    ops.lData[k+1] = -3;
+                    ops.list_data[k+1] = -3;
                 }
 
             if (maxIndex < span) {

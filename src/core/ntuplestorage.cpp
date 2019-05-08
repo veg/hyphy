@@ -144,16 +144,16 @@ void    _NTupleStorage::IndexToTuple (unsigned long directIndex, _SimpleList& kT
             long  i             = currentN,
                   lookup_offset = k*(storageN+1);
 
-            while (C_NK_Lookup.lData[lookup_offset+i] > directIndex) {
-                //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.lData[lookup_offset+i]);
+            while (C_NK_Lookup.list_data[lookup_offset+i] > directIndex) {
+                //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.list_data[lookup_offset+i]);
                 i--;
             }
-            //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.lData[lookup_offset+i]);
+            //printf ("(%d, %d) -> %d\n", k, i, C_NK_Lookup.list_data[lookup_offset+i]);
             kTuple << i;
             //printf ("Stored %d\n", i);
 
             currentN     = i-1L;
-            directIndex -= C_NK_Lookup.lData[lookup_offset+i];
+            directIndex -= C_NK_Lookup.list_data[lookup_offset+i];
         }
     }
     kTuple.Flip();

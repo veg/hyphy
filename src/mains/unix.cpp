@@ -488,8 +488,8 @@ long    DisplayListOfChoices (void) {
             } else {
                 _helper_clear_screen ();
                 printf ("***************** FILES IN '%s' ***************** \n\n",((_String*)categoryHeadings(categNumber))->get_str());
-                long start = categoryDelimiters.lData[categNumber]+1,
-                     end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.lData[categNumber+1];
+                long start = categoryDelimiters.list_data[categNumber]+1,
+                     end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.list_data[categNumber+1];
 
                 for (choice = start; choice<end; choice++) {
                     printf ("\n\t(%ld) %s",choice-start+1,((_String const *)availableTemplateFiles.GetItem (choice, 1))->get_str());
@@ -704,7 +704,13 @@ int main (int argc, char* argv[]) {
      if (signal (SIGINT, hyphy_sigterm_handler) == SIG_IGN)
          signal (SIGINT, SIG_IGN);
 #endif
-  
+    
+    /*long read = 0L;
+    hyFloat value = 0.0;
+    
+    printf ("%ld\n", sscanf (" 0.1e2 beavis", "%lf%n", &value, &read));
+    */
+    
     char    curWd[4096],
             dirSlash = get_platform_directory_char();
     

@@ -143,6 +143,15 @@ public:
    */
   _StringBuffer(const _String& buffer);
 
+    /**
+     * A constructor that moves from a standard string.
+     * @param buffer Create buffer from provided HyPhy _String
+     
+     *  Revision history
+     - SLKP 20190507 initial implementation
+     */
+   _StringBuffer(_String&& buffer);
+
   /**
    * A constructor that moves data from a standard string.
    * @param buffer This string will be deleted upon return
@@ -191,6 +200,15 @@ public:
    - SLKP 20170614 reviewed while porting from v3 branch
   */
   void Duplicate (BaseRefConst);
+    
+    
+ /**
+  * Move semantics for buffer assignment
+  * @param rhs A pointer to the _StringBuffer to be moved from
+  *  Revision history
+   - SLKP 20190507 initial implementations
+  */
+  _StringBuffer& operator = (_StringBuffer&&rhs);
 
   /**
   * Append all characters in the argument string to the buffer

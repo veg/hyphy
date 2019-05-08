@@ -115,7 +115,8 @@ public:
     void                   DeleteByKey     (HBLObjectRef);
     void                   DeleteByKey     (_String const&);
     HBLObjectRef           MCoord          (HBLObjectRef);
-    void                MStore          (HBLObjectRef, HBLObjectRef, bool = true, long = HY_OP_CODE_NONE);
+    bool                   MStore          (_String*,     HBLObjectRef, bool = true, long = HY_OP_CODE_NONE);
+    void                   MStore          (HBLObjectRef, HBLObjectRef, bool = true, long = HY_OP_CODE_NONE);
     // SLKP 20100811: see the comment for _Matrix::MStore
 
     void                MStore          (const _String&  , HBLObjectRef, bool = true);

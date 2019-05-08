@@ -209,10 +209,10 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes) {
             node_names < new _StringBuffer (name->get_str());  // append a pointer to _String duplicate
 
             // DEBUGGING
-            /* wuz: ReportWarning (_String("node_name[") & node & "]=" & (_String *)node_names.lData[node]);
+            /* wuz: ReportWarning (_String("node_name[") & node & "]=" & (_String *)node_names.list_data[node]);
              20111210 SLKP : _String (_String*) contstructor will actually assume that the argument is
                            : 'unencumbered' i.e. not a member of _Lists etc
-                           : this function call will create a stack copy of node_names.lData[node]
+                           : this function call will create a stack copy of node_names.list_data[node]
                            : print it to messages.log and then kill the dynamic portion of the object (sData)
                            : this will create all kinds of havoc downstream
              */
@@ -745,7 +745,7 @@ void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Si
         long            num_parent_combos = multipliers.GetElement(-1L);
  
         _Matrix::CreateMatrix (n_ij, num_parent_combos, 1, false, true, false);
-        _Matrix::CreateMatrix (n_ijk, num_parent_combos, num_levels.lData[dnode], false, true, false);
+        _Matrix::CreateMatrix (n_ijk, num_parent_combos, num_levels.list_data[dnode], false, true, false);
 
         hyFloat norm  = prior_sample_size(dnode,0)/num_parent_combos,
                 norm2 = 1./num_levels.get(dnode);
@@ -754,7 +754,7 @@ void    _BayesianGraphicalModel::UpdateDirichletHyperparameters (long dnode, _Si
         for (long j = 0; j < num_parent_combos; j++) {
             n_ij->Store (j, 0, norm);
 
-            for (long k = 0; k < num_levels.lData[dnode]; k++) {
+            for (long k = 0; k < num_levels.list_data[dnode]; k++) {
                 n_ijk->Store (j, k, (*n_ij)(j,0) * norm2);
             }
         }
@@ -843,7 +843,7 @@ hyFloat _BayesianGraphicalModel::K2Score (long node_id, _Matrix const & n_ij, _M
 hyFloat _BayesianGraphicalModel::BDeScore (long node_id, _Matrix const & n_ij, _Matrix const & n_ijk) const {
     // note that n_ij and n_ijk already contain prior counts, updated by data
     hyFloat  n_prior_ij      = prior_sample_size (node_id, 0) / n_ij.GetHDim(),
-                n_prior_ijk     = n_prior_ij / num_levels.lData[node_id],
+                n_prior_ijk     = n_prior_ij / num_levels.list_data[node_id],
                 log_score        = 0.;
 
     for (long j = 0L; j < n_ij.GetHDim(); j++) {
@@ -974,11 +974,11 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
                                   }
                                 } else {
                                   for (long par_idx = 0; par_idx < np; par_idx++) {
-                                    long par = nk_tuple.lData[par_idx];
+                                    long par = nk_tuple.list_data[par_idx];
                                     if (par >= node_id) {
                                       par++;
                                     }
-                                    parents.lData[par_idx] = par;
+                                    parents.list_data[par_idx] = par;
                                   }
                                   
                                   score = ComputeContinuousScore (node_id, parents);
@@ -1211,9 +1211,9 @@ void _BayesianGraphicalModel::MPIReceiveScores (_Matrix * mpi_node_status, bool 
 
     long        senderID    = (long) status.MPI_SOURCE,
                 this_node    = (long) (*mpi_node_status) (senderID, 1),
-                maxp       = max_parents.lData[this_node];
+                maxp       = max_parents.list_data[this_node];
 
-    _List   *   this_list   = (_List *) node_score_cache.lData[this_node];
+    _List   *   this_list   = (_List *) node_score_cache.list_data[this_node];
 
 
     _String     mxString,
@@ -1475,7 +1475,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (_AssociativeList const * options 
                           node_order_arg.Populate (num_nodes, 0, 0);
                       }
                       for (long i = 0; i < num_nodes; i++) {
-                          node_order_arg.lData[i] = (*output_matrix) (i,3);
+                          node_order_arg.list_data[i] = (*output_matrix) (i,3);
                       }
                       ReportWarning    (_String((_String*)node_order_arg.toStr()));
                       delete output_matrix;
@@ -1522,10 +1522,10 @@ _Matrix* _BayesianGraphicalModel::K2Search (bool do_permute_order, long n_restar
     //  Convert node order to binary matrix where edge A->B is permitted if
     //  order_matrix[B][A] = 1, i.e. B is to the right of A in node order.
     for (long i = 0; i < num_nodes; i++) {
-        long    child = best_node_order.lData[i];
+        long    child = best_node_order.list_data[i];
 
         for (long j = 0; j < num_nodes; j++) {
-            long    parent = best_node_order.lData[j];
+            long    parent = best_node_order.list_data[j];
 
             order_matrix.Store (parent, child, (j > i) ? 1 : 0);
         }
@@ -1571,7 +1571,7 @@ _Matrix* _BayesianGraphicalModel::K2Search (bool do_permute_order, long n_restar
                 } else {
                     break;  // unable to improve further
                 }
-            } while (num_parents < max_parents.lData[child]);
+            } while (num_parents < max_parents.list_data[child]);
         }
 
 
@@ -1588,9 +1588,9 @@ _Matrix* _BayesianGraphicalModel::K2Search (bool do_permute_order, long n_restar
             best_node_order.Permute (1);
 
             for (long i = 0; i < num_nodes; i++) {
-                long    child = best_node_order.lData[i];
+                long    child = best_node_order.list_data[i];
                 for (long j = 0; j < num_nodes; j++) {
-                    long    parent = best_node_order.lData[j];
+                    long    parent = best_node_order.list_data[j];
                     order_matrix.Store (parent, child, (j > i) ? 1 : 0);
                 }
             }
@@ -1623,8 +1623,8 @@ bool    _BayesianGraphicalModel::GraphObeysOrder (_Matrix & graph, _SimpleList c
 
     // convert order vector to matrix form
     for (long p_index = 0; p_index < num_nodes; p_index++) {
-        for (long par = order.lData[p_index], c_index = 0; c_index < num_nodes; c_index++) {
-            order_matrix.Store (par, order.lData[c_index], (p_index > c_index) ? 1 : 0);
+        for (long par = order.list_data[p_index], c_index = 0; c_index < num_nodes; c_index++) {
+            order_matrix.Store (par, order.list_data[c_index], (p_index > c_index) ? 1 : 0);
         }
     }
 

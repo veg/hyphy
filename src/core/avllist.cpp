@@ -87,9 +87,9 @@ long  _AVLList::Find (BaseRefConst obj) const {
         long comp = dataList->Compare (obj,curNode);
 
         if (comp<0) {
-            curNode = leftChild.lData[curNode];
+            curNode = leftChild.list_data[curNode];
         } else if (comp>0) {
-            curNode = rightChild.lData[curNode];
+            curNode = rightChild.list_data[curNode];
         } else {
             return curNode;
         }
@@ -104,12 +104,12 @@ long  _AVLList::FindLong (long obj) const {
     long curNode = root;
 
     while (curNode>=0) {
-        long comp = dataList->lData[curNode];
+        long comp = dataList->list_data[curNode];
 
         if (obj<comp) {
-            curNode = leftChild.lData[curNode];
+            curNode = leftChild.list_data[curNode];
         } else if (obj>comp) {
-            curNode = rightChild.lData[curNode];
+            curNode = rightChild.list_data[curNode];
         } else {
             return curNode;
         }
@@ -129,9 +129,9 @@ char  _AVLList::FindBest (BaseRefConst obj, long& lastNode) const {
         lastNode = curNode;
 
         if (comp<0) {
-            curNode = leftChild.lData[curNode];
+            curNode = leftChild.list_data[curNode];
         } else if (comp>0) {
-            curNode = rightChild.lData[curNode];
+            curNode = rightChild.list_data[curNode];
         } else {
             return 0;
         }
@@ -150,10 +150,10 @@ long  _AVLList::Find (BaseRefConst obj, _SimpleList& hist) const {
 
         if (comp<0) {
             hist << curNode;
-            curNode = leftChild.lData[curNode];
+            curNode = leftChild.list_data[curNode];
         } else if (comp>0) {
             hist << curNode;
-            curNode = rightChild.lData[curNode];
+            curNode = rightChild.list_data[curNode];
         } else {
             return curNode;
         }
@@ -166,19 +166,19 @@ long  _AVLList::Find (BaseRefConst obj, _SimpleList& hist) const {
 
 long  _AVLList::Next (long d, _SimpleList& hist) const {
     if (d >= 0) {
-        if (rightChild.lData [d] >= 0) {
+        if (rightChild.list_data [d] >= 0) {
             hist << d;
-            d = rightChild.lData [d];
-            while (leftChild.lData[d] >= 0) {
+            d = rightChild.list_data [d];
+            while (leftChild.list_data[d] >= 0) {
                 hist << d;
-                d = leftChild.lData[d];
+                d = leftChild.list_data[d];
             }
             return d;
         } else {
             while (hist.countitems()) {
                 long x = hist.Pop();
 
-                if (rightChild.lData[x] != d) {
+                if (rightChild.list_data[x] != d) {
                     return x;
                 }
                 //TODO:???
@@ -190,9 +190,9 @@ long  _AVLList::Next (long d, _SimpleList& hist) const {
     }
 
     d = root;
-    while (d >= 0 && leftChild.lData[d] >=0) {
+    while (d >= 0 && leftChild.list_data[d] >=0) {
       hist << d;
-      d = leftChild.lData[d];
+      d = leftChild.list_data[d];
     }
     
     return d;
@@ -202,8 +202,8 @@ long  _AVLList::Next (long d, _SimpleList& hist) const {
 
 long  _AVLList::First (void) const {
     long   d = root;
-    while (d >= 0 && leftChild.lData[d] >=0) {
-        d = leftChild.lData[d];
+    while (d >= 0 && leftChild.list_data[d] >=0) {
+        d = leftChild.list_data[d];
     }
 
     return d;
@@ -213,8 +213,8 @@ long  _AVLList::First (void) const {
 
 long  _AVLList::Last (void) const {
     long   d = root;
-    while (d >= 0 && rightChild.lData[d] >=0) {
-        d = rightChild.lData[d];
+    while (d >= 0 && rightChild.list_data[d] >=0) {
+        d = rightChild.list_data[d];
     }
 
     return d;
@@ -224,21 +224,21 @@ long  _AVLList::Last (void) const {
 
 long  _AVLList::Prev (long d, _SimpleList& hist) const {
   if (d >= 0) {
-    if (leftChild.lData [d] >= 0) {
+    if (leftChild.list_data [d] >= 0) {
       hist << d;
-      d = leftChild.lData [d];
-      while (rightChild.lData[d] >= 0) {
+      d = leftChild.list_data [d];
+      while (rightChild.list_data[d] >= 0) {
         hist << d;
-        d = rightChild.lData[d];
+        d = rightChild.list_data[d];
       }
       return d;
     } else {
       while (hist.countitems()) {
-        long x = hist.lData[hist.lLength-1];
+        long x = hist.list_data[hist.lLength-1];
         
         hist.Delete (hist.lLength-1);
         
-        if (leftChild.lData[x] != d) {
+        if (leftChild.list_data[x] != d) {
           return x;
         }
         //TODO:???
@@ -250,9 +250,9 @@ long  _AVLList::Prev (long d, _SimpleList& hist) const {
   }
   
   d = root;
-  while (d >= 0 && rightChild.lData[d] >=0) {
+  while (d >= 0 && rightChild.list_data[d] >=0) {
     hist << d;
-    d = rightChild.lData[d];
+    d = rightChild.list_data[d];
   }
   
   return d;
@@ -312,18 +312,18 @@ void  _AVLList::ReorderList (_SimpleList *s) {
     while (1) {
         while (curNode >= 0) {
             nodeStack << curNode;
-            curNode = leftChild.lData[curNode];
+            curNode = leftChild.list_data[curNode];
         }
         if (long h = nodeStack.lLength) {
             h--;
-            curNode = nodeStack.lData[h];
+            curNode = nodeStack.list_data[h];
             if (s) {
                 (*s) << curNode;
             }
-            reorderMe.InsertElement (((BaseRef*)dataList->lData)[curNode],-1,false,false);
+            reorderMe.InsertElement (((BaseRef*)dataList->list_data)[curNode],-1,false,false);
 
             //TODO:???
-            curNode = rightChild.lData[curNode];
+            curNode = rightChild.list_data[curNode];
             nodeStack.Delete (h, false);
 
         } else {
@@ -332,12 +332,15 @@ void  _AVLList::ReorderList (_SimpleList *s) {
     }
 
     reorderMe.TrimMemory ();
+    
 
-    long* t             = dataList->lData;
-    dataList->lData     = reorderMe.lData;
+    /*long* t             = dataList->list_data;
+    dataList->list_data     = reorderMe.list_data;
     dataList->lLength   = reorderMe.lLength;
     dataList->laLength  = reorderMe.laLength;
-    reorderMe.lData     = t;
+    reorderMe.list_data     = t;*/
+    
+    *dataList = reorderMe;
 }
 
 //______________________________________________________________
@@ -353,7 +356,7 @@ void  _AVLList::ConsistencyCheck (void)
     while (1) {
         while (curNode >= 0) {
             nodeStack << curNode;
-            curNode = leftChild.lData[curNode];
+            curNode = leftChild.list_data[curNode];
             if (curNode >= (long)dataList->lLength) {
                 hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
                 return;
@@ -366,7 +369,7 @@ void  _AVLList::ConsistencyCheck (void)
                 return;
             }
             h--;
-            curNode = nodeStack.lData[h];
+            curNode = nodeStack.list_data[h];
             if (lastNode >= 0 && curNode >= 0) {
                 if (dataList->Compare (Retrieve (lastNode), curNode) >= 0) {
                     hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
@@ -374,12 +377,12 @@ void  _AVLList::ConsistencyCheck (void)
                 }
                 checkCount++;
             }
-            if ((balanceFactor.lData[curNode] < -1)||(balanceFactor.lData[curNode] > 1)) {
+            if ((balanceFactor.list_data[curNode] < -1)||(balanceFactor.list_data[curNode] > 1)) {
                 hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
                 return;
             }
             lastNode = curNode;
-            curNode = rightChild.lData[curNode];
+            curNode = rightChild.list_data[curNode];
             if (curNode >= (long)dataList->lLength) {
                 hy_global::HandleApplicationError ("Failed Constistency Check in _AVLList");
                 return;
@@ -407,14 +410,14 @@ long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r) const {
 
     while (t >= 0) {
         nodeStack << t;
-        t = leftChild.lData[t];
+        t = leftChild.list_data[t];
     }
 
     if (long h = nodeStack.lLength) {
         h--;
-        t = nodeStack.lData[h];
+        t = nodeStack.list_data[h];
         r = t;
-        t = rightChild.lData[t];
+        t = rightChild.list_data[t];
         nodeStack.Delete (h, false);
         return r;
     }
@@ -477,13 +480,13 @@ const _List  _AVLList::Keys (void) const {
 //______________________________________________________________
 
 BaseRef _AVLList::Retrieve (long idx) const {
-    return ((BaseRef*)dataList->lData)[idx];
+    return ((BaseRef*)dataList->list_data)[idx];
 }
 
   //______________________________________________________________
 
 long _AVLList::RetrieveLong(long idx) const {
-  return ((long*)dataList->lData)[idx];
+  return ((long*)dataList->list_data)[idx];
 }
 
 //______________________________________________________________
@@ -511,12 +514,12 @@ long  _AVLList::InsertData (BaseRef b, long, bool)
          n;
 
     if (w>=0) {
-        n = emptySlots.lData[w];
+        n = emptySlots.list_data[w];
         emptySlots.Delete (w);
-        leftChild.lData[n] = -1;
-        rightChild.lData[n] = -1;
-        balanceFactor.lData[n] = 0;
-        ((BaseRef*)dataList->lData)[n] = b;
+        leftChild.list_data[n] = -1;
+        rightChild.list_data[n] = -1;
+        balanceFactor.list_data[n] = 0;
+        ((BaseRef*)dataList->list_data)[n] = b;
     } else {
         n = dataList->lLength;
         dataList->InsertElement (b,-1,false,false);
@@ -555,11 +558,14 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
 
         bool        go_right = false;
 
-        _SimpleList da ((unsigned long)32);
+        //_SimpleList da ((unsigned long)32);
+        
+        long          traversal_stack [32] = {0L};
+        unsigned long stack_pointer = 0UL;
 
         // try to find the node or where to insert it
 
-        for (q=z, p=y; p>=0; q=p, p=go_right?rightChild.lData[p]:leftChild.lData[p]) {
+        for (q=z, p=y; p>=0; q=p, p=go_right?rightChild.list_data[p]:leftChild.list_data[p]) {
             long comp = dataList->Compare (b, p);
             if (comp == 0) {
                 if (cp == false && clear) {
@@ -567,13 +573,18 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
                 }
                 return -p-1;
             }
-            if (balanceFactor.lData[p] != 0) {
+            if (balanceFactor.list_data[p] != 0) {
                 z = q;
                 y = p;
-                da.Clear();
+                //da.Clear();
+                stack_pointer = 0UL;
             }
             go_right = comp > 0;
-            da << go_right;
+            //da << go_right;
+            traversal_stack[stack_pointer++] = go_right;
+            if (stack_pointer >= 32UL) {
+                HandleApplicationError("Internal error: AVLList is too big");
+            }
         }
 
         /*if (da.lLength > 3*log (dataList->lLength+2))
@@ -587,9 +598,9 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
         n = InsertData (b, xtra,cp);
 
         if (go_right) {
-            rightChild.lData[q] = n;
+            rightChild.list_data[q] = n;
         } else {
-            leftChild.lData[q] = n;
+            leftChild.list_data[q] = n;
         }
 
 
@@ -597,11 +608,12 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
 
         p = y;
 
-        for (long k=0; p!=n; p=da.lData[k]?rightChild.lData[p]:leftChild.lData[p],k++)
-            if (da.lData[k] == 0) {
-                balanceFactor.lData[p]--;
+        for (long k=0L; p!=n; p=traversal_stack[k]?rightChild.list_data[p]:leftChild.list_data[p],k++)
+            //if (da.list_data[k] == 0) {
+            if (traversal_stack[k] == 0) {
+                balanceFactor.list_data[p]--;
             } else {
-                balanceFactor.lData[p]++;
+                balanceFactor.list_data[p]++;
             }
 
 
@@ -611,59 +623,59 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
         //return n;
         //}
 
-        if (balanceFactor.lData[y] == -2) {
+        if (balanceFactor.list_data[y] == -2) {
             //152
 
-            long x = leftChild.lData[y];
-            if (balanceFactor.lData[x] == -1) { //155
+            long x = leftChild.list_data[y];
+            if (balanceFactor.list_data[x] == -1) { //155
                 w                    = x;
-                leftChild.lData [y]  = rightChild.lData[x];
-                rightChild.lData[x]  = y;
-                balanceFactor.lData[x] = balanceFactor.lData[y] = 0;
+                leftChild.list_data [y]  = rightChild.list_data[x];
+                rightChild.list_data[x]  = y;
+                balanceFactor.list_data[x] = balanceFactor.list_data[y] = 0;
             } else { //156
-                w = rightChild.lData[x];
-                rightChild.lData[x] = leftChild.lData[w];
-                leftChild.lData[w] = x;
-                leftChild.lData[y] = rightChild.lData[w];
-                rightChild.lData[w] = y;
-                if (balanceFactor.lData[w] == -1) {
-                    balanceFactor.lData[x] = 0;
-                    balanceFactor.lData[y] = 1;
-                } else if (balanceFactor.lData[w] == 0) {
-                    balanceFactor.lData[x] = 0;
-                    balanceFactor.lData[y] = 0;
+                w = rightChild.list_data[x];
+                rightChild.list_data[x] = leftChild.list_data[w];
+                leftChild.list_data[w] = x;
+                leftChild.list_data[y] = rightChild.list_data[w];
+                rightChild.list_data[w] = y;
+                if (balanceFactor.list_data[w] == -1) {
+                    balanceFactor.list_data[x] = 0;
+                    balanceFactor.list_data[y] = 1;
+                } else if (balanceFactor.list_data[w] == 0) {
+                    balanceFactor.list_data[x] = 0;
+                    balanceFactor.list_data[y] = 0;
                 } else {
-                    balanceFactor.lData[x] = -1;
-                    balanceFactor.lData[y] = 0;
+                    balanceFactor.list_data[x] = -1;
+                    balanceFactor.list_data[y] = 0;
                 }
 
-                balanceFactor.lData[w] = 0;
+                balanceFactor.list_data[w] = 0;
             }
-        } else if (balanceFactor.lData[y] == 2) {
-            long x = rightChild.lData[y];
-            if (balanceFactor.lData[x] == 1) {
+        } else if (balanceFactor.list_data[y] == 2) {
+            long x = rightChild.list_data[y];
+            if (balanceFactor.list_data[x] == 1) {
                 w                      = x;
-                rightChild.lData [y]   = leftChild.lData[x];
-                leftChild.lData[x]     = y;
-                balanceFactor.lData[x] = balanceFactor.lData[y] = 0;
+                rightChild.list_data [y]   = leftChild.list_data[x];
+                leftChild.list_data[x]     = y;
+                balanceFactor.list_data[x] = balanceFactor.list_data[y] = 0;
             } else {
-                w = leftChild.lData[x];
-                leftChild.lData[x] = rightChild.lData[w];
-                rightChild.lData[w] = x;
-                rightChild.lData[y] = leftChild.lData[w];
-                leftChild.lData[w] = y;
-                if (balanceFactor.lData[w] == 1) {
-                    balanceFactor.lData[x] = 0;
-                    balanceFactor.lData[y] = -1;
-                } else if (balanceFactor.lData[w] == 0) {
-                    balanceFactor.lData[x] = 0;
-                    balanceFactor.lData[y] = 0;
+                w = leftChild.list_data[x];
+                leftChild.list_data[x] = rightChild.list_data[w];
+                rightChild.list_data[w] = x;
+                rightChild.list_data[y] = leftChild.list_data[w];
+                leftChild.list_data[w] = y;
+                if (balanceFactor.list_data[w] == 1) {
+                    balanceFactor.list_data[x] = 0;
+                    balanceFactor.list_data[y] = -1;
+                } else if (balanceFactor.list_data[w] == 0) {
+                    balanceFactor.list_data[x] = 0;
+                    balanceFactor.list_data[y] = 0;
                 } else {
-                    balanceFactor.lData[x] = 1;
-                    balanceFactor.lData[y] = 0;
+                    balanceFactor.list_data[x] = 1;
+                    balanceFactor.list_data[y] = 0;
                 }
 
-                balanceFactor.lData[w] = 0;
+                balanceFactor.list_data[w] = 0;
             }
         } else {
             //ConsistencyCheck ();
@@ -671,10 +683,10 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
         }
 
         if (z >= 0) {
-            if (y == leftChild.lData[z]) {
-                leftChild.lData[z] = w;
+            if (y == leftChild.list_data[z]) {
+                leftChild.list_data[z] = w;
             } else {
-                rightChild.lData[z] = w;
+                rightChild.list_data[z] = w;
             }
         }
 
@@ -699,9 +711,8 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
 
 //______________________________________________________________
 
-bool  _AVLList::HasData (long idx)
-{
-    return leftChild.lData[idx] != 2;
+bool  _AVLList::HasData (long idx) {
+    return leftChild.list_data[idx] != 2;
 }
 
 //______________________________________________________________
@@ -719,19 +730,19 @@ void  _AVLList::Delete (BaseRefConst b, bool delMe) {
                 cmp = dataList->Compare (b,p),
                 k = 0;
 
-    pa.lData[k] = -1;
-    da.lData[k++] = 1;
+    pa.list_data[k] = -1;
+    da.list_data[k++] = 1;
 
     for (; cmp !=0; cmp = dataList->Compare (b,p)) {
         bool go_right = cmp > 0;
 
-        pa.lData[k] = p;
-        da.lData[k++] = go_right;
+        pa.list_data[k] = p;
+        da.list_data[k++] = go_right;
 
         if (go_right) {
-            p = rightChild.lData[p];
+            p = rightChild.list_data[p];
         } else {
-            p = leftChild.lData[p];
+            p = leftChild.list_data[p];
         }
 
         if (p<0) {
@@ -740,79 +751,79 @@ void  _AVLList::Delete (BaseRefConst b, bool delMe) {
     }
 
     if (k==1) {
-        pa.lData[k]   = -1;
+        pa.list_data[k]   = -1;
     }
 
     emptySlots << p;
     if (delMe) {
         DeleteObject (Retrieve(p));
     }
-    //((BaseRef*)dataList->lData)[p] = nil;
-    dataList->lData[p] = 0;
+    //((BaseRef*)dataList->list_data)[p] = nil;
+    dataList->list_data[p] = 0;
     DeleteXtra (p);
 
-    long r = rightChild.lData[p];
+    long r = rightChild.list_data[p];
 
     if (r < 0) {
         if (k>1) {
-            if (da.lData[k-1] == 1) {
-                rightChild.lData[pa.lData[k-1]] = leftChild.lData[p];
+            if (da.list_data[k-1] == 1) {
+                rightChild.list_data[pa.list_data[k-1]] = leftChild.list_data[p];
             } else {
-                leftChild.lData[pa.lData[k-1]] = leftChild.lData[p];
+                leftChild.list_data[pa.list_data[k-1]] = leftChild.list_data[p];
             }
         }
 
         if (p==root) {
-            //root = pa.lData[k-1];
-            root = leftChild.lData[root];
+            //root = pa.list_data[k-1];
+            root = leftChild.list_data[root];
         }
     } else {
-        if (leftChild.lData[r] < 0) {
-            leftChild.lData[r]     = leftChild.lData[p];
-            balanceFactor.lData[r] = balanceFactor.lData[p];
+        if (leftChild.list_data[r] < 0) {
+            leftChild.list_data[r]     = leftChild.list_data[p];
+            balanceFactor.list_data[r] = balanceFactor.list_data[p];
             if (k>1) {
-                if (da.lData[k-1] == 1) {
-                    rightChild.lData[pa.lData[k-1]] = r;
+                if (da.list_data[k-1] == 1) {
+                    rightChild.list_data[pa.list_data[k-1]] = r;
                 } else {
-                    leftChild.lData[pa.lData[k-1]] = r;
+                    leftChild.list_data[pa.list_data[k-1]] = r;
                 }
             } else {
                 root = r;
             }
 
-            da.lData[k]   = 1;
-            pa.lData[k++] = r;
+            da.list_data[k]   = 1;
+            pa.list_data[k++] = r;
             //if (p==root)
             //root = r;
         } else {
             long s;
             int  j = k++;
             for (;;) {
-                da.lData[k]   = 0;
-                pa.lData[k++] = r;
-                s = leftChild.lData[r];
-                if (leftChild.lData[s] < 0) {
+                da.list_data[k]   = 0;
+                pa.list_data[k++] = r;
+                s = leftChild.list_data[r];
+                if (leftChild.list_data[s] < 0) {
                     break;
                 }
                 r = s;
             }
 
 
-            leftChild.lData[s] = leftChild.lData[p];
-            leftChild.lData[r] = rightChild.lData[s];
-            rightChild.lData[s] = rightChild.lData[p];
-            balanceFactor.lData[s] = balanceFactor.lData[p];
+            leftChild.list_data[s] = leftChild.list_data[p];
+            leftChild.list_data[r] = rightChild.list_data[s];
+            rightChild.list_data[s] = rightChild.list_data[p];
+            balanceFactor.list_data[s] = balanceFactor.list_data[p];
 
             if (j>1) {
-                if (da.lData[j-1] == 1) {
-                    rightChild.lData[pa.lData[j-1]] = s;
+                if (da.list_data[j-1] == 1) {
+                    rightChild.list_data[pa.list_data[j-1]] = s;
                 } else {
-                    leftChild.lData[pa.lData[j-1]] = s;
+                    leftChild.list_data[pa.list_data[j-1]] = s;
                 }
             }
 
-            da.lData[j] = 1;
-            pa.lData[j] = s;
+            da.list_data[j] = 1;
+            pa.list_data[j] = s;
             if (p==root) {
                 root = s;
             }
@@ -825,36 +836,36 @@ void  _AVLList::Delete (BaseRefConst b, bool delMe) {
     //}
 
     while (--k > 0) {
-        long y = pa.lData[k];
-        if (da.lData[k] == 0) {
-            balanceFactor.lData[y] ++;
-            if (balanceFactor.lData[y] == 1) {
+        long y = pa.list_data[k];
+        if (da.list_data[k] == 0) {
+            balanceFactor.list_data[y] ++;
+            if (balanceFactor.list_data[y] == 1) {
                 break;
-            } else if (balanceFactor.lData[y] == 2) {
-                long x = rightChild.lData[y];
-                if (balanceFactor.lData[x] == -1) {
-                    long w = leftChild.lData[x];
-                    leftChild.lData[x] = rightChild.lData[w];
-                    rightChild.lData[w] = x;
-                    rightChild.lData[y] = leftChild.lData[w];
-                    leftChild.lData[w] = y;
-                    if (balanceFactor.lData[w] == 1) {
-                        balanceFactor.lData[x] = 0;
-                        balanceFactor.lData[y] = -1;
-                    } else if (balanceFactor.lData[w] == 0) {
-                        balanceFactor.lData[x] = 0;
-                        balanceFactor.lData[y] = 0;
+            } else if (balanceFactor.list_data[y] == 2) {
+                long x = rightChild.list_data[y];
+                if (balanceFactor.list_data[x] == -1) {
+                    long w = leftChild.list_data[x];
+                    leftChild.list_data[x] = rightChild.list_data[w];
+                    rightChild.list_data[w] = x;
+                    rightChild.list_data[y] = leftChild.list_data[w];
+                    leftChild.list_data[w] = y;
+                    if (balanceFactor.list_data[w] == 1) {
+                        balanceFactor.list_data[x] = 0;
+                        balanceFactor.list_data[y] = -1;
+                    } else if (balanceFactor.list_data[w] == 0) {
+                        balanceFactor.list_data[x] = 0;
+                        balanceFactor.list_data[y] = 0;
                     } else {
-                        balanceFactor.lData[x] = 1;
-                        balanceFactor.lData[y] = 0;
+                        balanceFactor.list_data[x] = 1;
+                        balanceFactor.list_data[y] = 0;
                     }
 
-                    balanceFactor.lData[w] = 0;
+                    balanceFactor.list_data[w] = 0;
                     if (k>1) {
-                        if (da.lData[k-1] == 1) {
-                            rightChild.lData[pa.lData[k-1]] = w;
+                        if (da.list_data[k-1] == 1) {
+                            rightChild.list_data[pa.list_data[k-1]] = w;
                         } else {
-                            leftChild.lData[pa.lData[k-1]] = w;
+                            leftChild.list_data[pa.list_data[k-1]] = w;
                         }
                     } else {
                         root = w;
@@ -863,58 +874,58 @@ void  _AVLList::Delete (BaseRefConst b, bool delMe) {
                     //if (y==root)
                     //  root = w;
                 } else {
-                    rightChild.lData[y] = leftChild.lData[x];
-                    leftChild.lData[x] = y;
+                    rightChild.list_data[y] = leftChild.list_data[x];
+                    leftChild.list_data[x] = y;
 
                     if (k>1) {
-                        if (da.lData[k-1] == 1) {
-                            rightChild.lData[pa.lData[k-1]] = x;
+                        if (da.list_data[k-1] == 1) {
+                            rightChild.list_data[pa.list_data[k-1]] = x;
                         } else {
-                            leftChild.lData[pa.lData[k-1]] = x;
+                            leftChild.list_data[pa.list_data[k-1]] = x;
                         }
                     } else {
                         root = x;
                     }
 
-                    if (balanceFactor.lData[x] == 0) {
-                        balanceFactor.lData[x] = -1;
-                        balanceFactor.lData[y] = 1;
+                    if (balanceFactor.list_data[x] == 0) {
+                        balanceFactor.list_data[x] = -1;
+                        balanceFactor.list_data[y] = 1;
                         break;
                     } else {
-                        balanceFactor.lData[x] = 0;
-                        balanceFactor.lData[y] = 0;
+                        balanceFactor.list_data[x] = 0;
+                        balanceFactor.list_data[y] = 0;
                     }
                 }
             }
         } else {
-            balanceFactor.lData[y] --;
-            if (balanceFactor.lData[y] == -1) {
+            balanceFactor.list_data[y] --;
+            if (balanceFactor.list_data[y] == -1) {
                 break;
-            } else if ( balanceFactor.lData[y] == -2) {
-                long x = leftChild.lData[y];
-                if (balanceFactor.lData[x] == 1) {
-                    long w = rightChild.lData[x];
-                    rightChild.lData[x] = leftChild.lData[w];
-                    leftChild.lData[w] = x;
-                    leftChild.lData[y] = rightChild.lData[w];
-                    rightChild.lData[w] = y;
-                    if (balanceFactor.lData[w] == -1) {
-                        balanceFactor.lData[x] = 0;
-                        balanceFactor.lData[y] = 1;
-                    } else if (balanceFactor.lData[w] == 0) {
-                        balanceFactor.lData[x] = 0;
-                        balanceFactor.lData[y] = 0;
+            } else if ( balanceFactor.list_data[y] == -2) {
+                long x = leftChild.list_data[y];
+                if (balanceFactor.list_data[x] == 1) {
+                    long w = rightChild.list_data[x];
+                    rightChild.list_data[x] = leftChild.list_data[w];
+                    leftChild.list_data[w] = x;
+                    leftChild.list_data[y] = rightChild.list_data[w];
+                    rightChild.list_data[w] = y;
+                    if (balanceFactor.list_data[w] == -1) {
+                        balanceFactor.list_data[x] = 0;
+                        balanceFactor.list_data[y] = 1;
+                    } else if (balanceFactor.list_data[w] == 0) {
+                        balanceFactor.list_data[x] = 0;
+                        balanceFactor.list_data[y] = 0;
                     } else {
-                        balanceFactor.lData[x] = -1;
-                        balanceFactor.lData[y] = 0;
+                        balanceFactor.list_data[x] = -1;
+                        balanceFactor.list_data[y] = 0;
                     }
 
-                    balanceFactor.lData[w] = 0;
+                    balanceFactor.list_data[w] = 0;
                     if (k>1) {
-                        if (da.lData[k-1] == 1) {
-                            rightChild.lData[pa.lData[k-1]] = w;
+                        if (da.list_data[k-1] == 1) {
+                            rightChild.list_data[pa.list_data[k-1]] = w;
                         } else {
-                            leftChild.lData[pa.lData[k-1]] = w;
+                            leftChild.list_data[pa.list_data[k-1]] = w;
                         }
                     } else {
                         root = w;
@@ -923,25 +934,25 @@ void  _AVLList::Delete (BaseRefConst b, bool delMe) {
                     //if (y==root)
                     //root = w;
                 } else {
-                    leftChild.lData[y] = rightChild.lData[x];
-                    rightChild.lData[x] = y;
+                    leftChild.list_data[y] = rightChild.list_data[x];
+                    rightChild.list_data[x] = y;
                     if (k>1) {
-                        if (da.lData[k-1] == 1) {
-                            rightChild.lData[pa.lData[k-1]] = x;
+                        if (da.list_data[k-1] == 1) {
+                            rightChild.list_data[pa.list_data[k-1]] = x;
                         } else {
-                            leftChild.lData[pa.lData[k-1]] = x;
+                            leftChild.list_data[pa.list_data[k-1]] = x;
                         }
                     } else {
                         root = x;
                     }
 
-                    if (balanceFactor.lData[x] == 0) {
-                        balanceFactor.lData[x] = 1;
-                        balanceFactor.lData[y] = -1;
+                    if (balanceFactor.list_data[x] == 0) {
+                        balanceFactor.list_data[x] = 1;
+                        balanceFactor.list_data[y] = -1;
                         break;
                     } else {
-                        balanceFactor.lData[x] = 0;
-                        balanceFactor.lData[y] = 0;
+                        balanceFactor.list_data[x] = 0;
+                        balanceFactor.list_data[y] = 0;
                     }
                 }
             }

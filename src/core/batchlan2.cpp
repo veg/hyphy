@@ -494,7 +494,7 @@ void         InsertVarIDsInList     (_AssociativeList* theList , _String const& 
     if (varIDs.lLength) {
         _List     varNames;
         for (unsigned long i=0; i < varIDs.lLength; i++) {
-            _Variable* v = LocateVar (varIDs.lData[i]);
+            _Variable* v = LocateVar (varIDs.list_data[i]);
             if (v) {
                 varNames << v->GetName();
             }
@@ -515,7 +515,7 @@ void         InsertStringListIntoAVL    (_AssociativeList* theList , _String con
     if (stringsToPick.lLength) {
         _List     theNames;
         for (unsigned long i=0; i < stringsToPick.lLength; i++) {
-            _String * v = (_String*)theStrings.GetItem(stringsToPick.lData[i]);
+            _String * v = (_String*)theStrings.GetItem(stringsToPick.list_data[i]);
             if (v) {
                 theNames << v;
             }
@@ -888,7 +888,7 @@ void      _ElementaryCommand::ExecuteCase61 (_ExecutionList& chain)
                 DeleteObject (scfg);
             } else {
                 scfgNamesList.Replace(f,&scfgName,true);
-                scfgList.lData[f] = (long)scfg;
+                scfgList.list_data[f] = (long)scfg;
             }
         } else {
             scfgNamesList.Replace(f,&scfgName,true);
@@ -933,7 +933,7 @@ void      _ElementaryCommand::ExecuteCase63 (_ExecutionList& chain)
             else
             {
                 scfgNamesList.Replace(f,str,true);
-                scfgList.lData[f] = (long)scfg;
+                scfgList.list_data[f] = (long)scfg;
             }
         }
         else
@@ -1010,8 +1010,8 @@ bool    _ElementaryCommand::DecompileFormulae (void) {
   switch (code) {
     case 0:
       if (simpleParameters.nonempty()) {
-        _Formula* f = (_Formula*)simpleParameters.lData[1],
-                *f2 = (_Formula*)simpleParameters.lData[2] ;
+        _Formula* f = (_Formula*)simpleParameters.list_data[1],
+                *f2 = (_Formula*)simpleParameters.list_data[2] ;
         if (f) {
           delete f;
         }
@@ -1025,7 +1025,7 @@ bool    _ElementaryCommand::DecompileFormulae (void) {
       break;
     case 4: {
       if (parameters.lLength && simpleParameters.lLength == 3) {
-        _Formula* f = (_Formula*)simpleParameters.lData[2];
+        _Formula* f = (_Formula*)simpleParameters.list_data[2];
         if (f) {
           delete f;
         }
@@ -1036,7 +1036,7 @@ bool    _ElementaryCommand::DecompileFormulae (void) {
     }
     case 14: {
       if (parameters.lLength && simpleParameters.lLength == 2) {
-        _Formula* f = (_Formula*)simpleParameters.lData[1];
+        _Formula* f = (_Formula*)simpleParameters.list_data[1];
         if (f) {
           delete f;
         }
@@ -1126,13 +1126,13 @@ bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
 void    RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mbf)
 {
     if (mid >=0 && mid < modelTypeList.lLength) {
-        if (modelTypeList.lData[mid] == 0) {
-            mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.lData[mid],MATRIX);
+        if (modelTypeList.list_data[mid] == 0) {
+            mm = (_Matrix*)FetchObjectFromVariableByTypeIndex(modelMatrixIndices.list_data[mid],MATRIX);
         } else {
             mm = nil;
         }
 
-        long fvi = modelFrequenciesIndices.lData[mid];
+        long fvi = modelFrequenciesIndices.list_data[mid];
         fv = (_Matrix*)FetchObjectFromVariableByTypeIndex(fvi>=0?fvi:(-fvi-1),MATRIX);
         mbf = (fvi>=0);
     } else {
@@ -1145,13 +1145,13 @@ void    RetrieveModelComponents (long mid, _Matrix*& mm, _Matrix*& fv, bool & mb
 
 void    RetrieveModelComponents (long mid, _Variable*& mm, _Variable*& fv, bool & mbf)
 {
-    if (mid >= 0 && modelTypeList.lData[mid] == 0) {
-        mm = LocateVar(modelMatrixIndices.lData[mid]);
+    if (mid >= 0 && modelTypeList.list_data[mid] == 0) {
+        mm = LocateVar(modelMatrixIndices.list_data[mid]);
     } else {
         mm = nil;
     }
 
-    long fvi = modelFrequenciesIndices.lData[mid];
+    long fvi = modelFrequenciesIndices.list_data[mid];
     fv = LocateVar (fvi>=0?fvi:(-fvi-1));
     mbf = (fvi>=0);
 }
@@ -1164,13 +1164,13 @@ void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, boo
 {
     if (modelID != HY_NO_MODEL) {
         // standard rate matrix
-        if (modelTypeList.lData[modelID] == 0) {
-            ((_Matrix*) (LocateVar(modelMatrixIndices.lData[modelID])->GetValue()))->ScanForVariables2(theReceptacle,inclG,modelID2,inclCat);
+        if (modelTypeList.list_data[modelID] == 0) {
+            ((_Matrix*) (LocateVar(modelMatrixIndices.list_data[modelID])->GetValue()))->ScanForVariables2(theReceptacle,inclG,modelID2,inclCat);
         } else {
         // formula based
             // inclG was replaced with false in a previous commit. This caused problems in the optimizer and in
             // likelihood reporting (it was consistently worse than optimizer results)
-            ((_Formula*)modelMatrixIndices.lData[modelID])->ScanFForVariables(theReceptacle, inclG, false, inclCat);
+            ((_Formula*)modelMatrixIndices.list_data[modelID])->ScanFForVariables(theReceptacle, inclG, false, inclCat);
         }
     }
 }

@@ -2280,7 +2280,7 @@ hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum
         unsigned long upper_bound = NumberOperations();
 
         for (unsigned long i=0UL; i<upper_bound; i++) {
-            _Operation* thisOp = ItemAt (i);
+            _Operation const* thisOp = ItemAt (i);
             if (thisOp->theNumber) {
                 stack[stackTop++].value = thisOp->theNumber->Value();
                 continue;
@@ -2388,7 +2388,7 @@ bool _Formula::HasChanged (bool ingoreCats) {
         if (this_op->IsAVariable()) {
             data_id = this_op->GetAVariable();
             if (data_id>=0) {
-                if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[data_id]))->HasChanged(ingoreCats)) {
+                if (((_Variable*)(((BaseRef*)(variablePtrs.list_data))[data_id]))->HasChanged(ingoreCats)) {
                     return true;
                 }
             } else if (this_op->theNumber->HasChanged()) {
@@ -2489,7 +2489,7 @@ bool _Formula::HasChangedSimple (_SimpleList& variableIndex) {
         if (this_op->theNumber) {
             continue;
         } else if (this_op->theData >= 0) {
-            if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[variableIndex.lData[this_op->theData]]))->HasChanged(false)) {
+            if (((_Variable*)(((BaseRef*)(variablePtrs.list_data))[variableIndex.list_data[this_op->theData]]))->HasChanged(false)) {
                 return true;
             }
         } else {
@@ -2724,7 +2724,7 @@ HBLObjectRef _Formula::GetTheMatrix (void) {
 //__________________________________________________________________________________
 long _Formula::ObjectClass (void) {
     if (theStack.StackDepth()) {
-        return ((HBLObjectRef)theStack.theStack.lData[0])->ObjectClass();
+        return ((HBLObjectRef)theStack.theStack.list_data[0])->ObjectClass();
     }
 
     HBLObjectRef res =   Compute();

@@ -375,14 +375,14 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
 
   if (theData >= 0L) { // variable reference
     if (numberOfTerms <= 0L) { // compute and push value
-      theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->Compute());
+      theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.list_data)[theData])->Compute());
     } else { // compute reference and push value
-      theScrap.Push (((_Variable*)((BaseRef*)variablePtrs.lData)[theData])->ComputeReference(nameSpace),false);
+      theScrap.Push (((_Variable*)((BaseRef*)variablePtrs.list_data)[theData])->ComputeReference(nameSpace),false);
     }
     return true;
   }
   if (theData < -2L) { // place variable value (no compute, i.e. pass by reference)
-    theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.lData)[-theData-3])->GetValue());
+    theScrap.Push(((_Variable*)((BaseRef*)variablePtrs.list_data)[-theData-3])->GetValue());
     return true;
   }
   if (numberOfTerms<0) { // execute a user-defined function
@@ -554,16 +554,16 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
     //printf ("\nFunction result = %s\n", _String ((_String*)theScrap.Pop (false)->toStr()).getStr());
 
       for (unsigned long di = 0UL; di < referenceArgs.lLength; di++) {
-        variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(di)),displacedReferences.lData[di]);
+        variableNames.SetXtra(LocateVarByName (*(_String*)referenceArgs(di)),displacedReferences.list_data[di]);
       }
 
       for (unsigned long dv = 0UL; dv < displacedVars.lLength; dv++) {
-        variablePtrs.Replace (existingDVars.lData[dv],(HBLObjectRef)displacedVars(dv), false);
+        variablePtrs.Replace (existingDVars.list_data[dv],(HBLObjectRef)displacedVars(dv), false);
       }
 
 
       for (unsigned long dv2 = 0; dv2 < displacedValues.lLength; dv2++) {
-        _Variable* theV = LocateVar (existingIVars.lData[dv2]);
+        _Variable* theV = LocateVar (existingIVars.list_data[dv2]);
         DeleteObject(theV->varValue);
         theV->varValue = ((HBLObjectRef)displacedValues(dv2));
       }
@@ -578,7 +578,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
 
   }
 
-  HBLObjectRef arg0 = ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
+  HBLObjectRef arg0 = ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength-numberOfTerms]),
             temp;
 
   _hyExecutionContext localContext (nameSpace, errMsg);
@@ -587,14 +587,14 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
     _List arguments;
 
     for (long k = 1; k < numberOfTerms; k ++) {
-      arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength - numberOfTerms + k]);
+      arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength - numberOfTerms + k]);
     }
     
     temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
     theScrap.theStack.lLength -= (numberOfTerms);
 
   } else {
-    temp =  ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
+    temp =  ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
     theScrap.theStack.lLength--;
   }
 
@@ -653,7 +653,7 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
     }
 
 
-    HBLObjectRef arg0 = ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-numberOfTerms]),
+    HBLObjectRef arg0 = ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength-numberOfTerms]),
     temp;
 
     _hyExecutionContext localContext (nameSpace, errMsg);
@@ -662,14 +662,14 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
       _List arguments;
 
       for (long k = numberOfTerms-1; k >= 1; k --) {
-        arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-k]);
+        arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength-k]);
       }
 
       temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
       theScrap.theStack.lLength -= (numberOfTerms);
 
     } else {
-      temp =  ((HBLObjectRef)theScrap.theStack.lData[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
+      temp =  ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength-1])->ExecuteSingleOp(opCode, nil, &localContext);
       theScrap.theStack.lLength--;
     }
 

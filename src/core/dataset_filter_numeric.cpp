@@ -113,7 +113,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
 
     for (long k = 0; k < theNodeMap.lLength; k++) // sweep down the columns
       for (long state = 0; state < dimension; state++) {
-        testV += ((_Matrix *)(((_Matrix **)values.lData)[k]))
+        testV += ((_Matrix *)(((_Matrix **)values.list_data)[k]))
                      ->theData[site * dimension + state];
       }
 
@@ -127,14 +127,14 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
       sameScore = (_SimpleList *)siteIndices.GetXtra(f);
       for (long k = 0; k < sameScore->lLength; k++) {
         bool fit = true;
-        f = sameScore->lData[k];
+        f = sameScore->list_data[k];
 
         for (long spec = 0; spec < theNodeMap.lLength && fit;
              spec++) { // sweep down the columns
-          _Matrix *specMatrix = (_Matrix *)(((_Matrix **)values.lData)[spec]);
+          _Matrix *specMatrix = (_Matrix *)(((_Matrix **)values.list_data)[spec]);
           for (long state = 0; state < dimension; state++)
             if (specMatrix->theData[site * dimension + state] !=
-                specMatrix->theData[theMap.lData[f] * dimension + state]) {
+                specMatrix->theData[theMap.list_data[f] * dimension + state]) {
               fit = false;
               break;
             }
@@ -184,7 +184,7 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
       for (long site = 0; site < theFrequencies.lLength; site++)
         for (long state = 0; state < dimension; state++, storeHere++) {
           *storeHere =
-              specMatrix->theData[refShifter + theMap.lData[site] * dimension +
+              specMatrix->theData[refShifter + theMap.list_data[site] * dimension +
                                   state];
         }
     }

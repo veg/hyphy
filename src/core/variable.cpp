@@ -389,7 +389,7 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the 
         }
       
         /*if (valueClass & (TREE)) {
-            variablePtrs.lData[theIndex] = (long)(((_TheTree*)theP)->makeDynamicCopy(GetName()));
+            variablePtrs.list_data[theIndex] = (long)(((_TheTree*)theP)->makeDynamicCopy(GetName()));
             DeleteObject(this);
         } else*/ {
             if (dup) {
@@ -486,7 +486,7 @@ void    _Variable::ClearConstraints (void)
         _Variable newVar (*GetName(), IsGlobal());
         newVar.SetValue ((HBLObjectRef)Compute()->makeDynamic(),false);
         ReplaceVar ( &newVar);
-        /*_Matrix * modelMatrix = (_Matrix*)LocateVar(modelMatrixIndices.lData[1])->GetValue();
+        /*_Matrix * modelMatrix = (_Matrix*)LocateVar(modelMatrixIndices.list_data[1])->GetValue();
         for (long k=0; k<4; k++)
             for (long k2 = 0; k2<4; k2++)
                 if (k!=k2)

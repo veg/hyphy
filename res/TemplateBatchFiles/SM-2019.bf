@@ -5,7 +5,7 @@ LoadFunctionLibrary ("libv3/convenience/math.bf");
 LoadFunctionLibrary ("libv3/IOFunctions.bf");
 LoadFunctionLibrary ("libv3/UtilityFunctions.bf");
 
-//#profile START;
+#profile START;
 
 sm.analysis_description = {terms.io.info : "This analysis implements canonical and modified versions of the Slatkin-Maddison
 phylogeny based test for population segregation. The test estimates the minimum number of migration events using maximum
@@ -19,6 +19,14 @@ permutation tests",
                           };
 
 io.DisplayAnalysisBanner (sm.analysis_description);
+
+KeywordArgument ("tree", "The Newick tree string defining the topology to use for testing");
+KeywordArgument ("groups", "The number of compartments to test", "2");
+
+
+//KeywordArgument ("output", "Write the output JSON to ", "2");
+
+
 
 utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE); // for re-entrance
 SetDialogPrompt ("Load the phylogeny to test for compartmentalization");
@@ -36,7 +44,10 @@ sm.group_count = io.PromptUser(">How many branch classes are there", 2, 2, sm.le
 sm.regular_expressions = {};
 
 for (sm.i = 0; sm.i < sm.group_count; sm.i += 1) {
+
+    KeywordArgument ("description-" + (sm.i + 1), "Description for sequences in compartment " + (sm.i+1));
     sm.tag = io.PromptUserForString (">Please provide a description for group of branches " + (sm.i+1));
+    KeywordArgument ("regexp-" + (sm.i + 1), "Regular expression to select the branches in compartment _" + sm.tag + "_");
     sm.regexp = io.PromptUserForString (">Please provide a regular expression to select the _" + sm.tag + "_ branches");
     sm.regular_expressions [sm.tag] = sm.regexp;
 }
@@ -59,13 +70,23 @@ utility.ForEachPair (sm.partitions , "_key_", "_value_", '
     }
 ');
 
+KeywordArgument ("replicates", "The number of bootstrap replicates", "1000");
 
-sm.replicates = io.PromptUser(">How many bootstrap replicates", 100, 1, 1000000, TRUE);
+sm.replicates = io.PromptUser(">How many bootstrap replicates", 1000, 1, 1000000, TRUE);
 
 sm.bootstrap = trees.BootstrapSupport (sm.tree);
-sm.bootstrap_weighting = {"default" : 0.2};
+
+KeywordArgument ("weight", "Probability of branch selection for structured permutation [0-1]; 0 = classical Slatkin-Maddison, 1 = fully structured", "0.2");
+sm.default_weighting = io.PromptUser(">Probability of branch selection ", 0.2, 0.0,1.0, FALSE);
+
+sm.bootstrap_weighting = {"default" : sm.default_weighting};
+
+
 
 if (utility.Array1D (sm.bootstrap )) {
+ 
+   KeywordArgument ("use-bootstrap", "Use bootstrap weights to respect well supported clades", "Yes");
+
    if (io.SelectAnOption ({"No" : "Each internal branch has the same probability of being randomized in structured permutations",
                                 "Yes"  : "For branches with bootstrap support, determine the probability of randomization based on the bootstrap (higher -> more likely)"},
                                 "Use bootstrap weighting"
@@ -118,12 +139,11 @@ for (sm.k = 0; sm.k < sm.replicates ; ) {
     sm.resampled_distribution[sm.k][1] = sm.replicate_scores ["score"];
     sm.replicate_scores_standard = Max (T, {"labels": Random (sm.node_labels,0)});
     sm.resampled_distribution[sm.k][0] = sm.replicate_scores_standard["score"];
-    sm.replicate_scores = sm.replicate_scores["node-scores"];
 
 
     utility.ForEachPair (sm.replicate_scores_standard["node-scores"], "_node_", "_value_", '
          (sm.node_scores_standard_replicates [_node_])[sm.k] = _value_;
-         (sm.node_scores_replicates [_node_])[sm.k]         = (sm.replicate_scores[_node_]);
+         (sm.node_scores_replicates [_node_])[sm.k]         = ((sm.replicate_scores["node-scores"])[_node_]);
      '
     );
 
@@ -277,7 +297,7 @@ sm.json = {
 
 io.SpoolJSON (sm.json, sm.json_path);
 
-/*#profile _hyphy_profile_dump;
+#profile _hyphy_profile_dump;
 
 
 
@@ -296,6 +316,13 @@ for (k=0; k<Columns(_instructions); k=k+1)
     k2 = to_sort[k][0];
     fprintf (stdout, Format (_indices[k2],6,0), " : ", _instructions[k2], "\n\tCall count: ", stats[k2][0],
                                                    "\n\tTime (seconds): ", stats[k2][1], "\n");
-}*/
+}
+
+sm.json_file = sm.tree[terms.data.file] + "_SM.json";
+
+KeywordArgument ("output", "Write the JSON file here (default is to save to the same path as the tree file + '_SM.json')", sm.json_file);
+sm.json_file = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
+io.SpoolJSON (sm.json, sm.json_file);
 
 return sm.json;

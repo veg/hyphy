@@ -394,6 +394,35 @@ if(${MPI_FOUND})
     )
 endif(${MPI_FOUND})
 
+#-------------------------------------------------------------------------------
+# hyphy profile target
+#-------------------------------------------------------------------------------
+add_executable(
+    HYPHY-PROFILE
+    EXCLUDE_FROM_ALL
+    ${SRC_COMMON} ${SRC_UNIXMAIN}
+)
+
+if(${OPENMP_FOUND})
+    target_link_libraries(HYPHY-PROFILE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+else(${OPENMP_FOUND})
+    target_link_libraries(HYPHY-PROFILE ${DEFAULT_LIBRARIES})
+endif(${OPENMP_FOUND})
+
+add_custom_target(PROFILE DEPENDS HYPHY-PROFILE)
+
+
+set_target_properties(
+    HYPHY-PROFILE
+    PROPERTIES
+    if(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-instr-generate -fcoverage-mapping "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-instr-generate "
+    else(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}-g -fprofile-instr-generate -fcoverage-mapping "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -fprofile-instr-generate "
+    endif(${OPENMP_FOUND})
+)
 
 #-------------------------------------------------------------------------------
 # hyphy debug target
@@ -477,6 +506,12 @@ set_property(
     TARGET hyphy HYPHYGTEST HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
 )
+
+set_property(
+    TARGET hyphy HYPHYGTEST HYPHYDEBUG HYPHY-PROFILE
+    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+)
+
 
 set_property(
     TARGET HYPHYDEBUG HYPHYGTEST

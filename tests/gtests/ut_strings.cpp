@@ -941,7 +941,7 @@ TEST_F(StringTest,TokenizeTest)
     _String* sub_string = new _String(",");
 
     _List result_list = test_string.Tokenize(sub_string);
-    _String* result = (_String*)result_list.lData[0];
+    _String* result = (_String*)result_list.list_data[0];
 
     EXPECT_STREQ("house", result->getStr());
 
@@ -950,7 +950,7 @@ TEST_F(StringTest,TokenizeTest)
 //    _String* sub_string2 = new _String("");
 
 //    _List* result_list2 = test_string2.Tokenize(sub_string2);
-//    _String* result2 = (_String*)result_list2->lData[0];
+//    _String* result2 = (_String*)result_list2->list_data[0];
 //    EXPECT_STREQ("house,condo,hyphy", result2->getStr());
 
 
@@ -1159,7 +1159,7 @@ TEST_F(StringTest,RegExpMatchOnceTest)
     _String* pattern = new _String("hyph");
     _SimpleList matched_pairs;
     initial.RegExpMatchOnce(pattern, matched_pairs, false, false);
-    EXPECT_EQ(0,matched_pairs.lData[0]);
+    EXPECT_EQ(0,matched_pairs.list_data[0]);
 }
 
 TEST_F(StringTest,RegExpMatchTest)
@@ -1170,7 +1170,7 @@ TEST_F(StringTest,RegExpMatchTest)
     _SimpleList matched_pairs;
     initial.RegExpMatchOnce(pattern, matched_pairs, false, false);
 
-    EXPECT_EQ(2,matched_pairs.lData[0]);
+    EXPECT_EQ(2,matched_pairs.list_data[0]);
 }
 
 TEST_F(StringTest,RegExpMatchAllTest)
@@ -1184,7 +1184,7 @@ TEST_F(StringTest,RegExpMatchAllTest)
     hyPointer regex = PrepRegExp (pattern, errNo, false);
     initial.RegExpMatchAll(regex, matched_pairs);
 
-    EXPECT_EQ(2,matched_pairs.lData[0]);
+    EXPECT_EQ(2,matched_pairs.list_data[0]);
 }
 
 TEST_F(StringTest,LempelZivProductionHistoryTest)

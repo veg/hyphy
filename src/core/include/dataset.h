@@ -96,7 +96,7 @@ public:
   // return the frequency of a site
 
   _Site *GetSite(long index) const {
-    return ((_Site **)lData)[theMap.lData[index]];
+    return ((_Site **)list_data)[theMap.list_data[index]];
   }
 
   long ComputeSize(void);

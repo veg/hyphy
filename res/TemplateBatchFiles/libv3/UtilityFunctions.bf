@@ -240,11 +240,13 @@ function utility.Map (object, lambda_name, transform) {
     utility.Map.return_object = None;
 
     if (Type (object) == "AssociativeList") {
+        ExecuteCommands ("function  utility.Map.CB (`lambda_name`) {return `transform`;}", enclosing_namespace);
         utility.Map.return_object = {};
         utility.Map.keys = Rows (object);
         for (utility.Map.k = 0; utility.Map.k < Abs (object); utility.Map.k += 1) {
-            ^(lambda_name) = object [utility.Map.keys[utility.Map.k]];
-            utility.Map.return_object [utility.Map.keys[utility.Map.k]] = Eval (transform);
+            //^(lambda_name) = object [utility.Map.keys[utility.Map.k]];
+            //utility.Map.return_object [utility.Map.keys[utility.Map.k]] = Eval (transform);
+            utility.Map.return_object [utility.Map.keys[utility.Map.k]] = Call ("utility.Map.CB", object [utility.Map.keys[utility.Map.k]]);
         }
     } else {
         if (Type (object) == "Matrix") {
@@ -280,14 +282,15 @@ function utility.MapWithKey (object, key_name, lambda_name, transform) {
     Eval ("`lambda_name` = None");
     Eval ("`key_name` = None");
     utility.MapWithKey.return_object = None;
+    
 
     if (Type (object) == "AssociativeList") {
-         utility.MapWithKey.return_object = {};
+        ExecuteCommands ("function  utility.MapWithKey.CB (`key_name`, `lambda_name`) {return `transform`;}", enclosing_namespace);
+        utility.MapWithKey.return_object = {};
         utility.MapWithKey.keys = Rows (object);
         for (utility.MapWithKey.k = 0; utility.MapWithKey.k < Abs (object); utility.MapWithKey.k += 1) {
-            ^(key_name) = utility.MapWithKey.keys[utility.MapWithKey.k];
-            ^(lambda_name) = object [^(key_name)];
-            utility.MapWithKey.return_object [^(key_name)] = Eval (transform);
+            utility.MapWithKey.key = utility.MapWithKey.keys[utility.MapWithKey.k];
+            utility.MapWithKey.return_object [utility.MapWithKey.key] = Call ("utility.MapWithKey.CB", utility.MapWithKey.key, object[utility.MapWithKey.key]);
         }
     } else {
         if (Type (object) == "Matrix") {
