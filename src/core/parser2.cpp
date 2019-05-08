@@ -222,7 +222,8 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         }
 
         if (code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
-            LocateVar (reference)->SetValue (formulaValue);
+            formulaValue->AddAReference();
+            LocateVar (reference)->SetValue (formulaValue, false);
             return 1;
         }
 

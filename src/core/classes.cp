@@ -361,9 +361,8 @@ template <class node_data> int node<node_data>::get_child_num() {
     if (parent) {
         if (this == parent->one) return 1;
         if (this == parent->two) return 2;
-        num_siblings = parent->get_num_nodes();
-        for (int i=1; i<num_siblings+1; i++) {
-            if ((*parent).get_node(i) == this) return (i+2);
+        for (int i=0; i<parent->nodes.length; i++) {
+            if (parent->nodes.data[i] == this) return (i+3);
         }
     }
     return -1;
