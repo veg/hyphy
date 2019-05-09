@@ -5,7 +5,7 @@
 
 array_in = {};
 N = 500;
-M = 100;
+M = 1000;
 for (k = 0; k < N; k+=1) {
     array_in + k;
 }

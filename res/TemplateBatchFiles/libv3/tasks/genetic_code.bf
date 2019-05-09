@@ -274,6 +274,7 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
         codon_offset = 0;
 
         for (codon = 0; codon < 64; codon += 1) {
+        
 
             if (genCode[codon] == stop_code) {
                 codon_offset += 1;
@@ -377,6 +378,7 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
 
 
         for (codon_1 = 0; codon_1 < 64; codon_1 += 1) {
+        
             if (genCode[codon_1] == stop_code) {
                 codon_offset_1 += 1;
                 continue;
@@ -410,6 +412,7 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
                 ops = 0;
                 opn = 0;
                 ntp = None;
+                
 
                 for (path = 0; path < 6; path += 1) {
                     current_codon = codon_info_1;
@@ -439,6 +442,9 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
                         }
                     }
 
+ 
+
+
                     if (path_step == 3) {
                         path_count += 1;
                         path_length = Abs(codon_sequence);
@@ -454,16 +460,22 @@ lfunction genetic_code.ComputePairwiseDifferencesAndExpectedSites(genCode, optio
 
                         pes = 0;
                         pns = 0;
+                        
+                         
                         for (path_step = 0; path_step < path_length; path_step += 1) {
                             pes += SS[codon_sequence[path_step]];
                             pns += NS[codon_sequence[path_step]];
                         }
+                        
+                        
                         eps += pes / path_length;
                         epn += pns / path_length;
                         ops += ps;
                         opn += pn;
                     }
                 }
+                
+                
 
                 if (path_count > 0) {
                     EPS[direct_index_1][direct_index_2] = eps / path_count;

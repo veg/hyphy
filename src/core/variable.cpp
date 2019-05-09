@@ -230,6 +230,16 @@ HBLObjectRef  _Variable::ComputeMatchingType(long type) {
 HBLObjectRef  _Variable::Compute (void) // compute or return the value
 {
     // call_count++;
+    
+    auto update_var_value = [this] () -> void {
+        if (!varValue || varFormula->HasChanged()) {
+            HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
+            DeleteObject (varValue);
+            varValue = new_value;
+            //DeleteObject (varValue);
+            //(varValue = varFormula->Compute())->AddAReference();
+        }
+    };
   
     if (varFlags & HY_VARIABLE_COMPUTING) {
       HandleApplicationError (_String ("A recursive dependency error in _Variable::Compute; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
@@ -257,21 +267,14 @@ HBLObjectRef  _Variable::Compute (void) // compute or return the value
             if ((varFlags & HY_DEP_V_COMPUTED) && varValue) {
                 varFlags &= HY_VARIABLE_COMPUTING_CLR;
                 return varValue;
-            } else if (varFormula->HasChanged()||!varValue) {
-                HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
-                DeleteObject (varValue);
-                varValue = new_value;
-                //printf ("Recomputing value of %s => %g\n", theName->sData, varValue->Value());
+            } else {
+                update_var_value ();
             }
+                
             varFlags |= HY_DEP_V_COMPUTED;
           
-        } else if (varFormula->HasChanged()||!varValue) {
-              /* if varFormula depends on *this* variable, doing delete-set
-                 would cause the expression to reference deleted memory.
-               */
-            HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
-            DeleteObject (varValue);
-            varValue = new_value;
+        } else {
+            update_var_value ();
         }
 
     }
