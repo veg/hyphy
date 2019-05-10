@@ -341,17 +341,17 @@ io.ReportProgressMessageMD('GARD', 'multi-breakpoint', 'Performing multi breakpo
 
 namespace gard {
     // GA.1: Setup global parameters
-    populationSize = 20; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
+    populationSize = 30; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
     if(populationSize < mpi.NodeCount()) {
         populationSize = mpi.NodeCount();
     }
     mutationRate = 0.8; // the GARD paper said "15% of randomly selected bits were toggled"...
-    rateOfMutationsTharAreSmallShifts = 0.4; // some mutations are a new random break point; some are small shifts of the break point to an adjacent location.
-    maxFailedAttemptsToMakeNewModel = 5;
+    rateOfMutationsTharAreSmallShifts = 0.5; // some mutations are a new random break point; some are small shifts of the break point to an adjacent location.
+    maxFailedAttemptsToMakeNewModel = 7;
     cAIC_diversityThreshold = 0.001;
-    cAIC_improvementThreshold = 0.1; // I think this was basically 0 in the gard paper
-    maxGenerationsAllowedWithNoNewModelsAdded = 10; // TODO: Not in the GARD paper. use 10?
-    maxGenerationsAllowedAtStagnent_cAIC = 50; // TODO: this is set to 100 in the GARD paper
+    cAIC_improvementThreshold = 0.01; // I think this was basically 0 in the gard paper
+    maxGenerationsAllowedWithNoNewModelsAdded = 15; // TODO: Not in the GARD paper. use 10?
+    maxGenerationsAllowedAtStagnent_cAIC = 100; // TODO: this is set to 100 in the GARD paper
 
     // GA.2: Loop over increasing number of break points
     addingBreakPointsImproves_cAIC = TRUE;
