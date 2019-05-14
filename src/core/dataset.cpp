@@ -908,7 +908,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
             if (is_regexp) {
                 input.Trim(1,input.length()-2);
                 int   errCode;
-                regex = _String::PrepRegExp (&input, errCode, true);
+                regex = _String::PrepRegExp (input, errCode, true);
                 if (errCode) {
                     HandleApplicationError(_String::GetRegExpError(errCode));
                     return;
@@ -949,8 +949,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                     }
                     
                     if (is_regexp) {
-                        if (pattern.RegExpMatch (regex, 0L).countitems())
-                        target << specCount;
+                        if (pattern.RegExpMatch (regex, 0L).countitems()) {
+                            target << specCount;
+                        }
                     } else {
                         string_object->SetStringContent(new _StringBuffer (pattern));
                         string_name->SetStringContent  (new _StringBuffer (*GetSequenceName(seqPos)));

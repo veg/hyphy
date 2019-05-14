@@ -343,7 +343,7 @@ template <class node_data> void node<node_data>::replace_node(node<node_data>* e
         return;
     } else {
         if (two == existing) {
-            two == newNode;
+            two = newNode;
             return;
         }
     }
