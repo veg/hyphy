@@ -142,8 +142,10 @@ notDuplicate 	  = {};
 duplicateChecker  = {};
 haveInfoAtSites	  = {};
 
-for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceIndex+1)
-{
+
+all64.unique_sites = Rows (all64.site_freqs) * Columns (all64.site_freqs);
+
+for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceIndex+1) {
 
 	stopCodonCount     = 0;
 	sitesWithDeletions = {1,all64.unique_sites};
@@ -155,6 +157,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceI
 		siteInfo2 = nonStopCodonTemplate*siteInfo;
 		
 		
+		
 		if (siteInfo1[0]>0 && siteInfo2[0] == 0)
 		{
 			sitesWithDeletions[siteIndex] = 1;
@@ -162,9 +165,8 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceI
 		}
 		if (filteringOption % 2)
 		{
-			if (haveInfoAtSites[siteIndex] == 0)
-			{
-				if (siteInfo1[0]+siteInfo2[0] < stopCodonTemplate)
+			if (haveInfoAtSites[siteIndex] == 0) {
+				if (siteInfo1[0]+siteInfo2[0] < +stopCodonTemplate)
 				{
 					haveInfoAtSites[siteIndex] = 1;
 				}
