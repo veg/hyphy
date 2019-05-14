@@ -1027,21 +1027,23 @@ long    _DataSetFilter::HasExclusions (unsigned long site, _SimpleList* theExc, 
             RetrieveState           (site, k, buffer, false);
             Translate2Frequencies   (buffer, store, false, false);
             
-          
             unsigned long   filter_dim = GetDimension(false);
             long            found_forbidden = -1;
           
             for (unsigned long character = 0UL ;  character < filter_dim;  character ++) {
                    if (store[character] > 0.0) {
-                      if (theExc->Find(character) < 0) {
-                          return -1; // found at least one non-excluded character (possibly partial)
+                      if (theExc->Find(character) == kNotFound) {
+                          found_forbidden = -1;
+                          break;// found at least one non-excluded character (possibly partial)
                       } else {
                         found_forbidden = k;
                       }
                   }
             }
           
-            return found_forbidden;
+            if (found_forbidden >= 0L) {
+                return found_forbidden;
+            }
         }
     }
   

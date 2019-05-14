@@ -3458,7 +3458,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             hyFloat temp_sum = result + term;
             correction = (temp_sum - result) - term;
             result = temp_sum;
-            
+
         }
     }
     

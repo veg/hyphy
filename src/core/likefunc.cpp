@@ -2216,7 +2216,8 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         fprintf (stderr, "%g\n", result);
 #endif
         if (isnan (result)) {
-            ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
+            _TerminateAndDump("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
+            //ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
             return -INFINITY;
         }
         
@@ -4157,7 +4158,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
         long        inCount       = 0,
                     termFactor,
-                    lfCount         = likeFuncEvalCallCount;
+                    lfCount         = likeFuncEvalCallCount,
+                    nan_counter     = 0L;
         
         bool        do_large_change_only = false;
 
@@ -4590,6 +4592,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     LocateTheBump (current_index,brackStep, maxSoFar, bestVal, go2Bound);
                 }
                 
+                
+                
                 if (maxSoFar - lastLogL > precision) {
                     large_change << current_index;
                 }
@@ -4648,6 +4652,19 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 nc2.Sort();
             }
 
+            
+            if (isnan(maxSoFar-lastMaxValue)) {
+                nan_counter ++;
+                
+                if (nan_counter > 3) {
+                    ReportWarning (_String("Optimization terminated because it is stuck an -Infinity."));
+                    break;
+                }
+            } else {
+                nan_counter = 0;
+            }
+
+            
             averageChange2/=indexInd.lLength;
             // mean of parameter values
             averageChange/=(hyFloat)(indexInd.lLength-nc2.lLength+1);
@@ -8246,16 +8263,18 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
             if (np > 1) {
               hyFloat correction = 0.;
               for (blockID = 0; blockID < np; blockID ++)  {
+                if (thread_results[blockID] == -INFINITY) {
+                  sum = -INFINITY;
+                  break;
+                }
                 thread_results[blockID] -= correction;
                 hyFloat temp_sum = sum +  thread_results[blockID];
                 correction = (temp_sum - sum) - thread_results[blockID];
                 sum = temp_sum;
               }
 
-
             } else {
               sum = thread_results[0];
-
             }
 
             delete [] thread_results;
