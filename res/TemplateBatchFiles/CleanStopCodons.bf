@@ -148,9 +148,9 @@ all64.unique_sites = Rows (all64.site_freqs) * Columns (all64.site_freqs);
 for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceIndex+1) {
 
 	stopCodonCount     = 0;
-	sitesWithDeletions = {1,all64.unique_sites};
+	sitesWithDeletions = {1,Columns (all64.site_freqs)};
 	
-	for (siteIndex = 0; siteIndex < all64.unique_sites; siteIndex = siteIndex+1)
+	for (siteIndex = 0; siteIndex < Columns (all64.site_freqs); siteIndex = siteIndex+1)
 	{
 		GetDataInfo (siteInfo, all64, sequenceIndex, siteIndex);
 		siteInfo1 = stopCodonTemplate*siteInfo;
@@ -224,7 +224,7 @@ for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex = sequenceI
 
 if (filteringOption%2)
 {
-	doSomething = doSomething || (Abs(haveInfoAtSites)<all64.unique_sites);
+	doSomething = doSomething || (Abs(haveInfoAtSites)<Columns (all64.site_freqs));
 }
 
 if (doSomething)
