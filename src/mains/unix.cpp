@@ -84,7 +84,7 @@ const char hy_help_message [] =
 "  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
 "                           upon analysis completion\n\n"
 "optional global arguments:\n"
-"  BASEPATH=directory path  defines the base directory for all most path operations (default is pwd)\n"
+"  BASEPATH=directory path  defines the base directory for all path operations (default is pwd)\n"
 "  CPU=integer              if compiled with OpenMP multithreading support, requests this many threads; HyPhy could use fewer than this\n"
 "                           but never more; default is the number of CPU cores (as computed by OpenMP) on the system\n"
 "  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
@@ -115,7 +115,7 @@ const char hy_available_cli_analyses [] =
 "        [BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.\n"
 "        [aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).\n"
 "        [RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).\n"
-"        [GARD] Screen an alignment using GARD (requires an MPI environment).\n\n"
+"        [GARD] Screen an alignment for recombination using GARD (Genetic Algorithm for Recombination Detection).\n\n"
 ;
 
 
