@@ -51,7 +51,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define kAppendAnAssignmentToBufferAssignment   0x04
 #define kAppendAnAssignmentToBufferGlobal       0x08
 
-
+#define _HY_STRING_BUFFER_PREALLOCATE_SLOTS     256
 
 class _StringBuffer : public _String {
 
@@ -181,7 +181,7 @@ public:
    - SLKP 20170614 reviewed while porting from v3 branch
    */
 
-  virtual ~_StringBuffer(void) {};
+  virtual ~_StringBuffer(void);
 
   /**
   * Returns a dynamic copy of the current instance.
@@ -335,6 +335,15 @@ public:
      -  SLKP 20170923 initial implementation
      */
     virtual void TrimSpace (void);
+    
+    
+    /// memory buffering
+    void * operator new       (size_t size);
+    void   operator delete    (void * p);
+
+    static  _SimpleList                    free_slots;
+    static  unsigned char                  preallocated_buffer[];
+
     
 };
 

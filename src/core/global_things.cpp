@@ -361,8 +361,9 @@ namespace hy_global {
         init_genrand            (hy_random_seed);
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
         
+        _Constant::free_slots.Populate ((long)_HY_CONSTANT_PREALLOCATE_SLOTS, (long)_HY_CONSTANT_PREALLOCATE_SLOTS-1, -1L);
+        _StringBuffer::free_slots.Populate ((long)_HY_STRING_BUFFER_PREALLOCATE_SLOTS, (long)_HY_STRING_BUFFER_PREALLOCATE_SLOTS-1, -1L);
 
-        
         
 #ifdef __HYPHYMPI__
         hy_env :: EnvVariableSet (hy_env::mpi_node_id, new _Constant (hy_mpi_node_rank), false);
@@ -500,6 +501,12 @@ namespace hy_global {
             }
         }
         
+        /*if (_Constant::preallocated_buffer) {
+            free ((void*)_Constant::preallocated_buffer);
+        }
+        if (_StringBuffer::preallocated_buffer) {
+            free ((void*)_StringBuffer::preallocated_buffer);
+        }*/
         return no_errors;
     }
     

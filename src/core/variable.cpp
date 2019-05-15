@@ -113,6 +113,15 @@ BaseRef _Variable::makeDynamic (void) const{
 }
 
 //__________________________________________________________________________________
+void * _Variable::operator new (size_t size) {
+     return MemAllocate (size);
+}
+
+//__________________________________________________________________________________
+void  _Variable::operator delete (void * p) {
+    free (p);
+}
+//__________________________________________________________________________________
 bool _Variable::CheckFForDependence (long idx, bool opt)
 {
     if (varFormula) {

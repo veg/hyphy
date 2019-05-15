@@ -60,13 +60,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /*---------------------------------------------------------------------------*/
 
-template <class array_data> class ptr_array
-{
-
+template <class array_data> class ptr_array {
+    template<typename T> friend class node;
+protected:
+    int             length;                                            //length of the array
+    
 public:
     array_data  *data;                                            //points to an array of somethings
-    int             length;                                            //length of the array
-
+ 
     ptr_array                   (void) : data (NULL), length (0) {
     }
     //default constructor

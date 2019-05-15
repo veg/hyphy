@@ -457,9 +457,9 @@ _Matrix::_Matrix (hyFloat constant, unsigned long rows, unsigned long columns) {
 _Matrix::_Matrix (_List const& sl, bool parse_escapes)
 // list of strings
 {
-  if (sl.lLength) {
-    CreateMatrix     (this, 1, sl.lLength,  false, true, false);
-    Convert2Formulas();
+  if (sl.nonempty()) {
+    CreateMatrix     (this, 1, sl.lLength,  false, false, true);
+    this->storageType = _FORMULA_TYPE;
     
     if (parse_escapes) {
       for (unsigned long k=0UL; k<sl.lLength; k++) {
@@ -5311,33 +5311,31 @@ void        _Matrix::StoreObject (long k, _MathObject* value, bool dup)
 //_____________________________________________________________________________________________
 void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool simplify)
 {
-    if (storageType!=2) {
-        return;
-    }
-
-    long lIndex = Hash (i, j);
-    if (lIndex == -1) {
-        IncreaseStorage();
-        lIndex = Hash (i, j);
-    }
-
-    if (lIndex<0) {
-        theIndex[-lIndex-2] = i*vDim+j;
-        ((_Formula**)theData)[-lIndex-2] = copyF?(_Formula*)f.makeDynamic():&f;
-        if (simplify) {
-            ((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
+    if (is_expression_based()) {
+        long lIndex = Hash (i, j);
+        if (lIndex == -1) {
+            IncreaseStorage();
+            lIndex = Hash (i, j);
         }
-    } else {
-        if (((_Formula**)theData)[lIndex]!=(_Formula*)ZEROPOINTER) {
-            delete ((_Formula**)theData)[lIndex];
-        }
-        ((_Formula**)theData)[lIndex] = copyF?(_Formula*)f.makeDynamic():&f;
-        if (simplify) {
-            ((_Formula**)theData)[lIndex]->SimplifyConstants();
-        }
-    }
 
-    CheckIfSparseEnough();
+        if (lIndex<0) {
+            theIndex[-lIndex-2] = i*vDim+j;
+            ((_Formula**)theData)[-lIndex-2] = copyF?(_Formula*)f.makeDynamic():&f;
+            if (simplify) {
+                ((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
+            }
+        } else {
+            if (((_Formula**)theData)[lIndex]!=(_Formula*)ZEROPOINTER) {
+                delete ((_Formula**)theData)[lIndex];
+            }
+            ((_Formula**)theData)[lIndex] = copyF?(_Formula*)f.makeDynamic():&f;
+            if (simplify) {
+                ((_Formula**)theData)[lIndex]->SimplifyConstants();
+            }
+        }
+
+        CheckIfSparseEnough();
+    }
 }
 
 //_____________________________________________________________________________________________

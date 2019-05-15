@@ -46,10 +46,10 @@ function ForEachPair(object, key_name, value_name, transform) {
         utility.ForEachPair.keys = Rows (object);
         utility.ForEachPair.ub =  Abs (object);
 
-             for (utility.ForEachPair.k = 0; utility.ForEachPair.k < utility.ForEachPair.ub; utility.ForEachPair.k += 1) {
-                utility.ForEachPair.key = utility.ForEachPair.keys[utility.ForEachPair.k];
-                Call ("utility.ForEachPair.CB",utility.ForEachPair.key , object [utility.ForEachPair.key]);
-             }
+        for (utility.ForEachPair.k = 0; utility.ForEachPair.k < utility.ForEachPair.ub; utility.ForEachPair.k += 1) {
+            utility.ForEachPair.key = utility.ForEachPair.keys[utility.ForEachPair.k];
+            Call ("utility.ForEachPair.CB",utility.ForEachPair.key , object [utility.ForEachPair.key]);
+        }
     } else {
         if (Type (object) == "Matrix") {
             utility.ForEachPair.rows = Rows (object);

@@ -957,8 +957,9 @@ int main (int argc, char* argv[]) {
         }
 
 
-        ex.Execute();
+         ex.Execute();
 
+ 
         if (usePostProcessors && (!updateMode)) {
             ReadInPostFiles();
             printf ("\n\n**********Continue with result processing (y/n)?");
@@ -1012,9 +1013,14 @@ int main (int argc, char* argv[]) {
     _comparative_lf_debug_matrix->toFileStr(comparative_lf_debug_matrix_content_file);
     fclose (comparative_lf_debug_matrix_content_file);
 #endif
-    
+
+
     PurgeAll                    (true);
+    ex.ClearExecutionList();
+    
+
     GlobalShutdown              ();
+    
 
 
 #ifdef __MINGW32__

@@ -1909,8 +1909,6 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
           }
         }
 
-
-
         /*ticker++;
         if (ticker >= 1462440) {
           printf ("\n_Formula::Compute (%x, %d)  %ld terms, stack depth %ld\n", this, ticker, theFormula.lLength, theStack.theStack.lLength);

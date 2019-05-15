@@ -8443,12 +8443,12 @@ void    countingTraverse (node<long>* startingNode, long& totalLength, long curr
         maxSize = currentSize;
     }
 
-    for (long k=1; k<startingNode->nodes.length; k++) {
+    for (long k=1; k<startingNode->get_num_nodes(); k++) {
         countingTraverse (startingNode->go_down(k), totalLength, currentSize, maxSize, true);
     }
 
-    if (startingNode->nodes.length) {
-        countingTraverse (startingNode->go_down(startingNode->nodes.length), totalLength, currentSize, maxSize, false);
+    if (startingNode->get_num_nodes()) {
+        countingTraverse (startingNode->go_down(startingNode->get_num_nodes()), totalLength, currentSize, maxSize, false);
     }
 }
 
@@ -8457,14 +8457,14 @@ void    countingTraverse (node<long>* startingNode, long& totalLength, long curr
 void    countingTraverseArbRoot (node<long>* startingNode, node<long>* childNode, long& totalLength, long currentSize, long& maxSize)
 {
     if (childNode)
-        for (long k=1; k<=startingNode->nodes.length; k++) {
+        for (long k=1; k<=startingNode->get_num_nodes(); k++) {
             node<long>* cNode = startingNode->go_down(k);
             if (cNode!=childNode) {
                 countingTraverse (cNode, totalLength, currentSize, maxSize, true);
             }
         }
     else
-        for (long k=1; k<=startingNode->nodes.length; k++) {
+        for (long k=1; k<=startingNode->get_num_nodes(); k++) {
             countingTraverse (startingNode->go_down(k), totalLength, currentSize, maxSize, true);
         }
 
@@ -8502,7 +8502,7 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
 
     co << startingNode->in_object;
 
-    if (isFirstNode || startingNode->nodes.length) {
+    if (isFirstNode || startingNode->get_num_nodes()) {
         long id = findAvailableSlot(cs,ff);
         cs.list_data[id] = startingNode->in_object;
         startingNode->in_object = id;
@@ -8520,7 +8520,7 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
         po << (long)childNode;
 
         if (startingNode->parent) {
-            for (long k=1; k<=startingNode->nodes.length; k++) {
+            for (long k=1; k<=startingNode->get_num_nodes(); k++) {
                 node<long>* cNode = startingNode->go_down(k);
                 if (cNode!=childNode) {
                     setComputingArrays (startingNode->go_down(k), nil, co,so,cs,ro,po,ff);
@@ -8531,10 +8531,10 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
         } else { // actual tree root
             bool passedUpPath = false;
 
-            for (long k=1; k<=startingNode->nodes.length; k++) {
+            for (long k=1; k<=startingNode->get_num_nodes(); k++) {
                 node<long>* cNode = startingNode->go_down(k);
                 if (cNode!=childNode) {
-                    if ((k==startingNode->nodes.length)||((k==startingNode->nodes.length-1)&&(!passedUpPath))) {
+                    if (k == startingNode->get_num_nodes() || k == startingNode->get_num_nodes() - 1 && !passedUpPath) {
                         cs.list_data[startingNode->in_object] = -1;
                     }
                     setComputingArrays (startingNode->go_down(k), nil, co,so,cs,ro,po,ff);
@@ -8549,17 +8549,17 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
             po << (long)startingNode->parent;
         }
 
-        for (long k=1; k<startingNode->nodes.length; k++) {
+        for (long k=1; k<startingNode->get_num_nodes(); k++) {
             setComputingArrays (startingNode->go_down(k), nil, co,so,cs,ro,po,ff);
         }
 
         if (!isFirstNode)
-            if (startingNode->nodes.length) {
+            if (startingNode->get_num_nodes()) {
                 cs.list_data[startingNode->in_object] = -1;
             }
 
-        if (startingNode->nodes.length) {
-            setComputingArrays (startingNode->go_down(startingNode->nodes.length), nil, co,so,cs,ro,po,ff);
+        if (startingNode->get_num_nodes()) {
+            setComputingArrays (startingNode->go_down(startingNode->get_num_nodes()), nil, co,so,cs,ro,po,ff);
         }
 
         if (isFirstNode&&startingNode->parent) {
@@ -10010,7 +10010,7 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
         }
     } else {
         // handle the degenerate tree case
-        if (curNode.nodes.length == 1) {
+        if (curNode.get_num_nodes() == 1) {
             for (unsigned long k = 0UL; k<vecSize; k++) {
                 _String letterValue = dsf->ConvertCodeToLetters (dsf->CorrectCode(baseVector[k]), baseLength);
                 for (unsigned long m = 0UL; m<letterValue.length(); m++) {
@@ -10025,7 +10025,7 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
 
     // now scan the "children" and pass on the parameters as needed
 
-    if (curNode.nodes.length) {
+    if (curNode.get_num_nodes()) {
         if (intNodes) {
             bool writeOrAdd = intNodes->lLength;
             for (unsigned long k = 0UL; k<vecSize; k++) {
@@ -10111,7 +10111,7 @@ bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long par
         return true;
       }
     } else {
-      if (curNode.nodes.length == 1) { // two taxon sumulation
+      if (curNode.get_num_nodes() == 1) { // two taxon sumulation
         target << parentState;
       } else if (iNodes) {
         (*iNodes)<<parentState;

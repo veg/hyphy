@@ -93,6 +93,10 @@ public:
   long GetRefNo     (void) const { return refNo < 0L ? -refNo - 2L : refNo - 2L; }
   bool IsComplete   (void) const    { return refNo < 0L; }
   void SetRefNo     (long r) { refNo = -r - 2L; }
+    
+  void *      operator new       (size_t size);
+  void        operator delete    (void * p);
+
 
 private:
   long refNo; // if this site contains a reference to another one

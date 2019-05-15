@@ -2454,7 +2454,7 @@ void     _TheTree::RecoverNodeSupportStates (_DataSetFilter const* dsf, long sit
             for (long cc = 0L; cc < cBase; cc++) {
                 hyFloat      tmp = 1.0;
                 
-                for (long nc = 0; nc < thisINode->nodes.length; nc++) {
+                for (long nc = 0; nc < thisINode->get_num_nodes(); nc++) {
                     hyFloat  tmp2 = 0.0;
                     _CalcNode   * child         = map_node_to_calcnode(thisINode->go_down(nc+1));
                     
@@ -2500,7 +2500,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat * re
             hyFloat sum = 0.;
             for (long cc = 0; cc < cBase; cc++) {
                 hyFloat tmp = 1.0;
-                for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
+                for (long nc = 0; nc < thisNode->parent->get_num_nodes(); nc++) {
                     hyFloat  tmp2            = 0.0;
                     _CalcNode   * child         = map_node_to_calcnode(thisNode->parent->go_down (nc+1));
                     bool          invert        = (child == thisNodeC);;
@@ -2530,7 +2530,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat * re
         } else {
             for (long cc = 0; cc < cBase; cc++,vecPointer++) {
                 hyFloat tmp = 1.0;
-                for (long nc = 0; nc < thisNode->parent->nodes.length; nc++) {
+                for (long nc = 0; nc < thisNode->parent->get_num_nodes(); nc++) {
                     hyFloat  tmp2            = 0.0;
                     _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.list_data)[thisNode->parent->nodes.data[nc]->in_object]);
                     if (child != thisNodeC) {
@@ -2551,7 +2551,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat * re
         InitializeArray (vecPointer, cBase, 1.0);
     }
     
-    for (long nc = 0; nc < thisNode->nodes.length; nc++) {
+    for (long nc = 0; nc < thisNode->get_num_nodes(); nc++) {
         RecoverNodeSupportStates2 (thisNode->nodes.data[nc],resultVector,forwardVector,catID,lookup);
     }
 }
@@ -2627,7 +2627,7 @@ long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firs
             if (myParent >= 0) {
                 markedNodes [myParent] = 1;
             }
-            theCost += ((node <long>*)(flatNodes.list_data[i]))->nodes.length;
+            theCost += ((node <long>*)(flatNodes.list_data[i]))->get_num_nodes();
         }
     }
 
@@ -2669,7 +2669,7 @@ long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstInd
             if (myParent >= 0) {
                 markedNodes.list_data[myParent] = 1;
             }
-            theCost         += ((node <long>*)(flatNodes.list_data[i]))->nodes.length;
+            theCost         += ((node <long>*)(flatNodes.list_data[i]))->get_num_nodes();
         } else if (traversalTags && orderIndex) {
             long theIndex = filterL * i + orderIndex;
             traversalTags->list_data[theIndex/_HY_BITMASK_WIDTH_] |= bitMaskArray.masks[theIndex%_HY_BITMASK_WIDTH_];

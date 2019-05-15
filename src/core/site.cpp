@@ -92,4 +92,12 @@ void _Site::Complete(void) {
   refNo = refNo < 0L ? -refNo : refNo;
 }
 
+//__________________________________________________________________________________
+void * _Site::operator new (size_t size) {
+    return MemAllocate (size);
+}
 
+//__________________________________________________________________________________
+void  _Site::operator delete (void * p) {
+    free (p);
+}
