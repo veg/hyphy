@@ -340,6 +340,8 @@ for (v=Columns(branchLengths)-1; v>=0; v=v-1)
 
 /* get codon matrix */
 
+filteredData.unique_sites = Rows(filteredData.site_freqs) * Columns (filteredData.site_freqs);
+
 codonInfo  = {filteredData.species, filteredData.unique_sites};
 codonInfo2 = {filteredDataA.species, filteredDataA.unique_sites};
 

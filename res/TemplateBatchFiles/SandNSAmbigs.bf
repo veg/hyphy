@@ -243,6 +243,8 @@ SetDialogPrompt				("Specify output file:");
 
 fprintf (PROMPT_FOR_FILE,CLEAR_FILE,"Sequence ,Site, Synonymous Ambigs, Non-Synonymous Ambigs, Ambiguous Codon,Syn neighbors, Non-syn neighbors, Sense neighbors\n");
 
+filterData.unique_sites = Rows(filterData.site_freqs) * Columns (filterData.site_freqs);
+
 codonInfo  = {filteredData.species, filteredData.unique_sites};
 
 disallowed  = 0;
