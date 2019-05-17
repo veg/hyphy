@@ -78,12 +78,14 @@ GetDataInfo		(siteToPatternMap,  all);
 charCount	  = Columns (charInfo);
 template	  = {1,charCount}["1"];
 passcode	  = 2;
+all.unique_sites = Rows (all.site_freqs) * Columns (all.site_freqs);
+
 if (filteringOption == 1)
 {
 	passcode = charCount;
 }
 
-for (site = 0; site < Columns(all.site_freqs); site = site+1)
+for (site = 0; site < all.unique_site; site = site+1)
 {
 	seq_count = 0;
 	for (sequence = 0; sequence < all.species; sequence = sequence + 1)
@@ -102,7 +104,7 @@ for (site = 0; site < Columns(all.site_freqs); site = site+1)
 	{
 		retainSites [site] = 1;
 	}
-	SetParameter (STATUS_BAR_STATUS_STRING, "Processing pattern "+(site+1)+"/"+Columns (all.site_freqs),0);
+	SetParameter (STATUS_BAR_STATUS_STRING, "Processing pattern "+(site+1)+"/"+all.unique_sites,0);
 }
 
 DataSetFilter	filtered = CreateFilter (all, 1, retainSites[siteToPatternMap[siteIndex]]);
