@@ -41,6 +41,8 @@ else
 	DataSetFilter filteredData2 = CreateFilter (ds,1,"","");
 }
 
+filterData.unique_sites =  Rows (filteredData.site_freqs) * Columns (filteredData.site_freqs);
+
 fprintf (stdout, "\nUpper log-likelihood bound on the data set:",LAST_FILE_PATH,
 				 "\nSequences : ",filteredData.species,
 				 "\nSites     : ",filteredData.sites,
