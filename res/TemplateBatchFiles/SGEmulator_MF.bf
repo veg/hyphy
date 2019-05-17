@@ -230,6 +230,8 @@ for (fileID = 1; fileID <= fileCount; fileID = fileID + 1)
 
 	/* get codon matrix */
 
+	filteredData.unique_sites = Rows(filteredData.site_freqs) * Columns (fitleredData.site_freqs);	
+
 	codonInfo  = {filteredData.species, filteredData.unique_sites};
 	codonInfo2 = {filteredDataA.species, filteredDataA.unique_sites};
 
