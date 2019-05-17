@@ -2772,7 +2772,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     hy_global::matrix_exp_count += matrixQueue.lLength;
 #endif
     
-#pragma omp parallel for default(shared) private (matrixID) schedule(static) if (nt>1)  num_threads (nt)
+#pragma omp parallel for default(shared) private (matrixID) schedule(monotonic:guided) proc_bind(spread) if (nt>1)  num_threads (nt) 
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
         if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true), catID);
@@ -3243,23 +3243,56 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         accumulator = buffer[0] + buffer[1];
                         
 #elif defined _SLKP_USE_AVX_INTRINSICS // end _SLKP_USE_SSE_INTRINSICS
+                        if (alphabetDimensionmod4 == 60) {
+                            __m256d matrix_quad1 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix),_mm256_loadu_pd (childVector));
+                            __m256d matrix_quad2 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+4),_mm256_loadu_pd (childVector+4));
+                            __m256d matrix_quad3 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+8),_mm256_loadu_pd (childVector+8));
+                            __m256d matrix_quad4 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+12),_mm256_loadu_pd (childVector+12));
+                            __m256d matrix_quad5 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+16),_mm256_loadu_pd (childVector+16));
+                            __m256d matrix_quad6 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+20),_mm256_loadu_pd (childVector+20));
+                            __m256d matrix_quad7 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+24),_mm256_loadu_pd (childVector+24));
+                            __m256d matrix_quad8 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+28),_mm256_loadu_pd (childVector+28));
+                            __m256d matrix_quad9 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+32),_mm256_loadu_pd (childVector+32));
+                            __m256d matrix_quad10 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+36),_mm256_loadu_pd (childVector+36));
+                            __m256d matrix_quad11 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+40),_mm256_loadu_pd (childVector+40));
+                            __m256d matrix_quad12 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+44),_mm256_loadu_pd (childVector+44));
+                            __m256d matrix_quad13 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+48),_mm256_loadu_pd (childVector+48));
+                            __m256d matrix_quad14 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+52),_mm256_loadu_pd (childVector+52));
+                            __m256d matrix_quad15 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+56),_mm256_loadu_pd (childVector+56));
+
+                            matrix_quad1 = _mm256_add_pd (matrix_quad1,matrix_quad2);
+                            matrix_quad3 = _mm256_add_pd (matrix_quad3,matrix_quad4);
+                            matrix_quad5 = _mm256_add_pd (matrix_quad5,matrix_quad6);
+                            matrix_quad7 = _mm256_add_pd (matrix_quad7,matrix_quad8);
+                            matrix_quad9 = _mm256_add_pd (matrix_quad9,matrix_quad10);
+                            matrix_quad11 = _mm256_add_pd (matrix_quad11,matrix_quad12);
+                            matrix_quad13 = _mm256_add_pd (matrix_quad13,matrix_quad14);
+
+                            matrix_quad2 = _mm256_add_pd (matrix_quad1,matrix_quad3);
+                            matrix_quad4 = _mm256_add_pd (matrix_quad5,matrix_quad7);
+                            matrix_quad6 = _mm256_add_pd (matrix_quad9,matrix_quad11);
+                            matrix_quad8 = _mm256_add_pd (matrix_quad13,matrix_quad15);
+
+                            accumulator = _avx_sum_4(_mm256_add_pd (_mm256_add_pd(matrix_quad2,matrix_quad4), _mm256_add_pd(matrix_quad6,matrix_quad8)));
+ 
+                        } else {
                         
                         __m256d sum256 = _mm256_setzero_pd();
+                            for (long c = 0L; c < alphabetDimensionmod4; c+=4L) {
+                                __m256d matrix_quad = _mm256_loadu_pd (tMatrix+c),
+                                child_quad = _mm256_loadu_pd (childVector+c);
+    #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                sum256 = _mm256_fmadd_pd (matrix_quad,child_quad, sum256);
+    #else
+                                __m256d prod = _mm256_mul_pd (matrix_quad, child_quad);
+                                sum256 = _mm256_add_pd (sum256,prod);
+    #endif
+            
+                                accumulator = _avx_sum_4(sum256);
+                           }
+                       }
                         
-                        for (long c = 0L; c < alphabetDimensionmod4; c+=4L) {
-                            __m256d matrix_quad = _mm256_loadu_pd (tMatrix+c),
-                            child_quad = _mm256_loadu_pd (childVector+c);
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-                            sum256 = _mm256_fmadd_pd (matrix_quad,child_quad, sum256);
-#else
-                            __m256d prod = _mm256_mul_pd (matrix_quad, child_quad);
-                            sum256 = _mm256_add_pd (sum256,prod);
-#endif
-                        }
-                        
-                        
-                        accumulator = _avx_sum_4(sum256);
-                        //NOT sure why copy to doubles and add is faster
+                         //NOT sure why copy to doubles and add is faster
                         // that AVX istructions
 #else // _SLKP_USE_AVX_INTRINSICS
                         for (unsigned long c = 0UL; c < alphabetDimensionmod4; c+=4UL) {

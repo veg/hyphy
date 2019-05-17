@@ -3074,19 +3074,31 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             long    upto = secondArg.lDim - secondArg.lDim%4;
                        
             if (subtract)
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+                for (long idx = 0; idx < upto; idx+=4) {
+                    _mm256_storeu_pd (stData+idx, _mm256_sub_pd (_mm256_loadu_pd (stData+idx), _mm256_loadu_pd (argData+idx)));
+                }
+#else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]-=argData[idx];
                     stData[idx+1]-=argData[idx+1];
                     stData[idx+2]-=argData[idx+2];
                     stData[idx+3]-=argData[idx+3];
                 }
+#endif
             else
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+            for (long idx = 0; idx < upto; idx+=4) {
+                    _mm256_storeu_pd (stData+idx, _mm256_add_pd (_mm256_loadu_pd (stData+idx), _mm256_loadu_pd (argData+idx)));
+            }
+#else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]+=argData[idx];
                     stData[idx+1]+=argData[idx+1];
                     stData[idx+2]+=argData[idx+2];
                     stData[idx+3]+=argData[idx+3];
                 }
+#endif
                 
             if (subtract)
                 for (long idx = upto; idx < secondArg.lDim; idx++) {
@@ -3566,7 +3578,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
 #endif
                      for (long r = 0; r < hDim; r ++) {
 #ifdef _OPENMP                     
-#pragma omp parallel for default(none) shared(r,secondArg,storage) schedule(static) if (nt>1)  num_threads (nt)
+#pragma omp parallel for default(none) shared(r,secondArg,storage) schedule(monotonic:guided) proc_bind(spread) if (nt>1)  num_threads (nt) 
 #endif
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
                              hyFloat cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];
@@ -3657,13 +3669,12 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
               if (vDim == 61) {
                 for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
                   long m = theIndex[k];
-                  if (m != -1L) {
-                    long i = m%61;
+                  if (m >= 0L) {
+                    long i = ((unsigned long)m)%61;
                   
-                  
-                    hyFloat  value                           = theData[k];
+                    hyFloat  value                            = theData[k];
                     hyFloat  * _hprestrict_ res               = storage.theData    + (m-i);
-                    hyFloat  * _hprestrict_ secArg            = secondArg.theData  + i*vDim;
+                    hyFloat  * _hprestrict_ secArg            = secondArg.theData  + i*61;
                     
   #ifdef  _SLKP_USE_AVX_INTRINSICS
                       __m256d  value_op = _mm256_set1_pd (value);
@@ -3674,7 +3685,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                         _mm256_storeu_pd (res+i+4, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i+4),_mm256_loadu_pd(res+i+4)));
                         _mm256_storeu_pd (res+i+8, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i+8),_mm256_loadu_pd(res+i+8)));
 #else
-                        _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
+                        _mm256_storeu_pd (res+i,   _mm256_add_pd (_mm256_loadu_pd(res+i),    _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
                         _mm256_storeu_pd (res+i+4, _mm256_add_pd (_mm256_loadu_pd(res+i+4),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i+4))));
                         _mm256_storeu_pd (res+i+8, _mm256_add_pd (_mm256_loadu_pd(res+i+8),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i+8))));
 
@@ -3699,19 +3710,30 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
                       long m = theIndex[k];
                       if  (m != -1L ) { // non-zero
-                          long i = m%vDim;
+                          long i = ((unsigned long)m)%vDim;
                           // this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
                           // in the form of A_rc * B_cc'
 
                           hyFloat  value                           = theData[k];
                           hyFloat  *_hprestrict_ res               = storage.theData    + (m-i);
                           hyFloat  *_hprestrict_ secArg            = secondArg.theData  + i*vDim;
-
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+                          __m256d  value_op = _mm256_set1_pd (value);
+#endif
+                          
                           for (unsigned long i = 0UL; i < loopBound; i+=4) {
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+                              _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
+#else
+                              _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
+#endif
+                              
+#ifndef  _SLKP_USE_AVX_INTRINSICS
                               res[i]   += value * secArg[i];
                               res[i+1] += value * secArg[i+1];
                               res[i+2] += value * secArg[i+2];
                               res[i+3] += value * secArg[i+3];
+#endif
                           }
                            for (unsigned long i = loopBound; i < vDim; i++) {
                               res[i]   += value * secArg[i];
@@ -3724,8 +3746,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 for (long k=0; k<lDim; k++) {
                     long m = theIndex[k];
                     if (m!=-1) {
-                        long i = m/vDim;
-                        long j = m%vDim;
+                        long i = ((unsigned long)m)/vDim;
+                        long j = m - i*vDim;
                         hyFloat c = theData[k];
                         hyFloat* stData = storage.theData+i*secondArg.vDim,
                                     * secArgData=secondArg.theData+j*secondArg.vDim,
@@ -3860,7 +3882,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
             for (long k=0; k<lDim; k++) {
                 if ((t=theIndex[k])!=-1) {
                     long i = t/vDim;
-                    long j = t%vDim;
+                    long j = t - i * vDim;
                     hyFloat c = theData[k];
                     long n = j*dd;
                     long m = i*secondArg.vDim;
@@ -4187,7 +4209,7 @@ void    _Matrix::Transpose (void)
                     long p = theIndex[i];
                     if (p!=-1) {
                         long k      = p/vDim;
-                        long l      = p%vDim;
+                        long l      = p - k*vDim;
 
                         if (l!=k) { // off - diag
                             p            = Hash (l,k);
@@ -5211,10 +5233,14 @@ hyFloat&     _Matrix::operator [] (long i) {
     if (is_dense()) {
       return theData [i];
     }
-    long lIndex = Hash (i/vDim, i%vDim);
+    
+    unsigned long r = (unsigned long)i / vDim,
+                  c = i - vDim * r;
+    
+    long lIndex = Hash (r, c);
     if (lIndex == -1) {
         IncreaseStorage();
-        lIndex = Hash (i/vDim, i%vDim);
+        lIndex = Hash (r, c);
     }
     if (lIndex<0) {
         theIndex[-lIndex-2] = i;
@@ -5225,8 +5251,7 @@ hyFloat&     _Matrix::operator [] (long i) {
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::Store (long i, long j, hyFloat value)
-{
+void        _Matrix::Store (long i, long j, hyFloat value) {
     if (storageType!=1) {
         return;
     }
@@ -5254,8 +5279,7 @@ void        _Matrix::Store (long i, long j, hyFloat value)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::StoreObject (long i, long j, _MathObject* value, bool dup)
-{
+void        _Matrix::StoreObject (long i, long j, _MathObject* value, bool dup) {
     if (storageType) {
         return;
     }

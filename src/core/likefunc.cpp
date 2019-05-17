@@ -8239,7 +8239,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 #endif
 
             hyFloat* thread_results = new hyFloat[np];
-            #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
+    #pragma omp  parallel for default(shared) schedule(monotonic:guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
               for (blockID = 0; blockID < np; blockID ++) {
                 thread_results[blockID] = t->ComputeTreeBlockByBranch (*sl,
                                                     *branches,
@@ -8319,7 +8319,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                   printf ("%ld %s = %15.12g\n", p_id, GetIthIndependentVar(p_id)->GetName()->sData, (*parameterValuesAndRanges)(p_id,0));
                 }*/
 
-                 #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) if (np>1)
+                 #pragma omp  parallel for default(shared) schedule(monotonic:guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
                 for (blockID = 0; blockID < np; blockID ++) {
                     t->ComputeBranchCache (*sl,doCachedComp, bc, inc, df,
                                            conditionalTerminalNodeStateFlag[index],
