@@ -97,7 +97,7 @@ public:
     virtual void            MarkDone                    (void);
     bool            HasChanged2                 (void);
 
-    virtual  const _String           FinalizeNode                (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const&);
+    virtual  _String        FinalizeNode                (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const&);
     virtual  BaseRef        makeDynamic                 (void) const;
 
     virtual  BaseRef        makeDynamicCopy             (_String const*) const;

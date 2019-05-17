@@ -161,7 +161,7 @@ public:
   void MatchStartNEnd(_SimpleList &, _SimpleList &, _SimpleList * = nil) const;
 
   _String *GetSequenceName(long idx) const {
-    return theData->GetSequenceName(theNodeMap.lData[idx]);
+    return theData->GetSequenceName(theNodeMap.get(idx));
   }
 
   _String *GetSequenceCharacters(long) const;
@@ -265,7 +265,7 @@ public:
   char const *GetColumn(long index) const {
     return (const char *)(*(_Site *)((
         (BaseRef *)
-            theData->lData)[theData->theMap.lData[theMap.lData[index]]]));
+            theData->list_data)[theData->theMap.list_data[theMap.list_data[index]]]));
   }
 
   _SimpleList conversionCache;

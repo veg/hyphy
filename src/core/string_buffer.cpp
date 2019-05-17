@@ -45,6 +45,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 using namespace hy_global;
 
 #include <string.h> // for strlen
+#include <utility>  // for std::move
+
+
+unsigned char               _StringBuffer::preallocated_buffer [_HY_STRING_BUFFER_PREALLOCATE_SLOTS*sizeof (_StringBuffer)];
+_SimpleList                 _StringBuffer::free_slots;
 
 
 /*
@@ -138,6 +143,12 @@ _StringBuffer::_StringBuffer(const _String& buffer) : _String () {
 }
 
 //=============================================================
+
+_StringBuffer::_StringBuffer(_String&& buffer) : _String (std::move (buffer)) {
+    sa_length = s_length;
+}
+
+//=============================================================
 _StringBuffer::_StringBuffer(const _StringBuffer &s): _String () {
   this->Initialize();
   this->Duplicate (&s);
@@ -148,7 +159,9 @@ _StringBuffer::_StringBuffer(_String* buffer): _String (buffer) {
   sa_length = s_length;
 }
 
-
+_StringBuffer::~_StringBuffer (void ){
+    sa_length = 0L;
+}
 /*
 ==============================================================
 Cloners and Copiers
@@ -168,6 +181,21 @@ BaseRef _StringBuffer::makeDynamic (void) const {
   r->Duplicate(this);
   return r;
 }
+
+//=============================================================
+
+
+_StringBuffer& _StringBuffer::operator = (_StringBuffer && rhs) {
+    if (&rhs != this) {
+        Clear();
+        s_data = rhs.s_data;
+        s_length = rhs.s_length;
+        sa_length = rhs.sa_length;
+        rhs._String::Initialize();
+    }
+    return *this;
+}
+
 
 /*
 ==============================================================
@@ -428,7 +456,7 @@ void _StringBuffer::AppendAnAssignmentToBuffer(_String const* id, _String *value
 void _StringBuffer::AppendVariableValueAVL (_String const* id, _SimpleList const& var_numbers) {
   
   for (unsigned long k=0UL; k<var_numbers.countitems(); k++) {
-    _Variable *tiv = LocateVar(var_numbers.lData[k]);
+    _Variable *tiv = LocateVar(var_numbers.list_data[k]);
     if (tiv) {
       (*this) << id
               << "[\""
@@ -455,5 +483,32 @@ void _StringBuffer::AppendVariableValueAVL (_String const* id, _SimpleList const
   }
 }
 
+//__________________________________________________________________________________
+void * _StringBuffer::operator new (size_t size) {
+    if (_StringBuffer::free_slots.nonempty()) {
+        _StringBuffer * result = (_StringBuffer *)(_StringBuffer::preallocated_buffer) + _StringBuffer::free_slots.Pop();
+        //printf ("Allocate slot %ld\n", _StringBuffer::free_slots.get (_StringBuffer::free_slots.countitems()));
+        //result->Initialize();
+        return result;
+    }
+    //printf ("Allocating string buffer %ld\n", size);
+    return ::operator new(size);
+}
+
+
+//__________________________________________________________________________________
+void  _StringBuffer::operator delete (void * p) {
+    _StringBuffer * sb = (_StringBuffer*) p,
+                  * sbb = (_StringBuffer *)_StringBuffer::preallocated_buffer;
+    
+    if (sb >= sbb &&  sb < (sbb+ _HY_STRING_BUFFER_PREALLOCATE_SLOTS)) {
+        //printf ("Free slot %ld\n", ((long)(sb - _StringBuffer::preallocated_buffer)));
+        //sb->_StringBuffer::Clear();
+        free_slots << ((long)(sb - sbb));
+    } else {
+        //printf ("%p\n", p);
+        ::operator delete (p);
+    }
+}
 
 

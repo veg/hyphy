@@ -762,7 +762,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
                   i = lastNode-1;
                   lastNode = translationsFrom.BinaryFindObject (&node_name);
                   if (lastNode != kNotFound) {
-                    revisedTreeString<< (_String*)translationsTo.lData[lastNode];
+                    revisedTreeString<< (_String*)translationsTo.list_data[lastNode];
                   } else {
                     revisedTreeString<< node_name;
                   }
@@ -773,13 +773,13 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
         if (treeLevel) {
             ReportWarning (_String("Unbalanced '(,)' in the tree string:") & revisedTreeString.Enquote());
         } else if (i==file_tree_string->length()) {
-            *((_String*)treeStrings.lData[id]) = revisedTreeString;
+            *((_String*)treeStrings.list_data[id]) = revisedTreeString;
         }
     }
 
     if (treeSelected < treeStrings.lLength) {
         hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree, new HY_CONSTANT_TRUE,fState.theNamespace, false);
-        hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree_string, new _FString(*(_String*)treeStrings.lData[treeSelected], false),fState.theNamespace, false);
+        hy_env :: EnvVariableSetNamespace(hy_env::data_file_tree_string, new _FString(*(_String*)treeStrings.list_data[treeSelected], false),fState.theNamespace, false);
      }
 
     if (treeStrings.lLength) {

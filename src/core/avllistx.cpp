@@ -57,22 +57,19 @@ _AVLListX::_AVLListX (_SimpleList* d):_AVLList(d)
 
 //______________________________________________________________
 
-long    _AVLListX::GetXtra (long d) const
-{
-    return xtraD.lData[d];
+long    _AVLListX::GetXtra (long d) const {
+    return xtraD.get(d);
 }
 
 //______________________________________________________________
 
-void    _AVLListX::SetXtra (long i, long d)
-{
-    xtraD.lData[i] = d;
+void    _AVLListX::SetXtra (long i, long d) {
+    xtraD[i] = d;
 }
 
 //______________________________________________________________
 
-void _AVLListX::Clear (bool cL)
-{
+void _AVLListX::Clear (bool cL) {
     xtraD.Clear();
     _AVLList::Clear(cL);
 }
@@ -112,13 +109,13 @@ long  _AVLListX::InsertData (BaseRef b, long d, bool)
          n;
 
     if (w>=0) {
-        n = emptySlots.lData[w];
+        n = emptySlots.list_data[w];
         emptySlots.Delete (w);
-        leftChild.lData[n] = -1;
-        rightChild.lData[n] = -1;
-        balanceFactor.lData[n] = 0;
-        xtraD.lData[n] = d;
-        ((BaseRef*)dataList->lData)[n] = b;
+        leftChild.list_data[n] = -1;
+        rightChild.list_data[n] = -1;
+        balanceFactor.list_data[n] = 0;
+        xtraD.list_data[n] = d;
+        ((BaseRef*)dataList->list_data)[n] = b;
     } else {
         n = dataList->lLength;
         dataList->InsertElement (b,-1,false,false);
@@ -150,9 +147,8 @@ long  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
 
 //______________________________________________________________
 
-void _AVLListX::DeleteXtra (long i)
-{
-    xtraD.lData[i] = -1;
+void _AVLListX::DeleteXtra (long i) {
+    xtraD[i] = -1;
 }
 
 //______________________________________________________________

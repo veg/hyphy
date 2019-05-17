@@ -81,7 +81,7 @@ void _Trie::Clear (bool all){
 _String _Trie::Alphabet (void) const {
     _StringBuffer result (256UL);
     for (unsigned long charIndex = 0UL; charIndex < 256UL; charIndex++) {
-        if (charMap.lData[charIndex] >= 0)
+        if (charMap.list_data[charIndex] >= 0)
             result << char (charIndex);
     }
     return result;
@@ -99,14 +99,14 @@ void _Trie::SetAlphabet (const _String* alphabet, bool doClear)
     if (alphabet) {
         charMap.Populate (256,-1,0);
         unsigned long charCounter = 0;
-        charMap.lData[0] = 1; // always allow the '\0' character
+        charMap.list_data[0] = 1; // always allow the '\0' character
         for (unsigned long charIndex = 0; charIndex < alphabet->length(); charIndex++) {
-            charMap.lData [(unsigned char)alphabet->char_at(charIndex)] = 1;
+            charMap.list_data [(unsigned char)alphabet->char_at(charIndex)] = 1;
         }
         // now sort alphabetically
         for (unsigned long charIndex = 0; charIndex < 256; charIndex++) {
-            if (charMap.lData[charIndex] == 1)
-                charMap.lData[charIndex] = charCounter++;
+            if (charMap.list_data[charIndex] == 1)
+                charMap.list_data[charIndex] = charCounter++;
         }
     } else {
         charMap.Populate (256,0,1);
@@ -140,13 +140,13 @@ void _Trie::Duplicate (BaseRefConst t) {
 //----------------------------------------------------------------------------------------------------------------------
 
 long    _Trie::FindNextLetter (const char letter, const unsigned long current_index) const {
-    long letterKey = charMap.lData[(const unsigned char)letter];
+    long letterKey = charMap.list_data[(const unsigned char)letter];
     if (letterKey >= 0) {
-        _SimpleList* thisList = ((_SimpleList**)lData)[current_index];
+        _SimpleList* thisList = ((_SimpleList**)list_data)[current_index];
         letterKey = thisList->FindStepping (letterKey, 2, 0);
         if (letterKey < 0)
             return kNotFound;
-        return thisList->lData[letterKey+1];
+        return thisList->list_data[letterKey+1];
     }
     return kTrieInvalidLetter;
 }
@@ -157,7 +157,7 @@ long  _Trie::FindNextUnusedIndex (bool alloc){
     if (emptySlots.lLength) {
         long newIndex = emptySlots.Pop();
         if (alloc)
-            ((_SimpleList**)lData)[newIndex] = new _SimpleList;
+            ((_SimpleList**)list_data)[newIndex] = new _SimpleList;
         return newIndex;
     }  
     payload << 0;
@@ -173,13 +173,13 @@ long  _Trie::FindNextUnusedIndex (bool alloc){
 //----------------------------------------------------------------------------------------------------------------------
 
 long    _Trie::InsertNextLetter (const char letter, const unsigned long current_index) {
-    long letter_key = charMap.lData[(const unsigned char)letter];
+    long letter_key = charMap.list_data[(const unsigned char)letter];
     if (letter_key >= 0) {
         long next_index = FindNextUnusedIndex (letter != 0);
-        _SimpleList * currentList = ((_SimpleList**)lData)[current_index];
+        _SimpleList * currentList = ((_SimpleList**)list_data)[current_index];
         (*currentList) << letter_key;
         (*currentList) << next_index;
-        parents.lData[next_index] = current_index;
+        parents.list_data[next_index] = current_index;
         return next_index;
     }
     return kTrieInvalidLetter;
@@ -235,13 +235,13 @@ long     _Trie::GetValueFromString (const _String& key){
 //----------------------------------------------------------------------------------------------------------------------
 void     _Trie::UpdateValue(const long key, const long value) {
     if (key >= 0 && key < payload.lLength)
-        payload.lData[key] = value;
+        payload.list_data[key] = value;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 long     _Trie::GetValue(const long key) const{
     if (key >= 0 && key < payload.lLength)
-        return payload.lData[key];
+        return payload.list_data[key];
     
     return 0L;
 }
@@ -321,10 +321,10 @@ long    _Trie::InsertExtended (const _String& key, const long value, bool update
 unsigned long    _Trie::Insert (const _List& key, const _SimpleList* values) {
     unsigned long how_many = 0;
     for (long k = 0; k < key.lLength; k++) {
-        _String serializedKey ((_String*)((BaseRef*)key.lData)[k]->toStr());
+        _String serializedKey ((_String*)((BaseRef*)key.list_data)[k]->toStr());
         bool did_insert = false;
         
-        InsertExtended (serializedKey, values?values->lData[k]:0, false, &did_insert);
+        InsertExtended (serializedKey, values?values->list_data[k]:0, false, &did_insert);
         if (did_insert) {
             how_many ++;
         }
@@ -339,17 +339,17 @@ bool    _Trie::Delete (const _String& key){
     if (found_key >= 0) {
         // now traverse the history list backwards and delete all keys that have no children
         for (long k = history.lLength-1; k>=0; k--) {
-            _SimpleList * current_list = ((_SimpleList**)lData)[history.lData[k]];
+            _SimpleList * current_list = ((_SimpleList**)list_data)[history.list_data[k]];
             if (current_list == nil || current_list->lLength <= 1){
-                emptySlots << history.lData[k];
-                payload.lData[history.lData[k]] = 0L;
-                parents.lData[history.lData[k]] = -1L;
-                _SimpleList * parentList = ((_SimpleList**)lData)[history.lData[k-1]];
-                unsigned long parentNode = parentList->FindStepping (history.lData[k],2, 1) - 1;
+                emptySlots << history.list_data[k];
+                payload.list_data[history.list_data[k]] = 0L;
+                parents.list_data[history.list_data[k]] = -1L;
+                _SimpleList * parentList = ((_SimpleList**)list_data)[history.list_data[k-1]];
+                unsigned long parentNode = parentList->FindStepping (history.list_data[k],2, 1) - 1;
                 parentList->Delete (parentNode);
                 parentList->Delete (parentNode);
                 DeleteObject (current_list);
-                ((_SimpleList**)lData)[history.lData[k]] = nil;
+                ((_SimpleList**)list_data)[history.list_data[k]] = nil;
                 inserted_values--;
             }
         }
@@ -368,7 +368,7 @@ bool    _Trie::Delete (const char* key){
 unsigned long     _Trie::Delete (const _List& key){
      unsigned long how_many = 0;
     for (long k = 0; k < key.lLength; k++) {
-        _String serializedKey ((_String*)((BaseRef*)key.lData)[k]->toStr());
+        _String serializedKey ((_String*)((BaseRef*)key.list_data)[k]->toStr());
         
         long this_index = Delete (serializedKey);
         
@@ -395,9 +395,9 @@ _String*         _Trie::RetrieveStringFromPath (const _SimpleList& path, _String
   
     
     for (long k = 0; k < path.lLength - 4; k+=2) {
-         _SimpleList* current_list     = ((_SimpleList**)lData)[path.lData[k]];
-         long         current_position = path.lData[k+1];
-         (*this_string) << read_from->char_at (current_list->lData[current_position]);
+         _SimpleList* current_list     = ((_SimpleList**)list_data)[path.list_data[k]];
+         long         current_position = path.list_data[k+1];
+         (*this_string) << read_from->char_at (current_list->list_data[current_position]);
     }
     
   
@@ -411,9 +411,9 @@ void    _Trie::DumpRaw() {
     for (long k = 0; k < lLength; k++) {
         if (emptySlots.Find(k) < 0) {
             printf ("Position %ld:\n", k);
-            _SimpleList * this_list = ((_SimpleList**)lData)[k];
+            _SimpleList * this_list = ((_SimpleList**)list_data)[k];
             for (long m = 0; m < this_list->lLength; m+=2) {
-                printf ("'%c'(%ld) -> %ld\n", (char)this_list->lData[m], this_list->lData[m], this_list->lData[m+1]);
+                printf ("'%c'(%ld) -> %ld\n", (char)this_list->list_data[m], this_list->list_data[m], this_list->list_data[m+1]);
             }
             
         } else {
@@ -431,29 +431,29 @@ BaseRef     _Trie::toStr(unsigned long) {
   
     _SimpleList       traversal_history, 
                         // 2 indices per entry: node and current position (in multiples of 2)
-                      *root_list = ((_SimpleList**)lData)[0];
+                      *root_list = ((_SimpleList**)list_data)[0];
                       
     traversal_history << 0; traversal_history << 0;
     
     bool doComma = false;
     
     (*serialized) << '{';
-    while (!(traversal_history.lLength == 2 && traversal_history.lData[1] == root_list->lLength)) {
-        _SimpleList* current_list = ((_SimpleList**)lData)[traversal_history.lData[traversal_history.lLength-2]];
-        long current_position = traversal_history.lData[traversal_history.lLength-1];
+    while (!(traversal_history.lLength == 2 && traversal_history.list_data[1] == root_list->lLength)) {
+        _SimpleList* current_list = ((_SimpleList**)list_data)[traversal_history.list_data[traversal_history.lLength-2]];
+        long current_position = traversal_history.list_data[traversal_history.lLength-1];
         // if current list is empty, then generate a string based on the path, and advance up the chain
         if (current_list && current_list->lLength) {
             if (current_position < current_list->lLength) {
-                traversal_history << current_list->lData[current_position+1];
+                traversal_history << current_list->list_data[current_position+1];
                 traversal_history << 0;
             } else {
                 traversal_history.Pop();
                 traversal_history.Pop();
-                traversal_history.lData[traversal_history.lLength-1] += 2; // advance the counter in the parent
+                traversal_history.list_data[traversal_history.lLength-1] += 2; // advance the counter in the parent
            }
         } else {
             _String * this_string = RetrieveStringFromPath(traversal_history, &alph);
-            (*serialized) << '"' << this_string << "\":" << _String (GetValue (traversal_history.lData[traversal_history.lLength-2]));
+            (*serialized) << '"' << this_string << "\":" << _String (GetValue (traversal_history.list_data[traversal_history.lLength-2]));
             if (doComma) {
                 (*serialized) << ',';
             } else {
@@ -462,7 +462,7 @@ BaseRef     _Trie::toStr(unsigned long) {
             (*serialized) << '\n';
             traversal_history.Pop();
             traversal_history.Pop();            
-            traversal_history.lData[traversal_history.lLength-1] += 2; // advance the counter in the parent
+            traversal_history.list_data[traversal_history.lLength-1] += 2; // advance the counter in the parent
        }
     }
     
@@ -480,7 +480,7 @@ _String  const _Trie::RetrieveKeyByPayload (const long key){
         long keyer = key_index;
         do{
             parent_indices << keyer;
-            keyer = parents.lData[keyer];
+            keyer = parents.list_data[keyer];
         }
         while (keyer > 0);
         parent_indices << 0;
@@ -488,8 +488,8 @@ _String  const _Trie::RetrieveKeyByPayload (const long key){
         
         
         for (long i = 0; i < parent_indices.lLength-1; i++) {
-            traversal_history << parent_indices.lData[i];
-            traversal_history << (((_SimpleList**)lData)[parent_indices.lData[i]])->FindStepping (parent_indices.lData[i+1],2,1)-1;
+            traversal_history << parent_indices.list_data[i];
+            traversal_history << (((_SimpleList**)list_data)[parent_indices.list_data[i]])->FindStepping (parent_indices.list_data[i+1],2,1)-1;
         }
         traversal_history << key_index;
         traversal_history << 0L;

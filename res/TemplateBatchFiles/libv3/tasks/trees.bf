@@ -696,7 +696,7 @@ lfunction trees.ConjunctionLabel (tree_id, given_labels) {
  * @param 	{String} tree ID
  * @param 	{Dict/String} 	 node_name -> label OR (if string) (node_name) => name + annotation
  * @param {String} a pair of characters to enclose the label in
- * @param {Bool} whether or not to include branch lentghs
+ * @param {Dict/String} node_name -> length OR (if string) (node_name) => length annotation
  * @return {String} annotated string
  */
 
@@ -959,7 +959,12 @@ lfunction tree.infer.NJ (datafilter, distances) {
             distances = distances.nucleotide.tn93 (datafilter, null, null);
             flush_distances = TRUE;
         } else {
-            io.ReportAnExecutionError ("No default distance available for filter type of `type`");
+            if (type == ^"terms.amino_acid" || type == ^"terms.binary") {
+                distances = distances.p_distance (datafilter, null);
+                flush_distances = TRUE;
+            } else {
+                io.ReportAnExecutionError ("No default distance available for filter type of `type`");
+            }
         }
     }
 

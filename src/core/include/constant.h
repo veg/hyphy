@@ -43,6 +43,9 @@
 #include "mathobj.h"
 #include "global_things.h"
 
+#define  _HY_CONSTANT_PREALLOCATE_SLOTS 1024
+
+
 class _Constant : public _MathObject {
 
 private:
@@ -83,7 +86,7 @@ public:
     virtual HBLObjectRef lDiv          (HBLObjectRef);
     virtual HBLObjectRef longDiv       (HBLObjectRef);
     virtual HBLObjectRef Raise         (HBLObjectRef);
-    virtual bool      Equal         (HBLObjectRef);
+    virtual bool         Equal         (HBLObjectRef);
     virtual HBLObjectRef Abs           (void);
     virtual HBLObjectRef Sin           (void);
     virtual HBLObjectRef Cos           (void);
@@ -136,9 +139,17 @@ public:
     virtual   void    SetValue              (hyFloat pl) {
         theValue = pl;
     }
+    
+    void * operator new       (size_t size);
+    void   operator delete    (void * p);
+  
+    static  _SimpleList                    free_slots;
+    static unsigned char                       preallocated_buffer[];
 
 public:
     hyFloat theValue;
+    
+    
 };
 
 hyFloat _ln_gamma (hyFloat alpha);

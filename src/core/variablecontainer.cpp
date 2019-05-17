@@ -138,7 +138,7 @@ BaseRef _VariableContainer::toStr (unsigned long) {
 
     if (iVariables)
         for (long i = 0L; i<iVariables->lLength; i+=2L) {
-            res->AppendNewInstance ((_String*)variablePtrs(iVariables->lData[i])->toStr());
+            res->AppendNewInstance ((_String*)variablePtrs(iVariables->list_data[i])->toStr());
 
             if (i<iVariables->lLength-2) {
                 (*res) << ',';
@@ -150,7 +150,7 @@ BaseRef _VariableContainer::toStr (unsigned long) {
 
     if (dVariables)
         for (long i2 = 0L; i2<dVariables->lLength; i2+=2L) {
-            res->AppendNewInstance ((_String*)variablePtrs(dVariables->lData[i2])->toStr());
+            res->AppendNewInstance ((_String*)variablePtrs(dVariables->list_data[i2])->toStr());
             if (i2<dVariables->lLength-2) {
                 (*res) << ',';
             }
@@ -173,7 +173,7 @@ bool _VariableContainer::HasExplicitFormModel (void) const {
     if (theModel == -1L) {
         return false;
     }
-    return (modelTypeList.lData[theModel]);
+    return (modelTypeList.list_data[theModel]);
 }
 
 //__________________________________________________________________________________
@@ -182,8 +182,8 @@ _Formula* _VariableContainer::GetExplicitFormModel (void) const {
     if (theModel < 0L) {
         return nil;
     }
-    if (modelTypeList.lData[theModel]) { // an explicit formula based matrix
-        return (_Formula*)modelMatrixIndices.lData[theModel];
+    if (modelTypeList.list_data[theModel]) { // an explicit formula based matrix
+        return (_Formula*)modelMatrixIndices.list_data[theModel];
     }
     return nil;
 }
@@ -205,21 +205,21 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) co
         return nil;
     }
 
-    if (modelTypeList.lData[theModel]) { // an explicit formula based matrix
+    if (modelTypeList.list_data[theModel]) { // an explicit formula based matrix
         if (queue && tags) {
-            long currentQueueLength = ((_Formula*)modelMatrixIndices.lData[theModel])->ExtractMatrixExpArguments (queue);
+            long currentQueueLength = ((_Formula*)modelMatrixIndices.list_data[theModel])->ExtractMatrixExpArguments (queue);
             if (currentQueueLength) {
                 for (unsigned long k = 0; k < currentQueueLength; k++)
                   (*tags) << currentQueueLength;
                 return nil;
             }
         }
-        _Matrix* result = (_Matrix *)((_Formula *)modelMatrixIndices.lData[theModel])->Compute();
+        _Matrix* result = (_Matrix *)((_Formula *)modelMatrixIndices.list_data[theModel])->Compute();
         result->CheckIfSparseEnough(true);
         return result;
     }
 
-    return (_Matrix*) (LocateVar(modelMatrixIndices.lData[theModel])->GetValue());
+    return (_Matrix*) (LocateVar(modelMatrixIndices.list_data[theModel])->GetValue());
 }
 
 //__________________________________________________________________________________
@@ -227,7 +227,7 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) co
 long _VariableContainer::GetModelDimension (void) {
     long matrixDim = 0L;
     if (theModel >= 0L) {
-        matrixDim = modelTypeList.lData[theModel];
+        matrixDim = modelTypeList.list_data[theModel];
         if (matrixDim == 0L) {
             return GetModelMatrix()->GetHDim();
         }
@@ -239,7 +239,7 @@ long _VariableContainer::GetModelDimension (void) {
 
 _Matrix* _VariableContainer::GetFreqMatrix (void) const  {
     if (theModel>=0) {
-        long freqID = modelFrequenciesIndices.lData[theModel];
+        long freqID = modelFrequenciesIndices.list_data[theModel];
         if (freqID>=0) {
             return (_Matrix*) (LocateVar(freqID)->GetValue());
         } else {
@@ -265,7 +265,7 @@ void    _VariableContainer::ScanModelBasedVariables (_String const & fullName, _
                 _AVLList                ma (&mVars);
                 ScanModelForVariables   (GetModelIndex(), ma,true,theModel,false);
 
-                long freqID     = modelFrequenciesIndices.lData[theModel];
+                long freqID     = modelFrequenciesIndices.list_data[theModel];
                 if (freqID>=0) {
                     ((_Matrix*) (LocateVar(freqID)->GetValue()))->ScanForVariables2(ma,true,-1,false);
                 }
@@ -282,7 +282,7 @@ void    _VariableContainer::ScanModelBasedVariables (_String const & fullName, _
         }
 
         for (long i=0L; i<mVars.lLength; i++) {
-            _Variable * aVar = (_Variable*)variablePtrs (mVars.lData[i]);
+            _Variable * aVar = (_Variable*)variablePtrs (mVars.list_data[i]);
             if (aVar->IsGlobal()) {
                 PushGlobalVariable(aVar->get_index());
             } else {
@@ -484,9 +484,9 @@ void      _VariableContainer::SortVars(void) {
             *s2;
             while (!done) {
                 done = true;
-                s1 = LocateVar(array->lData[0])->GetName();
+                s1 = LocateVar(array->list_data[0])->GetName();
                 for (long index = 2L; index<array->countitems(); index+=2L) {
-                    s2 = LocateVar(array->lData[index])->GetName();
+                    s2 = LocateVar(array->list_data[index])->GetName();
                     if (s2->Compare(*s1) == kCompareLess) {
                         done = false;
                         array->Swap (index, index-2);
@@ -574,7 +574,7 @@ bool      _VariableContainer::RemoveDependance (long varIndex) {
         if (array_index >= 0) {
 
             InsertVariableInSortedList(iVariables,
-                                       *LocateVar (dVariables->lData[array_index])->GetName(),
+                                       *LocateVar (dVariables->list_data[array_index])->GetName(),
                                        varIndex,
                                        dVariables->get(array_index+1));
             RemoveLocalVariable (dVariables, array_index);
@@ -651,7 +651,7 @@ void      _VariableContainer::CopyMatrixParameters (_VariableContainer* source, 
             target_vars.Map (source_vars, the_mapping);
             the_mapping.Each ([=] (long source_var, unsigned long index) -> void {
                 if (source_var >= 0UL) {
-                    long which_idx = model_vars_in_source.lData[source_var];
+                    long which_idx = model_vars_in_source.list_data[source_var];
                     which_idx = which_idx >= 0 ? source->iVariables->get (which_idx) : source->dVariables->get (-which_idx-2L);
                     LocateVar (iVariables->get (model_vars_in_target.get(index)))->SetValue (LocateVar (which_idx)->Compute());
                 }
@@ -721,16 +721,16 @@ long      _VariableContainer::SetDependance (long varIndex) {
             }
         } else {
             f = -varIndex-1;
-            varIndex = iVariables->lData[f];
+            varIndex = iVariables->list_data[f];
         }
 
 
         /*printf ("Moving ind->dep for %s from %s\n", LocateVar (varIndex)->GetName()->get_str(),
                 GetName()->get_str());*/
 
-        if (iVariables->lData[f+1]>=0) {
-            //printf ("Local variable %s\n", LocateVar (iVariables->lData[f+1])->GetName()->sData);
-            if (!LocateVar(iVariables->lData[f+1])->IsIndependent()) {
+        if (iVariables->list_data[f+1]>=0) {
+            //printf ("Local variable %s\n", LocateVar (iVariables->list_data[f+1])->GetName()->sData);
+            if (!LocateVar(iVariables->list_data[f+1])->IsIndependent()) {
                 return -2;
             }
         }
@@ -748,14 +748,14 @@ bool      _VariableContainer::SetMDependance (_SimpleList const & mDep)
   if (iVariables) {
     if (mDep.lLength*2 > iVariables->lLength)
       for (long k=iVariables->lLength-2; k>=0; k-=2) {
-        long f = mDep.BinaryFind (iVariables->lData[k]);
+        long f = mDep.BinaryFind (iVariables->list_data[k]);
         if (f>=0) {
           SetDependance (-k-1);
         }
       }
     else
       for (unsigned long k=0UL; iVariables && k<mDep.lLength; k++) {
-        SetDependance (mDep.lData[k]);
+        SetDependance (mDep.list_data[k]);
       }
   }
   
@@ -821,7 +821,7 @@ _String*    _VariableContainer::GetSaveableListOfUserParameters (void) {
 //__________________________________________________________________________________
 void      _VariableContainer::ClearConstraints(void) {
     while (dVariables) {
-        LocateVar(dVariables->lData[0])->ClearConstraints();
+        LocateVar(dVariables->list_data[0])->ClearConstraints();
     }
 }
 
@@ -894,7 +894,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             if (!indOnly) {
                 if (dVariables) {
                     for (j=0; j<dVariables->lLength; j+=2)
-                        if (LocateVar(dVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
+                        if (LocateVar(dVariables->list_data[j])->GetName()->EndsWith (*(_String*)suffixes.list_data[i])) {
                             break;
                         }
 
@@ -905,7 +905,7 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             }
             if (iVariables) {
                 for (j=0; j<iVariables->lLength; j+=2) {
-                    if (LocateVar(iVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
+                    if (LocateVar(iVariables->list_data[j])->GetName()->EndsWith (*(_String*)suffixes.list_data[i])) {
                         break;
                     }
                 }
@@ -921,8 +921,8 @@ void _VariableContainer::MatchParametersToList (_List& suffixes, bool doAll, boo
             long j;
             if (dVariables) {
                 for (j=0; j<dVariables->lLength; j+=2) {
-                    if (dVariables->lData[j+1]<0) {
-                        if (LocateVar(dVariables->lData[j])->GetName()->EndsWith (*(_String*)suffixes.lData[i])) {
+                    if (dVariables->list_data[j+1]<0) {
+                        if (LocateVar(dVariables->list_data[j])->GetName()->EndsWith (*(_String*)suffixes.list_data[i])) {
                             break;
                         }
                     }

@@ -70,3 +70,33 @@ lfunction distances.nucleotide.tn93 (filter, freqs, options) {
     return distances;
 }
 
+/**
+ * Compute  all pairwise percent distances between sequences in a data set
+ * @name    distances.nucleotide.p_distance
+ * @param   filter  {String} - id of dataset
+ * @param   options {Dict/null} - options for ambiguity treatment
+ * @returns {Matrix} r - pairwise TN93 distances
+ */
+lfunction distances.p_distance (filter, options) {
+
+    sequence_count = ^(filter + ".species");
+    distances      = {sequence_count,sequence_count};
+    resolution     = "RESOLVE_AMBIGUITIES";
+    if (utility.Has (options, "ambigs","String")) {
+        resolution = options["ambigs"];
+    }
+
+    for (s1 = 0; s1 < sequence_count; s1 += 1) {
+        for (s2 = s1 + 1; s2 < sequence_count; s2 += 1) {
+             ExecuteCommands ("GetDataInfo (count, ^filter, s1, s2, `resolution`)");
+             totalSitesCompared = +count;
+             identicalSites = +count[count["_MATRIX_ELEMENT_COLUMN_==_MATRIX_ELEMENT_ROW_"]];
+             d = (totalSitesCompared-identicalSites) / totalSitesCompared;
+             distances [s1][s2] = d;
+             distances [s2][s1] = d;
+        }
+    }
+
+    return distances;
+}
+

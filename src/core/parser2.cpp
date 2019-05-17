@@ -173,7 +173,7 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
                 if (var_value->ObjectClass() == MATRIX) {
                     values[array_index].reference = (hyPointer)((_Matrix*)var_value)->theData;
                 } else {
-                    throw (_String("Internal error in PopulateArraysForASimpleFormula"));
+                    throw (_String("Internal error in PopulateArraysForASimpleFormula; this means that a prospectively compiled batch code was passed arguments it does not support (e.g. a dict argument to a cfunction)"));
                 }
             }
         });
@@ -222,6 +222,8 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         }
 
         if (code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
+            // copy by value or by reference?
+            //formulaValue->AddAReference();
             LocateVar (reference)->SetValue (formulaValue);
             return 1;
         }
@@ -690,7 +692,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             // closing ) or ]
             // or a parameter list
                 /* 04252006 if (level == mlevel && s.get_char(i)!=']')*/
-            if (squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength-1] == level && lookAtMe != ']') {
+            if (squareBrackets.lLength && squareBrackets.list_data[squareBrackets.lLength-1] == level && lookAtMe != ']') {
                 return HandleFormulaParsingError ("Missing or unbalanced '[]' ", parsingContext.errMsg(), s, i);
             }
 
@@ -708,7 +710,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 return HandleFormulaParsingError ("Unbalanced '()' parentheses ", parsingContext.errMsg(), s, i);
             }
 
-            if (lookAtMe ==',' && (level<1 || (squareBrackets.lLength && squareBrackets.lData[squareBrackets.lLength-1] == level))) {
+            if (lookAtMe ==',' && (level<1 || (squareBrackets.lLength && squareBrackets.list_data[squareBrackets.lLength-1] == level))) {
                 return HandleFormulaParsingError ("Parameter list is out of context ", parsingContext.errMsg(), s, i);
             }
 
@@ -804,13 +806,13 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
             }
 
             if (lookAtMe ==']') {
-                if (!squareBrackets.lLength || squareBrackets.lData [squareBrackets.lLength-1] != level + 1) {
+                if (!squareBrackets.lLength || squareBrackets.list_data [squareBrackets.lLength-1] != level + 1) {
                     return HandleFormulaParsingError ("Unexpected ']' ", parsingContext.errMsg(), s, i);
                 }
                 squareBrackets.Delete(squareBrackets.lLength-1);
                 curOp = *(_String*)BuiltInFunctions(HY_OP_CODE_MACCESS);
-                if (mergeMAccess.lLength && mergeMAccess.lData[mergeMAccess.lLength-1] >= 0 && mergeMAccessLevel.lData[mergeMAccessLevel.lLength-1] == level) {
-                    long mergeIndex              = mergeMAccess.lData[mergeMAccess.lLength-1];
+                if (mergeMAccess.lLength && mergeMAccess.list_data[mergeMAccess.lLength-1] >= 0 && mergeMAccessLevel.list_data[mergeMAccessLevel.lLength-1] == level) {
+                    long mergeIndex              = mergeMAccess.list_data[mergeMAccess.lLength-1];
                     _Operation * previousMaccess = (_Operation*) f->theFormula (mergeIndex);
                     if (previousMaccess->GetCode () != curOp) {
                         return HandleFormulaParsingError ("Internal error in Parse. Incorrect matrix access token code ", parsingContext.errMsg(), s, i);
@@ -1642,7 +1644,7 @@ void ExportIndVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
     _String str;
 
     for (unsigned long   i=0; i<indepVarList->lLength; i++) {
-        _Variable *thisVar = LocateVar(indepVarList->lData[i]);
+        _Variable *thisVar = LocateVar(indepVarList->list_data[i]);
         if (thisVar->IsGlobal()) {
             str = _String ("\nglobal ") & *thisVar->GetName() & '=' & _String((_String*)parameterToString(thisVar->Compute()->Value())) & ';';
             stIn = &glVars;
@@ -1682,14 +1684,14 @@ void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
         _List           dependancyLists;
         {
             for (unsigned long i=0; i<depVarList->lLength; i++)
-                if (LocateVar(depVarList->lData[i])->IsGlobal()) {
-                    lfDepGlobs << depVarList->lData[i];
+                if (LocateVar(depVarList->list_data[i])->IsGlobal()) {
+                    lfDepGlobs << depVarList->list_data[i];
                 }
         }
         lfDepGlobs.Sort();
 
         for (unsigned long i=0; i<depVarList->lLength; i++) {
-            _Variable * thisVar = LocateVar(depVarList->lData[i]);
+            _Variable * thisVar = LocateVar(depVarList->list_data[i]);
             if (thisVar->IsGlobal()) {
                 _SimpleList                 globDependancyList,
                                             prunedList;
@@ -1735,21 +1737,21 @@ void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
 
 
             for (unsigned long i2 = 0; i2 < _globalVariablesList.lLength; i2++) {
-                long updatedIndex = writeOrder.lData[i2];
+                long updatedIndex = writeOrder.list_data[i2];
                 _SimpleList * depList = (_SimpleList*)dependancyLists(i2);
                 for (unsigned long i3 = 0; i3 < depList->lLength; i3 ++) {
-                    long i4 = _globalVariablesList.Find (depList->lData[i3]);
-                    if (i4 >= 0 && updatedIndex < writeOrder.lData[i4]) {
-                        updatedIndex = writeOrder.lData[i4] + 1;
+                    long i4 = _globalVariablesList.Find (depList->list_data[i3]);
+                    if (i4 >= 0 && updatedIndex < writeOrder.list_data[i4]) {
+                        updatedIndex = writeOrder.list_data[i4] + 1;
                     }
                 }
-                writeOrder.lData[i2] = updatedIndex;
+                writeOrder.list_data[i2] = updatedIndex;
             }
 
             SortLists (&writeOrder, &indexList);
 
             for (unsigned long i=0; i<_globalVariablesList.lLength; i++) {
-                _Variable * thisVar = LocateVar(depVarList->lData[_globalVariablesList.lData[indexList.lData[i]]]);
+                _Variable * thisVar = LocateVar(depVarList->list_data[_globalVariablesList.list_data[indexList.list_data[i]]]);
                 str = _String("\nglobal ") & *thisVar->GetName();
                 glVars<<str;
                 glVars<<":=";
@@ -1774,14 +1776,14 @@ void ExportCatVariables (_StringBuffer & rec, _SimpleList* catVarList) {
     _SimpleList     nonInd;
 
     for (long idx = 0; idx < catVarList->lLength; idx++)
-        if (((_CategoryVariable*)LocateVar(catVarList->lData[idx]))->IsUncorrelated()) {
-            ((_CategoryVariable*)LocateVar(catVarList->lData[idx]))->SerializeCategory (rec);
+        if (((_CategoryVariable*)LocateVar(catVarList->list_data[idx]))->IsUncorrelated()) {
+            ((_CategoryVariable*)LocateVar(catVarList->list_data[idx]))->SerializeCategory (rec);
         } else {
             nonInd << idx;
         }
     {
         for (long idx = 0; idx < nonInd.lLength; idx++) {
-            ((_CategoryVariable*)LocateVar(catVarList->lData[nonInd.lData[idx]]))->SerializeCategory (rec);
+            ((_CategoryVariable*)LocateVar(catVarList->list_data[nonInd.list_data[idx]]))->SerializeCategory (rec);
         }
     }
 }
@@ -1791,13 +1793,13 @@ void ExportCatVariables (_StringBuffer & rec, _SimpleList* catVarList) {
 void SplitVariablesIntoClasses (_SimpleList& all, _SimpleList& i, _SimpleList& d, _SimpleList& c)
 {
     for (long idx = 0; idx < all.lLength; idx++) {
-        _Variable* thisVar = LocateVar (all.lData[idx]);
+        _Variable* thisVar = LocateVar (all.list_data[idx]);
         if (thisVar->IsCategory()) {
-            c << all.lData[idx];
+            c << all.list_data[idx];
         } else if (thisVar->IsIndependent()) {
-            i << all.lData[idx];
+            i << all.list_data[idx];
         } else {
-            d << all.lData[idx];
+            d << all.list_data[idx];
         }
     }
 }

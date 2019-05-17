@@ -33,6 +33,7 @@ env:
   - envSpecificTest="./HYPHYMP BUSTED --alignment ./tests/hbltests/data/CD2.nex --srv No --branches Internal"
   - envSpecificTest="./HYPHYMP BGM --alignment ./tests/hbltests/data/CD2.nex"
   - envSpecificTest="./hyphy fade --alignment ./tests/hbltests/data/CD2_AA.fna"
+  - envSpecificTest="./hyphy gard --alignment ./tests/hbltests/data/CD2.nex"
 
 
 language: c++

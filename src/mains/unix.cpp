@@ -84,7 +84,7 @@ const char hy_help_message [] =
 "  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
 "                           upon analysis completion\n\n"
 "optional global arguments:\n"
-"  BASEPATH=directory path  defines the base directory for all most path operations (default is pwd)\n"
+"  BASEPATH=directory path  defines the base directory for all path operations (default is pwd)\n"
 "  CPU=integer              if compiled with OpenMP multithreading support, requests this many threads; HyPhy could use fewer than this\n"
 "                           but never more; default is the number of CPU cores (as computed by OpenMP) on the system\n"
 "  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
@@ -115,7 +115,7 @@ const char hy_available_cli_analyses [] =
 "        [BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.\n"
 "        [aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).\n"
 "        [RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).\n"
-"        [GARD] Screen an alignment using GARD (requires an MPI environment).\n\n"
+"        [GARD] Screen an alignment for recombination using GARD (Genetic Algorithm for Recombination Detection).\n\n"
 ;
 
 
@@ -488,8 +488,8 @@ long    DisplayListOfChoices (void) {
             } else {
                 _helper_clear_screen ();
                 printf ("***************** FILES IN '%s' ***************** \n\n",((_String*)categoryHeadings(categNumber))->get_str());
-                long start = categoryDelimiters.lData[categNumber]+1,
-                     end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.lData[categNumber+1];
+                long start = categoryDelimiters.list_data[categNumber]+1,
+                     end = categNumber==categoryDelimiters.lLength-1?availableTemplateFiles.lLength:categoryDelimiters.list_data[categNumber+1];
 
                 for (choice = start; choice<end; choice++) {
                     printf ("\n\t(%ld) %s",choice-start+1,((_String const *)availableTemplateFiles.GetItem (choice, 1))->get_str());
@@ -704,7 +704,13 @@ int main (int argc, char* argv[]) {
      if (signal (SIGINT, hyphy_sigterm_handler) == SIG_IGN)
          signal (SIGINT, SIG_IGN);
 #endif
-  
+    
+    /*long read = 0L;
+    hyFloat value = 0.0;
+    
+    printf ("%ld\n", sscanf (" 0.1e2 beavis", "%lf%n", &value, &read));
+    */
+    
     char    curWd[4096],
             dirSlash = get_platform_directory_char();
     
@@ -951,8 +957,9 @@ int main (int argc, char* argv[]) {
         }
 
 
-        ex.Execute();
+         ex.Execute();
 
+ 
         if (usePostProcessors && (!updateMode)) {
             ReadInPostFiles();
             printf ("\n\n**********Continue with result processing (y/n)?");
@@ -1006,9 +1013,14 @@ int main (int argc, char* argv[]) {
     _comparative_lf_debug_matrix->toFileStr(comparative_lf_debug_matrix_content_file);
     fclose (comparative_lf_debug_matrix_content_file);
 #endif
-    
+
+
     PurgeAll                    (true);
+    ex.ClearExecutionList();
+    
+
     GlobalShutdown              ();
+    
 
 
 #ifdef __MINGW32__

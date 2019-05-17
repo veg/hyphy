@@ -2538,8 +2538,7 @@ void _Polynomial::Convert2OperationForm (void)
 
 }
 //__________________________________________________________________________________
-_MathObject* _Polynomial::Compute (void)
-{
+_MathObject* _Polynomial::Compute (void) {
     return new _Constant (ComputePolynomial());
 }
 

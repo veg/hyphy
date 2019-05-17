@@ -132,7 +132,7 @@ BaseRef _DataSet::makeDynamic(void) const {
 void _DataSet::ResetIHelper(void) {
   if (dsh && dsh->characterPositions.lLength == 256)
     for (long k = 0; k < 256; k++) {
-      dsh->characterPositions.lData[k] = -1;
+      dsh->characterPositions.list_data[k] = -1;
     }
 }
 
@@ -145,14 +145,14 @@ void _DataSet::ConvertRepresentations(void) {
     if (lLength == 0) {
       AppendNewInstance(new _StringBuffer (128UL));
     } else {
-      _Site *aSite = (_Site *)lData[0];
+      _Site *aSite = (_Site *)list_data[0];
 
       for (long str = 0; str < aSite->length(); str++) {
         horStrings < new _StringBuffer (DATA_SET_SWITCH_THRESHOLD);
       }
 
       for (long s = 0; s < lLength; s++) {
-        _Site *aSite = (_Site *)lData[s];
+        _Site *aSite = (_Site *)list_data[s];
         if (aSite->length() > horStrings.lLength || aSite->GetRefNo() != -1) {
           HandleApplicationError("Irrecoverable internal error in "
                                  "_DataSet::ConvertRepresentations. Sorry "
@@ -162,7 +162,7 @@ void _DataSet::ConvertRepresentations(void) {
         }
 
         for (long s2 = 0L; s2 < aSite->length(); s2++) {
-          (*(_StringBuffer *)horStrings.lData[s2]) << aSite->get_char(s2);
+          (*(_StringBuffer *)horStrings.list_data[s2]) << aSite->get_char(s2);
         }
       }
 
@@ -182,8 +182,8 @@ void _DataSet::ConvertRepresentations(void) {
 
 void _DataSet::AddSite(char c) {
   if (streamThrough) {
-    if (theMap.lData[0] == 0) {
-      if (theMap.lData[1] == 0) {
+    if (theMap.list_data[0] == 0) {
+      if (theMap.list_data[1] == 0) {
         if (theNames.lLength) {
           fprintf(streamThrough, ">%s\n", ((_String *)theNames(0))->get_str());
         } else {
@@ -192,8 +192,8 @@ void _DataSet::AddSite(char c) {
         AppendNewInstance(new _String(kEmptyString));
       }
 
-      theMap.lData[1]++;
-      theMap.lData[2]++;
+      theMap.list_data[1]++;
+      theMap.list_data[2]++;
       fputc(c, streamThrough);
     } else {
       HandleApplicationError("Can't add more sites to a file based data set, "
@@ -212,7 +212,7 @@ void _DataSet::AddSite(char c) {
       }
     }
 
-    (*((_StringBuffer *)lData[0])) << c;
+    (*((_StringBuffer *)list_data[0])) << c;
 
     /*long  f;
 
@@ -223,7 +223,7 @@ void _DataSet::AddSite(char c) {
             dsh->characterPositions << -1;
     }
 
-    f = dsh->characterPositions.lData[c];
+    f = dsh->characterPositions.list_data[c];
 
     if (f!=-1)
     {
@@ -236,7 +236,7 @@ void _DataSet::AddSite(char c) {
     }
     else
     {
-        dsh->characterPositions.lData[c] = lLength;*/
+        dsh->characterPositions.list_data[c] = lLength;*/
     //}
   }
 }
@@ -245,29 +245,29 @@ void _DataSet::AddSite(char c) {
 void _DataSet::Write2Site(long index, char c) {
   if (streamThrough) {
     if (index == 0) {
-      if (theMap.lData[2] == theMap.lData[1]) {
-        theMap.lData[0]++;
+      if (theMap.list_data[2] == theMap.list_data[1]) {
+        theMap.list_data[0]++;
 
-        if (theNames.lLength > theMap.lData[0]) {
+        if (theNames.lLength > theMap.list_data[0]) {
           fprintf(streamThrough, "\n>%s\n",
-                  ((_String *)theNames(theMap.lData[0]))->get_str());
+                  ((_String *)theNames(theMap.list_data[0]))->get_str());
         } else {
-          fprintf(streamThrough, "\n>Sequence %ld\n", theMap.lData[0] + 1);
+          fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] + 1);
         }
 
-        theMap.lData[1] = 0;
+        theMap.list_data[1] = 0;
       } else {
         HandleApplicationError("Can't write sequences of unequal lengths to a "
                                "file based data set.");
         return;
       }
-    } else if (index != theMap.lData[1]) {
+    } else if (index != theMap.list_data[1]) {
       HandleApplicationError("Can't write sites which are not consecutive to a "
                              "file based data set.");
       return;
     }
 
-    theMap.lData[1]++;
+    theMap.list_data[1]++;
     fputc(c, streamThrough);
   } else {
     /*if (!dsh)
@@ -277,7 +277,7 @@ void _DataSet::Write2Site(long index, char c) {
     }*/
 
     if (useHorizontalRep) {
-      long currentWritten = ((_String *)lData[0])->length();
+      long currentWritten = ((_String *)list_data[0])->length();
 
       if (index >= currentWritten) {
         HandleApplicationError("Internal Error in 'Write2Site' - index is too "
@@ -291,7 +291,7 @@ void _DataSet::Write2Site(long index, char c) {
         } else {
           long s = 1;
           for (; s < lLength; s++) {
-            _StringBuffer *aString = (_StringBuffer *)lData[s];
+            _StringBuffer *aString = (_StringBuffer *)list_data[s];
             if (aString->length() == index) {
               (*aString) << c;
               break;
@@ -311,24 +311,24 @@ void _DataSet::Write2Site(long index, char c) {
             "Internal Error in 'Write2Site' - index is too high");
         return;
       }
-      _Site *s = (_Site *)lData[index];
+      _Site *s = (_Site *)list_data[index];
       long rN = s->GetRefNo();
       if (rN == -1) { // independent site
         // dsh->incompletePatterns->Delete (s,false);
         (*s) << c;
         // dsh->incompletePatterns->Insert (s,index);
       } else {
-        _Site *ss = (_Site *)lData[rN];
+        _Site *ss = (_Site *)list_data[rN];
         long sL = ss->length() - 1;
         if (ss->get_char(sL) != c) { // appending distinct char
           s->Duplicate(ss);
           s->set_char(sL, c);
-          theFrequencies.lData[rN]--;
+          theFrequencies.list_data[rN]--;
 
           rN = dsh->incompletePatterns->Find(s);
           if (rN >= 0) {
             rN = dsh->incompletePatterns->GetXtra(rN);
-            /*_Site* s2 = (_Site*)lData[rN];
+            /*_Site* s2 = (_Site*)list_data[rN];
             if (s2->GetRefNo() != -1 || !s->Equal(s2))
             {
                 WarnError ("Mapping Error");
@@ -355,10 +355,10 @@ void _DataSet::CheckMapping(long index) {
         "Internal Error in 'CheckMapping' - index is too high", true);
   }
 
-  _Site *s = (_Site *)lData[index];
+  _Site *s = (_Site *)list_data[index];
 
   for (long k = 0L; k < index; k++) {
-    _Site *ss = (_Site *)lData[k];
+    _Site *ss = (_Site *)list_data[k];
     if (ss->GetRefNo() == -1) {
       if (s->Equal(ss)) {
         theFrequencies[index]--;
@@ -417,7 +417,7 @@ void _DataSet::Finalize(void) {
       bool good = true;
       for (long s = 0; s < lLength; s++) {
         good = good &&
-               ((_String *)lData[0])->length() == ((_String *)lData[s])->length();
+               ((_String *)list_data[0])->length() == ((_String *)list_data[s])->length();
       }
 
       if (!good) {
@@ -432,13 +432,13 @@ void _DataSet::Finalize(void) {
       _List uniquePats;
       _AVLListX dupsAVL(&dups);
 
-      long siteCounter = ((_String *)lData[0])->length();
+      long siteCounter = ((_String *)list_data[0])->length();
 
       for (long i1 = 0L; i1 < siteCounter; i1++) {
         _Site *tC = new _Site();
 
         for (long i2 = 0L; i2 < lLength; i2++) {
-          (*tC) << ((_String *)lData[i2])->get_char(i1);
+          (*tC) << ((_String *)list_data[i2])->get_char(i1);
         }
 
         long ff = dupsAVL.Find(tC);
@@ -450,7 +450,7 @@ void _DataSet::Finalize(void) {
         } else {
           ff = dupsAVL.GetXtra(ff);
           theMap << ff;
-          theFrequencies.lData[ff]++;
+          theFrequencies.list_data[ff]++;
         }
 
         DeleteObject(tC);
@@ -467,7 +467,7 @@ void _DataSet::Finalize(void) {
         _AVLListX dupsAVL(&dups);
 
         for (long i1 = 0; i1 < lLength; i1++) {
-          tC = (_Site *)lData[i1];
+          tC = (_Site *)list_data[i1];
           long ff = dupsAVL.Find(tC);
           if (ff < 0) {
             dupsAVL.Insert(tC, i1);
@@ -475,7 +475,7 @@ void _DataSet::Finalize(void) {
             ff = dupsAVL.GetXtra(ff);
             tC->Clear();
             tC->SetRefNo(ff);
-            theFrequencies.lData[ff]++;
+            theFrequencies.list_data[ff]++;
           }
         }
         dupsAVL.Clear(false);
@@ -499,11 +499,11 @@ void _DataSet::Finalize(void) {
         tC = (_Site *)(*(_List *)this)(i2);
         k = tC->GetRefNo();
         if (k >= 0) {
-          j = refs.lData[k];
+          j = refs.list_data[k];
           if (j < 0) {
             HandleApplicationError(kErrorStringDatasetRefIndexError);
           } else {
-            refs.lData[i2] = j;
+            refs.list_data[i2] = j;
           }
         }
       }
@@ -572,7 +572,7 @@ void _DataSet::Compact(long index) {
 //_______________________________________________________________________
 inline char _DataSet::operator()(unsigned long site, unsigned long pos,
                                  unsigned int) const {
-  return (((_String **)lData)[theMap.lData[site]])->get_char(pos);
+  return (((_String **)list_data)[theMap.list_data[site]])->get_char(pos);
 }
 
 //_________________________________________________________
@@ -800,11 +800,11 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
             for (unsigned long sequence_index = 0; sequence_index <hSegmentation.lLength; sequence_index ++) {
                 // loop down each column
                 
-                unsigned long mapped_sequence_index = hSegmentation.lData[sequence_index];
+                unsigned long mapped_sequence_index = hSegmentation.list_data[sequence_index];
                 // build atomic probabilities
                 
                 for (unsigned long m = 0UL; m<atom; m++ ) {
-                    unit_for_counting.set_char (m, (*this)(vSegmentation.lData[primary_site+m],mapped_sequence_index,atom));
+                    unit_for_counting.set_char (m, (*this)(vSegmentation.list_data[primary_site+m],mapped_sequence_index,atom));
                 }
                 
                 long resolution_count = theTT->MultiTokenResolutions(unit_for_counting, static_store, countGaps);
@@ -908,7 +908,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
             if (is_regexp) {
                 input.Trim(1,input.length()-2);
                 int   errCode;
-                regex = _String::PrepRegExp (&input, errCode, true);
+                regex = _String::PrepRegExp (input, errCode, true);
                 if (errCode) {
                     HandleApplicationError(_String::GetRegExpError(errCode));
                     return;
@@ -949,8 +949,9 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                     }
                     
                     if (is_regexp) {
-                        if (pattern.RegExpMatch (regex, 0L).countitems())
-                        target << specCount;
+                        if (pattern.RegExpMatch (regex, 0L).countitems()) {
+                            target << specCount;
+                        }
                     } else {
                         string_object->SetStringContent(new _StringBuffer (pattern));
                         string_name->SetStringContent  (new _StringBuffer (*GetSequenceName(seqPos)));
@@ -985,7 +986,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                     if (additionalFilter) {
                         InitializeArray(eligibleMarks, lLength, false);
                         for (long siteIndex = 0; siteIndex < additionalFilter->lLength; siteIndex ++) {
-                            eligibleMarks[theMap.lData[additionalFilter->lData[siteIndex]]] = true;
+                            eligibleMarks[theMap.list_data[additionalFilter->list_data[siteIndex]]] = true;
                         }
                     }
                     else {
@@ -1005,7 +1006,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                                 map_site ((_Site*)GetItem(siteCounter), *tempString, otherDimension);
                                 matches = tempString->RegExpMatch (regex, 0L);
                             } else {
-                                matches = ((_Site**)lData)[siteCounter]->RegExpMatch (regex, 0L);
+                                matches = ((_Site**)list_data)[siteCounter]->RegExpMatch (regex, 0L);
                             }
                             if (matches.empty()) {
                                 eligibleMarks[siteCounter] = false;
@@ -1015,7 +1016,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                     DeleteObject (tempString);
                     if (additionalFilter) {
                         for (long afi = 0; afi < additionalFilter->lLength; afi++) {
-                            if (eligibleMarks[theMap.lData[additionalFilter->lData[afi]]]) {
+                            if (eligibleMarks[theMap.list_data[additionalFilter->list_data[afi]]]) {
                                 target << afi;
                             }
                         }
@@ -1040,7 +1041,7 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                     if (additionalFilter) {
                         InitializeArray(eligibleMarks, theMap.lLength, false);
                         for (long siteIndex = 0; siteIndex < additionalFilter->lLength; siteIndex ++) {
-                            eligibleMarks[additionalFilter->lData[siteIndex]] = true;
+                            eligibleMarks[additionalFilter->list_data[siteIndex]] = true;
                         }
                     }
                     else {
@@ -1156,16 +1157,16 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                     }
                     while (anchor<totalLength-k) {
                         for (count = 0; count< numbers.lLength; count++) {
-                            target<<anchor+numbers.lData[count];
+                            target<<anchor+numbers.list_data[count];
                         }
                         anchor+=k;
                     }
                     if ( (k=totalLength-1-anchor) ) {
                         for (count = 0; count< numbers.lLength; count++) {
-                            if (numbers.lData[count]>k) {
+                            if (numbers.list_data[count]>k) {
                                 break;
                             }
-                            target<<anchor+numbers.lData[count];
+                            target<<anchor+numbers.list_data[count];
                         }
                     }
                     return;
@@ -1293,7 +1294,7 @@ _DataSet *_DataSet::Concatenate(_SimpleList const &ref)
   for (long k = 1; k < maxSpecies; k++) {
     siteIndex = 0;
     for (long i = 0; i < ref.lLength; i++) {
-      currentSet = (_DataSet *)dataSetList(ref.lData[i]);
+      currentSet = (_DataSet *)dataSetList(ref.list_data[i]);
 
       long cns = currentSet->NoOfSpecies(), cnc = currentSet->NoOfColumns();
 

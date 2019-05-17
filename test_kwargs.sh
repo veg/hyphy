@@ -163,6 +163,32 @@ evaluateMethod "slac" "Obtaining branch lengths" "${slacArgs[@]}"
 
 
 #*******************************************************************************
+#  GARD
+#*******************************************************************************
+# Redefining the two array variables to be able to use same "evaluateMethod" function defined previously
+
+declare -a fileTypes=(  "--alignment ./tests/hbltests/data/CD2.nex" # nexus with tree
+                        "--alignment ./tests/hbltests/data/CD2_noTree.nex " # nexus with no tree
+                        "--alignment ./tests/hbltests/data/CD2.phylip" # phylip
+                        )
+
+# GARD
+declare -a gardArgs=(   ""
+                        "--type Nucleotide"
+                        "--type Codon"
+                        "--type Codon --code Universal"
+                        "--type Codon --model JTT"
+                        "--rv GDD"
+                        "--rv GDD --rate-classes 2"
+                        "--output ./testMethodOutput"
+                        "--output-lf ./testMethodOutput"
+                        "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-length 1900000 --burn-in 1200000 --samples 125"
+                        )                     
+
+evaluateMethod "gard" "Fitting the baseline" "${gardArgs[@]}"
+
+
+#*******************************************************************************
 #  Amino Acid Methods
 #*******************************************************************************
 # Amino acid methods require different files and args

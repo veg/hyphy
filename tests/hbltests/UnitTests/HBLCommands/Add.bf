@@ -43,10 +43,12 @@ function runTest () {
   // + on topologies works in place
   T + {"NAME":"e", "WHERE": "b", "PARENT": "f"};
   Topology expectedNewTopology = ((a,(b,e)f)N1,c,d);
-  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology");
+  
+    
+  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology (1)");
   T + {"NAME":"Z", "WHERE": "f", "PARENT": "N2"};
   Topology expectedNewTopology = ((a,((b,e)f,Z)N2)N1,c,d);
-  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology");
+  assert((T == expectedNewTopology) == " ", "Failed to add a node to a topology (2)");
 
   T + {"NAME":"Z", "WHERE": "f"};
   Topology expectedNewTopology = ((a,((b,e,Z)f,Z)N2)N1,c,d);

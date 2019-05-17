@@ -60,10 +60,13 @@ _Formula *chi2 = nil,
 
 extern hyFloat tolerance;
 
-long            lastMatrixDeclared = -1,
-                dummyVariable1,
-                dummyVariable2,
-                expressionsParsed = 0;
+long                        lastMatrixDeclared = -1,
+                            dummyVariable1,
+                            dummyVariable2,
+                            expressionsParsed = 0;
+
+unsigned char               _Constant::preallocated_buffer [_HY_CONSTANT_PREALLOCATE_SLOTS*sizeof (_Constant)];
+_SimpleList                 _Constant::free_slots;
 
 //___________________________________________________________________________________________
 hyFloat  gaussDeviate (void) {
@@ -454,6 +457,26 @@ BaseRef _Constant::makeDynamic (void) const{
     _Constant * res = new _Constant;
     res->Duplicate(this);
     return res;
+}
+
+//__________________________________________________________________________________
+void * _Constant::operator new (size_t size) {
+    if (_Constant::free_slots.nonempty()) {
+        _Constant * result = ((_Constant*)_Constant::preallocated_buffer)+_Constant::free_slots.Pop();
+        return result;
+    }
+    return ::operator new (size);
+}
+
+//__________________________________________________________________________________
+void  _Constant::operator delete (void * p) {
+    _Constant * cp = (_Constant*)p,
+              * cpp = (_Constant*)_Constant::preallocated_buffer;
+    if (cp >= cpp &&  cp < (cpp + _HY_CONSTANT_PREALLOCATE_SLOTS)) {
+        free_slots << long (cp - cpp);
+    } else {
+        ::operator delete (p);
+    }
 }
 
 //__________________________________________________________________________________

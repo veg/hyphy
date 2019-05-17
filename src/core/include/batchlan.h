@@ -58,9 +58,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct    _CELInternals {
     _SimpleFormulaDatum     * values,
                             * stack;
+    
+    bool                    *is_compiled;
 
-    _SimpleList       varList,
-                      storeResults;
+    _SimpleList             varList,
+                            storeResults;
 
 };
 
@@ -102,8 +104,8 @@ public:
     HBLObjectRef   GetResult                   (void) {
         return result;
     }
-    void        ExecuteSimple               (void);             // run a simple compiled list
-    bool        TryToMakeSimple             (void);             // see if a list can be made into a compiled version
+    void        ExecuteSimple               (_ExecutionList * parent = nil);             // run a simple compiled list
+    bool        TryToMakeSimple             (bool partial_ok = false);             // see if a list can be made into a compiled version
 
     void        ExecuteAndClean             (long);
 
@@ -167,6 +169,10 @@ public:
 
     /** Advance program counter */
     void      advance (void) {currentCommand ++;}
+    
+    bool      is_compiled (long idx = -1) const {if (cli) if (idx < 0L) return true; else return cli->is_compiled[idx]; return false;}
+    
+    void      CopyCLIToVariables (void);
   
     // data fields
     // _____________________________________________________________
@@ -376,6 +382,8 @@ public:
     bool              DecompileFormulae        (void);
   
     void              BuildListOfDependancies  (_AVLListX & collection, bool recursive, _ExecutionList const& chain);
+    
+    
     
     /**
      

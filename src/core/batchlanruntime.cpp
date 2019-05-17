@@ -1026,8 +1026,8 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 char          *alignment_route = new char[2*(size_allocation)] {0};
 
                 _SimpleList ops (reference_sequence->length()+2UL,-2,0);
-                ops.lData[reference_sequence->length()+1] = sequence2->length();
-                ops.lData[0]               = -1;
+                ops.list_data[reference_sequence->length()+1] = sequence2->length();
+                ops.list_data[0]               = -1;
 
                 score = LinearSpaceAlign(reference_sequence,sequence2,character_map_to_integers,score_matrix,
                                          gap_open,gap_extend,gap_open2,gap_extend2,
@@ -1039,10 +1039,10 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 _StringBuffer     *result1 = new _StringBuffer (reference_sequence->length() + 1UL),
                                   *result2 = new _StringBuffer (size_allocation);
 
-                long             last_column     = ops.lData[ops.lLength-1];
+                long             last_column     = ops.list_data[ops.lLength-1];
 
                 for (long position = (long)reference_sequence->length() - 1L; position>=0; position--) {
-                    long current_column     = ops.lData[position+1];
+                    long current_column     = ops.list_data[position+1];
 
                     if (current_column<0) {
                         if (current_column == -2 /*|| (current_column == -3 && last_column == string2->sLength)*/) {
@@ -1050,11 +1050,11 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                         } else if (current_column == -3) {
                             // find the next matched char or a -1
                             long    p   = position, s2p;
-                            while ((ops.lData[p+1]) < -1) {
+                            while ((ops.list_data[p+1]) < -1) {
                                 p--;
                             }
 
-                            s2p = ops.lData[p+1];
+                            s2p = ops.list_data[p+1];
 
                             for (long j = last_column-1; j>s2p;) {
                                 (*result1) << gap_character;
@@ -2737,8 +2737,8 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                 
                 
                 
-                if (!simpleParameters.empty() && code.TryToMakeSimple()) {
-                    ReportWarning (_String ("Successfully compiled an execution list.\n") & _String ((_String*)code.toStr()) );
+                if (!simpleParameters.empty() && code.TryToMakeSimple(true)) {
+                    ReportWarning (_String ("Successfully compiled an execution list (possibly partially).\n") & _String ((_String*)code.toStr()) );
                     code.ExecuteSimple ();
                 } else {
                     code.Execute();
@@ -2854,7 +2854,7 @@ bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
           empty_slot = sql_databases.countitems();
           sql_databases << (long)db;
         } else {
-          sql_databases.lData[empty_slot] = (long)db;
+          sql_databases.list_data[empty_slot] = (long)db;
         }
 
         sqlite3_busy_timeout (db, 5000);
@@ -3502,7 +3502,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
         default: {
             // TODO: 20170623 SLKP CHANGE: use expression extractor
           
-          lookahead = input_data->ExtractEnclosedExpression(current_stream_position, (simpleParameters.lData[argument_index]==2)?'(':'{', (simpleParameters.lData[argument_index]==2)?')':'}', fExtractRespectQuote | fExtractRespectEscape);
+          lookahead = input_data->ExtractEnclosedExpression(current_stream_position, (simpleParameters.list_data[argument_index]==2)?'(':'{', (simpleParameters.list_data[argument_index]==2)?')':'}', fExtractRespectQuote | fExtractRespectEscape);
           
           if (lookahead == kNotFound) {
             lookahead = input_data->length ();
@@ -3511,9 +3511,9 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
           
           _String object_data (*input_data, current_stream_position, lookahead);
           
-          if (simpleParameters.lData[argument_index] != 2) { // matrix
+          if (simpleParameters.list_data[argument_index] != 2) { // matrix
             _FormulaParsingContext def;
-            store_here->SetValue (new _Matrix (object_data,simpleParameters.lData[argument_index]==4, def), false);
+            store_here->SetValue (new _Matrix (object_data,simpleParameters.list_data[argument_index]==4, def), false);
           } else {
             _TheTree (*store_here->GetName(), object_data);
           }
@@ -3958,7 +3958,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
     
     
     if (parameters.lLength>3) {
-      parameterName = (_String*)parameters.lData[3];
+      parameterName = (_String*)parameters.list_data[3];
       if (parameterName->Equal(explicitFormMExp)) {
         doExpressionBased = true;
         multFreqs         = 0;
@@ -3969,7 +3969,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
     
     _Matrix*  checkMatrix = nil;
     
-    parameterName = (_String*)parameters.lData[1];
+    parameterName = (_String*)parameters.list_data[1];
     
     if (parameterName->Equal (useLastDefinedMatrix)) {
       if (lastMatrixDeclared<0) {
@@ -3982,7 +3982,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
     
     
     if (doExpressionBased) {
-      _String matrixExpression (ProcessLiteralArgument((_String*)parameters.lData[1],chain.nameSpacePrefix)),
+      _String matrixExpression (ProcessLiteralArgument((_String*)parameters.list_data[1],chain.nameSpacePrefix)),
       defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment") & ':' & matrixExpression;
         // try to parse the expression, confirm that it is a square  matrix,
         // and that it is a valid transition matrix
@@ -4000,7 +4000,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
       
       
     } else {
-      parameterName = (_String*)parameters.lData[1];
+      parameterName = (_String*)parameters.list_data[1];
       
       _String augName (chain.AddNameSpaceToID(*parameterName));
       f = LocateVarByName (augName);
@@ -4024,7 +4024,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
       throw (*parameterName & " must be a square matrix of dimension>=2 in the call to Model = ...");
     }
     
-    parameterName = (_String*)parameters.lData[2]; // this is the frequency matrix (if there is one!)
+    parameterName = (_String*)parameters.list_data[2]; // this is the frequency matrix (if there is one!)
     _String         freqNameTag (chain.AddNameSpaceToID(*parameterName));
     
     f2 = LocateVarByName (freqNameTag);
@@ -4068,17 +4068,17 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
       
       if (lastMatrixDeclared>=0) {
         modelNames.Replace (lastMatrixDeclared,&arg0,true);
-        modelTypeList.lData[lastMatrixDeclared] = isExpressionBased?matrixDim:0;
+        modelTypeList.list_data[lastMatrixDeclared] = isExpressionBased?matrixDim:0;
         if (isExpressionBased) {
-          modelMatrixIndices.lData[lastMatrixDeclared] = (long)isExpressionBased;
+          modelMatrixIndices.list_data[lastMatrixDeclared] = (long)isExpressionBased;
         } else {
-          modelMatrixIndices.lData[lastMatrixDeclared] = (usingLastDefMatrix?f:variableNames.GetXtra(f));
+          modelMatrixIndices.list_data[lastMatrixDeclared] = (usingLastDefMatrix?f:variableNames.GetXtra(f));
         }
         
         if (f2>=0) {
-          modelFrequenciesIndices.lData[lastMatrixDeclared] = variableNames.GetXtra(f2);
+          modelFrequenciesIndices.list_data[lastMatrixDeclared] = variableNames.GetXtra(f2);
         } else {
-          modelFrequenciesIndices.lData[lastMatrixDeclared] = -variableNames.GetXtra(-f2-1)-1;
+          modelFrequenciesIndices.list_data[lastMatrixDeclared] = -variableNames.GetXtra(-f2-1)-1;
         }
       } else {
         modelNames && & arg0;
@@ -4097,11 +4097,11 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
       }
     } else {
       modelNames.Replace(existingIndex,&arg0,true);
-      if (modelTypeList.lData[existingIndex]) {
+      if (modelTypeList.list_data[existingIndex]) {
         delete ((_Formula*)modelMatrixIndices[existingIndex]);
       }
       
-      modelTypeList.lData[existingIndex] = isExpressionBased?matrixDim:0;
+      modelTypeList.list_data[existingIndex] = isExpressionBased?matrixDim:0;
       if (isExpressionBased) {
         modelMatrixIndices[existingIndex] = (long)isExpressionBased;
       } else {

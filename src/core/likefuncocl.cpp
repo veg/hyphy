@@ -682,14 +682,14 @@ double _OCLEvaluator::oclmain(void)
     printf("Update Nodes:");
     for (int i = 0; i < updateNodes.lLength; i++)
     {
-        printf(" %i ", updateNodes.lData[i]);
+        printf(" %i ", updateNodes.list_data[i]);
     }
     printf("\n");
 
     printf("Tagged Internals:");
     for (int i = 0; i < taggedInternals.lLength; i++)
     {
-        printf(" %i", taggedInternals.lData[i]);
+        printf(" %i", taggedInternals.list_data[i]);
     }
     printf("\n");
 */
@@ -701,8 +701,8 @@ double _OCLEvaluator::oclmain(void)
     //#pragma omp parallel for default(none) shared(updateNodes, flatParents, flatLeaves, flatCLeaves, flatTree, alphabetDimension, model, roundCharacters) private(nodeCode, parentCode, isLeaf, tMatrix, a1, a2)
     for (int nodeID = 0; nodeID < updateNodes.lLength; nodeID++)
     {
-        nodeCode = updateNodes.lData[nodeID];
-        parentCode = flatParents.lData[nodeCode];
+        nodeCode = updateNodes.list_data[nodeID];
+        parentCode = flatParents.list_data[nodeCode];
 
         isLeaf = nodeCode < flatLeaves.lLength;
 
@@ -765,8 +765,8 @@ double _OCLEvaluator::oclmain(void)
     for (int nodeIndex = 0; nodeIndex < updateNodes.lLength; nodeIndex++)
     {
         //printf("NewNode\n");
-        long    nodeCode = updateNodes.lData[nodeIndex],
-                parentCode = flatParents.lData[nodeCode];
+        long    nodeCode = updateNodes.list_data[nodeIndex],
+                parentCode = flatParents.list_data[nodeCode];
 
         //printf("NewNode: %i, NodeCode: %i\n", nodeIndex, nodeCode);
         bool isLeaf = nodeCode < flatLeaves.lLength;
@@ -774,7 +774,7 @@ double _OCLEvaluator::oclmain(void)
         if (isLeaf)
         {
             long nodeCodeTemp = nodeCode;
-            int tempIntTagState = taggedInternals.lData[parentCode];
+            int tempIntTagState = taggedInternals.list_data[parentCode];
             int ambig = 0;
             for (int aI = 0; aI < siteCount; aI++)
                 if (lNodeFlags[nodeCode*siteCount + aI] < 0)
@@ -787,7 +787,7 @@ double _OCLEvaluator::oclmain(void)
                 ciErr1 |= clSetKernelArg(ckLeafKernel, 7, sizeof(cl_long), (void*)&parentCode);
                 ciErr1 |= clSetKernelArg(ckLeafKernel, 9, sizeof(cl_int), (void*)&tempIntTagState);
                 ciErr1 |= clSetKernelArg(ckLeafKernel, 10, sizeof(cl_int), (void*)&nodeIndex);
-                taggedInternals.lData[parentCode] = 1;
+                taggedInternals.list_data[parentCode] = 1;
 
                 //printf("Leaf!\n");
 #ifdef __VERBOSE__
@@ -802,7 +802,7 @@ double _OCLEvaluator::oclmain(void)
                 ciErr1 |= clSetKernelArg(ckAmbigKernel, 7, sizeof(cl_long), (void*)&parentCode);
                 ciErr1 |= clSetKernelArg(ckAmbigKernel, 9, sizeof(cl_int), (void*)&tempIntTagState);
                 ciErr1 |= clSetKernelArg(ckAmbigKernel, 10, sizeof(cl_int), (void*)&nodeIndex);
-                taggedInternals.lData[parentCode] = 1;
+                taggedInternals.list_data[parentCode] = 1;
 
                 //printf("ambig!\n");
 #ifdef __VERBOSE__
@@ -822,12 +822,12 @@ double _OCLEvaluator::oclmain(void)
             long tempLeafState = 0;
             nodeCode -= flatLeaves.lLength;
             long nodeCodeTemp = nodeCode;
-            int tempIntTagState = taggedInternals.lData[parentCode];
+            int tempIntTagState = taggedInternals.list_data[parentCode];
             ciErr1 |= clSetKernelArg(ckInternalKernel, 5, sizeof(cl_long), (void*)&nodeCodeTemp);
             ciErr1 |= clSetKernelArg(ckInternalKernel, 6, sizeof(cl_long), (void*)&parentCode);
             ciErr1 |= clSetKernelArg(ckInternalKernel, 8, sizeof(cl_int), (void*)&tempIntTagState);
             ciErr1 |= clSetKernelArg(ckInternalKernel, 9, sizeof(cl_int), (void*)&nodeIndex);
-            taggedInternals.lData[parentCode] = 1;
+            taggedInternals.list_data[parentCode] = 1;
 #ifdef __VERBOSE__
             printf("Internal Started (ParentCode: %i)...", parentCode);
 #endif

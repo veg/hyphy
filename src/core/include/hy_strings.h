@@ -188,7 +188,7 @@ public:
    * Revision history
    - SLKP 20170517 reviewed while porting from v3 branch
    */
-  _String(_String *dynamic_string);
+  _String(_String *dynamic_string, bool dynamic = true);
 
   /**
    * Copy a part of another string into this string
@@ -298,6 +298,8 @@ public:
 
    */
   void operator=(_String const &rhs);
+
+  void operator=(_String &&rhs);
 
   /*
    ==============================================================
@@ -567,7 +569,7 @@ public:
    *  Revision history
       - SLKP 20170519 reviewed while porting from v3 branch
   */
-  const _String operator&(const _String &rhs) const;
+  _String operator&(const _String &rhs) const;
 
   /**
    * Removes part of string that is between the two specified indices
@@ -581,7 +583,7 @@ public:
    *  Revision history
       - SLKP 20170519 reviewed while porting from v3 branch
    */
-  const _String Chop(long start, long end) const;
+   _String Chop(long start, long end) const;
 
   /**
    * Cuts part of string that is between the two specified indices (0-bases,
@@ -596,7 +598,7 @@ public:
    *  Revision history
       - SLKP 20170519 reviewed while porting from v3 branch
    */
-  const _String Cut(long, long) const;
+   _String Cut(long, long) const;
 
   /**
    * Delete a range of chars from the string (0-based, inclusive indices)
@@ -631,7 +633,7 @@ public:
    *  Revision history
     - SLKP 20170519 reviewed ; (was missing in v3)
    */
-  const _String Reverse(void) const;
+   _String Reverse(void) const;
 
   /**
    * Insert a char at a given position

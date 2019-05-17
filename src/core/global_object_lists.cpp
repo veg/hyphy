@@ -388,7 +388,7 @@ namespace hyphy_global_objects {
   
   bool    IsModelOfExplicitForm (long modelID) {
     if (modelID != HY_NO_MODEL) {
-      return modelTypeList.lData[modelID] != 0;
+      return modelTypeList.list_data[modelID] != 0;
     }
     return false;
   }
@@ -579,9 +579,9 @@ namespace hyphy_global_objects {
                     *index = loc;
                 }
                 if (IsModelOfExplicitForm(loc)) {
-                    return (BaseRef)modelMatrixIndices.lData[loc];
+                    return (BaseRef)modelMatrixIndices.list_data[loc];
                 }
-                return LocateVar (modelMatrixIndices.lData[loc]);
+                return LocateVar (modelMatrixIndices.list_data[loc]);
             }
         }
         
@@ -702,9 +702,9 @@ namespace hyphy_global_objects {
                     *index = loc;
                 }
                 if (IsModelOfExplicitForm(loc)) {
-                    return (BaseRef)modelMatrixIndices.lData[loc];
+                    return (BaseRef)modelMatrixIndices.list_data[loc];
                 }
-                return LocateVar (modelMatrixIndices.lData[loc]);
+                return LocateVar (modelMatrixIndices.list_data[loc]);
             }
         }
         

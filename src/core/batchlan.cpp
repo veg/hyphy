@@ -146,6 +146,7 @@ blWhile                    ("while("),         // moved
 blFunction                 ("function "),      // moved
 blFFunction                ("ffunction "),     // moved
 blLFunction                ("lfunction "),     // moved
+blCFunction                ("cfunction "),     // moved
 blNameSpace                ("namespace "),
 blReturn                   ("return "),        // moved
 blReturnPrefix             ("return"),
@@ -663,7 +664,7 @@ long  AddDataSetToList (_String& theName,_DataSet* theDS) {
         k = dataSetNamesList.lLength-1;
     } else {
         dataSetNamesList.Replace (k, &theName, true);
-        dataSetList.lData[k]     = (long)theDS;
+        dataSetList.list_data[k]     = (long)theDS;
     }
     return k;
 }
@@ -719,8 +720,8 @@ void KillLFRecord (long lfID, bool completeKill) {
             wastedVars.Subtract(myVars, otherVars);
 
             for (unsigned long k=0UL; k<myVars.lLength; k++)
-                if (otherVars.BinaryFind(myVars.lData[k])<0) {
-                    wastedVars << myVars.lData[k];
+                if (otherVars.BinaryFind(myVars.list_data[k])<0) {
+                    wastedVars << myVars.list_data[k];
                 }
 
             myVars.Clear();
@@ -738,13 +739,13 @@ void KillLFRecord (long lfID, bool completeKill) {
             }
 
             for (unsigned long k=0UL; k<myVars.lLength; k++)
-                if (otherModels.BinaryFind (myVars.lData[k])<0) {
-                    KillModelRecord (myVars.lData[k]);
+                if (otherModels.BinaryFind (myVars.list_data[k])<0) {
+                    KillModelRecord (myVars.list_data[k]);
                 }
 
             for (unsigned long k=0UL; k<wastedVars.lLength; k++) {
-                //printf ("Deleting %ld (%s)\n", wastedVars.lData[k],  ->GetName()->getStr());
-                _Variable * check_me = LocateVar(wastedVars.lData[k]);
+                //printf ("Deleting %ld (%s)\n", wastedVars.list_data[k],  ->GetName()->getStr());
+                _Variable * check_me = LocateVar(wastedVars.list_data[k]);
                 if (check_me) {
                   DeleteVariable (*check_me->GetName());
                 }
@@ -756,7 +757,7 @@ void KillLFRecord (long lfID, bool completeKill) {
 
         if (lfID<likeFuncList.lLength-1) {
             DeleteObject(likeFuncList(lfID));
-            likeFuncList.lData[lfID] = 0L;
+            likeFuncList.list_data[lfID] = 0L;
             likeFuncNamesList.Replace(lfID,new _String,false);
         } else {
             likeFuncList.Delete(lfID);
@@ -782,7 +783,7 @@ void KillLFRecordFull (long lfID) {
     lf->GetGlobalVars (l);
 
     for (unsigned long k=0UL; k<l.lLength; k++) {
-        DeleteVariable (*LocateVar(l.lData[k])->GetName());
+        DeleteVariable (*LocateVar(l.list_data[k])->GetName());
     }
 
     l.Clear ();
@@ -796,7 +797,7 @@ void KillLFRecordFull (long lfID) {
     }
 
     for (unsigned long k=0UL; k<l.lLength; k++) {
-        KillModelRecord (l.lData[k]);
+        KillModelRecord (l.list_data[k]);
     }
 
     KillLFRecord (lfID);
@@ -808,7 +809,7 @@ void KillDataSetRecord (long dsID)
 {
     if (dsID<dataSetList.lLength-1) {
         DeleteObject(dataSetList(dsID));
-        dataSetList.lData[dsID] = 0;
+        dataSetList.list_data[dsID] = 0;
         dataSetNamesList.Replace(dsID,new _String,false);
     } else {
         dataSetList.Delete(dsID);
@@ -829,8 +830,8 @@ void KillDataSetRecord (long dsID)
 void    KillExplicitModelFormulae (void)
 {
     for (long i = 0; i < modelTypeList.lLength; i++)
-        if (modelTypeList.lData[i]) {
-            delete (_Formula*)(modelMatrixIndices.lData[i]);
+        if (modelTypeList.list_data[i]) {
+            delete (_Formula*)(modelMatrixIndices.list_data[i]);
         }
 }
 
@@ -847,8 +848,8 @@ void KillModelRecord (long mdID)
     // can't delete matrices before checking that no other model depends on the
 
 
-    if (modelTypeList.lData[mdID]) {
-        delete (_Formula*)(modelMatrixIndices.lData[mdID]);
+    if (modelTypeList.list_data[mdID]) {
+        delete (_Formula*)(modelMatrixIndices.list_data[mdID]);
     } else {
         _Variable * modelMatrix = nil,
                     * freqMatrix  = nil;
@@ -862,11 +863,11 @@ void KillModelRecord (long mdID)
 
         for (long k = 0; k < modelNames.lLength; k++) {
             if (k != mdID && ((_String*)modelNames(k))->nonempty()) {
-                if (modelTypeList.lData[k]) {
+                if (modelTypeList.list_data[k]) {
                     _SimpleList dependantMatrices;
-                    ((_Formula*)(modelMatrixIndices.lData[k]))->ScanFForType (dependantMatrices, MATRIX);
+                    ((_Formula*)(modelMatrixIndices.list_data[k]))->ScanFForType (dependantMatrices, MATRIX);
                     for (long k2 = 0; k2 < dependantMatrices.lLength; k2++) {
-                        saveTheseVariables.Insert((BaseRef)dependantMatrices.lData[k2]);
+                        saveTheseVariables.Insert((BaseRef)dependantMatrices.list_data[k2]);
                     }
                 } else {
                     RetrieveModelComponents(k, modelMatrix, freqMatrix, multByFreqs);
@@ -891,9 +892,9 @@ void KillModelRecord (long mdID)
     }
 
     if (mdID<modelNames.lLength-1) {
-        modelMatrixIndices.lData[mdID] = -1;
-        modelTypeList.lData[mdID] = 0;
-        modelFrequenciesIndices.lData[mdID] = -1;
+        modelMatrixIndices.list_data[mdID] = -1;
+        modelTypeList.list_data[mdID] = 0;
+        modelFrequenciesIndices.list_data[mdID] = -1;
         modelNames.Replace(mdID,new _String,false);
     } else {
         modelNames.Delete(mdID);
@@ -975,6 +976,7 @@ void _ExecutionList::ClearExecutionList (void) {
     if (cli) {
         delete [] cli->values;
         delete [] cli->stack;
+        delete [] cli->is_compiled;
         delete cli;
         cli = nil;
     }
@@ -1307,14 +1309,37 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
     currentCommand       = 0;
 
     terminate_execution  = false;
+      
+      
+    bool is_c = is_compiled();
+    if (is_c) {
+      //PopulateArraysForASimpleFormula (cli->varList, cli->values);
+      cli->is_compiled[0] = false;
+    }
 
     while (currentCommand<lLength) {
+        
+        if (is_c) {
+            if ( cli->is_compiled [currentCommand+1] == false) {
+               if (cli->is_compiled[0]) {
+                  CopyCLIToVariables();
+                  cli->is_compiled [0] = false;
+               }
+                
+            } else {
+                if (cli->is_compiled[0] == false) {
+                    PopulateArraysForASimpleFormula (cli->varList, cli->values);
+                    cli->is_compiled[0] = true;
+                }
+            }
+        }
+        
         if (doProfile == 1 && profileCounter) {
             long        instCounter = currentCommand;
             hyFloat  timeDiff    = 0.0;
 
             TimeDifference timer;
-            (((_ElementaryCommand**)lData)[currentCommand])->Execute(*this);
+            (((_ElementaryCommand**)list_data)[currentCommand])->Execute(*this);
             timeDiff   = timer.TimeSinceStart();
 
 
@@ -1324,14 +1349,14 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
             profileCounter->theData[instCounter*2+1] += 1.0;
           }
         } else {
-            (((_ElementaryCommand**)lData)[currentCommand])->Execute(*this);
+            (((_ElementaryCommand**)list_data)[currentCommand])->Execute(*this);
         }
 
         if (terminate_execution) {
             break;
         }
     }
-    currentCommand = callPoints.lData[callPoints.lLength-1];
+    currentCommand = callPoints.list_data[callPoints.lLength-1];
     callPoints.Delete (callPoints.lLength-1);
     currentExecutionList = stashCEL;
       
@@ -1356,6 +1381,11 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
       parent->currentKwarg = currentKwarg;
       BatchDeleteObject (stash1, stash2, stash_kw, stash_kw_tags);
     }
+      
+    if (is_compiled(0)) {
+      CopyCLIToVariables();
+    }
+
   } catch (const _String err) {
     HandleApplicationError(err);
   }
@@ -1372,29 +1402,29 @@ void        _ExecutionList::ExecuteAndClean     (long g) {
 
 //____________________________________________________________________________________
 
-bool        _ExecutionList::TryToMakeSimple     (void)
-{
+bool        _ExecutionList::TryToMakeSimple     (bool partial_ok) {
     _SimpleList     varListAux,
                     formulaeToConvert,
                     parseCodes;
   
-  
     _AVLList        varList (&varListAux);
 
-    long            stackDepth  = 0;
-
+    long            stackDepth  = 0L;
     bool            status      = true;
-
-    for (unsigned long k = 0; k<lLength && status; k++) {
+    unsigned long   k = 0UL;
+    
+    bool            *is_compiled = new bool [countitems()+1];
+    InitializeArray (is_compiled, countitems()+1, false);
+    
+    for (; k<lLength && status; k++) {
         _ElementaryCommand * aStatement = (_ElementaryCommand*)(*this)(k);
         switch (aStatement->code) {
-        case 0: {
+        case 0: { // expression
             _String * formulaString = (_String*)aStatement->parameters(0);
 
            if ((*formulaString) (-1) != '}') {
                 _Formula *f  = new _Formula,
                          *f2 = new _Formula;
-
 
                 _FormulaParsingContext fpc (nil, nameSpacePrefix);
 
@@ -1414,7 +1444,6 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                             _Operation * last = f->GetIthTerm(assignment_length-1);
                             if (! (last->TheCode() == HY_OP_CODE_MCOORD && last->GetNoTerms() == 2)) throw 0;
 
-
                             f2->GetList() << f->GetList();
                             f->Clear();
 
@@ -1425,18 +1454,22 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                           }
 
                         } catch (int e) {
+                          if (partial_ok) {
+                              parseCodes << -1;
+                              continue;
+                          }
                           status = false;
                           break;
                         }
+                      
                         aStatement->simpleParameters<<parseCode;
                         aStatement->simpleParameters<<(long)f;
                         aStatement->simpleParameters<<(long)f2;
-
-
                         aStatement->simpleParameters<<fpc.assignmentRefID();
 
 
                         formulaeToConvert << (long)f;
+                        is_compiled [k+1] = true;
 
 
                         if (parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
@@ -1453,7 +1486,11 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                 delete f;
                 delete f2;
             }
-            status = false;
+            
+            parseCodes << -1;
+            if (!partial_ok) {
+                status = false;
+            }
             break;
         }
 
@@ -1475,12 +1512,23 @@ bool        _ExecutionList::TryToMakeSimple     (void)
                 _Formula *cf  = ((_Formula*)aStatement->simpleParameters(2));
                 if (cf->AmISimple(stackDepth,varList)) {
                     formulaeToConvert << (long)cf;
+                    is_compiled [k+1] = true;
                 } else {
+                    if (partial_ok) {
+                        parseCodes << -1;
+                        continue;
+                    }
                     status = false;
                 }
+            } else {
+                is_compiled[k+1] = true;
             }
             break;
-
+                
+        case 14: // return statements are OK
+            parseCodes << -1;
+            break;
+                
         default:
             status = false;
         }
@@ -1490,31 +1538,41 @@ bool        _ExecutionList::TryToMakeSimple     (void)
     }
 
     if (status) {
-        cli = new _CELInternals;
-        varList.ReorderList();
-        cli->values = new _SimpleFormulaDatum[varList.countitems()+1];
-        cli->stack  = new _SimpleFormulaDatum[stackDepth+1];
+        if (formulaeToConvert.nonempty()) {
+            cli = new _CELInternals;
+            //varList.ReorderList();
+            cli->values = new _SimpleFormulaDatum[varList.countitems()+1];
+            cli->stack  = new _SimpleFormulaDatum[stackDepth+1];
+            cli->is_compiled = is_compiled;
 
-        _SimpleList  avlData;
-        _AVLListX    avlList (&avlData);
+            _SimpleList  avlData;
+            _AVLListX    avlList (&avlData);
 
-        for (unsigned long fi = 0; fi < formulaeToConvert.lLength; fi++) {
-            ((_Formula*)formulaeToConvert(fi))->ConvertToSimple (varList);
-        }
-
-        for (unsigned long vi = 0; vi < varListAux.countitems(); vi++) {
-            avlList.Insert ((BaseRef)varListAux.lData[vi], vi);
-        }
-
-        for (unsigned long ri = 0; ri<parseCodes.lLength; ri++) {
-            if (parseCodes.lData[ri] < 0) {
-                cli->storeResults << -1;
-            } else {
-                cli->storeResults << avlList.GetXtra (avlList.Find ((BaseRef) parseCodes.lData[ri]));
+            for (unsigned long fi = 0; fi < formulaeToConvert.lLength; fi++) {
+                ((_Formula*)formulaeToConvert(fi))->ConvertToSimple (varList);
             }
-            //printf ("\n%ld\n",  cli->storeResults.lData[ri]);
+
+            for (unsigned long vi = 0; vi < varListAux.countitems(); vi++) {
+                avlList.Insert ((BaseRef)varListAux.list_data[vi], vi);
+            }
+
+            for (unsigned long ri = 0; ri<parseCodes.lLength; ri++) {
+                if (parseCodes.list_data[ri] < 0) {
+                    cli->storeResults << -1;
+                } else {
+                    cli->storeResults << avlList.GetXtra (avlList.Find ((BaseRef) parseCodes.list_data[ri]));
+                }
+                //printf ("\n%ld\n",  cli->storeResults.list_data[ri]);
+            }
+            cli->varList.Duplicate(&varListAux);
         }
-        cli->varList.Duplicate(&varList);
+    } else {
+        // clean up partially converted statements
+      delete [] is_compiled;
+      for (unsigned long k2 = 0UL; k2 < k; k2++) {
+        GetIthCommand(k2)->simpleParameters.Pop(3UL);
+      
+      }
     }
 
     return status;
@@ -1522,16 +1580,22 @@ bool        _ExecutionList::TryToMakeSimple     (void)
 
 //____________________________________________________________________________________
 
-void        _ExecutionList::ExecuteSimple       (void) {
-    PopulateArraysForASimpleFormula (cli->varList, cli->values);
-    Execute();
-
-    for (long vi2 = 0; vi2 < cli->varList.lLength; vi2++) {
-        _Variable * mv = LocateVar(cli->varList.lData[vi2]);
+void        _ExecutionList::CopyCLIToVariables(void) {
+    
+    cli->varList.Each ([this] (long index, unsigned long idx) -> void {
+        _Variable * mv = LocateVar(index);
         if (mv->ObjectClass() == NUMBER) {
-            mv->SetValue (new _Constant (cli->values[vi2].value),false);
+            mv->SetValue (new _Constant (this->cli->values[idx].value),false);
         }
-    }
+    });
+}
+
+//____________________________________________________________________________________
+
+void        _ExecutionList::ExecuteSimple       (_ExecutionList * parent) {
+    //PopulateArraysForASimpleFormula (cli->varList, cli->values);
+    Execute(parent);
+    //CopyCLIToVariables();
 }
 
 //____________________________________________________________________________________
@@ -1541,7 +1605,7 @@ void        _ExecutionList::ResetFormulae       (void) {
     _SimpleList to_delete_aux;
     _AVLList to_delete (&to_delete_aux);
     while (currentCommand<lLength) {
-        _ElementaryCommand* thisCommand = ((_ElementaryCommand**)lData)[currentCommand];
+        _ElementaryCommand* thisCommand = ((_ElementaryCommand**)list_data)[currentCommand];
         if (thisCommand->DecompileFormulae()) {
           to_delete.Insert(thisCommand);
         }
@@ -1571,6 +1635,9 @@ BaseRef  _ExecutionList::toStr (unsigned long) {
 
     for (unsigned long i=0UL; i<countitems(); i++) {
         (*result) << &step << _String((long)i) << '.';
+        if (is_compiled(i+1)) {
+            (*result) << "[compiled]";
+        }
         result->AppendNewInstance ((_String*)GetItem(i)->toStr());
     }
 
@@ -1674,6 +1741,9 @@ void  _ExecutionList::BuildChoiceList (_List * pieces, long code) {
 
 void  _ExecutionList::BuildExecuteCommandInstruction (_List * pieces, long code) {
 
+  const _String kExecuteCompiled ("compiled"),
+                kExecuteEncloseingNamespace ("enclosing_namespace");
+  
   _ElementaryCommand * run_source = new _ElementaryCommand (code);
   run_source->parameters<<pieces->GetItem(0);
   
@@ -1684,10 +1754,10 @@ void  _ExecutionList::BuildExecuteCommandInstruction (_List * pieces, long code)
   }
   
   if (pieces->countitems() > 1UL) {
-    if (*(_String*)pieces->GetItem (1UL) == _String("compiled")) {
+    if (*(_String*)pieces->GetItem (1UL) == kExecuteCompiled) {
       run_source->simpleParameters << 1;
     } else {
-      if (*(_String*)pieces->GetItem (1UL) == _String("enclosing_namespace")) {
+      if (*(_String*)pieces->GetItem (1UL) == kExecuteEncloseingNamespace) {
         run_source->parameters.Delete(1UL);
         run_source->parameters < new _String;
       } else {
@@ -1898,7 +1968,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               throw (currentLine.Enquote() & " contained syntax errors, possibly a missing semicolon. " );
             }
           } else {
-              if (currentLine.BeginsWith (blFunction)||currentLine.BeginsWith (blFFunction)||currentLine.BeginsWith (blLFunction) || currentLine.BeginsWith (blNameSpace)) { // function declaration
+              if (currentLine.BeginsWith (blFunction)||currentLine.BeginsWith (blFFunction)||currentLine.BeginsWith (blLFunction) || currentLine.BeginsWith (blNameSpace) || currentLine.BeginsWith (blCFunction)) { // function declaration
                   _ElementaryCommand::ConstructFunction (currentLine, *this);
               } else if (currentLine.BeginsWithAndIsNotAnIdent (blReturnPrefix)) { // function return statement
                                                                             //StringToConsole(currentLine); NLToConsole();
@@ -1909,7 +1979,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                   if (lastif.countitems()) {
                       long    temp = countitems(),
                               lc   = lastif.countitems(),
-                              lif  = lastif.lData[lc-1];
+                              lif  = lastif.list_data[lc-1];
 
                       _ElementaryCommand      * stuff = new _ElementaryCommand ();
                       stuff->MakeJumpCommand  (nil,0,0,*this);
@@ -2338,11 +2408,13 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
 
     try {
 
-      if (chain.cli) {
-          hyFloat result = ((_Formula*)simpleParameters.lData[1])->ComputeSimple (chain.cli->stack, chain.cli->values);
-          long sti = chain.cli->storeResults.lData[chain.currentCommand-1];
+      if (chain.is_compiled(chain.currentCommand)) {
+          //if (chain.is_compiled(0) == false) {
+          //    PopulateArraysForASimpleFormula (chain.cli->varList, chain.cli->values);
+          //}
+          hyFloat result = ((_Formula*)simpleParameters.list_data[1])->ComputeSimple (chain.cli->stack, chain.cli->values);
+          long sti = chain.cli->storeResults.list_data[chain.currentCommand-1];
           if (sti>=0) {
-            //printf ("%ld, %g\n", sti, result);
               chain.cli->values[sti].value = result;
           }
           return;
@@ -2385,7 +2457,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
           }
       }
 
-      ExecuteFormula ((_Formula*)simpleParameters.lData[1],(_Formula*)simpleParameters.lData[2],simpleParameters.lData[0],simpleParameters.lData[3], chain.nameSpacePrefix, simpleParameters.lData[4]);
+      ExecuteFormula ((_Formula*)simpleParameters.list_data[1],(_Formula*)simpleParameters.list_data[2],simpleParameters.list_data[0],simpleParameters.list_data[3], chain.nameSpacePrefix, simpleParameters.list_data[4]);
 
       if (terminate_execution) {
         errMsg = new _String ("Error computing the interpreted statement: ");
@@ -2433,9 +2505,12 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
               }
           }
 
-          if (chain.cli) {
+          if (chain.is_compiled(chain.currentCommand)) {
+              //if (chain.is_compiled(0) == false) {
+              //    PopulateArraysForASimpleFormula (chain.cli->varList, chain.cli->values);
+              //}
               if ( ((_Formula*)simpleParameters(2))->ComputeSimple(chain.cli->stack, chain.cli->values)==0.0) {
-                  chain.currentCommand = simpleParameters.lData[1];
+                  chain.currentCommand = simpleParameters.list_data[1];
                   return;
               }
           } else {
@@ -2478,12 +2553,12 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
               }
 
               if (conditionFalse) {
-                  chain.currentCommand = simpleParameters.lData[1];
+                  chain.currentCommand = simpleParameters.list_data[1];
                   return;
               }
           }
       }
-      chain.currentCommand = simpleParameters.lData[0];
+      chain.currentCommand = simpleParameters.list_data[0];
 
       if (chain.currentCommand == -1) {
           terminate_execution   = true;
@@ -2637,7 +2712,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                             done = false;
                             break;
                         }
-                        theFreqID   = modelFrequenciesIndices.lData[theModelID];
+                        theFreqID   = modelFrequenciesIndices.list_data[theModelID];
 
                         while((thisNode = ti.Next()) && !ti.IsAtRoot()) {
                             theModelID      = thisNode->GetModelIndex();
@@ -2645,7 +2720,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                                 done = false;
                                 break;
                             }
-                            if (modelFrequenciesIndices.lData[theModelID]!=theFreqID) {
+                            if (modelFrequenciesIndices.list_data[theModelID]!=theFreqID) {
                                 done = true;
                                 break;
                             }
@@ -2723,7 +2798,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                 DeleteObject (lkf);
             } else {
                 likeFuncNamesList.Replace(likeFuncObjectID,&lfID,true);
-                likeFuncList.lData[likeFuncObjectID] = (long)lkf;
+                likeFuncList.list_data[likeFuncObjectID] = (long)lkf;
             }
         }
     } else {
@@ -3010,7 +3085,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
         _SimpleList * the_map = & ds->GetTheMap();
         the_map->RequestSpace (total_sites);
-        InitializeArray (the_map->lData, total_sites, 0L);
+        InitializeArray (the_map->list_data, total_sites, 0L);
         the_map->lLength = total_sites;
 
         _DataSetFilter* new_filter = new _DataSetFilter();
@@ -3177,8 +3252,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
                     tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
                 } else if (formRes->ObjectClass () == TREE) {
                     for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
-                        //printf ("%s\n", LocateVar(leftOverVars.lData[i])->GetName()->sData);
-                        DeleteVariable(leftOverVars.lData[i], true);
+                        //printf ("%s\n", LocateVar(leftOverVars.list_data[i])->GetName()->sData);
+                        DeleteVariable(leftOverVars.list_data[i], true);
                     }
                     leftOverVars.Clear();
                     tr = new _TheTree (treeIdent,(_TheTree*)formRes);
@@ -3223,7 +3298,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             dep.Sort ();
             holder.Subtract (indep,dep);
             for (varID = holder.lLength-1; varID >=0 ; varID--) {
-                DeleteVariable (*LocateVar (holder.lData[varID])->GetName());
+                DeleteVariable (*LocateVar (holder.list_data[varID])->GetName());
             }
 
             tr->Clear();
@@ -3260,6 +3335,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
       // a return statement
 
       if (parameters.lLength) {
+          
+        /*if (chain.is_compiled()) {
+          chain.CopyCLIToVariables();
+        }*/
 
         _Formula * expression = nil;
         _String  * errMsg     = nil;
@@ -3351,8 +3430,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             // purge all the datasets except the resulting one
             long newSetID = FindDataSetName (*resultName);
             for (long di=0; di<dsIndex.lLength; di++)
-                if (dsIndex.lData[di] != newSetID) {
-                    KillDataSetRecord(dsIndex.lData[di]);
+                if (dsIndex.list_data[di] != newSetID) {
+                    KillDataSetRecord(dsIndex.list_data[di]);
                 }
         }
 
@@ -4347,7 +4426,7 @@ bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&t
     _ElementaryCommand *cv = new _ElementaryCommand (32);
 
     cv->parameters<<args(0);
-    //((_String*)args.lData[1])->StripQuotes();
+    //((_String*)args.list_data[1])->StripQuotes();
     cv->parameters<<args(1)
                   <<args(2)
                   <<args(3);
@@ -4355,8 +4434,8 @@ bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&t
     if  (args.lLength>5UL) {
         _List * choices = new _List;
         for (long k = 4L; k<args.lLength-1; k+=2) {
-            ((_String*)args.lData[k])->StripQuotes();
-            ((_String*)args.lData[k+1])->StripQuotes();
+            ((_String*)args.list_data[k])->StripQuotes();
+            ((_String*)args.list_data[k+1])->StripQuotes();
             _List * thisChoice = new _List;
             *thisChoice << args(k);
             *thisChoice << args(k+1);
@@ -4588,7 +4667,8 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 
     bool    isFFunction = source.BeginsWith (blFFunction),
             isLFunction = ! isFFunction && source.BeginsWith (blLFunction),
-            isNameSpace = ! isFFunction && ! isLFunction && source.BeginsWith (blNameSpace);
+            isCFunction = ! isFFunction && ! isLFunction && source.BeginsWith (blCFunction),
+            isNameSpace = ! isFFunction && ! isLFunction && ! isCFunction && source.BeginsWith (blNameSpace);
 
     _hy_nested_check save_state = isInFunction;
     
@@ -4599,17 +4679,29 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       }
     }
     
+    long mark1, mark2;
     
-    long    mark1 = source.FirstNonSpaceIndex(isNameSpace ? blNameSpace.length(): ((isFFunction||isLFunction)?blFFunction.length():blFunction.length() ),-1,kStringDirectionForward),
-            mark2 = source.Find (isNameSpace ? '{' : '(', mark1, -1);
+    if (isNameSpace) {
+        mark1 = source.FirstNonSpaceIndex(blNameSpace.length(), kStringEnd, kStringDirectionForward);
+        mark2 = source.Find ('{', mark1, kStringEnd);
+    } else {
+        _String const * prefix = &blFunction;
+        
+        if (isFFunction) prefix = &blFFunction; else
+        if (isLFunction) prefix = &blLFunction; else
+        if (isCFunction) prefix = &blCFunction;
 
+        mark1 = source.FirstNonSpaceIndex(prefix->length(),kStringEnd,kStringDirectionForward);
+        mark2 = source.Find ('(', mark1, kStringEnd);
+    }
+    
 
-    if ( mark1==-1 || mark2==-1 || mark1>mark2-1) {
+    if ( mark1 == kNotFound || mark2 == kNotFound || mark1 > mark2-1) {
         HandleApplicationError      (_String("Function declaration missing a valid function identifier or parameter list.\n-----------\n") & source & "\n-----------\n");
         return false;
     }
 
-    _String*    funcID  = new _String(source.Cut (mark1,mark2-1));
+    _String*    funcID  = new _String(source,mark1,mark2-1);
 
     if (!funcID->IsValidIdentifier(fIDAllowCompound)) {
       HandleApplicationError      (_String("Not a valid function/namespace identifier '") & _String(funcID) & "'");
@@ -4674,19 +4766,25 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       else {
           functionBody = new _ExecutionList (sfunctionBody,chain.GetNameSpace(),true);
       }
+        
+      if (isCFunction) {
+          if (functionBody->TryToMakeSimple()) {
+              ReportWarning(_String ("Successfully compiled code for function ") & funcID->Enquote());
+          }
+      }
 
       //  take care of all the return statements
       returnlist.Each ([functionBody] (long value, unsigned long) -> void {
         ((_ElementaryCommand*)functionBody->GetItem(value))->simpleParameters << functionBody->countitems();
       });
       returnlist.Clear();
-
+        
       if (mark1>=0) {
           batchLanguageFunctions.Replace (mark1, functionBody, false);
           batchLanguageFunctionNames.Replace (mark1, funcID, false);
           batchLanguageFunctionParameterLists.Replace (mark1, &arguments, true);
           batchLanguageFunctionParameterTypes.Replace (mark1, &argument_types, true);
-          batchLanguageFunctionClassification.lData[mark1] = isLFunction ? kBLFunctionLocal :( isFFunction? kBLFunctionSkipUpdate :  kBLFunctionAlwaysUpdate);
+          batchLanguageFunctionClassification.list_data[mark1] = isLFunction ? kBLFunctionLocal :( isFFunction? kBLFunctionSkipUpdate :  kBLFunctionAlwaysUpdate);
       } else {
           batchLanguageFunctions.AppendNewInstance(functionBody);
           batchLanguageFunctionNamesIndexed.Insert (new _String (*funcID), batchLanguageFunctions.countitems() - 1, false, true);
@@ -4801,27 +4899,27 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
     _Formula    * theExp  = nil;
     _SimpleList   matrices;
 
-    if (modelTypeList.lData[theModel]) {
-        theExp = (_Formula*)modelMatrixIndices.lData[theModel];
+    if (modelTypeList.list_data[theModel]) {
+        theExp = (_Formula*)modelMatrixIndices.list_data[theModel];
         theExp->ScanFForType(matrices, MATRIX);
 
         for (long mi = 0; mi < matrices.countitems(); mi++) {
-            if (alreadyDone && alreadyDone->Insert ((BaseRef)matrices.lData[mi]) < 0) {
+            if (alreadyDone && alreadyDone->Insert ((BaseRef)matrices.list_data[mi]) < 0) {
                 matrices.Delete(mi);
                 mi--;
             }
         }
     } else {
-        if (!alreadyDone || alreadyDone->Find ((BaseRef)modelMatrixIndices.lData[theModel]) < 0) {
+        if (!alreadyDone || alreadyDone->Find ((BaseRef)modelMatrixIndices.list_data[theModel]) < 0) {
             if (alreadyDone) {
-                alreadyDone->Insert ((BaseRef)modelMatrixIndices.lData[theModel]);
+                alreadyDone->Insert ((BaseRef)modelMatrixIndices.list_data[theModel]);
             }
-            matrices << modelMatrixIndices.lData[theModel];
+            matrices << modelMatrixIndices.list_data[theModel];
         }
-        tV = LocateVar(modelMatrixIndices.lData[theModel]);
+        tV = LocateVar(modelMatrixIndices.list_data[theModel]);
     }
 
-    long freqID = modelFrequenciesIndices.lData[theModel];
+    long freqID = modelFrequenciesIndices.list_data[theModel];
 
     if (freqID>=0) {
         tV2 = LocateVar(freqID);
@@ -4850,7 +4948,7 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
         }
 
         for (long mi = 0; mi < matrices.lLength; mi++) {
-            LocateVar(matrices.lData[mi])->ScanForVariables (vlst,true);
+            LocateVar(matrices.list_data[mi])->ScanForVariables (vlst,true);
         }
 
         if (do2) {
@@ -4870,7 +4968,7 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
 
     if (matrices.lLength) {
         for (long k = 0; k < matrices.lLength; k++) {
-            _Variable *tV = LocateVar (matrices.lData[k]);
+            _Variable *tV = LocateVar (matrices.list_data[k]);
             ((_Matrix*)   tV->GetValue())->Serialize (rec,*tV->GetName());
             rec << '\n';
         }

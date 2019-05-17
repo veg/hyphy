@@ -51,7 +51,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define kAppendAnAssignmentToBufferAssignment   0x04
 #define kAppendAnAssignmentToBufferGlobal       0x08
 
-
+#define _HY_STRING_BUFFER_PREALLOCATE_SLOTS     256
 
 class _StringBuffer : public _String {
 
@@ -143,6 +143,15 @@ public:
    */
   _StringBuffer(const _String& buffer);
 
+    /**
+     * A constructor that moves from a standard string.
+     * @param buffer Create buffer from provided HyPhy _String
+     
+     *  Revision history
+     - SLKP 20190507 initial implementation
+     */
+   _StringBuffer(_String&& buffer);
+
   /**
    * A constructor that moves data from a standard string.
    * @param buffer This string will be deleted upon return
@@ -172,7 +181,7 @@ public:
    - SLKP 20170614 reviewed while porting from v3 branch
    */
 
-  virtual ~_StringBuffer(void) {};
+  virtual ~_StringBuffer(void);
 
   /**
   * Returns a dynamic copy of the current instance.
@@ -191,6 +200,15 @@ public:
    - SLKP 20170614 reviewed while porting from v3 branch
   */
   void Duplicate (BaseRefConst);
+    
+    
+ /**
+  * Move semantics for buffer assignment
+  * @param rhs A pointer to the _StringBuffer to be moved from
+  *  Revision history
+   - SLKP 20190507 initial implementations
+  */
+  _StringBuffer& operator = (_StringBuffer&&rhs);
 
   /**
   * Append all characters in the argument string to the buffer
@@ -317,6 +335,15 @@ public:
      -  SLKP 20170923 initial implementation
      */
     virtual void TrimSpace (void);
+    
+    
+    /// memory buffering
+    void * operator new       (size_t size);
+    void   operator delete    (void * p);
+
+    static  _SimpleList                    free_slots;
+    static  unsigned char                  preallocated_buffer[];
+
     
 };
 

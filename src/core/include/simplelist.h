@@ -51,10 +51,15 @@ class _SimpleList:public BaseObj {
     protected:
         //memory allocated enough for this many slots
         unsigned long laLength;
-
+        // default static buffer to hold smaller arrays and avoid dynamic mallocs
+        long     static_data [MEMORYSTEP];
+    
+        void     _UpdateStorageType (void);
+        void     _EnsureCorrectStorageType (void);
+        void     _CopyStatic (void);
     public:
         //Data Members
-        long* lData;
+        long* list_data;
         unsigned long lLength;//actual length
 
         //Methods
@@ -192,6 +197,12 @@ class _SimpleList:public BaseObj {
         bool empty (void) const {return lLength == 0UL;}
 
         /**
+           Does this list have dynamic memory allocation, or does it have a static array?
+         * @return True if the list has dynamically managed memory
+         */
+        bool is_dynamic (void) const {return list_data != static_data;}
+
+        /**
          //Is the list non-empty
          * Example: SimpleList SimpleList([4, 1, 2]).nonempty() = true
          * @return True if the list is non-empty
@@ -283,7 +294,7 @@ class _SimpleList:public BaseObj {
          * @param index Which item you want.
          * @return A long
          */
-        inline const long get (long index) const {return lData[index];}
+        inline const long get (long index) const {return list_data [index];}
 
         /**
         * Checks if list is identical to other list
@@ -312,7 +323,7 @@ class _SimpleList:public BaseObj {
 
         template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {
-            if ( condition (((long*)(lData))[i], i )) {
+            if ( condition (((long*)(list_data))[i], i )) {
               return i;
             }
           }
@@ -322,20 +333,20 @@ class _SimpleList:public BaseObj {
     
         template <typename MAPPER> void Each (MAPPER&& mapper, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {
-            mapper ( ((long*)(lData))[i], i );
+            mapper ( ((long*)(list_data))[i], i );
           }
         }
 
         template <typename MAPPER> bool Any (MAPPER&& mapper, long startAt = 0) const {
             for (unsigned long i = startAt; i<lLength; i++) {
-                if (mapper ( ((long*)(lData))[i], i )) return true;
+                if (mapper ( ((long*)(list_data))[i], i )) return true;
             }
             return false;
         }
 
         template <typename CONDITION> bool Every (CONDITION&& predicate, long startAt = 0) const {
             for (unsigned long i = startAt; i<lLength; i++) {
-                if (!predicate ( ((long*)(lData))[i], i )) return false;
+                if (!predicate ( ((long*)(list_data))[i], i )) return false;
             }
             return true;
         }
@@ -343,7 +354,7 @@ class _SimpleList:public BaseObj {
         template <typename FILTER> _SimpleList const FilterIndex (FILTER condition) const {
           _SimpleList filtered;
           for (unsigned long i = 0UL; i<lLength; i++) {
-            if (condition (((long*)(lData))[i] , i)) {
+            if (condition (((long*)(list_data))[i] , i)) {
               filtered << i;
             }
           }
@@ -353,7 +364,7 @@ class _SimpleList:public BaseObj {
         template <typename FILTER> _SimpleList const Filter (FILTER condition, unsigned long start_index = 0UL) const {
             _SimpleList filtered;
             for (unsigned long i = start_index; i<lLength; i++) {
-                long value = ((long*)(lData))[i];
+                long value = ((long*)(list_data))[i];
                 if (condition (value , i)) {
                     filtered << value;
                 }
@@ -365,7 +376,7 @@ class _SimpleList:public BaseObj {
             _SimpleList mapped;
             mapped.RequestSpace(countitems() - (long)start_index);
             for (unsigned long i = start_index; i<lLength; i++) {
-                mapped << transform (((long*)(lData))[i] , i);
+                mapped << transform (((long*)(list_data))[i] , i);
             }
             return mapped;
         }
@@ -533,10 +544,11 @@ class _SimpleList:public BaseObj {
     
         /**
         * Retrive the last value and shorted the list by 1
-        * Example: SimpleList(1,3,5,7).Pop() = 7 
+        * Example: SimpleList(1,3,5,7).Pop() = 7
+        * @param discard; if provided, discard this many items off the end of the list before popping
         * @return Return last value from the list
         */
-        long Pop();
+        long Pop(unsigned long discard = 0UL);
 
         /**
         * Populate a Simple List with integers incrementally.
@@ -558,7 +570,7 @@ class _SimpleList:public BaseObj {
         template <typename functor> _SimpleList& Populate(_SimpleList const& source, functor action) {
             this->RequestSpace (source.lLength);
             for (unsigned long idx = 0UL; idx < source.lLength; idx++) {
-                action (this->lData, source.lData, idx);
+                action (this->list_data, source.list_data, idx);
             }
             this->lLength = source.lLength;
             return *this;
@@ -605,7 +617,6 @@ class _SimpleList:public BaseObj {
         void Swap(long, long); //swap two elements
 
         virtual BaseRef toStr(unsigned long = 0UL);
-
 
         /**
         *
@@ -663,7 +674,7 @@ class _SimpleList:public BaseObj {
         void QuickSort(long, long);
 
         long* quickArrayAccess(void) {
-            return (long*)lData;
+            return (long*)list_data;
         }
 };
 

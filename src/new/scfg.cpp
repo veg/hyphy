@@ -248,7 +248,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
             /* ---------- end add --------- */
           } else {
             *((_SimpleList*)byNT2 (aList->get(0))) << ruleIdx;
-            ntToTerminalMap [indexNT_T (aList->lData[0],aList->get(1))] = ruleIdx;
+            ntToTerminalMap [indexNT_T (aList->list_data[0],aList->get(1))] = ruleIdx;
           }
           
         }
@@ -268,13 +268,13 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
         for (long ntC = 0L; ntC < foundNT.lLength; ntC ++) {
           long ntFlag = tempNT.GetXtra (ntC);
           if ((ntFlag & _HYSCFG_NT_LHS_) == 0L) {
-            throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " does not appear on the left-hand side of any production rules.";
+            throw _String ("Non-terminal symbol ") & foundNT.list_data[ntC] & " does not appear on the left-hand side of any production rules.";
           }
           if ((ntFlag & _HYSCFG_NT_START_) == 0L) {
-            throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " can not be derived from the start symbol.";
+            throw _String ("Non-terminal symbol ") & foundNT.list_data[ntC] & " can not be derived from the start symbol.";
           }
           if ((ntFlag & _HYSCFG_NT_TERM_) == 0L) {
-            throw _String ("Non-terminal symbol ") & foundNT.lData[ntC] & " can not be used to derive any terminal symbols.";
+            throw _String ("Non-terminal symbol ") & foundNT.list_data[ntC] & " can not be used to derive any terminal symbols.";
           }
         }
       
@@ -549,7 +549,7 @@ void    Scfg::RandomSampleVerify  (long samples) {
             for (long it = 0L; it < samples; ++it) {
                 zeroThruNm1.Permute (1);
                 for (long var = 0L; var < paramCount; var++) {
-                    SetIthIndependent (var, parameterBounds(var,0) + parameterBounds(var,1) * zeroThruNm1.lData[var]);
+                    SetIthIndependent (var, parameterBounds(var,0) + parameterBounds(var,1) * zeroThruNm1.list_data[var]);
                 }
               
                 VerifyValues ();
@@ -785,7 +785,7 @@ inline  long    Scfg::scfgIndexIntoAnArray            (long start,long end,long 
 void    Scfg::setIndexBit             (long start,long end,long nt,long stringLength,_SimpleList& theArray) {
     //long theIndex = (2*stringLength-start-1)*start/2 + end + nt*(stringLength+1)*stringLength/2;
     long array_index = scfgIndexIntoAnArray (start, end, nt, stringLength);
-    //theArray.lData[theIndex/32] |= bitMaskArray.masks[theIndex%32];
+    //theArray.list_data[theIndex/32] |= bitMaskArray.masks[theIndex%32];
     theArray[array_index >> 5] |= bitMaskArray.masks [array_index - (array_index << 5 >> 5)];
 }
 
@@ -796,9 +796,9 @@ bool    Scfg::getIndexBit             (long start,long end,long nt,long stringLe
     long array_index = scfgIndexIntoAnArray (start, end, nt, stringLength);
 
     /*char str255 [255];
-    snprintf (str255, sizeof(str255),"Fetch %d %d %d %d from %x to give %d\n", start, end, nt, stringLength, theArray.lData[theIndex/32], (theArray.lData[theIndex/32] & (bitMaskArray.masks[theIndex%32])) > 0);
+    snprintf (str255, sizeof(str255),"Fetch %d %d %d %d from %x to give %d\n", start, end, nt, stringLength, theArray.list_data[theIndex/32], (theArray.list_data[theIndex/32] & (bitMaskArray.masks[theIndex%32])) > 0);
     BufferToConsole (str255);*/
-    //return (theArray.lData[theIndex/32] & bitMaskArray.masks[theIndex%32]) > 0;
+    //return (theArray.list_data[theIndex/32] & bitMaskArray.masks[theIndex%32]) > 0;
   
     return (theArray.get (array_index >> 5) & bitMaskArray.masks [array_index - (array_index << 5 >> 5)]) > 0L;
 }
@@ -861,7 +861,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
     hyFloat      insideProbValue = 0.0;
 
     if (to == from) { // single terminal substring; direct lookup
-        //long ruleIndex = ntToTerminalMap.lData[indexNT_T(ntIndex,((_SimpleList**)corpusInt.lData)[stringIndex]->lData[to])];
+        //long ruleIndex = ntToTerminalMap.list_data[indexNT_T(ntIndex,((_SimpleList**)corpusInt.list_data)[stringIndex]->list_data[to])];
         long rule_index = ntToTerminalMap.get (indexNT_T(ntIndex,((_SimpleList*)corpusInt.GetItem (stringIndex))->get(to)));
         if (rule_index >= 0L) {
             insideProbValue = LookUpRuleProbability (rule_index);
@@ -1287,7 +1287,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
                                     if (matrixIndex > -1)   // skip productions with Pr identically 1, don't train.
                                                             //  This also applies to node censoring -- afyp, Aug 30, 2006
                                     {
-                                        hyFloat  ip  = ((_GrowingVector**)storedInsideP.lData)[stringID]->theData[matrixIndex],
+                                        hyFloat  ip  = ((_GrowingVector**)storedInsideP.list_data)[stringID]->theData[matrixIndex],
                                         op  = ComputeOutsideProb(from,to,stringID,ntIndex,firstOutside,FALSE);
                                         if (op > 0)
                                         {
@@ -1429,7 +1429,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
         // search through rules and sum linked probabilities
 
         for (long linkIndex = 0; linkIndex < links.lLength; linkIndex++) {
-            _SimpleList *   thisLink    = (_SimpleList*)links.lData[linkIndex];
+            _SimpleList *   thisLink    = (_SimpleList*)links.list_data[linkIndex];
             hyFloat      linkNumer   = 0.,
                             linkDenom = 0.;
             /*
@@ -1439,19 +1439,19 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
             {
                 for (long lcount = 0; lcount < thisLink->lLength; lcount++) {
                     /*
-                    snprintf (buf, sizeof(buf), "%d(%3.3f/%3.3f) ", thisLink->lData[lcount], nextProbs.theData[thisLink->lData[lcount]],
-                            nextProbs.theData[nRules+thisLink->lData[lcount]]);
+                    snprintf (buf, sizeof(buf), "%d(%3.3f/%3.3f) ", thisLink->list_data[lcount], nextProbs.theData[thisLink->list_data[lcount]],
+                            nextProbs.theData[nRules+thisLink->list_data[lcount]]);
                     BufferToConsole (buf);
                      */
-                    linkNumer += nextProbs.theData[thisLink->lData[lcount]];
-                    linkDenom += nextProbs.theData[nRules+thisLink->lData[lcount]];
+                    linkNumer += nextProbs.theData[thisLink->list_data[lcount]];
+                    linkDenom += nextProbs.theData[nRules+thisLink->list_data[lcount]];
                 }
             }
 
             for (long lcount = 0; lcount < thisLink->lLength; lcount++) {
                 // update linked probabilities
-                nextProbs.theData[thisLink->lData[lcount]] = linkNumer / thisLink->lLength;
-                nextProbs.theData[nRules+thisLink->lData[lcount]] = linkDenom / thisLink->lLength;
+                nextProbs.theData[thisLink->list_data[lcount]] = linkNumer / thisLink->lLength;
+                nextProbs.theData[nRules+thisLink->list_data[lcount]] = linkDenom / thisLink->lLength;
                 /*
                  snprintf (buf, sizeof(buf), "\t all set to %3.3f/%3.3f\n", linkNumer, linkDenom);
                  BufferToConsole(buf);
@@ -1473,7 +1473,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
 
                 thisFormula->ScanFForVariables(scannerList,TRUE,FALSE,TRUE,TRUE);
                 // for the time being, assume that the first variable in the formula is the one to adjust
-                _Variable *     theParameter    = LocateVar (itsVariables.lData[0]);
+                _Variable *     theParameter    = LocateVar (itsVariables.list_data[0]);
                 _Constant       nextValue (nextProbs.theData[ruleCount] / nextProbs.theData[nRules+ruleCount]);
 
 
@@ -1559,19 +1559,19 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString) {
     
     // loop through terminal rules (X->x) and sum probabilities
     for (; ruleIndex<aList->lLength && sum < randomValue ; ruleIndex++) {
-      sum += LookUpRuleProbability (aList->lData[ruleIndex]);
+      sum += LookUpRuleProbability (aList->list_data[ruleIndex]);
     }
     
     if (sum >= randomValue) {
       aRule = (_SimpleList*)rules(aList->get(ruleIndex-1));
-      (*storageString) << aRule->lData[1];
+      (*storageString) << aRule->list_data[1];
       return nil;
     }
     
     ruleIndex = 0;
     aList       = (_SimpleList*)byNT3(ntIndex);
     for (; ruleIndex<aList->lLength && sum < randomValue ; ruleIndex++) {
-      sum += LookUpRuleProbability (aList->lData[ruleIndex]);
+      sum += LookUpRuleProbability (aList->list_data[ruleIndex]);
     }
     
     if (sum >= randomValue) {

@@ -193,7 +193,7 @@ const _SimpleList SplitIntoDigits(ARG_TYPE composition, unsigned long places,
   unsigned long index = 0;
 
   while (remainder > 0 && index < places) {
-    result.lData[places - index - 1] = (remainder % radix);
+    result.list_data[places - index - 1] = (remainder % radix);
     remainder /= radix;
   }
 

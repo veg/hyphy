@@ -198,7 +198,7 @@ public:
     virtual  _FString*      Compare                             (HBLObjectRefConst) const;
     virtual  BaseRef        makeDynamic                         (void) const;
     node<long>* CopyTreeStructure                   (node<long>*, bool) const;
-    virtual  const _String           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const & settings);
+    virtual  _String           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const & settings);
 
 
     virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);

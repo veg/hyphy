@@ -120,6 +120,7 @@ public:
     hyComparisonType  Compare           (HBLObjectRef, bool convert_non_strings = true);
   
     inline _StringBuffer const&    get_str           (void) const {return *the_string;}
+    _StringBuffer *    get_str_ref        (void)  {the_string->AddAReference(); return the_string;}
 
     virtual bool      empty           (void) const {
         return !the_string || the_string->empty();

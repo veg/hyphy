@@ -904,7 +904,7 @@ HBLObjectRef   _FString::CountGlobalObjects (void)
         if (get_str() == hy_env::last_model_parameter_list) {
             if (lastMatrixDeclared>=0) {
               res =  PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
-                LocateVar (modelMatrixIndices.lData[lastMatrixDeclared])->ScanForVariables(parameter_list, false);
+                LocateVar (modelMatrixIndices.list_data[lastMatrixDeclared])->ScanForVariables(parameter_list, false);
               }).countitems();
             }
         }

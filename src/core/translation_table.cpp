@@ -779,7 +779,7 @@ void _TranslationTable::AddTokenCode(char token, _String const &code) {
     f = tokensAdded.length() - 1;
   }
 
-  translationsAdded.lData[f] = newCode;
+  translationsAdded.list_data[f] = newCode;
 }
 
 //_________________________________________________________
@@ -923,8 +923,8 @@ _TranslationTable::MergeTables(_TranslationTable const *table2) const
           // SLKP 20071002 added the next line;
           // was not adding the translation for the new token
           result->translationsAdded << table2->translationsAdded(i);
-        } else if (translationsAdded.lData[f] !=
-                   table2->translationsAdded.lData[i]) {
+        } else if (translationsAdded.list_data[f] !=
+                   table2->translationsAdded.list_data[i]) {
           DeleteObject(result);
           return nil;
         }

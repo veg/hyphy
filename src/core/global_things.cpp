@@ -170,7 +170,7 @@ namespace hy_global {
   
   
     int _reg_exp_err_code = 0;
-    regex_t * hy_float_regex                 = _String::PrepRegExp ("\\ *[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?", _reg_exp_err_code, true),
+    regex_t * hy_float_regex                 = _String::PrepRegExp ("^\\ *[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?", _reg_exp_err_code, true),
             * hy_replicate_constraint_regexp = _String::PrepRegExp ("^this([0-9]+)\\.(.+)$", _reg_exp_err_code, true);
   
   
@@ -361,8 +361,9 @@ namespace hy_global {
         init_genrand            (hy_random_seed);
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
         
+        _Constant::free_slots.Populate ((long)_HY_CONSTANT_PREALLOCATE_SLOTS, (long)_HY_CONSTANT_PREALLOCATE_SLOTS-1, -1L);
+        _StringBuffer::free_slots.Populate ((long)_HY_STRING_BUFFER_PREALLOCATE_SLOTS, (long)_HY_STRING_BUFFER_PREALLOCATE_SLOTS-1, -1L);
 
-        
         
 #ifdef __HYPHYMPI__
         hy_env :: EnvVariableSet (hy_env::mpi_node_id, new _Constant (hy_mpi_node_rank), false);
@@ -500,6 +501,12 @@ namespace hy_global {
             }
         }
         
+        /*if (_Constant::preallocated_buffer) {
+            free ((void*)_Constant::preallocated_buffer);
+        }
+        if (_StringBuffer::preallocated_buffer) {
+            free ((void*)_StringBuffer::preallocated_buffer);
+        }*/
         return no_errors;
     }
     

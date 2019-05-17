@@ -133,7 +133,7 @@ class _List:public _SimpleList {
 
         template <typename MAPPER> void ForEach (MAPPER mapper, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {
-            mapper ( ((BaseRef*)(lData))[i], i );
+            mapper ( ((BaseRef*)(list_data))[i], i );
           }
         }
     
@@ -145,7 +145,7 @@ class _List:public _SimpleList {
                 endAt = lLength;
             }
             for (unsigned long i = startAt; i<endAt; i++) {
-                result < mapper ( ((BaseRef*)(lData))[i], i );
+                result < mapper ( ((BaseRef*)(list_data))[i], i );
             }
             return result;
         }
@@ -243,7 +243,7 @@ class _List:public _SimpleList {
 
         template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
             for (unsigned long i = startAt; i<lLength; i++) {
-                if ( condition (((BaseRefConst*)(lData))[i], i) ) {
+                if ( condition (((BaseRefConst*)(list_data))[i], i) ) {
                     return i;
                 }
             }
@@ -321,7 +321,7 @@ class _List:public _SimpleList {
          * used to avoid (*list)(3) which are hard to read
          */
         template <typename INDEX> BaseRef GetItem     (INDEX index) const {
-          return ((BaseRef*)lData)[index];
+          return ((BaseRef*)list_data)[index];
         }
 
         template<typename INDEX, typename ...INDICES> BaseRef GetItem (INDEX i0, INDICES... rest) const {

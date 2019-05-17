@@ -246,8 +246,8 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
             if (node_id && mp && size) {
                 node_index  = (long) (node_id->Value());
 
-                is_discrete.lData[node_index] = 1.;
-                max_parents.lData[node_index] = (long) mp->Value();
+                is_discrete.list_data[node_index] = 1.;
+                max_parents.list_data[node_index] = (long) mp->Value();
 
                 if ((long) mp->Value() > max_max_parents) {
                     max_max_parents = (long) mp->Value();
@@ -285,8 +285,8 @@ Bgm::Bgm(_AssociativeList * dnodes, _AssociativeList * cnodes)
             if (node_id && mp && size && mean && precision) {
                 node_index = (long) (node_id->Value());
 
-                is_discrete.lData[node_index] = 0.;
-                max_parents.lData[node_index] = (long) mp->Value();
+                is_discrete.list_data[node_index] = 0.;
+                max_parents.list_data[node_index] = (long) mp->Value();
 
                 if (mp->Value() > max_max_parents) {
                     max_max_parents = (long) mp->Value();
@@ -369,8 +369,8 @@ void Bgm::SetDataMatrix (_Matrix * data)
 
     // reset data-dependent member variables
     for (long node = 0; node < num_nodes; node++) {
-        has_missing.lData[node] = 0;
-        num_levels.lData[node] = 0;
+        has_missing.list_data[node] = 0;
+        num_levels.list_data[node] = 0;
     }
 
 
@@ -393,23 +393,23 @@ void Bgm::SetDataMatrix (_Matrix * data)
         long    nrows = obsData->GetHDim();
 
         for (long node = 0; node < num_nodes; node++) {
-            if (is_discrete.lData[node]) {
-                num_levels.lData[node] = 1;
+            if (is_discrete.list_data[node]) {
+                num_levels.list_data[node] = 1;
 
                 for (long obs, row = 0; row < nrows; row++) {
                     obs = (*obsData)(row, node);
 
-                    if (has_missing.lData[node] == 0 && obs < 0) {  // use negative integer values to annotate missing data
-                        has_missing.lData[node] = 1;
+                    if (has_missing.list_data[node] == 0 && obs < 0) {  // use negative integer values to annotate missing data
+                        has_missing.list_data[node] = 1;
                         continue;   // skip next step to check levels
                     }
 
-                    if (obs+1 > num_levels.lData[node]) {
-                        num_levels.lData[node] = num_levels.lData[node] + 1;
+                    if (obs+1 > num_levels.list_data[node]) {
+                        num_levels.list_data[node] = num_levels.list_data[node] + 1;
                     }
                 }
             } else {
-                num_levels.lData[node] = 0;
+                num_levels.list_data[node] = 0;
 
                 // not implementing missing data for continuous nodes yet
                 //  not until I've decided on annotation anyhow :-/  afyp
@@ -420,7 +420,7 @@ void Bgm::SetDataMatrix (_Matrix * data)
         snprintf (buf, sizeof(buf), "Levels: ");
         BufferToConsole (buf);
         for (long i = 0; i < num_nodes; i++) {
-            snprintf (buf, sizeof(buf), "%d ", num_levels.lData[i]);
+            snprintf (buf, sizeof(buf), "%d ", num_levels.list_data[i]);
             BufferToConsole (buf);
         }
         NLToConsole ();
@@ -428,7 +428,7 @@ void Bgm::SetDataMatrix (_Matrix * data)
         snprintf (buf, sizeof(buf), "Missing (0=FALSE, 1=TRUE): ");
         BufferToConsole (buf);
         for (long i = 0; i < num_nodes; i++) {
-            snprintf (buf, sizeof(buf), "%d ", has_missing.lData[i]);
+            snprintf (buf, sizeof(buf), "%d ", has_missing.list_data[i]);
             BufferToConsole (buf);
         }
         NLToConsole ();
@@ -436,19 +436,19 @@ void Bgm::SetDataMatrix (_Matrix * data)
 
 #else
         for (long node = 0; node < num_nodes; node++) { // for every column in matrix
-            if (is_discrete.lData[node]) {
+            if (is_discrete.list_data[node]) {
                 // calculate number of levels for discrete node
-                num_levels.lData[node] = 1;
+                num_levels.list_data[node] = 1;
 
                 for (long obs = 0; obs < obsData->GetHDim(); obs++) {
                     // adjust for zero-indexing
-                    if ( ((*obsData)(obs,node) + 1) > num_levels.lData[node]) {
-                        num_levels.lData[node] = num_levels.lData[node] + 1;
+                    if ( ((*obsData)(obs,node) + 1) > num_levels.list_data[node]) {
+                        num_levels.list_data[node] = num_levels.list_data[node] + 1;
                     }
                 }
             } else {
                 // continuous node defined to have no levels
-                num_levels.lData[node] = 0;
+                num_levels.list_data[node] = 0;
             }
         }
 #endif
@@ -521,7 +521,7 @@ void    Bgm::SetBestOrder (_SimpleList * orderList)
     best_node_order.Populate(num_nodes, 0, 0);
 
     for (long i = 0; i < num_nodes; i++) {
-        best_node_order.lData[i] = orderList->lData[i];
+        best_node_order.list_data[i] = orderList->list_data[i];
     }
 }
 
@@ -660,7 +660,7 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
     for (long p_rank = 0; p_rank < num_nodes; p_rank++) {
         for (long c_rank = 0; c_rank < num_nodes; c_rank++) {
             // use actual node id's to index into matrix - 1 indicates a permitted edge
-            orderMx.Store (order->lData[p_rank], order->lData[c_rank], p_rank > c_rank ? 1 : 0);
+            orderMx.Store (order->list_data[p_rank], order->list_data[c_rank], p_rank > c_rank ? 1 : 0);
         }
     }
 #endif
@@ -691,13 +691,13 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
 #endif
 
             if ( (*graphMx)(parent, child) > 0) {
-                num_parents.lData[child]++;
+                num_parents.list_data[child]++;
             }
         }
         // end for
 
-        if (num_parents.lData[child] > max_parents.lData[child]) {
-            WarnError (_String ("Number of parents exceeds maximum BEFORE randomization of graph at node ") & child & " (" & num_parents.lData[child] & " > " & max_parents.lData[child] & ")\n" );
+        if (num_parents.list_data[child] > max_parents.list_data[child]) {
+            WarnError (_String ("Number of parents exceeds maximum BEFORE randomization of graph at node ") & child & " (" & num_parents.list_data[child] & " > " & max_parents.list_data[child] & ")\n" );
             break;
         }
     }
@@ -719,8 +719,8 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
         p_rank  = (genrand_int32() % (num_nodes-1)) + 1;    // shift right to not include lowest node in order
         c_rank  = genrand_int32() % p_rank;
 
-        child = order->lData[c_rank];
-        parent = order->lData[p_rank];
+        child = order->list_data[c_rank];
+        parent = order->list_data[p_rank];
 
 
         if (fixed_order || genrand_real2() > RANDOMIZE_PROB_SWAP) { // attempt an add or delete
@@ -728,7 +728,7 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
 #ifdef __DEBUG_RG__
                 mode = 0;
 #endif
-                if (num_parents.lData[child] == max_parents.lData[child]) { // child cannot accept any additional edges
+                if (num_parents.list_data[child] == max_parents.list_data[child]) { // child cannot accept any additional edges
                     // move an edge from an existing parent to target parent
                     _SimpleList     removeable_edges;
 
@@ -741,7 +741,7 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                     if (removeable_edges.lLength > 0) {
                         // shuffle the list and remove the first parent
                         removeable_edges.Permute(1);
-                        graphMx->Store (removeable_edges.lData[0], child, 0.);
+                        graphMx->Store (removeable_edges.list_data[0], child, 0.);
                         graphMx->Store (parent, child, 1.);
                         step++;
                     } else {
@@ -751,7 +751,7 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                 } else {
                     // child can accept another edge
                     graphMx->Store (parent, child, 1.);
-                    num_parents.lData[child]++;
+                    num_parents.list_data[child]++;
                     step++;
                 }
             } else if ( (*graphMx)(parent,child) == 1 && !enforced_edges(parent,child)) {   // delete an edge
@@ -759,7 +759,7 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                 mode = 1;
 #endif
                 graphMx->Store (parent, child, 0.);
-                num_parents.lData[child]--;
+                num_parents.list_data[child]--;
                 step++;
             } else {
                 fail++;
@@ -778,7 +778,7 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
             // check all other nodes affected by the swap
             if (ok_to_go) {
                 for (long bystander, i=c_rank+1; i < p_rank; i++) {
-                    bystander = order->lData[i];    // retrieve node id
+                    bystander = order->list_data[i];    // retrieve node id
 
                     if (
                         ( (*graphMx)(parent,bystander)==1 && enforced_edges (parent, bystander) )  ||
@@ -802,10 +802,10 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                 if ( (*graphMx)(parent,child) == 1 && !banned_edges(child,parent) ) {
                     graphMx->Store (parent, child, 0);
                     graphMx->Store (child, parent, 1);
-                    num_parents.lData[child]--;
-                    num_parents.lData[parent]++;
+                    num_parents.list_data[child]--;
+                    num_parents.list_data[parent]++;
 
-                    if (num_parents.lData[parent] > max_parents.lData[parent]) {
+                    if (num_parents.list_data[parent] > max_parents.list_data[parent]) {
                         // parent cannot accept any more edges, delete one of the edges at random (including the edge to flip)
                         _SimpleList     removeable_edges;
 
@@ -815,8 +815,8 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                             }
 
                         removeable_edges.Permute(1);
-                        graphMx->Store (removeable_edges.lData[0], parent, 0.);
-                        num_parents.lData[parent]--;
+                        graphMx->Store (removeable_edges.list_data[0], parent, 0.);
+                        num_parents.list_data[parent]--;
                     }
 
                     step++;
@@ -824,8 +824,8 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                 // if number of parents for parent node will exceed maximum, then the edge is deleted instead of flipped
 
                 // swap nodes in order
-                order->lData[p_rank] = child;
-                order->lData[c_rank] = parent;  // remember to update order matrix also!
+                order->list_data[p_rank] = child;
+                order->list_data[c_rank] = parent;  // remember to update order matrix also!
 
 
                 // flip the other edges affected by node swap
@@ -835,16 +835,16 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                 //                                                           ^                |
                 //                                                           `----------------+
                 for (long bystander, i = c_rank+1; i < p_rank; i++) {
-                    bystander = order->lData[i];
+                    bystander = order->list_data[i];
 
                     if ( (*graphMx)(bystander, child) == 1 ) {
                         graphMx->Store (bystander, child, 0);
-                        num_parents.lData[child]--;
+                        num_parents.list_data[child]--;
 
                         graphMx->Store (child, bystander, 1);
-                        num_parents.lData[bystander]++;
+                        num_parents.list_data[bystander]++;
 
-                        if (num_parents.lData[bystander] > max_parents.lData[bystander]) {
+                        if (num_parents.list_data[bystander] > max_parents.list_data[bystander]) {
                             _SimpleList     removeable_edges;
 
                             for (long par = 0; par < num_nodes; par++)
@@ -853,19 +853,19 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                                 }
 
                             removeable_edges.Permute(1);
-                            graphMx->Store (removeable_edges.lData[0], bystander, 0.);
-                            num_parents.lData[bystander]--;
+                            graphMx->Store (removeable_edges.list_data[0], bystander, 0.);
+                            num_parents.list_data[bystander]--;
                         }
                     }
 
                     if ( (*graphMx)(parent,bystander) == 1) {
                         graphMx->Store (parent, bystander, 0);
-                        num_parents.lData[bystander]--;
+                        num_parents.list_data[bystander]--;
 
                         graphMx->Store (bystander, parent, 1);
-                        num_parents.lData[parent]++;
+                        num_parents.list_data[parent]++;
 
-                        if (num_parents.lData[parent] > max_parents.lData[parent]) {
+                        if (num_parents.list_data[parent] > max_parents.list_data[parent]) {
                             _SimpleList     removeable_edges;
 
                             for (long par = 0; par < num_nodes; par++)
@@ -874,8 +874,8 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                                 }
 
                             removeable_edges.Permute(1);
-                            graphMx->Store (removeable_edges.lData[0], parent, 0.);
-                            num_parents.lData[parent]--;
+                            graphMx->Store (removeable_edges.list_data[0], parent, 0.);
+                            num_parents.list_data[parent]--;
                         }
                     }
                 }
@@ -883,7 +883,7 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
                 // refresh order matrix
                 for (long p_rank = 0; p_rank < num_nodes; p_rank++) {
                     for (long c_rank = 0; c_rank < p_rank; c_rank++) {
-                        orderMx.Store (order->lData[p_rank], order->lData[c_rank], 1);
+                        orderMx.Store (order->list_data[p_rank], order->list_data[c_rank], 1);
                     }
                 }
 #endif
@@ -915,11 +915,11 @@ void    Bgm::RandomizeGraph (_Matrix * graphMx, _SimpleList * order, long num_st
             }
 
             if ( (*graphMx)(parent, child) > 0) {
-                num_parents.lData[child]++;
+                num_parents.list_data[child]++;
             }
         }
 
-        if (num_parents.lData[child] > max_parents.lData[child]) {
+        if (num_parents.list_data[child] > max_parents.list_data[child]) {
             WarnError (_String ("Exceeded acceptable number of parents for node ") & child &  ", mode " & mode);
             break;
         }
@@ -963,7 +963,7 @@ void    Bgm::RandomizeDag (long num_steps)
             if (dag(row,col) == 0.) {
                 if (dag(col,row) == 0.) {   // no arc
                     // add an arc -- sum over n-th column gives number of parents for n-th child
-                    if (MarginalSum(FALSE,col) < max_parents.lData[col]) {
+                    if (MarginalSum(FALSE,col) < max_parents.list_data[col]) {
                         dag.Store (row,col,1.);
                     }
                 } else {
@@ -1011,7 +1011,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id)
     _SimpleList     parents;
 
     for (long par = 0; par < num_nodes; par++) {
-        if (dag(par, node_id) == 1 && is_discrete.lData[par]) {
+        if (dag(par, node_id) == 1 && is_discrete.list_data[par]) {
             parents << par;
         }
     }
@@ -1024,7 +1024,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _Matrix * g)
     _SimpleList     parents;
 
     for (long par = 0; par < num_nodes; par++) {
-        if ((*g)(par, node_id) == 1 && is_discrete.lData[par]) {
+        if ((*g)(par, node_id) == 1 && is_discrete.list_data[par]) {
             parents << par;
         }
     }
@@ -1041,20 +1041,20 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
     // use cached node scores if possible
     if (scores_cached) {
-        _List *     scores  = (_List *) node_scores.lData[node_id];
+        _List *     scores  = (_List *) node_scores.list_data[node_id];
 
         if (parents.lLength == 0) {
-            _Constant *     orphan_score = (_Constant *) scores->lData[0];
+            _Constant *     orphan_score = (_Constant *) scores->list_data[0];
             return (hyFloat) orphan_score->Value();
         } else if (parents.lLength == 1) {
-            _Matrix *   single_parent_scores = (_Matrix *) scores->lData[1];
-            return (hyFloat) (*single_parent_scores) (parents.lData[0], 0);
+            _Matrix *   single_parent_scores = (_Matrix *) scores->list_data[1];
+            return (hyFloat) (*single_parent_scores) (parents.list_data[0], 0);
         } else {
-            _NTupleStorage *    family_scores   = (_NTupleStorage *) scores->lData[parents.lLength];
+            _NTupleStorage *    family_scores   = (_NTupleStorage *) scores->list_data[parents.lLength];
             _SimpleList         nktuple;
 
             for (long i = 0; i < parents.lLength; i++) {    // map parents back to nk-tuple
-                long    par = parents.lData[i];
+                long    par = parents.list_data[i];
                 if (par > node_id) {
                     par--;
                 }
@@ -1069,21 +1069,21 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 #ifdef __MISSING_DATA__
     //  Are any of the edges banned?
     for (long par = 0; par < parents.lLength; par++) {
-        if (banned_edges(parents.lData[par], node_id) > 0) {
+        if (banned_edges(parents.list_data[par], node_id) > 0) {
             // score should never be used
-            ReportWarning(_String("Skipping node score for family containing banned edge ") & parents.lData[par] & "->" & node_id & "\n");
+            ReportWarning(_String("Skipping node score for family containing banned edge ") & parents.list_data[par] & "->" & node_id & "\n");
             return (-INFINITY);
         }
     }
 
 
     //  Is node with missing data in Markov blanket of focal node?
-    if (has_missing.lData[node_id]) {
+    if (has_missing.list_data[node_id]) {
         //return (ImputeDiscreteScore (node_id, parents));
         return (GibbsApproximateDiscreteScore (node_id, parents));
     } else {
         for (long par = 0; par < parents.lLength; par++) {
-            if (has_missing.lData[parents.lData[par]]) {
+            if (has_missing.list_data[parents.list_data[par]]) {
                 // return (ImputeDiscreteScore (node_id, parents));
                 return (GibbsApproximateDiscreteScore (node_id, parents));
             }
@@ -1101,7 +1101,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
     // [k] indexes values of i-th node
 
     long        num_parent_combos   = 1,                    // i.e. 'q'
-                r_i                   = num_levels.lData[node_id];
+                r_i                   = num_levels.list_data[node_id];
 
     hyFloat  n_prior_ijk = 0,
                 n_prior_ij  = 0,
@@ -1111,7 +1111,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
     // how many combinations of parental states are there?
     for (long par = 0; par < parents.lLength; par++) {
-        num_parent_combos *= num_levels.lData[parents.lData[par]];
+        num_parent_combos *= num_levels.list_data[parents.list_data[par]];
         multipliers << num_parent_combos;
     }
 
@@ -1120,7 +1120,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
     snprintf (buf, sizeof(buf), "Multipliers: ");
     BufferToConsole (buf);
     for (long i = 0; i < multipliers.lLength; i++) {
-        snprintf (buf, sizeof(buf), "%d ", multipliers.lData[i]);
+        snprintf (buf, sizeof(buf), "%d ", multipliers.list_data[i]);
         BufferToConsole (buf);
     }
     NLToConsole();
@@ -1140,10 +1140,10 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
                 child_state     = (*obsData)(obs, node_id);
 
         for (long par = 0; par < parents.lLength; par++) {
-            long    this_parent         = parents.lData[par],
+            long    this_parent         = parents.list_data[par],
                     this_parent_state = (*obsData)(obs, this_parent);
 
-            index += this_parent_state * multipliers.lData[par];
+            index += this_parent_state * multipliers.list_data[par];
         }
 
         n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1 );
@@ -1156,7 +1156,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
     BufferToConsole (buf);
 
     for (long k = 0; k < parents.lLength; k++) {
-        snprintf (buf, sizeof(buf), "%d ", parents.lData[k]);
+        snprintf (buf, sizeof(buf), "%d ", parents.list_data[k]);
         BufferToConsole (buf);
     }
     NLToConsole();
@@ -1175,19 +1175,19 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
     if (prior_sample_size (node_id, 0) == 0) {  // K2
         for (long j = 0; j < num_parent_combos; j++) {
-            log_score += LnGamma(num_levels.lData[node_id]);    // (r-1)!
-            log_score -= LnGamma(n_ij(j, 0) + num_levels.lData[node_id]);   // (N+r-1)!
+            log_score += LnGamma(num_levels.list_data[node_id]);    // (r-1)!
+            log_score -= LnGamma(n_ij(j, 0) + num_levels.list_data[node_id]);   // (N+r-1)!
 
             for (long k = 0; k < r_i; k++) {
                 log_score += LnGamma (n_ijk(j,k) + 1);    // (N_ijk)!
             }
 
 #ifdef BGM_DEBUG_CDS
-            snprintf (buf, sizeof(buf), "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(num_levels.lData[node_id]));
+            snprintf (buf, sizeof(buf), "\tlog(r-1)! = log %d! = %lf\n", num_levels.list_data[node_id] - 1, LnGamma(num_levels.list_data[node_id]));
             BufferToConsole (buf);
 
             snprintf (buf, sizeof(buf), "\tlog(N(%d,%d)+r-1)! = log %d! = %lf\n", node_id, j, ((long)n_ij(j, 0)) + r_i - 1,
-                     LnGamma(n_ij(j, 0) + num_levels.lData[node_id]));
+                     LnGamma(n_ij(j, 0) + num_levels.list_data[node_id]));
             BufferToConsole (buf);
 
             for (long k = 0; k < r_i; k++) {
@@ -1201,12 +1201,12 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
         }
     } else {    // BDe
         n_prior_ij = prior_sample_size (node_id, 0) / num_parent_combos;
-        n_prior_ijk = n_prior_ij / num_levels.lData[node_id];
+        n_prior_ijk = n_prior_ij / num_levels.list_data[node_id];
 
         for (long j = 0; j < num_parent_combos; j++) {
             log_score += LnGamma(n_prior_ij) - LnGamma(n_prior_ij + n_ij(j,0));
 
-            for (long k = 0; k < num_levels.lData[node_id]; k++) {
+            for (long k = 0; k < num_levels.list_data[node_id]; k++) {
                 log_score += LnGamma(n_prior_ijk + n_ijk(j,k)) - LnGamma(n_prior_ijk);
             }
         }
@@ -1219,15 +1219,15 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
                 child_state = (*obsData)(obs, node_id);
 
         for (long par = 0; par < parents.lLength; par++) {
-            long    this_parent         = parents.lData[par],
+            long    this_parent         = parents.list_data[par],
                     this_parent_state = (*obsData)(obs, this_parent);
 
 
             /*      // this system doesn't work with unequal levels!  :-P  afyp March 31, 2008
             index += this_parent_state * multiplier;
-            multiplier *= num_levels.lData[this_parent];
+            multiplier *= num_levels.list_data[this_parent];
              */
-            index += this_parent_state * multipliers.lData[par];
+            index += this_parent_state * multipliers.list_data[par];
         }
 
         n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
@@ -1244,7 +1244,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
             log_score += LnGamma(r_i);  // (r-1)!
             log_score -= LnGamma(n_ij(j, 0) + r_i); // (N+r-1)!
 
-            for (long k = 0; k < num_levels.lData[node_id]; k++) {
+            for (long k = 0; k < num_levels.list_data[node_id]; k++) {
                 log_score += LnGamma(n_ijk(j,k) + 1);    // (N_ijk)!
             }
 
@@ -1254,7 +1254,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
             BufferToConsole (buf);
 
             for (long k = 0; k < parents.lLength; k++) {
-                snprintf (buf, sizeof(buf), "%d ", parents.lData[k]);
+                snprintf (buf, sizeof(buf), "%d ", parents.list_data[k]);
                 BufferToConsole (buf);
             }
             NLToConsole();
@@ -1263,14 +1263,14 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
             BufferToConsole (buf);
 
 #ifdef BGM_DEBUG_CDS
-            snprintf (buf, sizeof(buf), "\tlog(r-1)! = log %d! = %lf\n", num_levels.lData[node_id] - 1, LnGamma(num_levels.lData[node_id]));
+            snprintf (buf, sizeof(buf), "\tlog(r-1)! = log %d! = %lf\n", num_levels.list_data[node_id] - 1, LnGamma(num_levels.list_data[node_id]));
             BufferToConsole (buf);
 
-            snprintf (buf, sizeof(buf), "\tlog(N+r-1)! = log %d! = %lf\n", n_ij(j, 0) + num_levels.lData[node_id] - 1,
-                     LnGamma(n_ij(j, 0) + num_levels.lData[node_id]));
+            snprintf (buf, sizeof(buf), "\tlog(N+r-1)! = log %d! = %lf\n", n_ij(j, 0) + num_levels.list_data[node_id] - 1,
+                     LnGamma(n_ij(j, 0) + num_levels.list_data[node_id]));
             BufferToConsole (buf);
 
-            for (long k = 0; k < num_levels.lData[node_id]; k++) {
+            for (long k = 0; k < num_levels.list_data[node_id]; k++) {
                 snprintf (buf, sizeof(buf), "\tlog (N_ijk)! = log %d! = %lf\n", ((long)n_ijk(j,k)), LnGamma(n_ijk(j,k) + 1));
                 BufferToConsole (buf);
             }
@@ -1282,12 +1282,12 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
         /* calculate Bayesian Dirichlet metric (BDeu) for this node */
         /* see p212 in Heckerman, Geiger, and Chickering (1995) Machine Learning 20, 197-243 */
         n_prior_ij = prior_sample_size (node_id, 0) / num_parent_combos;
-        n_prior_ijk = n_prior_ij / num_levels.lData[node_id];
+        n_prior_ijk = n_prior_ij / num_levels.list_data[node_id];
 
         for (long j = 0; j < num_parent_combos; j++) {
             log_score += LnGamma(n_prior_ij) - LnGamma(n_prior_ij + n_ij(j,0));
 
-            for (long k = 0; k < num_levels.lData[node_id]; k++) {
+            for (long k = 0; k < num_levels.list_data[node_id]; k++) {
                 log_score += LnGamma(n_prior_ijk + n_ijk(j,k)) - LnGamma(n_prior_ijk);
             }
         }
@@ -1300,7 +1300,7 @@ hyFloat  Bgm::ComputeDiscreteScore (long node_id, _SimpleList & parents)
 
     for (long par = 0; par < parents.lLength; par++)
     {
-        snprintf (buf, sizeof(buf), " %d", parents.lData[par]);
+        snprintf (buf, sizeof(buf), " %d", parents.list_data[par]);
         BufferToConsole (buf);
     }
     snprintf (buf, sizeof(buf), " Log score = %f\n", log_score);
@@ -1398,7 +1398,7 @@ void Bgm::CacheNodeScores (void)
 
             // farm out jobs to idle nodes until none are left
             for ( node_id = 0; node_id < num_nodes; node_id++) {
-                long        maxp            = max_parents.lData[node_id],
+                long        maxp            = max_parents.list_data[node_id],
                             ntuple_receipt,
                             this_node;
 
@@ -1408,10 +1408,10 @@ void Bgm::CacheNodeScores (void)
                             mxName;
 
 
-                this_list   = (_List *) node_scores.lData[node_id];
+                this_list   = (_List *) node_scores.list_data[node_id];
 
                 // [_SimpleList parents] should always be empty here
-                hyFloat  score       = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
+                hyFloat  score       = is_discrete.list_data[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
                 _Constant   orphan_score (score);
 
 
@@ -1493,7 +1493,7 @@ void Bgm::CacheNodeScores (void)
                 }
 
 
-                maxp = max_parents.lData[node_id];
+                maxp = max_parents.list_data[node_id];
 
                 parents.Clear();
                 parents.Populate (1,0,0);
@@ -1504,8 +1504,8 @@ void Bgm::CacheNodeScores (void)
                     if (par == node_id) {   // child cannot be its own parent, except in Kansas
                         single_parent_scores.Store (par, 0, 0.);
                     } else {
-                        parents.lData[0] = par;
-                        single_parent_scores.Store (par, 0, is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) :
+                        parents.list_data[0] = par;
+                        single_parent_scores.Store (par, 0, is_discrete.list_data[node_id] ? ComputeDiscreteScore (node_id, parents) :
                                                     ComputeContinuousScore (node_id));
                     }
                 }
@@ -1532,14 +1532,14 @@ void Bgm::CacheNodeScores (void)
                             }
 
                             for (long par_idx = 0; par_idx < np; par_idx++) {
-                                long par = nk_tuple.lData[par_idx];
+                                long par = nk_tuple.list_data[par_idx];
                                 if (par >= node_id) {
                                     par++;
                                 }
-                                parents.lData[par_idx] = par;
+                                parents.list_data[par_idx] = par;
                             }
 
-                            score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) :
+                            score = is_discrete.list_data[node_id] ? ComputeDiscreteScore (node_id, parents) :
                                     ComputeContinuousScore (node_id);
 
                             tuple_scores.Store (tuple_index, 0, (double)score);
@@ -1562,7 +1562,7 @@ void Bgm::CacheNodeScores (void)
 
 
                 for (long np = 2; np <= maxp; np++) {
-                    _Matrix * storedMx      = (_Matrix *) list_of_matrices.lData[np-2];
+                    _Matrix * storedMx      = (_Matrix *) list_of_matrices.list_data[np-2];
                     ReportMPIError (MPI_Send (storedMx->theData, storedMx->GetHDim(), MPI_DOUBLE, 0, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD), true);
                 }
             }
@@ -1583,14 +1583,14 @@ void Bgm::CacheNodeScores (void)
 #endif
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {
-        long        maxp        = max_parents.lData[node_id];
-        _List   *   this_list   = (_List *) node_scores.lData[node_id]; // retrieve pointer to list of scores for this child node
+        long        maxp        = max_parents.list_data[node_id];
+        _List   *   this_list   = (_List *) node_scores.list_data[node_id]; // retrieve pointer to list of scores for this child node
 
         this_list->Clear();     // reset the list
 
         // prepare some containers
         _SimpleList parents;
-        hyFloat  score = is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
+        hyFloat  score = is_discrete.list_data[node_id] ? ComputeDiscreteScore (node_id, parents) : ComputeContinuousScore (node_id);
         _Constant   orphan_score (score);
 
         (*this_list) && (&orphan_score);
@@ -1607,7 +1607,7 @@ void Bgm::CacheNodeScores (void)
                 }
 
                 parents << par;
-                single_parent_scores.Store (par, 0, is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, parents) :
+                single_parent_scores.Store (par, 0, is_discrete.list_data[node_id] ? ComputeDiscreteScore (node_id, parents) :
                                             ComputeContinuousScore (node_id));
                 parents.Clear();
             }
@@ -1628,13 +1628,13 @@ void Bgm::CacheNodeScores (void)
                     do {
                         remaining = all_but_one.NChooseK (aux_list, nk_tuple);
                         for (long par_idx = 0; par_idx < np; par_idx++) {
-                            long par = nk_tuple.lData[par_idx];
+                            long par = nk_tuple.list_data[par_idx];
                             if (par >= node_id) {
                                 par++;
                             }
                             parents << par;
                         }
-                        score = is_discrete.lData[node_id]  ?   ComputeDiscreteScore (node_id, parents) :
+                        score = is_discrete.list_data[node_id]  ?   ComputeDiscreteScore (node_id, parents) :
                                 ComputeContinuousScore (node_id);
                         res = family_scores.Store (score, nk_tuple);
                         parents.Clear();
@@ -1700,9 +1700,9 @@ void    Bgm::MPIReceiveScores (_Matrix * mpi_node_status, bool sendNextJob, long
 
     long        senderID    = (long) status.MPI_SOURCE,
                 this_node    = (long) (*mpi_node_status) (senderID, 1),
-                maxp       = max_parents.lData[this_node];
+                maxp       = max_parents.list_data[this_node];
 
-    _List   *   this_list   = (_List *) node_scores.lData[this_node];
+    _List   *   this_list   = (_List *) node_scores.list_data[this_node];
 
 
     mpi_node_status->Store (senderID, 0, 0);    // set node status to idle
@@ -1811,7 +1811,7 @@ void    Bgm::InitComputeLists (_List * compute_list)
 void        Bgm::DumpComputeLists (_List * compute_list)
 {
     for (long i = 0; i < compute_list->lLength; i++) {
-        ((_GrowingVector *) compute_list->lData[i]) -> Clear();
+        ((_GrowingVector *) compute_list->list_data[i]) -> Clear();
     }
 
     compute_list->Clear();
@@ -1838,20 +1838,20 @@ hyFloat  Bgm::Compute (_SimpleList * node_order, _List * results)
 
     // reset _GrowingVector objects stored in _List object
     for (long i = 0; i < num_nodes * num_nodes; i++) {
-        gv1 = (_GrowingVector *) results->lData[i];
+        gv1 = (_GrowingVector *) results->list_data[i];
         gv1 -> ZeroUsed();
     }
 
 
     for (long nodeIndex = 0; nodeIndex < node_order->lLength; nodeIndex++) {
-        long                child_node      = node_order->lData[nodeIndex],
-                            maxp            = max_parents.lData[child_node];
+        long                child_node      = node_order->list_data[nodeIndex],
+                            maxp            = max_parents.list_data[child_node];
 
-        _List           *   score_lists     = (_List *) node_scores.lData[child_node];
-        _Constant       *   orphan_score    = (_Constant *) (score_lists->lData[0]);
+        _List           *   score_lists     = (_List *) node_scores.list_data[child_node];
+        _Constant       *   orphan_score    = (_Constant *) (score_lists->list_data[0]);
 
 
-        gv1 = (_GrowingVector *) results->lData[child_node * num_nodes + child_node];   // store denominator in diagonal
+        gv1 = (_GrowingVector *) results->list_data[child_node * num_nodes + child_node];   // store denominator in diagonal
         gv1->ZeroUsed();
         gv1 -> Store (orphan_score->Value());   // handle case of no parents
 
@@ -1861,7 +1861,7 @@ hyFloat  Bgm::Compute (_SimpleList * node_order, _List * results)
             // all nodes to the right are potential parents, except banned parents!
             _SimpleList     precedes;
             for (long parIndex = nodeIndex + 1; parIndex < node_order->lLength; parIndex++) {
-                long    par = node_order->lData[parIndex];
+                long    par = node_order->list_data[parIndex];
 
                 if (banned_edges(par, child_node) == 0) {
                     precedes << par;
@@ -1870,13 +1870,13 @@ hyFloat  Bgm::Compute (_SimpleList * node_order, _List * results)
 
 
             // handle trivial case of one parent
-            _Matrix *   single_parent_scores    = (_Matrix *) (score_lists->lData[1]);
+            _Matrix *   single_parent_scores    = (_Matrix *) (score_lists->list_data[1]);
 
             for (long i = 0; i < precedes.lLength; i++) {
-                long    par = precedes.lData[i];
+                long    par = precedes.list_data[i];
 
                 gv1 -> Store ((*single_parent_scores) (par, 0));
-                gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + par];
+                gv2 = (_GrowingVector *) results->list_data[child_node * num_nodes + par];
                 gv2 -> Store ((*single_parent_scores) (par, 0));
             }
 
@@ -1905,7 +1905,7 @@ hyFloat  Bgm::Compute (_SimpleList * node_order, _List * results)
 
                         parents.Populate (nparents, 0, 0);  // allocate memory
 
-                        family_scores = (_NTupleStorage *) (score_lists->lData[nparents]);
+                        family_scores = (_NTupleStorage *) (score_lists->list_data[nparents]);
 
 
                         do {
@@ -1914,11 +1914,11 @@ hyFloat  Bgm::Compute (_SimpleList * node_order, _List * results)
 
 
                             for (long i = 0; i < nparents; i++) {   // convert indices to parent IDs (skipping child)
-                                long    realized = precedes.lData[subset.lData[i]];
+                                long    realized = precedes.list_data[subset.list_data[i]];
                                 if (realized >= child_node) {
                                     realized--;
                                 }
-                                parents.lData[i] = realized;
+                                parents.list_data[i] = realized;
                             }
                             parents.Sort(TRUE);
 
@@ -1927,7 +1927,7 @@ hyFloat  Bgm::Compute (_SimpleList * node_order, _List * results)
                             gv1 -> Store (tuple_score);
 
                             for (long i = 0; i < nparents; i++) {
-                                gv2 = (_GrowingVector *) results->lData[child_node * num_nodes + precedes.lData[subset.lData[i]]];
+                                gv2 = (_GrowingVector *) results->list_data[child_node * num_nodes + precedes.list_data[subset.list_data[i]]];
                                 gv2 -> Store (tuple_score);
                             }
                         } while (not_finished);
@@ -1956,7 +1956,7 @@ hyFloat Bgm::Compute (void)
     hyFloat  log_score = 0.;
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {
-        log_score += is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id) : ComputeContinuousScore (node_id);
+        log_score += is_discrete.list_data[node_id] ? ComputeDiscreteScore (node_id) : ComputeContinuousScore (node_id);
     }
 
     return log_score;
@@ -1973,7 +1973,7 @@ hyFloat Bgm::Compute (_Matrix * g)
     hyFloat  log_score = 0.;
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {
-        log_score += is_discrete.lData[node_id] ? ComputeDiscreteScore (node_id, g) : ComputeContinuousScore (node_id, g);
+        log_score += is_discrete.list_data[node_id] ? ComputeDiscreteScore (node_id, g) : ComputeContinuousScore (node_id, g);
     }
 
     return log_score;
@@ -2032,10 +2032,10 @@ _Matrix *   Bgm::Optimize (_AssociativeList const * options) {
     //  Convert node order to binary matrix where edge A->B is permitted if
     //  orderMx[B][A] = 1, i.e. B is to the right of A in node order.
     for (long i = 0; i < num_nodes; i++) {
-        long    child = best_node_order.lData[i];
+        long    child = best_node_order.list_data[i];
 
         for (long j = 0; j < num_nodes; j++) {
-            long    parent = best_node_order.lData[j];
+            long    parent = best_node_order.list_data[j];
 
             orderMx.Store (parent, child, (j > i) ? 1 : 0);
         }
@@ -2081,7 +2081,7 @@ _Matrix *   Bgm::Optimize (_AssociativeList const * options) {
                 } else {
                     break;  // unable to improve further
                 }
-            } while (num_parents < max_parents.lData[child]);
+            } while (num_parents < max_parents.list_data[child]);
         }
 
 
@@ -2098,9 +2098,9 @@ _Matrix *   Bgm::Optimize (_AssociativeList const * options) {
             best_node_order.Permute (1);
 
             for (long i = 0; i < num_nodes; i++) {
-                long    child = best_node_order.lData[i];
+                long    child = best_node_order.list_data[i];
                 for (long j = 0; j < num_nodes; j++) {
-                    long    parent = best_node_order.lData[j];
+                    long    parent = best_node_order.list_data[j];
                     orderMx.Store (parent, child, (j > i) ? 1 : 0);
                 }
             }
@@ -2197,12 +2197,12 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
             }
         }
 
-        if (pars.lLength > max_parents.lData[chi]) {
-            ReportWarning(_String("Number of parents (") & (long)pars.lLength & ")exceed maximum setting for child node " & chi & ": " & max_parents.lData[chi] & "\n");
+        if (pars.lLength > max_parents.list_data[chi]) {
+            ReportWarning(_String("Number of parents (") & (long)pars.lLength & ")exceed maximum setting for child node " & chi & ": " & max_parents.list_data[chi] & "\n");
             pars.Permute(1);
-            for (long p = 0; p < (long)pars.lLength - max_parents.lData[chi]; p++) {
-                proposed_graph->Store(pars.lData[p], chi, 0);
-                ReportWarning(_String("Deleted excess edge ") & pars.lData[p] & "->" & chi & " from graph");
+            for (long p = 0; p < (long)pars.lLength - max_parents.list_data[chi]; p++) {
+                proposed_graph->Store(pars.list_data[p], chi, 0);
+                ReportWarning(_String("Deleted excess edge ") & pars.list_data[p] & "->" & chi & " from graph");
             }
         }
     }
@@ -2219,7 +2219,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
         } else {
             proposed_order->Populate(num_nodes, 0, 0);  // allocate memory
             for (long i = 0; i < num_nodes; i++) {
-                proposed_order->lData[i] = best_node_order.lData[i];
+                proposed_order->list_data[i] = best_node_order.list_data[i];
             }
 
             ReportWarning (_String("Transferring best node order to proposal: ") & (_String *)proposed_order->toStr());
@@ -2230,7 +2230,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
             for (long order_index, onode, node = 0; node < num_nodes; node++) {
                 // locate the lowest-ranked parent in the order, if any
                 for (order_index = 0; order_index < proposed_order->lLength; order_index++) {
-                    onode = proposed_order->lData[order_index];
+                    onode = proposed_order->list_data[order_index];
                     if ((*proposed_graph) (onode, node)) {
                         // insert new node immediately left of this parent
                         proposed_order->InsertElement ((BaseRef) node, order_index, false, false);
@@ -2247,7 +2247,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
             // restore order
             proposed_order->Populate(num_nodes,0,1);
             for (long i = 0; i < num_nodes; i++) {
-                proposed_order->lData[i] = best_node_order.lData[i];
+                proposed_order->list_data[i] = best_node_order.list_data[i];
             }
         }
     }
@@ -2264,11 +2264,11 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
 
     //  Populate order matrix -- and while we're at it, set proposed order to current order
     for (long i = 0; i < num_nodes; i++) {
-        long    child = proposed_order->lData[i];
+        long    child = proposed_order->list_data[i];
 
         for (long j = 0; j < num_nodes; j++) {
             //  if A precedes B, then set entry (A,B) == 1, permitting edge A->B
-            orderMx->Store (proposed_order->lData[j], child, (j > i) ? 1 : 0);
+            orderMx->Store (proposed_order->list_data[j], child, (j > i) ? 1 : 0);
         }
     }
     ReportWarning(_String("Populated order matrix\n"));
@@ -2326,7 +2326,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
             current_score   = proposed_score;
 
             for (long foo = 0; foo < num_nodes; foo++) {
-                current_order.lData[foo] = proposed_order->lData[foo];
+                current_order.list_data[foo] = proposed_order->list_data[foo];
             }
 
             if (current_score > best_score) {
@@ -2339,7 +2339,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
                 snprintf (bug, sizeof(bug), "Update best node ordering: ");
                 BufferToConsole (bug);
                 for (long deb = 0; deb < num_nodes; deb++) {
-                    snprintf (bug, sizeof(bug), "%d ", current_order.lData[deb]);
+                    snprintf (bug, sizeof(bug), "%d ", current_order.list_data[deb]);
                     BufferToConsole (bug);
                 }
                 NLToConsole ();
@@ -2352,7 +2352,7 @@ _Matrix *   Bgm::GraphMCMC (bool fixed_order)
 #endif
             // revert proposal
             for (long row = 0; row < num_nodes; row++) {
-                proposed_order->lData[row] = current_order.lData[row];
+                proposed_order->list_data[row] = current_order.list_data[row];
 
                 for (long col = 0; col < num_nodes; col++) {
                     proposed_graph->Store(row, col, current_graph(row, col));
@@ -2680,7 +2680,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
     snprintf (buf, sizeof(buf), "Initial node order (log L = %f): ", prob_current_order);
     BufferToConsole (buf);
     for (long i = 0; i < num_nodes; i++) {
-        snprintf (buf, sizeof(buf), "%d ", best_node_order.lData[i]);
+        snprintf (buf, sizeof(buf), "%d ", best_node_order.list_data[i]);
         BufferToConsole (buf);
     }
     NLToConsole();
@@ -2710,7 +2710,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
         snprintf (buf, sizeof(buf), "Proposed node order (log L = %f): ", prob_proposed_order);
         BufferToConsole (buf);
         for (long i = 0; i < num_nodes; i++) {
-            snprintf (buf, sizeof(buf), "%d ", proposed_order.lData[i]);
+            snprintf (buf, sizeof(buf), "%d ", proposed_order.list_data[i]);
             BufferToConsole (buf);
         }
         NLToConsole();
@@ -2755,7 +2755,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
                 for (long i = 0; i < num_nodes; i++) {
                     for (long j = 0; j < num_nodes; j++) {
-                        gv = (_GrowingVector *) clist->lData[i * num_nodes + j];
+                        gv = (_GrowingVector *) clist->list_data[i * num_nodes + j];
 
                         snprintf (buf, sizeof(buf), "i=%d, j=%d, n=%d: ", i, j, gv->GetUsed());
                         BufferToConsole (buf);
@@ -2774,7 +2774,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
                 // compute marginal edge posteriors
                 for (long child = 0; child < num_nodes; child++) {
-                    gv      = (_GrowingVector *) clist->lData[child * num_nodes + child];
+                    gv      = (_GrowingVector *) clist->list_data[child * num_nodes + child];
                     denom   = (*gv)(0, 0);  // first entry holds node marginal post pr
 
 
@@ -2784,7 +2784,7 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
                         }
 
                         edge    = child * num_nodes + parent;
-                        gv      = (_GrowingVector *) clist->lData[edge];
+                        gv      = (_GrowingVector *) clist->list_data[edge];
 
 
                         if (gv->GetUsed() > 0) {
@@ -2854,8 +2854,8 @@ _Matrix *   Bgm::RunColdChain (_SimpleList * current_order, long nsteps, long sa
 
     // export node ordering info
     for (long node = 0; node < num_nodes; node++) {
-        mcmc_output->Store (node, 2, (hyFloat) (best_node_order.lData[node]));
-        mcmc_output->Store (node, 3, (hyFloat) (current_order->lData[node]));
+        mcmc_output->Store (node, 2, (hyFloat) (best_node_order.list_data[node]));
+        mcmc_output->Store (node, 3, (hyFloat) (current_order->list_data[node]));
     }
 
     last_node_order = (_SimpleList &) (*current_order);
@@ -3030,14 +3030,14 @@ void        Bgm::CacheNetworkParameters (void)
         theta_ijk.Clear();
 
         num_parent_combos   = 1;
-        r_i                 = num_levels.lData[i];
+        r_i                 = num_levels.list_data[i];
 
 
         // assemble parents based on current graph
         for (long par = 0; par < num_nodes; par++) {
-            if (dag(par, i) == 1 && is_discrete.lData[par]) {
+            if (dag(par, i) == 1 && is_discrete.list_data[par]) {
                 parents << par; // list of parents will be in ascending numerical order
-                num_parent_combos *= num_levels.lData[par];
+                num_parent_combos *= num_levels.list_data[par];
                 multipliers << num_parent_combos;
             }
         }
@@ -3055,10 +3055,10 @@ void        Bgm::CacheNetworkParameters (void)
 
             // is there a faster algorithm for this? - afyp
             for (long par = 0; par < parents.lLength; par++) {
-                long    this_parent         = parents.lData[par],
+                long    this_parent         = parents.list_data[par],
                         this_parent_state = (*obsData)(obs, this_parent);
 
-                index += this_parent_state * multipliers.lData[par];
+                index += this_parent_state * multipliers.list_data[par];
             }
 
             n_ijk.Store ((long) index, child_state, n_ijk(index, child_state) + 1);
@@ -3121,7 +3121,7 @@ void        Bgm::PostOrderInstantiate (long node_id, _SimpleList & results)
 
     // assign random state given parents
     for (long pindex = 0; pindex < parents.lLength; pindex++) {
-        long    par = parents.lData[pindex];
+        long    par = parents.list_data[pindex];
 
     }
 }
@@ -3176,14 +3176,14 @@ void    Bgm::SerializeBgm (_String & rec)
     rec << "dnodes={};\ncnodes={};\n";
 
     for (long node_id = 0; node_id < num_nodes; node_id++) {
-        if (is_discrete.lData[node_id]) {
+        if (is_discrete.list_data[node_id]) {
             rec << "dnodes[Abs(dnodes)]=make_dnode(";
-            snprintf (buf, sizeof(buf), "%ld,%ld,%ld", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id]);
+            snprintf (buf, sizeof(buf), "%ld,%ld,%ld", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.list_data[node_id]);
             rec << buf;
             rec << ");\n";
         } else {
             rec << "cnodes[Abs(cnodes)]=make_cnode(";
-            snprintf (buf, sizeof(buf), "%ld,%ld,%ld,%f,%f", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.lData[node_id],
+            snprintf (buf, sizeof(buf), "%ld,%ld,%ld,%f,%f", node_id, (long)prior_sample_size(node_id,0), (long)max_parents.list_data[node_id],
                      prior_mean(node_id,0), prior_precision(node_id,0));
             rec << buf;
             rec << ");\n";

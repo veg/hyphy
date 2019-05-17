@@ -71,7 +71,7 @@ bool _Stack::Push (HBLObjectRef newObj, bool dup) {   // push object onto the st
 
 //__________________________________________________________________________________
 HBLObjectRef _Stack::Pop (bool del)   {      // pop object from the top of the stack
-    HBLObjectRef r = (HBLObjectRef)theStack.lData[theStack.lLength-1];
+    HBLObjectRef r = (HBLObjectRef)theStack.list_data[theStack.lLength-1];
     if (del) {
         theStack.lLength--;
     }
@@ -81,7 +81,7 @@ HBLObjectRef _Stack::Pop (bool del)   {      // pop object from the top of the s
 //__________________________________________________________________________________
 HBLObjectRef _Stack::Peek (long offset)   {      // pop object from the top of the stack
     if (offset < theStack.lLength) {
-        return (HBLObjectRef)theStack.lData[theStack.lLength-1-offset];
+        return (HBLObjectRef)theStack.list_data[theStack.lLength-1-offset];
     }
     return nil;
 }

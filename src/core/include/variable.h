@@ -94,6 +94,10 @@ public:
       return varFormula;
     }
 
+    
+    void *      operator new       (size_t size);
+    void        operator delete    (void * p);
+
     virtual     bool        HasChanged      (bool = false);
     virtual     void        PreMarkChanged  ();
     virtual     void        PostMarkChanged ();

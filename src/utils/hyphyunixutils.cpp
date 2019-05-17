@@ -350,11 +350,11 @@ void mpiOptimizerLoop (int rank, int size)
             _StringBuffer      variableSpec (128UL);
 
 
-            (variableSpec) << LocateVar(ivl->lData[0])->GetName();
+            (variableSpec) << LocateVar(ivl->list_data[0])->GetName();
             
             for (long kk = 1; kk < ivl->lLength; kk++) {
               (variableSpec) << ';';
-              (variableSpec) << LocateVar(ivl->lData[kk])->GetName();
+              (variableSpec) << LocateVar(ivl->list_data[kk])->GetName();
             }
           
             ReportWarning         (_String("[MPI] Sending back the following variable list\n") & variableSpec);
