@@ -3288,9 +3288,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                                 sum256 = _mm256_add_pd (sum256,prod);
     #endif
             
-                                accumulator = _avx_sum_4(sum256);
                            }
-                       }
+                           accumulator = _avx_sum_4(sum256);
+                      }
                         
                          //NOT sure why copy to doubles and add is faster
                         // that AVX istructions

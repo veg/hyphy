@@ -457,13 +457,13 @@ public:
     
     template <typename CALLBACK, typename EXTRACTOR>  void ForEach (CALLBACK&& cbv, EXTRACTOR&& accessor) const {
         if (theIndex) {
-            for (unsigned long i=0UL; i<lDim; i++) {
+            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
                 if (theIndex[i] >= 0L) {
                     cbv (accessor (i), theIndex[i], i);
                 }
             }
         } else {
-            for (unsigned long i=0UL; i<lDim; i++) {
+            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
                 cbv (accessor (i), i, i);
             }
         }
@@ -471,7 +471,7 @@ public:
 
     template <typename CALLBACK> void ForEachCellNumeric (CALLBACK&& cbv) const {
         if (theIndex) {
-            for (unsigned long i=0UL; i<lDim; i++) {
+            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
                 long idx = theIndex[i];
                 if (idx >= 0L) {
                     long row = idx / vDim;
@@ -479,8 +479,8 @@ public:
                 }
             }
         } else {
-            for (unsigned long i=0UL, c = 0UL; i<hDim; i++) {
-                for (unsigned long j=0UL; j<vDim; j++, c++) {
+            for (unsigned long i=0UL, c = 0UL; i<(unsigned long)hDim; i++) {
+                for (unsigned long j=0UL; j<(unsigned long)vDim; j++, c++) {
                     cbv (theData[c], c, i, j);
                 }
             }
@@ -489,7 +489,7 @@ public:
 
     template <typename CALLBACK, typename EXTRACTOR>  bool Any (CALLBACK&& cbv, EXTRACTOR&& accessor) const {
         if (theIndex) {
-            for (unsigned long i=0UL; i<lDim; i++) {
+            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
                 if (theIndex[i] >= 0L) {
                     if (cbv (accessor (i), theIndex[i])) {
                         return true;
@@ -497,7 +497,7 @@ public:
                 }
             }
         } else {
-            for (unsigned long i=0UL; i<lDim; i++) {
+            for (unsigned long i=0UL; i<(unsigned long)lDim; i++) {
                 if (cbv (accessor (i), i)) {
                     return true;
                 }

@@ -3679,18 +3679,15 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
   #ifdef  _SLKP_USE_AVX_INTRINSICS
                       __m256d  value_op = _mm256_set1_pd (value);
                     
-                      for (unsigned long i = 0UL; i < 60UL; i+=12UL) {
 #ifdef _SLKP_USE_FMA3_INTRINSICS
-                        _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
-                        _mm256_storeu_pd (res+i+4, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i+4),_mm256_loadu_pd(res+i+4)));
-                        _mm256_storeu_pd (res+i+8, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i+8),_mm256_loadu_pd(res+i+8)));
+    #define                 CELL_OP(x) _mm256_storeu_pd (res+x, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+x),_mm256_loadu_pd(res+x)))
 #else
-                        _mm256_storeu_pd (res+i,   _mm256_add_pd (_mm256_loadu_pd(res+i),    _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
-                        _mm256_storeu_pd (res+i+4, _mm256_add_pd (_mm256_loadu_pd(res+i+4),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i+4))));
-                        _mm256_storeu_pd (res+i+8, _mm256_add_pd (_mm256_loadu_pd(res+i+8),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i+8))));
-
+    #define                 CELL_OP(x) _mm256_storeu_pd (res+x,   _mm256_add_pd (_mm256_loadu_pd(res+x),    _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+x))))
 #endif
-                      }
+                      CELL_OP(0);CELL_OP(4);CELL_OP(8);CELL_OP(12);
+                      CELL_OP(16);CELL_OP(20);CELL_OP(24);CELL_OP(28);
+                      CELL_OP(32);CELL_OP(36);CELL_OP(40);CELL_OP(44);
+                      CELL_OP(48);CELL_OP(52);CELL_OP(56);
   #else
                       for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
                         res[i]   += value * secArg[i];
@@ -3705,7 +3702,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 }
                 
               } else {
-                  long loopBound = vDim - vDim%4;
+                  long loopBound = (vDim >> 2) << 2;
 
                   for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
                       long m = theIndex[k];
@@ -3722,13 +3719,14 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
 #endif
                           
                           for (unsigned long i = 0UL; i < loopBound; i+=4) {
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-                              _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+    #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                  _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
+    #else
+                                  _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
+    #endif
 #else
-                              _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
-#endif
                               
-#ifndef  _SLKP_USE_AVX_INTRINSICS
                               res[i]   += value * secArg[i];
                               res[i+1] += value * secArg[i+1];
                               res[i+2] += value * secArg[i+2];
