@@ -90,12 +90,11 @@
 "SA","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of sequential addition.","SequentialAddition.bf";
 "SD","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of star decomposition.","StarDecomposition.bf";
 "TS","Perform an exhaustive tree space search for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearch.bf";
-"TSC","Perform an exhaustive tree space search (subject to a topology contraint) for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearchConstrained.bf";
 
 "","Perform codon-based positive selection tests.","!Positive Selection";
 
 "BST","Use the improved branch-site REL method of Yang and Nielsen (2005) to look for episodic selection in sequences.","YangNielsenBranchSite2005.bf";
-"BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf"; 
+"BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf";
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 "PSM","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1. Multiple subsets of one data set with shared dN/dS.","MFPositiveSelection.bf";
 "SSD","Use approximate likelihoods at a site to test for subtree specific selective pressure.","SubtreeSelectionComparison.bf";
@@ -118,4 +117,3 @@
 "","Perform relative ratio tests.","!Relative Ratio";
 "RRT","Use relative ratio test on 2 datasets and a variety of standard models","RelativeRatio.bf";
 "PRRTI","Given a list of files (and optinally genetic code tables), perform relative ratio tests on all possible pair of the data files.","PairwiseRelativeRatio.bf";
-
