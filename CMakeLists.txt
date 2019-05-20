@@ -425,6 +425,29 @@ set_target_properties(
 )
 
 #-------------------------------------------------------------------------------
+ # hyphy profile target
+ #-------------------------------------------------------------------------------
+ add_executable(
+     HYPHY-GPERF
+     EXCLUDE_FROM_ALL
+     ${SRC_COMMON} ${SRC_UNIXMAIN}
+ )
+
+  target_link_libraries(HYPHY-PROFILE ${DEFAULT_LIBRARIES})
+
+  add_custom_target(GPERF DEPENDS HYPHY-GPERF)
+
+ 
+  set_target_properties(
+     HYPHY-GPERF
+     PROPERTIES
+          COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  "
+         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -L/usr/local/Cellar/gperftools/2.7/lib/ -lprofiler -ltcmalloc  "
+     endif(${OPENMP_FOUND})
+ )
+
+
+#-------------------------------------------------------------------------------
 # hyphy debug target
 #-------------------------------------------------------------------------------
 add_executable(
@@ -492,7 +515,7 @@ set_target_properties(
 
 if(UNIX)
     set_property(
-        TARGET hyphy HYPHYGTEST HYPHYDEBUG
+        TARGET hyphy HYPHYGTEST HYPHYDEBUG HYPHY-PROFILE HYPHY-GPERF
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
 endif(UNIX)

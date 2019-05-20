@@ -48,8 +48,9 @@
 #if defined   __UNIX__ 
     #include <unistd.h>
     #include <sys/stat.h>
+    #include <sys/types.h>
     #if !defined __MINGW32__
-    #include <sys/utsname.h>
+        #include <sys/utsname.h>
     #endif
 #endif
 
