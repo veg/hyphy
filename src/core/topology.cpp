@@ -1771,7 +1771,9 @@ bool     _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _Si
     long  nc1 = n1->get_num_nodes(),
           nc2 = n2->get_num_nodes() + (cangoup&&n2->parent) - (n22&&(!n2->parent));
     
-    
+  
+    //printf ("Comparing nodes %ld %ld\n", nc1, nc2);
+  
     if ( nc1 == nc2 || isPattern && nc2<nc1 ) {
         // now see if the descendants in all directions can be matched
         // first prepare the list of subtrees in the 2nd tree
@@ -1800,7 +1802,7 @@ bool     _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _Si
                          childLeaves->Each ([&] (long value, unsigned long index) -> void {
                             long lookup = reindexer->get (value);
                             if (lookup >= 0) {
-                                complement [lookup] = 0L;
+                                (*complement) [lookup] = 0L;
                             } else {
                                 complementCorrection++;
                             }
@@ -1808,7 +1810,7 @@ bool     _TreeTopology::internalNodeCompare (node<long>* n1, node<long>* n2, _Si
                    }
                    else {
                         childLeaves->Each ([&] (long value, unsigned long index) -> void {
-                            complement [value] = 0L;
+                            (*complement) [value] = 0L;
                         });
                    }
                 }
@@ -2007,7 +2009,7 @@ char     _TreeTopology::internalTreeCompare (node<long>* n1, node<long>* n2, _Si
 
                 for (long k3 = 0; k3 < children->lLength; k3++) {
                     node<long>* aChild = n1->go_down(children->list_data[k3]+1);
-                    dummy->nodes.add (aChild);
+                    dummy->add_node(*aChild);
                     _SimpleList  t;
                     t.Union (*newLeaves, *(_SimpleList*)aChild->in_object);
                     newLeaves->Clear();
@@ -3122,9 +3124,6 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
               myDescs->Clear();
               myDescs->Duplicate (&temp);
             }
-
-            /*for (long cc2 = 0; cc2 < myDescs->lLength; cc2++)
-             myDescs->list_data[cc2] = recordTransfer.list_data[myDescs->list_data[cc2]];*/
           } else {
             ((_SimpleList*)iterator->in_object)->list_data[0] = recordTransfer.list_data[((_SimpleList*)iterator->in_object)->list_data[0]];
           }
@@ -3216,7 +3215,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
         iterator = ni.Next();
         while (iterator!=theRoot) {
           if (tCount==1) {
-            rerootAt = kCompareEqualWithReroot & map_node_to_calcnode (iterator)->GetName() & '.';
+            rerootAt = kCompareEqualWithReroot & *map_node_to_calcnode (iterator)->GetName() & '.';
             break;
           } else {
             tCount --;

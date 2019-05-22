@@ -3,8 +3,7 @@
 
 /*---------------------------------------------------------------*/
 
-function ReceiveJobs (sendOrNot, nni_flagrj)
-{
+function ReceiveJobs (sendOrNot, nni_flagrj)  {
 	if (MPI_NODE_COUNT>1)
 	{
 		MPIReceive (-1, fromNode, result_String);
@@ -139,7 +138,7 @@ function CheckForImprovement (nni_flagcfi)
 					mxTreeSpec [2] = "10,40,-10,-175,1";
 					twHasBeenOpened = 1;
 				}
-				
+
 			}
 		}
 	}
@@ -519,12 +518,11 @@ function InferTreeTopology (verbFlag)
 
 				thisTree = TreeMatrix2TreeString (2,0);
 
-				if ((verbFlag)&&(MPI_NODE_COUNT<2))
-				{
+				if ((verbFlag)&&(MPI_NODE_COUNT<2)) {
 					fprintf (stdout, "\n\tTree ",thisTree);
 				}
 
-				Tree    Inferred_Tree = thisTree;
+ 				Tree    Inferred_Tree = thisTree;
 
 
 				if (haveTreeConstraint)

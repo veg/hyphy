@@ -655,16 +655,18 @@ inline  bool    _Matrix::IsNonEmpty  (long logicalIndex) const {
 bool        _Matrix::HasChanged(bool) {
     
     switch (storageType) {
+        case _POLYNOMIAL_TYPE: {
+          return Any ([&] (_MathObject * f, unsigned long) -> bool {if (f) return f->HasChanged(); return false;},
+                      [&] (unsigned long i) -> _MathObject * {return ((_MathObject**)theData)[i];});
+        }
+        break;
+        
         case _FORMULA_TYPE: {
             return Any ([&] (_Formula * f, unsigned long) -> bool {if (f) return f->HasChanged(); return false;},
                         [&] (unsigned long i) -> _Formula * {return ((_Formula**)theData)[i];});
         }
         break;
-        case _POLYNOMIAL_TYPE: {
-            return Any ([&] (_MathObject * f, unsigned long) -> bool {if (f) return f->HasChanged(); return false;},
-                        [&] (unsigned long i) -> _MathObject * {return ((_MathObject**)theData)[i];});
-        }
-        break;
+
         case _SIMPLE_FORMULA_TYPE: {
             if (cmd->has_volatile_entries) return true;
             return cmd->varIndex.Any ([&] (long value, unsigned long) -> bool {
@@ -2499,7 +2501,6 @@ _String*        _Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf) {
 void        _Matrix::MakeMeSimple (void) {
     if (storageType == _FORMULA_TYPE) {
         long            stackLength = 0L;
-        bool            isGood      = true;
 
         _SimpleList     newFormulas,
                         references;
@@ -2508,26 +2509,25 @@ void        _Matrix::MakeMeSimple (void) {
         _AVLListX       flaStrings(&flaStringsL);
 
  
-      _SimpleList varListAux;
-      _AVLList    varList (&varListAux);
+        _SimpleList varListAux;
+        _AVLList    varList (&varListAux);
       
-      ProcessFormulas (stackLength,varList,newFormulas,references,flaStrings);
-      
-      
-        if (isGood) {
+        if (ProcessFormulas (stackLength,varList,newFormulas,references,flaStrings)) {
             storageType = _SIMPLE_FORMULA_TYPE;
 
             cmd                         = new _CompiledMatrixData;
             cmd->has_volatile_entries   = false;
+          
             for (unsigned long k = 0; k < newFormulas.lLength; k++) {
-                cmd->has_volatile_entries = cmd->has_volatile_entries || ((_Formula*)newFormulas.list_data[k])->ConvertToSimple(varList);
+                cmd->has_volatile_entries = ((_Formula*)newFormulas.get(k))->ConvertToSimple(varList) || cmd->has_volatile_entries;
             }
 
             cmd->varIndex.Duplicate     (&varListAux);
             cmd->theStack               = (_SimpleFormulaDatum*)MatrixMemAllocate (stackLength*sizeof(_SimpleFormulaDatum));
             cmd->varValues              = (_SimpleFormulaDatum*)MatrixMemAllocate ((cmd->varIndex.countitems()>0?varList.countitems():1)*sizeof(_SimpleFormulaDatum));
-            cmd->formulaRefs            = references.list_data;
-            references.list_data            = nil;
+            long allocation_size = MAX (references.lLength, 1) * sizeof (long);
+            cmd->formulaRefs            = (long*)MemAllocate (allocation_size);
+            memcpy (cmd->formulaRefs, references.list_data, allocation_size);
             cmd->formulaValues          = new hyFloat [newFormulas.lLength];
             cmd->formulasToEval.Duplicate (&newFormulas);
         }

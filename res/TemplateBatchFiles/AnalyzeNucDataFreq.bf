@@ -17,8 +17,6 @@ sum := estPiA+estPiC+estPiG+estPiT;
 
 EMBED_FREQUENCY_DEPENDENCE = 1;
 
-#include "TemplateModels/TrN.mdl";
-
 SelectTemplateModel(filteredData);
 
 estPiA = .25;
@@ -42,7 +40,3 @@ fprintf (stdout, "\n",lf);
 HarvestFrequencies (obsFreq,filteredData,1,1,1);
 
 fprintf (stdout, "\nEstimated Frequencies:", vectorOfFrequencies, "\nObserved Frequencies", obsFreq);
-
-GetString (mbl, TrNModel,-1);
-
-fprintf (stdout,"\n",mbl,"\n");

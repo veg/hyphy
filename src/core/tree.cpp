@@ -751,6 +751,7 @@ void _TheTree::SetUp (void) {
             flatNodes<< (long)ti.GetNode();
             flatINodeParents << (long)ti.GetNode()->get_parent();
         }
+      
     }
 
     flatParents << flatINodeParents;
@@ -2835,72 +2836,74 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List* expNodes, long catID, long addOne, bool canClear)
-{
-    nodesToUpdate.Populate (flatLeaves.lLength + flatTree.lLength - 1, 0, 0);
-    _CalcNode       *currentTreeNode;
-    long            lastNodeID = -1;
-    
+long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List* expNodes, long catID, long addOne, bool canClear) {
+  nodesToUpdate.Populate (flatLeaves.lLength + flatTree.lLength, 0, 0);
+  _CalcNode       *currentTreeNode;
+  long            lastNodeID = -1;
+  
     // look for nodes with model changes and mark the path up to the root as needing an update
+  
+  #define DIRECT_INDEX(N) (flatParents.list_data[N]+flatLeaves.lLength)
+  
+  if (addOne >= 0) {
+    nodesToUpdate.list_data[addOne] = 2;
+  }
+  
+  if (forceRecalculationOnTheseBranches.nonempty()) {
+    forceRecalculationOnTheseBranches.Each ([this] (long value, unsigned long) -> void {
+      this->nodesToUpdate.list_data [value] = 2L;
+    });
     
+    if (canClear) {
+      forceRecalculationOnTheseBranches.Clear();
+    }
+  }
+  
+  for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++) {
+    bool    isLeaf     = nodeID < flatLeaves.lLength;
     
-    if (addOne >= 0) {
-        nodesToUpdate.list_data[addOne] = 2;
+    if (isLeaf) {
+      currentTreeNode = (((_CalcNode**) flatCLeaves.list_data)[nodeID]);
+    } else {
+      currentTreeNode = (((_CalcNode**) flatTree.list_data)  [nodeID - flatLeaves.lLength]);
     }
     
-    if (forceRecalculationOnTheseBranches.lLength) {
-        for (unsigned long markedNode = 0; markedNode < forceRecalculationOnTheseBranches.lLength; markedNode++) {
-            nodesToUpdate.list_data[forceRecalculationOnTheseBranches.list_data[markedNode]] = 2;
-        }
-        
-        if (canClear) {
-            forceRecalculationOnTheseBranches.Clear();
-        }
+    if (currentTreeNode->NeedNewCategoryExponential (catID)) {
+      if (expNodes) {
+        (*expNodes) << currentTreeNode;
+        lastNodeID = nodeID;
+      } else {
+        currentTreeNode->RecomputeMatrix (catID, categoryCount, nil);
+      }
+      
+      nodesToUpdate.list_data[nodeID] = 2;
     }
     
-    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++) {
-        bool    isLeaf     = nodeID < flatLeaves.lLength;
-        
-        currentTreeNode = isLeaf? (((_CalcNode**) flatCLeaves.list_data)[nodeID]):
-        (((_CalcNode**) flatTree.list_data)  [nodeID - flatLeaves.lLength]);
-        
-        if (currentTreeNode->NeedNewCategoryExponential (catID)) {
-            if (expNodes) {
-                (*expNodes) << currentTreeNode;
-                //printf ("EXP>%s\n", currentTreeNode->GetName()->sData);
-                lastNodeID = nodeID;
-            } else {
-                currentTreeNode->RecomputeMatrix (catID, categoryCount, nil);
-            }
-            
-            nodesToUpdate.list_data[nodeID] = 2;
-        }
-        
-        if (nodesToUpdate.list_data[nodeID]) {
-            nodesToUpdate.list_data[flatParents.list_data[nodeID]+flatLeaves.lLength] = 2;
-        }
+    if (nodesToUpdate.list_data[nodeID]) {
+      nodesToUpdate.list_data[DIRECT_INDEX(nodeID)] = 2;
     }
-    
-    
-    // one more pass to pick up all descendants of changed internal nodes
-    
-    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
-        if (nodesToUpdate.list_data[flatLeaves.lLength+flatParents.list_data[nodeID]] == 2 && nodesToUpdate.list_data[nodeID] == 0) {
-            nodesToUpdate.list_data[nodeID] = 1;
-        }
-    
+  }
+  
+    // one more pass to pick up all DIRECT descendants of changed internal nodes
+  
+  for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++)
+    if (nodesToUpdate.list_data[nodeID] == 0 && nodesToUpdate.list_data[DIRECT_INDEX(nodeID)] == 2) {
+      nodesToUpdate.list_data[nodeID] = 1;
+    }
+  
     // write out all changed nodes
-    
-    for (unsigned long nodeID = 0; nodeID < nodesToUpdate.lLength; nodeID++)
-        if (nodesToUpdate.list_data[nodeID]) {
-            updateNodes << nodeID;
-        }
-    
-    if (expNodes && expNodes->lLength == 1) {
-        return lastNodeID;
+  
+  for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++) {
+    if (nodesToUpdate.list_data[nodeID]) {
+      updateNodes << nodeID;
     }
-    
-    return -1;
+  }
+  
+  if (expNodes && expNodes->countitems() == 1) {
+    return lastNodeID;
+  }
+  
+  return -1;
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
