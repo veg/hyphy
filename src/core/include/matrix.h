@@ -85,6 +85,48 @@ struct      _CompiledMatrixData {
 /*__________________________________________________________________________________________________________________________________________ */
 
 class       _Matrix: public _MathObject {
+    
+// data members
+public:
+    hyFloat   *theData;                            // matrix elements
+    
+protected:
+    
+    // data
+    
+    long        hDim, vDim, lDim;               // matrix physical dimensions; lDim - length of
+    // actual storage allocated
+    
+    long*       theIndex;                       // indices of matrix elements in logical storage
+    
+private:
+    
+    long        storageType,                    // true element matrix(1) or a matrix of pointers(0) which do not need to be deleted
+    // 2, if elements of the matrix are actually formulas which must be initialized to numerics before use
+    // matrices of type two are merely storage tables and can not be operated on directly, i.e their
+    // numerical values are computed first
+                bufferPerRow,                   // values reflecting internal storage structure for
+                overflowBuffer,                 // sparse matrices
+                allocationBlock;
+    
+    _CompiledMatrixData*
+    cmd;
+    
+    HBLObjectRef   theValue;                       // stores evaluated values of the matrix
+
+    static      int     storageIncrement,       // how many percent of full matrix size
+    // to allocate to the matrix storage per increment
+    
+                        precisionArg,                    // how many elements in exp series to truncate after
+    
+                        switchThreshold;                 // maximum percentage of non-zero elements
+    // to keep the matrix sparse
+    
+    static      hyFloat truncPrecision;
+    
+    // matrix exp truncation precision
+    
+ 
 
 public:
 
@@ -550,18 +592,10 @@ public:
      */
     /*---------------------------------------------------*/
 
-    hyFloat   *theData;                            // matrix elements
     static void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse = false, bool allocateStorage = false, bool isFla = false);
 
 
-protected:
 
-    // data
-
-    long        hDim, vDim, lDim;               // matrix physical dimensions; lDim - length of
-    // actual storage allocated
-
-    long*       theIndex;                       // indices of matrix elements in logical storage
 
 private:
 
@@ -647,30 +681,6 @@ private:
 
     // if nil - matrix stored conventionally
 
-    static      int     storageIncrement,       // how many percent of full matrix size
-                // to allocate to the matrix storage per increment
-
-                precisionArg,                    // how many elements in exp series to truncate after
-
-                switchThreshold;                 // maximum percentage of non-zero elements
-    // to keep the matrix sparse
-
-    static      hyFloat truncPrecision;
-
-    // matrix exp truncation precision
-
-    long        storageType,                    // true element matrix(1) or a matrix of pointers(0) which do not need to be deleted
-                // 2, if elements of the matrix are actually formulas which must be initialized to numerics before use
-                // matrices of type two are merely storage tables and can not be operated on directly, i.e their
-                // numerical values are computed first
-                bufferPerRow,                   // values reflecting internal storage structure for
-                overflowBuffer,                 // sparse matrices
-                allocationBlock;
-
-    _CompiledMatrixData*
-    cmd;
-
-    HBLObjectRef   theValue;                       // stores evaluated values of the matrix
 };
 
 /*__________________________________________________________________________________________________________________________________________ */

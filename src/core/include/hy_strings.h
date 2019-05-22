@@ -74,8 +74,18 @@ class _ExecutionList;
 class _StringBuffer;
 
 class _String : public BaseObj {
+    
+protected:
+    char          *s_data;
+    unsigned long s_length;
+    
+    /** this value is returned for "failed"
+     access operations that don't throw errors, e.g. getChar */
+    const static char default_return = '\0';
 
 public:
+    
+    
   /*
    ==============================================================
    Constructors/Destructors/Copiers
@@ -1444,13 +1454,6 @@ public:
                                      bool case_sensitive,
                                      bool handle_errors) const;
 
-protected:
-  unsigned long s_length;
-  char *s_data;
-    
-    /** this value is returned for "failed"
-     access operations that don't throw errors, e.g. getChar */
-  const static char default_return = '\0';
 
 private:
   /** Find the length of the maximum prefix that forms a valid ID

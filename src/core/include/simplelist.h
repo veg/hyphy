@@ -47,6 +47,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class _SimpleList:public BaseObj {
     friend class _AVLList;
+    
+    public:
+    //Data Members
+        long* list_data;
+        unsigned long lLength;//actual length
 
     protected:
         //memory allocated enough for this many slots
@@ -57,11 +62,8 @@ class _SimpleList:public BaseObj {
         void     _UpdateStorageType (void);
         void     _EnsureCorrectStorageType (void);
         void     _CopyStatic (void);
-    public:
-        //Data Members
-        long* list_data;
-        unsigned long lLength;//actual length
 
+    public:
         //Methods
 
         /*

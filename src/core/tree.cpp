@@ -2967,7 +2967,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     _SimpleList     taggedInternals                 (flatNodes.lLength, 0, 0);
     unsigned long   const alphabetDimension     =         theFilter->GetDimension(),
     siteCount           =         theFilter->GetPatternCount(),
-    alphabetDimensionmod4  =      alphabetDimension-alphabetDimension%4;
+    alphabetDimensionmod4  =      (alphabetDimension >> 2) << 2;
     
     _CalcNode       *currentTreeNode;
     long            localScalerChange     =         0;
@@ -2998,6 +2998,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             if (alphabetDimension == 4UL) {
                 long k3     = 0;
                 if (matchSet)
+                    
                     for (long k = siteFrom; k < siteTo; k++, k3+=4) {
                         parentConditionals [k3]   = 0.;
                         parentConditionals [k3+1] = 0.;
@@ -3005,7 +3006,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         parentConditionals [k3+3] = 0.;
                         parentConditionals [k3+setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
                     }
-                else
+                else {
+                    
                     for (long k = siteFrom; k < siteTo; k++, k3+=4) {
                         hyFloat scaler = localScalingFactor[k];
                         parentConditionals [k3]   = scaler;
@@ -3013,23 +3015,17 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         parentConditionals [k3+2] = scaler;
                         parentConditionals [k3+3] = scaler;
                     }
+                }
             } else {
-                long k3     = 0;
+                hyFloat * pp = parentConditionals;
                 if (matchSet) {
-                    for (long k = siteFrom; k < siteTo; k++) {
-                        for (long k2 = 0; k2 < alphabetDimension; k2++) {
-                            parentConditionals [k3+k2] = 0.;
-                        }
-                        
-                        parentConditionals[k3 + setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
-                        k3                 +=   alphabetDimension;
+                    memset (parentConditionals, 0, (siteTo-siteFrom) * sizeof (hyFloat));
+                    for (long k = siteFrom; k < siteTo; k++, pp +=   alphabetDimension) {
+                         pp[setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
                     }
                 } else {
-                    for (long k = siteFrom; k < siteTo; k++) {
-                        hyFloat scaler = localScalingFactor[k];
-                        for (long k2 = 0; k2 < alphabetDimension; k2++, k3++) {
-                            parentConditionals [k3] = scaler;
-                        }
+                    for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
+                        InitializeArray(pp, alphabetDimension, (hyFloat)localScalingFactor[k]);
                     }
                 }
             }
@@ -3126,7 +3122,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         unsigned long target_index = siteState;
                         unsigned long shifter = alphabetDimension << 2;
                         for (; k < alphabetDimensionmod4; k+=4UL, target_index += shifter) {
-                            parentConditionals[k]   *= tMatrix[target_index];
+                            parentConditionals[k]    *= tMatrix[target_index];
                             parentConditionals[k+1L] *= tMatrix[target_index + alphabetDimension];
                             parentConditionals[k+2L] *= tMatrix[target_index + alphabetDimension + alphabetDimension];
                             parentConditionals[k+3L] *= tMatrix[target_index + alphabetDimension + alphabetDimension + alphabetDimension];
@@ -3153,8 +3149,32 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     lastUpdatedSite = childVector;
                 }
             }
-            
-            if (alphabetDimension == 4) { // special case for nuc data
+/*
+ #ifdef _SLKP_USE_AVX_INTRINSICS
+
+            if (alphabetDimension == 60) { // separate TEST case for mtDNA genetic code
+                __m256d parent_cache [15] = {_mm256_setzero_pd ()};
+                
+                for (unsigned int r = 0; r < 60; r += 4) {
+                    for (unsigned int c = 0; c < 60; c += 4) { // loop over the transition matrix in 4x4 blocks
+                        tmatrix_transpose [0] = (__m256d) {transitionMatrix[r*60 + c], transitionMatrix[(r+1) * 60 + c], transitionMatrix[(r+2) * 60 + c],transitionMatrix[(r+3) * 60 + c]};
+                        tmatrix_transpose [1] = (__m256d) {transitionMatrix[r*60 + c + 1], transitionMatrix[(r+1) * 60 + c + 1], transitionMatrix[(r+2) * 60 + c + 1],transitionMatrix[(r+3) * 60 + c + 1]};
+                        tmatrix_transpose [2] = (__m256d) {transitionMatrix[r*60 + c + 2], transitionMatrix[(r+1) * 60 + c + 2], transitionMatrix[(r+2) * 60 + c],transitionMatrix[(r+3) * 60 + c + 2]};
+                        tmatrix_transpose [3] = (__m256d) {transitionMatrix[r*60 + c + 3], transitionMatrix[(r+1) * 60 + c + 3], transitionMatrix[(r+2) * 60 + c + 3],transitionMatrix[(r+3) * 60 + c + 3]};
+                        
+                        ///
+                        ///    T (i,j) figures in the parent [i] *= sum over j child [i,j] * T (i,j)
+                        ///
+                        
+                        
+                    }
+                }
+                
+            } else
+#endif
+ */
+
+            if (alphabetDimension == 4L) { // special case for nuc data
                 
 #ifdef _SLKP_USE_AVX_INTRINSICS
                 _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
