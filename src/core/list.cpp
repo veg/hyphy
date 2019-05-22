@@ -478,26 +478,26 @@ void _List::InsertElement (BaseRef br, long insertAt, bool store, bool pointer) 
     _SimpleList::InsertElement (br, insertAt, store, pointer);
 }
 
-void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* idx2)
-{
+void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* idx2) {
     // compute the union of two sorted lists
     // each repeat appears exactly once
-    if (lLength) {
+    if (nonempty()) {
         Clear();
     }
 
-    long  c1 = 0,
-          c2 = 0;
+    long  c1 = 0L,
+          c2 = 0L;
 
     while (c1<l1.lLength && c2<l2.lLength) {
-        while (c1<l1.lLength && ((_String*)l1(c1))->Compare((_String*)l2(c2)) == kCompareLess) {
+        while (c1<l1.lLength && ((_String*)l1(c1))->Compare(*(_String*)l2(c2)) == kCompareLess) {
             c1++;
         }
+      
         if (c1==l1.lLength) {
             break;
         }
 
-        while (c1<l1.lLength && c2<l2.lLength &&((_String*)l1(c1))->Equal((_String*)l2(c2))) {
+        while (c1<l1.lLength && c2<l2.lLength &&((_String*)l1(c1))->Equal(*(_String*)l2(c2))) {
             if (idx) {
                 (*idx) << c1;
             }
@@ -511,7 +511,7 @@ void    _List::Intersect (_List& l1, _List& l2, _SimpleList* idx, _SimpleList* i
         if (c1==l1.lLength || c2==l2.lLength) {
             break;
         }
-        while (c2<l2.lLength && ((_String*)l2(c2))->Compare((_String*)l1(c1)) == kCompareLess) {
+        while (c2<l2.lLength && ((_String*)l2(c2))->Compare(*(_String*)l1(c1)) == kCompareLess) {
             c2++;
         }
     }

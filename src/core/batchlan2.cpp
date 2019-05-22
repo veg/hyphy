@@ -706,20 +706,20 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
     
     auto ensure_site_partition = [] (_String& site_part, const long code, const long max_site) -> void {
         if (code != 6 && site_part.empty () ) {
-            site_part = _String ("0-") & _String (max_site - 1L);
+            site_part = _String ("\"0-") & _String (max_site - 1L) & ("\"");
         }
     };
 
     if (!isFilter) {
         dataset = (_DataSet*)dataSetList(dsID);
         dataset -> ProcessPartition (site_partition,site_list,false, unit, nil, nil, chain.GetNameSpace());
-        ensure_site_partition (site_partition, code, dataset->NoOfColumns());
+        ensure_site_partition (sequence_partition, code, dataset->NoOfColumns());
         dataset->ProcessPartition (sequence_partition,sequence_list,true, unit, nil, nil, chain.GetNameSpace());
 
     } else {
         const _DataSetFilter * dataset1 = GetDataFilter (dsID);
         dataset1->GetData()->ProcessPartition (site_partition,site_list,false, unit, &dataset1->theNodeMap, &dataset1->theOriginalOrder, chain.GetNameSpace());
-        ensure_site_partition (site_partition, code, dataset1->GetSiteCount());
+        ensure_site_partition (sequence_partition, code, dataset1->GetSiteCount());
         dataset1->GetData()->ProcessPartition (sequence_partition,sequence_list ,true,  unit, &dataset1->theOriginalOrder, &dataset1->theNodeMap, chain.GetNameSpace());
         dataset = (_DataSet*)dataset1;
     }

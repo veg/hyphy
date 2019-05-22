@@ -125,7 +125,23 @@ public:
     }
     //TEST BELOW
     void                detach_child    (int k) {
-        nodes.delete_entry(k);
+      int do_delete = 0;
+      if (k == 1 || k == 2) {
+        if (k == 1) {
+          one = two;
+        }
+        if (nodes.length) {
+          two = nodes.data[0];
+          do_delete = 1;
+        } else {
+          two = NULL;
+        }
+      } else {
+        do_delete = k - 2;
+      }
+      if (do_delete > 0) {
+          nodes.delete_entry(do_delete);
+      }
     }
 
     int                 tree_depth      (void);

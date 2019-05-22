@@ -7,8 +7,7 @@ RequireVersion ("0.99.20061122");
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0)
-{
+if (dataType<0) {
 	return;
 }
 
@@ -16,14 +15,11 @@ if (dataType<0)
 MESSAGE_LOGGING = 0;
 twHasBeenOpened = 0;
 
-if (dataType)
-{
-	NICETY_LEVEL = 3;
+if (dataType) {
 	SetDialogPrompt ("Please choose a codon data file:");
 	#include "TemplateModels/chooseGeneticCode.def";
 }
-else
-{
+else {
 	SetDialogPrompt ("Please choose a nucleotide or amino-acid data file:");
 }
 
@@ -35,8 +31,7 @@ ChoiceList (randomOption,"Addition Order",1,SKIP_NONE,
 			"Random Order","The order of addition will be random.");
 
 
-if (randomOption<0)
-{
+if (randomOption<0) {
 	return;
 }
 
@@ -45,13 +40,11 @@ ChoiceList (haveTreeConstraint,"Topology Constraint",1,SKIP_NONE,
 			"Use Constraint","Use a topological constraint during tree searches.");
 
 
-if (haveTreeConstraint<0)
-{
+if (haveTreeConstraint<0) {
 	return;
 }
 
-if (haveTreeConstraint)
-{
+if (haveTreeConstraint) {
 	SetDialogPrompt ("Please select a topology constraint file:");
 	fscanf (PROMPT_FOR_FILE, "String", _topologyPatternString);
 	Tree _topologyPattern = _topologyPatternString;
@@ -67,27 +60,22 @@ ChoiceList (doNNIOption,"Branch Swapping",1,SKIP_NONE,
 			"NNI+SPR","Nearest neighbor interchange is performed after EACH sequence is added. Subtree pruning and regrafting performed on the final tree. Order (sequences)^2 additional trees are examined.");
 
 
-if (doNNIOption<0)
-{
+if (doNNIOption<0) {
 	return;
 }
 
-if (doNNIOption == 1)
-{
+if (doNNIOption == 1) {
 	nniPeriod = 0;
-	while (nniPeriod <= 0)
-	{
+	while (nniPeriod <= 0) {
 		fprintf (stdout, "\nDo NNI every time this many branches are added (>=1):");
 		fscanf  (stdin, "Number", nniPeriod);
 	}
 }
 
-if (dataType)
-{
+if (dataType) {
 	DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
 }
-else
-{
+else {
 	DataSetFilter filteredData = CreateFilter (ds,1,"","");
 }
 
@@ -102,31 +90,25 @@ ChoiceList (methodIndex,"Starting 3 taxa tree",1,SKIP_NONE,
 			"Random","Select 3 random starting sequences.");
 
 /* begin by selecting the best 3-taxa tree */
-if (methodIndex<0)
-{
+if (methodIndex<0) {
 	return;
 }
 
 first3Taxa = {3,1};
 
-if (methodIndex == 0)
-{
+if (methodIndex == 0) {
 	first3Taxa = first3Taxa["_MATRIX_ELEMENT_ROW_"];
 }
-else
-{
-	if (methodIndex == 1)
-	{
+else {
+	if (methodIndex == 1) {
 		ChoiceList (first3Taxa, "Choose 3 taxa for the starting tree:",3,SKIP_NONE,ds);
-		if (first3Taxa[0]<0)
-		{
+		if (first3Taxa[0]<0) {
 			return ;
 		}
 	}
 }
 
-if (pCount > 0)
-{
+if (pCount > 0) {
 
 	ChoiceList (globalParameters,"Global parameters",1,SKIP_NONE,
 				"Estimate always", "Re-estimate global model parameters (e.g. rate variation parameters, substitution biases etc) for each tree. This option can be quite slow, and global parameter estimates may be unreliable for small trees, leading to possible biases.",
@@ -134,21 +116,18 @@ if (pCount > 0)
 				);
 
 
-	if (globalParameters < 0)
-	{
+	if (globalParameters < 0) {
 		return ;
 	}
 
-	if (globalParameters == 1)
-	{
+	if (globalParameters == 1) {
 		fprintf					(stdout, "\n[WILL USE GLOBAL ESTIMATES FROM A USER-PROVIDED TREE]\n");
 		ExecuteAFile 			("queryTree.bf");
 		fprintf					(stdout, "\n[OBTAINING GLOBAL PARAMETER ESTIMATES]\n");
 		LikelihoodFunction 		apprxLF = (filteredData, givenTree);
 		Optimize 			    (arg, apprxLF);
 
-		for (k=0; k<pCount; k=k+1)
-		{
+		for (k=0; k<pCount; k += 1) {
 			ExecuteCommands ("_param_val = " + globalParamList[k] + ";");
 			fprintf (stdout, "\t", globalParamList[k], " = ", _param_val, "\n");
 			ExecuteCommands (globalParamList[k] + ":=" + _param_val + ";");
@@ -158,8 +137,7 @@ if (pCount > 0)
 
 l = InferTreeTopology (1.0);
 
-if (l)
-{
+if (l) {
 	fprintf (stdout,"\n\n --------------------- RESULTS --------------------- \n\n");
 	fprintf (stdout,"BestTree =", bestTree);
 

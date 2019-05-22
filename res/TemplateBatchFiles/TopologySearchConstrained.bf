@@ -9,7 +9,7 @@ function TreeMatrix2TreeString (levelIndex)
 	n = treeNodes[0][levelIndex];
 
 	while (m)
-	{	
+	{
 		if (m>p)
 		{
 			if (p)
@@ -29,11 +29,11 @@ function TreeMatrix2TreeString (levelIndex)
 				{
 					treeString = treeString+")";
 				}
-			}	
+			}
 			else
 			{
 				treeString = treeString+",";
-			}	
+			}
 		}
 		if (n<ds.species)
 		{
@@ -50,7 +50,7 @@ function TreeMatrix2TreeString (levelIndex)
 	{
 		treeString = treeString+")";
 	}
-	
+
 	return treeString;
 }
 
@@ -78,10 +78,10 @@ function  _AddTreeToResults		(currentTreeString, currentLFValue)
 	{
 		fprintf (statFileName, currentLFValue, ";", currentTreeString, "\n");
 	}
-	
+
 	treeStatistics [globalTreeCounter][0] = currentLFValue;
 	globalTreeCounter = globalTreeCounter+1;
-	
+
 	for (ii = 0; ii<10; ii=ii+1)
 	{
 		if (currentLFValue>bestTreesStash[ii][1])
@@ -110,9 +110,9 @@ function  _ReportTreeStatistics		(currentLFValue)
 	fprintf (stdout, "\n\n**************************\n",
 					     "*     TREE REPORT	       *\n",
 					     "**************************\n\n");
-					     
+
 	fprintf (stdout, "\n#### BEST TREES #####\n\n");
-					     
+
 	for (ii=0; ii<10; ii = ii+1)
 	{
 		if (bestTreesStash[ii][1]==(-1e100))
@@ -120,16 +120,16 @@ function  _ReportTreeStatistics		(currentLFValue)
 			break;
 		}
 		fprintf (stdout, ii+1, ").");
-		
+
 		if (ii>0)
 		{
 			fprintf (stdout, " Worse by: ", bestTreesStash[ii][1]-currentLFValue);
 		}
 		fprintf (stdout,"\n",  bestTreesStash[ii][0], "\nLog-likelihood = ", bestTreesStash[ii][1], "\n\n");
 	}
-	
+
 	fprintf (stdout, "\n#### STATISTICS #####\n\n");
-	
+
 	bestTreesStash [0][0] = 0.1;
 	bestTreesStash [1][0] = 0.5;
 	bestTreesStash [2][0] = 1;
@@ -151,7 +151,7 @@ function  _ReportTreeStatistics		(currentLFValue)
 	bestTreesStash [7][1] = 0;
 	bestTreesStash [8][1] = 0;
 	bestTreesStash [9][1] = 0;
-	
+
 	for (i=0; i<globalTreeCounter; i=i+1)
 	{
 		diff = currentLFValue-treeStatistics[i];
@@ -162,15 +162,15 @@ function  _ReportTreeStatistics		(currentLFValue)
 		}
 		bestTreesStash [j][1] = bestTreesStash [j][1] + 1;
 	}
-	
+
 	bestTreesStash [0][1] = bestTreesStash [0][1]-1;
-	
+
 	ii = "+---------------+---------------+---------------+---------------+\n";
-	fprintf (stdout, "\n\n", ii, 
+	fprintf (stdout, "\n\n", ii,
 							    "| From Best +   |  To Best +    |   Tree Count  |  % of total	  |\n",
 							 ii);
 	for (i=0; i<10; i=i+1)
-	{	
+	{
 		if (i)
 		{
 			fprintf (stdout, "| " , Format (bestTreesStash [i-1][0],13,1));
@@ -186,10 +186,10 @@ function  _ReportTreeStatistics		(currentLFValue)
 		else
 		{
 			fprintf (stdout, " |      Infinity");
-		}		
-		fprintf (stdout, " | ", Format (bestTreesStash [i][1],13,0), " | ", Format (100*bestTreesStash [i][1]/globalTreeCounter,13,8), " |\n",ii); 
+		}
+		fprintf (stdout, " | ", Format (bestTreesStash [i][1],13,0), " | ", Format (100*bestTreesStash [i][1]/globalTreeCounter,13,8), " |\n",ii);
 	}
-	
+
 	treeStatistics = 0;
 
 	return 1;
@@ -285,7 +285,7 @@ while (!done)
 					treeNodes[i+2][k]=currentLevel+ds.species+1;
 					treeNodes[i+2][k+1]=treeNodes[i][m];
 					cladesInfo[currentLevel+1][k] = i;
-					cladesInfo[currentLevel+1][k+1] = 3;					
+					cladesInfo[currentLevel+1][k+1] = 3;
 				}
 				else
 				{
@@ -295,7 +295,7 @@ while (!done)
 					for (p=s+cladesInfo[l][m]-1; p>=s; p=p-1)
 					{
 						treeNodes[i][k]=treeNodes[i][j];
-						treeNodes[i][k+1]=treeNodes[i][m]+1;						
+						treeNodes[i][k+1]=treeNodes[i][m]+1;
 						i=i-1;
 					}
 					i=i+cladesInfo[l][m];
@@ -318,7 +318,7 @@ while (!done)
 					{
 						cladesInfo[p][k] = cladesInfo[p][j];
 					}
-					
+
 					if ((cladesInfo[p][j]<=i)&&((cladesInfo[p][j]+cladesInfo[p][m])>i+1))
 					{
 						cladesInfo[p][k+1] = cladesInfo[p][m]+2;
@@ -327,7 +327,7 @@ while (!done)
 					{
 						cladesInfo[p][k+1] = cladesInfo[p][m];
 					}
-				}				
+				}
 			}
 			else
 			{
@@ -347,8 +347,7 @@ while (!done)
 			thisTree = TreeMatrix2TreeString (2*(currentLevel+1));
 			branchIndex[currentLevel]=branchIndex[currentLevel]+1;
 			Tree    treeVar = thisTree;
-			if (treeVar <= Tree_Constraint)
-			{
+			if (treeVar <= Tree_Constraint) {
 				fprintf (stdout, "\nTree#",Format(treeCounter,0,0)," ", thisTree);
 				LikelihoodFunction lf = (filteredData, treeVar);
 				Optimize (res,lf);
@@ -384,7 +383,7 @@ if (globalTreeCounter)
 	fprintf (stdout," Total tree count =", Format(treeCounter,0,0));
 	fprintf (stdout,"\n\n BestTree =", bestTree);
 	fprintf (stdout,"\n\nTree Constraint:\n",Tree_Constraint,"\n");
- 
+
 
 	dummy = _ReportTreeStatistics (bestValue);
 
