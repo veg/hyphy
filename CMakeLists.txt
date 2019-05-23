@@ -276,7 +276,7 @@ add_custom_target(uninstall
 
 add_custom_target(
 	docs ALL
-	rm -rf ./docs && npm install -g documentation@4 && documentation build --polyglot -f html ./res/TemplateBatchFiles/libv3/**/*.bf -o ./docs
+	rm -rf ./docs && npm install -g documentation@4 && documentation build --polyglot -f md ./res/TemplateBatchFiles/libv3/**/*.bf -o ./docs.md
 )
 
 #-------------------------------------------------------------------------------
