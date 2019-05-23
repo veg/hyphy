@@ -64,6 +64,12 @@ class   _Operation : public BaseObj
     friend class _Formula;
     friend class _Variable;
     friend class _VariableContainer;
+protected:
+    long           opCode;         // internal operation code
+    long           numberOfTerms,  // 1 - unary, 2 - binary, etc
+                   theData;
+    HBLObjectRef   theNumber;
+
 
 public:
     _Operation  (void);
@@ -189,10 +195,6 @@ protected:
 
     bool        ReportOperationExecutionError ( _String, _String*);
 
-    long        opCode;         // internal operation code
-    long        numberOfTerms,  // 1 - unary, 2 - binary, etc
-                theData;
-    HBLObjectRef   theNumber;
 };
 
 #endif

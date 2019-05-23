@@ -28,6 +28,8 @@ macro(PCL_CHECK_FOR_SSE3)
 
   check_cxx_source_runs("
       #include <pmmintrin.h>
+      #include <stdio.h>
+      
       int main ()
       {
           __m128d a, b;
@@ -35,6 +37,7 @@ macro(PCL_CHECK_FOR_SSE3)
           a = _mm_loadu_pd (vals);
           b = _mm_hadd_pd (a,a);
           _mm_storeu_pd (vals, b);
+          printf (\"%g\", vals[0]);
           return (0);
       }"
       HAVE_SSE3_EXTENSIONS)
@@ -54,6 +57,8 @@ macro(PCL_CHECK_FOR_AVX)
 
   check_cxx_source_runs("
       #include <immintrin.h>
+      #include <stdio.h>
+      
       int main ()
       {
           __m256d a, b;
@@ -61,6 +66,7 @@ macro(PCL_CHECK_FOR_AVX)
           a = _mm256_loadu_pd (vals);
           b = _mm256_hadd_pd (a,a);
           _mm256_storeu_pd (vals, b);
+          printf (\"%g\", vals[0]);
           return (0);
       }"
       HAVE_AVX_EXTENSIONS)
@@ -80,15 +86,19 @@ macro(PCL_CHECK_FOR_FMA3)
 
     check_cxx_source_runs("
     #include <immintrin.h>
+    #include <stdio.h>
+
     int main ()
     {
         __m256d a, b, c;
-        double vals[4] = {0.};
+        double vals[4] = {2.};
         a = _mm256_loadu_pd (vals);
         b = _mm256_loadu_pd (vals);
         c = _mm256_loadu_pd (vals);
-        _mm256_fmadd_pd      (a, b, c);
-        return (0);
+        a = _mm256_fmadd_pd      (a, b, c);
+        _mm256_storeu_pd (vals, a);
+        printf (\"%g\", vals[0]);
+        return 0;
     }"
     HAVE_FMA3)
 endmacro(PCL_CHECK_FOR_FMA3)
