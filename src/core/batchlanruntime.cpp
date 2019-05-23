@@ -1266,6 +1266,7 @@ bool      _ElementaryCommand::HandleOptimizeCovarianceMatrix (_ExecutionList& cu
                     _Matrix * bgm_cov = (_Matrix*)source_object->CovarianceMatrix(nil);
                     if (bgm_cov) {
                         receptacle->SetValue(bgm_cov,false);
+                        return true;
                     } // TODO SLKP 20170706: handle the case when null is returned (why would that happen?); warn the user.
                 }
                 break;

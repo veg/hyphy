@@ -151,7 +151,6 @@ _String  const
                                 likefuncOutput                  ("LIKELIHOOD_FUNCTION_OUTPUT"),
                                 categorySimulationMethod        ("CATEGORY_SIMULATION_METHOD"),
                                 kUseInitialDistanceGuess        ("USE_DISTANCES"),
-                                covariancePrecision             ("COVARIANCE_PRECISION"),
                                 cacheSubtrees                   ("CACHE_SUBTREES"),
                                 likeFuncCountVar                ("LF_CALL_COUNT"),
                                 doShuffleOrder                  ("SHUFFLE_ORDER_OF_PARAMETERS"),
@@ -5353,24 +5352,25 @@ void    _LikelihoodFunction::CheckStep (hyFloat& tryStep, _Matrix vect, _Matrix*
 //_______________________________________________________________________________________
 
 HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList) {
+    
+    const static _String kCovariancePrecision ("COVARIANCE_PRECISION");
+
     if (indexInd.empty()) {
-        return nil;
+        return new _MathObject;
     }
 
-    hyFloat  h = 1.e-5,//STD_GRAD_STEP,
+    hyFloat     h = 1.e-5,//STD_GRAD_STEP,
                 functionValue,
                 t1,
                 t2,
-                cm; // small h and L(x_opt)
-
-    checkParameter (covariancePrecision,cm,1.0);
-
-    long        parameter_count = parameterList?parameterList->countitems():indexInd.countitems(),
-                j;
+                cm = hy_env::EnvVariableGetNumber(kCovariancePrecision);
+    
+ 
 
     PrepareToCompute();
 
     functionValue = Compute();
+    
     _Variable      *thisVar;
 
     bool        useIndirectIndexing = false;
@@ -5380,6 +5380,8 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
     } else {
         parameterList = &indexInd;
     }
+    
+    long        parameter_count = parameterList->countitems();
 
     if (cm<1.) {
         // use likelihood profile with the appropriate signifcance level
@@ -5403,7 +5405,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                 if (cm<0.0) {
                     t1 = -2.*cm;
                 } else {
-                    throw (_String("Must have a non-zero ") & covariancePrecision);
+                    throw (_String("Must have a non-zero ") & kCovariancePrecision);
                 }
             }
         } catch (const _String& e) {
@@ -5446,10 +5448,11 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         exL.Execute ();
 
         for (parameter_count=0; parameter_count<parameterList->lLength; parameter_count++) {
-            j = useIndirectIndexing?parameterList->list_data[parameter_count]:parameter_count;
+            long j = useIndirectIndexing?parameterList->list_data[parameter_count]:parameter_count;
             t2 = GetIthIndependent (j);
-            _Variable* thisVar2 = LocateVar (indexInd.list_data[j]);
-            thisVar->SetBounds (thisVar2->GetLowerBound(),thisVar2->GetUpperBound());
+            _Variable* function_parameter = GetIthIndependentVar(j);
+            //ObjectToConsole(function_parameter->GetName()); NLToConsole();
+            thisVar->SetBounds (function_parameter->GetLowerBound(),function_parameter->GetUpperBound());
             sigLevels->Store (parameter_count,1,t2);
 
             char buffer[255];
@@ -5458,19 +5461,19 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
             fString = _String("_profileFit(") & xxc & "," & j & ")-(" & buffer& ')';
             _Formula    FitFla (fString,nil);
             
-            if (CheckEqual(t2,thisVar2->GetLowerBound())) {
+            if (CheckEqual(t2,function_parameter->GetLowerBound())) {
                 sigLevels->Store (parameter_count,0,t2);
             } else {
                 h = FitFla.Brent (thisVar,t2+1,t2,t2*0.0001+0.000001);
                 //sigLevels.Store (i,0,MAX(h,thisVar2->GetLowerBound()));
-                 if (h <= thisVar2->GetLowerBound()) {
+                 if (h <= function_parameter->GetLowerBound()) {
                   _String lf_buffer ("_xxres");
                   snprintf (buffer, sizeof(buffer),"%.14g",FetchVar(LocateVarByName(lf_buffer))->Value() + 0.0001);
                   lf_buffer = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
                   _Formula try_again (lf_buffer,nil);
                   h = try_again.Brent (thisVar,t2+1,t2,t2*0.0001+0.000001);
                   sigLevels->Store (parameter_count,5,h);
-                  sigLevels->Store (parameter_count,0,thisVar2->GetLowerBound());
+                  sigLevels->Store (parameter_count,0,function_parameter->GetLowerBound());
 
                 } else {
                   sigLevels->Store (parameter_count,0,h);
@@ -5485,19 +5488,19 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
             DeleteObject (lf_diff);
 
 
-            if (CheckEqual(t2,thisVar2->GetUpperBound())) {
+            if (CheckEqual(t2,function_parameter->GetUpperBound())) {
                 sigLevels->Store (parameter_count,2,t2);
             } else {
                 //_List store_evals;
                 h = FitFla.Brent (thisVar,t2,t2,t2*0.0001+0.000001);//, &store_evals);
-                if (h >= thisVar2->GetUpperBound()) {
+                if (h >= function_parameter->GetUpperBound()) {
                   _String lf_buffer ("_xxres");
                   snprintf (buffer, sizeof(buffer),"%.14g",FetchVar(LocateVarByName(lf_buffer))->Value() + 0.0001);
                   lf_buffer = _String("_profileFit(_xx_,") & j & ")-(" & buffer& ')';
                   _Formula try_again (lf_buffer,nil);
                   h = try_again.Brent (thisVar, t2,t2,t2*0.0001+0.000001);
                   sigLevels->Store (parameter_count,6,h);
-                  sigLevels->Store (parameter_count,2,thisVar2->GetUpperBound());
+                  sigLevels->Store (parameter_count,2,function_parameter->GetUpperBound());
 
                 } else {
                   sigLevels->Store (parameter_count,2,h);
@@ -5683,7 +5686,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
             hyFloat  ival  = GetIthIndependent(iidx),
                         locHi = 1/8192.;//funcValues (i,4);
 
-            for (j=parameter_count+1; j<parameterList->lLength; j++) {
+            for (long j=parameter_count+1; j<parameterList->lLength; j++) {
                 long        jidx = useIndirectIndexing?parameterList->list_data[j]:j;
 
                 hyFloat  jval  = GetIthIndependent(jidx),
@@ -5734,7 +5737,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                            t6 = funcValues(parameter_count,2);
 
                 SetIthIndependent (useIndirectIndexing?parameterList->list_data[parameter_count]:parameter_count,t3+h);
-                for (j=parameter_count+1; j<parameterList->lLength; j++) {
+                for (long j=parameter_count+1; j<parameterList->lLength; j++) {
                     hyFloat t4 = GetIthIndependent(useIndirectIndexing?parameterList->list_data[j]:j);
                     SetIthIndependent (useIndirectIndexing?parameterList->list_data[j]:j,t4+h);
                     t1 = Compute();

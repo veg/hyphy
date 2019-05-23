@@ -232,7 +232,7 @@ for (leisr.partition_index = 0; leisr.partition_index < leisr.partition_count; l
     LikelihoodFunction leisr.site_likelihood = (leisr.site_filter, leisr.site_tree);
 
     leisr.site_model_scaler_name = "leisr.site_rate_estimate";
-    parameters.DeclareGlobal (leisr.site_model_scaler_name, None);
+    parameters.DeclareGlobalWithRanges (leisr.site_model_scaler_name, 1, 0, 1e26);
     
     
     /*
@@ -385,6 +385,7 @@ lfunction leisr.handle_a_site (lf, filter_data, partition_index, pattern_info, m
     __make_filter ((lfInfo["Datafilters"])[0]);
     
     
+    
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
     parameters.SetValue (^"leisr.site_model_scaler_name", 1);
     /*
@@ -407,6 +408,8 @@ lfunction leisr.handle_a_site (lf, filter_data, partition_index, pattern_info, m
 		^(utility.getGlobalValue("leisr.site_model_scaler_name")) = 1;
 		Optimize (results, ^lf);
 	}
+	
+	
     profile = parameters.GetProfileCI (utility.getGlobalValue("leisr.site_model_scaler_name"), lf, 0.95);
     profile[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
     
@@ -451,6 +454,13 @@ lfunction leisr.store_results (node, result, arguments) {
 			result_row [2] = (`&result`)[terms.upper_bound];
 			result_row [3] = leisr.site_level_log_likelihoods[((leisr.filter_specification[`&partition_index`])[terms.data.coverage])[_site_index_]];
  			result_row [4] = (`&result`)[terms.fit.log_likelihood];
+ 			
+ 			if (result_row[4] < result_row[3]) {
+ 			    Export (lfe, ^'leisr.site_likelihood');
+ 			    console.log (lfe);
+ 			    console.log ('FUBAR!!!');
+ 			    console.log (((leisr.filter_specification[`&partition_index`])[terms.data.coverage])[_site_index_]);
+ 			}
 			
             leisr.report.echo (_site_index_, `&partition_index`, result_row);
 			

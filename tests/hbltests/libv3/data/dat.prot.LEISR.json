@@ -144,7 +144,7 @@
     }
   },
  "input":{
-   "file name":"/Users/sergei/hyphy-develop/tests/hbltests/libv3/data/dat.prot",
+   "file name":"/Users/sergei/Development/hyphy-develop/tests/hbltests/libv3/data/dat.prot",
    "number of sequences":10,
    "number of sites":10,
    "partition count":1,

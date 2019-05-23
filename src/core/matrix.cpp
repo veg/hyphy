@@ -4575,7 +4575,19 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
                     DeleteObject (result);
                     return this->Exponentiate(scale_to * 100, true);
                 }
-                HandleApplicationError("Failed to compute a valid transition matrix; this is usually caused by ill-conditioned rate matrices (e.g. very large rate values)");
+                
+                /*for (unsigned long r = 0L; r < hDim; r ++) {
+                    hyFloat sum = 0.;
+                    for (unsigned long c = 0L; c < vDim; c++) {
+                        sum += (*this)(r,c);
+                    }
+                    printf ("%ld %g\n", r, sum);
+                }
+
+                
+                ObjectToConsole(this);
+                ObjectToConsole(result);*/
+                throw _String ("Failed to compute a valid transition matrix; this is usually caused by ill-conditioned rate matrices (e.g. very large rate values)");
             }
         }
         
