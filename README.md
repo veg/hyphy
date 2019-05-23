@@ -107,5 +107,9 @@ For example, this configuration will install hyphy at /opt/hyphy
 
 #### Building Documentation
 
-`npm install -g documentation`
+```
+make docs
+cd docs
+python3 -m http.server
+```
 
