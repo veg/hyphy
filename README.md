@@ -104,3 +104,8 @@ For example, this configuration will install hyphy at /opt/hyphy
 `mkdir -p /opt/hyphy`
 
 `cmake -DINSTALL_PREFIX=/opt/hyphy .`
+
+#### Building Documentation
+
+`npm install -g documentation`
+
