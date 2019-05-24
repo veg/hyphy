@@ -397,7 +397,7 @@ function ReceiveJobs (sendOrNot, ji, jobKind)
 	}
 	else
 	{
-		fprintf (stdout, "\nBreakpoint at position ", Format(bppMap[ji],6,0), ". dAIC =  ", Format(nullAIC-myAIC,10,2), " dAICc = ",Format(nullAICc-myAICc,10,2)," dBIC = ",Format(nullBIC-myBIC,10,2), );	
+		fprintf (stdout, "\nBreakpoint at position ", Format(bppMap[ji],6,0), ". dAIC =  ", Format(nullAIC-myAIC,10,2), " dAICc = ",Format(nullAICc-myAICc,10,2)," dBIC = ",Format(nullBIC-myBIC,10,2));	
 		fprintf (resFilePath, bppMap[ji], ",", myAIC, ",", nullAIC-myAIC, "\n");
 	
 		MasterList [ji-1][0] = ji;
