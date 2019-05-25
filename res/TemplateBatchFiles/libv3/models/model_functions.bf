@@ -28,7 +28,7 @@ lfunction model.GetParameters_RegExp(model, re) {
 
 /**
  * @name model.ApplyModelToTree
- * @param id
+ * @param id {String}
  * @param tree
  * @param model_list
  * @param rules
