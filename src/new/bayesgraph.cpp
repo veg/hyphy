@@ -368,7 +368,7 @@ bool _BayesianGraphicalModel::SetDataMatrix (_Matrix const * data) {
                 }
             }
         }
-        ReportWarning (_String ("Set data matrix to:\n") & *(_String *)theData.toStr() & "\n" & " and missing values at " & *(_String *) has_missing.toStr());
+        ReportWarning (_String ("Set data matrix to:\n") & _String((_String *)theData.toStr()) & "\n and missing values at " & _String((_String *) has_missing.toStr()));
         
     } catch (const _String & err) {
         HandleApplicationError (err);

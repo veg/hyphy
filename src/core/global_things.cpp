@@ -333,6 +333,10 @@ namespace hy_global {
             lastMatrixDeclared = -1;
             variableNames.Clear(true);
             _hy_application_globals.Clear(true);
+            bgmList.Clear();
+            scfgList.Clear();
+            bgmNamesList.Clear();
+            scfgNamesList.Clear();
             
             hy_x_variable = nil;
             hy_n_variable = nil;

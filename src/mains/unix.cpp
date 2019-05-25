@@ -724,7 +724,7 @@ int main (int argc, char* argv[]) {
     }
   
     _String libDir = getLibraryPath();
-
+    
 
 #ifdef __MINGW32__
      baseDir = libDir;

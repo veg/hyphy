@@ -1874,6 +1874,7 @@ void    _LikelihoodFunction::PostCompute        (void) {
         if (this_p->varFlags & HY_VARIABLE_CHANGED) {
           this_p->varFlags -= HY_VARIABLE_CHANGED;
         }
+        //this_p->varFlags = this_p->varFlags & HY_HY_VARIABLE_CHANGED_CLEAR;
     }
 }
 
