@@ -1109,7 +1109,6 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     results = estimators.ExtractMLEs( & likelihoodFunction, model_id_to_object);
 
-    //console.log (mles);
 
     results[utility.getGlobalValue("terms.fit.log_likelihood")] = mles[1][0];
     results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + (mg_rev [utility.getGlobalValue("terms.parameters")]) [utility.getGlobalValue("terms.model.empirical")] + df;

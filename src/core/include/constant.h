@@ -43,7 +43,7 @@
 #include "mathobj.h"
 #include "global_things.h"
 
-#define  _HY_CONSTANT_PREALLOCATE_SLOTS 1024
+#define  _HY_CONSTANT_PREALLOCATE_SLOTS 16384
 
 
 class _Constant : public _MathObject {

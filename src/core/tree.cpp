@@ -3330,12 +3330,15 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         }
 #endif // regular code
                         
-                        for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
-                            accumulator +=  tMatrix[c] * childVector[c];
+                        if (alphabetDimension == 61) {
+                            sum += (parentConditionals[p] *= accumulator + tMatrix[alphabetDimensionmod4] * childVector[alphabetDimensionmod4]);
+                        } else {
+                            for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
+                                accumulator +=  tMatrix[c] * childVector[c];
+                            }
+                            sum += (parentConditionals[p] *= accumulator);
                         }
-                        
                         tMatrix               += alphabetDimension;
-                        sum += (parentConditionals[p] *= accumulator);
                     }
                 }
                 else {

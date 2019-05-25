@@ -121,6 +121,22 @@ void * _Variable::operator new (size_t size) {
 void  _Variable::operator delete (void * p) {
     free (p);
 }
+
+//__________________________________________________________________________________
+
+unsigned long        _Variable::ObjectClass (void) const {
+    
+    if (varValue) {
+        return varValue->ObjectClass();
+    }
+    
+    if (varFormula && !varFormula->IsEmpty()) {
+        return varFormula->ObjectClass();
+    }
+    
+    return NUMBER;
+}
+
 //__________________________________________________________________________________
 bool _Variable::CheckFForDependence (long idx, bool opt)
 {

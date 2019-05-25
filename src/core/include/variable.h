@@ -108,9 +108,8 @@ public:
         return false;
     }
 
-    virtual unsigned long        ObjectClass (void) const {
-        return varValue?varValue->ObjectClass():((varFormula&&varFormula->theFormula.lLength)?varFormula->ObjectClass():1);
-    }
+    virtual unsigned long        ObjectClass (void) const;
+    
     void        SetIndex (long i) {
         theIndex = i;
     }

@@ -706,8 +706,10 @@ extern  long  ANALYTIC_COMPUTATION_FLAG;
                                        ));
        */
         __m256d sum      = _mm256_hadd_pd(x, x);
-        __m128d sum_high = _mm256_extractf128_pd(sum, 1);
-        return _mm_cvtsd_f64(_mm_add_pd(sum_high, _mm256_castpd256_pd128(sum)));
+        return _mm_cvtsd_f64(_mm_add_pd(_mm256_extractf128_pd(sum, 1), _mm256_castpd256_pd128(sum)));
+        /*double  __attribute__ ((aligned (32))) array[4];
+        _mm256_store_pd (array, x);
+        return (array[0]+array[1])+(array[2]+array[3])  ;*/
       
     }
 #endif

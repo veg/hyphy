@@ -77,15 +77,15 @@ lfunction io.PromptUserForFilePath(prompt) {
 }
 
 /**
- * @name io.PromptUserForFilePath
+ * @name  io.LoadFile
  * @param prompt
  */
+ 
 function io.LoadFile(prompt) {
    SetDialogPrompt (prompt);
    ExecuteAFile (PROMPT_FOR_FILE);
    return  ^"LAST_FILE_PATH";
 }
-
 
 
 /**
@@ -775,4 +775,29 @@ lfunction io.SingularOrPlural (value, singular, plural) {
         return singular;
    }
    return plural;
+}
+
+/**
+ * @name io.splitFilePath
+ * Split file path into a directory, file name, and extension (if any)
+ * @param {String} path
+ * @return {Matrix} {{dir, filename, ext}}
+ */
+
+lfunction io.splitFilePath (path) {
+	result = {{"","",""}};
+	split     = path $ ("[^\\"+^"DIRECTORY_SEPARATOR"+"]+$");
+	if (split[0] != 0 || split[1] != Abs (path)-1) {
+		result [0] = path[0][split[0]-1];
+		path = path[split[0]][Abs(path)];
+	}
+
+	split     = path || "\\.";
+	if (split[0] < 0) {
+		result[1]  = path;
+ 	} else {
+		result [2] =  path[split[Rows(split)-1]+1][Abs(path)-1];
+		result [1]  = path[0][split[Rows(split)-1]-1];
+	}
+	return result;
 }

@@ -3490,7 +3490,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
           }
           
           if (last_break < line_block.length()) {
-            add_buffer (last_break, line_block.length () - 1UL);
+            add_buffer (last_break, line_block.length ());
           }
         
           store_here->SetValue (new _Matrix (lines, false), false);
