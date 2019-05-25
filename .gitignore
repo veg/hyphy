@@ -51,8 +51,10 @@ tempOutput.txt
 tests/hbltests/data/CD2*.json
 testMethodOutput
 tests/hbltests/data/CD2*.cache
+test
 
 
 #Utility function
 remake_hyphy.sh
 remake_hyphydebug.sh
+

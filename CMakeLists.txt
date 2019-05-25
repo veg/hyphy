@@ -284,7 +284,10 @@ add_custom_target(uninstall
 )
 
 
-
+add_custom_target(
+	docs ALL
+	rm -rf ./docs && npm install -g documentation@4 && documentation build --polyglot -f md ./res/TemplateBatchFiles/libv3/**/*.bf -o ./docs.md
+)
 
 #-------------------------------------------------------------------------------
 # setup some source properties so that we don't spam stdout
