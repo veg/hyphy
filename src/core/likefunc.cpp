@@ -3517,12 +3517,12 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
         long ambig_resolution_count = 1L;
 
         if (leafCount > 1UL) {
-            conditionalInternalNodeLikelihoodCaches[i] = new hyFloat [patternCount*stateSpaceDim*iNodeCount*cT->categoryCount];
-            branchCaches[i]                            = new hyFloat [2*patternCount*stateSpaceDim*cT->categoryCount];
+            conditionalInternalNodeLikelihoodCaches[i] = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount, false, 64);
+            branchCaches[i]                            = (hyFloat*)MemAllocate (sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount, false, 64);
         }
 
-        siteScalingFactors[i]                          = new hyFloat [patternCount*iNodeCount*cT->categoryCount];
-        conditionalTerminalNodeStateFlag[i]            = new long       [patternCount*MAX(2,leafCount)];
+        siteScalingFactors[i]                          = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*iNodeCount*cT->categoryCount, false, 64);
+        conditionalTerminalNodeStateFlag[i]            = (long*)MemAllocate (sizeof(long)*patternCount*MAX(2,leafCount), false, 64);
 
         cachedBranches < new _SimpleList (cT->categoryCount,-1,0);
         if (cT->categoryCount == 1UL) {
@@ -3541,8 +3541,8 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
         _AVLListX    foundCharacters (&foundCharactersAux);
         _String      aState ((unsigned long)atomSize);
 
-        char  const ** columnBlock      = new char const*[atomSize];
-        hyFloat      * translationCache  = new hyFloat [stateSpaceDim];
+        char  const ** columnBlock      = (char const**)alloca(atomSize*sizeof (const char*));
+        hyFloat      * translationCache  = (hyFloat*)alloca (sizeof (hyFloat)* stateSpaceDim);
         _Vector  * ambigs            = new _Vector();
 
         for (unsigned long siteID = 0UL; siteID < patternCount; siteID ++) {
@@ -3578,8 +3578,6 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
             }
         }
         conditionalTerminalNodeLikelihoodCaches < ambigs;
-        delete [] columnBlock;
-        delete [] translationCache;
 
 #ifdef MDSOCL
 		OCLEval[i].init(patternCount, theFilter->GetDimension(), conditionalInternalNodeLikelihoodCaches[i]);
@@ -7922,7 +7920,7 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
     if (conditionalInternalNodeLikelihoodCaches) {
         for (long k = 0; k < theTrees.lLength; k++)
             if (conditionalInternalNodeLikelihoodCaches[k]) {
-                delete [] (conditionalInternalNodeLikelihoodCaches[k]);
+                free (conditionalInternalNodeLikelihoodCaches[k]);
             }
         delete [] conditionalInternalNodeLikelihoodCaches ;
         conditionalInternalNodeLikelihoodCaches = nil;
@@ -7930,7 +7928,7 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
     if (branchCaches) {
         for (long k = 0; k < theTrees.lLength; k++)
             if (branchCaches[k]) {
-                delete [] branchCaches[k];
+                free (branchCaches[k]);
             }
         delete [] branchCaches;
         branchCaches = nil;
@@ -7938,7 +7936,7 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
     if (conditionalTerminalNodeStateFlag) {
         for (long k = 0; k < theTrees.lLength; k++)
             if (conditionalTerminalNodeStateFlag[k]) {
-                delete [] conditionalTerminalNodeStateFlag[k];
+                free (conditionalTerminalNodeStateFlag[k]);
             }
         delete [] conditionalTerminalNodeStateFlag;
         conditionalTerminalNodeStateFlag = nil;
@@ -7946,7 +7944,7 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
     if (siteScalingFactors) {
         for (long k = 0; k < theTrees.lLength; k++)
             if (siteScalingFactors[k]) {
-                delete [] siteScalingFactors[k];
+                free(siteScalingFactors[k]);
             }
         delete [] siteScalingFactors;
         siteScalingFactors = nil;

@@ -550,7 +550,7 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
     if (skip_nfolds || theExc ) { // somthing to do
         _SimpleList patterns_to_be_removed;
         if (theExc) {
-          hyFloat   *store_vec = new hyFloat [GetDimension(false)];
+          hyFloat   *store_vec = (hyFloat*)alloca (sizeof(hyFloat)*GetDimension(false));
           patterns_to_be_removed = theFrequencies.FilterIndex (
               [this, store_vec, theExc] (long value, unsigned long index) -> bool {
                 long invalid_state = HasExclusions(index, theExc, store_vec);
@@ -562,7 +562,6 @@ void    _DataSetFilter::FilterDeletions(_SimpleList *theExc) {
                 return false;
               }
           );
-          delete [] store_vec;
         }
         if (skip_nfolds) {
           theFrequencies.Each (
@@ -925,7 +924,7 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage) con
     long        filter_dimension  = GetDimension(false),
                 sequence_count    = theNodeMap.countitems()?theNodeMap.countitems():theData->NoOfSpecies();
   
-    hyFloat* store    = new hyFloat [filter_dimension];
+    hyFloat* store    = ( hyFloat*) alloca (sizeof(hyFloat)*filter_dimension);
     _String buffer ((unsigned long) GetUnitLength());
   
     bool outcome = false;
@@ -956,13 +955,11 @@ bool    _DataSetFilter::HasDeletions (unsigned long site, _AVLList* storage) con
                 outcome = true;
                 storage->InsertNumber(theNodeMap.get(k));
             } else {
-                delete [] store;
                 return true;
             }
         }
     }
     
-    delete [] store;
     
     return outcome;
 }

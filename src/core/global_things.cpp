@@ -57,6 +57,7 @@
 #include <time.h>
 #include <float.h>
 #include <signal.h>
+#include <stdlib.h>
 
 
 using     namespace hy_env;
@@ -178,9 +179,20 @@ namespace hy_global {
 
     //____________________________________________________________________________________
   
-    hyPointer MemAllocate (long bytes, bool zero) {
+    hyPointer MemAllocate (long bytes, bool zero, size_t alignment) {
+        hyPointer result = nil;
         
-        hyPointer result = (hyPointer) zero ? calloc (bytes, 1) : malloc (bytes);
+//#ifdef _ISOC11_SOURCE
+        if (alignment > 0 && bytes >= alignment && bytes % alignment == 0) {
+            if (posix_memalign (&result, alignment, bytes) == 0) {
+                if (zero) {
+                    memset (result, 0, bytes);
+                }
+                return result;
+            }
+        }
+//#endif
+        result = (hyPointer) zero ? calloc (bytes, 1) : malloc (bytes);
         
         if (result == nil) {
             HandleApplicationError (_String ("Failed to allocate '")  & bytes & "' bytes'", true);

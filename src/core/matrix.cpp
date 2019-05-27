@@ -77,7 +77,7 @@ int _Matrix::storageIncrement = 16;
 int _Matrix::switchThreshold = 40;
 
 hyFloat  _Matrix::truncPrecision = 1e-13;
-#define     MatrixMemAllocate(X) MemAllocate(X)
+#define     MatrixMemAllocate(X) MemAllocate(X, false, 64)
 #define     MatrixMemFree(X)     free(X)
 #define     MX_ACCESS(a,b) theData[(a)*hDim+(b)]
 
@@ -86,7 +86,8 @@ hyFloat     analMatrixTolerance = 1e-6,
             zero = 0,
             AUTO_PAD_DIAGONAL = 1,
             toPolyOrNot=0.0,
-            toMorNot2M=1.0;
+            toMorNot2M=1.0,
+            _log2 = log (2.0);
 
 long        ANALYTIC_COMPUTATION_FLAG = 0;
 
@@ -4388,7 +4389,6 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash)
 _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
     // find the maximal elements of the matrix
     
-    const static long static_allocation_size = 512;
     
     try {
         if (!is_square()) {
@@ -4403,15 +4403,8 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
 #endif
         
         hyFloat max     = 1.0,
-                static_stash [static_allocation_size],
-                *stash;
+                *stash = (hyFloat*)alloca(sizeof (hyFloat) * hDim*(1+vDim));
         //  = new hyFloat[hDim*(1+vDim)];
-        
-        if (hDim*(1+vDim) > static_allocation_size) {
-            stash = new hyFloat[hDim*(1+vDim)];
-        } else {
-            stash = static_stash;
-        }
         
         if (!is_polynomial()) {
             hyFloat t;
@@ -4419,8 +4412,8 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
             max *= t;
             if (max > .1) {
                 max             = scale_to*sqrt (10.*max);
-                power2          = (long)((log (max)/log ((hyFloat)2.0)))+1;
-                max             = exp (power2 * log ((hyFloat)2.0));
+                power2          = (long)((log (max)/_log2))+1L;
+                max             = exp (power2 * _log2);
                 (*this)         *= 1.0/max;
             } else {
                 power2 = 0;
@@ -4452,9 +4445,6 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
         }
         
         if (max == 0.0) {
-            if (stash != static_stash) {
-                delete [] stash;
-            }
             return result;
         }
         
@@ -4490,7 +4480,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
             
             i=2;
             
-            if (is_dense() && lDim < static_allocation_size) { // avoid matrix allocation
+            if (is_dense()) { // avoid matrix allocation
                 _Matrix tempS;
                 tempS.hDim = hDim;
                 tempS.vDim = vDim;
@@ -4591,9 +4581,6 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
             }
         }
         
-        if (stash != static_stash) {
-            delete [] stash;
-        }
         
         if (check_transition) {
             bool pass = true;
