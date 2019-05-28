@@ -3443,6 +3443,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                               col_buffer[4] = _mm256_load_pd (quad5);
                       
                     hyFloat const * p = theData;
+                    hyFloat row [20];
                     for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
 #ifdef _SLKP_USE_FMA3_INTRINSICS
                         __m256d sum1 = _mm256_fmadd_pd (_mm256_loadu_pd(p), col_buffer[0], _mm256_mul_pd(_mm256_loadu_pd(p+4UL), col_buffer[1]));
@@ -3450,8 +3451,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                                         _mm256_fmadd_pd(_mm256_loadu_pd(p+12UL), col_buffer[3],
                                                         _mm256_mul_pd(_mm256_loadu_pd(p+16UL), col_buffer[4])));
                         
-                        dest[r*vDim + c] = _avx_sum_4  (_mm256_add_pd (sum1, sum2));
-                        
+                        //dest[r*vDim + c] = _avx_sum_4  (_mm256_add_pd (sum1, sum2));
+                        row[r] = _avx_sum_4  (_mm256_add_pd (sum1, sum2));
 #else
                       __m256d r0 = _mm256_mul_pd(_mm256_loadu_pd(p), col_buffer[0]);
                       __m256d r1 = _mm256_mul_pd(_mm256_loadu_pd(p+4UL), col_buffer[1]);
@@ -3462,9 +3463,14 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       __m256d s01 = _mm256_add_pd(r0, r1);
                       __m256d s23 = _mm256_add_pd(r2, r3);
                       __m256d s234 = _mm256_add_pd(s23, r4);
- 
-                       dest[r*vDim + c] = _avx_sum_4 (_mm256_add_pd(s01, s234));
+                      row[r] = _avx_sum_4 (_mm256_add_pd(s01, s234));
+                       //dest[r*vDim + c] = _avx_sum_4 (_mm256_add_pd(s01, s234));
 #endif
+                    }
+                      
+                      
+                    for (unsigned long r = 0UL, idx = c; r < 20UL; r++, idx += 20UL) {
+                        dest[idx] = row[r];
                     }
                     continue;
                   }
@@ -4119,27 +4125,6 @@ hyFloat  _Matrix::MaxRelError  (_Matrix& compMx)
     return 10.0;
 }
 
-//_____________________________________________________________________________________________
-
-bool    _Matrix::is_row(void) const {
-    return GetHDim() == 1UL;
-}
-
-bool    _Matrix::is_column(void) const {
-    return GetVDim() == 1UL;
-}
-
-bool    _Matrix::is_square(void) const {
-    return GetHDim() == GetVDim();
-}
-
-bool    _Matrix::is_dense (void) const {
-    return theIndex == nil;
-}
-
-bool    _Matrix::is_empty (void) const {
-    return GetVDim () == 0UL || GetHDim () == 0UL;
-}
 
 //_____________________________________________________________________________________________
 

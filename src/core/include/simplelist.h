@@ -196,20 +196,20 @@ class _SimpleList:public BaseObj {
          * Example: SimpleList SimpleList([4, 1, 2]).empty() = false
          * @return True if the list is empty
          */
-        bool empty (void) const {return lLength == 0UL;}
+        inline bool empty (void) const {return lLength == 0UL;}
 
         /**
            Does this list have dynamic memory allocation, or does it have a static array?
          * @return True if the list has dynamically managed memory
          */
-        bool is_dynamic (void) const {return list_data != static_data;}
+        inline bool is_dynamic (void) const {return list_data != static_data;}
 
         /**
          //Is the list non-empty
          * Example: SimpleList SimpleList([4, 1, 2]).nonempty() = true
          * @return True if the list is non-empty
          */
-        bool nonempty (void) const {return lLength > 0UL;}
+        inline bool nonempty (void) const {return lLength > 0UL;}
 
         /**
         * SLKP: 20090611

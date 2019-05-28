@@ -186,14 +186,18 @@ public:
     virtual void        Serialize (_StringBuffer&,_String&);
     // write the matrix definition in HBL
 
-    virtual bool        is_empty (void) const;
-    virtual bool        is_row (void) const;
-    virtual bool        is_column (void) const;
-    virtual bool        is_square (void) const;
-    virtual bool        is_dense (void) const;
-    virtual bool        is_expression_based (void) const {return storageType == _FORMULA_TYPE;}
-    virtual bool        is_numeric (void) const {return storageType == _NUMERICAL_TYPE;}
-    virtual bool        is_polynomial (void) const {return storageType == _POLYNOMIAL_TYPE;}
+    //_____________________________________________________________________________________________
+    
+    
+
+    inline bool        is_empty (void) const {return GetVDim () == 0UL || GetHDim () == 0UL;}
+    inline bool        is_row (void) const { return GetHDim() == 1UL;}
+    inline bool        is_column (void) const { return GetVDim() == 1UL;}
+    inline bool        is_square (void) const { return GetVDim() == GetHDim();}
+    inline bool        is_dense (void) const {return theIndex == nil;}
+    inline bool        is_expression_based (void) const {return storageType == _FORMULA_TYPE;}
+    inline bool        is_numeric (void) const {return storageType == _NUMERICAL_TYPE;}
+    inline bool        is_polynomial (void) const {return storageType == _POLYNOMIAL_TYPE;}
 
     HBLObjectRef           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original

@@ -117,10 +117,7 @@ hyFloat  tolerance  = DBL_EPSILON;
 //__________________________________________________________________________________
 void            DeleteTreeVariable      (long, _SimpleList &, bool);
 
-//__________________________________________________________________________________
-_Variable * LocateVar (long index) {
-    return (_Variable *)(((BaseRef*)variablePtrs.list_data)[index]);
-}
+
 
 //__________________________________________________________________________________
 void     parameterToCharBuffer (hyFloat value, char* dump, long length, bool json)

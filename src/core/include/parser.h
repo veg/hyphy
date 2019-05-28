@@ -99,7 +99,9 @@ extern      _Trie           UnOps;
 extern      long            lastMatrixDeclared;
 
 long        LocateVarByName (_String const&);
-_Variable*  LocateVar       (long index);
+inline _Variable*  LocateVar       (long index) {
+        return (_Variable *)(((BaseRef*)variablePtrs.list_data)[index]);
+}
 HBLObjectRef   FetchObjectFromVariableByType       (_String const*, const unsigned long, long = -1, _String* = nil);
 HBLObjectRef   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
 HBLObjectRef   FetchObjectFromFormulaByType         (_Formula&, const unsigned long, long = -1, _String* = nil);
