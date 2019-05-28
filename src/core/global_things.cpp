@@ -119,19 +119,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                      kHyPhyVersion  = _String ("2.4.0.") & _String(__DATE__).Cut (7,10) & _String(__DATE__).Cut (0,2).Replace("Jan", "01", true).
-                                      Replace("Feb", "02", true).
-                                      Replace("Mar", "03", true).
-                                      Replace("Apr", "04", true).
-                                      Replace("May", "05", true).
-                                      Replace("Jun", "06", true).
-                                      Replace("Jul", "07", true).
-                                      Replace("Aug", "08", true).
-                                      Replace("Sep", "09", true).
-                                      Replace("Oct", "10", true).
-                                      Replace("Nov", "11", true).
-                                      Replace("Dec", "12", true)
-                                        & _String(__DATE__).Cut (4,5).Replace (" ", "0", true) & "alpha",
+                      kHyPhyVersion  = _String ("2.5.0.") & "beta",
     
                     kNoneToken = "None",
                     kNullToken = "null",
