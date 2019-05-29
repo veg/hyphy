@@ -4479,6 +4479,9 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
                     temp      *= 1.0/i;
                     (*result) += temp;
                     i         ++;
+#ifndef _OPENMP
+                    taylor_terms_count++;
+#endif
                 } while (temp.IsMaxElement(tMax*truncPrecision*i));
                 
                 

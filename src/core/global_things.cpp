@@ -289,7 +289,6 @@ namespace hy_global {
         _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd ));
         _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd & hy_standard_model_directory & dd ));
         _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd & "Utility" & dd));
-        _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & "UserAddIns" & dd));
         _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd & "Distances" & dd));
         
         const char * extensions [] = {"", ".bf", ".ibf", ".def", ".mdl"};
@@ -820,7 +819,9 @@ namespace hy_global {
   }
   
   //____________________________________________________________________________________
-  bool    ProcessFileName (_String & path_name, bool isWrite, bool acceptStringVars, hyPointer theP, bool assume_platform_specific, _ExecutionList * caller, bool relative_to_base) {
+  bool    ProcessFileName (_String & path_name, bool isWrite, bool acceptStringVars, hyPointer theP, bool assume_platform_specific, _ExecutionList * caller, bool relative_to_base, bool relative_path_passthrough) {
+      
+    static  const _String kRelPathPrefix ("../");
     _String errMsg;
           
     try {
@@ -891,20 +892,22 @@ namespace hy_global {
     }
     
     if (path_name.get_char(0) != '/') { // relative path
-      if (pathNames.lLength) {
+      if (pathNames.nonempty() && !relative_path_passthrough) {
+          
         _String*    lastPath = relative_to_base ? & hy_base_directory : (_String*)pathNames(pathNames.lLength-1);
 
         long        f = (long)lastPath->length ()-2L,
                     k = 0L;
         
         // check the last stored absolute path and reprocess this relative path into an absolute.
-        while (path_name.BeginsWith ("../")) {
+        while (path_name.BeginsWith (kRelPathPrefix)) {
           if ( (f = lastPath->FindBackwards('/',0,f)-1) == kNotFound) {
             return true;
           }
           path_name.Trim(3,-1);
           k++;
         }
+
         if (k==0L) {
           path_name = *lastPath & path_name;
         } else {
@@ -934,7 +937,7 @@ namespace hy_global {
     
     if (path_name.Find(':') == kNotFound && path_name.Find("\\\\",0,1) == kNotFound) { // relative path
       
-      if (pathNames.lLength) {
+      if (pathNames.nonempty () && !relative_path_passthrough) {
         _String*    lastPath = relative_to_base ? & hy_base_directory : (_String*)pathNames(pathNames.lLength-1);
         long f = (long)lastPath->length() - 2L, k = 0L;
         // check the last stored absolute path and reprocess this relative path into an absolute.

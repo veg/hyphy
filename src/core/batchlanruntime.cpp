@@ -2566,12 +2566,12 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             if (do_load_library) {
                 bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound;
                 
+                
                 for (unsigned long p = 0; !source_file && p < _hy_standard_library_paths.countitems(); p++) {
                     for (unsigned long e = 0; !source_file && e < _hy_standard_library_extensions.countitems(); e++) {
                         _String try_path = *((_String*)_hy_standard_library_paths(p)) & file_path & *((_String*)_hy_standard_library_extensions(e));
-                        
-                        
-                        ProcessFileName (try_path, false, false, (hyPointer)current_program.nameSpacePrefix);
+
+                        ProcessFileName (try_path, false, false, (hyPointer)current_program.nameSpacePrefix, false, nil, false, true);
                         
                         if (loadedLibraryPaths.Find(&try_path) >= 0 && parameter_count() == 2UL && !reload) {
                             ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & try_path);
@@ -2590,7 +2590,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             
             if (source_file == nil) {
                 ProcessFileName (file_path, false,false,(hyPointer)current_program.nameSpacePrefix);
-                
+
                 if (do_load_library && loadedLibraryPaths.Find(&file_path) >= 0 && parameter_count() == 2UL && !reload) {
                     ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & file_path);
                     return true;

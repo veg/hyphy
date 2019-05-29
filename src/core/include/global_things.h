@@ -233,7 +233,7 @@ namespace hy_global {
    */
   
   
-  bool  ProcessFileName (_String & path, bool isWrite = false, bool acceptStringVars = false, hyPointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil, bool relative_to_base = false);
+  bool  ProcessFileName (_String & path, bool isWrite = false, bool acceptStringVars = false, hyPointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil, bool relative_to_base = false, bool relative_path_passthrough = false);
   
   void    ConsoleLog (void);
   
