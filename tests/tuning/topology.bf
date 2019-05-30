@@ -5,7 +5,7 @@ tree_string = "(BMS619_consensus_553_n_14_1:0.002179,BMS619_consensus_70_n_22_1:
 
 #profile START;
 
-N = 100;
+N = 1000;
 
 for (k = 0; k < N; k+=1) {
     Topology T = tree_string;

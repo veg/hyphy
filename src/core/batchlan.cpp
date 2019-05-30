@@ -1078,8 +1078,8 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
     _List        ref_manager;
     _String*     kwarg_used = nil;
     
-    auto echo_argument = [] (_String const * kwarg, _String const& value) -> void {
-        if (kwarg) {
+    auto echo_argument = [&do_echo] (_String const * kwarg, _String const& value) -> void {
+        if (do_echo && kwarg) {
             bool do_markdown = hy_env :: EnvVariableTrue(hy_env :: produce_markdown_output);
             if (do_markdown) {
                 NLToConsole(); BufferToConsole(">"); StringToConsole(*kwarg); BufferToConsole( " –> "); BufferToConsole(value); NLToConsole();
@@ -1259,7 +1259,7 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned
 
 //____________________________________________________________________________________
 
-HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
+HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent, bool ignore_CEL_kwargs) {
 
   //setParameter(_hyLastExecutionError, new _MathObject, nil, false);
   try{
@@ -1273,7 +1273,7 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
          * stash_kw_tags = nil;// recursion
     _AssociativeList * stash_kw = nil;
       
-    currentKwarg         = stashCEL ? stashCEL->currentKwarg : 0;
+    currentKwarg         = (stashCEL && !ignore_CEL_kwargs) ? stashCEL->currentKwarg : 0;
 
     if (parent && (stdinRedirect == nil || kwargs == nil)) {
         if (!stdinRedirect) {
@@ -1360,7 +1360,7 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent) {
     callPoints.Delete (callPoints.lLength-1);
     currentExecutionList = stashCEL;
       
-    if (currentExecutionList) {
+    if (currentExecutionList && !ignore_CEL_kwargs) {
       currentExecutionList->currentKwarg = currentKwarg;
     }
 

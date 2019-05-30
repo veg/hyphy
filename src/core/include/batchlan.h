@@ -98,7 +98,7 @@ public:
     
     void        SetKWArgs   (_AssociativeList*);
 
-    HBLObjectRef   Execute                     (_ExecutionList* parent = nil);
+    HBLObjectRef   Execute                     (_ExecutionList* parent = nil, bool ignore_parent_kwargs = false);
         // if parent is specified, copy stdin redirects from it
         // run this execution list
     HBLObjectRef   GetResult                   (void) {

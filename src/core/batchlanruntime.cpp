@@ -2602,7 +2602,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                 }
             }
             
-            if (do_load_from_file && source_file) {
+            if (do_load_from_file && do_load_library && source_file) {
                 ReportWarning (_String("Loaded ") & original_path.Enquote() & " from " & file_path.Enquote());
                 loadedLibraryPaths.Insert (new _String (file_path),0,false,true);
             }
@@ -2723,8 +2723,12 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                     code.stdinRedirectAux = current_program.stdinRedirectAux;
                 }
                 
+                
+                bool ignore_ces_args = false;
+                
                 if (has_user_kwargs) {
                     code.SetKWArgs(user_kwargs);
+                    ignore_ces_args = true;
                 } else {
                     if (current_program.has_keyword_arguments()) {
                         code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
@@ -2742,7 +2746,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                     ReportWarning (_String ("Successfully compiled an execution list (possibly partially).\n") & _String ((_String*)code.toStr()) );
                     code.ExecuteSimple ();
                 } else {
-                    code.Execute();
+                    code.Execute(nil, ignore_ces_args);
                 }
                 
                 if (stash1) {
