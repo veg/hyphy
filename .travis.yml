@@ -13,20 +13,21 @@ branches:
     - master
     - develop
 
+dist: xenial
+sudo : false
+
+language: c++
+compiler: 
+  - gcc
+
+script: 
+  - export OMP_NUM_THREADS=4
+  - travis_wait 60 eval $envSpecificTest
+
 matrix:
   include:
     # ---- Run all the tests with gcc-7 ----
     - os: linux
-      dist: xenial
-      sudo : false
-
-      language: c++
-      compiler: 
-        - gcc
-
-      script: 
-        - export OMP_NUM_THREADS=4
-        - travis_wait 60 eval $envSpecificTest
 
       env:
         - envSpecificTest="bash ./test_kwargs.sh"
@@ -64,14 +65,7 @@ matrix:
     # ---- Just run the hbl unit tests with gcc-4, 5 and 6 ----
     # gcc-4
     - os: linux
-      dist: xenial
-      sudo : false
-      language: c++
-      compiler: 
-        - gcc
-      script: 
-        - export OMP_NUM_THREADS=4
-        - travis_wait 60 eval $envSpecificTest
+    
       env:
         - envSpecificTest="bash ./run_unit_tests.sh"
       addons:
