@@ -8240,8 +8240,17 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 fprintf (stderr, "NORMAL compute lf \n");
 #endif
 
-            hyFloat* thread_results = new hyFloat[np];
-    #pragma omp  parallel for default(shared) schedule(monotonic:guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
+            hyFloat* thread_results = (hyFloat*) alloca (sizeof(hyFloat)*np);
+
+#ifdef _OPENMP
+#if _OPENMP>=201511
+#pragma omp  parallel for default(shared) schedule(monotonic:guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
+#else
+#if _OPENMP>=200803
+#pragma omp  parallel for default(shared) schedule(guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
+#endif
+#endif
+#endif
               for (blockID = 0; blockID < np; blockID ++) {
                 thread_results[blockID] = t->ComputeTreeBlockByBranch (*sl,
                                                     *branches,
@@ -8279,7 +8288,6 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
               sum = thread_results[0];
             }
 
-            delete [] thread_results;
             /*
             #pragma omp  parallel for default(shared) schedule(static,1) private(blockID) num_threads (np) reduction(+:sum) if (np>1)
             for (blockID = 0; blockID < np; blockID ++) {
@@ -8320,8 +8328,15 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 /*for (unsigned long p_id = 0; p_id < indexInd.lLength; p_id++) {
                   printf ("%ld %s = %15.12g\n", p_id, GetIthIndependentVar(p_id)->GetName()->sData, (*parameterValuesAndRanges)(p_id,0));
                 }*/
-
-                 #pragma omp  parallel for default(shared) schedule(monotonic:guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
+#ifdef _OPENMP
+  #if _OPENMP>=201511
+    #pragma omp  parallel for default(shared) schedule(monotonic:guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
+  #else
+  #if _OPENMP>=200803
+    #pragma omp  parallel for default(shared) schedule(guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
+  #endif
+  #endif
+#endif
                 for (blockID = 0; blockID < np; blockID ++) {
                     t->ComputeBranchCache (*sl,doCachedComp, bc, inc, df,
                                            conditionalTerminalNodeStateFlag[index],
