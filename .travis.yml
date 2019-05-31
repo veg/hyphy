@@ -1,7 +1,3 @@
-# OpenMP projects should set the environment variable OMP_NUM_THREADS to a reasonably small value (say, 4). 
-dist: xenial
-sudo : false
-
 notifications:
     slack: veg-igem:rqQd95zjTuZoRNElekQx2CLf
     email:
@@ -15,46 +11,131 @@ notifications:
 branches:
   only:
     - master
-    - beta
     - develop
 
-env:
-  - envSpecificTest="bash ./test_kwargs.sh"
-  - envSpecificTest="bash ./run_unit_tests.sh"
-  - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
-  - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC.wbf"
-  - envSpecificTest="./HYPHYMP SLAC --alignment ./tests/hbltests/libv3/data/partitioned.nex --branches Internal"
-  - envSpecificTest="./HYPHYMP FEL --alignment ./tests/hbltests/libv3/data/CD2.nex"
-  - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/data/CD2.nex"
-  - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/libv3/data/CD2.nex --branches GROUP1"
-  - envSpecificTest="./HYPHYMP FUBAR --alignment ./tests/hbltests/libv3/data/CD2.nex"
-  - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/RELAX.wbf"
-  - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/aBSREL.wbf"
-  - envSpecificTest="./HYPHYMP BUSTED --alignment ./tests/hbltests/data/CD2.nex --srv No --branches Internal"
-  - envSpecificTest="./HYPHYMP BGM --alignment ./tests/hbltests/data/CD2.nex"
-  - envSpecificTest="./hyphy fade --alignment ./tests/hbltests/data/CD2_AA.fna"
-  - envSpecificTest="./hyphy gard --alignment ./tests/hbltests/data/CD2.nex"
+matrix:
+  include:
+    # ---- Run all the tests with gcc-7 ----
+    - os: linux
+      dist: xenial
+      sudo : false
+
+      language: c++
+      compiler: 
+        - gcc
+
+      script: 
+        - export OMP_NUM_THREADS=4
+        - travis_wait 60 eval $envSpecificTest
+
+      env:
+        - envSpecificTest="bash ./test_kwargs.sh"
+        - envSpecificTest="bash ./run_unit_tests.sh"
+        - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
+        - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC.wbf"
+        - envSpecificTest="./HYPHYMP SLAC --alignment ./tests/hbltests/libv3/data/partitioned.nex --branches Internal"
+        - envSpecificTest="./HYPHYMP FEL --alignment ./tests/hbltests/libv3/data/CD2.nex"
+        - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/data/CD2.nex"
+        - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/libv3/data/CD2.nex --branches GROUP1"
+        - envSpecificTest="./HYPHYMP FUBAR --alignment ./tests/hbltests/libv3/data/CD2.nex"
+        - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/RELAX.wbf"
+        - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/aBSREL.wbf"
+        - envSpecificTest="./HYPHYMP BUSTED --alignment ./tests/hbltests/data/CD2.nex --srv No --branches Internal"
+        - envSpecificTest="./HYPHYMP BGM --alignment ./tests/hbltests/data/CD2.nex"
+        - envSpecificTest="./hyphy fade --alignment ./tests/hbltests/data/CD2_AA.fna"
+        - envSpecificTest="./hyphy gard --alignment ./tests/hbltests/data/CD2.nex"
+
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
 
 
-language: c++
-compiler: 
-  - gcc
+    # ---- Just run the hbl unit tests with gcc-4, 5 and 6 ----
+    # gcc-4
+    - os: linux
+      dist: xenial
+      sudo : false
+      language: c++
+      compiler: 
+        - gcc
+      script: 
+        - export OMP_NUM_THREADS=4
+        - travis_wait 60 eval $envSpecificTest
+      env:
+        - envSpecificTest="bash ./run_unit_tests.sh"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-4.9
+              - gcc-4.9
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+        - cmake . 
+        - make
 
-addons:
-  apt:
-    sources:
-        - llvm-toolchain-precise
-        - ubuntu-toolchain-r-test
-        - george-edison55-precise-backports
-    packages:
-        - g++-6
-        - gcc-6
+    # gcc-5
+    - os: linux
+      dist: xenial
+      sudo : false
+      language: c++
+      compiler: 
+        - gcc
+      script: 
+        - export OMP_NUM_THREADS=4
+        - travis_wait 60 eval $envSpecificTest
+      env:
+        - envSpecificTest="bash ./run_unit_tests.sh"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-5
+              - gcc-5
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
+        - cmake . 
+        - make
 
-install:
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
-  - cmake . 
-  - make
-
-script: 
-  - export OMP_NUM_THREADS=4
-  - travis_wait 60 eval $envSpecificTest
+    # gcc-6
+    - os: linux
+      dist: xenial
+      sudo : false
+      language: c++
+      compiler: 
+        - gcc
+      script: 
+        - export OMP_NUM_THREADS=4
+        - travis_wait 60 eval $envSpecificTest
+      env:
+        - envSpecificTest="bash ./run_unit_tests.sh"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-6
+              - gcc-6
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
+        - cmake . 
+        - make
