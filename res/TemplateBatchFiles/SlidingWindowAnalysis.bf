@@ -20,6 +20,8 @@ else
 
 DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
 
+ds.unique_sites =  Rows (ds.site_freqs) * Columns (ds.site_freqs);
+
 fprintf (stdout,"\n\n**** Read file ", LAST_FILE_PATH," ****\n**** ", Format(ds.sites,0,0)," sites (", 
 				Format(ds.unique_sites,0,0)," of them are distinct), and ", Format(ds.species,0,0), " species. ****"); 
 

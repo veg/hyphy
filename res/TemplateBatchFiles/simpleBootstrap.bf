@@ -35,7 +35,7 @@ function BootStrapFunction (bsIterates, tabulatedFileName, parametricOrNot)
 	{
 		ChoiceList (CATEGORY_SIMULATION_METHOD,"Sampling Options",1,SKIP_NONE,
 					"Discrete","Random rate variability will be sampled from the discretized disrtibution.",
-					"Continuous","Random rate variability will be sampled from the continuous disrtibution (if possible).",
+					"Continuous","Random rate variability will be sampled from the continuous disrtibution (if possible)."
 		);
 		if (CATEGORY_SIMULATION_METHOD<0)
 		{

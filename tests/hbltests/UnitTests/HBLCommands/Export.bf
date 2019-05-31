@@ -19,6 +19,7 @@ function runTest () {
     ExecuteAFile (PATH_TO_CURRENT_BF  + "res" + DIRECTORY_SEPARATOR + "test_likefunc.nex");
     
     Export (export_string, lf);
+    
     DeleteObject (lf);
     ExecuteCommands (export_string);
     assert (trapAllErrors("Export (export_string, MG94customModel);") == 1, "Roundtrip likelihood function export (model)");
@@ -29,7 +30,8 @@ function runTest () {
     
     
     assert (runCommandWithSoftErrors ("Export (seamus/romney, some_object)", "is not a valid variable identifier in call to Export"), "Invalid variable identifier in call to Export.");
-    assert (runCommandWithSoftErrors ("Export (seamus_romney, some_object)", " is not a supported type in call to Export"), "Invalid object to export.");
+    Export (seamus_romney, some_object);
+    assert (Type (seamus_romney) == "Unknown", "Expected null export result for an invalid object");
 
 	testResult = 1;
 		

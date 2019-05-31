@@ -3,24 +3,23 @@ DISTANCE_PROMPTS = 1;
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
-function PopulateModelMatrix (ModelMatrixName&, doRV)
-{
+function PopulateModelMatrix (ModelMatrixName&, doRV) {
 	modelDefString = "";
 	modelDefString*128;
-	
+
 	if (doRV)
 	{
 		incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"TemplateModels"+DIRECTORY_SEPARATOR+"defineGamma.mdl";
 		ExecuteCommands  ("#include \""+incFileName+"\";");
 		blp = "c*t;";
-	}	
+	}
 	else
 	{
 		blp = "t;";
 	}
-	
+
 	ModelMatrixName = {4,4};
-	
+
 	for (transition = 0; transition < 4; transition = transition + 1)
 	{
 		for (transition2 = transition + 1; transition2 < 4; transition2 = transition2 + 1)
@@ -75,7 +74,7 @@ function ReceiveJobs (sendOrNot)
 		if (sendOrNot)
 		{
 			MPISend (fromNode,lf);
-			MPINodeState[fromNode-1][1] = modelNum;		
+			MPINodeState[fromNode-1][1] = modelNum;
 			MPINodeState[fromNode-1][2] = v1;
 			MPINodeState[fromNode-1][3] = v2;
 			MPINodeState[fromNode-1][4] = v3;
@@ -86,16 +85,16 @@ function ReceiveJobs (sendOrNot)
 		else
 		{
 			MPINodeState[fromNode-1][0] = 0;
-			MPINodeState[fromNode-1][1] = -1;		
+			MPINodeState[fromNode-1][1] = -1;
 		}
-		
+
 		ExecuteCommands (result_String);
 	}
 	else
 	{
 		jobModelNum = modelNum;
 	}
-	
+
 	if (jobModelNum == 0)
 	{
 		stdl = lf_MLES[1][0];
@@ -112,16 +111,16 @@ function ReceiveJobs (sendOrNot)
 		resultCache [0][6] = lf_MLES[1][1]+totalBranchCount;
 		resultCache [0][7] = 0;
 		resultCache [0][8] = 0;
-		
-		fprintf (stdout,"\n#   |  Model   | # prm |    lnL    |      LRT       |    AIC     |   P-Value        |");   
-		fprintf (stdout,"\n----|----------|-------|-----------|----------------|------------|------------------|");   
+
+		fprintf (stdout,"\n#   |  Model   | # prm |    lnL    |      LRT       |    AIC     |   P-Value        |");
+		fprintf (stdout,"\n----|----------|-------|-----------|----------------|------------|------------------|");
 
 		if (MPI_NODE_COUNT>1)
 		{
 			for (h=1; h<203; h=h+1)
 			{
 				lnL = resultCache[h][5];
-				
+
 				if (lnL<0)
 				{
 					np = resultCache[h][6];
@@ -137,12 +136,12 @@ function ReceiveJobs (sendOrNot)
 					fprintf (stdout," | (",0, resultCache[h][0], resultCache[h][1], resultCache[h][2], resultCache[h][3], resultCache[h][4],") | ");
 					fprintf (stdout,Format (np,5,0));
 					PRINT_DIGITS = 8;
-					fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
-					
+					fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  " );
+
 					PRINT_DIGITS = 15;
 					if (LRT==0)
 					{
-						pValue = 1;					
+						pValue = 1;
 					}
 					else
 					{
@@ -157,17 +156,17 @@ function ReceiveJobs (sendOrNot)
 					}
 					else
 					{
-						resultCache [jobModelNum][8] = 1;					
+						resultCache [jobModelNum][8] = 1;
 					}
-					
+
 					if (pValue<rejectAt)
 					{
 						fprintf (stdout,"(*)");
-					}				
+					}
 				}
 			}
 		}
-		
+
 		return fromNode-1;
 	}
 	else
@@ -181,7 +180,7 @@ function ReceiveJobs (sendOrNot)
 			resultCache [jobModelNum][4] = vv6;
 			resultCache [jobModelNum][5] = lf_MLES[1][0];
 			resultCache [jobModelNum][6] = lf_MLES[1][1]+totalBranchCount;
-						
+
 			return fromNode - 1;
 		}
 	}
@@ -200,19 +199,19 @@ function ReceiveJobs (sendOrNot)
 	fprintf (stdout," | (",vv1,vv2,vv3,vv4,vv5,vv6,") | ");
 	fprintf (stdout,Format (np,5,0));
 	PRINT_DIGITS = 8;
-	fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
-		
+	fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ");
+
 	PRINT_DIGITS = 15;
 	if (LRT==0)
 	{
-		pValue = 1;					
+		pValue = 1;
 	}
 	else
 	{
 		pValue = 1-CChi2(LRT,fullnp-np);
 	}
 	fprintf (stdout,pValue," |");
-	
+
 	resultCache [jobModelNum][0] = vv2;
 	resultCache [jobModelNum][1] = vv3;
 	resultCache [jobModelNum][2] = vv4;
@@ -228,14 +227,14 @@ function ReceiveJobs (sendOrNot)
 	}
 	else
 	{
-		resultCache [jobModelNum][8] = 1;					
+		resultCache [jobModelNum][8] = 1;
 	}
-	
+
 	if (pValue<rejectAt)
 	{
 		fprintf (stdout,"(*)");
 	}
-			
+
 	return fromNode-1;
 }
 
@@ -309,7 +308,7 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 		global CG;
 		global CT;
 		global GT;
-		
+
 		if (modelType == 1)
 		{
 			m = {{*,AC*t,t,AT*t}
@@ -393,17 +392,17 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 	{
 		totalBranchCount     = TipCount(tr) + BranchCount (tr);
 		stashedLengths		 = {totalBranchCount,1};
-		
+
 		branchNames = BranchName (givenTree,-1);
-		
+
 		pia = observedFreqs[0];
 		pic = observedFreqs[1];
 		pig = observedFreqs[2];
 		pit = observedFreqs[3];
-		
+
 		global totalFactor := AC*(2*pia__*pic__)+2*pia__*pig__+(2*pia__*pit__)*AT+
 								 (2*pic__*pig__)*CG+(2*pic__*pit__)*CT+(2*pig__*pit__)*GT;
-								 
+
 		for (v2 = 0; v2 < totalBranchCount; v2 = v2+1)
 		{
 			stashedLengths [v2] = BranchLength(tr,v2);
@@ -450,7 +449,7 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 						{
 							break;
 						}
-						
+
 						if (modelType > 0)
 						{
 							paramCount	  = 0;
@@ -460,9 +459,9 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 							modelDesc = modelDesc+Format(v4,1,0);
 							modelDesc = modelDesc+Format(v5,1,0);
 							modelDesc = modelDesc+Format(v6,1,0);
-							
+
 							modelConstraintString = "";
-							
+
 							AC = 1;
 							AT = 1;
 							CG = 1;
@@ -481,12 +480,12 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 										}
 										else
 										{
-											modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";			
+											modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";
 										}
 										break;
 									}
 								}
-							}	
+							}
 
 							if (Abs(modelConstraintString))
 							{
@@ -501,7 +500,7 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 							r = setElement 		(1,3,v5);
 							r = setElement 		(2,3,v6);
 						}
-										
+
 						Model currentModel = (m,observedFreqs);
 						if (modelType == 0)
 						{
@@ -516,9 +515,9 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 								ExecuteCommands (eCommand);
 							}
 						}
-						
+
 						LikelihoodFunction lf = (filteredData, tr);
-						
+
 						modelNum = modelNum+1;
 						if (MPI_NODE_COUNT>1)
 						{
@@ -526,10 +525,10 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 							{
 								if (MPINodeState[mpiNode][0]==0)
 								{
-									break;	
+									break;
 								}
 							}
-							
+
 							if (mpiNode==MPI_NODE_COUNT-1)
 							/* all nodes busy */
 							{
@@ -575,14 +574,14 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 				if (MPINodeState[nodeCounter][0]==1)
 				{
 					fromNode = ReceiveJobs (0);
-					break;	
+					break;
 				}
 			}
 			if (nodeCounter == MPI_NODE_COUNT-1)
 			{
 				break;
 			}
-		}	
+		}
 		OPTIMIZE_SUMMATION_ORDER = 1;
 	}
 
@@ -616,7 +615,7 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 							for (v4 = 0; v4<5; v4=v4+1)
 							{
 								modelString2 = modelString2 + resultCache [v3][v4];
-							}	
+							}
 							if (checkEmbedding (modelString, modelString2))
 							{
 								fprintf (stdout,"H: (", modelString,") A: (", modelString2, "). ");
@@ -650,11 +649,11 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 			}
 		}
 
-		
-		fprintf (stdout,"\n\nRemaining models:\n\n#   |  Model   | # prm |    lnL    |      LRT       |    AIC     |   P-Value        |");   
-		fprintf (stdout,"\n----|----------|-------|-----------|----------------|------------|------------------|"); 
-		
-		modelNum = 0;  
+
+		fprintf (stdout,"\n\nRemaining models:\n\n#   |  Model   | # prm |    lnL    |      LRT       |    AIC     |   P-Value        |");
+		fprintf (stdout,"\n----|----------|-------|-----------|----------------|------------|------------------|");
+
+		modelNum = 0;
 		v5 = 1e10;
 		v4 = 0;
 
@@ -683,11 +682,11 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 				fprintf (stdout," | (",0,resultCache[v2][0],resultCache[v2][1],resultCache[v2][2],resultCache[v2][3],resultCache[v2][4],") | ");
 				fprintf (stdout,Format (np,5,0));
 				PRINT_DIGITS = 8;
-				fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
+				fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  " );
 				PRINT_DIGITS = 15;
 				if (LRT==0)
 				{
-					pValue = 1;					
+					pValue = 1;
 				}
 				else
 				{
@@ -699,18 +698,18 @@ function ModelSelect (modelType, branchLengths, rejectAt)
 					v4 = v2;
 				}
 				fprintf (stdout,pValue," |");
-				
+
 			}
 		}
-		
+
 		PRINT_DIGITS = 0;
 		modelString = "0";
 		for (v3 = 0; v3<5; v3=v3+1)
 		{
 			modelString = modelString + Format(resultCache [v4][v3],0,0);
 		}
-		
-		fprintf (stdout, "\n\nAIC based winner: (", modelString, ") with AIC = ", v5, "\n\n");	
+
+		fprintf (stdout, "\n\nAIC based winner: (", modelString, ") with AIC = ", v5, "\n\n");
 	}
 	else
 	{
@@ -733,7 +732,7 @@ function TreeMatrix2TreeString (doLengths)
 	d = treeString*(Rows(treeNodes)*25);
 
 	while (m)
-	{	
+	{
 		if (m>p)
 		{
 			if (p)
@@ -753,11 +752,11 @@ function TreeMatrix2TreeString (doLengths)
 				{
 					d = treeString*")";
 				}
-			}	
+			}
 			else
 			{
 				d = treeString*",";
-			}	
+			}
 		}
 		if (n<ds.species)
 		{
@@ -779,7 +778,7 @@ function TreeMatrix2TreeString (doLengths)
 	{
 		d = treeString*")";
 	}
-	
+
 	d=treeString*0;
 	return treeString;
 }
@@ -788,9 +787,8 @@ function TreeMatrix2TreeString (doLengths)
 
 function InferTreeTopology(optionFlag)
 {
-	distanceMatrix = {ds.species,ds.species};	
-	if (optionFlag == 0)
-	{
+	distanceMatrix = {ds.species,ds.species};
+	if (optionFlag == 0) {
 		incFileName = HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"chooseDistanceFormula.def";
 		ExecuteCommands  ("#include \""+incFileName+"\";");
 		InitializeDistances (0);
@@ -802,14 +800,11 @@ function InferTreeTopology(optionFlag)
 			}
 		}
 	}
-	else
-	{
+	else {
 		svl = VERBOSITY_LEVEL;
 		VERBOSITY_LEVEL = -1;
-		for (i = 0; i<ds.species; i=i+1)
-		{
-			for (j = i+1; j<ds.species; j = j+1)
-			{
+		for (i = 0; i<ds.species; i=i+1) {
+			for (j = i+1; j<ds.species; j = j+1) {
 				DataSetFilter	dFilter = CreateFilter(simData,1,"",speciesIndex == i || speciesIndex == j);
 				Tree			dTree	= (1,2);
 				LikelihoodFunction dLF  = (dFilter, dTree);
@@ -822,14 +817,14 @@ function InferTreeTopology(optionFlag)
 
 	MESSAGE_LOGGING 		 	= 1;
 	cladesMade 					= 1;
-	
+
 	if (ds.species == 2)
 	{
 		d1 = distanceMatrix[0][1]/2;
 		treeNodes = {{0,1,d1__},
 					 {1,1,d1__},
 					 {2,0,0}};
-					 
+
 		cladesInfo = {{2,0}};
 	}
 	else
@@ -843,16 +838,16 @@ function InferTreeTopology(optionFlag)
 						 {1,1,d2__},
 						 {2,1,d3__}
 						 {3,0,0}};
-						 
-			cladesInfo = {{3,0}};		
+
+			cladesInfo = {{3,0}};
 		}
 		else
-		{	
+		{
 			njm = (distanceMatrix > methodIndex)>=ds.species;
-				
+
 			treeNodes 		= {2*(ds.species+1),3};
 			cladesInfo	    = {ds.species-1,2};
-			
+
 			for (i=Rows(treeNodes)-1; i>=0; i=i-1)
 			{
 				treeNodes[i][0] = njm[i][0];
@@ -865,7 +860,7 @@ function InferTreeTopology(optionFlag)
 				cladesInfo[i][0] = njm[i][3];
 				cladesInfo[i][1] = njm[i][4];
 			}
-			
+
 			njm = 0;
 		}
 	}
@@ -890,12 +885,10 @@ treeString	= 	InferTreeTopology (0);
 fprintf (stdout, "\Using this initial NJ topology: ", treeString);
 
 Topology givenTree = treeString;
-if (givenTree <= splitTop)
-{
+if (givenTree <= splitTop) {
 	fprintf (stdout, "\n\n\t ** This topology supports the split.\n");
 }
-else
-{
+else {
 	fprintf (stdout, "\n\n\t ** This topology DOES NOT support the split.\n");
 }
 
@@ -904,11 +897,11 @@ else
 ChoiceList  (mOptions,"Model Options",1,NO_SKIP,
 			 "Auto-select","Run a model selection procedure to choose the appropriate model.",
 			 "User","User chooses a model.");
-	
+
 
 if (mOptions < 0)
 {
-	return;	
+	return;
 }
 
 global AC = 1;
@@ -917,7 +910,7 @@ global CG = 1;
 global CT = 1;
 global GT = 1;
 
-MGCustomRateBiasTerms = {{"AC*","","AT*","CG*","CT*","GT*"}};	
+MGCustomRateBiasTerms = {{"AC*","","AT*","CG*","CT*","GT*"}};
 
 if (mOptions)
 {
@@ -927,10 +920,10 @@ if (mOptions)
 		fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
 		fscanf  (stdin,"String", modelDesc);
 		if (Abs(modelDesc)==6)
-		{	
+		{
 			done = 1;
 		}
-	}			
+	}
 }
 else
 {
@@ -971,7 +964,7 @@ for (customLoopCounter2=2; customLoopCounter2<6; customLoopCounter2=customLoopCo
 		_nucBiasTerms[h][v] = MGCustomRateBiasTerms[customLoopCounter2];
 		_nucBiasTerms[v][h] = MGCustomRateBiasTerms[customLoopCounter2];
 	}
-	
+
 	v = v+1;
 	if (v==4)
 	{
@@ -993,31 +986,30 @@ fprintf (stdout, "\n\nNo rate variation likelihood fit results:", lfNR, "\n");
 ChoiceList  (rvOptions,"Rate Variation Options",1,NO_SKIP,
 			 "Test","Test for site-to-site rate variation.",
 			 "Skip the test","Skip this test.");
-	
+
 
 if (rvOptions < 0)
 {
-	return;	
+	return;
 }
 
-execString = "Model simModel = (c44matrix,simFreq,1)";		
+execString = "Model simModel = (c44matrix,simFreq,1)";
 
-if (rvOptions == 0)
-{
+if (rvOptions == 0) {
 	c44matrixRV = 0;
 	MULTIPLY_BY_FREQS 			= PopulateModelMatrix ("c44matrixRV", 1);
 	Model c44modelRV		 	= (c44matrixRV,observedFreqs,MULTIPLY_BY_FREQS);
 	Tree   RVTree 				= treeString;
 	LikelihoodFunction lfRV = (filteredData, RVTree);
 	Optimize (resRV, lfRV);
-	
+
 	fprintf (stdout, "\n\nSite-to-site rate variation likelihood fit results:", lfRV, "\n");
-	
+
 	AICNR = 2*(resNR[1][1]-resNR[1][0]);
 	AICRV = 2*(resRV[1][1]-resRV[1][0]);
-	
+
 	fprintf (stdout, "\n\n AIC comparison:\n\t No rate variation: ", AICNR, "\n\t Site-to-site rate variation: ", AICRV, "\n");
-	
+
 	if (AICRV < AICNR)
 	{
 		fprintf (stdout, "\n\nChoosing the site-to-site rate variation model.");
@@ -1026,7 +1018,7 @@ if (rvOptions == 0)
 			GetString (globalVarName,lfRV,siteCount);
 			ExecuteCommands (globalVarName+":="+globalVarName+"__;");
 			execString = "Model simModel = (c44matrixRV,simFreq,1)";
-		}	
+		}
 	}
 	else
 	{
@@ -1034,48 +1026,43 @@ if (rvOptions == 0)
 		{
 			GetString (globalVarName,lfNR,siteCount);
 			ExecuteCommands (globalVarName+":="+globalVarName+"__;");
-		}	
-		fprintf (stdout, "\n\nChoosing the homogeneous rates model.");	
+		}
+		fprintf (stdout, "\n\nChoosing the homogeneous rates model.");
 	}
-}	
-else
-{
+}
+else {
 	for (siteCount = 0; siteCount < resNR[1][2]; siteCount = siteCount+1)
 	{
 		GetString (globalVarName,lfNR,siteCount);
 		ExecuteCommands (globalVarName+":="+globalVarName+"__;");
-	}	
+	}
 }
 
 bootstrapSamples = 0;
 supportClade	 = 0;
 
-while (bootstrapSamples<=0)
-{
+while (bootstrapSamples<=0) {
 	fprintf (stdout,"\nHow many bootstrap replicates (>=1)?");
 	fscanf  (stdin,"Number", bootstrapSamples);
-}	
+}
 
 SetDialogPrompt ("Spool boostrap trees to:");
 fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
+
 bsTrees = LAST_FILE_PATH;
-for (itCount = 1; itCount <= bootstrapSamples; itCount = itCount+1)
-{
+for (itCount = 1; itCount <= bootstrapSamples; itCount += 1) {
 	DataSetFilter simData = Bootstrap(ds,1);
 	HarvestFrequencies (simFreq,simData,1,1,0);
-	ExecuteCommands (execString);
 	SimTreeString	= 	InferTreeTopology (1);
 	fprintf (bsTrees,SimTreeString,"\n");
 	fprintf (stdout, "Iteration ", Format(itCount,5,0), "/", bootstrapSamples);
 	Topology SimTree = SimTreeString;
-	if (SimTree<=splitTop)
-	{
-		fprintf (stdout, " + ");	
+	if (SimTree<=splitTop) {
+		fprintf (stdout, " + ");
 		supportClade = supportClade + 1;
 	}
-	else
-	{
-		fprintf (stdout, " - ");		
+	else {
+		fprintf (stdout, " - ");
 	}
 	fprintf (stdout, "\t Running support value:", Format (supportClade/itCount,10,6), "\n");
 }

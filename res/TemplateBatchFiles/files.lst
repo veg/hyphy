@@ -6,12 +6,13 @@
 "BUSTED","[BUSTED] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED.bf";
 "aBSREL","[aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
 "RELAX","[RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";
+"FADE","[FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).","SelectionAnalyses/FADE.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
 "FEL-Contrast","Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/FEL-contrast.bf";
 
 "","Evolutionary rates on non-coding data.","!Relative evolutionary rate inference";
-"LEISR","[LEISR] Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";
+"LEISR","Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";
 
 "","Identify pairs or networks of sites that co-evolve.","!Coevolutionary analysis";
 "BGM","[BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.","BGM.bf";
@@ -32,34 +33,30 @@
 
 "","Various tools for checking subdivision of sequences into sub-populations (e.g. HIV-1 compartmentalization), selection operating along the segregating branch etc.","!Compartmentalization";
 "AI","Peter Simmonds' Association Index (AI).","SimmondsAI.bf";
-"BDN","Fit several dN/dS to branch classes, based on a pre-partitioned tree.","BranchClassDNDS.bf";
 "BSEL","Split a tree into two clades (compartments) and a separating branch and test for equality of dN/dS between compartments and for selection along the separating branch using a series of Likelihood Ratio Tests.","SelectionLRT.bf";
 "CORR","Assess the correlation between phylogenetic and compartment segregation using generalized correlation coefficients and permutation tests.","TreeCorrelationCoefficients.bf";
 "FST","Compute various measures of F_ST and (optionally) perform permutation tests.","F_ST.bf";
-"SM","Peform a Slatkin-Maddison test for the number migrations.","SlatkinMaddison.bf";
+"SM","Peform a classic and structured Slatkin-Maddison test for the number migrations.","SM-2019.bf";
 "TC","Test whether a group of sequences in a sample cluster together","TestClade.bf";
 
 "","Tools for manipulating sequence files.","!Data File Tools";
-"ALN","Align coding sequences to reference (assuming star topology) using protein translations. The analysis will try to detect appropriare reading frames and fix some frameshifts. Designed with within-patient HIV sequences in mind.","SeqAlignment.bf";
 "CALN","Align coding sequences to reference (assuming star topology) using a codon-based dynamic programming algorithm (good for fixing multiple frameshifts). Designed with within-patient HIV sequences in mind.","SeqAlignmentCodon.bf";
-"PALN","Align amino-acid sequences to reference (assuming star topology).","SeqAlignmentProt.bf";
-"NALN","Align nucleotide sequences to reference (assuming star topology). Designed with whole-genome HIV sequences in mind.","SeqAlignmentNuc.bf";
 "CLG","Remove 'gappy' sites from alignments based on a user-specified gap threshold.","CleanGaps.bf";
 "CLN","Convert sequence names to HyPhy valid identifiers if needed and replace stop codons with gaps in codon data if any are present.","CleanStopCodons.bf";
-"CLST","Partition sequences into clusters based on a distance matrix.","ClusterByDistanceRange.bf";
+"CLSR","Partition sequences into clusters based on a distance matrix.","ClusterByDistanceRange.bf";
 "CONV","Translate an in-frame codon alignment to proteins.","CodonToProtein.bf";
 "DTR","Read sequence data (#,PHYLIP,NEXUS) and convert to a different format","ConvertDataFile.bf";
 "MH","Merge two datafiles by combining sites (horizontal merge).","MergeSites.bf";
 "MV","Merge two datafiles by combining sequences (vertical merge).","MergeSequences.bf";
 "PDF","Read sequence data, select a contiguous subset of sites and save it to another datafile.","PartitionDataFile.bf";
-"RMV","Remove sequences with stop codons from the data.","StripStopCodons.bf";
+"RMV","Remove sequences with stop codons from the data.","CleanStopCodons.bf";
 
 "","Miscellaneous items.","!Miscellaneous";
 "FAA","Fit a multiple fitness class model to amino acid data.","FitnessAAModels.bf";
 "KH","Perform a Kishino-Hasegawa test on two competing phylogenies","KHTest.bf";
 "LZ","Compute Lempel-Ziv complexity and entropy of (possibly unaligned) sequences","LZ_Complexity.bf";
 "MCC","Compare mean within-clade branch length or pairwise divergence between two or more non-nested cladesd in a tree","TestCladeMeans.bf";
-"PHB","Run an example file from our book chapter in 'The Phylogentic Handbook' (2nd edition).","Phylohandbook.bf";
+"PHB","Run an example file from our book chapter in 'The Phylogentic Handbook' (2nd edition).","Miscellaneous/phylohandbook/Phylohandbook.bf";
 "RBLE","Use a series of random effects branch-site models to perform robust model-averaged branch length estimation under a codon model with episodic selection.","BranchSiteRELMultiModel.bf";
 "RED","Replace sufficiently close sequence with their MRCA","ReduceDataSetMatrix.bf";
 "SNS","Parse a codon alignment for ambiguous codons and output a complete list/resolutions/syn and ns counts by sequence/position","SandNSAmbigs.bf";
@@ -72,54 +69,36 @@
 "MT","Select an evolutionary model for nucleotide data, using the methods of 'ModelTest' - a program by David Posada and Keith Crandall.","ModelTest.bf";
 "NUC","Compare all 203 reversible nucleotide models and perform LRT and AIC model selection.","NucModelCompare.bf";
 "Protein","Compare the fit of several amino-acid substitution models to an alignment using AIC and c-AIC.","AAModelComparison.bf";
-"","Tools for data analysis and pattern extraction based on kernel technqiues.","!Kernel Analysis Tools";
-"KMEANS","GA driven kernel k-means clustering.","Kernel_k_means.bf";
-"KPCA","Kernel principal component analysis.","Kernel_PCA.bf";
+
 
 "","Molecular Clock Tests.","!Molecular Clock";
-"DTMC","Test for the presence of a global molecular clock with DATED sequences. Evolutionary rates and dates for internal nodes are estimated as well. This analysis is effectively an extended version of Andrew Rabmaut's TipDate methodogoly.","DatedTipsMolecularClock.bf";
 "MCLK","Test for the presence of a global molecular clock on the tree using its root (the resulting clock tree is unrooted, but one of the root branches can be divided in such a way as to enforce the clock).","MolecularClock.bf";
 "LCLK","Test for the presence of a local molecular clock. Every subtree of the given tree is subjected to the clock constraint, while the remainder of the tree is free of the clock constraint.","LocalMolClock.bf";
 "RCLK","Test for the presence of a global molecular clock on the tree. The tree is rooted at every possible branch.","MolClockAllRoots.bf";
-"RLXMC","Infer dates of ancestral nodes for a sample of DATED sequences using a rate-distribution genetic algorithm to allow for multiple substituion rates. This is a frequentist alternative to the relaxed clock analyses implemented by Drummond and Rambaut in BEAST. [MPI Enabled]","GADatedClock.bf";
-"RLXMCP","Process a .samples file generated with GADatedClock","GADatedClockProcessor.bf";
+
 
 "","Reconstruct a phylogenetic tree using either distance or ML based heuristic methods.","!Phylogeny Reconstruction";
 "CLST","Apply clustering methods for phylogeny reconstruction (UPGMA,WPGMA,complete or minimal linkage) to nucleotide, protein and codon data, using MLE of pairwise distances with user-selectable models. These methods produce trees with global molecular clock.","ClusterAnalysis.bf";
 "DIST","Generate a pairwise sequence distance matrix in PHYLIP format.","DistanceMatrix.bf";
 "NJ","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of neighbor joining.","NeighborJoining.bf";
-"NNI","Perform nearest neighbor branch swapping on a given tree, attempting to find a tree with a better likelihood score under the given evolutionary model.","BranchSwap.bf";
 "SA","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of sequential addition.","SequentialAddition.bf";
-"SD","Perform a phylogeny reconstuction for nucleotide, protein or codon data with user-selectable models using the method of star decomposition.","StarDecomposition.bf";
 "TS","Perform an exhaustive tree space search for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearch.bf";
-"TSC","Perform an exhaustive tree space search (subject to a topology contraint) for nucleotide or protein data with user-selectable models. Should only be used for data sets with less than 10 taxa!","TopologySearchConstrained.bf";
 
 "","Perform codon-based positive selection tests.","!Positive Selection";
-"BSREL","Use the random effects branch-site model (2010) to find lineages subject to episodic selection.","BranchSiteREL.bf";
+
 "BST","Use the improved branch-site REL method of Yang and Nielsen (2005) to look for episodic selection in sequences.","YangNielsenBranchSite2005.bf";
 "BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf";
-"BUSTED","Run the Branch-site Unrestricted Statistical Test for Episodic Diversification to test for evidence of episodic alignment-wide selective pressure","SelectionAnalyses/BUSTED.bf";
-"PSD","Test whether sites in two populations are evolving under different selective pressures.","CompareSelectivePressure.bf";
-"PSDI","Test whether sites in two populations are evolving under different selective pressures along internal tree branches.","CompareSelectivePressureIVL.bf";
 "NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 "PSM","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1. Multiple subsets of one data set with shared dN/dS.","MFPositiveSelection.bf";
-"RELAX","Test whether selected branches are under relaxed or intensified selection against reference branches","SelectionAnalyses/RELAX.bf";
-"SSD","Use approximate likelihoods at a site to test for subtree specific selective pressure.","SubtreeSelectionComparison.bf";
-"DST","Perform a random effects (D)irectional (E)volution on (P)rotein (S)equences test to identify sites which evolve directionally towards a given residue [MPI enabled].","DirectionalREL.bf";
-"MEDS","Test for Episodic Directional Selection on a set of labeled branches","MEDS.bf";
 
 "","Test for recombination.","!Recombination";
-"GARD","Screen an alignment using GARD (requires an MPI environment).","GARD.bf";
+"GARD","[GARD] Screen an alignment using GARD (requires an MPI environment).","GARD.bf";
 "GRDR","Process GARD results.","GARDProcessor.bf";
 "LHT","A Likelihood Ratio Test to detect conflicting phylogenetic signal Huelsenbeck and Bull, 1996. [Contributed by Olivier Fedrigo].","LHT.bf";
 "SBL","Search an alignment for a single breakpoint.","SingleBreakpointRecomb.bf";
 "SPL","Plot genetic distances (similarity) of one sequence against all others in an alignment, using a sliding window. Optionally, determine NJ-based clustering and bootstrap support in every window. This is a HyPhy adaptation of the excellent (but Windows only tool) SimPlot (and/or VarPlot) written by Stuart Ray (http://sray.med.som.jhmi.edu/SCRoftware/simplot/)","SimilarityPlot.bf";
 
 "","Test for selection in presence of recombination.","!Selection/Recombination";
-"FUBAR","Detect site-specific pervasive diversifying and purifying selection using the FUBAR (Fast Unbiased Bayesian AppRoximate) method on a multiple partition data set, e.g. produced by GARD.","FUBAR.bf";
-"MEME","Detect site-specific episodic diversifying selection using MEME on a multiple partition data set, e.g. produced by GARD.","MEME_mf.bf";
-"SLAC/FEL","Detect site-specific diversifying/purifying selection using SLAC or FEL on a multiple partition data set, e.g. produced by GARD.","QuickSelectionDetectionMF.bf";
-"REL","Detect site-specific selection using REL on a multiple partition data set, e.g. produced by GARD.","dNdSRateAnalysis_MF.bf";
 "PARRIS","A PARtitioning approach for Robust Inference of Selection (written by K. Scheffler)","PARRIS.bf";
 
 "","Perform relative rate tests.","!Relative Rate";
@@ -129,6 +108,3 @@
 "","Perform relative ratio tests.","!Relative Ratio";
 "RRT","Use relative ratio test on 2 datasets and a variety of standard models","RelativeRatio.bf";
 "PRRTI","Given a list of files (and optinally genetic code tables), perform relative ratio tests on all possible pair of the data files.","PairwiseRelativeRatio.bf";
-
-"","Various tools for estimating the distribution of substitution rates.","!Substitution Rates";
-"SR","DNARates like site specific rate estimation. Other model parameters are inferred from the entire alignment.","SiteRates.bf";

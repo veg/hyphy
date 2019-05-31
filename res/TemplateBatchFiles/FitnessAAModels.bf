@@ -44,26 +44,26 @@ function PopulateModelMatrix (ModelMatrixName&, EFV&, classIndex)
 {
 	ModelMatrixName = {20,20};
 	EFV				= {20,1};
-	
+
 	commandString = "";
-	
+
 	for (rI = 1; rI < 20; rI = rI+1)
 	{
-		commandString = commandString + "global F_" + aaCodes[rI] + "_" + classIndex + 
-						"=0; F_" + aaCodes[rI] + "_" + classIndex + 
+		commandString = commandString + "global F_" + aaCodes[rI] + "_" + classIndex +
+						"=0; F_" + aaCodes[rI] + "_" + classIndex +
 						":>-1e10;\n";
 	}
-	
+
 	ExecuteCommands (commandString);
-	
+
 	for (cI = 1; cI < 20; cI = cI+1)
 	{
-		commandString = "ModelMatrixName[0]["+cI+"]:=t*(1+(F_" + 
+		commandString = "ModelMatrixName[0]["+cI+"]:=t*(1+(F_" +
 						 aaCodes[cI] + "_" + classIndex + "<0)*(Exp(F_"+
-						 aaCodes[cI] + "_" + classIndex + ")-1));\n" + 
-						 "ModelMatrixName["+cI+"][0]:=t*(1+(0>" + "F_" + 
+						 aaCodes[cI] + "_" + classIndex + ")-1));\n" +
+						 "ModelMatrixName["+cI+"][0]:=t*(1+(0>" + "F_" +
 						 aaCodes[cI] + "_" + classIndex + ")*(Exp(-F_"+
-						 aaCodes[cI] + "_" + classIndex + ")-1));\n"; 
+						 aaCodes[cI] + "_" + classIndex + ")-1));\n";
 		ExecuteCommands	 (commandString);
 	}
 
@@ -71,20 +71,20 @@ function PopulateModelMatrix (ModelMatrixName&, EFV&, classIndex)
 	{
 		for (cI = rI+1; cI < 20; cI = cI+1)
 		{
-			commandString = "ModelMatrixName["+rI+"]["+cI+"]:=t*(1+(F_" + 
-							 aaCodes[cI] + "_" + classIndex + "<" + "F_" + 
+			commandString = "ModelMatrixName["+rI+"]["+cI+"]:=t*(1+(F_" +
+							 aaCodes[cI] + "_" + classIndex + "<" + "F_" +
 							 aaCodes[rI] + "_" + classIndex + ")*(Exp(F_"+
 							 aaCodes[cI] + "_" + classIndex + "-F_"+
-							 aaCodes[rI] + "_" + classIndex + ")-1));\n" + 
-							 "ModelMatrixName["+cI+"]["+rI+"]:=t*(1+(F_" + 
-							 aaCodes[rI] + "_" + classIndex + "<" + "F_" + 
+							 aaCodes[rI] + "_" + classIndex + ")-1));\n" +
+							 "ModelMatrixName["+cI+"]["+rI+"]:=t*(1+(F_" +
+							 aaCodes[rI] + "_" + classIndex + "<" + "F_" +
 							 aaCodes[cI] + "_" + classIndex + ")*(Exp(F_"+
 							 aaCodes[rI] + "_" + classIndex + "-F_"+
-							 aaCodes[cI] + "_" + classIndex + ")-1));\n"; 
+							 aaCodes[cI] + "_" + classIndex + ")-1));\n";
 			ExecuteCommands	 (commandString);
 		}
 	}
-	
+
 	commandString = "global EFV_Norm_"+classIndex+":=1";
 	for (rI = 1; rI < 20; rI = rI+1)
 	{
@@ -115,7 +115,7 @@ while (fitnessClassNumber<1)
 testEFV	   = 0;
 dummy = PopulateModelMatrix ("testMatrix","testEFV",0);*/
 
-SetDialogPrompt ("Please specify a nucleotide or amino-acid data file:");
+SetDialogPrompt ("Please specify an amino-acid data file:");
 
 DataSet ds 	= ReadDataFile (PROMPT_FOR_FILE);
 DataSetFilter filteredData = CreateFilter (ds,1);
@@ -139,7 +139,7 @@ if (IS_TREE_PRESENT_IN_DATA)
 		{
 			treeString = DATAFILE_TREE;
 		}
-		
+
 		IS_TREE_PRESENT_IN_DATA = 1;
 	}
 	fprintf (stdout, "\n\n");
@@ -151,17 +151,17 @@ if (!IS_TREE_PRESENT_IN_DATA)
 	SetDialogPrompt ("Please select a tree file for the data:");
 
 	fscanf (PROMPT_FOR_FILE, "String", treeString);
-	
+
 	while ((Abs(treeString)==0)||(treeString[0]!="("))
 	{
 		if (END_OF_FILE)
 		{
-			fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file.\n").
+			fprintf (stdout, "\nThis doesn't seem to be a valid Newick string file.\n");
 			return;
 		}
 		fscanf (LAST_FILE_PATH, "String", treeString);
 	}
-	
+
 	if (_DO_TREE_REBALANCE_)
 	{
 		treeString = RerootTree (treeString,0);
@@ -192,23 +192,23 @@ else
 		freqStrMx[mi] = "";
 		for (mi2=1;mi2<=mi;mi2=mi2+1)
 		{
-			freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";		
+			freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";
 		}
-		freqStrMx[mi] = freqStrMx[mi]+"PS_"+(mi+1);	
-	}	
+		freqStrMx[mi] = freqStrMx[mi]+"PS_"+(mi+1);
+	}
 
 	freqStrMx[mi] = "";
 	for (mi2=1;mi2<mi;mi2=mi2+1)
 	{
-		freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";		
+		freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";
 	}
 	freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi+")";
-	
-	lfString 	   = "LikelihoodFunction lf = (";	
+
+	lfString 	   = "LikelihoodFunction lf = (";
 	templateString = "Log(";
-	
+
 	for (fC = 0; fC < fitnessClassNumber; fC = fC+1)
-	{	
+	{
 		ExecuteCommands ("fitnessRates_"+fC+"=0;fintessEFV_"+fC+"=0;dummy=PopulateModelMatrix(\"fitnessRates_"+
 						  fC+"\",\"fitnessEFV_"+fC+"\",fC);Model fitnessModel_"+fC+"=(fitnessRates_"+fC+",fitnessEFV_"+fC+",0);Tree tree_"+
 						  fC+"="+treeString+";");
@@ -217,8 +217,8 @@ else
 			lfString = lfString+",";
 			templateString = templateString + "+";
 		}
-		
-		lfString = lfString+"filteredData,tree_"+fC;	
+
+		lfString = lfString+"filteredData,tree_"+fC;
 		templateString = templateString	+ "SITE_LIKELIHOOD["+fC+"]*"+freqStrMx[fC];
 	}
 	templateString = templateString+")";
@@ -239,7 +239,7 @@ if (rI==0)
 	SetDialogPrompt ("Save MLEs to:");
 	fprintf (PROMPT_FOR_FILE, CLEAR_FILE);
 	Optimize (res,lf);
-	mi				   = LIKELIHOOD_FUNCTION_OUTPUT;
+	mi = LIKELIHOOD_FUNCTION_OUTPUT;
 	fprintf (stdout, lf);
 	LIKELIHOOD_FUNCTION_OUTPUT = 4;
 	fprintf (LAST_FILE_PATH, lf);
@@ -267,7 +267,7 @@ for (fC = 0; fC < fitnessClassNumber; fC = fC+1)
 	}
 }
 
-if (fitnessClassNumber>1) 
+if (fitnessClassNumber>1)
 /* compute marginals */
 {
 	fitnessMarginals = {filteredData.sites,fitnessClassNumber+1};
@@ -284,14 +284,14 @@ if (fitnessClassNumber>1)
 	classPriors = {fitnessClassNumber,1};
 	for (fC = 0; fC < fitnessClassNumber; fC = fC+1)
 	{
-		ExecuteCommands ("classPriors[fC]="+freqStrMx[fC]+";");	
+		ExecuteCommands ("classPriors[fC]="+freqStrMx[fC]+";");
 	}
 	for (rI = 0; rI < filteredData.sites; rI = rI + 1)
 	{
 		maxTerm  = 0;
 		maxIndex = 0;
 		cI		 = 0;
-		
+
 		for (fC = 0; fC < fitnessClassNumber; fC = fC+1)
 		{
 			flatMarginals = classPriors[fC]*fitnessMarginals[rI][fC];
@@ -307,7 +307,7 @@ if (fitnessClassNumber>1)
 		{
 			fitnessMarginals[rI][fC] =  classPriors[fC]*fitnessMarginals[rI][fC]/cI;
 		}
-	}	
+	}
 }
 
 
@@ -338,57 +338,3 @@ for (fC = 0; fC < 20; fC = fC+1)
 labelMatrix[fitnessClassNumber] = aaString;
 
 labelMatrix2[fitnessClassNumber] = "Model Assignment";
-
-OpenWindow (CHARTWINDOW,{{"Estimated Fitnesses"}
-						   {"labelMatrix"},
-						   {"estimatedFitnessParameters"},
-						   {"Line Plot"},
-						   {"Index"},
-						   {seriesString},
-						   {"AA Index"},
-						   {""},
-						   {"Relative Fitness"},
-						   {"3"}},
-						   "(SCREEN_WIDTH-30)/3;(SCREEN_HEIGHT-50)/2;10;SCREEN_HEIGHT/2+25");
-
-OpenWindow (CHARTWINDOW,{{"Estimated EFV"}
-						   {"labelMatrix"},
-						   {"estimatedEFVs"},
-						   {"Line Plot"},
-						   {"Index"},
-						   {seriesString},
-						   {"AA Index"},
-						   {""},
-						   {"Estimated Freq"},
-						   {"3"}},
-						   "(SCREEN_WIDTH-30)/3;(SCREEN_HEIGHT-50)/2;10+(SCREEN_WIDTH-30)/3;SCREEN_HEIGHT/2+25");
-						   
-if (fitnessClassNumber>1)
-{
-	OpenWindow (CHARTWINDOW,{{"Class Priors"}
-							   {"labelMatrix3"},
-							   {"classPriors"},
-							   {"Pie Chart"},
-							   {"Class Prior"},
-							   {"None"},
-							   {""},
-							   {""},
-							   {"Class Prior"},
-							   {"3"}},
-							   "(SCREEN_WIDTH-30)/3;(SCREEN_HEIGHT-50)/2;12+2*(SCREEN_WIDTH-30)/3;SCREEN_HEIGHT/2+25");
-
-
-	OpenWindow (CHARTWINDOW,{{"Class Posteriors"}
-							   {"labelMatrix2"},
-							   {"fitnessMarginals"},
-							   {"Stacked Bars"},
-							   {"Index"},
-							   {seriesString},
-							   {"AA Index"},
-							   {""},
-							   {"Class Posterior"},
-							   {"3"}},
-							   "SCREEN_WIDTH-30;(SCREEN_HEIGHT-50)/2;15;25");
-}
-
-

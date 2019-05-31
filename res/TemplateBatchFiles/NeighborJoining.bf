@@ -2,7 +2,7 @@ ChoiceList (distanceChoice, "Distance Computation",1,SKIP_NONE,
 			"Distance formulae","Use one of the predefined distance measures based on data comparisons. Fast.",
 			"Full likelihood","Estimate distances using pairwise MLE. More choices but slow.",
 			"Use existing matrix","Load a HyPhy distance matrix for the data file");
-			
+
 if (distanceChoice < 0)
 {
 	return 0;
@@ -21,7 +21,7 @@ ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or
 A_DISTANCE_METHOD   = 1;
 
 
-if (dataType<0) 
+if (dataType<0)
 {
 	return;
 }
@@ -55,7 +55,7 @@ if (distanceChoice == 1)
 
 ChoiceList (methodIndex,"Negative Branch Lengths",1,SKIP_NONE,
 			"Keep Negative","Negative Branch Lengths are Allowed.",
-			"Force Zero","Negative Branch Lengths are Forced to 0.");			
+			"Force Zero","Negative Branch Lengths are Forced to 0.");
 if (methodIndex<0)
 {
 	return;
@@ -93,9 +93,9 @@ function InferTreeTopology(verbFlag)
 	else
 	{
 		#include "chooseDistanceFormula.def";
-		
+
 		dummy = InitializeDistances (0);
-		
+
 		for (i = 0; i<ds.species; i=i+1)
 		{
 			for (j = i+1; j<ds.species; j = j+1)
@@ -107,7 +107,7 @@ function InferTreeTopology(verbFlag)
 
 	MESSAGE_LOGGING 		 	= 1;
 	cladesMade 					= 1;
-	
+
 
 	if (ds.species == 2)
 	{
@@ -115,7 +115,7 @@ function InferTreeTopology(verbFlag)
 		treeNodes = {{0,1,d1__},
 					 {1,1,d1__},
 					 {2,0,0}};
-					 
+
 		cladesInfo = {{2,0}};
 	}
 	else
@@ -129,16 +129,17 @@ function InferTreeTopology(verbFlag)
 						 {1,1,d2__},
 						 {2,1,d3__}
 						 {3,0,0}};
-						 
-			cladesInfo = {{3,0}};		
+
+			cladesInfo = {{3,0}};
 		}
 		else
-		{	
+		{
+	        fprintf (stdout, (distanceMatrix > methodIndex), "\n");
 			njm = (distanceMatrix > methodIndex)>=ds.species;
-				
+
 			treeNodes 		= {2*(ds.species+1),3};
 			cladesInfo	    = {ds.species-1,2};
-			
+
 			for (i=Rows(treeNodes)-1; i>=0; i=i-1)
 			{
 				treeNodes[i][0] = njm[i][0];
@@ -151,12 +152,12 @@ function InferTreeTopology(verbFlag)
 				cladesInfo[i][0] = njm[i][3];
 				cladesInfo[i][1] = njm[i][4];
 			}
-			
+
 			njm = 0;
 		}
 	}
 	distanceMatrix = 0;
-	
+
 	return 1.0;
 }
 
@@ -183,7 +184,6 @@ if ((resp!="n")&&(resp!="N"))
 
 UseModel (USE_NO_MODEL);
 
-Tree Inferred_Tree = treeString; 
+Tree Inferred_Tree = treeString;
 
 bestTreeNodes = treeNodes;
-

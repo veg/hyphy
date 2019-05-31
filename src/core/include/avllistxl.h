@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -65,6 +65,10 @@ public:
     virtual void Clear(bool = false);
     virtual void DeleteXtra(long);
     virtual long UpdateValue (BaseRef, BaseRef, bool = false, bool = true);
+    
+    _AVLListXL&  PushPairCopyKey  (_String const key, BaseRef);
+    _AVLListXL&  PushPair         (_String* key, BaseRef);
+    
 
     _List xtraD;
 

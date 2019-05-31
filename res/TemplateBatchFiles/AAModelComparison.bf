@@ -87,7 +87,7 @@ function runAModel (modelID, fileName, xtraP, midx)
 	}
 
 	fprintf (stdout, "| ", Format (res[1][0],14,3), " | ", Format (params,5,0), " | ",
-						   Format (AIC, 9,3), " | ",);
+						   Format (AIC, 9,3), " | ");
 					
 	if (cAIC > 0)
 	{
@@ -239,14 +239,4 @@ USE_LAST_RESULTS = 0;
 
 labelMatrix[5] = aaString;
 skipCodeSelectionStep = 0;
-OpenWindow (CHARTWINDOW,{{"Model Fits"}
-						   {"labelMatrix"},
-						   {"resultMatrix"},
-						   {"Bar Chart"},
-						   {"Index"},
-						   {"c-AIC"},
-						   {"Model Index"},
-						   {""},
-						   {"AIC"}
-						   },
-						   "SCREEN_WIDTH-60;SCREEN_HEIGHT-60;30;30");
+

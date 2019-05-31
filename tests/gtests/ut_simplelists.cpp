@@ -105,7 +105,7 @@ TEST_F(SimpleListTest,_StackCopyConstructorListTest){
 
 TEST_F(SimpleListTest,_LengthConstructorTest){
     _SimpleList sl((long)7);
-    EXPECT_EQ(8,sizeof(sl.lData));
+    EXPECT_EQ(8,sizeof(sl.list_data));
 }
 
 TEST_F(SimpleListTest, _PopulateTest){

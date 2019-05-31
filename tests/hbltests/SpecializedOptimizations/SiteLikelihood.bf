@@ -1207,7 +1207,7 @@ DataSetFilter siteFilter = CreateFilter(ds,3,"0-2","43,25,73,72,0,60,71,38,44,58
 
 ClearConstraints (siteTree);
 global alpha = 1;
-ReplicateConstraint ("this1.?.synRate:=alpha*this2.?.synRate__", siteTree, siteTree);
+ReplicateConstraint ("this1.?.?:=alpha*this2.?.synRate__", siteTree, siteTree);
 
 /* test preamble */
 
@@ -1223,6 +1223,7 @@ VERBOSITY_LEVEL        = -1;
 
 
 LikelihoodFunction siteLikelihood = (siteFilter,siteTree);
+
 Optimize (res, siteLikelihood);
 
 /* test epilogue */

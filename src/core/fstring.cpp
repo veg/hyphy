@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -37,15 +37,16 @@
  
  */
 
-#include "defines.h"
 #include "fstring.h"
-#include "constant.h"
-#include "matrix.h"
-#include "calcnode.h"
 #include "batchlan.h"
 #include "global_object_lists.h"
+#include "global_things.h"
+#include "calcnode.h"
+#include "function_templates.h"
+#include "tree.h"
+#include "tree_iterator.h"
 
-extern long lastMatrixDeclared;
+/*extern long lastMatrixDeclared;
 extern _AVLListX _HY_GetStringGlobalTypes;
 
 extern _List likeFuncList,
@@ -54,182 +55,161 @@ extern _List likeFuncList,
              scfgList;
 
 extern _SimpleList modelMatrixIndices;
-extern _String lastModelParameterList;
+extern _String last_model_parameter_list;*/
 
 using namespace hyphy_global_objects;
+using namespace hy_global;
 
-_String internalRerootTreeID("_INTERNAL_REROOT_TREE_");
 //__________________________________________________________________________________
-_FString::_FString (void)
-{
-    theString = new _String;
+_FString::_FString (void) {
+    the_string = new _StringBuffer;
 }
 
 //__________________________________________________________________________________
-_FString::~_FString ()
-{
-    if (nInstances<=1) {
-        DeleteObject (theString);
+_FString::~_FString () {
+    if (CanFreeMe()) {
+        DeleteObject (the_string);
     } else {
-        nInstances--;
+        RemoveAReference();
     }
-
 }
 
 //__________________________________________________________________________________
-_FString::_FString (_String* data)
-{
-    theString = data;
+_FString::_FString (_String* data) {
+    the_string = new _StringBuffer (data);
 }
 
 //__________________________________________________________________________________
-_FString::_FString (long inData)
-{
-    checkPointer (theString = new _String (inData));
+_FString::_FString (long in_data){
+   the_string = new _StringBuffer (new _String (in_data));
+}
+
+//__________________________________________________________________________________
+_FString::_FString (const _FString& source){
+  the_string = new _StringBuffer (*source.the_string);
+}
+
+//__________________________________________________________________________________
+_FString::_FString (_FString&& source){
+  if (source.CanFreeMe()) {
+    the_string = source.the_string;
+    source.the_string = nil;
+  } else {
+    the_string = new _StringBuffer (*source.the_string);
+  }
 }
 
 //__________________________________________________________________________________
 _FString::_FString (_String const& data, bool meta) {
     if (meta) {
-        unsigned long ssi = _String::storageIncrement;
-
-        if (data.sLength>ssi) {
-            _String::storageIncrement = data.sLength;
-        }
-
-        theString = new _String (data.sLength,true);
-        for (unsigned long k=0; k<data.sLength; k++) {
-            char c = data.sData[k];
+ 
+        the_string = new _StringBuffer(data.length());
+        for (unsigned long k=0; k < data.length(); k++) {
+            char c = data.char_at(k);
             if (c=='\\') {
-                if (k<data.sLength-1) {
-                    c = data.sData[k+1];
+                  c = data.char_at(k+1UL);
                     switch (c) {
-                    case 'n':
-                        (*theString)<<'\n';
-                        break;
-                    case 't':
-                        (*theString)<<'\t';
-                        break;
-                    case '\\':
-                        (*theString)<<'\\';
-                        break;
-                    default:
-                        (*theString)<<'\\';
-                        (*theString)<<c;
+                      case 'n':
+                          *the_string<<'\n';
+                          break;
+                      case 't':
+                          *the_string<<'\t';
+                          break;
+                      case '\\':
+                          *the_string<<'\\';
+                          break;
+                      default:
+                          *the_string<<'\\' <<c;
                     }
-                    k++;
-                    continue;
-                }
-            }
-            (*theString)<<c;
+                  k++;
+                  continue;
+             }
+             *the_string<<c;
         }
-        _String::storageIncrement = ssi;
-        theString->Finalize();
     } else {
-        theString = new _String (data);
+        the_string = new _StringBuffer (data);
     }
 }
 
 //__________________________________________________________________________________
-BaseRef _FString::makeDynamic (void)
-{
-    //_FString* res = new _FString;
-    //res->theString->Duplicate(theString);
-    return new _FString(*theString, false);
+BaseRef _FString::makeDynamic (void) const {
+  if (the_string) {
+    return new _FString(*the_string, false);
+  }
+  return new _FString;
 }
 
 //__________________________________________________________________________________
-void _FString::Duplicate (BaseRef o)
-{
-    DeleteObject (theString);
-    _FString* m = (_FString*)o;
-    theString = (_String*)m->theString->makeDynamic();
+void _FString::Duplicate (BaseRefConst o) {
+    DeleteObject (the_string);
+    the_string = (_StringBuffer*)((_FString const*)o)->get_str().makeDynamic();
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::Add (_PMathObj p)
-{
+void _FString::SetStringContent (_StringBuffer * arg){
+    DeleteObject (the_string);
+    the_string = arg;
+ }
+
+//__________________________________________________________________________________
+HBLObjectRef _FString::Add (HBLObjectRef p) {
+    _StringBuffer  * res;
+  
     if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        _String * res    = new _String (theString->sLength+theStr->theString->sLength,true);
-        if (res) {
-            (*res) << theString;
-            (*res) << theStr->theString;
-            res->Finalize();
-            return new _FString (res);
-        } else {
-            checkPointer (nil);
-        }
+      _FString* add_this = (_FString*)p;
+      res    = new _StringBuffer (get_str().length() + add_this->get_str().length());
+      (*res) << get_str()  << add_this->get_str();
+    } else {
+      res    = new _StringBuffer (get_str().length());
+      ((*res) << get_str()).AppendNewInstance((_String*)p->toStr());
     }
-    _String* convStr = (_String*)p->toStr();
-    _String res (*theString& *((_String*)convStr));
-    DeleteObject (convStr);
     return new _FString (res, false);
 }
 
 //__________________________________________________________________________________
 
-_PMathObj _FString::Sum (void) {
-  return new _Constant (theString->toNum());
+HBLObjectRef _FString::Sum (void) {
+  return new _Constant (get_str().to_float());
 }
 
 //__________________________________________________________________________________
-long _FString::AddOn (_PMathObj p)
-{
+long _FString::AddOn (HBLObjectRef p) {
     if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        (*theString) << theStr->theString;
-        return theStr->theString->sLength;
+        *the_string << ((_FString*)p)->get_str();
+        return ((_FString*)p)->get_str().length();
     } else if (p->ObjectClass()==NUMBER) {
         long s = p->Value();
         if (s) {
-            delete theString;
-            checkPointer (theString = new _String (s, true));
+            DeleteObject (the_string);
+            the_string = new _StringBuffer (s);
             return s;
-        } else {
-            theString->Finalize();
         }
     } else {
-        WarnError ("Invalid 2nd argument in call to string*number");
+        HandleApplicationError ("Invalid 2nd argument in call to string*number");
     }
     return 0;
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::AreEqual (_PMathObj p)
-{
+HBLObjectRef _FString::AreEqual (HBLObjectRef p) {
     if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        bool     equal = theString->Equal(theStr->theString);
-        return new _Constant ((_Parameter)equal);
+        return new _Constant (get_str() == ((_FString*)p)->get_str());
     } else {
-        /*_String* convStr = (_String*)p->toStr();
-         bool     equal = theString->Equal(convStr);
-         DeleteObject (convStr);
-         return new _Constant ((_Parameter)equal);*/
-         return new HY_CONSTANT_FALSE;
+        return new HY_CONSTANT_FALSE;
     }
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::AreEqualCIS (_PMathObj p)
-{
-    if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        _String   t1 (*theString),
-                  t2 (*theStr->theString);
-        t1.UpCase();
-        t2.UpCase();
-        bool     equal = t1.Equal(&t2);
-        return new _Constant ((_Parameter)equal);
-    } else {
-        return AreEqual (p);
-    }
+HBLObjectRef _FString::AreEqualCIS (HBLObjectRef p) {
+  if (p->ObjectClass()==STRING) {
+    return new _Constant (get_str().CompareIgnoringCase(((_FString*)p)->get_str()) == kCompareEqual);
+  } else {
+    return new HY_CONSTANT_FALSE;
+  }
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::Join (_PMathObj p)
-{
+HBLObjectRef _FString::Join (HBLObjectRef p) {
     _List theStrings;
 
     if (p->ObjectClass()==MATRIX) {
@@ -238,164 +218,140 @@ _PMathObj _FString::Join (_PMathObj p)
         ((_AssociativeList*)(p->Compute()))->FillInList (theStrings);
     }
 
-    return new _FString((_String*)theStrings.Join(theString));
+    return new _FString((_String*)theStrings.Join(get_str()));
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::EqualAmb (_PMathObj p)
-{
+HBLObjectRef _FString::EqualAmb (HBLObjectRef p) {
+    bool result;
     if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        bool     equal = theString->EqualWithWildChar(theStr->theString);
-        return new _Constant ((_Parameter)equal);
+        result = the_string->EqualWithWildChar (((_FString*)p)->get_str());
     } else {
         _String  convStr      ((_String*)p->toStr());
-        return   new _Constant(theString->EqualWithWildChar(&convStr));
+        result = the_string->EqualWithWildChar(convStr);
     }
+
+    return new _Constant (result);
+
 }
 
 //__________________________________________________________________________________
 
-_PMathObj _FString::EqualRegExp (_PMathObj p, bool matchAll)
+HBLObjectRef _FString::EqualRegExp (HBLObjectRef p, bool match_all)
 {
     if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        _SimpleList matches;
-
-        if (matchAll) {
-            int errNo = 0;
-            Ptr regex = PrepRegExp (theStr->theString, errNo, true);
-            if (regex) {
-                theString->RegExpMatchAll(regex, matches);
-                FlushRegExp (regex);
-            } else {
-                WarnError (GetRegExpError (errNo));
-            }
-        } else {
-            theString->RegExpMatchOnce(theStr->theString, matches, true, true);
-        }
-
-        if (matches.lLength == 0) {
-            matches << -1;
-            matches << -1;
+       _SimpleList matches  = match_all ? the_string->RegExpAllMatches(((_FString*)p)->get_str(), true, true) :
+                                          the_string->RegExpMatch     (((_FString*)p)->get_str(), true, true);
+      
+        if (matches.empty()) {
+            matches << -1 << -1;
         }
         _Matrix * res = new _Matrix (matches);
         res->Transpose();
         return res;
     } else {
-        WarnError ("Invalid 2nd argument in call to string$reg.exp.");
+        HandleApplicationError ("Invalid 2nd argument in call to string$reg.exp.");
         return new _Matrix (2,1,false,true);
     }
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::ReplaceReqExp (_PMathObj p)
-{
-    if (theString && theString->sLength) {
+HBLObjectRef _FString::ReplaceReqExp (HBLObjectRef p) {
+    if (has_data ()) {
+      
         if (p->ObjectClass()==MATRIX) {
             _Matrix * m = (_Matrix*)p;
 
             if (m->IsAStringMatrix() && m->GetHDim() * m->GetVDim() >= 2) {
-                _FString* theStr  = (_FString*)m->GetFormula(0,0)->Compute(),
-                          * repWith = (_FString*)m->GetFormula(1,-1)->Compute();
+              
+                _FString*  pattern      = (_FString*)m->GetFormula(0, 0)->Compute(),
+                         * replacement  = (_FString*)m->GetFormula(1,-1)->Compute();
 
-                _SimpleList matches;
-
-                int errNo = 0;
-                Ptr regex = PrepRegExp (theStr->theString, errNo, true);
-
-                if (!regex) {
-                    WarnError (GetRegExpError (errNo));
-                    return new _FString (emptyString);
-                }
-
-                theString->RegExpMatchAll(regex, matches);
+  
+                _SimpleList matches = get_str().RegExpAllMatches(pattern->get_str(), true, true);
+              
                 _FString * res;
-                if (matches.lLength) {
-                    _String * newString = new _String (theString->sLength+1,true);
-                    checkPointer (newString);
-                    long      idx  = matches.lData[0],
+              
+                if (matches.empty() == false) {
+                    _StringBuffer * replaced = new _StringBuffer (get_str().length() + 1L);
+                    long      idx  = matches.Element (0L),
                               midx = 0;
 
-                    for (long k=0; k<theString->sLength;) {
+                    for (long k=0; k<the_string->length();) {
                         if (k==idx) {
-                            (*newString) << repWith->theString;
-                            k = matches.lData[midx+1]+1;
+                            *replaced << replacement->get_str();
+                            k = matches.Element (midx+1)+1;
                             midx += 2;
                             if (midx == matches.lLength) {
                                 idx = -1;
                             } else {
-                                idx = matches.lData[midx];
+                                idx = matches.Element (midx);
                             }
                         } else {
-                            (*newString) << theString->sData[k++];
+                            *replaced << the_string->char_at(k++);
                         }
                     }
-                    newString->Finalize();
-                    res = new _FString (newString);
+                    res = new _FString (replaced);
                 } else {
-                    res = new _FString (*theString,false);
+                    res = new _FString (get_str(), false);
                 }
 
-                FlushRegExp (regex);
                 return res;
             }
         }
 
-        WarnError ("Invalid 2nd argument in call to string^{{pattern,replacement}}");
+        HandleApplicationError ("Invalid 2nd argument in call to string^{{pattern,replacement}}");
     }
-    return new _FString (emptyString,false);
+    return new _FString (kEmptyString,false);
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::NotEqual (_PMathObj p)
-{
-    if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        bool     equal = theString->Equal(theStr->theString);
-        return new _Constant ((_Parameter)!equal);
-    } else {
-        //_String* convStr = (_String*)p->toStr();
-        //bool     equal = theString->Equal(convStr);
-        //DeleteObject (convStr);
-        //return new _Constant ((_Parameter)!equal);
-        return new HY_CONSTANT_TRUE;
+
+hyComparisonType _FString::Compare  (HBLObjectRef p, bool convert_non_strings) {
+  hyComparisonType result = kCompareUndefined;
+  if (p->ObjectClass()==STRING) {
+    result = the_string->Compare(((_FString*)p)->get_str());
+  } else {
+    if (convert_non_strings) {
+      _String  convStr      ((_String*)p->toStr());
+      result = the_string->Compare(convStr);
     }
+  }
+  return result;
+
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::Less (_PMathObj p)
-{
-    if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        bool     equal = theString->Less(theStr->theString);
-        return new _Constant ((_Parameter)equal);
-    } else {
-        _String* convStr = (_String*)p->toStr();
-        bool     equal = theString->Less(convStr);
-        DeleteObject (convStr);
-        return new _Constant ((_Parameter)equal);
-    }
+
+HBLObjectRef _FString::NotEqual (HBLObjectRef p) {
+    return new _Constant (Compare (p, true) != kCompareEqual);
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::LessEq (_PMathObj p)
-{
-    if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        bool     equal = theString->Less(theStr->theString)||theString->Equal(theStr->theString);
-        return new _Constant ((_Parameter)equal);
-    } else {
-        _String* convStr = (_String*)p->toStr();
-        bool     equal = theString->Less(convStr)||theString->Equal(convStr);
-        DeleteObject (convStr);
-        return new _Constant ((_Parameter)equal);
-    }
+HBLObjectRef _FString::Less (HBLObjectRef p) {
+  return new _Constant (Compare (p, true) == kCompareLess);
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::Differentiate (_PMathObj p)
-{
+HBLObjectRef _FString::LessEq (HBLObjectRef p) {
+  hyComparisonType r = Compare (p, true);
+  return new _Constant (r == kCompareLess || r == kCompareEqual);
+}
+
+  //__________________________________________________________________________________
+HBLObjectRef _FString::GreaterEq (HBLObjectRef p) {
+  hyComparisonType r = Compare (p, true);
+  return new _Constant (r == kCompareGreater || r == kCompareEqual);
+}
+
+  //__________________________________________________________________________________
+HBLObjectRef _FString::Greater (HBLObjectRef p) {
+  return new _Constant (Compare (p, true) == kCompareGreater);
+}
+
+
+//__________________________________________________________________________________
+HBLObjectRef _FString::Differentiate (HBLObjectRef p) {
     _Formula F;
 
     _String  *X,
@@ -404,20 +360,20 @@ _PMathObj _FString::Differentiate (_PMathObj p)
     bool     deleteX = false;
 
     if (p->ObjectClass()==STRING) {
-        X = ((_FString*)p)->theString;
+        X = ((_FString*)p)->the_string;
     } else {
         deleteX = true;
         X = (_String*)p->toStr();
     }
 
-    _String copyMe (*theString);
+    _String copyMe (*the_string);
+  
     _FormulaParsingContext fpc;
     if (Parse (&F,copyMe, fpc, nil) == HY_FORMULA_EXPRESSION) {
         _Formula *DF = F.Differentiate (*X,true);
         if (DF) {
-            DFDX = (_String*)DF->toStr();
+            DFDX = (_String*)DF->toStr(kFormulaStringConversionNormal);
         }
-
     }
 
     if (deleteX) {
@@ -428,61 +384,35 @@ _PMathObj _FString::Differentiate (_PMathObj p)
 
 }
 
+
 //__________________________________________________________________________________
-_PMathObj _FString::GreaterEq (_PMathObj p)
-{
-    if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        bool     equal = theString->Greater(theStr->theString)||theString->Equal(theStr->theString);
-        return new _Constant ((_Parameter)equal);
-    } else {
-        _String* convStr = (_String*)p->toStr();
-        bool     equal = theString->Greater(convStr)||theString->Equal(convStr);
-        DeleteObject (convStr);
-        return new _Constant ((_Parameter)equal);
-    }
+BaseRef  _FString::toStr(unsigned long) {
+    the_string->AddAReference();
+    return the_string;
 }
 
 //__________________________________________________________________________________
-_PMathObj _FString::Greater (_PMathObj p)
-{
-    if (p->ObjectClass()==STRING) {
-        _FString* theStr = (_FString*)p;
-        bool     equal = theString->Greater(theStr->theString);
-        return new _Constant ((_Parameter)equal);
-    } else {
-        _String* convStr = (_String*)p->toStr();
-        bool     equal = theString->Greater(convStr);
-        DeleteObject (convStr);
-        return new _Constant ((_Parameter)equal);
-    }
-}
-
-//__________________________________________________________________________________
-BaseRef  _FString::toStr(unsigned long)
-{
-    theString->AddAReference();
-    return theString;
-}
-
-//__________________________________________________________________________________
-_PMathObj _FString::RerootTree (_PMathObj) {
+HBLObjectRef _FString::RerootTree (HBLObjectRef) {
+    // TODO SKLP 20170921 This needs algorithmic review
   
-    long     stashedModelID = lastMatrixDeclared;
+    static const _String _internal_reroot_tree ("_INTERNAL_REROOT_TREE_");
+
+  
+    long     stashed_model_id = lastMatrixDeclared;
     lastMatrixDeclared      = HY_NO_MODEL;
     /* unset current model; do not want the internal tree to have an attached model */
 
-    _TheTree    rTree (internalRerootTreeID,*theString);
-
+    _TheTree    rTree (_internal_reroot_tree,get_str());
+ 
     if (rTree.IsDegenerate()) { // no need to reroot two-sequence trees
-        lastMatrixDeclared = stashedModelID;
-        DeleteVariable  (internalRerootTreeID);
-        return new _FString (*theString, false);
+        lastMatrixDeclared = stashed_model_id;
+        DeleteVariable  (_internal_reroot_tree);
+        return new _FString (get_str(), false);
     }
 
-    if (terminateExecution) {
-        lastMatrixDeclared = stashedModelID;
-        DeleteVariable  (internalRerootTreeID);
+    if (terminate_execution) {
+        lastMatrixDeclared = stashed_model_id;
+        DeleteVariable  (_internal_reroot_tree);
         return new _FString;
     }
   
@@ -494,7 +424,7 @@ _PMathObj _FString::RerootTree (_PMathObj) {
     long        maxMin         = 0L,
                 totalNodeCount = counted_descendants->in_object + 1L;
   
-    _Parameter  bRatio  = 0.0;
+    hyFloat  bRatio  = 0.0;
   
     node_iterator<long> ni (counted_descendants, _HY_TREE_TRAVERSAL_POSTORDER);
     _TreeIterator ti (&rTree, _HY_TREE_TRAVERSAL_POSTORDER);
@@ -502,7 +432,7 @@ _PMathObj _FString::RerootTree (_PMathObj) {
     while       (_CalcNode * iterator = ti.Next()) {
         node<long>* counter_tree = ni.Next();
         long      nodeMin    = totalNodeCount-counter_tree->in_object-1L;
-        _Parameter thisRatio = nodeMin/(1L+counter_tree->in_object);
+        hyFloat thisRatio = nodeMin/(1L+counter_tree->in_object);
 
         if (thisRatio>1.0) {
             thisRatio = 1.0/thisRatio;
@@ -536,25 +466,24 @@ _PMathObj _FString::RerootTree (_PMathObj) {
         _FString    rAt  (rerootAt->ContextFreeName());
         res = (_FString*)rTree.RerootTree (&rAt);
     } else {
-        res = new _FString (*theString, false);
+        res = new _FString (get_str(), false);
     }
 
-    DeleteVariable  (internalRerootTreeID);
-    lastMatrixDeclared = stashedModelID;
+    DeleteVariable  (_internal_reroot_tree);
+    lastMatrixDeclared = stashed_model_id;
 
     return      res;
 }
 
 //__________________________________________________________________________________
 
-_PMathObj _FString::Evaluate (_hyExecutionContext* context)
-{
-    if (theString && theString->sLength) {
-        _String     s (*theString);
+HBLObjectRef _FString::Evaluate (_hyExecutionContext* context) {
+    if (has_data ()) {
+        _String     s (get_str());
         _Formula    evaluator (s, (_VariableContainer*)context->GetContext());
-        _PMathObj   evalTo = evaluator.Compute(0,(_VariableContainer*)context->GetContext());
+        HBLObjectRef   evalTo = evaluator.Compute(0,(_VariableContainer*)context->GetContext());
 
-        if (evalTo && !terminateExecution) {
+        if (evalTo && !terminate_execution) {
             evalTo->AddAReference();
             return evalTo;
         }
@@ -564,7 +493,7 @@ _PMathObj _FString::Evaluate (_hyExecutionContext* context)
 
   //__________________________________________________________________________________
 
-_PMathObj _FString::SubstituteAndSimplify(_PMathObj arguments) {
+HBLObjectRef _FString::SubstituteAndSimplify(HBLObjectRef arguments) {
   /**
    "arguments" is expected to be a dictionary of with key : value pairs like
     "x" : 3, 
@@ -572,29 +501,29 @@ _PMathObj _FString::SubstituteAndSimplify(_PMathObj arguments) {
    
     etc
    */
-  if (theString && theString->sLength) {
-    _String     s (*theString);
+  if (has_data()) {
+    _String     s (get_str());
     _Formula    evaluator (s);
     
     
-    if (!terminateExecution) {
+    if (!terminate_execution) {
       _AssociativeList* argument_substitution_map = (_AssociativeList*) (arguments->ObjectClass() == ASSOCIATIVE_LIST ? arguments : nil);
       if (argument_substitution_map) { // do direct argument substitution
         for (unsigned long expression_term = 0UL; expression_term < evaluator.Length(); expression_term++) {
           _Operation* current_term       = evaluator.GetIthTerm(expression_term);
           _Variable * variable_reference = current_term->RetrieveVar();
           if (variable_reference) {
-            _PMathObj replacement = argument_substitution_map->GetByKey (*variable_reference->GetName());
+            HBLObjectRef replacement = argument_substitution_map->GetByKey (*variable_reference->GetName());
             if (replacement) {
               current_term->SetAVariable(-1);
-              current_term->SetNumber ((_PMathObj)replacement->makeDynamic());
+              current_term->SetNumber ((HBLObjectRef)replacement->makeDynamic());
             }
           }
         }
       }
       
       evaluator.SimplifyConstants();
-      return new _FString ((_String*)evaluator.toStr());
+      return new _FString ((_String*)evaluator.toStr(kFormulaStringConversionNormal));
     }
   }
   return new _MathObject;
@@ -602,22 +531,26 @@ _PMathObj _FString::SubstituteAndSimplify(_PMathObj arguments) {
 
 //__________________________________________________________________________________
 
-_PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* context, bool return_variable_ref) {
-    _String referencedVariable = *theString;
-    if (!ignore_context && context) {
-        referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer *)context->GetContext());
-    }
-    if (return_variable_ref) {
-        return FetchVar (LocateVarByName(referencedVariable));
-    }
-    _PMathObj result = FetchObjectFromVariableByType(&referencedVariable, HY_ANY_OBJECT); 
-    //printf ("\n\nDereferencing %s in this context '%s'\n\n", referencedVariable.sData, context && context->GetContext() ? context->GetContext()->GetName()->getStr() : "");
+HBLObjectRef _FString::Dereference(bool ignore_context, _hyExecutionContext* context, bool return_variable_ref) {
+   HBLObjectRef result = nil;
+   _String referencedVariable;
+   if (has_data()) {
+      referencedVariable = get_str();
+      if (!ignore_context && context) {
+          referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer *)context->GetContext());
+      }
+      if (return_variable_ref) {
+          return FetchVar (LocateVarByName(referencedVariable));
+      }
+      result = FetchObjectFromVariableByType(&referencedVariable, HY_ANY_OBJECT);
+   }
+    //printf ("\n\nDereferencing %s in this context %x\n\n", referencedVariable.sData, context);
     if (!result) {
-        _String errM = _String("Failed to dereference ") & referencedVariable.Enquote('\'');
+        _String errM = _String("Failed to dereference '") & referencedVariable & "'";
         if (context) {
             context->ReportError(errM);
         } else {
-            WarnError (errM);
+            HandleApplicationError (errM);
         }
         result = new _FString;
     } else {
@@ -629,23 +562,23 @@ _PMathObj _FString::Dereference(bool ignore_context, _hyExecutionContext* contex
 //__________________________________________________________________________________
 
 
-_PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)   {
+HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)   {
   
   switch (opCode) { // first check operations without arguments
     case HY_OP_CODE_NOT: // !
       return FileExists();
     case HY_OP_CODE_ABS: // Abs
-      return new _Constant (theString->sLength);
+      return new _Constant (get_str().length());
     case HY_OP_CODE_EVAL: // Eval
         return Evaluate(context);
     case HY_OP_CODE_EXP: // Exp
-      return new _Constant (theString->LempelZivProductionHistory(nil));
+      return new _Constant (get_str().LempelZivProductionHistory(nil));
     case HY_OP_CODE_LOG: // Log - check sum
-      return new _Constant (theString->Adler32());
+      return new _Constant (get_str().Adler32());
     case HY_OP_CODE_INVERSE:  // Inverse
-      return new _FString (new _String (theString->Reverse()));
+      return new _FString (new _String (get_str().Reverse()));
     case HY_OP_CODE_MCOORD: // MCoord
-      return new _FString (*theString, true);
+      return new _FString (get_str(), true);
     case HY_OP_CODE_TYPE: // Type
       return Type();
     case HY_OP_CODE_REROOTTREE: // RerootTree
@@ -656,7 +589,7 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
   
   _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
   
-  switch (opCode) { // next check operations without arguments or with one argument
+  switch (opCode) { // next check operations without arguments or with at least one argument
     case HY_OP_CODE_MUL: // *
       if (arg0) {
         // NOT a dereference
@@ -693,33 +626,65 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
         return EqualRegExp(arg0);
       case HY_OP_CODE_MOD: // % equal case insenstive
         return AreEqualCIS(arg0);
+            
+      case HY_OP_CODE_MIN: {// resolve file path
+          hyFloat local_resolve = 0.0;
+          if (arg0->ObjectClass () == NUMBER) {
+              local_resolve = arg0->Value();
+          }
+          _String value = get_str();
+          ProcessFileName (value, false, false, (hyPointer) (context ? context->GetContext() : nil), false, nil, !CheckEqual(local_resolve,0.0));
+          return new _FString (value, false);
+      }
+            
       case HY_OP_CODE_AND: { // && upcase or lowercase
-        _Parameter pVal = 0.0;
+        hyFloat pVal = 0.0;
         if (arg0->ObjectClass () == NUMBER) {
           pVal = arg0->Value();
         }
         
         if (pVal < 0.0) {
-          return (_PMathObj)makeDynamic();
+          return (HBLObjectRef)makeDynamic();
         } else {
           _String * t = nil;
           
-          if (CheckEqual(pVal,2.0) || CheckEqual(pVal,3.0) || CheckEqual(pVal,4.0) || CheckEqual(pVal,5.0) || CheckEqual(pVal,6.0)) {
-            t = new _String (theString->sLength+1,true);
-            t->EscapeAndAppend (*theString, CheckEqual(pVal,3.0) + 2*CheckEqual(pVal,4.0) + 4*CheckEqual(pVal,5.0) + 5*CheckEqual(pVal,6.0));
-            t->Finalize();
-          } else {
-            t = new _String (*theString);
-            if (CheckEqual(pVal,1.0)) {
-              t->UpCase();
-            } else {
-              t->LoCase();
+          long      conversion_type = pVal;
+          
+          switch (conversion_type) {
+            case 1L:
+              t = new _String( get_str().ChangeCase(kStringUpperCase));
+              break;
+            case 2L: {
+              t = &(new _StringBuffer)->SanitizeAndAppend(get_str());
+              break;
             }
+            case 3L: {
+              t = &(new _StringBuffer)->SanitizeForPostScriptAndAppend(get_str());
+              break;
+            }
+            case 4L: {
+              t = &(new _StringBuffer)->SanitizeForSQLAndAppend(get_str());
+              break;
+            }
+            case 5L: {
+              t = &(new _StringBuffer)->SanitizeForHTMLAndAppend(get_str());
+              break;
+            }
+             
+            case 6L: {
+              t = &(new _StringBuffer)->SanitizeForRegExAndAppend(get_str());
+              break;
+            }
+              
+            default:
+              t = new _String( get_str().ChangeCase(kStringLowerCase));
+              break;
           }
           
           return new _FString (t);
         }
       }
+        
       case HY_OP_CODE_DIV: // /
         return EqualAmb(arg0);
       case HY_OP_CODE_LESS: // <
@@ -752,17 +717,20 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
     if (arg1) {
       switch (opCode) {
         case HY_OP_CODE_FORMAT: { // Format
-          _String   cpyString (*theString);
-          _Formula f (cpyString);
-          _PMathObj fv = f.Compute();
-          if (fv && fv->ObjectClass () == NUMBER) {
+          HBLObjectRef fv = nil;
+          try {
+           fv = _Formula::ParseAndCompute (get_str(), true, NUMBER, context);
+          } catch (_String const &e) {
+            
+          }
+          if (fv) {
             return ((_Constant*)fv)->FormatNumberString (arg0,arg1);
           } else {
-            ReportWarning (_String("Failed to evaluate ")& *theString & " to a number in call to Format (string...)");
+            ReportWarning (_String("Failed to evaluate ")& get_str() & " to a number in call to Format (string...)");
             return new _FString();
           }
         }
-          
+        break;
       }
     }
   }
@@ -796,33 +764,31 @@ _PMathObj _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecution
 }
 
 //__________________________________________________________________________________
-_PMathObj   _FString::MapStringToVector (_PMathObj p)
-{
-    if (theString->sLength && p->ObjectClass () == MATRIX) {
+HBLObjectRef   _FString::MapStringToVector (HBLObjectRef p) {
+    if (has_data() && p->ObjectClass () == MATRIX) {
         _Matrix         * factoringMatrix = (_Matrix *)p;
 
-        if (factoringMatrix->IsAVector () && factoringMatrix->IsAStringMatrix()) {
+        if ((factoringMatrix->is_row () || factoringMatrix->is_column ()) && factoringMatrix->IsAStringMatrix()) {
             long            mapper [255],
                             keys    = factoringMatrix->GetHDim() * factoringMatrix->GetVDim(),
-                            byRows   = factoringMatrix->IsAVector (HY_MATRIX_COLUMN_VECTOR);
+                            byRows   = factoringMatrix->is_column ();
 
-            for (long c = 0; c < 255; c++) {
-                mapper[c] = -1;
-            }
-
+            InitializeArray(mapper, 255 , -1L);
+ 
             for (long r = 0; r < keys; r++) {
                 _FString* aKey = (_FString*)factoringMatrix->GetFormula(byRows?r:0,byRows?0:r)->Compute();
-                if (aKey->theString->sLength == 1) {
-                    unsigned char thisChar = aKey->theString->sData[0];
-                    if (mapper[thisChar] < 0) {
+                if (aKey->get_str().length() == 1UL) {
+                    unsigned char thisChar = aKey->get_str().get_uchar (0);
+                    if (mapper[thisChar] < 0L) {
                         mapper[thisChar] = r;
                     }
                 }
             }
 
             _SimpleList mapped;
-            for (long s = 0; s < theString->sLength; s++) {
-                mapped << mapper[theString->getUChar(s)];
+          
+            for (long s = 0; s < get_str().length(); s++) {
+                mapped << mapper[get_str().get_uchar(s)];
             }
 
             return new _Matrix (mapped);
@@ -833,44 +799,45 @@ _PMathObj   _FString::MapStringToVector (_PMathObj p)
 }
 
 //__________________________________________________________________________________
-_PMathObj   _FString::CharAccess (_PMathObj p,_PMathObj p2)
+HBLObjectRef   _FString::CharAccess (HBLObjectRef p,HBLObjectRef p2)
 {
     unsigned long index = p->Value();
-    _String res;
 
     if (p2) {
         unsigned long index2 = p2->Value();
-        res = theString->Cut (index,index2);
-    } else if (index<theString->sLength) {
-        res = theString->sData[index];
-    }
+        return new _FString (new _String (get_str().Cut (index,index2)));
+    } else if (index<get_str().length()) {
+        return new _FString (new _String (get_str().char_at(index)));
+     }
 
-    return new _FString (res);
+    return new _FString (kEmptyString, false);
 }
 //__________________________________________________________________________________
-_PMathObj   _FString::FileExists (void) {
+HBLObjectRef   _FString::FileExists (void) {
     _Constant  * retValue = new _Constant (0.0);
-    if (theString) {
-        _String cpy (*theString);
-        cpy.ProcessFileName();
-        FILE * test = doFileOpen (cpy, "rb");
-        if (test) {
-            retValue->SetValue (1.0);
-            fclose (test);
+    if (has_data()) {
+        _String cpy (get_str());
+        if (ProcessFileName(cpy)) {
+            // TODO use fstat instead
+          FILE * test = doFileOpen (cpy, "rb");
+          if (test) {
+              retValue->SetValue (1.0);
+              fclose (test);
+          }
         }
     }
     return retValue;
 }
 
 //__________________________________________________________________________________
-_PMathObj   _FString::Call (_List* arguments, _hyExecutionContext* context) {
-  long function_id = FindBFFunctionName (*theString, NULL);
+HBLObjectRef   _FString::Call (_List* arguments, _hyExecutionContext* context) {
+  long function_id = FindBFFunctionName (get_str(), NULL);
   if (function_id >= 0) {
        _Formula the_call;
     
       if (arguments) {
         for (long k = 0; k < arguments->countitems() ; k ++) {
-          _PMathObj payload = (_PMathObj)arguments->GetItem (k);
+          HBLObjectRef payload = (HBLObjectRef)arguments->GetItem (k);
           _Operation *arg_k = new _Operation (payload);
           payload->AddAReference();
           the_call.PushTerm(arg_k);
@@ -882,12 +849,12 @@ _PMathObj   _FString::Call (_List* arguments, _hyExecutionContext* context) {
       the_call.PushTerm(function_call_term);
       DeleteObject (function_call_term);
       
-      _PMathObj result = the_call.Compute();
+      HBLObjectRef result = the_call.Compute();
       result->AddAReference();
       return result;
       
   } else {
-    WarnError (_String ("The first argument ('") & *theString & "') to 'Call' was not an HBL function name");
+    HandleApplicationError (_String ("The first argument ('") & get_str() & "') to 'Call' was not an HBL function name");
   }
   
   return new _MathObject;
@@ -895,11 +862,11 @@ _PMathObj   _FString::Call (_List* arguments, _hyExecutionContext* context) {
 }
 
 //__________________________________________________________________________________
-_PMathObj   _FString::CountGlobalObjects (void)
+HBLObjectRef   _FString::CountGlobalObjects (void)
 {
-    _Parameter res = 0.0;
+    hyFloat res = 0.0;
 
-    long      standardType = _HY_GetStringGlobalTypes.Find(theString);
+    long      standardType = _HY_GetStringGlobalTypes.Find(&get_str());
     if (standardType >=0 ) {
         standardType = _HY_GetStringGlobalTypes.GetXtra (standardType);
     }
@@ -912,7 +879,7 @@ _PMathObj   _FString::CountGlobalObjects (void)
     case HY_BL_DATASET_FILTER:
         return new _Constant (CountObjectsByType (HY_BL_DATASET_FILTER));
     case HY_BL_HBL_FUNCTION:
-        return new _Constant (batchLanguageFunctionNames.lLength);
+        return new _Constant (GetBFFunctionCount());
     case HY_BL_TREE: {
         _SimpleList tc;
         long        si,
@@ -934,16 +901,11 @@ _PMathObj   _FString::CountGlobalObjects (void)
     }
 
     if (standardType < 0) {
-        if ((*theString)==lastModelParameterList) {
+        if (get_str() == hy_env::last_model_parameter_list) {
             if (lastMatrixDeclared>=0) {
-                _SimpleList p;
-                _Variable *theM = LocateVar (modelMatrixIndices.lData[lastMatrixDeclared]);
-                {
-                    _AVLList pA (&p);
-                    theM->ScanForVariables (pA,false);
-                    pA.ReorderList();
-                }
-                res = p.lLength;
+              res =  PopulateAndSort ([&] (_AVLList & parameter_list) -> void  {
+                LocateVar (modelMatrixIndices.list_data[lastMatrixDeclared])->ScanForVariables(parameter_list, false);
+              }).countitems();
             }
         }
     }

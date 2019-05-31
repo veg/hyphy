@@ -67,6 +67,28 @@ lfunction io.PromptUserForString(prompt) {
 }
 
 /**
+ * @name io.PromptUserForFilePath
+ * @param prompt
+ */
+lfunction io.PromptUserForFilePath(prompt) {
+    SetDialogPrompt (prompt);
+    fprintf (PROMPT_FOR_FILE, CLEAR_FILE);
+    return  ^"LAST_FILE_PATH";
+}
+
+/**
+ * @name  io.LoadFile
+ * @param prompt
+ */
+ 
+function io.LoadFile(prompt) {
+   SetDialogPrompt (prompt);
+   ExecuteAFile (PROMPT_FOR_FILE);
+   return  ^"LAST_FILE_PATH";
+}
+
+
+/**
  * @name io._reportMessageHelper
  * @param analysis
  * @param text
@@ -476,6 +498,18 @@ lfunction io.SpoolLF(lf_id, trunk_path, tag) {
 }
 
 /**
+ * @name io.SpoolLFToPath
+ * @param lf_id
+ * @param trunk_path
+ * @param tag
+ * @returns nothing
+ */
+lfunction io.SpoolLFToPath(lf_id, path) {
+    Export(__lf_spool, ^ lf_id);
+    fprintf(path, CLEAR_FILE, __lf_spool);
+}
+
+/**
  * @name io.PrintAndUnderline
  * @param string
  * @param char
@@ -711,7 +745,7 @@ lfunction io.SelectAnOption  (options, description) {
         }
 
         ChoiceList  (selection,description,1,NO_SKIP,option_set);
-
+        
         if (selection >= 0) {
             return option_set[selection][0];
         } else {
@@ -741,4 +775,29 @@ lfunction io.SingularOrPlural (value, singular, plural) {
         return singular;
    }
    return plural;
+}
+
+/**
+ * @name io.splitFilePath
+ * Split file path into a directory, file name, and extension (if any)
+ * @param {String} path
+ * @return {Matrix} {{dir, filename, ext}}
+ */
+
+lfunction io.splitFilePath (path) {
+	result = {{"","",""}};
+	split     = path $ ("[^\\"+^"DIRECTORY_SEPARATOR"+"]+$");
+	if (split[0] != 0 || split[1] != Abs (path)-1) {
+		result [0] = path[0][split[0]-1];
+		path = path[split[0]][Abs(path)];
+	}
+
+	split     = path || "\\.";
+	if (split[0] < 0) {
+		result[1]  = path;
+ 	} else {
+		result [2] =  path[split[Rows(split)-1]+1][Abs(path)-1];
+		result [1]  = path[0][split[Rows(split)-1]-1];
+	}
+	return result;
 }

@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -66,130 +66,6 @@ using namespace std;
 #include "likefunc.h"
 #endif
 
-#ifdef __NEVER_DEFINED__
-
-/* ==================== */
-/*      STRUCTURES      */
-/* ==================== */
-
-struct Prob {       // inner or outer probability stored with sub-string indices
-
-    int     i;      // non-terminal index
-    int     s;      // left index in string
-    int     t;      // right index in string
-
-    double  p;      // non-zero values only
-};
-
-
-struct Production {     // identifies production rules
-    int     i, j, k, m;
-};
-
-
-struct ProductionLink {     // for linking production rule probabilities
-    int             size;
-    Production *    pvec;
-};
-
-
-struct Triplet {    // for trace-backs in CYK algorithm
-    int i1, i2, i3;
-};
-
-
-
-/* ================================================================ */
-/*  CLASS: ParseNode                                                */
-/* ---------------------------------------------------------------- */
-/*  Root node allocates memory for 95 printable ASCII characters.   */
-/*  Character not occurring in grammar corresponds to NULL.         */
-/*  Non-root nodes, push-back vector as required.                   */
-/*                                                                  */
-/*  itsIndex = terminal symbol integer (0-index)                    */
-/*  itsChar = terminal symbol                                       */
-/* ================================================================ */
-
-class ParseNode
-{
-private:
-    ParseNode *             itsParent;
-    vector <ParseNode *>    itsChildren;
-    char                    itsChar;
-    int                     itsIndex;
-
-public:
-    ParseNode() {   // for root node
-        itsParent = NULL;
-        itsChar = '\0';
-        itsIndex = -1;
-        for (int i = 0; i < 95; i++) {
-            itsChildren.push_back(NULL);
-        }
-    }
-
-    ParseNode(ParseNode * p, char c) {
-        itsParent = p;
-        itsChar = c;
-        itsIndex = -1;
-    }
-
-    // default destructor
-    ~ParseNode()    { }
-
-    // member accessor functions
-    void SetParent(ParseNode * p)   {
-        itsParent = p;
-    }
-    ParseNode * GetParent()         {
-        return itsParent;
-    }
-
-    ParseNode * AddChild(char c) {
-        ParseNode * pn = new ParseNode(this, c);
-        itsChildren.push_back(pn);
-        return pn;
-    }
-
-    ParseNode * SetChild(int i, char c) {
-        ParseNode * pn = new ParseNode(this, c);
-        itsChildren.at(i) = pn;
-        return pn;
-    }
-
-    ParseNode * GetChild(int i) {
-        return itsChildren.at(i);
-    }
-
-    void SetIndex(int i)        {
-        itsIndex = i;
-    }
-    int GetIndex()              {
-        return itsIndex;
-    }
-
-    void SetChar(char c)        {
-        itsChar = c;
-    }
-    char GetChar()              {
-        return itsChar;
-    }
-
-    int HowManyChildren()       {
-        return itsChildren.size();
-    }
-
-    ParseNode * FindChild(char c) {
-        for (int i = 0; i < itsChildren.size(); i++)
-            if (c == itsChildren.at(i)->GetChar()) {
-                return itsChildren.at(i);
-            }
-        return NULL;
-    }
-};
-
-
-#endif
 
 // SLKP 20070525: Moved _GrowingVector to matrix.h
 // and renamed it _GrowingVector
@@ -204,85 +80,11 @@ public:
 /*      - calculate inside/outside probabilities of a given string  */
 /* ================================================================ */
 
-class Scfg
-#ifdef _USE_HYPHY_HOOKS_
-    : public _LikelihoodFunction
-#endif
-{
+class Scfg: public _LikelihoodFunction {
 
-private:
-
-#ifdef _NEVER_DEFINED_
-    /* GRAMMAR SYMBOLS */
-
-    int                         numNT;      // number of non-terminal symbols
-    int                         numT;       //  "   "   terminal        "
-
-    int                         firstPreTerm;   // index of first non-terminal symbol
-    // in string of form i->m
-
-    ParseNode *                 itsParseTree;
-
-    /* PRODUCTION PROBABILITIES */
-
-    /* use symbol indices for production probability matrices   */
-    /* ijk initialized N x N x N, where N = numNT               */
-    /* im initialized N x M, where M = numT                     */
-    double *                    itsIJKProbs;    // i->jk production probabilities
-    double *                    itsIMProbs;     // i->m         "       "
-
-
-    /* STRING PROBABILITY STORAGE */
-
-    // stores whether the inside and outside probabilities for
-    // the production of sub-string (s,t) from the i-th non-terminal symbol
-    // has been evaluated;
-    // and if so whether it takes the value 0, 1, or something inbetween.
-
-    /*      character key                                       */
-    /* -------------------------------------------------------- */
-    /*                              inside                      */
-    /*  o               NA      0       1       0 < p < 1       */
-    /*  u   ----------------------------------------------      */
-    /*  t   NA          @       A       B       C               */
-    /*  s   0           D       E       F       G               */
-    /*  i   1           H       I       J       K               */
-    /*  d   0 < p < 1   L       M       N       O               */
-    /*  e   ----------------------------------------------      */
-
-
-
-    char **                     itsStringProbs;
-
-    // stores inside and outside probabilities between 0 and 1
-    vector <Prob>               itsInsideProbs;
-    vector <Prob>               itsOutsideProbs;
-
-    vector <ProductionLink>     itsLinked;
-
-    /* STRING AND CORPUS */
-
-    String *                    itsString;
-    vector <String *>           itsCorpus;
-
-    int                         lengthString;
-
-    TRandomMersenne *           pMersenne;
-
-    ifstream                    infile;
-    ofstream                    outfile;
-
-#endif
-
-#ifdef                  _USE_HYPHY_HOOKS_
-
-#endif
 
 public:
     // general specification of grammar by string
-#ifndef                     _USE_HYPHY_HOOKS_
-    Scfg(char * grammar, int nt, int t, TRandomMersenne * pMers);
-#else
     Scfg(_AssociativeList*, _AssociativeList *, long = 0);
     /* SLKP:
 
@@ -324,28 +126,27 @@ public:
     BaseRef             toStr                   (unsigned long = 0UL); // a string representation of the SCFG
 
     virtual void        ScanAllVariables        (void);
-    virtual _String*    GetRuleString           (long); // return a string representation of a derivation rule
-    virtual _String*    VerifyValues            (void);
+    virtual _StringBuffer*    GetRuleString           (long) const; // return a string representation of a derivation rule
+    virtual void        VerifyValues            (void);
     // for a given set of parameter values, check that all probabilities are
     // (a) in [0,1]
     // (b) for a fixed NT 'i' the sum of all probabilities for the rules
     //     involving the NT is 1
-    // returns nil if all is good
+    // throws const String exceptions if checks fail
 
     virtual void        RandomSampleVerify      (long);
     // draw a number of values using LHC sampling on parameter bounds
     // and check that they all define valid sets of probabilities
 
-    virtual void        SetStringCorpus         (_String*);
     virtual void        SetStringCorpus         (_Matrix*);
     // the strings to set SCFG string corpus
     // the first one does it from a HyPhy variable identifier, which is assumed
     // to reference either a string or a matrix of strings (it calls the second)
     // the second one does the work; lexing the input strings and converting
 
-    virtual _Parameter          Compute                 (void);
+    virtual hyFloat          Compute                 (void);
     // compute the derivation probability of the current corpus
-    virtual _Matrix*            Optimize                ();
+    virtual _Matrix*            Optimize                (_AssociativeList const* options = nil);
     // train the grammar using current corpus
 
     virtual void                AddSCFGInfo             (_AssociativeList*);
@@ -357,201 +158,12 @@ public:
     // from which to generate a substring (called recursively)
     // the string argument is the storage, created by the first call
 
-    virtual _String *           BestParseTree           (void);
+    virtual _StringBuffer *           BestParseTree           (void);
 
-    virtual void                CykTraceback            (long,long,long,long,_AVLListX *,_SimpleList *,_GrowingVector *,_String *);
+    virtual void                CykTraceback            (long,long,long,long,_AVLListX const *,_SimpleList const *,_Vector const *,_StringBuffer&) const;
 
-#endif
 
-#ifdef _NEVER_DEFINED_
 
-    // destructor
-    ~Scfg()     { }
-
-
-    // member access functions
-    int     GetNumberNTs()                      {
-        return numNT;
-    }
-    int     GetNumberTerms()                    {
-        return numT;
-    }
-
-    void    SetFirstPT(int fpt)     {
-        firstPreTerm = fpt;
-    }
-    int     GetFirstPreTerm()       {
-        return firstPreTerm;
-    }
-
-
-    // allocate memory for production probabilities
-    void    InitIJKProbs();
-    void    InitIMProbs();
-
-
-    /* -------- PRODUCTION PROBABILITY FUNCTIONS ------------- */
-    void    SetProb(int i, int m, double prob) {
-        itsIMProbs[i*numT + m] = prob;
-    }
-
-    void    SetProb(int i, int j, int k, double prob) {
-        itsIJKProbs[i * numNT * numNT + j * numNT + k] = prob;
-    }
-
-    void    CreateProduction(int i, int m, double prob) {
-        itsIMProbs[i * numT + m] = prob;
-    }
-
-    void    CreateProduction(int i, int j, int k, double prob) {
-        itsIJKProbs[i * numNT * numNT + j * numNT + k] = prob;
-    }
-
-
-    double  GetProb(int i, int m)   {
-        return itsIMProbs[i * numT + m];
-    }
-
-    double  GetProb(int i, int j, int k) {
-        return (itsIJKProbs[i*numNT*numNT + j*numNT + k]);
-    }
-
-
-    void    LinkProductions(int nlink, int* linkArray);
-
-    /* list the production rules in this grammar */
-    void    ShowProductions(bool detFlag);
-
-
-
-    /* -------- TERMINAL PARSE TREE FUNCTIONS ---------- */
-
-    void        SetParseTree(char * terminals);
-    String *    ParseString(char * s);
-
-
-    /* -------- MEMBER STRING FUNCTIONS ------------- */
-
-    /* for non-member access to a string */
-    String *        AccessString()      {
-        return itsString;
-    }
-
-    /* start a new string */
-    void    InitiateString() {
-        itsString = new String(0, FALSE, numNT, numT);
-    }
-    void    InitiateString(int nt) {
-        itsString = new String(nt, FALSE, numNT, numT);
-    }
-
-
-    /* converts non-terminal to terminal or other non-
-        terminals symbols using production rules */
-    bool    EmitSymbol(String * theString, int s);
-
-    /* applies ResolveElement to all non-terminals in string */
-    void    GenerateRandomString(bool verbose)  {
-        GenerateRandomString(verbose, itsString);
-    }
-    void    GenerateRandomString(bool verbose, String * thisString);
-
-    void    ReadStringsFromFile(char * filename);
-
-
-
-    /* --------- CORPUS FUNCTIONS ------------------ */
-
-    /* funcitons for managing corpus (group of strings) */
-    void        AddStringToCorpus() {
-        itsCorpus.push_back(itsString);
-    }
-
-    void        AddStringToCorpus(String * string) {
-        itsCorpus.push_back(string);
-    }
-
-    String *    GetStringFromCorpus(int i)      {
-        return itsCorpus.at(i);
-    }
-
-    void    ClearCorpus()       {
-        itsCorpus.clear();
-    }
-
-    void    PrintCorpus();
-
-    int     GetCorpusSize()     {
-        return itsCorpus.size();
-    }
-
-    void    WriteCorpusToFile(char * filename);
-
-
-
-    /* -------- RANDOM NUMBER GENERATOR FUNCTIONS ---------- */
-
-    /* uniform random number generator */
-    float   Urn()           {
-        return pMersenne->Random();
-    }
-
-    /* for non-member access to the random-number generator */
-    TRandomMersenne *   AccessMersenne()    {
-        return pMersenne;
-    }
-
-
-
-    /* --------- PRODUCTION PROBABILITY FUNCTIONS ---------- */
-
-    /* calculate inside probability of sub-string */
-    double  InsideProb(String * thisString, int i, int s, int t);
-
-    /* calculate outside probability of sub-string */
-    double  OutsideProb(String * thisString, int i, int s, int t);
-
-    /* initial calculation of inside and outside probabilities */
-    void    CalculateProbs(String * stringPtr);
-
-    // initialize storage array
-    void    InitStringProbs(String * thisString);
-
-    // release allocated memory and clear stored probabilities
-    void    ReleaseEvals();
-
-    char    GetStringProb(String * thisString, int i, int s, int t);
-
-    /* returns evaluated and stored probabilities not equal to 0 or 1 */
-    double  LookUpProb(bool isInner, int i, int s, int t);
-    void    ShowProbs(bool inside);
-
-    /* print out all stored probabilities not equal to 0 or 1 */
-    void    PrintNonZeroProbs(bool inside);
-    void    PrintStringProbs(String * thisString);
-    void    PrintStringProbs(int s)     {
-        PrintStringProbs(itsCorpus.at(s));
-    }
-
-
-
-    /* --------- PARSING FUNCTIONS ------------------------ */
-
-    /* get likelihood of a string */
-    double  GetLikString(String * stringPtr);
-
-    double  GetLikCorpus();
-
-    /* train production rule probabilities given a corpus */
-    double  TrainCorpus();
-
-    void    BestParseCorpus();
-
-    void    CykFillMatrices(String *, double *, Triplet *);
-    void    CykTraceback(String *, Triplet *);
-#endif
-
-#ifdef      _USE_HYPHY_HOOKS_               // SLKP June 2006
 
     /* SLKP SCFG data members */
 
@@ -639,14 +251,12 @@ public:
     // the indexing for the rules is the same as in the 'rules' list
 
 
-    node<long>**        parseTree;          // maintains a parse tree which maps character input (ASCII) to the set of
+    _Trie             terminal_symbols;          // maintains a parse tree which maps character input (ASCII) to the set of
     // terminal characters expressed as integer indices.
     // Each node is associated with the branch which terminates in it
     // The 3 highest order bytes of the <long> data filed are only used for leaves,
     // and represent the index of the terminal symbol, whilst the lowest order byte
     // associates a character with the branch
-    // The 'root' of the parseTree is represented by the array of 256
-    // node<long>* for faster indexing
 
     long                startSymbol,
                         insideCalls,
@@ -654,16 +264,15 @@ public:
 
 protected:
 
-    void        ClearParseTree  (void);
-    /* SLKP: this function is used to clear the data structures holding the input parse tree */
-    void        ProcessAFormula (_FString*, _List&, _SimpleList&, _String&);
+    static void        ProcessAFormula (_FString*, _List&, _SimpleList&);
+    // 20180808: throws _String exceptions when errors encountered
     /* SLKP: utility function to process a probability expression */
-    bool        CheckANT        (long,long,long, _AVLListX&, long);
+    bool        CheckANT        (long,long,long, _AVLListX&, long) const;
     /* SLKP: utility function which checks conditions on rules involving non-terminals
              returning true if status flags for some of the non-terminals were modified*/
-    _String*    TokenizeString  (_String&, _SimpleList&);
+    void     TokenizeString  (_StringBuffer const&, _SimpleList&) const;
     /* SLKP: convert a string (1st argument) into a series of terminal tokens (stored into the 2nd argument)
-             Returns nil if all is good, or an error string if something went wrong
+             Throws _String exceptions if something goes wrong
     */
 
     void        DumpComputeStructures (void);
@@ -673,62 +282,44 @@ protected:
     // initialize compute structures for a new corpus
     // by populating appropriate data structures with empties
 
-    _Parameter  ComputeInsideProb     (long, long, long, long, bool);
+    hyFloat  ComputeInsideProb     (long, long, long, long, bool);
     // compute the inside probability for substring from s (arg1) to t (arg2) - both zero based -
     // in corpus string j (arg3) derived from non-terminal i (arg4). The bool flag shows whether or
     // not this is the first call into a given corpus and that computeFlagsI should be consulted
     // during computation
 
-    _Parameter  ComputeOutsideProb    (long, long, long, long, bool, bool);
+    hyFloat  ComputeOutsideProb    (long, long, long, long, bool, bool);
     // compute the outside probability for substring from s (arg1) to t (arg2) - both zero based -
     // in corpus string j (arg3) derived from non-terminal i (arg4). The FIRST bool flag shows whether or
     // not this is the first call for outside probabilities into a given corpus and that computeFlagsO
     // should be consulted during computation.  The SECOND bool indicates first call for inside
     // probabilities and that computeFlagsI should be consulted.
 
-    long        indexNT_T             (long, long);
+    inline long        indexNT_T             (long, long) const;
     // index (nt, term) pairs into ntToTerminalMap
 
-    _Parameter  LookUpRuleProbability (long index) {
+    hyFloat  LookUpRuleProbability (long index) {
         return ((_Matrix*)probabilities.RetrieveNumeric())->theData[index];
     }
-
-#endif
+  
+    static inline  long    scfgIndexIntoAnArray            (long,long,long,long);
+    /* this function indexes the triple start_substring, end_substring,non-terminal index given the string length (last argument)
+     into a linear array
+     */
+    
+    static _SimpleList *   arrayIntoScfgIndex              (long,long);
+    /* this function indexes from a linear array to the triple start_substring, end_substring, non-terminal index
+     given the string length -AFYP
+     */
+    
+    static inline  bool    getIndexBit                             (long,long,long,long,_SimpleList&);
+    static inline  void    setIndexBit                             (long,long,long,long,_SimpleList&);
+    /* this function indexes the triple start_substring, end_substring,non-terminal index given the string length (4th argument)
+     into a bit array stored in the last argument
+     */
 };
 
-#ifdef      _USE_HYPHY_HOOKS_               // SLKP June 2006
 
-inline  long    scfgIndexIntoAnArray            (long,long,long,long);
-/* this function indexes the triple start_substring, end_substring,non-terminal index given the string length (last argument)
-   into a linear array
-*/
 
-_SimpleList *   arrayIntoScfgIndex              (long,long);
-/* this function indexes from a linear array to the triple start_substring, end_substring, non-terminal index
-    given the string length -AFYP
-*/
-
-inline  bool    getIndexBit                             (long,long,long,long,_SimpleList&);
-inline  void    setIndexBit                             (long,long,long,long,_SimpleList&);
-/* this function indexes the triple start_substring, end_substring,non-terminal index given the string length (4th argument)
-   into a bit array stored in the last argument
-*/
-
-#endif
-
-#define    _HY_BITMASK_WIDTH_ (8*sizeof (unsigned long))
-
-struct      bitMasks {
-    unsigned long masks[_HY_BITMASK_WIDTH_];
-    bitMasks (void) {
-        unsigned long aBit = 1;
-        for (long k=0; k<_HY_BITMASK_WIDTH_; k++) {
-            masks[k] = aBit;
-            aBit = aBit << 1;
-        }
-    }
-};
-
-extern bitMasks bitMaskArray;
 
 #endif

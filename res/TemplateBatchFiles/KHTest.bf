@@ -6,7 +6,7 @@ fprintf(stdout,"\n ---- RUNNING KH ALTERNATIVE TOPOLOGY TEST ---- \n");
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0) 
+if (dataType<0)
 {
 	return;
 }
@@ -29,7 +29,7 @@ ChoiceList (compType,"Comparison Kind",1,SKIP_NONE,"Full Alignment","Compare the
 				     "Recombination Test","Compare the trees on 2 parts of the alignment, reversing their roles before and after the breakpoint.");
 
 
-if (compType<0) 
+if (compType<0)
 {
 	return;
 }
@@ -59,15 +59,15 @@ if (Rows(NEXUS_FILE_TREE_MATRIX)>=2)
 		ChoiceList (tc,"Choose second tree",1,skipMx,NEXUS_FILE_TREE_MATRIX);
 		if (tc>=0)
 		{
-			secondTreeString = NEXUS_FILE_TREE_MATRIX[tc][1];		
+			secondTreeString = NEXUS_FILE_TREE_MATRIX[tc][1];
 		}
 	}
 	else
 	{
-		ChoiceList (tc,"Choose second tree",1,SKIP_NONE,NEXUS_FILE_TREE_MATRIX);	
+		ChoiceList (tc,"Choose second tree",1,SKIP_NONE,NEXUS_FILE_TREE_MATRIX);
 		if (tc>=0)
 		{
-			secondTreeString = NEXUS_FILE_TREE_MATRIX[tc][1];		
+			secondTreeString = NEXUS_FILE_TREE_MATRIX[tc][1];
 		}
 	}
 }
@@ -128,7 +128,7 @@ if (compType)
 	}
 	else
 	{
-		pPrompt = "bp";	
+		pPrompt = "bp";
 	}
 	while (breakPoint<1 || breakPoint > filteredData.sites-2)
 	{
@@ -144,7 +144,7 @@ if (compType)
 	else
 	{
 		DataSetFilter filteredData1 = CreateFilter (ds,1,siteIndex<breakPoint);
-		DataSetFilter filteredData2 = CreateFilter (ds,1,siteIndex>=breakPoint);	
+		DataSetFilter filteredData2 = CreateFilter (ds,1,siteIndex>=breakPoint);
 	}
 	LikelihoodFunction lf1_1 = (filteredData1,firstTree);
 	Optimize (res1_1, lf1_1);
@@ -162,49 +162,32 @@ if (compType)
 	Optimize (res2_2, lf2_2);
 	ConstructCategoryMatrix (v4,lf2_2,COMPLETE);
 	fprintf (stdout, "\n\n4). FITTING TREE 2 TO PARTITION 2\n", lf2_2);
-	
+
 	LRT1 = 2*(res1_1[1][0]-res1_2[1][0]);
 	LRT2 = 2*(res2_2[1][0]-res2_1[1][0]);
-	
+
 	fprintf (stdout, "\n\nSUMMARY:\n\n\tPARTITION 1 LRT = ",LRT1, "\n\tPARTITION 2 LRT = ", LRT2);
 	if (LRT1 < 0 || LRT2 < 0)
 	{
 		fprintf (stdout, "\n\nERROR: Both LRTs were expeceted to be positive.\nPlease check your trees and partition");
 		return 0;
 	}
-	
+
 	test1 = testLRT (v1,v2)%0;
-	
+
 	for (k=0; k<Columns(v1); k=k+1)
 	{
 		if (test1[k]>0)
 		{
 			break;
 		}
-	}	
-	
+	}
+
 	fprintf (stdout, "\n\nEstimated p-value for the FIRST partition (based on ", itCount," replicates): ", Format(k/itCount,10,4));
-	
-	
-	OpenWindow (CHARTWINDOW,{{"Simulated LRT for the First Partition"}
-		{"labels"}
-		{"test1"}
-		{"Step Plot"}
-		{"Index"}
-		{labels[0]}
-		{"Index"}
-		{"LRT"}
-		{"LRT"}
-		{""}
-		{""+LRT1}
-		{""}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:14:2"}
-		{"0;0;16777215;5000268;0;0;6750054;11842740;13158600;14474460;0;3947580;16777215;5000268;11776947;10066329;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-		{"16"}
-		},
-		"(SCREEN_WIDTH-30)/2;(SCREEN_HEIGHT-50)/2;10;40");
-	
+
+
+
+
 	test2 = testLRT (v4,v3)%0;
 
 	for (k=0; k<Columns(v3); k=k+1)
@@ -213,27 +196,10 @@ if (compType)
 		{
 			break;
 		}
-	}	
-	
+	}
+
 	fprintf (stdout, "\n\nEstimated p-value for the SECOND partition (based on ", itCount," replicates): ", Format(k/itCount,10,4),"\n");
-	OpenWindow (CHARTWINDOW,{{"Simulated LRT for the Second Partition"}
-		{"labels"}
-		{"test2"}
-		{"Step Plot"}
-		{"Index"}
-		{labels[0]}
-		{"Index"}
-		{"LRT"}
-		{"LRT"}
-		{""}
-		{""+LRT2}
-		{""}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:14:2"}
-		{"0;0;16777215;5000268;0;0;6750054;11842740;13158600;14474460;0;3947580;16777215;5000268;11776947;10066329;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-		{"16"}
-		},
-		"(SCREEN_WIDTH-30)/2;(SCREEN_HEIGHT-50)/2;20+(SCREEN_WIDTH)/2;40");
+
 }
 else
 {
@@ -247,7 +213,7 @@ else
 	fprintf					 (stdout, "\n\n2). FITTING TREE 2 TO THE DATA\n", lf2);
 
 	LRT1					 = 2*(res1[1][0]-res2[1][0]);
-	
+
 	fprintf (stdout, "\n\nSUMMARY:\n\n\tLRT = ",LRT1);
 	if (LRT1 < 0)
 	{
@@ -263,27 +229,10 @@ else
 		{
 			break;
 		}
-	}	
-	
+	}
+
 	fprintf (stdout, "\n\nEstimated p-value for  (based on ", itCount," replicates): ", Format(k/itCount,10,4),"\n");
-	OpenWindow (CHARTWINDOW,{{"Simulated LRT"}
-		{"labels"}
-		{"test1"}
-		{"Step Plot"}
-		{"Index"}
-		{labels[0]}
-		{"Index"}
-		{"LRT"}
-		{"LRT"}
-		{""}
-		{""+LRT1}
-		{""}
-		{"10;1.309;0.785398"}
-		{"Times:12:0;Times:10:0;Times:14:2"}
-		{"0;0;16777215;5000268;0;0;6750054;11842740;13158600;14474460;0;3947580;16777215;5000268;11776947;10066329;9199669;7018159;1460610;16748822;11184810;14173291;14173291"}
-		{"16"}
-		},
-		"(SCREEN_WIDTH-30)/2;(SCREEN_HEIGHT-50)/2;20+(SCREEN_WIDTH)/2;40");
+
 }
 
 /*--------------------------------------------------------------------------------------*/
@@ -291,20 +240,20 @@ else
 function testLRT (vec1, vec2)
 {
 	size1 = Columns(vec1);
-	
+
 	sumVec1 = {size1,1};
 	jvec	= {2,size1};
 	resMx1	= {itCount,1};
 	resMx2	= {itCount,1};
-	
+
 	for (k=0; k<size1; k=k+1)
 	{
 		sumVec1 [k]	   = 1;
 		jvec	[0][k] = Log(vec1[k]);
 		jvec	[1][k] = Log(vec2[k]);
 	}
-	
-	
+
+
 	for (k=0; k<itCount; k=k+1)
 	{
 		resampled = Random(jvec,1);
@@ -312,6 +261,6 @@ function testLRT (vec1, vec2)
 		resMx1[k] = resampled[0];
 		resMx2[k] = resampled[1];
 	}
-	
+
 	return (resMx1-resMx2)*2;
 }

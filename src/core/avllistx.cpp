@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -39,17 +39,15 @@
 
 #include "avllistx.h"
 #include "hy_strings.h"
-#include "errorfns.h"
+#include "hy_string_buffer.h"
 #include "parser.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
-#ifdef    __HYPHYDMALLOC__
-#include "dmalloc.h"
-#endif
 
 //______________________________________________________________
 
@@ -59,32 +57,27 @@ _AVLListX::_AVLListX (_SimpleList* d):_AVLList(d)
 
 //______________________________________________________________
 
-long    _AVLListX::GetXtra (long d) const
-{
-    return xtraD.lData[d];
+long    _AVLListX::GetXtra (long d) const {
+    return xtraD.get(d);
 }
 
 //______________________________________________________________
 
-void    _AVLListX::SetXtra (long i, long d)
-{
-    xtraD.lData[i] = d;
+void    _AVLListX::SetXtra (long i, long d) {
+    xtraD[i] = d;
 }
 
 //______________________________________________________________
 
-void _AVLListX::Clear (bool cL)
-{
+void _AVLListX::Clear (bool cL) {
     xtraD.Clear();
     _AVLList::Clear(cL);
 }
 
 //______________________________________________________________
 
-BaseRef _AVLListX::toStr (unsigned long)
-{
-    _String * str = new _String (128L, true);
-    checkPointer (str);
+BaseRef _AVLListX::toStr (unsigned long) {
+    _StringBuffer * str = new _StringBuffer (128L);
 
     if (countitems() == 0) {
         (*str) << "Empty Associative List";
@@ -96,15 +89,15 @@ BaseRef _AVLListX::toStr (unsigned long)
 
         while (cn>=0) {
             _String * keyVal = (_String*)Retrieve (cn);
-            (*str) << keyVal;
-            (*str) << " : ";
-            (*str) << _String(GetXtra (cn));
-            (*str) << '\n';
+            (*str)  << keyVal
+                    << " : "
+                    << _String(GetXtra (cn))
+                    << '\n';
+          
             cn = Traverser (hist,ls);
         }
     }
 
-    str->Finalize();
     return str;
 }
 
@@ -116,13 +109,13 @@ long  _AVLListX::InsertData (BaseRef b, long d, bool)
          n;
 
     if (w>=0) {
-        n = emptySlots.lData[w];
+        n = emptySlots.list_data[w];
         emptySlots.Delete (w);
-        leftChild.lData[n] = -1;
-        rightChild.lData[n] = -1;
-        balanceFactor.lData[n] = 0;
-        xtraD.lData[n] = d;
-        ((BaseRef*)dataList->lData)[n] = b;
+        leftChild.list_data[n] = -1;
+        rightChild.list_data[n] = -1;
+        balanceFactor.list_data[n] = 0;
+        xtraD.list_data[n] = d;
+        ((BaseRef*)dataList->list_data)[n] = b;
     } else {
         n = dataList->lLength;
         dataList->InsertElement (b,-1,false,false);
@@ -146,6 +139,7 @@ long  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
         }
     } else {
         Insert (b,d);
+        // SLKP 20181113 Insert assumes that b is not a managed object
     }
     return exists;
 }
@@ -153,20 +147,8 @@ long  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
 
 //______________________________________________________________
 
-void _AVLListX::DeleteXtra (long i)
-{
-    xtraD.lData[i] = -1;
-}
-
-//______________________________________________________________
-
-long _AVLListX::FindAndGetXtra(BaseRefConst key, long default_value)
-{
-  long f = Find (key);
-  if (f >= 0) {
-    return GetXtra(f);
-  }
-  return default_value;
+void _AVLListX::DeleteXtra (long i) {
+    xtraD[i] = -1;
 }
 
 //______________________________________________________________
@@ -179,3 +161,22 @@ void _AVLListX::PopulateFromList (_List& src)
     }
 }
 
+//______________________________________________________________
+
+long _AVLListX::GetDataByKey(BaseRefConst key) const {
+    long f = Find (key);
+    if (f < 0L) {
+        return -1L;
+    }
+    return GetXtra(f);
+}
+
+//______________________________________________________________
+
+long _AVLListX::FindAndGetXtra(BaseRefConst key, long default_value) const {
+  long f = Find (key);
+  if (f >= 0) {
+    return GetXtra(f);
+  }
+  return default_value;
+}

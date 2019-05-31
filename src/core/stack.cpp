@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -51,8 +51,7 @@ void _Stack::Initialize (void)
 }
 
 //__________________________________________________________________________________
-void _Stack::Duplicate (BaseRef s)
-{
+void _Stack::Duplicate (BaseRefConst s) {
     theStack.Duplicate(&((_Stack*)s)->theStack);
 }
 
@@ -62,8 +61,7 @@ _Stack::~_Stack (void)
 }
 
 //__________________________________________________________________________________
-bool _Stack::Push (_PMathObj newObj, bool dup)    // push object onto the stack
-{
+bool _Stack::Push (HBLObjectRef newObj, bool dup) {   // push object onto the stack
     if (dup)
         theStack<<(newObj);
     else
@@ -72,9 +70,8 @@ bool _Stack::Push (_PMathObj newObj, bool dup)    // push object onto the stack
 }
 
 //__________________________________________________________________________________
-_PMathObj _Stack::Pop (bool del)        // pop object from the top of the stack
-{
-    _PMathObj r = (_PMathObj)theStack.lData[theStack.lLength-1];
+HBLObjectRef _Stack::Pop (bool del)   {      // pop object from the top of the stack
+    HBLObjectRef r = (HBLObjectRef)theStack.list_data[theStack.lLength-1];
     if (del) {
         theStack.lLength--;
     }
@@ -82,13 +79,19 @@ _PMathObj _Stack::Pop (bool del)        // pop object from the top of the stack
 }
 
 //__________________________________________________________________________________
-long _Stack::StackDepth (void)  // returns the depth of the stack
-{
+HBLObjectRef _Stack::Peek (long offset)   {      // pop object from the top of the stack
+    if (offset < theStack.lLength) {
+        return (HBLObjectRef)theStack.list_data[theStack.lLength-1-offset];
+    }
+    return nil;
+}
+
+//__________________________________________________________________________________
+long _Stack::StackDepth (void) const { // returns the depth of the stack
     return theStack.lLength;
 }
 
 //__________________________________________________________________________________
-void _Stack::Reset (void)   // clears the stack
-{
+void _Stack::Reset (void) {  // clears the stack
     theStack.Clear();
 }

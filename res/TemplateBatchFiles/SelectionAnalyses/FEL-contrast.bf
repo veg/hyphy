@@ -1,4 +1,4 @@
-RequireVersion("2.3.4");
+RequireVersion("2.4.0");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -29,7 +29,7 @@ fel.analysis_description = {
     terms.io.info: "FEL-contrast (Fixed Effects Likelihood) investigates whether or not selective pressures differ between two or more sets of
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
     and then beta rates are tested for equality at each site. LRT is used to assess significance.",
-    terms.io.version: "0.2",
+    terms.io.version: "0.4",
     terms.io.reference: "Kosakovsky Pond SL, Frost SDW, Grossman Z, Gravenor MB, Richman DD, Leigh Brown AJ (2006) Adaptation to Different Human Populations by HIV-1 Revealed by Codon-Based Analyses. PLoS Comput Biol 2(6): e62.",
     terms.io.authors: "Sergei L Kosakovsky Pond",
     terms.io.contact: "spond@temple.edu",
@@ -51,16 +51,29 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 */
 
 
+
 terms.fel.pairwise      = "pairwise";
+terms.fel.permutation   = "permutation";
+terms.fel.test_keys     = "test keys";
 fel.site_alpha          = "Site relative synonymous rate";
 fel.site_beta_reference = "Site relative non-synonymous rate (reference branches)";
 fel.site_tested_classes = {};
 fel.alpha.scaler        = "fel.alpha_scaler";
+fel.site.permutations   = 20;
 
 
 // default cutoff for printing to screen
 fel.p_value = 0.1;
 fel.scaler_prefix = "FEL.scaler";
+
+
+KeywordArgument ("code",      "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+KeywordArgument ("branch-set", "The set of branches to use for testing");
+KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
+KeywordArgument ("p-value", "p-values to test for significance", fel.p_value);
+
 
 // The dictionary of results to be written to JSON at the end of the run
 fel.json = {
@@ -81,7 +94,6 @@ selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
 
 
 
-
 namespace fel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ({utility.getGlobalValue("terms.prefix"): "fel", utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "fel.select_branches"}});
@@ -99,7 +111,10 @@ if (fel.srv == "Yes"){
     fel.srv = FALSE
 }
 /* Prompt for p value threshold */
-fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
+fel.p_value  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
+
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
+fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
 
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to use as the test set in the FEL-contrast analysis');
@@ -121,6 +136,7 @@ fel.branch_class_counter = 0;
 fel.branches.testable = {};
 fel.branches.has_background = FALSE;
 
+
 utility.ForEachPair (fel.branch_sets, "_group_", "_branches_",
     "
      if (_group_ != terms.tree_attributes.background) {
@@ -133,16 +149,19 @@ utility.ForEachPair (fel.branch_sets, "_group_", "_branches_",
         fel.scaler_parameter_names [_group_] = 'fel.beta_scaler_background';
         fel.site_tested_classes [_group_] = 'Site relative non-synonymous rate (reference branches)';
         fel.branches.has_background = TRUE;
+        io.ReportProgressMessageMD('FEL',  'selector', '* ' + Abs(_branches_) + ' branches are in the background group : \\\`' + Join (', ',_branches_) + '\\\`')
      }
      "
 );
+
+
 
 fel.test_count = 1;
 if (fel.branch_class_counter > 2) {
     fel.test_count += fel.branch_class_counter * (fel.branch_class_counter-1) / 2;
 }
 
-fel.table_headers = {2 + utility.Array1D (fel.scaler_parameter_names) + fel.test_count, 2};
+fel.table_headers = {3 + utility.Array1D (fel.scaler_parameter_names) + fel.branch_class_counter + fel.test_count, 2};
 fel.table_headers [0][0] = "alpha"; fel.table_headers [0][1] = "Synonymous substitution rate at a site";
 
 fel.k = 1;
@@ -156,22 +175,32 @@ utility.ForEach (fel.rate.names, "_n_", ,
 
 fel.report.rate_count = fel.k;
 
-fel.table_headers [fel.k][0] = "p-value (overall)";
+utility.ForEach (fel.branches.testable, "_n_", ,
+'
+    fel.table_headers [fel.k][0] = "subs (" + _n_ + ")";
+    fel.table_headers [fel.k][1] = "Substitutions mapped to " + _n_ + " branches";
+    fel.k += 1;
+');
+
+fel.report.subs_kinds = utility.Array1D (fel.branches.testable);
+
+fel.table_headers [fel.k][0] = "P-value (overall)";
 if (fel.branch_class_counter == 1) {
     fel.table_headers [fel.k][1] = "P-value for the test that " + fel.branches.testable[0] + " branches have different non-synonymous rates than background branches";
 } else {
     fel.table_headers [fel.k][1] = "P-value for the test that non-synonymous rates differ between any of the selected groups: " + Join (",", fel.branches.testable);
 }
 
-fel.k += 1;
 
-fel.report.test_count = 1 + fel.branch_class_counter * (fel.branch_class_counter-1) / 2;
+
+fel.report.test_count = 1 + (fel.branch_class_counter > 2) * (fel.branch_class_counter * (fel.branch_class_counter-1) / 2);
 fel.tests.key = {fel.report.test_count, 4};
 fel.tests.key [0][0] = "overall";
 fel.tests.key [0][1] = -1;
-fel.tests.key [0][3] = fel.report.rate_count;
+fel.tests.key [0][3] = fel.report.rate_count + fel.report.subs_kinds;
 
-fel.test.index = 1;
+fel.test.index = fel.test_count > 1;
+fel.k += fel.test_count > 1;
 
 for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
     for (fel.v2 = fel.v + 1; fel.v2 < fel.branch_class_counter; fel.v2 += 1) {
@@ -179,7 +208,7 @@ for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
         fel.tests.key [fel.test.index][0] = fel.branches.testable[fel.v] + " vs " + fel.branches.testable[fel.v2];
         fel.tests.key [fel.test.index][1] = 1 + fel.v;
         fel.tests.key [fel.test.index][2] = 1 + fel.v2;
-        fel.tests.key [fel.test.index][3] = fel.report.rate_count + fel.test.index;
+        fel.tests.key [fel.test.index][3] = fel.report.rate_count + fel.test.index + fel.report.subs_kinds;
 
         fel.table_headers [fel.k][1] = "P-value for  the test that non-synonymous rates differ between " + fel.branches.testable[fel.v] + " and " + fel.branches.testable[fel.v2] + " branches";
         fel.k += 1;
@@ -187,7 +216,17 @@ for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
     }
 }
 
+
+
+io.ReportProgressMessageMD('FEL',  'tests', '**' + fel.test_count + "** " + io.SingularOrPlural (fel.test_count , "test", "tests")+" will be performed at each site");
+
+
 fel.report.counts         = {fel.report.test_count,1};
+
+fel.table_headers [fel.k][0] = "Permutation p-value";
+fel.table_headers [fel.k][1] = "Label permutation test for significant sites";
+
+fel.k += 1;
 
 fel.table_headers [fel.k][0] = "Total branch length";
 fel.table_headers [fel.k][1] = "The total length of branches contributing to inference at this site, and used to scale beta-alpha";
@@ -199,9 +238,10 @@ is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Mar
 the next set of variables.
 */
 
-fel.table_screen_output  = {{"Codon", "alpha", "beta", "test", "p-value"}};
+fel.table_screen_output  = {{"Codon", "alpha", "beta", "substitutions", "test", "LRT p-value", "Permutation p-value"}};
+
 fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.align : "center",
-                            terms.table_options.column_widths : { "0" : 8, "1" : 16, "2" : 30, "3" : 40, "4" : 10}};
+                            terms.table_options.column_widths : { "0" : 8, "1" : 16, "2" : 30, "3" : 30, "4" : 40, "5" : 10, "6" : 10}};
 
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
 estimators.fixSubsetOfEstimates(fel.gtr_results, fel.gtr_results[terms.global]);
@@ -232,7 +272,7 @@ utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel",
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (fel.json,
+selection.io.json_store_lf_withEFV (fel.json,
                             terms.json.global_mg94xrev,
                             fel.final_partitioned_mg_results[terms.fit.log_likelihood],
                             fel.final_partitioned_mg_results[terms.parameters],
@@ -273,20 +313,6 @@ io.CheckAssertion ("None!=fel.alpha && None!=fel.beta", "Could not find expected
 
 selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 
-//----------------------------------------------------------------------------------------
-function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
-    //console.log (node_name + " -> " +  alpha_factor);
-
-    fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
-
-    node_name = tree_name + "." + node_name;
-
-    ExecuteCommands ("
-        `node_name`.`alpha_parameter` := (`alpha_factor`) * fel.branch_length__;
-        `node_name`.`beta_parameter`  := (`beta_factor`)  * fel.branch_length__;
-    ");
-}
-//----------------------------------------------------------------------------------------
 
 model.generic.AddGlobal (fel.site.mg_rev, fel.alpha.scaler, fel.site_alpha);
 
@@ -300,233 +326,27 @@ utility.ForEachPair (fel.scaler_parameter_names, "_group_", "_name_",
 ');
 
 
-
-
-//----------------------------------------------------------------------------------------
-lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping) {
-
-    GetString (lfInfo, ^lf,-1);
-    ExecuteCommands (filter_data);
-    __make_filter ((lfInfo["Datafilters"])[0]);
-
-    utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
-
-    if (^"fel.srv"){
-        ^(^"fel.alpha.scaler") = 1;
-    } else
-    {
-        ^(^"fel.alpha.scaler") := 1;
-    }
-
-    // all rates free
-    utility.ForEach (^"fel.scaler_parameter_names", "_pname_",
-    '
-        ^_pname_ = 1;
-    '
-    );
-
-    Optimize (results, ^lf);
-
-    snapshot = estimators.TakeLFStateSnapshot (lf);
-    alternative = estimators.ExtractMLEs (lf, model_mapping);
-    alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-
-
-    sum = + utility.Map (^"fel.scaler_parameter_names", "_pname_",
-        '^_pname_'
-    );
-
-    testable = utility.Array1D (^"fel.branches.testable");
-    denominator = testable;
-    if (^"fel.branches.has_background") {
-        denominator = testable + 1;
-    }
-
-    // baseline NULL (everything = same rate)
-
-    if (^"fel.srv") {
-        ^(^"fel.alpha.scaler") = (^(^"fel.alpha.scaler")+denominator*sum)/denominator;
-    }
-
-
-    ref_parameter = (^"fel.scaler_parameter_names")[(^"fel.branches.testable")["VALUEINDEXORDER"][0]];
-
-    ^ref_parameter = sum /denominator;
-
-    if (testable == 1) {
-        parameters.SetConstraint ((^"fel.scaler_parameter_names")[^"terms.tree_attributes.background"],ref_parameter, "");
-    } else {
-        utility.ForEach (^"fel.scaler_parameter_names", "_pname_",
-        '
-            //console.log ("REF " + `&ref_parameter`);
-            if (_pname_ != `&ref_parameter`) {
-                parameters.SetConstraint (_pname_,`&ref_parameter`, "");
-            }
-        '
-        );
-    }
-
-    Optimize (results, ^lf);
-    null = estimators.ExtractMLEs (lf, model_mapping);
-    null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-
-    if (testable > 2) {
-        pairwise = {};
-        for (v = 0; v < testable; v+=1) {
-            for (v2 = v + 1; v2 < testable; v2+=1) {
-                v1n = (^"fel.branches.testable")[v];
-                v2n = (^"fel.branches.testable")[v2];
-
-                estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
-                parameters.SetConstraint ((^"fel.scaler_parameter_names")[v1n],(^"fel.scaler_parameter_names")[v2n], "");
-                //GetString (lfi, ^lf, -1);
-                //console.log (lfi);
-                Optimize (results, ^lf);
-                pairwise[v1n + "|" + v2n] = estimators.ExtractMLEs (lf, model_mapping);
-                (pairwise[v1n + "|" + v2n])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-           }
-        }
-    } else {
-        pairwise = None;
-    }
-
-    return {
-                utility.getGlobalValue("terms.alternative") : alternative,
-                utility.getGlobalValue("terms.null"): null,
-                utility.getGlobalValue("terms.fel.pairwise"): pairwise
-           };
-}
-
 /* echo to screen calls */
 
 
 fel.report.pairwise = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
                                     Format(fel.report.row[0],10,3),
                                     Format(fel.report.row[fel.report.rate1_index],10,3) + " : " + Format(fel.report.row[fel.report.rate2_index],10,3),
+                                    fel.report.substitutions,
                                     fel.report.test ,
-                                    Format(fel.report.row[fel.report.pvalue_index],6,4)}};
+                                    Format(fel.report.row[fel.report.pvalue_index],6,4),
+                                    Format(fel.report.row[fel.report.permutation_index],6,4)}};
 
 fel.report.overall = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
                                     Format(fel.report.row[0],10,3),
                                     Format(fel.report.rates[0],10,3) + " - " + Format(fel.report.rates[fel.report.rate_count-2],10,3),
+                                    fel.report.substitutions,
                                     fel.report.test,
-                                    Format(fel.report.row[fel.report.pvalue_index],6,4)}};
-
-
-function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row) {
-
-    fel.k.bound   = Rows (fel.tests.key);
-
-    for (fel.k = 0; fel.k < fel.k.bound;  fel.k += 1) {
-        fel.print_row = None;
-        if (fel.report.row[fel.tests.key[fel.k][3]] <= fel.p_value) {
-            fel.report.test         = fel.tests.key[fel.k][0];
-            fel.report.rate1_index  = fel.tests.key[fel.k][1];
-            fel.report.pvalue_index = fel.tests.key[fel.k][3];
-            if (fel.report.rate1_index >= 0) {
-                fel.report.rate2_index = fel.tests.key[fel.k][2];
-                fel.print_row = fel.report.pairwise;
-            } else {
-                fel.print_row = fel.report.overall;
-                fel.report.rates = Transpose (fel.report.row[{{0,1}}][{{0,fel.report.rate_count-1}}]) % 0;
-            }
-            fel.report.counts [fel.k] += 1;
-        }
-
-        if (None != fel.print_row) {
-            if (!fel.report.header_done) {
-                io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
-                fprintf (stdout,
-                    io.FormatTableRow (fel.table_screen_output,fel.table_output_options));
-                fel.report.header_done = TRUE;
-                fel.table_output_options[terms.table_options.header] = FALSE;
-            }
-            fprintf (stdout,
-                io.FormatTableRow (fel.print_row,fel.table_output_options));
-        }
-    }
+                                    Format(fel.report.row[fel.report.pvalue_index],6,4),
+                                    Format(fel.report.row[fel.report.permutation_index],6,4)}};
 
 
 
-
-}
-
-
-lfunction fel.store_results (node, result, arguments) {
-    //console.log (^"fel.table_headers");
-
-    partition_index = arguments [2];
-    pattern_info    = arguments [3];
-
-    array_size = utility.getGlobalValue ("fel.report.rate_count") + utility.getGlobalValue ("fel.report.test_count") + 1;
-
-    result_row          = { 1, array_size } ["_MATRIX_ELEMENT_COLUMN_>=^'fel.report.rate_count'&&_MATRIX_ELEMENT_COLUMN_<array_size-1"];
-
-
-    if (None != result) { // not a constant site
-
-        result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
-        k = 1;
-        utility.ForEach (^"fel.rate.names", "_n_",
-            '
-                `&result_row`[`&k`] = ( estimators.GetGlobalMLE ((`&result`[utility.getGlobalValue("terms.alternative")], fel.site_tested_classes [_n_])));
-                 `&k` += 1;
-           '
-        );
-
-
-        lrt = math.DoLRT ((result[utility.getGlobalValue("terms.null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                          (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                          Max (1,^'fel.branch_class_counter' - 1));
-
-        p_values = {};
-        p_values ["overall"] = lrt[^'terms.p_value'];
-        test_keys = {};
-
-        for (v = 0; v < ^'fel.branch_class_counter'; v += 1) {
-            for (v2 = v + 1; v2 < ^'fel.branch_class_counter'; v2 += 1) {
-                test_key = (^'fel.branches.testable') [v] + "|" + (^'fel.branches.testable') [v2];
-                test_keys + test_key;
-                lrt = math.DoLRT (((result[utility.getGlobalValue("terms.fel.pairwise")])[test_key])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                                  (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
-                                  1);
-                p_values [test_key] = lrt[^'terms.p_value'];
-            }
-        }
-
-        p_values = math.HolmBonferroniCorrection (p_values);
-        result_row [k] = p_values ["overall"];
-
-        for (v = 1; v < ^'fel.report.test_count'; v+=1) {
-            k += 1;
-            result_row [k] = p_values[test_keys[v-1]];
-        }
-
-        k += 1;
-
-        alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
-
-        utility.ForEach (^"fel.case_respecting_node_names", "_node_",
-                '`&sum` += ((`&alternative_lengths`)[_node_])[utility.getGlobalValue("terms.fit.MLE")];');
-
-        result_row [k] = sum;
-     }
-
-
-    utility.EnsureKey (^"fel.site_results", partition_index);
-
-
-    utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_fel_result_",
-        '
-            (fel.site_results[`&partition_index`])[_fel_result_] = `&result_row`;
-            fel.report.echo (_fel_result_, `&partition_index`, `&result_row`);
-        '
-    );
-
-
-    //assert (0);
-}
-//----------------------------------------------------------------------------------------
 
 
 
@@ -538,7 +358,6 @@ fel.table_output_options[terms.table_options.header] = TRUE;
 model.ApplyModelToTree( "fel.site_tree", fel.trees[fel.partition_index], {terms.default : fel.site.mg_rev}, None);
 
 fel.case_respecting_node_names = trees.branch_names (fel.site_tree, TRUE);
-
 fel.site_patterns = alignments.Extract_site_patterns ((fel.filter_specification[fel.partition_index])[utility.getGlobalValue("terms.data.name")]);
 
 
@@ -552,6 +371,7 @@ utility.ForEach (fel.case_respecting_node_names, "_node_",
          _beta_scaler = fel.scaler_parameter_names[_node_class_];
          fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.alpha.scaler, _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
     ');
+
 
 
 // create the likelihood function for this site
@@ -572,8 +392,9 @@ estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping
 
 fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                "Models" : {{"fel.site.mg_rev"}},
-                               "Headers" : {{"libv3/all-terms.bf"}},
-                               "Variables" : {{"fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise"}}
+                               "Headers" : {{"libv3/all-terms.bf","libv3/tasks/ancestral.bf", "libv3/convenience/math.bf"}},
+                               "Functions" : {{"fel.apply_proportional_site_constraint"}},
+                               "Variables" : {{"terms.fel.test_keys","fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations"}}
                              });
 
 
@@ -585,8 +406,11 @@ utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
                                                             "1" : None,
                                                             "2" : fel.partition_index,
                                                             "3" : _pattern_info_,
-                                                            "4" : fel.site_model_mapping
-                                                            });
+                                                            "4" : fel.site_model_mapping,
+                                                            "5" : fel.selected_branches[fel.partition_index],
+                                                            "6" : fel.scaler_parameter_names,
+                                                            "7" : FALSE
+                                                             });
         } else {
             mpi.QueueJob (fel.queue, "fel.handle_a_site", {"0" : "fel.site_likelihood",
                                                             "1" : alignments.serialize_site_filter
@@ -594,7 +418,10 @@ utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
                                                                (_pattern_info_[utility.getGlobalValue("terms.data.sites")])[0]),
                                                             "2" : fel.partition_index,
                                                             "3" : _pattern_info_,
-                                                            "4" : fel.site_model_mapping
+                                                            "4" : fel.site_model_mapping,
+                                                            "5" : fel.selected_branches[fel.partition_index],
+                                                            "6" : fel.scaler_parameter_names,
+                                                            "7" : FALSE
                                                             },
                                                             "fel.store_results");
         }
@@ -619,7 +446,7 @@ fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
 
 
 for (fel.k = 0; fel.k < fel.report.test_count; fel.k += 1) {
-    io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[fel.k] + "_ " + io.SingularOrPlural (fel.report.counts[fel.k], "site", "sites") + " with different _" + fel.tests.key[fel.k][0] +"_ dN/dS at p <= " + fel.pvalue + "**");
+    io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[fel.k] + "_ " + io.SingularOrPlural (fel.report.counts[fel.k], "site", "sites") + " with different _" + fel.tests.key[fel.k][0] +"_ dN/dS at p <= " + fel.p_value + "**");
 }
 
 
@@ -640,7 +467,7 @@ lfunction fel.select_branches(partition_info) {
     tree_for_analysis = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
     utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
     list_models   = utility.Keys   (available_models); // get keys
-    branch_counts = utility.Values (available_models);
+    branch_counts = utility.UniqueValues (available_models);
     option_count  = Abs (available_models);
 
     io.CheckAssertion("`&option_count` >= 2", "FEL-contrast requires at least one designated set of branches in the tree.");
@@ -690,3 +517,318 @@ lfunction fel.select_branches(partition_info) {
     return return_set;
 }
 
+//----------------------------------------------------------------------------------------
+function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
+
+    fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
+
+    node_name = tree_name + "." + node_name;
+
+    ExecuteCommands ("
+        `node_name`.`alpha_parameter` := (`alpha_factor`) * fel.branch_length__;
+        `node_name`.`beta_parameter`  := (`beta_factor`)  * fel.branch_length__;
+    ");
+}
+//----------------------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------------------
+lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, branch_sets, parameter_names, permutation) {
+
+    utility.ForEach (utility.Keys (branch_sets), "_node_",
+        '_node_class_ = (`&branch_sets`)[_node_];
+         _beta_scaler = (`&parameter_names`)[_node_class_];
+         fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.alpha.scaler, _beta_scaler, 
+            (( fel.final_partitioned_mg_results[terms.branch_length])[partition_index])[_node_]);
+    ');
+
+    GetString (lfInfo, ^lf,-1);    
+    ExecuteCommands (filter_data);
+    __make_filter ((lfInfo["Datafilters"])[0]);
+
+    utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
+
+    if (^"fel.srv"){
+        ^(^"fel.alpha.scaler") = 1;
+    } else
+    {
+        ^(^"fel.alpha.scaler") := 1;
+    }
+
+    // all rates free
+    utility.ForEach (^"fel.scaler_parameter_names", "_pname_",
+    '
+        ^_pname_ = 1;
+    '
+    );
+
+    Optimize (results, ^lf);
+    
+    /**
+        infer and report ancestral substitutions
+    */
+    
+    if (!permutation) {
+        ancestors   = ancestral._buildAncestralCacheInternal (lf, 0, FALSE, FALSE);
+        counts      = ancestral.ComputeSubstitutionCounts (ancestors, null, null, null);
+        branch_map  = utility.SwapKeysAndValues (counts["Branches"]);
+        counts_by_branch_set = {};
+    
+    
+        utility.ForEach (counts["Branches"], "_name_", '
+            `&counts_by_branch_set`[`&branch_sets`[_name_]] += ((`&counts`)["Counts"])[+`&branch_map`[_name_]];
+        ');
+    }
+    
+    
+            
+    snapshot = estimators.TakeLFStateSnapshot (lf);
+    alternative = estimators.ExtractMLEs (lf, model_mapping);
+    alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+
+
+    sum = + utility.Map (^"fel.scaler_parameter_names", "_pname_",
+        '^_pname_'
+    );
+
+    testable = utility.Array1D (^"fel.branches.testable");
+    denominator = testable;
+    if (^"fel.branches.has_background") {
+        denominator = testable + 1;
+    }
+
+    // baseline NULL (everything = same rate)
+
+    if (^"fel.srv") {
+        ^(^"fel.alpha.scaler") = Min (10, (^(^"fel.alpha.scaler")+denominator*sum)/denominator);
+    }
+
+    ref_parameter = (^"fel.scaler_parameter_names")[(^"fel.branches.testable")["VALUEINDEXORDER"][0]];
+
+    ^ref_parameter = sum /denominator;
+
+    if (testable == 1) {
+        parameters.SetConstraint ((^"fel.scaler_parameter_names")[^"terms.tree_attributes.background"],ref_parameter, "");
+    } else {
+        utility.ForEach (^"fel.branches.testable", "_gname_",
+        '
+            //console.log ("REF " + `&ref_parameter`);
+            _pname_ =  (^"fel.scaler_parameter_names")[_gname_];
+            if (_pname_ != `&ref_parameter`) {
+            	//console.log (_pname_ + "=>" + `&ref_parameter`);
+                parameters.SetConstraint (_pname_,`&ref_parameter`, "");
+            }
+        '
+        );
+    }
+
+    Optimize (results, ^lf);
+    Null = estimators.ExtractMLEs (lf, model_mapping);
+    Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+
+    if (testable > 2) {
+        pairwise = {};
+        for (v = 0; v < testable; v+=1) {
+            for (v2 = v + 1; v2 < testable; v2+=1) {
+                v1n = (^"fel.branches.testable")[v];
+                v2n = (^"fel.branches.testable")[v2];
+
+                estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
+                parameters.SetConstraint ((^"fel.scaler_parameter_names")[v1n],(^"fel.scaler_parameter_names")[v2n], "");
+                Optimize (results, ^lf);
+                pairwise[v1n + "|" + v2n] = estimators.ExtractMLEs (lf, model_mapping);
+                (pairwise[v1n + "|" + v2n])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+           }
+        }
+    } else {
+        pairwise = None;
+    }
+    
+    lrt = math.DoLRT (Null[utility.getGlobalValue("terms.fit.log_likelihood")],
+                      alternative[utility.getGlobalValue("terms.fit.log_likelihood")],
+                      Max (1,^'fel.branch_class_counter' - 1));
+
+    p_values = {};
+    p_values ["overall"] = lrt[^'terms.p_value'];
+    test_keys = {};
+
+    if (^'fel.report.test_count' > 1) {
+
+        for (v = 0; v < ^'fel.branch_class_counter'; v += 1) {
+            for (v2 = v + 1; v2 < ^'fel.branch_class_counter'; v2 += 1) {
+                test_key = (^'fel.branches.testable') [v] + "|" + (^'fel.branches.testable') [v2];
+                test_keys + test_key;
+                lrt = math.DoLRT ((pairwise[test_key])[utility.getGlobalValue("terms.fit.log_likelihood")],
+                                   alternative[utility.getGlobalValue("terms.fit.log_likelihood")],
+                                  1);
+                p_values [test_key] = lrt[^'terms.p_value'];
+            }
+        }
+    }
+    
+
+    p_values = math.HolmBonferroniCorrection (p_values);
+    
+    if (permutation == FALSE && (Min (p_values,0))["value"] <= ^'fel.p_value') {
+        result = {
+                    utility.getGlobalValue("terms.alternative") : alternative,
+                    utility.getGlobalValue("terms.Null"): Null,
+                    utility.getGlobalValue("terms.fel.pairwise"): pairwise,
+                    utility.getGlobalValue("terms.substitutions") : counts_by_branch_set,
+                    utility.getGlobalValue("terms.p_value") : p_values,
+                    utility.getGlobalValue("terms.fel.test_keys") : test_keys
+                };
+            
+        p_min = (Min (p_values,0))["value"];
+        console.log ("Entering permutation mode with p = " + p_min);
+        perm_p_values = {};
+        for (rep = 0; rep < ^'fel.site.permutations'; rep+=1) {
+            this_set = (fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, Random(branch_sets,0), parameter_names, 1))[utility.getGlobalValue("terms.p_value")];
+            console.log (this_set);
+            perm_p_values + this_set;
+            console.log ("" + rep + " => " + (Min (this_set,0))["value"]);
+            if ((Min (this_set,0))["value"] <= p_min) {
+                break;
+            }
+        }
+        result [utility.getGlobalValue("terms.fel.permutation")]= perm_p_values;
+        return result;
+    } 
+    
+    return {
+                utility.getGlobalValue("terms.alternative") : alternative,
+                utility.getGlobalValue("terms.Null"): Null,
+                utility.getGlobalValue("terms.fel.pairwise"): pairwise,
+                utility.getGlobalValue("terms.substitutions") : counts_by_branch_set,
+                utility.getGlobalValue("terms.fel.test_keys") : test_keys,
+                utility.getGlobalValue("terms.p_value") : p_values
+           };
+}
+
+
+function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row) {
+
+    fel.k.bound   = Rows (fel.tests.key);
+
+
+
+    for (fel.k = 0; fel.k < fel.k.bound;  fel.k += 1) {
+        fel.print_row = None;
+        if (fel.report.row[fel.tests.key[fel.k][3]] <= fel.p_value) {
+            fel.report.test         = fel.tests.key[fel.k][0];
+            fel.report.rate1_index  = fel.tests.key[fel.k][1];
+            fel.report.pvalue_index = fel.tests.key[fel.k][3];
+            
+            fel.report.permutation_index = Columns (fel.report.row) - 2;
+            
+            if (fel.report.rate1_index >= 0) {
+                fel.report.rate2_index = fel.tests.key[fel.k][2];
+                fel.print_row = fel.report.pairwise;
+                fel.report.substitutions = "" + fel.report.row[-1 + ^"fel.report.rate_count" + fel.report.rate1_index] + ", " +
+                                                fel.report.row[-1 + ^"fel.report.rate_count" + fel.report.rate2_index];
+                
+            } else {
+                fel.print_row = fel.report.overall;
+                fel.report.rates = Transpose (fel.report.row[{{0,1}}][{{0,fel.report.rate_count-1}}]) % 0;
+                fel.report.substitutions = "" + fel.report.row[^"fel.report.rate_count"];
+                for (fel.i = 1; fel.i < fel.report.subs_kinds; fel.i +=1) {
+                     fel.report.substitutions += ", " + fel.report.row[^"fel.report.rate_count" + fel.i];
+                }
+                
+            }
+            fel.report.counts [fel.k] += 1;
+        }
+
+        if (None != fel.print_row) {
+            if (!fel.report.header_done) {
+                io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.p_value + "\n");
+                fprintf (stdout,
+                    io.FormatTableRow (fel.table_screen_output,fel.table_output_options));
+                fel.report.header_done = TRUE;
+                fel.table_output_options[terms.table_options.header] = FALSE;
+            }
+            fprintf (stdout,
+                io.FormatTableRow (fel.print_row,fel.table_output_options));
+        }
+    }
+}
+
+lfunction fel.store_results (node, result, arguments) {
+    //console.log (^"fel.table_headers");
+        
+    partition_index = arguments [2];
+    pattern_info    = arguments [3];
+
+    array_size  = utility.getGlobalValue ("fel.report.rate_count") + utility.getGlobalValue ("fel.report.subs_kinds") + utility.getGlobalValue ("fel.report.test_count") + 2;
+    result_row  = { 1, array_size } ["_MATRIX_ELEMENT_COLUMN_>=^'fel.report.rate_count'&&_MATRIX_ELEMENT_COLUMN_<array_size-1"];
+
+
+    if (None != result) { // not a constant site
+
+        result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
+        k = 1;
+        utility.ForEach (^"fel.rate.names", "_n_",
+            '
+                `&result_row`[`&k`] = ( estimators.GetGlobalMLE ((`&result`[utility.getGlobalValue("terms.alternative")], fel.site_tested_classes [_n_])));
+                 `&k` += 1;
+           '
+        );
+
+        utility.ForEach (^"fel.branches.testable", "_n_",
+            '
+                `&result_row`[`&k`] = (`&result`[utility.getGlobalValue("terms.substitutions")])[_n_];
+                 `&k` += 1;
+           '
+        );
+        
+
+        
+        p_values = result[^"terms.p_value"];
+        result_row [k] = p_values ["overall"];
+        
+        test_keys = result[^"terms.fel.test_keys"];
+        
+        for (v = 1; v < ^'fel.report.test_count'; v+=1) {
+            k += 1;
+            result_row [k] = p_values[test_keys[v-1]];
+        }
+        
+
+        k += 1;
+        
+        alternative_lengths = utility.Array1D(result[^"terms.fel.permutation"]);
+
+        if (alternative_lengths) {
+            result_row [k] = 1./alternative_lengths;
+        } else {
+            result_row [k] = -1;
+        }
+
+        k += 1;
+        
+        sum = 0;
+    
+        alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
+
+        utility.ForEach (^"fel.case_respecting_node_names", "_node_",
+                '`&sum` += ((`&alternative_lengths`)[_node_])[utility.getGlobalValue("terms.fit.MLE")];');
+
+        result_row [k] = sum;
+        
+      }
+
+
+    //console.log (result_row);
+
+    utility.EnsureKey (^"fel.site_results", partition_index);
+
+
+    utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_fel_result_",
+        '
+            (fel.site_results[`&partition_index`])[_fel_result_] = `&result_row`;
+            fel.report.echo (_fel_result_, `&partition_index`, `&result_row`);
+        '
+    );
+
+
+    //assert (0);
+}

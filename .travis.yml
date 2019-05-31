@@ -1,61 +1,338 @@
-# OpenMP projects should set the environment variable OMP_NUM_THREADS to a reasonably small value (say, 4). 
-dist: trusty
-sudo : false
-
 notifications:
     slack: veg-igem:rqQd95zjTuZoRNElekQx2CLf
     email:
         recipients:
-            - spond@temple.edu
             - steven@stevenweaver.org
+            - spond@temple.edu
+            - tuj86312@temple.edu
         on_success: change
         on_failure: always
 
 branches:
   only:
     - master
-    - beta
+    - develop
 
-env:
-  - METHOD_TEST=tests/hbltests/libv3/SLAC.wbf
-  - METHOD_TEST=tests/hbltests/libv3/SLAC-partitioned.wbf
-  - METHOD_TEST=tests/hbltests/libv3/FEL.wbf
-  - METHOD_TEST=tests/hbltests/libv3/MEME.wbf
-  - METHOD_TEST=tests/hbltests/libv3/MEME-partitioned.wbf
-  - METHOD_TEST=tests/hbltests/libv3/FUBAR.wbf
-  - METHOD_TEST=tests/hbltests/libv3/RELAX.wbf
-  - METHOD_TEST=tests/hbltests/libv3/aBSREL.wbf
-  - METHOD_TEST=tests/hbltests/libv3/BUSTED.wbf
-  - METHOD_TEST=tests/hbltests/libv3/LEISR.wbf
-  - METHOD_TEST=tests/hbltests/libv3/BGM.wbf
-
+dist: xenial
+sudo : false
 language: c++
-
 compiler: 
   - gcc
-  - clang
-
-addons:
-  apt:
-    sources:
-        - llvm-toolchain-precise
-        - ubuntu-toolchain-r-test
-        - george-edison55-precise-backports
-    packages:
-        - g++-7
-        - gcc-7
-
-install:
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
-  - cmake . 
-  - make HYPHYMP
-  - make HYPHYGTEST
-
 script: 
-  - export OMP_NUM_THREADS=8
-  - export LD_LIBRARY_PATH=/usr/local/clang/lib:$LD_LIBRARY_PATH
-  - ./HYPHYGTEST
-  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/math.bf
-  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/iofunctions.bf
-  - ./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/utilityfunctions.bf
-  - ./HYPHYMP LIBPATH=`pwd`/res/ $METHOD_TEST
+  - export OMP_NUM_THREADS=4
+  - travis_wait 60 eval $envSpecificTest
+
+
+matrix:
+  include:
+    # ---- Run all the tests with gcc-7 ----
+    - os: linux
+      env:
+        - envSpecificTest="bash ./test_kwargs.sh"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+    
+    - os: linux
+      env:
+        - envSpecificTest="bash ./run_unit_tests.sh"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+    
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/SLAC.wbf"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+    
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP SLAC --alignment ./tests/hbltests/libv3/data/partitioned.nex --branches Internal"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+    
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP FEL --alignment ./tests/hbltests/libv3/data/CD2.nex"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/data/CD2.nex"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP MEME --alignment ./tests/hbltests/libv3/data/CD2.nex --branches GROUP1"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP FUBAR --alignment ./tests/hbltests/libv3/data/CD2.nex"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/RELAX.wbf"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP LIBPATH=`pwd`/res/ tests/hbltests/libv3/aBSREL.wbf"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP BUSTED --alignment ./tests/hbltests/data/CD2.nex --srv No --branches Internal"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./HYPHYMP BGM --alignment ./tests/hbltests/data/CD2.nex"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./hyphy fade --alignment ./tests/hbltests/data/CD2_AA.fna"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+    - os: linux
+      env:
+        - envSpecificTest="./hyphy gard --alignment ./tests/hbltests/data/CD2.nex"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-7
+              - gcc-7
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+        - cmake . 
+        - make
+
+
+    # ---- Just run the hbl unit tests with gcc-4, 5 and 6 ----
+    # gcc-4
+    - os: linux
+      env:
+        - envSpecificTest="bash ./run_unit_tests.sh"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-4.9
+              - gcc-4.9
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+        - cmake . 
+        - make
+
+    # gcc-5
+    - os: linux
+      env:
+        - envSpecificTest="bash ./run_unit_tests.sh"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-5
+              - gcc-5
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
+        - cmake . 
+        - make
+
+    # gcc-6
+    - os: linux
+      env:
+        - envSpecificTest="bash ./run_unit_tests.sh"
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-6
+              - gcc-6
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi
+        - cmake . 
+        - make

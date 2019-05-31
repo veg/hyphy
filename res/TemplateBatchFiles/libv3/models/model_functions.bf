@@ -28,7 +28,7 @@ lfunction model.GetParameters_RegExp(model, re) {
 
 /**
  * @name model.ApplyModelToTree
- * @param id
+ * @param id {String}
  * @param tree
  * @param model_list
  * @param rules
@@ -219,6 +219,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
 
 
+ 
 	// Add data filter information to model description
 	if ( None != data_filter) {
 	    models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
@@ -229,6 +230,8 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 
     // Define type of frequency estimator
+    
+    
 	if (None != estimator_type) {
 		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
 	}
@@ -237,7 +240,6 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	model.generic.DefineModel.model = Call (model.generic.DefineModel.model [terms.model.frequency_estimator], model.generic.DefineModel.model,
 													    id,
 													    data_filter);
-
 
 
     // Define id's for frequencies, Q, and id
@@ -254,11 +256,9 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	    utility.SetEnvVariable (model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model[terms.efv_estimate]);
 	}
 
-
 	model.define_from_components (id, 	model.generic.DefineModel.model [terms.model.matrix_id], model.generic.DefineModel.model [terms.model.efv_id], model.generic.DefineModel.model [terms.model.canonical]);
 
     if (Type (model.generic.DefineModel.model[terms.model.post_definition]) == "String") {
-
        Call (model.generic.DefineModel.model[terms.model.post_definition], model.generic.DefineModel.model);
     }
 
@@ -347,10 +347,12 @@ function models.generic.ConstrainBranchLength (model, value, parameter) {
     if (Type (value) == "Number") {
         if (Abs((model[terms.parameters])[terms.local]) == 1) {
             if (Type (model [terms.model.branch_length_string]) == "String") {
+            
                 models.generic.ConstrainBranchLength.expression = model [terms.model.branch_length_string];
                 models.generic.ConstrainBranchLength.bl = (Columns ((model[terms.parameters])[terms.local]))[0];
                 models.generic.ConstrainBranchLength.bl.p = parameter + "." + models.generic.ConstrainBranchLength.bl;
                 models.generic.ConstrainBranchLength.substitution = {models.generic.ConstrainBranchLength.bl : 1};
+                utility.Extend (models.generic.ConstrainBranchLength.substitution, parameters.SetCategoryVariables (model));
                 models.generic.ConstrainBranchLength.expression = "(" + Simplify (models.generic.ConstrainBranchLength.expression, models.generic.ConstrainBranchLength.substitution) + ")";
                 Eval (models.generic.ConstrainBranchLength.bl.p + ":=" + value + "/" + models.generic.ConstrainBranchLength.expression);
                 messages.log ("models.generic.ConstrainBranchLength: " + models.generic.ConstrainBranchLength.bl.p + ":=" + value + "/" + models.generic.ConstrainBranchLength.expression);
@@ -385,7 +387,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 models.generic.SetBranchLength.bl = Call (model [terms.model.time], model[terms.model.type]);
                 models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
                 if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) == FALSE) {
-                     models.generic.SetBranchLength.bl = utility.First (utility.Values ((model[terms.parameters])[terms.local]), "_name_",
+                     models.generic.SetBranchLength.bl = utility.First (utility.UniqueValues ((model[terms.parameters])[terms.local]), "_name_",
                             'parameters.IsIndependent (parameter + "." + _name_)');
 
                      if (None == models.generic.SetBranchLength.bl) {
@@ -396,7 +398,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 }
 
                 models.generic.SetBranchLength.substitution = {};
-                utility.ForEach (utility.Values ((model[terms.parameters])[terms.local]), "_name_",
+                utility.ForEach (utility.UniqueValues ((model[terms.parameters])[terms.local]), "_name_",
                             'if (_name_ != models.generic.SetBranchLength.bl) {
                                 models.generic.SetBranchLength.substitution [_name_] = Eval (parameter + "." + _name_);
                              }');
@@ -529,7 +531,7 @@ lfunction model.MatchAlphabets (a1, a2) {
 lfunction models.BindGlobalParameters (models, filter) {
     if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
         reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
-        candidate_set = utility.Values(utility.Filter (utility.Keys (reference_set), "_key_",
+        candidate_set = utility.UniqueValues(utility.Filter (utility.Keys (reference_set), "_key_",
             "regexp.Find (_key_,`&filter`)"
         ));
 

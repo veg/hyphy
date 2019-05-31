@@ -1,4 +1,4 @@
-RequireVersion ("2.3.12");
+RequireVersion ("2.4.0");
 
 
 LoadFunctionLibrary     ("libv3/all-terms.bf");
@@ -55,8 +55,8 @@ namespace terms.fade {
 
     namespace methods {
         MH  = "Metropolis-Hastings";
-        VB0 = "Variational Bayes";
-        CG  = "Collapsed Gibbs";
+        VB0 = "Variational-Bayes";
+        CG  = "Collapsed-Gibbs";
     }
 
 };
@@ -93,11 +93,11 @@ fade.analysis_description = {terms.io.info :
                             evolve towards a particular residue along a subset of branches at accelerated rates compared to reference model.
                             FADE uses a random effects model and latent Dirichlet allocation (LDA) - inspired approximation methods to allocate sites to rate classes.",
 
-                           terms.io.version : "0.1",
+                           terms.io.version : "0.2",
                            terms.io.reference : "TBD",
                            terms.io.authors : "Sergei L Kosakovsky Pond",
                            terms.io.contact : "spond@temple.edu",
-                           terms.io.requirements : "A protein alignment and a phylogenetic tree (optionally annotated with {})"
+                           terms.io.requirements : "A protein alignment and a **rooted** phylogenetic tree (optionally annotated with {})"
                           };
 
 
@@ -121,9 +121,18 @@ namespace fade {
 
 
 // =========== LOAD DATA AND SET UP CACHES
+
+//*******************************************************************************************//
+KeywordArgument ("alignment",      "Protein alignment to screen for directional selection");
+//*******************************************************************************************//
+
 SetDialogPrompt ("Specify a protein multiple sequence alignment file");
 fade.alignment_info                  = alignments.ReadProteinDataSet ("fade.dataset", None);
-fade.alignment_info[terms.json.json] = fade.alignment_info[terms.data.file] + ".FADE.json";
+
+//*******************************************************************************************//
+KeywordArgument ("output",   "Save FADE results (JSON) to [default is alignment+.FADE.json]", fade.alignment_info[terms.data.file] + ".FADE.json");
+//*******************************************************************************************//
+fade.alignment_info[terms.json.json] =  io.PromptUserForFilePath ("Save FADE results (JSON) to");
 
 
 
@@ -133,20 +142,27 @@ selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.
 selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.sequences, fade.alignment_info [terms.data.sequences]);
 selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.sites, fade.alignment_info [terms.data.sites]);
 
-
 fade.path.base = (fade.json [terms.json.input])[terms.json.file];
-fade.path.cache = fade.path.base + ".FADE.cache";
+
+//*******************************************************************************************//
+KeywordArgument ("cache",   "Save FADE cache to [default is alignment+.FADE.cache]", fade.path.base + ".FADE.cache");
+//*******************************************************************************************//
+fade.path.cache = io.PromptUserForString ("Save FADE cache to");
 io.ReportProgressBar  ("init", "Loading existing cache files");
 fade.cache = io.LoadCacheFromFile (fade.path.cache);
-io.ClearProgressBar                   ();
+io.ClearProgressBar  ();
 
-console.log ( "> FADE will write cache and result files to _`fade.path.base`.FADE.cache_ and _`fade.path.base`.FADE.json_, respectively \n\n");
+console.log ( "> FADE will write cache and result files to _`fade.path.cache`_ and _`fade.alignment_info[terms.json.json]`_, respectively \n\n");
 
 
 
 fade.alignment_sample_size = fade.alignment_info[terms.data.sequences] * fade.alignment_info[terms.data.sites];
 
 alignments.EnsureMapping ("fade.dataset", fade.alignment_info);
+
+//*******************************************************************************************//
+KeywordArgument ("tree",      "A rooted phylogenetic tree", null, "Please select a tree file for the data:");
+//*******************************************************************************************//
 
 fade.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (fade.alignment_info[utility.getGlobalValue("terms.data.partitions")],
                                                                               fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")]
@@ -167,22 +183,10 @@ if (utility.Has (fade.cache, terms.fade.cache.root, "AssociativeList")) {
     fade.roots = {};
 }
 
-fade.prompted_for_roots = FALSE;
-
-utility.ForEachPair (fade.partitions_and_trees, "index", "_partition_",
-                "
-                    if ((_partition_[terms.data.tree])[terms.trees.rooted] == FALSE) {
-                        if (utility.Has (fade.roots,index,'String')) {
-                            (fade.partitions_and_trees[index])[terms.data.tree] = (trees.RootTree (_partition_[terms.data.tree], fade.roots[index]))[terms.data.tree];
-                        } else {
-                            fade.rooted_tree = trees.RootTree (_partition_[terms.data.tree], None);
-                            (fade.partitions_and_trees[index])[terms.data.tree] = fade.rooted_tree[terms.data.tree];
-                            fade.roots[index] = fade.rooted_tree[terms.trees.root];
-                            fade.prompted_for_roots = TRUE;
-                        }
-                    }
-                "
-                );
+if (utility.Has (fade.roots,index,'String')) {
+ (fade.partitions_and_trees[index])[terms.data.tree] = (trees.RootTree (_partition_[terms.data.tree], fade.roots[index]))[terms.data.tree];
+}
+assert (((fade.partitions_and_trees[index])[terms.data.tree])[terms.trees.rooted], "Input tree MUST be rooted");
 
 
 fade.name_mapping = fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
@@ -282,9 +286,25 @@ utility.ForEachPair (fade.baseline_fit[terms.branch_length], "_part_", "_value_"
 '
 );
 
-selection.io.json_store_lf(fade.json, fade.baseline_model,fade.baseline_fit[terms.fit.log_likelihood],
+//Normalize EFV for saving to JSON
+fade.baseline_efv = {20, 1};
+for (i = 0; i < 20; i+=1)
+{
+    fade.efv_search = terms.characterFrequency(models.protein.alphabet[i]);  
+    fade.baseline_efv[i] = ((fade.baseline_fit[terms.global])[fade.efv_search])[terms.fit.MLE];
+
+}
+fade.baseline_efv = fade.baseline_efv * (1/(+fade.baseline_efv));
+
+
+
+
+selection.io.json_store_lf_withEFV(fade.json, fade.baseline_model,fade.baseline_fit[terms.fit.log_likelihood],
                             fade.baseline_fit[terms.parameters],
-                            fade.alignment_sample_size, None, 0);
+                            fade.alignment_sample_size, 
+                            None, 
+                            fade.baseline_efv,
+                            0);
 
 utility.ForEachPair (fade.filter_specification, "_key_", "_value_",
     'selection.io.json_store_branch_attribute(fade.json, fade.baseline_model, terms.branch_length, 0,
@@ -395,7 +415,7 @@ namespace fade {
     site.substitution.string := fade.SubstitutionHistory (((cache [^"terms.fade.cache.substitutions"])[partition_index])[s]);
 
     site_annotation_headers = {
-                                    "Composition" : "Aminoacid composition of site",
+                                    "Composition" : "Amino acid composition of site",
                                     "Substitutions" : "Substitution history on selected branches"
                                   };
 
@@ -793,12 +813,18 @@ io.SpoolJSON (fade.json, fade.alignment_info[terms.json.json]);
 
 function     fade.RunPrompts (prompts) {
     if (prompts["branches"]) {
+        //*******************************************************************************************//
+        KeywordArgument ("branches", "The branches to test", "All");
+        //*******************************************************************************************//
         fade.selected_branches = selection.io.defineBranchSets ( fade.partitions_and_trees );
         fade.cache [terms.fade.cache.branches] = fade.selected_branches;
         prompts["branches"] = FALSE;
     }
 
      if (prompts["grid"]) {
+        //*******************************************************************************************//
+        KeywordArgument ("grid", "The number of grid points", "20");
+        //*******************************************************************************************//
         fade.run_settings["grid size"] = io.PromptUser ("> Number of grid points per dimension (total number is D^2)",fade.run_settings["grid size"],5,50,TRUE);
         prompts["grid"] = FALSE;
     }
@@ -807,6 +833,9 @@ function     fade.RunPrompts (prompts) {
 
     if (prompts["model"]) {
         utility.Extend (models.protein.empirical_models, {"GTR" : "General time reversible model (189 estimated parameters)."});
+        //*******************************************************************************************//
+        KeywordArgument ("model", "The substitution model to use", "GTR");
+        //*******************************************************************************************//
         fade.baseline_model         = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
         fade.generator              = (utility.Extend (models.protein.empirical.plusF_generators , {"GTR" : "models.protein.REV.ModelDescription"}))[fade.baseline_model ];
         fade.cache[terms.fade.cache.model] = fade.baseline_model;
@@ -816,25 +845,35 @@ function     fade.RunPrompts (prompts) {
 
 
      if (prompts["method"]) {
+        //*******************************************************************************************//
+        KeywordArgument ("method", "Inference method to use", "`terms.fade.methods.VB0`");
+        //*******************************************************************************************//
         fade.run_settings["method"] = io.SelectAnOption  ({
-                                                                terms.fade.methods.MH : "Full Metropolis-Hastings MCMC algorithm (slowest, original 2013 paper implementation)",
+                                                                terms.fade.methods.VB0 : "0-th order Variational Bayes approximations (fastest, recommended default)",
                                                                 terms.fade.methods.CG : "Collapsed Gibbs sampler (intermediate speed)",
-                                                                terms.fade.methods.VB0 : "0-th order Variational Bayes approximations (fastest, recommended default)"
+                                                                terms.fade.methods.MH : "Full Metropolis-Hastings MCMC algorithm (slowest, original 2013 paper implementation)"
                                                             }, "Posterior estimation method");
         prompts["method"] = FALSE;
      }
 
     if (prompts["chain"]) {
         if (fade.run_settings["method"] ==  terms.fade.methods.MH) {
+            //*******************************************************************************************//
+            KeywordArgument ("chains", "How many MCMC chains to run", fade.run_settings["chains"]);
+            //*******************************************************************************************//
             fade.run_settings["chains"] = io.PromptUser ("> Number of MCMC chains to run",fade.run_settings["chains"],2,20,TRUE);
         } else {
             fade.run_settings["chains"] = 1;
         }
         if (fade.run_settings["method"] !=  terms.fade.methods.VB0) {
+            KeywordArgument ("chain-length", "MCMC chain length", fade.run_settings["chain-length"]);
             fade.run_settings["chain-length"] = io.PromptUser ("> The length of each chain",fade.run_settings["chain-length"],5e3,5e7,TRUE);
+            KeywordArgument ("burn-in", "MCMC chain burn in", fade.run_settings["chain-length"]$2);
             fade.run_settings["burn-in"] = io.PromptUser ("> Use this many samples as burn-in",fade.run_settings["chain-length"]$2,fade.run_settings["chain-length"]$20,fade.run_settings["chain-length"]*95$100,TRUE);
+            KeywordArgument ("samples", "MCMC samples to draw", fade.run_settings["samples"]);
             fade.run_settings["samples"] = io.PromptUser ("> How many samples should be drawn from each chain",fade.run_settings["samples"],50,fade.run_settings["chain-length"]-fade.run_settings["burn-in"],TRUE);
         }
+        KeywordArgument ("concentration_parameter", "The concentration parameter of the Dirichlet prior", fade.run_settings["concentration"]);
         fade.run_settings["concentration"] = io.PromptUser  ("> The concentration parameter of the Dirichlet prior",fade.run_settings["concentration"],0.001,1,FALSE);
         prompts["chain"] = FALSE;
     }

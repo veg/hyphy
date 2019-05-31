@@ -1,0 +1,100 @@
+fprintf (stdout, "\n\nComputing likelihood weights (this may take a while)...\n");
+
+ExecuteCommands ("LFCompute ("+LF_NAME+",LF_START_COMPUTE);");
+
+scores = {SAMPLE_N,2};
+
+bestScore = -1e25;
+
+timer = Time (0);
+for (itCount = 0; itCount < SAMPLE_N; itCount = itCount + 1)
+{
+	ExecuteCommands (assignmentString+"LFCompute ("+LF_NAME+",lfWeight);");
+	scores[itCount][0] = lfWeight;
+	
+	if (lfWeight > bestScore)
+	{
+		bestScore = lfWeight;
+	}
+	
+	if ((1+itCount) % 100 == 0)
+	{
+		fprintf (stdout, itCount+1, "/", SAMPLE_N, " evaluations done. Estimated remaining time: ",Format (((SAMPLE_N-itCount-1)/(itCount+1))*(Time(0)-timer),5,2)," seconds \n");
+	}
+}
+
+	/* restore to original values */
+
+for (k=0; k<varCount; k=k+1)
+{
+	aKey = usedVars[k];
+	ExecuteCommands (aKey + "=" + stashedValues[k][0] + ";");
+}	
+
+ExecuteCommands ("LFCompute ("+LF_NAME+",LF_DONE_COMPUTE);");
+
+fprintf (stdout, "\n\nResampling...\n");
+coord = 0;
+for (itCount = 0; itCount < SAMPLE_N; itCount = itCount + 1)
+{
+	scores[itCount][0] = Exp(scores[itCount][0]-bestScore);
+	coord = coord + scores[itCount][0];
+}
+
+N_eff = 0;
+
+for (itCount = 0; itCount < SAMPLE_N; itCount = itCount + 1)
+{
+	N_eff = N_eff + (scores[itCount][0]/coord)^2;
+}
+
+fprintf (stdout, "Estimated effective sample size: ", 1/N_eff, "\n\n");
+
+j = 0;
+sampledPoints = {SAMPLE_M,varCount+1};
+
+timer = Time (0);
+
+for (itCount = 0; itCount < SAMPLE_M; itCount = itCount + 1)
+{
+	sum = Random(0,1);
+	runningSum     = 0;
+	lastValidIndex = 0;
+	
+	for (k=0; k<SAMPLE_N && runningSum < sum;k=k+1)
+	{
+		if (scores[k][1] == 0)
+		{
+			lastValidIndex = k;
+			runningSum = runningSum + scores[k][0] / coord; 
+		}
+	}
+	
+	sampledPoints[j][0] = Log(scores[lastValidIndex][0])+bestScore;
+	for (k = 0; k < varCount; k=k+1)
+	{
+		sampledPoints[j][k+1] = generatedSamples[lastValidIndex][k];	
+	}
+	coord = coord - scores[lastValidIndex][0];
+	scores[lastValidIndex][1] = 1;
+	j = j+1;
+
+	if ((1+itCount) % 500 == 0)
+	{
+		fprintf (stdout, itCount+1, "/", SAMPLE_M, " samples drawn. Estimated remaining time: ",Format (((SAMPLE_M-itCount-1)/(itCount+1))*(Time(0)-timer),5,2)," seconds \n");
+	}
+}
+
+labelMatrix = {1,varCount+1};
+
+labelMatrix[0] = "-Log(L)";
+for (k = 0; k < varCount; k=k+1)
+{
+	labelMatrix[k+1] = usedVars[k];	
+}
+
+
+<<<<<<< HEAD:res/ChartAddIns/Samplers/srs.ibf
+=======
+
+>>>>>>> df30d3acef2bc2a5fb8401b0b98b82aa1d9b1c63:res/TemplateBatchFiles/Samplers/srs-ErrorEst.ibf

@@ -10,8 +10,8 @@ LoadFunctionLibrary ("../UtilityFunctions.bf");
  */
 function models.codon.MapCode (genetic_code) {
 
-	return {terms.sense_codons : utility.Values (genetic_code.ComputeCodonCodeToStringMap (genetic_code)),
-	        terms.stop_codons  : utility.Values (genetic_code.ComputeCodonCodeToStringMapStop (genetic_code)),
+	return {terms.sense_codons : utility.UniqueValues (genetic_code.ComputeCodonCodeToStringMap (genetic_code)),
+	        terms.stop_codons  : utility.UniqueValues (genetic_code.ComputeCodonCodeToStringMapStop (genetic_code)),
 	        terms.translation_table : genetic_code.DefineCodonToAAGivenCode (genetic_code) };
 }
 
@@ -58,10 +58,8 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 
 
 	if (None != __rate_variation) {
-
 		__rp = Call (__rate_variation[terms.rate_variation.distribution], __rate_variation[terms.rate_variation.options], namespace);
 		__rate_variation [terms.id] = (__rp[terms.category])[terms.id];
-
 		parameters.DeclareCategory   (__rp[terms.category]);
         parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 	}
@@ -139,6 +137,48 @@ for (k=0; k<Columns(_instructions); k=k+1)
 
 }
 
+/**
+ * Generates a branch length extraction stencil for synonymous and non-synonymous rates
+ * @name models.codon.generate_stencil 
+ * @param {String} type - terms.genetic_code.synonymous or terms.genetic_code.nonsynonymous or callback
+ * @param {Dictionary} model - the model object
+ * @returns {Matrix} - the appropriate NxN matrix stencil
+*/
+
+lfunction models.codon.generate_stencil._non_synonymous (from, to, model) {
+    return (model[^"terms.translation_table"])[from] != (model[^"terms.translation_table"])[to];
+}
+
+lfunction models.codon.generate_stencil._synonymous (from, to, model) {
+    return (model[^"terms.translation_table"])[from] == (model[^"terms.translation_table"])[to];
+}
+
+
+lfunction models.codon.generate_stencil (type, model) {
+    
+    if (type == utility.getGlobalValue("terms.genetic_code.synonymous")) {
+        callback = "models.codon.generate_stencil._synonymous";
+    } else {
+        if (type == utility.getGlobalValue("terms.genetic_code.non_synonymous")) {
+            callback = "models.codon.generate_stencil._non_synonymous";
+        } else {
+            callback = type;
+        }
+    }
+ 
+	__dimension     = model.Dimension (model);
+	__alphabet      = model [^"terms.alphabet"];
+    stencil         = {__dimension,__dimension};
+    
+	for (_rowChar = 0; _rowChar < __dimension; _rowChar +=1 ){
+		for (_colChar = _rowChar + 1; _colChar < __dimension; _colChar += 1) {
+            stencil [_rowChar][_colChar] = Call (callback, __alphabet[_rowChar], __alphabet[_colChar], model);
+            stencil [_colChar][_rowChar] = Call (callback, __alphabet[_colChar], __alphabet[_rowChar], model);
+        }
+    }
+    
+    return stencil;
+}
 
 lfunction models.codon.diff (a,b) {
     r = {utility.getGlobalValue("terms.diff.from") : None,

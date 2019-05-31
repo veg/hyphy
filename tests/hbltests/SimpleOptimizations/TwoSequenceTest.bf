@@ -13,7 +13,6 @@ modelLL    = {1,4};
 runTimer = Time(1);
 
 fprintf (stdout, "\nRunning a series of model fits on two HIV-1 RT sequences\n");
-
 inputOptions = {};
 inputOptions["0"] = PATH_TO_CURRENT_BF+".." +DIRECTORY_SEPARATOR+"data"+DIRECTORY_SEPARATOR+"2.fas";
 inputOptions["1"] = "HKY85";
@@ -24,10 +23,13 @@ ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR +
 
 modelLL [0] = res[1][0];
 
+
+
 inputOptions["2"] = "Global w/variation";
 inputOptions["3"] = "General Discrete";
 inputOptions["4"] = "2";
 inputOptions["7"] = "Don't Display";
+
 
 ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "AnalyzeNucProtData.bf", inputOptions);
 

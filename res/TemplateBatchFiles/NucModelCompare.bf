@@ -913,8 +913,8 @@ if (rejectCount<202)
 			fprintf (BASE_PATH," | (",0,resultCache[v2][0],resultCache[v2][1],resultCache[v2][2],resultCache[v2][3],resultCache[v2][4],") | ");
 			fprintf (BASE_PATH,Format (np,5,0));
 			PRINT_DIGITS = 8;
-			fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
-			fprintf (BASE_PATH, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ", );
+			fprintf (stdout, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ");
+			fprintf (BASE_PATH, " |  ",lnL," | ",Format(LRT,14,3), " |  ", AIC, "  |  ");
 			PRINT_DIGITS = 15;
 			if (LRT==0)
 			{

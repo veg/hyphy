@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -55,13 +55,16 @@ public:
     _Stack (void);
     virtual ~_Stack (void);
 
-    bool      Push (_PMathObj, bool = true);     // push object onto the stack
-    _PMathObj Pop (bool del = true);            // pop object from the top of the stack
-    long      StackDepth (void);    // returns the depth of the stack
+    bool      Push (HBLObjectRef, bool = true);     // push object onto the stack
+    HBLObjectRef Pop (bool del = true);            // pop object from the top of the stack
+    long      StackDepth (void) const;    // returns the depth of the stack
     void      Reset (void);         // clear the stack
-
+    HBLObjectRef    Peek (long offset = 0L);
+        // peek at the object 'offset'
+        // units from the top of the stack
+    
     virtual   void    Initialize (void);
-    virtual   void    Duplicate (BaseRef);
+    virtual   void    Duplicate (BaseRefConst);
 
 protected:
 

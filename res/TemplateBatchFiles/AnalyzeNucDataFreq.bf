@@ -40,7 +40,3 @@ fprintf (stdout, "\n",lf);
 HarvestFrequencies (obsFreq,filteredData,1,1,1);
 
 fprintf (stdout, "\nEstimated Frequencies:", vectorOfFrequencies, "\nObserved Frequencies", obsFreq);
-
-GetString (mbl, TrNModel,-1);
-
-fprintf (stdout,"\n",mbl,"\n");

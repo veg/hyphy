@@ -1,6 +1,7 @@
-function			checkMarginalReconstruction (expected_partials, expected_classes, lfID)
-{
+function			checkMarginalReconstruction (expected_partials, expected_classes, lfID) {
 	ConstructCategoryMatrix (cmx, "`lfID`");
+	
+	
 	cmx = Transpose(cmx);
 	cmx = cmx["_MATRIX_ELEMENT_VALUE_*Exp(cmx.log_scale_multiplier)^cmx.site_scalers[_MATRIX_ELEMENT_ROW_]"];
 	ConstructCategoryMatrix (cmx2, lfID, SHORT);

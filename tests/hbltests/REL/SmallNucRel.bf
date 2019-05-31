@@ -103,7 +103,6 @@ OPTIMIZATION_PRECISION    = 0.001;
 
 Optimize(res_SmallCodon_LF,SmallCodon_LF);
 
-fprintf (stdout, res_SmallCodon_LF, "\n");
 
 expectedConditionalProbabilities =
 {

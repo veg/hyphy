@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -48,8 +48,7 @@
 #include "formula.h"
 
 
-class _Variable : public _Constant
-{
+class _Variable : public _Constant {
 
     friend class _Operation;
 
@@ -62,15 +61,15 @@ public:
     virtual ~_Variable (void);
 
     virtual   void          Initialize (bool = false);
-    virtual   void          Duplicate (BaseRef);
-    virtual   BaseRef       makeDynamic(void);
+    virtual   void          Duplicate (BaseRefConst);
+    virtual   BaseRef       makeDynamic(void) const;
     virtual   BaseRef       toStr (unsigned long = 0UL);
     virtual    void         toFileStr (FILE*, unsigned long = 0UL);
 
     virtual   void          MarkDone (void);
 
-    virtual     _PMathObj   Compute (void);       // compute or return the value
-                _PMathObj   ComputeMatchingType (long);
+    virtual     HBLObjectRef   Compute (void);       // compute or return the value
+                HBLObjectRef   ComputeMatchingType (long);
                 // return a value if the type is matched, otherwise nil
     virtual     bool        IsVariable (void); //
     virtual     bool        IsIndependent (void) {
@@ -79,17 +78,25 @@ public:
                (varValue?varValue->IsIndependent():true);
     }
     virtual     bool        IsConstant (void);
-    void        SetValue (_PMathObj, bool = true); // set the value of the variable
-    void        SetValue (_Parameter); // set the value of the variable
-    void        SetNumericValue (_Parameter);
-    void        CheckAndSet (_Parameter, bool = false);
+    void        SetValue (HBLObjectRef, bool = true); // set the value of the variable
+    void        SetValue (hyFloat); // set the value of the variable
+    void        SetNumericValue (hyFloat);
+    void        CheckAndSet (hyFloat, bool = false);
     // set the value of the variable
     // bool flag is used to indicate that out of bounds values should be rejected
 
-    _PMathObj   GetValue (void) {
+    HBLObjectRef   GetValue (void) {
         return varValue;   // get the value of the variable
     }
     void        SetFormula (_Formula&); // set the variable to a new formula
+  
+    const     _Formula * get_constraint (void) const {
+      return varFormula;
+    }
+
+    
+    void *      operator new       (size_t size);
+    void        operator delete    (void * p);
 
     virtual     bool        HasChanged      (bool = false);
     virtual     void        PreMarkChanged  ();
@@ -100,32 +107,29 @@ public:
     virtual     bool        IsCategory (void) {
         return false;
     }
-    virtual     long        GetAVariable (void) const{
-        return theIndex;
-    }
-    virtual unsigned long        ObjectClass (void) {
-        return varValue?varValue->ObjectClass():((varFormula&&varFormula->theFormula.lLength)?varFormula->ObjectClass():1);
-    }
+
+    virtual unsigned long        ObjectClass (void) const;
+    
     void        SetIndex (long i) {
         theIndex = i;
     }
-    long        GetIndex (void) {
+    long        get_index (void) const {
         return theIndex;
     }
-    void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0);
+    virtual void        ScanForVariables (_AVLList& l, bool globals = false, _AVLListX* tagger = nil, long weight = 0) const;
     virtual     bool        IsContainer (void) {
         return false;
     }
 
-    void        SetBounds (_Parameter lb, _Parameter ub);
+    void        SetBounds (hyFloat lb, hyFloat ub);
     void        EnsureTheValueIsInBounds (void);
-    bool        IsValueInBounds (_Parameter v)
+    bool        IsValueInBounds (hyFloat v)
                            { return v >= lowerBound && v <= upperBound; }
 
-    _Parameter  GetLowerBound (void) {
+    hyFloat  GetLowerBound (void) {
         return lowerBound;
     }
-    _Parameter  GetUpperBound (void) {
+    hyFloat  GetUpperBound (void) {
         return upperBound;
     }
 
@@ -140,30 +144,31 @@ public:
     _String*    GetName                         (void) const{
         return theName;
     }
-    _String*    GetFormulaString        (void) {
-        return varFormula?(_String*)varFormula->toStr():new _String;
+    _String*    GetFormulaString        (_hyFormulaStringConversionMode mode) {
+        return varFormula?(_String*)varFormula->toStr(mode):new _String;
     }
 
     virtual     void        CompileListOfDependents (_SimpleList&);
-    _PMathObj   ComputeReference        (_MathObject const *) const;
+    HBLObjectRef   ComputeReference        (_MathObject const *) const;
 
 
     friend      void        ResetVariables          (void);
-    friend      _Variable*  LocateVar               (long);
+    //friend      _Variable*  LocateVar               (long);
     friend      void        InsertVar               (_Variable*);
+    bool        has_been_set                        (void) const {return !(HY_VARIABLE_NOTSET & varFlags);}
 
 public:
 
     _String*   theName;
 
-    _PMathObj  varValue;
+    HBLObjectRef  varValue;
 
     long       theIndex; // index of this variable in the global variable pool
 
     // the class of this variable - i.e global, local, category or random
     int       varFlags;
 
-    _Parameter lowerBound,
+    hyFloat lowerBound,
                upperBound;
     // dynamic lower and upper bounds here
 
@@ -172,7 +177,7 @@ public:
 };
 
 long    DereferenceVariable (long index, _MathObject const *  context, char reference_type);
-long    DereferenceString   (_PMathObj, _MathObject const * context, char reference_type);
+long    DereferenceString   (HBLObjectRef, _MathObject const * context, char reference_type);
 _String const WrapInNamespace (_String const&, _String const*);
 
 

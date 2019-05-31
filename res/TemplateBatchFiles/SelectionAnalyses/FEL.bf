@@ -1,4 +1,4 @@
-RequireVersion("2.3");
+RequireVersion("2.4.0");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -37,7 +37,7 @@ fel.analysis_description = {
     Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    terms.io.version: "2.00",
+    terms.io.version: "2.1",
     terms.io.reference: "Not So Different After All: A Comparison of Methods for Detecting Amino Acid Sites Under Selection (2005). _Mol Biol Evol_ 22 (5): 1208-1222",
     terms.io.authors: "Sergei L Kosakovsky Pond and Simon DW Frost",
     terms.io.contact: "spond@temple.edu",
@@ -55,7 +55,6 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 /*------------------------------------------------------------------------------
     Globals
 */
-
 
 
 fel.site_alpha = "Site relative synonymous rate";
@@ -84,11 +83,23 @@ fel.display_orders =   {terms.original_name: -1,
 selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
 
 
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+KeywordArgument ("branches",  "Branches to test", "All");
+KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
+KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
+// One additional KeywordArgument ("output") is called below after namespace fel.
+
+
 fel.table_headers = {{"alpha", "Synonymous substitution rate at a site"}
                      {"beta", "Non-synonymous substitution rate at a site"}
                      {"alpha=beta", "The rate estimate under the neutral model"}
                      {"LRT", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
-                     {"p-value", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
+                     {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
                      {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
 
 
@@ -97,16 +108,14 @@ This table is meant for HTML rendering in the results web-app; can use HTML char
 is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
 the next set of variables.
 */
+
 fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
 fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
-
 
 namespace fel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("fel");
 }
-
-
 
 /* Prompt for one-rate or two-rate analysis */
 fel.srv = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS := 1 at each site)."}},
@@ -120,6 +129,8 @@ if (fel.srv == "Yes"){
 /* Prompt for p value threshold */
 fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
 
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
+fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
 fel.partition_count = Abs (fel.filter_specification);
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to include in the FEL analysis');
@@ -147,8 +158,6 @@ namespace fel {
 io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
 
-
-
 fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
     terms.run_options.partitioned_omega: fel.selected_branches,
@@ -168,9 +177,8 @@ utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel",
 
 estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_partitioned_mg_results[terms.global]);
 
-
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (fel.json,
+selection.io.json_store_lf_withEFV (fel.json,
                             terms.json.global_mg94xrev,
                             fel.final_partitioned_mg_results[terms.fit.log_likelihood],
                             fel.final_partitioned_mg_results[terms.parameters],
@@ -263,17 +271,17 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     Optimize (results, ^lf);
 
-    null = estimators.ExtractMLEs (lf, model_mapping);
+    Null = estimators.ExtractMLEs (lf, model_mapping);
 
 
-    null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+    Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
     /*
     Export (lfs, ^lf);
     fprintf (MESSAGE_LOG, lfs);
     assert (0);
     */
-    return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.null"): null};
+    return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null};
 }
 
 /* echo to screen calls */
@@ -342,12 +350,12 @@ lfunction fel.store_results (node, result, arguments) {
 
     if (None != result) { // not a constant site
 
-        lrt = math.DoLRT ((result[utility.getGlobalValue("terms.null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
+        lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           1);
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
         result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_beta");
-        result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.null")], ^"fel.site_beta");
+        result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.Null")], ^"fel.site_beta");
         result_row [3] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [4] = lrt [utility.getGlobalValue("terms.p_value")];
 

@@ -5,16 +5,13 @@ utility.ToggleEnvVariable ("OPTIMIZATION_TIME_HARD_LIMIT", 1);
 
 LoadFunctionLibrary("LEISR.bf", {
     "0": PATH_TO_CURRENT_BF + "data/dat.prot",
-    "1": "Y",
     "2": "Protein",
     "3": "WAG",
     "4": "Gamma"
 });
 
-
 LoadFunctionLibrary("LEISR.bf", {
     "0": PATH_TO_CURRENT_BF + "data/dat.prot",
-    "1": "Y",
     "2": "Protein",
     "3": "WAG",
     "4": "GDD"
@@ -23,7 +20,6 @@ LoadFunctionLibrary("LEISR.bf", {
 
 LoadFunctionLibrary("LEISR.bf", {
     "0": PATH_TO_CURRENT_BF + "data/dat.prot",
-    "1": "Y",
     "2": "Protein",
     "3": "WAG",
     "4": "No"
@@ -31,7 +27,6 @@ LoadFunctionLibrary("LEISR.bf", {
 
 LoadFunctionLibrary("LEISR.bf", {
     "0": PATH_TO_CURRENT_BF + "data/dat.nuc",
-    "1": "Y",
     "2": "Nucleotide",
     "3": "GTR",
     "4": "Gamma"
@@ -39,7 +34,6 @@ LoadFunctionLibrary("LEISR.bf", {
 
 LoadFunctionLibrary("LEISR.bf", {
     "0": PATH_TO_CURRENT_BF + "data/dat.nuc",
-    "1": "Y",
     "2": "Nucleotide",
     "3": "HKY85",
     "4": "No"

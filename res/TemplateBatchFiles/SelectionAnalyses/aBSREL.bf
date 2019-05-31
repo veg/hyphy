@@ -1,4 +1,4 @@
-RequireVersion ("2.3.3");
+RequireVersion ("2.4.0");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -19,6 +19,9 @@ LoadFunctionLibrary("libv3/convenience/math.bf");
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
+utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 1/2);
+utility.SetEnvVariable ("LF_SMOOTHING_REDUCTION",4);
+utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
 
 
 /*------------------------------------------------------------------------------*/
@@ -54,7 +57,7 @@ absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site ran
                             uses an adaptive random effects branch-site model framework
                             to test whether each branch has evolved under positive selection,
                             using a procedure which infers an optimal number of rate categories per branch.",
-                           terms.io.version : "2.0",
+                           terms.io.version : "2.1",
                            terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353",
                            terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                            terms.io.contact : "spond@temple.edu",
@@ -75,13 +78,31 @@ absrel.json    = {
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Overall", 0);
 
+
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:"); 
+KeywordArgument ("branches",  "Branches to test", "All");
+// One additional KeywordArgument ("output") is called below after namespace absrel.
+
+/*------------------------------------------------------------------------------
+    Continued Analysis Setup
+*/
+
 namespace absrel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
     load_file ("absrel");
 }
 
-io.CheckAssertion("utility.Array1D (absrel.partitions_and_trees) == 1", "aBSREL only works on a single partition dataset");
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'ABSREL.json')", absrel.codon_data_info [terms.json.json]);
 
+absrel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
+io.CheckAssertion("utility.Array1D (absrel.partitions_and_trees) == 1", "aBSREL only works on a single partition dataset");
 
 utility.ForEachPair (absrel.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
@@ -115,6 +136,7 @@ absrel.base.results = estimators.FitMGREV (absrel.filter_names, absrel.trees, ab
     terms.run_options.retain_model_object : TRUE
 }, absrel.gtr_results);
 
+
 io.ReportProgressMessageMD("absrel", "base", "* " + selection.io.report_fit (absrel.base.results, 0, absrel.codon_data_info[terms.data.sample_size]));
 
 
@@ -123,7 +145,7 @@ io.ReportProgressMessageMD("absrel", "base", "* " + selection.io.report_fit (abs
 absrel.baseline.branch_lengths = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "selection.io.branch.length");
 absrel.baseline.omegas = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "absrel.local.omega");
 
-absrel.omega_stats = math.GatherDescriptiveStats (utility.Map (utility.Values (absrel.baseline.omegas), "_value_", "0+_value_"));
+absrel.omega_stats = math.GatherDescriptiveStats (utility.Map (utility.UniqueValues (absrel.baseline.omegas), "_value_", "0+_value_"));
 
 io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.omega_ratio` distribution has median " +
                                              Format (absrel.omega_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (absrel.omega_stats[terms.math._2.5], 5,2) + " - " + Format (absrel.omega_stats[terms.math._97.5], 5,2));
@@ -158,7 +180,7 @@ absrel.distribution_for_json = {absrel.per_branch_omega :
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (absrel.json,
+selection.io.json_store_lf_withEFV (absrel.json,
                                      absrel.baseline_mg94xrev,
                                      absrel.base.results[terms.fit.log_likelihood],
                                      absrel.base.results[terms.parameters] ,
@@ -223,6 +245,7 @@ absrel.branch.complexity       = {};
 
 utility.ToggleEnvVariable ("USE_LAST_RESULTS", TRUE);
 
+
 absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
             "0": 35,
             "1": 10,
@@ -236,6 +259,8 @@ absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.tab
 
 fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. dN/dS", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
 absrel.complexity_table.settings [terms.table_options.header] = FALSE;
+
+utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0);
 
 for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch_id += 1) {
 
@@ -251,12 +276,15 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         absrel.report.row [2] =  Format(absrel.current_rate_count,0,0);
         model.ApplyToBranch ((absrel.model_defintions [absrel.current_rate_count])[terms.id], absrel.tree_id, absrel.current_branch);
         parameters.SetValues (absrel.current_branch_estimates);
-
+        
+        
         absrel.initial_guess = absrel.ComputeOnAGrid (absrel.PopulateInitialGrid (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch, absrel.current_branch_estimates), absrel.likelihood_function_id);
-
         absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
-
+        
+        
+        
         Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id);
+        
         absrel.current_test_score = math.GetIC (absrel.stepup.mles[1][0], absrel.current_parameter_count + 2, absrel.codon_data_info[terms.data.sample_size]);
 
         absrel.provisional_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
@@ -608,13 +636,13 @@ lfunction absrel.ComputeOnAGrid (grid_definition, lfname) {
         absrel.SetValues (current_state);
 
         LFCompute (^lfname, try_value);
-
+        
         if (try_value > best_val) {
             best_state  = current_state;
             best_val = try_value;
         }
     }
-
+    
     absrel.SetValues (best_state);
     LFCompute(^lfname,LF_DONE_COMPUTE);
 

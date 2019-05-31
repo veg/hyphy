@@ -78,12 +78,14 @@ GetDataInfo		(siteToPatternMap,  all);
 charCount	  = Columns (charInfo);
 template	  = {1,charCount}["1"];
 passcode	  = 2;
+all.unique_sites = Rows (all.site_freqs) * Columns (all.site_freqs);
+
 if (filteringOption == 1)
 {
 	passcode = charCount;
 }
 
-for (site = 0; site < all.unique_sites; site = site+1)
+for (site = 0; site < all.unique_site; site = site+1)
 {
 	seq_count = 0;
 	for (sequence = 0; sequence < all.species; sequence = sequence + 1)

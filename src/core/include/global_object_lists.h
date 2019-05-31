@@ -4,7 +4,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -35,7 +35,7 @@
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "site.h"
+#include "dataset_filter.h"
 #include "avllistxl_iterator.h"
 
 /**
@@ -256,6 +256,18 @@ namespace hyphy_global_objects {
   
   const   _String* GetObjectNameByType       (const long type, const long index, bool correct_for_empties = true);
   
+  bool    IsModelReversible                 (long model_index);
+  /** is the model reversible?
+    @param model_index : model index
+   
+    @return T/F
+   */
+  bool    IsModelOfExplicitForm             (long model_index);
+  /** is the model specified in a form that doesn't require exponentiation
+   @param model_index : model index
+   @return T/F
+   */
+
   
   const   _String  GenerateUniqueObjectIDByType (_String const & base, const long type);
   /**
@@ -267,5 +279,23 @@ namespace hyphy_global_objects {
    @return a unique ID
    
    */
+    
+    // TODO: 20171005 SLKP, these will be deprecated
+    
+    BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false, _ExecutionList* current_program = nil);
+    
+    BaseRef      _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false, _ExecutionList* current_program = nil);
+    
+
+    long      FindDataSetName                 (_String const&);
+    long      FindSCFGName                    (_String const&);
+    long      FindBFFunctionName              (_String const&, _VariableContainer const* = nil);
+    long      FindBgmName                     (_String const&);
+    // added by afyp, March 18, 2007
+
+    long      FindLikeFuncName                (_String const&, bool = false);
+    long      FindModelName                   (_String const&);
+
+    extern   _AVLListX batchLanguageFunctionNamesIndexed;
   
 }

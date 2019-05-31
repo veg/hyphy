@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -47,16 +47,23 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class _SimpleList:public BaseObj {
     friend class _AVLList;
+    
+    public:
+    //Data Members
+        long* list_data;
+        unsigned long lLength;//actual length
 
     protected:
         //memory allocated enough for this many slots
         unsigned long laLength;
+        // default static buffer to hold smaller arrays and avoid dynamic mallocs
+        long     static_data [MEMORYSTEP];
+    
+        void     _UpdateStorageType (void);
+        void     _EnsureCorrectStorageType (void);
+        void     _CopyStatic (void);
 
     public:
-        //Data Members
-        long* lData;
-        unsigned long lLength;//actual length
-
         //Methods
 
         /*
@@ -73,7 +80,7 @@ class _SimpleList:public BaseObj {
 
         // stack copy contructor
         _SimpleList(_SimpleList const&,long=0,long=-1);
-
+    
         // data constructor (1 member list)
         _SimpleList(long);
 
@@ -108,7 +115,7 @@ class _SimpleList:public BaseObj {
         virtual _SimpleList const & operator = (_SimpleList const&);
 
         // append operator
-        virtual _SimpleList operator & (_SimpleList);
+        virtual _SimpleList operator & (_SimpleList const&);
 
         // append number to this
         _SimpleList& operator << (long);
@@ -117,6 +124,7 @@ class _SimpleList:public BaseObj {
         virtual bool operator >> (long);
 
         virtual void operator << (_SimpleList const &);
+  
 
 
         /*
@@ -126,7 +134,7 @@ class _SimpleList:public BaseObj {
         */
 
         /**
-        * Retrieve the element in position index if index if positive or 
+        * Retrieve the element in position index if index if positive or
         * length + index if index is negative
         * Example: SimpleList(1,3,5,7).GetElement(1) = 3, SimpleList(1,3,5,7).GetElement(-1) = 7 
         * @param index The index of the elemnt to retrieve 
@@ -160,8 +168,8 @@ class _SimpleList:public BaseObj {
         * @param j The second index to compare
         * @return -1 if i<j, 0 if i==j, or 1 if i>j 
         */
-        virtual long Compare(long,long) const;
-        virtual long Compare(BaseObj const*,long) const;
+        virtual hyComparisonType Compare(long,long) const;
+        virtual hyComparisonType Compare(BaseObj const*,long) const;
 
         long CountCommonElements(_SimpleList const&, bool=false) const;
 
@@ -171,13 +179,37 @@ class _SimpleList:public BaseObj {
         * @return Unsigned long of item length    
         */
         inline unsigned long countitems(void) const {return lLength;}
+  
+  
+        /**
+         * Append a range to the current list
+         * @param how_many : the number of items in the range
+         * @param start: the first element
+         * @param step : step from i to i+1 element
+         
+         */
+  
+        void   AppendRange (unsigned long how_many, long start, long step);
 
         /**
          //Is the list empty
          * Example: SimpleList SimpleList([4, 1, 2]).empty() = false
          * @return True if the list is empty
          */
-        bool empty (void) const {return lLength == 0UL;}
+        inline bool empty (void) const {return lLength == 0UL;}
+
+        /**
+           Does this list have dynamic memory allocation, or does it have a static array?
+         * @return True if the list has dynamically managed memory
+         */
+        inline bool is_dynamic (void) const {return list_data != static_data;}
+
+        /**
+         //Is the list non-empty
+         * Example: SimpleList SimpleList([4, 1, 2]).nonempty() = true
+         * @return True if the list is non-empty
+         */
+        inline bool nonempty (void) const {return lLength > 0UL;}
 
         /**
         * SLKP: 20090611
@@ -190,7 +222,7 @@ class _SimpleList:public BaseObj {
         // delete the item at a given poisiton
         void Delete(long, bool=true);
 
-        virtual void Duplicate(BaseRef);
+        virtual void Duplicate(BaseRefConst);
 
         /**
         * Delete all duplicates in a sorted list
@@ -241,7 +273,7 @@ class _SimpleList:public BaseObj {
         /** Adjust the [sorted] list of indcies argument for skipped elements in the [0-max] range
          * so that the arguments is remapped to the range with elements in this
          * list excluded. (*this) list must be sorted
-         * Example: SimpleList (2,4,5).SkipCorrect ([2,3],2) = 1 (and the list is now [2])
+         * Example: SimpleList (2,4,5).CorrectForExclusions ([2,3],2) = 1 (and the list is now [2])
          
          * @param index the list of indices to correct; corrected indices are written here
          * @param count the length of indices
@@ -264,7 +296,7 @@ class _SimpleList:public BaseObj {
          * @param index Which item you want.
          * @return A long
          */
-        inline const long Get (long index) const {return lData[index];}
+        inline const long get (long index) const {return list_data [index];}
 
         /**
         * Checks if list is identical to other list
@@ -291,8 +323,67 @@ class _SimpleList:public BaseObj {
         */
         virtual long Find(long, long startAt = 0) const;
 
-        /**
-        * Same as find, but steps over indices 
+        template <typename FILTER> long FindOnCondition (FILTER condition, long startAt = 0) const {
+          for (unsigned long i = startAt; i<lLength; i++) {
+            if ( condition (((long*)(list_data))[i], i )) {
+              return i;
+            }
+          }
+          return kNotFound;
+        }
+
+    
+        template <typename MAPPER> void Each (MAPPER&& mapper, long startAt = 0) const {
+          for (unsigned long i = startAt; i<lLength; i++) {
+            mapper ( ((long*)(list_data))[i], i );
+          }
+        }
+
+        template <typename MAPPER> bool Any (MAPPER&& mapper, long startAt = 0) const {
+            for (unsigned long i = startAt; i<lLength; i++) {
+                if (mapper ( ((long*)(list_data))[i], i )) return true;
+            }
+            return false;
+        }
+
+        template <typename CONDITION> bool Every (CONDITION&& predicate, long startAt = 0) const {
+            for (unsigned long i = startAt; i<lLength; i++) {
+                if (!predicate ( ((long*)(list_data))[i], i )) return false;
+            }
+            return true;
+        }
+
+        template <typename FILTER> _SimpleList const FilterIndex (FILTER condition) const {
+          _SimpleList filtered;
+          for (unsigned long i = 0UL; i<lLength; i++) {
+            if (condition (((long*)(list_data))[i] , i)) {
+              filtered << i;
+            }
+          }
+          return filtered;
+        }
+
+        template <typename FILTER> _SimpleList const Filter (FILTER condition, unsigned long start_index = 0UL) const {
+            _SimpleList filtered;
+            for (unsigned long i = start_index; i<lLength; i++) {
+                long value = ((long*)(list_data))[i];
+                if (condition (value , i)) {
+                    filtered << value;
+                }
+            }
+            return filtered;
+        }
+
+        template <typename FUNCTOR> _SimpleList const MapList (FUNCTOR transform, unsigned long start_index = 0UL) const {
+            _SimpleList mapped;
+            mapped.RequestSpace(countitems() - (long)start_index);
+            for (unsigned long i = start_index; i<lLength; i++) {
+                mapped << transform (((long*)(list_data))[i] , i);
+            }
+            return mapped;
+        }
+/**
+        * Same as find, but steps over indices
         * Example: SimpleList(1,3,5,7).Find(3,3) = -1 
         * @param s The integer to find
         * @param step The number to skip between searches 
@@ -308,7 +399,14 @@ class _SimpleList:public BaseObj {
         */
         void Flip(void); //flip the order of list elements
 
+        /**
+            Initialize the list object
+            @param bool if set to true, make a default memory allocation for the elements
+         
+            @return nothing; acts on this
+         */
         virtual void Initialize(bool = true);
+
 
         /**
         * Insert an element at a specific point
@@ -325,7 +423,7 @@ class _SimpleList:public BaseObj {
 
         BaseRef ListToPartitionString(void) const;
 
-        virtual BaseRef makeDynamic(void);
+        virtual BaseRef makeDynamic(void) const;
 
         /**
         * SLKP: 20090508
@@ -413,7 +511,19 @@ class _SimpleList:public BaseObj {
         * @return Nothing. Acts on the List object it was called from. 
         */
         void Permute(long);
-    
+
+        /**
+         * TODO: Sample (without replacement)
+         * @param size how many elements to sample
+         * @return resampled list
+         */
+        _SimpleList const Sample (unsigned long size) const;
+
+        /**
+         * Draw a random element from the list
+         * @return the index of the sampled element or -1 if the list is empty
+         */
+        long Choice () const;
 
         /**
         * TODO:Permute elements in blocks of given size with possible replacement
@@ -436,10 +546,11 @@ class _SimpleList:public BaseObj {
     
         /**
         * Retrive the last value and shorted the list by 1
-        * Example: SimpleList(1,3,5,7).Pop() = 7 
+        * Example: SimpleList(1,3,5,7).Pop() = 7
+        * @param discard; if provided, discard this many items off the end of the list before popping
         * @return Return last value from the list
         */
-        long Pop();
+        long Pop(unsigned long discard = 0UL);
 
         /**
         * Populate a Simple List with integers incrementally.
@@ -452,6 +563,38 @@ class _SimpleList:public BaseObj {
         void Populate(long, long, long); 
 
         /**
+         * Populate a SimpleList from another list using a transform
+         * @param source start with this list
+         * @param action (target array [long* __restrict__], source array [long const* __restrict__], index [unsigned long]) -> ()
+         * @return *this. Acts on the _List object it was called from.
+         */
+    
+        template <typename functor> _SimpleList& Populate(_SimpleList const& source, functor action) {
+            this->RequestSpace (source.lLength);
+            for (unsigned long idx = 0UL; idx < source.lLength; idx++) {
+                action (this->list_data, source.list_data, idx);
+            }
+            this->lLength = source.lLength;
+            return *this;
+        }
+    
+        /**
+         * Some functors for the populator above
+         * Assuming that the list on N elements stores a 1-1 map from [0,N-1] to [0, N-1], invert it
+         * so that if source (x) = y becomes target (y) = x
+         */
+        static void action_invert (long * __restrict__ target, long * __restrict__ source, unsigned long idx) {
+            target [source[idx]] = idx;
+        }
+        /**
+         * Some functors for the populator above
+         * so that if target [x] -> source (target (x))
+         */
+        static void action_compose (long * __restrict__ target, long * __restrict__ source, unsigned long idx) {
+            target [idx] = source [target[idx]];
+        }
+
+        /**
         * TODO
         * Example: SimpleList sl(1,2,3).Flip() = [3,2,1]
         * @return Nothing. Acts on the List object it was called from. 
@@ -461,12 +604,10 @@ class _SimpleList:public BaseObj {
 
         /**
         * Request space for a given # of elements 
-        * Example: _SimpleList([4, 1, 2]).Equal(_SimpleList([4, 1, 2]) = 4 
-        * @return true if equal. 
         */
         void RequestSpace(long);
 
-        void Subtract(_SimpleList&, _SimpleList&);
+        void Subtract(_SimpleList const &, _SimpleList const&);
 
         /**
         * Swaps two positions  
@@ -478,7 +619,6 @@ class _SimpleList:public BaseObj {
         void Swap(long, long); //swap two elements
 
         virtual BaseRef toStr(unsigned long = 0UL);
-
 
         /**
         *
@@ -536,7 +676,7 @@ class _SimpleList:public BaseObj {
         void QuickSort(long, long);
 
         long* quickArrayAccess(void) {
-            return (long*)lData;
+            return (long*)list_data;
         }
 };
 

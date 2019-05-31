@@ -17,6 +17,8 @@ namespace terms{
     codon                   = "codon";
     sense_codons            = "sense";
     nucleotide              = "nucleotide";
+    dinucleotide            = "dinucleotide";
+    binary                  = "binary";
     stop_codons             = "stop";
     translation_table       = "translation-table";
     synonymous_sub_count    = "synonymous substitution count";
@@ -24,6 +26,7 @@ namespace terms{
     original_name           = "original name";
     replicates              = "replicates";
     data_type               = "datatype";
+    devnull                 = "/dev/null";
 
     category            = "category";
     mixture             = "mixture";
@@ -36,6 +39,8 @@ namespace terms{
     three_way           = "three-way";
     reduced             = "reduced";
     substitutions       = "substitutions";
+    search_grid         = "search_grid";
+    search_restarts     = "search_restarts";
 
     parameters     = "parameters";
     local          = "local";
@@ -49,7 +54,7 @@ namespace terms{
     efv_estimate   = "EFV";
     branch_length  = "branch length";
     alternative    = "alternative";
-    null           = "null";
+    Null           = "null";
     LRT            = "LRT";
     p_value        = "p-value";
 
@@ -80,6 +85,11 @@ namespace terms{
     range_any = {
         lower_bound: "0",
         upper_bound: "1e25"
+    };
+
+    range_clamp_locals = {
+        lower_bound: "0",
+        upper_bound: "100"
     };
 
 
@@ -187,10 +197,13 @@ namespace terms{
         _4x1       = "Nucleotide 4x1 estimator";
         equal      = "Equal frequencies";
         CF3x4      = "Corrected 3x4 frequency estimator";
+        F3x4      = "Standard F3x4 codon frequency estimator";
+        F1x4      = "Standard F1x4 codon frequency estimator";
         _20x1      = "Protein 20x1 estimator";
         MLE        = "Maximum likelihood frequency estimator";
         predefined = "Based on a training set";
         binary     = "Binary character frequency estimator";
+        run_time   = "Run time frequency estimator via matrix inversion"
     }
 
     /* Terms accompanying tasks/genetic_code.bf */
@@ -281,6 +294,7 @@ namespace terms{
         version               = "version";
         convergence_failures  = "convergence failures";
         omega_ratio           = "omega";
+        rate                  = "rate";
         proportion            = "proportion";
         positive              = "positive test results";
     }
@@ -368,6 +382,7 @@ namespace terms{
         Headers             = "Headers";
         Variables           = "Variables";
         Functions           = "Functions";
+        DataSetFilters      = "DataSetFilters";
     }
 
 
@@ -385,7 +400,8 @@ namespace terms{
         synonymous_rate               = "synonymous rate";
         nonsynonymous_rate            = "non-synonymous rate";
         omega_ratio                   = "non-synonymous/synonymous rate ratio";
-        multiple_hit_rate             = "rate at which multiple nucleotides are changed instantly within a single codon";
+        multiple_hit_rate             = "rate at which 2 nucleotides are changed instantly within a single codon";
+        triple_hit_rate               = "rate at which 3 nucleotides are changed instantly within a single codon";
 
         one                           = "1";
         theta                         = "theta";
@@ -434,6 +450,7 @@ namespace terms{
         retain_model_object               = "retain-model-object";
         partitioned_omega                 = "partitioned-omega";
         apply_user_constraints            = "apply-user-constraints";
+        optimization_settings             = "optimization-settings";
     }
 
 
@@ -455,15 +472,17 @@ namespace terms{
 
     /* Terms associated with tree structures */
     namespace trees {
-        newick = "string";
+        newick              = "string";
         newick_with_lengths = "string_with_lengths";
-        newick_annotated = "annotated_string";
-        model_map = "model_map";
-        partitioned = "partitioned";
-        model_list = "model_list";
-        rooted = "rooted";
-        root   = "root";
-        branches = "branches";
+        newick_annotated    = "annotated_string";
+        model_map           = "model_map";
+        partitioned         = "partitioned";
+        model_list          = "model_list";
+        rooted              = "rooted";
+        root                = "root";
+        branches            = "branches";
+        meta                = "meta";
+        comment             = "comment";
 
         //node_name = "Name";
         //children = "Children";

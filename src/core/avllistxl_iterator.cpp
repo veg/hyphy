@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -82,9 +82,9 @@ AVLListXLIterator& AVLListXLIterator::operator =  (const AVLListXLIterator& assi
 
 AVLListXLIteratorKeyValue const  AVLListXLIterator::operator* (void) {
   if (this->current_location >= 0) {
-    return AVLListXLIteratorKeyValue (this->current_location, the_list->GetXtra(this->current_location));
+    return AVLListXLIteratorKeyValue (this->current_location, (_String const*)the_list->Retrieve(this->current_location), the_list->GetXtra(this->current_location));
   }
-  return AVLListXLIteratorKeyValue (AVL_LISTXL_ITERATOR_ENDINDEX,nil);
+  return AVLListXLIteratorKeyValue (AVL_LISTXL_ITERATOR_ENDINDEX,nil,nil);
 }
 
 bool AVLListXLIterator::operator == (AVLListXLIterator const & compare) {

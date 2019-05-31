@@ -15,8 +15,8 @@ function 	  setUpCodonToAA (dataSetID)
 	codonToAAMap["---"] = "-";
 	
 	ExecuteCommands ("DataSetFilter _converterfilteredData 	= CreateFilter	("+dataSetID+",1);");
-	ExecuteCommands ("DataSetFilter _converterfilteredDataC 	= CreateFilter	("+dataSetID+",3);");
 	GetInformation (theSequences,_converterfilteredData);
+	ExecuteCommands ("DataSetFilter _converterfilteredDataC 	= CreateFilter	("+dataSetID+",3);");
 	GetDataInfo    (siteToPatternMap,_converterfilteredDataC);
 	return 0;
 }

@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
 
  Module Developers:
@@ -46,57 +46,110 @@
 #include "parser.h"
 #include "batchlan.h"
 #include "function_templates.h"
+#include "global_things.h"
+#include "global_object_lists.h"
+#include "polynoml.h"
+
+using namespace hy_global;
+using namespace hyphy_global_objects;
 
 //Constants
-extern _Parameter twoOverSqrtPi;
+hyFloat const sqrtPi = 1.77245385090551603,
+              twoOverSqrtPi = 2./sqrtPi;
 
-extern  _Variable*  _x_, *_n_;
-
-extern _Parameter machineEps;
-extern _Parameter tolerance;
-
-extern _String intPrecFact;
-extern _String intMaxIter;
-
-#define         maxRombergSteps  8L
-#define         integrationPrecisionFactor  1.e-5
-
-_Formula::_Formula (void)
-{
-    theTree     = nil;
-    resultCache = nil;
-    call_count = 0UL;
-    recursion_calls = nil;
-}
 //__________________________________________________________________________________
 
-_Formula::_Formula (_PMathObj p, bool isAVar)
-{
+
+_Formula::_Formula (void) {
+    Initialize();
+}
+
+//__________________________________________________________________________________
+
+_Formula::_Formula (HBLObjectRef p, bool is_a_var) {
     theTree     = nil;
     resultCache = nil;
     recursion_calls = nil;
     call_count = 0UL;
 
-    if (!isAVar) {
+    if (!is_a_var) {
         theFormula.AppendNewInstance (new _Operation (p));
     } else {
         _Variable* v = (_Variable*)p;
         theFormula.AppendNewInstance (new _Operation (true,*v->GetName(),v->IsGlobal(), nil));
     }
 }
-//__________________________________________________________________________________
-void _Formula::Initialize (void) {}
 
 //__________________________________________________________________________________
-void _Formula::Duplicate  (BaseRef f)
-{
-    _Formula * f_cast = (_Formula*) f;
+_Formula::_Formula (_String const &s, _VariableContainer const* theParent, _String* reportErrors) {
+    ParseFormula (s, theParent, reportErrors);
+}
+
+//__________________________________________________________________________________
+
+_Formula::_Formula(const _Polynomial* source) {
+    Initialize();
+    _PolynomialData * poly_terms = source->GetTheTerms();
+    
+    _List poly_vars;
+    for (long i = 0L; i < source->GetNoVariables(); i++) {
+        poly_vars << source->GetIthVariable(i);
+    }
+    
+    for (long i = 0L; i < poly_terms->NumberOfTerms(); i++) {
+        hyFloat c = poly_terms->GetCoeff(i);
+        /*theFormula.AppendNewInstance (new _Operation (new _Constant (poly_terms->GetCoeff(i))));*/
+        bool started_term = false;
+        if (!CheckEqual(c, 1.0)) {
+            theFormula.AppendNewInstance (new _Operation (new _Constant (poly_terms->GetCoeff(i))));
+            started_term = true;
+        }
+        long *exponents = poly_terms->GetTerm(i);
+        poly_vars.ForEach ([this, exponents, &started_term] (BaseRefConst v, unsigned long idx) -> void {
+            if (exponents[idx] != 0L) {
+                this->theFormula.AppendNewInstance (new _Operation (*((_Variable const*)v)));
+                if (exponents[idx] != 1L) {
+                    this->theFormula.AppendNewInstance (new _Operation (new _Constant (exponents[idx])));
+                    this->theFormula.AppendNewInstance (new _Operation (HY_OP_CODE_POWER, 2));
+                }
+                if (started_term) {
+                    this->theFormula.AppendNewInstance (new _Operation (HY_OP_CODE_MUL, 2));
+                } else {
+                    started_term = true;
+                }
+            }
+        });
+        if (!started_term) {
+            this->theFormula.AppendNewInstance (new _Operation (new _Constant (1.0)));
+        }
+        if (i) {
+            this->theFormula.AppendNewInstance (new _Operation (HY_OP_CODE_ADD, 2));
+        }
+    }
+}
+
+//__________________________________________________________________________________
+void _Formula::Initialize (void) {
+    theTree     = nil;
+    resultCache = nil;
+    call_count = 0UL;
+    recursion_calls = nil;
+}
+
+//__________________________________________________________________________________
+_Formula::_Formula (_Formula const& rhs) {
+    Initialize();
+    Duplicate (&rhs);
+}
+
+//__________________________________________________________________________________
+void _Formula::Duplicate  (_Formula const * f_cast) {
 
     theFormula.Duplicate       (& f_cast->theFormula);
     theStack.theStack.Duplicate(& f_cast->theStack.theStack);
     call_count = f_cast->call_count;
     if (f_cast->recursion_calls) {
-      recursion_calls = (_PMathObj)f_cast->recursion_calls->makeDynamic();
+      recursion_calls = (HBLObjectRef)f_cast->recursion_calls->makeDynamic();
     } else {
       recursion_calls = nil;
     }
@@ -114,43 +167,77 @@ void _Formula::Duplicate  (BaseRef f)
 }
 
 //__________________________________________________________________________________
-void _Formula::DuplicateReference  (const _Formula* f)
-{
-    for (unsigned long i=0; i<f->theFormula.lLength; i++) {
-        _Operation *theO = ((_Operation**)f->theFormula.lData)[i];
-        if (theO->GetAVariable()==-2) {
-            theFormula.AppendNewInstance(new _Operation ((_PMathObj)LocateVar (-theO->GetNoTerms()-1)->Compute()->makeDynamic()));
+void _Formula::DuplicateReference  (const _Formula* f) {
+    for (unsigned long i=0; i<f->theFormula.countitems(); i++) {
+        _Operation *ith_term = f->GetIthTerm(i);
+        // -2 is used to code for value substitutions (x__)
+        if (ith_term->IsValueSubstitution()) {
+            theFormula.AppendNewInstance(new _Operation ((HBLObjectRef)LocateVar (ith_term->GetAVariable())->Compute()->makeDynamic()));
         } else {
-            theFormula&& theO;
+            theFormula && ith_term;
         }
     }
 }
 
+  //__________________________________________________________________________________
+
+HBLObjectRef _Formula::ParseAndCompute (_String const& expression, bool use_exceptions, long type, _hyExecutionContext * context) {
+  
+  _String error_message;
+  _Formula f;
+  
+  long parse_result = f.ParseFormula (expression, context ? context -> GetContext() : nil , &error_message);
+  
+  try {
+    if (error_message.nonempty()) {
+      throw (_String ("Failed to parse ") & expression.Enquote () & " with the following error: " & error_message);
+    }
+    if (parse_result != HY_FORMULA_EXPRESSION) {
+      throw (expression.Enquote () & " did not parse to a simple expression");
+    }
+    if (f.IsEmpty ()) {
+      throw (expression.Enquote () & " parsed to an empty expression");
+    }
+    if (!(type == HY_ANY_OBJECT || f.ObjectClass() == type)) {
+        // TODO SLKP 20170704: ObjectClass will compute the expression with current values which may fail
+      throw (expression.Enquote () & " did not evaluate to a " & FetchObjectNameFromType (type));
+    }
+  } catch (_String const & e) {
+    if (use_exceptions) {
+      throw (e);
+    } else {
+      HandleApplicationError (e);
+      return nil;
+    }
+  }
+  
+  HBLObjectRef result = f.Compute();
+  result->AddAReference();
+  return result;
+}
+
+
 //__________________________________________________________________________________
-BaseRef _Formula::makeDynamic (void)
-{
+BaseRef _Formula::makeDynamic (void) const {
     _Formula * res = new _Formula;
-    res->Duplicate((BaseRef)this);
+    res->Duplicate(this);
     return (BaseRef)res;
 }
 //__________________________________________________________________________________
 
-_Formula::~_Formula (void)
-{
-
+_Formula::~_Formula (void) {
     Clear();
 }
 
 //__________________________________________________________________________________
-void    _Formula::Clear (void)
-{
+void    _Formula::Clear (void) {
     if (theTree) {
         theTree->delete_tree();
         delete theTree;
     }
     theTree = nil;
     if (resultCache) {
-        DeleteObject (resultCache);
+        DeleteAndZeroObject(resultCache);
     }
 
     theFormula.Clear();
@@ -160,108 +247,128 @@ void    _Formula::Clear (void)
 
 //  theStack.Clear();
 }
-
 //__________________________________________________________________________________
-BaseRef _Formula::toStr (_List* matchedNames, bool dropTree)
-{
+_StringBuffer const _Formula::toRPN (_hyFormulaStringConversionMode mode, _List* matched_names) {
+    _StringBuffer r;
+    if (theFormula.countitems()) {
+        SubtreeToString (r,nil,0,nil,GetIthTerm(0UL), mode);
+        for (unsigned long k=1UL; k<theFormula.countitems(); k++) {
+            r <<'|';
+            SubtreeToString (r,nil,0,nil,GetIthTerm(k), mode);
+        }
+    }
+    return r;
+}
+//__________________________________________________________________________________
+BaseRef _Formula::toStr (_hyFormulaStringConversionMode mode, _List* matched_names, bool drop_tree) {
     ConvertToTree(false);
 
-    _String * result = new _String(16UL,true);
+    _StringBuffer * result = new _StringBuffer (64UL);
 
-    long          savepd = printDigits;
-    printDigits          = 0;
+    long          savepd = print_digit_specification;
+    print_digit_specification          = 0L;
 
     if (theTree) { // there is something to do
-        internalToStr (*result, theTree, -1, matchedNames);
+        SubtreeToString (*result, theTree, -1, matched_names, nil, mode);
     } else {
-        if (theFormula.lLength) {
-            (*result) << "RPN:";
-            internalToStr (*result,nil,0,nil,(_Operation*)(theFormula(0)));
-            for (unsigned long k=1; k<theFormula.lLength; k++) {
-                (*result)<<'|';
-                internalToStr (*result,nil,0,nil,(_Operation*)(theFormula(k)));
-            }
+        if (theFormula.countitems()) {
+            (*result) << "RPN:" << toRPN (mode, matched_names);
         }
     }
 
-    printDigits = savepd;
-    result->Finalize ();
-    if (theTree && dropTree) {
+    print_digit_specification = savepd;
+    result->TrimSpace();
+    if (theTree && drop_tree) {
         theTree->delete_tree();
         delete theTree;
         theTree = nil;
     }
+  
     return result;
 }
 //__________________________________________________________________________________
-node<long>* _Formula::DuplicateFormula (node<long>* src, _Formula& tgt)
-{
-    node<long>* resNode = new node<long>;
-    checkPointer (resNode);
-
-    tgt.theFormula && (_Operation*) theFormula (src->in_object);
-
-    resNode->in_object = tgt.theFormula.lLength-1;
-
-    for (long k=1; k<=src->get_num_nodes(); k++) {
-        resNode->add_node (*DuplicateFormula (src->go_down (k), tgt));
+node<long>* _Formula::DuplicateFormula (node<long>* src, _Formula& tgt) const {
+    
+    node<long>* copied = new node<long>;
+    
+    for (long k=1L; k<=src->get_num_nodes(); k++) {
+        copied->add_node (*DuplicateFormula (src->go_down (k), tgt));
     }
 
-    return     resNode;
+    copied->in_object = tgt.theFormula.lLength;
+    tgt.theFormula && theFormula.GetItem(src->in_object);
+
+    return     copied;
 }
 
 //__________________________________________________________________________________
-_Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from_tree)
-{
-    long          varID = LocateVarByName (varName);
-
-    if (varID<0) {
+_Formula* _Formula::Differentiate (_String const & var_name, bool bail, bool convert_from_tree) {
+   
+    _Variable * dx = FetchVar(LocateVarByName(var_name));
+    
+    if (!dx) { // create the dX variable if it's not here ye
         return new _Formula (new _Constant (0.0));
     }
 
-    varID = variableNames.GetXtra (varID);
-
-    _Formula*     res = new _Formula ();
+    long dx_id = dx->get_index();
 
      ConvertToTree    ();
+    
+     //printf ("\n **** Diff %s on %s\n\n", _String ((_String*)toStr(kFormulaStringConversionNormal)).get_str(), var_name.get_str());
 
-    _SimpleList  varRefs,
-                 dydx;
+    _SimpleList  var_refs = PopulateAndSort ([&] (_AVLList & parameter_list) -> void {
+                            this->ScanFForVariables (parameter_list, true, true, true);
+    });
+    
+    if (var_refs.empty()) { // handle the case of constant expressions here
+        return new _Formula (new _Constant (0.0));
+    }
 
-
-    _AVLList al (&varRefs);
-    ScanFForVariables (al, true, true, true);
-    al.ReorderList ();
-
-    for (unsigned long k=0UL; k < varRefs.lLength; k++) {
-        _Variable* thisVar = LocateVar (varRefs.lData[k]);
-        _Formula * dYdX;
-
-        if (thisVar->IsIndependent()) {
-            dYdX = new _Formula ((thisVar->GetName()->Equal (&varName))?new _Constant (1.0):new _Constant (0.0));
-            dYdX->ConvertToTree();
-            dydx << (long)dYdX;
-        } else {
-            dYdX = thisVar->varFormula->Differentiate (varName, bail, false);
-
-            if (dYdX->theFormula.lLength == 0) {
-                delete (dYdX);
-                return res;
+    _Formula*     res = new _Formula ();
+    _Formula    ** dydx = new _Formula* [var_refs.countitems()] {0};// stores precomputed derivatives for all the
+    
+    auto dydx_cleanup = [&] () -> void {
+        for (unsigned long k=0UL; k < var_refs.countitems(); k++) {
+            if (dydx[k]) {
+                delete dydx[k];
             }
-            dydx << (long)dYdX;
         }
-      }
-
-    SortLists             (&varRefs, &dydx);
+        delete [] dydx;
+    };
+   
     node<long>*           dTree = nil;
 
-    if (!(dTree = InternalDifferentiate (theTree, varID, varRefs, dydx, *res))) {
-        for (unsigned long k=0UL; k<dydx.lLength; k++) {
-            delete ((_Formula*)dydx.lData[k]);
-        }
+    try {
+        for (unsigned long k=0UL; k < var_refs.countitems(); k++) {
+            _Variable* thisVar = LocateVar (var_refs.GetElement(k));
+            _Formula * dYdX;
 
+            if (thisVar->IsIndependent()) {
+                dYdX = new _Formula ((*thisVar->GetName() == var_name)?new _Constant (1.0):new _Constant (0.0));
+            } else {
+                dYdX = thisVar->varFormula->Differentiate (var_name, bail, false);
+                if (dYdX->IsEmpty()) {
+                    delete dYdX;
+                    dydx_cleanup ();
+                    return res;
+                }
+            }
+            dYdX->ConvertToTree();
+            dydx [k] = dYdX;
+          }
+
+            // SortLists             (&varRefs, &dydx);
+            // this is already sorted coming from PopulateAndSort
+            
+
+        if (!(dTree = InternalDifferentiate (theTree, dx_id, var_refs, dydx, *res))) {
+            throw (_String ("Differentiation of ") & _String((_String*)toStr(kFormulaStringConversionNormal)) & " failed.");
+        }
+    } catch (_String const &e) {
+        dydx_cleanup ();
+        
         if (bail) {
-            WarnError    (_String ("Differentiation of ") & _String((_String*)toStr()) & " failed.");
+            HandleApplicationError (e);
             res->Clear();
             return       res;
         } else {
@@ -270,115 +377,482 @@ _Formula* _Formula::Differentiate (_String varName, bool bail, bool convert_from
         }
     }
 
-    for (unsigned long k=0UL; k<dydx.lLength; k++) {
-        delete ((_Formula*)dydx.lData[k]);
-    }
+    dydx_cleanup ();
 
-    res->theFormula.AppendNewInstance (new _Operation(new _Constant (0.0))) ;
+    //res->theFormula.AppendNewInstance (new _Operation(new _Constant (0.0))) ; // why is this here?
     res->theTree         = dTree;
-
-    // consistency check
-
-    /*_SimpleList preOrderNodes;
-    node_iterator<long> iterator (dTree, _HY_TREE_TRAVERSAL_PREORDER);
-
-    while (node <long> * ni = iterator.Next()) {
-      printf ("Differentiate %x\n", ni);
-      if (preOrderNodes.Find ((long)ni) >= 0) {
-        WarnError ("Tree construction error!");
-        return;
-      }
-      preOrderNodes << (long)ni;
-    }
-
-    StringToConsole (_String("\nNode count:") & (long) preOrderNodes.countitems());
-    NLToConsole();*/
-
     res->InternalSimplify (dTree);
-
-    if (convert_from_tree)
+    //printf ("%s\n", _String ((_String*)res->theFormula.toStr(kFormulaStringConversionNormal)).get_str());
+    
+    if (convert_from_tree) {
       res->ConvertFromTree  ();
+    }
+    //printf ("%s\n", _String ((_String*)res->theFormula.toStr(kFormulaStringConversionNormal)).get_str());
+
+    // try polynomial simplification
+    _Polynomial*    is_poly = (_Polynomial*)res->ConstructPolynomial();
+    if (is_poly) {
+        _Formula * simplified_polynomial = new _Formula (is_poly);
+        //printf ("%s\n", _String ((_String*)simplified_polynomial->toStr(kFormulaStringConversionNormal)).get_str());
+        delete res;
+        
+        //printf ("\n RESULT : %s \n", _String ((_String*)simplified_polynomial->toStr(kFormulaStringConversionNormal)).get_str());
+
+        return simplified_polynomial;
+    } else {
+        //printf ("%s\n", _String ((_String*)res->toStr(kFormulaStringConversionNormal)).get_str());
+    }
+    
     return res;
 
 }
 
+//__________________________________________________________________________________
+node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, long varID, _SimpleList const & varRefs, _Formula  * const * dydx, _Formula& tgt) {
+    _Operation * op = GetIthTerm(currentSubExpression->in_object);
+    
+    if (op->theData!=-1) {
+        long k     = varRefs.BinaryFind (op->GetAVariable());
+        if (k<0L) {
+            return nil;
+        }
+        
+        _Formula const* dYdX = dydx[k];
+        return dYdX->DuplicateFormula (dYdX->theTree, tgt);
+    }
+    
+    if (op->theNumber) {
+        _Formula src (new _Constant (0.0));
+        src.ConvertToTree ();
+        return   src.DuplicateFormula (src.theTree, tgt);
+    }
+    
+    node<long>* newNode = new node<long>;
+    node <long> *  created_nodes [7]{nil};
+    created_nodes [0] = newNode;
+    
+    try {
+        switch (op->opCode) {
+            case HY_OP_CODE_MUL: {
+                /**
+                 d (X*Y) = X*dY + Y*dX
+                 */
+                
+                created_nodes [1]  = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (!created_nodes [1]) {
+                    throw (2);
+                }
+                
+                node<long>*       YtimesDX = new node<long>;
+                created_nodes[3] = YtimesDX;
+                YtimesDX->add_node (*created_nodes [1],*DuplicateFormula (currentSubExpression->go_down(2),tgt));
+                YtimesDX->in_object = tgt.theFormula.AppendNewInstance (new _Operation (HY_OP_CODE_MUL,2)) - 1;
+                
+
+                created_nodes [2]  = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
+                if (!created_nodes [2]) {
+                    throw (4);
+                }
+                node<long>*       XtimesDY = new node<long>;
+                XtimesDY->add_node (*created_nodes [2],*DuplicateFormula (currentSubExpression->go_down(1),tgt));
+                XtimesDY->in_object = tgt.theFormula.AppendNewInstance (new _Operation (HY_OP_CODE_MUL,2)) - 1;
+                newNode->add_node  (*YtimesDX,*XtimesDY);
+                newNode->in_object  = tgt.theFormula. AppendNewInstance (new _Operation (HY_OP_CODE_ADD,2)) - 1;
+                
+                return          newNode;
+            }
+            break;
+                
+            case HY_OP_CODE_ADD: // +
+            case HY_OP_CODE_SUB: { // -
+                
+                // TODO SLKP 20170426: clean up the rest of the function
+                
+                created_nodes[1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (!created_nodes[1]) {
+                    throw (1);
+                }
+                
+                long      isUnary = (currentSubExpression->get_num_nodes()==1);
+                
+                if (!isUnary) {
+                    created_nodes[2] = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
+                    if (!created_nodes[2]) {
+                        throw (2);
+                    }
+                }
+                
+                
+                newNode->add_node (*created_nodes[1]);
+                if (!isUnary) {
+                    newNode->add_node (*created_nodes[2]);
+                }
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (*op)) - 1;
+                return          newNode;
+            }
+            break;
+                
+            case HY_OP_CODE_DIV: { // /
+                
+                /*
+                    d (X/Y) = (y * dX - x * dY ) * Y^{-2}
+                */
+                created_nodes [1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (!created_nodes [1]) {
+                    throw (2);
+                }
+                
+                
+                node<long>*       yDx = new node<long>;
+                created_nodes[3] = yDx;
+                yDx->add_node (*created_nodes [1],*DuplicateFormula (currentSubExpression->go_down(2),tgt)); // dX * Y
+                yDx->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL,2))-1;
+                
+                created_nodes [2] = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
+                if (!created_nodes [2]) {
+                    throw (4);
+                }
+
+                node<long>*       y_raise_m2 = new node<long>;
+                node<long>*       yDx_minus_xDy = new node<long>;
+                node<long>*       xDy = new node<long>;
+                node<long>*       m2  = new node<long>;
+
+                xDy->add_node (*created_nodes [2],*DuplicateFormula (currentSubExpression->go_down(1),tgt)); // dY * X
+                xDy->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL,2))-1;
+                
+                yDx_minus_xDy->add_node  (*yDx,*xDy);
+                yDx_minus_xDy->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_SUB,2))-1; // numerator
+                
+                y_raise_m2->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt), *m2);
+                m2->in_object =  tgt.theFormula.AppendNewInstance(new _Operation (new _Constant (-2.)))-1;
+                y_raise_m2->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_POWER,2))-1; // y^{-2}
+
+                newNode->add_node(*yDx_minus_xDy, *y_raise_m2);
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL,2)) - 1;
+                
+                return          newNode;
+            }
+                break;
+                
+            case HY_OP_CODE_ARCTAN: { // Arctan
+                
+                // Arctax (y)' = y' / (1+y^2)
+                
+                created_nodes [1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (!created_nodes[1]) {
+                    throw (1);
+                }
+                
+                node<long>*       one   = new node<long>,
+                          *       two   = new node<long>,
+                          *       denom = new node<long>,
+                          *       y_squared = new node<long>;
+                
+                y_squared->add_node(*DuplicateFormula(currentSubExpression->go_down(1), tgt), *two);
+                two->in_object = tgt.theFormula.AppendNewInstance(new _Operation (new _Constant (2.))) - 1;
+                y_squared->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_POWER,2)) - 1;
+                denom->add_node(*y_squared, *one);
+                one->in_object = tgt.theFormula.AppendNewInstance(new _Operation (new _Constant (1.))) - 1;
+                denom->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_ADD,2)) - 1;
+                newNode->add_node(*created_nodes[1], *denom);
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_DIV,2)) - 1;
+                
+                return          newNode;
+            }
+                break;
+                
+            case HY_OP_CODE_COS: {
+                // d Cos (f[x]) = - f'[x] * Sin (x)
+                
+                created_nodes[1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (! created_nodes[1] ) {
+                    throw (1);
+                }
+                
+                node <long> * func_fx = new node <long>;
+                func_fx->add_node(*DuplicateFormula(currentSubExpression->go_down(1), tgt));
+                func_fx->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_SIN,1)) - 1;
+                node <long> * product_term = new node <long>;
+                product_term->add_node (*created_nodes[1], *func_fx);
+                product_term->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL,2)) - 1;
+                newNode->add_node(*product_term);
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_SUB,1)) - 1;
+
+                return          newNode;
+            }
+                break;
+                
+            case HY_OP_CODE_ERF: { // Erf
+                
+                // d ERF (f [X]) = Exp(-f[X]^2) / 2Pi
+                
+                created_nodes[1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (!created_nodes[1]) {
+                    throw (1);
+                }
+                
+                node <long> * f_squared = new node<long>,
+                            * two = new node<long>;
+                
+                f_squared->add_node(*DuplicateFormula(currentSubExpression->go_down(1), tgt), *two);
+                two->in_object = tgt.theFormula.AppendNewInstance(new _Operation (new _Constant (2.))) - 1L;
+                f_squared->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_POWER, 2)) - 1L;
+ 
+                node <long> * minus_f_squared = new node<long>;
+                minus_f_squared->add_node(*f_squared);
+                minus_f_squared->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_SUB, 1)) - 1L;
+
+                node <long> * exp_minus_f_squared = new node<long>;
+                exp_minus_f_squared->add_node(*minus_f_squared);
+                exp_minus_f_squared->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_EXP, 1)) - 1L;
+
+                
+                node <long> * two_pi        = new node<long>,
+                            * div_by_two_pi = new node<long>;
+
+                div_by_two_pi->add_node(*exp_minus_f_squared, *two_pi);
+                two_pi->in_object = tgt.theFormula.AppendNewInstance(new _Operation (new _Constant (twoOverSqrtPi))) - 1L;
+                div_by_two_pi ->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_DIV, 2)) - 1L;
+                
+                newNode->add_node(*created_nodes[1], *div_by_two_pi);
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL, 2)) - 1L;
+                
+                return          newNode;
+            }
+                break;
+                
+            case HY_OP_CODE_EXP: // HY_OP_CODE_EXP
+            case HY_OP_CODE_SIN: { // HY_OP_CODE_SIN
+                
+                // d Exp (f[X]) = f'[X] Exp (f[X])
+                // d Sin (f[X]) = f'[X] Cos (f[X])
+                
+                created_nodes[1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (! created_nodes[1] ) {
+                    throw (1);
+                }
+                
+                node <long> * func_fx = new node <long>;
+                func_fx->add_node(*DuplicateFormula(currentSubExpression->go_down(1), tgt));
+                func_fx->in_object = tgt.theFormula.AppendNewInstance(new _Operation (op->opCode==HY_OP_CODE_SIN ? HY_OP_CODE_COS : HY_OP_CODE_EXP,1)) - 1;
+                newNode->add_node (*created_nodes[1], *func_fx);
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL,2)) - 1;
+                
+                return           newNode;
+            }
+                break;
+                
+            case HY_OP_CODE_LOG: {
+                // Log (f(x))' = f'(x) * f(x)^{-1}
+                created_nodes[1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (!created_nodes[1]) {
+                    throw (2);
+                }
+                
+                node <long> * n1 = new node<long>, * n2 = new node<long>;
+                n2->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt), *n1); // f(x) , {-1}
+                n1->in_object = tgt.theFormula.AppendNewInstance (new _Operation (new _Constant (-1))) - 1; // push -1
+                n2->in_object = tgt.theFormula.AppendNewInstance (new _Operation (HY_OP_CODE_POWER,2)) - 1; // push '^'
+                newNode->add_node (*created_nodes[1], *n2); // f'(x) , f(x) (^) {-1}
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL,2))-1; // push *
+                
+                return           newNode;
+            }
+            break;
+                
+            case HY_OP_CODE_SQRT: {
+                
+                // d (Sqrt (f[x])) = 0.5 * f'[x] / Sqrt (f[x]))
+                created_nodes[1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (!created_nodes[1]) {
+                    throw (1);
+                }
+                
+                node <long>* half           = new node<long>;
+                node <long>* half_times_dfx = new node<long>;
+                
+                half_times_dfx->add_node (*created_nodes[1],*half);
+                half->in_object = tgt.theFormula.AppendNewInstance(new _Operation (new _Constant (0.5))) - 1;
+                half_times_dfx->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL, 2)) - 1;
+                
+                node <long> * sqrt_fx = new node<long>;
+                sqrt_fx->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
+                sqrt_fx->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_SQRT, 1)) - 1;
+
+                newNode->add_node  (*half_times_dfx,*sqrt_fx);
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_DIV, 2)) - 1;                
+                return          newNode;
+            }
+                break;
+                
+            case HY_OP_CODE_TAN: {
+                // Tan (f[X]) = f'[X] / Cos ^ 2 (f[X])
+                
+                created_nodes[1] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                
+                if (!created_nodes[1]) {
+                    throw (1);
+                }
+ 
+                node <long>* two                    = new node<long>;
+                node <long>* cos_f                  = new node<long>;
+                node <long>* cos_f_squared         = new node<long>;
+
+                cos_f->add_node(*DuplicateFormula(currentSubExpression->go_down(1), tgt));
+                cos_f->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_COS, 1)) - 1;
+                cos_f_squared->add_node(*cos_f, *two);
+                two->in_object = tgt.theFormula.AppendNewInstance(new _Operation (new _Constant (2.))) - 1;
+                cos_f_squared->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_POWER, 2)) - 1;
+                
+                newNode->add_node(*created_nodes[1], *cos_f_squared);
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_DIV, 2)) - 1;
+                
+                return          newNode;
+            }
+                break;
+                
+            case HY_OP_CODE_POWER: // ^
+                // f[x]^g[x] (g'[x] Log[f[x]] + f'[x]g[x] * (f[x]^{-1}))
+            {
+                node <long> * f_raise_g = new node <long>;
+                f_raise_g->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt),*DuplicateFormula (currentSubExpression->go_down(2),tgt));
+                f_raise_g->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_POWER, 2)) - 1;
+                created_nodes[1] = f_raise_g;
+                created_nodes[2] = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
+                if (!created_nodes[2]) {
+                    throw (3);
+                }
+                node <long> * log_f = new node <long>;
+                created_nodes[3] = log_f;
+                log_f->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
+                log_f->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_LOG, 1)) - 1;
+                node <long> * dg_times_log_fx = new node <long>;
+                created_nodes[4] = dg_times_log_fx;
+                dg_times_log_fx->add_node (*created_nodes[2], *log_f);
+                dg_times_log_fx->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL, 2)) - 1;
+                created_nodes[5] = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
+                if (!created_nodes[5]) {
+                    throw (6);
+                }
+                node <long> * df_times_g = new node <long>;
+                df_times_g->add_node (*created_nodes[5],*DuplicateFormula (currentSubExpression->go_down(2),tgt));
+                df_times_g->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL, 2)) - 1;
+                node <long> * inverse_f = new node <long>;
+                node <long> * minus1 = new node<long>;
+                inverse_f->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt),*minus1);
+                minus1->in_object = tgt.theFormula.AppendNewInstance(new _Operation (new _Constant (-1.))) - 1;
+                inverse_f->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_POWER, 2)) - 1;
+                node <long> * product_term = new node<long>; // f'[x]g[x] [*] (f[x]^{-1}
+                product_term->add_node (*df_times_g, *inverse_f);
+                product_term->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL, 2)) - 1;
+                node <long> * sum_term = new node<long>; // g'[x] Log[f[x]] <+> f'[x]g[x] * (f[x]^{-1})
+                sum_term->add_node (*dg_times_log_fx, *product_term);
+                sum_term->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_ADD, 2)) - 1;
+                newNode->add_node (*f_raise_g, *sum_term);
+                newNode->in_object = tgt.theFormula.AppendNewInstance(new _Operation (HY_OP_CODE_MUL, 2)) - 1;
+
+                
+                return          newNode;
+            }
+        }
+    } catch (int cleanup_length) {
+        for (long i = 0L; i < cleanup_length; i++) {
+            if (created_nodes [i]) {
+                created_nodes[i]->delete_tree(true);
+            }
+        }
+        return nil;
+    }
+    delete (newNode);
+    return nil;
+}
+
+
 
 //__________________________________________________________________________________
-bool _Formula::InternalSimplify (node<long>* startNode)
+bool _Formula::InternalSimplify (node<long>* top_node) {
 // returns true if the subexpression at
 // and below startnode is constant
-{
-    long        numChildren = startNode->get_num_nodes();
+    _Operation* op = GetIthTerm(top_node->get_data());
+    long        n_children = top_node->get_num_nodes();
 
-    _Operation* op = GetIthTerm(startNode->get_data());
-
-    if  (numChildren == 0) {
+    if  (n_children == 0L) {
       return !op->IsAVariable();
     }
 
 
-    bool        isConstant  = true,
-                firstConst  = true,
-                secondConst = (numChildren>1L);
+    bool        all_constant  = true,
+                left_constant  = true,
+                right_constant = (n_children>1L);
 
     long        prune_this_child = -1;
 
-    _Parameter  theVal      = 0.0;
-    _PMathObj   newVal      = nil;
+    hyFloat     evaluated_to      = 0.0;
+    HBLObjectRef   replace_with      = nil;
 
 
     //printf ("InternalSimplify %x\n", startNode);
 
-    for  (unsigned long k=1UL; k<=numChildren; k++) {
+    for  (unsigned long k=1UL; k<=n_children; k++) {
         if (k==1UL) {
-            firstConst = InternalSimplify (startNode->go_down(k));
+            left_constant = InternalSimplify (top_node->go_down(k));
         } else if (k==2UL) {
-            secondConst = InternalSimplify (startNode->go_down(k));
+            right_constant = InternalSimplify (top_node->go_down(k));
         } else {
-          if (!InternalSimplify (startNode->go_down(k))) {
-            isConstant = false;
+          if (!InternalSimplify (top_node->go_down(k))) {
+            all_constant = false;
           }
         }
     }
 
-    isConstant = isConstant && firstConst && (numChildren==1 || secondConst);
+    all_constant = all_constant && left_constant && (n_children==1 || right_constant);
 
     if (op->opCode > HY_OP_CODE_NONE) {
-        if (isConstant) { // this executes the subxpression starting at the current node
+        if (all_constant) { // this executes the subxpression starting at the current node
             _Stack scrap;
-            for  (unsigned long k=1UL; k<=numChildren; k++) {
-                ((_Operation*)theFormula (startNode->go_down(k)->get_data()))->Execute (scrap);
+            for  (unsigned long k=1UL; k<=n_children; k++) {
+                ((_Operation*)theFormula (top_node->go_down(k)->get_data()))->Execute (scrap);
             }
             op->Execute (scrap);
-            newVal = (_PMathObj)scrap.Pop();//->makeDynamic();
+            replace_with = (HBLObjectRef)scrap.Pop();//->makeDynamic();
         } else {
-            if (firstConst||secondConst) {
+            if (left_constant||right_constant) {
 
-                _PMathObj constant_value = ((_Operation*)theFormula (startNode->go_down(firstConst?1:2)->get_data()))->GetANumber();
+                HBLObjectRef constant_value = ((_Operation*)theFormula (top_node->go_down(left_constant?1:2)->get_data()))->GetANumber();
 
 
                 if (constant_value->ObjectClass() == NUMBER) {
-                  theVal  = constant_value->Value();
+                  evaluated_to  = constant_value->Value();
 
                   switch (op->opCode) {
                       case HY_OP_CODE_MUL: { // *
-                          if (CheckEqual (theVal,0.0)) { // *0 => 0
+                          if (CheckEqual (evaluated_to,0.0)) { // *0 => 0
                                                          //printf ("*0\n");
-                              newVal = new _Constant (0.0);
+                              replace_with = new _Constant (0.0);
                               break;
                           }
-                          if (CheckEqual (theVal,1.0)) { // x*1 => x
+                          if (CheckEqual (evaluated_to,1.0)) { // x*1 => x
                                                          //printf ("*1\n");
-                              prune_this_child = firstConst?1:2;
+                              prune_this_child = left_constant?1:2;
                               break;
                           }
                       }
                       break;
 
                       case HY_OP_CODE_ADD: { // +
-                          if (CheckEqual (theVal,0.0)) { // x+0 => x
+                          if (CheckEqual (evaluated_to,0.0)) { // x+0 => x
                                                          //printf ("+0\n");
-                              prune_this_child = firstConst?1:2;
+                              prune_this_child = left_constant?1:2;
                           }
                           break;
                       }
@@ -386,21 +860,21 @@ bool _Formula::InternalSimplify (node<long>* startNode)
                       case HY_OP_CODE_SUB: { // x-0 => x
                                              // 0-x => -x
 
-                          if (CheckEqual (theVal,0.0)) {
+                          if (CheckEqual (evaluated_to,0.0)) {
                               //printf ("-0\n");
-                             prune_this_child = firstConst? -2 : 2;
+                             prune_this_child = left_constant? -2 : 2;
                           }
                           break;
                       }
 
                       case HY_OP_CODE_DIV: { // /
-                          if (firstConst&&CheckEqual (theVal,0.0)) { // 0/x => 0
-                              newVal = new _Constant (0.0);
+                          if (left_constant&&CheckEqual (evaluated_to,0.0)) { // 0/x => 0
+                              replace_with = new _Constant (0.0);
                               //printf ("0/\n");
 
                               break;
                           }
-                          if (secondConst&&CheckEqual (theVal,1.0)) { // x/1 => x
+                          if (right_constant&&CheckEqual (evaluated_to,1.0)) { // x/1 => x
                                                                       //printf ("/1\n");
                               prune_this_child = 2;
                               break;
@@ -409,12 +883,12 @@ bool _Formula::InternalSimplify (node<long>* startNode)
                       break;
 
                       case HY_OP_CODE_POWER: { // ^
-                          if (firstConst&&CheckEqual (theVal,1.0)) { // 1^x => 1
+                          if (left_constant&&CheckEqual (evaluated_to,1.0)) { // 1^x => 1
                                                                      //printf ("1^\n");
-                              newVal = new _Constant (1.0);
+                              replace_with = new _Constant (1.0);
                               break;
                           }
-                          if (secondConst&&CheckEqual (theVal,1.0)) { // x^1 => ?
+                          if (right_constant&&CheckEqual (evaluated_to,1.0)) { // x^1 => ?
                                                                       //printf ("^1\n");
                               prune_this_child = 1;
                               break;
@@ -427,177 +901,208 @@ bool _Formula::InternalSimplify (node<long>* startNode)
         }
     }
 
-    if (newVal) {
-        for  (int k=1; k <= numChildren; k++) {
-            startNode->go_down(k)->delete_tree(true);
+    if (replace_with) {
+        all_constant = true;
+        for  (int k=1; k <= n_children; k++) {
+            top_node->go_down(k)->delete_tree(true);
         }
-        startNode->kill_all_nodes();
-        startNode->in_object = theFormula.lLength;
-        theFormula < (new _Operation(newVal));
+        top_node->kill_all_nodes();
+        top_node->in_object = theFormula.lLength;
+        theFormula < (new _Operation(replace_with));
     } else {
 
       if (prune_this_child !=- 1L) {
           if (prune_this_child > 0L) {
+              top_node->go_down(prune_this_child)->delete_tree(true);
+              top_node->kill_node (prune_this_child);
+              node <long>*    pruned_tree = top_node->go_down(1);
 
+              top_node->kill_all_nodes();
 
-              startNode->go_down(prune_this_child)->delete_tree(true);
-              startNode->kill_node (prune_this_child);
-              node <long>*    replaceWith = startNode->go_down(1);
-
-              startNode->kill_all_nodes();
-
-              for (unsigned long k=1; k<=replaceWith->get_num_nodes(); k++) {
-                  startNode->add_node (*replaceWith->go_down(k));
+              for (unsigned long k=1; k<=pruned_tree->get_num_nodes(); k++) {
+                  top_node->add_node (*pruned_tree->go_down(k));
               }
-              startNode->in_object = replaceWith->in_object;
-              delete (replaceWith);
+              top_node->in_object = pruned_tree->in_object;
+              delete (pruned_tree);
 
           } else { // 0-? => -?
-              startNode->go_down(1)->delete_tree(true);
-              startNode->kill_node(1);
+              top_node->go_down(1)->delete_tree(true);
+              top_node->kill_node(1);
               op->SetTerms(1);
              //startNode->kill_node(1);
           }
       }
     }
-    return isConstant;
+    
+    // check to see if this op may be of the kind F (F^-1 (X)), like Log (Exp (..)))
+    
+    if (!all_constant && top_node->get_num_nodes() == 1) {
+        long check_op_code = GetIthTerm(top_node->get_data())->opCode;
+        node <long>* child_node = top_node->go_down(1);
+        if (child_node->get_num_nodes() == 1) {
+            long child_op_code = GetIthTerm(child_node->get_data())->opCode;
+            bool cancel_pair = _Operation::AreOpsInverse (child_op_code, check_op_code);
+            if (cancel_pair) {
+                node<long> * remaining_trunk = child_node->go_down(1);
+                delete (top_node->go_down(1));
+                top_node->in_object = remaining_trunk->in_object;
+                top_node->kill_all_nodes();
+                for (long k = 1; k <= remaining_trunk->get_num_nodes(); k++) {
+                    top_node->add_node (*remaining_trunk->go_down (k));
+                }
+                delete remaining_trunk;
+                
+            }
+        }
+    }
+    
+    return all_constant;
 }
 
 
 //__________________________________________________________________________________
-void _Formula::internalToStr (_String& result, node<long>* currentNode, char opLevel, _List* matchNames, _Operation* thisNodeOperation)
-{
-    if (!thisNodeOperation) {
-        thisNodeOperation = (_Operation*)theFormula (currentNode->get_data());
+void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode) {
+    
+    if (!this_node_op) {
+        if (!top_node) {
+          return;
+        }
+        this_node_op = GetIthTerm (top_node->get_data());
     }
 
     // decide what to do about this operation
 
-    if (thisNodeOperation->IsAVariable(false))
+    if (this_node_op->IsAVariable(false) || this_node_op->IsValueSubstitution()) {
         // this operation is just a variable - add ident to string and return
-    {
-        if (subNumericValues) {
-            if (subNumericValues == 2) {
-                _Variable* theV = LocateVar(thisNodeOperation->GetAVariable());
-                if  (_x_&&(theV->GetAVariable()==_x_->GetAVariable())) {
-                    result << _x_->GetName();
+        long node_variable_index = this_node_op->GetAVariable();
+        if (node_variable_index < 0L) {
+          return;
+        }
+      
+        if (mode != kFormulaStringConversionNormal) {
+          
+            _Variable *node_variable = LocateVar(node_variable_index);
+          
+            if (mode == kFormulaStringConversionSubstiteValues) {
+                 if  (hy_x_variable && (node_variable->get_index()==hy_x_variable->get_index())) {
+                    result << hy_x_variable->GetName();
                     return;
                 }
             }
 
-            _Variable *thisVariable = LocateVar(thisNodeOperation->GetAVariable());
-            _PMathObj subThisValue = thisVariable->Compute();
+            HBLObjectRef replace_with = node_variable->Compute();
 
-            if (subThisValue->ObjectClass () == NUMBER) {
-                if (subNumericValues == 3) {
-                    result << LocateVar(thisNodeOperation->GetAVariable())->GetName();
-                    result << '[';
-                    result.AppendNewInstance(new _String (subThisValue->Value()));
+            if (replace_with->ObjectClass () == NUMBER) {
+                if (mode == kFormulaStringConversionReportRanges) {
+                    result << node_variable->GetName()
+                           << '[';
+                    result.AppendNewInstance(new _String (replace_with->Value()));
                     result << ':';
-                    result.AppendNewInstance(new _String (thisVariable->GetLowerBound()));
+                    result.AppendNewInstance(new _String (node_variable->GetLowerBound()));
                     result << '-';
-                    result.AppendNewInstance(new _String (thisVariable->GetUpperBound()));
+                    result.AppendNewInstance(new _String (node_variable->GetUpperBound()));
                     result << ']';
 
                 } else {
-                    result.AppendNewInstance(new _String (subThisValue->Value()));
+                    result.AppendNewInstance(new _String (replace_with->Value()));
                 }
-            } else if (subThisValue->ObjectClass () == STRING) {
-                result.AppendNewInstance((_String*)subThisValue->toStr());
+            } else if (replace_with->ObjectClass () == STRING) {
+                result.AppendNewInstance((_String*)replace_with->toStr());
+                if (this_node_op->IsValueSubstitution()) {
+                    result << "__";
+                }
             } else {
-                result << LocateVar(thisNodeOperation->GetAVariable())->GetName();
+                result << node_variable->GetName();
+                if (this_node_op->IsValueSubstitution()) {
+                    result << "__";
+                }
             }
         } else {
-            long variableIDX = thisNodeOperation->GetAVariable();
-            if (variableIDX>=0) {
-                _String * vName = LocateVar(variableIDX)->GetName();
-                if (matchNames) {
-                    _List * p1 = (_List*)(*matchNames)(0),
-                            * p2 = (_List*)(*matchNames)(1);
+            _String * variable_name = LocateVar(node_variable_index)->GetName();
+            if (match_names) {
 
-                    long  f = p1->FindObject (vName);
+                long  f = ((_List*)(*match_names)(0))->FindObject (variable_name);
 
-                    if (f<0) {
-                        result<<vName;
-                    } else {
-                        result<<(_String*)(*p2)(f);
-                    }
+                if (f == kNotFound) {
+                    result<<variable_name;
                 } else {
-                    result<<vName;
+                    result << (_String*)((_List*)(*match_names)(1))->GetItem(f);
                 }
+            } else {
+                result<<variable_name;
+            }
+            if (this_node_op->IsValueSubstitution()) {
+                result << "__";
             }
         }
         return;
     }
 
-    long nOps = thisNodeOperation->GetNoTerms();
-    if (nOps>0)
+    long node_op_count = this_node_op->GetNoTerms();
+    if (node_op_count > 0) {
         // a built-in operation or a function call
-    {
         // check if it's a built-in binary operation
-        _String  opString (thisNodeOperation->GetCode());
-        long f = BinOps.Find ((opString.sLength>1)?(opString.sData[0]*256+opString.sData[1]):opString.sData[0]);
-        if (f!=-1)
+      
+        long f = _Operation::BinOpCode(this_node_op->GetCode());
+      
+        if (f != kNotFound) {
             // indeed - a binary operation is what we have. check if need to wrap the return in parentheses
-        {
-            if (!currentNode || currentNode->get_num_nodes()==2 ) {
-                char tOpLevel  = opPrecedence(f),
-                     tOpLevel2 = tOpLevel;
+          
+            if (!top_node || top_node->get_num_nodes() == 2 ) {
+                unsigned char op_precedence   = opPrecedence(f),
+                              op_precedence_right = op_precedence;
 
-                if (associativeOps.Find(f)<0) {
-                    tOpLevel2 ++;
+                if (associativeOps.Find(f) == kNotFound) {
+                    op_precedence_right ++;
                 }
-                if (opLevel>=0) { // need to worry about op's precedence
-                    {
-                        bool parens = opPrecedence(f)<opLevel;
+                if (op_level >= 0) { // need to worry about op's precedence
+                    bool need_parens = op_precedence < op_level;
 
-                        if (parens&&currentNode) { // put parentheses around the return of this expression
-                            result<<'(';
-                            internalToStr (result, currentNode->go_down(1),tOpLevel,matchNames);
-                            result<<&thisNodeOperation->GetCode();
-                            internalToStr (result, currentNode->go_down(2),tOpLevel2,matchNames);
-                            result<<')';
-                            return;
-                        }
+                    if (need_parens && top_node ) { // put parentheses around the return of this expression
+                        result<<'(';
+                        SubtreeToString (result, top_node->go_down(1),op_precedence,match_names, nil, mode);
+                        result <<&this_node_op->GetCode();
+                        SubtreeToString (result, top_node->go_down(2),op_precedence_right,match_names, nil, mode);
+                        result<<')';
+                        return;
                     }
                 }
-                if (currentNode) {
-                    internalToStr (result, currentNode->go_down(1),tOpLevel,matchNames);
+              
+                if (top_node) {
+                    SubtreeToString (result, top_node->go_down(1),op_precedence,match_names,nil, mode);
                 }
-                result<<&thisNodeOperation->GetCode();
-                if (currentNode) {
-                    internalToStr (result, currentNode->go_down(2),tOpLevel2,matchNames);
+                result << &this_node_op->GetCode();
+                if (top_node) {
+                    SubtreeToString (result, top_node->go_down(2),op_precedence_right,match_names,nil, mode);
                 }
                 return;
             } else { // mixed binary-unary operation
-                result<<&thisNodeOperation->GetCode();
-                if (currentNode) {
+                result<<&this_node_op->GetCode();
+                if (top_node) {
                     result<<'(';
-                    internalToStr (result, currentNode->go_down(1),opPrecedence(f),matchNames);
+                    SubtreeToString (result, top_node->go_down(1),opPrecedence(f),match_names,nil, mode);
                     result<<')';
                 }
                 return;
             }
         } else {
-            _String mac ("MAccess");
-            if (!thisNodeOperation->GetCode().Equal(&mac)) {
-                result<<&thisNodeOperation->GetCode();
-                if (currentNode) {
+             if (this_node_op->TheCode() != HY_OP_CODE_MACCESS) {
+                result<<&this_node_op->GetCode();
+                if (top_node) {
                     result<<'(';
-                    for (long k=1; k<=nOps; k++) {
-                        if (k>1) {
-                            result<<',';
-                        }
-                        internalToStr (result, currentNode->go_down(k),-1,matchNames);
+                    SubtreeToString (result, top_node->go_down(1),-1,match_names,nil, mode);
+                    for (long k=2UL; k <= node_op_count; k++) {
+                        result << ',';
+                        SubtreeToString (result, top_node->go_down(k),-1,match_names,nil, mode);
                     }
                     result<<')';
                 }
             } else { // matrix element access - treat specially
-                if (currentNode) {
-                    internalToStr (result, currentNode->go_down(1),-1,matchNames);
-                    for (long k=2; k<=nOps; k++) {
+                if (top_node) {
+                    SubtreeToString (result, top_node->go_down(1),-1,match_names,nil,mode);
+                    for (long k=2; k<=node_op_count; k++) {
                         result<<'[';
-                        internalToStr (result, currentNode->go_down(k),-1,matchNames);
+                        SubtreeToString (result, top_node->go_down(k),-1,match_names,nil, mode);
                         result<<']';
                     }
                 }
@@ -605,79 +1110,73 @@ void _Formula::internalToStr (_String& result, node<long>* currentNode, char opL
         }
         return;
     }
-    if (nOps<0)
+    if (node_op_count < 0L) {
         // a user-defined function
-    {
-        long func_id = thisNodeOperation->UserFunctionID();
+        long func_id = this_node_op->UserFunctionID();
         result<< & GetBFFunctionNameByIndex(func_id);
-        if (currentNode) {
+        if (top_node) {
             result<<'(';
             long argument_count = GetBFFunctionArgumentCount(func_id);
-            for (long k=1L; k<=argument_count; k++) {
-                if(k>1L) {
-                    result<<',';
-                }
-                internalToStr (result, currentNode->go_down(k),-1,matchNames);
+            SubtreeToString (result, top_node->go_down(1),-1,match_names,nil,mode);
+            for (long k=2L; k<=argument_count; k++) {
+                result<<',';
+                SubtreeToString (result, top_node->go_down(k),-1,match_names,nil,mode);
             }
             result<<')';
         }
         return;
     }
-    _PMathObj opValue = thisNodeOperation->GetANumber();
-    if (opValue) {
-        _String* conv = (_String*)opValue->toStr();
-        if (opValue->ObjectClass()==STRING) {
-            result<<'"';
-            result<<conv;
-            result<<'"';
+  
+    HBLObjectRef op_data = this_node_op->GetANumber();
+    if (op_data) {
+        _String* conv = (_String*)op_data->toStr();
+        if (op_data->ObjectClass()==STRING) {
+            (result <<'"').AppendNewInstance (conv) << '"';
         } else {
-            if (opValue->ObjectClass() == NUMBER && opValue->Value() < 0.0) {
-                result<<'(';
-                result<<conv;
-                result<<')';
+            if (op_data->ObjectClass() == NUMBER && op_data->Value() < 0.0) {
+              (result <<'(').AppendNewInstance (conv) << ')';
             } else {
-                result<<conv;
+                result.AppendNewInstance (conv);
             }
         }
-        DeleteObject(conv);
     } else {
         result << "<null>";
     }
 }
+
 //__________________________________________________________________________________
 bool     _Formula::IsEmpty(void) const {
-// is there anything in the formula
-    return bool(!theFormula.lLength);
+    return theFormula.empty();
 }
 
 //__________________________________________________________________________________
-_Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Parameter targetValue, _Parameter left, _Parameter right)
-// find a root of the formulaic expression, using Newton's method, given the derivative and a bracketed root.
-// will alternate between bisections and Newton iterations based on what is fatser
-{
-  // check that there is indeed a sign change on the interval
-  _Parameter    func_left, func_right, // keeps track of function values in the current interval, [left,right]
+hyFloat   _Formula::Newton(_Formula& derivative, _Variable* unknown, hyFloat target_value, hyFloat left, hyFloat right) {
+    // find a root of the formulaic expression, using Newton's method, given the derivative and a bracketed root.
+    // will alternate between bisections and Newton iterations based on what is fatser
+    // check that there is indeed a sign change on the interval
+  
+  auto set_and_compute = [&] (hyFloat x) -> hyFloat {
+    unknown->SetValue(x);
+    return Compute()->Value()-target_value;
+  };
+  
+  hyFloat    func_left, func_right, // keeps track of function values in the current interval, [left,right]
   root_guess, func_root_guess,
   lastCorrection = 100.,
   newCorrection;
 
-
-  unknown->SetValue(left);
-  func_left = Compute()->Value()-targetValue;
+  func_left = set_and_compute (left);
   if (func_left==0.0) {
     return left;
   }
   unknown->SetValue(right);
-  func_right = Compute()->Value()-targetValue;
+  func_right = set_and_compute (right);
   if (func_right==0.0) {
     return right;
   }
 
   if (func_left*func_right>0.0) { // bracket fail
-    subNumericValues = 3;
-    _String msg ((_String*)toStr());
-    subNumericValues = 0;
-    ReportWarning (msg&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf); " & func_left & "-" & func_right);
+    ReportWarning (_String((_String*)toStr(kFormulaStringConversionReportRanges)) & " = "&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&",Inf); " & func_left & "-" & func_right);
     return    left;
   }
   // else all is good we can start the machine
@@ -685,57 +1184,50 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramet
 
   root_guess = (right+left) * .5;
 
-  for (unsigned long iterCount  = 0L; iterCount < 200UL; iterCount++) {
-    if ( fabs(right-left)/MAX(left,right) > machineEps*10. ) { // stuff to do
+  for (unsigned long iterCount  = 0L; fabs(right-left)/MAX(left,right) > kMachineEpsilon*10. && iterCount < 200UL; iterCount++) {
+    func_root_guess = set_and_compute (root_guess);
+    if (func_root_guess == 0.) {
+      return root_guess;
+    }
+    // get the correction term from the derivative
+    hyFloat df_dx = derivative.Compute()->Value(),
+    adjusted_root_guess;
 
-      unknown->SetValue(root_guess);
-      func_root_guess = Compute()->Value()-targetValue;
-      if (func_root_guess == 0.) {
-        return root_guess;
+    useNewton = true;
+    if (df_dx==0.0) {
+      useNewton = false;
+    } else {
+      newCorrection = -func_root_guess/df_dx;
+
+      if (fabs(newCorrection/func_root_guess)<kMachineEpsilon*2. || fabs(newCorrection)<kMachineEpsilon*2.) { // correction too small - the root has been found
+          return root_guess;
       }
-      // get the correction term from the derivative
-      _Parameter df_dx = derivative.Compute()->Value(),
-      adjusted_root_guess;
 
-      useNewton = true;
-      if (df_dx==0.0) {
+      if (fabs(newCorrection/lastCorrection)>4.) { // Newton correction too large - revert to bisection
+        useNewton = false;
+      }
+
+      adjusted_root_guess = root_guess +newCorrection;
+      if (adjusted_root_guess<=left || adjusted_root_guess >=right) {
         useNewton = false;
       } else {
-        newCorrection = -func_root_guess/df_dx;
-
-        if (fabs(newCorrection/func_root_guess)<machineEps*2. || fabs(newCorrection)<machineEps*2.) { // correction too small - the root has been found
-            return root_guess;
-        }
-
-        if (fabs(newCorrection/lastCorrection)>4.) { // Newton correction too large - revert to bisection
-          useNewton = false;
-        }
-
-        adjusted_root_guess = root_guess +newCorrection;
-        if (adjusted_root_guess<=left || adjusted_root_guess >=right) {
-          useNewton = false;
-        } else {
-          lastCorrection = newCorrection;
-        }
+        lastCorrection = newCorrection;
       }
+    }
 
-      if (useNewton) {
-        root_guess = adjusted_root_guess;
-      } else {
-        if (func_root_guess==0.0) {
-          return root_guess;
-        }
-        if (func_root_guess*func_left > 0.0) { // move to the right half
-          func_left   = func_root_guess;
-          left  = root_guess;
-        } else {
-          right = root_guess;
-        }
-        root_guess = (right+left) * .5;
-      }
-
+    if (useNewton) {
+      root_guess = adjusted_root_guess;
     } else {
-      break;
+      if (func_root_guess==0.0) {
+        return root_guess;
+      }
+      if (func_root_guess*func_left > 0.0) { // move to the right half
+        func_left   = func_root_guess;
+        left  = root_guess;
+      } else {
+        right = root_guess;
+      }
+      root_guess = (right+left) * .5;
     }
   }
   return root_guess;
@@ -743,12 +1235,23 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Variable* unknown, _Paramet
 
 
 //__________________________________________________________________________________
-_Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Parameter tol, _List* storeEvals, _Parameter rhs)
+hyFloat   _Formula::Brent(_Variable* unknown, hyFloat a, hyFloat b, hyFloat tol, _List* store_evals, hyFloat rhs) {
 // find a root of the formulaic expression, using Brent's method and a bracketed root.
-{
     // check that there is indeed a sign change on the interval
 
-    _Parameter  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
+    auto set_and_compute = [&] (hyFloat x) -> hyFloat {
+      unknown->SetValue(x);
+      hyFloat fx = Compute()->Value()-rhs;
+      
+      if (store_evals) {
+        store_evals->AppendNewInstance(new _Constant (x));
+        store_evals->AppendNewInstance(new _Constant (fx));
+      }
+      
+      return fx;
+    };
+
+    hyFloat  fa = 0.0,fb = 0.0,fc,d = b-a,e = b-a ,min1,min2,xm,p,q,r,s,tol1,
                 c = b;
 
     min1 = unknown->GetLowerBound();
@@ -757,13 +1260,8 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
     long        it = 0;
 
     if (a>b) { // autobracket to the left
-        unknown->SetValue(b);
-        fb = Compute()->Value();
-        if (storeEvals) {
-            storeEvals->AppendNewInstance(new _Constant (b));
-            storeEvals->AppendNewInstance(new _Constant (fb));
-        }
-
+        fb = set_and_compute (b);
+      
         if (b<0.00001 && b>-0.00001) {
             a = b-0.0001;
         } else {
@@ -773,19 +1271,11 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
         if (a<min1) {
             a = min1+0.5*(b-min1);
         }
-
-        unknown->SetValue(a);
-        fa = Compute()->Value()-rhs;
-        if (storeEvals) {
-          storeEvals->AppendNewInstance(new _Constant (a));
-          storeEvals->AppendNewInstance(new _Constant (fa));
-        }
-
-        for (long k=0; k<50; k++) {
-            if (fb*fa<0.0) {
-                break;
-            }
-
+      
+        fa = set_and_compute (a);
+      
+        for (long k=0L; k<50L && fb*fa >= 0.0; k++) {
+ 
             d  = (b-a)*GOLDEN_RATIO;
             b  = a;
             a -= d;
@@ -799,22 +1289,11 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             }
 
             fb = fa;
-
-            unknown->SetValue(a);
-            fa = Compute()->Value()-rhs;
-            if (storeEvals) {
-              storeEvals->AppendNewInstance(new _Constant (a));
-              storeEvals->AppendNewInstance(new _Constant (fa));
-            }
+            fa = set_and_compute (a);
         }
     } else if (CheckEqual (a,b)) { // autobracket to the right
-        unknown->SetValue(a);
-        fa = Compute()->Value()-rhs;
-
-        if (storeEvals) {
-          storeEvals->AppendNewInstance(new _Constant (a));
-          storeEvals->AppendNewInstance(new _Constant (fa));
-        }
+        fa = set_and_compute (a);
+      
         a = b;
 
         if ((b<0.00001)&&(b>-0.00001)) {
@@ -827,18 +1306,9 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             b = a+0.5*(min2-a);
         }
 
-        unknown->SetValue(b);
-        fb = Compute()->Value()-rhs;
-
-        if (storeEvals) {
-          storeEvals->AppendNewInstance(new _Constant (b));
-          storeEvals->AppendNewInstance(new _Constant (fb));
-        }
-
-        for (long k=0; k<50; k++) {
-            if (fb*fa<0.0) {
-                break;
-            }
+        fb = set_and_compute (b);
+      
+        for (long k=0L; k<50L && fb*fa >= 0.0; k++) {
 
             d  = (b-a)*GOLDEN_RATIO;
             a  = b;
@@ -853,36 +1323,20 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             }
 
             fa = fb;
-
-            unknown->SetValue(b);
-            fb = Compute()->Value()-rhs;
-            if (storeEvals) {
-              storeEvals->AppendNewInstance(new _Constant (b));
-              storeEvals->AppendNewInstance(new _Constant (fb));
-            }
+            fb = set_and_compute (b);
         }
     }
 
 
     if (fa == 0.0) {
-        unknown->SetValue(a);
-        fa = Compute()->Value()-rhs;
-        if (storeEvals) {
-          storeEvals->AppendNewInstance(new _Constant (a));
-          storeEvals->AppendNewInstance(new _Constant (fa));
-        }
+        fa = set_and_compute (a);
         if (fa == 0.0) {
             return a;
         }
     }
 
     if (fb == 0.0) {
-        unknown->SetValue(b);
-        fb = Compute()->Value()-rhs;
-        if (storeEvals) {
-          storeEvals->AppendNewInstance(new _Constant (b));
-          storeEvals->AppendNewInstance(new _Constant (fb));
-        }
+        fb = set_and_compute (b);
         if (fb == 0.0) {
             return b;
         }
@@ -908,7 +1362,7 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
                 fc    = fa;
             }
 
-            tol1 = 2.*fabs(b)*machineEps+.5*tol;
+            tol1 = 2.*fabs(b)*kMachineEpsilon+.5*tol;
 
             xm = .5*(c-b);
 
@@ -930,7 +1384,6 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
                 if (p>0.0) {
                     q = -q;
                 }
-                p = fabs (p);
 
                 if (p<0.0) {
                     p = -p;
@@ -954,53 +1407,42 @@ _Parameter   _Formula::Brent(_Variable* unknown, _Parameter a, _Parameter b, _Pa
             if (fabs(d)>tol1) {
                 b+=d;
             } else {
-              if (xm > 0.) {
-                b += fabs (tol1);
-              } else {
-                b -= fabs (tol1);
-              }
+                if (xm > 0.) {
+                    b += fabs (tol1);
+                } else {
+                    b -= fabs (tol1);
+                }
             }
-
-            unknown->SetValue(b);
-            fb = Compute()->Value()-rhs;
-            if (storeEvals) {
-              storeEvals->AppendNewInstance(new _Constant (b));
-              storeEvals->AppendNewInstance(new _Constant (fb));
-            }
+            fb = set_and_compute (b);
         }
     }
 
-    subNumericValues = 2;
 
     /*for (long i = 0; i < theFormula.lLength; i++) {
       _Operation *op_i = GetIthTerm(i);
       printf ("%ld: %s\n", i+1, _String((_String*)op_i->toStr()).sData);
     }*/
 
-    _String msg ((_String*)toStr());
-    subNumericValues = 0;
+   _String msg ((_String*)toStr(kFormulaStringConversionSubstiteValues));
     msg = msg & "=" & rhs;
     if (it < MAX_BRENT_ITERATES) {
         msg =   msg & " has no (or multiple) roots in ["&_String(a)&","&_String(b)&"]";
     } else {
         msg =   msg & " failed to converge to sufficient precision in " & MAX_BRENT_ITERATES &" iterates.";
     }
-
     ReportWarning (msg);
     return    b;
 }
 //__________________________________________________________________________________
-_Parameter   _Formula::Newton(_Formula& derivative, _Parameter targetValue, _Parameter left, _Parameter max_right, _Variable* unknown)
+hyFloat   _Formula::Newton(_Formula& derivative, hyFloat target_value, hyFloat left, hyFloat max_right, _Variable* unknown) {
 // given a monotone function and a left bracket bound, found the right bracket bound and solve
-{
+  
     // check that there is indeed a sign change on the interval
-    _Constant   dummy;
-    dummy.SetValue (left);
-    unknown->SetValue(&dummy);
-    _Parameter  t1 = Compute()->Value(), right = left, t2, step = 1.0;
+    unknown->SetValue(left);
+    hyFloat  t1 = Compute()->Value(), right = left, t2, step = 1.0;
 
-    if (max_right-left < step * 100) {
-        step = (max_right-left)/100;
+    if (max_right-left < step * 100.) {
+        step = (max_right-left) * 0.01;
     }
     if  (step==0.0) {
         return left;
@@ -1008,51 +1450,37 @@ _Parameter   _Formula::Newton(_Formula& derivative, _Parameter targetValue, _Par
     do {
         right += step;
         if (right>max_right) { // function doesn't seem to have a root
-            subNumericValues = 2;
-            _String *s = (_String*)toStr();
-            subNumericValues = 0;
-            _String msg = *s&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")";
-            ReportWarning (msg);
-            DeleteObject (s);
+            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
             return    left;
         }
-        dummy.SetValue (right);
-        unknown->SetValue(&dummy);
+        unknown->SetValue(right);
         t2 = Compute()->Value();
         step*=2;
         if (right+step>max_right)
             if (right<max_right) {
                 step = max_right-right;
             }
-    } while ((targetValue-t1)*(targetValue-t2)>0);
-    return Newton (derivative, unknown, targetValue, left, right);
+    } while ((target_value-t1)*(target_value-t2)>0);
+    return Newton (derivative, unknown, target_value, left, right);
 
 }
 
 //__________________________________________________________________________________
-_Parameter   _Formula::Newton(_Variable* unknown, _Parameter targetValue, _Parameter x_min, _Parameter left, _Parameter right)
-{
+hyFloat   _Formula::Newton(_Variable* unknown, hyFloat target_value, hyFloat x_min, hyFloat left, hyFloat right) {
     // check that there is indeed a sign change on the interval
-    _Constant   dummy;
-    _Parameter  t1,t2,t3,t4,t5,lastCorrection = 100, newCorrection;
+    hyFloat  t1,t2,t3,t4,t5,lastCorrection = 100, newCorrection;
     _String     msg;
-    t1 =Integral(unknown, x_min, left)-targetValue;
+    t1 =Integral(unknown, x_min, left)-target_value;
     if (t1==0.0) {
         return left;
     }
     t2 = t1+Integral(unknown, left, right);
-    if (t2==0) {
+    if (t2==0.0) {
         return right;
     }
     if (t1*t2>0.0) {
-        subNumericValues = 2;
-        _String *s = (_String*)toStr();
-        subNumericValues = 0;
-        _String msg = *s&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&","
-                      &_String (right)&"]";
-        ReportWarning (msg);
-        DeleteObject (s);
-        return    left;
+      ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&","&_String(right)&")");
+      return    left;
     }
     // else all is good we can start the machine
     bool useNewton = false;
@@ -1063,13 +1491,11 @@ _Parameter   _Formula::Newton(_Variable* unknown, _Parameter targetValue, _Param
         if (!useNewton) {
             t3 = (right+left) * 0.5;
         }
-        dummy.SetValue(t3);
-        unknown->SetValue(&dummy);
-        t4 = Integral(unknown, x_min, t3)-targetValue;
+        unknown->SetValue(t3);
+        t4 = Integral(unknown, x_min, t3)-target_value;
         // get the correction term from the derivative
-        dummy.SetValue(t3);
-        unknown->SetValue(&dummy);
-        t5 = Compute()->Value();
+        unknown->SetValue(t3);
+         t5 = Compute()->Value();
         useNewton = true;
         if (t5==0.0) {
             useNewton = false;
@@ -1091,7 +1517,7 @@ _Parameter   _Formula::Newton(_Variable* unknown, _Parameter targetValue, _Param
         if (useNewton) {
             t3 = t5;
         } else {
-            t4 = Integral(unknown, x_min, t3)-targetValue;
+            t4 = Integral(unknown, x_min, t3)-target_value;
             if (t4==0.0) {
                 return t3;
             }
@@ -1108,232 +1534,335 @@ _Parameter   _Formula::Newton(_Variable* unknown, _Parameter targetValue, _Param
 }
 
 //__________________________________________________________________________________
-_Parameter   _Formula::Newton( _Variable* unknown, _Parameter targetValue,_Parameter x_min, _Parameter left)
+hyFloat   _Formula::Newton( _Variable* unknown, hyFloat target_value,hyFloat x_min, hyFloat left) {
 // given a monotone function and a left bracket bound, found the right bracket bound and solve
-{
     // check that there is indeed a sign change on the interval
-    _Parameter  t1 = Integral(unknown, x_min, left), right = left, t2, step = 1.0;
+    hyFloat  t1 = Integral(unknown, x_min, left), right = left, t2, step = 1.0;
     do {
         right += step;
         t2 = Integral(unknown, right-step, right);
         step*=2;
         if (right>=1e10) { // function doesn't seem to have a root
-            subNumericValues = 2;
-            _String *s = (_String*)toStr();
-            subNumericValues = 0;
-            _String msg = *s&"="&_String(targetValue)&" has no (or multiple) roots in ["&_String(left)&",Inf)";
-            WarnError (msg);
-            DeleteObject (s);
+            ReportWarning (_String((_String*)toStr(kFormulaStringConversionSubstiteValues))&"="&_String(target_value)&" has no (or multiple) roots in ["&_String(left)&",Inf)");
             return    0.0;
         }
-    } while ((targetValue-t1)*(targetValue-t2-t1)>=0);
-    return Newton ( unknown, targetValue,x_min, left, right);
+    } while ((target_value-t1)*(target_value-t2-t1)>=0);
+    return Newton ( unknown, target_value,x_min, left, right);
 
 }
 
-_Parameter   _Formula::Integral(_Variable* dx, _Parameter left, _Parameter right, bool infinite)
+//__________________________________________________________________________________
+
+hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool infinite) {
 // uses Romberg's intergation method
-{
     if (infinite) { // tweak "right" here
-        _Parameter value = 1.0, step = 1.0, right1=-1;
+        hyFloat value = 1.0, step = 1.0, right1= -1.;
         right = left;
-        while (value>machineEps) {
+        while (value>1e-8) {
             right+=step;
-            _Constant dummy (right);
-            dx->SetValue(&dummy);
+            dx->SetValue(right);
             value = fabs(Compute()->Value());
-            if ((value<0.001)&&(right1<0)) {
+            if ( value < 1e-4 && right1 < 0.) { // SLKP 20181205 why is this here?
                 right1 = right;
             }
             step *= 2;
-            if (step>100000) { // integrand decreasing too slowly
-                _String msg, *s = (_String*)toStr();
-                msg = *s & " decreases too slowly to be integrated over an infinite interval";
-                DeleteObject(s);
-                WarnError (msg);
+            if (step > 100000) { // integrand decreasing too slowly
+                HandleApplicationError (_String(*(_String*)toStr(kFormulaStringConversionNormal)).Enquote() & " decreases too slowly to be integrated over an infinite interval");
                 return 0.0;
             }
         }
-        if (right1<right-machineEps) {
+        
+        
+        if (right1<right-kMachineEpsilon) {
             return Integral(dx,left,right1,false)+Integral(dx,right1,right,false);
         } else {
             return Integral(dx,left,right1,false);
         }
     }
 
-    _Parameter       localPrecisionFactor;
-    long             localIntegrationLoops;
+    hyFloat          precision_factor =  hy_env::EnvVariableGetNumber(hy_env::integration_precision_factor);
+    long             max_iterations  =  hy_env::EnvVariableGetNumber(hy_env::integration_maximum_iterations);
 
-    checkParameter (intPrecFact,localPrecisionFactor,integrationPrecisionFactor);
-    checkParameter (intMaxIter, localIntegrationLoops,maxRombergSteps);
-
-    _Parameter ss,
+    hyFloat ss,
                dss,
-               *s,
-               *h;
+               *s = new hyFloat [max_iterations],
+               *h = new hyFloat [max_iterations+1L];
 
-    s = new _Parameter [(long)maxRombergSteps];
-    h = new _Parameter [(long)(maxRombergSteps+1)];
-
+ 
     h[0]=1.0;
 
-    long         interpolateSteps = 5,
-                 stackDepth = 0;
+    long         interpolate_steps = 5L,
+                 stack_depth = 0L;
 
-    _SimpleList  fvidx,
-                 changingVars,
-                 idxMap;
+    _SimpleList  fvidx_aux,
+                 changing_vars,
+                 idx_map;
+  
+  
+    _AVLList    fvidx (&fvidx_aux);
 
-    _Parameter   * ic = new _Parameter[interpolateSteps],
-    * id = new _Parameter[interpolateSteps];
+    hyFloat   * ic = new hyFloat[interpolate_steps],
+              * id = new hyFloat[interpolate_steps];
 
     _SimpleFormulaDatum
-    * stack = nil,
+      * stack = nil,
       * vvals = nil;
 
-    checkPointer (ic);
-    checkPointer (id);
 
-    if (AmISimple (stackDepth,fvidx)) {
-        stack = new _SimpleFormulaDatum [stackDepth];
-        vvals = new _SimpleFormulaDatum [fvidx.lLength];
+    if (AmISimple (stack_depth,fvidx)) {
+        stack = new _SimpleFormulaDatum [stack_depth];
+        
         ConvertToSimple (fvidx);
-        stackDepth = dx->GetAVariable();
-        for (long vi = 0; vi < fvidx.lLength; vi++) {
-            _Variable * checkvar = LocateVar (fvidx.lData[vi]);
-            if (checkvar->CheckFForDependence (stackDepth,true)) {
-                changingVars << fvidx.lData[vi];
-                idxMap << vi;
+        if (fvidx.countitems()) { // could be a constant expression with no variable dependancies
+            vvals = new _SimpleFormulaDatum [fvidx.countitems()];
+            //fvidx.ReorderList();
+            long dx_index = dx->get_index();
+            for (long vi = 0; vi < fvidx_aux.countitems(); vi++) {
+                _Variable* variable_in_expression = LocateVar (fvidx_aux.Element(vi));
+                if (variable_in_expression->CheckFForDependence (dx_index,true)) {
+                    changing_vars << fvidx_aux.Element(vi);
+                    idx_map << vi;
+                }
+                vvals[vi].value = variable_in_expression->Compute()->Value();
             }
-            vvals[vi].value = checkvar->Compute()->Value();
+            
+            long depends_on_dx = fvidx.FindLong(dx_index);
+            
+            if (depends_on_dx >= 0) {
+                changing_vars.InsertElement ((BaseRef)dx_index,0,false,false);
+                idx_map.InsertElement ((BaseRef)fvidx.FindLong(dx_index),0,false,false);
+            }
+        } else {
+            vvals = new _SimpleFormulaDatum [1L];
         }
-        changingVars.InsertElement ((BaseRef)stackDepth,0,false,false);
-        idxMap.InsertElement ((BaseRef)fvidx.Find(stackDepth),0,false,false);
     } else {
-        stackDepth = -1;
+        stack_depth = -1L;
     }
 
-    for (long j=0; j<(long)maxRombergSteps; j++) {
-        if (stackDepth>=0) {
-            s[j] = TrapezoidLevelKSimple(*this, dx, left, right, j+1, stack, vvals,changingVars,idxMap);
+    for (long step = 0L; step < max_iterations; step ++) {
+      //printf ("%d\n", step);
+      if (stack_depth >=0) { // compiled
+          s[step] = TrapezoidLevelKSimple(*this, dx, left, right, step+1L, stack, vvals,changing_vars,idx_map);
         } else {
-            s[j] = TrapezoidLevelK(*this, dx, left, right, j+1);
+            s[step] = TrapezoidLevelK(*this, dx, left, right, step+1L);
         }
-        if (j>=4) {
-            ss = InterpolateValue(&h[j-4],&s[j-4],interpolateSteps,ic,id,0.0, dss);
-            if (fabs(dss)<= integrationPrecisionFactor * fabs(ss)) {
-                delete s;
-                delete h;
-                delete ic;
-                delete id;
-                if (stackDepth>=0) {
+        if (step >= 4L) {
+            ss = InterpolateValue(&h[step-4L],&s[step-4L],interpolate_steps,ic,id,0.0, dss);
+            if (fabs(dss)<= precision_factor * fabs(ss)) {
+              
+                BatchDeleteArray (s,h,ic,id);
+                if (stack_depth >=0L ) {
                     ConvertFromSimple(fvidx);
-                    delete (stack);
-                    delete (vvals);
+                    BatchDeleteArray (stack, vvals);
                 }
                 return ss;
             }
         }
-        h[j+1] =  h[j]/9.0;
+        h[step+1] =  h[step]/9.0;
     }
 
-    if (stackDepth>=0) {
+    if (stack_depth >=0) {
         ConvertFromSimple(fvidx);
-        delete [] stack;
-        delete [] vvals;
+        BatchDeleteArray (stack, vvals);
     }
-    _String *str = (_String*)toStr(),
-             msg = _String("Integral of ")&*str & " over ["&_String(left)&","&_String(right)&"] converges slowly, loss of precision may occur. Change either INTEGRATION_PRECISION_FACTOR or INTEGRATION_MAX_ITERATES";
 
-    DeleteObject (str);
-    ReportWarning (msg);
-
-    delete [] s;
-    delete [] h;
-    delete [] ic;
-    delete [] id;
+    ReportWarning (_String("Integral of ")&*_String((_String*)toStr(kFormulaStringConversionNormal)) & " over ["&_String(left)&","&_String(right)&"] converges slowly, loss of precision may occur. Change either INTEGRATION_PRECISION_FACTOR or INTEGRATION_MAX_ITERATES");
+    BatchDeleteArray (s,h,ic,id);
     return ss;
+}
+  //__________________________________________________________________________________
+hyFloat  InterpolateValue (hyFloat* theX, hyFloat* theY, long n, hyFloat *c , hyFloat *d, hyFloat x, hyFloat& err) {
+    // Neville's algoruthm for polynomial interpolation (Numerical Recipes' rawinterp)
+  hyFloat y,
+  den,
+  dif = 1e10,
+  dift,
+  ho,
+  hp,
+  w;
+  
+  long   ns = 0L;
+  
+  for (long i=0L; i<n; i++) {
+    dift = fabs(x-theX[i]);
+    if (dift<dif) {
+      ns = i;
+      dif = dift;
+    }
+    c[i] = d[i] = theY[i];
+  }
+  
+  y = theY[ns--];
+  
+  for (long m=1L; m<n; m++) {
+    for (long i=0L; i<=n-m-1; i++) {
+      ho = theX[i]-x;
+      hp = theX[i+m]-x;
+      w = c[i+1]-d[i];
+      den = w/(ho-hp);
+      d[i] = hp*den;
+      c[i] = ho*den;
+    }
+    err = 2*ns< (n-m)? c[ns+1]: d[ns--];
+    y += err;
+  }
+  
+  return y;
+}
+
+
+
+  //__________________________________________________________________________________
+
+hyFloat  TrapezoidLevelKSimple (_Formula&f, _Variable* xvar, hyFloat left, hyFloat right, long k, _SimpleFormulaDatum * stack, _SimpleFormulaDatum* values, _SimpleList& changingVars, _SimpleList& varToStack) {
+    
+    hyFloat x,
+    tnm,
+    sum,
+    del,
+    ddel;
+    
+    static hyFloat s;
+    
+    //_Constant dummy;
+    
+    auto set_and_compute = [&] (hyFloat x) -> hyFloat {
+        if (changingVars.countitems() == 1L) {
+            values[varToStack.get(0)].value = x;
+        } else {
+            xvar->SetNumericValue  (x);
+            changingVars.Each ([&] (long v, unsigned long vi) -> void {
+                values[varToStack.get(vi)].value = LocateVar(v)->Compute()->Value();
+            });
+        }
+        return f.ComputeSimple(stack, values);
+    };
+    
+    
+    if (k==1) {
+        s = set_and_compute ((left+right)*0.5);
+        return s;
+    }
+    
+    long        it =1;
+    
+    for (long j=1L; j<k-1; j++) {
+        it *= 3L;
+    }
+    
+    tnm = it;
+    del = (right-left)/(3.0*tnm);
+    ddel = del+del;
+    x   = left+del*.5;
+    sum = 0.;
+    for (long j=1L; j<=it; j++, x+=del) {
+        sum += set_and_compute (x);
+        x+=ddel;
+        sum += set_and_compute (x);
+    }
+    s = (s+(right-left)*sum/tnm)/3.0;
+    return s;
+}
+
+  //__________________________________________________________________________________
+hyFloat  TrapezoidLevelK (_Formula&f, _Variable* xvar, hyFloat left, hyFloat right, long k) {
+    hyFloat x,
+    tnm,
+    sum,
+    del,
+    ddel;
+    
+    static hyFloat s;
+    
+    long        it = 1L;
+    
+    if (k==1L) {
+        xvar -> SetNumericValue((left + right) * 0.5);
+        return s = f.Compute()->Value();
+    }
+    
+    for (long j = 1L; j < k-1; j++) {
+        it *= 3L;
+    }
+    
+    
+    tnm = it;
+    del = (right-left)/(3.0*tnm);
+    ddel = del+del;
+    x   = left+del*.5;
+    
+    sum = 0.0;
+    
+    for (long j=1L; j<=it; j++, x+=del) {
+        xvar->SetNumericValue(x);
+        sum += f.Compute()->Value();
+        x+=ddel;
+        xvar->SetNumericValue(x);
+        sum += f.Compute()->Value();
+    }
+    s = (s+(right-left)*sum/tnm)/3.0;
+    return s;
 }
 
 //__________________________________________________________________________________
-_Parameter   _Formula::MeanIntegral(_Variable* dx, _Parameter left, _Parameter right, bool infinite)
-{
+hyFloat   _Formula::MeanIntegral(_Variable* dx, hyFloat left, hyFloat right, bool infinite) {
     _Formula newF;
-    _String tim ("*");
-    _Operation times (tim,2);
-    _Operation term (true, *(dx->GetName()));
-    newF.Duplicate((BaseRef)this);
-    newF.theFormula&& (&term);
-    newF.theFormula&& (& times);
+    newF.Duplicate(this);
+    newF.theFormula < new _Operation (true, *(dx->GetName())) < new _Operation (HY_OP_CODE_MUL, 2);
     return newF.Integral (dx,left,right, infinite);
 }
 
 //__________________________________________________________________________________
-long     _Formula::NumberOperations(void) const
+long     _Formula::NumberOperations(void) const {
 // number of operations in the formula
-{
-    return theFormula.lLength;
+    return theFormula.countitems();
 }
-
-//extern long likeFuncEvalCallCount;
 
 //__________________________________________________________________________________
 
 long      _Formula::ExtractMatrixExpArguments (_List* storage) {
-    long count = 0;
+  long count = 0L;
 
-    if (resultCache && resultCache->lLength) {
-        long cacheID     = 0;
+    if (resultCache && resultCache->empty() == false) {
+        long cacheID      = 0L;
         bool cacheUpdated = false;
             // whether or not a cached result was used
 
 
-        for (unsigned long i=0; i<theFormula.lLength; i++) {
-            _Operation* thisOp ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-            if (i < theFormula.lLength-1) {
-                _Operation* nextOp  ((_Operation*)(((BaseRef**)theFormula.lData)[i+1]));
+        for (unsigned long i=0UL; i + 1UL <theFormula.countitems(); i++) {
+            _Operation* this_op = GetIthTerm(i),
+                      * next_op = GetIthTerm(i + 1UL);
 
-                if (! cacheUpdated && nextOp->CanResultsBeCached(thisOp)) {
-                     /*if (likeFuncEvalCallCount == 12733 && i == 13) {
-                         _Matrix * this_matrix = (_Matrix *)LocateVar (thisOp->GetAVariable())->GetValue();
+              if (! cacheUpdated && next_op->CanResultsBeCached(this_op)) {
+                  _Stack temp;
+                  this_op->Execute (temp);
 
-                         _String buffer (1024UL, true), id ("TEMP");
-                         this_matrix->Serialize(buffer, id);
-                         buffer.Finalize();
-                         fprintf (stderr, "[_Formula::ExtractMatrixExpArguments] Get model matrix \n step %ld \n  %s \n\n", i, (const char*) buffer );
-                     }*/
+                  _Matrix *currentArg  = (_Matrix*)temp.Pop(true),
+                          *cachedArg   = (_Matrix*)((HBLObjectRef)(*resultCache)(cacheID)),
+                          *diff        = nil;
 
-                    _Stack temp;
-                    thisOp->Execute (temp);
+                  if (cachedArg->ObjectClass() == MATRIX) {
+                      diff =  (_Matrix*)cachedArg->SubObj(currentArg);
+                  }
 
-                    _Matrix *currentArg  = (_Matrix*)temp.Pop(true),
-                            *cachedArg   = (_Matrix*)((_PMathObj)(*resultCache)(cacheID)),
-                            *diff        = nil;
-
-                    if (cachedArg->ObjectClass() == MATRIX) {
-                        diff =  (_Matrix*)cachedArg->SubObj(currentArg);
-                    }
-
-                    if (diff && diff->MaxElement() <= 1e-12) {
-                        cacheID += 2;
-                        i ++;
-                    } else {
-                        cacheUpdated = true;
-                        cacheID++;
-                        if (nextOp->CanResultsBeCached(thisOp, true)) {
-
-                            storage->AppendNewInstance(currentArg);
-                            count ++;
-                        }
-                    }
-                    DeleteObject (diff);
-                    continue;
-                }
-                if (cacheUpdated) {
-                    cacheID++;
-                    cacheUpdated = false;
-                }
-            }
+                  if (diff && diff->MaxElement() <= 1e-12) {
+                      cacheID += 2;
+                      i ++;
+                  } else {
+                      cacheUpdated = true;
+                      cacheID++;
+                      if (next_op->CanResultsBeCached(this_op, true)) {
+                          storage->AppendNewInstance(currentArg);
+                          count ++;
+                      }
+                  }
+                  DeleteObject (diff);
+                  continue;
+              }
+              if (cacheUpdated) {
+                  cacheID++;
+                  cacheUpdated = false;
+              }
         }
     }
 
@@ -1343,13 +1872,13 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
 //__________________________________________________________________________________
 _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* theContext) {
     _Variable * result = nil;
-    _PMathObj computedValue = Compute (0, theContext->GetContext(), nil, theContext->GetErrorBuffer());
+    HBLObjectRef computedValue = Compute (0, theContext->GetContext(), nil, theContext->GetErrorBuffer());
     if (computedValue && computedValue->ObjectClass() == STRING) {
         result =  (_Variable*)((_FString*)computedValue)->Dereference(ignore_context, theContext, true);
     }
 
     if (!result) {
-        theContext->ReportError( (_String ("Failed to dereference '") & _String ((_String*)toStr()) & "' in the " & (ignore_context ? "global" : "local") & " context"));
+        theContext->ReportError( (_String ("Failed to dereference '") & _String ((_String*)toStr(kFormulaStringConversionNormal)) & "' in the " & (ignore_context ? "global" : "local") & " context"));
     }
 
     return result;
@@ -1358,11 +1887,12 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
   //unsigned long ticker = 0UL;
 
 //__________________________________________________________________________________
-_PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
+HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
 // compute the value of the formula
+// TODO SLKP 20170925 Needs code review
 {
     _Stack * scrap_here;
-    if (theFormula.lLength == 0) {
+    if (theFormula.empty()) {
         theStack.theStack.Clear();
         theStack.Push (new _MathObject, false);
         scrap_here = &theStack;
@@ -1379,23 +1909,23 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
           }
         }
 
-
-
         /*ticker++;
         if (ticker >= 1462440) {
           printf ("\n_Formula::Compute (%x, %d)  %ld terms, stack depth %ld\n", this, ticker, theFormula.lLength, theStack.theStack.lLength);
         }*/
+      
+        const unsigned long term_count = NumberOperations();
 
-        if (startAt == 0 && resultCache && resultCache->lLength) {
-            long cacheID     = 0;
+        if (startAt == 0L && resultCache && !resultCache->empty()) {
+            long cacheID     = 0L;
                 // where in the cache are we currently looking
             bool cacheUpdated = false;
                 // whether or not a cached result was used
 
-            for (unsigned long i=0; i<theFormula.lLength; i++) {
-                _Operation* thisOp ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-                if (i < theFormula.lLength-1) {
-                    _Operation* nextOp  ((_Operation*)(((BaseRef**)theFormula.lData)[i+1]));
+            for (unsigned long i=0; i< term_count ; i++) {
+                _Operation* thisOp = ItemAt (i);
+                if ( i + 1UL < term_count ) {
+                    _Operation* nextOp  = ItemAt (i+1UL);
 
                     if (! cacheUpdated && nextOp->CanResultsBeCached(thisOp)) {
                         if (!thisOp->Execute(*scrap_here,nameSpace, errMsg)) {
@@ -1404,7 +1934,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                         }
 
                         _Matrix *currentArg  = (_Matrix*)scrap_here->Pop(false),
-                                *cachedArg   = (_Matrix*)((_PMathObj)(*resultCache)(cacheID)),
+                                *cachedArg   = (_Matrix*)((HBLObjectRef)(*resultCache)(cacheID)),
                                 *diff        = nil;
 
                         if (cachedArg->ObjectClass() == MATRIX) {
@@ -1413,15 +1943,15 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
 
                         bool    no_difference = diff && diff->MaxElement() <= 1e-12;
 
-                        if (no_difference || (additionalCacheArguments && additionalCacheArguments->lLength && nextOp->CanResultsBeCached(thisOp,true))) {
+                        if (no_difference || (additionalCacheArguments && !additionalCacheArguments->empty() && nextOp->CanResultsBeCached(thisOp,true))) {
                             DeleteObject  (scrap_here->Pop  ());
                             if (no_difference) {
-                                scrap_here->Push ((_PMathObj)(*resultCache)(cacheID+1));
+                                scrap_here->Push ((HBLObjectRef)(*resultCache)(cacheID+1));
                             } else {
 
-                                scrap_here->Push ((_PMathObj)additionalCacheArguments->GetItem (0));
+                                scrap_here->Push ((HBLObjectRef)additionalCacheArguments->GetItem (0));
                                 resultCache->Replace(cacheID,scrap_here->Pop(false),true);
-                                resultCache->Replace(cacheID+1,(_PMathObj)additionalCacheArguments->GetItem (0),false);
+                                resultCache->Replace(cacheID+1,(HBLObjectRef)additionalCacheArguments->GetItem (0),false);
                                 additionalCacheArguments->Delete (0, false);
                                 //printf ("_Formula::Compute additional arguments %ld\n", additionalCacheArguments->lLength);
                            }
@@ -1448,30 +1978,19 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
             }
         } else {
 
-            for (unsigned long i=startAt; i<theFormula.lLength; i++) {
-                  _Operation * this_step =((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-
-
-                  /*
-                   if (ticker >= 1462435) {
-                    printf ("[FORMULA %x] Step %ld, Stack %ld, Op %s (top stack %s)\n", this, i, theStack.theStack.lLength, _String ((_String*)this_step->toStr()).sData, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
-                  }
-                   */
-
-                  if (! this_step->Execute(*scrap_here, nameSpace, errMsg)) {
+            for (unsigned long i=startAt; i< term_count; i++) {
+                  if (!ItemAt (i)->Execute(*scrap_here, nameSpace, errMsg)) {
                       wellDone = false;
                       break;
                   }
 
-                  /*
-                  if (ticker >= 1462435) {
-                    printf ("[DONE %x] Step %ld, Stack %ld, top stack %s\n", this, i, theStack.theStack.lLength, theStack.theStack.lLength ? _String((_String*)theStack.Pop(false)->toStr()).sData : "empty" );
-                  }
-                   */
             }
         }
         if (scrap_here->StackDepth() != 1L || !wellDone) {
-            _String errorText = _String ("'") & _String((_String*)toStr()) & _String("' evaluated with errors.");
+            _String errorText = _String ("'") & _String((_String*)toStr(kFormulaStringConversionNormal)) & _String("' evaluated with errors ");
+            if (errMsg && errMsg->nonempty()) {
+                errorText = errorText & " " & errMsg->Enquote('(',')');
+            }
 
             if (scrap_here->StackDepth() > 1 && wellDone) {
                 errorText = errorText & " Unconsumed values on the stack";
@@ -1485,7 +2004,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
                 *errMsg = *errMsg & errorText;
             }
             else {
-                WarnError (errorText);
+                HandleApplicationError (errorText);
             }
             scrap_here->Reset();
             scrap_here->Push (new _Constant (0.0), false);
@@ -1493,7 +2012,7 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
     }
 
 
-    _PMathObj return_value = scrap_here->Pop(false);
+    HBLObjectRef return_value = scrap_here->Pop(false);
 
     if (theFormula.lLength) {
          DeleteObject (recursion_calls);
@@ -1510,14 +2029,13 @@ _PMathObj _Formula::Compute (long startAt, _VariableContainer const * nameSpace,
 }
 
 //__________________________________________________________________________________
-bool _Formula::CheckSimpleTerm (_PMathObj thisObj)
-{
+bool _Formula::CheckSimpleTerm (HBLObjectRef thisObj) {
     if (thisObj) {
         long oc = thisObj->ObjectClass();
-        if (oc !=NUMBER) {
+        if (oc != NUMBER) {
             if (oc ==MATRIX) {
                 _Matrix * mv = (_Matrix*)thisObj->Compute();
-                if (mv->IsIndependent () && !mv->SparseDataStructure()) {
+                if (!mv->SparseDataStructure() && mv->IsIndependent ()) {
                     return true;
                 }
             }
@@ -1529,49 +2047,45 @@ bool _Formula::CheckSimpleTerm (_PMathObj thisObj)
 }
 
 //__________________________________________________________________________________
-_Formula _Formula::operator+ (const _Formula& operand2) {
-    _Formula joint;
-    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_ADD);
+_Formula const _Formula::operator+ (const _Formula& operand2) {
+    return *PatchFormulasTogether (*this,operand2,HY_OP_CODE_ADD);
 }
 
 //__________________________________________________________________________________
-_Formula _Formula::operator- (const _Formula& operand2) {
-    _Formula joint;
-    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_SUB);
+_Formula const _Formula::operator- (const _Formula& operand2) {
+    return *PatchFormulasTogether (*this,operand2,HY_OP_CODE_SUB);
 }
 
 //__________________________________________________________________________________
-_Formula _Formula::operator* (const _Formula& operand2) {
-    _Formula joint;
-    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_MUL);
+_Formula const _Formula::operator* (const _Formula& operand2) {
+    return *PatchFormulasTogether (*this,operand2,HY_OP_CODE_MUL);
 }
 
 //__________________________________________________________________________________
-_Formula _Formula::operator/ (const _Formula& operand2) {
-    _Formula joint;
-    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_DIV);
+_Formula const _Formula::operator/ (const _Formula& operand2) {
+    return *PatchFormulasTogether (*this,operand2,HY_OP_CODE_DIV);
 }
 
 //__________________________________________________________________________________
-_Formula _Formula::operator^ (const _Formula& operand2) {
-    _Formula joint;
-    return joint.PatchFormulasTogether (*this,operand2,HY_OP_CODE_POWER);
+_Formula const _Formula::operator^ (const _Formula& operand2) {
+    return *PatchFormulasTogether (*this,operand2,HY_OP_CODE_POWER);
 }
 
 //__________________________________________________________________________________
-_Formula& _Formula::PatchFormulasTogether (_Formula& target, const _Formula& operand2, const char op_code) {
-    target.Clear();
-    target.DuplicateReference(this);
-    target.DuplicateReference(&operand2);
-    target.theFormula.AppendNewInstance(new _Operation (op_code, 2));
-    return target;
+_Formula* _Formula::PatchFormulasTogether (const _Formula& op1, const _Formula& op2, const char op_code) {
+    _Formula * result = new _Formula;
+    result->DuplicateReference(&op1);
+    result->DuplicateReference(&op2);
+    result->theFormula.AppendNewInstance(new _Operation (op_code, 2));
+    return result;
 }
 
 
 //__________________________________________________________________________________
-void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
-{
-  if (makeComplex) {
+void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool make_complex) {
+  unsigned long term_count = NumberOperations();
+  
+  if (make_complex) {
     if (resultCache) {
       DeleteObject (resultCache);
       resultCache = nil;
@@ -1579,9 +2093,8 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
   } else {
     if (!resultCache) {
       resultCache = new _List();
-      for (int i=1; i<theFormula.lLength; i++) {
-        _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-        if (thisOp->CanResultsBeCached(((_Operation*)(((BaseRef**)theFormula.lData)[i-1])))) {
+      for (unsigned long i = 1UL ; i< term_count ; i++) {
+        if ( ItemAt(i)->CanResultsBeCached(ItemAt (i-1))) {
           resultCache->AppendNewInstance(new _MathObject());
           resultCache->AppendNewInstance(new _MathObject());
         }
@@ -1589,29 +2102,28 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool makeComplex)
     }
   }
 
-  for (int i=0; i<theFormula.lLength; i++) {
-    _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
+  for (unsigned long i = 0UL ; i< term_count ; i++) {
+    _Operation* this_op = ItemAt (i);
+    _Matrix   * op_matrix = nil;
 
-    _Matrix   * thisMatrix = nil;
-
-    if (thisOp->theNumber) {
-      if (thisOp->theNumber->ObjectClass() == MATRIX) {
-        thisMatrix = (_Matrix*)thisOp->theNumber;
+    if (this_op->theNumber) {
+      if (this_op->theNumber->ObjectClass() == MATRIX) {
+        op_matrix = (_Matrix*)this_op->theNumber;
       }
     } else {
-      if (thisOp->theData>-1) {
-        _Variable* thisVar = LocateVar (thisOp->theData);
+      if (this_op->theData >= 0L) {
+        _Variable* thisVar = LocateVar (this_op->theData);
         if (thisVar->ObjectClass() == MATRIX) {
-          thisMatrix = (_Matrix*)thisVar->GetValue();
+          op_matrix = (_Matrix*)thisVar->GetValue();
         }
       }
     }
 
-    if (thisMatrix) {
-      if (makeComplex) {
-        thisMatrix->MakeMeGeneral();
+    if (op_matrix) {
+      if (make_complex) {
+        op_matrix->MakeMeGeneral();
       } else {
-        thisMatrix->MakeMeSimple();
+        op_matrix->MakeMeSimple();
       }
     }
   }
@@ -1623,7 +2135,7 @@ long _Formula::StackDepth (long from, long to) const {
   long result = 0L;
 
   for ( long i = from; i <= to; i++) {
-     result += GetIthTerm (i)->StackDepth ();
+     result += ItemAt(i)->StackDepth ();
   }
 
   return result;
@@ -1632,58 +2144,54 @@ long _Formula::StackDepth (long from, long to) const {
 
 
 //__________________________________________________________________________________
-bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
-{
-    if (!theFormula.lLength) {
+bool _Formula::AmISimple (long& stack_depth, _AVLList& variable_index) {
+    if (theFormula.empty()) {
         return true;
     }
 
-    long locDepth = 0L;
+    long loc_depth = 0L;
 
-    for (int i=0; i<theFormula.lLength; i++) {
-        _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-        locDepth++;
-        if ( thisOp->theData<-2 || thisOp->numberOfTerms<0) {
-            if (thisOp->theData < -2 && i == 0) {
-              if (variableIndex.Find (thisOp->GetAVariable())==-1) {
-                variableIndex<<thisOp->GetAVariable();
-              }
+    for (unsigned long i=0UL; i<theFormula.countitems(); i++) {
+        _Operation* this_op =ItemAt (i);
+        loc_depth++;
+        if ( this_op->theData<-2 || this_op->numberOfTerms<0) {
+            if (this_op->theData < -2 && i == 0UL) {
+              variable_index.InsertNumber (this_op->GetAVariable());
               continue;
             }
             return false;
         }
 
-        if (thisOp->theNumber) {
-            if (thisOp->theNumber->ObjectClass() != NUMBER) {
+        if (this_op->theNumber) {
+            if (this_op->theNumber->ObjectClass() != NUMBER) {
                 return false;
             }
         } else {
-            if (thisOp->theData>-1) {
-                _Variable* thisVar = LocateVar (thisOp->theData);
-                if (thisVar->ObjectClass()!=NUMBER) {
-                    _PMathObj cv = thisVar->GetValue();
+            if (this_op->theData >= 0) {
+                _Variable* this_var = LocateVar (this_op->theData);
+                if (this_var->ObjectClass()!=NUMBER) {
+                    HBLObjectRef cv = this_var->GetValue();
                     if (!CheckSimpleTerm (cv)) {
                         return false;
                     }
                 }
-                if (variableIndex.Find (thisOp->theData)==-1) {
-                    variableIndex<<thisOp->theData;
-                }
+                variable_index.InsertNumber (this_op->GetAVariable());
             } else {
-                if (simpleOperationCodes.Find(thisOp->opCode)==-1) {
+                long op_code = this_op->TheCode();
+              
+                if (simpleOperationCodes.Find(op_code)==kNotFound) {
                     return false;
-                } else if ((thisOp->opCode == HY_OP_CODE_MACCESS || thisOp->opCode == HY_OP_CODE_MCOORD || thisOp->opCode == HY_OP_CODE_MUL) && thisOp->numberOfTerms != 2) {
+                } else if ((op_code == HY_OP_CODE_MACCESS || op_code == HY_OP_CODE_MCOORD || op_code == HY_OP_CODE_MUL) && this_op->GetNoTerms() != 2) {
                     return false;
                 }
 
-                locDepth-=thisOp->numberOfTerms;
+                loc_depth -= this_op->GetNoTerms();
             }
         }
-        if (locDepth>stackDepth) {
-            stackDepth = locDepth;
-        } else if (locDepth==0L) {
-            _String errStr = _String("Invalid formula (no return value) passed to _Formula::AmISimple") & _String ((_String*)toStr());
-            WarnError (errStr);
+        if (loc_depth>stack_depth) {
+            stack_depth = loc_depth;
+        } else if (loc_depth==0L) {
+             HandleApplicationError (_String("Invalid formula (no return value) passed to ") & __PRETTY_FUNCTION__ & " :" & _String ((_String*)toStr(kFormulaStringConversionNormal)).Enquote());
             return false;
         }
     }
@@ -1692,171 +2200,150 @@ bool _Formula::AmISimple (long& stackDepth, _SimpleList& variableIndex)
 
 //__________________________________________________________________________________
 bool _Formula::IsArrayAccess (void){
-    if (theFormula.lLength) {
-        return ((_Operation*)(theFormula(theFormula.lLength-1)))->GetCode().Equal((_String*)BuiltInFunctions(HY_OP_CODE_MACCESS));
+    if (!theFormula.empty()) {
+        return (ItemAt (theFormula.countitems()-1)->TheCode() == HY_OP_CODE_MACCESS);
     }
     return false;
 }
 
 //__________________________________________________________________________________
-bool _Formula::ConvertToSimple (_SimpleList& variableIndex)
-{
+bool _Formula::ConvertToSimple (_AVLList& variable_index) {
     bool has_volatiles = false;
-    if (theFormula.lLength)
-        for (unsigned long i=0; i<theFormula.lLength; i++) {
-            _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-            if (thisOp->theNumber) {
+    if (!theFormula.empty()) {
+        for (unsigned long i=0UL; i<theFormula.countitems(); i++) {
+            _Operation* this_op = ItemAt (i);
+            if (this_op->theNumber) {
                 continue;
-            } else if (thisOp->theData >= 0) {
-                thisOp->theData = variableIndex.Find (thisOp->theData);
-            } else if (thisOp->opCode == HY_OP_CODE_SUB && thisOp->numberOfTerms == 1) {
-                thisOp->opCode = (long)MinusNumber;
+            } else if (this_op->theData >= 0) {
+                this_op->theData = variable_index.FindLong (this_op->theData);
+            } else if (this_op->opCode == HY_OP_CODE_SUB && this_op->numberOfTerms == 1) {
+                this_op->opCode = (long)MinusNumber;
             } else {
-                if (thisOp->opCode == HY_OP_CODE_MACCESS) {
-                    thisOp->numberOfTerms = -2;
+                if (this_op->opCode == HY_OP_CODE_MACCESS) {
+                    this_op->numberOfTerms = -2;
                 } else {
-                  if (thisOp->opCode == HY_OP_CODE_MCOORD) {
-                    thisOp->numberOfTerms = -3;
+                  if (this_op->opCode == HY_OP_CODE_MCOORD) {
+                    this_op->numberOfTerms = -3;
                   }
                 }
-                if (thisOp->opCode == HY_OP_CODE_RANDOM || thisOp->opCode == HY_OP_CODE_TIME)
+                if (this_op->opCode == HY_OP_CODE_RANDOM || this_op->opCode == HY_OP_CODE_TIME)
                     has_volatiles = true;
-                thisOp->opCode = simpleOperationFunctions(simpleOperationCodes.Find(thisOp->opCode));
+                this_op->opCode = simpleOperationFunctions(simpleOperationCodes.Find(this_op->opCode));
             }
 
         }
+    }
     return has_volatiles;
 }
 
 //__________________________________________________________________________________
-void _Formula::ConvertFromSimple (_SimpleList& variableIndex)
-{
-    if (!theFormula.lLength) {
-        return;
-    }
-
-    for (int i=0; i<theFormula.lLength; i++) {
-        _Operation* thisOp = ((_Operation*)(((BaseRef**)theFormula.lData)[i]));
-        if (thisOp->theNumber) {
-            continue;
-        } else {
-            if (thisOp->theData>-1) {
-                thisOp->theData = variableIndex[thisOp->theData];
-            } else if (thisOp->opCode == (long)MinusNumber) {
-                thisOp->opCode = HY_OP_CODE_SUB;
-            } else {
-                if (thisOp->opCode == (long)FastMxAccess) {
-                    thisOp->numberOfTerms = 2;
-                } else {
-                  if (thisOp->opCode == (long)FastMxWrite) {
-                    thisOp->numberOfTerms = 2;
-                  }
-                }
-                thisOp->opCode = simpleOperationCodes(simpleOperationFunctions.Find(thisOp->opCode));
-            }
-        }
-    }
+void _Formula::ConvertFromSimple (_AVLList const& variableIndex) {
+  ConvertFromSimpleList (*variableIndex.dataList);
 }
 
-#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
-extern long likeFuncEvalCallCount;
-#endif
+//__________________________________________________________________________________
+void _Formula::ConvertFromSimpleList (_SimpleList const& variableIndex) {
+  if (theFormula.empty()) {
+    return;
+  }
+  
+  for (unsigned long i=0UL; i<theFormula.countitems(); i++) {
+    _Operation* this_op = ItemAt (i);
+    if (this_op->theNumber) {
+      continue;
+    } else {
+      if (this_op->theData>-1) {
+        this_op->theData = variableIndex.get (this_op->theData);
+      } else if (this_op->opCode == (long)MinusNumber) {
+        this_op->opCode = HY_OP_CODE_SUB;
+      } else {
+        if (this_op->opCode == (long)FastMxAccess) {
+          this_op->numberOfTerms = 2;
+        } else {
+          if (this_op->opCode == (long)FastMxWrite) {
+            this_op->numberOfTerms = 2;
+          }
+        }
+        this_op->opCode = simpleOperationCodes(simpleOperationFunctions.Find(this_op->opCode));
+      }
+    }
+  }
+}
 
 //__________________________________________________________________________________
-_Parameter _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues)
+hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues)
 {
-    if (!theFormula.lLength) {
-        return 0.0;
-    }
+    if (theFormula.nonempty()) {
+        long stackTop = 0;
+        unsigned long upper_bound = NumberOperations();
 
-    long stackTop = 0;
-
-    for (int i=0; i<theFormula.lLength; i++) {
-        _Operation* thisOp = ((_Operation*)(((BaseRef*)theFormula.lData)[i]));
-        if (thisOp->theNumber) {
-            stack[stackTop++].value = thisOp->theNumber->Value();
-#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
-            if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
-                fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d, pushed constant %g\n", i, stack[stackTop-1].value );
-            }
-#endif
-            continue;
-        } else {
-            if (thisOp->theData>-1) {
-                stack[stackTop++] = varValues[thisOp->theData];
-#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
-                if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
-                    fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d, pushed variable %g\n", i, stack[stackTop-1].value );
-                }
-#endif
+        for (unsigned long i=0UL; i<upper_bound; i++) {
+            _Operation const* thisOp = ItemAt (i);
+            if (thisOp->theNumber) {
+                stack[stackTop++].value = thisOp->theNumber->Value();
+                continue;
             } else {
-                stackTop--;
-                if (thisOp->numberOfTerms==2) {
-                    _Parameter  (*theFunc) (_Parameter, _Parameter);
-                    theFunc = (_Parameter(*)(_Parameter,_Parameter))thisOp->opCode;
-                    if (stackTop<1L) {
-                        WarnError ("Internal error in _Formula::ComputeSimple - stack underflow.)");
-                        return 0.0;
-                    }
-                    stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].value,stack[stackTop].value);
-#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
-                    if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
-                        fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d (two op function), value %g\n", i, stack[stackTop-1].value );
-                    }
-#endif
-
+                if (thisOp->theData>-1) {
+                    stack[stackTop++] = varValues[thisOp->theData];
                 } else {
-                    switch (thisOp->numberOfTerms) {
+                    stackTop--;
+                    if (thisOp->numberOfTerms==2) {
+                        hyFloat  (*theFunc) (hyFloat, hyFloat);
+                        theFunc = (hyFloat(*)(hyFloat,hyFloat))thisOp->opCode;
+                        if (stackTop<1L) {
+                            HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow.)", true);
+                            return 0.0;
+                        }
+                        stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].value,stack[stackTop].value);
+                    } else {
+                      switch (thisOp->numberOfTerms) {
                         case -2 : {
-                            _Parameter  (*theFunc) (Ptr,_Parameter);
-                            theFunc = (_Parameter(*)(Ptr,_Parameter))thisOp->opCode;
+                            hyFloat  (*theFunc) (hyPointer,hyFloat);
+                            theFunc = (hyFloat(*)(hyPointer,hyFloat))thisOp->opCode;
                             if (stackTop<1L) {
-                                WarnError ("Internal error in _Formula::ComputeSimple - stack underflow.)");
+                                HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow.)", true);
                                 return 0.0;
                             }
                             stack[stackTop-1].value = (*theFunc)(stack[stackTop-1].reference,stack[stackTop].value);
                             break;
-                        }
+                          }
                         case -3 : {
-                            void  (*theFunc) (Ptr,_Parameter,_Parameter);
-                            theFunc = (void(*)(Ptr,_Parameter,_Parameter))thisOp->opCode;
-                            if (stackTop != 2 || i != theFormula.lLength - 1) {
-                                WarnError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)");
+                          void  (*theFunc) (hyPointer,hyFloat,hyFloat);
+                          theFunc = (void(*)(hyPointer,hyFloat,hyFloat))thisOp->opCode;
+                          if (stackTop != 2 || i != theFormula.lLength - 1) {
+                            HandleApplicationError ("Internal error in _Formula::ComputeSimple - stack underflow or MCoord command is not the last one.)", true);
 
-                                return 0.0;
-                            }
-                            //stackTop = 0;
-                            // value, reference, index
-                            (*theFunc)(stack[1].reference,stack[2].value, stack[0].value);
-                            break;
+                            return 0.0;
+                          }
+                          //stackTop = 0;
+                          // value, reference, index
+                          (*theFunc)(stack[1].reference,stack[2].value, stack[0].value);
+                          break;
                         }
                         default: {
-                            _Parameter  (*theFunc) (_Parameter);
-                            theFunc = (_Parameter(*)(_Parameter))thisOp->opCode;
+                            hyFloat  (*theFunc) (hyFloat);
+                            theFunc = (hyFloat(*)(hyFloat))thisOp->opCode;
                             stack[stackTop].value = (*theFunc)(stack[stackTop].value);
-#ifdef __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL
-                            if (likeFuncEvalCallCount >= __REPORT_DETAILED_COMPS_FOR_SPECIFIC_CALL) {
-                                fprintf (stderr, "[_Formula::ComputeSimple] Computing step %d (one op function), value %g\n", i, stack[stackTop-1].value );
-                            }
-#endif
                             ++stackTop;
                         }
-                    }
+                      }
 
+                    }
                 }
             }
         }
+        return stack[0].value;
     }
-
-    return stack[0].value;
+    return 0.0;
 }
 
 //__________________________________________________________________________________
-bool _Formula::EqualFormula (_Formula* f)
-{
-    if (theFormula.lLength == f->theFormula.lLength) {
-        for (int i=0; i<theFormula.lLength; i++) {
-            if (!((_Operation*)(((BaseRef**)theFormula.lData)[i]))->EqualOp (((_Operation*)(((BaseRef**)f->theFormula.lData)[i])))) {
+bool _Formula::EqualFormula (_Formula* f) {
+    if (theFormula.countitems() == f->theFormula.countitems()) {
+        unsigned long const upper_bound = NumberOperations();
+      
+        for (unsigned long i=0UL; i<upper_bound; i++) {
+            if (ItemAt (i) -> EqualOp (f->ItemAt(i)) == false) {
                 return false;
             }
         }
@@ -1866,47 +2353,53 @@ bool _Formula::EqualFormula (_Formula* f)
 }
 
 //__________________________________________________________________________________
-_PMathObj _Formula::ConstructPolynomial (void) // compute the value of the formula
-{
+HBLObjectRef _Formula::ConstructPolynomial (void) {
     theStack.Reset();
     bool wellDone = true;
     _String errMsg;
 
-    for (long i=0; i<theFormula.lLength; i++)
-        if (!GetIthTerm(i)->ExecutePolynomial(theStack, nil, &errMsg)) {
-            wellDone = false;
-            break;
-        }
-
-    if (theStack.theStack.lLength !=1 || !wellDone) {
-        return    nil;
+    for (unsigned long i=0UL; wellDone && i<theFormula.countitems(); i++) {
+      wellDone = ItemAt (i)->ExecutePolynomial(theStack, nil, &errMsg);
+        /*if (wellDone) {
+            printf ("%ld (%ld)\n", i, theStack.StackDepth());
+            for (long k = 0; k < theStack.StackDepth(); k++) {
+                printf ("\t%s\n", _String((_String*)theStack.Peek (k)->toStr()).get_str());
+            }
+        }*/
+    }
+    
+    if (theStack.StackDepth() == 1 && wellDone) {
+        return theStack.Pop(false);
     }
 
-    return theStack.Pop(false);
+    return nil;
 }
+
 //__________________________________________________________________________________
 bool _Formula::HasChanged (bool ingoreCats) {
-    _Operation *thisOp;
-    for (unsigned long  i = 0UL; i<theFormula.lLength; i++) {
-        long dataID;
-        thisOp = (_Operation*)((BaseRef**)theFormula.lData)[i];
-        if (thisOp->IsAVariable()) {
-            dataID = thisOp->GetAVariable();
-            if (dataID>=0) {
-                if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[dataID]))->HasChanged(ingoreCats)) {
+    unsigned long const upper_bound = NumberOperations();
+  
+    for (unsigned long i=0UL; i<upper_bound; i++) {
+        long data_id;
+        _Operation * this_op = ItemAt (i);
+      
+        if (this_op->IsAVariable()) {
+            data_id = this_op->GetAVariable();
+            if (data_id>=0) {
+                if (((_Variable*)(((BaseRef*)(variablePtrs.list_data))[data_id]))->HasChanged(ingoreCats)) {
                     return true;
                 }
-            } else if (thisOp->theNumber->HasChanged()) {
+            } else if (this_op->theNumber->HasChanged()) {
                 return true;
             }
-        } else if (thisOp->opCode == HY_OP_CODE_BRANCHLENGTH||thisOp->opCode == HY_OP_CODE_RANDOM||thisOp->opCode == HY_OP_CODE_TIME)
+        } else if (this_op->opCode == HY_OP_CODE_BRANCHLENGTH||this_op->opCode == HY_OP_CODE_RANDOM||this_op->opCode == HY_OP_CODE_TIME)
             // time, random or branch length
         {
             return true;
-        } else if (thisOp->numberOfTerms<0L) {
-            dataID = -thisOp->numberOfTerms-2;
-            if (IsBFFunctionIndexValid (dataID)) {
-                if (GetBFFunctionType (dataID) == BL_FUNCTION_SKIP_UPDATE) {
+        } else if (this_op->numberOfTerms<0L) {
+            data_id = -this_op->numberOfTerms-2;
+            if (IsBFFunctionIndexValid (data_id)) {
+                if (GetBFFunctionType (data_id) == kBLFunctionSkipUpdate) {
                     continue;
                 }
             }
@@ -1935,7 +2428,7 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
     }
   };
 
-  ConvertToTree();
+  ConvertToTree(false);
 
   if (theTree) {
 
@@ -1955,7 +2448,7 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
           _Operation * function_to_call_value = GetIthTerm (function_to_call->get_data());
 
           if (function_to_call->get_num_nodes() == 0 && function_to_call_value -> IsConstantOfType(STRING)) {
-              hbl_id = FindBFFunctionName (*((_FString*)function_to_call_value->theNumber->Compute())->theString);
+              hbl_id = FindBFFunctionName (((_FString*)function_to_call_value->theNumber->Compute())->get_str());
           } else {
               ReportWarning ("Cannot export Call function arguments which are run-time dependent");
           }
@@ -1966,8 +2459,8 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
                 _Operation* bracket_1 = GetIthTerm (iterator->go_down(2)->get_data());
                 _Operation* bracket_2 = GetIthTerm (iterator->go_down(3)->get_data());
                 if (bracket_1->IsConstantOfType(STRING) && bracket_2->IsConstantOfType(STRING)) {
-                  handle_function_id (FindBFFunctionName (*((_FString*)bracket_1->theNumber->Compute())->theString));
-                  handle_function_id (FindBFFunctionName (*((_FString*)bracket_2->theNumber->Compute())->theString));
+                  handle_function_id (FindBFFunctionName (((_FString*)bracket_1->theNumber->Compute())->get_str()));
+                  handle_function_id (FindBFFunctionName (((_FString*)bracket_2->theNumber->Compute())->get_str()));
                   continue;
                 }
               }
@@ -1986,19 +2479,19 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
 }
 
 //__________________________________________________________________________________
-bool _Formula::HasChangedSimple (_SimpleList& variableIndex)
-{
-    _Operation *thisOp;
-    for (unsigned long i = 0; i<theFormula.lLength; i++) {
-        thisOp = (_Operation*)((BaseRef**)theFormula.lData)[i];
-        if (thisOp->theNumber) {
+bool _Formula::HasChangedSimple (_SimpleList& variableIndex) {
+    unsigned long const upper_bound = NumberOperations();
+    
+    for (unsigned long i=0UL; i<upper_bound; i++) {
+      _Operation * this_op = ItemAt (i);
+        if (this_op->theNumber) {
             continue;
-        } else if (thisOp->theData >= 0) {
-            if (((_Variable*)(((BaseRef*)(variablePtrs.lData))[variableIndex.lData[thisOp->theData]]))->HasChanged(false)) {
+        } else if (this_op->theData >= 0) {
+            if (((_Variable*)(((BaseRef*)(variablePtrs.list_data))[variableIndex.list_data[this_op->theData]]))->HasChanged(false)) {
                 return true;
             }
         } else {
-            if (thisOp->opCode == (long) RandomNumber) {
+            if (this_op->opCode == (long) RandomNumber) {
                 return true;
             }
         }
@@ -2007,21 +2500,22 @@ bool _Formula::HasChangedSimple (_SimpleList& variableIndex)
 }
 
 //__________________________________________________________________________________
-void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight)
-{
-    for (unsigned long i = 0; i<theFormula.lLength; i++) {
-        _Operation* theObj = ((_Operation**)theFormula.lData)[i];
-        if (theObj->IsAVariable()) {
+void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight) const {
+    unsigned long const upper_bound = NumberOperations();
+  
+    for (unsigned long i=0UL; i<upper_bound; i++) {
+        _Operation * this_op = ItemAt (i);
+        if (this_op->IsAVariable()) {
             if (!includeGlobals)
                 // This change was part of a commit that introduced an optimizer bug (suspected location:
                 // src/core/batchlan2.cpp:2220). This change is suspicious as well (removed and undocumented condition).
                 //if ((((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal())||
-                 //       (((_Variable*)LocateVar(theObj->GetAVariable()))->ObjectClass()!=NUMBER)) {
-                if (((_Variable*)LocateVar(theObj->GetAVariable()))->IsGlobal()) {
+                 //       (((_Variable*)LocateVar(theObj->GetIndex()))->ObjectClass()!=NUMBER)) {
+                if (((_Variable*)LocateVar(this_op->GetAVariable()))->IsGlobal()) {
                     continue;
                 }
 
-            long f = theObj->GetAVariable();
+            long f = this_op->GetAVariable();
 
             if (f>=0) {
                 _Variable * v = LocateVar(f);
@@ -2038,113 +2532,113 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
                 }
 
                 if (skipMatrixAssignments) {
-                    if (v->ObjectClass()!=MATRIX || !theObj->AssignmentVariable()) {
+                    if (v->ObjectClass()!=MATRIX || !this_op->AssignmentVariable()) {
                         v->ScanForVariables(l,includeGlobals,tagger, weight);
                     }
                 } else if (!v->IsIndependent()) {
                     v->ScanForVariables(l,includeGlobals,tagger);
                 }
-            } else if (theObj->theNumber)
-                if (theObj->theNumber->ObjectClass()==MATRIX) {
-                    ((_Matrix*)theObj->theNumber)->ScanForVariables(l,includeGlobals,tagger, weight);
+            } else if (this_op->theNumber)
+                if (this_op->theNumber->ObjectClass()==MATRIX) {
+                    ((_Matrix*)this_op->theNumber)->ScanForVariables(l,includeGlobals,tagger, weight);
                 }
         }
     }
 }
 
 //__________________________________________________________________________________
-void _Formula::ScanFForType (_SimpleList &l, int type)
-{
-    for (long i = 0; i<theFormula.lLength; i++) {
-        _Operation* theObj = ((_Operation**)theFormula.lData)[i];
-        if (theObj->IsAVariable()) {
-            long f = theObj->GetAVariable();
-
-            if (f>=0) {
-                _Variable * v = LocateVar(f);
-
-                if(v->ObjectClass()==type) {
-                    l << f;
-                }
-
-            }
+void _Formula::ScanFForType (_SimpleList &l, int type) {
+  unsigned long const upper_bound = NumberOperations();
+  
+  for (unsigned long i=0UL; i<upper_bound; i++) {
+    _Operation * this_op = ItemAt (i);
+    if (this_op->IsAVariable()) {
+      long f = this_op->GetAVariable();
+      
+      if (f>=0) {
+        _Variable * v = LocateVar(f);
+        
+        if(v->ObjectClass()==type) {
+          l << f;
         }
+        
+      }
     }
+  }
 }
 
 //__________________________________________________________________________________
-bool _Formula::CheckFForDependence (long varID, bool checkAll)
-{
-    for (int i = 0; i<theFormula.lLength; i++) {
-        _Operation* theObj = (_Operation*)theFormula(i);
-        long f;
-        if (theObj->IsAVariable()) {
-            f = theObj->GetAVariable();
-            if (f>=0) {
-                if (f == varID) {
-                    return true;
-                }
-                if (checkAll) {
-                    _Variable * v = LocateVar(f);
-                    if (!v->IsIndependent())
-                        if (v->CheckFForDependence(varID)) {
-                            return true;
-                        }
-                }
+bool _Formula::CheckFForDependence (long varID, bool checkAll) {
+  unsigned long const upper_bound = NumberOperations();
+  
+  for (unsigned long i=0UL; i<upper_bound; i++) {
+    _Operation * this_op = ItemAt (i);
+    if (this_op->IsAVariable()) {
+      long f = this_op->GetAVariable();
+      if (f>=0) {
+        if (f == varID) {
+          return true;
+        }
+        if (checkAll) {
+          _Variable * v = LocateVar(f);
+          if (!v->IsIndependent())
+            if (v->CheckFForDependence(varID)) {
+              return true;
             }
         }
+      }
     }
-    return false;
+  }
+  return false;
 }
 
-//__________________________________________________________________________________
-void  _Formula::LocalizeFormula (_Formula& ref, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv)
-{
-    for (int i = 0; i<ref.theFormula.lLength; i++) {
-        if (((_Operation*)ref.theFormula(i))->IsAVariable()) {
-            long     vIndex = ((_Operation*)ref.theFormula(i))->GetAVariable();
-            _Variable* theV = LocateVar (vIndex);
-            if (theV->IsGlobal()) {
-                theFormula&& ref.theFormula(i);
-                continue;
-            }
-            if (theV->IsContainer()) {
-                continue;
-            }
-            _String  fullName = parentName&"."&*(theV->GetName());
-            long lvIndex = LocateVarByName(fullName);
-            if (lvIndex==-1)
-                // local variable doesn't yet exist - create
-            {
-                _Variable dummy (fullName);
-                lvIndex = LocateVarByName(fullName);
-                if (theV->IsIndependent()) {
-                    iv<<lvIndex;
-                    iiv<<vIndex;
-                } else {
-                    dv<<lvIndex;
-                    idv<<vIndex;
-                }
-            }
-            _Operation newVar (true, fullName);
-            theFormula && &newVar;
-        } else {
-            theFormula&& ref.theFormula(i);
-        }
+  //__________________________________________________________________________________
+void  _Formula::LocalizeFormula (_Formula& ref, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv) {
+  unsigned long const upper_bound = ref.NumberOperations();
+  
+  for (unsigned long i=0UL; i<upper_bound; i++) {
+    _Operation * this_op = ref.ItemAt (i);
+    if (this_op->IsAVariable()) {
+      long     vIndex = this_op->GetAVariable();
+      _Variable* theV = LocateVar (vIndex);
+      if (theV->IsGlobal()) {
+        theFormula&& ref.theFormula(i);
+        continue;
+      }
+      if (theV->IsContainer()) {
+        continue;
+      }
+      _String  localized_name = parentName&"."&*(theV->GetName());
+      
+      _Variable * localized_var = CheckReceptacle (&localized_name, kEmptyString, false, false);
+      
+      if (theV->IsIndependent()) {
+        iv<<localized_var->get_index();
+        iiv<<vIndex;
+      } else {
+        dv<<localized_var->get_index();
+        idv<<vIndex;
+        
+      }
+      theFormula.AppendNewInstance( new _Operation (true, localized_name));
+    } else {
+      theFormula&& ref.theFormula(i);
     }
+  }
 }
 
-//__________________________________________________________________________________
-bool _Formula::DependsOnVariable (long idx)
-{
-    for (long f = 0; f<theFormula.lLength; f++) {
-        _Operation * anOp = ((_Operation**)theFormula.lData)[f];
-        if (anOp->IsAVariable() && anOp->GetAVariable() == idx) {
-            return true;
-        }
+  //__________________________________________________________________________________
+bool _Formula::DependsOnVariable (long idx) {
+  unsigned long const upper_bound = NumberOperations();
+  
+  for (unsigned long i=0UL; i<upper_bound; i++) {
+    _Operation * this_op = ItemAt (i);
+    if (this_op->IsAVariable() && this_op->GetAVariable() == idx) {
+      return true;
     }
-
-    return false;
+  }
+  
+  return false;
 }
 
 //__________________________________________________________________________________
@@ -2157,25 +2651,35 @@ _Operation* _Formula::GetIthTerm (long idx) const {
 }
 
 //__________________________________________________________________________________
-bool _Formula::IsAConstant (void)
-{
-    for (unsigned long i = 0; i<theFormula.lLength; i++)
-        if (((_Operation*)((BaseRef**)theFormula.lData)[i])->IsAVariable()) {
-            return false;
-        }
+_Operation* _Formula::ItemAt (long idx) const {
+  return (_Operation*)theFormula.GetItem(idx);
+}
 
-    return true;
+  //__________________________________________________________________________________
+bool _Formula::IsAConstant (void) {
+  
+  unsigned long const upper_bound = NumberOperations();
+  
+  for (unsigned long i=0UL; i<upper_bound; i++) {
+    if ( ItemAt (i)->IsAVariable()) {
+      return false;
+    }    
+  }
+  return true;
+
 }
 
 //__________________________________________________________________________________
-bool _Formula::IsConstant (bool strict)
-{
-    for (unsigned long i = 0; i<theFormula.lLength; i++)
-        if (((_Operation*)((BaseRef**)theFormula.lData)[i])->IsConstant(strict) == false) {
-            return false;
-        }
+bool _Formula::IsConstant (bool strict) {
+  unsigned long const upper_bound = NumberOperations();
 
-    return true;
+  for (unsigned long i=0UL; i<upper_bound; i++) {
+    if (ItemAt (i)->IsConstant(strict) == false) {
+      return false;
+    }
+  }
+    
+  return true;
 }
 
 //__________________________________________________________________________________
@@ -2196,11 +2700,10 @@ void _Formula::SimplifyConstants (void){
 }
 
 //__________________________________________________________________________________
-_PMathObj _Formula::GetTheMatrix (void)
-{
-    if (theFormula.lLength==1) {
-        _Operation* firstOp = (_Operation*)theFormula(0);
-        _PMathObj   ret = firstOp->GetANumber();
+HBLObjectRef _Formula::GetTheMatrix (void) {
+    if (theFormula.countitems()==1) {
+        _Operation* firstOp = ItemAt (0);
+        HBLObjectRef   ret = firstOp->GetANumber();
         if (ret&&(ret->ObjectClass()==MATRIX)) {
             return ret;
         } else {
@@ -2217,13 +2720,12 @@ _PMathObj _Formula::GetTheMatrix (void)
 }
 
 //__________________________________________________________________________________
-long _Formula::ObjectClass (void)
-{
-    if (theStack.theStack.lLength) {
-        return ((_PMathObj)theStack.theStack.lData[0])->ObjectClass();
+long _Formula::ObjectClass (void) {
+    if (theStack.StackDepth()) {
+        return ((HBLObjectRef)theStack.theStack.list_data[0])->ObjectClass();
     }
 
-    _PMathObj res =   Compute();
+    HBLObjectRef res =   Compute();
 
     if (res) {
         return res->ObjectClass();
@@ -2232,8 +2734,10 @@ long _Formula::ObjectClass (void)
     return HY_UNDEFINED;
 }
 
+
+
 //__________________________________________________________________________________
-_Formula::_Formula (_String const &s, _VariableContainer const* theParent, _String* reportErrors) {
+long _Formula::ParseFormula (_String const &s, _VariableContainer const* theParent, _String* reportErrors) {
     theTree     = nil;
     resultCache = nil;
     recursion_calls = nil;
@@ -2243,61 +2747,71 @@ _Formula::_Formula (_String const &s, _VariableContainer const* theParent, _Stri
 
     _String formula_copy (s);
 
-    if (Parse (this, formula_copy, fpc, nil) != HY_FORMULA_EXPRESSION) {
+    long    return_value = Parse (this, formula_copy, fpc, nil);
+
+    if (return_value != HY_FORMULA_EXPRESSION) {
         Clear();
     }
+
+    return return_value;
+
 }
+
 //__________________________________________________________________________________
 void    _Formula::ConvertToTree (bool err_msg) {
-    if (!theTree && theFormula.lLength) { // work to do
+    if (!theTree && theFormula.countitems()) { // work to do
         _SimpleList nodeStack;
-        _Operation* currentOp;
 
-        for (unsigned long i=0UL; i<theFormula.lLength; i++) {
+        unsigned long const upper_bound = NumberOperations();
+        theTree = nil;
+        try {
+        
+            for (unsigned long i=0UL; i<upper_bound; i++) {
 
-            currentOp = GetIthTerm(i);
+                _Operation* currentOp = ItemAt(i);
 
-            if (currentOp->theNumber || currentOp->theData >= 0L || currentOp->theData < -2L) { // a data bit
-                node<long>* leafNode = new node<long>;
-                leafNode->init(i);
-                nodeStack<<(long)leafNode;
-            } else { // an operation
-                long nTerms = currentOp->GetNoTerms();
-                if (nTerms<0L) {
-                    nTerms = GetBFFunctionArgumentCount(currentOp->opCode);
-                }
-
-                if (nTerms>nodeStack.lLength) {
-                    if (err_msg) {
-                        WarnError (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()) & " while converting " & _String ((_String*)toStr()).Enquote() & " to a parse tree");
+                if (currentOp->theNumber || currentOp->theData >= 0L || currentOp->theData <= -2L) { // a data bit
+                    node<long>* leafNode = new node<long>;
+                    leafNode->init(i);
+                    nodeStack<<(long)leafNode;
+                } else { // an operation
+                    long nTerms = currentOp->GetNoTerms();
+                    if (nTerms<0L) {
+                        nTerms = GetBFFunctionArgumentCount(currentOp->opCode);
                     }
-                    theTree = nil;
-                    return;
-                }
 
-                node<long>* operationNode = new node<long>;
-                operationNode->init(i);
-                for (long j=0; j<nTerms; j++) {
-                    operationNode->prepend_node(*((node<long>*)nodeStack.Pop()));
+                    if (nTerms>nodeStack.lLength) {
+                        throw (_String ("Insufficient number of arguments for a call to ") & _String ((_String*)currentOp->toStr()) & " while converting " & toRPN(kFormulaStringConversionNormal).Enquote() & " to a parse tree");
+                    }
+
+                    node<long>* operationNode = new node<long>;
+                    operationNode->init(i);
+                    for (long j=0; j<nTerms; j++) {
+                        operationNode->prepend_node(*((node<long>*)nodeStack.Pop()));
+                    }
+                    nodeStack<<(long)operationNode;
                 }
-                nodeStack<<(long)operationNode;
             }
-        }
-        if (nodeStack.lLength!=1) {
+            if (nodeStack.lLength!=1) {
+                throw ((_String)"The expression '" & toRPN (kFormulaStringConversionNormal) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
+            } else {
+                theTree = (node<long>*)nodeStack(0);
+            }
+        } catch (_String const e) {
             if (err_msg) {
-                WarnError ((_String)"The expression '" & _String ((_String*)toStr()) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
+                HandleApplicationError(e);
             }
+            nodeStack.Each ([this] (long v, unsigned long) -> void {
+                node<long>* operationNode = (node<long>*)v;
+                operationNode->delete_tree();
+                delete (operationNode);
+            });
             theTree = nil;
-        } else {
-            theTree = (node<long>*)nodeStack(0);
         }
-
-
     }
 }
 //__________________________________________________________________________________
-void    _Formula::ConvertFromTree (void)
-{
+void    _Formula::ConvertFromTree (void) {
     if (theTree) { // work to do
         _SimpleList termOrder;
         node_iterator<long> ni (theTree, _HY_TREE_TRAVERSAL_POSTORDER);
@@ -2321,613 +2835,3 @@ void    _Formula::ConvertFromTree (void)
     }
 }
 
-//__________________________________________________________________________________
-node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, long varID, _SimpleList& varRefs, _SimpleList& dydx, _Formula& tgt)
-{
-    _Operation * op = (_Operation*)theFormula (currentSubExpression->in_object);
-
-    if (op->theData!=-1) {
-        long k     = varRefs.BinaryFind (op->GetAVariable());
-        if (k<0) {
-            return nil;
-        }
-
-        _Formula* dYdX = (_Formula*)dydx(k);
-        return dYdX->DuplicateFormula (dYdX->theTree, tgt);
-    }
-
-    if (op->theNumber) {
-        _Formula src (new _Constant (0.0));
-        src.ConvertToTree ();
-        return   src.DuplicateFormula (src.theTree, tgt);
-    }
-
-    node<long>* newNode = (node<long>*)checkPointer (new node<long>);
-
-
-    switch (op->opCode) {
-    case HY_OP_CODE_MUL: {
-
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
-                  * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
-
-        if (!b1 || !b2) {
-            newNode->delete_tree(true);
-            if (b1) {
-                b1->delete_tree (true);
-            }
-            if (b2) {
-                b2->delete_tree (true);
-            }
-            return nil;
-        }
-
-        _String           opC  ('*'),
-                          opC2 ('+');
-
-        _Operation*       newOp  = new _Operation (opC2,2),
-        *         newOp2 = new _Operation (opC ,2),
-        *         newOp3 = new _Operation (opC ,2);
-
-
-
-
-        node<long>*       newNode2 = (node<long>*)checkPointer(new node<long>);
-        node<long>*       newNode3 = (node<long>*)checkPointer(new node<long>);
-
-        newNode2->add_node (*b1);
-        newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
-
-        newNode3->add_node (*b2);
-        newNode3->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode->add_node  (*newNode2);
-        newNode->add_node  (*newNode3);
-
-        newNode3->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance (newOp3);
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula. AppendNewInstance (newOp2);
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance (newOp);
-
-        return          newNode;
-    }
-    break;
-
-    case HY_OP_CODE_ADD: // +
-    case HY_OP_CODE_SUB: { // -
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
-                    * b2 = nil;
-
-        if (!b1) {
-            newNode->delete_tree (true);
-            return nil;
-        }
-
-        long      isUnary = (currentSubExpression->get_num_nodes()==1);
-
-        if (!isUnary) {
-            b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
-            if (!b2) {
-                b1->delete_tree      (true);
-                newNode->delete_tree (true);
-                return nil;
-            }
-        }
-
-
-        _Operation*   newOp = new _Operation ();
-        checkPointer  (newOp);
-        newOp->Duplicate (op);
-        newNode->add_node (*b1);
-        if (!isUnary) {
-            newNode->add_node (*b2);
-        }
-        newNode->in_object = tgt.theFormula.lLength;
-
-        tgt.theFormula.AppendNewInstance(newOp);
-        return          newNode;
-    }
-    break;
-
-    case HY_OP_CODE_DIV: { // /
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt),
-                    * b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
-
-        if (!b1 || !b2) {
-            newNode->delete_tree(true);
-            if (b1) {
-                b1->delete_tree (true);
-            }
-            if (b2) {
-                b2->delete_tree (true);
-            }
-            return nil;
-        }
-
-        _String           opC  ('*'),
-                          opC2 ('-'),
-                          opC3 ('/'),
-                          opC4 ('^');
-
-        _Operation*       newOp  = new _Operation (opC3 ,2),
-        *         newOp2 = new _Operation (opC4 ,2),
-        *         newOp3 = new _Operation (opC2 ,2),
-        *         newOp4 = new _Operation (opC  ,2),
-        *         newOp5 = new _Operation (opC  ,2),
-        *         newOp6 = new _Operation (new _Constant (2.0));
-
-
-        node<long>*       newNode2 = new node<long>;
-        node<long>*       newNode3 = new node<long>;
-        node<long>*       newNode4 = new node<long>;
-        node<long>*       newNode5 = new node<long>;
-        node<long>*       newNode6 = new node<long>;
-
-        newNode6->add_node (*b1);
-        newNode6->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
-
-        newNode5->add_node (*b2);
-        newNode5->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode4->add_node  (*newNode6);
-        newNode4->add_node  (*newNode5);
-
-        newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node  (*newNode4);
-        newNode->add_node  (*newNode2);
-
-        newNode6->in_object = tgt.theFormula.lLength;
-
-
-        tgt.theFormula.AppendNewInstance(newOp5);
-        newNode5->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp4);
-        newNode4->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp3);
-        newNode3->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp6);
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp2);
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp);
-
-
-        return          newNode;
-    }
-    break;
-
-    case HY_OP_CODE_ARCTAN: { // Arctan
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
-
-        if (!b1) {
-            newNode->delete_tree (true);
-            return nil;
-        }
-
-        _String           opC  ('/'),
-                          opC2 ('+'),
-                          opC3 ('^');
-
-        _Operation*       newOp  = new _Operation (opC ,2),
-        *         newOp2 = new _Operation (opC2 ,2),
-        *         newOp3 = new _Operation (new _Constant (1.0)),
-        *         newOp4 = new _Operation (opC3 ,2),
-        *         newOp5 = new _Operation (new _Constant (2.0));
-
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-        checkPointer      (newOp4);
-
-        node<long>*       newNode2 = new node<long>;
-        node<long>*       newNode3 = new node<long>;
-        node<long>*       newNode4 = new node<long>;
-        node<long>*       newNode5 = new node<long>;
-
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
-        checkPointer      (newNode5);
-
-        newNode4->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-        newNode4->add_node (*newNode5);
-
-        newNode2->add_node (*newNode3);
-        newNode2->add_node (*newNode4);
-
-        newNode->add_node (*b1);
-        newNode->add_node (*newNode2);
-
-        newNode5->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp5);
-        newNode4->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp4);
-        newNode3->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp3);
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp2);
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp);
-
-        return          newNode;
-    }
-    break;
-
-    case HY_OP_CODE_COS: { // Cos
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
-
-        if (!b1) {
-            newNode->delete_tree (true);
-            return nil;
-        }
-
-        _String           opC  ('*'),
-                          opC2 ('-'),
-                          opC3 ("Sin");
-
-        _Operation*       newOp  = new _Operation (opC  ,2),
-        *         newOp2 = new _Operation (opC2 ,1),
-        *         newOp3 = new _Operation (opC3 ,1);
-
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-
-        node<long>*       newNode2 = new node<long>;
-        node<long>*       newNode3 = new node<long>;
-
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-
-        newNode3->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node  (*newNode2);
-        newNode->add_node  (*b1);
-
-        newNode3->in_object = tgt.theFormula.lLength;
-        tgt.theFormula << newOp3;
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula << newOp2;
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula << newOp;
-
-        DeleteObject    (newOp);
-        DeleteObject    (newOp2);
-        DeleteObject    (newOp3);
-
-        return          newNode;
-    }
-    break;
-
-    case HY_OP_CODE_ERF: { // Erf
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
-
-        if (!b1) {
-            newNode->delete_tree (true);
-            return nil;
-        }
-
-        _String           opC  ('*'),
-                          opC2 ('/'),
-                          opC3 ("Exp"),
-                          opC4 ("-"),
-                          opC5 ("^");
-
-        _Operation*       newOp  = new _Operation (opC  ,2),
-        *         newOp2 = new _Operation (opC2 ,2),
-        *         newOp3 = new _Operation (new _Constant (twoOverSqrtPi)),
-        *         newOp4 = new _Operation (opC3 ,1),
-        *         newOp5 = new _Operation (opC4 ,1),
-        *         newOp6 = new _Operation (opC5 ,2),
-        *         newOp7 = new _Operation (new _Constant (2.0));
-
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-        checkPointer      (newOp4);
-        checkPointer      (newOp5);
-        checkPointer      (newOp6);
-        checkPointer      (newOp7);
-
-        node<long>*       newNode2 = new node<long>;
-        node<long>*       newNode3 = new node<long>;
-        node<long>*       newNode4 = new node<long>;
-        node<long>*       newNode5 = new node<long>;
-        node<long>*       newNode6 = new node<long>;
-        node<long>*       newNode7 = new node<long>;
-
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
-        checkPointer      (newNode5);
-        checkPointer      (newNode6);
-        checkPointer      (newNode7);
-
-        newNode6->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-        newNode6->add_node (*newNode7);
-
-        newNode5->add_node (*newNode6);
-        newNode4->add_node (*newNode5);
-        newNode2->add_node (*newNode4);
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node  (*b1);
-        newNode->add_node  (*newNode2);
-
-        newNode7->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp7);
-        newNode6->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp6);
-        newNode5->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp5);
-        newNode4->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp4);
-        newNode3->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp3);
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp2);
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp);
-
-        return          newNode;
-    }
-    break;
-
-    case HY_OP_CODE_EXP: // HY_OP_CODE_EXP
-    case HY_OP_CODE_SIN: { // HY_OP_CODE_SIN
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
-
-        if (!b1) {
-            newNode->delete_tree (true);
-            return nil;
-        }
-
-        _String           opC  ('*'),
-                          opC2;
-
-        if (op->opCode==HY_OP_CODE_SIN) {
-            opC2 = *(_String*)BuiltInFunctions(HY_OP_CODE_COS);
-        } else {
-            opC2 = *(_String*)BuiltInFunctions(HY_OP_CODE_EXP);
-        }
-
-        _Operation*       newOp  = new _Operation (opC  ,2),
-        *         newOp2 = new _Operation (opC2 ,1);
-
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-
-        node<long>*       newNode2 = new node<long>;
-
-        checkPointer      (newNode2);
-
-        newNode2->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode->add_node  (*newNode2);
-        newNode->add_node  (*b1);
-
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp2);
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp);
-
-        return           newNode;
-    }
-    break;
-
-    case HY_OP_CODE_LOG: { // Log
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
-
-        if (!b1) {
-            newNode->delete_tree (true);
-            return nil;
-        }
-        _String           opC  ('/');
-
-        _Operation*       newOp  = new _Operation (opC  ,2);
-
-        checkPointer      (newOp);
-
-        newNode->add_node  (*b1);
-        newNode->add_node  (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp);
-
-        return           newNode;
-    }
-    break;
-
-    case HY_OP_CODE_SQRT: { // Sqrt
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
-
-        if (!b1) {
-            newNode->delete_tree (true);
-            return nil;
-        }
-
-        _String           opC  ('/'),
-                          opC2 ('*'),
-                          opC3 (*(_String*)BuiltInFunctions(HY_OP_CODE_SQRT));
-
-        _Operation*       newOp  = new _Operation (opC  ,2),
-        *         newOp2 = new _Operation (opC2 ,2),
-        *         newOp3 = new _Operation (opC3 ,1),
-        *         newOp4 = new _Operation (new _Constant (2.0));
-
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-        checkPointer      (newOp4);
-
-        node<long>*       newNode2 = new node<long>;
-        node<long>*       newNode3 = new node<long>;
-        node<long>*       newNode4 = new node<long>;
-
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
-
-        newNode3->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode2->add_node (*newNode4);
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node  (*b1);
-        newNode->add_node  (*newNode2);
-
-        newNode4->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp4);
-        newNode3->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp3);
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp2);
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp);
-
-        return          newNode;
-    }
-    break;
-
-    case HY_OP_CODE_TAN: { // Tan
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
-
-        if (!b1) {
-            newNode->delete_tree (true);
-            return nil;
-        }
-
-        _String           opC  ('/'),
-                          opC2 ('^'),
-                          opC3 (*(_String*)BuiltInFunctions(HY_OP_CODE_COS));
-
-        _Operation*       newOp  = new _Operation (opC ,2),
-        *         newOp2 = new _Operation (opC2,2),
-        *         newOp3 = new _Operation (new _Constant (2.0)),
-        *         newOp4 = new _Operation (opC3,1);
-
-        checkPointer      (newOp);
-        checkPointer      (newOp2);
-        checkPointer      (newOp3);
-
-        node<long>*       newNode2 = new node<long>;
-        node<long>*       newNode3 = new node<long>;
-        node<long>*       newNode4 = new node<long>;
-
-        checkPointer      (newNode2);
-        checkPointer      (newNode3);
-        checkPointer      (newNode4);
-
-        newNode4->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNode2->add_node (*newNode4);
-        newNode2->add_node (*newNode3);
-
-        newNode->add_node (*b1);
-        newNode->add_node (*newNode2);
-
-        newNode4->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp4);
-        newNode3->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp3);
-        newNode2->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp2);
-        newNode->in_object = tgt.theFormula.lLength;
-        tgt.theFormula.AppendNewInstance(newOp);
-
-        return          newNode;
-    }
-    break;
-
-    case HY_OP_CODE_POWER: // ^
-        // f[x]^g[x] (g'[x] Log[f[x]] + f'[x]g[x]/f[x])
-    {
-        node<long>* b1 = InternalDifferentiate (currentSubExpression->go_down(1), varID, varRefs, dydx, tgt);
-        if (!b1) {
-            newNode->delete_tree(true);
-            return nil;
-        }
-        node<long>* b2 = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
-        if (!b2) {
-            newNode->delete_tree(true);
-            return nil;
-        }
-
-        long opCodes[7] = {HY_OP_CODE_MUL, HY_OP_CODE_POWER, HY_OP_CODE_ADD, HY_OP_CODE_DIV, HY_OP_CODE_MUL, HY_OP_CODE_MUL, HY_OP_CODE_LOG};
-        long opArgs [7] = {2,2,2,2,2,2,1};
-
-        node<long> * newNodes [7];
-        newNodes[0] = newNode;
-        for (long k = 1; k < 7; k++) {
-            newNodes[k] = new node <long>;
-        }
-
-        newNodes[6]->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNodes[5]->add_node (*b2);
-        newNodes[5]->add_node (*newNodes[6]);
-
-        newNodes[4]->add_node (*b1);
-        newNodes[4]->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
-
-        newNodes[3]->add_node (*newNodes[4]);
-        newNodes[3]->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-
-        newNodes[2]->add_node (*newNodes[5]);
-        newNodes[2]->add_node (*newNodes[3]);
-
-        newNodes[1]->add_node (*DuplicateFormula (currentSubExpression->go_down(1),tgt));
-        newNodes[1]->add_node (*DuplicateFormula (currentSubExpression->go_down(2),tgt));
-
-        newNode->add_node  (*newNodes[1]);
-        newNode->add_node  (*newNodes[2]);
-
-        for (long k = 6; k >=0 ; k--) {
-            newNodes[k]->in_object = tgt.theFormula.lLength;
-            tgt.theFormula .AppendNewInstance (new _Operation (opCodes[k], opArgs[k]));
-        }
-
-        return          newNode;
-    }
-    }
-
-    delete (newNode);
-    return nil;
-}
-
-
-
-//__________________________________________________________________________________
-_FormulaParsingContext::_FormulaParsingContext (_String* err, _VariableContainer const* scope) {
-    assignment_ref_id   = -1;
-    assignment_ref_type = HY_STRING_DIRECT_REFERENCE;
-    is_volatile = false;
-    in_assignment = false;
-    build_complex_objects = true;
-    err_msg = err;
-    formula_scope = scope;
-}
-
-//__________________________________________________________________________________
-_String const _FormulaParsingContext::contextualizeRef (_String& ref) {
-    if (formula_scope) {
-        return *formula_scope->GetName () & '.' & ref;
-    }
-    return ref;
-}
-
-//__________________________________________________________________________________
-void _FormulaParsingContext::setScope(const _String *scope) {
-  if (scope && scope->sLength) {
-    _VariableContainer vc (*scope);
-    formula_scope = (_VariableContainer*)FetchVar(vc.GetAVariable());
-  } else {
-    formula_scope = nil;
-  }
-}

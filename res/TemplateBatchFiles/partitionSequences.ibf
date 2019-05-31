@@ -39,8 +39,8 @@ while (goOn) {
 		}
 	}
 
-    st1 = Join (",", Rows (cladeA));
-    st2 = Join (",", Rows (cladeB));
+    st1 = Join (",", Columns (cladeA));
+    st2 = Join (",", Columns (cladeB));
 
 	st1 = "(("+st1+"),"+st2+")";
 

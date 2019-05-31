@@ -1,4 +1,5 @@
-RequireVersion("2.3.3");
+RequireVersion("2.4.0");
+
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -22,10 +23,9 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
 
 
-
-/*------------------------------------------------------------------------------ Display analysis information
+/*------------------------------------------------------------------------------ 
+    Display analysis information
 */
-
 
 meme.analysis_description = {
     terms.io.info: "MEME (Mixed Effects Model of Evolution)
@@ -40,7 +40,7 @@ meme.analysis_description = {
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    terms.io.version: "2.0.1",
+    terms.io.version: "2.1.1",
     terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
     terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
     terms.io.contact: "spond@temple.edu",
@@ -51,18 +51,16 @@ meme.analysis_description = {
 io.DisplayAnalysisBanner(meme.analysis_description);
 
 
-
 /*------------------------------------------------------------------------------
     Environment setup
 */
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
+
 /*------------------------------------------------------------------------------
     Globals
 */
-
-
 
 meme.parameter_site_alpha = "Site relative synonymous rate";
 meme.parameter_site_omega_minus = "Omega ratio on (tested branches); negative selection or neutral evolution (&omega;- <= 1;)";
@@ -86,10 +84,21 @@ meme.display_orders =   {terms.original_name: -1,
                         terms.json.global_mg94xrev: 1
                        };
 
-
-
-
 selection.io.startTimer (meme.json [terms.json.timers], "Total time", 0);
+
+
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+KeywordArgument ("branches",  "Branches to test", "All");
+KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
+// One additional KeywordArgument ("output") is called below after namespace meme.
+
+
 meme.scaler_prefix = "MEME.scaler";
 
 meme.table_headers = {{"alpha;", "Synonymous substitution rate at a site"}
@@ -118,6 +127,10 @@ namespace meme {
 }
 
 meme.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",meme.pvalue,0,1,FALSE);
+
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'MEME.json')", meme.codon_data_info [terms.json.json]);
+meme.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
 io.ReportProgressMessageMD('MEME',  'selector', 'Branches to include in the MEME analysis');
 
 utility.ForEachPair (meme.selected_branches, "_partition_", "_selection_",
@@ -162,7 +175,7 @@ utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME
 estimators.fixSubsetOfEstimates(meme.final_partitioned_mg_results, meme.final_partitioned_mg_results[terms.global]);
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (meme.json,
+selection.io.json_store_lf_withEFV (meme.json,
                             terms.json.global_mg94xrev,
                             meme.final_partitioned_mg_results[terms.fit.log_likelihood],
                             meme.final_partitioned_mg_results[terms.parameters],
@@ -446,7 +459,6 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 //----------------------------------------------------------------------------------------
 lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
 
-
     GetString   (lfInfo, ^lf_fel,-1);
 
 
@@ -527,13 +539,13 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         ^"meme.site_beta_plus" := ^"meme.site_alpha";
         Optimize (results, ^lf_bsrel);
 
-        null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
-        null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+        Null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
+        Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
 
 
     } else {
-        null = alternative;
+        Null = alternative;
         utility.ForEach (^bsrel_tree_id, "_node_name_",
         '
             if ((meme.selected_branches [^"`&partition_index`"])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
@@ -550,7 +562,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
             utility.getGlobalValue("terms.posterior") : branch_posterior,
             utility.getGlobalValue("terms.empirical_bayes_factor") : branch_ebf,
             utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information, //TODO: keep this attr?
-            utility.getGlobalValue("terms.null"): null};
+            utility.getGlobalValue("terms.Null"): Null};
 }
 
 /* echo to screen calls */
@@ -602,7 +614,7 @@ lfunction meme.store_results (node, result, arguments) {
     if (None != result) { // not a constant site
 
 
-        lrt = {utility.getGlobalValue("terms.LRT") : 2*((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")]-(result[utility.getGlobalValue("terms.null")])[utility.getGlobalValue("terms.fit.log_likelihood")])};
+        lrt = {utility.getGlobalValue("terms.LRT") : 2*((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")]-(result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")])};
         lrt [utility.getGlobalValue("terms.p_value")] = 2/3-2/3*(0.45*CChi2(lrt[utility.getGlobalValue("terms.LRT")],1)+0.55*CChi2(lrt[utility.getGlobalValue("terms.LRT")],2));
 
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.parameter_site_alpha"));

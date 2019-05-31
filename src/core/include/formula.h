@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
 
  Module Developers:
@@ -47,58 +47,57 @@
 #include "stack.h"
 #include "operation.h"
 
+
+#include "hy_string_buffer.h"
+#include "formula_parsing_context.h"
+
 class _Variable;
 class _VariableContainer;
+class _Polynomial;
 
 
 union       _SimpleFormulaDatum {
-    _Parameter value;
-    Ptr        reference;
+    hyFloat value;
+    hyPointer        reference;
 };
 
 
-class _FormulaParsingContext {
-
-    long                 assignment_ref_id;
-    char                 assignment_ref_type;
-    bool                 is_volatile;
-    bool                 in_assignment;
-    bool                 build_complex_objects;
-        /*
-            this controls whether or not
-            [matrix, TBD] and dictionary constant are built in place (default)
-            or deferred (is false)
-
-        */
-    _String            * err_msg;
-    _VariableContainer const * formula_scope;
-
-    public:
-        _FormulaParsingContext (_String* = nil, _VariableContainer const* = nil);
-        bool&       isVolatile (void)                   { return is_volatile; }
-        bool&       inAssignment (void)                 { return in_assignment;}
-        bool&       buildComplexObjects (void)          { return build_complex_objects;}
-        long&       assignmentRefID (void)              { return assignment_ref_id; }
-        char&       assignmentRefType (void)            { return assignment_ref_type;}
-        _String*    errMsg (void)                       { return err_msg; }
-        _VariableContainer const* formulaScope (void)         { return formula_scope; }
-        void        setScope (_String const* scope);
-        _String const     contextualizeRef (_String&);
+enum _hyFormulaStringConversionMode  {
+  kFormulaStringConversionNormal = 0L,
+  kFormulaStringConversionSubstiteValues = 2L,
+  kFormulaStringConversionReportRanges = 3L
 };
 
-
-class   _Formula   // a computational formula
-{
+class   _Formula {
 
     friend class _Variable;
     friend class _VariableContainer;
+    
+protected:
+
+    unsigned    long    call_count;
+    HBLObjectRef        recursion_calls;
+    _List*              resultCache;
+    _Stack              theStack;
+    _List               theFormula;
+
+    node<long>* theTree; // this formula converted to a tree for operation purposes
+    // such as simplification, differentiation and printing.
+    // trees store numbers referencing operations inside
+    // "theFormula"
+
 
 public:
     _Formula (void);
     _Formula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
-    _Formula (_PMathObj, bool isAVar = false);
+    _Formula (const _Polynomial *);
+    
+    long     ParseFormula (_String const&,_VariableContainer const* theParent=nil,_String* errorString = nil);
+    
+    _Formula (HBLObjectRef, bool isAVar = false);
+    _Formula (_Formula const & rhs);
     virtual ~_Formula (void);
-    _PMathObj   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
+    HBLObjectRef   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
     // compute the value of the formula
     // 1st argument : execute from this instruction onwards
     // see the commend for ExecuteFormula for the second argument
@@ -131,15 +130,16 @@ public:
     _MathObject*ConstructPolynomial (void);
 
     virtual void        Initialize          (void);
-    virtual void        Duplicate           (BaseRef);
-    void        DuplicateReference  (const _Formula*);
-    virtual BaseRef     makeDynamic         (void);
-    virtual BaseRef     toStr               (_List* matchNames = nil, bool = false);
+    virtual void        Duplicate           (_Formula const *);
+    void        DuplicateReference          (const _Formula*);
+    virtual BaseRef     makeDynamic         (void) const;
+    virtual BaseRef     toStr               (_hyFormulaStringConversionMode mode, _List* matchNames = nil, bool = false);
+    _StringBuffer const     toRPN               (_hyFormulaStringConversionMode mode, _List* matchNames = nil);
 
     virtual long        ObjectClass         (void);
 
 
-    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0);
+    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0) const;
     virtual void        ScanFForType        (_SimpleList&,  int);
     /* SLKP 20100716:
             A simple utility function to retrieve all variables of a given type
@@ -169,10 +169,15 @@ public:
         the i-th term of the formula
     */
 
+    _Operation* ItemAt          (long) const;
+    /*
+     Same as GetIthTerm, but no range checking
+     */
+
     unsigned long Length            (void) const {return theFormula.lLength;}
 
     void        Clear               (void);
-    _PMathObj   GetTheMatrix        (void);
+    HBLObjectRef   GetTheMatrix        (void);
 
     void        PushTerm            (BaseRef);
 
@@ -182,31 +187,32 @@ public:
 
     */
 
-    bool        AmISimple           (long& stackDepth, _SimpleList& variableIndex);
+    bool        AmISimple           (long& stack_depth, _AVLList& variable_index);
     long        StackDepth          (long start_at = 0L, long end_at = -1L) const;
       /**
         starting at operation 'start_at', counting up to 'end_at' (-1 == the end),
         evaluate how many values would be on the stack after the execution of these commands
        */
-    bool        ConvertToSimple     (_SimpleList& variableIndex);
-    void        ConvertFromSimple   (_SimpleList& variableIndex);
+    bool        ConvertToSimple     (_AVLList& variableIndex);
+    void        ConvertFromSimple   (_AVLList const& variableIndex);
+    void        ConvertFromSimpleList   (_SimpleList const& variableIndex);
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
-    _Parameter  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
+    hyFloat  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
 
-    _Parameter  Newton              (_Formula&, _Variable*,  _Parameter, _Parameter, _Parameter);
-    _Parameter  Newton              (_Formula&, _Parameter, _Parameter, _Parameter, _Variable*);
-    _Parameter  Newton              (_Variable*,  _Parameter, _Parameter, _Parameter, _Parameter);
-    _Parameter  Newton              (_Variable*,_Parameter, _Parameter, _Parameter);
+    hyFloat  Newton              (_Formula&, _Variable*,  hyFloat, hyFloat, hyFloat);
+    hyFloat  Newton              (_Formula&, hyFloat, hyFloat, hyFloat, _Variable*);
+    hyFloat  Newton              (_Variable*,  hyFloat, hyFloat, hyFloat, hyFloat);
+    hyFloat  Newton              (_Variable*,hyFloat, hyFloat, hyFloat);
 
-    _Parameter  Brent               (_Variable*, _Parameter, _Parameter, _Parameter = 1.e-7, _List* = nil, _Parameter = 0.);
+    hyFloat  Brent               (_Variable*, hyFloat, hyFloat, hyFloat = 1.e-7, _List* = nil, hyFloat = 0.);
 
-    _Parameter  Integral            (_Variable*,_Parameter, _Parameter, bool inifinite = false);
-    _Parameter  MeanIntegral        (_Variable*,_Parameter, _Parameter, bool inifinite = false);
-    _Formula*   Differentiate       (_String, bool = true, bool convert_from_tree = true);
+    hyFloat  Integral            (_Variable*,hyFloat, hyFloat, bool inifinite = false);
+    hyFloat  MeanIntegral        (_Variable*,hyFloat, hyFloat, bool inifinite = false);
+    _Formula*   Differentiate       (_String const&, bool = true, bool convert_from_tree = true);
     node<long>* InternalDifferentiate
-    (node<long>*, long,_SimpleList&, _SimpleList&, _Formula&);
+    (node<long>*, long,_SimpleList const &, _Formula  * const *, _Formula&);
 
     bool        InternalSimplify    (node<long>*);
 
@@ -214,37 +220,42 @@ public:
     void        ConvertMatrixArgumentsToSimpleOrComplexForm (bool);
     long        ExtractMatrixExpArguments        (_List*);
 
-    virtual     _Formula operator + (const _Formula&);
-    virtual     _Formula operator - (const _Formula&);
-    virtual     _Formula operator * (const _Formula&);
-    virtual     _Formula operator / (const _Formula&);
-    virtual     _Formula operator ^ (const _Formula&);
+    virtual     _Formula const operator + (const _Formula&);
+    virtual     _Formula const operator - (const _Formula&);
+    virtual     _Formula const operator * (const _Formula&);
+    virtual     _Formula const operator / (const _Formula&);
+    virtual     _Formula const operator ^ (const _Formula&);
 
-    _Formula&        PatchFormulasTogether (_Formula&, const _Formula&, const char op_code);
+    static      _Formula*        PatchFormulasTogether (const _Formula& op1, const _Formula& op2, const char op_code);
 
     void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive);
+  
+  
+    /** A compute and forget utility function.
+        Parse an expression, optionally check to see that it's of the right type and return the value
+        
+      @param expression : the string to parse
+      @param use_exceptions : if true, throw const _String exceptions, otherwise handle errors directly 
+      @param requested_type: return nil if the computed value is not of this type
+      @param formula parsing contrext
+     
+      @return expression value or nil; the value needs to be managed by the caller
+      Revision history
+          20170921 : SLKP initial implementation 
+     
+    */
+     
+    static      HBLObjectRef          ParseAndCompute (_String const& expression, bool use_exceptions = false, long requested_type = HY_ANY_OBJECT, _hyExecutionContext * context = nil);
 
 
 protected:
 
-    void        internalToStr       (_String& result,node<long>*, char opLevel, _List* matchNames, _Operation* = nil);
+    void        SubtreeToString     (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal);
     void        ConvertToTree       (bool err_msg = true);
     void        ConvertFromTree     (void);
-    bool        CheckSimpleTerm     (_PMathObj);
-    node<long>* DuplicateFormula    (node<long>*,_Formula&);
+    bool        CheckSimpleTerm     (HBLObjectRef);
+    node<long>* DuplicateFormula    (node<long>*,_Formula&) const;
 
-    _List       theFormula,
-                *resultCache;
-
-    _Stack      theStack;
-    _PMathObj   recursion_calls;
-
-    unsigned    long call_count;
-
-    node<long>* theTree; // this formula converted to a tree for operation purposes
-    // such as simplification, differentiation and printing.
-    // trees store numbers referencing operations inside
-    // "theFormula"
 
 };
 

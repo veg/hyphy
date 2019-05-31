@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -82,9 +82,9 @@ public:
         DeleteObject (weights);
     };
     virtual
-    BaseRef     makeDynamic             (void);
+    BaseRef     makeDynamic             (void) const;
     virtual
-    void        Duplicate               (BaseRef);
+    void        Duplicate               (BaseRefConst);
     virtual
     BaseRef     toStr                   (unsigned long = 0UL);
 
@@ -100,7 +100,7 @@ public:
     }
 
     virtual
-    void       ScanForVariables         (_AVLList&, bool = false, _AVLListX* tagger = nil, long weight = 0);
+    void       ScanForVariables         (_AVLList&, bool = false, _AVLListX* tagger = nil, long weight = 0) const;
 
     virtual
     void       ScanForGVariables        (_AVLList&);
@@ -112,24 +112,24 @@ public:
 
     // access functions
 
-    long        GetNumberOfIntervals () {
+    long        GetNumberOfIntervals () const {
         return intervals;
     }
 
-    char        GetRepresentationType () {
+    char        GetRepresentationType () const {
         return representation;
     }
 
-    _Parameter  SetIntervalValue (long, bool recacl = true);
+    hyFloat  SetIntervalValue (long, bool recacl = true);
     // set interval value is returned
 
-    _Parameter  Mean (void);
+    hyFloat  Mean (void);
 
-    _Parameter  GetIntervalValue (long);
+    hyFloat  GetIntervalValue (long);
 
-    _Parameter  GetIntervalWeight(long);
+    hyFloat  GetIntervalWeight(long);
 
-    _Parameter* GetIntervalWeights(void) {
+    hyFloat* GetIntervalWeights(void) {
         return weights->fastIndex();
     }
 
@@ -141,8 +141,8 @@ public:
 
     _Matrix*    ComputeHiddenMarkov (void);
     _Matrix*    ComputeHiddenMarkovFreqs (void);
-    _Matrix*    GetHiddenMarkov (void);
-    _Matrix*    GetHiddenMarkovFreqs (void);
+    _Matrix*    GetHiddenMarkov (void) const;
+    _Matrix*    GetHiddenMarkovFreqs (void) const;
 
     _Formula&   GetDensity(void) {
         return density;
@@ -157,19 +157,17 @@ public:
         return UpdateIntervalsAndValues(force);
     }
 
-    _Parameter  GetMinX (void)  {
+    hyFloat  GetMinX (void)  const {
         return x_min;
     }
-    _Parameter  GetMaxX (void)  {
+    hyFloat  GetMaxX (void)  const {
         return x_max;
     }
-    bool        IsHiddenMarkov
-    (void)  {
+    bool        is_hidden_markov (void)  const {
         return (hiddenMarkovModel!=-1);
     }
 
-    bool        IsConstantOnPartition
-    (void)  {
+    bool        is_constant_on_partition (void) const {
         return (flags&CONSTANT_ON_PARTITION);
     }
 
@@ -177,7 +175,7 @@ public:
     // assumes a 'standard' category variable - i.e.
     // EQUAL freqs, and density/cumulative
 
-    void        SerializeCategory       (_String&);
+    void        SerializeCategory       (_StringBuffer &);
 
     long        GetCurrentState         (void);
     bool        IsUncorrelated          (void);
@@ -214,7 +212,7 @@ private:
                 *weights,
                 *conditionalWeights;
 
-    _Parameter  x_min,
+    hyFloat  x_min,
                 x_max;      // distribution range
 
     _SimpleList parameterList;
@@ -224,9 +222,46 @@ private:
 
 };
 
+template <typename ACTION> void IntergrateOverAssignments (_SimpleList const& indices, bool refresh, ACTION&& do_this) {
+    
+    long                    current_category = 0L,
+                            total_cat_count  = 1L,
+                            cat_var_count    = indices.countitems();
+    
+    hyFloat                 weight           = 1.;
+    
+    
+    indices.Each ( [&] (long cat_var_idx, unsigned long) -> void {
+        _CategoryVariable*      cat_var = (_CategoryVariable*)LocateVar (cat_var_idx);
+        if (refresh) {
+            cat_var->Refresh();
+        }
+        total_cat_count *= cat_var->GetNumberOfIntervals();
+    });
+
+    do {
+        if (indices.nonempty()) {
+            long c = current_category;
+            weight = 1.0;
+            for (long k=cat_var_count-1; k>=0; k--) {
+                _CategoryVariable*      cat_var = (_CategoryVariable*)LocateVar (indices.get (k));
+                
+                long t          = cat_var->GetNumberOfIntervals(),
+                     this_index = c % t;
+                
+                cat_var->SetIntervalValue(this_index);
+                weight *= cat_var->GetIntervalWeight(this_index);
+                c/=t;
+            }
+        }
+
+        do_this (current_category, weight);
+        current_category++;
+    } while (current_category<total_cat_count);
+}
+
 //__________________________________________________________________________________
 
 extern  unsigned long  maxCategoryIntervals;
-extern  _Variable*  _x_, *_n_;
 
 #endif

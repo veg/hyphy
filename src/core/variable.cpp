@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -47,7 +47,9 @@
 #include "batchlan.h"
 
 #include "function_templates.h"
+#include "global_things.h"
 
+using namespace hy_global;
 
 extern _SimpleList freeSlots;
 extern _SimpleList deferIsConstant;
@@ -69,7 +71,7 @@ void _Variable::Initialize (bool)
 {
     //_Formula::Initialize();
     _Constant::Initialize();
-    theName = (_String*)checkPointer(new _String());
+    theName = new _String();
     varValue = nil;
     theIndex = -1;
     varFlags = HY_VARIABLE_NOTSET;
@@ -77,9 +79,8 @@ void _Variable::Initialize (bool)
 }
 
 //__________________________________________________________________________________
-void _Variable::Duplicate (BaseRef r)
-{
-    _Variable *v = (_Variable*)r;
+void _Variable::Duplicate (BaseRefConst r) {
+    _Variable const *v = (_Variable const*)r;
     //theFormula.Duplicate (&(v->theFormula));
     if (v->varFormula) {
         varFormula = new _Formula();
@@ -93,11 +94,11 @@ void _Variable::Duplicate (BaseRef r)
     theValue = v->theValue;
     varValue = v->varValue;
     if (varValue) {
-        varValue->nInstances++;
+        varValue->AddAReference();
     }
     theIndex = v->theIndex;
     theName = v->theName;
-    theName->nInstances++;
+    theName->AddAReference();
     lowerBound = v->lowerBound;
     upperBound = v->upperBound;
     //hasBeenChanged = v->hasBeenChanged;
@@ -105,16 +106,35 @@ void _Variable::Duplicate (BaseRef r)
 }
 
 //__________________________________________________________________________________
-BaseRef _Variable::makeDynamic (void)
-{
+BaseRef _Variable::makeDynamic (void) const{
     _Variable * res = new _Variable;
-    if (!res) {
-        isError(0);
-        return nil;
-    }
-    //memcpy ((char*)res, (char*)this, sizeof (_Variable));
     res->Duplicate(this);
     return res;
+}
+
+//__________________________________________________________________________________
+void * _Variable::operator new (size_t size) {
+     return MemAllocate (size);
+}
+
+//__________________________________________________________________________________
+void  _Variable::operator delete (void * p) {
+    free (p);
+}
+
+//__________________________________________________________________________________
+
+unsigned long        _Variable::ObjectClass (void) const {
+    
+    if (varValue) {
+        return varValue->ObjectClass();
+    }
+    
+    if (varFormula && !varFormula->IsEmpty()) {
+        return varFormula->ObjectClass();
+    }
+    
+    return NUMBER;
 }
 
 //__________________________________________________________________________________
@@ -133,7 +153,7 @@ BaseRef _Variable::toStr(unsigned long padding)
     if (varValue&&varValue->IsPrintable()) {
         return varValue->toStr(padding);
     }
-    _PMathObj vv = Compute();
+    HBLObjectRef vv = Compute();
     if (!vv) {
         return new _String("NAN");
     }
@@ -146,7 +166,7 @@ void _Variable::toFileStr(FILE* f, unsigned long padding)
     if (varValue&&varValue->IsPrintable()) {
         varValue->toFileStr(f, padding);
     } else {
-        _PMathObj vv = Compute();
+        HBLObjectRef vv = Compute();
         if (!vv) {
             fprintf(f,"NAN");
         } else {
@@ -168,8 +188,7 @@ _Variable::_Variable (_String const&s, bool isG) {
 
 //__________________________________________________________________________________
 
-_Variable::_Variable (_String const&s, _String const &f, bool isG)//:  _Formula (f)
-{
+_Variable::_Variable (_String const&s, _String const &f, bool isG) {
     //hasBeenChanged = false;
     //isGlobal = isG;
     theName     = new _String(s);
@@ -179,7 +198,7 @@ _Variable::_Variable (_String const&s, _String const &f, bool isG)//:  _Formula 
     InsertVar   (this);
     varFormula = new _Formula (f);
     if (varFormula->IsAConstant()) {
-        _PMathObj theP = varFormula->Compute();
+        HBLObjectRef theP = varFormula->Compute();
         if (theP) {
             SetValue (theP);
             delete   (varFormula);
@@ -194,15 +213,9 @@ _Variable::_Variable (_String const&s, _String const &f, bool isG)//:  _Formula 
 
 //__________________________________________________________________________________
 
-_Variable::~_Variable (void)
-{
-  //nInstances++;
-    if (varValue) {
-        DeleteObject (varValue);
-    }
-    if (theName) {
-        DeleteObject (theName);
-    }
+_Variable::~_Variable (void) {
+    DeleteObject (varValue);
+    DeleteObject (theName);
     if (varFormula) {
         delete (varFormula);
     }
@@ -216,7 +229,7 @@ bool    _Variable::IsVariable (void)
 
 //__________________________________________________________________________________
 
-void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* tagger, long weight) {
+void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* tagger, long weight) const {
     if (varValue) {
         varValue->ScanForVariables (l, globals,tagger, weight);
     }
@@ -228,8 +241,8 @@ void        _Variable::ScanForVariables (_AVLList& l, bool globals, _AVLListX* t
 
   //__________________________________________________________________________________
 
-_PMathObj  _Variable::ComputeMatchingType(long type) {
-  _PMathObj computed_value = Compute();
+HBLObjectRef  _Variable::ComputeMatchingType(long type) {
+  HBLObjectRef computed_value = Compute();
   if (computed_value && (computed_value->ObjectClass() & type) > 0L) {
     return computed_value;
   }
@@ -239,12 +252,23 @@ _PMathObj  _Variable::ComputeMatchingType(long type) {
 
 //__________________________________________________________________________________
 
-_PMathObj  _Variable::Compute (void) // compute or return the value
+HBLObjectRef  _Variable::Compute (void) // compute or return the value
 {
     // call_count++;
+    
+    auto update_var_value = [this] () -> void {
+        if (!varValue || varFormula->HasChanged()) {
+            HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
+            DeleteObject (varValue);
+            varValue = new_value;
+            //DeleteObject (varValue);
+            //(varValue = varFormula->Compute())->AddAReference();
+        }
+    };
   
     if (varFlags & HY_VARIABLE_COMPUTING) {
-      FlagError (_String ("A recursive dependency error in _Variable::Compute; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+      HandleApplicationError (_String ("A recursive dependency error in _Variable::Compute; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+      return new _MathObject;
     }
   
     varFlags |= HY_VARIABLE_COMPUTING;
@@ -268,21 +292,14 @@ _PMathObj  _Variable::Compute (void) // compute or return the value
             if ((varFlags & HY_DEP_V_COMPUTED) && varValue) {
                 varFlags &= HY_VARIABLE_COMPUTING_CLR;
                 return varValue;
-            } else if (varFormula->HasChanged()||!varValue) {
-                _PMathObj new_value = (_PMathObj)varFormula->Compute()->makeDynamic();
-                DeleteObject (varValue);
-                varValue = new_value;
-                //printf ("Recomputing value of %s => %g\n", theName->sData, varValue->Value());
+            } else {
+                update_var_value ();
             }
+                
             varFlags |= HY_DEP_V_COMPUTED;
           
-        } else if (varFormula->HasChanged()||!varValue) {
-              /* if varFormula depends on *this* variable, doing delete-set
-                 would cause the expression to reference deleted memory.
-               */
-            _PMathObj new_value = (_PMathObj)varFormula->Compute()->makeDynamic();
-            DeleteObject (varValue);
-            varValue = new_value;
+        } else {
+            update_var_value ();
         }
 
     }
@@ -303,7 +320,7 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
         _Variable* thisVar = FetchVar (i);
         if (!thisVar->IsIndependent()) {
             if (thisVar->CheckFForDependence (theIndex)) {
-                long f = thisVar->GetAVariable();
+                long f = thisVar->get_index();
                 if (rec.Find(f)<0) {
                     rec<<f;
                 }
@@ -313,17 +330,18 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
 }
 
 //__________________________________________________________________________________
-void  _Variable::SetValue (_Parameter new_value) {
+void  _Variable::SetValue (hyFloat new_value) {
 // set the value of the var
   this->SetValue (new _Constant (new_value), false);
 }
 
 //__________________________________________________________________________________
-void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
+void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the var
 {
     //hasBeenChanged = true;
     if (varFlags & HY_VARIABLE_COMPUTING) {
-        FlagError (_String ("A recursive dependency error in _Variable::SetValue; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+        HandleApplicationError (_String ("A recursive dependency error in _Variable::SetValue; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+        return ;
     }
   
     varFlags &= HY_VARIABLE_SET;
@@ -331,9 +349,9 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 
     long     valueClass = theP->ObjectClass();
   
-    /*bool     doPrint = (*theName) == _String("_value_");
+    /*bool     doPrint = (*theName) == _String("_pattern_info_");
     if (doPrint) {
-      printf ("Setting %s to %s\n", theName->sData, _String((_String*)theP->toStr()).sData);
+      printf ("Setting %s to %s\n", theName->get_str(), _String((_String*)theP->toStr()).get_str());
     }*/
 
     if (valueClass==NUMBER) {
@@ -343,6 +361,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 
             // also update the fact that this variable is no longer dependent in all declared
             // variable containers which contain references to this variable
+            
             for (unsigned long i = 0UL; i<variablePtrs.lLength; i++) {
                 if (freeSlots.Find(i)>=0) {
                     continue;
@@ -357,7 +376,7 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
                 }
             }
             for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
-                if (((_String*)likeFuncNamesList(i))->sLength) {
+                if (((_String*)likeFuncNamesList(i))->nonempty()) {
                     ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(theIndex);
                 }
 
@@ -397,12 +416,12 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
             varValue=nil;
         }
       
-        if (valueClass==TREE) {
-            variablePtrs.lData[theIndex] = (long)(((_TheTree*)theP)->makeDynamicCopy(GetName()));
+        /*if (valueClass & (TREE)) {
+            variablePtrs.list_data[theIndex] = (long)(((_TheTree*)theP)->makeDynamicCopy(GetName()));
             DeleteObject(this);
-        } else {
+        } else*/ {
             if (dup) {
-                varValue = (_PMathObj)theP->makeDynamic();
+                varValue = (HBLObjectRef)theP->makeDynamic();
             } else {
                 varValue = theP;
             }
@@ -411,11 +430,12 @@ void  _Variable::SetValue (_PMathObj theP, bool dup) // set the value of the var
 }
 
 //__________________________________________________________________________________
-void  _Variable::SetNumericValue (_Parameter v) // set the value of the var to a number
+void  _Variable::SetNumericValue (hyFloat v) // set the value of the var to a number
 {
     //hasBeenChanged = true;
     if (varFlags & HY_VARIABLE_COMPUTING) {
-      FlagError (_String ("A recursive dependency error in _Variable::SetNumericValue; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+      HandleApplicationError (_String ("A recursive dependency error in _Variable::SetNumericValue; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+      return;
     }
 
     varFlags &= HY_VARIABLE_SET;
@@ -433,12 +453,12 @@ void  _Variable::SetNumericValue (_Parameter v) // set the value of the var to a
 
 //__________________________________________________________________________________
 
-void  _Variable::CheckAndSet (_Parameter c, bool oob) // set the value of the var
+void  _Variable::CheckAndSet (hyFloat c, bool oob) // set the value of the var
 {
     //hasBeenChanged = true;
     varFlags &= HY_VARIABLE_SET;
     varFlags |= HY_VARIABLE_CHANGED;
-    _Parameter l = lowerBound+1.0e-30,
+    hyFloat l = lowerBound+1.0e-30,
                u = upperBound-1.0e-30;
     if (c<l || c>u ) {
         if (oob) {
@@ -462,7 +482,7 @@ void  _Variable::CheckAndSet (_Parameter c, bool oob) // set the value of the va
 }
 
 //__________________________________________________________________________________
-void    _Variable::SetBounds (_Parameter lb, _Parameter ub)
+void    _Variable::SetBounds (hyFloat lb, hyFloat ub)
 {
     lowerBound = lb;
     upperBound = ub;
@@ -492,9 +512,9 @@ void    _Variable::ClearConstraints (void)
 {
     if (IsCategory ()) {
         _Variable newVar (*GetName(), IsGlobal());
-        newVar.SetValue ((_PMathObj)Compute()->makeDynamic(),false);
+        newVar.SetValue ((HBLObjectRef)Compute()->makeDynamic(),false);
         ReplaceVar ( &newVar);
-        /*_Matrix * modelMatrix = (_Matrix*)LocateVar(modelMatrixIndices.lData[1])->GetValue();
+        /*_Matrix * modelMatrix = (_Matrix*)LocateVar(modelMatrixIndices.list_data[1])->GetValue();
         for (long k=0; k<4; k++)
             for (long k2 = 0; k2<4; k2++)
                 if (k!=k2)
@@ -504,8 +524,10 @@ void    _Variable::ClearConstraints (void)
                 }
         */
     } else {
+        //printf ("ClearConstraints %s %x\n", GetName()->get_str(), varFormula);
+
         if (!IsIndependent()) {
-            SetValue ((_PMathObj)Compute()->makeDynamic(),false);
+            SetValue ((HBLObjectRef)Compute()->makeDynamic(),false);
         }
         SetBounds (DEFAULTLOWERBOUND,DEFAULTUPPERBOUND);
     }
@@ -535,7 +557,8 @@ bool _Variable::IsConstant (void)
 void  _Variable::SetFormula (_Formula& theF) {
 //  bind the variable to an expression
     if (varFlags & HY_VARIABLE_COMPUTING) {
-      FlagError (_String ("A recursive dependency error in _Variable::SetFormula; this is an HBL implementation bug; offending variable name is '") & *GetName() & "'");
+      HandleApplicationError (_String ("A recursive dependency error in _Variable::SetFormula; this is an HBL implementation bug; offending variable name is '") & *GetName() & "'");
+      return ;
     }
 
     bool changeMe    = false,
@@ -548,9 +571,9 @@ void  _Variable::SetFormula (_Formula& theF) {
     _Formula* right_hand_side = &theF;
 
     if (isAConstant) {
-        _PMathObj theP = theF.Compute();
+        HBLObjectRef theP = theF.Compute();
         if (theP) {
-            right_hand_side = new _Formula ((_PMathObj)theP->makeDynamic(),false);
+            right_hand_side = new _Formula ((HBLObjectRef)theP->makeDynamic(),false);
         } else {
             return;
         }
@@ -559,10 +582,9 @@ void  _Variable::SetFormula (_Formula& theF) {
     _SimpleList vars;
     _AVLList vA (&vars);
     theF.ScanFForVariables (vA,true);
-    vA.ReorderList();
 
-    if (vars.BinaryFind(theIndex)>=0) {
-        WarnError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr())&" because it would create a circular dependance."));
+    if (vA.Find((BaseRefConst)theIndex)>=0) {
+        HandleApplicationError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr(kFormulaStringConversionNormal))&" because it would create a circular dependance."));
         if (&theF!=right_hand_side) {
             delete right_hand_side;
         }
@@ -592,7 +614,7 @@ void  _Variable::SetFormula (_Formula& theF) {
 
     //_Formula::Duplicate ((BaseRef)myF);
     varFormula = new _Formula;
-    varFormula->Duplicate ((BaseRef)right_hand_side);
+    varFormula->Duplicate (right_hand_side);
 
     // mod 20060125 added a call to simplify constants
     varFormula->SimplifyConstants ();
@@ -604,14 +626,10 @@ void  _Variable::SetFormula (_Formula& theF) {
               *deferSetFormula << theIndex;
               deferIsConstant  << isAConstant;
           } else {
-              long i;
-              _SimpleList tcache;
-              long        iv;
-
-              i = variableNames.Traverser (tcache,iv,variableNames.GetRoot());
-
-              for (; i >= 0; i = variableNames.Traverser (tcache,iv)) {
-                  _Variable* theV = FetchVar(i);
+              
+              for (AVLListXIteratorKeyValue variable_record : AVLListXIterator (&variableNames)) {
+                  _Variable * theV = LocateVar(variable_record.get_value());
+                  //printf ("%s\n", theV->GetName()->get_str());
                   if (theV->IsContainer()) {
                       _VariableContainer* theVC = (_VariableContainer*)theV;
                       if (theVC->SetDependance(theIndex) == -2) {
@@ -620,12 +638,12 @@ void  _Variable::SetFormula (_Formula& theF) {
                       }
                   }
               }
-              {
-                  for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
-                      if (((_String*)likeFuncNamesList(i))->sLength) {
-                          ((_LikelihoodFunction*)likeFuncList(i))->UpdateIndependent(theIndex,isAConstant);
-                      }
-              }
+              
+              likeFuncNamesList.ForEach ([this, isAConstant] (BaseRef lf_name, unsigned long idx) -> void {
+                  if (((_String*)lf_name)->nonempty()) {
+                      ((_LikelihoodFunction*)likeFuncList(idx))->UpdateIndependent(theIndex,isAConstant);
+                  }
+              });
           }
     }
 
@@ -693,7 +711,7 @@ void _Variable::MarkDone (void) {
 }
 
 //__________________________________________________________________________________
-_PMathObj    _Variable::ComputeReference (_MathObject const * context) const {
+HBLObjectRef    _Variable::ComputeReference (_MathObject const * context) const {
     _String reference_string (*GetName());
     reference_string = AppendContainerName(reference_string, (_VariableContainer const*)context);
     
@@ -702,21 +720,27 @@ _PMathObj    _Variable::ComputeReference (_MathObject const * context) const {
 
 //__________________________________________________________________________________
 _String const    _Variable::ContextFreeName(void) const {
-    long location = theName->FindBackwards (".", 0, -1);
-    if (location > 0) {
-       return theName->Cut (location+1,-1); 
+    static const _String kDot (".");
+    
+    long location = theName->FindBackwards (kDot, 0L, kStringEnd);
+    if (location > 0L) {
+       return theName->Cut (location+1L,kStringEnd);
     }  
     return *theName;
 }
 
 //__________________________________________________________________________________
 _String const   _Variable::ParentObjectName(void) const {
-    long location = theName->FindBackwards (".", 0, -1);
-    if (location > 0) {
-       return theName->Cut (0,location-1); 
-    }  
-    return emptyString;
+    static const _String kDot (".");
+    
+    long location = theName->FindBackwards (kDot, 0L, kStringEnd);
+    if (location > 0L) {
+        return theName->Cut (0, location-1L);
+    }
+    return kEmptyString;
 }
+
+//__________________________________________________________________________________
 
 _String const WrapInNamespace (_String const& name, _String const* context) {
   if (context) {
@@ -726,11 +750,11 @@ _String const WrapInNamespace (_String const& name, _String const* context) {
 }
 
 //__________________________________________________________________________________
-long    DereferenceString (_PMathObj v, _MathObject const * context, char reference_type){
+long    DereferenceString (HBLObjectRef v, _MathObject const * context, char reference_type){
     if (v && v->ObjectClass () == STRING) {
         _FString * value = (_FString*)v;
-        _String referencedVariable = *value->theString;
-        if (reference_type == HY_STRING_LOCAL_DEREFERENCE && context) {
+        _String referencedVariable = value->get_str();
+        if (reference_type == kStringLocalDeference && context) {
             referencedVariable = AppendContainerName(referencedVariable, (_VariableContainer*)context);
         }
         return LocateVarByName(referencedVariable);
@@ -740,7 +764,7 @@ long    DereferenceString (_PMathObj v, _MathObject const * context, char refere
 
 //__________________________________________________________________________________
 long    DereferenceVariable (long index, _MathObject const * context, char reference_type){
-    if (reference_type == HY_STRING_DIRECT_REFERENCE) {
+    if (reference_type == kStringDirectReference) {
         return index;
     }
     

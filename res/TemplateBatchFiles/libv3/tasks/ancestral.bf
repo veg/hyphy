@@ -96,7 +96,7 @@ ancestral._bacCacheInstanceCounter = 0;
  * @example
  */
 function ancestral.build (_lfID, _lfComponentID, options) {
-    return ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, options["sample"]);
+    return ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, options["sample"], options["marginal"]);
 }
 
 
@@ -110,7 +110,8 @@ function ancestral.build (_lfID, _lfComponentID, options) {
  * @returns an integer index to reference
  * the opaque structure for subsequent operations
  */
-lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample) {
+lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample, doMarginal) {
+
 
     /* 1; grab the information AVL from the likelihood function */
 
@@ -132,16 +133,23 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
             }
         });
     } else {
-        DataSet _bac_ancDS = ReconstructAncestors( ^ _lfID, {
-            {
-                _lfComponentID
-            }
-        });
+        if (doMarginal) {
+            DataSet _bac_ancDS = ReconstructAncestors( ^ _lfID, {
+                {
+                    _lfComponentID
+                }
+            }, MARGINAL);
+        } else {
+            DataSet _bac_ancDS = ReconstructAncestors( ^ _lfID, {
+                {
+                    _lfComponentID
+                }
+            });
+        }
     }
 
-
     _bac_tree_avl = ( ^ _bac_treeID) ^ 0;
-
+    
     GetString(_bacSequenceNames, ^ _bac_filterID, -1);
 
 
@@ -157,6 +165,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     DataSetFilter _bacAF = CreateFilter(_bac_ancDS, _bacCharsPerState, "", "", _bacCharProperties["EXCLUSIONS"]);
     GetString(_bacAncestralNames, _bacAF, -1);
     GetDataInfo(_bacAncestralPatternMap, _bacAF);
+
 
     /* now start building a matrix of mapped states;
 
@@ -217,7 +226,6 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     }["_MATRIX_ELEMENT_COLUMN_"];
 
 
-    debug = 0;
     /* loop over branches (rows) */
     for (_bacBranchCounter = 1; _bacBranchCounter <= _bacBranchCount; _bacBranchCounter += 1) {
         _bacRowIndex = _bacMapTreeNodeToDF[_bacBranchCounter - 1];
@@ -317,7 +325,7 @@ lfunction ancestral._branch_filter_helper (ancestral_data, branch_filter, select
                         continue;
                     }
                 } else {
-                    if (Call (branch_filter, node_name) == FALSE) {
+                    if (Call (branch_filter, ((ancestral_data["TREE_AVL"])[k])) == FALSE) {
                         continue;
                     }
                 }
@@ -329,6 +337,53 @@ lfunction ancestral._branch_filter_helper (ancestral_data, branch_filter, select
 
     return Abs (selected_branches);
 }
+
+/*******************************************/
+
+
+lfunction ancestral._select_internal (node) {
+    return Abs (node["Children"]);
+}
+
+/*******************************************/
+/**
+ * @name ancestral.Sequences
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ 
+ * @returns
+        {
+         "Node Name" :  {String} inferred ancestral sequence,
+        }
+
+ */
+
+lfunction ancestral.Sequences (ancestral_data) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+    
+    branches =  ancestral._branch_filter_helper (ancestral_data, "ancestral._select_internal", selected_branches, selected_branch_names) + 1;    
+    sites  = (ancestral_data["DIMENSIONS"])["SITES"];
+    result = {};
+    selected_branches + {{(Abs(ancestral_data["TREE_AVL"])-2),0}};
+    selected_branch_names + "root";
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];    
+        seq_string = ""; seq_string * sites;
+        
+        for (s = 0; s < sites; s += 1) {
+            own_state    = (ancestral_data["MATRIX"])[self][s];
+            seq_string * (ancestral_data["CHARS"])[own_state];
+            
+        }   
+        seq_string * 0;
+        result[selected_branch_names[b]] = seq_string;
+    }
+    
+    return result;
+}
+
+
 
 /*******************************************/
 /**
@@ -366,7 +421,7 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
     selected_branches       = {};
     selected_branch_names   = {};
 
-    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);;
+    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);
 
     sites  = (ancestral_data["DIMENSIONS"])["SITES"];
     counts = {branches,sites};

@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (spond@ucsd.edu)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@ucsd.edu)
  
  Module Developers:
@@ -42,14 +42,13 @@
 
 #include "baseobj.h"
 #include "defines.h"
-#include "errorfns.h"
-#include "list.h"
 #include "avllistx.h"
 #include "hy_strings.h"
 #include "_hyExecutionContext.h"
 
-class   _MathObject : public BaseObj  //abstract math operations class
-{
+
+
+class   _MathObject : public BaseObj  { //abstract math operations class
   
 protected:
   _MathObject* _extract_argument (_List * arguments, unsigned long index, bool fill_in) const;
@@ -57,235 +56,73 @@ protected:
 
 public:
 
-    virtual _MathObject* Add        (_MathObject*)     {
-        warnError (-666); ;
-        return this;
-    }
-    virtual _MathObject* Sub        (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Minus      (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Sum        (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Mult       (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Div        (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* lDiv       (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* longDiv    (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Raise      (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual void         Assign     (_MathObject*)     {
-        warnError (-666);
-    }
-    virtual bool         Equal      (_MathObject*)     {
-        warnError (-666);
-        return false;
-    }
-    virtual _MathObject* Abs        (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Sin        (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Cos        (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Tan        (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Exp        (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Log        (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Sqrt       (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Gamma      (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Erf        (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* LnGamma    (void)             {
-        warnError (-666);    // <-- added by afyp, February 7, 2007
-        return this;
-    }
-    virtual _MathObject* Beta       (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* IGamma     (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* CChi2      (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* IBeta      (_MathObject*,_MathObject*) {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Simplex    (void)             {
-        warnError (-666);
-        return this;
-    }
-
-    virtual _MathObject* Simplify    (void)             {
-      warnError (-666);
-      return this;
-    }
-
-   virtual _MathObject* Min        (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Max        (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* InvChi2    (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* ZCDF       (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Time       (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Arctan     (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Less       (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Random     (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* Greater    (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* LessEq     (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* GreaterEq  (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* AreEqual   (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* NotEqual   (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* LAnd       (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* LOr        (_MathObject*)     {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* GammaDist  (_MathObject*,_MathObject*) {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* CGammaDist (_MathObject*,_MathObject*) {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* LNot       (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* TipCount   (void)             {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* BranchCount (void)            {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* TipName     (_MathObject*)    {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* BranchName  (_MathObject*)    {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* BranchLength(_MathObject*)    {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* RerootTree  (_MathObject*)    {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* TEXTreeString(_MathObject*) const {
-        warnError (-666);
-        return new _MathObject;
-    }
+    virtual _MathObject* Add        (_MathObject*)     ;
+    virtual _MathObject* Sub        (_MathObject*)     ;
+    virtual _MathObject* Minus      (void)             ;
+    virtual _MathObject* Sum        (void)             ;
+    virtual _MathObject* Mult       (_MathObject*)     ;
+    virtual _MathObject* Div        (_MathObject*)     ;
+    virtual _MathObject* lDiv       (_MathObject*)     ;
+    virtual _MathObject* longDiv    (_MathObject*)     ;
+    virtual _MathObject* Raise      (_MathObject*)     ;
+    virtual bool         Equal      (_MathObject*)     ;
+    virtual _MathObject* Abs        (void)             ;
+    virtual _MathObject* Sin        (void)             ;
+    virtual _MathObject* Cos        (void)             ;
+    virtual _MathObject* Tan        (void)             ;
+    virtual _MathObject* Exp        (void)             ;
+    virtual _MathObject* Log        (void)             ;
+    virtual _MathObject* Sqrt       (void)             ;
+    virtual _MathObject* Gamma      (void)             ;
+    virtual _MathObject* Erf        (void)             ;
+    virtual _MathObject* LnGamma    (void)             ;
+    virtual _MathObject* Beta       (_MathObject*)     ;
+    virtual _MathObject* IGamma     (_MathObject*)     ;
+    virtual _MathObject* CChi2      (_MathObject*)     ;
+    virtual _MathObject* IBeta      (_MathObject*,_MathObject*) ;
+    virtual _MathObject* Simplex    (void)             ;
+    
+    virtual _MathObject* Simplify    (void)             ;
+    
+    virtual _MathObject* Min        (_MathObject*)     ;
+    virtual _MathObject* Max        (_MathObject*)     ;
+    virtual _MathObject* InvChi2    (_MathObject*)     ;
+    virtual _MathObject* ZCDF       (void)             ;
+    virtual _MathObject* Time       (void)             ;
+    virtual _MathObject* Arctan     (void)             ;
+    virtual _MathObject* Less       (_MathObject*)     ;
+    virtual _MathObject* Random     (_MathObject*)     ;
+    virtual _MathObject* Greater    (_MathObject*)     ;
+    virtual _MathObject* LessEq     (_MathObject*)     ;
+    virtual _MathObject* GreaterEq  (_MathObject*)     ;
+    virtual _MathObject* AreEqual   (_MathObject*)     ;
+    virtual _MathObject* NotEqual   (_MathObject*)     ;
+    virtual _MathObject* LAnd       (_MathObject*)     ;
+    virtual _MathObject* LOr        (_MathObject*)     ;
+    virtual _MathObject* GammaDist  (_MathObject*,_MathObject*) ;
+    virtual _MathObject* CGammaDist (_MathObject*,_MathObject*) ;
+    virtual _MathObject* LNot       (void)             ;
+    virtual _MathObject* TipCount   (void)             ;
+    virtual _MathObject* BranchCount (void)            ;
+    virtual _MathObject* TipName     (_MathObject*)    ;
+    virtual _MathObject* BranchName  (_MathObject*)    ;
+    virtual _MathObject* BranchLength(_MathObject*)    ;
+    virtual _MathObject* RerootTree  (_MathObject*)    ;
+    virtual _MathObject* TEXTreeString(_MathObject*) const ;
     virtual _MathObject* Type                          (void);
-    virtual _MathObject* PlainTreeString(_MathObject*,_MathObject*) {
-        warnError (-666);
-        return this;
-    }
-    virtual _MathObject* FormatNumberString (_MathObject*,_MathObject*) {
-        warnError (-666);
-        return this;
-    }
-    virtual _Parameter   Value (void)              {
-        warnError (-666);
-        return 0.0;
-    }
+    virtual _MathObject* PlainTreeString(_MathObject*,_MathObject*) ;
+    virtual _MathObject* FormatNumberString (_MathObject*,_MathObject*) ;
+    virtual hyFloat   Value (void)              ;
+    
     virtual _MathObject* Compute (void)            {
         return this;
     }
-    virtual void         ScanForVariables (_AVLList&,bool = false, _AVLListX* = nil, long = 0)
+    virtual void         ScanForVariables (_AVLList&,bool = false, _AVLListX* = nil, long = 0) const
     {}
 
-    virtual      BaseRef makeDynamic               (void);
+    virtual      BaseRef makeDynamic               (void) const;
+    virtual      void    Duplicate                 (BaseRefConst);
+    
     virtual bool         IsVariable (void)         {
         return false;
     }
@@ -299,7 +136,7 @@ public:
     virtual bool         IsIndependent (void)       {
         return true;
     }
-    virtual unsigned long  ObjectClass (void)       {
+    virtual unsigned long  ObjectClass (void) const       {
         return HY_UNDEFINED;
     }
     // returns a unique ID for this object
@@ -318,10 +155,18 @@ public:
     virtual   bool       IsConstant (void) {
         return true;
     }
+    
+    private :
+        _MathObject* _null_handler ();
+    
+    
+    
 };
 
 // pointer to a math object
-typedef _MathObject* _PMathObj ;
+typedef _MathObject* HBLObjectRef ;
+typedef _MathObject const * HBLObjectRefConst ;
+
 
 
 #endif

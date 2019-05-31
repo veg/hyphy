@@ -3,6 +3,7 @@ LoadFunctionLibrary("../all-terms.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 LoadFunctionLibrary("TreeTools");
+LoadFunctionLibrary("distances.bf");
 
 /** @module trees */
 
@@ -90,12 +91,13 @@ lfunction trees.GetTreeString._sanitize(string) {
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", "intNode");
     }
-    string = string ^ {
+    /* this strips bootstrap values; not necessary for 2.4 */
+    /* string = string ^ {
         {
             "\\)[0-9]+(\\.[0-9]*)?\:",
             "):"
         }
-    };
+    }; */
 
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", None);
@@ -124,22 +126,16 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
         }
 
         if (utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
-            fprintf(stdout, "\n\n>A tree was found in the data file: ``", utility.GetEnvVariable("DATAFILE_TREE"), "``\n\n>Would you like to use it (y/n)? ");
-            fscanf(stdin, "String", response);
-            if (response == "n" || response == "N") {
-                utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);
-                IS_TREE_PRESENT_IN_DATA = 0;
-            } else {
-                treeString = trees.GetTreeString._sanitize(utility.GetEnvVariable("DATAFILE_TREE"));
-                utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", TRUE);
-            }
-            fprintf(stdout, "\n\n");
+            treeString = trees.GetTreeString._sanitize(utility.GetEnvVariable("DATAFILE_TREE"));
+            utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", TRUE);
         }
 
         if (!utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
             SetDialogPrompt("Please select a tree file for the data:");
             fscanf(PROMPT_FOR_FILE, REWIND, "Raw", treeString);
             fprintf(stdout, "\n");
+
+            look_for_newick_tree = utility.getGlobalValue ("LAST_FILE_PATH");
 
             if (regexp.Find(treeString, "^#NEXUS")) {
                 ExecuteCommands(treeString);
@@ -195,7 +191,11 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
         }
     }
 
-    return treeString;
+    return
+    {
+        utility.getGlobalValue("terms.data.file"): look_for_newick_tree,
+        utility.getGlobalValue("terms.data.tree"): treeString
+    };
 }
 
 
@@ -378,6 +378,13 @@ lfunction trees.RootTree(tree_info, root_on) {
  */
 lfunction trees.ExtractTreeInfo(tree_string) {
 
+    if (Type (tree_string) == "AssociativeList") {
+        file_name   = tree_string[^"terms.data.file"];
+        tree_string = tree_string[^"terms.data.tree"];
+    } else {
+        file_name = None;
+    }
+
     Topology T = tree_string;
 
     branch_lengths = BranchLength(T, -1);
@@ -393,6 +400,7 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     }
 
     GetInformation(modelMap, T);
+
 
     leaves_internals = {};
     flat_tree = T ^ 0;
@@ -414,7 +422,10 @@ lfunction trees.ExtractTreeInfo(tree_string) {
         ^"terms.trees.model_map": modelMap,
         ^"terms.trees.partitioned": leaves_internals,
         ^"terms.trees.model_list": Columns(modelMap),
-        ^"terms.trees.rooted" : rooted
+        ^"terms.trees.rooted" : rooted,
+        ^"terms.trees.meta" : T.__meta,
+        ^"terms.data.file" : file_name
+
     };
 }
 
@@ -425,8 +436,18 @@ lfunction trees.ExtractTreeInfo(tree_string) {
  */
 
 lfunction trees.HasBranchLengths (tree_info) {
-
     return utility.Array1D (tree_info [^"terms.trees.partitioned"]) == utility.Array1D (tree_info [^"terms.branch_length"]);
+}
+
+/**
+ * @name trees.BootstrapSupport
+ * @param {Dictionary} tree information object (e.g. as returned by LoadAnnotatedTopology)
+ * @returns a {Dictionary} (could be empty or partially filled) with "node name" -> bootstrap support
+ */
+
+lfunction trees.BootstrapSupport (tree_info) {
+    return utility.Map (utility.Filter (tree_info[^"terms.trees.meta"], "_value_", "(_value_/'bootstrap')"), "_value_",
+                        "_value_['bootstrap']");
 }
 
 /**
@@ -446,7 +467,8 @@ function trees.GetBranchCount(tree_string) {
  * @param {String} tree_string
  * @returns {Number} total branch count
  */
-function trees.SortedBranchLengths(tree_string) {
+
+lfunction trees.SortedBranchLengths(tree_string) {
 
     tree_count = trees.GetBranchCount(tree_string);
     Tree T = tree_string;
@@ -466,10 +488,592 @@ function trees.SortedBranchLengths(tree_string) {
  * @param {String} tree_string
  * @returns {Matrix} 1xN sorted branch names
  */
-function trees.BranchNames(tree) {
-    tree_string = tree[terms.trees.newick];
+
+lfunction trees.BranchNames(tree) {
+    tree_string = tree[^"terms.trees.newick"];
     Topology T = tree_string;
     branch_names = BranchName(T, -1);
     return branch_names;
 }
 
+/**
+ * Compute branch labeling using parsimony
+ * @name trees.ParsimonyLabel
+ * @param 	{String} tree ID
+ * @param 	{Dict} 	 leaf -> label
+ 					 labels may be missing for some of the leaves to induce partial labeling of the tree
+ * @returns {Dict} 	 {"score" : value, "labels" : Internal Branch -> label}
+ */
+
+lfunction trees.ParsimonyLabel(tree_id, given_labels) {
+   tree_avl = (^tree_id) ^ 0;
+   label_values = utility.UniqueValues (given_labels);
+   label_count  = utility.Array1D (label_values);
+   labels = {};
+   scores = {}; // node name -> score of optimal labeling staring at this now given parent state
+   optimal_labeling = {}; // node name -> current node labeling which achieves this score
+   resulting_labels = {}; // internal nodes -> label
+
+   // pass 1 to fill in the score matrix
+   for (k = 0; k < Abs (tree_avl) ; k += 1) {
+   	 	node_name = (tree_avl[k])["Name"];
+   	 	node_children = (tree_avl[k])["Children"];
+   	 	c_count = Abs (node_children);
+   	 	if (c_count) { // internal node
+   	 		// first check to see if all the children are labeled
+
+   	 		c_names = {c_count , 1};
+
+			for (c = 0; c < c_count; c+=1) {
+				c_names[c] = (tree_avl[node_children[c]])["Name"];
+   	 			if (scores / c_names[c] == FALSE)  {
+   	 				break;
+   	 			}
+
+   	 		}
+   	 		if (c == c_count) {
+
+   	 			scores [node_name] = {1, label_count};
+   	 			labels [node_name] = {1, label_count};
+
+
+    	 		for (parent_state = 0; parent_state < label_count; parent_state+=1) {
+    	 			best_score = 1e100;
+    	 			best_state = None;
+    	 			for (my_state = 0; my_state < label_count; my_state+=1) {
+    	 				my_score = 0;
+						for (c = 0; c < c_count; c+=1) {
+							my_score += (scores [c_names[c]])[my_state];
+						}
+						if (my_state != parent_state) {
+							my_score += 1;
+						}
+						if (my_score < best_score) {
+							best_score = my_score;
+							best_state = my_state;
+						}
+					}
+   	 	 			(scores [node_name])[parent_state] = best_score;
+   	 	 			(labels [node_name])[parent_state] = best_state;
+   	 	 		}
+
+   	 	 	}
+   	 	} else {
+   	 		if (utility.Has (given_labels, node_name, "String")) {
+   	 			node_label = given_labels[node_name];
+   	 			scores [node_name] = {1, label_count};
+   	 			labels [node_name] = {1, label_count};
+
+   	 			for (z = 0; z < label_count; z+=1) {
+   	 				if (node_label == label_values[z]) {
+   	 					break;
+   	 				}
+   	 			}
+
+    	 			for (i = 0; i < label_count; i+=1) {
+   	 				(scores [node_name]) [i] = 1 - (z == i);
+   	 				(labels [node_name]) [i] = z;
+   	 			}
+   	 		}
+   	 	}
+   }
+
+
+   // pass 2 to choose the best state for subtree parents
+
+
+   total_score = 0;
+
+   for (k = 0; k < Abs (tree_avl); k += 1) {
+   	 	node_name = (tree_avl[k])["Name"];
+   	 	node_children = (tree_avl[k])["Children"];
+   	 	c_count = Abs (node_children);
+   	 	if (c_count) { // internal node
+   	 		parent = (tree_avl[k])["Parent"];
+   	 		if (parent > 0) {
+   	 			if (utility.Has (scores, (tree_avl[parent])["Name"], "Matrix")) {
+   	 				continue;
+   	 			}
+   	 		}
+
+   	 		if (utility.Has (scores, node_name, "Matrix") == FALSE) {
+   	 			continue;
+   	 		}
+
+   	 		best_score = 1e100;
+   	 		best_label = None;
+
+   	 		for (i = 0; i < label_count; i+=1) {
+   	 			my_score = (scores [node_name])[i];
+
+   	 			if (my_score < best_score) {
+   	 				best_score = my_score;
+   	 				best_label = i;
+   	 			}
+   	 		}
+
+   	 		total_score += best_score;
+   	 		resulting_labels [node_name] = best_label;
+   	 	}
+ 	}
+
+   tree_avl = (^tree_id) ^ 1;
+   for (k = 2; k < Abs (tree_avl); k += 1) {
+   	 node_name = (tree_avl[k])["Name"];
+   	 if (utility.Array1D((tree_avl[k])["Children"])) {
+   	 	parent = (tree_avl[k])["Parent"];
+   	 	if (utility.Has (resulting_labels, (tree_avl[parent])["Name"], "Number")) {
+   	 		parent = resulting_labels[(tree_avl[parent])["Name"]];
+   	 		resulting_labels[node_name] = (labels [node_name])[parent];
+   	 	}
+   	 }
+   }
+
+   return {"score" : total_score, "labels" : utility.Map (resulting_labels, "_value_", "`&label_values`[_value_]")};
+   // pass 1 to choose the best state for subtree parents
+}
+
+/**
+ * Compute branch labeling using conjunction, i.e. node N is labeled 'X' iff
+ * all of the nodes that are in the subtree rooted at 'N' are also labeled 'N'
+ * @name trees.ConjunctionLabel
+ * @param 	{String} tree ID
+ * @param 	{Dict} 	 leaf -> label
+ 					 labels may be missing for some of the leaves to induce partial labeling of the tree
+ * @returns {Dict} 	 {"labeled" : # of labeled internal  nodes, "labels" : Internal Branch -> label}
+ */
+
+lfunction trees.ConjunctionLabel (tree_id, given_labels) {
+   tree_avl = (^tree_id) ^ 0;
+   label_values = utility.UniqueValues (given_labels);
+   label_count  = utility.Array1D (label_values);
+   labels = {};
+   resulting_labels = {}; // internal nodes -> label
+   inodes_labeled = 0;
+
+   // pass 1 to fill in the score matrix
+   for (k = 0; k < Abs (tree_avl) ; k += 1) {
+   	 	node_name = (tree_avl[k])["Name"];
+   	 	node_children = (tree_avl[k])["Children"];
+   	 	c_count = utility.Array1D (node_children);
+
+   	 	if (c_count) { // internal node
+   	 		// first check to see if all the children are labeled
+
+   	 	   	child_labels = {};
+
+			for (c = 0; c < c_count; c+=1) {
+				c_name = (tree_avl[node_children[c]])["Name"];
+   	 			if (utility.Has (labels, c_name, "String") == FALSE)  {
+   	 				break;
+   	 			}
+   	 			child_labels [labels[c_name]] = TRUE;
+
+   	 		}
+   	 		if (c == c_count) { // all children labeled
+    	 	   inodes_labeled += 1;
+    	 	   if (utility.Array1D (child_labels) == 1) {
+    	 	       labels [node_name] = (utility.Keys (child_labels))[0];
+    	 	       resulting_labels[node_name] = labels [node_name];
+    	 	   }
+   	 	 	}
+   	 	} else { // leaf
+   	 		if (utility.Has (given_labels, node_name, "String")) {
+                labels[node_name] = given_labels[node_name];
+   	 		}
+   	 	}
+   }
+
+
+
+   return {"labeled" : inodes_labeled, "labels" : resulting_labels};
+   // pass 1 to choose the best state for subtree parents
+}
+
+/**
+ * Annotate a tree string with using user-specified labels
+ * @name trees.ParsimonyLabel
+ * @param 	{String} tree ID
+ * @param 	{Dict/String} 	 node_name -> label OR (if string) (node_name) => name + annotation
+ * @param {String} a pair of characters to enclose the label in
+ * @param {Dict/String} node_name -> length OR (if string) (node_name) => length annotation
+ * @return {String} annotated string
+ */
+
+lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
+	theAVL = (^tree_id)^0;
+	_ost = "";
+	_ost * 256;
+
+	lastLevel = 0;
+	treeSize  = Abs(theAVL);
+	treeInfo  = theAVL[0];
+	rootIndex = treeInfo["Root"];
+
+	for (nodeIndex = 1; nodeIndex < treeSize; nodeIndex += 1) {
+        nodeInfo = theAVL[nodeIndex];
+        myDepth = nodeInfo["Depth"];
+        if (lastDepth < myDepth) {
+            if (lastDepth) {
+                _ost * ",";
+            }
+            for (pidx = lastDepth; pidx < myDepth; pidx += 1) {
+                _ost * "(";
+            }
+        } else {
+            if (lastDepth > myDepth) {
+                for (pidx = myDepth; pidx < lastDepth; pidx += 1) {
+                    _ost * ")";
+                }
+            } else {
+                _ost * ",";
+            }
+        }
+
+
+        if (Type (labels) == "String") {
+            _ost * Call (labels, nodeInfo["Name"]);
+        } else {
+            _ost * nodeInfo["Name"];
+            if (labels / nodeInfo["Name"]) {
+                if (Abs(labels[nodeInfo["Name"]])) {
+                    _ost * (chars[0] + labels[nodeInfo["Name"]] + chars[1]);
+                }
+            }
+        }
+
+        if (doLengths) {
+
+             if (nodeIndex < treeSize - 1) {
+                _ost * ":";
+                if (Type (doLengths) == "String") {
+                    _ost * Call (doLengths, nodeInfo);
+                } else {
+                    _ost * (""+nodeInfo ["Length"]);
+
+                }
+            }
+        }
+        lastDepth = myDepth;
+	}
+
+	_ost * 0;
+	return _ost;
+}
+
+
+/**
+ * Generate a symmetric binary tree on N leaves (only perfectly symmetric if N is a power of 2)
+ * @name trees.GenerateSymmetricTree
+ * @param 	{Number} N : number of leavers
+ * @param   {Bool} rooted : whether the tree is rooted
+ * @param 	{None/String} branch_name   : if a string, then it is assumed to be a function with an integer argument (node index) that generates branch names
+                                        default is to use numeric names
+ * @param 	{None/String} branch_length : if a string, then it is assumed to be a function with no arguments that generates branch lengths
+ * @return  {String} Newick tree string
+ */
+
+lfunction tree.GenerateSymmetricTree (N, rooted, branch_name, branch_length) {
+    assert (N>=2, "Can't generate trees with fewer than 2 leaves");
+    internal_nodes = N-2;
+    if (rooted) {
+        internal_nodes += 1;
+    }
+
+    total_nodes = N + internal_nodes;
+    flat_tree  = {total_nodes, 4}["-1"];
+
+
+    // each row represents the corresponding node (in its' index), [parent, child 1, child 2, child 3] record
+    // each node is represented with a [0, total_nodes-1] integer
+    // -1 means NULL
+    // for example ((1,2),(3,4)) will be represented as
+        /*
+           {4,-1,-1,-1}
+           {4,-1,-1,-1}
+           {5,-1,-1,-1}
+           {5,-1,-1,-1}
+           {6,0,1,-1}
+           {6,2,3,-1}
+           {-1,4,5,-1}
+        */
+
+    current_parent_node = N;
+    current_child_node  = 0;
+
+
+    while (current_parent_node < total_nodes) {
+        flat_tree[current_child_node][0] = current_parent_node;
+        flat_tree[current_child_node+1][0] = current_parent_node;
+        flat_tree[current_parent_node][1] = current_child_node;
+        if (current_child_node < total_nodes-2) {
+            flat_tree[current_parent_node][2] = current_child_node + 1;
+        }
+        current_parent_node += 1;
+        current_child_node += 2;
+        if (current_child_node == N-1) {
+            // if the number of leaves in not divisible for 2, we skip the unpaired leaf and attach it to the root
+            flat_tree[total_nodes-1][3-(rooted!=FALSE)] = N-1;
+            flat_tree[current_child_node][0] = total_nodes-1;
+            current_child_node += 1;
+        }
+    }
+
+
+    if (current_child_node < total_nodes - 1) { // rooted tree
+        /*
+        {
+            {4, -1, -1, -1}
+            {4, -1, -1, -1}
+            {5, -1, -1, -1}
+            {5, -1, -1, -1}
+            {-1, 0, 1, -1}
+            {-1, 2, 3, -1}
+            }
+        */
+        if (flat_tree[total_nodes-1][3] < 0) { // doesn't already have the 3rd leaf attached
+            flat_tree[total_nodes-1][3] = total_nodes-2;
+            flat_tree[total_nodes-2][0] = total_nodes-1;
+            flat_tree[flat_tree[total_nodes-1][1]] = total_nodes-1;
+            flat_tree[flat_tree[total_nodes-1][2]] = total_nodes-1;
+        }
+    }
+
+    return tree._NewickFromMatrix (&flat_tree, total_nodes-1, branch_name, branch_length);
+
+}
+
+
+/**
+ * Generate a ladder tree on N leaves
+ * @name trees.GenerateSymmetricTree
+ * @param 	{Number} N : number of leavers
+ * @param   {Bool} rooted : whether the tree is rooted
+ * @param 	{None/String} branch_name   : if a string, then it is assumed to be a function with an integer argument (node index) that generates branch names
+                                        default is to use numeric names
+ * @param 	{None/String} branch_length : if a string, then it is assumed to be a function with no arguments that generates branch lengths
+ * @return  {String} Newick tree string
+ */
+
+lfunction tree.GenerateLadderTree (N, rooted, branch_name, branch_length) {
+    assert (N>=2, "Can't generate trees with fewer than 2 leaves");
+    internal_nodes = N-2;
+    if (rooted) {
+        internal_nodes += 1;
+    }
+
+    total_nodes = N + internal_nodes;
+    flat_tree  = {total_nodes, 4}["-1"];
+
+
+    current_parent_node = N;
+    current_child_node  = 0;
+
+    // create the first cherry
+
+    flat_tree[current_child_node][0] = current_parent_node;
+    flat_tree[current_child_node+1][0] = current_parent_node;
+    flat_tree[current_parent_node][1] = current_child_node;
+    flat_tree[current_parent_node][2] = current_child_node + 1;
+    current_child_node = 2;
+    current_parent_node += 1;
+
+
+    while (current_parent_node < total_nodes) {
+        flat_tree[current_child_node][0] = current_parent_node;
+        flat_tree[current_parent_node-1][0] = current_parent_node;
+        flat_tree[current_parent_node][1] = current_parent_node-1;
+        flat_tree[current_parent_node][2] = current_child_node;
+        current_parent_node += 1;
+        current_child_node += 1;
+
+    }
+
+
+    if (current_child_node < N) { // unrooted tree
+        flat_tree[total_nodes-1][3] = N-1;
+        flat_tree[N-1][0] = total_nodes-1;
+    }
+
+    return tree._NewickFromMatrix (&flat_tree, total_nodes-1, branch_name, branch_length);
+
+}
+
+lfunction tree._NewickFromMatrix (flat_tree, index, branch_name, branch_length) {
+    if ((^flat_tree)[index][0] >= 0) { // not a root
+        if ((^flat_tree)[index][1] < 0) { // a leaf
+            if (branch_name) {
+                name = Call (branch_name, index);
+            } else {
+                name = "" + index;
+            }
+            if (branch_length) {
+                return name + ":" + Call (branch_length);
+            }
+            return name;
+        } else {
+            if (branch_length) {
+                return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+                        "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+                        "):" + Call (branch_length);
+
+            } else {
+                return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+                        "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+                        ")";
+            }
+        }
+    }  else {
+        if ((^flat_tree)[index][3] < 0) { // 2 root children
+            return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+                    "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+                    ")";
+        } else {
+            return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+            "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+            "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][3], branch_name, branch_length) +
+            ")";
+        }
+    }
+    return None;
+}
+
+/**
+ * Infer a neighbor joining tree from a data filter using a specific distance
+ * @name trees.infer.NJ
+ * @param 	{String} datafilter the ID of an existing datafilter
+ * @param 	{null/String/Matrix},
+        null   : use the default distance calculation appropriate for the datatype
+        String : a callback which takes (filter_id, seq1, seq2) arguments and returns d(seq1,seq2)
+        Matrix : a precomputed distance matrix (same order of rows/column as datafilter names)
+
+ * @return  {String} inferred tree string
+ */
+
+lfunction tree.infer.NJ (datafilter, distances) {
+
+    flush_distances = FALSE;
+    if (None == distances) { // use default distances
+        type = alignments.FilterType (datafilter);
+        if (type == ^"terms.nucleotide" || type == ^"terms.codon") {
+            distances = distances.nucleotide.tn93 (datafilter, null, null);
+            flush_distances = TRUE;
+        } else {
+            if (type == ^"terms.amino_acid" || type == ^"terms.binary") {
+                distances = distances.p_distance (datafilter, null);
+                flush_distances = TRUE;
+            } else {
+                io.ReportAnExecutionError ("No default distance available for filter type of `type`");
+            }
+        }
+    }
+
+    N = ^(datafilter + ".species");
+    assert (N == Rows (distances), "Incompatible dimensions for the distance matrix and datafilter");
+
+    if (N == 2) {
+		d1 = distances[0][1]/2;
+		treeNodes = {{0,1,d1__},
+					 {1,1,d1__},
+					 {2,0,0}};
+		cladesInfo = {{2,0}};
+	}
+	else {
+		if (N == 3) {
+			d1 = (distances[0][1]+distances[0][2]-distances[1][2])/2;
+			d2 = (distances[0][1]-distances[0][2]+distances[1][2])/2;
+			d3 = (distances[1][2]+distances[0][2]-distances[0][1])/2;
+			treeNodes = {{0,1,d1__},
+						 {1,1,d2__},
+						 {2,1,d3__}
+						 {3,0,0}};
+
+			cladesInfo = {{3,0}};
+		}
+		else {
+			njm = (distances > 0) >= N;
+
+			treeNodes 		= {2*N,3};
+
+           for (i = 0; i < 2*N; i += 1) {
+                treeNodes[i][0] = njm[i][0]; // node index; leaves in [0,N), internal nodes N and higher
+                treeNodes[i][1] = njm[i][1]; // node depth relative to the root
+                treeNodes[i][2] = njm[i][2]; // branch length
+            }
+
+            DeleteObject (njm);
+		}
+	}
+
+    if (flush_distances) {
+        DeleteObject (distances);
+    }
+
+    return tree._matrix2string (treeNodes, N, alignments.GetSequenceNames (datafilter), TRUE);
+
+}
+
+/* ____________________________________________*/
+
+/**
+ * Convert a matrix representation of a tree into Newick
+ * @name trees._matrix2string
+ * @param 	{Matrix} matrix_form : Kx3 matrix;
+            each row represents ?
+ * @param 	{Number} N : number of leaves
+ * @param 	{Matrix/Dict} names : leaf index -> name
+ * @param 	{Bool} do_lengths : include branch lengths in the output
+
+ * @return  {String} newick tree string
+ */
+
+lfunction tree._matrix2string (matrix_form, N, names, do_lengths) {
+
+	newick = ""; newick * 1024;
+
+	p = 0;                 // tree depth of previous node
+	k = 0;                 // current row in matrix_form
+
+	m = matrix_form[0][1]; // current tree depth (0 == root)
+	n = matrix_form[0][0]; // current node index
+
+	while (m) {
+		if (m>p) { // going down in the tree
+			if (p) {
+				newick * ",";
+			}
+			for (j=p; j<m; j += 1 ) {
+				newick * "(";
+			}
+		} else { // going up in the tree
+			if (m<p) {
+				for (j=m;j<p; j += 1) {
+					newick * ")";
+				}
+			}
+			else {
+				newick * ",";
+			}
+		}
+
+		if (n < N) {
+		    newick * names [n];
+		}
+
+		if (do_lengths) {
+			newick * (":"+matrix_form[k][2]);
+		}
+
+		k += 1;
+		p = m;
+		n = matrix_form[k][0];
+		m = matrix_form[k][1];
+	}
+
+	for (j=m;j<p; j += 1) {
+		newick *")";
+	}
+
+	newick *0;
+	return newick;
+}

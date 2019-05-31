@@ -356,7 +356,7 @@ mxTreeSpec [1] = "8240";
 mxTreeSpec [2] = "10,40,-10,-175,1";
 mxTreeSpec [3] = "";
 mxTreeSpec [4] = "";
-OpenWindow (TREEWINDOW, mxTreeSpec);
+
 
 ChoiceList  (bOption,"Choose the branch to test",0,NO_SKIP,choiceMatrix);
 

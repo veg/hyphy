@@ -40,12 +40,6 @@
 // #include "HYUtils.h"
 
 
-/*SLKP 20070926; include progress report updates */
-#if !defined __UNIX__ && !defined __HEADLESS__
-#include "HYConsoleWindow.h"
-#endif
-/*SLKP*/
-
 
 #if defined __AFYP_DEVELOPMENT__ && defined __HYPHYMPI__
 #include "mpi.h"
@@ -59,12 +53,11 @@
 	natural log.
 	see Fienberg and Holland (1972) J Multivar Anal 2: 127-134.
 */
-#define     DIRICHLET_FLATTENING_CONST  0.5
-#define		MIN_SAMPLE_SIZE				5
+#define   kBGMDirichletFlattening  0.5
+#define		kBGMMinSize       				5
 
 
-class _BayesianGraphicalModel : public _LikelihoodFunction
-{
+class _BayesianGraphicalModel : public _LikelihoodFunction {
 public:
     /* constructors */
     _BayesianGraphicalModel () { }
@@ -75,43 +68,43 @@ public:
 
 
     /* network initialization */
-    bool            SetDataMatrix   (_Matrix *),    // via SetParameter HBL
-                    SetWeightMatrix (_Matrix *),
-                    SetConstraints    (_Matrix *),    //  "       "
-                    SetStructure  (_Matrix *),
-                    SetParameters (_AssociativeList *),
-                    SetNodeOrder  (_SimpleList *);
+    bool            SetDataMatrix   (_Matrix const *),    // via SetParameter HBL
+                    SetWeightMatrix (_Matrix const *),
+                    SetConstraints    (_Matrix const *),    //  "       "
+                    SetStructure  (_Matrix const *),
+                    SetParameters (_AssociativeList const *),
+                    SetNodeOrder  (_SimpleList const *);
 
 
     /* computation */
-    virtual _Parameter      Compute (void);	// compute likelihood of current network structure
-    _Parameter      Compute (_Matrix &),	// compute likelihood of given network structure
-                    Compute (_SimpleList &, _List *);	// compute likelihood of given node order
+    virtual hyFloat      Compute (void);	// compute likelihood of current network structure
+    hyFloat              Compute (_Matrix const &),	// compute likelihood of given network structure
+                         Compute (_SimpleList const &, _List *);	// compute likelihood of given node order
                     									//	return edge marginal probabilities at pointer
                     									
-    virtual _Matrix *       Optimize ();	// generic wrapper from HBL to different optimization methods
+    virtual _Matrix *       Optimize (_AssociativeList const * options = nil);	// generic wrapper from HBL to different optimization methods
     										// e.g., K2, structural MCMC, order MCMC (see next functions)
 	
-    void            GraphMetropolis (bool, long, long, long, _Parameter, _Matrix *),
-                    OrderMetropolis (bool, long, long, _Parameter, _Matrix *),
-                    K2Search (bool, long, long, _Matrix *);
+    _Matrix*        GraphMetropolis (bool, long, long, long, hyFloat);
+    _Matrix*        OrderMetropolis (bool, long, long, hyFloat);
+    _Matrix*        K2Search (bool, long, long);
 
 
     void            CacheNodeScores (void);	// MPI enabled
     void            MPIReceiveScores (_Matrix *, bool, long);
     void            ReleaseCache (void);
 
-    _Parameter      ComputeDiscreteScore (long node_id),
-                    ComputeDiscreteScore (long, _Matrix &),
-                    ComputeDiscreteScore (long, _SimpleList &),
+    hyFloat         ComputeDiscreteScore (long node_id),
+                    ComputeDiscreteScore (long, _Matrix const &),
+                    ComputeDiscreteScore (long, _SimpleList const &),
 
                     ComputeContinuousScore (long node_id),
-                    ComputeContinuousScore (long, _Matrix &),
-                    ComputeContinuousScore (long, _SimpleList &);
+                    ComputeContinuousScore (long, _Matrix const &),
+                    ComputeContinuousScore (long, _SimpleList const &);
 
 
-    _Parameter      ImputeDiscreteNodeScore (long, _SimpleList &),	// use Gibbs sampling to compute expectation over missing data
-    				ImputeCGNodeScore (long, _SimpleList &);		// arguments: node ID, parent ID's
+    hyFloat         ImputeDiscreteNodeScore (long, _SimpleList const &) const,	// use Gibbs sampling to compute expectation over missing data
+                    ImputeCGNodeScore (long, _SimpleList const &) const;		// arguments: node ID, parent ID's
 
     void            ComputeParameters (void),	// UNDER DEVELOPMENT - and I think I ended up using HBL instead
                     ComputeParameters (_Matrix *);
@@ -120,27 +113,27 @@ public:
 
 
     /* input/output */
-    void                SerializeBGM (_String &);	// export network structure and parameters to HBL
+    void                SerializeBGM (_StringBuffer &);	// export network structure and parameters to HBL
     bool                ImportModel (_AssociativeList *),	// THIS HAS NOT BEEN WRITTEN
-                        ExportCache (_AssociativeList *),	// send node score cache to HBL as associative list
+                        ExportCache (_AssociativeList *) const,	// send node score cache to HBL as associative list
                         ImportCache (_AssociativeList *);	// set node score cache to HBL associative list
 
 
     /* utility */
-    void            InitMarginalVectors (_List *);
-    void            DumpMarginalVectors (_List *);
+    void            InitMarginalVectors (_List *) const;
+    void            DumpMarginalVectors (_List *) const;
 
-    void            SerializeBGMtoMPI (_String &);	// pass network object to compute node as HBL
+    void            SerializeBGMtoMPI (_StringBuffer &);	// pass network object to compute node as HBL
 
-    void            RandomizeGraph (_Matrix *, _SimpleList *, _Parameter, long, long, bool);
-    _SimpleList *   GetOrderFromGraph (_Matrix &);
-    bool            GraphObeysOrder (_Matrix &, _SimpleList &);
+    void            RandomizeGraph (_Matrix *, _SimpleList *, hyFloat, long, long, bool);
+    _SimpleList const   GetOrderFromGraph (_Matrix const &) const;
+    bool            GraphObeysOrder (_Matrix &, _SimpleList const &) const;
 
-    void            UpdateDirichletHyperparameters (long , _SimpleList &, _Matrix * , _Matrix * );
+    void            UpdateDirichletHyperparameters (long , _SimpleList const &, _Matrix * , _Matrix * );
 
-    _Parameter      K2Score (long, _Matrix &, _Matrix &),
-                    BDeScore (long, _Matrix &, _Matrix &),
-                    BottcherScore (_Matrix &, _Matrix &, _Matrix &, _Matrix &, _Parameter, _Parameter, long);
+    hyFloat          K2Score (long, _Matrix const &, _Matrix const &) const,
+                    BDeScore (long, _Matrix const&, _Matrix const&) const,
+                    BottcherScore (_Matrix const &, _Matrix const &, _Matrix const &, _Matrix const &, hyFloat, hyFloat, long) const;
 
     long            GetNumNodes (void)  {
         return num_nodes;
@@ -149,15 +142,21 @@ public:
         return theData.GetHDim();
     }
 
-    void            GetNodeOrder (_Matrix * order);
-    void            GetStructure (_Matrix * graph);
-    _Matrix*        GetConstraints (void) {
+    void            GetNodeOrder (_Matrix * order) const;
+    void            GetStructure (_Matrix * graph) const;
+    _Matrix*        GetConstraints (void) const {
         return (_Matrix*)constraint_graph.makeDynamic();
       
     }
 
 protected:
 
+    bool            is_node_continuous (long node) const {return node_type.get (node) == 1L;}
+    bool            is_node_discrete   (long node) const {return node_type.get (node) == 0L;}
+    const _SimpleList
+                    ComputeParentMultipliers (_SimpleList const&) const;
+    long            ReindexParentObservations(_SimpleList const& parents, _SimpleList& n_ij, _SimpleList& pa_indexing) const;
+  
     long            num_nodes;
 
     /* ------------------------------------------- */
@@ -177,7 +176,7 @@ protected:
                     prior_precision,
                     prior_scale;
 
-    _Parameter      continuous_missing_value;       // some arbitrary value set in HBL to indicate just that
+    hyFloat      continuous_missing_value;       // some arbitrary value set in HBL to indicate just that
 
     /* ------------------------------------------- */
 
@@ -191,20 +190,10 @@ protected:
     _SimpleList     node_order_arg;     // provides access to node ordering functionality as HBL argument
 
     /* ------------------------------------------- */
+  
+    static          hyFloat      LogSumExpo (_Vector * log_values);
 
 };
 
-
-
-//______________________________________________________________________________________________
-#ifdef __NEVER_DEFINED__
-class _DynamicBayesGraph : public _BayesianGraphicalModel
-{
-public:
-
-protected:
-
-};
-#endif
 
 

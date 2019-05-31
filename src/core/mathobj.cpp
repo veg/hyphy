@@ -5,7 +5,7 @@
  Copyright (C) 1997-now
  Core Developers:
  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
- Art FY Poon    (apoon@cfenet.ubc.ca)
+ Art FY Poon    (apoon42@uwo.ca)
  Steven Weaver (sweaver@temple.edu)
  
  Module Developers:
@@ -39,9 +39,194 @@
 
 #include "parser.h"
 #include "mathobj.h"
+#include "global_things.h"
+
+using namespace hy_global;
 
 
 _MathObject  default_null_argument;
+
+_MathObject* _MathObject:: _null_handler() {
+    HandleApplicationError (kErrorStringNullOperand);
+    this->AddAReference();
+    return this;
+}
+
+_MathObject* _MathObject:: Add        (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Sub        (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Minus      (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Sum        (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Mult       (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Div        (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: lDiv       (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: longDiv    (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Raise      (_MathObject*)     {
+    return _null_handler();
+}
+
+bool _MathObject::         Equal      (_MathObject* rhs)     {
+    if (rhs->ObjectClass() == HY_UNDEFINED) {
+        return true;
+    }
+    return false;
+    // null is equal to null, otherwise false\
+    return false;
+}
+_MathObject* _MathObject:: Abs        (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Sin        (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Cos        (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Tan        (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Exp        (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Log        (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Sqrt       (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Gamma      (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Erf        (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: LnGamma    (void)             {
+    return _null_handler();
+}
+
+_MathObject* _MathObject:: Beta       (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: IGamma     (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: CChi2      (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: IBeta      (_MathObject*,_MathObject*) {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Simplex    (void)             {
+    return _null_handler();
+}
+
+_MathObject* _MathObject:: Simplify    (void)             {
+    return _null_handler();
+}
+
+_MathObject* _MathObject:: Min        (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Max        (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: InvChi2    (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: ZCDF       (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Time       (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Arctan     (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Less       (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Random     (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Greater    (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: LessEq     (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: GreaterEq  (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: AreEqual   (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: NotEqual   (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: LAnd       (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: LOr        (_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: GammaDist  (_MathObject*,_MathObject*) {
+    return _null_handler();
+}
+_MathObject* _MathObject:: CGammaDist (_MathObject*,_MathObject*) {
+    return _null_handler();
+}
+_MathObject* _MathObject:: LNot       (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: TipCount   (void)             {
+    return _null_handler();
+}
+_MathObject* _MathObject:: BranchCount (void)            {
+    return _null_handler();
+}
+_MathObject* _MathObject:: TipName     (_MathObject*)    {
+    return _null_handler();
+}
+_MathObject* _MathObject:: BranchName  (_MathObject*)    {
+    return _null_handler();
+}
+_MathObject* _MathObject:: BranchLength(_MathObject*)    {
+    return _null_handler();
+}
+_MathObject* _MathObject:: RerootTree  (_MathObject*)    {
+    return _null_handler();
+}
+_MathObject* _MathObject:: TEXTreeString(_MathObject*) const {
+    HandleApplicationError (kErrorStringNullOperand);
+    return new _MathObject;
+}
+
+_MathObject* _MathObject:: PlainTreeString(_MathObject*,_MathObject*) {
+    return _null_handler();
+}
+_MathObject* _MathObject:: FormatNumberString (_MathObject*,_MathObject*) {
+    return _null_handler();
+}
+hyFloat _MathObject::   Value (void)              {
+    HandleApplicationError (kErrorStringNullOperand);
+    return 0.0;
+}
+
 
 _MathObject* _MathObject:: _extract_argument (_List * arguments, unsigned long index, bool fill_in) const {
   if (arguments && index < arguments->lLength) {
@@ -52,7 +237,7 @@ _MathObject* _MathObject:: _extract_argument (_List * arguments, unsigned long i
 
 
 //SW: This calls the function with the opcode after it's been parsed
-_PMathObj _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
+HBLObjectRef _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
 
     switch (opCode) { // first check operations without arguments
       case HY_OP_CODE_NOT: // !
@@ -69,7 +254,7 @@ _PMathObj _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
       case HY_OP_CODE_ERF: // Erf
         return Erf();
       case HY_OP_CODE_EVAL:
-        return (_PMathObj)Compute()->makeDynamic();
+        return (HBLObjectRef)Compute()->makeDynamic();
       case HY_OP_CODE_EXP: // Exp
         return Exp();
       case HY_OP_CODE_GAMMA: // Gamma
@@ -228,47 +413,56 @@ _PMathObj _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
 
 //__________________________________________________________________________________
 
-BaseRef _MathObject::makeDynamic (void)
-{
-    return(_PMathObj)checkPointer(new _MathObject);
+BaseRef _MathObject::makeDynamic (void) const {
+    return new _MathObject;
 }
 
-//SW: Why do we need a string for the type?
-_PMathObj _MathObject::Type (void) {
-    _FString * ts = new _FString();
-    switch (ObjectClass()) {
+//__________________________________________________________________________________
 
+void _MathObject::Duplicate (BaseRefConst) {
+}
+
+
+
+//__________________________________________________________________________________
+
+  //SW: Why do we need a string for the type?
+HBLObjectRef _MathObject::Type (void) {
+  
+  static const _FString kNumber       ("Number", false);
+  static const _FString kMatrix       ("Matrix", false);
+  static const _FString kContainer    ("Container", false);
+  static const _FString kTreeNode     ("TreeNode", false);
+  static const _FString kTree         ("Tree", false);
+  static const _FString kString       ("String", false);
+  static const _FString kAssociativeList
+                                      ("AssociativeList", false);
+  static const _FString kTopology     ("Topology", false);
+  static const _FString kPolynomial   ("Polynomial", false);
+  static const _FString kUnknown      ("Unknown", false);
+  
+  switch (ObjectClass()) {
+      
     case NUMBER:
-        *(ts->theString)="Number";
-        break;
+      return new _FString (kNumber);
     case MATRIX:
-        *(ts->theString)="Matrix";
-        break;
+      return new _FString (kMatrix);
     case CONTAINER:
-        *(ts->theString)="Container";
-        break;
+      return new _FString (kContainer);
     case TREE_NODE:
-        *(ts->theString)="TreeNode";
-        break;
+      return new _FString (kTreeNode);
     case TREE:
-        *(ts->theString)="Tree";
-        break;
+      return new _FString (kTree);
     case STRING:
-        *(ts->theString)="String";
-        break;
+      return new _FString (kString);
     case ASSOCIATIVE_LIST:
-        *(ts->theString)="AssociativeList";
-        break;
+      return new _FString (kAssociativeList);
     case TOPOLOGY:
-        *(ts->theString)="Topology";
-        break;
+      return new _FString (kTopology);
     case POLYNOMIAL:
-        *(ts->theString)="Polynomial";
-        break;
-    default:
-        *(ts->theString) = "Unknown";
-
-    }
-
-    return ts;
+      return new _FString (kPolynomial);
+      
+  }
+  
+  return new _FString (kUnknown);
 }

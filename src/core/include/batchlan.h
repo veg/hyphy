@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -41,9 +41,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define __BATCHLANGUAGE__
 
 
+#include "global_things.h"
 #include "parser.h"
 #include "site.h"
+#include "dataset.h"
 #include "trie.h"
+#include "associative_list.h"
+
 #include <stdio.h>
 
 
@@ -54,9 +58,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct    _CELInternals {
     _SimpleFormulaDatum     * values,
                             * stack;
+    
+    bool                    *is_compiled;
 
-    _SimpleList       varList,
-                      storeResults;
+    _SimpleList             varList,
+                            storeResults;
 
 };
 
@@ -77,61 +83,68 @@ class _ElementaryCommand;
 //____________________________________________________________________________________
 class   _ExecutionList: public _List // a sequence of commands to be executed
 {
+    
 public:
     _ExecutionList (); // doesn't do much
     _ExecutionList (_String&, _String* = nil, bool = false, bool* = nil);
     void Init (_String* = nil);
 
-    virtual
-    ~_ExecutionList (void);
-  
-    void       ClearExecutionList (void);
+    virtual     ~_ExecutionList (void);
 
-    virtual
-    BaseRef     makeDynamic (void);
-
-    virtual
-    BaseRef     toStr (unsigned long = 0UL);
-
-    virtual
-    void        Duplicate                   (BaseRef);
+    virtual     BaseRef     makeDynamic (void) const;
+    virtual     BaseRef     toStr (unsigned long = 0UL);
+    virtual     void        Duplicate       (BaseRefConst);
     bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
+    
+    void        SetKWArgs   (_AssociativeList*);
 
-    _PMathObj   Execute                     (_ExecutionList* parent = nil);
+    HBLObjectRef   Execute                     (_ExecutionList* parent = nil, bool ignore_parent_kwargs = false);
         // if parent is specified, copy stdin redirects from it
         // run this execution list
-    _PMathObj   GetResult                   (void) {
+    HBLObjectRef   GetResult                   (void) {
         return result;
     }
-    void        ExecuteSimple               (void);             // run a simple compiled list
-    bool        TryToMakeSimple             (void);             // see if a list can be made into a compiled version
+    void        ExecuteSimple               (_ExecutionList * parent = nil);             // run a simple compiled list
+    bool        TryToMakeSimple             (bool partial_ok = false);             // see if a list can be made into a compiled version
 
-    long        ExecuteAndClean             (long,_String* = nil);
+    void        ExecuteAndClean             (long);
 
     void        ResetFormulae               (void);             // decompile formulas (for reference functions)
     void        ResetNameSpace              (void);
-    void        SetNameSpace                (_String);
+    void        SetNameSpace                (_String const &);
     _String const
                 GetFileName                 (void) const;
     _String*    GetNameSpace                (void);
-    _String     AddNameSpaceToID            (_String&, _String * = nil);
+    _String const    AddNameSpaceToID            (_String const&, _String const * = nil);
     _String     TrimNameSpaceFromID         (_String&);
-    _String*    FetchFromStdinRedirect      (void);
+  
+    bool        has_stdin_redirect         (void) const {return stdinRedirect != nil;}
+    bool        has_keyword_arguments      (void) const {return (kwargs && kwargs -> countitems()) || (kwarg_tags && kwarg_tags->countitems());}
+  
+    _String*    FetchFromStdinRedirect     (_String const * dialog_tag = nil, bool handle_multi_choice = false, bool do_echo = false);
+    
     _ElementaryCommand* FetchLastCommand (void) {
         if (currentCommand - 1 < lLength && currentCommand > 0) {
             return (_ElementaryCommand*)(*this)(currentCommand - 1);
         }
         return nil;
     }
-  
+    _ElementaryCommand* GetIthCommand       (long i) const {
+        return (_ElementaryCommand*) GetItem (i);
+    }
 
     void        GoToLastInstruction         (void) {
         currentCommand = MAX(currentCommand,lLength-1);
     }
     
+    _StringBuffer const GenerateHelpMessage         (_AVLList * scanned_functions = nil) const;
+    
     bool        IsErrorState    (void)     {
             return errorState;
     }
+
+    void ClearExecutionList (void);
+
 
     void              ReportAnExecutionError (_String errMsg, bool doCommand = true, bool appendToExisting = false);
     /**
@@ -154,33 +167,55 @@ public:
      
     */
 
-
+    /** Advance program counter */
+    void      advance (void) {currentCommand ++;}
+    
+    bool      is_compiled (long idx = -1) const {if (cli) if (idx < 0L) return true; else return cli->is_compiled[idx]; return false;}
+    
+    void      CopyCLIToVariables (void);
+  
     // data fields
     // _____________________________________________________________
 
-    long                            currentCommand;
+    long                            currentCommand,
+                                    currentKwarg;
+    
     char                            doProfile;
     int                             errorHandlingMode; // how does this execution list handle errors
     bool                            errorState;
 
-    _PMathObj                       result;
+    HBLObjectRef                    result;
 
     _VariableContainer*             nameSpacePrefix;
+    _AssociativeList*               kwargs;
 
     _AVLListXL                      *stdinRedirect;
-
-    _List                           *stdinRedirectAux;
+    _List                           *stdinRedirectAux,
+                                    *kwarg_tags;
+    
+    /** SLKP 20190223
+        kwarg_tags, if set, stores the ordered list of tagged inputs, which are created by
+        invoking the
+            KeywordArgument ("keyword", "description", "default");
+        procedure. They are inherited down the call chain, like stdinRedirect and stdinRedirectAux
+     */
 
     _String                         sourceFile,
                                     sourceText,
                                     enclosingNamespace;
-
+    
     _SimpleList                     callPoints,
                                     lastif;
 
     _Matrix                         *profileCounter;
 
     _CELInternals                   *cli;
+  
+    protected:
+        void       BuildExecuteCommandInstruction (_List * pieces, long code);
+        void       BuildFscanf                    (_List * pieces, long code);
+        void       BuildChoiceList                (_List * pieces, long code);
+
 
 };
 
@@ -199,8 +234,8 @@ public:
     // starting at a given position
     virtual                  ~_ElementaryCommand (void);
 
-    virtual   BaseRef        makeDynamic (void);
-    virtual   void           Duplicate (BaseRef);
+    virtual   BaseRef        makeDynamic (void) const;
+    virtual   void           Duplicate (BaseRefConst);
     virtual   BaseRef        toStr (unsigned long = 0UL);
 
     bool      Execute        (_ExecutionList&); // perform this command in a given list
@@ -210,33 +245,22 @@ public:
     void      ExecuteDataFilterCases (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
-    void      ExecuteCase21  (_ExecutionList&);
-    void      ExecuteCase25  (_ExecutionList&, bool = false); // fscanf
-    void      ExecuteCase26  (_ExecutionList&); // ReplicateConstraint
     void      ExecuteCase31  (_ExecutionList&); // model construction
-    void      ExecuteCase32  (_ExecutionList&); // list selection handler
-    void      ExecuteCase34  (_ExecutionList&); // CovarianceMatrix
-    void      ExecuteCase36  (_ExecutionList&); // OpenDataPanel
-    void      ExecuteCase37  (_ExecutionList&); // GetInformation
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
-    void      ExecuteCase39  (_ExecutionList&); // Execute Commands
-    void      ExecuteCase40  (_ExecutionList&); // Open Window
-    void      ExecuteCase41  (_ExecutionList&); // Spawn LF
-    void      ExecuteCase43  (_ExecutionList&); // FindRoot
-    void      ExecuteCase44  (_ExecutionList&); // MPISend
-    void      ExecuteCase45  (_ExecutionList&); // MPIReceive
-    void      ExecuteCase46  (_ExecutionList&); // GetDataInfo
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase53  (_ExecutionList&); // DoSQL
     void      ExecuteCase54  (_ExecutionList&); // Topology
-    void      ExecuteCase55  (_ExecutionList&); // AlignSequences
-    void      ExecuteCase57  (_ExecutionList&); // GetNeutralNull
     void      ExecuteCase58  (_ExecutionList&); // Profile Code
     void      ExecuteCase61  (_ExecutionList&); // SCFG
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
     void      ExecuteCase64  (_ExecutionList&); // BGM
     
+    bool      HandleReplicateConstraint             (_ExecutionList&);
+    bool      HandleAlignSequences                  (_ExecutionList&);
+    bool      HandleConstructCategoryMatrix         (_ExecutionList&);
+    bool      HandleGetDataInfo                     (_ExecutionList&);
+    bool      HandleGetInformation                  (_ExecutionList&);
     bool      HandleFprintf                         (_ExecutionList&);
     bool      HandleHarvestFrequencies              (_ExecutionList&);
     bool      HandleOptimizeCovarianceMatrix        (_ExecutionList&, bool);
@@ -251,15 +275,25 @@ public:
     bool      HandleMolecularClock                  (_ExecutionList&);
     bool      HandleGetURL                          (_ExecutionList&);
     bool      HandleGetString                       (_ExecutionList&);
+    bool      HandleKeywordArgument                 (_ExecutionList&);
     bool      HandleExport                          (_ExecutionList&);
     bool      HandleDifferentiate                   (_ExecutionList&);
-    long      GetCode                               (void) { return code; };
+    bool      HandleFindRootOrIntegrate             (_ExecutionList&, bool do_integrate = false);
+    bool      HandleMPISend                         (_ExecutionList&);
+    bool      HandleMPIReceive                      (_ExecutionList&);
+    bool      HandleExecuteCommandsCases            (_ExecutionList&, bool do_load_from_file = false, bool do_load_library = false);
+    bool      HandleDoSQL                           (_ExecutionList&);
+    bool      HandleFscanf                          (_ExecutionList&, bool is_sscanf = false);
+    bool      HandleChoiceList                      (_ExecutionList&);
+  
+    long      get_code                              (void) const { return code; };
+    unsigned  long parameter_count                  (void) const { return parameters.countitems();}
     
-    static  const _String   FindNextCommand       (_String&, bool = false);
+    static  const _String   FindNextCommand       (_String&);
     // finds & returns the next command block in input
     // chops the input to remove the newly found line
 
-    static  long      ExtractConditions     (_String& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
+    static  long      ExtractConditions     (_String const& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
     // used to extract the loop, if-then conditions
 
     static  bool      ExtractValidateAddHBLCommand (_String& current_stream, const long command_code, _List* pieces, _HBLCommandExtras* command_spec, _ExecutionList& command_list);
@@ -305,11 +339,6 @@ public:
     static  bool      ConstructDataSet      (_String&, _ExecutionList&);
     // construct a dataset from the string
 
-    static  bool      ConstructExport       (_String&, _ExecutionList&);
-    // construct a matrix export command
-
-    static  bool      ConstructGetString    (_String&, _ExecutionList&);
-    // construct a matrix import command
 
     static  bool      ConstructDataSetFilter(_String&, _ExecutionList&);
     // construct a dataset filter from the string
@@ -317,17 +346,8 @@ public:
     static  bool      ConstructTree         (_String&, _ExecutionList&);
     // construct a tree
 
-    static  bool      ConstructFscanf       (_String&, _ExecutionList&);
-    // construct a fscanf command
 
-    static  bool      ConstructExecuteCommands
-    (_String&, _ExecutionList&);
-    // construct a fscanf command
-
-    static  bool      ConstructReplicateConstraint
-    (_String&, _ExecutionList&);
-    // construct a replicate constraint command
-
+ 
     static  bool      ConstructLF           (_String&, _ExecutionList&);
     // construct a likelihood function
 
@@ -338,67 +358,32 @@ public:
     static  bool      ConstructReturn       (_String&, _ExecutionList&);
     // construct a fprintf command
 
-    static  bool      ConstructSetParameter (_String&, _ExecutionList&);
-    // construct a set parameter clause
-
     static  bool      ConstructCategory     (_String&, _ExecutionList&);
     // construct a category variable
 
     static  bool      ConstructChoiceList   (_String&, _ExecutionList&);
     // construct a category variable
 
-    static  bool      ConstructCategoryMatrix (_String&, _ExecutionList&);
-    // construct a category matrix for the optimized like func
-
-    static  bool      ConstructOpenDataPanel (_String&, _ExecutionList&);
-    // open data panel with given settings
-
-    static  bool      ConstructOpenWindow   (_String&, _ExecutionList&);
-
-    static  bool      ConstructSpawnLF      (_String&, _ExecutionList&);
-
-    static  bool      ConstructFindRoot     (_String&, _ExecutionList&);
-
-    static  bool      ConstructGetInformation
-    (_String&, _ExecutionList&);
-
     static  bool      ConstructModel        (_String&, _ExecutionList&);
 
-    static  bool      ConstructMPISend      (_String&, _ExecutionList&);
-
-    static  bool      ConstructMPIReceive   (_String&, _ExecutionList&);
-
-    static  bool      ConstructGetDataInfo  (_String&, _ExecutionList&);
-
-    static  bool      ConstructStateCounter (_String&, _ExecutionList&);
-
-    static  bool      ConstructDoSQL        (_String&, _ExecutionList&);
-
-    static  bool      ConstructAlignSequences
-    (_String&, _ExecutionList&);
-
-    static  bool      ConstructGetNeutralNull
-    (_String&, _ExecutionList&);
-
+   
     static  bool      ConstructProfileStatement
     (_String&, _ExecutionList&);
 
-    static  bool      ConstructDeleteObject
-    (_String&, _ExecutionList&);
-
+ 
     static  bool      ConstructSCFG         (_String&, _ExecutionList&);
 
     static  bool      ConstructBGM          (_String&, _ExecutionList&);
 
-    static  bool      ConstructAssert       (_String&, _ExecutionList&);
-
-    static  bool      SelectTemplateModel   (_String&, _ExecutionList&);
-
+  
+ 
     static  bool      MakeGeneralizedLoop      (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
   
     bool              DecompileFormulae        (void);
   
-    void              BuildListOfDependancies  (_AVLListX & collection, bool recursive, _ExecutionList& chain);
+    void              BuildListOfDependancies  (_AVLListX & collection, bool recursive, _ExecutionList const& chain);
+    
+    
     
     /**
      
@@ -409,11 +394,21 @@ public:
      as well.
      
      */
+  
+     static      const _List        fscanf_allowed_formats;
 
 
 protected:
   
-    static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList&, bool, _AVLListX& );
+    static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList const&, bool, _AVLListX& );
+
+    _String  *   GetIthParameter       (unsigned long i, bool range_check = true) const {
+        BaseRef p = parameters.GetItemRangeCheck(i);
+        if (!p && range_check) {
+            hy_global::HandleApplicationError("Internal error in ElemenaryCommand::GetIthParameter", true);
+        }
+        return (_String *)p;
+    }
 
 
     bool      MakeJumpCommand       (_String*,  long, long, _ExecutionList&);
@@ -421,7 +416,7 @@ protected:
     // to build a jump command
     // with two branches
     // and a condition
-
+  
     void       addAndClean            (_ExecutionList&, _List* = nil, long = 0);
     void       appendCompiledFormulae (_Formula *, _Formula* = nil);
 
@@ -431,11 +426,47 @@ protected:
     friend  void      UpdateChangingFlas (long);
     friend  void      UpdateChangingFlas (_SimpleList&);
 
+
+private:
+    _Variable*      _ValidateStorageVariable (_ExecutionList& program, unsigned long argument_index = 0UL) const;
+    
+    /**
+        Extract the identifier from an expression like
+        Type <id> = (...);
+     
+        @param ([in] _String) the source text to scan
+        @param ([out] long) a positive integer to the first character following the '='; kNotFound if missing
+        @param ([in] bool) if true, validate the identifier
+        @param ([in] bool) if true, throw _String exceptions on errors
+        @param ([in] long) start searching at this position in the string
+     
+        @return the identifier, or empty string if failed
+        @version 0.1 SLKP 20190211
+    */
+    static const _String   ExtractStatementAssignment (_String const& source, long& end_at, const bool validate = true, const bool exceptions = true, const long offset = 0L);
+
+    /**
+     Process declaration of the form
+     Type <id> = procedure (...);
+     
+     @param ([in] _String) the source text to scan
+     @param ([out] procedure) the string for the procedure name (e.g. CreateFilter)
+     @param ([out] pieces) comma separated arguments from the parentheses
+     
+     @return the identifier, or empty string if failed
+     
+     Throws _String exceptions
+     
+     @version 0.1 SLKP 20190212
+     */
+    static const _String   ProcessProcedureCall (_String const& source, _String& procedure, _List& pieces);
+
 protected:  // data members
 
     _List       parameters;        // a list of parameters
     _SimpleList simpleParameters;  // a list of numeric parameters
     int         code;              // code describing this command
+  
 
 };
 
@@ -448,8 +479,6 @@ _ElementaryCommand               * makeNewCommand       (long);
 #ifdef __HYPHYMPI__
 #include <mpi.h>
 
-extern   _String                mpiNodeID,
-         mpiNodeCount;
 
 #define  HYPHY_MPI_SIZE_TAG     111
 #define  HYPHY_MPI_STRING_TAG   112
@@ -461,11 +490,14 @@ extern   _String                mpiNodeID,
 
 
 void     ReportMPIError         (int, bool);
-void     MPISendString          (_String&,long,bool=false);
+void     MPISendString          (_String const&,long,bool=false);
 _String* MPIRecvString          (long,long&);
 
 #endif
 //____________________________________________________________________________________
+
+  //  EXTERN GLOBALS TODO SLKP 20180920 : these need to be reviewed and removed
+
 
 extern  _List
 
@@ -475,6 +507,7 @@ likeFuncList,
 templateModelList,
 scfgNamesList,
 scfgList,
+batchLanguageFunctions,
 
 bgmNamesList,       // modified by afyp
 bgmList,
@@ -496,20 +529,11 @@ modelFrequenciesIndices,
 listOfCompiledFormulae;
 
 
-
 extern  _String
 
-getDString,
-getFString,
-tempFString,
-baseDirectory,
-libDirectory,
 useLastFString,
 mpiMLELFValue,
 lf2SendBack,
-hyphyBaseDirectory,
-hyphyLibDirectory,
-platformDirectorySeparator,
 defFileNameValue,
 defFileString,
 blConstructCM,
@@ -530,19 +554,15 @@ getDString                      ,
 useLastFString                  ,
 getFString                      ,
 defFileString                   ,
-useLastModel                    ,
 VerbosityLevelString            ,
-hasEndBeenReached               ,
 clearFile                       ,
 keepFileOpen                    ,
 closeFile                       ,
 useLastDefinedMatrix            ,
 MessageLogging                  ,
 selectionStrings                ,
-useNoModel                      ,
 stdoutDestination               ,
 messageLogDestination           ,
-lastModelParameterList          ,
 dataPanelSourcePath             ,
 windowTypeTree                  ,
 windowTypeClose                 ,
@@ -554,9 +574,6 @@ screenHeightVar                 ,
 useNexusFileData                ,
 mpiMLELFValue                   ,
 lf2SendBack                     ,
-pcAmbiguitiesResolve            ,
-pcAmbiguitiesAverage            ,
-pcAmbiguitiesSkip               ,
 lfStartCompute                  ,
 lfDoneCompute                   ,
 getURLFileFlag                  ,
@@ -573,23 +590,16 @@ platformDirectorySeparator      ,
 covarianceParameterList         ,
 matrixEvalCount                 ,
 scfgCorpus                      ,
-bgmData                         ,
-bgmWeights                      ,
 pathToCurrentBF                 ,
-statusBarUpdateString           ,
-statusBarProgressValue          ,
 errorReportFormatExpression     ,
 errorReportFormatExpressionStr  ,
 errorReportFormatExpressionStack,
 errorReportFormatExpressionStdin,
-lastModelUsed                   ,
 deferConstrainAssignment        ,
-bgmData                         ,
-bgmScores                       ,
-bgmGraph                        ,
-bgmNodeOrder                    ,
+kBGMData                        ,
 bgmConstraintMx                 ,
 bgmParameters                   ,
+bgmWeights                      ,
 assertionBehavior               ,
 dialogPrompt                    ,
 _hyLastExecutionError           ,
@@ -601,13 +611,7 @@ blLF                            ,
 blLF3                           ,
 blTree                          ,
 blTopology                      ,
-blSCFG                          ,
-#ifdef      __HYPHYMPI__
-mpiNodeID                       ,
-mpiNodeCount                    ,
-mpiLastSentMsg                  ,
-#endif
-hfCountGap                      ;
+blSCFG                          ;
 
 extern  _ExecutionList              *currentExecutionList;
 
@@ -620,25 +624,16 @@ extern  _Trie                       _HY_ValidHBLExpressions,
                                     _HY_HBL_Namespaces,
                                     _HY_HBL_KeywordsPreserveSpaces;
 
-extern  long                        globalRandSeed,
-                                    matrixExpCount;
+extern  long                        matrixExpCount;
  
 
-long      FindDataSetName                 (_String const&);
-long      FindSCFGName                    (_String const&);
-long      FindBFFunctionName              (_String const&, _VariableContainer const* = nil);
-long    FindBgmName                       (_String const&);
-// added by afyp, March 18, 2007
-
-long    FindLikeFuncName                  (_String const&, bool = false);
-long    FindModelName                     (_String const&);
 
 
 const _String&  GetBFFunctionNameByIndex        (long);
 long      GetBFFunctionArgumentCount  (long);
 _List&    GetBFFunctionArgumentList   (long);
 _SimpleList&    GetBFFunctionArgumentTypes   (long);
-_HY_BL_FUNCTION_TYPE
+hyBLFunctionType
          GetBFFunctionType            (long);
 _ExecutionList&
           GetBFFunctionBody           (long);
@@ -658,21 +653,25 @@ void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, boo
     for variables to permit the use of explicit (formula-based) model definitions
  */
 
-void    ReadBatchFile                (_String&, _ExecutionList&);
-_String ReturnDialogInput            (bool dispPath = false);
-_String ReturnFileDialogInput        (void);
-_String*ProcessCommandArgument       (_String*);
-_String WriteFileDialogInput         (void);
-_Parameter
-ProcessNumericArgument               (_String*,_VariableContainer const*, _ExecutionList* = nil);
+void    ReadBatchFile                      (_String&, _ExecutionList&);
+_String const ReturnDialogInput            (bool dispPath = false, _String const * rel_path = nil);
+_String const ReturnFileDialogInput        (_String const* rel_path = nil);
+_String const WriteFileDialogInput         (_String const* rel_path = nil);
+
+
+hyFloat
+_ProcessNumericArgumentWithExceptions (_String&,_VariableContainer const*);
+
+hyFloat
+ProcessNumericArgument                (_String*,_VariableContainer const*, _ExecutionList* = nil);
 const _String ProcessLiteralArgument (_String const*,_VariableContainer const*, _ExecutionList* = nil);
 _AssociativeList*
 ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
-const _String GetStringFromFormula         (_String*,_VariableContainer*);
+const _String GetStringFromFormula         (_String const*,_VariableContainer*);
 void    ExecuteBLString              (_String&,_VariableContainer*);
 
-void    SerializeModel               (_String&,long,_AVLList* = nil, bool = false);
+void    SerializeModel               (_StringBuffer &,long,_AVLList* = nil, bool = false);
 bool    Get_a_URL                    (_String&,_String* = nil);
 
 long    AddDataSetToList             (_String&,_DataSet*);
@@ -683,15 +682,10 @@ void    KillExplicitModelFormulae    (void);
 bool    PushFilePath                 (_String&, bool = true, bool process = true);
 _String const    PopFilePath         (void);
 _String const *  PeekFilePath        (void);
-_String const    GetPathStack        (const _String spacer = ",");
+_String const    GetPathStack        (const _String& spacer = ",");
 
-_Matrix*CheckMatrixArg               (_String const*, bool);
-_AssociativeList *
-CheckAssociativeListArg      (_String const*);
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
-bool    IsModelReversible            (long);
-bool    IsModelOfExplicitForm        (long);
 
 void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);
@@ -699,48 +693,46 @@ _String ProcessStringArgument        (_String* data);
 const _String _hblCommandAccessor          (_ExecutionList*, long);
 _String _HYGenerateANameSpace             (void);
 
-_PMathObj
+HBLObjectRef
 ProcessAnArgumentByType      (_String const*, _VariableContainer const*, long, _ExecutionList* = nil);
 
 void    _HBL_Init_Const_Arrays       (void);
 
-void    ReturnCurrentCallStack       (_List&, _List&);
+
+
 
 /**
-    An accessor function which attempts to retrieve a reference to a HyPhy Batch Language Object
-    by name. A list of acceptable object classes can be specified in the type parameter. Note that
-    types will be searched in the following order:
+ An accessor function which attempts to retrieve a reference to a HyPhy Batch Language Object
+ by name. A list of acceptable object classes can be specified in the type parameter. Note that
+ types will be searched in the following order:
+ 
+ HY_BL_DATASET,HY_BL_DATASET_FILTER,HY_BL_LIKELIHOOD_FUNCTION,HY_BL_SCFG,HY_BL_BGM,HY_BL_MODEL,HY_BL_HBL_FUNCTION
+ 
+ i.e. if there is a dataset named 'foo' and a likelihood function named 'foo', then the dataset
+ will be returned.
+ 
+ 
+ 
+ @param   name provides a string with the name of the object to be retrieved.
+ @param   type [in] which types of objects will be searched.
+ [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
+ @param   index (if not nil) will receive the index of the found object in the corresponding array
+ @param   errMsg if set to True, will cause the function to report an error if no object of corresponding type could be found
+ @param   tryLiteralLookup if set to True, will cause the function to, upon a failed lookup, to also try interpreting name as a string variable ID
+ @return  pointer to the retrieved object or nil if not found
+ @author  SLKP
+ @version 20120324
+ */
 
-        HY_BL_DATASET,HY_BL_DATASET_FILTER,HY_BL_LIKELIHOOD_FUNCTION,HY_BL_SCFG,HY_BL_BGM,HY_BL_MODEL,HY_BL_HBL_FUNCTION
 
-    i.e. if there is a dataset named 'foo' and a likelihood function named 'foo', then the dataset
-    will be returned.
+_String const _HYHBLTypeToText                (long type);
 
-
-
-    @param   name provides a string with the name of the object to be retrieved.
-    @param   type [in] which types of objects will be searched.
-                 [out] which type of object was retrieved (HY_BL_NOT_DEFINED if not found)
-    @param   index (if not nil) will receive the index of the found object in the corresponding array
-    @param   errMsg if set to True, will cause the function to report an error if no object of corresponding type could be found
-    @param   tryLiteralLookup if set to True, will cause the function to, upon a failed lookup, to also try interpreting name as a string variable ID
-    @return  pointer to the retrieved object or nil if not found
-    @author  SLKP
-    @version 20120324
-*/
-
-BaseRefConst _HYRetrieveBLObjectByName              (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
-
-BaseRef _HYRetrieveBLObjectByNameMutable       (_String const& name, long& type, long* index = nil, bool errMsg = false, bool tryLiteralLookup = false);
-
-_String _HYHBLTypeToText                (long type);
-_String _HYStandardDirectory            (const unsigned long);
-
-_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String = emptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
+_HBLCommandExtras* _hyInitCommandExtras (const long = 0, const long = 0, const _String& = hy_global::kEmptyString, const char = ';', const bool = true, const bool = false, const bool = false, _SimpleList* = nil);
 
 
 extern  bool                        numericalParameterSuccessFlag;
-extern  _Parameter                  messageLogFlag;
+extern  hyFloat                  messageLogFlag;
+
 
 extern enum       _hy_nested_check {
   _HY_NO_FUNCTION,

@@ -1,1574 +1,990 @@
-RequireVersion("2.3");
-
-LoadFunctionLibrary("libv3/UtilityFunctions.bf");
-LoadFunctionLibrary("libv3/IOFunctions.bf");
-LoadFunctionLibrary("libv3/all-terms.bf");
-
-if (MPI_NODE_COUNT <= 1)
-{
-    fprintf (stdout, "[ERROR] This analysis requires an MPI environment to run\n");
-    return 0;
-}
-
-partCount                = 2;
-produceOffspring        = MPI_NODE_COUNT-1;
-populationSize          = 2*produceOffspring;
-incestDistance          = 0;
-generationCount              = 5000;
-maxSampleTries            = populationSize*10;
-mutationThreshhold        = 0.0001;
-mutationProb            = 0.15;
-mutationProbDecrease    = 0.95;
-annealingPhase            = 100;
-SHORT_MPI_RETURN        = 1;
-totalSampleCounter        = 0;
-localMutationRate        = 0.05;
-localMutationInterval    = 20;
-shortestAllowedSegment  = 0;
-
-stoppingCriterion        = 50;
-sampleCount                = 0;
-familyControlSize        = produceOffspring$6;
-
-verboseFlag                = 0;
-rateClassesCount        = 2;
-MESSAGE_LOGGING            = 0;
-cAICPenaltyPerSite        = 100;
-adjustAICScores            = 1;
-maxTimeAllowed            = 3600*1000;
-startAtBreakpoint        = 1;
-
-/* ________________________________________________________________________________________________*/
-
-global AC                 = 1;
-global AT                 = 1;
-global CG                 = 1;
-global CT                 = 1;
-global GT                 = 1;
-
-
-
-/* ________________________________________________________________________________________________*/
-
-MasterList                        = {};
-REPLACE_TREE_STRUCTURE          = 1;
-bppMap                            = {};
-SHORT_MPI_RETURN                = 1;
-totalBitSize                    = 0;
-LIKELIHOOD_FUNCTION_OUTPUT         = 0;
-FILE_SEPARATOR                       = "__FILE_SEPARATOR__";
-
-ExecuteAFile (HYPHY_LIB_DIRECTORY+"TemplateBatchFiles"+DIRECTORY_SEPARATOR+"Utility"+DIRECTORY_SEPARATOR+"NJ.bf");
-
-
-/* ________________________________________________________________________________________________*/
-
-function _reportSubstitutionMatrix (treeName, filterName)
-{
-    
-    ExecuteCommands ("bl = BranchLength  (`treeName`,-1);");
-    ExecuteCommands ("bn = BranchName       (`treeName`,-1);");
-    ExecuteCommands ("_size = BranchCount(`treeName`) + TipCount (`treeName`) - 1;");
-    
-    for (k = _size; k >= 0 ; k = k - 1)
-    {
-        if (bl[k] > 0 || k == 0)
-        {
-            c = 1;
-            ExecuteCommands ("GetInformation(branchMx,`treeName`." + bn[k] +");");
-            if (bl[k])
-            {
-                normalizer = bl[k];
-            }
-            else
-            {
-                normalizer = 1;
-            }
-            
-      rateMatrix = branchMx * (1/ normalizer);
-            break;
-        }
-    }
-    
-    return rateMatrix;
-
-}
-
-function ComputeDistanceFormula (s1,s2)
-{
-    GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DIST);
-    
-    totalSitesCompared = Transpose(summingVector)*(siteDifferenceCount*summingVector);
-    totalSitesCompared = totalSitesCompared[0];
-    
-    if (_useK2P)
-    {
-        _dTransitionCounts      =    siteDifferenceCount[0][2]+siteDifferenceCount[2][0]  /* A-G and G-A */
-                                 +siteDifferenceCount[1][3]+siteDifferenceCount[3][1]; /* C-T and T-C */
-                            
-        _dTransversionCounts = (siteDifferenceCount[0][0]+siteDifferenceCount[1][1]+siteDifferenceCount[2][2]+siteDifferenceCount[3][3])+_dTransitionCounts;
-        
-        _dTransitionCounts     = _dTransitionCounts/totalSitesCompared;
-        _dTransversionCounts = 1-_dTransversionCounts/totalSitesCompared;
-        
-        _d1C = 1-2*_dTransitionCounts-_dTransversionCounts;
-        _d2C = 1-2*_dTransversionCounts;
-        
-        if (_d1C>0 && _d2C>0)
-        {
-            return -(0.5*Log(_d1C)+.25*Log(_d2C));    
-        }
-    }
-    else
-    {
-        _dAGCounts      =    siteDifferenceCount[0][2]+siteDifferenceCount[2][0]  /* A-G and G-A */;
-        _dCTCounts     =       siteDifferenceCount[1][3]+siteDifferenceCount[3][1]; /* C-T and T-C */
-                            
-        _dTransversionCounts = (siteDifferenceCount[0][0]+siteDifferenceCount[1][1]+siteDifferenceCount[2][2]+
-                                siteDifferenceCount[3][3])+_dAGCounts+_dCTCounts;
-        
-        _dAGCounts     = _dAGCounts/totalSitesCompared;
-        _dCTCounts     = _dCTCounts/totalSitesCompared;
-        
-        _dTransversionCounts = 1-_dTransversionCounts/totalSitesCompared;
-        
-        _d1C = 1-_dAGCounts/_d_TN_K1-0.5*_dTransversionCounts/_d_fR;
-        _d2C = 1-_dCTCounts/_d_TN_K2-0.5*_dTransversionCounts/_d_fY;
-        _d3C = 1-0.5*_dTransversionCounts/_d_fY/_d_fR;
-        
-        if ((_d1C>0)&&(_d2C>0)&&(_d3C>0))
-        {
-            return -_d_TN_K1*Log(_d1C)-_d_TN_K2*Log(_d2C)-_d_TN_K3*Log(_d3C);
-        }
-    }
-    
-    return 1000;
-}
-
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function StringToMatrix (zz)
-{
-    return zz;
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function ExportAMatrix (fileName, rateMatrix,dummy)
-{
-    if (Abs(rateMatrix))
-    {
-        sortedBP     = ConvertToPart (rateMatrix);
-    }
-    else
-    {
-        v = 0;
-    }
-    theAVL    = {};
-    
-    theAVL ["BP"]    = {};
-	  theAVL ["Filters"] = {};
-    theAVL ["Trees"] = {};
-    
-    if (dataType)
-    {
-        bpF  = 0;
-        bpF2 = 0;
-    }    
-    else
-    {
-        bpF     = -1;
-        bpF2    = -1;
-    }
-    
-    USE_DISTANCES = 0;
-
-    lfDef = "";
-    lfDef * 128;
-    lfDef  * "LikelihoodFunction multiPart  = (";
-
-
-    partSpecs = {};
-    
-    for (h=0; h<v; h=h+1)
-    {
-        bpF2 = sortedBP[h];
-        bpF2 = bppMap[bpF2];
-        if (dataType)
-        {
-            filterString = ""+(3*bpF)+"-"+(3*bpF2-1);
-        }
-        else
-        {
-            filterString = ""+(bpF+1)+"-"+bpF2;        
-            (theAVL ["BP"])[h]   = ""+(bpF+2)+"-"+(bpF2+1);
-		        (theAVL ["Filters"])[h]   = filterString;
-
-        }
-        DataSetFilter filteredData = CreateFilter(ds,1,filterString);
-        InferTreeTopology (0);
-        treeString=TreeMatrix2TreeString(0);
-
-        ExecuteCommands ("DataSetFilter part_" + h + " = CreateFilter (ds, 1, \"" + filterString + "\");");
-        ExecuteCommands ("Tree tree_"            + h + " = " + treeString + ";");
-                
-        if (h)
-        {
-            lfDef * ",";
-        }
-        lfDef  * ("part_"+h+",tree_"+h);
-        partSpecs [h] = filterString;
-        bpF = bpF2;
-    }
-    
-    if (bpF2<ds.sites)
-    {
-
-        filterString = ""+(bpF2+1)+"-"+(ds.sites-1);
-        (theAVL ["BP"])[h]   = ""+(bpF+2)+"-"+ds.sites;
-        (theAVL ["Filters"])[h]   = filterString;
-        DataSetFilter filteredData = CreateFilter(ds,1,filterString);
-        partSpecs [h] = filterString;
-        InferTreeTopology           (0);
-        treeString                   = TreeMatrix2TreeString(0);
-        ExecuteCommands             ("DataSetFilter part_" + h + " = CreateFilter (ds, 1, \"" + filterString + "\");");
-        ExecuteCommands             ("Tree tree_" + h + " = " + treeString + ";");
-        if (h)
-        {
-            lfDef * ",";
-        }
-        lfDef  * ("part_"+h+",tree_"+h);
-    }
-
-    lfDef  * ");";
-    lfDef  * 0;
-    ExecuteCommands (lfDef);
-    Optimize (res, multiPart);
-
-    ConstraintString = "";
-    ConstraintString * 8192;
-    ConstraintString * "\n";
-    
-    for (h=0; h<Abs (partSpecs); h=h+1)
-    {
-        ConstraintString * ("\n" + partSpecs [h] + "\n");
-        ExecuteCommands    ("filterString = Format (tree_" + h + ",0,1);");
-        ConstraintString * filterString;
-        (theAVL ["Trees"]) [h]    = filterString;
-    }
-
-    ConstraintString * 0;
-    fprintf (fileName,ConstraintString);
-
-    return theAVL;
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function CleanUpMPI (dummy)
-{
-    if (MPI_NODE_COUNT>1)
-    {
-        while (1)
-        {
-            for (nodeCounter = 0; nodeCounter < MPI_NODE_COUNT-1; nodeCounter = nodeCounter+1)
-            {
-                if (MPINodeState[nodeCounter][0]==1)
-                {
-                    fromNode = ReceiveJobs (0,0);
-                    break;    
-                }
-            }
-            if (nodeCounter == MPI_NODE_COUNT-1)
-            {
-                break;
-            }
-        }            
-    }
-    return 0;
-}
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function adjustAICScore (theLL,bpMatrix)
-{
-    daAICScore = 2*(baseParams*(baseSites/(baseSites-baseParams-1)) - theLL) ;
-    lastBpos   = 0;
-    
-    for (_pid = 0; _pid < Rows(bpMatrix); _pid = _pid+1)
-    {
-        thisSpan = bppMap[bpMatrix[_pid]] - lastBpos+1;
-        lastBpos = bppMap[bpMatrix[_pid]];
-        if (thisSpan > perPartParameterCount + 1)
-        {
-            daAICScore = daAICScore + 2*(perPartParameterCount*(thisSpan/(thisSpan-perPartParameterCount-1)));
-        }
-        else
-        {
-            daAICScore = daAICScore + 2*perPartParameterCount*cAICPenaltyPerSite;
-        }
-    }
-    
-    thisSpan = baseSites-lastBpos;
-    if (thisSpan > perPartParameterCount + 1)
-    {
-        daAICScore = daAICScore + 2*(perPartParameterCount*(thisSpan/(thisSpan-perPartParameterCount-1)));
-    }
-    else
-    {
-        daAICScore = daAICScore + 2*perPartParameterCount*cAICPenaltyPerSite;
-    }
-    
-    return -daAICScore;
-}
-
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function ReceiveJobs (sendOrNot, ji)
-{
-    if (MPI_NODE_COUNT>1)
-    {
-        MPIReceive (-1, fromNode, result_String);
-        mji = MPINodeState[fromNode-1][1];
-        
-        if (sendOrNot)
-        {
-            MPISend     (fromNode,mpiStringToSend);
-            MPINodeState[fromNode-1][1] = ji;            
-        }
-        else
-        {
-            MPINodeState[fromNode-1][0] = 0;
-            MPINodeState[fromNode-1][1] = -1;        
-        }
-        ExecuteCommands (result_String);
-        myDF  = lf_MLES[1][1]+baseParams;
-        myAIC = 2*(lf_MLES[1][0]-myDF*(baseSites/(baseSites-myDF-1)));
-        myLL  = lf_MLES[1][0];
-        ji       = mji;
-    }
-    else
-    {
-        myDF  = res[1][1]+baseParams;
-        myAIC = 2*(res[1][0]-myDF*(baseSites/(baseSites-myDF-1)));
-    }
-    
-    sortedBP = {{-1}};
-    
-    if (resultProcessingContext==0)
-    {
-        sortedScores[ji][0] = myAIC;
-        if (ji>=0)
-        {
-            jobPrint = ConvertToPartString (currentPopulation[ji]);
-            sortedBP = ConvertToPart        (currentPopulation[ji]);
-            if (adjustAICScores)
-            {
-                myAIC     = adjustAICScore (myLL, sortedBP);
-            }
-            v          = Rows (sortedBP);
-            sortedScores[ji][0] = myAIC;
-        }
-        if (verboseFlag)
-        {
-            fprintf (stdout, "Individual ",ji," AIC-c = ",-myAIC," ");
-        }
-    }
-    else
-    {
-        intermediateProbs[ji][0] = myAIC;    
-        if (ji>=0)
-        {
-            jobPrint = ConvertToPartString (children[ji-populationSize]);
-            sortedBP = ConvertToPart        (children[ji-populationSize]);
-            if (adjustAICScores)
-            {
-                myAIC     = adjustAICScore (myLL, sortedBP);
-            }
-            v = Rows (sortedBP);
-            intermediateProbs[ji][0] = myAIC;    
-        }
-        if (verboseFlag)
-        {
-            fprintf (stdout, "Offspring ",ji," AIC-c = ",-myAIC," ");
-        }
-    }
-    
-    if (sortedBP[0]>=0)
-    {
-        if (dataType)
-        {
-            bpF = 0;
-        }
-        else
-        {
-            bpF = -1;
-        }
-        filterString = "";
-        for (h=0; h<v; h=h+1)
-        {
-            bpF2 = sortedBP[h];
-            bpF2 = bppMap[bpF2];
-            if (dataType)
-            {
-                filterString = filterString+" "+(3*bpF)+"-"+(3*bpF2-1);
-            }
-            else
-            {
-                filterString = filterString+" "+(bpF+1)+"-"+bpF2;            
-            }
-            bpF = bpF2;
-        }
-        
-        if ((bpF2<ds.sites && (dataType == 0)) || (bpF2<3*ds.sites && dataType))
-        {
-            if (dataType)
-            {
-                filterString = filterString+" "+(3*bpF2)+"-"+(ds.sites-1);
-            }
-            else
-            {
-                filterString = filterString+" "+(bpF2+1)+"-"+(ds.sites-1);            
-            }
-        }
-
-        if (verboseFlag)
-        {
-            fprintf (stdout, " ", filterString, "\n");
-        }
-
-        MasterList [jobPrint] = myAIC;
-    }
-    return fromNode-1;
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-compressedString = {{1,1}};
-
-function MakeStringCanonical (someString, dummy)
-{
-    return someString;
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function ConvertToPartString (pString)
-{
-    sortedBP = ConvertToPart (pString);
-    if (dataType)
-    {
-        bpF = 0;    
-    }
-    else
-    {
-        bpF = -1;
-    }
-    
-    minPartLength       = 1e100;
-    
-    _ConstraintString = "";
-    _ConstraintString * 256;
-    
-
-    for (h=0; h<v; h=h+1)
-    {
-        bpF2 = bppMap[sortedBP[h]];
-    
-        if (h)
-        {
-            _ConstraintString * ",";
-        }
-        if (dataType)
-        {
-            _ConstraintString * (""+(3*bpF)+"-"+(3*bpF2-1));        
-            curSegLength = 3*(bpF2-bpF);
-        }        
-        else
-        {
-            _ConstraintString * (""+(bpF+1)+"-"+bpF2);        
-            curSegLength = bpF2-bpF;
-        }
-        bpF = bpF2;
-        
-        if (curSegLength < minPartLength && curSegLength>0)
-        {
-            minPartLength = curSegLength;
-        }
-    }
-    
-    if (bpF2<ds.sites && dataType == 0 || bpF2<3*ds.sites && dataType)
-    {
-        if (dataType)
-        {
-            _ConstraintString * (","+(3*bpF2)+"-"+(ds.sites-1));
-            curSegLength = ds.sites-3*bpF2;
-        }
-        else
-        {
-            _ConstraintString * (","+(bpF2+1)+"-"+(ds.sites-1));        
-            curSegLength = ds.sites-bpF2;
-        }
-        if (curSegLength < minPartLength && curSegLength>0)
-        {
-            minPartLength = curSegLength;
-        }
-    }
-
-    _ConstraintString * 0;
-    return _ConstraintString;
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function ConvertToPart (pString)
-{
-    partitionHits    =         {};
-    h                  =         0; 
-    v                  =         bppSize;
-    
-    for (mpiNode=0; mpiNode<partCount; mpiNode=mpiNode+1)
-    {
-        aBP    = 0;
-        bpF       = 2^(bppSize-1);
-        
-        for (; h<v; h=h+1)
-        {
-            aBP = aBP + bpF*(0+pString[h]);
-            bpF = bpF/2;
-        }
-        
-        if (aBP>=Abs(bppMap)-1)
-        {
-            aBP = aBP - 2^(bppSize-1);
-        }
-        
-        v = v + bppSize;
-        partitionHits[aBP] = 1;
-    }
-
-    meKeys     = Rows(partitionHits);
-    v          = Columns(meKeys);
-    sortedBP = {v,1};
-    
-    for (h=0; h<v; h=h+1)
-    {
-        sortedBP [h] = 0+meKeys[h];
-    }
-    
-    sortedBP = sortedBP % 0;
-    return        sortedBP;
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function RunASample (dummy,jobIndex)
-{    
-    myAIC     = MasterList[ConvertToPartString (cString)];
-
-    if (myAIC<0)
-    {        
-        if (resultProcessingContext==0)
-        {
-            sortedScores[jobIndex][0] = myAIC;
-            if (verboseFlag)
-            {
-                fprintf (stdout, "Individual ",jobIndex," AIC-c = ",-myAIC, "\n");
-            }
-        }
-        else
-        {
-            intermediateProbs[jobIndex][0] = myAIC;    
-            if (verboseFlag)
-            {
-                fprintf (stdout, "Offspring ",jobIndex," AIC-c = ",-myAIC,"\n");
-            }
-        }    
-        return 0;
-    }
-
-    if (dataType)
-    {
-        bpF = 0;    
-    }
-    else
-    {
-        bpF = -1;
-    }
-    
-    mpiStringToSend              = "";
-    mpiStringToSend                * 8192;
-    
-    ConstraintString             = "";
-    LikelihoodFunctionString      = "";
-    ConstraintString             * 8192;
-    LikelihoodFunctionString     * 256;
-    LikelihoodFunctionString    * "LikelihoodFunction lf=(";
-    
-
-    for (h=0; h<v; h=h+1)
-    {
-        bpF2 = bppMap[sortedBP[h]];
-        if (dataType)
-        {
-            filterString = ""+(3*bpF)+"-"+(3*bpF2-1);
-        }
-        else
-        {
-            filterString = ""+(bpF+1)+"-"+bpF2;        
-        }
-        ConstraintString * ("DataSetFilter filteredData = CreateFilter(ds,1,\""+filterString+"\");");
-        if (dataType)
-        {
-            ConstraintString * ("DataSetFilter filteredData"+h+" = CreateFilter (ds,3,\""+filterString+"\",\"\",GeneticCodeExclusions);");        
-        }
-        else
-        {
-            ConstraintString * ("DataSetFilter filteredData"+h+" = CreateFilter (ds,1,\""+filterString+"\");");
-        }
-        ConstraintString * ("InferTreeTopology (0);treeString=TreeMatrix2TreeString(0);Tree givenTree"+h+" = treeString;");
-        if (h)
-        {
-            LikelihoodFunctionString * ",";
-        }
-        LikelihoodFunctionString * ("filteredData" + h + ",givenTree"+h);
-        bpF = bpF2;
-    }
-    
-    if ((bpF2<ds.sites && (dataType == 0)) || (bpF2<3*ds.sites && dataType))
-    {
-        if (dataType)
-        {
-            filterString = ""+(3*bpF2)+"-"+(ds.sites-1);
-        }
-        else
-        {
-            filterString = ""+(bpF2+1)+"-"+(ds.sites-1);        
-        }
-
-        ConstraintString * ("DataSetFilter filteredData = CreateFilter(ds,1,\""+filterString+"\");");
-        if (dataType)
-        {
-            ConstraintString * ("DataSetFilter filteredData"+h+" = CreateFilter (ds,3,\""+filterString+"\",\"\",GeneticCodeExclusions);");        
-        }
-        else
-        {
-            ConstraintString * ("DataSetFilter filteredData"+h+" = CreateFilter (ds,1,\""+filterString+"\");");
-        }
-        ConstraintString * ("InferTreeTopology (0);treeString=TreeMatrix2TreeString(0);Tree givenTree"+h+" = treeString;");
-
-        LikelihoodFunctionString * (",filteredData" + h + ",givenTree"+h);
-    }
-
-
-    LikelihoodFunctionString * (");");
-    ConstraintString          * 0;
-    LikelihoodFunctionString * 0;    
-    
-    mpiStringToSend * _mpiPrefixString;
-    mpiStringToSend * ConstraintString;
-    mpiStringToSend * LikelihoodFunctionString;
-    
-    
-    if ((MPI_NODE_COUNT>1) && (jobIndex>=0))
-    {
-        mpiStringToSend * ("Optimize(res,lf);return \"lf_MLES=\"+res+\";\";");
-        mpiStringToSend * 0;
-        for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
-        {
-            if (MPINodeState[mpiNode][0]==0)
-            {
-                break;    
-            }
-        }
-        if (mpiNode==MPI_NODE_COUNT-1)
-        {
-            mpiNode = ReceiveJobs (1,jobIndex);
-        }
-        else
-        {
-            MPISend (mpiNode+1,mpiStringToSend);
-            MPINodeState[mpiNode][0] = 1;
-            MPINodeState[mpiNode][1] = jobIndex;
-        }
-    }
-    else
-    {
-        mpiStringToSend * 0;
-        ExecuteCommands (mpiStringToSend);
-        Optimize (res,lf);
-        if (jobIndex>=0)
-        {
-            mpiNode = ReceiveJobs (1, jobIndex);
-        }
-        else
-        {
-            myAIC = 2*(res[1][0]-res[1][1]-baseParams);
-        }
-    }
-    return 0;    
-}
-
-
-
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function SpawnRandomString (clsCnt)
-{
-    rModel = {totalBitSize,1};
-    for (h=0; h<totalBitSize; h=h+1)
-    {
-        rModel[h] = Random(0,2)$1;
-    }
-    return rModel;
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function IsChildViable (putativeChild)
-{
-    sampleString =     ConvertToPartString (putativeChild);
-    myAIC         = MasterList[sampleString];
-    testChild      = putativeChild;
-    mutPassCount = 1;
-    
-    for (_lc = 0; _lc < populationSize && myAIC > (-0.1); _lc = _lc + 1)
-    {
-        if (Rows (currentPopulation[_lc]))
-        {
-            myAIC = -(sampleString == ConvertToPartString (currentPopulation[_lc]));
-        }
-    } 
-    for (_lc = 0; _lc < Abs(children) && myAIC > (-0.1); _lc = _lc + 1)
-    {
-        if (Rows (children[_lc]))
-        {
-            myAIC = -(sampleString == ConvertToPartString (children[_lc]));
-        }
-    } 
-    
-    while ((myAIC<(-0.1) || minPartLength<shortestAllowedSegment)&& mutPassCount < 25)
-    {
-        if (verboseFlag > 1)
-        {
-            fprintf (stdout,"Adjusting the child to avoid a duplicate. Min(fragment) = ",minPartLength,".  Pass ", mutPassCount, "\n");
-        }
-        
-        mutPassCount     = mutPassCount + 1;
-        sampleString     = Min(Random(0,stateVectorDimension)$1,stateVectorDimension-1);
-        myAIC             = testChild[sampleString];
-        newValue         = Random (0,rateClassesCount-0.0000001)$1;
-        
-        while (newValue == myAIC)
-        {
-            newValue     = Random (0,rateClassesCount-0.0000001)$1;
-        }
-        
-        testChild [sampleString]     = newValue;
-        sampleString                  = ConvertToPartString (testChild);
-        myAIC                          = MasterList           [sampleString];
-        for (_lc = 0; _lc < populationSize && myAIC > (-0.1); _lc = _lc + 1)
-        {
-            if (Rows (currentPopulation[_lc]))
-            {
-                myAIC = -(sampleString == ConvertToPartString (currentPopulation[_lc]));
-            }
-        } 
-        for (_lc = 0; _lc < Abs(children) && myAIC > (-0.1); _lc = _lc + 1)
-        {
-            if (Rows (children[_lc]))
-            {
-                myAIC = -(sampleString == ConvertToPartString (children[_lc]));
-            }
-        } 
-    }
-    return testChild;
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function UpdateBL (dummy)
-{
-    return 0;
-}
-
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-
-dataType = 0;
-
-fprintf        (stdout, "Initialized GARD on ", MPI_NODE_COUNT, " MPI nodes.\nPopulation size is ", populationSize, " models\n");
-SetDialogPrompt     ("Nucleotide file to screen:");
-DataSet     ds    = ReadDataFile (PROMPT_FOR_FILE);
-
-baseFilePath       = LAST_FILE_PATH;
-
-done = 0;
-
-while (!done)
-{
-    fprintf (stdout,"\nPlease enter a 6 character model designation (e.g:010010 defines HKY85):");
-    fscanf  (stdin,"String", modelDesc);
-    if (Abs(modelDesc)==6)
-    {    
-        done = 1;
-    }
-}
-
-ChoiceList (rvChoice, "Rate variation options", 1, SKIP_NONE,
-                      "None",                     "Homogeneous rates across sites (fastest)",
-                      "General Discrete",         "General discrete distribution on N-bins",
-                      "Beta-Gamma",             "Adaptively discretized gamma N-bins. Try is GDD doesn't converge well, or if you suspect a lot of rate classes and do not want to overparameterize the model");
-                      
-if (rvChoice<0)
-{
-    return 0;
-}
-
-if (rvChoice)
-{
-    rateClasses = 0;
-    while (rateClasses < 2 || rateClasses > 32)
-    {
-        fprintf (stdout, "How many distribution bins [2-32]?:");
-        fscanf  (stdin,  "Number", rateClasses);
-        rateClasses = rateClasses $ 1;
-    }
-    fprintf (stdout, "\nUsing ", rateClasses, " distribution bins\n");
-}
-
-DEFAULT_FILE_SAVE_NAME          = baseFilePath + ".html";
-
-SetDialogPrompt               ("Save results to:");
-fprintf                    (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN);
-outputFilePath                 = LAST_FILE_PATH;
-
-
-
-DataSetFilter filteredData  = CreateFilter (ds,1);
-
-InferTreeTopology (0);
-treeString = TreeMatrix2TreeString(0);
-baseTreeString 		= treeString;
-
-/* find "informative sites" */
-
-if (dataType==0)
-{
-    for (h=0; h<filteredData.sites; h=h+1)
-    {
-        filterString = Format(h,20,0);
-        DataSetFilter siteFilter = CreateFilter (filteredData,1,filterString);
-
-        HarvestFrequencies (f1, siteFilter, 1, 1, 0);
-        m1 = 0;
-        for (mpiNode=0; (mpiNode < 4) && (m1<=1) ; mpiNode=mpiNode+1)
-        {
-            if (f1[mpiNode]>0)
-            {
-                m1=m1+1;
-            }
-        }    
-        if (m1>1)
-        {
-            bppMap[Abs(bppMap)] = h;
-        }
-    }
-}
-
-
-bppSize = (Log(Abs(bppMap))/Log(2)+1)$1;
-fprintf (stdout, "There are ",Abs(bppMap)," potential breakpoints. Bit size of the sample is ", bppSize,".\n");
-
-
-partCount = 2;
-h = Abs(bppMap);
-
-if (h <= partCount)
-{
-    fprintf (outputFilePath,   "ERROR: There are too few potential break points to support ", partCount-1, " recombination events.\n");
-    return 0;
-}
-
-
-maxBPP        = h-1;
-ModelTitle = ""+modelDesc[0];
-            
-rateBiasTerms = {{"AC","1","AT","CG","CT","GT"}};
-paramCount      = 0;
-
-modelConstraintString = "";
-
-for (customLoopCounter2=1; customLoopCounter2<6; customLoopCounter2=customLoopCounter2+1)
-{
-    for (customLoopCounter=0; customLoopCounter<customLoopCounter2; customLoopCounter=customLoopCounter+1)
-    {
-        if (modelDesc[customLoopCounter2]==modelDesc[customLoopCounter])
-        {
-            ModelTitle  = ModelTitle+modelDesc[customLoopCounter2];    
-            if (rateBiasTerms[customLoopCounter2] == "1")
-            {
-                modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter]+":="+rateBiasTerms[customLoopCounter2]+";";
-            }
-            else
-            {
-                modelConstraintString = modelConstraintString + rateBiasTerms[customLoopCounter2]+":="+rateBiasTerms[customLoopCounter]+";";            
-            }
-            break;
-        }
-    }
-    if (customLoopCounter==customLoopCounter2)
-    {
-        ModelTitle = ModelTitle+modelDesc[customLoopCounter2];    
-    }
-}    
-
-if (Abs(modelConstraintString))
-{
-    ExecuteCommands (modelConstraintString);
-}
-
-
-if (rvChoice)
-{
-    rateClasses = rateClasses $ 1;
-    if (rateClasses < 2)
-    {
-        rateClasses = 2;
-    }
-    else
-    {
-        if (rateClasses > 8)
-        {
-            rateClasses = 8;
-        }
-    }    
-    
-    if (ds.species < 5)
-    {
-        rateClasses = Min (3,rateClasses);
-    }
-    else
-    {
-        if (ds.species < 10)
-        {
-            rateClasses = Min (4,rateClasses);    
-        }
-        else
-        {
-            if (ds.species < 30)
-            {
-                rateClasses = Min (5,rateClasses);    
-            }
-        }
-    }
-    
-    if (rvChoice == 1)
-    {
-        gdDefString = "";
-        gdDefString * 1024;
-        for (mi=1; mi<rateClasses; mi=mi+1)
-        {
-            gdDefString*("global PS_"+mi+" = 1/"+((rateClasses+1)-mi)+";\nPS_"+mi+":<1;\n");
-        }
-        
-        gdDefString*("\n\nglobal RS_1 = .3;\nRS_1:<1;RS_1:>0.000000001;\n");
-
-        for (mi=3; mi<=rateClasses; mi=mi+1)
-        {
-            gdDefString*("global RS_"+mi+" = 1.5;"+"\nRS_"+mi+":>1;RS_"+mi+":<100000;\n");
-        } 
-
-        rateStrMx    = {rateClasses,1};
-        rateStrMx[0] = "RS_1";
-        rateStrMx[1] = "1";
-
-        for (mi=3; mi<=rateClasses; mi=mi+1)
-        {
-            rateStrMx[mi-1] = rateStrMx[mi-2]+"*RS_"+mi;
-        }     
-
-        freqStrMx    = {rateClasses,1};
-        freqStrMx[0] = "PS_1";
-
-        for (mi=1; mi<rateClasses-1; mi=mi+1)
-        {
-            freqStrMx[mi] = "";
-            for (mi2=1;mi2<=mi;mi2=mi2+1)
-            {
-                freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";        
-            }
-            freqStrMx[mi] = freqStrMx[mi]+"PS_"+(mi+1);    
-        }    
-
-        freqStrMx[mi] = "";
-        for (mi2=1;mi2<mi;mi2=mi2+1)
-        {
-            freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi2+")";        
-        }
-        freqStrMx[mi] = freqStrMx[mi]+"(1-PS_"+mi+")";    
-
-
-        gdDefString*("\n\nglobal c_scale:="+rateStrMx[0]+"*"+freqStrMx[0]);
-
-        for (mi=1; mi<rateClasses; mi=mi+1)
-        {
-            gdDefString*("+"+rateStrMx[mi]+"*"+freqStrMx[mi]);
-        }
-
-        gdDefString*(";c_scale :< 1e100; \ncategFreqMatrix={{"+freqStrMx[0]);
-
-        for (mi=1; mi<rateClasses; mi=mi+1)
-        {
-            gdDefString*(","+freqStrMx[mi]);
-        }
-
-        gdDefString*("}};\ncategRateMatrix={{"+rateStrMx[0]+"/c_scale");
-
-        for (mi=1; mi<rateClasses; mi=mi+1)
-        {
-            gdDefString*(","+rateStrMx[mi]+"/c_scale");
-        }
-
-        gdDefString*("}};\n\ncategory c  = ("+rateClasses+", categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);\n\n");
-        gdDefString*0;
-        ExecuteCommands (gdDefString);    
-    }
-    else
-    {
-        global betaP = 1;
-        global betaQ = 1;
-        betaP:>0.05;betaP:<85;
-        betaQ:>0.05;betaQ:<85;
-        category pc = (rateClasses-1, EQUAL, MEAN, 
-                        _x_^(betaP-1)*(1-_x_)^(betaQ-1)/Beta(betaP,betaQ), /* density */
-                        IBeta(_x_,betaP,betaQ), /*CDF*/
-                        0,                    /*left bound*/
-                        1,                /*right bound*/
-                        IBeta(_x_,betaP+1,betaQ)*betaP/(betaP+betaQ)
-                       );
-        
-        global alpha = .5;
-        alpha:>0.01;alpha:<100;
-        category c = (rateClasses, pc, MEAN, 
-                        GammaDist(_x_,alpha,alpha), 
-                        CGammaDist(_x_,alpha,alpha), 
-                        0 , 
-                          1e25,
-                          CGammaDist(_x_,alpha+1,alpha)
-                       );
-            
-    }
-    NucleotideMatrix     = {{*,c*AC*t,c*t,c*AT*t}
-                            {c*AC*t,*,c*CG*t,c*CT*t}
-                            {c*t,c*CG*t,*,c*GT*t}
-                            {c*AT*t,c*CT*t,c*GT*t,*}};
-}
-else
-{
-    NucleotideMatrix     = {{*,AC*t,t,AT*t}{AC*t,*,CG*t,CT*t}{t,CG*t,*,GT*t}{AT*t,CT*t,GT*t,*}};
-}
-
-HarvestFrequencies           (nucEFV, filteredData, 1, 1, 1);
-Model nucModel           = (NucleotideMatrix, nucEFV, 1);
-Tree givenTree             = treeString;
-branchNames                  = BranchName (givenTree,-1);
-LikelihoodFunction lf   = (filteredData,givenTree);
-
-
-/* check parameter counts */
-
-GetString                 (varList, lf, -1);
-baseParams                    = Columns(varList["Global Independent"])+3;
-perPartParameterCount    = Columns(varList["Local Independent"]);
-baseSites                   = filteredData.sites;
-
-if (baseParams + (partCount+1) * perPartParameterCount >= baseSites - 1)
-{
-    fprintf (stdout,   "ERROR: Too few sites for c-AIC inference.\n");
-    return 0;
-}
-
-if (baseParams + 2 * perPartParameterCount >= baseSites - 1)
-{
-    fprintf (stdout,   "ERROR: Too few sites for reliable c-AIC inference.\n");
-    return 0;
-}
-
-
-fprintf (stdout,         "\nFitting a baseline nucleotide model...\n");
-Optimize            (res,lf);
-baseLL               = res[1][0];
-
-currentPopulation  = {};
-sortedScores       = {populationSize,2};
-/*baseParams            = res[1][2];*/
-
-myDF                = baseParams+perPartParameterCount;
-
-sortedScores[0][0] = 2*(res[1][0]-myDF*(baseSites/(baseSites-myDF-1)));
-sortedScores[0][1] = 0;
-
-fprintf (stdout, CLEAR_FILE, "Done with single partition analysis. ",
-                 "Log(L) = ",lf,
-                 ", c-AIC  = ",-sortedScores[0][0], "\n");
-
-
-if (baseParams>3)
-{
-
-    ConstraintString = "";
-    ConstraintString*256;
-    for (h=0; h<baseParams-3; h=h+1)
-    {
-        GetString (v,lf,h);
-        ConstraintString * (v+":="+v+"__;\n");
-    }
-    ConstraintString*0;
-    ExecuteCommands (ConstraintString);
-}
-
-_mpiPrefixString = "";
-_mpiPrefixString * 256;
-
-_mpiPrefixString * ("ExecuteAFile (HYPHY_LIB_DIRECTORY+\"TemplateBatchFiles\"+DIRECTORY_SEPARATOR+\"Utility\"+DIRECTORY_SEPARATOR+\"NJ.bf\");");
-_mpiPrefixString * ("DataSet     ds    = ReadDataFile (\""+baseFilePath+"\");");
-Export (modelString, USE_LAST_MODEL);
-_mpiPrefixString * modelString;
-_mpiPrefixString * 0;
-
-crapAIC          = -sortedScores[0][0];
-startTimer         = Time (1);
-
-if (MPI_NODE_COUNT>1)
-{
-    MPINodeState             = {MPI_NODE_COUNT-1,3};
-    MPINodeBreakpoints        = {};
-}
-
-currentBEST_IC              = crapAIC;
-ibfPath                  = "GARD_GA_CHC.ibf";
-current_BPP_done_counter = 0;
-
-lastImprovedBPC = 0;
-
-byBPImprovement = {};
-byBPSplits        = {};
-
-DataSetFilter allData = CreateFilter (ds, 1);
-
-byBPImprovement[0]    = crapAIC;
-bestIndividualOverall = 0;
-
-fprintf (stdout, "Starting the GA...\n");
-
-for (currentBPC = startAtBreakpoint; currentBPC < maxBPP; currentBPC = currentBPC + 1)
-{
-    partCount                 = currentBPC;
-    totalBitSize             = bppSize * partCount;
-    stateVectorDimension     = totalBitSize;
-    
-    if (currentBPC == startAtBreakpoint)
-    {
-        currentPopulation [0] = {totalBitSize,1};
-    }
-    else
-    {
-        for (k=0; k<populationSize; k=k+1)
-        {
-            oldVector              = currentPopulation[k];
-            newVector             = {totalBitSize,1};
-            currentPopulation[k] = newVector ["oldVector[_MATRIX_ELEMENT_ROW_%(totalBitSize-bppSize)]"];
-        }
-        children = {};
-    }    
-    
-    totalModelCounter          = 1;
-    kf                          = 1;
-
-    for (k=1; k <= partCount; k=k+1)
-    {
-        totalModelCounter = totalModelCounter * (Abs(bppMap)-k+1);
-        kf                   = kf * k;
-    } 
-    totalModelCounter = totalModelCounter / kf;
-
-    ExecuteAFile             (ibfPath);     
-    
-    current_BPP_done_counter = Abs (MasterList);
-    kf                         = -sortedScores[populationSize-1][0];
-    
-    if (currentBEST_IC > kf || currentBPC == 1)
-    {
-        byBPSplits        [currentBPC] = ConvertToPart     (currentPopulation[populationSize-1]);
-        byBPImprovement [currentBPC] = currentBEST_IC-kf;
-        if (currentBEST_IC > kf)
-        {
-            lastImprovedBPC       = currentBPC;
-            bestIndividualOverall = currentPopulation[populationSize-1];
-        }
-        currentBEST_IC = Min(kf,currentBEST_IC);
-    }
-    else
-    {
-        break;
-    }
-}
-
-
-fprintf (outputFilePath, "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN'><html><head><META http-equiv='Content-Style-Type' content='text/css'><meta http-equiv='Content-Type' content='text/html; charset=ISO-8859-1'><title>GARD Results</title><LINK REL=STYLESHEET TYPE='text/css' HREF='http://www.datamonkey.org/GARD/styles/styles.css'></head><body>");
-fprintf (outputFilePath, "<DIV CLASS = 'RepClassSM'>Processed alignment <b>", baseFilePath,"</b> with ", ds.species, " sequences and ", ds.sites, " sites.",
-                          "<p> Processor time taken: ", Time(1)-startTimer, " seconds.</DIV>");
-                          
-if (timeLeft < 0)
-{
-    fprintf (outputFilePath, "<DIV CLASS = 'ErrorTag'> This analysis was stopped before convergence, because the CPU time limit per job was reached. The reported results may, therefore be incomplete, as there may be more breakpoints, for example. ",
-                             "Consider reducing the size of the alignment, either by removing sequences or selecting shorted sequence regions, or choosing a simpler model (no rate variation etc). </DIV>\n");
-}
-
-fprintf (outputFilePath, "<DIV class = 'RepClassSM'><u>Results</u><p>", reportImprovementHTML (0), "</DIV>");
-
-                         
-
-fprintf (outputFilePath, "<DIV CLASS='RepClassSM'><span class = 'font-variant:small-caps;'>Substitution process parameters</span><p><b>Nucleotide Model (",modelDesc,
-        ") Fit Results</b><p>Log likelihood : ",outputSpan (150,baseLL),"<br>",
-        "c-AIC : ", outputSpan(150, crapAIC),"<br>");
-
-if (rvChoice)
-{
-    if (rvChoice == 1)
-    {
-        fprintf (outputFilePath, "<p>Using general discrete distribution of rates across sites");
-    }    
-    else
-    {
-        fprintf (outputFilePath, "<p>Using the beta-gamma distribution of rates across sites");    
-    }
-    GetInformation (cI,c);
-    for (k = 0; k < Columns (cI); k=k+1)
-    {
-        fprintf (outputFilePath, "<br> Rate : ", Format (cI[0][k],7,3), outputSpan (150, "Weight : " + Format (cI[1][k],7,3)));
-    }
-}
-else
-{
-    fprintf (outputFilePath, "<p>Homogeneous rate distribution across sites");
-}
-
-fprintf (outputFilePath, "<p><u>Nucleotide substitution rate matrix</u><p>",
-        "<TABLE id='rate-matrix-table'><TR CLASS = 'TRReportT'><TH>&nbsp;</TH><TH>A</TH><TH>C</TH><TH>G</TH><TH>T</TH></TR>",
-        "<TR CLASS = 'TRReport1'><TH>A</TH><TD>&#42;</TD><TD>",AC,"</TD><TD>1</TD><TD>",AT,"</TD></TR>",        
-        "<TR CLASS = 'TRReport2'><TH>C</TH><TD>&#45;</TD><TD>&#42</TD><TD>",CG,"</TD><TD>",CT,"</TD></TR>",        
-        "<TR CLASS = 'TRReport1'><TH>G</TH><TD>&#45;</TD><TD>&#45</TD><TD>&#42</TD><TD>",GT,"</TD></TR>",        
-        "<TR CLASS = 'TRReport2'><TH>T</TH><TD>&#45;</TD><TD>&#45</TD><TD>&#45</TD><TD>&#42</TD></TR></TABLE>",        
-        "</DIV></html>");
-
-
-fprintf  (outputFilePath, "</body></html>", CLOSE_FILE);
-fprintf      (stdout, "Performing the final optimization...\n");
-
-rawOutFile = outputFilePath + "_splits";
-fprintf (rawOutFile,CLEAR_FILE);
-
-// print rate matrix to new JSON file
-
-rateMatrix = _reportSubstitutionMatrix("givenTree", "filteredData");
-jsonOutFile = outputFilePath + ".json";
-
-gard.json = {
-    "rateMatrix" : rateMatrix
+/**
+    ---- OUTLINE ----
+    1. SETUP
+        1a. Initial Setup
+        1b. User Input
+        1c. Load and Filter Data
+        1d. Check that there are enough sites to permit cAIC
+        1e. Baseline fit on entire alignment
+        1f. Set up some book keeping
+        1g. Set general and baseline info to json
+    2. MAIN ANALYSIS
+        2a. Evaluation of single break points with brute force
+            2a1. Loop over every valid single break point
+            2a2. Report the status of the sinlge break point analysis
+            2a3. Evaluate if the best single breakpoint is the overall best model
+        2b. Evaluation of multiple break points with genetic algorithm
+            GA.1: Setup global parameters
+            GA.2: Loop over increasing number of break points
+                GA.2.a Setup for n number of break points
+                GA.2.b Loop over increasing generations for particular number of break points
+                    GA.2.b.1 Produce the next generation of models with recombination.
+                    GA.2.b.2 Select the fittest models.
+                    GA.2.b.3 Evaluate convergence for this modelSet initialization
+                    GA.2.b.4 Evaluate convergence for this number of break points
+                GA.2.c Report status of n-break point analysis.
+                GA.2.d Evaluate if the analysis should conclude or if the GA should run with breakpoints + 1
+    3. Conclude Analysis (run the gard.concludeAnalysis function)
+
+    FUNCTIONS
+        - General GARD Functions
+        - Genetic Algorithm Functions
+        - Helper Functions
+
+    NOTES
+        - By convention, a model consisting of N breakpoints is encoded as an Nx1 (column)
+          matrix with SITE (not PATTERN) coordinates
+*/
+
+
+/* 1. SETUP
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
+/* 1a. Initial Setup
+------------------------------------------------------------------------------*/
+RequireVersion ("2.4.0");
+
+LoadFunctionLibrary ("libv3/all-terms.bf");
+LoadFunctionLibrary ("libv3/convenience/regexp.bf");
+LoadFunctionLibrary ("libv3/convenience/math.bf");
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+LoadFunctionLibrary ("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary ("libv3/tasks/trees.bf");
+LoadFunctionLibrary ("libv3/tasks/alignments.bf");
+LoadFunctionLibrary ("libv3/tasks/estimators.bf");
+LoadFunctionLibrary ("SelectionAnalyses/modules/io_functions.ibf");
+LoadFunctionLibrary ("libv3/tasks/mpi.bf");
+LoadFunctionLibrary ("libv3/convenience/random.bf");
+LoadFunctionLibrary("libv3/models/rate_variation.bf");
+
+
+
+gard.analysisDescription = {terms.io.info : "GARD : Genetic Algorithms for Recombination Detection. Implements a heuristic
+    approach to screening alignments of sequences for recombination, by using the CHC genetic algorithm to search for phylogenetic
+    incongruence among different partitions of the data. The number of partitions is determined using a step-up procedure, while the
+    placement of breakpoints is searched for with the GA. The best fitting model (based on c-AIC) is returned; and additional post-hoc
+    tests run to distinguish topological incongruence from rate-variation.",
+                           terms.io.version : "0.1",
+                           terms.io.reference : "**Automated Phylogenetic Detection of Recombination Using a Genetic Algorithm**, _Mol Biol Evol 23(10), 1891–1901",
+                           terms.io.authors : "Sergei L Kosakovsky Pond",
+                           terms.io.contact : "spond@temple.edu",
+                           terms.io.requirements : "A sequence alignment."
+                          };
+
+namespace terms.gard {
+    nucleotide = "Nucleotide";
+    protein    = "Protein";
+    codon      = "Codon";
 };
 
-gard.json[utility.getGlobalValue("terms.json.input")] = {};
-(gard.json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.file")] =  baseFilePath;
-(gard.json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sequences")] = Eval("filteredData.species");
-(gard.json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sites")] = filteredData.sites;
-(gard.json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.partition_count")] = partCount;
-gard.json["timeElapsed"] = Time(1) - startTimer;
-gard.json["rvChoice"] = rvChoice;
-gard.json["rvRates"] = rateClasses;
-gard.json["potentialBreakpoints"] = Abs(bppMap);
-
-if (Rows(bestIndividualOverall))
-{
-    totalBitSize = Rows (bestIndividualOverall)*Columns(bestIndividualOverall);
-    partCount    = totalBitSize/bppSize;
-    outAVL          = ExportAMatrix (rawOutFile,bestIndividualOverall,0);
-
-    filterStrings = outAVL["Filters"];
-    treeStrings      = outAVL["Trees"];
-
-    results = KHTest(outAVL);
-    gard.json["likelihoodScores"] = results["likelihoodScores"];
-    gard.json["pairwiseP"] = results["pairwiseP"];
-    gard.json["singleTreeAICc"] = results["singleTreeAICc"];
-
-}
-else
-{
-    outAVL         = ExportAMatrix (rawOutFile,0,0);
-}
+gard.json = {   terms.json.analysis: gard.analysisDescription,
+                terms.json.input: {},
+            };
 
 
-io.SpoolJSON (gard.json, jsonOutFile);
+/* 1b. User Input
+------------------------------------------------------------------------------*/
+io.DisplayAnalysisBanner (gard.analysisDescription);
 
-rawOutFile = outputFilePath + "_ga_details";
-fprintf (rawOutFile,CLEAR_FILE, KEEP_OPEN);
+KeywordArgument ("type",        "The type of data to perform screening on", "Nucleotide");
+KeywordArgument ("code",        "Genetic code to use (for codon alignments)", "Universal", "Choose Genetic Code");
+KeywordArgument ("alignment",   "Sequence alignment to screen for recombination");
 
-masterKeys = Rows(MasterList);
-for (h=Rows(masterKeys)*Columns(masterKeys)-1; h>=0; h=h-1)
-{
-    aKey = masterKeys[h];
-    fprintf (rawOutFile,(-MasterList[aKey]),"\n",aKey,"\n");
-}
-fprintf (rawOutFile,CLOSE_FILE);
 
-IS_TREE_PRESENT_IN_DATA = 0;
-DATA_FILE_PRINT_FORMAT    = 6;
+gard.dataType = io.SelectAnOption  ({terms.gard.nucleotide : "A nucleotide (DNA/RNA) alignment",
+                                      terms.gard.protein : "A protein alignment",
+                                      terms.gard.codon : "An in-frame codon alignment"},
+                                      "The type of data to perform screening on");
+// Output key word argument is after data is loaded
 
-tempFile               = outputFilePath + "_finalout";
+/* 1c. Load and Filter Data
+------------------------------------------------------------------------------*/
+if (gard.dataType == terms.gard.nucleotide) {
+    LoadFunctionLibrary ("libv3/models/DNA/GTR.bf");
+    gard.model.generator = "models.DNA.GTR.ModelDescription";
+    gard.alignment = alignments.ReadNucleotideDataSet ("gard.sequences", null);
+    DataSetFilter gard.filter = CreateFilter (gard.sequences, 1);
+} else {
+    // TODO: implement these branches
+    if (gard.dataType == terms.gard.protein) {
+        LoadFunctionLibrary     ("libv3/models/protein.bf");
+        LoadFunctionLibrary     ("libv3/models/protein/empirical.bf");
+        LoadFunctionLibrary     ("libv3/models/protein/REV.bf");
 
-fprintf               (tempFile,CLEAR_FILE,KEEP_OPEN,allData,"\nBEGIN TREES;\n");
-bpL                     = outAVL ["BP"];
-bpT                     = outAVL ["Trees"];
-for                  (rvChoice = 0; rvChoice < Abs(bpT); rvChoice = rvChoice + 1)
-{
-    fprintf (tempFile, "\tTREE part_", rvChoice+1, " = ", bpT[rvChoice], ";\n");
-}
-fprintf               (tempFile,"\nEND;\n\nBEGIN ASSUMPTIONS;\n");
-for                  (rvChoice = 0; rvChoice < Abs(bpL); rvChoice = rvChoice + 1)
-{
-    fprintf (tempFile, "\tCHARSET span_", rvChoice+1, " = ", bpL[rvChoice], ";\n");
-}
-fprintf                 (tempFile,"\nEND;\n",CLOSE_FILE);
+        gard.alignment = alignments.ReadProteinDataSet ("gard.sequences", null);
+        DataSetFilter gard.filter = CreateFilter (gard.sequences, 1);
+        // prompt for which model to use
+        utility.Extend (models.protein.empirical_models, {"GTR" : "General time reversible model (189 estimated parameters)."});
+        KeywordArgument ("model", "The substitution model to use", "JTT");
+        gard.baseline_model         = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
+        gard.model.generator        = (utility.Extend (models.protein.empirical.plusF_generators , {"GTR" : "models.protein.REV.ModelDescription"}))[gard.baseline_model ];
 
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function testLRT (vec1, vec2, itCount)
-{
-	size1 = Columns(vec1);
-	
-	sumVec1 = {size1,1};
-	jvec	= {2,size1};
-	resMx1	= {itCount,1};
-	resMx2	= {itCount,1};
-	
-	for (k=0; k<size1; k=k+1)
-	{
-		sumVec1 [k]	   = 1;
-		jvec	[0][k] = vec1[k];
-		jvec	[1][k] = vec2[k];
-	}
-	
-	
-	for (k=0; k<itCount; k=k+1)
-	{
-		resampled = Random(jvec,1);
-		resampled = resampled*sumVec1;
-		resMx1[k] = resampled[0];
-		resMx2[k] = resampled[1];
-	}
-	
-	return (resMx1-resMx2)*2;
+    } else {
+        gard.alignment = alignments.LoadGeneticCodeAndAlignment ("gard.sequences", "gard.filter", null);
+        LoadFunctionLibrary     ("libv3/models/codon/MG_REV.bf");
+        gard.model.generator = "models.codon.MG_REV.ModelDescription";
+   }
 }
 
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-function KHTest(outAVL) {
+KeywordArgument ("rv",   "Site to site rate variation", "None");
+gard.rateVariation = io.SelectAnOption  ({"None"  : "Constant rates",
+                                          "Gamma" : "Unit mean gamma distribution discretized into N rates",
+                                          "GDD"   : "General discrete distribution on N rates"},
+                                          "Site to site rate variation option");
 
-    filterStrings = outAVL["Filters"];
-    treeStrings      = outAVL["Trees"];
-    
-    USE_DISTANCES = 0;
-    lfDef = "";
-    lfDef * 128;
-    lfDef  * "LikelihoodFunction multiPart  = (";
-    
-    readPCount = Abs (filterStrings);
-    
-    for (pccounter = 0; pccounter < readPCount; pccounter = pccounter + 1)
-    {
-        ExecuteCommands ("DataSetFilter part_" + pccounter + " = CreateFilter (ds, 1, \"" + filterStrings[pccounter] + "\");");
-        ExecuteCommands ("Tree tree_" + pccounter + " = baseTreeString;");
-        if (pccounter)
-        {
-            lfDef  * ",";
-        }
-        lfDef  * ("part_"+pccounter+",tree_"+pccounter);
+if (gard.rateVariation != "None") {
+    KeywordArgument ("rate-classes",   "How many site rate classes to use", "4");
+    gard.rateClasses = io.PromptUser(">How many site rate classes to use", 4, 2, 10, TRUE);
+    gard.model.generator.base = gard.model.generator;
+    if (gard.rateVariation == "Gamma") {
+        gard.model.generator = "gard.model.withGamma";
+    } else {
+        gard.model.generator = "gard.model.withGDD";
     }
-    lfDef  * ");";
-    lfDef  * 0;
+}
 
-    ExecuteCommands (lfDef);
-    
-    Optimize (res2, multiPart);
-    myDF  = res2[1][1]+baseParams;
-    myAIC = -2*(res2[1][0]-myDF*(baseSites/(baseSites-myDF-1)));
-    
-    bpLocations = {readPCount, 1}; 
-    for (pccounter = 0; pccounter <  readPCount; pccounter = pccounter + 1)
-    {
-        if (pccounter)
-        {
-            bpLocations[pccounter] = siteCount + bpLocations[pccounter-1];
-        }
-        ExecuteCommands ("siteCount = part_" + pccounter + ".sites;");
+//------------------------------------------------------------------------------------------------------------------------
+function gard.model.withGamma (options) {
+	def = Call  (gard.model.generator.base, options);
+	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.Gamma.factory (
+	    {utility.getGlobalValue("terms.rate_variation.bins") : gard.rateClasses});
+	return def;
+};
+
+//------------------------------------------------------------------------------------------------------------------------
+function gard.model.withGDD  (options) {
+	def = Call  (gard.model.generator.base, options);
+	def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory (
+	    {utility.getGlobalValue("terms.rate_variation.bins") : gard.rateClasses});
+	return def;
+};
+//------------------------------------------------------------------------------------------------------------------------
+
+// Where to save the json
+gard.defaultJsonFilePath = (gard.alignment[terms.data.file] + '.GARD.json');
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'GARD.json')", gard.defaultJsonFilePath);
+gard.jsonFileLocation = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
+gard.defaultFitFilePath = (gard.alignment[terms.data.file] + '.best-gard');
+KeywordArgument ("output-lf", "Write the best fitting HyPhy analysis snapshot to (default is to save to the same path as the alignment file + 'best-gard')", gard.defaultFitFilePath);
+gard.lfFileLocation = io.PromptUserForFilePath ("Save the HyPhy analysis snapshot to");
+
+
+// Define model to be used in each fit
+if (gard.dataType == terms.gard.codon) {
+    gard.model = model.generic.DefineModel (gard.model.generator, "gard.overallModel", {"0" : "terms.global", "1": gard.alignment[terms.code]}, "gard.filter", null);
+    gard.siteMultiplier = 3;
+    gard.siteShift = 2;
+} else {
+    gard.model = model.generic.DefineModel (gard.model.generator, "gard.overallModel", {"0" : "terms.global"}, "gard.filter", null);
+    gard.siteMultiplier = 1;
+    gard.siteShift = 0;
+}
+
+gard.numSites               = gard.alignment[terms.data.sites];
+gard.numSeqs                = gard.alignment[terms.data.sequences];
+
+// Get a matrix of the variable sites {"0": site index, "1": site index ...}
+gard.variableSiteMap = {};
+
+
+
+utility.ForEach (alignments.Extract_site_patterns ("gard.filter"), "_pattern_", "
+    if (_pattern_[terms.data.is_constant]==FALSE) {
+        utility.ForEachPair (_pattern_[terms.data.sites], '_key_', '_value_',
+        '
+            gard.variableSiteMap + (gard.siteMultiplier*_value_ + gard.siteShift);
+        ');
     }
-    
-    conditionals      = {};
-    likelihoodScores = {readPCount,readPCount};
-    pairwiseP         = {readPCount,readPCount};
-    
-    treeSplitMatches      = 0;
-    khIterations         = 10000;
-    
-    LIKELIHOOD_FUNCTION_OUTPUT = 7;
-    
-    for (pccounter = 0; pccounter <  readPCount; pccounter += 1)
-    {
-        for (pc2 = 0; pc2 <  readPCount; pc2 += 1)
-        {
-            if (Abs(pc2-pccounter) <= 1)
-            {
-                DataSetFilter         aPart = CreateFilter (ds,1,filterStrings[pccounter]);
-                Tree                  aTree = treeStrings[pc2];
-                LikelihoodFunction    aLF    = (aPart,aTree);
-                Optimize            (aRes, aLF);    
-                ConstructCategoryMatrix (conds, aLF,SITE_LOG_LIKELIHOODS);
-                conditionals        [pccounter*readPCount+pc2] = conds;
-                likelihoodScores    [pccounter][pc2] = aRes[1][0];
+");
+
+gard.variableSiteMap = Transpose (utility.DictToArray (gard.variableSiteMap)) % 0; // sort by 1st column
+gard.variableSites = Rows (gard.variableSiteMap);
+gard.inverseVariableSiteMap = unility.SwapKeysAndValues(gard.variableSiteMap);
+gard.numberOfPotentialBreakPoints = gard.variableSites - 1;
+
+io.ReportProgressMessage ("", ">Loaded a `gard.dataType` multiple sequence alignment with **`gard.numSeqs`** sequences, **`gard.numSites`** sites (`gard.variableSites` of which are variable) from \`" +
+                                gard.alignment[utility.getGlobalValue("terms.data.file")] + "\`");
+
+gard.baselineParameters     = (gard.model[terms.parameters])[terms.model.empirical] + // empirical parameters
+                              utility.Array1D ((gard.model[terms.parameters])[terms.global]) + // global parameters
+                              utility.Array1D ((gard.model[terms.parameters])[terms.local]) * (2*gard.numSeqs-5) * 2; // local parameters X number of branches x at least 2 partitions
+
+gard.minExpectedSites     = (gard.baselineParameters + 2);
+gard.minPartitionSize       = 2*gard.numSeqs-3;
+/** gard.minPartitionSize:
+    a simple heuristic that requires that there c-AIC makes sense for each individual
+    partition i.e. there are at least 2 more sites than branch lengths
+**/
+
+io.ReportProgressMessage ("", ">Minimum size of a partition is set to be `gard.minPartitionSize` sites");
+
+/* 1d. Check that there are enough sites to permit cAIC
+------------------------------------------------------------------------------*/
+io.CheckAssertion("gard.minExpectedSites <= gard.numSites", "The alignment is too short to permit c-AIC based model comparison. Need at least `gard.minExpectedSites` sites for `gard.numSeqs` sequences to fit a two-partiton model.");
+
+
+/* 1e. Baseline fit on entire alignment
+------------------------------------------------------------------------------*/
+io.ReportProgressMessageMD('GARD', 'baseline-fit', 'Fitting the baseline (single-partition; no breakpoints) model');
+gard.startTime = Time(1);
+// Infer NJ tree, estimting rate parameters (branch-lengths, frequencies and substitution rate matrix)
+
+gard.baseLikelihoodInfo = gard.fitPartitionedModel (null, gard.model, null, null, FALSE);
+gard.initialValues = gard.baseLikelihoodInfo;
+gard.globalParameterCount = utility.Array1D (estimators.fixSubsetOfEstimates(gard.initialValues, gard.initialValues[terms.global]));
+// Set branch lenth = null in intialValues (need to have a null entry for each partition so just setting a bunch of them here)
+maxExpectedBreakPoints = 200;
+for(i=0; i<maxExpectedBreakPoints; i=i+1) {
+    (gard.initialValues [terms.branch_length])[i] = null;
+}
+
+gard.baseline_cAIC = math.GetIC (gard.baseLikelihoodInfo[terms.fit.log_likelihood], gard.baseLikelihoodInfo[terms.parameters], gard.numSites);
+io.ReportProgressMessageMD("GARD", "baseline-fit", "* " + selection.io.report_fit (gard.baseLikelihoodInfo, 0, gard.numSites));
+
+
+/* 1f. Set up some book keeping
+------------------------------------------------------------------------------*/
+// Setup mpi variableSiteMap
+gard.createLikelihoodFunctionForExport ("gard.exportedModel", gard.model);
+gard.queue = mpi.CreateQueue (
+                            {
+                            "LikelihoodFunctions" : {{"gard.exportedModel"}},
+                            "Headers" : {{"libv3/all-terms.bf"}},
+                            "Variables" : {{"gard.globalParameterCount", "gard.numSites", "gard.alignment", "gard.variableSiteMap", "gard.dataType", "terms.gard.codon"}}
+                            }
+                        );
+
+// Setup master list of evaluated models.
+gard.masterList = {};
+/** gard.masterList:
+    "model string": "model fitness (cAIC score)"
+    model string is in the format: "{\n{bp1} \n{bp2} ...\n}"
+    model fitness is either infinity (if not evaluated) or the numeric cAIC score
+**/
+
+gard.masterList [{{}}] = gard.baseline_cAIC;
+gard.bestOverall_cAIC_soFar = gard.baseline_cAIC;
+gard.bestOverallModelSoFar = {{}};
+
+
+/* 1g. Set general and baseline info to json
+------------------------------------------------------------------------------*/
+gard.json[terms.json.input] = { terms.json.file: gard.alignment[terms.data.file],
+                                terms.json.sequences: gard.alignment[terms.data.sequences],
+                                terms.json.sites: gard.alignment[terms.data.sites],
+                                terms.json.partition_count: Rows(gard.alignment[terms.data.partitions])
+                              };
+gard.json['potentialBreakpoints'] = gard.numberOfPotentialBreakPoints;
+gard.json['baselineScore'] = gard.baseline_cAIC;
+
+
+/* 2. MAIN ANALYSIS
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
+/* 2a. Evaluation of single break points with brute force
+------------------------------------------------------------------------------*/
+io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Performing an exhaustive single breakpoint analysis');
+
+namespace gard {
+
+    // 2a1. Loop over every valid single break point
+    singleBreakPointBest_cAIC = ^"math.Infinity";
+
+    for (breakPointIndex = 0; breakPointIndex <variableSites - 1; breakPointIndex += 1) {
+        siteIndex = variableSiteMap [breakPointIndex];
+
+        if (singleBreakPointBest_cAIC < baseline_cAIC) {
+            io.ReportProgressBar ("GARD", "Breakpoint " +  Format (1+breakPointIndex, 10, 0) + " of " + (variableSites-1) + ". Best cAIC = " + Format (singleBreakPointBest_cAIC, 12, 4) + " [delta = " + Format (baseline_cAIC - singleBreakPointBest_cAIC, 12, 4) + "] with breakpoint at site " + Format (singleBreakPointBestLocation, 10, 0));
+        } else {
+            io.ReportProgressBar ("GARD", "Breakpoint " +  Format (1+breakPointIndex, 10, 0) + " of " + (variableSites-1) + ". Best cAIC = " + Format (baseline_cAIC, 12, 4) + " with no breakpoints");
+        }
+
+
+        if (gard.validatePartititon ({{siteIndex}}, minPartitionSize, numSites) == FALSE)  {
+            continue;
+        }
+
+        mpi.QueueJob (queue, "gard.obtainModel_cAIC", {"0" : {{siteIndex__}},
+                                                     "1" : model,
+                                                     "2" : baseLikelihoodInfo},
+                                                     "gard.storeSingleBreakPointModelResults");
+
+    }
+
+    mpi.QueueComplete (queue);
+    io.ClearProgressBar();
+
+    // 2a2. Report the status of the sinlge break point analysis
+    io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Done with single breakpoint analysis.');
+    io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   Best sinlge break point location: " + singleBreakPointBestLocation));
+    io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   c-AIC  = " + singleBreakPointBest_cAIC));
+}
+
+// 2a3. Evaluate if the best single breakpoint is the overall best model
+if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
+    gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
+    gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
+    gard.improvements = {'0': {
+                                "deltaAICc": gard.baseline_cAIC - gard.bestOverall_cAIC_soFar,
+                                "breakpoints": gard.bestOverallModelSoFar
+                              }
+                        };
+} else {
+    gard.bestOverallModelSoFar = null;
+}
+
+
+/* 2b. Evaluation of multiple break points with genetic algorithm
+------------------------------------------------------------------------------*/
+io.ReportProgressMessageMD('GARD', 'multi-breakpoint', 'Performing multi breakpoint analysis using a genetic algorithm');
+
+namespace gard {
+    // GA.1: Setup global parameters
+    populationSize = 30; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
+    if(populationSize < mpi.NodeCount()) {
+        populationSize = mpi.NodeCount();
+    }
+    mutationRate = 0.8; // the GARD paper said "15% of randomly selected bits were toggled"...
+    rateOfMutationsTharAreSmallShifts = 0.5; // some mutations are a new random break point; some are small shifts of the break point to an adjacent location.
+    maxFailedAttemptsToMakeNewModel = 7;
+    cAIC_diversityThreshold = 0.001;
+    cAIC_improvementThreshold = 0.01; // I think this was basically 0 in the gard paper
+    maxGenerationsAllowedWithNoNewModelsAdded = 15; // TODO: Not in the GARD paper. use 10?
+    maxGenerationsAllowedAtStagnent_cAIC = 100; // TODO: this is set to 100 in the GARD paper
+
+    // GA.2: Loop over increasing number of break points
+    addingBreakPointsImproves_cAIC = TRUE;
+    numberOfBreakPointsBeingEvaluated = 1;
+    while(addingBreakPointsImproves_cAIC) {
+        // GA.2.a Setup for n number of break points
+        numberOfBreakPointsBeingEvaluated+=1;
+        generationsAtCurrentBest_cAIC = 0;
+        generationsNoNewModelsAdded = 0;
+        parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints, bestOverallModelSoFar);
+
+        // GA.2.b Loop over increasing generations for particular number of break points
+        terminationCondition = FALSE;
+        generation = 0;
+        while(terminationCondition == FALSE) {
+            // GA.2.b.1 Produce the next generation of models with recombination.
+            childModels = gard.GA.recombineModels(parentModels, populationSize);
+
+            // GA.2.b.2 Select the fittest models.
+            interGenerationalModels = parentModels;
+            interGenerationalModels * childModels;
+            gard.GA.evaluateModels(interGenerationalModels);
+            selectedModels = gard.GA.selectModels(interGenerationalModels, populationSize);
+
+            // GA.2.b.3 Evaluate convergence for this modelSet initialization
+            // If converged, produce a new parent modelSet (keeping the current fitest)
+            if (gard.GA.modelSetsAreTheSame(selectedModels, parentModels)) {
+                generationsNoNewModelsAdded += 1;
+            } else {
+                generationsNoNewModelsAdded = 0;
+            }
+            if ( (math.minNormalizedRange(selectedModels) < cAIC_diversityThreshold) || (generationsNoNewModelsAdded > maxGenerationsAllowedWithNoNewModelsAdded) ) {
+                parentModels = gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints, mutationRate, rateOfMutationsTharAreSmallShifts);
+                if (Abs(parentModels) == 1) {
+                    parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints);
+                }
+                differenceThreshold = numberOfBreakPointsBeingEvaluated / 4;
+            } else {
+                parentModels = selectedModels;
+            }
+
+            // GA.2.b.4 Evaluate convergence for this number of break points
+            // If converged, move on to n+1 break points or end analysis
+            currentBest_individual = Min(interGenerationalModels,1);
+            currentBest_cAIC  = currentBest_individual["value"];
+            currentBest_model = Eval(currentBest_individual["key"]);
+
+            if (previousBest_cAIC - currentBest_cAIC < cAIC_improvementThreshold) {
+                generationsAtCurrentBest_cAIC += 1;
+                if (generationsAtCurrentBest_cAIC >= maxGenerationsAllowedAtStagnent_cAIC) {
+                    terminationCondition = TRUE;
+                }
+            } else {
+                generationsAtCurrentBest_cAIC = 0;
+            }
+            previousBest_cAIC = currentBest_cAIC;
+
+            generation += 1;
+
+            if (bestOverall_cAIC_soFar-currentBest_cAIC > 0) {
+                 io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + "]"
+                                        + ". Min (c-AIC) = " + Format (currentBest_cAIC, 12,4) + " [ delta = " + Format (bestOverall_cAIC_soFar-currentBest_cAIC, 8, 2) + "], breakpoints at " + Join (", ", currentBest_model));
+
+            } else {
+                io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + "]"
+                                        + ". Min (c-AIC) = " + Format (currentBest_cAIC, 12,4) + " [no improvement], breakpoints at " + Join (", ", bestOverallModelSoFar));
             }
         }
-        
-        partTreeConds = conditionals[pccounter*readPCount+pccounter];
-        
-        for (pc2 = 0; pc2 <  readPCount; pc2 += 1)
-        {
-            if (Abs(pc2-pccounter) == 1)
-            {
-                otherPartTree = conditionals[pccounter*readPCount+pc2];
-                baseLRT = 2*(likelihoodScores[pccounter][pccounter]-likelihoodScores[pccounter][pc2]);
-                textMx = testLRT(partTreeConds,otherPartTree,khIterations) % 0;
-                for (kk=0; kk<khIterations; kk=kk+1)
-                {    
-                    if (textMx[kk]>=2*OPTIMIZATION_PRECISION)
-                    {
-                        break;
+
+        io.ClearProgressBar();
+        // GA.2.c Report status of n-break point analysis.
+        statusString = ("Done with " + numberOfBreakPointsBeingEvaluated + " breakpoint analysis.\n" + gard.GA.getMultiBreakPointStatusString(selectedModels, variableSiteMap));
+        io.ReportProgressMessageMD('GARD', 'multi-breakpoint', statusString);
+
+        // GA.2.d Evaluate if the analysis should conclude or if the GA should run with breakpoints + 1
+        if (previousBest_cAIC < bestOverall_cAIC_soFar) {
+            bestModel = gard.Helper.convertMatrixStringToMatrix(utility.Keys(selectedModels)[Min(utility.Values(selectedModels),1)[1]]);
+            improvements[numberOfBreakPointsBeingEvaluated-1] = {
+                                                                    "deltaAICc": bestOverall_cAIC_soFar - previousBest_cAIC,
+                                                                    "breakpoints": bestModel
+                                                                };
+            bestOverall_cAIC_soFar = previousBest_cAIC;
+            bestModel = gard.Helper.convertMatrixStringToMatrix(utility.Keys(selectedModels)[Min(utility.Values(selectedModels),1)[1]]);
+            bestOverallModelSoFar = bestModel;
+        } else {
+            addingBreakPointsImproves_cAIC = FALSE;
+            gard.concludeAnalysis(bestOverallModelSoFar);
+        }
+    }
+
+}
+
+
+//--------------------------------------------------------------------------------------------------------------------
+
+/* FUNCTIONS
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
+// ---- General GARD Functions ----
+
+/**
+ * @name gard.fitPartitionedModel
+ * Given a list of partitions, specified as increasing breakpoint locations,
+   fit the specified model to said partitions, using neighbor joining trees on each partition
+   return the likelihood information object
+
+ * @param {Matrix} breakPoints : sorted, 0-based breakpoints, e.g.
+    {{100,200}} -> 3 partitions : 0-100, 101-200, 201-end
+ * @param {Dict} model : an instantiated model to be used for all partitions
+ * @param {Dict/null} initialValues : if provided, use as initial values
+ * @param {String/null} saveToFile: if provided, save the resulting nexus file to this file location
+ * @param {Bolean} constrainToOneTopology: if provided, allow the branch lengths to vary across partitions but constrain the topology to the overall tree
+
+ * @returns a {likelihood information object}
+
+ */
+
+lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFile, constrainToOneTopology) {
+
+    currentIndex = 0;
+    currentStart = 0;
+    breakPointsCount = utility.Array1D (breakPoints);
+    partCount = breakPointsCount + 1;
+    lfComponents = {2 * (partCount), 1};
+    trees = {};
+
+    if (constrainToOneTopology == TRUE) {
+        overall_tree = trees.ExtractTreeInfo (tree.infer.NJ ( "gard.filter", null));
+    }
+
+    for (p = 0; p < partCount; p += 1) {
+        lastPartition = p >= breakPointsCount;
+        if (!lastPartition) {
+            currentEnd = breakPoints[p];
+        } else {
+            if (^"gard.dataType" == ^"terms.gard.codon") {
+                currentEnd = ^"gard.filter.sites" * 3;
+            } else {
+                currentEnd = ^"gard.filter.sites";
+            }
+            currentEnd = currentEnd - 1;
+        }
+        lfComponents [2*p] = "gard.filter.part_" + p;
+        lfComponents [2*p+1] = "gard.tree.part_" + p;
+        if (^"gard.dataType" == ^"terms.gard.codon") {
+            DataSetFilter ^(lfComponents[2*p]) = CreateFilter (^"gard.filter", 3, "" + currentStart + "-" + currentEnd, "", (^"gard.alignment")[^"terms.stop_codons"]);
+        } else {
+            DataSetFilter ^(lfComponents[2*p]) = CreateFilter (^"gard.filter", 1, "" + currentStart + "-" + currentEnd);
+        }
+        if (constrainToOneTopology == TRUE) {
+            trees[p] = overall_tree;
+        } else {
+            trees[p] = trees.ExtractTreeInfo (tree.infer.NJ ( lfComponents[2*p], null));
+        }
+        model.ApplyModelToTree(lfComponents[2 * p + 1], trees[p], {
+            "default": model
+        }, None);
+        // Increment the current starting point
+        if (!lastPartition) {
+            currentStart = breakPoints[p] + 1;
+        }
+    }
+
+    lf_id = &likelihoodFunction;
+    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lfComponents`)");
+
+    modelObjects = {
+        "gard.overallModel" : model
+    };
+
+    df = 0;
+    if (Type(initialValues) == "AssociativeList") {
+        utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
+        df = estimators.ApplyExistingEstimates(&likelihoodFunction, modelObjects, initialValues, None);
+    }
+
+    res = estimators.FitExistingLF (&likelihoodFunction, modelObjects);
+
+    if (Type (saveToFile) == "String") {
+        io.SpoolLF (&likelihoodFunction, saveToFile, "");
+    }
+
+    DeleteObject (likelihoodFunction, :shallow);
+
+    res[^"terms.parameters"] += df + (model[^"terms.parameters"])[^"terms.model.empirical"];
+    return res;
+
+}
+
+/**
+ * @name gard.obtainModel_cAIC
+ * Wrap a call to gard.fitPartitionedModel to compute c-AIC
+
+   @returns c-AIC
+
+ */
+lfunction gard.obtainModel_cAIC (breakPoints, model, initialValues) {
+    fit = gard.fitPartitionedModel (breakPoints, model, initialValues, null, FALSE);
+    c_AIC = math.GetIC (fit[^"terms.fit.log_likelihood"], fit[^"terms.parameters"] + ^"gard.globalParameterCount", ^"gard.numSites");
+    return c_AIC;
+}
+
+function gard.storeSingleBreakPointModelResults (node, result, arguments) {
+    result = Eval (result);
+    gard.masterList[arguments[0]] = result;
+    if (result < gard.singleBreakPointBest_cAIC) {
+        gard.singleBreakPointBest_cAIC = result;
+        gard.singleBreakPointBestLocation = Eval(arguments[0])[0];
+    }
+}
+
+lfunction gard.createLikelihoodFunctionForExport (id,  model) {
+    overall_tree = trees.ExtractTreeInfo (tree.infer.NJ ( "gard.filter", null));
+    model.ApplyModelToTree("gard._ignore_tree",overall_tree, {
+        "default": model
+    }, None);
+
+    utility.ExecuteInGlobalNamespace ("LikelihoodFunction `id` = (gard.filter, gard._ignore_tree)");
+
+}
+
+/**
+    definition is assumed to contain a SORTED list of 0-based
+    breakpoint locations
+
+    If any of the individual partitions is < minSize, the function
+    returns FALSE, otherwise it returns TRUE
+*/
+lfunction gard.validatePartititon (definition, minSize, totalSites) {
+    lastBP = 0;
+    //console.log ("");
+    //console.log (definition);
+    bpCount = utility.Array1D (definition);
+    for (i = 0; i < bpCount; i+=1) {
+        if (definition[i] - lastBP + 1 < minSize) {
+            return FALSE;
+        }
+        lastBP = definition[i];
+    }
+    if (totalSites - lastBP < minSize) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/**
+   @name gard.modelIsNotInMasterList
+   @params {Matrix || Dictonary} breakPoints
+   @returns {Bolean}
+
+ */
+lfunction gard.modelIsNotInMasterList(masterList, breakPoints) {
+    return utility.KeyExists(masterList, '' + breakPoints) == FALSE;
+}
+
+function gard.concludeAnalysis(bestOverallModel) {
+    (gard.json)['timeElapsed'] = Time(1) - gard.startTime;
+    (gard.json)['siteBreakPointSupport'] = gard.getSiteBreakPointSupport(gard.masterList, gard.bestOverall_cAIC_soFar);
+    (gard.json)['singleTreeAICc'] = gard.getSingleTree_cAIC(bestOverallModel);
+    (gard.json)['totalModelCount'] = Abs(gard.masterList);
+
+    gard.setBestModelTreeInfoToJson(bestOverallModel);
+
+    if(Abs((gard.json)['trees']) > 1) {
+        (gard.json)['improvements'] = gard.improvements;
+    }
+
+    io.SpoolJSON (gard.json, gard.jsonFileLocation);
+
+}
+
+function gard.setBestModelTreeInfoToJson(bestModel) {
+    gard.bestModelNumberBreakPoints = utility.Array1D(bestModel);
+
+    if(gard.bestModelNumberBreakPoints == 0) {
+        gard.json['breakpointData'] = { 'tree': (gard.baseLikelihoodInfo["Trees"])[0],
+                                        'bps': {{1,gard.numSites}}
+                                      };
+        gard.json['trees'] = {"newickString": (gard.baseLikelihoodInfo["Trees"])[0] };
+    }
+
+    if (gard.bestModelNumberBreakPoints > 0) {
+        // bestModel is a 1xn matrix with the the site index of the break points
+        gard.bestModelBreakPoints = bestModel;
+        gard.bestModelMultiBreakpointLikelihoodInfo = gard.fitPartitionedModel(gard.bestModelBreakPoints, gard.model, gard.baseLikelihoodInfo, gard.lfFileLocation, FALSE);
+
+        gard.bestModelTrees = {};
+        gard.bestModelBps = {};
+        gard.bestModelBreakpointData = {};
+        for(i=0; i<gard.bestModelNumberBreakPoints + 1; i += 1) {
+            gard.bestModelTrees[i] = {"newickString": (gard.bestModelMultiBreakpointLikelihoodInfo['Trees'])[i]};
+             gard.bestModelBps[i] = {1,2};
+            if(i == 0){
+                (gard.bestModelBps[i])[0] = 1;
+                (gard.bestModelBps[i])[1] = gard.bestModelBreakPoints[i];
+             } else {
+                if(i < gard.bestModelNumberBreakPoints) {
+                    (gard.bestModelBps[i])[0] = gard.bestModelBreakPoints[i-1]+1;
+                    (gard.bestModelBps[i])[1] = gard.bestModelBreakPoints[i];
+                } else {
+                    (gard.bestModelBps[i])[0] = gard.bestModelBreakPoints[i-1]+1;
+                    (gard.bestModelBps[i])[1] = gard.numSites;
+                }
+            }
+            gard.bestModelBreakpointData[i] = ({
+                                                "tree": (gard.bestModelMultiBreakpointLikelihoodInfo['Trees'])[i],
+                                                "bps": gard.bestModelBps[i]
+                                             });
+        }
+        gard.json['trees'] = gard.bestModelTrees;
+        gard.json['breakpointData'] = gard.bestModelBreakpointData;
+    }
+    return ;
+}
+
+lfunction gard.getSingleTree_cAIC(bestOverallModel) {
+    gard.singleTreeLikelihoodInfo = gard.fitPartitionedModel (bestOverallModel, ^"gard.model", ^"gard.initialValues", null, TRUE);
+    gard.singleTree_cAIC = math.GetIC (gard.singleTreeLikelihoodInfo[^"terms.fit.log_likelihood"], gard.singleTreeLikelihoodInfo[^"terms.parameters"] + ^"gard.globalParameterCount", ^"gard.numSites");
+    return gard.singleTree_cAIC;
+}
+
+lfunction gard.getSiteBreakPointSupport(modelMasterList, best_cAIC_score) {
+    gard.masterListModels = utility.Keys(modelMasterList);
+    gard.masterList_cAIC_values = utility.Values(modelMasterList);
+    gard.numberOfModels = Columns(gard.masterList_cAIC_values);
+
+    gard.siteAkaikeWeights = {};
+    for(modelIndex=0; modelIndex<gard.numberOfModels; modelIndex=modelIndex+1) {
+        gard.cAIC_delta = best_cAIC_score - gard.masterList_cAIC_values[modelIndex];
+        gard.akaikeWeight = Exp(gard.cAIC_delta * 0.5);
+
+        if( Abs(gard.masterListModels[modelIndex]) > 3) {
+            gard.breakPointMatrix = gard.Helper.convertMatrixStringToMatrix(gard.masterListModels[modelIndex]);
+        } else {
+            gard.breakPointMatrix = 0;
+        }
+        gard.numberOfBreakPoints = Columns(gard.breakPointMatrix);
+
+        for(breakPointIndex=0; breakPointIndex<gard.numberOfBreakPoints; breakPointIndex=breakPointIndex+1) {
+            gard.siteAkaikeWeights[gard.breakPointMatrix[breakPointIndex]] += gard.akaikeWeight;
+        }
+    }
+
+    gard.akaikeWeightScallingFactor = 1 / (Max(gard.siteAkaikeWeights)['value']);
+    gard.normalizedSiteAkaikeWeights = {};
+
+    gard.potentialBreakPointList = utility.Keys(gard.siteAkaikeWeights);
+    gard.numberOfPotentialBreakPoints = Abs(gard.siteAkaikeWeights);
+    for(breakPointIndex=0; breakPointIndex<gard.numberOfPotentialBreakPoints; breakPointIndex+=1) {
+        siteIndex = gard.potentialBreakPointList[breakPointIndex];
+        gard.normalizedSiteAkaikeWeights[siteIndex] = gard.siteAkaikeWeights[siteIndex]*gard.akaikeWeightScallingFactor;
+    }
+
+    return gard.normalizedSiteAkaikeWeights;
+}
+
+
+// ---- Genetic Algorithm (GA) Functions ----
+
+/**
+ * @name gard.GA.initializeModels
+ * @param {Number} numberOfBreakPoints
+ * @param {Number} populationSize
+ * @param {Number} numberOfPotentialBreakPoints
+ * @returns a {Dictonary} initializedModels
+ */
+lfunction gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberOfPotentialBreakPoints, seed) {
+
+    initializedModels = {};
+    modelNumber       = 0;
+
+    if (null != seed) {
+       for (; modelNumber < populationSize$2; modelNumber += 1) {
+         do {
+            breakPoints = {numberOfBreakPoints, 1};
+            for (breakpoint.index = 0; breakpoint.index < numberOfBreakPoints - 1; breakpoint.index += 1) {
+                breakPoints[breakpoint.index] = seed[breakpoint.index];
+            }
+            breakPoints [breakpoint.index] = (^"gard.variableSiteMap") [Random(0, numberOfPotentialBreakPoints)$1];
+            breakPoints = gard.Helper.sortedMatrix(breakPoints);
+
+        } while (gard.validatePartititon (breakPoints, ^"gard.minPartitionSize", ^"gard.numSites") == FALSE);
+
+        initializedModels[breakPoints] = ^"math.Infinity";
+       }
+    }
+    for (; modelNumber < populationSize; modelNumber += 1) {
+        // TODO : make sure that feasible solutions exist, i.e. that gard.validatePartititon doesn't just keep rejecting all models
+        do {
+            breakPoints = utility.Map (({numberOfBreakPoints,1} ["Random(0, numberOfPotentialBreakPoints)$1"]) % 0, "_pattern_", "gard.variableSiteMap[_pattern_]");
+        } while (gard.validatePartititon (breakPoints, ^"gard.minPartitionSize", ^"gard.numSites") == FALSE);
+
+        initializedModels[breakPoints] = ^"math.Infinity";
+    }
+    return initializedModels;
+}
+
+/**
+ * @name gard.GA.recombineModels
+ Given a set of models create a new generation of models by iteratively recombining two random parent models.
+ The child model will have a random subset of the breakpoints from the parents
+
+ * @param {Matrix} parentModels
+ * @param {Number} populationSize
+ * @returns a {Dictonary} childModels
+ */
+lfunction gard.GA.recombineModels (parentModels, populationSize) {
+    parentModelIds = utility.Keys(parentModels);
+    numberOfParentModels = Abs(parentModels);
+    firstModel = gard.Helper.convertMatrixStringToMatrix(parentModelIds[0]);
+    numberOfBreakPoints = utility.Array1D (firstModel);
+
+    childModels = {};
+    for(modelIndex=0; modelIndex<populationSize; modelIndex+=1) {
+
+        modelIsValid = FALSE;
+        failedAttempts = 0;
+        while(modelIsValid == FALSE && failedAttempts < ^"gard.maxFailedAttemptsToMakeNewModel") {
+            parentModel1 = gard.Helper.convertMatrixStringToMatrix(parentModelIds[Random(0, numberOfParentModels-.0001)$1]);
+            parentModel2 = gard.Helper.convertMatrixStringToMatrix(parentModelIds[Random(0, numberOfParentModels-.0001)$1]);
+
+            while(parentModel1 == parentModel2) {
+                parentModel2 = gard.Helper.convertMatrixStringToMatrix(parentModelIds[Random(0, numberOfParentModels-.0001)$1]);
+            }
+
+            breakPoints = {numberOfBreakPoints, 1};
+            for (breakPointNumber=0; breakPointNumber < numberOfBreakPoints; breakPointNumber += 1) {
+                if (random.TRUE_or_FALSE()) {
+                    breakPoints[breakPointNumber] = parentModel1[breakPointNumber];
+                } else {
+                    breakPoints[breakPointNumber] = parentModel2[breakPointNumber];
+                }
+            }
+            breakPoints = gard.Helper.sortedMatrix(breakPoints);
+            if ( (gard.modelIsNotInMasterList(^"gard.masterList", breakPoints)) && (gard.validatePartititon(breakPoints, ^"gard.minPartitionSize", ^"gard.numSites")) ) {
+                modelIsValid = TRUE;
+            } else {
+                failedAttempts+=1;
+            }
+
+        }
+        if (modelIsValid) {
+            childModels[breakPoints] = ^"math.Infinity";
+        }
+
+    }
+    return childModels;
+}
+
+/**
+ * @name gard.GA.evaluateModels
+ * @param {Dictonary} models (some models may have cAIC scores already)
+ * @returns nothing... the gard.GA.storeMultiBreakPointModelResults function gets called which updates the intergenerationalModels object
+ */
+function gard.GA.evaluateModels (models) {
+    modelIds = utility.Keys(models);
+    numberOfModels = Columns(modelIds);
+
+    for(modelIndex=0; modelIndex<numberOfModels; modelIndex += 1) {
+        modelId = modelIds[modelIndex];
+        cAIC = models[modelId];
+
+
+        if (cAIC == math.Infinity) {
+            breakPoints = gard.Helper.convertMatrixStringToMatrix(modelId);
+            mpi.QueueJob (gard.queue, "gard.obtainModel_cAIC", {"0" : breakPoints__,
+                                                     "1" : gard.model,
+                                                     "2" : gard.baseLikelihoodInfo},
+                                                     "gard.GA.storeMultiBreakPointModelResults");
+        }
+        mpi.QueueComplete (gard.queue);
+
+    }
+
+}
+
+/**
+ * @name gard.GA.storeMultiBreakPointModelResults
+ // The call back function passed to mpi.QueueJob in the gard.GA.evaluateModels function
+ * @param {Dictonary} evaluatedModels: the set of models at the end of the analysis
+ */
+function gard.GA.storeMultiBreakPointModelResults(node, result, arguments) {
+    result = Eval (result);
+    gard.masterList[arguments[0]] = result;
+    gard.interGenerationalModels[arguments[0]] = result;
+    //console.log ("" + Abs (gard.masterList) + " : " + arguments[0]);
+}
+
+/**
+ * @name gard.GA.selectModels
+ * @param {Dictionary} evaluatedModels
+ * @param {Number} numberOfModelsToKeep
+ * @returns a {Matrix} selectedModels
+ */
+lfunction gard.GA.selectModels (evaluatedModels, numberOfModelsToKeep) {
+    modelIds = utility.Keys(evaluatedModels);
+    cAIC_scores = utility.Values(evaluatedModels);
+
+
+    selectedModels = {};
+    for(i=0; i<numberOfModelsToKeep; i+=1) {
+        lowest_cAIC_index = Min(cAIC_scores,1)[1];
+        selectedModelId = modelIds[lowest_cAIC_index];
+        selectedModels[selectedModelId] = cAIC_scores[lowest_cAIC_index];
+
+        cAIC_scores[lowest_cAIC_index] = ^"math.Infinity";
+    }
+    return selectedModels;
+}
+
+/**
+ * @name gard.GA.modelSetsAreTheSame
+ * @param {Dictionary} modelSet1
+ * @param {Dictionary} modelSet2
+ * @returns a {Bolean}
+ */
+lfunction gard.GA.modelSetsAreTheSame(modelSet1, modelSet2) {
+    s1 = modelSet1;
+    return (s1-modelSet2) == 0;
+}
+
+/**
+ * @name gard.GA.generateNewGenerationOfModelsByMutatingModelSet
+ Keeps the current best performing model
+ Generates new models for the rest of the population by randomly mutating some of the parent models break points
+ // TODO: decide if we want some logic in here to more meaningfully mutate.
+ * @param {Dictonary} parentModels
+ * @param {Number} numberOfPotentialBreakPoints
+ * @param {Number} mutationRate
+ * @param {Number} rateOfMutationsThatAreSmallShifts
+ * @returns a {Dictonary} the new generation of models
+ */
+lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints, mutationRate, rateOfMutationsThatAreSmallShifts) {
+    modelIds = utility.Keys(parentModels);
+    populationSize = Columns(modelIds);
+    firstModel = gard.Helper.convertMatrixStringToMatrix(modelIds[0]);
+    numberOfBreakPoints = utility.Array1D(firstModel);
+
+    // Generate a new set of models
+    nextGenOfModels = {};
+    for(i=0; i<populationSize-1; i += 1) {
+
+        modelIsValid = FALSE;
+        failedAttempts = 0;
+        while(modelIsValid == FALSE && failedAttempts < ^"gard.maxFailedAttemptsToMakeNewModel") {
+            parentModel = gard.Helper.convertMatrixStringToMatrix(modelIds[i]);
+            breakPoints = {numberOfBreakPoints, 1};
+            for(breakPointIndex=0; breakPointIndex<numberOfBreakPoints; breakPointIndex=breakPointIndex+1) {
+
+                if(Random(0,1) < mutationRate) { // keep the break point the same
+                    breakPoints[breakPointIndex] = parentModel[breakPointIndex];
+                } else {
+
+                    if(Random(0,1) < rateOfMutationsThatAreSmallShifts) { // move the break point by a random small amount
+                        distanceOfStep = random.poisson(2);
+                        if (random.TRUE_or_FALSE()) { // randomly decide if the break point moves right or left
+                            distanceOfStep = - distanceOfStep;
+                        }
+                        variableSiteMapIndexOfParentBreakPoint = utility.Find(^"gard.variableSiteMap", parentModel[breakPointIndex]);
+                        newBreakPoint = (^"gard.variableSiteMap")[variableSiteMapIndexOfParentBreakPoint + distanceOfStep];
+                        breakPoints[breakPointIndex] = newBreakPoint;
+                    } else { // select a completely new random break point
+                        breakPoints[breakPointIndex] = (^"gard.variableSiteMap")[Random(0,numberOfPotentialBreakPoints)$1];
                     }
+
                 }
-                pval = Max(1,kk)/khIterations;
-                pairwiseP[pccounter][pc2] = pval;
             }
-        }
-    }
-    
-    results = {
-            "likelihoodScores" : likelihoodScores,
-            "singleTreeAICc" : myAIC,
-            "pairwiseP": pairwiseP
-        };
 
-    return results;
+            breakPoints = gard.Helper.sortedMatrix (breakPoints);
 
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function    reportImprovementHTML (_IC)
-{
-    if (lastImprovedBPC)
-    {
-        return "<DIV class = 'RepClassSM'><b>GARD found evidence of "+lastImprovedBPC+" breakpoints</b><p>"+spoolAICTable(0) + "</DIV>\n";
-                                
-    }
-    return "<DIV class = 'RepClassSM'>GARD found no evidence of recombination</DIV>";
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function    outputSpan (_offset, _text)
-{
-    return "<span style = 'position: absolute; left: " + (140+_offset) + "px'>" + _text + "</span>";
-}
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-function     spoolAICTable (dummy)
-{
-    colorList     = {{"red","black","blue","green","purple","orange"}};
-    fcolorList     = {{"white","white","white","white","white","black"}};
-
-    htmlAICTable = "";
-    htmlAICTable * 128;
-
-
-    htmlAICTable * "<html><body><div style = 'width: 580px; border: black solid 1px; '>";
-    htmlAICTable * "<table id='aic-table' style = 'width: 100%;font-size: 10px;text-align:left;'><tr><th>BPs</th><th>c-AIC</th><th>&Delta; c-AIC</th><th width = '70%'>Segments</th></tr>";
-
-
-    currentAIC = byBPImprovement [0];
-
-    for (_partCount = 0; _partCount <Abs (byBPImprovement); _partCount = _partCount + 1)
-    {
-        if (_partCount)
-        {
-            currentAIC = currentAIC - byBPImprovement [_partCount];
-            ci            = byBPImprovement [_partCount];
-            bpLocs2    = byBPSplits         [_partCount];
-            pxPerSpan  = 406/allData.sites;
-            sp           = "<table style = 'padding: 0px; spacing: 0px;'><tr>";
-            
-            prv        = Rows (bpLocs2);
-            bpLocs       = {1,prv+1};
-            for (k = 0; k < prv; k=k+1)
-            {
-                bpLocs[k]     = bppMap[bpLocs2[k]];
+            if ((gard.modelIsNotInMasterList(^"gard.masterList", breakPoints)) && (gard.validatePartititon(breakPoints, ^"gard.minPartitionSize", ^"gard.numSites")) ) {
+                modelIsValid = TRUE;
+            } else {
+                failedAttempts+=1;
             }
-            
-            bpLocs[prv]  = allData.sites-1;
-            prv          = 1;
-            
-            for (k=0; k<Columns (bpLocs); k=k+1)
-            {
-                sp = sp + "<td style = 'width:"+
-                     pxPerSpan*(bpLocs[k]-prv+1)$1+
-                     "px; background-color: "+
-                     colorList[k%Columns(colorList)]+
-                     "; color: "+
-                     fcolorList[k%Columns(colorList)]+
-                     "; text-align: right; font-size: 10px;'>";
-                     
-                if (k<Columns (bpLocs)-1)
-                {
-                    sp = sp + (bpLocs[k] + 1);    
-                }
-                else
-                {
-                    sp = sp + "&nbsp";    
-                }
-                sp = sp + "</td>";
-                prv = bpLocs[k];
-            }    
-            sp = sp + "</tr></table>";
+
         }
-        else
-        {
-            ci            = "";
-            sp           = "<table><tr><td style = 'font-size:10px;width: 406px;background-color:"+colorList[0]+"; color:"+fcolorList[0]+"'>1-"+allData.sites+"</td></tr></table>";
+
+        if (modelIsValid) {
+            nextGenOfModels[breakPoints] = ^"math.Infinity";
         }
-        htmlAICTable * ("\n<tr><td>"+ _partCount+ 
-                              "</td><td><div style = 'width: "+100*currentAIC/byBPImprovement [0]$1+"%; background-color: purple; color: white;'>"+currentAIC+ 
-                              "</div></td><td>"+ ci+ 
-                              "</td><td>"+ sp+
-                              "</td></tr>");
-        
+
     }
 
-    htmlAICTable * "\n</table></div></body></html>";
-    htmlAICTable * 0;
-    return htmlAICTable;
+    // Add the most fit model from the previous set
+    cAIC_scores = utility.Values(parentModels);
+    lowest_cAIC_index = Min(cAIC_scores,1)[1];
+    selectedModelId = modelIds[lowest_cAIC_index];
+    nextGenOfModels[selectedModelId] = cAIC_scores[lowest_cAIC_index];
+
+    return nextGenOfModels;
+}
+
+/**
+ * @name gard.GA.getMultiBreakPointStatusString
+ get the string to print out after the GA has finished n-breakpoint analysis
+ * @param {Dictonary} evaluatedModels: the set of models at the end of the analysis
+ * @returns a {String} the markdown string to log to console
+ */
+lfunction gard.GA.getMultiBreakPointStatusString(evaluatedModels, variableSiteMap) {
+    best_cAIC_index = Min(utility.Values(evaluatedModels),1)[1];
+    bestModel = gard.Helper.convertMatrixStringToMatrix(utility.Keys(evaluatedModels)[best_cAIC_index]);
+    best_cAIC = Min(utility.Values(evaluatedModels),1)[0];
+    bestBreakPointsString = gard.GA.convertModelMatrixToCommaSeperatedString(bestModel);
+    statusString = "    Best break point locations: " + bestBreakPointsString + "\n" +
+                   "    c-AIC = " + best_cAIC;
+
+    return statusString;
+}
+
+lfunction gard.GA.convertModelMatrixToCommaSeperatedString(matrix){
+    return Join (", ", matrix);
+}
+
+
+// ---- Helper Functions ----
+// TODO: replace these helper functions with a more HBL way of dealing with matrices
+
+lfunction gard.Helper.convertMatrixStringToMatrix(matrixString){
+    return Eval(matrixString);
+}
+
+//sort numeric Nx1 matrix into assending order.
+lfunction gard.Helper.sortedMatrix(matrix) {
+    return matrix % 0;
+
+    /*sortedMatrix = {1,Columns(matrix)};
+
+    for (i=0; i<Columns(matrix); i+=1) {
+        minElementLeft=Min(matrix, 1);
+        sortedMatrix[i] = minElementLeft[0];
+        matrix[minElementLeft[1]] = ^"math.Infinity";
+    }
+
+    return sortedMatrix;*/
 }

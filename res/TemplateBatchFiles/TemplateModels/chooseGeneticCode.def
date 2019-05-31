@@ -45,41 +45,41 @@ _geneticCodeOptionMatrix = {
     {
         "Universal", "Universal code. (Genebank transl_table=1)."
     } {
-        "Vertebrate mtDNA", "Vertebrate mitochondrial DNA code. (Genebank transl_table=2)."
+        "Vertebrate-mtDNA", "Vertebrate mitochondrial DNA code. (Genebank transl_table=2)."
     } {
-        "Yeast mtDNA", "Yeast mitochondrial DNA code. (Genebank transl_table=3)."
+        "Yeast-mtDNA", "Yeast mitochondrial DNA code. (Genebank transl_table=3)."
     } {
-        "Mold/Protozoan mtDNA", "Mold, Protozoan and Coelenterate mitochondrial DNA and the Mycloplasma/Spiroplasma code. (Genebank transl_table=4)."
+        "Mold-Protozoan-mtDNA", "Mold, Protozoan and Coelenterate mitochondrial DNA and the Mycloplasma/Spiroplasma code. (Genebank transl_table=4)."
     } {
-        "Invertebrate mtDNA", "Invertebrate mitochondrial DNA code. (Genebank transl_table=5)."
+        "Invertebrate-mtDNA", "Invertebrate mitochondrial DNA code. (Genebank transl_table=5)."
     } {
-        "Ciliate Nuclear", "Ciliate, Dasycladacean and Hexamita Nuclear code. (Genebank transl_table=6)."
+        "Ciliate-Nuclear", "Ciliate, Dasycladacean and Hexamita Nuclear code. (Genebank transl_table=6)."
     } {
-        "Echinoderm mtDNA", "Echinoderm mitochondrial DNA code. (Genebank transl_table=9)."
+        "Echinoderm-mtDNA", "Echinoderm mitochondrial DNA code. (Genebank transl_table=9)."
     } {
-        "Euplotid Nuclear", "Euplotid Nuclear code. (Genebank transl_table=10)."
+        "Euplotid-Nuclear", "Euplotid Nuclear code. (Genebank transl_table=10)."
     } {
-        "Alt. Yeast Nuclear", "Alternative Yeast Nuclear code. (Genebank transl_table=12)."
+        "Alt-Yeast-Nuclear", "Alternative Yeast Nuclear code. (Genebank transl_table=12)."
     } {
-        "Ascidian mtDNA", "Ascidian mitochondrial DNA code. (Genebank transl_table=13)."
+        "Ascidian-mtDNA", "Ascidian mitochondrial DNA code. (Genebank transl_table=13)."
     } {
-        "Flatworm mtDNA", "Flatworm mitochondrial DNA code. (Genebank transl_table=14)."
+        "Flatworm-mtDNA", "Flatworm mitochondrial DNA code. (Genebank transl_table=14)."
     } {
-        "Blepharisma Nuclear", "Blepharisma Nuclear code. (Genebank transl_table=15)."
+        "Blepharisma-Nuclear", "Blepharisma Nuclear code. (Genebank transl_table=15)."
     } {
-        "Chlorophycean mtDNA", "Chlorophycean Mitochondrial Code (transl_table=16)."
+        "Chlorophycean-mtDNA", "Chlorophycean Mitochondrial Code (transl_table=16)."
     } {
-        "Trematode mtDNA", "Trematode Mitochondrial Code (transl_table=21)."
+        "Trematode-mtDNA", "Trematode Mitochondrial Code (transl_table=21)."
     } {
-        "Scenedesmus obliquus mtDNA", "Scenedesmus obliquus mitochondrial Code (transl_table=22)."
+        "Scenedesmus-obliquus-mtDNA", "Scenedesmus obliquus mitochondrial Code (transl_table=22)."
     } {
-        "Thraustochytrium mtDNA", "Thraustochytrium Mitochondrial Code (transl_table=23)."
+        "Thraustochytrium-mtDNA", "Thraustochytrium Mitochondrial Code (transl_table=23)."
     } {
-        "Pterobranchia mtDNA", "Pterobranchia Mitochondrial Code (transl_table=24)."
+        "Pterobranchia-mtDNA", "Pterobranchia Mitochondrial Code (transl_table=24)."
     } {
-        "SR1 and Gracilibacteria", "Candidate Division SR1 and Gracilibacteria Code (transl_table=25)."
+        "SR1-and-Gracilibacteria", "Candidate Division SR1 and Gracilibacteria Code (transl_table=25)."
     } {
-        "Pachysolen Nuclear", "Pachysolen tannophilus Nuclear Code (transl_table=26)."
+        "Pachysolen-Nuclear", "Pachysolen tannophilus Nuclear Code (transl_table=26)."
     }
 };
 

@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -42,135 +42,88 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#pragma once
 
 
-typedef char* Ptr;
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef TRUE
-#define TRUE  1
-#endif
-
-#ifndef nil
-#define nil   NULL
-#endif
 
 #ifdef      __HEADLESS__
 #include "THyPhy.h"
 #endif
 
-#ifdef __GNUC__
-#define _hprestrict_ __restrict
-#else
-#define _hprestrict_
-#endif
-
-#include "hy_types.h"
-
 #include <stdio.h>
+
+#include "defines.h"
+#include "hy_types.h"
 
 
 class BaseObj {
-
-    //base object class
+    
+    /** 
+        This is a legacy implementation of reference - counted objects.
+        The idea is that when an object reaches the reference count of 0,
+        it can be deleted, because it is no longer being used. 
+     
+        Storing objects by reference or shallow cloning will increase reference counts,
+        inverse operations will decrease said counts.
+     
+        Also defines mandatory overload functions
+     
+     */
+private:
+    long reference_counter;
+    
 public:
-
+    
     BaseObj();
-
+    
     virtual ~BaseObj(void) {}
+    
+    virtual BaseObj *toStr (unsigned long padding = 0UL);
+        /** string representation for the object 
+            @param padding is used to allow 'pretty' rendering of nested objects, like dictss
+         */
+    
+    virtual BaseObj *toErrStr () ;
+        /** error string representation for the object 
+            (default = same as toStr) 
+         */
 
-    virtual BaseObj* toStr     (unsigned long = 0UL);
-    virtual BaseObj* toErrStr  (unsigned long = 0UL);
-    virtual void     toFileStr (FILE*, unsigned long = 0UL);
-
-    /*virtual operator const char*(void);*/
-
-    virtual BaseObj* makeDynamic (void);
-
-    virtual long     FreeUpMemory (long) {
-        return 0;
-    }
-
-    virtual void     Initialize (bool = false) {
-        nInstances=1L;
-    }
-
-    virtual void     Duplicate (BaseObj* ref) {
-        nInstances=++ref->nInstances;
-    }
-
-    inline virtual void     AddAReference (void)     {
-        nInstances ++;
-    }
-
-    virtual inline void     RemoveAReference (void)     {
-        nInstances --;
-    }
-  
-    void ConsoleLog (void);
-
-    long             nInstances;
-
-
+    virtual void toFileStr (FILE *, unsigned long padding = 0UL) ;
+        /** file representation for the object 
+            @param padding is used to allow 'pretty' rendering of nested objects, like dictss
+         */
+    
+    virtual BaseObj *makeDynamic(void) const = 0;
+    
+    virtual void Initialize(bool = false) { reference_counter = 1L; }
+    
+    virtual void Duplicate(BaseObj const * ref) = 0;
+    
+    inline void AddAReference(void) { reference_counter++; }
+    
+    inline void RemoveAReference(void) { reference_counter--; }
+    
+    inline bool CanFreeMe (void)  const { return reference_counter <= 1L; }
+    
+    inline bool SingleReference (void)  const { return reference_counter == 1L; }
+    // comparison functions
+    
+    
 };
 
-typedef BaseObj*  BaseRef;
+typedef BaseObj*        BaseRef;
 typedef BaseObj const * BaseRefConst;
 
 
-bool      DeleteObject (BaseRef); // delete / decrease counter for a dynamic object
+bool    DeleteObject (BaseRef object);
+/** 
+    Remove one reference count from an object, and if it is no
+    longer pointed to by anything (counter = 0), then delete it.
+ 
+    @param object the object to "delete"
+    
+    @retrun true if object was deleted, otherwise false
+ 
+ */
 
 
-#ifdef  __HYPHYDMALLOC__
-#define MemAllocate(X)      malloc(X)
-#define MemReallocate(X,Y)  realloc(X,Y)
-#else
-char*   MemAllocate (long);
-char*   MemReallocate (Ptr, long);
-#endif
-
-bool    GlobalStartup();
-void    InitializeGlobals ();
-bool    GlobalShutdown();
-
-
-extern  FILE*   globalErrorFile;
-extern  FILE*   globalMessageFile;
-
-extern  bool    terminateExecution,
-                skipWarningMessages;
-
-extern long     systemCPUCount;
-
-void          PurgeAll                  (bool   all = true);
-void          init_genrand              (unsigned long);
-unsigned long genrand_int32             (void);
-double        genrand_real2             (void);
-FILE*         doFileOpen                (const char *, const char *, bool = false);
-// 20110324: SLKP added the bool flag to allow automatic "Can't open file" error reports
-
-#define       RAND_MAX_32               4294967295.0
-#define       USE_AVL_NAMES
-#define       HY_WIDTH_OF_LONG          ((long)(sizeof(long)*8))
-
-#define     PRINTF_FORMAT_STRING    "%.16g"
-typedef     double       _Parameter; // standard number type - used everywhere in matrices.
-
-
-#if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHY_GTK__ || defined __HYPHYQT__
-void    yieldCPUTime        (void);
-bool    handleGUI           (bool = false);
-#endif
-
-
-#ifdef _SLKP_USE_SSE_INTRINSICS
-#include <pmmintrin.h>
-#endif
-
-#ifdef _SLKP_USE_AVX_INTRINSICS
-#include <immintrin.h>
-#endif
 
 #endif
 

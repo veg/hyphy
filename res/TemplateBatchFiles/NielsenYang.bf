@@ -19,6 +19,8 @@ OPTIMIZATION_PRECISION 			= 0.001;
 
 modelLL							= {};
 
+
+
 /*-------------------------------------------------------------------------------*/
 
 function PromptForAParameter (promptString, leftBound, rightBound, midx)
@@ -312,9 +314,8 @@ function BuildCodonFrequencies12 (obsF)
 /* ____________________________________________________________________________________________________________________*/
 
 
-function GetDistributionParameters (sigLevel)
-{
-	GetInformation (distrInfo,c);
+lfunction GetDistributionParameters (sigLevel) {
+	GetInformation (distrInfo,^"c");
 	D = Columns(distrInfo);
 	E = 0.0;
 	T = 0.0;
@@ -327,10 +328,10 @@ function GetDistributionParameters (sigLevel)
 	}
 	sampleVar = sampleVar-E*E;
 
-	fprintf  (SUMMARY_FILE,"\n\n------------------------------------------------\n\ndN/dS = ",E, " (sample variance = ",sampleVar,")\n");
+	fprintf  (^"SUMMARY_FILE","\n\n------------------------------------------------\n\ndN/dS = ",E, " (sample variance = ",sampleVar,")\n");
 	for (k=0; k<D; k=k+1)
 	{
-		fprintf (SUMMARY_FILE,"\nRate[",Format(k+1,0,0),"]=",
+		fprintf (^"SUMMARY_FILE","\nRate[",Format(k+1,0,0),"]=",
 				 Format(distrInfo[0][k],12,8), " (weight=", Format(distrInfo[1][k],9,7),")");
 	}
 
@@ -338,13 +339,13 @@ function GetDistributionParameters (sigLevel)
 	{
 		if (distrInfo[0][k]>1) break;
 	}
-	ConstructCategoryMatrix(marginals_1,lf,COMPLETE);
+	ConstructCategoryMatrix(marginals_1,^"lf",COMPLETE);
 	CC = Columns (marginals_1);
 	if (k<D)
 	/* have rates > 1 */
 	{
 		marginals = marginals_1;
-		fprintf  (SUMMARY_FILE,"\n\n------------------------------------------------\n\n Sites with dN/dS>1 (Posterior cutoff = ",sigLevel,")\n\n");
+		fprintf  (^"SUMMARY_FILE","\n\n------------------------------------------------\n\n Sites with dN/dS>1 (Posterior cutoff = ",sigLevel,")\n\n");
 		for (v=0; v<CC; v=v+1)
 		{
 			sampleVar = 0;
@@ -361,24 +362,24 @@ function GetDistributionParameters (sigLevel)
 			marginals[0][v] = positiveProb;
 			if (positiveProb>=sigLevel)
 			{
-				fprintf (SUMMARY_FILE,Format (v+1,0,0)," (",positiveProb,")\n");
+				fprintf (^"SUMMARY_FILE",Format (v+1,0,0)," (",positiveProb,")\n");
 			}
 		}
-		fprintf  (SUMMARY_FILE,"\n\n------------------------------------------------\n\n Sites with dN/dS<=1 (Posterior cutoff = ",sigLevel,")\n\n");
+		fprintf  (^"SUMMARY_FILE","\n\n------------------------------------------------\n\n Sites with dN/dS<=1 (Posterior cutoff = ",sigLevel,")\n\n");
 		for (v=0; v<CC; v=v+1)
 		{
 			if (marginals[0][v]<sigLevel)
 			{
-				fprintf (SUMMARY_FILE,Format (v+1,0,0)," (",marginals[0][v],")\n");
+				fprintf (^"SUMMARY_FILE",Format (v+1,0,0)," (",marginals[0][v],")\n");
 			}
 		}
 		marginals = 0;
 	}
 	else
 	{
-		fprintf  (SUMMARY_FILE,"\n\n------------------------------------------------\n\n No rate classes with dN/dS>1.");
+		fprintf  (^"SUMMARY_FILE","\n\n------------------------------------------------\n\n No rate classes with dN/dS>1.");
 	}
-	fprintf  (SUMMARY_FILE,"\n\n------------------------------------------------\n\nTabulated Posteriors for Each Site\nSites in Columns, Rate Classes in Rows\nImport the following part into a data processing program\nfor further analysis\n\n");
+	fprintf  (^"SUMMARY_FILE","\n\n------------------------------------------------\n\nTabulated Posteriors for Each Site\nSites in Columns, Rate Classes in Rows\nImport the following part into a data processing program\nfor further analysis\n\n");
 	for (v=0; v<CC; v=v+1)
 	{
 		sampleVar = 0;
@@ -406,7 +407,7 @@ function GetDistributionParameters (sigLevel)
 		}
 	}
 
-	fprintf  (SUMMARY_FILE,"\n", outString,"\n");
+	fprintf  (^"SUMMARY_FILE","\n", outString,"\n");
 
 	marginals_1 = 0;
 

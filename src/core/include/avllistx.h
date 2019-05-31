@@ -4,8 +4,8 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 
 Copyright (C) 1997-now
 Core Developers:
-  Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Sergei L Kosakovsky Pond (sergeilkp@icloud.com)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -42,6 +42,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#pragma once
 #include "list.h"
 #include "avllist.h"
+#include "avllistx_iterator.h"
 
 #define  MEMORYSTEP 8
 
@@ -66,17 +67,17 @@ class _AVLListX: public _AVLList {
         virtual void Clear(bool = false);
         virtual void DeleteXtra(long);
         virtual void PopulateFromList(_List&);
-
+        long         GetDataByKey (BaseRefConst) const;
+        long        FindAndGetXtra (BaseRefConst, long not_found_value = kNotFound) const;
+  
         virtual long InsertData(BaseRef, long, bool);
         virtual long UpdateValue (BaseRef, long, long);
 
         void        SetXtra(long,long);
         long        GetXtra(long) const;
-  
-        long        FindAndGetXtra (BaseRefConst, long not_found_value = -1);
     
         void        ClearFormulasInList (void) {
-            xtraD.ClearFormulasInList();
+            xtraD.ClearFormulasInList ();
         }
 
 };

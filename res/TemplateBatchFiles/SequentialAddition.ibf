@@ -1,20 +1,19 @@
 #include "heuristicMethodNPBootstrap.bf";
 #include "branchSwappingFunctions.bf";
-				
+
 /*---------------------------------------------------------------*/
 
-function ReceiveJobs (sendOrNot, nni_flagrj)
-{
+function ReceiveJobs (sendOrNot, nni_flagrj)  {
 	if (MPI_NODE_COUNT>1)
 	{
 		MPIReceive (-1, fromNode, result_String);
-		
+
 		_thisTree	 = 	MPITreeStrings[fromNode-1];
 
 		_tempStorage = {2*taxonCounter-1,2};
 		_tempStorage2 = {taxonCounter-2,2};
 		_cindex		 = 2*(fromNode-1);
-		
+
 		for (_rc = 0; _rc < 2*taxonCounter-1; _rc = _rc + 1)
 		{
 			_tempStorage[_rc][0] = MPINodeTree[_rc][_cindex];
@@ -26,7 +25,7 @@ function ReceiveJobs (sendOrNot, nni_flagrj)
 			_tempStorage2[_rc][0] = MPINodeClades[_rc][_cindex];
 			_tempStorage2[_rc][1] = MPINodeClades[_rc][_cindex+1];
 		}
-		
+
 		if (sendOrNot)
 		{
 			MPITreeStrings[fromNode-1] = thisTree;
@@ -47,13 +46,13 @@ function ReceiveJobs (sendOrNot, nni_flagrj)
 		{
 			MPINodeState[fromNode-1]    = 0;
 		}
-		
+
 		for (_rc = 0; _rc < 2*taxonCounter-1; _rc = _rc + 1)
 		{
 			treeNodes[_rc][2] = _tempStorage[_rc][0];
 			treeNodes[_rc][3] = _tempStorage[_rc][1];
 		}
-		
+
 		for (_rc = 0; _rc < taxonCounter-2; _rc = _rc + 1)
 		{
 			cladesInfo[_rc][2] = _tempStorage2[_rc][0];
@@ -66,7 +65,7 @@ function ReceiveJobs (sendOrNot, nni_flagrj)
 		res = lf_MLES;
 		fprintf (stdout, "\nReceived a tree from node: ", fromNode-1,"  =>   ", res[1][0]);
 	}
-	
+
 	dummy = CheckForImprovement(nni_flagrj);
 
 	return fromNode-1;
@@ -85,7 +84,7 @@ function CheckForImprovement (nni_flagcfi)
 			nniDidBetter = 1;
 			if (verbFlag)
 			{
-				OpenWindow (TREEWINDOW, {{"Inferred_Tree"}});
+
 				fprintf (stdout, "\n\tRestarting NNI on the better tree.");
 			}
 			for (l4=2*taxonCounter-2;l4>=0;l4=l4-1)
@@ -106,8 +105,8 @@ function CheckForImprovement (nni_flagcfi)
 			while (cladesInfo[l][1])
 			{
 				l = l+1;
-			}				
-			l2 = -1;		
+			}
+			l2 = -1;
 		}
 		else
 		{
@@ -139,7 +138,7 @@ function CheckForImprovement (nni_flagcfi)
 					mxTreeSpec [2] = "10,40,-10,-175,1";
 					twHasBeenOpened = 1;
 				}
-				OpenWindow (TREEWINDOW, mxTreeSpec );
+
 			}
 		}
 	}
@@ -150,17 +149,17 @@ function CheckForImprovement (nni_flagcfi)
 function SendOffTreeJob (nni_flag)
 {
 	LikelihoodFunction lf = (smallerFilter, Inferred_Tree);
-					
+
 	if (MPI_NODE_COUNT>1)
 	{
 		for (mpiNode = 0; mpiNode < MPI_NODE_COUNT-1; mpiNode = mpiNode+1)
 		{
 			if (MPINodeState[mpiNode]==0)
 			{
-				break;	
+				break;
 			}
 		}
-		
+
 		if (mpiNode==MPI_NODE_COUNT-1)
 		/* all nodes busy */
 		{
@@ -172,7 +171,7 @@ function SendOffTreeJob (nni_flag)
 			MPINodeState[mpiNode] = 1;
 			MPITreeStrings[mpiNode] = thisTree;
 			_cindex		 = 2*mpiNode;
-			
+
 			for (_rc = 0; _rc < 2*taxonCounter-1; _rc = _rc + 1)
 			{
 				MPINodeTree[_rc][_cindex] 	= treeNodes[_rc][2];
@@ -194,7 +193,7 @@ function SendOffTreeJob (nni_flag)
 			fprintf (stdout, " => ", res[1][0]);
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -212,14 +211,14 @@ function InferTreeTopology (verbFlag)
 	{
 		treeNodes  = {filteredData.species,1};
 		cladesInfo = {filteredData.species,1};
-		
+
 		for (currentTaxon=0; currentTaxon < filteredData.species; currentTaxon = currentTaxon+1)
 		{
-			cladesInfo [currentTaxon] = currentTaxon;	
+			cladesInfo [currentTaxon] = currentTaxon;
 		}
-		
+
 		currentTaxon = filteredData.species-1;
-		
+
 		while (currentTaxon>=0)
 		{
 			i = Random (0,currentTaxon+1) $ 1;
@@ -239,14 +238,14 @@ function InferTreeTopology (verbFlag)
 			}
 			currentTaxon = currentTaxon - 1;
 		}
-		
+
 		/*reshuffledOrder = "";
 		for (currentTaxon = 0; currentTaxon < filteredData.species-1; currentTaxon = currentTaxon+1)
 		{
 			reshuffledOrder = reshuffledOrder + treeNodes[currentTaxon] + ",";
 		}
 		reshuffledOrder = reshuffledOrder + treeNodes[currentTaxon];*/
-		
+
 		if (verbFlag)
 		{
 			fprintf (stdout,"\n\t Sequence order randomized as follows:\n");
@@ -257,8 +256,8 @@ function InferTreeTopology (verbFlag)
 			}
 			fprintf (stdout,"\n");
 		}
-		
-				
+
+
 		additionOrder = treeNodes;
 		if (methodIndex == 0)
 		{
@@ -279,7 +278,7 @@ function InferTreeTopology (verbFlag)
 	treeNodes 		= {2*(filteredData.species+1),4};
 	bestTreeNodes 	= {2*(filteredData.species+1),2};
 
-	
+
 	cladesInfo 	    = {filteredData.species,4};
 	bestCladesInfo  = {filteredData.species,2};
 
@@ -339,7 +338,7 @@ function InferTreeTopology (verbFlag)
 					treeNodes[1][0]=s;
 					treeNodes[1][1]=1;
 					treeNodes[2][0]=shift;
-					treeNodes[2][1]=1;		
+					treeNodes[2][1]=1;
 					thisTree = TreeMatrix2TreeString (0,0);
 					Tree    Inferred_Tree = thisTree;
 					if (dataType)
@@ -357,7 +356,7 @@ function InferTreeTopology (verbFlag)
 						first3Taxa[0]=i;
 						first3Taxa[1]=s;
 						first3Taxa[2]=shift;
-						
+
 						bestValue = res[1][0];
 						bestTree = thisTree;
 					}
@@ -408,9 +407,9 @@ function InferTreeTopology (verbFlag)
 
 	currentTaxon = 0;
 	taxonCounter = 3;
-	
+
 	filterSeqString = "";
-	
+
 	filterSeqString = filterSeqString + first3Taxa[0];
 	filterSeqString = filterSeqString + "," + first3Taxa[1];
 	filterSeqString = filterSeqString + "," + first3Taxa[2];
@@ -422,7 +421,7 @@ function InferTreeTopology (verbFlag)
 		if ((taxonIndex!=first3Taxa[0])&&(taxonIndex!=first3Taxa[1])&&(taxonIndex!=first3Taxa[2]))
 		{
 			GetString (nodeName, filteredData, taxonIndex);
-			
+
 			if (verbFlag)
 			{
 				fprintf (stdout, "\n\n\nSTEP ",Format(taxonCounter-2,0,0),"/",Format(filteredData.species-3,0,0),"). Adding taxon:", nodeName);
@@ -442,7 +441,7 @@ function InferTreeTopology (verbFlag)
 			treesConsidered = 0;
 			for (t_count=0; t_count<2*taxonCounter-3; t_count=t_count+1)
 			/* loop over all branches */
-			{	
+			{
 				i = 0;
 				shift = 0;
 				while (treeNodes[i][1])
@@ -461,7 +460,7 @@ function InferTreeTopology (verbFlag)
 							treeNodes[i+2][2]= taxonCounter+ filteredData.species-3;
 							treeNodes[i+2][3]=treeNodes[i][1];
 							cladesInfo[currentLevel][2] = i;
-							cladesInfo[currentLevel][3] = 3;					
+							cladesInfo[currentLevel][3] = 3;
 						}
 						else
 						{
@@ -472,7 +471,7 @@ function InferTreeTopology (verbFlag)
 							for (p=s+cladesInfo[l][1]-1; p>=s; p=p-1)
 							{
 								treeNodes[i][2]=treeNodes[i][0];
-								treeNodes[i][3]=treeNodes[i][1]+1;						
+								treeNodes[i][3]=treeNodes[i][1]+1;
 								i=i-1;
 							}
 							i=i+cladesInfo[l][1];
@@ -495,7 +494,7 @@ function InferTreeTopology (verbFlag)
 							{
 								cladesInfo[p][2] = cladesInfo[p][0];
 							}
-							
+
 							if ((cladesInfo[p][0]<=i)&&((cladesInfo[p][0]+cladesInfo[p][1])>i+1))
 							{
 								cladesInfo[p][3] = cladesInfo[p][1]+2;
@@ -504,7 +503,7 @@ function InferTreeTopology (verbFlag)
 							{
 								cladesInfo[p][3] = cladesInfo[p][1];
 							}
-						}				
+						}
 					}
 					else
 					{
@@ -513,20 +512,19 @@ function InferTreeTopology (verbFlag)
 					}
 					i = i+1;
 				}
-				
+
 				treeNodes[i+2][2]=treeNodes[i][0];
 				treeNodes[i+2][3]=treeNodes[i][1];
-				
+
 				thisTree = TreeMatrix2TreeString (2,0);
-				
-				if ((verbFlag)&&(MPI_NODE_COUNT<2))
-				{
+
+				if ((verbFlag)&&(MPI_NODE_COUNT<2)) {
 					fprintf (stdout, "\n\tTree ",thisTree);
 				}
-				
-				Tree    Inferred_Tree = thisTree;
-				
-				
+
+ 				Tree    Inferred_Tree = thisTree;
+
+
 				if (haveTreeConstraint)
 				{
 					if ((Inferred_Tree<=_topologyPattern) == 0)
@@ -545,13 +543,13 @@ function InferTreeTopology (verbFlag)
 						}
 					}
 				}
-				
+
 				dummy = SendOffTreeJob (0);
-				
+
 				treesConsidered = treesConsidered + 1;
 
 			}
-			
+
 			if (MPI_NODE_COUNT>1)
 			{
 				while (1)
@@ -561,16 +559,16 @@ function InferTreeTopology (verbFlag)
 						if (MPINodeState[nodeCounter]==1)
 						{
 							fromNode = ReceiveJobs (0,0);
-							break;	
+							break;
 						}
 					}
 					if (nodeCounter == MPI_NODE_COUNT-1)
 					{
 						break;
 					}
-				}	
-			}	
-	
+				}
+			}
+
 			if (treesConsidered == 0)
 			{
 				fprintf (stdout, "\n***** NO TREES MATCHED THE TREE CONSTRAINT. PLEASE CHECK THAT SEQUENCE NAMES MATCH *****\n");

@@ -21,7 +21,7 @@ LoadFunctionLibrary("../../convenience/math.bf");
 lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
 
     components = math.Int (components);
-    io.CheckAssertion ("`&components` >= 2 && `&components` <= 10", "must have between 2 and 10 components in call to models.codon.BS_REL.ModelDescription");
+    io.CheckAssertion ("`&components` >= 1 && `&components` <= 10", "must have between 1 and 10 components in call to models.codon.BS_REL.ModelDescription");
     codons = models.codon.MapCode(code);
 
     return {
@@ -240,7 +240,8 @@ function models.codon.BS_REL.post_definition(model) {
 
 function models.codon.BS_REL.get_branch_length(model, tree, node) {
 	parameters.SetLocalModelParameters (model, tree, node);
-	bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]);
+	parameters.SetCategoryVariables   (model);
+	bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]) / 3;
 	//console.log ("Branch length = " + bl);
 	return bl;
 }

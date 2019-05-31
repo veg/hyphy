@@ -203,6 +203,16 @@ lfunction utility.DictToArray (object) {
     return result;
 }
 
+/**
+ * @name utility.DictToSortedArray
+ * @param object
+ */
+lfunction utility.DictToSortedArray (object) {
+    result = {Abs (object),2};
+    utility.ForEachPair(object, "_key_", "_value_", "(`&result`)[+_key_][0] = _value_;(`&result`)[+_key_][1] = +_key_;");
+    return result % 0;
+}
+
 
 /**
  * @name utility.Range
@@ -227,35 +237,84 @@ lfunction utility.Range (elements, from, step) {
 function utility.Map (object, lambda_name, transform) {
 
     Eval ("`lambda_name` = None");
+    utility.Map.return_object = None;
 
     if (Type (object) == "AssociativeList") {
+        ExecuteCommands ("function  utility.Map.CB (`lambda_name`) {return `transform`;}", enclosing_namespace);
         utility.Map.return_object = {};
         utility.Map.keys = Rows (object);
-        ^(lambda_name) := object [utility.Map.keys[utility.Map.k]];
         for (utility.Map.k = 0; utility.Map.k < Abs (object); utility.Map.k += 1) {
-            utility.Map.return_object [utility.Map.keys[utility.Map.k]] = Eval (transform);
+            //^(lambda_name) = object [utility.Map.keys[utility.Map.k]];
+            //utility.Map.return_object [utility.Map.keys[utility.Map.k]] = Eval (transform);
+            utility.Map.return_object [utility.Map.keys[utility.Map.k]] = Call ("utility.Map.CB", object [utility.Map.keys[utility.Map.k]]);
         }
-        return utility.Map.return_object;
-    }
+    } else {
+        if (Type (object) == "Matrix") {
+            utility.Map.rows = Rows (object);
+            utility.Map.columns = Columns (object);
+            utility.Map.return_object = {utility.Map.rows,  utility.Map.columns};
 
-    if (Type (object) == "Matrix") {
-        utility.Map.rows = Rows (object);
-        utility.Map.columns = Columns (object);
-        utility.Map.return_object = {utility.Map.rows,  utility.Map.columns};
+            ^(lambda_name) := object [utility.Map.r][utility.Map.c];
+            for (utility.Map.r = 0; utility.Map.r < utility.Map.rows; utility.Map.r += 1) {
+                for (utility.Map.c = 0; utility.Map.c < utility.Map.columns; utility.Map.c += 1) {
+                    utility.Map.temp = Eval (transform);
+                    assert (Type (utility.Map.temp) == "Number" || Type (utility.Map.temp) == "String", "Unsupported object type in call to utility.Map [Matrix]");
+                    utility.Map.return_object [utility.Map.r][utility.Map.c] = utility.Map.temp;
 
-        ^(lambda_name) := object [utility.Map.r][utility.Map.c];
-        for (utility.Map.r = 0; utility.Map.r < utility.Map.rows; utility.Map.r += 1) {
-            for (utility.Map.c = 0; utility.Map.c < utility.Map.columns; utility.Map.c += 1) {
-                utility.Map.temp = Eval (transform);
-                assert (Type (utility.Map.temp) == "Number" || Type (utility.Map.temp) == "String", "Unsupported object type in call to utility.Map [Matrix]");
-                utility.Map.return_object [utility.Map.r][utility.Map.c] = utility.Map.temp;
-
+                }
             }
-        }
-        return utility.Map.return_object;
-    }
 
-    return None;
+        }
+    }
+    Eval ("`lambda_name` = None");
+
+    return utility.Map.return_object;
+}
+
+/**
+ * @name utility.MapWithKey
+ * @param {AssociativeList|Matrix} object - object to iterate over
+ * @param {String} lambda_name - variable name for transform
+ * @param {String} transform - function transform
+ */
+function utility.MapWithKey (object, key_name, lambda_name, transform) {
+
+    Eval ("`lambda_name` = None");
+    Eval ("`key_name` = None");
+    utility.MapWithKey.return_object = None;
+    
+
+    if (Type (object) == "AssociativeList") {
+        ExecuteCommands ("function  utility.MapWithKey.CB (`key_name`, `lambda_name`) {return `transform`;}", enclosing_namespace);
+        utility.MapWithKey.return_object = {};
+        utility.MapWithKey.keys = Rows (object);
+        for (utility.MapWithKey.k = 0; utility.MapWithKey.k < Abs (object); utility.MapWithKey.k += 1) {
+            utility.MapWithKey.key = utility.MapWithKey.keys[utility.MapWithKey.k];
+            utility.MapWithKey.return_object [utility.MapWithKey.key] = Call ("utility.MapWithKey.CB", utility.MapWithKey.key, object[utility.MapWithKey.key]);
+        }
+    } else {
+        if (Type (object) == "Matrix") {
+            utility.MapWithKey.rows = Rows (object);
+            utility.MapWithKey.columns = Columns (object);
+            utility.MapWithKey.return_object = {utility.MapWithKey.rows,  utility.MapWithKey.columns};
+
+            ^(lambda_name) := object [utility.MapWithKey.r][utility.MapWithKey.c];
+            ^(key_name) := {{utility.MapWithKey.r,utility.MapWithKey.c}}
+            for (utility.MapWithKey.r = 0; utility.MapWithKey.r < utility.MapWithKey.rows; utility.MapWithKey.r += 1) {
+                for (utility.MapWithKey.c = 0; utility.MapWithKey.c < utility.MapWithKey.columns; utility.MapWithKey.c += 1) {
+                    utility.MapWithKey.temp = Eval (transform);
+                    assert (Type (utility.MapWithKey.temp) == "Number" || Type (utility.MapWithKey.temp) == "String", "Unsupported object type in call to utility.MapWithKey [Matrix]");
+                    utility.MapWithKey.return_object [utility.MapWithKey.r][utility.MapWithKey.c] = utility.MapWithKey.temp;
+
+                }
+            }
+
+        }
+    }
+    Eval ("`lambda_name` = None");
+    Eval ("`key_name` = None");
+
+    return utility.MapWithKey.return_object;
 }
 
 /**
@@ -289,35 +348,35 @@ lfunction utility.MatrixToListOfRows (object) {
  */
 function utility.Filter (object, lambda_name, condition) {
 
+    utility.Filter.return_object = None;
+
     Eval ("`lambda_name` = None");
 
     utility.Filter.return_object = {};
     if (Type (object) == "AssociativeList") {
         utility.Filter.keys = Rows (object);
-        ^(lambda_name) := object [utility.Filter.keys[utility.Filter.k]];
         for (utility.Filter.k = 0; utility.Filter.k < Abs (object); utility.Filter.k += 1) {
-            if (Eval (condition)) {
+           ^(lambda_name) = object [utility.Filter.keys[utility.Filter.k]];
+           if (Eval (condition)) {
                 utility.Filter.return_object [utility.Filter.keys[utility.Filter.k]] = ^(lambda_name);
             }
         }
-        return utility.Filter.return_object;
-    }
-
-    if (Type (object) == "Matrix") {
-        utility.Filter.rows = Rows (object);
-        utility.Filter.columns = Columns (object);
-        ^(lambda_name) := object [utility.Filter.r][utility.Filter.c];
-        for (utility.Filter.r = 0; utility.Filter.r < utility.Filter.rows; utility.Filter.r += 1) {
-            for (utility.Filter.c = 0; utility.Filter.c < utility.Filter.columns; utility.Filter.c += 1) {
-                if (Eval (condition)) {
-                    utility.Filter.return_object + ^(lambda_name);
+    } else {
+        if (Type (object) == "Matrix") {
+            utility.Filter.rows = Rows (object);
+            utility.Filter.columns = Columns (object);
+            ^(lambda_name) := object [utility.Filter.r][utility.Filter.c];
+            for (utility.Filter.r = 0; utility.Filter.r < utility.Filter.rows; utility.Filter.r += 1) {
+                for (utility.Filter.c = 0; utility.Filter.c < utility.Filter.columns; utility.Filter.c += 1) {
+                    if (Eval (condition)) {
+                        utility.Filter.return_object + ^(lambda_name);
+                    }
                 }
             }
         }
-        return utility.Filter.return_object;
     }
-
-    return None;
+    Eval ("`lambda_name` = None");
+    return utility.Filter.return_object;
 }
 
 /**
@@ -330,34 +389,39 @@ function utility.Filter (object, lambda_name, condition) {
  */
 function utility.First (object_utility_first, lambda_name, condition) {
 
-    Eval ("`lambda_name` = None");
+     utility.First.return_object = None;
+
+     Eval ("`lambda_name` = None");
 
      if (Type (object_utility_first) == "AssociativeList") {
         utility.First.keys = Rows (object_utility_first);
-        ^(lambda_name) := object_utility_first [utility.First.keys[utility.First.k]];
-        for (utility.First.k = 0; utility.First.k < Abs (object); utility.First.k += 1) {
+        for (utility.First.k = 0; utility.First.k < Abs (object_utility_first); utility.First.k += 1) {
+            ^(lambda_name) = object_utility_first [utility.First.keys[utility.First.k]];
             if (Eval (condition)) {
-                return ^(lambda_name);
+                utility.First.return_object = ^(lambda_name);
+                break;
             }
         }
-        return None;
     }
 
     if (Type (object_utility_first) == "Matrix") {
         utility.First.rows = Rows (object_utility_first);
         utility.First.columns = Columns (object_utility_first);
         ^(lambda_name) := object_utility_first [utility.First.r][utility.First.c];
+
         for (utility.First.r = 0; utility.First.r < utility.First.rows; utility.First.r += 1) {
             for (utility.First.c = 0; utility.First.c < utility.First.columns; utility.First.c += 1) {
                 if (Eval (condition)) {
-                    return ^(lambda_name);
+                     utility.First.return_object = ^(lambda_name);
+                     break;
                 }
             }
         }
-        return None;
     }
 
-    return None;
+    Eval ("`lambda_name` = None");
+
+    return utility.First.return_object;
 }
 
 /**
@@ -392,27 +456,29 @@ function utility.ForEach (object, lambda_name, transform) {
         utility.ForEach.keys = Rows (object);
         utility.ForEach.size = Abs (object);
 
-        ^(lambda_name) := object [utility.ForEach.keys[utility.ForEach.k]];
 
         for (utility.ForEach.k = 0; utility.ForEach.k < utility.ForEach.size; utility.ForEach.k += 1) {
-            ExecuteCommands (transform, enclosing_namespace);
+          ^(lambda_name) = object [utility.ForEach.keys[utility.ForEach.k]];
+           ExecuteCommands (transform, enclosing_namespace);
         }
-        return;
-    }
+    } else {
 
-    if (Type (object) == "Matrix") {
-        utility.ForEach.rows = Rows (object);
-        utility.ForEach.columns = Columns (object);
+        if (Type (object) == "Matrix") {
+            utility.ForEach.rows = Rows (object);
+            utility.ForEach.columns = Columns (object);
 
-        if (utility.ForEach.rows && utility.ForEach.columns)  {
-             ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
-            for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
-                for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
-                    ExecuteCommands (transform, enclosing_namespace);
+            if (utility.ForEach.rows && utility.ForEach.columns)  {
+                 ^(lambda_name) := object [utility.ForEach.r][utility.ForEach.c];
+                for (utility.ForEach.r = 0; utility.ForEach.r < utility.ForEach.rows; utility.ForEach.r += 1) {
+                    for (utility.ForEach.c = 0; utility.ForEach.c < utility.ForEach.columns; utility.ForEach.c += 1) {
+                        ExecuteCommands (transform, enclosing_namespace);
+                    }
                 }
             }
         }
     }
+
+    Eval ("`lambda_name` = None");
 }
 
 /**
@@ -547,6 +613,7 @@ function utility.PopulateDict (from, to, value, lambda) {
         for (utility.PopulateDict.k = from; utility.PopulateDict.k < to; utility.PopulateDict.k+=1) {
             utility.PopulateDict.result[utility.PopulateDict.k] = Eval (value);
         }
+        Eval ("`lambda` = None");
    }
     else {
         for (utility.PopulateDict.k = from; utility.PopulateDict.k < to; utility.PopulateDict.k+=1) {
@@ -570,41 +637,43 @@ function utility.PopulateDict (from, to, value, lambda) {
  */
 function utility.ForEachPair(object, key_name, value_name, transform) {
 
-    io.CheckAssertion ("!utility.ForEachPair.warn_non_rentrant", "utility.ForEachPair is non re-entrant");
-    utility.ForEachPair.warn_non_rentrant = TRUE;
+    io.CheckAssertion ("!utility.ForEachPair.warn_non_reentrant", "utility.ForEachPair is non re-entrant");
+    utility.ForEachPair.warn_non_reentrant = TRUE;
 
-    Eval ("`key_name` = None");
-    Eval ("`value_name` = None");
-
+    ExecuteCommands ("function  utility.ForEachPair.CB (`key_name`, `value_name`) {`transform`}", enclosing_namespace);
 
     if (Type (object) == "AssociativeList") {
         utility.ForEachPair.keys = Rows (object);
-        ^(key_name) := utility.ForEachPair.keys[utility.ForEachPair.k];
-        ^(value_name) := object [utility.ForEachPair.keys[utility.ForEachPair.k]];
-        for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {
-            ExecuteCommands (transform, enclosing_namespace);
+         for (utility.ForEachPair.k = 0; utility.ForEachPair.k < Abs (object); utility.ForEachPair.k += 1) {            //ExecuteCommands (transform, enclosing_namespace);
+            utility.ForEachPair.key = utility.ForEachPair.keys[utility.ForEachPair.k];
+            Call ("utility.ForEachPair.CB",utility.ForEachPair.key , object [utility.ForEachPair.key]);
         }
-        utility.ForEachPair.warn_non_rentrant = FALSE;
-        return;
-    }
-    if (Type (object) == "Matrix") {
-        utility.ForEachPair.rows = Rows (object);
-        utility.ForEachPair.columns = Columns (object);
+    } else {
+        if (Type (object) == "Matrix") {
+            utility.ForEachPair.rows = Rows (object);
+            utility.ForEachPair.columns = Columns (object);
 
-        if (utility.ForEachPair.rows && utility.ForEachPair.columns) {
+            if (utility.ForEachPair.rows && utility.ForEachPair.columns) {
 
-            ^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
-            ^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
+                //^(key_name) = {{utility.ForEachPair.r,utility.ForEachPair.c}};
+                //^(value_name) := object [utility.ForEachPair.r][utility.ForEachPair.c];
+                utility.ForEachPair.key = {{utility.ForEachPair.r,utility.ForEachPair.c}};
+                for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
+                    for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
+                        //ExecuteCommands (transform, enclosing_namespace);
+                        Call ("utility.ForEachPair.CB",utility.ForEachPair.key , object [utility.ForEachPair.r][utility.ForEachPair.c]);
 
-            for (utility.ForEachPair.r = 0; utility.ForEachPair.r < utility.ForEachPair.rows; utility.ForEachPair.r += 1) {
-                for (utility.ForEachPair.c = 0; utility.ForEachPair.c < utility.ForEachPair.columns; utility.ForEachPair.c += 1) {
-                    ExecuteCommands (transform, enclosing_namespace);
-
+                    }
                 }
             }
         }
     }
-    utility.ForEachPair.warn_non_rentrant = FALSE;
+
+    Eval ("`key_name` = None");
+    Eval ("`value_name` = None");
+    // reset bindings here to avoid calls on stale formula in subsequent invocations
+
+    utility.ForEachPair.warn_non_reentrant = FALSE;
 
 }
 
@@ -625,14 +694,19 @@ lfunction utility.Keys (object) {
 }
 
 /**
- * Returns values from a dictionary. Only returns unique values
+ * Returns values from a dictionary. Not just unique values and the values aren't coerced to strings.
  * @name utility.Values
  * @param object - {Dictionary} the object to return keys from
  * @returns {Matrix} List of keys in dictionary
  */
 lfunction utility.Values (object) {
     if (Type (object) == "AssociativeList") {
-        return Columns (object);
+        keys = utility.Keys(object);
+        values = {1,Abs(object)};
+        for(i=0; i<Abs(object); i=i+1) {
+            values[i] = object[keys[i]];
+        }
+        return values;
     }
     return None;
 }
@@ -860,7 +934,29 @@ lfunction utility.BinByValue (obj) {
 lfunction utility.GetListOfLoadedModules (filter) {
     GetString (res, LIST_OF_LOADED_LIBRARIES, -1);
     if (None != filter) {
-        return utility.Values (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
+        return utility.UniqueValues (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
+    }
+    return res;
+}
+
+/**
+ * Returns the list of likelihood function IDs that are currently available
+ * param: {String} filter, if provided, will filter the list of library paths via a regexp
+ * @returns a string matrix with (absolute) file paths for loaded modules
+ */
+lfunction utility.GetListOfLoadedLikelihoodFunctions (filter) {
+
+    lf_count = Rows ("LikelihoodFunction");
+
+    res = {lf_count, 1};
+
+    for (k = 0; k < lf_count; k+=1) {
+        GetString (lf_id, LikelihoodFunction, k);
+        res[k] = lf_id;
+    }
+
+    if (None != filter) {
+        return utility.UniqueValues (utility.Filter (res, "_path_", "regexp.Find(_path_,`&filter`)"));
     }
     return res;
 }

@@ -1,5 +1,6 @@
 RequireVersion("2.3");
 
+
 /*------------------------------------------------------------------------------
     Load library files
 */
@@ -85,6 +86,18 @@ slac.display_orders =   {terms.original_name: -1,
 
 selection.io.startTimer (slac.json [terms.json.timers], "Total time", 0);
 
+/*------------------------------------------------------------------------------
+    Key word arguments
+*/
+
+KeywordArgument ("code", "Which genetic code should be used", "Universal");
+KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:"); 
+KeywordArgument ("branches",  "Branches to test", "All");
+KeywordArgument ("samples",  "number of samples to assess ancestral reconstruction uncertainty", "100");
+KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
+// One additional KeywordArgument ("output") is called below after namespace absrel.
+
 slac.scaler_prefix = "SLAC.scaler";
 
 slac.by_site   = "by-site";
@@ -121,6 +134,9 @@ namespace slac {
 slac.samples = io.PromptUser ("\n>Select the number of samples used to assess ancestral reconstruction uncertainty [select 0 to skip]",100,0,100000,TRUE);
 slac.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
 
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'SLAC.json')", slac.codon_data_info [terms.json.json]);
+slac.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
 io.ReportProgressMessageMD('SLAC',  'selector', 'Branches to include in the SLAC analysis');
 
 utility.ForEachPair (slac.selected_branches, "_partition_", "_selection_",
@@ -146,7 +162,7 @@ slac.global_dnds = selection.io.extract_global_MLE_re (slac.partitioned_mg_resul
 
 
 //Store MG94 to JSON
-selection.io.json_store_lf_GTR_MG94 (slac.json,
+selection.io.json_store_lf_withEFV (slac.json,
                             terms.json.global_mg94xrev,
                             slac.partitioned_mg_results[terms.fit.log_likelihood],
                             slac.partitioned_mg_results[terms.parameters],
@@ -222,6 +238,7 @@ slac.report_negative_site = {{"" + (1+((slac.filter_specification[slac.i])[terms
                                     slac.row[5],
                                     slac.row[6],
                                     "Neg. p = " + slac.row[9]}};
+
 
 
 for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
@@ -608,6 +625,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
                              // this implies that the ancestor is fully resolved
                         resolution = lookup [-this_state-2]; // column vector with 1's for possible resolutions
                         resolution_count = + resolution;
+                                                
 
                         av = Eval (averaged);
                         for (k = 0; k < 4; k += 1) {

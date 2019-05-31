@@ -18,7 +18,7 @@ function runTest () {
     
     assert (runCommandWithSoftErrors ("HarvestFrequencies (corn/holio,filter,2)","Incorrect number of arguments"), "Failed error checking for an invalid syntax");
     assert (runCommandWithSoftErrors ("HarvestFrequencies (corn/holio,filter,1,1,1)","is not a valid variable identifier in call to HarvestFrequencies"), "Failed error checking for an invalid receptacle");
-    assert (runCommandWithSoftErrors ("HarvestFrequencies (cornholio,filter,1,1,1)","is neither a DataSet nor a DataSetFilter"), "Failed error checking for an invalid dataset/dataset filter parameter");
+    assert (runCommandWithSoftErrors ("HarvestFrequencies (cornholio,filter,1,1,1)","is not a DataSet|DataSetFilter"), "Failed error checking for an invalid dataset/dataset filter parameter");
 
     ExecuteAFile (PATH_TO_CURRENT_BF  + "res" + DIRECTORY_SEPARATOR + "test_likefunc.nex");
 
@@ -30,7 +30,7 @@ function runTest () {
 {    0.219696969697}
 }) < 1e-8, "Checking nucleotide frequency counts");
 
-    assert (runCommandWithSoftErrors ("HarvestFrequencies (cornholio,filteredData,3,2,1)","Atom should divide unit"), "Failed error checking for an invalid unit/atom specification");
+    assert (runCommandWithSoftErrors ("HarvestFrequencies (cornholio,filteredData,3,2,1)","Atom must divide unit"), "Failed error checking for an invalid unit/atom specification");
     
     HarvestFrequencies (nucFreqsFromDS, ds, 1, 1, 1);
     assert (Abs (nucFreqs-nucFreqsFromDS) < 1e-8, "Checking nucleotide frequency counts collected from the DataSet object");
@@ -75,7 +75,6 @@ function runTest () {
 {    2,1.5}
 {    0,1.5} 
 }* (1/5)) < 1e-8, "Checking positional dinucleotide frequency counts");
-    
     
     
     HarvestFrequencies (count12_overall, simpleTest, 2, 1, 0);

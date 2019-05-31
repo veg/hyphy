@@ -73,6 +73,7 @@ namespace mpi {
          *      controls what gets passed to slave nodes
          *      "Headers" -> iterable (matrix/dict) of string paths of header files to load
          *      "Models" ->  matrix of model names to make available to slave nodes
+         *      "Filters" ->  matrix of filter names to make available to slave nodes
          *      "LikelihoodFunctions" -> iterable (matrix/dict) of LikelihoodFunction IDs to export to slave nodes
          * @return {Dict} an "opaque" queue structure
          */
@@ -128,6 +129,16 @@ namespace mpi {
                         );
                     }
 
+                    if (utility.Has (nodesetup, utility.getGlobalValue("terms.mpi.DataSetFilters"), None)) {
+                        utility.SetEnvVariable ("DATA_FILE_PRINT_FORMAT",9);
+                        utility.ForEach (nodesetup[utility.getGlobalValue("terms.mpi.DataSetFilters")], "_value_",
+                            '
+                                Export (serialized_filter, ^_value_);
+                                 `&send_to_nodes` * ("\nDataSet __private_" + _value_ + " = ReadFromString (\'" + (serialized_filter&&2)  + "\'); DataSetFilter " + _value_ + " = CreateFilter (__private_" + _value_ + ",1);");
+                            '
+                        );
+                    }
+
                     model_count = utility.Array1D (nodesetup[utility.getGlobalValue("terms.mpi.Models")]);
 
                     if (model_count) {
@@ -138,7 +149,7 @@ namespace mpi {
 
                         for (m = 0; m < model_count; m+=1) {
                             model_name = (nodesetup[utility.getGlobalValue("terms.mpi.Models")])[m];
-                            model_globals = utility.Values(((^model_name)[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
+                            model_globals = utility.UniqueValues(((^model_name)[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
                             model_global_count = utility.Array1D (model_globals);
                             for (v = 0; v < model_global_count; v+=1) {
                                 globals_to_export [model_globals[v]] = 1;
@@ -192,6 +203,7 @@ namespace mpi {
 
 
     lfunction QueueJob (queue, job, arguments, result_callback) {
+
         /**
             send the job function with provided arguments to
             the first available node.
@@ -264,5 +276,80 @@ namespace mpi {
             queue [from] = {utility.getGlobalValue("terms.mpi.job_id") : None, utility.getGlobalValue("terms.mpi.callback") : None};
             return from;
         }
+    }
+
+
+    //------------------------------------------------------------------------------
+
+    lfunction ComputeOnGrid (lf_id, grid, handler, callback) {
+
+        jobs = mpi.PartitionIntoBlocks(grid);
+
+        scores = {};
+
+        queue  = mpi.CreateQueue ({^"terms.mpi.LikelihoodFunctions": {{lf_id}},
+                                   ^"terms.mpi.Headers" : utility.GetListOfLoadedModules ("libv3/")});
+
+        for (i = 1; i < Abs (jobs); i += 1) {
+            mpi.QueueJob (queue, handler, {"0" : lf_id,
+                                           "1" : jobs [i],
+                                           "2" : &scores}, callback);
+        }
+
+        Call (callback, -1, Call (handler, lf_id, jobs[0], &scores), {"0" : lf_id, "1" : jobs [0], "2" : &scores});
+
+        mpi.QueueComplete (queue);
+
+        return scores;
+
+    }
+
+    //------------------------------------------------------------------------------
+
+
+    lfunction ComputeOnGrid.ResultHandler (node, result, arguments) {
+        utility.Extend (^(arguments[2]), result);
+    }
+
+    //------------------------------------------------------------------------------
+
+    lfunction ComputeOnGrid.SimpleEvaluator (lf_id, tasks, scores) {
+        LFCompute (^lf_id, LF_START_COMPUTE);
+
+        results = {};
+        task_ids = utility.Keys (tasks);
+        task_count = Abs (tasks);
+        for (i = 0; i < task_count; i+=1) {
+
+            parameters.SetValues (tasks[task_ids[i]]);
+            LFCompute (^lf_id, ll);
+            results [task_ids[i]] = ll;
+
+        }
+        LFCompute (^lf_id, LF_DONE_COMPUTE);
+        return results;
+    }
+
+    //------------------------------------------------------------------------------
+
+    lfunction pass2.evaluator (lf_id, tasks, scores) {
+
+        results = {};
+        task_ids = utility.Keys (tasks);
+        task_count = Abs (tasks);
+        for (i = 0; i < task_count; i+=1) {
+            parameters.SetValues (tasks[task_ids[i]]);
+            ConstructCategoryMatrix(site_likelihoods,^lf_id,SITE_LOG_LIKELIHOODS);
+            /*if (( (tasks[task_ids[i]]) ["FADE bias"])["MLE"] == 0.0) {
+                console.log (tasks[task_ids[i]]);
+                console.log (site_likelihoods);
+            }*/
+            results [task_ids[i]] = site_likelihoods ["Max(_MATRIX_ELEMENT_VALUE_,-1e200)"];
+
+            // to avoid returning -inf
+        }
+
+
+        return results;
     }
 }

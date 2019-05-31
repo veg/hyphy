@@ -6,14 +6,11 @@ fprintf(stdout,"\n ---- RUNNING PAIRWISE RELATIVE RATE ANALYSIS ---- \n");
 ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
 				     "Codon","Codon (several available genetic codes).");
 
-if (dataType<0) 
-{
+if (dataType<0)  {
 	return;
 }
 
-if (dataType)
-{
-	NICETY_LEVEL = 3;
+if (dataType) {
 	SetDialogPrompt ("Please choose a codon data file:");
 	#include "TemplateModels/chooseGeneticCode.def";
 }
@@ -29,8 +26,7 @@ if ((OPTIMIZATION_PRECISION==0)||(OPTIMIZATION_PRECISION>0.001))
 	OPTIMIZATION_PRECISION = 0.001;
 }
 
-while (speciesCount < 3)
-{
+while (speciesCount < 3) {
 	SetDialogPrompt ("Choose a data file with 3 or more sequences");
 	DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
 	speciesCount = ds.species;
@@ -38,19 +34,16 @@ while (speciesCount < 3)
 
 ChoiceList (thirdSpec,"Choose the outgroup:",1,SKIP_NONE,ds);
 
-if (thirdSpec<0)
-{
+if (thirdSpec<0) {
 	return;
 }
 
 GetString (outgroupName,ds,thirdSpec);
 
-if (dataType)
-{
+if (dataType) {
 	DataSetFilter filteredData = CreateFilter (ds,3);
 }
-else
-{
+else {
 	DataSetFilter filteredData = CreateFilter (ds,1);
 }
 
@@ -61,51 +54,35 @@ relationString = ":=";
 #include "selectModelParameters.bf";
 
 SetDialogPrompt ("Save full results to:");
-
 modelParameterCount = Rows("LAST_MODEL_PARAMETER_LIST");
-
 fprintf (PROMPT_FOR_FILE,CLEAR_FILE);
 
 MESSAGE_LOGGING = 0;
-
 maxLength = 0;
 
-
-for (firstSpec = 0; firstSpec < speciesCount; firstSpec = firstSpec+1)
-{
-	GetString (firstName,ds,firstSpec);
-
-	tLength = Abs(outgroupName)+Abs(firstName);
-	
-	for (secondSpec = firstSpec+1; secondSpec < speciesCount; secondSpec = secondSpec+1)
-	{
-		GetString (secondName,ds,secondSpec);
-		tLength2 = tLength + Abs (secondName) + 30;
-		if (tLength2>maxLength)
-		{
-			maxLength = tLength2;
-		}
+for (firstSpec = 0; firstSpec < speciesCount; firstSpec = firstSpec+1) {
+    GetString (firstName,ds,firstSpec);
+	tLength = Abs(outgroupName)+Abs(firstName);	
+	for (secondSpec = firstSpec+1; secondSpec < speciesCount; secondSpec = secondSpec+1) {
+	    GetString (secondName,ds,secondSpec);
+		maxLength = Max (maxLength, tLength + Abs (secondName) + 30);
 	}
 }
 
 maxLength = maxLength+6;
 fprintf(stdout,"\n\n In the summary table below, branch lengths denote");
 
-if (parameter2Constrain)
-{
-	fprintf (stdout," the value of parameter ", funnyString, " for that branch.");
+if (parameter2Constrain) {
+	fprintf (stdout," the value of parameter ", parameter_name, " for that branch.");
 }
-else
-{
+else {
 	fprintf (stdout," the expected number of substituions per that branch.");
 }
 
 fprintf (stdout,"\n\n (*)   corresponds to the .05 significance level\n (**)  corresponds to the .01 significance level\n (***) corresponds to the .001 significance level.\n\n");
-
 fprintf (stdout,"\n\n  Taxa Triplet");
 
-for (tLength = 15; tLength<maxLength; tLength=tLength+1)
-{
+for (tLength = 15; tLength<maxLength; tLength=tLength+1) {
 	fprintf (stdout," ");
 }
 
@@ -113,34 +90,28 @@ fprintf (stdout,"      LRT        P-Value \n");
 
 separatorString = "-";
 
-for (tLength = 0; tLength<=maxLength; tLength=tLength+1)
-{
+for (tLength = 0; tLength<=maxLength; tLength += 1) {
 	separatorString = separatorString + "-";
 }
 
 separatorString = separatorString + "+";
 
-for (tLength = 0; tLength<12; tLength=tLength+1)
-{
+for (tLength = 0; tLength<12; tLength += 1) {
 	separatorString = separatorString + "-";
 }
 
 separatorString = separatorString + "+";
 
-for (tLength = 0; tLength<12; tLength=tLength+1)
-{
+for (tLength = 0; tLength<12; tLength += 1) {
 	separatorString = separatorString + "-";
 }
-
 
 
 tLength2 = 0;
 
-for (firstSpec = 0; firstSpec < speciesCount; firstSpec = firstSpec+1)
-{
+for (firstSpec = 0; firstSpec < speciesCount; firstSpec += 1) {
 
-	if (firstSpec == thirdSpec)
-	{
+	if (firstSpec == thirdSpec) {
 		continue;
 	}
 	
@@ -148,61 +119,49 @@ for (firstSpec = 0; firstSpec < speciesCount; firstSpec = firstSpec+1)
 
 	GetString (firstName,ds,firstSpec);
 	
-	for (secondSpec = firstSpec+1; secondSpec < speciesCount; secondSpec = secondSpec+1)
-	{
-		if (secondSpec == thirdSpec)
-		{
+	for (secondSpec = firstSpec+1; secondSpec < speciesCount; secondSpec += 1) {
+		if (secondSpec == thirdSpec) {
 			continue;
 		}
 		
-		if (dataType)
-		{
+		if (dataType) {
 			DataSetFilter filteredData = CreateFilter (ds,3,"",(speciesIndex==firstSpec)||(speciesIndex==secondSpec)||(speciesIndex==thirdSpec),GeneticCodeExclusions);
 		}
-		else
-		{
+		else {
 			DataSetFilter filteredData = CreateFilter (ds,1,"",(speciesIndex==firstSpec)||(speciesIndex==secondSpec)||(speciesIndex==thirdSpec));
 		}
 
 		HarvestFrequencies (rrEFV,filteredData,1,1,1);
 		
-		if (FREQUENCY_SENSITIVE)
-		{
+		if (FREQUENCY_SENSITIVE) {
 			rrModelMatrix = 0;
-			if (USE_POSITION_SPECIFIC_FREQS)
-			{
+			if (USE_POSITION_SPECIFIC_FREQS) {
 				HarvestFrequencies (vectorOfFrequencies,filteredData,3,1,1);
 			}
 			MULTIPLY_BY_FREQS = PopulateModelMatrix ("rrModelMatrix",rrEFV);
-			if (dataType)
-			{
+			if (dataType) {
 				rrCodonEFV = BuildCodonFrequencies (rrEFV);
 				Model rrModel = (rrModelMatrix,rrCodonEFV,MULTIPLY_BY_FREQS);	
 			}
-			else
-			{
+			else {
 				Model rrModel = (rrModelMatrix,rrEFV,MULTIPLY_BY_FREQS);
 			}	
 		}
 		
-		if ((firstSpec<thirdSpec)&&(secondSpec<thirdSpec))
-		{
+		if ((firstSpec<thirdSpec)&&(secondSpec<thirdSpec)) {
 			treeString = "(FirstSpecies,SecondSpecies,OutGroup)";
 			i1 = 0;
 			i2 = 1;
 			i3 = 2;
 		}
-		else
-		{
-			if ((firstSpec>thirdSpec)&&(secondSpec>thirdSpec))
-			{
+		else {
+			if ((firstSpec>thirdSpec)&&(secondSpec>thirdSpec)) {
 				treeString = "(OutGroup,FirstSpecies,SecondSpecies)";
 				i1 = 1;
 				i2 = 2;
 				i3 = 0;
 			}
-			else
-			{
+			else {
 				treeString = "(FirstSpecies,OutGroup,SecondSpecies)";
 				i1 = 0;
 				i2 = 2;
@@ -213,80 +172,69 @@ for (firstSpec = 0; firstSpec < speciesCount; firstSpec = firstSpec+1)
 		Tree threeTaxaTree = treeString;
 
 		LikelihoodFunction lf = (filteredData,threeTaxaTree);
-
 		Optimize (res,lf);
-
 		Tree constrained3TaxaTree = treeString;
-
 		/* now specify the constraint */
 
 		LikelihoodFunction lfConstrained = (filteredData,constrained3TaxaTree);
-
-		ReplicateConstraint (constraintString,constrained3TaxaTree.FirstSpecies, constrained3TaxaTree.SecondSpecies);
-
+		ReplicateConstraint ("this1.FirstSpecies.`parameter_name`:=this2.SecondSpecies.`parameter_name`",constrained3TaxaTree.FirstSpecies, constrained3TaxaTree.SecondSpecies);
 		Optimize (res1,lfConstrained);
-
+		
+		ClearConstraints (constrained3TaxaTree);
+		
+	
 		lnLikDiff = -2(res1[1][0]-res[1][0]);
 
 		degFDiff = res[1][1]-res1[1][1];
 		
-		if (lnLikDiff>0)
-		{
+		if (lnLikDiff>0) {
 			pValue = 1.0-CChi2(lnLikDiff,degFDiff);
 		}
-		else
-		{
+		else {
 			pValue = 1;
 			fprintf (MESSAGE_LOG,"\nA negative LRT statistic encoutered. You may want to increase the optimization precision settings to resolve numerical apporximation errors");
 		}
 
 		GetString (secondName,ds,secondSpec);
 		
-		if (parameter2Constrain==0)
-		{
+		if (parameter2Constrain==0) {
 			b_out = BranchLength(threeTaxaTree,i3);
 			b_1 = BranchLength(threeTaxaTree,i1);
 			b_2 = BranchLength(threeTaxaTree,i2);
 		}
-		else
-		{
+		else {
 			b_out = res[0][modelParameterCount*i3+parameter2Constrain-1];
 			b_1 = res[0][modelParameterCount*i1+parameter2Constrain-1];
 			b_2 = res[0][modelParameterCount*i2+parameter2Constrain-1];
 		}
 		
-		printTreeString = "("+outgroupName+":"+b_out+",("
-		+firstName+":"+b_1+","+secondName+":"+b_2+"))";
+		printTreeString = "("+outgroupName+":"+
+		    Format (b_out,9,6) +",("+firstName+":"+
+		    Format (b_1, 9,6) +","+secondName+":"+
+		    Format (b_2, 9,6) +"))";
 
 		fprintf (stdout, "\n", printTreeString);
 		
-		for (tLength=Abs(printTreeString);tLength<maxLength;tLength=tLength+1)
-		{
+		for (tLength=Abs(printTreeString);tLength<maxLength;tLength=tLength+1) {
 			fprintf (stdout," ");
 		}
 		
-		fprintf (stdout, "  | ", Format(lnLikDiff,9,4),"  | ", pValue );
+		fprintf (stdout, "  | ", Format(lnLikDiff,9,4),"  | ", Format (pValue, 8, 5) );
 		
-		if (pValue<0.05)
-		{
-			if (pValue<0.01)
-			{
-				if (pValue<0.001)
-				{
+		if (pValue<0.05) {
+			if (pValue<0.01) {
+				if (pValue<0.001) {
 				    fprintf (stdout," (***) ");
-				}
-				else
-				{
+				} else {
 			     	fprintf (stdout," (**) ");
 			    }
 			}
-			else
-			{
+			else {
 			     fprintf (stdout," (*) ");			
 			}
-		}
-		if (!tLength2)
-		{
+		}		
+		
+		if (!tLength2) {
 			tLength2 = 1;
 			dataDimension = Columns(res);
 			fprintf (LAST_FILE_PATH,",,,Unconstrained Optimizations");

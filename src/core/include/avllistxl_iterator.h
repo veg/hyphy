@@ -5,7 +5,7 @@ HyPhy - Hypothesis Testing Using Phylogenies.
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
-  Art FY Poon    (apoon@cfenet.ubc.ca)
+  Art FY Poon    (apoon42@uwo.ca)
   Steven Weaver (sweaver@ucsd.edu)
   
 Module Developers:
@@ -48,10 +48,12 @@ class AVLListXLIteratorKeyValue {
 private:
   long      index;
   BaseRef   object;
+  const     _String * key;
 public:
-  AVLListXLIteratorKeyValue (long idx, BaseRef obj) : index (idx), object (obj) {}
+  AVLListXLIteratorKeyValue (long idx, const _String* k, BaseRef obj) : index (idx), object (obj), key (k) {}
   long get_index (void) const {return index;}
   BaseRef get_object (void) const {return object;}
+  _String const* get_key (void) {return key;}
   
 };
 
