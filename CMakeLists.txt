@@ -29,7 +29,7 @@ macro(PCL_CHECK_FOR_SSE3)
   check_cxx_source_runs("
       #include <pmmintrin.h>
       #include <stdio.h>
-      
+
       int main ()
       {
           __m128d a, b;
@@ -58,7 +58,7 @@ macro(PCL_CHECK_FOR_AVX)
   check_cxx_source_runs("
       #include <immintrin.h>
       #include <stdio.h>
-      
+
       int main ()
       {
           __m256d a, b;
@@ -285,11 +285,16 @@ add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
 )
 
+find_program(NODE npm)
+if(NOT NODE)
+    message("Node not installed; API documentation will not be generated")
+else(NOT NODE)
+    add_custom_target(
+        docs ALL
+        rm -rf ./docs && npm install -g documentation@4 && documentation build --polyglot -f md ./res/TemplateBatchFiles/libv3/**/*.bf -o ./docs.md
+    )
+endif(NOT NODE)
 
-add_custom_target(
-	docs ALL
-	rm -rf ./docs && npm install -g documentation@4 && documentation build --polyglot -f md ./res/TemplateBatchFiles/libv3/**/*.bf -o ./docs.md
-)
 
 #-------------------------------------------------------------------------------
 # setup some source properties so that we don't spam stdout
@@ -452,7 +457,7 @@ set_target_properties(
 
   add_custom_target(GPERF DEPENDS HYPHY-GPERF)
 
- 
+
   set_target_properties(
      HYPHY-GPERF
      PROPERTIES
