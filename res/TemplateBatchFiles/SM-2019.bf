@@ -82,7 +82,6 @@ sm.default_weighting = io.PromptUser(">Probability of branch selection ", 0.2, 0
 sm.bootstrap_weighting = {"default" : sm.default_weighting};
 
 
-
 if (utility.Array1D (sm.bootstrap )) {
  
    KeywordArgument ("use-bootstrap", "Use bootstrap weights to respect well supported clades", "Yes");
@@ -92,12 +91,10 @@ if (utility.Array1D (sm.bootstrap )) {
                                 "Use bootstrap weighting"
                                 ) == "Yes") {
 
-        sm.bootstrap_weighting * utility.Map (sm.bootstrap, "_bs_", "Max(0.2,(_bs_>1)*(_bs_/100)^2+(_bs_<=1)*_bs_^2)");
+        sm.bootstrap_weighting * utility.Map (sm.bootstrap, "_bs_", "sm.bootstrap_weight(_bs_)");
    }
 
 }
-
-
 
 sm.tree.string = sm.tree[terms.trees.newick_with_lengths];
 sm.node_labels = {};
@@ -129,7 +126,6 @@ sm.resampled_distribution = {sm.replicates , 2};
 sm.resampled_p_value = 0;
 sm.resampled_sum = 0;
 
-sm.shuffling_probability = Max (0.2, 10 / (BranchCount (T) + TipCount (T)));
 
 for (sm.k = 0; sm.k < sm.replicates ; ) {
     sm.reshuffled_tree = "" + Random (T, sm.bootstrap_weighting);
@@ -327,3 +323,16 @@ sm.json_file = io.PromptUserForFilePath ("Save the resulting JSON file to");
 io.SpoolJSON (sm.json, sm.json_file);
 
 return sm.json;
+
+//------
+
+lfunction sm.bootstrap_weight (bs) {
+    if (bs > 1) {
+        bs = bs / 100;
+    }
+    
+    if (bs < 0.7) {
+        return ^"sm.default_weighting";
+    }
+    return Max (^"sm.default_weighting",bs*bs);
+}

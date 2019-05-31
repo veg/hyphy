@@ -257,7 +257,9 @@ unsigned long DrawFromDiscreteGenerator (FUNCTOR&& generator, unsigned long dime
    */
   
   unsigned long index = 0UL;
-  auto sum_so_far = generator(0), random_draw = genrand_real2();
+    
+  auto   sum_so_far = generator(0);
+  double random_draw = genrand_real2();
   
   while (sum_so_far < random_draw && index < dimension) {
     sum_so_far += generator(++index);
