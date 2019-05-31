@@ -3584,8 +3584,14 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                      nt           = MIN(omp_get_max_threads(),secondArg.vDim / _HY_MATRIX_CACHE_BLOCK + 1);
 #endif
                      for (long r = 0; r < hDim; r ++) {
-#ifdef _OPENMP                     
-#pragma omp parallel for default(none) shared(r,secondArg,storage) schedule(monotonic:guided) proc_bind(spread) if (nt>1)  num_threads (nt) 
+#ifdef _OPENMP
+  #if _OPENMP>=201511
+    #pragma omp parallel for default(none) shared(r,secondArg,storage) schedule(monotonic:guided) proc_bind(spread) if (nt>1)  num_threads (nt)
+  #else
+    #if _OPENMP>=200803
+      #pragma omp parallel for default(none) shared(r,secondArg,storage) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt)
+    #endif
+  #endif
 #endif
                          for (long c = 0; c < secondArg.vDim; c+= _HY_MATRIX_CACHE_BLOCK) {
                              hyFloat cacheBlockInMatrix2 [_HY_MATRIX_CACHE_BLOCK][_HY_MATRIX_CACHE_BLOCK];

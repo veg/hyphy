@@ -166,7 +166,6 @@ protected:
     
   
     virtual void _RemoveNodeList (_SimpleList const& list);
-    static const _String kMeta;
 
 public:
     // class constants
@@ -174,7 +173,8 @@ public:
     static const _String kCompareEqualWithReroot,
                          kCompareEqualWithoutReroot,
                          kCompareUnequalToplogies,
-                         kCompareUnequalLabelSets;
+                         kCompareUnequalLabelSets,
+                         kMeta;
 
     node<long>      *theRoot;
   

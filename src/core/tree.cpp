@@ -2772,8 +2772,16 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     unsigned long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
     hy_global::matrix_exp_count += matrixQueue.lLength;
 #endif
-    
-#pragma omp parallel for default(shared) private (matrixID) schedule(monotonic:guided) proc_bind(spread) if (nt>1)  num_threads (nt) 
+
+#ifdef _OPENMP
+  #if _OPENMP>=201511
+    #pragma omp parallel for default(shared) private (matrixID) schedule(monotonic:guided) proc_bind(spread) if (nt>1)  num_threads (nt)
+  #else
+  #if _OPENMP>=200803
+    #pragma omp parallel for default(shared) private (matrixID) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt) 
+  #endif
+#endif
+#endif
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
         if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true), catID);
