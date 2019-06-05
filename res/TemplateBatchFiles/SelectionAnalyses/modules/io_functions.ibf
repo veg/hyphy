@@ -42,7 +42,7 @@ lfunction selection.io.defineBranchSets(partition_info) {
             selectTheseForTesting[3 + k][0] = list_models[k];
             selectTheseForTesting[3 + k][1] = "Set " + list_models[k] + " with " + available_models[list_models[k]] + " branches";
         } else {
-            selectTheseForTesting[3 + k][0] = "Unlabeled branches";
+            selectTheseForTesting[3 + k][0] = "Unlabeled";
             selectTheseForTesting[3 + k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
         }
     }
