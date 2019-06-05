@@ -63,7 +63,7 @@ lfunction rate_variation_define_gamma (options, namespace) {
 				  utility.getGlobalValue("terms.rate_variation.after") : None,
 				  };
 				  
-	return {utility.getGlobalValue("terms.global") : {"Gamma distribution shape parameter" : alpha},
+	return {utility.getGlobalValue("terms.global") : {utility.getGlobalValue("terms.rate_variation.gamma_alpha") : alpha},
 		    utility.getGlobalValue("terms.category") : definition};
 
 
