@@ -31,7 +31,12 @@
 #pragma alloca
 #endif
 
-#if !defined REGEX_MALLOC && !defined __MINGW32__
+/* alloca.h does not exist on Free- and OpenBSD, but is defined in the
+   standard library.
+
+   https://www.freebsd.org/cgi/man.cgi?query=alloca
+   https://man.openbsd.org/alloca */
+#if !defined REGEX_MALLOC && !defined __MINGW32__ && !defined __UNIX__
 #include <alloca.h>
 #endif
 

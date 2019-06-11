@@ -3122,7 +3122,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         _String filter_specification = *GetFilterName (filter_id) & spawning_tree->GetName()->Enquote(',') & *freq_var->GetName();
 
 
-        bool    do_internals = parameters.countitems() > 5 ? (ProcessNumericArgument ((_String*)parameters (5),chain.nameSpacePrefix)>0.5) : nil;
+        bool    do_internals = parameters.countitems() > 5 ? (ProcessNumericArgument ((_String*)parameters (5),chain.nameSpacePrefix)>0.5) : false;
 
         _String spool_file;
 
