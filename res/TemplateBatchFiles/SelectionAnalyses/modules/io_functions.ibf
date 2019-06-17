@@ -245,6 +245,16 @@ function selection.io.report_fit (fit, xp, ss) {
             " (" + (xp+fit[terms.parameters]) + " estimated parameters)";
 }
 
+//------------------------------------------------------------------------------
+
+function selection.io.report_lrt (lrt) {
+
+    return "p-value = " +
+            Format (lrt[terms.p_value], 8, 4) +
+            ", LRT = " +
+            Format (lrt[terms.LRT], 8, 2);
+}
+
 
 //------------------------------------------------------------------------------
 
