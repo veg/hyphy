@@ -290,7 +290,7 @@ if(NOT NODE)
     message("Node not installed; API documentation will not be generated")
 else(NOT NODE)
     add_custom_target(
-        docs ALL
+        docs
         rm -rf ./docs && npm install -g documentation@4 && documentation build --polyglot -f md ./res/TemplateBatchFiles/libv3/**/*.bf -o ./docs.md
     )
 endif(NOT NODE)

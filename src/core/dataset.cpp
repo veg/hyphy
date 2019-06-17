@@ -693,7 +693,7 @@ void _DataSet::MatchIndices(_Formula &f, _SimpleList &receptacle, bool isVert,
   // ? scope->sData : "none", varName.sData, ((_String*)f.toStr())->sData);
 
   for (long i = 0L; i < limit; i++) {
-    v->SetValue(new _Constant((hyFloat)i), nil);
+    v->SetValue(new _Constant((hyFloat)i), false);
     HBLObjectRef res = f.Compute();
     // fprintf (stderr, "%ld %g\n", i, res->Compute()->Value());
     if (res && !CheckEqual(res->Value(), 0.0)) {

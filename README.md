@@ -5,7 +5,7 @@ HyPhy is an open-source software package for the analysis of genetic sequences u
 ## Quick Start
 
 #### Install  
-`conda install hyphy`   _conda installation is currently only for linux; see 'Building from Source' below to install on mac_
+`conda install hyphy`
 
 #### Run with Command Line Arguments
 `hyphy <method_name> --alignment <path_to_alignment_file> <additional_method_specific_arguments>`  
