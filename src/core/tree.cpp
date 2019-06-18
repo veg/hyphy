@@ -4797,9 +4797,9 @@ hyFloat   _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, long
     dsf->categoryShifter * catID + dsf->theNodeMap.list_data[1]*dsf->shifter,
     *l2 = dsf->probabilityVectors.theData +
     dsf->categoryShifter * catID + dsf->theNodeMap.list_data[2]*dsf->shifter,
-    * matrix0 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[0]->in_object)))->GetCompExp(catID)->theData,
-    * matrix1 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[1]->in_object)))->GetCompExp(catID)->theData,
-    * matrix2 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[2]->in_object)))->GetCompExp(catID)->theData,
+    * matrix0 = ((_CalcNode*)(LocateVar(theRoot->get_node(1)->in_object)))->GetCompExp(catID)->theData,
+    * matrix1 = ((_CalcNode*)(LocateVar(theRoot->get_node(2)->in_object)))->GetCompExp(catID)->theData,
+    * matrix2 = ((_CalcNode*)(LocateVar(theRoot->get_node(3)->in_object)))->GetCompExp(catID)->theData,
     overallResult = 0.;
     
     long        patternCount =  dsf->GetPatternCount();
