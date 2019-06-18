@@ -709,6 +709,7 @@ lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
 	treeSize  = Abs(theAVL);
 	treeInfo  = theAVL[0];
 	rootIndex = treeInfo["Root"];
+	lastDepth = 0;
 
 	for (nodeIndex = 1; nodeIndex < treeSize; nodeIndex += 1) {
         nodeInfo = theAVL[nodeIndex];

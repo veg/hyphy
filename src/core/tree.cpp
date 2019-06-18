@@ -2533,7 +2533,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat * re
                 hyFloat tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->get_num_nodes(); nc++) {
                     hyFloat  tmp2            = 0.0;
-                    _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.list_data)[thisNode->parent->nodes.data[nc]->in_object]);
+                    _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.list_data)[thisNode->parent->get_node(nc+1)->in_object]);
                     if (child != thisNodeC) {
                         hyFloat  * childSupport  = forwardVector + lookup.GetDataByKey(child)*cBase,
                         * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
@@ -2553,7 +2553,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat * re
     }
     
     for (long nc = 0; nc < thisNode->get_num_nodes(); nc++) {
-        RecoverNodeSupportStates2 (thisNode->nodes.data[nc],resultVector,forwardVector,catID,lookup);
+        RecoverNodeSupportStates2 (thisNode->get_node(nc+1),resultVector,forwardVector,catID,lookup);
     }
 }
 
