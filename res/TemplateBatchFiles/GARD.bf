@@ -822,9 +822,8 @@ function gard.GA.evaluateModels (models) {
                                                      "2" : gard.baseLikelihoodInfo},
                                                      "gard.GA.storeMultiBreakPointModelResults");
         }
-        mpi.QueueComplete (gard.queue);
-
     }
+    mpi.QueueComplete (gard.queue);
 
 }
 
