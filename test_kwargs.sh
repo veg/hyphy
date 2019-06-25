@@ -174,11 +174,12 @@ declare -a fileTypes=(  "--alignment ./tests/hbltests/data/CD2.nex" # nexus with
 
 # GARD
 declare -a gardArgs=(   ""
-                        "--type Nucleotide"
-                        "--type Codon"
-                        "--type Codon --code Universal"
-                        "--type Codon --model JTT"
-                        "--type Codon --rv GDD"
+                        "--type nucleotide"
+                        "--type codon"
+                        "--type codon --code Universal"
+                        "--type codon --model JTT"
+                        "--type codon --rv GDD"
+                        "--type nucleotide"
                         "--rv GDD"
                         "--rv GDD --rate-classes 2"
                         "--output ./testMethodOutput"

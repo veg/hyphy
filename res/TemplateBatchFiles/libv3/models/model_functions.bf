@@ -529,7 +529,10 @@ lfunction model.MatchAlphabets (a1, a2) {
  */
 
 lfunction models.BindGlobalParameters (models, filter) {
+
+
     if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
+    
         reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
         candidate_set = utility.UniqueValues(utility.Filter (utility.Keys (reference_set), "_key_",
             "regexp.Find (_key_,`&filter`)"

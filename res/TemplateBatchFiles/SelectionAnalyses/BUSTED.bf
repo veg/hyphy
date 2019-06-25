@@ -50,6 +50,7 @@ busted.MG94 = terms.json.mg94xrev_sep_rates;
 busted.json.background = busted.background;
 busted.json.site_logl  = "Site Log Likelihood";
 busted.json.evidence_ratios  = "Evidence Ratios";
+busted.json.srv_posteriors  = "Synonymous site-posteriors";
 busted.rate_classes = 3;
 busted.synonymous_rate_classes = 3;
 busted.initial_grid.N = 250;
@@ -97,9 +98,6 @@ KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {}
 KeywordArgument ("branches",  "Branches to test", "All");
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
 KeywordArgument ("rates", "The number omega rate classes to include in the model [1-10, default 3]", busted.rate_classes);
-KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes);
-KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);
-KeywordArgument ("starting-points", "The number of initial random guesses to seed rate values optimization", 1);
 
 namespace busted {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
@@ -113,8 +111,15 @@ busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates
                                     ) == "Yes";
 
 busted.rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.rate_classes, 1, 10, TRUE);
-busted.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.synonymous_rate_classes, 1, 10, TRUE);
+
+if (busted.do_srv) {
+    KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes);
+    busted.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.synonymous_rate_classes, 1, 10, TRUE);
+}
+
+KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);
 busted.initial_grid.N = io.PromptUser ("The number of points in the initial distributional guess for likelihood fitting", 250, 1, 10000, TRUE);
+KeywordArgument ("starting-points", "The number of initial random guesses to seed rate values optimization", 1);
 busted.N.initial_guesses = io.PromptUser ("The number of initial random guesses to 'seed' rate values optimization", 1, 1, busted.initial_grid.N$10, TRUE);
                                     
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'BUSTED.json')", busted.codon_data_info [terms.json.json]);
@@ -184,6 +189,7 @@ busted.model_generator = "models.codon.BS_REL.ModelDescription";
 
 
 if (busted.do_srv) {
+
     lfunction busted.model.with.GDD (type, code, rates) {        
         def = models.codon.BS_REL.ModelDescription (type, code, rates);
         def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory ({utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("busted.synonymous_rate_classes")});
@@ -383,10 +389,17 @@ if (busted.do_srv) {
     io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
     selection.io.report_distribution (busted.srv_info);
 
-     busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
+    busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
                                                              "_index_",
                                                              "{terms.json.rate :busted.srv_info [_index_][0],
                                                                terms.json.proportion : busted.srv_info [_index_][1]}"));
+                                                               
+    ConstructCategoryMatrix (busted.cmx, ^(busted.full_model[terms.likelihood_function]));
+    ConstructCategoryMatrix (busted.cmx_weights, ^(busted.full_model[terms.likelihood_function]), WEIGHTS);
+    busted.cmx_weighted         = busted.cmx_weights $ busted.cmx;
+    busted.column_weights       = {1, Rows (busted.cmx_weights)}["1"] * busted.cmx_weighted;
+    busted.column_weights       = busted.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
+    (busted.json [busted.json.srv_posteriors]) =  busted.cmx_weighted $ busted.column_weights;
 
 }
 

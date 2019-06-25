@@ -688,16 +688,18 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     df = 0;
 
+    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
+        df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
+    }
+
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
-    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
-        df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
-    }
 
     can_do_restarts = null;
+    
 
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
         grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
@@ -1100,7 +1102,9 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     //Export (lfe, likelihoodFunction);
     //console.log (lfe);
-
+    
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
+    
     Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
