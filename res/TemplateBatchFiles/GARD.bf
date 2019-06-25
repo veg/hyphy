@@ -72,9 +72,9 @@ gard.analysisDescription = {terms.io.info : "GARD : Genetic Algorithms for Recom
                           };
 
 namespace terms.gard {
-    nucleotide = "Nucleotide";
-    protein    = "Protein";
-    codon      = "Codon";
+    nucleotide = "nucleotide";
+    protein    = "amino-acid";
+    codon      = "codon";
 };
 
 gard.json = {   terms.json.analysis: gard.analysisDescription,
@@ -86,7 +86,7 @@ gard.json = {   terms.json.analysis: gard.analysisDescription,
 ------------------------------------------------------------------------------*/
 io.DisplayAnalysisBanner (gard.analysisDescription);
 
-KeywordArgument ("type",        "The type of data to perform screening on", "Nucleotide");
+KeywordArgument ("type",        "The type of data to perform screening on", "nucleotide");
 KeywordArgument ("code",        "Genetic code to use (for codon alignments)", "Universal", "Choose Genetic Code");
 KeywordArgument ("alignment",   "Sequence alignment to screen for recombination");
 
