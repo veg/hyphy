@@ -129,9 +129,8 @@ KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {}
     */
 
 KeywordArgument ("mode",      "Run mode", "Classic mode", "Group test mode");
-KeywordArgument ("reference-group", "The set of branches to use as reference", null, "Select the set of branches to use as reference");
 KeywordArgument ("test",  "Branches to use as the test set", null, "Choose the set of branches to use as the _test_ set");
-KeywordArgument ("reference",  "Branches to use as the reference test", null, "Choose the set of branches to use as the _reference_ set");
+KeywordArgument ("reference",  "Branches to use as the reference set", null, "Choose the set of branches to use as the _reference_ set");
 
 KeywordArgument ("rates", "The number omega rate classes to include in the model [2-10, default 3]", relax.rate_classes);
 KeywordArgument ("models", "Which version of the test to run (All or Minimal)", "All");
