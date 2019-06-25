@@ -81,9 +81,11 @@ bgm.run_settings = {
 KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
-KeywordArgument ("branches",  "Branches to test", "All");
 
-if (bgm.type == "nucleotide") {
+
+
+if (bgm.run_type == "nucleotide") {
+   KeywordArgument ("branches",  "Branches to test", "All");
    bgm.alignment_info = alignments.ReadNucleotideDataSet ("bgm.dataset", None);
    bgm.baseline_model = "models.DNA.GTR.ModelDescription";
 } else {
@@ -93,9 +95,12 @@ if (bgm.type == "nucleotide") {
         LoadFunctionLibrary     ("libv3/models/protein/empirical.bf");
         LoadFunctionLibrary     ("libv3/models/protein/REV.bf");
         utility.Extend (models.protein.empirical_models, {"GTR" : "General time reversible model (189 estimated parameters)."});
-        bgm.run_settings ["model"]         = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
-        bgm.baseline_model          = (utility.Extend (models.protein.empirical.plusF_generators , {"GTR" : "models.protein.REV.ModelDescription"}))[bgm.run_settings ["model"]];
+        KeywordArgument ("baseline_model", "Which amino acid substitution model should be used", "LG");
+        bgm.run_settings ["model"] = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
+        bgm.baseline_model = (utility.Extend (models.protein.empirical.plusF_generators , {"GTR" : "models.protein.REV.ModelDescription"}))[bgm.run_settings ["model"]];
+        KeywordArgument ("branches",  "Branches to test", "All");
     } else { // codon
+        KeywordArgument ("branches",  "Branches to test", "All");
         bgm.alignment_info = alignments.PromptForGeneticCodeAndAlignment("bgm.dataset","bgm.codon.filter");
         LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
         bgm.baseline_model = "models.codon.MG_REV.ModelDescription";
