@@ -16,6 +16,7 @@ ModelNames = {{"Neutral",
 
 MAXIMUM_ITERATIONS_PER_VARIABLE = 2000;
 OPTIMIZATION_PRECISION 			= 0.001;
+USE_LAST_RESULTS                = TRUE;
 
 modelLL							= {};
 
@@ -1050,7 +1051,12 @@ if (chosenModelList[0]>0)
 	else
 	{
 		timer = Time(1);
-		Optimize (res,lf);
+		Optimize (res,lf,{
+            "OPTIMIZATION_METHOD" : "nedler-mead",
+            "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
+            "OPTIMIZATION_PRECISION" : 0.1
+        });
+        Optimize (res,lf);
 		ReceiveJobs (0);
 	}
 
@@ -1109,6 +1115,11 @@ for (rateType = 0; rateType < 15; rateType += 1) {
 	else
 	{
 		timer = Time(1);
+		Optimize (res,lf,{
+            "OPTIMIZATION_METHOD" : "nedler-mead",
+            "MAXIMUM_OPTIMIZATION_ITERATIONS" : 100,
+            "OPTIMIZATION_PRECISION" : 1
+        });
 		Optimize (res,lf);
 		ReceiveJobs (0);
 	}
