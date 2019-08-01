@@ -238,7 +238,6 @@ function models.protein.empirical.DefineQMatrix (modelSpec, namespace) {
                 parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 
                 __rate_matrix [_rowChar][_colChar] = __rp[terms.model.rate_entry];
-                __rate_matrix [_colChar][_rowChar] = __rp[terms.model.rate_entry];
                 continue;
             }
 			__rate_matrix [_rowChar][_colChar] = "";
