@@ -702,7 +702,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
         _StringBuffer revisedTreeString (128L);
       
       // TODO SLKP 20170621: looks like this is a generic Newick parser; why duplicate it here?
-        for (long i=0; i<file_tree_string->length(); ++i) {
+        for (i=0; i<file_tree_string->length(); ++i) {
             char    cc = file_tree_string->char_at (i);
 
             switch (cc) {
