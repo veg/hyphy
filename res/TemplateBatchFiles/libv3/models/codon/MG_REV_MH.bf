@@ -98,7 +98,7 @@ lfunction models.codon.MG_REV_MH._GenerateRate_generic (fromChar, toChar, namesp
                 rate_entry += "*" + delta_rate;
             } else {
                 (_GenerateRate.p[model_type])[delta_term] = delta;
-                rate_entry += "*" + delta_rate;
+                rate_entry += "*" + delta;
             }
         }
 

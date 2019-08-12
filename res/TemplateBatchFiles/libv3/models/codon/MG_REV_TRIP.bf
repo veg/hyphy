@@ -100,7 +100,7 @@ lfunction models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, name
                 rate_entry += "*" + delta_rate;
             } else {
                 (_GenerateRate.p[model_type])[delta_term] = delta;
-                rate_entry += "*" + delta_rate;
+                rate_entry += "*" + delta;
             }
         }
 
@@ -112,7 +112,7 @@ lfunction models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, name
                 rate_entry += "*" + psi_rate;
             } else {
                 (_GenerateRate.p[model_type])[psi_term] = psi;
-                rate_entry += "*" + psi_rate;
+                rate_entry += "*" + psi;
             }
         }
 
