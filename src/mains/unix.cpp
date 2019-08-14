@@ -234,10 +234,10 @@ _String getLibraryPath() {
   _String baseDir (buffer);
   baseDir.Trim (0, baseDir.FindBackwards (dirSlash, 0, -1) - 1L);
 #else
-    char    curWd[_HYPHY_MAX_PATH_LENGTH];
-    getcwd (curWd,_HYPHY_MAX_PATH_LENGTH);
-
-    _String baseDir (curWd);
+    char curPath[_HYPHY_MAX_PATH_LENGTH];
+    readlink("/proc/self/exe", curPath, _HYPHY_MAX_PATH_LENGTH);
+		*strrchr(curPath, '/') = '\0';
+    _String baseDir (curPath);
 #endif
 
     if (baseDir.get_char (baseDir.length()-1) != dirSlash) {
