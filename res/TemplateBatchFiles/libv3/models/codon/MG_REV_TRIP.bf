@@ -31,7 +31,8 @@ lfunction models.codon.MG_REV_TRIP._GenerateRate(fromChar, toChar, namespace, mo
         "beta", utility.getGlobalValue("terms.parameters.nonsynonymous_rate"),
         "omega", utility.getGlobalValue("terms.parameters.omega_ratio"),
         "delta", utility.getGlobalValue("terms.parameters.multiple_hit_rate"),
-        "psi", utility.getGlobalValue("terms.parameters.triple_hit_rate")
+        "psi", utility.getGlobalValue("terms.parameters.triple_hit_rate"),
+        "psi_syn", utility.getGlobalValue("terms.parameters.triple_hit_rate_syn")
         );
 }
 
@@ -45,7 +46,7 @@ lfunction models.codon.MG_REV_TRIP._GenerateRate(fromChar, toChar, namespace, mo
  */
 
 
-lfunction models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, omega, omega_term, delta, delta_term, psi, psi_term) {
+lfunction models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, omega, omega_term, delta, delta_term, psi, psi_term, psi_s, psi_s_term) {
 
     _GenerateRate.p = {};
     _GenerateRate.diff = models.codon.diff.complete(fromChar, toChar);
@@ -106,13 +107,26 @@ lfunction models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, name
 
 
         if (diff_count == 3) {
-            if (model_type == utility.getGlobalValue("terms.global")) {
-                psi_rate = parameters.ApplyNameSpace(psi, namespace);
-                (_GenerateRate.p[model_type])[psi_term] = psi_rate;
-                rate_entry += "*" + psi_rate;
+            if (_tt[fromChar] != _tt[toChar]) {
+                if (model_type == utility.getGlobalValue("terms.global")) {
+                    psi_rate = parameters.ApplyNameSpace(psi, namespace);
+                    (_GenerateRate.p[model_type])[psi_term] = psi_rate;
+                    rate_entry += "*" + psi_rate;
+                } else {
+                    (_GenerateRate.p[model_type])[psi_term] = psi;
+                    rate_entry += "*" + psi;
+                }
             } else {
-                (_GenerateRate.p[model_type])[psi_term] = psi;
-                rate_entry += "*" + psi;
+               //console.log (fromChar + " <-> " + toChar + " (" + _tt[fromChar] + ")");
+               if (model_type == utility.getGlobalValue("terms.global")) {
+                    psi_rate = parameters.ApplyNameSpace(psi_s, namespace);
+                    (_GenerateRate.p[model_type])[psi_s_term] = psi_rate;
+                    rate_entry += "*" + psi_rate;
+                } else {
+                    (_GenerateRate.p[model_type])[psi_s_term] = psi_s;
+                    rate_entry += "*" + psi_s;
+                }
+            
             }
         }
 

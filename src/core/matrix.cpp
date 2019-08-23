@@ -3410,6 +3410,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                 quad3[4] __attribute__ ((aligned (32))),
                                 quad4[4] __attribute__ ((aligned (32))),
                                 quad5[4] __attribute__ ((aligned (32)));
+                      
 
                                 quad1 [0] = secondArg.theData[c];
                                 quad1 [1] = secondArg.theData[c + 20UL];
