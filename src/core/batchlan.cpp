@@ -590,7 +590,7 @@ _String const ExportBFFunction (long idx, bool recursive) {
 
 //____________________________________________________________________________________
 void ClearBFFunctionLists (long start_here) {
-  if (start_here > 0L && start_here < batchLanguageFunctionNames.countitems()) {
+  if (start_here >= 0L && start_here < batchLanguageFunctionNames.countitems()) {
 
     _SimpleList delete_me (batchLanguageFunctionNames.countitems()-start_here, start_here, 1L);
     
@@ -604,11 +604,13 @@ void ClearBFFunctionLists (long start_here) {
     batchLanguageFunctionParameterLists.DeleteList  (delete_me);
     batchLanguageFunctionParameterTypes.DeleteList  (delete_me);
   } else {
-    batchLanguageFunctionNames.Clear           ();
-    batchLanguageFunctions.Clear               ();
-    batchLanguageFunctionClassification.Clear  ();
-    batchLanguageFunctionParameterLists.Clear  ();
-    batchLanguageFunctionParameterTypes.Clear  ();
+    if (start_here < 0) {
+        batchLanguageFunctionNames.Clear           ();
+        batchLanguageFunctions.Clear               ();
+        batchLanguageFunctionClassification.Clear  ();
+        batchLanguageFunctionParameterLists.Clear  ();
+        batchLanguageFunctionParameterTypes.Clear  ();
+    }
   }
 }
 
