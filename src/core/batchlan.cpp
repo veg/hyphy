@@ -508,7 +508,7 @@ _SimpleList&   GetBFFunctionArgumentTypes  (long idx) {
 
 //____________________________________________________________________________________
 _ExecutionList&   GetBFFunctionBody  (long idx) {
-  return *(_ExecutionList*)batchLanguageFunctions.Element (idx);
+  return *(_ExecutionList*)batchLanguageFunctions.GetItem (idx);
 }
 
 //____________________________________________________________________________________
@@ -603,6 +603,12 @@ void ClearBFFunctionLists (long start_here) {
     batchLanguageFunctionClassification.DeleteList  (delete_me);
     batchLanguageFunctionParameterLists.DeleteList  (delete_me);
     batchLanguageFunctionParameterTypes.DeleteList  (delete_me);
+  } else {
+    batchLanguageFunctionNames.Clear           ();
+    batchLanguageFunctions.Clear               ();
+    batchLanguageFunctionClassification.Clear  ();
+    batchLanguageFunctionParameterLists.Clear  ();
+    batchLanguageFunctionParameterTypes.Clear  ();
   }
 }
 

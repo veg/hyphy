@@ -309,7 +309,6 @@ namespace hy_global {
         
         using namespace hyphy_global_objects;
         
-        ClearBFFunctionLists();
         executionStack.Clear();
         loadedLibraryPaths.Clear(true);
         _HY_HBL_Namespaces.Clear();
@@ -319,7 +318,7 @@ namespace hy_global {
             likeFuncNamesList.Clear();
             dataSetList.Clear();
             dataSetNamesList.Clear();
-            batchLanguageFunctions.Clear();
+            ClearBFFunctionLists();
             compiledFormulaeParameters.Clear();
             modelNames.Clear();
             KillExplicitModelFormulae ();

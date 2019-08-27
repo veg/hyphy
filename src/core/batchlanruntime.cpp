@@ -418,7 +418,9 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                           kPairwiseCountAmbiguitiesSkip                   ("SKIP_AMBIGUITIES"),
                           kCharacters                                     ("CHARACTERS"),
                           kConsensus                                      ("CONSENSUS"),
-                          kParameters                                     ("PARAMETERS");
+                          kParameters                                     ("PARAMETERS"),
+                          kPattern                                        ("PATTERN"),
+                          kSite                                           ("SITE");
 
 
     _Variable * receptacle = nil;

@@ -238,7 +238,7 @@ _List& _List::operator < (BaseRef br) {
   //  InsertElement (br, -1, false);
   lLength++;
   if (lLength>laLength) {
-    unsigned long incBy = (MEMORYSTEP*4 > lLength)? MEMORYSTEP: (lLength << 2);
+    unsigned long incBy = ((MEMORYSTEP >> 2) > lLength)? MEMORYSTEP: (lLength << 2);
     laLength+=incBy;
     _EnsureCorrectStorageType();
     /*
