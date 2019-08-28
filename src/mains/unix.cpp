@@ -685,7 +685,7 @@ int main (int argc, char* argv[]) {
     
    
     
-    if (rank > 0) {
+    /*if (rank > 0) {
         volatile int i = 0;
         char hostname[256];
         gethostname(hostname, sizeof(hostname));
@@ -694,7 +694,7 @@ int main (int argc, char* argv[]) {
         while (0 == i)
           sleep(5);
         printf("PID %d continuing\n", getpid());
-    }
+    }*/
   
 #endif
 
