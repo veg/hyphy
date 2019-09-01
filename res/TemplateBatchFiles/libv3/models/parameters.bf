@@ -204,27 +204,39 @@ function parameters.SetValues(set) {
 /**
  * Ensures that the mean of parameters in a set is maintained
  * @name parameters.ConstrainMeanOfSet
- * @param {Dict}   set  - list of variable ids
+ * @param {Dict/Matrix}   set      - list of variable ids
+ * @param {Dict/Matrix}   weights  - weights to apply  
  * @param {Number} mean - desired mean
+ * @param {String} namespace - desired mean
  * @returns nothing
  */
-lfunction parameters.ConstrainMeanOfSet (set, mean, namespace) {
+lfunction parameters.ConstrainMeanOfSet (set, weights, mean, namespace) {
     if (Type (set) == "AssociativeList") {
-        unscaled = utility.Map (utility.UniqueValues (set), "_name_", "_name_ + '_scaler_variable'");
+        unscaled   = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");
+        constraint = utility.MapWithKey (unscaled, "_key_", "_name_", "_name_  + '*' + `&weights`[_key_]");
     } else {
         if (Type (set) == "Matrix") {
          unscaled = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");
+         constraint = utility.MapWithKey (unscaled, "_key_", "_name_", "_name_  + '*' + `&weights`[_key_[0]+_key_[1]]");
         }
         else {
             return;
         }
     }
+    
+
+    scaler_variables = {};
+        
+    utility.ForEach (unscaled, "_name_", 'parameters.DeclareGlobal (_name_, null)');
     global_scaler = namespace + ".scaler_variable";
-    parameters.SetConstraint (global_scaler, Join ("+", unscaled), "global");
+    parameters.SetConstraint (global_scaler, Join ("+", constraint), "global");
     utility.ForEach (set, "_name_", '
+        `&scaler_variables`["Mean scaler variable for " + _name_] = _name_ + "_scaler_variable";
         parameters.SetValue (_name_ + "_scaler_variable", _name_);
         parameters.SetConstraint (_name_, "(" + `&mean` + ")*" + _name_ + "_scaler_variable/`global_scaler`", "");
     ');
+    
+    return {^'terms.global' : scaler_variables};
 }
 
 /**
@@ -612,7 +624,7 @@ lfunction parameters.SetStickBreakingDistribution (parameters, values) {
  */
 
 lfunction parameters.GetStickBreakingDistribution (parameters) {
-    rate_count = Rows (parameters["rates"]);
+    rate_count = utility.Array1D (parameters["rates"]);
     distribution = {rate_count, 2};
 
     current_weight = 1;

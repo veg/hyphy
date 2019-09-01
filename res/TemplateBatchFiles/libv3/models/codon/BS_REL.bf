@@ -65,6 +65,27 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing.ModelDescription(type, code, com
 }
 
 /**
+ * @name models.codon.BS_REL_SRV.ModelDescription
+ * @param {String} type
+ * @param {String} code
+ * @param {Matrix} components (alpha, beta) components
+ */
+lfunction models.codon.BS_REL_SRV.ModelDescription(type, code, components) {
+ 
+    io.CheckAssertion ('`&type`==terms.global', 'Only ' + ^'terms.global' + ' model type is supported for BS_REL_SRV');
+ 
+    io.CheckAssertion ('Type (`&components`) == "Matrix" && utility.Array1D (`&components`) == 2', "must have a 2 dimensional matrix of rate counts in models.codon.BS_REL_SRV.ModelDescription");
+    components = utility.Map (components, "_value_", "math.Int(_value_)");
+    io.CheckAssertion ("Min(`&components`,0) >= 1 && Max(`&components`,0) <= 10", "must have between 1 and 10 components in call to models.codon.BS_REL_SRV.ModelDescription");
+    
+    
+ 	template = models.codon.BS_REL.ModelDescription(type, code, 3);
+	template [utility.getGlobalValue("terms.model.defineQ")] = "models.codon.BS_REL_SRV._DefineQ";
+	template [utility.getGlobalValue("terms.model.components")] = components;
+	return template;
+}
+
+/**
  * @name models.codon.BS_REL.BS_REL_Per_Branch_Mixing._DefineQ
  * @param {Dict} mg_rev
  * @param {String} namespace
@@ -116,6 +137,11 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
 
 lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
     count = bs_rel [utility.getGlobalValue ("terms.model.components")];
+    
+    if (Type (count) == "Matrix") {
+        count = count[1];
+    }
+    
     rates = {count, 1};
     weights = {count-1, 1};
 
@@ -125,6 +151,7 @@ lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
             weights [i-1] = ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.global")])[terms.AddCategory (utility.getGlobalValue ("terms.mixture.mixture_aux_weight"), i )];
         }
     }
+    
 
     return {"rates" : rates, "weights" : weights };
 }
@@ -188,6 +215,96 @@ lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
        rate_matrices [key] = bs_rel[utility.getGlobalValue("terms.model.rate_matrix")];
        (bs_rel [^'terms.mixture.mixture_components'])[key] = _wts [component-1];
     }
+
+
+    bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
+    parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
+
+    return bs_rel;
+}
+
+/**
+ * @name models.codon.BS_REL.BS_REL_SRV._DefineQ
+ * @param {Dict} mg_rev
+ * @param {String} namespace
+ * @returns {Dict} updated model
+ */
+
+lfunction models.codon.BS_REL_SRV._DefineQ(bs_rel, namespace) {
+
+    rate_matrices = {};
+
+    bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
+    bs_rel [utility.getGlobalValue("terms.model.time")] = &rate_multiplier;
+
+    bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")] = {};
+
+    ns_components  = (bs_rel[(utility.getGlobalValue("terms.model.components"))])[1];
+    syn_components = (bs_rel[(utility.getGlobalValue("terms.model.components"))])[0];
+    
+
+    _aux = parameters.GenerateSequentialNames (namespace + ".bsrel_mixture_aux", ns_components - 1, "_");
+    _wts = parameters.helper.stick_breaking (_aux, None);
+
+    _aux_srv = parameters.GenerateSequentialNames (namespace + ".bsrel_mixture_aux_srv", syn_components - 1, "_");
+    _wts_srv = parameters.helper.stick_breaking (_aux_srv, None);
+
+    _alphas = parameters.GenerateSequentialNames (namespace + ".alpha", syn_components, "_");
+    
+    
+    mixture = {};
+    
+
+    for (s_component = 1; s_component <= syn_components; s_component += 1) {
+    
+        ExecuteCommands ("
+            function rate_multiplier (option) {
+                return {
+                    ^'terms.global' : {
+                        terms.AddCategory (utility.getGlobalValue('terms.parameters.synonymous_rate'), `s_component`) : '`_alphas[s_component-1]`'
+                    },
+                    ^'terms.local' : {
+                        ^'terms.parameters.synonymous_rate' : models.DNA.generic.Time (null)
+                    },
+                    ^'terms.model.rate_entry' :  '`_alphas[s_component-1]`*' + models.DNA.generic.Time (null)
+                };
+           }
+        ");
+
+        for (component = 1; component <= ns_components; component += 1) {
+           key = "component_" + s_component + "_" + component;
+        
+             
+            
+           ExecuteCommands ("
+            function rate_generator (fromChar, toChar, namespace, model_type, model) {
+
+                   return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                    'alpha_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.synonymous_rate'), s_component),
+                    'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                    'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
+                    
+                }"
+           );
+
+           if ( component < ns_components) {
+                model.generic.AddGlobal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
+                parameters.DeclareGlobalWithRanges (_aux[component-1], 0.5, 0, 1);
+           }
+           if ( s_component < syn_components) {
+                model.generic.AddGlobal ( bs_rel, _aux_srv[s_component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), "SRV " + s_component ));
+                parameters.DeclareGlobalWithRanges (_aux_srv[s_component-1], 0.5, 0, 1);
+           }
+           models.codon.generic.DefineQMatrix(bs_rel, namespace);
+           rate_matrices [key] = bs_rel[utility.getGlobalValue("terms.model.rate_matrix")];
+           (bs_rel [^'terms.mixture.mixture_components'])[key] = parameters.AppendMultiplicativeTerm (_wts [component-1], _wts_srv[s_component- 1]);
+        }
+    }
+
+    __rp    = parameters.ConstrainMeanOfSet (_alphas, _wts_srv, 1, namespace);
+    
+    parameters.DeclareGlobal (__rp[^'terms.global'], null);
+    parameters.helper.copy_definitions (bs_rel[^'terms.parameters'], __rp);
 
 
     bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;

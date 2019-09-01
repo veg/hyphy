@@ -700,9 +700,9 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     can_do_restarts = null;
     
-    //Export (lfe, likelihoodFunction);
-    //console.log (lfe);
-    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
+    /*Export (lfe, likelihoodFunction);
+    fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
+    utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);*/
 
     
 

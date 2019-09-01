@@ -100,11 +100,19 @@ function models.codon.generic.DefineQMatrix (modelSpec, namespace) {
 	if (__modelType == terms.global) {
 	    __rp = Call (__time_function, __modelType);
 
-        if (Abs (__rp)) {
-            ((modelSpec[terms.parameters])[terms.local])[terms.parameters.synonymous_rate] = __rp;
-            modelSpec [terms.model.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, FALSE);
+        if (Type (__rp) == "String") {
+            if (Abs (__rp)) {
+                ((modelSpec[terms.parameters])[terms.local])[terms.parameters.synonymous_rate] = __rp;
+                modelSpec [terms.model.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp, FALSE);
+            } else {
+                modelSpec [terms.model.rate_matrix] = __rate_matrix;
+            }
         } else {
-            modelSpec [terms.model.rate_matrix] = __rate_matrix;
+            if (Type (__rp) == "AssociativeList") {
+                parameters.DeclareGlobal (__rp[terms.global], __global_cache);
+                parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
+                modelSpec [terms.model.rate_matrix] = parameters.AddMultiplicativeTerm (__rate_matrix, __rp[terms.model.rate_entry], FALSE);
+            }
         }
     } else {
         modelSpec [terms.model.rate_matrix] = __rate_matrix;
