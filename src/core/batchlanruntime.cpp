@@ -1110,6 +1110,7 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 pairwise_alignment->MStore ("1", new _FString(result1), false);
                 pairwise_alignment->MStore ("2", new _FString(result2), false);
                 pairwise_alignment->MStore ("0", new _Constant (score), false);
+                aligned_strings->MStore (_String((long)index2-1L), pairwise_alignment, false);
            } else { // not linear
                 char * str1r = nil,
                      * str2r = nil;
