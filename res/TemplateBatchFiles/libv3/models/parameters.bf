@@ -243,7 +243,8 @@ lfunction parameters.ConstrainMeanOfSet (set, weights, mean, namespace) {
  * Given a set of parameters [x1,x2,...] set x1 to a given value, and constrain x2 := x1, x3 := x1...
  * @name parameters.ConstrainParameterSet
  * @param {Dict} set  - list of variable ids (as values)
- * @param {Number/null} value - if is a Number, then set x1 to this value, if null, set x1 to the mean of all values
+ * @param {Number/null} value - if is a Number, then set x1 to this value, 
+                                if null, set x1 to the mean of all values
  * @returns {Dict} the list of constrained parameters
  */ 
 lfunction parameters.ConstrainParameterSet (set, value) {
@@ -270,6 +271,30 @@ lfunction parameters.ConstrainParameterSet (set, value) {
     return {};
     
 }
+
+/**
+ * Given a set of parameters [x1,x2,...] set x_i := Eval (x_i)
+ * @name parameters.ConstrainParameterSet
+ * @param {Dict} set  - list of variable ids (as values)
+  * @returns {Dict} the list of constrained parameters
+ */ 
+lfunction parameters.FixParameterSet (set) {
+    if (Type (set) == "AssociativeList") {
+        if (utility.Array1D (set) > 1) {
+            constraints = {};
+            utility.ForEach (set, "_id_", '
+                parameters.SetConstraint (_id_, "" + Eval (_id_), "");
+                (`&constraints`) + _id_;
+            ');
+            
+            return constraints;
+        }
+    } 
+    
+    return {};
+    
+}
+
 
 
 /**
