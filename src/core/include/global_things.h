@@ -222,17 +222,10 @@ namespace hy_global {
    */
   const _String      GetStandardDirectory (const unsigned long which_one);
   
-  /** resolve the path name contained in 'path', accoding to various flag settings
-   
-   
-   
-   * Revision history
-   - SLKP 20170616; moved from _String, stripped much of the legacy code, basically only the UNIX branch is needed now
-   
-   
+  /** Appends to library path to find HyPhy library files
    */
-  
-  
+  void AppendLibraryPath(_String new_path);
+
   bool  ProcessFileName (_String & path, bool isWrite = false, bool acceptStringVars = false, hyPointer = nil, bool assume_platform_specific = false, _ExecutionList * caller = nil, bool relative_to_base = false, bool relative_path_passthrough = false);
   
   void    ConsoleLog (void);

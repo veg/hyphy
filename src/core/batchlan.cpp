@@ -1304,6 +1304,12 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent, bool ign
 
     hy_env::EnvVariableSet(hy_env::path_to_current_bf, &cfp, true);
 
+    if (!hy_env::EnvVariableGet(hy_env::path_to_initial_bf, STRING)) {
+        hy_env::EnvVariableSet(hy_env::path_to_initial_bf, &cfp, true);
+        _String hy_relative_path = ((_FString *)hy_env::EnvVariableGet(hy_env::path_to_initial_bf, STRING))->get_str();
+        AppendLibraryPath(hy_relative_path);
+    }
+
     DeleteAndZeroObject        (result);
     currentExecutionList = this;
     currentCommand       = 0;

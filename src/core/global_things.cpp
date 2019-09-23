@@ -78,7 +78,7 @@ extern _SimpleList freeSlots;
 
 namespace hy_global {
     
-    
+
     
     bool             hy_drop_into_debug_mode = false,
         /** if set (e.g., via a -d command line flag, errors will drop
@@ -134,7 +134,7 @@ namespace hy_global {
                      hy_error_log_name             ("errors.log"),
                      hy_messages_log_name          ("messages.log");
   
-  
+
     _List            _hy_application_globals_aux,
                      _hy_standard_library_paths,
                      _hy_standard_library_extensions;
@@ -245,6 +245,7 @@ namespace hy_global {
             &lib_directory,
             &directory_separator_char,
             &path_to_current_bf,
+            &path_to_initial_bf,
             &true_const,
             &false_const,
             &matrix_element_value,
@@ -273,7 +274,7 @@ namespace hy_global {
          
         
         _String             dd (get_platform_directory_char());
-        
+
         _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd ));
         _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd & hy_standard_model_directory & dd ));
         _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd & "Utility" & dd));
@@ -805,6 +806,16 @@ namespace hy_global {
     return  asctime (local_time);
     
   }
+
+  //____________________________________________________________________________________
+  void AppendLibraryPath(_String new_path) {
+    _String dd (get_platform_directory_char());
+    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd ));
+    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & hy_standard_model_directory & dd ));
+    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Utility" & dd));
+    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Distances" & dd));
+  }
+
   
   //____________________________________________________________________________________
   bool    ProcessFileName (_String & path_name, bool isWrite, bool acceptStringVars, hyPointer theP, bool assume_platform_specific, _ExecutionList * caller, bool relative_to_base, bool relative_path_passthrough) {

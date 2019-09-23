@@ -158,6 +158,7 @@ namespace hy_env {
           lib_directory,
           directory_separator_char,
           path_to_current_bf,
+          path_to_initial_bf,
           print_float_digits,
           true_const,
           false_const,

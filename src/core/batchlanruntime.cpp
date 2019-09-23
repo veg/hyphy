@@ -2565,7 +2565,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             
             if (do_load_library) {
                 bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound;
-                
+
                 
                 for (unsigned long p = 0; !source_file && p < _hy_standard_library_paths.countitems(); p++) {
                     for (unsigned long e = 0; !source_file && e < _hy_standard_library_extensions.countitems(); e++) {
