@@ -52,10 +52,6 @@ using namespace hy_global;
 
 #endif
 
-#include <iostream>
-using namespace std;
-
-
 const char hy_usage[] =
 "usage: hyphy or HYPHYMPI [-h] [--help]"
 "[-c] "
@@ -304,7 +300,6 @@ void    ReadInTemplateFiles(void) {
     if(!modelList) {
         for (unsigned long p = 0; !modelList && p < _hy_standard_library_paths.countitems(); p++) {
             fileIndex = *((_String*)_hy_standard_library_paths(p)) & dir_sep & "files.lst";
-            std::cout << fileIndex << endl;
             modelList = fopen (fileIndex.get_str(),"r");
             if(modelList) {
                 break;
