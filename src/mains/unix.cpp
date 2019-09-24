@@ -52,6 +52,9 @@ using namespace hy_global;
 
 #endif
 
+#include <iostream>
+using namespace std;
+
 
 const char hy_usage[] =
 "usage: hyphy or HYPHYMPI [-h] [--help]"
@@ -256,10 +259,7 @@ _String getLibraryPath() {
     _String libDir = baseDir;
 #endif
 
-    // SW20141119: Check environment libpath and override default path if it exists
-    // TODO: Move string to globals in v3
-    // TODO: Move function to helpers location in v3
-    char* hyphyEnv = getenv("HYPHY_PATH");
+    char* hyphyEnv = getenv("HYPHY_LIB_PATH");
 
     if(hyphyEnv) {
         _String hyphyPath(hyphyEnv);
@@ -293,12 +293,26 @@ void   _helper_clear_screen (void) {
 
 //__________________________________________________________________________________
 void    ReadInTemplateFiles(void) {
+
     _String dir_sep (get_platform_directory_char()),
-            fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & "files.lst";
-  
+            fileIndex = hy_base_directory & hy_standard_library_directory & dir_sep & "files.lst";
+
+    // SW20190924
+    // Search all possible library directories for the modelList
     FILE* modelList = fopen (fileIndex.get_str(),"r");
+  
+    if(!modelList) {
+        for (unsigned long p = 0; !modelList && p < _hy_standard_library_paths.countitems(); p++) {
+            fileIndex = *((_String*)_hy_standard_library_paths(p)) & dir_sep & "files.lst";
+            std::cout << fileIndex << endl;
+            if(modelList = fopen (fileIndex.get_str(),"r")) {
+                break;
+            }
+        }
+    }
+
     if (!modelList) {
-        fileIndex = baseArgDir& hy_standard_library_directory & dir_sep & "files.lst";
+        fileIndex = baseArgDir & hy_standard_library_directory & dir_sep & "files.lst";
         modelList = fopen (fileIndex.get_str(),"r");
         if (!modelList) {
             return;
@@ -324,6 +338,7 @@ void    ReadInTemplateFiles(void) {
                 if (((_String*)thisFile->GetItem(0))->nonempty()) {
                     _String to_insert (((_String*)thisFile->GetItem(0))->ChangeCase(kStringLowerCase));
                     availableTemplateFilesAbbreviations.InsertExtended(to_insert, availableTemplateFiles.countitems()-1, false, &did_insert);
+                    std::cout << to_insert << endl;
                     if (!did_insert) {
                         HandleApplicationError(_String("Duplicate analysis keyword (not case sensitive) in ") & _String ((_String*)thisFile->toStr()));
                         return;
