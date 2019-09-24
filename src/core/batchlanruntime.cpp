@@ -61,6 +61,9 @@
 using namespace hy_global;
 using namespace hyphy_global_objects;
 
+#include <iostream>
+using namespace std;
+
 #include <ctype.h>
 //____________________________________________________________________________________
 /* various helper functions */
@@ -2564,10 +2567,11 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             
             
             if (do_load_library) {
-                bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound;
 
+                bool has_extension    = file_path.FindBackwards (".",0,-1) != kNotFound;
                 
                 for (unsigned long p = 0; !source_file && p < _hy_standard_library_paths.countitems(); p++) {
+                    std::cout << *((_String*)_hy_standard_library_paths(p)) << std::endl;
                     for (unsigned long e = 0; !source_file && e < _hy_standard_library_extensions.countitems(); e++) {
                         _String try_path = *((_String*)_hy_standard_library_paths(p)) & file_path & *((_String*)_hy_standard_library_extensions(e));
 

@@ -287,7 +287,7 @@ namespace hy_global {
         const char * common_paths[] = {"", "res", "lib"};
         for (const char * common_path: common_paths) {
             _hy_common_relative_library_paths < new _String (common_path);
-            AppendLibraryPath(hy_base_directory & common_path);
+            AppendLibraryPath(hy_base_directory & common_path & dd & hy_standard_library_directory);
         }
         
         //StringToConsole(*((_String*)_hy_standard_library_paths.toStr())); NLToConsole();
@@ -820,16 +820,6 @@ namespace hy_global {
     _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Utility" & dd));
     _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Distances" & dd));
   }
-
-  void CommonRelativeLibraryPaths(_String new_path) {
-    _String dd (get_platform_directory_char());
-    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd ));
-    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & hy_standard_model_directory & dd ));
-    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Utility" & dd));
-    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Distances" & dd));
-  }
-
-
   
   //____________________________________________________________________________________
   bool    ProcessFileName (_String & path_name, bool isWrite, bool acceptStringVars, hyPointer theP, bool assume_platform_specific, _ExecutionList * caller, bool relative_to_base, bool relative_path_passthrough) {
