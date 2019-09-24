@@ -278,6 +278,7 @@ namespace hy_global {
         }
          
         AppendLibraryPath(hy_lib_directory);
+        AppendLibraryPath(hy_lib_directory & hy_standard_library_directory);
         
         const char * extensions [] = {"", ".bf", ".ibf", ".def", ".mdl"};
         for (const char * ext : extensions ) {

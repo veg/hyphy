@@ -305,7 +305,8 @@ void    ReadInTemplateFiles(void) {
         for (unsigned long p = 0; !modelList && p < _hy_standard_library_paths.countitems(); p++) {
             fileIndex = *((_String*)_hy_standard_library_paths(p)) & dir_sep & "files.lst";
             std::cout << fileIndex << endl;
-            if(modelList = fopen (fileIndex.get_str(),"r")) {
+            modelList = fopen (fileIndex.get_str(),"r");
+            if(modelList) {
                 break;
             }
         }
@@ -338,7 +339,6 @@ void    ReadInTemplateFiles(void) {
                 if (((_String*)thisFile->GetItem(0))->nonempty()) {
                     _String to_insert (((_String*)thisFile->GetItem(0))->ChangeCase(kStringLowerCase));
                     availableTemplateFilesAbbreviations.InsertExtended(to_insert, availableTemplateFiles.countitems()-1, false, &did_insert);
-                    std::cout << to_insert << endl;
                     if (!did_insert) {
                         HandleApplicationError(_String("Duplicate analysis keyword (not case sensitive) in ") & _String ((_String*)thisFile->toStr()));
                         return;
