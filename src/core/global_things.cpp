@@ -63,11 +63,6 @@
 
 using     namespace hy_env;
 
-#include <iostream>
-using namespace std;
-
-
-
 extern _SimpleList freeSlots;
 
 
