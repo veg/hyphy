@@ -254,6 +254,7 @@ namespace hy_global {
   extern  _AVLList  _hy_application_globals;
   
   extern  _List     _hy_standard_library_extensions,
+                    _hy_common_relative_library_paths,
   _hy_standard_library_paths;
   
   extern  FILE*     hy_error_log_file,

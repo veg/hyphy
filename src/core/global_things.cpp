@@ -45,6 +45,8 @@
 #include "mersenne_twister.h"
 #include "global_object_lists.h"
 
+
+
 #if defined   __UNIX__ 
     #include <unistd.h>
     #include <sys/stat.h>
@@ -59,8 +61,12 @@
 #include <signal.h>
 #include <stdlib.h>
 
-
 using     namespace hy_env;
+
+#include <iostream>
+using namespace std;
+
+
 
 extern _SimpleList freeSlots;
 
@@ -137,6 +143,7 @@ namespace hy_global {
 
     _List            _hy_application_globals_aux,
                      _hy_standard_library_paths,
+                     _hy_common_relative_library_paths,
                      _hy_standard_library_extensions;
   
     _AVLList         _hy_application_globals (&_hy_application_globals_aux);
@@ -267,22 +274,25 @@ namespace hy_global {
             &last_model_parameter_list,
             &use_last_model
         };
+
+
+        _String dd (get_platform_directory_char());
         
         for (_String const * item : mark_as_globals) {
             _hy_application_globals.Insert (new _String (*item));
         }
          
-        
-        _String             dd (get_platform_directory_char());
-
-        _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd ));
-        _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd & hy_standard_model_directory & dd ));
-        _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd & "Utility" & dd));
-        _hy_standard_library_paths.AppendNewInstance      (new _String(hy_lib_directory & hy_standard_library_directory & dd & "Distances" & dd));
+        AppendLibraryPath(hy_lib_directory);
         
         const char * extensions [] = {"", ".bf", ".ibf", ".def", ".mdl"};
         for (const char * ext : extensions ) {
             _hy_standard_library_extensions < new _String (ext);
+        }
+
+        const char * common_paths[] = {"", "res", "lib"};
+        for (const char * common_path: common_paths) {
+            _hy_common_relative_library_paths < new _String (common_path);
+            AppendLibraryPath(hy_base_directory & common_path);
         }
         
         //StringToConsole(*((_String*)_hy_standard_library_paths.toStr())); NLToConsole();
@@ -815,6 +825,15 @@ namespace hy_global {
     _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Utility" & dd));
     _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Distances" & dd));
   }
+
+  void CommonRelativeLibraryPaths(_String new_path) {
+    _String dd (get_platform_directory_char());
+    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd ));
+    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & hy_standard_model_directory & dd ));
+    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Utility" & dd));
+    _hy_standard_library_paths.AppendNewInstance(new _String(new_path & dd & "Distances" & dd));
+  }
+
 
   
   //____________________________________________________________________________________
