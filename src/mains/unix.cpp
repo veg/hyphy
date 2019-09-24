@@ -315,7 +315,7 @@ void    ReadInTemplateFiles(void) {
         _ElementaryCommand::ExtractConditions(theData,0,extracted_files);
         extracted_files.ForEach([] (BaseRef item, unsigned long) -> void {
             _String* thisString = (_String*)item;
-            _List  *  thisFile  = new _List();
+            _List*  thisFile  = new _List();
             _ElementaryCommand::ExtractConditions(*thisString,thisString->FirstNonSpaceIndex(),*thisFile,',');
             if (thisFile->countitems() == 3L) {
                 thisFile->ForEach ([] (BaseRef item, unsigned long) -> void { ((_String*)item)->StripQuotes();});
