@@ -40,7 +40,6 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-#include <stdlib.h>
 
 #include "hy_string_buffer.h"
 #include "dataset.h"

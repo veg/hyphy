@@ -28,7 +28,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 #include "global_things.h"

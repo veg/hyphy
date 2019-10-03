@@ -57,7 +57,6 @@
 #include <time.h>
 #include <float.h>
 #include <signal.h>
-#include <stdlib.h>
 
 
 using     namespace hy_env;

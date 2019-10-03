@@ -39,7 +39,6 @@
 
 #include <string.h>
 #include <math.h>
-#include <stdlib.h>
 
 #include "polynoml.h"
 #include "global_things.h"

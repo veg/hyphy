@@ -47,7 +47,6 @@
 #include "hbl_env.h"
 #include "global_object_lists.h"
 
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
