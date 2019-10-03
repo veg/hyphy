@@ -598,6 +598,7 @@ public:
 
     static void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse = false, bool allocateStorage = false, bool isFla = false);
 
+    void        RecursiveIndexSort      (long, long, _SimpleList*);
 
 
 
@@ -661,7 +662,6 @@ private:
 
 
     void        BreakPoints             (long, long, _SimpleList*);
-    void        RecursiveIndexSort      (long, long, _SimpleList*);
     void        ConvertFormulas2Poly    (bool force2numbers=true);
     void        ConvertNumbers2Poly     (void);
     void        AgreeObjects            (_Matrix&);

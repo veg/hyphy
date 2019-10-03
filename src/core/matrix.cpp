@@ -5765,8 +5765,7 @@ void    _Matrix::SwapRows (const long row1, const long row2) {
 }
 //______________________________________________________________
 
-void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
-{
+void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index) {
     long            middle          = (from+to) >> 1,
                     bottommove      = 1L,
                     topmove         = 1L;

@@ -9424,10 +9424,12 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
     discrete_category_variables,
     HMM_category_variables,
     HMM_state;
+      
+    _List           local_dynamic_cleanup;
 
     bool            simulate_column_wise = false;
 
-    if (indexCat.lLength) {
+    if (indexCat.nonempty()) {
       checkParameter (categorySimulationMethod,categorySimMethod,2.0);
 
       if (categorySimMethod > 1.5) {
@@ -9461,7 +9463,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
         }
       }
 
-      if (catNames && indexCat.lLength) {
+      if (catNames && indexCat.nonempty()) {
 
         catNames->Clear();
         _Matrix::CreateMatrix (catNames,indexCat.lLength,1,false,true,false);
@@ -9510,8 +9512,6 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
       catValues->Clear();
       _Matrix::CreateMatrix (catValues,indexCat.lLength,total_sites,false,true,false);
     }
-
-    TimeDifference timer;
 
 
     bool       column_wise  = false;
@@ -9567,8 +9567,46 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
         _TheTree * this_tree = GetIthTree (partition_index);
         this_tree->SetUpMatrices(1);
-        while (good_sites < this_site_count) {
+          
+        _Matrix * precomputed_values = nil;
+          
+        if (category_simulation_mode != kLFSimulateCategoriesNone) {
+            if (HMM_category_variables.empty()) {
+                precomputed_values = new _Matrix (
+                                                  this_site_count, discrete_category_variables.countitems() + continuous_category_variables.countitems(),false, true);
+                local_dynamic_cleanup < precomputed_values;
+                
+                for (unsigned i = 0; i < this_site_count; i++) {
+                    for (unsigned long discrete_category_index = 0UL;
+                       discrete_category_index < discrete_category_variables.lLength;
+                       discrete_category_index++) {
 
+
+                        _CategoryVariable* discrete_cat = GetIthCategoryVar(discrete_category_variables(discrete_category_index));
+                        precomputed_values->Store (i,discrete_category_index,DrawFromDiscrete(discrete_cat->GetWeights()->fastIndex(), discrete_cat->GetNumberOfIntervals()));
+                    }
+                    
+                    for (unsigned long continuous_category_index = 0UL;
+                       continuous_category_index < continuous_category_variables.lLength;
+                       continuous_category_index++) { // use discrete values here
+
+                        _CategoryVariable* continuous_cat_var = GetIthCategoryVar(continuous_category_variables(continuous_category_index));
+
+                        hyFloat  category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),hy_x_variable);
+
+                        precomputed_values->Store  (i,continuous_category_index + discrete_category_variables.lLength, category_value);
+                    }
+                }
+                _SimpleList index ((long)this_site_count,0L,1L);
+                precomputed_values->RecursiveIndexSort(0,this_site_count-1, &index);
+
+            }
+        }
+          
+          
+        while (good_sites < this_site_count) {
+            
+            
           if (category_simulation_mode != kLFSimulateCategoriesNone ) {
 
             for (unsigned long hmm_category_index =0UL;
@@ -9596,8 +9634,10 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
                 HMM_state [hmm_category_index] = root_state;
               }
 
+              hyFloat sampled_value = hmm_cat->Compute()->Value();
+                
               if (catValues) {
-                catValues->Store (hmm_category_index,site_offset+good_sites,hmm_cat->Compute()->Value());
+                catValues->Store (hmm_category_index,site_offset+good_sites,sampled_value);
               }
             }
 
@@ -9606,14 +9646,22 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
                  discrete_category_index++) {
 
 
+              hyFloat sampled_value;
               _CategoryVariable* discrete_cat = GetIthCategoryVar(discrete_category_variables(discrete_category_index));
 
-              unsigned long category_value = DrawFromDiscrete(discrete_cat->GetWeights()->fastIndex(), discrete_cat->GetNumberOfIntervals());
-
-              discrete_cat->SetIntervalValue(category_value);
-
+              if (precomputed_values) {
+                  unsigned long category_value = (*precomputed_values)(good_sites,discrete_category_index);
+                  if (good_sites == 0 ||  category_value != (*precomputed_values)(good_sites-1,discrete_category_index)) {
+                      discrete_cat->SetIntervalValue(category_value);
+                  }
+                  sampled_value = discrete_cat->GetIntervalValue (category_value);
+              } else {
+                  unsigned long category_value = DrawFromDiscrete(discrete_cat->GetWeights()->fastIndex(), discrete_cat->GetNumberOfIntervals());
+                  discrete_cat->SetIntervalValue(category_value);
+                  sampled_value = discrete_cat->Compute()->Value();
+              }
               if (catValues) {
-                catValues->Store (discrete_category_index+HMM_category_variables.lLength,site_offset+good_sites,discrete_cat->Compute()->Value());
+                catValues->Store (discrete_category_index+HMM_category_variables.lLength,site_offset+good_sites,sampled_value);
               }
             }
 
@@ -9621,11 +9669,23 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
                  continuous_category_index < continuous_category_variables.lLength;
                  continuous_category_index++) { // use discrete values here
 
-              _CategoryVariable* continuous_cat_var = GetIthCategoryVar(continuous_category_variables(continuous_category_index));
+                _CategoryVariable* continuous_cat_var = GetIthCategoryVar(continuous_category_variables(continuous_category_index));
+                    
+                hyFloat  category_value;
+                
+                if (precomputed_values) {
+                    category_value = (*precomputed_values)(good_sites,continuous_category_index + discrete_category_variables.lLength);
+                    if (good_sites == 0 ||  category_value != (*precomputed_values)(good_sites-1,continuous_category_index + discrete_category_variables.lLength)) {
+                        continuous_cat_var->SetValue(new _Constant (category_value), false);
+                    }
+                } else {
+                    category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),hy_x_variable);
 
-              hyFloat  category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),hy_x_variable);
+                    continuous_cat_var->SetValue(new _Constant (category_value), false);
+                }
+                
+              
 
-              continuous_cat_var->SetValue(new _Constant (category_value), false);
               if (catValues) {
                 catValues->Store (continuous_category_index+discrete_category_variables.lLength+HMM_category_variables.lLength,site_offset+good_sites,category_value);
               }
@@ -9640,6 +9700,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
             root_state = DrawFromDiscrete(this_freqs, filter_dimension);
           }
 
+          //ObjectToConsole(&sampled_values); NLToConsole();
 
           _SimpleList ancestral_values,
                       leaf_values;
@@ -9685,15 +9746,9 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
             }
           }
 
-          hyFloat time_elapsed = timer.TimeSinceStart();
-
-
-          if (time_elapsed > .25) {
-#if !defined __UNIX__ || defined __HEADLESS__
-            SetStatusBarValue (100.*(site_offset_raw+good_sites)/total_sites, 1, 0);
-#endif
-            timer.Start();
-          }
+          indexCat.Each ([&] (long var_idx, unsigned long index) -> void {
+              LocateVar (var_idx)->MarkDone();
+          });
         }
         this_tree->CleanUpMatrices();
 
@@ -9869,6 +9924,7 @@ bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long par
 
       if (ccurNode->NeedNewCategoryExponential(-1)) {
         ccurNode->RecomputeMatrix(0,1);
+        ccurNode->MarkDone();
       }
 
       unsigned long matrix_dimension = ccurNode->GetCompExp()->GetVDim();
