@@ -6277,7 +6277,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
     }
 
     if (outcome >=0 && (leftValue > middleValue || rightValue > middleValue)) {
-      HandleApplicationError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue & " initial value = " & maxSoFar);
+      _TerminateAndDump (_String ("_LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue & " initial value = " & maxSoFar);
       return;
     }
 
@@ -6456,7 +6456,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
         }
 
         if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 100. * kMachineEpsilon)) {
-          HandleApplicationError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%18.16g") & " / " & _String (initialValue,"%18.16g") & ".\n");
+          _TerminateAndDump(_String (" _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%18.16g") & " / " & _String (initialValue,"%18.16g") & ".\n");
 
           return;
         }

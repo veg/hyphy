@@ -273,6 +273,10 @@ lfunction random.number (from, to) {
     return Random (from,to);
 }
 
+lfunction random.exponential (lambda) {
+    return -Log (Random (0,1)) / lambda;
+}
+
 lfunction random.poisson (lambda) {
  if (lambda < 30) {
      L = Exp(-lambda);

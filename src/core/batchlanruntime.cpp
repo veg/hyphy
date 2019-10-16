@@ -325,7 +325,7 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
         target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
 
         if (!parsed_expression.DependsOnVariable(target_variable->get_index()) && !do_integrate) {
-            throw (expression & " does not depend on the variable " & target_variable->GetName()->Enquote());
+            throw (expression.Enquote() & " does not depend on the variable " & target_variable->GetName()->Enquote());
         }
 
  

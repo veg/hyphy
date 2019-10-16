@@ -104,17 +104,17 @@ const char hy_help_message [] =
 ;
 
 const char hy_available_cli_analyses [] =
-"Available standard analyses and their [analysisName] are listed below:\n\n"
-"        [MEME] Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).\n"
-"        [FEL] Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).\n"
-"        [FUBAR] Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).\n"
-"        [FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).\n"
-"        [SLAC] Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).\n"
-"        [BUSTED] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).\n"
-"        [BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.\n"
-"        [aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).\n"
-"        [RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).\n"
-"        [GARD] Screen an alignment for recombination using GARD (Genetic Algorithm for Recombination Detection).\n\n"
+"Available standard analyses and their [standard analysis name] are listed below:\n\n"
+"        [meme] Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).\n"
+"        [fel] Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).\n"
+"        [fubar] Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).\n"
+"        [fade] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).\n"
+"        [slac] Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).\n"
+"        [busted] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).\n"
+"        [bgm] Apply Bayesian Graphical Model inference to substitution histories at individual sites.\n"
+"        [absrel] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).\n"
+"        [relax] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).\n"
+"        [gard] Screen an alignment for recombination using GARD (Genetic Algorithm for Recombination Detection).\n\n"
 ;
 
 
@@ -167,7 +167,8 @@ _String baseArgDir,
         libArgDir;
 
 const   _String kLoggedFileEntry ("__USER_ENTRY__"),
-                kHelpKeyword     ("--help");
+                kHelpKeyword     ("--help"),
+                kVersionKeyword  ("--version");
 
 void    ReadInTemplateFiles         (void);
 long    DisplayListOfChoices        (void);
@@ -757,6 +758,10 @@ int main (int argc, char* argv[]) {
               if (thisArg == kHelpKeyword) {
                   run_help_message = true;
                   continue;
+              }
+              if (thisArg == kVersionKeyword) {
+                  StringToConsole(GetVersionString()); NLToConsole();
+                  exit (0);
               }
               if (i + 1 < argc) {
                   _String payload (argv[++i]);

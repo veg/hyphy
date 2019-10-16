@@ -219,6 +219,41 @@ lfunction math.HolmBonferroniCorrection(ps) {
   return corrected;
 };
 
+
+/**
+* Returns Benjamini-Hochberg corrected q-values (FDR)
+* @name math.BenjaminiHochbergFDR 
+* @param {Dict} ps - a key -> p-value (or null, for not done)
+
+*/
+
+lfunction math.BenjaminiHochbergFDR(ps) {
+  tested  = utility.Filter (ps, "_value_", "None!=_value_");
+  count   = utility.Array1D (tested);
+  names   = utility.Keys (tested);
+  indexed = {count, 2};
+  for (k = 0; k < count; k+=1) {
+    indexed [k][0] = tested[names[k]];
+    indexed [k][1] = k;
+  }
+  indexed = indexed % 0;
+
+
+  for (k = 0; k < count; k+=1) {
+    indexed[k][0] = indexed[k][0] * count/(k+1);
+  }
+
+  corrected = {};
+
+  for (k = 0; k < count; k+=1) {
+    corrected[names[indexed[k][1]]] = Min (1,indexed[k][0]);
+  }
+  
+  utility.Extend (corrected, ps);
+  return corrected;
+};
+
+
 /**
 * Returns the range normalized to the lowest value
 * @name math.minNormalizedRange
