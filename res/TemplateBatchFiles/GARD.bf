@@ -352,7 +352,7 @@ namespace gard {
     cAIC_diversityThreshold = 0.001;
     cAIC_improvementThreshold = 0.01; // I think this was basically 0 in the gard paper
     maxGenerationsAllowedWithNoNewModelsAdded = 10; // TODO: Not in the GARD paper. use 10?
-    maxGenerationsAllowedAtStagnent_cAIC = 100; // TODO: this is set to 100 in the GARD paper
+    maxGenerationsAllowedAtStagnant_cAIC = 100; // TODO: this is set to 100 in the GARD paper
 
     // GA.2: Loop over increasing number of break points
     addingBreakPointsImproves_cAIC = TRUE;
@@ -402,7 +402,7 @@ namespace gard {
 
             if (previousBest_cAIC - currentBest_cAIC < cAIC_improvementThreshold) {
                 generationsAtCurrentBest_cAIC += 1;
-                if (generationsAtCurrentBest_cAIC >= maxGenerationsAllowedAtStagnent_cAIC) {
+                if (generationsAtCurrentBest_cAIC >= maxGenerationsAllowedAtStagnant_cAIC) {
                     terminationCondition = TRUE;
                 }
             } else {
