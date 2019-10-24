@@ -298,19 +298,19 @@ lfunction random.poisson (lambda) {
 
      while (1) {
 
-         var u = Random (0.1);
+         u = Random (0,1);
          if (u > 0.0) {
-             var x = (alpha - Log ((1.0 - u) / u)) / beta;
-             var n = (x + 0.5)$1;
+             x = (alpha - Log ((1.0 - u) / u)) / beta;
+             n = (x + 0.5)$1;
              if (n < 0) {
                  continue;
              }
-             var v = Random (0.1);
+             v = Random (0,1);
              if (v > 0.0) {
-                 var y = alpha - beta * x;
-                 var t = (1.0 + Exp(y));
-                 var lhs = y + Log (v / (t*t));
-                 var rhs = k + n * Log (lambda) - LogFactorial (n);
+                 y = alpha - beta * x;
+                 t = (1.0 + Exp(y));
+                 lhs = y + Log (v / (t*t));
+                 rhs = k + n * Log (lambda) - LogFactorial (n);
                  if (lhs <= rhs)
                      return n;
              }

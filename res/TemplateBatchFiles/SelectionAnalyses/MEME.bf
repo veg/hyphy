@@ -461,6 +461,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
     GetString   (lfInfo, ^lf_fel,-1);
 
+    utility.SetEnvVariable ("VERBOSITY_LEVEL", 100);
 
     //TODO Datafilters hardcode, Trees hardcode.
     ExecuteCommands (filter_data);
@@ -479,7 +480,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     ^"meme.site_beta_nuisance"  = 1;
 
     //console.log ("Optimizing FEL for pattern " + pattern_info);
-    //io.SpoolLF (lf_fel, "/tmp/meme.debug", "FEL");
+    io.SpoolLF (lf_fel, "/tmp/meme.debug", "FEL");
     Optimize (results, ^lf_fel);
 
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
@@ -495,7 +496,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
      }
 
     //console.log ("Optimizing MEME for pattern " + pattern_info);
-    //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
+    io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
     Optimize (results, ^lf_bsrel);
     //console.log (results[1][0]);
 
@@ -538,6 +539,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
         ^"meme.site_beta_plus" := ^"meme.site_alpha";
         Optimize (results, ^lf_bsrel);
+        io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME-null");
 
         Null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
         Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];

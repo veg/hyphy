@@ -104,6 +104,7 @@ if (gard.dataType == terms.gard.nucleotide) {
     gard.model.generator = "models.DNA.GTR.ModelDescription";
     gard.alignment = alignments.ReadNucleotideDataSet ("gard.sequences", null);
     DataSetFilter gard.filter = CreateFilter (gard.sequences, 1);
+    
 } else {
     // TODO: implement these branches
     if (gard.dataType == terms.gard.protein) {
@@ -341,16 +342,16 @@ io.ReportProgressMessageMD('GARD', 'multi-breakpoint', 'Performing multi breakpo
 
 namespace gard {
     // GA.1: Setup global parameters
-    populationSize = 30; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
-    if(populationSize < mpi.NodeCount()) {
-        populationSize = mpi.NodeCount();
+    populationSize = 32; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
+    if(populationSize < mpi.NodeCount() -1 ) {
+        populationSize = mpi.NodeCount() + 1;
     }
     mutationRate = 0.8; // the GARD paper said "15% of randomly selected bits were toggled"...
     rateOfMutationsTharAreSmallShifts = 0.5; // some mutations are a new random break point; some are small shifts of the break point to an adjacent location.
     maxFailedAttemptsToMakeNewModel = 7;
     cAIC_diversityThreshold = 0.001;
     cAIC_improvementThreshold = 0.01; // I think this was basically 0 in the gard paper
-    maxGenerationsAllowedWithNoNewModelsAdded = 15; // TODO: Not in the GARD paper. use 10?
+    maxGenerationsAllowedWithNoNewModelsAdded = 10; // TODO: Not in the GARD paper. use 10?
     maxGenerationsAllowedAtStagnent_cAIC = 100; // TODO: this is set to 100 in the GARD paper
 
     // GA.2: Loop over increasing number of break points
@@ -531,7 +532,8 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
     res = estimators.FitExistingLF (&likelihoodFunction, modelObjects);
 
     if (Type (saveToFile) == "String") {
-        io.SpoolLF (&likelihoodFunction, saveToFile, "");
+        alignment.ExportPartitionedNEXUS ("gard.filter",breakPoints,utility.Map (trees,"_t_","_t_[^'terms.trees.newick_with_lengths']"),saveToFile,^"gard.dataType" == ^"terms.gard.codon");
+        io.SpoolLF (&likelihoodFunction, saveToFile, "fit");
     }
 
     DeleteObject (likelihoodFunction, :shallow);
@@ -903,14 +905,20 @@ lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, 
                 if(Random(0,1) < mutationRate) { // keep the break point the same
                     breakPoints[breakPointIndex] = parentModel[breakPointIndex];
                 } else {
-
                     if(Random(0,1) < rateOfMutationsThatAreSmallShifts) { // move the break point by a random small amount
-                        distanceOfStep = random.poisson(2);
-                        if (random.TRUE_or_FALSE()) { // randomly decide if the break point moves right or left
-                            distanceOfStep = - distanceOfStep;
+                        notValid = TRUE;
+                        while (notValid) {
+                            distanceOfStep = Min (1,random.poisson(2));
+                            if (random.TRUE_or_FALSE()) { // randomly decide if the break point moves right or left
+                                distanceOfStep = - distanceOfStep;
+                            }
+                            variableSiteMapIndexOfParentBreakPoint = utility.Find(^"gard.variableSiteMap", parentModel[breakPointIndex]);
+                            variableSiteMapIndexOfParentBreakPoint += distanceOfStep;
+                            if (variableSiteMapIndexOfParentBreakPoint >= 0 && variableSiteMapIndexOfParentBreakPoint < (^"gard.variableSites")) {
+                                newBreakPoint = (^"gard.variableSiteMap")[variableSiteMapIndexOfParentBreakPoint + distanceOfStep];
+                                notValid = FALSE;
+                            }
                         }
-                        variableSiteMapIndexOfParentBreakPoint = utility.Find(^"gard.variableSiteMap", parentModel[breakPointIndex]);
-                        newBreakPoint = (^"gard.variableSiteMap")[variableSiteMapIndexOfParentBreakPoint + distanceOfStep];
                         breakPoints[breakPointIndex] = newBreakPoint;
                     } else { // select a completely new random break point
                         breakPoints[breakPointIndex] = (^"gard.variableSiteMap")[Random(0,numberOfPotentialBreakPoints)$1];

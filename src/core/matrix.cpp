@@ -6261,10 +6261,12 @@ HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
             _AssociativeList    * pdfArgs   = (_AssociativeList *)kind;
             _List               * keys      = pdfArgs->GetKeys();
             _String             pdfkey      ("PDF"),
-                                * arg0      = (_String *)keys->GetItem(0L);
+                                * arg0      = (_String *)pdfArgs->GetByKey(pdfkey,STRING);
             DeleteObject (keys);
-            if (arg0->Equal(pdfkey)) {
-                _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
+            
+            
+            if (arg0) {
+                _String     pdf ((_String*)arg0->toStr()),
                             arg ("ARG0");
                 
                 long        pdfCode = _HY_MatrixRandomValidPDFs.GetValueFromString (pdf);
@@ -8240,9 +8242,9 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
                     * result = nil;
 
         if (samples == 0UL) {
-            throw "Expected a numerical (>=1) value for the number of replicates";
+            throw _String ("Expected a numerical (>=1) value for the number of replicates");
         } else if ( ! eval->is_numeric() || GetVDim() != 2 || values < 2) {
-            throw "Expecting numerical Nx2 (with N>=1) matrix.";
+            throw _String ("Expecting numerical Nx2 (with N>=1) matrix.");
         } else {
             _Constant one (1.);
             sorted = (_Matrix*) eval->SortMatrixOnColumn(&one);
@@ -8258,13 +8260,17 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
                 sum += v;
             }
             if (CheckEqual (sum, 0.)) {
-                throw "The probabilities (second column) cannot add to 0 or be negative";
+                throw _String ("The probabilities (second column) cannot add to 0 or be negative");
             } else {
                 sum = 1./sum;
 
                 _Matrix     *raw_result  = new _Matrix (1, values, false, true),
                 *normalized  = new _Matrix (1, values, false, true);
 
+                reference_manager <raw_result;
+                reference_manager <normalized;
+
+                
                 for (long v = 0; v < values; v++) {
                     normalized->theData[values-1-v] = sorted->theData[1+2*v] * sum;
                 }
@@ -8284,9 +8290,8 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
                     result->theData[2*v+1] = raw_result->theData[v];
                 }
 
-                DeleteObject (raw_result);
-                DeleteObject (sorted);
-                sorted = normalized;
+                
+                return result;
             }
         }
     }
