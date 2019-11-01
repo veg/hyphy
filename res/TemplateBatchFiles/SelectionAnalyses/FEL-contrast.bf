@@ -65,6 +65,7 @@ fel.site.permutations   = 20;
 
 // default cutoff for printing to screen
 fel.p_value = 0.1;
+fel.q_value = 0.2;
 fel.scaler_prefix = "FEL.scaler";
 
 
@@ -101,6 +102,7 @@ namespace fel {
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
 KeywordArgument ("permutations", "Perform permutation significance tests", "Yes");
 KeywordArgument ("p-value", "Significance value for site-tests", "0.05");
+KeywordArgument ("q-value", "Significance value for FDR reporting", "0.20");
 
 
 /* Prompt for one-rate or two-rate analysis */
@@ -126,6 +128,7 @@ if (fel.permutations == "Yes"){
 
 /* Prompt for p value threshold */
 fel.p_value  = io.PromptUser ("\n>Select nominal p-value threshold to use when testing for selection (FDR correction will be performed on all sites)",0.1,0,1,FALSE);
+fel.q_value  = io.PromptUser ("\n>Select nominal the q-value threshold to use when testing for selection (FDR reporting)",0.2,0,1,FALSE);
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
 fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
@@ -469,7 +472,7 @@ fel.bh.count = {};
 
 utility.ForEachPair (fel.bh.pv, "_index_", "_value_", 
 '
-    if (fel.p_value >= _value_) {
+    if (fel.q_value >= _value_) {
         fel.bh.count [1 + _index_] = _value_;
     }
     (fel.site_results[0])[0+_index_][fel.overall.index+1] = _value_;
@@ -482,7 +485,7 @@ for (fel.k = 0; fel.k < fel.report.test_count; fel.k += 1) {
 io.ReportProgressMessageMD ("fel", "FDR", "### False discovery rate correction");
  
 if (utility.Array1D (fel.bh.count)) {
-    io.ReportProgressMessageMD ("fel", "FDR", "There are " + utility.Array1D (fel.bh.count) + " sites where the overall p-value passes the False Discovery Rate threshold");
+    io.ReportProgressMessageMD ("fel", "FDR", "There are " + utility.Array1D (fel.bh.count) + " sites where the overall p-value passes the False Discovery Rate threshold of " + fel.q_value);
     console.log ("");
     fel.bh.count.mx = {Abs (fel.bh.count), 2};
     fel.i = 0;
@@ -508,7 +511,7 @@ if (utility.Array1D (fel.bh.count)) {
     }
 
 } else {
-    io.ReportProgressMessageMD ("fel", "FDR", "There are no sites where the overall p-value passes the False Discovery Rate threshold");
+    io.ReportProgressMessageMD ("fel", "FDR", "There are no sites where the overall p-value passes the False Discovery Rate threshold of " + fel.q_value);
 }
 
 

@@ -186,7 +186,8 @@ bool    usePostProcessors = false,
         calculatorMode    = false,
         updateMode       = false,
         pipeMode         = false,
-        logInputMode   = false;
+        logInputMode   = false,
+        displayHelpAndExit = false;
 char    prefFileName[] = ".hyphyinit";
 
 #ifdef  __HYPHYMPI__
@@ -552,16 +553,26 @@ long    DisplayListOfPostChoices (void) {
 }
 
 
-
+void    DisplayHelpMessage (void) {
+   printf ("%s\n%s", hy_usage, hy_help_message);
+   printf ("Available standard keyword analyses (located in %s)\n", getLibraryPath().get_str());
+   TrieIterator options (&availableTemplateFilesAbbreviations);
+   for (TrieIteratorKeyValue ti : options) {
+       printf ("\t%s \t%s\n", ti.get_key().get_str(), ((_String*)(availableTemplateFiles.GetItem(availableTemplateFilesAbbreviations.GetValue(ti.get_value()),1)))->get_str());
+   }
+   printf ("\n");
+   //fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
+   exit (0);
+}
             
 void    ProcessConfigStr (_String const & conf) {
     for (unsigned long i=1UL; i<conf.length(); i++) {
         switch (char c = conf.char_at (i)) {
             case 'h':
             case 'H': {
-                fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
-                exit (0);
+                displayHelpAndExit = true;
             }
+            break;
 
             case 'p':
           case 'P': {
@@ -739,7 +750,6 @@ int main (int argc, char* argv[]) {
     hy_base_directory = baseDir;
     baseArgDir    = hy_base_directory;
     
-    bool          run_help_message = false;
     
 #ifdef _OPENMP
     system_CPU_count = omp_get_max_threads();
@@ -756,7 +766,7 @@ int main (int argc, char* argv[]) {
       if (thisArg.get_char(0)=='-') { // -[LETTER] arguments
           if (thisArg.get_char (1) == '-') {
               if (thisArg == kHelpKeyword) {
-                  run_help_message = true;
+                  displayHelpAndExit = true;
                   continue;
               }
               if (thisArg == kVersionKeyword) {
@@ -808,10 +818,9 @@ int main (int argc, char* argv[]) {
     GlobalStartup();
     ReadInTemplateFiles();
     
-    if (positional_arguments.empty () && run_help_message) {
+    if (positional_arguments.empty () && displayHelpAndExit) {
         // --help returns the message below
-        fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
-        BufferToConsole("\n");
+        DisplayHelpMessage();
         GlobalShutdown();
         return 0;
     }
@@ -944,7 +953,7 @@ int main (int argc, char* argv[]) {
             ReadBatchFile (argFile,ex);
         }
 
-        if (run_help_message) {
+        if (displayHelpAndExit) {
 #ifdef __HYPHYMPI__
             if (hy_mpi_node_rank == 0L) {
 #endif

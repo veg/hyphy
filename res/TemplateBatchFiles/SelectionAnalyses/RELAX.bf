@@ -130,10 +130,7 @@ KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {}
 
 KeywordArgument ("mode",      "Run mode", "Classic mode", "Group test mode");
 KeywordArgument ("test",  "Branches to use as the test set", null, "Choose the set of branches to use as the _test_ set");
-KeywordArgument ("reference",  "Branches to use as the reference set", null, "Choose the set of branches to use as the _reference_ set");
-
-KeywordArgument ("rates", "The number omega rate classes to include in the model [2-10, default 3]", relax.rate_classes);
-KeywordArgument ("models", "Which version of the test to run (All or Minimal)", "All");
+KeywordArgument ("reference",  "Branches to use as the reference set", null, "Select the set of branches to use as reference group");
 
 
 
@@ -180,7 +177,7 @@ function relax.echo_group (group, description) {
 relax.branch_sets ["relax.echo_group"][""];
 
 if (relax.numbers_of_tested_groups > 2) {
-	relax.reference_set_name = io.SelectAnOption (relax.group_choices, "Select the set of branches to use as reference");
+	relax.reference_set_name = io.SelectAnOption (relax.group_choices, "Select the set of branches to use as reference group");
 	if (relax.branch_sets [relax.reference_set_name] > 0) {
 		relax.k = utility.Keys (relax.branch_sets);
 		for (relax.i = 0; relax.i < relax.numbers_of_tested_groups; relax.i += 1) {
@@ -201,8 +198,10 @@ utility.ForEachPair (relax.selected_branches, "_partition_", "_selection_",
         io.ReportProgressMessageMD('RELAX',  'selector', '* ' + Abs(_selection_) + ' branches are in the unclassified (nuisance) set: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')
      }");
 
+KeywordArgument ("rates", "The number omega rate classes to include in the model [2-10, default 3]", relax.rate_classes);
 relax.rate_classes = io.PromptUser ("The number omega rate classes to include in the model", relax.rate_classes, 2, 10, TRUE);
 
+KeywordArgument ("models", "Which version of the test to run (All or Minimal)", "All");
 relax.model_set = io.SelectAnOption ({
                                         {"All", "[Default] Fit descriptive models AND run the relax test (4 models)"}
                                         {"Minimal", "Run only the RELAX test (2 models)"}
