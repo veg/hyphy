@@ -102,7 +102,7 @@ lfunction trees.GetTreeString._sanitize(string) {
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", None);
     }
-
+    
     return string;
 }
 
@@ -354,7 +354,6 @@ lfunction trees.RootTree(tree_info, root_on) {
 
     Topology T = tree_info[^"terms.trees.newick_with_lengths"];
 
-
     utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", TRUE);
     tree_info = trees.ExtractTreeInfo(RerootTree (T, root_on));
     utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", None);
@@ -386,7 +385,8 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     }
 
     Topology T = tree_string;
-
+    
+ 
     branch_lengths = BranchLength(T, -1);
     branch_names   = BranchName(T, -1);
     branch_count   = utility.Array1D (branch_names) - 1;

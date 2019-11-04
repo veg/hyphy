@@ -10,7 +10,11 @@ function getTestName () {
 function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult = TRUE;
-  
+ 
+    ACCEPT_ROOTED_TREES = 0;
+   Topology single_leaf = (a,b);
+   fprintf (stdout, Format (single_leaf,0,0), "\n"); 
+   
 
   //---------------------------------------------------------------------------------------------------------
   // SIMPLE FUNCTIONALITY
@@ -44,6 +48,7 @@ function runTest () {
   //Topology twoNodes = (a),b;
   //assert (runCommandWithSoftErrors ('Topology twoNodes = (a),b;', "Cannot constuct empty Topologys"), "Failed error checking for trying to construct a Topology with only two nodes");
   
+    
   testResult = 1;
 
   return testResult;

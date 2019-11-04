@@ -503,6 +503,7 @@ if (utility.Array1D (fel.bh.count)) {
                                 terms.table_options.column_widths : { "0" : 8, "1" : 22}};
 
     fprintf (stdout, io.FormatTableRow (fel.table_screen_output.qv,fel.table_output_options.qv));
+    fel.table_output_options.qv[terms.table_options.header] = FALSE;
 
     for (fel.i = 0; fel.i < Rows (fel.bh.count.mx ); fel.i += 1) {
         fprintf (stdout, io.FormatTableRow (
