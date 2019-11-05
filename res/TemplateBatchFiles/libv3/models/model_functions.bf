@@ -35,6 +35,7 @@ lfunction model.GetParameters_RegExp(model, re) {
  */
 function model.ApplyModelToTree (id, tree, model_list, rules) {
 
+
 	if (Type (rules) == "AssociativeList") {
 	    // this has the form
 	    // model id : list of branches to apply the model (as a string COLUMN matrix with branch names,
@@ -89,10 +90,13 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 
 	} else {
 	    // TO DO: REMOVE HARDCODING
+	    
+	    
 		model.ApplyModelToTree.modelID = model_list[model_list ["INDEXORDER"][0]];
 		ExecuteCommands ("UseModel (" + model.ApplyModelToTree.modelID[terms.id] + ");
 						  Tree `id` = " + tree["string"] + ";
 						  ");
+						  
 	}
 }
 

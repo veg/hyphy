@@ -422,13 +422,14 @@ void    _TheTree::PostTreeConstructor (bool make_copy, _AssociativeList* meta) {
             
             if (rooted==UNROOTED) {
               ReportWarning ("One branch tree supplied - hopefully this IS what you meant to do.");
-              node<long> *node_temp = theRoot->go_down(1);
-              delete_associated_calcnode(theRoot);
-              node_temp->detach_parent();
-              node_temp->add_node(*theRoot->go_down(2));
-              delete theRoot;
-              theRoot = node_temp;
+              node<long> *delete_me = theRoot->go_down(2);
+              //delete_associated_calcnode(theRoot);
+              delete_me->detach_parent();
+              theRoot->detach_child(2);
+              delete_associated_calcnode(delete_me);
+              delete delete_me;
               rooted = ROOTED_LEFT;
+              ReportWarning ("RIGHT child collapsed to the root");
               //delete_associated_calcnode(theRoot);
             }
           } else {

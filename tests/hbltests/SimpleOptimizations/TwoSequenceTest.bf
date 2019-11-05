@@ -7,7 +7,6 @@
 
 /* end test preamble */
 
-
 modelLL    = {1,4};
 
 runTimer = Time(1);
@@ -22,8 +21,7 @@ inputOptions["6"] = PATH_TO_CURRENT_BF+".."+DIRECTORY_SEPARATOR+"data"+DIRECTORY
 ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "AnalyzeNucProtData.bf", inputOptions);
 
 modelLL [0] = res[1][0];
-
-
+DeleteObject (lf);
 
 inputOptions["2"] = "Global w/variation";
 inputOptions["3"] = "General Discrete";
@@ -31,9 +29,12 @@ inputOptions["4"] = "2";
 inputOptions["7"] = "Don't Display";
 
 
+
 ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "AnalyzeNucProtData.bf", inputOptions);
 
 modelLL [1] = res[1][0];
+DeleteObject (lf);
+
 
 inputOptions["0"] = PATH_TO_CURRENT_BF+".."+DIRECTORY_SEPARATOR+"data"+DIRECTORY_SEPARATOR+"2.prot";
 inputOptions["1"] = "HIVBETWEEN";
@@ -42,6 +43,7 @@ inputOptions["2"] = "Rate variation";
 ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "AnalyzeNucProtData.bf", inputOptions);
 
 modelLL [2] = res[1][0];
+DeleteObject (lf);
 
 
 inputOptions["1"] = PATH_TO_CURRENT_BF+".."+DIRECTORY_SEPARATOR+"data"+DIRECTORY_SEPARATOR+"2.fas";
@@ -54,6 +56,7 @@ inputOptions["5"] = inputOptions["7"];
 ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR + "AnalyzeCodonData.bf", inputOptions);
 
 modelLL [3] = res[1][0];
+DeleteObject (lf);
 
 
 /* test epilogue */

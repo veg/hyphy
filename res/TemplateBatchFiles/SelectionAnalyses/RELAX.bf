@@ -130,7 +130,7 @@ KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {}
 
 KeywordArgument ("mode",      "Run mode", "Classic mode", "Group test mode");
 KeywordArgument ("test",  "Branches to use as the test set", null, "Choose the set of branches to use as the _test_ set");
-KeywordArgument ("reference",  "Branches to use as the reference set", null, "Select the set of branches to use as reference group");
+KeywordArgument ("reference",  "Branches to use as the reference set", null, "Choose the set of branches to use as the _reference_ set");
 
 
 
@@ -177,7 +177,7 @@ function relax.echo_group (group, description) {
 relax.branch_sets ["relax.echo_group"][""];
 
 if (relax.numbers_of_tested_groups > 2) {
-	relax.reference_set_name = io.SelectAnOption (relax.group_choices, "Select the set of branches to use as reference group");
+	relax.reference_set_name = io.SelectAnOption (relax.group_choices, "Choose the set of branches to use as the _reference_ set");
 	if (relax.branch_sets [relax.reference_set_name] > 0) {
 		relax.k = utility.Keys (relax.branch_sets);
 		for (relax.i = 0; relax.i < relax.numbers_of_tested_groups; relax.i += 1) {
