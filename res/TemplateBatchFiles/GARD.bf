@@ -915,7 +915,7 @@ lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, 
                             variableSiteMapIndexOfParentBreakPoint = utility.Find(^"gard.variableSiteMap", parentModel[breakPointIndex]);
                             variableSiteMapIndexOfParentBreakPoint += distanceOfStep;
                             if (variableSiteMapIndexOfParentBreakPoint >= 0 && variableSiteMapIndexOfParentBreakPoint < (^"gard.variableSites")) {
-                                newBreakPoint = (^"gard.variableSiteMap")[variableSiteMapIndexOfParentBreakPoint + distanceOfStep];
+                                newBreakPoint = (^"gard.variableSiteMap")[variableSiteMapIndexOfParentBreakPoint];
                                 notValid = FALSE;
                             }
                         }
