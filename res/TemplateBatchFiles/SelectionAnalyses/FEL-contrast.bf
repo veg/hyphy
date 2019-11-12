@@ -500,7 +500,7 @@ if (utility.Array1D (fel.bh.count)) {
 
     fel.table_screen_output.qv  = {{"Codon", "q-value"}};
     fel.table_output_options.qv = {terms.table_options.header : TRUE, terms.table_options.align : "center",
-                                terms.table_options.column_widths : { "0" : 8, "1" : 22}};
+                                terms.table_options.column_widths : { "0" : 15, "1" : 22}};
 
     fprintf (stdout, io.FormatTableRow (fel.table_screen_output.qv,fel.table_output_options.qv));
     fel.table_output_options.qv[terms.table_options.header] = FALSE;
