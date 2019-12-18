@@ -366,8 +366,9 @@ lfunction fade.rate.modifier (fromChar, toChar, namespace, model_type, model) {
                                                   "`utility.getGlobalValue("fade.parameter.bias")`/(1-Exp (-`utility.getGlobalValue("fade.parameter.bias")`))");
      } else {
         if (fromChar == model["fade.residue_bias"]) {
-            parameters.AppendMultiplicativeTerm ( baseline [utility.getGlobalValue("terms.model.rate_entry")],
-                                                  "`utility.getGlobalValue("fade.parameter.bias")`/(Exp (`utility.getGlobalValue("fade.parameter.bias")`-1))");
+            baseline [utility.getGlobalValue("terms.model.rate_entry")] = 
+                parameters.AppendMultiplicativeTerm ( baseline [utility.getGlobalValue("terms.model.rate_entry")],
+                                                  "`utility.getGlobalValue("fade.parameter.bias")`/(Exp (`utility.getGlobalValue("fade.parameter.bias")`)-1)");
         }
     }
     return baseline;
@@ -539,13 +540,12 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
         LikelihoodFunction fade.lf = (fade.lf.components);
         estimators.ApplyExistingEstimates  ("fade.lf", fade.model_id_to_object, fade.baseline_fit, None);
-
+    
         fade.conditionals.raw = fade.ComputeOnGrid  ("fade.lf",
                              fade.grid.MatrixToDict (fade.cache[terms.fade.cache.grid]),
                             "fade.pass2.evaluator",
                             "fade.pass1.result_handler");
-
-
+  
 
         (fade.cache [terms.fade.cache.conditionals])[fade.bias.residue] = fade.ConvertToConditionals (fade.conditionals.raw);
         io.WriteCacheToFile (fade.path.cache, fade.cache);
@@ -599,7 +599,8 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
         rates  = Transpose ((cache['grid'])[-1][0]);
         biases = Transpose ((cache['grid'])[-1][1]);
-
+                
+ 
 
         if (run_settings["method"] != ^"terms.fade.methods.VB0") {
 
@@ -674,7 +675,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
              posterior_mean_over_grid                 = (cache[^"terms.fade.cache.posterior"])[bias.residue];
              posterior_mean_over_grid_T               = Transpose (posterior_mean_over_grid);
              cache[terms.fade.cache.posterior]       = posterior_mean_over_grid;
-
+ 
              P_ks = posterior_mean_over_grid_T * ((cache[utility.getGlobalValue("terms.fade.cache.conditionals")])[bias.residue])["conditionals"];
 
 

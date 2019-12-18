@@ -461,6 +461,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
     GetString   (lfInfo, ^lf_fel,-1);
 
+    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 100);
 
     //TODO Datafilters hardcode, Trees hardcode.
     ExecuteCommands (filter_data);
@@ -538,6 +539,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
         ^"meme.site_beta_plus" := ^"meme.site_alpha";
         Optimize (results, ^lf_bsrel);
+        //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME-null");
 
         Null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
         Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];

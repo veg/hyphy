@@ -233,6 +233,8 @@ _String const
         // set SCFG training corpus
     kStringSuppliedLengths                          ("STRING_SUPPLIED_LENGTHS"),
         // literal for branch lengths from the Newick tree string
+    kDevNull                                        ("/dev/null"),
+        // literal for branch lengths from the Newick tree string
     last_file_path                                  ("LAST_FILE_PATH"),
         // is set by various file read/write commands (fscanf, fprintf, dialog prompts)
         // to contain the **absolute** path to the last file interacted with

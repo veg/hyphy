@@ -188,23 +188,34 @@ endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
-    PCL_CHECK_FOR_AVX()
-
-    if(${HAVE_AVX_EXTENSIONS} AND NOT ${NOAVX})
-        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=native -mtune=native -mavx")
-        add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
-        PCL_CHECK_FOR_FMA3()
-        if (${HAVE_FMA3})
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mfma")
-            add_definitions (-D_SLKP_USE_FMA3_INTRINSICS)
-        endif (${HAVE_FMA3})
-    else(${HAVE_AVX_EXTENSIONS} AND NOT ${NOAVX})
-        PCL_CHECK_FOR_SSE3()
-        if(${HAVE_SSE3_EXTENSIONS})
-            add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
-        endif(${HAVE_SSE3_EXTENSIONS})
-    endif (${HAVE_AVX_EXTENSIONS})
+    if(NOAVX)
+        if(NOSSE3)
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
+        else(NOSSE)
+            PCL_CHECK_FOR_SSE3()
+            if(${HAVE_SSE3_EXTENSIONS})
+                add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
+                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+            endif(${HAVE_SSE3_EXTENSIONS})
+        endif(NOSSE3)
+    else(NOAVX)
+        PCL_CHECK_FOR_AVX()
+        if(${HAVE_AVX_EXTENSIONS})
+            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=native -mtune=native -mavx")
+            add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
+            PCL_CHECK_FOR_FMA3()
+            if (${HAVE_FMA3})
+                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mfma")
+                add_definitions (-D_SLKP_USE_FMA3_INTRINSICS)
+            endif (${HAVE_FMA3})
+        else(${HAVE_AVX_EXTENSIONS})
+            PCL_CHECK_FOR_SSE3()
+            if(${HAVE_SSE3_EXTENSIONS})
+                add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
+                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
+            endif(${HAVE_SSE3_EXTENSIONS})
+        endif (${HAVE_AVX_EXTENSIONS})
+    endif(NOAVX)
 
     set_property(
      SOURCE ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_UNIXMAIN}
@@ -406,10 +417,10 @@ if(${MPI_FOUND})
         HYPHYMPI
         PROPERTIES
         if(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g "
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g "
         else(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS}"
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} -g "
             LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
         endif(${OPENMP_FOUND})
     )

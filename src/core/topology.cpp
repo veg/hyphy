@@ -203,7 +203,7 @@ void    _TreeTopology::PostTreeConstructor (bool make_copy, _AssociativeList * m
                 delete theRoot;
                 theRoot = node_temp;
                 ReportWarning ("The root has a single child, which is be promoted to the root");
-                recurse = true;
+                recurse = false;
             }
             
             flatTree.Delete (node_index);
@@ -2442,6 +2442,10 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
               },
         false);
           
+        if (!ith_internal_node) {
+          ith_internal_node = theRoot;
+        }
+          
         if (ith_internal_node) {
             if (get_subtree) {
               hyTopologyBranchLengthMode  mapMode  = kTopologyBranchLengthNone;
@@ -2554,41 +2558,54 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
   //__________________________________________________________________________________
 void _TreeTopology::SubTreeString (node<long>* root, _StringBuffer &result, _TreeTopologyParseSettings const& settings, bool all_names, hyTopologyBranchLengthMode mode, long branch_length_variable, _AVLListXL* substitutions) const {
     
-  long    last_level        = 0L;
-
-  node_iterator<long> ni (root, _HY_TREE_TRAVERSAL_POSTORDER);
-
-  while (node <long>* iterator = ni.Next()) {
-    //printf ("[%s] %s\n", GetNodeName(root).sData, GetNodeName(iterator).sData);
-    if (ni.Level() > last_level) {
-      if (last_level) {
-        result<<',';
-      }
-      result.AppendNCopies('(', ni.Level()-last_level);
-    } else if (ni.Level() < last_level) {
-      result.AppendNCopies(')', last_level-ni.Level());
-    } else if (last_level) {
-      result<<',';
-    }
-
-    last_level = ni.Level();
-
+    
+  auto handle_node = [&] (node<long>*  iterator, bool is_degenerate) -> void {
     _String node_name = GetNodeName (iterator);
-      
-    if (substitutions) {
-        if (BaseRefConst replacement = substitutions->GetDataByKey(&node_name)) {
-            node_name = *(_String*)replacement;
+      if (substitutions) {
+            if (BaseRefConst replacement = substitutions->GetDataByKey(&node_name)) {
+                node_name = *(_String*)replacement;
+            }
         }
-    }
 
-    if (!iterator->is_root()) {
-      if (all_names || !node_name.BeginsWith(settings.inode_prefix)) {
-        result << node_name;
-      }
-      PasteBranchLength (iterator,result,mode,branch_length_variable);
+        if (is_degenerate || !iterator->is_root()) {
+          if (all_names || !node_name.BeginsWith(settings.inode_prefix)) {
+            result << node_name;
+          }
+          PasteBranchLength (iterator,result,mode,branch_length_variable);
+        }
+  };
+                          
+  if (root->parent == NULL && IsDegenerate()) {
+    node_iterator<long> ni (root, _HY_TREE_TRAVERSAL_POSTORDER);
+    result << '(';
+
+    while (node<long>* iterator = ni.Next()) {
+        handle_node (iterator, true);
+        result << (iterator->is_root() ? ')' : ',');
     }
+  } else {
+      long    last_level        = 0L;
+
+      node_iterator<long> ni (root, _HY_TREE_TRAVERSAL_POSTORDER);
+
+      while (node <long>* iterator = ni.Next()) {
+
+        if (ni.Level() > last_level) {
+          if (last_level) {
+            result<<',';
+          }
+          result.AppendNCopies('(', ni.Level()-last_level);
+        } else if (ni.Level() < last_level) {
+          result.AppendNCopies(')', last_level-ni.Level());
+        } else if (last_level) {
+          result<<',';
+        }
+
+        last_level = ni.Level();
+        handle_node (iterator, false);
+      }
   }
- }
+}
 
 
 //__________________________________________________________________________________

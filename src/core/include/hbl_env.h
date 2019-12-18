@@ -192,6 +192,7 @@ namespace hy_env {
           branch_length_stencil,
           kExpectedNumberOfSubstitutions,
           kStringSuppliedLengths,
+          kDevNull,
           include_model_spec,
           lf_convergence_criterion,
           try_numeric_sequence_match,

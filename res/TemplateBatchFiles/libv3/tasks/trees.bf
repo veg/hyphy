@@ -102,7 +102,7 @@ lfunction trees.GetTreeString._sanitize(string) {
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", None);
     }
-
+    
     return string;
 }
 
@@ -354,7 +354,6 @@ lfunction trees.RootTree(tree_info, root_on) {
 
     Topology T = tree_info[^"terms.trees.newick_with_lengths"];
 
-
     utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", TRUE);
     tree_info = trees.ExtractTreeInfo(RerootTree (T, root_on));
     utility.ToggleEnvVariable("ACCEPT_ROOTED_TREES", None);
@@ -386,7 +385,8 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     }
 
     Topology T = tree_string;
-
+    
+ 
     branch_lengths = BranchLength(T, -1);
     branch_names   = BranchName(T, -1);
     branch_count   = utility.Array1D (branch_names) - 1;
@@ -709,6 +709,7 @@ lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
 	treeSize  = Abs(theAVL);
 	treeInfo  = theAVL[0];
 	rootIndex = treeInfo["Root"];
+	lastDepth = 0;
 
 	for (nodeIndex = 1; nodeIndex < treeSize; nodeIndex += 1) {
         nodeInfo = theAVL[nodeIndex];
@@ -899,6 +900,77 @@ lfunction tree.GenerateLadderTree (N, rooted, branch_name, branch_length) {
 
 }
 
+/**
+ * Generate a RANDOM tree on N leaves
+ * @name trees.GenerateRandomTree
+ * @param 	{Number} N : number of leavers
+ * @param   {Bool} rooted : whether the tree is rooted
+ * @param 	{None/String} branch_name   : if a string, then it is assumed to be a function with an integer argument (node index) that generates branch names
+                                        default is to use numeric names
+ * @param 	{None/String} branch_length : if a string, then it is assumed to be a function with no arguments that generates branch lengths
+ * @return  {String} Newick tree string
+ */
+
+
+lfunction tree._GenerateRandomTreeDraw2 (nodes) {
+    r = Rows (nodes);
+    n = Abs (nodes);
+    n1 = Random (0,n) $ 1;
+    do {
+        n2 = Random (0,n) $ 1;
+    } while (n1 == n2);
+    
+    
+    nodes - r[n1];
+    nodes - r[n2];
+    
+    return {"0" : +r[n1], "1" : +r[n2]};
+}
+
+
+lfunction tree.GenerateRandomTree (N, rooted, branch_name, branch_length) {
+    assert (N>=2, "Can't generate trees with fewer than 2 leaves");
+    internal_nodes = N-2;
+    if (rooted) {
+        internal_nodes += 1;
+    }
+
+    total_nodes = N + internal_nodes;
+    flat_tree  = {total_nodes, 4}["-1"];
+    
+
+    available_to_join = {};
+    for (k = 0; k < N; k+=1) {
+        available_to_join[k] = TRUE;
+    }
+    
+
+    current_parent_node = N;
+    downto = 1 + (rooted == 0);
+    
+    
+    while (Abs (available_to_join) > downto) {
+        pair = tree._GenerateRandomTreeDraw2 (available_to_join);
+        flat_tree[pair[0]][0] = current_parent_node;
+        flat_tree[pair[1]][0] = current_parent_node;
+        flat_tree[current_parent_node][1] = pair[0];
+        flat_tree[current_parent_node][2] = pair[1];
+        available_to_join[current_parent_node] = TRUE;
+        current_parent_node += 1;
+    }
+    
+    if (!rooted) { // attach the last node to the root
+        available_to_join - (total_nodes-1);
+        leaf_index = +((Rows(available_to_join))[0]);
+        flat_tree[leaf_index][0] = total_nodes-1;
+        flat_tree[total_nodes-1][3] = leaf_index;
+        
+    }
+
+    return tree._NewickFromMatrix (&flat_tree, total_nodes-1, branch_name, branch_length);
+
+}
+
 lfunction tree._NewickFromMatrix (flat_tree, index, branch_name, branch_length) {
     if ((^flat_tree)[index][0] >= 0) { // not a root
         if ((^flat_tree)[index][1] < 0) { // a leaf
@@ -913,15 +985,19 @@ lfunction tree._NewickFromMatrix (flat_tree, index, branch_name, branch_length) 
             return name;
         } else {
             if (branch_length) {
-                return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
-                        "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
-                        "):" + Call (branch_length);
-
+                bl := ":" + Call (branch_length);
             } else {
-                return "(" + tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
-                        "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
-                        ")";
+                bl := "";
             }
+            if (branch_name) {
+                bn := Call (branch_name, index);
+            } else {
+                bn := "";
+            }
+            
+            return "("   +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
+                     "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
+                     ")" + bn + bl;
         }
     }  else {
         if ((^flat_tree)[index][3] < 0) { // 2 root children

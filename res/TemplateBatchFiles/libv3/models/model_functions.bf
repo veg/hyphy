@@ -35,6 +35,7 @@ lfunction model.GetParameters_RegExp(model, re) {
  */
 function model.ApplyModelToTree (id, tree, model_list, rules) {
 
+
 	if (Type (rules) == "AssociativeList") {
 	    // this has the form
 	    // model id : list of branches to apply the model (as a string COLUMN matrix with branch names,
@@ -89,10 +90,13 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 
 	} else {
 	    // TO DO: REMOVE HARDCODING
+	    
+	    
 		model.ApplyModelToTree.modelID = model_list[model_list ["INDEXORDER"][0]];
 		ExecuteCommands ("UseModel (" + model.ApplyModelToTree.modelID[terms.id] + ");
 						  Tree `id` = " + tree["string"] + ";
 						  ");
+						  
 	}
 }
 
@@ -529,7 +533,10 @@ lfunction model.MatchAlphabets (a1, a2) {
  */
 
 lfunction models.BindGlobalParameters (models, filter) {
+
+
     if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
+    
         reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
         candidate_set = utility.UniqueValues(utility.Filter (utility.Keys (reference_set), "_key_",
             "regexp.Find (_key_,`&filter`)"

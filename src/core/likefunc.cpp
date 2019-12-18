@@ -40,7 +40,6 @@
   //#define _UBER_VERBOSE_LF_DEBUG
 
 #include <string.h>
-#include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <math.h>
@@ -6278,7 +6277,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
     }
 
     if (outcome >=0 && (leftValue > middleValue || rightValue > middleValue)) {
-      HandleApplicationError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue & " initial value = " & maxSoFar);
+      _TerminateAndDump (_String ("_LikelihoodFunction::GradientLocateTheBump: bracket reported successful (") & (long)outcome & "), but likelihood values are inconsistent with it. " & leftValue & " / " & middleValue & " / " & rightValue & " initial value = " & maxSoFar);
       return;
     }
 
@@ -6457,7 +6456,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
         }
 
         if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 100. * kMachineEpsilon)) {
-          HandleApplicationError (_String ("Internal error in  _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%18.16g") & " / " & _String (initialValue,"%18.16g") & ".\n");
+          _TerminateAndDump(_String (" _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%18.16g") & " / " & _String (initialValue,"%18.16g") & ".\n");
 
           return;
         }
@@ -7059,240 +7058,6 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
     
     delete [] simplex;
     return N_inv;
-    
-    /*
-    
-    _Matrix     points (indexInd.lLength+1, indexInd.lLength, false, true), //the matrix of points
-                functionalEvaluations (1, indexInd.lLength+1,false, true),
-                scratch1 (1, indexInd.lLength,false, true),
-                scratch2 (1, indexInd.lLength,false, true),
-                bestSoFar (1, indexInd.lLength+1,false, true),
-                temp;
-
-    hyFloat  lastBError      = 0.,
-                lastError        = 0.0,
-                simplexAlpha     = 1.0,
-                simplexBeta    = 0.5,
-                simplexGamma    = 2.0,
-                testValue,
-                minError      = 1.e300,
-                bumpingFactor    = 1.;
-
-    long        iterationsCount = 0,
-                nBumps          = 0;
-
-
-    // first populate the matrix of initial points
-    long j,k;
-
-    for (k=0; k<indexInd.lLength; k++) {
-        _Variable *v = LocateVar (indexInd (k));
-
-        hyFloat lowP     = v->GetLowerBound(),
-                   highP     = v->GetUpperBound(),
-                   span     = highP-lowP;
-
-        if (span>1) {
-            lowP += 0.1;
-            highP = lowP+1;
-        } else {
-            lowP += span/10;
-            highP += lowP+span/2;
-        }
-
-        for (j=0; j<k; j++) {
-            points.Store (j,k,lowP);
-        }
-
-        for (j=k+1; j<=indexInd.lLength; j++) {
-            points.Store (j,k,lowP);
-        }
-
-        points.Store (k,k,highP);
-    }
-
-
-    for (j=0; j<=indexInd.lLength; j++) {
-        functionalEvaluations.Store (0,j,computeAtAPoint(points,j));
-    }
-
-    do {
-        // compute the reflection
-        long            indexMin = 0,
-                        indexMax = 0,
-                        index2Min;
-
-        hyFloat      max  = -1e300,
-                        min  = 1e300,
-                        min2 = 1e300,
-                        error = 0;
-
-        for (j=0; j<=indexInd.lLength; j++) {
-            if (functionalEvaluations(0,j)>max) {
-                indexMax = j;
-                max = functionalEvaluations(0,j);
-            }
-            if (functionalEvaluations(0,j)<min) {
-                if (min<min2) {
-                    min2 = min;
-                    index2Min = indexMin;
-                }
-                indexMin = j;
-                min = functionalEvaluations(0,j);
-            } else {
-                if (functionalEvaluations(0,j)<min2) {
-                    index2Min = j;
-                    min2 = functionalEvaluations(0,j);
-                }
-            }
-        }
-
-
-
-
-        error = functionalEvaluations(0,indexMax)-functionalEvaluations(0,indexMin);
-        if (verbosity_level>1) {
-            char    buffer[64];
-            snprintf (buffer, sizeof(buffer),"\n Error = %15.15g", error);
-            BufferToConsole (buffer);
-        }
-        if (error<minError) {
-            minError = error;
-            for (k=0; k < indexMax; k++) {
-                bestSoFar.Store(0,k,points(indexMax,k));
-            }
-        }
-
-        // find the centroid of all the points excluding the worst!
-        for (j=0; j<indexInd.lLength; j++) {
-            hyFloat junk = 0;
-            for (k=0; k < indexMin; k++) {
-                junk+= points(k,j);
-            }
-
-            for (k=indexMin+1; k <= indexInd.lLength; k++) {
-                junk+= points(k,j);
-            }
-            _Variable *v = LocateVar (indexInd(j));
-
-            junk/=indexInd.lLength;
-            if (junk<v->GetLowerBound()) {
-                scratch1.Store (0,j,v->GetLowerBound());
-            } else if (junk>v->GetUpperBound()) {
-                scratch1.Store (0,j,v->GetUpperBound());
-            } else {
-                scratch1.Store (0,j,junk);
-            }
-
-        }
-
-
-
-        if (error<gPrecision) {
-            break;
-        }
-        if (fabs(lastError-error)<gPrecision*error) {
-            iterationsCount++;
-            if (iterationsCount%10==0) {
-                if ((error>lastBError)||(iterationsCount%(30)==0)) {
-                    //perturb the coodinates of simplex vertices to escape a vicios loop
-                    nBumps++;
-                    for (k=0; k<indexInd.lLength; k++) {
-
-                        _Variable *v = LocateVar (indexInd (k));
-                        hyFloat lowP = v->GetLowerBound() , highP = v->GetUpperBound(), trial;
-
-                        if (fabs(lastBError-error)>gPrecision) {
-                            bumpingFactor*=10;
-                        } else {
-                            bumpingFactor = 1;
-                        }
-                        //trial = bestSoFar(0,k)+bumpingFactor*(genrand_int32()-RAND_MAX_32)/(hyFloat)RAND_MAX_32*error;
-//                      else
-//                          trial = scratch1(0,k)+100*(genrand_int32()-RAND_MAX_32)/(hyFloat)RAND_MAX_32*error;
-                        trial = lowP+(highP-lowP)*genrand_real1()*error;
-
-                        if ((trial<(lowP+gPrecision))||(trial>(highP-gPrecision))) {
-                            trial = lowP+ genrand_real1 () * (highP-lowP);
-                        }
-                        scratch1.Store (0,k,trial);
-                        lastBError = error;
-
-                    }
-                    if (verbosity_level>1) {
-                        char    buffer[64];
-                        snprintf (buffer, sizeof(buffer),"\nBUMPING... with factor %g", bumpingFactor);
-                        BufferToConsole (buffer);
-                    }
-                }
-
-            }
-            if (nBumps>25) {
-                char str[255];
-                snprintf (str, sizeof(str),"Simplex Method Failed to Converge to Desired Precision. Precision attained: %15.15g", minError);
-                ReportWarning (_String(str));
-                break;
-            }
-        } else {
-            iterationsCount = 0;
-        }
-        lastError = error;
-
-        for (k=0; k < indexInd.lLength; k++) {
-            scratch2.Store (0,k,points(indexMin,k));
-        }
-
-        // reflect the worst point across the centroid
-        _Matrix dummy;
-        temp = scratch2;
-        dummy = scratch1;
-        dummy -= temp;
-        dummy *=(1.0+simplexAlpha);
-        temp += dummy;
-
-        testValue = computeAtAPoint (temp);
-
-
-        if ((testValue>functionalEvaluations(0,indexMin))&&(testValue<functionalEvaluations(0,indexMax))) {
-            replaceAPoint (points, indexMin, temp, testValue, functionalEvaluations);
-        } else if (testValue>functionalEvaluations(0,indexMax)) {
-            replaceAPoint (points, indexMin, temp, testValue, functionalEvaluations);
-            scratch2 =temp;
-            scratch2*=simplexGamma;
-            scratch1*=(1-simplexGamma);
-            scratch2+=scratch1;
-            hyFloat testValue3 = computeAtAPoint (scratch2);
-
-            if (testValue3>functionalEvaluations(0,index2Min)) {
-                replaceAPoint (points, index2Min, scratch2,testValue3, functionalEvaluations);
-            }
-        } else {
-            for (k=0; k < indexInd.lLength; k++) {
-                scratch2.Store (0,k,points(indexMin,k));
-            }
-            temp=scratch2;
-            temp*=simplexBeta;
-            scratch1*=(1-simplexBeta);
-            temp+=scratch1;
-
-            hyFloat testValue2 = computeAtAPoint (temp);
-            if (testValue2>=testValue) {
-                replaceAPoint (points, indexMin, temp, testValue, functionalEvaluations);
-            } else {
-                for (j=0; j<indexInd.lLength; j++)
-                    for (k=0; k<=indexInd.lLength; k++) {
-                        points.Store (j,k,(points(j,k)+points(indexMax,k))/2);
-                    }
-            }
-        }
-    } while (1);
-
-    for (k=0; k < indexInd.lLength; k++) {
-        SetIthIndependent (k, bestSoFar(0,k));
-    }
-
-    return true;
-    */
 }
 
 
@@ -9659,10 +9424,12 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
     discrete_category_variables,
     HMM_category_variables,
     HMM_state;
+      
+    _List           local_dynamic_cleanup;
 
     bool            simulate_column_wise = false;
 
-    if (indexCat.lLength) {
+    if (indexCat.nonempty()) {
       checkParameter (categorySimulationMethod,categorySimMethod,2.0);
 
       if (categorySimMethod > 1.5) {
@@ -9696,7 +9463,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
         }
       }
 
-      if (catNames && indexCat.lLength) {
+      if (catNames && indexCat.nonempty()) {
 
         catNames->Clear();
         _Matrix::CreateMatrix (catNames,indexCat.lLength,1,false,true,false);
@@ -9745,8 +9512,6 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
       catValues->Clear();
       _Matrix::CreateMatrix (catValues,indexCat.lLength,total_sites,false,true,false);
     }
-
-    TimeDifference timer;
 
 
     bool       column_wise  = false;
@@ -9802,8 +9567,46 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
         _TheTree * this_tree = GetIthTree (partition_index);
         this_tree->SetUpMatrices(1);
-        while (good_sites < this_site_count) {
+          
+        _Matrix * precomputed_values = nil;
+          
+        if (category_simulation_mode != kLFSimulateCategoriesNone) {
+            if (HMM_category_variables.empty()) {
+                precomputed_values = new _Matrix (
+                                                  this_site_count, discrete_category_variables.countitems() + continuous_category_variables.countitems(),false, true);
+                local_dynamic_cleanup < precomputed_values;
+                
+                for (unsigned i = 0; i < this_site_count; i++) {
+                    for (unsigned long discrete_category_index = 0UL;
+                       discrete_category_index < discrete_category_variables.lLength;
+                       discrete_category_index++) {
 
+
+                        _CategoryVariable* discrete_cat = GetIthCategoryVar(discrete_category_variables(discrete_category_index));
+                        precomputed_values->Store (i,discrete_category_index,DrawFromDiscrete(discrete_cat->GetWeights()->fastIndex(), discrete_cat->GetNumberOfIntervals()));
+                    }
+                    
+                    for (unsigned long continuous_category_index = 0UL;
+                       continuous_category_index < continuous_category_variables.lLength;
+                       continuous_category_index++) { // use discrete values here
+
+                        _CategoryVariable* continuous_cat_var = GetIthCategoryVar(continuous_category_variables(continuous_category_index));
+
+                        hyFloat  category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),hy_x_variable);
+
+                        precomputed_values->Store  (i,continuous_category_index + discrete_category_variables.lLength, category_value);
+                    }
+                }
+                _SimpleList index ((long)this_site_count,0L,1L);
+                precomputed_values->RecursiveIndexSort(0,this_site_count-1, &index);
+
+            }
+        }
+          
+          
+        while (good_sites < this_site_count) {
+            
+            
           if (category_simulation_mode != kLFSimulateCategoriesNone ) {
 
             for (unsigned long hmm_category_index =0UL;
@@ -9831,8 +9634,10 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
                 HMM_state [hmm_category_index] = root_state;
               }
 
+              hyFloat sampled_value = hmm_cat->Compute()->Value();
+                
               if (catValues) {
-                catValues->Store (hmm_category_index,site_offset+good_sites,hmm_cat->Compute()->Value());
+                catValues->Store (hmm_category_index,site_offset+good_sites,sampled_value);
               }
             }
 
@@ -9841,14 +9646,22 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
                  discrete_category_index++) {
 
 
+              hyFloat sampled_value;
               _CategoryVariable* discrete_cat = GetIthCategoryVar(discrete_category_variables(discrete_category_index));
 
-              unsigned long category_value = DrawFromDiscrete(discrete_cat->GetWeights()->fastIndex(), discrete_cat->GetNumberOfIntervals());
-
-              discrete_cat->SetIntervalValue(category_value);
-
+              if (precomputed_values) {
+                  unsigned long category_value = (*precomputed_values)(good_sites,discrete_category_index);
+                  if (good_sites == 0 ||  category_value != (*precomputed_values)(good_sites-1,discrete_category_index)) {
+                      discrete_cat->SetIntervalValue(category_value);
+                  }
+                  sampled_value = discrete_cat->GetIntervalValue (category_value);
+              } else {
+                  unsigned long category_value = DrawFromDiscrete(discrete_cat->GetWeights()->fastIndex(), discrete_cat->GetNumberOfIntervals());
+                  discrete_cat->SetIntervalValue(category_value);
+                  sampled_value = discrete_cat->Compute()->Value();
+              }
               if (catValues) {
-                catValues->Store (discrete_category_index+HMM_category_variables.lLength,site_offset+good_sites,discrete_cat->Compute()->Value());
+                catValues->Store (discrete_category_index+HMM_category_variables.lLength,site_offset+good_sites,sampled_value);
               }
             }
 
@@ -9856,11 +9669,23 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
                  continuous_category_index < continuous_category_variables.lLength;
                  continuous_category_index++) { // use discrete values here
 
-              _CategoryVariable* continuous_cat_var = GetIthCategoryVar(continuous_category_variables(continuous_category_index));
+                _CategoryVariable* continuous_cat_var = GetIthCategoryVar(continuous_category_variables(continuous_category_index));
+                    
+                hyFloat  category_value;
+                
+                if (precomputed_values) {
+                    category_value = (*precomputed_values)(good_sites,continuous_category_index + discrete_category_variables.lLength);
+                    if (good_sites == 0 ||  category_value != (*precomputed_values)(good_sites-1,continuous_category_index + discrete_category_variables.lLength)) {
+                        continuous_cat_var->SetValue(new _Constant (category_value), false);
+                    }
+                } else {
+                    category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),hy_x_variable);
 
-              hyFloat  category_value = continuous_cat_var->GetCumulative().Newton(continuous_cat_var->GetDensity(),MAX (genrand_real2(), 1e-30),continuous_cat_var->GetMinX(),continuous_cat_var->GetMaxX(),hy_x_variable);
+                    continuous_cat_var->SetValue(new _Constant (category_value), false);
+                }
+                
+              
 
-              continuous_cat_var->SetValue(new _Constant (category_value), false);
               if (catValues) {
                 catValues->Store (continuous_category_index+discrete_category_variables.lLength+HMM_category_variables.lLength,site_offset+good_sites,category_value);
               }
@@ -9875,6 +9700,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
             root_state = DrawFromDiscrete(this_freqs, filter_dimension);
           }
 
+          //ObjectToConsole(&sampled_values); NLToConsole();
 
           _SimpleList ancestral_values,
                       leaf_values;
@@ -9920,15 +9746,9 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
             }
           }
 
-          hyFloat time_elapsed = timer.TimeSinceStart();
-
-
-          if (time_elapsed > .25) {
-#if !defined __UNIX__ || defined __HEADLESS__
-            SetStatusBarValue (100.*(site_offset_raw+good_sites)/total_sites, 1, 0);
-#endif
-            timer.Start();
-          }
+          indexCat.Each ([&] (long var_idx, unsigned long index) -> void {
+              LocateVar (var_idx)->MarkDone();
+          });
         }
         this_tree->CleanUpMatrices();
 
@@ -10104,6 +9924,7 @@ bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long par
 
       if (ccurNode->NeedNewCategoryExponential(-1)) {
         ccurNode->RecomputeMatrix(0,1);
+        ccurNode->MarkDone();
       }
 
       unsigned long matrix_dimension = ccurNode->GetCompExp()->GetVDim();

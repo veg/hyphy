@@ -37,7 +37,6 @@
  
  */
 
-#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -129,6 +128,7 @@ _String::_String(long const number) {
 _String::_String(const unsigned long sL) {
     s_length = sL;
     s_data = (char*) MemAllocate(sL + 1L, true);
+    s_data[sL] = (char)0;
 }
 
 //=============================================================

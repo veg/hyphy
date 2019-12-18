@@ -693,7 +693,7 @@ void _DataSet::MatchIndices(_Formula &f, _SimpleList &receptacle, bool isVert,
   // ? scope->sData : "none", varName.sData, ((_String*)f.toStr())->sData);
 
   for (long i = 0L; i < limit; i++) {
-    v->SetValue(new _Constant((hyFloat)i), nil);
+    v->SetValue(new _Constant((hyFloat)i), false);
     HBLObjectRef res = f.Compute();
     // fprintf (stderr, "%ld %g\n", i, res->Compute()->Value());
     if (res && !CheckEqual(res->Value(), 0.0)) {
@@ -1426,7 +1426,7 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
         bool isDifferent = existing_ds->NoOfSpecies () != ds->NoOfSpecies() ||
         existing_ds->NoOfColumns () != ds->NoOfColumns() ||
         existing_ds->NoOfUniqueColumns () != ds->NoOfUniqueColumns() ||
-        existing_ds->GetTT () != ds->GetTT();
+        (existing_ds->GetTT () != ds->GetTT() && !(*existing_ds->GetTT () == *ds->GetTT()));
         
         for (AVLListXLIteratorKeyValue filter_key_value : ObjectIndexer (HY_BL_DATASET_FILTER)) {
             _DataSetFilter * filter = (_DataSetFilter*) filter_key_value.get_object();

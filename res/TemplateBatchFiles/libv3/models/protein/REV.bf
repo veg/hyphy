@@ -137,8 +137,11 @@ function models.protein.REV.DefineQMatrix (modelSpec, namespace) {
 	} 
 
 	for (_rowChar = 0; _rowChar < models.protein.dimensions; _rowChar +=1 ){
-		for (_colChar = _rowChar + 1; _colChar < models.protein.dimensions; _colChar += 1) {
+		for (_colChar = 0; _colChar < models.protein.dimensions; _colChar += 1) {
 		    
+		    if (_rowChar == _colChar) {
+		        continue;
+		    }
 			__rp = Call (__rate_function, __alphabet[_rowChar],
 															  __alphabet[_colChar],
 															   namespace,
@@ -160,7 +163,7 @@ function models.protein.REV.DefineQMatrix (modelSpec, namespace) {
                 parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 
                 __rate_matrix [_rowChar][_colChar] = __rp[terms.model.rate_entry];
-                __rate_matrix [_colChar][_rowChar] = __rp[terms.model.rate_entry];
+                //__rate_matrix [_colChar][_rowChar] = __rp[terms.model.rate_entry];
                 continue;
             }
 			__rate_matrix [_rowChar][_colChar] = "";

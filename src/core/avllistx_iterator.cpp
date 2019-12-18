@@ -84,7 +84,7 @@ AVLListXIteratorKeyValue const  AVLListXIterator::operator* (void) {
   if (this->current_location >= 0) {
     return AVLListXIteratorKeyValue (this->current_location, the_list->GetXtra(this->current_location));
   }
-  return AVLListXIteratorKeyValue (AVL_LISTX_ITERATOR_ENDINDEX,nil);
+  return AVLListXIteratorKeyValue (AVL_LISTX_ITERATOR_ENDINDEX,0);
 }
 
 bool AVLListXIterator::operator == (AVLListXIterator const & compare) {

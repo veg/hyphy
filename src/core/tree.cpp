@@ -422,13 +422,14 @@ void    _TheTree::PostTreeConstructor (bool make_copy, _AssociativeList* meta) {
             
             if (rooted==UNROOTED) {
               ReportWarning ("One branch tree supplied - hopefully this IS what you meant to do.");
-              node<long> *node_temp = theRoot->go_down(1);
-              delete_associated_calcnode(theRoot);
-              node_temp->detach_parent();
-              node_temp->add_node(*theRoot->go_down(2));
-              delete theRoot;
-              theRoot = node_temp;
+              node<long> *delete_me = theRoot->go_down(2);
+              //delete_associated_calcnode(theRoot);
+              delete_me->detach_parent();
+              theRoot->detach_child(2);
+              delete_associated_calcnode(delete_me);
+              delete delete_me;
               rooted = ROOTED_LEFT;
+              ReportWarning ("RIGHT child collapsed to the root");
               //delete_associated_calcnode(theRoot);
             }
           } else {
@@ -2533,7 +2534,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat * re
                 hyFloat tmp = 1.0;
                 for (long nc = 0; nc < thisNode->parent->get_num_nodes(); nc++) {
                     hyFloat  tmp2            = 0.0;
-                    _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.list_data)[thisNode->parent->nodes.data[nc]->in_object]);
+                    _CalcNode   * child         = ((_CalcNode*)((BaseRef*)variablePtrs.list_data)[thisNode->parent->get_node(nc+1)->in_object]);
                     if (child != thisNodeC) {
                         hyFloat  * childSupport  = forwardVector + lookup.GetDataByKey(child)*cBase,
                         * transMatrix   = child->GetCompExp(catID)->theData + cc*cBase;
@@ -2553,7 +2554,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat * re
     }
     
     for (long nc = 0; nc < thisNode->get_num_nodes(); nc++) {
-        RecoverNodeSupportStates2 (thisNode->nodes.data[nc],resultVector,forwardVector,catID,lookup);
+        RecoverNodeSupportStates2 (thisNode->get_node(nc+1),resultVector,forwardVector,catID,lookup);
     }
 }
 
@@ -4797,9 +4798,9 @@ hyFloat   _TheTree::Process3TaxonNumericFilter (_DataSetFilterNumeric* dsf, long
     dsf->categoryShifter * catID + dsf->theNodeMap.list_data[1]*dsf->shifter,
     *l2 = dsf->probabilityVectors.theData +
     dsf->categoryShifter * catID + dsf->theNodeMap.list_data[2]*dsf->shifter,
-    * matrix0 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[0]->in_object)))->GetCompExp(catID)->theData,
-    * matrix1 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[1]->in_object)))->GetCompExp(catID)->theData,
-    * matrix2 = ((_CalcNode*)(LocateVar(theRoot->nodes.data[2]->in_object)))->GetCompExp(catID)->theData,
+    * matrix0 = ((_CalcNode*)(LocateVar(theRoot->get_node(1)->in_object)))->GetCompExp(catID)->theData,
+    * matrix1 = ((_CalcNode*)(LocateVar(theRoot->get_node(2)->in_object)))->GetCompExp(catID)->theData,
+    * matrix2 = ((_CalcNode*)(LocateVar(theRoot->get_node(3)->in_object)))->GetCompExp(catID)->theData,
     overallResult = 0.;
     
     long        patternCount =  dsf->GetPatternCount();

@@ -325,6 +325,7 @@ _StringBuffer& _StringBuffer::SanitizeForPostScriptAndAppend(const _String& s) {
   for (unsigned long i = 0UL; i < sl; i++) {
     this->SanitizeForPostScriptAndAppend(s.char_at(i));
   }
+  return *this;
 }
 
 _StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const char c) {

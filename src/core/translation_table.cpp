@@ -900,6 +900,35 @@ _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
 
 //_________________________________________________________
 
+bool _TranslationTable::operator == (const _TranslationTable& rhs) const {
+    
+    if (baseSet.length() == rhs.baseSet.length()) {
+        if (baseSet.empty()) { // standard alphabet
+            if (baseLength != rhs.baseLength) {
+                return false;
+            }
+        } else if (baseSet != rhs.baseSet) {
+            return false;
+        }
+        
+        if (tokensAdded.length() == rhs.tokensAdded.length()) {
+            
+            for (unsigned i = 0; i < tokensAdded.length(); i++) {
+                if (ExpandToken (tokensAdded.get_char(i)) != rhs.ExpandToken (tokensAdded.get_char(i))) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+    }
+    return false;
+
+}
+
+//_________________________________________________________
+
 _TranslationTable *
 _TranslationTable::MergeTables(_TranslationTable const *table2) const
 // merge the translation tables if they are compatible, return the result,

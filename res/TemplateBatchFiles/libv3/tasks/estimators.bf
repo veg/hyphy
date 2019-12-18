@@ -688,16 +688,23 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     df = 0;
 
+    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
+        df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
+    }
+
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
-    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
-        df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lf_id, lf_components, data_filter, tree, model_map, initial_values, model_objects);
-    }
 
     can_do_restarts = null;
+    
+    /*Export (lfe, likelihoodFunction);
+    fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
+    utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);*/
+
+    
 
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
         grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
@@ -1039,7 +1046,6 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
     }
 
 
-
     if (Abs(partition_omega)) {
 
         /**
@@ -1061,7 +1067,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
         alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
         beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
-        io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
+         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];
 
@@ -1084,6 +1090,9 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     LikelihoodFunction likelihoodFunction = (lf_components);
 
+    if (utility.Has (option,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
+        df += Call (option[utility.getGlobalValue("terms.run_options.apply_user_constraints")], &likelihoodFunction, lf_components, codon_data, tree, model_map, initial_values, model_id_to_object);
+    }
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
@@ -1100,7 +1109,9 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     //Export (lfe, likelihoodFunction);
     //console.log (lfe);
-
+    
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
+    
     Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {

@@ -41,7 +41,6 @@
 
 #include <ctype.h>
 #include <math.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "avllistxl_iterator.h"

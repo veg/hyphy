@@ -504,6 +504,15 @@ HBLObjectRef _FString::SubstituteAndSimplify(HBLObjectRef arguments) {
   if (has_data()) {
     _String     s (get_str());
     _Formula    evaluator (s);
+      
+    _Polynomial*    is_poly = (_Polynomial*)evaluator.ConstructPolynomial();
+    if (is_poly) {
+        _Formula pf (is_poly);
+        evaluator.Duplicate(&pf);
+        //printf ("%s\n", _String ((_String*)simplified_polynomial->toStr(kFormulaStringConversionNormal)).get_str());
+        
+        //printf ("\n RESULT : %s \n", _String ((_String*)simplified_polynomial->toStr(kFormulaStringConversionNormal)).get_str());
+    }
     
     
     if (!terminate_execution) {

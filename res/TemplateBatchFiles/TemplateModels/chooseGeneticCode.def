@@ -80,7 +80,14 @@ _geneticCodeOptionMatrix = {
         "SR1-and-Gracilibacteria", "Candidate Division SR1 and Gracilibacteria Code (transl_table=25)."
     } {
         "Pachysolen-Nuclear", "Pachysolen tannophilus Nuclear Code (transl_table=26)."
+    }{
+        "Mesodinium-Nuclear", "Mesodinium Nuclear Code (transl_table=29)"
+    }{
+        "Peritrich-Nuclear", "Peritrich Nuclear Code (transl_table=30)"
+    }{
+        "Cephalodiscidae-mtDNA", "Cephalodiscidae Mitochondrial UAA-Tyr Code (transl_table=33)"
     }
+
 };
 
 _hyphyAAOrdering        = "FLIMVSPTAYXHQNKDECWRG";
@@ -361,6 +368,39 @@ function ApplyGeneticCodeTable(myModelType) {
         GeneticCodeExclusions = "TAA,TAG,TGA";
         return myModelType;
     }
+
+    if (myModelType == 19)
+    /*   Mesodinium Nuclear */
+    {
+        _Genetic_Code[48]  = 9; /* TAA => Tyr  */
+        _Genetic_Code[50]  = 9; /* TAG => Tyr  */
+
+        GeneticCodeExclusions = "TGA";
+        return myModelType;
+    }
+
+    if (myModelType == 20)
+    /*   Peritrich Nuclear */
+    {
+        _Genetic_Code[48]  = 16; /* TAA => Glu  */
+        _Genetic_Code[50]  = 16; /* TAG => Glu  */
+
+        GeneticCodeExclusions = "TGA";
+        return myModelType;
+    }
+
+    if (myModelType == 21)
+    /*   Cephalodiscidae Mitochondrial */
+    {
+        _Genetic_Code[48]  = 9; /* TAA => Tyr  */
+        _Genetic_Code[56]  = 18; /* TGA => Trp  */
+        _Genetic_Code[8]  = 5; /* AGA => Ser  */
+        _Genetic_Code[10]  = 14; /* AGG => Lys  */
+
+        GeneticCodeExclusions = "TAG";
+        return myModelType;
+    }
+
 
     return myModelType;
 }
