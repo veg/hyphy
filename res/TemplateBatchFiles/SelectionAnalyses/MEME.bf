@@ -480,7 +480,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     ^"meme.site_beta_nuisance"  = 1;
 
     //console.log ("Optimizing FEL for pattern " + pattern_info);
-    //io.SpoolLF (lf_fel, "/tmp/meme.debug", "FEL");
+    //io.SpoolLF (lf_fel, "/tmp/meme.debug" + ^"MPI_NODE_ID", "FEL");
     Optimize (results, ^lf_fel);
 
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
@@ -496,7 +496,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
      }
 
     //console.log ("Optimizing MEME for pattern " + pattern_info);
-    //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
+    //utility.SetEnvVariable ("LF_NEXUS_EXPORT_EXTRA", "Optimize (res,`lf_bsrel`);");
+    //io.SpoolLF (lf_bsrel, "/tmp/meme.debug" + ^"MPI_NODE_ID", "MEME");
     Optimize (results, ^lf_bsrel);
     //console.log (results[1][0]);
 

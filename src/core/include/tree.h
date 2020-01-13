@@ -133,7 +133,7 @@ public:
     void        PurgeTree                       (void);
 
     long        ComputeReleafingCost            (_DataSetFilter const*, long, long, _SimpleList* = nil, long = 0) const;
-    long        ComputeReleafingCostChar        (_DataSetFilter const*, long, long) const;
+    long        ComputeReleafingCostChar        (_DataSetFilter const*, long, long, _SimpleList const* = nil) const;
     void        DumpingOrder                    (_DataSetFilter*, _SimpleList&);
     void        SetTreeCodeBase                 (long);
     long        IsLinkedToALF                   (long&) const;
@@ -149,6 +149,8 @@ public:
     long        GetINodeCount                   (void) {
         return flatNodes.lLength    ;
     }
+    
+    const _SimpleList& get_flat_nodes (void) {return flatNodes;}
 
     void        ScanAndAttachVariables          (void) const;
     void        ScanContainerForVariables       (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0) const;

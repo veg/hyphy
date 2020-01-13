@@ -3965,7 +3965,8 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
          // this is because extaction will work from the first character following a '(', e.g. CreateFilter([start parsing here]....)
          last_delim    = start_at,
          index             = start_at,
-         curly_depth       = 0L;
+         curly_depth       = 0L,
+         bracket_depth     = 0L;
 
 
     enum {
@@ -3998,6 +3999,14 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
                 curly_depth--;
                 continue;
             }
+            if (c=='[') {
+                bracket_depth++;
+                continue;
+            }
+            if (c==']') {
+                bracket_depth--;
+                continue;
+            }
             if (c==')') {
                 parentheses_depth --;
                 if (parentheses_depth == 0L) {
@@ -4019,7 +4028,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
             continue;
         }
         if (c==delimeter) {
-            if (parentheses_depth > 1 || quote_type != normal_text || curly_depth) {
+            if (parentheses_depth > 1 || quote_type != normal_text || curly_depth || bracket_depth) {
                 continue;
             }
 

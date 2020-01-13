@@ -211,6 +211,80 @@ public:
   long CorrectCode(long code) const;
   virtual bool CompareTwoSites(unsigned long, unsigned long,
                                unsigned long) const;
+
+  template <typename FUNC> void CompareTwoSitesCallback(unsigned long site1, unsigned long site2,
+                                                        FUNC&& callback) const {
+                                                            
+                                                    
+        switch (unitLength) {
+            case 3: {
+                site1 = (site1 << 1) + site1;
+                site2 = (site2 << 1) + site2;
+                
+                const char * site1c[3] = {GetColumn(site1),GetColumn(site1+1),GetColumn(site1+2)},
+                           * site2c[3] = {GetColumn(site2),GetColumn(site2+1),GetColumn(site2+2)};
+                
+                theNodeMap.Each ([site1c,site2c,&callback] (long ci, unsigned long i) -> void {
+                    if (site1c[0][ci] != site2c[0][ci] || site1c[1][ci] != site2c[1][ci] || site1c[2][ci] != site2c[2][ci]) {
+                        callback (ci, i);
+                    }
+                });
+             }
+             break;
+                
+            case 2: {
+                site1 = (site1 << 1);
+                site2 = (site2 << 1);
+                
+                const char * site1c[2] = {GetColumn(site1),GetColumn(site1+1)},
+                           * site2c[2] = {GetColumn(site2),GetColumn(site2+1)};
+                
+                theNodeMap.Each ([site1c,site2c,&callback] (long ci, unsigned long i) -> void {
+                    if (site1c[0][ci] != site2c[0][ci] || site1c[1][ci] != site2c[1][ci]) {
+                        callback (ci, i);
+                    }
+                });
+             }
+            break;
+
+            case 1: {
+                
+                const char * site1c = GetColumn(site1),
+                           * site2c = GetColumn(site2);
+                
+                theNodeMap.Each ([site1c,site2c,&callback] (long ci, unsigned long i) -> void {
+                    if (site1c[ci] != site2c[ci]) {
+                        callback (ci, i);
+                    }
+                });
+                break;
+            }
+                
+            default: {
+                    site1 *= unitLength;
+                    site2 *= unitLength;
+                
+                    const char **site1c = (const char **)alloca (sizeof (char*) * unitLength),
+                               **site2c = (const char **)alloca (sizeof (char*) * unitLength);
+                
+                    for (int i = 0; i < unitLength; i++) {
+                        site1c[i] = GetColumn (site1 + i);
+                        site2c[i] = GetColumn (site2 + i);
+                    }
+                    
+                    theNodeMap.Each ([site1c,site2c,this,&callback] (long ci, unsigned long i) -> void {
+                            for (int i = 0; i < this->unitLength; i++) {
+                                if (site1c[i][ci] != site2c[i][ci]) {
+                                    callback (ci, i);
+                                    break;
+                                }
+                            }
+                    });
+                    break;
+            }
+        }
+  }
+    
   long FindSpeciesName(_List &, _SimpleList &) const;
   _DataSetFilter *PairFilter(long, long, _DataSetFilter *);
   void SetDimensions();

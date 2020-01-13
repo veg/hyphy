@@ -134,7 +134,7 @@ public:
 
     _Matrix ();                                 // default constructor, doesn't do much
 
-    _Matrix (_String const&, bool, _FormulaParsingContext&);
+    _Matrix (_String const&, bool, _FormulaParsingContext&, bool use_square_brackets = false);
     // matrix from a string of the form
     // {{i11,i12,...}{i21,i22,..}{in1,in2..)})
     // or {# rows,<# cols>{i1,j1,expr}{i2,j2,expr}..}

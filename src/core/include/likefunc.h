@@ -343,7 +343,7 @@ protected:
     virtual void            ScanAllVariables        (void);
     // internal function to scan all the variables in
 
-    void            OptimalOrder            (long, _SimpleList&);
+    void            OptimalOrder            (long, _SimpleList&, const _SimpleList* clone = nil);
     // determine the optimal order of compuation for a block
 
     hyFloat      ComputeBlock            (long, hyFloat* siteResults = nil, long currentRateClass = -1, long = -1, _SimpleList* = nil);
