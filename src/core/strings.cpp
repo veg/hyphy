@@ -51,7 +51,7 @@
 
 
 _String   compileDate = __DATE__,
-          __HYPHY__VERSION__ = _String ("2.5.0");
+          __HYPHY__VERSION__ = _String ("2.5.1");
 
 using namespace hy_global;
 
