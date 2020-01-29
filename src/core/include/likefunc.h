@@ -249,10 +249,6 @@ public:
     void        FillInConditionals      (long = -1);
 
     void        Setup                   (bool check_reversibility = true);
-    bool&       HasBeenOptimized (void) {
-        return hasBeenOptimized;
-    }
-    void        ComputePruningEfficiency(long&, long&);
 
     long        SequenceCount           (long);
     unsigned long        SiteCount               (void) const;
@@ -610,8 +606,7 @@ protected:
         this is used for internal normalization transforms during optimization
      */
 
-    bool            hasBeenOptimized,
-                    siteArrayPopulated;
+    bool            siteArrayPopulated;
 
     _Formula*       computingTemplate;
     MSTCache*       mstCache;

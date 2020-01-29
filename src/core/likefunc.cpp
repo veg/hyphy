@@ -37,7 +37,7 @@
 
  */
 
-  //#define _UBER_VERBOSE_LF_DEBUG
+//#define _UBER_VERBOSE_LF_DEBUG
 
 #include <string.h>
 #include <math.h>
@@ -545,7 +545,6 @@ void _LikelihoodFunction::Init (void)
 {
     siteResults         = nil;
     bySiteResults       = nil;
-    hasBeenOptimized    = false;
     hasBeenSetUp        = 0;
     templateKind        = _hyphyLFComputationalTemplateNone;
     computingTemplate   = nil;
@@ -760,7 +759,6 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
 void     _LikelihoodFunction::Rebuild (bool rescan_parameters) {
   computationalResults.Clear();
   hasBeenSetUp     = 0;
-  hasBeenOptimized = false;
   _String ignored_error;
   try {
     for (unsigned long k = 0UL; k < theDataFilters.lLength; k++) {
@@ -775,6 +773,7 @@ void     _LikelihoodFunction::Rebuild (bool rescan_parameters) {
     return;
   }
   AllocateTemplateCaches();
+  optimalOrders.Clear();
   Setup(false);
   if (rescan_parameters) {
     RescanAllVariables();
@@ -807,7 +806,6 @@ void     _LikelihoodFunction::Clear (void)
     optimalOrders.Clear();
     leafSkips.Clear();
     hasBeenSetUp            = 0;
-    hasBeenOptimized        = false;
     if (computingTemplate) {
         delete computingTemplate;
         computingTemplate = nil;
@@ -1096,8 +1094,6 @@ _LikelihoodFunction::_LikelihoodFunction (_LikelihoodFunction& lf) // stack copy
 {
     Clear();
 
-    hasBeenOptimized    = lf.hasBeenOptimized;
-    templateKind        = lf.templateKind;
 
     if (lf.computingTemplate) {
         computingTemplate   = (_Formula*)lf.computingTemplate->makeDynamic();
@@ -1959,12 +1955,6 @@ hyFloat  _LikelihoodFunction::Compute        (void)
        after last optimization
      */
 
-    if (!isInOptimize && hasBeenOptimized)
-        for (unsigned long i=0; i<indexInd.lLength; i++)
-            if (LocateVar (indexInd.list_data[i])->HasChanged()) {
-                hasBeenOptimized = false;
-                break;
-            }
 
     /*  compute modes:
 
@@ -2013,11 +2003,11 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 #ifdef _UBER_VERBOSE_LF_DEBUG
     fprintf (stderr, "\n*** Likelihood function evaluation %ld ***\n", likeFuncEvalCallCount+1);
     for (unsigned long i=0; i<indexInd.lLength; i++) {
-        _Variable *v = LocateVar (indexInd.list_data[i]);
+        _Variable *v = GetIthIndependentVar(i);
         if (v->HasChanged()) {
           fprintf (stderr, "[CHANGED] ");
         }
-        fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
+        fprintf (stderr, "%s = %15.12g\n", v->GetName()->get_str(), v->theValue);
     }
 #endif
     if (computeMode == 0 || computeMode == 3) {
@@ -2045,7 +2035,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                         ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    fprintf (stderr, "Did compute %g\n", result);
+                    fprintf (stderr, "Did compute %16.12g\n", result);
 #endif
                     hyFloat                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
                     UpdateBlockResult               (partID, blockResult);
@@ -2212,7 +2202,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         evalsSinceLastSetup   ++;
         PostCompute ();
 #ifdef _UBER_VERBOSE_LF_DEBUG
-        fprintf (stderr, "%g\n", result);
+        fprintf (stderr, "%16.12g\n", result);
 #endif
         if (isnan (result)) {
             _TerminateAndDump("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
@@ -3733,12 +3723,10 @@ void _LikelihoodFunction::SetupParameterMapping (void) {
 
 //_______________________________________________________________________________________________
 
-void _LikelihoodFunction::CleanupParameterMapping (void)
-{
+void _LikelihoodFunction::CleanupParameterMapping (void) {
     smoothingPenalty = 0.0;
     smoothingTerm    = 0.0;
-    DeleteObject (parameterValuesAndRanges);
-    parameterValuesAndRanges = nil;
+    DeleteAndZeroObject (parameterValuesAndRanges);
     parameterTransformationFunction.Clear();
 }
 
@@ -4812,7 +4800,9 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_te
     _String err ("Internal error ");
   
     if (out) {
-       this->DoneComputing();
+      ObjectToConsole(this->parameterValuesAndRanges);
+      this->CleanupParameterMapping();
+      this->DoneComputing();
       _StringBuffer          sLF (8192L);
       SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
       sLF.TrimSpace();
@@ -4832,11 +4822,9 @@ void _LikelihoodFunction::CleanUpOptimize (void) {
 #ifdef __HYPHYMPI__
     if (hyphyMPIOptimizerMode==_hyphyLFMPIModeNone) {
 #endif
-        for (long i=0; i<theTrees.lLength; i++) {
-            _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-            cT->CleanUpMatrices();
+        for (long i=0L; i<theTrees.lLength; i++) {
+            GetIthTree (i)->CleanUpMatrices();
         }
-
         DeleteCaches (false);
 
         if (mstCache) {
@@ -4898,11 +4886,9 @@ void _LikelihoodFunction::CleanUpOptimize (void) {
     setParameter (likeFuncCountVar,likeFuncEvalCallCount);
     isInOptimize = false;
     DoneComputing();
-    hasBeenOptimized = true;
     hasBeenSetUp     = 0;
     lockedLFID       = -1;
-    DeleteObject     (nonConstantDep);
-    nonConstantDep = nil;
+    DeleteAndZeroObject     (nonConstantDep);
 }
 
 //_______________________________________________________________________________________
@@ -5064,27 +5050,20 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
     }
 
 
-
-    /*if (index < 0)
-    {
+#ifdef _UBER_VERBOSE_LF_DEBUG
+    if (index < 0) {
         printf                                 ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
         for (unsigned long i = 0; i < indexInd.lLength; i++) {
-            printf ("%s = %.16g\n", GetIthIndependentVar(i)->GetName()->sData, gradient->theData[i]);
+            printf ("%s = %.16g \n", GetIthIndependentVar(i)->GetName()->get_str(), gradient->get_direct(i));
         }
-    }*/
+    }
+#endif
 
     if (verbosity_level > 100) {
         char buf [512];
         snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld, eval %ld) INITIAL BRACKET %15.12g <= %15.12g (current %15.12g) <= %15.12g]", index, likeFuncEvalCallCount, middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
         BufferToConsole (buf);
     }
-
-    /*
-    if (likeFuncEvalCallCount > 0) {
-      printf ("\n\n\nCHECK INDEX 6\n\n\n");
-      SetIthIndependent(6L, GetIthIndependent(6L));
-    }
-    */
 
     while (1) {
 
@@ -7714,6 +7693,9 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
         _Matrix         *glFreqs = GetIthFrequencies(i);
         _DataSetFilter const* df      = GetIthFilter(i);
         _TheTree        *t       = GetIthTree (i);
+        if (t->GetLeafCount () == 0) {
+            t->SetUp();
+        }
         t->InitializeTreeFrequencies (glFreqs, true);
         _SimpleList        *s = new _SimpleList,
         *l = new _SimpleList;
@@ -7884,7 +7866,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                     }
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    fprintf (stderr, "\nCached %s (nodeID = %lD)/New %s (touched matrices %ld) Eval id = %ld\n", *cbid >= 0 ? t->GetNodeFromFlatIndex (*cbid)->GetName()->getStr() : "None", nodeID, snID >= 0 ? t->GetNodeFromFlatIndex (snID)->GetName()->getStr() : "None", matrices->lLength, likeFuncEvalCallCount);
+                    fprintf (stderr, "\nCached %s (nodeID = %lD)/New %s (touched matrices %ld) Eval id = %ld\n", *cbid >= 0 ? t->GetNodeFromFlatIndex (*cbid)->GetName()->get_str() : "None", nodeID, snID >= 0 ? t->GetNodeFromFlatIndex (snID)->GetName()->get_str() : "None", matrices->lLength, likeFuncEvalCallCount);
 #endif
                     if (snID != *cbid) {
                         RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
@@ -7997,6 +7979,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
             if (np > 1) {
               hyFloat correction = 0.;
+                
               for (blockID = 0; blockID < np; blockID ++)  {
                 if (thread_results[blockID] == -INFINITY) {
                   sum = -INFINITY;
@@ -8597,37 +8580,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _
     }
 
 }
-//_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ComputePruningEfficiency (long& full, long& saved) {
-    full = 0;
-    saved = 0;
-    for (long i=0; i<theTrees.lLength; i++) {
-        _TheTree    *cT = ((_TheTree*)(LocateVar(theTrees(i))));
-        _SimpleList *l  = (_SimpleList*)leafSkips (i);
-        HBLObjectRef   lc  = cT->TipCount();
-
-        long         leafCount = lc->Value(),
-                     iCount;
-
-        DeleteObject (lc);
-        lc = cT->BranchCount ();
-        iCount = lc->Value();
-        DeleteObject (lc);
-
-        saved += leafCount+iCount;
-        full  += (leafCount+iCount) * (l->lLength+1);
-
-        for (long k=0; k<l->lLength; k++) {
-            unsigned long j = l->list_data[k],
-                          p1 = j&0xffff,
-                          p2 = ((j>>16)&0xffff);
-
-            saved += leafCount - p1 - (leafCount - 1 - p2);
-            saved += iCount - cT->GetLeftINodes().list_data[p1];
-        }
-    }
-}
 
 //_______________________________________________________________________________________
 
@@ -10107,9 +10060,7 @@ void    _LikelihoodFunction::DoneComputing (bool force)
             ((_Matrix*)LocateVar(theProbabilities.list_data[i])->GetValue())->MakeMeGeneral();
         }
 
-        DeleteObject (siteResults);
-        siteResults = 0;
-
+        DeleteAndZeroObject(siteResults);
         DeleteCaches        (false);
         categoryTraversalTemplate.Clear();
         hasBeenSetUp       = 0;
