@@ -419,7 +419,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         _String         *argument_k = (_String*)funcVarList->Element(k);
         HBLObjectRef       nthterm = theScrap.Pop();
 
-        //printf ("\tArgument %d : %s (%s)\n", k, argument_k->sData, _String((_String*)nthterm->toStr()).sData);
+        //printf ("\tArgument %d : %s (%s)\n", k, argument_k->get_str(), _String((_String*)nthterm->toStr()).get_str());
 
         if (isRefVar) {
           need_to_purge = true;

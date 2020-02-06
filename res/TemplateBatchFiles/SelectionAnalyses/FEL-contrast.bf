@@ -1,4 +1,4 @@
-RequireVersion("2.4.0");
+RequireVersion("2.5.1");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -22,14 +22,15 @@ LoadFunctionLibrary("libv3/convenience/math.bf");
 LoadFunctionLibrary("modules/io_functions.ibf");
 
 
+
 /*------------------------------------------------------------------------------ Display analysis information
 */
 
 fel.analysis_description = {
     terms.io.info: "FEL-contrast (Fixed Effects Likelihood) investigates whether or not selective pressures differ between two or more sets of
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
-    and then beta rates are tested for equality at each site. LRT is used to assess significance.",
-    terms.io.version: "0.4",
+    and then beta rates are tested for equality at each site. LRT and permutation tests ar used to assess significance at each site, and FDR is applied alignment wide to call sites with different selective profiles",
+    terms.io.version: "0.5",
     terms.io.reference: "Kosakovsky Pond SL, Frost SDW, Grossman Z, Gravenor MB, Richman DD, Leigh Brown AJ (2006) Adaptation to Different Human Populations by HIV-1 Revealed by Codon-Based Analyses. PLoS Comput Biol 2(6): e62.",
     terms.io.authors: "Sergei L Kosakovsky Pond",
     terms.io.contact: "spond@temple.edu",
@@ -64,6 +65,7 @@ fel.site.permutations   = 20;
 
 // default cutoff for printing to screen
 fel.p_value = 0.1;
+fel.q_value = 0.2;
 fel.scaler_prefix = "FEL.scaler";
 
 
@@ -71,8 +73,6 @@ KeywordArgument ("code",      "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
 KeywordArgument ("branch-set", "The set of branches to use for testing");
-KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
-KeywordArgument ("p-value", "p-values to test for significance", fel.p_value);
 
 
 // The dictionary of results to be written to JSON at the end of the run
@@ -99,6 +99,10 @@ namespace fel {
     load_file ({utility.getGlobalValue("terms.prefix"): "fel", utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "fel.select_branches"}});
 }
 
+KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
+KeywordArgument ("permutations", "Perform permutation significance tests", "Yes");
+KeywordArgument ("p-value", "Significance value for site-tests", "0.05");
+KeywordArgument ("q-value", "Significance value for FDR reporting", "0.20");
 
 
 /* Prompt for one-rate or two-rate analysis */
@@ -110,12 +114,24 @@ if (fel.srv == "Yes"){
 } else {
     fel.srv = FALSE
 }
+
+/* Prompt for one-rate or two-rate analysis */
+fel.permutations = io.SelectAnOption( {{"Yes", "For sites with significant p-values, perform an additional permutation test (over branch assignments) to assess significance. Adds computational cost, reduces false positves"}, 
+                                       {"No", "Do not perform additional tests (faster, higher risk of false positves)"}},
+                                  "Perform permutation significance tests");
+
+if (fel.permutations == "Yes"){
+    fel.permutations = TRUE
+} else {
+    fel.permutations = FALSE
+}
+
 /* Prompt for p value threshold */
-fel.p_value  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
+fel.p_value  = io.PromptUser ("\n>Select nominal p-value threshold to use when testing for selection (FDR correction will be performed on all sites)",0.1,0,1,FALSE);
+fel.q_value  = io.PromptUser ("\n>Select nominal the q-value threshold to use when testing for selection (FDR reporting)",0.2,0,1,FALSE);
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
 fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
-
 
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to use as the test set in the FEL-contrast analysis');
 
@@ -161,7 +177,7 @@ if (fel.branch_class_counter > 2) {
     fel.test_count += fel.branch_class_counter * (fel.branch_class_counter-1) / 2;
 }
 
-fel.table_headers = {3 + utility.Array1D (fel.scaler_parameter_names) + fel.branch_class_counter + fel.test_count, 2};
+fel.table_headers = {4 + utility.Array1D (fel.scaler_parameter_names) + fel.branch_class_counter + fel.test_count, 2};
 fel.table_headers [0][0] = "alpha"; fel.table_headers [0][1] = "Synonymous substitution rate at a site";
 
 fel.k = 1;
@@ -185,13 +201,17 @@ utility.ForEach (fel.branches.testable, "_n_", ,
 fel.report.subs_kinds = utility.Array1D (fel.branches.testable);
 
 fel.table_headers [fel.k][0] = "P-value (overall)";
+fel.table_headers [fel.k+1][0] = "Q-value (overall)";
+
 if (fel.branch_class_counter == 1) {
-    fel.table_headers [fel.k][1] = "P-value for the test that " + fel.branches.testable[0] + " branches have different non-synonymous rates than background branches";
+    fel.table_headers [fel.k][1] = "P-value for the test that " + fel.branches.testable[0] + " branches have different non-synonymous rates than the rest of the branches";
+    fel.table_headers [fel.k+1][1] = "Q-value for the test that " + fel.branches.testable[0] + " branches have different non-synonymous rates than the rest of the branches";
 } else {
     fel.table_headers [fel.k][1] = "P-value for the test that non-synonymous rates differ between any of the selected groups: " + Join (",", fel.branches.testable);
+    fel.table_headers [fel.k+1][1] = "Q-value for the test that non-synonymous rates differ between any of the selected groups: " + Join (",", fel.branches.testable);
 }
 
-
+fel.k += 1;
 
 fel.report.test_count = 1 + (fel.branch_class_counter > 2) * (fel.branch_class_counter * (fel.branch_class_counter-1) / 2);
 fel.tests.key = {fel.report.test_count, 4};
@@ -200,7 +220,8 @@ fel.tests.key [0][1] = -1;
 fel.tests.key [0][3] = fel.report.rate_count + fel.report.subs_kinds;
 
 fel.test.index = fel.test_count > 1;
-fel.k += fel.test_count > 1;
+fel.k += 1;
+
 
 for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
     for (fel.v2 = fel.v + 1; fel.v2 < fel.branch_class_counter; fel.v2 += 1) {
@@ -208,18 +229,17 @@ for (fel.v = 0; fel.v < fel.branch_class_counter; fel.v += 1) {
         fel.tests.key [fel.test.index][0] = fel.branches.testable[fel.v] + " vs " + fel.branches.testable[fel.v2];
         fel.tests.key [fel.test.index][1] = 1 + fel.v;
         fel.tests.key [fel.test.index][2] = 1 + fel.v2;
-        fel.tests.key [fel.test.index][3] = fel.report.rate_count + fel.test.index + fel.report.subs_kinds;
 
-        fel.table_headers [fel.k][1] = "P-value for  the test that non-synonymous rates differ between " + fel.branches.testable[fel.v] + " and " + fel.branches.testable[fel.v2] + " branches";
-        fel.k += 1;
+        if (fel.test_count > 1) {
+            fel.tests.key [fel.test.index][3] = fel.report.rate_count + fel.test.index + fel.report.subs_kinds + 1;
+            fel.table_headers [fel.k][1] = "P-value for  the test that non-synonymous rates differ between " + fel.branches.testable[fel.v] + " and " + fel.branches.testable[fel.v2] + " branches";
+            fel.k += 1;
+        }
         fel.test.index += 1;
     }
 }
 
-
-
 io.ReportProgressMessageMD('FEL',  'tests', '**' + fel.test_count + "** " + io.SingularOrPlural (fel.test_count , "test", "tests")+" will be performed at each site");
-
 
 fel.report.counts         = {fel.report.test_count,1};
 
@@ -228,9 +248,9 @@ fel.table_headers [fel.k][1] = "Label permutation test for significant sites";
 
 fel.k += 1;
 
+
 fel.table_headers [fel.k][0] = "Total branch length";
 fel.table_headers [fel.k][1] = "The total length of branches contributing to inference at this site, and used to scale beta-alpha";
-
 
 /**
 This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
@@ -394,7 +414,7 @@ fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                "Models" : {{"fel.site.mg_rev"}},
                                "Headers" : {{"libv3/all-terms.bf","libv3/tasks/ancestral.bf", "libv3/convenience/math.bf"}},
                                "Functions" : {{"fel.apply_proportional_site_constraint"}},
-                               "Variables" : {{"terms.fel.test_keys","fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations"}}
+                               "Variables" : {{"terms.fel.test_keys","fel.permutations", "fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations"}}
                              });
 
 
@@ -441,20 +461,72 @@ utility.ForEachPair (fel.site_results[fel.partition_index], "_key_", "_value_",
 
 fel.site_results[fel.partition_index] = fel.partition_matrix;
 
-fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
-                               terms.json.content : fel.site_results };
+/* compute Benjamini-Hochberg */
 
+fel.bh.pv = {};
+
+fel.overall.index = fel.tests.key[0][3];
+utility.ForEachPair ((fel.site_results[0])[-1][fel.overall.index], "_idx_", "_value_", "fel.bh.pv[_idx_[0]]=_value_");
+fel.bh.pv = math.BenjaminiHochbergFDR(fel.bh.pv);
+fel.bh.count = {};
+
+utility.ForEachPair (fel.bh.pv, "_index_", "_value_", 
+'
+    if (fel.q_value >= _value_) {
+        fel.bh.count [1 + _index_] = _value_;
+    }
+    (fel.site_results[0])[0+_index_][fel.overall.index+1] = _value_;
+');
 
 for (fel.k = 0; fel.k < fel.report.test_count; fel.k += 1) {
     io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[fel.k] + "_ " + io.SingularOrPlural (fel.report.counts[fel.k], "site", "sites") + " with different _" + fel.tests.key[fel.k][0] +"_ dN/dS at p <= " + fel.p_value + "**");
 }
 
+io.ReportProgressMessageMD ("fel", "FDR", "### False discovery rate correction");
+ 
+if (utility.Array1D (fel.bh.count)) {
+    io.ReportProgressMessageMD ("fel", "FDR", "There are " + utility.Array1D (fel.bh.count) + " sites where the overall p-value passes the False Discovery Rate threshold of " + fel.q_value);
+    console.log ("");
+    fel.bh.count.mx = {Abs (fel.bh.count), 2};
+    fel.i = 0;
+    utility.ForEachPair (fel.bh.count, "_key_", "_value_", "
+        fel.bh.count.mx[fel.i][0] = +_key_;
+        fel.bh.count.mx[fel.i][1] = +_value_;
+        fel.i += 1;
+
+    ");
+
+    fel.bh.count.mx =  (fel.bh.count.mx%1);
+
+    fel.table_screen_output.qv  = {{"Codon", "q-value"}};
+    fel.table_output_options.qv = {terms.table_options.header : TRUE, terms.table_options.align : "center",
+                                terms.table_options.column_widths : { "0" : 15, "1" : 22}};
+
+    fprintf (stdout, io.FormatTableRow (fel.table_screen_output.qv,fel.table_output_options.qv));
+    fel.table_output_options.qv[terms.table_options.header] = FALSE;
+
+    for (fel.i = 0; fel.i < Rows (fel.bh.count.mx ); fel.i += 1) {
+        fprintf (stdout, io.FormatTableRow (
+                {{Format (fel.bh.count.mx[fel.i][0],6,0), Format (fel.bh.count.mx[fel.i][1],16,10)}}
+                ,fel.table_output_options.qv));
+    }
+
+} else {
+    io.ReportProgressMessageMD ("fel", "FDR", "There are no sites where the overall p-value passes the False Discovery Rate threshold of " + fel.q_value);
+}
+
+
+fel.json [terms.json.MLE ] = {
+                                terms.json.headers   : fel.table_headers,
+                                terms.json.content   : fel.site_results 
+                              };
 
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");
 
 
 io.SpoolJSON (fel.json, fel.codon_data_info[terms.json.json]);
+
 
 //------------------------------------------------------------------------------
 lfunction fel.select_branches(partition_info) {
@@ -468,21 +540,32 @@ lfunction fel.select_branches(partition_info) {
     utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
     list_models   = utility.Keys   (available_models); // get keys
     branch_counts = utility.UniqueValues (available_models);
-    option_count  = Abs (available_models);
+    option_count  = Abs (available_models) + 3;
 
-    io.CheckAssertion("`&option_count` >= 2", "FEL-contrast requires at least one designated set of branches in the tree.");
+    //io.CheckAssertion("`&option_count` >= 2", "FEL-contrast requires at least one designated set of branches in the tree.");
+
+    internal_count = utility.Array1D(utility.Filter (tree_for_analysis[^"terms.trees.partitioned"], "_value_", "_value_ == ^'terms.tree_attributes.internal'"));
+    leaf_count     = utility.Array1D(utility.Filter (tree_for_analysis[^"terms.trees.partitioned"], "_value_", "_value_ == ^'terms.tree_attributes.leaf'"));
+    //leaf_count     = 
 
     selectTheseForTesting = {
         option_count, 2
     };
+    
+    selectTheseForTesting [0][0] = "Internal branches";
+    selectTheseForTesting [0][1] = "Set of all `internal_count` internal branches in the tree";
+    selectTheseForTesting [1][0] = "Terminal branches";
+    selectTheseForTesting [1][1] = "Set of all `leaf_count` terminal branches in the tree";
+    selectTheseForTesting [2][0] = "Random set of branches";
+    selectTheseForTesting [2][1] = "Partition the tree into two random sets of branches (e.g., for null hypothesis testing); this options supersedes all others";
 
-    for (k = 0; k < option_count; k += 1) {
-        if (list_models[k] != "") {
-            selectTheseForTesting[k][0] = list_models[k];
-            selectTheseForTesting[k][1] = "Set " + list_models[k] + " with " + available_models[list_models[k]] + " branches";
+    for (k = 3; k < option_count; k += 1) {
+        if (list_models[k-3] != "") {
+            selectTheseForTesting[k][0] = list_models[k-3];
+            selectTheseForTesting[k][1] = "Set " + list_models[k-3] + " with " + available_models[list_models[k-3]] + " branches";
         } else {
             selectTheseForTesting[k][0] = "Unlabeled branches";
-            selectTheseForTesting[k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
+            selectTheseForTesting[k][1] = "Set of " + available_models[list_models[k-3]] + " unlabeled branches";
         }
     }
 
@@ -490,7 +573,6 @@ lfunction fel.select_branches(partition_info) {
     io.CheckAssertion ("`&testSet[0]` >= 0", "User cancelled branch selection; analysis terminating");
 
     return_set = {};
-
     tree_configuration = {};
     tree_for_analysis  = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
     branch_set_count   = utility.Array1D (testSet);
@@ -503,15 +585,40 @@ lfunction fel.select_branches(partition_info) {
         }
         test_sets[tag_test] = TRUE;
     }
-
-
-    utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "
-        if (`&test_sets`[_value_]) {
-            `&tree_configuration`[_key_] = _value_;
-        } else {
-            `&tree_configuration`[_key_] = utility.getGlobalValue('terms.tree_attributes.background');
+    
+    if (test_sets / 'Random set of branches') {
+        KeywordArgument ("random-subset", "How many branches in the random subset to test", (internal_count+leaf_count)$2);
+        test_count = io.PromptUser ("How many branches in the test set", (internal_count+leaf_count)$2,1,(internal_count+leaf_count), TRUE);
+        branch_names = utility.Keys (tree_for_analysis[^"terms.trees.partitioned"]);
+        test_set = Random ({1,internal_count+leaf_count}["_MATRIX_ELEMENT_COLUMN_"],0);
+        for (k = 0; k < test_count; k+=1) {
+            tree_configuration[branch_names[test_set[k]]] = ^'terms.tree_attributes.test';
         }
-    ");
+        test_count = utility.Array1D (test_set);
+        for (;k < test_count; k+=1) {
+            tree_configuration[branch_names[test_set[k]]] = ^'terms.tree_attributes.background';
+        }
+    } else {
+        utility.ForEachPair(tree_for_analysis[^"terms.trees.partitioned"], "_key_","_value_", "
+            if (`&test_sets` / 'Terminal branches' && _value_ == ^'terms.tree_attributes.leaf') {
+                `&tree_configuration`[_key_] = _value_;
+            }
+            if (`&test_sets` / 'Internal branches' && _value_ == ^'terms.tree_attributes.internal') {
+                `&tree_configuration`[_key_] = _value_;
+            }
+        
+        ");   
+        utility.ForEachPair (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_key_", "_value_", "
+            if (`&test_sets`[_value_]) {
+                io.CheckAssertion ('(`&tree_configuration`/_key_)==FALSE', 'Branch ' + _key_ + ' belongs to multiple sets');
+                `&tree_configuration`[_key_] = _value_;
+            } else {
+                if ((`&tree_configuration`/_key_)==FALSE) {
+                    `&tree_configuration`[_key_] = utility.getGlobalValue('terms.tree_attributes.background');
+                }
+            }
+        ");
+    }
 
     return_set + tree_configuration;
     return return_set;
@@ -667,7 +774,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     
 
     p_values = math.HolmBonferroniCorrection (p_values);
-    
+        
     if (permutation == FALSE && (Min (p_values,0))["value"] <= ^'fel.p_value') {
         result = {
                     utility.getGlobalValue("terms.alternative") : alternative,
@@ -677,20 +784,23 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                     utility.getGlobalValue("terms.p_value") : p_values,
                     utility.getGlobalValue("terms.fel.test_keys") : test_keys
                 };
+                
             
-        p_min = (Min (p_values,0))["value"];
-        console.log ("Entering permutation mode with p = " + p_min);
-        perm_p_values = {};
-        for (rep = 0; rep < ^'fel.site.permutations'; rep+=1) {
-            this_set = (fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, Random(branch_sets,0), parameter_names, 1))[utility.getGlobalValue("terms.p_value")];
-            console.log (this_set);
-            perm_p_values + this_set;
-            console.log ("" + rep + " => " + (Min (this_set,0))["value"]);
-            if ((Min (this_set,0))["value"] <= p_min) {
-                break;
+        if (^'fel.permutations' == TRUE) {
+            p_min = (Min (p_values,0))["value"];
+            //console.log ("Entering permutation mode with p = " + p_min);
+            perm_p_values = {};
+            for (rep = 0; rep < ^'fel.site.permutations'; rep+=1) {
+                this_set = (fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, Random(branch_sets,0), parameter_names, 1))[utility.getGlobalValue("terms.p_value")];
+                //console.log (this_set);
+                perm_p_values + this_set;
+                //console.log ("" + rep + " => " + (Min (this_set,0))["value"]);
+                if ((Min (this_set,0))["value"] <= p_min) {
+                    break;
+                }
             }
+            result [utility.getGlobalValue("terms.fel.permutation")]= perm_p_values;
         }
-        result [utility.getGlobalValue("terms.fel.permutation")]= perm_p_values;
         return result;
     } 
     
@@ -709,7 +819,8 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
 
     fel.k.bound   = Rows (fel.tests.key);
 
-
+    //console.log (fel.report.row);
+    //console.log (fel.tests.key);
 
     for (fel.k = 0; fel.k < fel.k.bound;  fel.k += 1) {
         fel.print_row = None;
@@ -758,7 +869,7 @@ lfunction fel.store_results (node, result, arguments) {
     partition_index = arguments [2];
     pattern_info    = arguments [3];
 
-    array_size  = utility.getGlobalValue ("fel.report.rate_count") + utility.getGlobalValue ("fel.report.subs_kinds") + utility.getGlobalValue ("fel.report.test_count") + 2;
+    array_size  = utility.getGlobalValue ("fel.report.rate_count") + utility.getGlobalValue ("fel.report.subs_kinds") + utility.getGlobalValue ("fel.report.test_count") + 3;
     result_row  = { 1, array_size } ["_MATRIX_ELEMENT_COLUMN_>=^'fel.report.rate_count'&&_MATRIX_ELEMENT_COLUMN_<array_size-1"];
 
 
@@ -784,7 +895,9 @@ lfunction fel.store_results (node, result, arguments) {
         
         p_values = result[^"terms.p_value"];
         result_row [k] = p_values ["overall"];
-        
+        k += 1;
+        result_row [k] = 0; // q-value to be computed later
+         
         test_keys = result[^"terms.fel.test_keys"];
         
         for (v = 1; v < ^'fel.report.test_count'; v+=1) {
@@ -815,13 +928,8 @@ lfunction fel.store_results (node, result, arguments) {
         result_row [k] = sum;
         
       }
-
-
-    //console.log (result_row);
-
+      
     utility.EnsureKey (^"fel.site_results", partition_index);
-
-
     utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_fel_result_",
         '
             (fel.site_results[`&partition_index`])[_fel_result_] = `&result_row`;

@@ -913,3 +913,66 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
     translString * 0;
     return translString;
 }
+
+/**
+ * @name alignment.ExportPartitionedNEXUS
+ * Export a datafilter with partitions and trees to a file
+
+ * @param {String} filter - filter name
+ * @param {Matrix} breakPoints  - locations of breakpoints (Nx1)
+ * @param {Matrix} trees  - tree strings for partitions (Nx1)
+ * @param {String} file - write the result here
+ * @param {Bool}   isCodon - is the filter a codon filter?
+
+ * @returns {String} the mapped sequence
+
+ * @example
+    GCAAAATCATTAGGGACTATGGAAAACAGA
+    -AKSLGTMEN-R
+
+    maps to
+
+    ---GCAAAATCATTAGGGACTATGGAAAAC---AGA
+
+ */
+
+lfunction alignment.ExportPartitionedNEXUS (filter, breakPoints, trees, file, isCodon) {
+    utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 4);
+    
+    fprintf (file, CLEAR_FILE, KEEP_OPEN, ^filter, "\n");
+    
+    breakPointsCount = utility.Array1D (breakPoints);
+    partCount      = breakPointsCount + 1;
+    currentStart    = 0;
+
+    fprintf (file, "\nBEGIN ASSUMPTIONS;\n");
+
+    for (p = 0; p < partCount; p += 1) {
+        lastPartition = p >= breakPointsCount;
+        if (!lastPartition) {
+            currentEnd = breakPoints[p];
+        } else {
+            if (isCodon) {
+                currentEnd = ^(filter+".sites") * 3;
+            } else {
+                currentEnd = ^(filter+".sites");
+            }
+            currentEnd = currentEnd - 1;
+        }
+ 
+        fprintf (file, "\tCHARSET span_", p + 1, " = ", currentStart + 1, "-", currentEnd + 1, ";\n");
+        
+ 
+        if (!lastPartition) {
+            currentStart = breakPoints[p] + 1;
+        }
+    }
+
+    fprintf (file, "END;\nBEGIN TREES;\n");
+    for (p = 0; p < partCount; p += 1) {
+        fprintf (file, "\tTREE tree_", p + 1, " = ", trees[p], ";\n");
+    }
+    
+    fprintf (file, "END;\n");
+    utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", None);
+}

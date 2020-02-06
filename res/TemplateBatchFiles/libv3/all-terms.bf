@@ -402,6 +402,7 @@ namespace terms{
         omega_ratio                   = "non-synonymous/synonymous rate ratio";
         multiple_hit_rate             = "rate at which 2 nucleotides are changed instantly within a single codon";
         triple_hit_rate               = "rate at which 3 nucleotides are changed instantly within a single codon";
+        triple_hit_rate_syn           = "rate at which 3 nucleotides are changed instantly within a single codon between synonymous codon islands";
 
         one                           = "1";
         theta                         = "theta";

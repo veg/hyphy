@@ -873,16 +873,16 @@ char _DataSetFilter::direct_index_character (unsigned long site, unsigned long s
   return (((_String**)theData->list_data)[theData->theMap.list_data[theMap.list_data[site]]])->char_at(sequence);
 }
 
-  //_______________________________________________________________________
-
+//_______________________________________________________________________
+ 
 bool     _DataSetFilter::CompareTwoSites (unsigned long site1, unsigned long site2, unsigned long pos1) const {
   pos1 = theNodeMap.list_data[pos1];
   
-  
   switch (unitLength) {
+          
     case 3: { // codon
-      site1*=3;
-      site2*=3;
+      site1 = (site1 << 1) + site1;
+      site2 = (site2 << 1) + site2;
       return direct_index_character (site1, pos1)     == direct_index_character (site2,     pos1) &&
       direct_index_character (site1 + 1, pos1) == direct_index_character (site2 + 1, pos1) &&
       direct_index_character (site1 + 2, pos1) == direct_index_character (site2 + 2, pos1);
@@ -893,15 +893,15 @@ bool     _DataSetFilter::CompareTwoSites (unsigned long site1, unsigned long sit
     }
       
     case 2: { // di-nucs
-      site1*=2;
-      site2*=2;
+      site1 = site1 << 1;
+      site2 = site1 << 1;
       return direct_index_character (site1, pos1)     == direct_index_character (site2,     pos1) &&
       direct_index_character (site1 + 1, pos1) == direct_index_character (site2 + 1, pos1);
     }
       
       
     default: {
-      site1*=unitLength;
+      site1*=unitLength;    
       site2*=unitLength;
       
       
@@ -1894,6 +1894,25 @@ void    _DataSetFilter::ConvertCodeToLettersBuffered (long code, unsigned char u
 
 void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffer) {
   
+    //    case 4: // labels, sequential
+    //case 5: // labels, interleaved
+    //case 6: // no labels, sequential
+    //case 7: { // no labels, interleaved
+
+  const enum    {
+      kFormatMEGASequential             = 0,
+      kFormatMEGAInterleaved            = 1,
+      kFormatPHYLIPSequential           = 2,
+      kFormatPHYLIPInterleaved          = 3,
+      kFormatNEXUSLabelsSequential      = 4,
+      kFormatNEXUSLabelsInterleaved     = 5,
+      kFormatNEXUSSequential            = 6,
+      kFormatNEXUSInterleaved           = 7,
+      kFormatCharacterList              = 8,
+      kFormatFASTASequential            = 9,
+      kFormatFASTAInterleaved           = 10,
+      kFormatPAML                       = 11
+  } datafile_format = kFormatMEGASequential;
   
   auto trim_to_10 = [] (const _String& seq_name) -> _String const& {
     if (seq_name.length() >= 10) {
@@ -1906,6 +1925,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
        printWidth   = hy_env::EnvVariableGetNumber(hy_env::data_file_default_width),
        gapWidth     = hy_env::EnvVariableGetNumber(hy_env::data_file_gap_width);
   
+
     // write out the file with this dataset filter
   
   unsigned long sequence_count = NumberSpecies(),
@@ -1942,13 +1962,13 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
   }
   
   switch (outputFormat) {
-    case 1: // hash-mark interleaved
-    case 10: { // FASTA interleaved
+    case kFormatMEGAInterleaved: // hash-mark interleaved
+    case kFormatFASTAInterleaved: { // FASTA interleaved
       
       long sitesDone    = 0,
       upTo;
       
-      char seqDelimiter = (outputFormat==1)?'#':'>';
+      char seqDelimiter = (outputFormat==kFormatMEGAInterleaved)?'#':'>';
       
       for (unsigned long i = 0UL; i<theNodeMap.lLength; i++) {
         write_here << seqDelimiter
@@ -1983,8 +2003,8 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       break;
     }
       
-    case 2:     // PHYLIP sequential
-    case 11:    // PAML
+    case kFormatPHYLIPSequential:     // PHYLIP sequential
+    case kFormatPAML:    // PAML
     {
       
       write_here << _String((long)theNodeMap.lLength)
@@ -1997,7 +2017,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
         _String const * sequence_name = GetSequenceName(i);
         _String sequence_name_10;
         
-        if (outputFormat == 2) { // PHYLIP
+        if (outputFormat == kFormatPHYLIPSequential) { // PHYLIP
           sequence_name_10 = trim_to_10 (*sequence_name);
         } else {
           sequence_name_10 = *sequence_name & "  ";
@@ -2021,7 +2041,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       break;
     }
       
-    case 3: { // phylip interleaved
+    case kFormatPHYLIPInterleaved: { // phylip interleaved
               // print PHYLIP format header
               //fprintf (dest,"$FORMAT:\"PHYLIPI\"\n");
               // print number of species and sites
@@ -2072,10 +2092,10 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       
         // various flavors of NEXUS
       
-    case 4: // labels, sequential
-    case 5: // labels, interleaved
-    case 6: // no labels, sequential
-    case 7: { // no labels, interleaved
+    case kFormatNEXUSLabelsSequential: // labels, sequential
+    case kFormatNEXUSLabelsInterleaved: // labels, interleaved
+    case kFormatNEXUSSequential: // no labels, sequential
+    case kFormatNEXUSInterleaved: { // no labels, interleaved
               // write out the header
       
       write_here << "#NEXUS\n\nBEGIN TAXA;\n\tDIMENSIONS NTAX = "
@@ -2124,10 +2144,10 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       if (theData->theTT->GetSkipChar()) {
         write_here << "\n\t\tMISSING=" << theData->theTT->GetSkipChar();
       }
-      if (outputFormat>5) {
+      if (outputFormat == kFormatNEXUSInterleaved || outputFormat == kFormatNEXUSSequential) {
         write_here << "\n\t\tNOLABELS";
       }
-      if (outputFormat%2) {
+      if (outputFormat == kFormatNEXUSInterleaved || outputFormat == kFormatNEXUSLabelsInterleaved) {
         write_here << "\n\t\tINTERLEAVE";
       }
       
@@ -2151,9 +2171,9 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       }
       
       
-      if (outputFormat%2==0) { // sequential
+      if (outputFormat == kFormatNEXUSLabelsSequential || outputFormat == kFormatNEXUSSequential) { // sequential
         for (unsigned long i=0UL; i< sequence_count; i++) {
-          if (outputFormat == 4) { // labels
+          if (outputFormat == kFormatNEXUSLabelsSequential) { // labels
             write_here << "\n\t'"
             << GetSequenceName(i)
             << '\''
@@ -2180,7 +2200,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
           
           
           for (unsigned long i=0UL; i< sequence_count; i++) {
-            if (outputFormat == 5) { // labels
+            if (outputFormat == kFormatNEXUSLabelsInterleaved) { // labels
               write_here << "\n\t'"
               << GetSequenceName(i)
               << '"'
@@ -2204,7 +2224,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       break;
     }
       
-    case 8: {
+    case kFormatCharacterList: {
       for (unsigned long i = 0UL; i< sequence_count; i++) {
         write_here << (*theData)(theOriginalOrder(0),theNodeMap(i),1);
         for (unsigned long j = 1UL; j<site_count; j++) {
@@ -2216,7 +2236,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
     }
       
     default: { // hash-mark sequential
-      char seqDelimiter = (outputFormat==9)?'>':'#';
+      char seqDelimiter = (outputFormat==kFormatFASTASequential)?'>':'#';
       
       for (unsigned long i = 0UL; i< sequence_count; i++) {
         write_here << seqDelimiter << GetSequenceName(i);
@@ -2234,23 +2254,24 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
     }
   }
   
-  if (outputFormat != 8) {
+  if (outputFormat != kFormatCharacterList) {
       if (hy_env::EnvVariableTrue(hy_env::data_file_tree)) {
           HBLObjectRef tree_var = hy_env::EnvVariableGet(hy_env::data_file_tree_string, HY_ANY_OBJECT);
           if (tree_var) {
             _String* treeString = (_String*)(tree_var->Compute())->toStr();
             switch (outputFormat) {
-              case 0:
-              case 1:
-              case 9:
-              case 10: {
+              case kFormatMEGASequential:
+              case kFormatMEGAInterleaved:
+              case kFormatFASTASequential:
+              case kFormatFASTAInterleaved:
+              case kFormatPAML: {
                 write_here << kStringFileWrapperNewLine
                 << kStringFileWrapperNewLine
                 << *treeString;
                 break;
               }
-              case 2:
-              case 3: {
+              case kFormatPHYLIPSequential:
+              case kFormatPHYLIPInterleaved: {
                 write_here << "\n1\n" << *treeString;
                 break;
               }

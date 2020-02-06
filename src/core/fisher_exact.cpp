@@ -18,7 +18,6 @@ Function prototype is declared in matrix.h
 
 */
 
-#include <stdlib.h>
 #include <math.h>
 
 #include "global_things.h"

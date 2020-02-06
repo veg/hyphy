@@ -508,7 +508,7 @@ _SimpleList&   GetBFFunctionArgumentTypes  (long idx) {
 
 //____________________________________________________________________________________
 _ExecutionList&   GetBFFunctionBody  (long idx) {
-  return *(_ExecutionList*)batchLanguageFunctions.Element (idx);
+  return *(_ExecutionList*)batchLanguageFunctions.GetItem (idx);
 }
 
 //____________________________________________________________________________________
@@ -590,7 +590,7 @@ _String const ExportBFFunction (long idx, bool recursive) {
 
 //____________________________________________________________________________________
 void ClearBFFunctionLists (long start_here) {
-  if (start_here > 0L && start_here < batchLanguageFunctionNames.countitems()) {
+  if (start_here >= 0L && start_here < batchLanguageFunctionNames.countitems()) {
 
     _SimpleList delete_me (batchLanguageFunctionNames.countitems()-start_here, start_here, 1L);
     
@@ -603,6 +603,14 @@ void ClearBFFunctionLists (long start_here) {
     batchLanguageFunctionClassification.DeleteList  (delete_me);
     batchLanguageFunctionParameterLists.DeleteList  (delete_me);
     batchLanguageFunctionParameterTypes.DeleteList  (delete_me);
+  } else {
+    if (start_here < 0) {
+        batchLanguageFunctionNames.Clear           ();
+        batchLanguageFunctions.Clear               ();
+        batchLanguageFunctionClassification.Clear  ();
+        batchLanguageFunctionParameterLists.Clear  ();
+        batchLanguageFunctionParameterTypes.Clear  ();
+    }
   }
 }
 
@@ -3122,7 +3130,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         _String filter_specification = *GetFilterName (filter_id) & spawning_tree->GetName()->Enquote(',') & *freq_var->GetName();
 
 
-        bool    do_internals = parameters.countitems() > 5 ? (ProcessNumericArgument ((_String*)parameters (5),chain.nameSpacePrefix)>0.5) : nil;
+        bool    do_internals = parameters.countitems() > 5 ? (ProcessNumericArgument ((_String*)parameters (5),chain.nameSpacePrefix)>0.5) : false;
 
         _String spool_file;
 
@@ -3957,7 +3965,8 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
          // this is because extaction will work from the first character following a '(', e.g. CreateFilter([start parsing here]....)
          last_delim    = start_at,
          index             = start_at,
-         curly_depth       = 0L;
+         curly_depth       = 0L,
+         bracket_depth     = 0L;
 
 
     enum {
@@ -3990,6 +3999,14 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
                 curly_depth--;
                 continue;
             }
+            if (c=='[') {
+                bracket_depth++;
+                continue;
+            }
+            if (c==']') {
+                bracket_depth--;
+                continue;
+            }
             if (c==')') {
                 parentheses_depth --;
                 if (parentheses_depth == 0L) {
@@ -4011,7 +4028,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
             continue;
         }
         if (c==delimeter) {
-            if (parentheses_depth > 1 || quote_type != normal_text || curly_depth) {
+            if (parentheses_depth > 1 || quote_type != normal_text || curly_depth || bracket_depth) {
                 continue;
             }
 

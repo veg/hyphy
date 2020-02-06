@@ -204,28 +204,97 @@ function parameters.SetValues(set) {
 /**
  * Ensures that the mean of parameters in a set is maintained
  * @name parameters.ConstrainMeanOfSet
- * @param {Dict}   set  - list of variable ids
+ * @param {Dict/Matrix}   set      - list of variable ids
+ * @param {Dict/Matrix}   weights  - weights to apply  
  * @param {Number} mean - desired mean
+ * @param {String} namespace - desired mean
  * @returns nothing
  */
-lfunction parameters.ConstrainMeanOfSet (set, mean, namespace) {
+lfunction parameters.ConstrainMeanOfSet (set, weights, mean, namespace) {
     if (Type (set) == "AssociativeList") {
-        unscaled = utility.Map (utility.UniqueValues (set), "_name_", "_name_ + '_scaler_variable'");
+        unscaled   = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");
+        constraint = utility.MapWithKey (unscaled, "_key_", "_name_", "_name_  + '*' + `&weights`[_key_]");
     } else {
         if (Type (set) == "Matrix") {
          unscaled = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");
+         constraint = utility.MapWithKey (unscaled, "_key_", "_name_", "_name_  + '*' + `&weights`[_key_[0]+_key_[1]]");
         }
         else {
             return;
         }
     }
+    
+
+    scaler_variables = {};
+        
+    utility.ForEach (unscaled, "_name_", 'parameters.DeclareGlobal (_name_, null)');
     global_scaler = namespace + ".scaler_variable";
-    parameters.SetConstraint (global_scaler, Join ("+", unscaled), "global");
+    parameters.SetConstraint (global_scaler, Join ("+", constraint), "global");
     utility.ForEach (set, "_name_", '
+        `&scaler_variables`["Mean scaler variable for " + _name_] = _name_ + "_scaler_variable";
         parameters.SetValue (_name_ + "_scaler_variable", _name_);
         parameters.SetConstraint (_name_, "(" + `&mean` + ")*" + _name_ + "_scaler_variable/`global_scaler`", "");
     ');
+    
+    return {^'terms.global' : scaler_variables};
 }
+
+/**
+ * Given a set of parameters [x1,x2,...] set x1 to a given value, and constrain x2 := x1, x3 := x1...
+ * @name parameters.ConstrainParameterSet
+ * @param {Dict} set  - list of variable ids (as values)
+ * @param {Number/null} value - if is a Number, then set x1 to this value, 
+                                if null, set x1 to the mean of all values
+ * @returns {Dict} the list of constrained parameters
+ */ 
+lfunction parameters.ConstrainParameterSet (set, value) {
+    if (Type (set) == "AssociativeList") {
+        if (utility.Array1D (set) > 1) {
+            _key_name = set["VALUEINDEXORDER"][0];
+            if (None == value) {
+                value = + (utility.Map (set, "_id_", "Eval(_id_)"));
+                value = value / utility.Array1D (set);
+            }
+            parameters.SetValue (_key_name, value);
+            constraints = {};
+            utility.ForEach (set, "_id_", '
+                if (_id_ != `&_key_name`) {
+                    parameters.SetConstraint (_id_, `&_key_name`, "");
+                    (`&constraints`) + _id_;
+                }
+            ');
+            
+            return constraints;
+        }
+    } 
+    
+    return {};
+    
+}
+
+/**
+ * Given a set of parameters [x1,x2,...] set x_i := Eval (x_i)
+ * @name parameters.ConstrainParameterSet
+ * @param {Dict} set  - list of variable ids (as values)
+  * @returns {Dict} the list of constrained parameters
+ */ 
+lfunction parameters.FixParameterSet (set) {
+    if (Type (set) == "AssociativeList") {
+        if (utility.Array1D (set) > 1) {
+            constraints = {};
+            utility.ForEach (set, "_id_", '
+                parameters.SetConstraint (_id_, "" + Eval (_id_), "");
+                (`&constraints`) + _id_;
+            ');
+            
+            return constraints;
+        }
+    } 
+    
+    return {};
+    
+}
+
 
 
 /**
@@ -580,7 +649,7 @@ lfunction parameters.SetStickBreakingDistribution (parameters, values) {
  */
 
 lfunction parameters.GetStickBreakingDistribution (parameters) {
-    rate_count = Rows (parameters["rates"]);
+    rate_count = utility.Array1D (parameters["rates"]);
     distribution = {rate_count, 2};
 
     current_weight = 1;

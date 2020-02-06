@@ -57,7 +57,6 @@
 #include <time.h>
 #include <float.h>
 #include <signal.h>
-#include <stdlib.h>
 
 
 using     namespace hy_env;
@@ -119,7 +118,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                      kHyPhyVersion  = _String ("2.5.1"),
+                     kHyPhyVersion  = _String ("2.5.2"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -309,7 +308,6 @@ namespace hy_global {
         
         using namespace hyphy_global_objects;
         
-        ClearBFFunctionLists();
         executionStack.Clear();
         loadedLibraryPaths.Clear(true);
         _HY_HBL_Namespaces.Clear();
@@ -319,7 +317,7 @@ namespace hy_global {
             likeFuncNamesList.Clear();
             dataSetList.Clear();
             dataSetNamesList.Clear();
-            batchLanguageFunctions.Clear();
+            ClearBFFunctionLists();
             compiledFormulaeParameters.Clear();
             modelNames.Clear();
             KillExplicitModelFormulae ();

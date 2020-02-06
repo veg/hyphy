@@ -325,7 +325,7 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
         target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
 
         if (!parsed_expression.DependsOnVariable(target_variable->get_index()) && !do_integrate) {
-            throw (expression & " does not depend on the variable " & target_variable->GetName()->Enquote());
+            throw (expression.Enquote() & " does not depend on the variable " & target_variable->GetName()->Enquote());
         }
 
  
@@ -418,7 +418,9 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                           kPairwiseCountAmbiguitiesSkip                   ("SKIP_AMBIGUITIES"),
                           kCharacters                                     ("CHARACTERS"),
                           kConsensus                                      ("CONSENSUS"),
-                          kParameters                                     ("PARAMETERS");
+                          kParameters                                     ("PARAMETERS"),
+                          kPattern                                        ("PATTERN"),
+                          kSite                                           ("SITE");
 
 
     _Variable * receptacle = nil;
@@ -1108,6 +1110,7 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 pairwise_alignment->MStore ("1", new _FString(result1), false);
                 pairwise_alignment->MStore ("2", new _FString(result2), false);
                 pairwise_alignment->MStore ("0", new _Constant (score), false);
+                aligned_strings->MStore (_String((long)index2-1L), pairwise_alignment, false);
            } else { // not linear
                 char * str1r = nil,
                      * str2r = nil;
@@ -1964,7 +1967,8 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         _String option;
         bool    has_input = true;
         try {
-            option = (current_program.FetchFromStdinRedirect (&kPromptText));
+            _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
+            option = current_program.FetchFromStdinRedirect (&kPromptText, false, !(redirect&&redirect->has_data()));
         } catch (const _String e) {
             if (e != kNoKWMatch) {
                 throw (e);
@@ -2368,7 +2372,6 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
 bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
   static const _String    kFprintfStdout               ("stdout"),
-                          kFprintfDevNull              ("/dev/null"),
                           kFprintfMessagesLog          ("MESSAGE_LOG"),
                           kFprintfClearFile            ("CLEAR_FILE"),
                           kFprintfKeepOpen             ("KEEP_OPEN"),
@@ -2399,7 +2402,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
       _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
       if (redirect && redirect->has_data()) {
         destination         = redirect->get_str();
-        if (destination == kFprintfDevNull) {
+        if (destination == hy_env::kDevNull) {
           return true; // "print" to /dev/null
         } else {
           skip_file_path_eval = true;
@@ -3746,7 +3749,8 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
             while (selections.countitems() < required) {
                 _String user_choice;
                 try {
-                    user_choice =(current_program.FetchFromStdinRedirect(&dialog_title, required > 1, true)); // handle multiple selections
+                    _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
+                    user_choice = current_program.FetchFromStdinRedirect(&dialog_title, required > 1, !(redirect && redirect->has_data())); // handle multiple selections
                 } catch (const _String e) {
                     if (e == kNoKWMatch) {
                         break;

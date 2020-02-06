@@ -158,6 +158,8 @@ public:
 
 
   _TranslationTable *MergeTables(_TranslationTable const *) const;
+    
+  bool  operator == (const _TranslationTable& ) const;
 
   static const _String &GetDefaultTable(long tableType);
 

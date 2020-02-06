@@ -3193,7 +3193,7 @@
       ],
      "Log Likelihood":-5723.778973684941,
      "Rate Distributions":{
-       "Gamma distribution shape parameter":0.4080150689051227,
+       "Shape parameter for the gamma distribution (alpha)":0.4080150689051227,
        "Transitition/transversion ratio":4.027684720937853
       },
      "estimated parameters":120

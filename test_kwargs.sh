@@ -173,17 +173,32 @@ declare -a fileTypes=(  "--alignment ./tests/hbltests/data/CD2.nex" # nexus with
                         )
 
 # GARD
+# TODO - GH-981
 declare -a gardArgs=(   ""
-                        "--type Nucleotide"
-                        "--type Codon"
-                        "--type Codon --code Universal"
-                        "--type Codon --model JTT"
+                        "--type nucleotide"
+                        "--type codon"
+                        "--type codon --code Universal"
+                        "--type codon --model JTT"
+                        "--type codon --rv GDD"
+                        "--type nucleotide"
                         "--rv GDD"
                         "--rv GDD --rate-classes 2"
                         "--output ./testMethodOutput"
                         "--output-lf ./testMethodOutput"
                         "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-length 1900000 --burn-in 1200000 --samples 125"
-                        )                     
+                        )         
+                        
+declare -a gardArgs=(   ""
+                        "--type nucleotide"
+                        "--type codon"
+                        "--type codon --code Universal"
+                        "--type codon --model JTT"
+                        "--rv GDD"
+                        "--rv GDD --rate-classes 2"
+                        "--output ./testMethodOutput"
+                        "--output-lf ./testMethodOutput"
+                        "--method Collapsed-Gibbs --grid 20 --model WAG --concentration_parameter 0.5 --chains 6 --chain-length 1900000 --burn-in 1200000 --samples 125"
+                        )        
 
 evaluateMethod "gard" "Fitting the baseline" "${gardArgs[@]}"
 

@@ -61,10 +61,12 @@ lfunction pass2.evaluator (lf_id, tasks, scores) {
     for (i = 0; i < task_count; i+=1) {
         parameters.SetValues (tasks[task_ids[i]]);
         ConstructCategoryMatrix(site_likelihoods,^lf_id,SITE_LOG_LIKELIHOODS);
-        /*if (( (tasks[task_ids[i]]) ["FADE bias"])["MLE"] == 0.0) {
+        /*
+        if (( (tasks[task_ids[i]]) ["FADE bias"])["MLE"] == 0.0) {
             console.log (tasks[task_ids[i]]);
             console.log (site_likelihoods);
-        }*/
+        }
+        */
         results [task_ids[i]] = site_likelihoods ["Max(_MATRIX_ELEMENT_VALUE_,-1e200)"];
 
         // to avoid returning -inf

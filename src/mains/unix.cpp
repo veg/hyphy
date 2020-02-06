@@ -28,7 +28,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 #include "global_things.h"
@@ -105,17 +104,17 @@ const char hy_help_message [] =
 ;
 
 const char hy_available_cli_analyses [] =
-"Available standard analyses and their [analysisName] are listed below:\n\n"
-"        [MEME] Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).\n"
-"        [FEL] Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).\n"
-"        [FUBAR] Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).\n"
-"        [FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).\n"
-"        [SLAC] Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).\n"
-"        [BUSTED] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).\n"
-"        [BGM] Apply Bayesian Graphical Model inference to substitution histories at individual sites.\n"
-"        [aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).\n"
-"        [RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).\n"
-"        [GARD] Screen an alignment for recombination using GARD (Genetic Algorithm for Recombination Detection).\n\n"
+"Available standard analyses and their [standard analysis name] are listed below:\n\n"
+"        [meme] Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).\n"
+"        [fel] Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).\n"
+"        [fubar] Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).\n"
+"        [fade] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).\n"
+"        [slac] Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).\n"
+"        [busted] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).\n"
+"        [bgm] Apply Bayesian Graphical Model inference to substitution histories at individual sites.\n"
+"        [absrel] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).\n"
+"        [relax] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).\n"
+"        [gard] Screen an alignment for recombination using GARD (Genetic Algorithm for Recombination Detection).\n\n"
 ;
 
 
@@ -168,7 +167,8 @@ _String baseArgDir,
         libArgDir;
 
 const   _String kLoggedFileEntry ("__USER_ENTRY__"),
-                kHelpKeyword     ("--help");
+                kHelpKeyword     ("--help"),
+                kVersionKeyword  ("--version");
 
 void    ReadInTemplateFiles         (void);
 long    DisplayListOfChoices        (void);
@@ -186,7 +186,8 @@ bool    usePostProcessors = false,
         calculatorMode    = false,
         updateMode       = false,
         pipeMode         = false,
-        logInputMode   = false;
+        logInputMode   = false,
+        displayHelpAndExit = false;
 char    prefFileName[] = ".hyphyinit";
 
 #ifdef  __HYPHYMPI__
@@ -552,16 +553,26 @@ long    DisplayListOfPostChoices (void) {
 }
 
 
-
+void    DisplayHelpMessage (void) {
+   printf ("%s\n%s", hy_usage, hy_help_message);
+   printf ("Available standard keyword analyses (located in %s)\n", getLibraryPath().get_str());
+   TrieIterator options (&availableTemplateFilesAbbreviations);
+   for (TrieIteratorKeyValue ti : options) {
+       printf ("\t%s \t%s\n", ti.get_key().get_str(), ((_String*)(availableTemplateFiles.GetItem(availableTemplateFilesAbbreviations.GetValue(ti.get_value()),1)))->get_str());
+   }
+   printf ("\n");
+   //fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
+   exit (0);
+}
             
 void    ProcessConfigStr (_String const & conf) {
     for (unsigned long i=1UL; i<conf.length(); i++) {
         switch (char c = conf.char_at (i)) {
             case 'h':
             case 'H': {
-                fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
-                exit (0);
+                displayHelpAndExit = true;
             }
+            break;
 
             case 'p':
           case 'P': {
@@ -685,15 +696,15 @@ int main (int argc, char* argv[]) {
     
    
     
-    /*if (rank == 0) {
-        int i = 0;
+    /*if (rank > 0) {
+        volatile int i = 0;
         char hostname[256];
         gethostname(hostname, sizeof(hostname));
         printf("PID %d on %s ready for attach\n", getpid(), hostname);
         fflush(stdout);
         while (0 == i)
           sleep(5);
-        printf("PID %d on continuing\n", getpid());
+        printf("PID %d continuing\n", getpid());
     }*/
   
 #endif
@@ -739,7 +750,6 @@ int main (int argc, char* argv[]) {
     hy_base_directory = baseDir;
     baseArgDir    = hy_base_directory;
     
-    bool          run_help_message = false;
     
 #ifdef _OPENMP
     system_CPU_count = omp_get_max_threads();
@@ -756,8 +766,12 @@ int main (int argc, char* argv[]) {
       if (thisArg.get_char(0)=='-') { // -[LETTER] arguments
           if (thisArg.get_char (1) == '-') {
               if (thisArg == kHelpKeyword) {
-                  run_help_message = true;
+                  displayHelpAndExit = true;
                   continue;
+              }
+              if (thisArg == kVersionKeyword) {
+                  StringToConsole(GetVersionString()); NLToConsole();
+                  exit (0);
               }
               if (i + 1 < argc) {
                   _String payload (argv[++i]);
@@ -804,10 +818,9 @@ int main (int argc, char* argv[]) {
     GlobalStartup();
     ReadInTemplateFiles();
     
-    if (positional_arguments.empty () && run_help_message) {
+    if (positional_arguments.empty () && displayHelpAndExit) {
         // --help returns the message below
-        fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
-        BufferToConsole("\n");
+        DisplayHelpMessage();
         GlobalShutdown();
         return 0;
     }
@@ -940,7 +953,7 @@ int main (int argc, char* argv[]) {
             ReadBatchFile (argFile,ex);
         }
 
-        if (run_help_message) {
+        if (displayHelpAndExit) {
 #ifdef __HYPHYMPI__
             if (hy_mpi_node_rank == 0L) {
 #endif

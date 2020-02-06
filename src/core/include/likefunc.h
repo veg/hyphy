@@ -249,10 +249,6 @@ public:
     void        FillInConditionals      (long = -1);
 
     void        Setup                   (bool check_reversibility = true);
-    bool&       HasBeenOptimized (void) {
-        return hasBeenOptimized;
-    }
-    void        ComputePruningEfficiency(long&, long&);
 
     long        SequenceCount           (long);
     unsigned long        SiteCount               (void) const;
@@ -343,7 +339,7 @@ protected:
     virtual void            ScanAllVariables        (void);
     // internal function to scan all the variables in
 
-    void            OptimalOrder            (long, _SimpleList&);
+    void            OptimalOrder            (long, _SimpleList&, const _SimpleList* clone = nil);
     // determine the optimal order of compuation for a block
 
     hyFloat      ComputeBlock            (long, hyFloat* siteResults = nil, long currentRateClass = -1, long = -1, _SimpleList* = nil);
@@ -610,8 +606,7 @@ protected:
         this is used for internal normalization transforms during optimization
      */
 
-    bool            hasBeenOptimized,
-                    siteArrayPopulated;
+    bool            siteArrayPopulated;
 
     _Formula*       computingTemplate;
     MSTCache*       mstCache;

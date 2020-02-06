@@ -27,9 +27,10 @@ jointly to all or a subset of tree branches in order to test for alignment-wide 
 Assuming there is evidence of positive selection (i.e. there is an omega > 1),  BUSTED will also perform a quick evidence-ratio 
 style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, 
 and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point.
-Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead.
+Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead. Version 3.0 implements the option
+for branch-site variation in synonymous substitution rates
 ",
-                               terms.io.version : "2.2",
+                               terms.io.version : "3.0",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
@@ -50,6 +51,7 @@ busted.MG94 = terms.json.mg94xrev_sep_rates;
 busted.json.background = busted.background;
 busted.json.site_logl  = "Site Log Likelihood";
 busted.json.evidence_ratios  = "Evidence Ratios";
+busted.json.srv_posteriors  = "Synonymous site-posteriors";
 busted.rate_classes = 3;
 busted.synonymous_rate_classes = 3;
 busted.initial_grid.N = 250;
@@ -97,9 +99,6 @@ KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {}
 KeywordArgument ("branches",  "Branches to test", "All");
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
 KeywordArgument ("rates", "The number omega rate classes to include in the model [1-10, default 3]", busted.rate_classes);
-KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes);
-KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);
-KeywordArgument ("starting-points", "The number of initial random guesses to seed rate values optimization", 1);
 
 namespace busted {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
@@ -108,13 +107,35 @@ namespace busted {
 
 
 busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch)", 
+                                    "Branch-site" : "Allow synonymous substitution rates to vary using general branch site models",
                                     "No"  : "Synonymous substitution rates are constant across sites. This is the 'classic' behavior, i.e. the original published test"},
                                     "Synonymous rate variation"
-                                    ) == "Yes";
+                                    );
+                                    
+if (busted.do_srv == "Branch-site") {
+    busted.do_bs_srv = TRUE;
+    busted.do_srv = TRUE;
+    (busted.json[terms.json.analysis])[terms.settings] = "Branch-site synonymous rate variation";
+} else {
+    if (busted.do_srv == "Yes") {
+        busted.do_bs_srv = FALSE;
+        busted.do_srv = TRUE;
+    } else {
+        busted.do_srv = FALSE;    
+    }
+}                       
+                                    
 
 busted.rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.rate_classes, 1, 10, TRUE);
-busted.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.synonymous_rate_classes, 1, 10, TRUE);
+
+if (busted.do_srv) {
+    KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes);
+    busted.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.synonymous_rate_classes, 1, 10, TRUE);
+}
+
+KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);
 busted.initial_grid.N = io.PromptUser ("The number of points in the initial distributional guess for likelihood fitting", 250, 1, 10000, TRUE);
+KeywordArgument ("starting-points", "The number of initial random guesses to seed rate values optimization", 1);
 busted.N.initial_guesses = io.PromptUser ("The number of initial random guesses to 'seed' rate values optimization", 1, 1, busted.initial_grid.N$10, TRUE);
                                     
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'BUSTED.json')", busted.codon_data_info [terms.json.json]);
@@ -184,29 +205,38 @@ busted.model_generator = "models.codon.BS_REL.ModelDescription";
 
 
 if (busted.do_srv) {
-    lfunction busted.model.with.GDD (type, code, rates) {        
-        def = models.codon.BS_REL.ModelDescription (type, code, rates);
-        def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory ({utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("busted.synonymous_rate_classes")});
-        return def;
-    }
-    busted.model_generator = "busted.model.with.GDD";
-}
 
+    if (busted.do_bs_srv) {
+        busted.model_generator = "busted.model.with.GDD";
+        busted.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
+        busted.rate_class_arguments = {{busted.synonymous_rate_classes__,busted.rate_classes__}};
+    } else {
+        lfunction busted.model.with.GDD (type, code, rates) {        
+            def = models.codon.BS_REL.ModelDescription (type, code, rates);
+            def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory ({utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("busted.synonymous_rate_classes")});
+            return def;
+        }
+        busted.model_generator = "busted.model.with.GDD";
+        busted.rate_class_arguments = busted.rate_classes;
+    }
+} else {
+    busted.rate_class_arguments = busted.rate_classes;
+}
 
 busted.test.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generator,
         "busted.test", {
             "0": parameters.Quote(terms.global),
             "1": busted.codon_data_info[terms.code],
-            "2": parameters.Quote (busted.rate_classes) // the number of rate classes
+            "2": parameters.Quote (busted.rate_class_arguments) // the number of rate classes
         },
         busted.filter_names,
         None);
-
+        
 busted.background.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generator,
         "busted.background", {
             "0": parameters.Quote(terms.global),
             "1": busted.codon_data_info[terms.code],
-            "2": parameters.Quote (busted.rate_classes) // the number of rate classes
+            "2": parameters.Quote (busted.rate_class_arguments) // the number of rate classes
         },
         busted.filter_names,
         None);
@@ -216,8 +246,13 @@ models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.backgr
 
 
 if (busted.do_srv) {
-    models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, "GDD rate category");
-    models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " for GDD category ");
+    if (busted.do_bs_srv) {
+        models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, "Mean scaler variable for");
+        models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), "SRV [0-9]+"));
+    } else {
+        models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, "GDD rate category");
+        models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " for GDD category ");
+    }
 }
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
@@ -263,8 +298,23 @@ if (busted.has_background) {
 }
 
 if (busted.do_srv)  {
-    busted.srv_rate_regex  = "GDD rate category [0-9]+";
-    busted.srv_weight_regex = "Mixture auxiliary weight for GDD category [0-9]+";
+
+    if (busted.do_bs_srv) {
+        busted.srv_rate_regex   = "Mean scaler variable for";
+        busted.srv_weight_regex = terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), "SRV [0-9]+");
+        
+        busted.srv_rate_reporting = regexp.PartitionByRegularExpressions(utility.Keys ((busted.test.bsrel_model[terms.parameters])[terms.global]), 
+            {"0" : "^" + utility.getGlobalValue('terms.parameters.synonymous_rate'), 
+             "1" :  busted.srv_weight_regex});
+
+        busted.srv_rate_reporting = {
+          'rates' : utility.UniqueValues (utility.Map ( busted.srv_rate_reporting ["^" + utility.getGlobalValue('terms.parameters.synonymous_rate') ]  , "_value_", '((busted.test.bsrel_model[terms.parameters])[terms.global])[_value_]')),
+           'weights' : utility.UniqueValues (utility.Map (busted.srv_rate_reporting [busted.srv_weight_regex ]  , "_value_", '((busted.test.bsrel_model[terms.parameters])[terms.global])[_value_]'))
+        };
+    } else {
+        busted.srv_rate_regex  = "GDD rate category [0-9]+";
+        busted.srv_weight_regex = "Mixture auxiliary weight for GDD category [0-9]+";
+    }
     busted.srv_distribution = regexp.PartitionByRegularExpressions(utility.Keys ((busted.test.bsrel_model[terms.parameters])[terms.global]), {"0" : busted.srv_rate_regex, "1" : busted.srv_weight_regex});
 
     
@@ -273,6 +323,7 @@ if (busted.do_srv)  {
         'weights' : utility.UniqueValues (utility.Map (busted.srv_distribution [busted.srv_weight_regex ]  , "_value_", '((busted.test.bsrel_model[terms.parameters])[terms.global])[_value_]'))
     };
     
+ 
     PARAMETER_GROUPING + busted.srv_distribution["rates"];
     PARAMETER_GROUPING + busted.srv_distribution["weights"];
 
@@ -379,14 +430,26 @@ if (busted.has_background) {
 }
 
 if (busted.do_srv) {
-    busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
+    
+    if (busted.do_bs_srv) {
+        busted.srv_info = parameters.GetStickBreakingDistribution ( busted.srv_rate_reporting) % 0
+    } else {
+        busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
+    }
     io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
     selection.io.report_distribution (busted.srv_info);
 
-     busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
+    busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
                                                              "_index_",
                                                              "{terms.json.rate :busted.srv_info [_index_][0],
                                                                terms.json.proportion : busted.srv_info [_index_][1]}"));
+                                                               
+    ConstructCategoryMatrix (busted.cmx, ^(busted.full_model[terms.likelihood_function]));
+    ConstructCategoryMatrix (busted.cmx_weights, ^(busted.full_model[terms.likelihood_function]), WEIGHTS);
+    busted.cmx_weighted         = busted.cmx_weights $ busted.cmx;
+    busted.column_weights       = {1, Rows (busted.cmx_weights)}["1"] * busted.cmx_weighted;
+    busted.column_weights       = busted.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
+    (busted.json [busted.json.srv_posteriors]) =  busted.cmx_weighted $ busted.column_weights;
 
 }
 
@@ -454,7 +517,11 @@ if (!busted.run_test) {
     }
 
     if (busted.do_srv) {
-        busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
+        if (busted.do_bs_srv) {
+            busted.srv_info = parameters.GetStickBreakingDistribution ( busted.srv_rate_reporting) % 0
+        } else {
+            busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
+        }
         io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
         selection.io.report_distribution (busted.srv_info);
 

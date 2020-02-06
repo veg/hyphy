@@ -81,7 +81,7 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
 		parameters.DeclareCategory   (__rp[terms.category]);
         parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 	} 
-
+	
 	for (_rowChar = 0; _rowChar < models.protein.dimensions; _rowChar +=1 ){
 		for (_colChar = 0; _colChar < models.protein.dimensions; _colChar += 1) {
 		    
@@ -110,7 +110,6 @@ function models.protein.generic.DefineQMatrix (modelSpec, namespace) {
                 parameters.helper.copy_definitions (modelSpec[terms.parameters], __rp);
 
                 __rate_matrix [_rowChar][_colChar] = __rp[terms.model.rate_entry];
-                __rate_matrix [_colChar][_rowChar] = __rp[terms.model.rate_entry];
                 continue;
             }
 			__rate_matrix [_rowChar][_colChar] = "";

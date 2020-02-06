@@ -37,7 +37,6 @@
  
  */
 
-#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -142,7 +141,7 @@ void _Matrix::Initialize (bool) {                            // default construc
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc) {
+_Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc, bool use_square_brackets) {
   // takes two separate formats
   // 1st : {{i11,...,i1n}{i21,...,i2n}....{in1,...,inn}} // all elements must be explicitly specified
   // 2st : {hor dim, <vert dim>,{hor index, vert index, value or formula}{...}...}
@@ -159,14 +158,17 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
   
   
   long    i=s.FirstNonSpaceIndex(),
-  j=s.FirstNonSpaceIndex(i+1),
+          j=s.FirstNonSpaceIndex(i+1),
   k=0,
   hPos = 0,
   vPos = 0;
   
+  char open_terminator  = use_square_brackets ? '[' : '{',
+       close_terminator = use_square_brackets ? ']' : '}';
+    
   bool    terminators [256] {false};
   terminators [(unsigned char)','] = true;
-  terminators [(unsigned char)'}'] = true;
+  terminators [(unsigned char)close_terminator] = true;
   
   
   try {
@@ -186,7 +188,7 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
 
     if (j>i && s.length()>4) { // non-empty string
       _String term;
-      if (s.char_at (i) == '{' && s.char_at (j) == '{') { // first type
+      if (s.char_at (i) == open_terminator && s.char_at (j) == open_terminator) { // first type
         i = j+1;
         // read the dimensions first
         
@@ -198,7 +200,7 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
           i = i2;
           cc = s.char_at (i);
           
-          if (cc=='}') {
+          if (cc==close_terminator) {
             break;
           }
           
@@ -212,7 +214,7 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
         hDim = 1;
         
         for (i = i + 1L; i<s.length()-1; i++) {
-          i = s.ExtractEnclosedExpression (i,'{','}',fExtractRespectQuote | fExtractRespectEscape);
+          i = s.ExtractEnclosedExpression (i,open_terminator,close_terminator,fExtractRespectQuote | fExtractRespectEscape);
           if (i < 0) {
             break;
           }
@@ -232,8 +234,8 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
         // scan the elements one-by-one
         
         for (i=1; i<s.length()-1; i++) {
-          if (s.char_at(i) == '{') {
-            while (s.char_at(i) != '}') {
+          if (s.char_at(i) == open_terminator) {
+            while (s.char_at(i) != close_terminator) {
               i++;
               j = s.FindTerminator (i, terminators);
               
@@ -280,7 +282,7 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
               i=j;
             }
           }
-          if (s[i]=='}') {
+          if (s[i]==close_terminator) {
             if (vPos!=vDim) {
               throw  kErrorStringBadMatrixDefinition & PrepareErrorContext (s,i-16);
             }
@@ -295,7 +297,7 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
           throw kErrorStringBadMatrixDefinition & PrepareErrorContext (s,i-16);
         }
       } else { // second type of input
-        for (i=j,j=0; s.char_at (i) !='{' && s.char_at (i) !='}' && i<s.length(); i++) {
+        for (i=j,j=0; s.char_at (i) !=open_terminator && s.char_at (i) !=close_terminator && i<s.length(); i++) {
           if (s.char_at(i)==',') { // neither hDim nore vDim have been specified
             if (j > 0) {
               break;
@@ -328,12 +330,12 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
         // read the terms now
         
         for (; i<s.length(); i++) {
-          if (s.char_at (i) =='{') {
+          if (s.char_at (i) ==open_terminator) {
             hPos = -1;
             vPos = -1;
             k    = i+1;
             
-            for (j=i+1; j<s.length () && s.char_at (j) !='}'; j++) {
+            for (j=i+1; j<s.length () && s.char_at (j) !=close_terminator; j++) {
               long j2 = s.FindTerminator (j, terminators);
               
               if (j2<0) {
@@ -3410,6 +3412,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                 quad3[4] __attribute__ ((aligned (32))),
                                 quad4[4] __attribute__ ((aligned (32))),
                                 quad5[4] __attribute__ ((aligned (32)));
+                      
 
                                 quad1 [0] = secondArg.theData[c];
                                 quad1 [1] = secondArg.theData[c + 20UL];
@@ -5765,8 +5768,7 @@ void    _Matrix::SwapRows (const long row1, const long row2) {
 }
 //______________________________________________________________
 
-void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index)
-{
+void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index) {
     long            middle          = (from+to) >> 1,
                     bottommove      = 1L,
                     topmove         = 1L;
@@ -6262,10 +6264,12 @@ HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
             _AssociativeList    * pdfArgs   = (_AssociativeList *)kind;
             _List               * keys      = pdfArgs->GetKeys();
             _String             pdfkey      ("PDF"),
-                                * arg0      = (_String *)keys->GetItem(0L);
+                                * arg0      = (_String *)pdfArgs->GetByKey(pdfkey,STRING);
             DeleteObject (keys);
-            if (arg0->Equal(pdfkey)) {
-                _String     pdf ((_String *) (pdfArgs->GetByKey(pdfkey,STRING))->toStr()),
+            
+            
+            if (arg0) {
+                _String     pdf ((_String*)arg0->toStr()),
                             arg ("ARG0");
                 
                 long        pdfCode = _HY_MatrixRandomValidPDFs.GetValueFromString (pdf);
@@ -8241,9 +8245,9 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
                     * result = nil;
 
         if (samples == 0UL) {
-            throw "Expected a numerical (>=1) value for the number of replicates";
+            throw _String ("Expected a numerical (>=1) value for the number of replicates");
         } else if ( ! eval->is_numeric() || GetVDim() != 2 || values < 2) {
-            throw "Expecting numerical Nx2 (with N>=1) matrix.";
+            throw _String ("Expecting numerical Nx2 (with N>=1) matrix.");
         } else {
             _Constant one (1.);
             sorted = (_Matrix*) eval->SortMatrixOnColumn(&one);
@@ -8259,13 +8263,17 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
                 sum += v;
             }
             if (CheckEqual (sum, 0.)) {
-                throw "The probabilities (second column) cannot add to 0 or be negative";
+                throw _String ("The probabilities (second column) cannot add to 0 or be negative");
             } else {
                 sum = 1./sum;
 
                 _Matrix     *raw_result  = new _Matrix (1, values, false, true),
                 *normalized  = new _Matrix (1, values, false, true);
 
+                reference_manager <raw_result;
+                reference_manager <normalized;
+
+                
                 for (long v = 0; v < values; v++) {
                     normalized->theData[values-1-v] = sorted->theData[1+2*v] * sum;
                 }
@@ -8285,9 +8293,8 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
                     result->theData[2*v+1] = raw_result->theData[v];
                 }
 
-                DeleteObject (raw_result);
-                DeleteObject (sorted);
-                sorted = normalized;
+                
+                return result;
             }
         }
     }

@@ -134,7 +134,7 @@ public:
 
     _Matrix ();                                 // default constructor, doesn't do much
 
-    _Matrix (_String const&, bool, _FormulaParsingContext&);
+    _Matrix (_String const&, bool, _FormulaParsingContext&, bool use_square_brackets = false);
     // matrix from a string of the form
     // {{i11,i12,...}{i21,i22,..}{in1,in2..)})
     // or {# rows,<# cols>{i1,j1,expr}{i2,j2,expr}..}
@@ -598,6 +598,7 @@ public:
 
     static void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse = false, bool allocateStorage = false, bool isFla = false);
 
+    void        RecursiveIndexSort      (long, long, _SimpleList*);
 
 
 
@@ -661,7 +662,6 @@ private:
 
 
     void        BreakPoints             (long, long, _SimpleList*);
-    void        RecursiveIndexSort      (long, long, _SimpleList*);
     void        ConvertFormulas2Poly    (bool force2numbers=true);
     void        ConvertNumbers2Poly     (void);
     void        AgreeObjects            (_Matrix&);

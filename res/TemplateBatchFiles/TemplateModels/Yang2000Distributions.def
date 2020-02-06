@@ -40,7 +40,7 @@ function SetWDistribution (resp)
 				P2:<1;
 				global W1 = .25;
 				global R_1 = .5;
-				global R_2 = 3;
+				global R_2 = 5;
 				R_1:<1;
 				R_2:>1;
 				categFreqMatrix = {{P1,(1-P1)*P2, (1-P1)*(1-P2)}} ;

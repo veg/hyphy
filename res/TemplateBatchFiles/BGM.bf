@@ -60,10 +60,10 @@ selection.io.startTimer (bgm.json [terms.json.timers], "Overall", 0);
 bgm.data_types = {terms.nucleotide  : "Nucleotide multiple sequence alignment",
                  terms.amino_acid   : "Protein multiple sequence alignment",
                  terms.codon        : "Codon multiple sequence alignment"};
-KeywordArgument ("run_type", "nucleotide, amino-acid or codon", "codon");
-bgm.run_type = io.SelectAnOption (bgm.data_types, "Data type");
+KeywordArgument ("type", "nucleotide, amino-acid or codon", "codon");
+bgm.type = io.SelectAnOption (bgm.data_types, "Data type");
 
-SetDialogPrompt ("Specify a `bgm.run_type` multiple sequence alignment file");
+SetDialogPrompt ("Specify a `bgm.type` multiple sequence alignment file");
 
 bgm.fit_options = {terms.run_options.retain_lf_object : TRUE};
 bgm.reporting_thershold = 0.5;
@@ -74,28 +74,33 @@ bgm.run_settings = {
     "samples" : 100,
     "max-parents" : 1,
     "min-subs" : 1,
-    "data-type" : bgm.run_type,
+    "data-type" : bgm.type,
     "threshold" : bgm.reporting_thershold
 };
 
 KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
-KeywordArgument ("branches",  "Branches to test", "All");
+
+
 
 if (bgm.run_type == "nucleotide") {
+   KeywordArgument ("branches",  "Branches to test", "All");
    bgm.alignment_info = alignments.ReadNucleotideDataSet ("bgm.dataset", None);
    bgm.baseline_model = "models.DNA.GTR.ModelDescription";
 } else {
-    if (bgm.run_type == "amino-acid") {
+    if (bgm.type == "amino-acid") {
         bgm.alignment_info = alignments.ReadProteinDataSet ("bgm.dataset", None);
         LoadFunctionLibrary     ("libv3/models/protein.bf");
         LoadFunctionLibrary     ("libv3/models/protein/empirical.bf");
         LoadFunctionLibrary     ("libv3/models/protein/REV.bf");
         utility.Extend (models.protein.empirical_models, {"GTR" : "General time reversible model (189 estimated parameters)."});
-        bgm.run_settings ["model"]         = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
-        bgm.baseline_model          = (utility.Extend (models.protein.empirical.plusF_generators , {"GTR" : "models.protein.REV.ModelDescription"}))[bgm.run_settings ["model"]];
+        KeywordArgument ("baseline_model", "Which amino acid substitution model should be used", "LG");
+        bgm.run_settings ["model"] = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
+        bgm.baseline_model = (utility.Extend (models.protein.empirical.plusF_generators , {"GTR" : "models.protein.REV.ModelDescription"}))[bgm.run_settings ["model"]];
+        KeywordArgument ("branches",  "Branches to test", "All");
     } else { // codon
+        KeywordArgument ("branches",  "Branches to test", "All");
         bgm.alignment_info = alignments.PromptForGeneticCodeAndAlignment("bgm.dataset","bgm.codon.filter");
         LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
         bgm.baseline_model = "models.codon.MG_REV.ModelDescription";
@@ -112,7 +117,7 @@ bgm.name_mapping = bgm.alignment_info[utility.getGlobalValue("terms.data.name_ma
 selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.json.file, bgm.alignment_info [terms.data.file]);
 selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.json.sequences, bgm.alignment_info [terms.data.sequences]);
 selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.json.sites, bgm.alignment_info [terms.data.sites]);
-selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.data_type, bgm.run_type);
+selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.data_type, bgm.type);
 
 bgm.alignment_info[terms.json.json] = bgm.alignment_info[terms.data.file] + ".BGM.json";
 
@@ -133,7 +138,7 @@ bgm.filter_specification = alignments.DefineFiltersForPartitions (bgm.partitions
 bgm.store_tree_information();
 
 io.ReportProgressMessageMD ("BGM", "Data", "Loaded **" +
-                            bgm.alignment_info [terms.data.sequences] + "** `bgm.run_type` sequences, **" +
+                            bgm.alignment_info [terms.data.sequences] + "** `bgm.type` sequences, **" +
                             bgm.alignment_info [terms.data.sites] + "** sites, from \`" + bgm.alignment_info [terms.data.file] + "\`");
 
 bgm.initial_values = parameters.helper.tree_lengths_to_initial_values (bgm.trees, None);
@@ -165,7 +170,7 @@ selection.io.startTimer (bgm.json [terms.json.timers], "Baseline fit", 1);
 
 io.ReportProgressMessageMD("bgm", "phylo", "Performing initial model fit to obtain branch lengths and rate parameters");
 
-if (bgm.run_type == "nucleotide") {
+if (bgm.type == "nucleotide") {
    bgm.initial_values = utility.Extend (bgm.initial_values,
                                   {
                                     utility.getGlobalValue ("terms.global") : {
@@ -177,7 +182,7 @@ if (bgm.run_type == "nucleotide") {
                                  });
 
  } else {
-    if (bgm.run_type == "codon") {
+    if (bgm.type == "codon") {
         bgm.initial_values = utility.Extend (bgm.initial_values,
                                   {
                                     utility.getGlobalValue ("terms.global") : {
@@ -206,7 +211,7 @@ if (bgm.run_type == "nucleotide") {
     }
  }
 
-if (bgm.run_type == "codon") {
+if (bgm.type == "codon") {
     //codon_data, tree, generator, genetic_code, option, initial_values
     bgm.baseline_fit = estimators.FitCodonModel(
                                                      bgm.filter_names,
@@ -259,7 +264,7 @@ bgm.ancestral_cache = ancestral.build (bgm.baseline_fit[terms.likelihood_functio
 bgm.branch_filter = utility.Filter (bgm.selected_branches[0], "_class_", "_class_ == terms.tree_attributes.test");
 DeleteObject (^bgm.baseline_fit[terms.likelihood_function]);
 
-if (bgm.run_type != "codon") {
+if (bgm.type != "codon") {
    bgm.counts = ancestral.ComputeSubstitutionCounts(
         bgm.ancestral_cache,
         bgm.branch_filter,  // selected branches
