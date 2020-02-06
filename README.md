@@ -97,13 +97,13 @@ To test HyPhy, build with the  GTEST target and run ./HYPHYGTEST from the source
 
 By default, HyPhy installs into `/usr/local` but it can be installed on any location of your system by providing an installation prefix
 
-`cmake -DINSTALL_PREFIX=/location/of/choice`
+`cmake -DCMAKE_INSTALL_PREFIX:PATH=/location/of/choice`
 
 For example, this configuration will install hyphy at /opt/hyphy
 
 `mkdir -p /opt/hyphy`
 
-`cmake -DINSTALL_PREFIX=/opt/hyphy .`
+`cmake -DCMAKE_INSTALL_PREFIX:PATH=/opt/hyphy .`
 
 #### Building Documentation
 
