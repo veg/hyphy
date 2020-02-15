@@ -65,8 +65,7 @@ _Operation::_Operation  (void) {
  }
 
 //__________________________________________________________________________________
-void    _Operation::Initialize(bool)
-{
+void    _Operation::Initialize(bool) {
     numberOfTerms = 0;
     theData = -1;
     theNumber = nil;
@@ -93,6 +92,7 @@ _Operation::_Operation (_Operation const& rhs) {
 }
 
 
+
 //__________________________________________________________________________________
 void    _Operation::Duplicate(BaseRefConst r) {
     _Operation const * o = (_Operation const*)r;
@@ -103,6 +103,11 @@ void    _Operation::Duplicate(BaseRefConst r) {
     if (theNumber) {
         theNumber->AddAReference();
     }
+}
+
+//__________________________________________________________________________________
+void    _Operation::operator = (_Operation const & rhs) {
+    Duplicate (&rhs);
 }
 
 

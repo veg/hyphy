@@ -60,12 +60,14 @@ class _AVLList: public BaseObj {
 
         //Methods
         _AVLList(_SimpleList*);
+        _AVLList (_AVLList const &src);
 
         virtual ~_AVLList(void){}
         virtual void Clear(bool = false);
         virtual bool HasData(long);
         virtual BaseRef makeDynamic (void) const;
         virtual void Duplicate (BaseRefConst);
+        void operator = (_AVLList const& rhs);
 
         virtual void ReorderList(_SimpleList* = nil);
         virtual long InsertData(BaseRef, long, bool);

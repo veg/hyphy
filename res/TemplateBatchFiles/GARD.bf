@@ -589,13 +589,16 @@ lfunction gard.validatePartititon (definition, minSize, totalSites) {
     bpCount = utility.Array1D (definition);
     for (i = 0; i < bpCount; i+=1) {
         if (definition[i] - lastBP + 1 < minSize) {
+            //console.log ("FAIL");
             return FALSE;
         }
         lastBP = definition[i];
     }
     if (totalSites - lastBP < minSize) {
+        //console.log ("FAIL");
         return FALSE;
     }
+    //console.log ("PASS");
     return TRUE;
 }
 

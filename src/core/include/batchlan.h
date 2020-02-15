@@ -170,7 +170,7 @@ public:
     /** Advance program counter */
     void      advance (void) {currentCommand ++;}
     
-    bool      is_compiled (long idx = -1) const {if (cli) if (idx < 0L) return true; else return cli->is_compiled[idx]; return false;}
+    bool      is_compiled (long idx = -1) const {if (cli) {if (idx < 0L) return true; else return cli->is_compiled[idx];} return false;}
     
     void      CopyCLIToVariables (void);
   

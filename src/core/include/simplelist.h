@@ -296,7 +296,7 @@ class _SimpleList:public BaseObj {
          * @param index Which item you want.
          * @return A long
          */
-        inline const long get (long index) const {return list_data [index];}
+        inline long get (long index) const {return list_data [index];}
 
         /**
         * Checks if list is identical to other list
