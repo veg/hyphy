@@ -698,7 +698,7 @@ extern  long  ANALYTIC_COMPUTATION_FLAG;
 
 
 #ifdef  _SLKP_USE_AVX_INTRINSICS
-    inline const double _avx_sum_4 (__m256d const & x) {
+    inline double _avx_sum_4 (__m256d const & x) {
       /*__m256d t = _mm256_add_pd (_mm256_shuffle_pd (x, x, 0x0),
                                  // (x3,x3,x1,x1)
                                  _mm256_shuffle_pd (x, x, 0xf)

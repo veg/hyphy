@@ -2761,8 +2761,20 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         
         j = nonConstantIndices.get(j);
         
-        _TerminateAndDump(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
-                          & (*cornholio->GetName()) & ":=" & _String((_String*)cornholio->GetFormulaString(kFormulaStringConversionSubstiteValues)) & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".");
+        _StringBuffer err_report ("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:");
+        
+        err_report << (*cornholio->GetName());
+        err_report << ":=";
+        err_report << _String((_String*)cornholio->GetFormulaString(kFormulaStringConversionSubstiteValues));
+        err_report << " must be in [";
+        err_report << lowerBounds[j];
+        err_report << ",";
+        err_report << upperBounds[j];
+        err_report << "]. Current value = ";
+        err_report << currentValues[j];
+        err_report << ".";
+        
+        _TerminateAndDump(err_report);
         
         
     }
@@ -4800,8 +4812,7 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_te
     _String err ("Internal error ");
   
     if (out) {
-      ObjectToConsole(this->parameterValuesAndRanges);
-      this->CleanupParameterMapping();
+      //this->CleanupParameterMapping();
       this->DoneComputing();
       _StringBuffer          sLF (8192L);
       SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);

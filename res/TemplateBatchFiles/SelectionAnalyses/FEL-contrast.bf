@@ -581,7 +581,7 @@ lfunction fel.select_branches(partition_info) {
     for (k = 0; k < branch_set_count; k+=1) {
         tag_test = selectTheseForTesting [testSet[k]][0];
         if (tag_test == "Unlabeled branches") {
-            tag_test = "";
+            tag_test = "_unlabeled_";
         }
         test_sets[tag_test] = TRUE;
     }

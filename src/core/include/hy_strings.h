@@ -359,7 +359,7 @@ public:
    *  Revision history
    - SLKP 20170517 reviewed while porting from v3 branch
    */
-  virtual const char get_char(long index) const {
+  virtual char get_char(long index) const {
     if (index >= 0L && index < s_length) {
       return s_data[index];
     }
@@ -376,7 +376,7 @@ public:
    *  Revision history
    - SLKP 20170616 initial implementation
    */
-  inline const char char_at(unsigned long idx) const { return s_data[idx]; }
+  inline char char_at(unsigned long idx) const { return s_data[idx]; }
 
   /** The sole purpose of this function is to allow warning-free compilation of
    calls like array [string.getUChar (i)], otherwise you'd get warnings about
@@ -385,7 +385,7 @@ public:
    *  Revision history
    - SLKP 20170517 reviewed while porting from v3 branch
    */
-  inline const unsigned char get_uchar(long i) const {
+  inline unsigned char get_uchar(long i) const {
     return (unsigned char)s_data[i];
   }
 
