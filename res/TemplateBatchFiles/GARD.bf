@@ -351,7 +351,7 @@ namespace gard {
     maxFailedAttemptsToMakeNewModel = 7;
     cAIC_diversityThreshold = 0.001;
     cAIC_improvementThreshold = 0.01; // I think this was basically 0 in the gard paper
-    maxGenerationsAllowedWithNoNewModelsAdded = 10; // TODO: Not in the GARD paper. use 10?
+    maxGenerationsAllowedWithNoNewModelsAdded = 5; // TODO: Not in the GARD paper. use 10?
     maxGenerationsAllowedAtStagnant_cAIC = 100; // TODO: this is set to 100 in the GARD paper
 
     // GA.2: Loop over increasing number of break points
@@ -370,6 +370,7 @@ namespace gard {
         while(terminationCondition == FALSE) {
             // GA.2.b.1 Produce the next generation of models with recombination.
             childModels = gard.GA.recombineModels(parentModels, populationSize);
+            //console.log ("\n" + Abs (childModels));
 
             // GA.2.b.2 Select the fittest models.
             interGenerationalModels = parentModels;
@@ -413,11 +414,11 @@ namespace gard {
             generation += 1;
 
             if (bestOverall_cAIC_soFar-currentBest_cAIC > 0) {
-                 io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + "]"
+                 io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + ", " + Format (generationsAtCurrentBest_cAIC/ maxGenerationsAllowedAtStagnant_cAIC*100, 4, 0) +"% converged]"
                                         + ". Min (c-AIC) = " + Format (currentBest_cAIC, 12,4) + " [ delta = " + Format (bestOverall_cAIC_soFar-currentBest_cAIC, 8, 2) + "], breakpoints at " + Join (", ", currentBest_model));
 
             } else {
-                io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + "]"
+                io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + ", " + Format (generationsAtCurrentBest_cAIC/ maxGenerationsAllowedAtStagnant_cAIC*100, 4, 0) +"% converged]"
                                         + ". Min (c-AIC) = " + Format (currentBest_cAIC, 12,4) + " [no improvement], breakpoints at " + Join (", ", bestOverallModelSoFar));
             }
         }

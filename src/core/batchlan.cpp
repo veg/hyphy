@@ -1232,7 +1232,7 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned
             
             
             if (def_value) {
-                help_message << "\tdefaut value: " << simplify_string(def_value) << '\n';
+                help_message << "\tdefault value: " << simplify_string(def_value) << '\n';
             }
              if (applies_to) {
                 help_message << "\tapplies to: " << simplify_string(applies_to) << '\n';
