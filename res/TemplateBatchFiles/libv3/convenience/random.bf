@@ -417,9 +417,5 @@ lfunction random.dirichlet (alpha) {
 }
 
 lfunction random.TRUE_or_FALSE () {
-    if (Random(0,1) < 0.5){
-        return TRUE;
-    } else {
-        return FALSE;
-    }
+    return Random(0,1) < 0.5;
 }
