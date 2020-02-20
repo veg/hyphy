@@ -367,6 +367,7 @@ namespace gard {
         // GA.2.b Loop over increasing generations for particular number of break points
         terminationCondition = FALSE;
         generation = 0;
+        previousBest_cAIC = ^"math.Infinity";
         while(terminationCondition == FALSE) {
             // GA.2.b.1 Produce the next generation of models with recombination.
             childModels = gard.GA.recombineModels(parentModels, populationSize);
