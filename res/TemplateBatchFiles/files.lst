@@ -9,7 +9,7 @@
 "FADE","[FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).","SelectionAnalyses/FADE.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
-"Contrast-FEL","Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/FEL-contrast.bf";
+"Contrast-FEL","[Contrast-FEL] Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/contrast-fel.bf";
 
 "","Evolutionary rates on non-coding data.","!Relative evolutionary rate inference";
 "LEISR","Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";
