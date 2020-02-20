@@ -700,7 +700,7 @@ void _DataSet::MatchIndices(_Formula &f, _SimpleList &receptacle, bool isVert,
       receptacle << i;
     }
   }
-  v->SetValue(new _Constant(0.0), nil);
+  v->SetValue(new _Constant(0.0), false);
 }
 
 //_________________________________________________________
