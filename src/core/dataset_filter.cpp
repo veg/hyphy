@@ -873,16 +873,16 @@ char _DataSetFilter::direct_index_character (unsigned long site, unsigned long s
   return (((_String**)theData->list_data)[theData->theMap.list_data[theMap.list_data[site]]])->char_at(sequence);
 }
 
-  //_______________________________________________________________________
-
+//_______________________________________________________________________
+ 
 bool     _DataSetFilter::CompareTwoSites (unsigned long site1, unsigned long site2, unsigned long pos1) const {
   pos1 = theNodeMap.list_data[pos1];
   
-  
   switch (unitLength) {
+          
     case 3: { // codon
-      site1*=3;
-      site2*=3;
+      site1 = (site1 << 1) + site1;
+      site2 = (site2 << 1) + site2;
       return direct_index_character (site1, pos1)     == direct_index_character (site2,     pos1) &&
       direct_index_character (site1 + 1, pos1) == direct_index_character (site2 + 1, pos1) &&
       direct_index_character (site1 + 2, pos1) == direct_index_character (site2 + 2, pos1);
@@ -893,15 +893,15 @@ bool     _DataSetFilter::CompareTwoSites (unsigned long site1, unsigned long sit
     }
       
     case 2: { // di-nucs
-      site1*=2;
-      site2*=2;
+      site1 = site1 << 1;
+      site2 = site1 << 1;
       return direct_index_character (site1, pos1)     == direct_index_character (site2,     pos1) &&
       direct_index_character (site1 + 1, pos1) == direct_index_character (site2 + 1, pos1);
     }
       
       
     default: {
-      site1*=unitLength;
+      site1*=unitLength;    
       site2*=unitLength;
       
       

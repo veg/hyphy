@@ -1130,9 +1130,17 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 mergeMAccessLevel << level;
             } else {
                 if (levelData->lLength == 0 && f->IsEmpty()) {
-                   return HandleFormulaParsingError ("[..] must be preceded by an object to index ", parsingContext.errMsg(), s, i);
+                   // try JSON style matrix definition
+                   int     j       = s.ExtractEnclosedExpression (i,'[',']',fExtractRespectQuote | fExtractRespectEscape);
+                   _String matrixDef   (s,i,j);
+                   if (matrixDef.length() >= 2UL) {
+                       levelData->AppendNewInstance (new _Operation ( new _Matrix (matrixDef,false,parsingContext, true)));
+                       i = j;
+                       continue;
+                   } else {
+                       return HandleFormulaParsingError ("[..] must be preceded by an object to index ", parsingContext.errMsg(), s, i);
+                   }
                 }
-
                 if (levelData->lLength) {
                     //f->theFormula.AppendNewInstance((*levelData)[levelData->lLength-1]);
                     f->PushTerm(levelData->GetItem(levelData->lLength-1));

@@ -262,7 +262,6 @@ function sm.label_with_p_values (node) {
 }
 
 sm.json_path = sm.tree[terms.data.file] + ".json";
-io.ReportProgressMessageMD('SM',  'file', 'Saving detailed report as a JSON file to \`' + sm.json_path + '\`');
 
 sm.json = {
     'partitions' : sm.partitions_with_labels,
@@ -293,34 +292,14 @@ sm.json = {
 
 io.SpoolJSON (sm.json, sm.json_path);
 
-/*#profile _hyphy_profile_dump;
 
-
-
-stats  			= _hyphy_profile_dump["STATS"];
-_profile_summer = ({1,Rows(stats)}["1"]) * stats;
-_instructions   = _hyphy_profile_dump["INSTRUCTION"];
-_indices	    = _hyphy_profile_dump["INSTRUCTION INDEX"];
-
-fprintf (stdout, "\nTotal run time (seconds)      : ", Format(_profile_summer[1],15,6),
-                 "\nTotal number of steps         : ", Format(_profile_summer[0],15,0), "\n\n");
-
-to_sort        =  stats["-_MATRIX_ELEMENT_VALUE_*_MATRIX_ELEMENT_COLUMN_+(_MATRIX_ELEMENT_COLUMN_==0)*_MATRIX_ELEMENT_ROW_"] % 1;
-
-for (k=0; k<Columns(_instructions); k=k+1)
-{
-    k2 = to_sort[k][0];
-    fprintf (stdout, Format (_indices[k2],6,0), " : ", _instructions[k2], "\n\tCall count: ", stats[k2][0],
-                                                   "\n\tTime (seconds): ", stats[k2][1], "\n");
-}
-*/
 
 sm.json_file = sm.tree[terms.data.file] + "_SM.json";
 
 KeywordArgument ("output", "Write the JSON file here (default is to save to the same path as the tree file + '_SM.json')", sm.json_file);
 sm.json_file = io.PromptUserForFilePath ("Save the resulting JSON file to");
-
 io.SpoolJSON (sm.json, sm.json_file);
+io.ReportProgressMessageMD('SM',  'file', 'Saving detailed report as a JSON file to \`' + sm.json_file + '\`');
 
 return sm.json;
 

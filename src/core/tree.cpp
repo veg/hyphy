@@ -2604,32 +2604,37 @@ void    _TheTree::MarkDone (void) {
 
 //_______________________________________________________________________________________________
 
-long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firstIndex, long secondIndex) const {
+long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firstIndex, long secondIndex, const _SimpleList* child_count) const {
 
     const char *pastState = dsf->GetColumn(firstIndex),
                *thisState = dsf->GetColumn(secondIndex);
 
 
-    _SimpleList markedNodes (flatTree.lLength, 0, 0);
+    bool * marked_nodes = (bool*) alloca (sizeof(bool) * flatTree.lLength);
+    InitializeArray(marked_nodes, flatTree.lLength, false);
     
     flatLeaves.Each ([&] (long node, unsigned long node_index) -> void {
         long f = dsf->theNodeMap.list_data[node_index];
         if (thisState[f] != pastState[f]) {
-            markedNodes [flatParents.get(node_index)] = 1L;
+            marked_nodes [flatParents.get(node_index)] = true;
         }
     });
 
     long theCost = 0L,
-            offset = flatLeaves.countitems();
+         offset = flatLeaves.countitems();
     
 
     for (long i=0; i<flatTree.lLength; i++) {
-        if (markedNodes.get(i)) {
+        if (marked_nodes[i]) {
             long myParent = flatParents.get (i + offset);
             if (myParent >= 0) {
-                markedNodes [myParent] = 1;
+                marked_nodes [myParent] = true;
             }
-            theCost += ((node <long>*)(flatNodes.list_data[i]))->get_num_nodes();
+            if (child_count) {
+                theCost += child_count->get (i);
+            } else {
+                theCost += ((node <long>*)(flatNodes.list_data[i]))->get_num_nodes();
+            }
         }
     }
 
@@ -2653,23 +2658,24 @@ long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstInd
 
     long        filterL = dsf->GetPatternCount();
 
-    _SimpleList     markedNodes (flatTree.lLength,0,0);
+    
+    
+    bool * marked_nodes = (bool*) alloca (sizeof(bool) * flatTree.lLength);
+    InitializeArray(marked_nodes, flatTree.lLength, false);
 
-    for (long leafID = 0; leafID<flatLeaves.lLength; leafID++)
-        if (!dsf->CompareTwoSites(firstIndex,secondIndex,leafID)) {
-            markedNodes.list_data [flatParents.list_data[leafID]] = 1;
-        }
-
-    // now compute the cost
-
+    
+    dsf->CompareTwoSitesCallback (firstIndex, secondIndex, [marked_nodes, this] (long idx, unsigned long di)->void{
+        marked_nodes [this->flatParents.list_data[di]] = true;
+    });
+    
     long theCost = 0;
 
 
     for (long i=0; i<flatTree.lLength; i++) {
-        if (markedNodes.list_data[i]) {
+        if (marked_nodes[i]) {
             long myParent    =  flatParents.list_data[flatLeaves.lLength + i];
             if (myParent >= 0) {
-                markedNodes.list_data[myParent] = 1;
+                marked_nodes[myParent] = true;
             }
             theCost         += ((node <long>*)(flatNodes.list_data[i]))->get_num_nodes();
         } else if (traversalTags && orderIndex) {

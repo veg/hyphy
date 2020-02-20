@@ -11,7 +11,7 @@
    - Two previous tests combined
 */
 
-RequireVersion ("0.99.20061001");
+RequireVersion ("2.0");
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------*/
 
@@ -477,6 +477,9 @@ sop = Max(OPTIMIZATION_PRECISION,0.001);
 fprintf (stdout, "Running simpler distribution approximations to ensure good convergence...\n");
 
 OPTIMIZATION_PRECISION = 0.1;
+
+VERBOSITY_LEVEL = 101;
+
 
 P_1_1 := 0;P_1_2 := 0;P_1_3 := 0;
 P_2_1 := 0;P_2_2 := 0;P_2_3 := 0;

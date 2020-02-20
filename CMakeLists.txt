@@ -417,10 +417,10 @@ if(${MPI_FOUND})
         HYPHYMPI
         PROPERTIES
         if(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g "
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} "
             LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g "
         else(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} -g "
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} "
             LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
         endif(${OPENMP_FOUND})
     )
@@ -448,11 +448,11 @@ set_target_properties(
     HYPHY-PROFILE
     PROPERTIES
     if(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-instr-generate -fcoverage-mapping "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-instr-generate "
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate "
     else(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}-g -fprofile-instr-generate -fcoverage-mapping "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -fprofile-instr-generate "
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}-g -fprofile-generate "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -fprofile-generate "
     endif(${OPENMP_FOUND})
 )
 

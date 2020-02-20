@@ -367,7 +367,7 @@ TEST_F(AVLListTest,toStrTest){
     }
 
     _String* return_str = (_String*)al.toStr();
-    EXPECT_STREQ("(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", return_str->getStr());
+    EXPECT_STREQ("(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)", return_str->get_str());
 }
 
 TEST_F(AVLListTest,RetrieveTest) {
@@ -562,7 +562,7 @@ TEST_F(AVLListXTest,PopulateFromListTest){
     
     alx.PopulateFromList(result_list);
     _String* return_str = (_String*)alx.dataList->list_data[2];
-    EXPECT_STREQ("hyphy", return_str->getStr());
+    EXPECT_STREQ("hyphy", return_str->get_str());
 }
 
 
@@ -602,7 +602,7 @@ TEST_F(AVLListXLTest,SetAndGetXtraTest){
     alxl.SetXtra(0,(BaseRef)xtra_str, false);
 
     _String* x = (_String*)alxl.GetXtra((long)0);
-    EXPECT_STREQ("xtra",x->getStr());
+    EXPECT_STREQ("xtra",x->get_str());
 
 }
 

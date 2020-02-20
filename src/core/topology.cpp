@@ -2442,6 +2442,10 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
               },
         false);
           
+        if (!ith_internal_node) {
+          ith_internal_node = theRoot;
+        }
+          
         if (ith_internal_node) {
             if (get_subtree) {
               hyTopologyBranchLengthMode  mapMode  = kTopologyBranchLengthNone;

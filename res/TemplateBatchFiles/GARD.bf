@@ -104,7 +104,7 @@ if (gard.dataType == terms.gard.nucleotide) {
     gard.model.generator = "models.DNA.GTR.ModelDescription";
     gard.alignment = alignments.ReadNucleotideDataSet ("gard.sequences", null);
     DataSetFilter gard.filter = CreateFilter (gard.sequences, 1);
-    
+
 } else {
     // TODO: implement these branches
     if (gard.dataType == terms.gard.protein) {
@@ -351,7 +351,7 @@ namespace gard {
     maxFailedAttemptsToMakeNewModel = 7;
     cAIC_diversityThreshold = 0.001;
     cAIC_improvementThreshold = 0.01; // I think this was basically 0 in the gard paper
-    maxGenerationsAllowedWithNoNewModelsAdded = 10; // TODO: Not in the GARD paper. use 10?
+    maxGenerationsAllowedWithNoNewModelsAdded = 5; // TODO: Not in the GARD paper. use 10?
     maxGenerationsAllowedAtStagnant_cAIC = 100; // TODO: this is set to 100 in the GARD paper
 
     // GA.2: Loop over increasing number of break points
@@ -367,15 +367,23 @@ namespace gard {
         // GA.2.b Loop over increasing generations for particular number of break points
         terminationCondition = FALSE;
         generation = 0;
+        previousBest_cAIC = ^"math.Infinity";
         while(terminationCondition == FALSE) {
             // GA.2.b.1 Produce the next generation of models with recombination.
             childModels = gard.GA.recombineModels(parentModels, populationSize);
+            //console.log ("\n" + Abs (childModels));
 
             // GA.2.b.2 Select the fittest models.
+            //console.log ("\n\nPARENT MODELS");
+            //console.log (parentModels);
             interGenerationalModels = parentModels;
             interGenerationalModels * childModels;
             gard.GA.evaluateModels(interGenerationalModels);
+            //console.log ("interGenerationalModels MODELS");
+            //console.log (interGenerationalModels);
             selectedModels = gard.GA.selectModels(interGenerationalModels, populationSize);
+            //console.log ("SELECTED MODELS");
+            //console.log (selectedModels);
 
             // GA.2.b.3 Evaluate convergence for this modelSet initialization
             // If converged, produce a new parent modelSet (keeping the current fitest)
@@ -384,10 +392,19 @@ namespace gard {
             } else {
                 generationsNoNewModelsAdded = 0;
             }
+
+            currentBest_individual = Min(interGenerationalModels,1);
+            currentBest_cAIC  = currentBest_individual["value"];
+            currentBest_model = Eval(currentBest_individual["key"]);
+
             if ( (math.minNormalizedRange(selectedModels) < cAIC_diversityThreshold) || (generationsNoNewModelsAdded > maxGenerationsAllowedWithNoNewModelsAdded) ) {
-                parentModels = gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, numberOfPotentialBreakPoints, mutationRate, rateOfMutationsTharAreSmallShifts);
+                //console.log ("UPDATING PARENT MODELS");
+
+                parentModels = gard.GA.generateNewGenerationOfModelsByMutatingModelSet(selectedModels, numberOfPotentialBreakPoints, mutationRate, rateOfMutationsTharAreSmallShifts);
                 if (Abs(parentModels) == 1) {
-                    parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize, numberOfPotentialBreakPoints);
+                    //console.log ("REINIT PARENT MODELS");
+                    parentModels = gard.GA.initializeModels(numberOfBreakPointsBeingEvaluated, populationSize - 1, numberOfPotentialBreakPoints, bestOverallModelSoFar);
+                    parentModels [currentBest_model] = currentBest_cAIC;
                 }
                 differenceThreshold = numberOfBreakPointsBeingEvaluated / 4;
             } else {
@@ -396,9 +413,6 @@ namespace gard {
 
             // GA.2.b.4 Evaluate convergence for this number of break points
             // If converged, move on to n+1 break points or end analysis
-            currentBest_individual = Min(interGenerationalModels,1);
-            currentBest_cAIC  = currentBest_individual["value"];
-            currentBest_model = Eval(currentBest_individual["key"]);
 
             if (previousBest_cAIC - currentBest_cAIC < cAIC_improvementThreshold) {
                 generationsAtCurrentBest_cAIC += 1;
@@ -408,16 +422,24 @@ namespace gard {
             } else {
                 generationsAtCurrentBest_cAIC = 0;
             }
+
+            //console.log ("END OF LOOP");
+            //console.log (parentModels);
+
+            if (previousBest_cAIC > 0 && previousBest_cAIC < currentBest_cAIC) {
+                io.CheckAssertion("gard.previousBest_cAIC >= gard.currentBest_cAIC", "Internal error in GARD -- c-AIC INCREASED between two consecutive generations");
+            }
             previousBest_cAIC = currentBest_cAIC;
+
 
             generation += 1;
 
             if (bestOverall_cAIC_soFar-currentBest_cAIC > 0) {
-                 io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + "]"
+                 io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + ", " + Format (generationsAtCurrentBest_cAIC/ maxGenerationsAllowedAtStagnant_cAIC*100, 4, 0) +"% converged]"
                                         + ". Min (c-AIC) = " + Format (currentBest_cAIC, 12,4) + " [ delta = " + Format (bestOverall_cAIC_soFar-currentBest_cAIC, 8, 2) + "], breakpoints at " + Join (", ", currentBest_model));
 
             } else {
-                io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + "]"
+                io.ReportProgressBar ("GARD", Format (numberOfBreakPointsBeingEvaluated,3,0) + ' breakpoints [ generation ' +  Format (generation, 6, 0) + ", total models " + Format (Abs (masterList), 8, 0) + ", " + Format (generationsAtCurrentBest_cAIC/ maxGenerationsAllowedAtStagnant_cAIC*100, 4, 0) +"% converged]"
                                         + ". Min (c-AIC) = " + Format (currentBest_cAIC, 12,4) + " [no improvement], breakpoints at " + Join (", ", bestOverallModelSoFar));
             }
         }
@@ -589,13 +611,16 @@ lfunction gard.validatePartititon (definition, minSize, totalSites) {
     bpCount = utility.Array1D (definition);
     for (i = 0; i < bpCount; i+=1) {
         if (definition[i] - lastBP + 1 < minSize) {
+            //console.log ("FAIL");
             return FALSE;
         }
         lastBP = definition[i];
     }
     if (totalSites - lastBP < minSize) {
+        //console.log ("FAIL");
         return FALSE;
     }
+    //console.log ("PASS");
     return TRUE;
 }
 
@@ -848,17 +873,21 @@ function gard.GA.storeMultiBreakPointModelResults(node, result, arguments) {
  * @returns a {Matrix} selectedModels
  */
 lfunction gard.GA.selectModels (evaluatedModels, numberOfModelsToKeep) {
+/**
+    evaluatedModels: model -> score
+*/
+    // sort model scores
+    N = utility.Array1D (evaluatedModels);
+    idx2score = {};
     modelIds = utility.Keys(evaluatedModels);
-    cAIC_scores = utility.Values(evaluatedModels);
-
-
+    for (i = 0; i < N; i+=1) {
+        idx2score[i] = evaluatedModels[modelIds[i]];
+    }
+    idx2score = utility.DictToSortedArray (idx2score);
     selectedModels = {};
+    numberOfModelsToKeep = Min (numberOfModelsToKeep, N);
     for(i=0; i<numberOfModelsToKeep; i+=1) {
-        lowest_cAIC_index = Min(cAIC_scores,1)[1];
-        selectedModelId = modelIds[lowest_cAIC_index];
-        selectedModels[selectedModelId] = cAIC_scores[lowest_cAIC_index];
-
-        cAIC_scores[lowest_cAIC_index] = ^"math.Infinity";
+        selectedModels[modelIds[idx2score[i][1]]] = idx2score[i][0];
     }
     return selectedModels;
 }
@@ -944,11 +973,16 @@ lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, 
     }
 
     // Add the most fit model from the previous set
-    cAIC_scores = utility.Values(parentModels);
-    lowest_cAIC_index = Min(cAIC_scores,1)[1];
-    selectedModelId = modelIds[lowest_cAIC_index];
-    nextGenOfModels[selectedModelId] = cAIC_scores[lowest_cAIC_index];
 
+    //console.log ("STORING CURRENT BEST INDIVIDUAL");
+    cAIC_scores = utility.Values(parentModels);
+    //console.log (parentModels);
+    lowest_cAIC_index = Min(cAIC_scores,1)[1];
+    //console.log (Min(cAIC_scores,1)[1]);
+    selectedModelId = modelIds[lowest_cAIC_index];
+    //console.log (selectedModelId);
+    nextGenOfModels[selectedModelId] = cAIC_scores[lowest_cAIC_index];
+    //console.log (nextGenOfModels[selectedModelId]);
     return nextGenOfModels;
 }
 

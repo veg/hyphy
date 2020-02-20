@@ -37,7 +37,7 @@
 
  */
 
-  //#define _UBER_VERBOSE_LF_DEBUG
+//#define _UBER_VERBOSE_LF_DEBUG
 
 #include <string.h>
 #include <math.h>
@@ -545,7 +545,6 @@ void _LikelihoodFunction::Init (void)
 {
     siteResults         = nil;
     bySiteResults       = nil;
-    hasBeenOptimized    = false;
     hasBeenSetUp        = 0;
     templateKind        = _hyphyLFComputationalTemplateNone;
     computingTemplate   = nil;
@@ -760,7 +759,6 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
 void     _LikelihoodFunction::Rebuild (bool rescan_parameters) {
   computationalResults.Clear();
   hasBeenSetUp     = 0;
-  hasBeenOptimized = false;
   _String ignored_error;
   try {
     for (unsigned long k = 0UL; k < theDataFilters.lLength; k++) {
@@ -775,6 +773,7 @@ void     _LikelihoodFunction::Rebuild (bool rescan_parameters) {
     return;
   }
   AllocateTemplateCaches();
+  optimalOrders.Clear();
   Setup(false);
   if (rescan_parameters) {
     RescanAllVariables();
@@ -807,7 +806,6 @@ void     _LikelihoodFunction::Clear (void)
     optimalOrders.Clear();
     leafSkips.Clear();
     hasBeenSetUp            = 0;
-    hasBeenOptimized        = false;
     if (computingTemplate) {
         delete computingTemplate;
         computingTemplate = nil;
@@ -1096,8 +1094,6 @@ _LikelihoodFunction::_LikelihoodFunction (_LikelihoodFunction& lf) // stack copy
 {
     Clear();
 
-    hasBeenOptimized    = lf.hasBeenOptimized;
-    templateKind        = lf.templateKind;
 
     if (lf.computingTemplate) {
         computingTemplate   = (_Formula*)lf.computingTemplate->makeDynamic();
@@ -1959,12 +1955,6 @@ hyFloat  _LikelihoodFunction::Compute        (void)
        after last optimization
      */
 
-    if (!isInOptimize && hasBeenOptimized)
-        for (unsigned long i=0; i<indexInd.lLength; i++)
-            if (LocateVar (indexInd.list_data[i])->HasChanged()) {
-                hasBeenOptimized = false;
-                break;
-            }
 
     /*  compute modes:
 
@@ -2013,11 +2003,11 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 #ifdef _UBER_VERBOSE_LF_DEBUG
     fprintf (stderr, "\n*** Likelihood function evaluation %ld ***\n", likeFuncEvalCallCount+1);
     for (unsigned long i=0; i<indexInd.lLength; i++) {
-        _Variable *v = LocateVar (indexInd.list_data[i]);
+        _Variable *v = GetIthIndependentVar(i);
         if (v->HasChanged()) {
           fprintf (stderr, "[CHANGED] ");
         }
-        fprintf (stderr, "%s = %15.12g\n", v->GetName()->sData, v->theValue);
+        fprintf (stderr, "%s = %15.12g\n", v->GetName()->get_str(), v->theValue);
     }
 #endif
     if (computeMode == 0 || computeMode == 3) {
@@ -2045,7 +2035,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                         ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    fprintf (stderr, "Did compute %g\n", result);
+                    fprintf (stderr, "Did compute %16.12g\n", result);
 #endif
                     hyFloat                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
                     UpdateBlockResult               (partID, blockResult);
@@ -2212,7 +2202,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         evalsSinceLastSetup   ++;
         PostCompute ();
 #ifdef _UBER_VERBOSE_LF_DEBUG
-        fprintf (stderr, "%g\n", result);
+        fprintf (stderr, "%16.12g\n", result);
 #endif
         if (isnan (result)) {
             _TerminateAndDump("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
@@ -2771,8 +2761,20 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         
         j = nonConstantIndices.get(j);
         
-        _TerminateAndDump(_String("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:")
-                          & (*cornholio->GetName()) & ":=" & _String((_String*)cornholio->GetFormulaString(kFormulaStringConversionSubstiteValues)) & " must be in [" & lowerBounds[j] & "," & upperBounds[j] &"]. Current value = " & currentValues[j] & ".");
+        _StringBuffer err_report ("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:");
+        
+        err_report << (*cornholio->GetName());
+        err_report << ":=";
+        err_report << _String((_String*)cornholio->GetFormulaString(kFormulaStringConversionSubstiteValues));
+        err_report << " must be in [";
+        err_report << lowerBounds[j];
+        err_report << ",";
+        err_report << upperBounds[j];
+        err_report << "]. Current value = ";
+        err_report << currentValues[j];
+        err_report << ".";
+        
+        _TerminateAndDump(err_report);
         
         
     }
@@ -3733,12 +3735,10 @@ void _LikelihoodFunction::SetupParameterMapping (void) {
 
 //_______________________________________________________________________________________________
 
-void _LikelihoodFunction::CleanupParameterMapping (void)
-{
+void _LikelihoodFunction::CleanupParameterMapping (void) {
     smoothingPenalty = 0.0;
     smoothingTerm    = 0.0;
-    DeleteObject (parameterValuesAndRanges);
-    parameterValuesAndRanges = nil;
+    DeleteAndZeroObject (parameterValuesAndRanges);
     parameterTransformationFunction.Clear();
 }
 
@@ -4812,7 +4812,8 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_te
     _String err ("Internal error ");
   
     if (out) {
-       this->DoneComputing();
+      //this->CleanupParameterMapping();
+      this->DoneComputing();
       _StringBuffer          sLF (8192L);
       SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
       sLF.TrimSpace();
@@ -4832,11 +4833,9 @@ void _LikelihoodFunction::CleanUpOptimize (void) {
 #ifdef __HYPHYMPI__
     if (hyphyMPIOptimizerMode==_hyphyLFMPIModeNone) {
 #endif
-        for (long i=0; i<theTrees.lLength; i++) {
-            _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-            cT->CleanUpMatrices();
+        for (long i=0L; i<theTrees.lLength; i++) {
+            GetIthTree (i)->CleanUpMatrices();
         }
-
         DeleteCaches (false);
 
         if (mstCache) {
@@ -4898,11 +4897,9 @@ void _LikelihoodFunction::CleanUpOptimize (void) {
     setParameter (likeFuncCountVar,likeFuncEvalCallCount);
     isInOptimize = false;
     DoneComputing();
-    hasBeenOptimized = true;
     hasBeenSetUp     = 0;
     lockedLFID       = -1;
-    DeleteObject     (nonConstantDep);
-    nonConstantDep = nil;
+    DeleteAndZeroObject     (nonConstantDep);
 }
 
 //_______________________________________________________________________________________
@@ -5064,27 +5061,20 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
     }
 
 
-
-    /*if (index < 0)
-    {
+#ifdef _UBER_VERBOSE_LF_DEBUG
+    if (index < 0) {
         printf                                 ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
         for (unsigned long i = 0; i < indexInd.lLength; i++) {
-            printf ("%s = %.16g\n", GetIthIndependentVar(i)->GetName()->sData, gradient->theData[i]);
+            printf ("%s = %.16g \n", GetIthIndependentVar(i)->GetName()->get_str(), gradient->get_direct(i));
         }
-    }*/
+    }
+#endif
 
     if (verbosity_level > 100) {
         char buf [512];
         snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld, eval %ld) INITIAL BRACKET %15.12g <= %15.12g (current %15.12g) <= %15.12g]", index, likeFuncEvalCallCount, middle-leftStep, middle, index>=0?GetIthIndependent (index):0.0, middle+rightStep);
         BufferToConsole (buf);
     }
-
-    /*
-    if (likeFuncEvalCallCount > 0) {
-      printf ("\n\n\nCHECK INDEX 6\n\n\n");
-      SetIthIndependent(6L, GetIthIndependent(6L));
-    }
-    */
 
     while (1) {
 
@@ -6281,7 +6271,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
       return;
     }
 
-    //printf ("[LogL = %.20g GRADIENT BRACKET %g/%.20g, %g/%.20g, %g/%.20g; %d]\n",maxSoFar,lV,leftValue,ms,middleValue,rV,rightValue, outcome);
+    //printf ("[LogL = %.20g GRADIENT BRACKET %g/%.20g, %g/%.20g, %g/%.20g; %d]\n",maxSoFar,left,leftValue,middle,middleValue,right,rightValue, outcome);
 
     left_vector.AplusBx   (gradient, left);
     middle_vector.AplusBx (gradient, middle);
@@ -6318,8 +6308,14 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
       } else {
           hyFloat U,V,W,X=middle,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
           //ObjectToConsole(&prior_parameter_values);
-          _Matrix current_best_vector (prior_parameter_values);
-          current_best_vector.AplusBx(gradient, middle);
+          //_Matrix current_best_vector (prior_parameter_values);
+          //current_best_vector.AplusBx(gradient, middle);
+          _Matrix current_best_vector;
+          GetAllIndependent (current_best_vector);
+          if (maxSoFar < middleValue) {
+              maxSoFar = middleValue;
+              bestVal = current_best_vector;
+          }
           W = .0;
           V = .0;
           FX = -middleValue;
@@ -6388,8 +6384,12 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
                     snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump (eval %ld) ACCEPT new try, confirm value %20.16g (delta = %20.16g)", likeFuncEvalCallCount,  U, FX-FU);
                     BufferToConsole (buf);
                     }
-                    current_best_vector = prior_parameter_values;
-                    current_best_vector.AplusBx(gradient, U);
+                  
+                    GetAllIndependent (current_best_vector);
+                    // 20200110 : SLKP, because of boundary constraints, previous is not equivalent to the result of SetParametersAndCompute
+                    //current_best_vector = prior_parameter_values;
+                    //current_best_vector.AplusBx(gradient, U);
+                  
                     if (U>=X) {
                       left = X;
                     } else {
@@ -6407,7 +6407,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
                      snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump (eval %ld) REJECT new try (%20.16g) (delta = %20.16g)", likeFuncEvalCallCount, U, FX-FU);
                      BufferToConsole (buf);
                     }
-                    current_best_vector = prior_parameter_values;
+                    //current_best_vector = prior_parameter_values;
                     if (U<X) {
                       left = U;
                     } else {
@@ -6450,7 +6450,6 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
             char buf [256];
             snprintf (buf, 256, "\n\t[_LikelihoodFunction::GradientLocateTheBump moving parameter value (should trigger LL update) %15.12g ||L2|| move ]\n\n", (current_best_vector-bestVal).AbsValue());
             BufferToConsole (buf);
-            //ObjectToConsole(&current_best_vector);
           }
           bestVal     = current_best_vector;
         }
@@ -6460,11 +6459,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
           return;
         }
-
-        //bestVal = middle;
-        //maxSoFar = middleValue;
-      }
-      //middle = X;
+       }
     }
 
     else {
@@ -6523,71 +6518,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
            brentPrec = (right-left) * 0.2;
            //printf ("\nResetting brentPrec to %g\n", brentPrec, "\n");
         }
-        /*if (index >= 0) {
-         // try Newton Raphson
-         
-         if (middle - left > STD_GRAD_STEP && right - middle > STD_GRAD_STEP) {
-         
-         
-         _Parameter last_value, current_value = middle, current_fx = middleValue;
-         
-         auto store_max = [&] (_Parameter x, _Parameter fx) -> void {
-         if (fx > maxSoFar) {
-         maxSoFar = fx;
-         bestVal  = x;
-         }
-         };
-         
-         do  {
-         last_value = current_value;
-         
-         _Parameter x_plus_h  = last_value + STD_GRAD_STEP,
-         x_minus_h = last_value - STD_GRAD_STEP,
-         fx_plus_h  = SetParametersAndCompute(index, x_plus_h),
-         fx_minus_h = SetParametersAndCompute(index, x_minus_h),
-         dFdX = (fx_plus_h - fx_minus_h) / (2. * STD_GRAD_STEP),
-         d2FdX2 = ((fx_plus_h - current_fx) + (fx_minus_h - current_fx)) / (STD_GRAD_STEP * STD_GRAD_STEP);
-         
-         
-         store_max (x_plus_h, fx_plus_h);
-         store_max (x_minus_h, fx_minus_h);
-         
-         if (CheckEqual(d2FdX2, 0.0)) {
-         current_value = last_value;
-         } else {
-         current_value = last_value - dFdX / d2FdX2;
-         }
-         
-         if (current_value < left || current_value > right) {
-         break;
-         }
-         
-         //printf ("\n\nf(%20.16g) = %20.16g; f(%20.16g) = %20.16g\n", x_plus_h, fx_plus_h, x_minus_h, fx_minus_h);
-         //printf ("f(%g) = %g; dF = %g, dF2 = %g\n", last_value, current_fx, dFdX, d2FdX2);
-         
-         if (CheckAndSetIthIndependent(index, current_value)) {
-         current_fx = SetParametersAndCompute (index, current_value);
-         }
-         //printf (" == move by %g with value %20.16g\n", current_value-last_value, current_fx);
-         
-         store_max (current_value, current_fx);
-         
-         
-         } while (fabs (current_value - last_value) >= brentPrec && current_value - left > STD_GRAD_STEP && right - current_value > STD_GRAD_STEP);
-         
-         if (fabs (current_value - last_value) < brentPrec && current_value - left > STD_GRAD_STEP && right - current_value > STD_GRAD_STEP) {
-         CheckAndSetIthIndependent(index, bestVal);
-         //printf (" == SUCCESS\n");
-         FlushLocalUpdatePolicy            ();
-         return;
-         }
-         CheckAndSetIthIndependent(index, bestVal);
-         middle = bestVal;
-         middleValue = maxSoFar;
-         //printf (" == FAILURE %20.16g -> %20.16g\n", middle, middleValue);
-         
-         }
-         }*/
+        
         
         hyFloat U,V,W,X=middle,E=0.,FX,FW,FV,XM,R,Q,P,ETEMP,D=0.,FU;
         W       = middle;
@@ -7721,26 +7652,23 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
 
 void    _LikelihoodFunction::Setup (bool check_reversibility)
 {
-    hyFloat kp       = 0.0;
-    //RankVariables();
-    checkParameter      (useFullMST,kp,0.0);
 
-    if (kp>.5 && !mstCache) {
+    if (hy_env::EnvVariableTrue(useFullMST) && !mstCache) {
         mstCache = new MSTCache;
     }
 
     if (theTrees.lLength==optimalOrders.lLength) {
         //check to see if we need to recompute the
         // optimal summation order
-        checkParameter (keepOptimalOrder,kp,0.0);
-        if (kp) {
+        if (hy_env::EnvVariableTrue(keepOptimalOrder)) {
             for (unsigned long i=0; i<theTrees.lLength; i++) {
-                _SimpleList*    s = (_SimpleList*)optimalOrders(i),
+                
+                _SimpleList     *   s = (_SimpleList*)optimalOrders(i),
                                 *   l = (_SimpleList*)leafSkips(i);
 
                 _DataSetFilter const * df   = GetIthFilter(i);
-                _Matrix       *glFreqs      = (_Matrix*)LocateVar(theProbabilities.list_data[i])->GetValue();
-                _TheTree      *t            = ((_TheTree*)LocateVar(theTrees.list_data[i]));
+                _Matrix       *glFreqs      = GetIthFrequencies(i);
+                _TheTree      *t            = GetIthTree(i);
 
                 t->InitializeTreeFrequencies (glFreqs, true);
                 if (s->lLength!=df->GetPatternCount()) {
@@ -7776,15 +7704,39 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
         _Matrix         *glFreqs = GetIthFrequencies(i);
         _DataSetFilter const* df      = GetIthFilter(i);
         _TheTree        *t       = GetIthTree (i);
+        if (t->GetLeafCount () == 0) {
+            t->SetUp();
+        }
         t->InitializeTreeFrequencies (glFreqs, true);
         _SimpleList        *s = new _SimpleList,
         *l = new _SimpleList;
 
         treeTraversalMasks.AppendNewInstance(new _SimpleList (t->GetINodeCount() * df->GetPatternCount() / _HY_BITMASK_WIDTH_ + 1,0,0));
-        OptimalOrder      (i,*s);
-        df->MatchStartNEnd(*s,*l);
-        optimalOrders.AppendNewInstance(s);
-        leafSkips.AppendNewInstance(l);
+        
+        bool copied = false;
+        if (i) {
+            for (int j = 0; j < i; j ++) {
+                if (GetIthFilter(j) == df) {
+                    //StringToConsole("MATCH FILTER\n");
+                    _TheTree        *tj = GetIthTree(j);
+                    if (tj->CompareTrees (t) == _TreeTopology::kCompareEqualWithoutReroot) {
+                        copied = true;
+                        //StringToConsole("MATCH TREE\n");
+                        OptimalOrder (i, *s, (const _SimpleList*)optimalOrders (j));
+                        l->Duplicate (leafSkips (j));
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (!copied) {
+            OptimalOrder      (i,*s);
+            df->MatchStartNEnd(*s,*l);
+        }
+        
+        optimalOrders < s;
+        leafSkips < l;
 
         if (check_reversibility) {
           _SimpleList treeModels;
@@ -7925,7 +7877,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                     }
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
-                    fprintf (stderr, "\nCached %s (nodeID = %lD)/New %s (touched matrices %ld) Eval id = %ld\n", *cbid >= 0 ? t->GetNodeFromFlatIndex (*cbid)->GetName()->getStr() : "None", nodeID, snID >= 0 ? t->GetNodeFromFlatIndex (snID)->GetName()->getStr() : "None", matrices->lLength, likeFuncEvalCallCount);
+                    fprintf (stderr, "\nCached %s (nodeID = %lD)/New %s (touched matrices %ld) Eval id = %ld\n", *cbid >= 0 ? t->GetNodeFromFlatIndex (*cbid)->GetName()->get_str() : "None", nodeID, snID >= 0 ? t->GetNodeFromFlatIndex (snID)->GetName()->get_str() : "None", matrices->lLength, likeFuncEvalCallCount);
 #endif
                     if (snID != *cbid) {
                         RestoreScalingFactors (index, *cbid, patternCnt, scc, sccb);
@@ -8038,6 +7990,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
             if (np > 1) {
               hyFloat correction = 0.;
+                
               for (blockID = 0; blockID < np; blockID ++)  {
                 if (thread_results[blockID] == -INFINITY) {
                   sum = -INFINITY;
@@ -8195,9 +8148,14 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 //_______________________________________________________________________________________
 long        _LikelihoodFunction::CostOfPath  (_DataSetFilter const* df, _TheTree const* t, _SimpleList& sl, _SimpleList* tcc) const {
     long res = 0L;
-    for (long i=1L; i<sl.countitems(); i++) {
+    
+    sl.Each([&sl,&tcc,&res,t,df] (long v, unsigned long i) -> void  {
+        res += t->ComputeReleafingCost (df,sl.get (i-1L),v, tcc, i);
+    }, 1L);
+    
+    /*for (long i=1L; i<sl.countitems(); i++) {
         res+=t->ComputeReleafingCost (df,sl.get (i-1L),sl.get(i), tcc, i);
-    }
+    }*/
     return res;
 }
 
@@ -8354,266 +8312,263 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
 
 //_______________________________________________________________________________________
 
-void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl) {
+void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _SimpleList const * clone) {
 
     _DataSetFilter const* df = GetIthFilter (index);
+    _TheTree            * t   = GetIthTree(index);
+    long                vLevel       = VerbosityLevel();
 
-    long            partition           = -1,
-                    totalSites           = 0,
-                    completedSites         = 0,
-                    startpt,
-                    endpt,
-                    j,
-                    max                 = -1,
-                    k,
-                    intI,
-                    totalLength;
-
-
-
-    hyFloat      skipo = 1.0;
-    _TheTree        *t = (_TheTree*)LocateVar(theTrees(index));
-    checkParameter  (optimizeSummationOrder,skipo,1.0);
-
-    if (!skipo || df->GetPatternCount()==1 || t->IsDegenerate() || !df->IsNormalFilter ()) { // do not optimize
-        for (k = 0; k < df->GetPatternCount(); k++) {
-            sl<<k;
-        }
-        return;
-    }
-    SetStatusLine ("Optimizing data ordering");
-    checkParameter (optimizePartitionSize,skipo,0.0);
-    totalSites = df->GetPatternCount();
-    if (skipo) { //  partition the sequence into smaller subseqs. for optimization
-        partition = (long)skipo;
-        if ((partition<=0)||(partition>totalSites)) {
-            partition = totalSites;
-        }
-    } else { // revert to default partitioning
-        partition = totalSites>1500?1500:totalSites;
-    }
-
-    long    vLevel       = VerbosityLevel(),
-            globalLength = 0;
-
-    if (vLevel>5) {
-        char buffer [128];
-        snprintf (buffer, sizeof(buffer),"\nOptimizing Column Order for block %ld", index);
-        BufferToConsole (buffer);
-    }
-
-    _SimpleList   partitionSites, distances, edges;
+    if (clone) {
+        sl.Duplicate(clone);
+    } else {
+        long            partition           = -1,
+                        totalSites           = df->GetPatternCount(),
+                        completedSites         = 0,
+                        startpt,
+                        endpt,
+                        j,
+                        max                 = -1,
+                        k,
+                        intI,
+                        totalLength;
 
 
-    while (completedSites<totalSites) {
-        if (totalSites-completedSites<partition) {
-            partition = totalSites-completedSites;
+
+        hyFloat      skipo = 1.0;
+        checkParameter  (optimizeSummationOrder,skipo,1.0);
+
+        if (!skipo || totalSites ==1 || t->IsDegenerate() || !df->IsNormalFilter ()) { // do not optimize
+            sl.Populate (totalSites , 0L, 1L);
+            return;
         }
 
-        intI = 0; // internal index for partition
-
-        // populate sites allowed
-
-        if (df->GetUnitLength()==1) {
-            for (k=completedSites+1; k<completedSites+partition; k++) {
-                partitionSites<<k;
-                distances<<t->ComputeReleafingCostChar (df, completedSites, k);
-                edges<<completedSites;
+        partition = hy_env::EnvVariableGetNumber(optimizePartitionSize, 0.0);
+        
+         if (partition) { //  partition the sequence into smaller subseqs. for optimization
+            if ( partition <= 0L || partition > totalSites ) {
+                partition = totalSites;
             }
-        } else {
-            for (k=completedSites+1; k<completedSites+partition; k++) {
-                partitionSites<<k;
-                distances<<t->ComputeReleafingCost (df, completedSites, k);
-                edges<<completedSites;
-            }
-        }
-
-        node<long>*   spanningTreeRoot;
-        _SimpleList   spanningTreePointers,
-                      spanningTreeSites;
-
-        if (mstCache) {
-            spanningTreeRoot = new node<long>;
-            spanningTreeSites << 0;
-            for (k=completedSites+1; k<completedSites+partition; k++) {
-                spanningTreePointers << (long)spanningTreeRoot;
-                spanningTreeSites << 0;
-            }
-            spanningTreeSites.list_data[0] = (long)spanningTreeRoot;
-        }
-
-        sl << completedSites;
-
-        while (intI<partition-1) {
-            // search for the shortest branch to add to the tree.
-            max = 0x0fffffff;
-            long * pl  = distances.list_data;
-
-            for (k=0; k<distances.lLength; k++,pl++)
-                if (*pl<=max) {
-                    max = *pl;
-                    endpt = partitionSites.list_data[k];
-                    startpt = k;
-                }
-
-            // delete k from allowed sites
-            partitionSites.Delete(startpt);
-            distances.Delete(startpt);
-            // insert the endpt into the tree before the pt that the edge came from
-
-            node<long>*   spanningTreeNode;
-            if (mstCache) {
-                spanningTreeNode = new node<long>;
-                spanningTreeNode->in_object = max;
-                ((node<long>*)spanningTreePointers.list_data[startpt])->add_node (*spanningTreeNode);
-                spanningTreeSites.list_data[endpt-completedSites] = (long)spanningTreeNode;
-                spanningTreePointers.Delete(startpt);
-            }
-
-            j = sl.Find(edges.list_data[startpt],completedSites);
-            sl.InsertElement ((BaseRef)endpt,j+1,false,false);
-            edges.Delete(startpt);
-
-            // make one more pass and update the distances if needed
-            if (df->GetUnitLength()==1) {
-                for (k=0; k<distances.lLength; k++) {
-                    j = t->ComputeReleafingCostChar (df,endpt, partitionSites.list_data[k]);
-                    if (j<distances.list_data[k]) {
-                        distances.list_data[k]=j;
-                        edges.list_data[k] = endpt;
-
-                        if (mstCache) {
-                            spanningTreePointers.list_data[k] = (long)spanningTreeNode;
-                        }
-                    }
-                }
-            } else {
-                for (k=0; k<distances.lLength; k++) {
-                    j = t->ComputeReleafingCost (df,endpt, partitionSites.list_data[k]);
-                    if (j<distances.list_data[k]) {
-                        distances.list_data[k]=j;
-                        edges.list_data[k] = endpt;
-
-                        if (mstCache) {
-                            spanningTreePointers.list_data[k] = (long)spanningTreeNode;
-                        }
-                    }
-                }
-            }
-
-            intI++;
-            if (intI%50==0) {
-#if !defined __UNIX__ || defined __HEADLESS__
-                SetStatusBarValue ((intI+completedSites)*100/totalSites,1.0, 0.0);
-#endif
-                //yieldCPUTime();
-            }
+        } else { // revert to default partitioning
+            partition = MIN (totalSites, 1500);
         }
 
 
-
-        partitionSites.Clear();
-        distances.Clear();
-        edges.Clear();
-
-        if (mstCache) {
-            // print out the info on the spanning tree
-            // keep track of the "deepest path"
-            long        maxLevel    = 0;
-
-            totalLength = 0;
-            countingTraverse (spanningTreeRoot,totalLength,0,maxLevel,true);
-
-            globalLength += totalLength;
-
-
-            long        level,
-                        nc          =   0;
-
-
-            node_iterator<long> ni (spanningTreeRoot, _HY_TREE_TRAVERSAL_POSTORDER);
-
-            while (node<long>* iterator = ni.Next()) {
-              if (iterator != spanningTreeRoot) {
-                long maxLevel2 = 0L;
-                     totalLength = 0L;
-                countingTraverseArbRoot (spanningTreeRoot, nil, totalLength, 1, maxLevel2);
-                maxLevel = MIN (maxLevel, maxLevel2);
-              }
-            }
-
-            _SimpleList   computingOrder,
-                          storageOrder,
-                          cacheSlots,
-                          referenceOrder,
-                          parentOrder;
-
-            for (level=0; level<maxLevel; level++) {
-                cacheSlots << -1;
-            }
-
-            for (level=0; level<spanningTreeSites.lLength; level++) {
-                ((node<long>*)spanningTreeSites.list_data[level])->in_object = level+completedSites;
-            }
-
-            setComputingArrays (spanningTreeRoot, nil, computingOrder, storageOrder, cacheSlots, referenceOrder, parentOrder, nc);
-
-            for (level=0; level<spanningTreeSites.lLength; level++) {
-                ((node<long>*)spanningTreeSites.list_data[level])->in_object = level+completedSites;
-            }
-
-            for (level=1; level<parentOrder.lLength; level++) {
-                parentOrder.list_data[level] = ((node<long>*)parentOrder.list_data[level])->in_object;
-            }
-
-            if (completedSites) {
-                level = mstCache->computingOrder.lLength-1;
-                (*(_SimpleList*)mstCache->computingOrder(level)) << computingOrder;
-                (*(_SimpleList*)mstCache->storageOrder(level)) << storageOrder;
-                (*(_SimpleList*)mstCache->referenceOrder(level)) << referenceOrder;
-                (*(_SimpleList*)mstCache->parentOrder(level)) << parentOrder;
-                if (cacheSlots.lLength > mstCache->cacheSize.list_data[level]) {
-                    mstCache->cacheSize.list_data[level] = cacheSlots.lLength;
-                }
-            } else {
-                mstCache->computingOrder    && & computingOrder;
-                mstCache->storageOrder      && & storageOrder;
-                mstCache->referenceOrder    && & referenceOrder;
-                mstCache->parentOrder       && & parentOrder;
-                mstCache->cacheSize         << cacheSlots.lLength;
-            }
-
-            spanningTreeRoot->delete_tree();
-            delete (spanningTreeRoot); // dmalloc fix 06162005
-
-        }
-
-        completedSites+=partition;
         if (vLevel>5) {
-            char   buffer[64];
-            snprintf (buffer, sizeof(buffer),"\n%ld %% done", (long)(completedSites*100/totalSites));
+            char buffer [128];
+            snprintf (buffer, sizeof(buffer),"\nOptimizing Column Order for block %ld", index);
             BufferToConsole (buffer);
+        }
+
+        _SimpleList   partitionSites, distances, edges,
+                      child_count (t->get_flat_nodes().MapList([] (long n, unsigned long ) -> long {
+                          return ((node <long>*)n)->get_num_nodes();
+                      }));
+
+
+        while (completedSites<totalSites) {
+            if (totalSites-completedSites<partition) {
+                partition = totalSites-completedSites;
+            }
+
+            intI = 0; // internal index for partition
+
+            // populate sites allowed
+
+            if (df->GetUnitLength()==1) {
+                for (k=completedSites+1; k<completedSites+partition; k++) {
+                    partitionSites<<k;
+                    distances<<t->ComputeReleafingCostChar (df, completedSites, k, &child_count);
+                    edges<<completedSites;
+                }
+            } else {
+                for (k=completedSites+1; k<completedSites+partition; k++) {
+                    partitionSites<<k;
+                    distances<<t->ComputeReleafingCost (df, completedSites, k);
+                    edges<<completedSites;
+                }
+            }
+
+            node<long>*   spanningTreeRoot;
+            _SimpleList   spanningTreePointers,
+                          spanningTreeSites;
+
+            if (mstCache) {
+                spanningTreeRoot = new node<long>;
+                spanningTreeSites << 0;
+                for (k=completedSites+1; k<completedSites+partition; k++) {
+                    spanningTreePointers << (long)spanningTreeRoot;
+                    spanningTreeSites << 0;
+                }
+                spanningTreeSites.list_data[0] = (long)spanningTreeRoot;
+            }
+
+            sl << completedSites;
+
+            while (intI<partition-1) {
+                // search for the shortest branch to add to the tree.
+                max = 0x0fffffff;
+                long * pl  = distances.list_data;
+
+                for (k=0; k<distances.lLength; k++,pl++)
+                    if (*pl<=max) {
+                        max = *pl;
+                        endpt = partitionSites.list_data[k];
+                        startpt = k;
+                    }
+
+                // delete k from allowed sites
+                partitionSites.Delete(startpt);
+                distances.Delete(startpt);
+                // insert the endpt into the tree before the pt that the edge came from
+
+                node<long>*   spanningTreeNode;
+                if (mstCache) {
+                    spanningTreeNode = new node<long>;
+                    spanningTreeNode->in_object = max;
+                    ((node<long>*)spanningTreePointers.list_data[startpt])->add_node (*spanningTreeNode);
+                    spanningTreeSites.list_data[endpt-completedSites] = (long)spanningTreeNode;
+                    spanningTreePointers.Delete(startpt);
+                }
+
+                j = sl.Find(edges.list_data[startpt],completedSites);
+                sl.InsertElement ((BaseRef)endpt,j+1,false,false);
+                edges.Delete(startpt);
+
+                // make one more pass and update the distances if needed
+                if (df->GetUnitLength()==1) {
+                    for (k=0; k<distances.lLength; k++) {
+                        j = t->ComputeReleafingCostChar (df,endpt, partitionSites.list_data[k], &child_count);
+                        if (j<distances.list_data[k]) {
+                            distances.list_data[k]=j;
+                            edges.list_data[k] = endpt;
+
+                            if (mstCache) {
+                                spanningTreePointers.list_data[k] = (long)spanningTreeNode;
+                            }
+                        }
+                    }
+                } else {
+                    for (k=0; k<distances.lLength; k++) {
+                        j = t->ComputeReleafingCost (df,endpt, partitionSites.list_data[k]);
+                        if (j<distances.list_data[k]) {
+                            distances.list_data[k]=j;
+                            edges.list_data[k] = endpt;
+
+                            if (mstCache) {
+                                spanningTreePointers.list_data[k] = (long)spanningTreeNode;
+                            }
+                        }
+                    }
+                }
+
+                intI++;
+                if (intI%50==0) {
+    #if !defined __UNIX__ || defined __HEADLESS__
+                    SetStatusBarValue ((intI+completedSites)*100/totalSites,1.0, 0.0);
+    #endif
+                    //yieldCPUTime();
+                }
+            }
+
+
+
+            partitionSites.Clear();
+            distances.Clear();
+            edges.Clear();
+
+            if (mstCache) {
+                // print out the info on the spanning tree
+                // keep track of the "deepest path"
+                long        maxLevel    = 0;
+
+                totalLength = 0;
+                countingTraverse (spanningTreeRoot,totalLength,0,maxLevel,true);
+
+  
+
+                long        level,
+                            nc          =   0;
+
+
+                node_iterator<long> ni (spanningTreeRoot, _HY_TREE_TRAVERSAL_POSTORDER);
+
+                while (node<long>* iterator = ni.Next()) {
+                  if (iterator != spanningTreeRoot) {
+                    long maxLevel2 = 0L;
+                         totalLength = 0L;
+                    countingTraverseArbRoot (spanningTreeRoot, nil, totalLength, 1, maxLevel2);
+                    maxLevel = MIN (maxLevel, maxLevel2);
+                  }
+                }
+
+                _SimpleList   computingOrder,
+                              storageOrder,
+                              cacheSlots,
+                              referenceOrder,
+                              parentOrder;
+
+                for (level=0; level<maxLevel; level++) {
+                    cacheSlots << -1;
+                }
+
+                for (level=0; level<spanningTreeSites.lLength; level++) {
+                    ((node<long>*)spanningTreeSites.list_data[level])->in_object = level+completedSites;
+                }
+
+                setComputingArrays (spanningTreeRoot, nil, computingOrder, storageOrder, cacheSlots, referenceOrder, parentOrder, nc);
+
+                for (level=0; level<spanningTreeSites.lLength; level++) {
+                    ((node<long>*)spanningTreeSites.list_data[level])->in_object = level+completedSites;
+                }
+
+                for (level=1; level<parentOrder.lLength; level++) {
+                    parentOrder.list_data[level] = ((node<long>*)parentOrder.list_data[level])->in_object;
+                }
+
+                if (completedSites) {
+                    level = mstCache->computingOrder.lLength-1;
+                    (*(_SimpleList*)mstCache->computingOrder(level)) << computingOrder;
+                    (*(_SimpleList*)mstCache->storageOrder(level)) << storageOrder;
+                    (*(_SimpleList*)mstCache->referenceOrder(level)) << referenceOrder;
+                    (*(_SimpleList*)mstCache->parentOrder(level)) << parentOrder;
+                    if (cacheSlots.lLength > mstCache->cacheSize.list_data[level]) {
+                        mstCache->cacheSize.list_data[level] = cacheSlots.lLength;
+                    }
+                } else {
+                    mstCache->computingOrder    && & computingOrder;
+                    mstCache->storageOrder      && & storageOrder;
+                    mstCache->referenceOrder    && & referenceOrder;
+                    mstCache->parentOrder       && & parentOrder;
+                    mstCache->cacheSize         << cacheSlots.lLength;
+                }
+
+                spanningTreeRoot->delete_tree();
+                delete (spanningTreeRoot); // dmalloc fix 06162005
+
+            }
+
+            completedSites+=partition;
+            if (vLevel>5) {
+                char   buffer[64];
+                snprintf (buffer, sizeof(buffer),"\n%ld %% done", (long)(completedSites*100/totalSites));
+                BufferToConsole (buffer);
+            }
         }
     }
 
     _SimpleList straight (sl.lLength, 0, 1),
                 * tcc = nil;
 
-#ifdef _SLKP_LFENGINE_REWRITE_
     if (treeTraversalMasks.lLength > index) {
         tcc =  (_SimpleList*) treeTraversalMasks(index);
     }
-
-#endif
 
     hyFloat strl = CostOfPath (df,t,straight),
                optl = CostOfPath (df,t,sl,tcc);
 
     if (vLevel>500) {
-        _String* opPath = (_String*)sl.toStr();
         BufferToConsole("\nSite ordering:");
-        StringToConsole(*opPath);
-        DeleteObject(opPath);
+        ObjectToConsole(&sl);
     }
 
     char buffer [512];
@@ -8627,7 +8582,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl) {
         long     memOverhead = mstCache->cacheSize.list_data[mstCache->cacheSize.lLength-1];
         if (memOverhead) {
             memOverhead *= (t->GetINodeCount()*(sizeof(hyFloat)*t->GetCodeBase()+sizeof(long)+sizeof (char))+t->GetLeafCount()*(sizeof(hyFloat)+sizeof(long)))/1024;
-            snprintf (buffer, sizeof(buffer),"\nIf using full MST heurisitcs: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %ld KB memory overhead",globalLength,(long)strl,strl/(double)globalLength,optl/(double)globalLength,memOverhead);
+            snprintf (buffer, sizeof(buffer),"\nIf using full MST heurisitcs: %ld vs %ld for 1..k=> a %g x (relative %g x) improvement with %ld KB memory overhead",sl.countitems(),(long)strl,strl/(double)sl.countitems(),optl/(double)sl.countitems(),memOverhead);
             ReportWarning (buffer);
             if (vLevel>5) {
                 BufferToConsole (buffer);
@@ -8636,37 +8591,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl) {
     }
 
 }
-//_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ComputePruningEfficiency (long& full, long& saved) {
-    full = 0;
-    saved = 0;
-    for (long i=0; i<theTrees.lLength; i++) {
-        _TheTree    *cT = ((_TheTree*)(LocateVar(theTrees(i))));
-        _SimpleList *l  = (_SimpleList*)leafSkips (i);
-        HBLObjectRef   lc  = cT->TipCount();
-
-        long         leafCount = lc->Value(),
-                     iCount;
-
-        DeleteObject (lc);
-        lc = cT->BranchCount ();
-        iCount = lc->Value();
-        DeleteObject (lc);
-
-        saved += leafCount+iCount;
-        full  += (leafCount+iCount) * (l->lLength+1);
-
-        for (long k=0; k<l->lLength; k++) {
-            unsigned long j = l->list_data[k],
-                          p1 = j&0xffff,
-                          p2 = ((j>>16)&0xffff);
-
-            saved += leafCount - p1 - (leafCount - 1 - p2);
-            saved += iCount - cT->GetLeftINodes().list_data[p1];
-        }
-    }
-}
 
 //_______________________________________________________________________________________
 
@@ -9099,6 +9024,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
 
     // write out the global variable for enforcing reversible models
     rec.AppendAnAssignmentToBuffer(&hy_env::assume_reversible, new _String(hy_env::EnvVariableGetNumber(hy_env::assume_reversible, 0.)));
+    rec.AppendAnAssignmentToBuffer(&kUseLastResults, new _String(hy_env::EnvVariableGetNumber(kUseLastResults, 0.)));
 
     rec << "LikelihoodFunction " << *lfName << " = (";
 
@@ -10145,9 +10071,7 @@ void    _LikelihoodFunction::DoneComputing (bool force)
             ((_Matrix*)LocateVar(theProbabilities.list_data[i])->GetValue())->MakeMeGeneral();
         }
 
-        DeleteObject (siteResults);
-        siteResults = 0;
-
+        DeleteAndZeroObject(siteResults);
         DeleteCaches        (false);
         categoryTraversalTemplate.Clear();
         hasBeenSetUp       = 0;

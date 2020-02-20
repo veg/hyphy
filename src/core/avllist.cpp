@@ -58,10 +58,13 @@ using namespace hy_global;
 // AVL Lists
 //______________________________________________________________
 
-_AVLList::_AVLList (_SimpleList* d)
-{
+_AVLList::_AVLList (_SimpleList* d) {
     dataList = d;
     root     = -1;
+}
+
+_AVLList::_AVLList (_AVLList const &) {
+    HandleApplicationError("Called _AVLList:: copy constructor  method stub that is not implemented");
 }
 
 //______________________________________________________________
@@ -75,6 +78,12 @@ BaseRef _AVLList::makeDynamic (void) const {
 void _AVLList::Duplicate (BaseRefConst) {
     HandleApplicationError("Called _AVLList::Duplicate:  method stub that is not implemented");
     
+}
+
+//______________________________________________________________
+
+void _AVLList::operator = (_AVLList const & rhs) {
+    HandleApplicationError("Called _AVLList::operator = :  method stub that is not implemented");
 }
 
 //______________________________________________________________
