@@ -65,7 +65,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('IBeta("", 1, 1)', "Operation 'IBeta' is not implemented/defined for a String"), "IBeta String argument is invalid");
   assert(runCommandWithSoftErrors('IBeta({}, 1, 1)', "Operation 'IBeta' is not implemented/defined for a AssociativeList"), "IBeta Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('IBeta({{"a","b"}}, 1, 1)', "evaluated with errors"), "IBeta Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('IBeta({{"a","b"}}, 1, 1)', "Operation 'IBeta' is not implemented/defined for a Matrix"), "IBeta Matrix argument is invalid");
   assert(runCommandWithSoftErrors('IBeta(T, 1, 1)', "Operation 'IBeta' is not implemented/defined for a Topology"), "IBeta Topology argument is invalid");
   assert(runCommandWithSoftErrors('IBeta(TT, 1, 1)', "Operation 'IBeta' is not implemented/defined for a Tree"), "IBeta Tree argument is invalid");
 

@@ -37,7 +37,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('Tan("")', "Operation 'Tan' is not implemented/defined for a String"), "Tan String argument is invalid");
   assert(runCommandWithSoftErrors('Tan({})', "Operation 'Tan' is not implemented/defined for a AssociativeList"), "Tan Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('Tan({{"a","b"}})', "evaluated with errors"), "Tan Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('Tan({{"a","b"}})', "Operation 'Tan' is not implemented/defined for a Matrix"), "Tan Matrix argument is invalid");
   assert(runCommandWithSoftErrors('Tan(T)', "Operation 'Tan' is not implemented/defined for a Topology"), "Tan Topology argument is invalid");
   assert(runCommandWithSoftErrors('Tan(TT)', "Operation 'Tan' is not implemented/defined for a Tree"), "Tan Tree argument is invalid");
 

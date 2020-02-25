@@ -3055,10 +3055,11 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
         }
 
         // next, handle lookup of HBL objects
+          
         const _String source_name   = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
         long          object_type = HY_BL_ANY,
                       object_index;
-
+          
         BaseRefConst       source_object = nil;
         try {
           source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
@@ -3997,7 +3998,9 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
         // and that it is a valid transition matrix
       isExpressionBased = new _Formula;
       _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
-      matrixExpression =  _ElementaryCommand::FindNextCommand (matrixExpression);
+      _StringBuffer  trimmed_expression;
+      _ElementaryCommand::FindNextCommand (matrixExpression,trimmed_expression);
+      matrixExpression = trimmed_expression;
       long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
       if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
         throw (defErrMsg & " parse code = " & parseCode & " " & (parseCode == HY_FORMULA_EXPRESSION ? (_String(", object type code ") & _String((long) isExpressionBased->ObjectClass())) : kEmptyString ));

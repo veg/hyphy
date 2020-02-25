@@ -540,6 +540,9 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
         catVariable->SetIntervalValue(0,true);
         if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate || runMode == _hyphyLFConditionProbsClassWeights) {
             (*catWeigths) << catVariable->GetWeights();
+            catVariable->SetIntervalValue(0,false);
+        } else {
+            catVariable->SetIntervalValue(0,true);
         }
     }
 
@@ -571,21 +574,21 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                     if (currentRateCombo && remainder  == 0) {
                         categoryValues.list_data[catCount] = 0;
-                        (((_CategoryVariable**)(variables->list_data))[catCount])->SetIntervalValue(0);
+                        (((_CategoryVariable**)(variables->list_data))[catCount])->SetIntervalValue(0,false);
                         for (long uptick = catCount-1; uptick >= 0; uptick --) {
                             categoryValues.list_data[uptick]++;
                             if (categoryValues.list_data[uptick] == categoryCounts->list_data[uptick]) {
                                 categoryValues.list_data[uptick] = 0;
-                                (((_CategoryVariable**)(variables->list_data))[uptick])->SetIntervalValue(0);
+                                (((_CategoryVariable**)(variables->list_data))[uptick])->SetIntervalValue(0,false);
                             } else {
-                                (((_CategoryVariable**)(variables->list_data))[uptick])->SetIntervalValue(categoryValues.list_data[uptick]);
+                                (((_CategoryVariable**)(variables->list_data))[uptick])->SetIntervalValue(categoryValues.list_data[uptick],false);
                                 break;
                             }
                         }
                     } else {
                         if (currentRateCombo) {
                             categoryValues.list_data[catCount]++;
-                            (((_CategoryVariable**)(variables->list_data))[catCount])->SetIntervalValue(remainder);
+                            (((_CategoryVariable**)(variables->list_data))[catCount])->SetIntervalValue(remainder, false);
                         }
                     }
                 }

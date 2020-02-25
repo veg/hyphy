@@ -595,7 +595,7 @@ void ClearBFFunctionLists (long start_here) {
     _SimpleList delete_me (batchLanguageFunctionNames.countitems()-start_here, start_here, 1L);
     
     for (unsigned long k = 0UL; k < delete_me.countitems(); k++) {
-      batchLanguageFunctionNamesIndexed.Delete (batchLanguageFunctionNames.GetItem (delete_me.get (k)));
+      batchLanguageFunctionNamesIndexed.Delete (batchLanguageFunctionNames.GetItem (delete_me.get (k)), true);
     }
 
     batchLanguageFunctionNames.DeleteList           (delete_me);
@@ -610,6 +610,7 @@ void ClearBFFunctionLists (long start_here) {
         batchLanguageFunctionClassification.Clear  ();
         batchLanguageFunctionParameterLists.Clear  ();
         batchLanguageFunctionParameterTypes.Clear  ();
+        batchLanguageFunctionNamesIndexed.Clear    (true);
     }
   }
 }
@@ -1842,13 +1843,13 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
 
   //char const * savePointer = s.get_str();
 
-    _SimpleList          triePath;
     _List                local_object_manager;
+    _StringBuffer        currentLine (128UL);
   
     try {
 
       while (s.nonempty ()) { // repeat while there is stuff left in the buffer
-          _String currentLine (_ElementaryCommand::FindNextCommand (s));
+          _ElementaryCommand::FindNextCommand (s,currentLine);
 
           if (currentLine.get_char(0)=='}') {
               currentLine.Trim(1,kStringEnd);
@@ -1858,8 +1859,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               continue;
           }
 
-          triePath.Clear(false);
-          long prefixTreeCode = _HY_ValidHBLExpressions.FindKey (currentLine, &triePath, true);
+          long prefixTreeCode = _HY_ValidHBLExpressions.FindKey (currentLine, nil, true);
 
           _List *pieces = nil;
           _HBLCommandExtras *commandExtraInfo = nil;
@@ -2051,7 +2051,9 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               // plain ol' formula - parse it as such!
               else {
                   _String checker (currentLine);
-                  if (_ElementaryCommand::FindNextCommand (checker).length ()==currentLine.length()) {
+                  _StringBuffer next_command;
+                  _ElementaryCommand::FindNextCommand (checker,next_command);
+                  if (next_command.length ()==currentLine.length()) {
                       if (currentLine.length()>1)
                           while (currentLine (-1L) ==';') {
                               currentLine.Trim (0,currentLine.length()-2);
@@ -2065,8 +2067,8 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                       AppendNewInstance (oddCommand);
                   } else {
                       while (currentLine.nonempty()) {
-                          _String part (_ElementaryCommand::FindNextCommand (currentLine));
-                          BuildList (part,bc,processed);
+                          _ElementaryCommand::FindNextCommand (currentLine,next_command);
+                          BuildList (next_command,bc,processed);
                       }
                   }
               }
@@ -2269,6 +2271,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_CHOICE_LIST:
         case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
         case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
+        case HY_HBL_COMMAND_GET_INFORMATION:
         case HY_HBL_COMMAND_SIMULATE_DATA_SET: {
             (*string_form) << procedure (code);
         }
@@ -3234,16 +3237,16 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         SetStatusLine (_String("Constructing Tree ")&treeIdent);
         long  varID = LocateVarByName (treeIdent);
 
-        hyFloat rtv = 0.0; // mod 11/19/2003
-        checkParameter (replaceTreeStructure, rtv, 0.0); // mod 11/19/2003
+        
+        bool replace_tree_structure = hy_env::EnvVariableTrue(replaceTreeStructure);
 
         _SimpleList   leftOverVars; // mod 02/03/2003
         if (varID>=0)
             if (FetchVar(varID)->ObjectClass()==TREE) {
-                if (rtv>0.5) {
+                if (replace_tree_structure) {
                     DeleteVariable(*FetchVar(varID)->GetName());    // mod 11/19/2003
                 } else {
-                    DeleteTreeVariable(*FetchVar(varID)->GetName(),leftOverVars,true);    // mod 02/03/2003
+                    DeleteTreeVariable(varID,leftOverVars);    // mod 02/03/2003
                 }
             }
 
@@ -3260,7 +3263,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
                     tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
                 } else if (formRes->ObjectClass () == TREE) {
                     for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
-                        //printf ("%s\n", LocateVar(leftOverVars.list_data[i])->GetName()->sData);
+                        //rintf ("%s\n", LocateVar(leftOverVars.list_data[i])->GetName()->get_str());
                         DeleteVariable(leftOverVars.list_data[i], true);
                     }
                     leftOverVars.Clear();
@@ -3674,12 +3677,13 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 //____________________________________________________________________________________
 
 
-const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
+void   _ElementaryCommand::FindNextCommand  (_String& input, _StringBuffer &result) {
 
     long    index     = input.length();
+    result.Reset();
 
     if (index == 0L) {
-      return kEmptyString;
+      return;
     }
 
     bool    skipping  = false;
@@ -3705,7 +3709,6 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
 
     _SimpleList is_DoWhileLoop;
 
-    _StringBuffer result (128L);
 
     char    last_char = '\0';
         // a look back character
@@ -3847,7 +3850,8 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
             if (parentheses_depth < 0L) {
                 HandleApplicationError (_String("Too many closing ')' near '") & input.Cut (MAX(0,index-32),index) & "'.");
                 input.Clear();
-                return kEmptyString;
+                result.Reset();
+                return ;
             }
             last_char = '\0';
             continue;
@@ -3864,7 +3868,8 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
             if (bracket_depth < 0L) {
                 HandleApplicationError (_String("Too many closing ']' near '") & input.Cut (MAX(0,index-32),index) & "'.");
                 input.Clear();
-                return kEmptyString;
+                result.Reset();
+                return ;
             }
             last_char = '\0';
             continue;
@@ -3921,9 +3926,10 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
                        & (literal_state == single_quote?" In a '' literal. ":kEmptyString) &
                        (comment_state == slash_star ? " In a /* */ comment ":kEmptyString) & '\n' & input);
             input.Clear();
-            return kEmptyString;
+            result.Reset();
+            return ;
         } else {
-            result = kEmptyString;
+            result.Reset();
         }
     }
 
@@ -3953,9 +3959,6 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
         input.Clear();
     }
 
-
-
-    return result;
 }
 //____________________________________________________________________________________
 
@@ -4187,7 +4190,8 @@ bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&targ
         source.Trim (upto,-1);
         target.AppendNewInstance (new _ElementaryCommand);
 
-        _String nextCommand (FindNextCommand(source));
+        _StringBuffer nextCommand;
+        _ElementaryCommand::FindNextCommand(source,nextCommand);
         success *= target.BuildList (nextCommand, bc, true);
 
     }
@@ -4414,10 +4418,10 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
     if (mark1!=-1) {
         mark2 = source.FindBackwards(')',mark1+1,-1);
         if (mark2!=-1) {
-            source = source.Cut (mark1+1,mark2-1);
+            _String definition (source,mark1+1,mark2-1);
             _List args;
-            ExtractConditions (source,0,args,',');
-            if (args.lLength>=7UL) {
+            ExtractConditions (definition,0,args,',');
+            if (args.countitems()>=7UL) {
                 _ElementaryCommand * cv = new _ElementaryCommand (20);
                 cv->parameters&&(&catID);
                 cv->addAndClean(target,&args,0);

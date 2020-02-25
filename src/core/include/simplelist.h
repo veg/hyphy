@@ -78,6 +78,10 @@ class _SimpleList:public BaseObj {
         //length constructor
         _SimpleList(unsigned long);
 
+        //length constructor with storage already preallocated somewhere else
+        //e.g. using `alloca`
+        _SimpleList(unsigned long, long* preallocated_storage);
+    
         // stack copy contructor
         _SimpleList(_SimpleList const&,long=0,long=-1);
     

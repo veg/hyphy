@@ -253,7 +253,6 @@ _Matrix* _VariableContainer::GetFreqMatrix (void) const  {
 void    _VariableContainer::ScanModelBasedVariables (_String const & fullName, _AVLListXL* varCache) {
     if (theModel!= HY_NO_MODEL) { // build the matrix variables
         _SimpleList       mVars;
-        _String           varName;
         
         {
             
@@ -286,8 +285,11 @@ void    _VariableContainer::ScanModelBasedVariables (_String const & fullName, _
             if (aVar->IsGlobal()) {
                 PushGlobalVariable(aVar->get_index());
             } else {
-                varName = fullName&'.'&aVar->ContextFreeName();
-                _Variable * spawnedVar = CheckReceptacle(&varName, kEmptyString, false, false);
+                _StringBuffer var_name (fullName.length() + 1UL + aVar->GetName()->length());
+                var_name << fullName << '.';
+                aVar->ContextFreeName(var_name);
+                //_String           var_name = fullName&'.'&aVar->ContextFreeName();
+                _Variable * spawnedVar = CheckReceptacle(&var_name, kEmptyString, false, false);
                 spawnedVar->SetBounds (aVar->GetLowerBound(), aVar->GetUpperBound());
 
                 if (aVar->IsIndependent()) {
@@ -348,7 +350,7 @@ void _VariableContainer::ScanAndAttachVariables (void) {
     long f = variableNames.Find (theName,travcache);
     
     if (f >= 0L) {
-        _String theNameAndADot = *theName & '.';
+        _StringBuffer theNameAndADot = (_StringBuffer (theName->length() + 1L) << *theName << '.');
 
         for (f = variableNames.Next (f, travcache); f>=0; f = variableNames.Next (f, travcache)) {
             var = FetchVar (f);
@@ -571,7 +573,7 @@ bool      _VariableContainer::RemoveDependance (long varIndex) {
     if (dVariables) {
         long array_index = dVariables->FindStepping(varIndex,2L);
 
-        if (array_index >= 0) {
+        if (array_index >= 0L) {
 
             InsertVariableInSortedList(iVariables,
                                        *LocateVar (dVariables->list_data[array_index])->GetName(),
@@ -581,6 +583,33 @@ bool      _VariableContainer::RemoveDependance (long varIndex) {
         }
     }
     return true;
+}
+
+//__________________________________________________________________________________
+void      _VariableContainer::RemoveDependance (_AVLList const & list) {
+    if (dVariables) {
+    
+        _SimpleList removed;
+        
+        ForEachLocalVariable(dVariables, [&list, &removed, this] (long self, long template_var, unsigned long array_idx) -> void {
+            if (list.FindLong(self) >= 0L) {
+                InsertVariableInSortedList(this->iVariables,
+                                           *LocateVar (self)->GetName(),
+                                           self,
+                                           template_var);
+                removed << array_idx;
+                
+            }
+        });
+        
+        removed.Sort();
+        removed.Flip();
+        
+        removed.Each([this] (long idx, unsigned long) -> void {
+            this->RemoveLocalVariable (this->dVariables, idx);
+        });
+        
+    }
 }
 
 //__________________________________________________________________________________

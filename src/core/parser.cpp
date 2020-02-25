@@ -113,8 +113,6 @@ hyFloat  tolerance  = DBL_EPSILON;
 //__________________________________________________________________________________
 //SW: Helper functions
 
-//__________________________________________________________________________________
-void            DeleteTreeVariable      (long, _SimpleList &, bool);
 
 
 
@@ -350,9 +348,7 @@ void       UpdateChangingFlas (long vN) {
 }
 
 //__________________________________________________________________________________
-void       UpdateChangingFlas (_SimpleList & involvedVariables)
-{
-
+void       UpdateChangingFlas (_SimpleList const & involvedVariables) {
     long          topLimit         = compiledFormulaeParameters.lLength;
     _SimpleList * toDelete         = nil;
 
@@ -446,17 +442,122 @@ void DeleteVariable (long dv, bool deleteself, bool do_checks) {
 }
 
 //__________________________________________________________________________________
-void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
-{
-    if (dv>=0) {
-        _String *name  = (_String*)variableNames.Retrieve (dv);
-        _String myName = *name&".";
-        long    vidx   = variableNames.GetXtra (dv);
+void DeleteTreeVariable (long tree_variable_index, _SimpleList & parms) {
+    if (tree_variable_index>=0) {
+        
+        /*
+            1. Indentify all the variables that are in the tree.* and tree.*.* domain
+            2. Scan all the variables that are dependend on the list here and "batch" unconstrain them
+            3. Delete the tree and tree nodes; store the remainign variables in parms
+        */
+        
+        
+        _String const *tree_name  = (_String const*)variableNames.Retrieve (tree_variable_index),
+                       kDot = ".",
+                       tree_prefix = *tree_name&kDot;
+        
+        _SimpleList traversal_stack,
+                    indices_to_delete,
+                    all_subdomain_indices;
+        
+        _AVLList    indices_to_delete_avl (&indices_to_delete),
+                    all_subdomain_indices_avl (&all_subdomain_indices),
+                    will_keep_these (&parms);
+                    
+        
+        long tree_array_index = tree_variable_index;
+        variableNames.Find (tree_name,traversal_stack);
+        
+        while (long next_var = variableNames.Next (tree_array_index,traversal_stack)) {
+            if (next_var < 0) {
+                break;
+            }
+            _String const * next_var_name = (_String const *)variableNames.Retrieve(next_var);
+            if (next_var_name->BeginsWith(tree_prefix)) {
+                all_subdomain_indices_avl.InsertNumber(next_var);
+                
+                _Variable * secondary_variable = FetchVar (next_var);
+                                
+                if (next_var_name->FindBackwards(kDot, tree_prefix.length() + 1, kStringEnd) != kNotFound && !secondary_variable->IsContainer()) {
+                    // 20200220: deleting all containers here; only "plain" variables will be kept
+                    // subnode level
+                    will_keep_these.InsertNumber(next_var);
+                 } else {
+                    indices_to_delete_avl.InsertNumber (next_var);
+                }
+            } else {
+                break;
+            }
+            tree_array_index = next_var;
+        }
+        
+        //if ((nvid = variableNames.Next (dv,recCache))>=0)
+        
+        all_subdomain_indices_avl.ReorderList();
+        indices_to_delete_avl.ReorderList();
+        will_keep_these.ReorderList();
+        
+        _SimpleList _touched_dependent_variables,
+                    touched_containers;
+        
+        _AVLList    touched_dependent_variables (&_touched_dependent_variables);
+        
+        DoForEachVariable([&touched_dependent_variables, &indices_to_delete_avl, &all_subdomain_indices_avl] (_Variable* v, long idx) -> void {
+            // only care about variables that are not going in the subdomain
+            if (all_subdomain_indices_avl.FindLong(idx) < 0) {
+                if (v->IsContainer()) {
+                    //_VariableContainer * vc = (_VariableContainer*)vc;
+                    /* TODO, it is theoretically possible that a node / tree variable is a template variable
+                       in another container, but there are no use cases of this;
+                       need to check, but later
+                     */
+                } else {
+                    if (v->CheckFForDependence(indices_to_delete_avl)) {
+                        //printf ("Touched dependent variable %s\n" , v->GetName()->get_str());
+                        touched_dependent_variables.InsertNumber(v->get_index());
+                    }
+                }
+            }
+        });
+        
 
-        UpdateChangingFlas (vidx);
+        
+        //SetVariableToOwn
+        
+        UpdateChangingFlas(all_subdomain_indices);
+        // reset compiled formulas that may contain variable indices being deleted
+        
+        SetVariablesToOwnValues (will_keep_these);
+        if (touched_dependent_variables.countitems()) {
+            SetVariablesToOwnValues (touched_dependent_variables);
+        }
+        
+        
+        indices_to_delete.Each ([] (long var_idx, unsigned long) -> void {
+            _Variable * delvar = LocateVar (var_idx);
+            //printf ("Deleting variable %s\n" , delvar->GetName()->get_str());
+            if (delvar->ObjectClass() != TREE) {
+                variableNames.Delete (delvar->GetName(),true);
+                (*((_SimpleList*)&variablePtrs))[delvar->get_index()]=0;
+                freeSlots<<delvar->get_index();
+                DeleteObject (delvar);
+            } else {
+                ((_VariableContainer*)delvar)->Clear();
+            }
+        });
+        
+
+        return;
+         
+        /*_String const *tree_name  = (_String const*)variableNames.Retrieve (dv),
+                       tree_prefix = *tree_name&".";
+        
+        long    variable_index   = variableNames.GetXtra (dv);
+
+        UpdateChangingFlas (variable_index);
 
         _SimpleList recCache;
-        variableNames.Find (name,recCache);
+        variableNames.Find (tree_name,recCache);
         _String     nextVarID;
         long        nvid;
         if ((nvid = variableNames.Next (dv,recCache))>=0) {
@@ -464,6 +565,7 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
         }
 
 
+        
         {
             _SimpleList tcache;
             long        iv,
@@ -472,11 +574,11 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
             for (; k>=0; k = variableNames.Traverser (tcache, iv)) {
                 _Variable * thisVar = FetchVar(k);
 
-                if (thisVar->CheckFForDependence (vidx,false)) {
+                if (thisVar->CheckFForDependence (variable_index,false)) {
                     HBLObjectRef curValue = thisVar->Compute();
                     curValue->AddAReference();
-                    thisVar->SetValue (curValue);
-                    DeleteObject (curValue);
+                    thisVar->SetValue (curValue, false);
+                    //DeleteObject (curValue);
                 }
             }
         }
@@ -484,8 +586,8 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
         _Variable* delvar = (FetchVar(dv));
         if (delvar->ObjectClass() != TREE) {
             variableNames.Delete (variableNames.Retrieve(dv),true);
-            (*((_SimpleList*)&variablePtrs))[vidx]=0;
-            freeSlots<<vidx;
+            (*((_SimpleList*)&variablePtrs))[variable_index]=0;
+            freeSlots<<variable_index;
             DeleteObject (delvar);
         } else {
             ((_VariableContainer*)delvar)->Clear();
@@ -496,8 +598,8 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
             long nextVar = variableNames.Find (&nextVarID,recCache);
             for (; nextVar>=0; nextVar = variableNames.Next (nextVar, recCache)) {
                 _String dependent = *(_String*)variableNames.Retrieve (nextVar);
-                if (dependent.BeginsWith(myName)) {
-                    if (dependent.Find ('.', myName.length()+1, -1)>=0) {
+                if (dependent.BeginsWith(tree_prefix)) {
+                    if (dependent.Find ('.', tree_prefix.length()+1, -1)>=0) {
                         _Variable * checkDep = FetchVar (nextVar);
                         if (!checkDep->IsIndependent()) {
                             HBLObjectRef curValue = checkDep->Compute();
@@ -517,9 +619,9 @@ void DeleteTreeVariable (long dv, _SimpleList & parms, bool doDeps)
             for (unsigned long k=0; k<toDelete.lLength; k++) {
                 //StringToConsole (*(_String*)toDelete(k));
                 //BufferToConsole ("\n");
-                DeleteTreeVariable (*(_String*)toDelete(k),parms,false);
+                DeleteTreeVariable (LocateVarByName(*(_String*)toDelete(k)),parms,false);
             }
-        }
+        }*/
     }
 }
 //__________________________________________________________________________________
@@ -527,11 +629,6 @@ void DeleteVariable (_String const &name, bool deleteself) {
     DeleteVariable(LocateVarByName (name), deleteself);
 }
 
-//__________________________________________________________________________________
-void DeleteTreeVariable (_String&name, _SimpleList& parms, bool doDeps)
-{
-    DeleteTreeVariable(LocateVarByName (name), parms,doDeps);
-}
 
 //__________________________________________________________________________________
 _Variable* CheckReceptacle (_String const * name, _String const & fID, bool checkValid, bool isGlobal, bool clear_trees) {

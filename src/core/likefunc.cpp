@@ -2574,14 +2574,30 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         
         for (index = 0; index<indexInd.lLength; index++) {
             hyFloat          temp = GetIthIndependent(index);
-            SetIthIndependent  (index,temp*1.000000000001);
             
-            for (j=0; j < indexDep.lLength; j++) {
-                hyFloat temp1 = GetIthDependent(j);
-                if (temp1>currentValues[j]) {
-                    dependancies.Store(j,index,1.0);
-                } else if (temp1<currentValues[j]) {
-                    dependancies.Store(j,index,-1.0);
+            
+            
+            if (temp < GetIthIndependentBound(index)) {
+                SetIthIndependent  (index,temp*1.000000000001);
+                for (j=0; j < indexDep.lLength; j++) {
+                    hyFloat temp1 = GetIthDependent(j);
+                    if (temp1>currentValues[j]) {
+                        dependancies.Store(j,index,1.0);
+                    } else if (temp1<currentValues[j]) {
+                        dependancies.Store(j,index,-1.0);
+                    }
+                }
+            } else {
+                if (temp > GetIthIndependentBound(index, true)) {
+                    SetIthIndependent  (index,temp*0.9999999999999);
+                    for (j=0; j < indexDep.lLength; j++) {
+                        hyFloat temp1 = GetIthDependent(j);
+                        if (temp1>currentValues[j]) {
+                            dependancies.Store(j,index,-1.0);
+                        } else if (temp1<currentValues[j]) {
+                            dependancies.Store(j,index,1.0);
+                        }
+                    }
                 }
             }
             SetIthIndependent (index,temp);
@@ -2608,7 +2624,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             
             for (j = 0; j < indexInd.lLength; j++) {
                 if ((correlation = dependancies(badVarIndex,j)) != 0.) {
-                    // fprintf (stderr, "## %d -> %g\n", j, correlation);
+                    //fprintf (stderr, "## %d -> %g\n", j, correlation);
                     for (i=0; i<badIndices.lLength; i++) {
                         if (i != index) {
                             hyFloat depIJ = dependancies(badIndices.list_data[i],j);
@@ -2767,11 +2783,11 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         err_report << ":=";
         err_report << _String((_String*)cornholio->GetFormulaString(kFormulaStringConversionSubstiteValues));
         err_report << " must be in [";
-        err_report << lowerBounds[j];
+        err_report << _String(lowerBounds[j]);
         err_report << ",";
-        err_report << upperBounds[j];
+        err_report << _String(upperBounds[j]);
         err_report << "]. Current value = ";
-        err_report << currentValues[j];
+        err_report << _String(currentValues[j]);
         err_report << ".";
         
         _TerminateAndDump(err_report);
@@ -7570,6 +7586,36 @@ void    _LikelihoodFunction::UpdateDependent (long index) {
     }
 
 }
+    
+//_______________________________________________________________________________________
+void    _LikelihoodFunction::UpdateDependent (_AVLList const& list) {
+    auto handle_list = [] (_AVLList const& l, _SimpleList * dl, _SimpleList * il) -> long {
+        _SimpleList deleted_indices,
+                    deleted_vars;
+        
+        dl->Each ([&l, &deleted_indices, &deleted_vars] (long v, unsigned long i) -> void {
+            if (l.FindLong (v) >= 0) {
+                deleted_indices << i;
+                deleted_vars << v;
+            }
+        });
+        
+        if (deleted_vars.nonempty()) {
+            dl->DeleteList(deleted_indices);
+            (*il) << deleted_vars;
+        }
+        
+        return deleted_vars.countitems();
+    };
+    
+    long deleted_overall = handle_list(list, &indexDep, &indexInd);
+    
+    if (deleted_overall) {
+        for (unsigned long k = 0; k<depVarsByPartition.lLength; k++) {
+            handle_list (list, (_SimpleList*)depVarsByPartition(k), (_SimpleList*)indVarsByPartition(k));
+        }
+    }
+}
 
 
 //_______________________________________________________________________________________
@@ -7749,6 +7795,10 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
                 isReversiblePartition = false;
                 ReportWarning (_String ("Partition ") & long(i) & " is ASSUMED to have a non-reversible model");
               } else {
+                /* regarding issue #1081 : also need to confirm that equilibrium frequencies are all the same*/
+                  
+                _Matrix * base_frequencies = nil;
+                  
                 for (unsigned long m = 0; m < treeModels.lLength && isReversiblePartition; m++) {
                     long alreadyDone = alreadyDoneModels.Find ((BaseRef)treeModels.list_data[m]);
                     if (alreadyDone>=0) {
@@ -7756,6 +7806,20 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
                     } else {
                         alreadyDone = IsModelReversible (treeModels.list_data[m]);
                         alreadyDoneModels.Insert ((BaseRef)treeModels.list_data[m], alreadyDone);
+                    }
+                    if (alreadyDone) {
+                        _Variable *q = nil,
+                                  *f = nil;
+                        bool      mbf;
+                        RetrieveModelComponents (treeModels.list_data[m], q, f, mbf);
+                        if (!base_frequencies) {
+                            base_frequencies = (_Matrix*)f->GetValue();
+                        } else {
+                            _Matrix * my_freqs = (_Matrix*)f->GetValue();
+                            if (!my_freqs->Equal (base_frequencies)) {
+                                isReversiblePartition = false;
+                            }
+                        }
                     }
                     isReversiblePartition = isReversiblePartition && alreadyDone;
                 }
@@ -7867,8 +7931,8 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
                     if (nodeID == 1) {
                         if (matrices->lLength == 2) {
-                            branches->Clear();
-                            matrices->Clear();
+                            branches->Clear(false);
+                            matrices->Clear(false);
 
                             snID = t->DetermineNodesForUpdate          (*branches, matrices,catID,*cbid,canClear);
                         }

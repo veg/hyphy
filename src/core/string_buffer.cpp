@@ -107,6 +107,15 @@ void _StringBuffer::Clear() {
   sa_length = 0UL;
 }
 
+//=============================================================
+
+void _StringBuffer::Reset() {
+    s_length = 0L;
+    if (s_data) {
+        s_data[0] = '\0';
+    }
+}
+
 
 /*
 ==============================================================
@@ -279,10 +288,35 @@ _StringBuffer&    _StringBuffer::AppendNCopies   (_String const& value, unsigned
 //=============================================================
 
 _StringBuffer& _StringBuffer::AppendSubstring(const _String& source, long start, long end) {
-  (*this) << _String (source, start, end);
+ long requested_range = source.NormalizeRange(start, end);
+ 
+  if (requested_range > 0L) {
+      for (long i = start; i <= end; i++) {
+          (*this) << source.char_at(i);
+      }
+  }
   return (*this);
 }
 
+//=============================================================
+
+void _StringBuffer::Trim(long start, long end) {
+    
+    long resulting_length = NormalizeRange(start, end);
+    
+    if (resulting_length > 0L) {
+        if (start > 0L) {
+            memmove(s_data, s_data + start, resulting_length);
+        }
+        if (s_length != resulting_length) {
+            s_length = resulting_length;
+            s_data[resulting_length] = '\0';
+        }
+    } else {
+        s_length = 0UL;
+        s_data[0] = '\0';
+    }
+}
  
 
 //=============================================================

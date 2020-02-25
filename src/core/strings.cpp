@@ -817,6 +817,18 @@ const _String    _String::ChangeCase (hy_string_case conversion_type) const {
 
 //=============================================================
 
+void   _String::ChangeCaseInPlace (hy_string_case conversion_type) {
+  
+  auto conversion_function = conversion_type == kStringUpperCase ? toupper : tolower;
+  
+  for (unsigned long i = 0UL; i<s_length; i++) {
+    s_data[i] = conversion_function (s_data[i]);
+  }
+  
+}
+
+//=============================================================
+
 const _List _String::Tokenize(const _String& splitter) const {
   _List tokenized;
   
@@ -1297,6 +1309,7 @@ bool    _String::IsALiteralArgument (bool strip_quotes) {
 
 hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_object, _String const * context) const {
   if (nonempty()) {
+            
       char first_char    = char_at(0);
       bool is_func_ref   = char_at(s_length-1) == '&';
       
@@ -1306,16 +1319,18 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
           return kStringInvalidReference;
         }
         bool is_global_ref = first_char == '^';
-        _String   plain_name (*this, 1, -1);
+        _StringBuffer   plain_name (length());
+        plain_name.AppendSubstring (*this,1,-1);
         
         if (plain_name.IsValidIdentifier(fIDAllowCompound | fIDAllowFirstNumeric)) {
           if (context) {
-            plain_name = *context & '.' & plain_name;
+            plain_name.Clear();
+            (plain_name << *context << '.').AppendSubstring (*this,1,-1);
           }
           _FString * dereferenced_value = (_FString*)FetchObjectFromVariableByType(&plain_name, STRING);
           if (dereferenced_value && dereferenced_value->get_str().ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
             if (!is_global_ref && context) {
-              referenced_object = *context & '.' & referenced_object;
+              referenced_object = (_StringBuffer (context->length() + 1UL + referenced_object.length()) << *context << '.' << referenced_object);
             }
             return is_global_ref?kStringGlobalDeference:kStringLocalDeference;
           }
@@ -1330,7 +1345,8 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
           }
           if (try_as_expression.ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
             if (!is_global_ref && context) {
-              referenced_object = *context & '.' & try_as_expression;
+              //referenced_object = *context & '.' & try_as_expression;
+              referenced_object = (_StringBuffer (context->length() + 1UL + try_as_expression.length()) << *context << '.' << try_as_expression);
             }
             
             return is_global_ref?kStringGlobalDeference:kStringLocalDeference;

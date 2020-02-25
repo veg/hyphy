@@ -490,14 +490,25 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
      ^"meme.site_mixture_weight" = 0.75;
      if (^"meme.site_alpha" > 0) {
          ^"meme.site_omega_minus" = 1;
+         ^"meme.site_beta_plus"  = ^"meme.site_alpha" * 1.5;
      } else {
          ^"meme.site_omega_minus" = ^"meme.site_beta_plus" / Max (^"meme.site_alpha", 1e-6);
+         ^"meme.site_beta_plus" = 0.1;
          /* avoid 0/0 by making the denominator non-zero*/
      }
-
-    //console.log ("Optimizing MEME for pattern " + pattern_info);
-    //utility.SetEnvVariable ("LF_NEXUS_EXPORT_EXTRA", "Optimize (res,`lf_bsrel`);");
-    //io.SpoolLF (lf_bsrel, "/tmp/meme.debug" + ^"MPI_NODE_ID", "MEME");
+ 
+     
+     /*
+     console.log (pattern_info);
+     console.log (^"meme.site_alpha");
+     console.log (^"meme.site_omega_minus");
+     console.log (^"meme.site_beta_plus");
+    
+     console.log ("Optimizing MEME for pattern " + pattern_info);
+     utility.SetEnvVariable ("LF_NEXUS_EXPORT_EXTRA", "Optimize (res,`lf_bsrel`);");
+     io.SpoolLF (lf_bsrel, "/tmp/meme.debug" + (pattern_info['sites'])[0], "MEME");
+     */
+    
     Optimize (results, ^lf_bsrel);
     //console.log (results[1][0]);
 
