@@ -2516,7 +2516,12 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
   }
   catch (const _String& error) {
-    success =  _DefaultExceptionHandler (nil, error, current_program);
+    if (hy_env::EnvVariableTrue(hy_env::soft_fileio_exceptions)) {
+         hy_env::EnvVariableSet(hy_env::last_fileio_exception, new _FString (error,false), false);
+         success = true;
+    } else {
+        success =  _DefaultExceptionHandler (nil, error, current_program);
+    }
   }
 
   if (destination_file && destination_file != hy_message_log_file && do_close) {
@@ -3317,7 +3322,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     
     _String source_name = *GetIthParameter(0UL);
     if (source_name == kFscanfStdin) {
-    bool need_to_ask_user = true;
+      bool need_to_ask_user = true;
       if (current_program.has_stdin_redirect () || current_program.has_keyword_arguments()) {
           try {
             _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
@@ -3545,7 +3550,11 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     last_call_stream_position += current_stream_position - started_here_position;
 
   } catch (const _String& error) {
-    return  _DefaultExceptionHandler (nil, error, current_program);
+      if (hy_env::EnvVariableTrue(hy_env::soft_fileio_exceptions)) {
+          hy_env::EnvVariableSet(hy_env::last_fileio_exception, new _FString (error,false), false);
+          return true;
+      }
+      return  _DefaultExceptionHandler (nil, error, current_program);
   }
   
   return true;

@@ -243,17 +243,20 @@ _String const ReturnFileDialogInput(_String const * rel_path) {
         try {
             _String dialog_string (currentExecutionList->FetchFromStdinRedirect());
             if (dialog_string.nonempty()) {
+                hy_env::EnvVariableSet (hy_env::last_raw_file_prompt, new _FString (dialog_string), false);
                 return dialog_string;
             }
         } catch (_String const e) {
             if (e != kNoKWMatch) {
                 HandleApplicationError (e);
+                hy_env::EnvVariableSet (hy_env::last_raw_file_prompt, new _FString(), false);
                 return kEmptyString;
             }
         }
     }
 
     _String file_path = ReturnDialogInput(true, rel_path);
+    hy_env::EnvVariableSet (hy_env::last_raw_file_prompt, new _FString (file_path), false);
     terminate_execution = file_path.empty();
     return file_path;
 }

@@ -132,11 +132,27 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
 
         if (!utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
             SetDialogPrompt("Please select a tree file for the data:");
+            utility.SetEnvVariable ("LAST_FILE_IO_EXCEPTION", None);
+            utility.ToggleEnvVariable ("SOFT_FILE_IO_EXCEPTIONS",TRUE);
             fscanf(PROMPT_FOR_FILE, REWIND, "Raw", treeString);
+            
+            look_for_newick_tree = utility.getGlobalValue ("LAST_FILE_PATH");
+            
+            if (None != utility.GetEnvVariable ("LAST_FILE_IO_EXCEPTION")) {
+                if (utility.getGlobalValue ("LAST_RAW_FILE_PROMPT") ==  utility.getGlobalValue ("terms.trees.neighbor_joining")) {
+                    datafilter_name = utility.GetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"));
+                    assert (Type (datafilter_name) == "String", "Expected a string for the datafilter to  build a NJ tree from");
+                    treeString = tree.infer.NJ (datafilter_name, None);
+                } else {
+                    assert (0, utility.GetEnvVariable ("LAST_FILE_IO_EXCEPTION"));
+                }
+                utility.SetEnvVariable ("LAST_FILE_IO_EXCEPTION", None);
+            }
+            
+            utility.ToggleEnvVariable ("SOFT_FILE_IO_EXCEPTIONS",None);
             fprintf(stdout, "\n");
 
-            look_for_newick_tree = utility.getGlobalValue ("LAST_FILE_PATH");
-
+  
             if (regexp.Find(treeString, "^#NEXUS")) {
                 ExecuteCommands(treeString);
 
@@ -295,7 +311,7 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
                 utility.getGlobalValue("terms.data.tree"): trees.LoadAnnotatedTopologyAndMap(tree_matrix[i][1], mapping)
             };
         }
-    } else { // no tree matrix; allow if there is a single partition
+    } else { // no tree matrix; apply the same tree to all partitions
 
         tree_info = trees.LoadAnnotatedTopologyAndMap(TRUE, mapping);
 
