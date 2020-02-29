@@ -50,7 +50,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ROOTED_RIGHT                    2
 
 #define HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS  0.000000001
-
+#define fReusePreviouslyAllocatedMatrixExponentials 0x01
 
 //_______________________________________________________________________________________________
 
@@ -116,7 +116,10 @@ public:
         return theProbs;
     }
     
-    void                SetCompExp      (_Matrix*, long = -1);
+    bool                clear_exponentials (void) const { return (flags & fReusePreviouslyAllocatedMatrixExponentials) == 0;}
+    void                reuse_exponentials (void) { flags = flags | fReusePreviouslyAllocatedMatrixExponentials;}
+
+    void                SetCompExp      (_Matrix*, long = -1, bool do_exponentiation = false);
     void                SetCompMatrix   (long);
     _Matrix*            GetCompExp      (long catID = -1, bool = false) const;
     
@@ -213,7 +216,8 @@ protected:
     _Matrix   **    matrixCache;    // only meaningful for category computations
     
     long            cBase,          // dimension of theProbs
-                    lastState;
+                    flags;
+
     /*nodeIndex,
     referenceNode,
     slaveNodes;*/

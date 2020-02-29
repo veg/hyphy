@@ -41,7 +41,7 @@ function runTest () {
   
   Tree twoNodes = (a),b;
   ACCEPT_ROOTED_TREES = 0;
-  assert (runCommandWithSoftErrors ('Tree twoNodes = (a),b;', "Cannot constuct empty trees"), "Failed error checking for trying to construct a tree with only two nodes");
+  assert (runCommandWithSoftErrors ('Tree twoNodes = (a),b;', "Cannot consrtuct empty trees"), "Failed error checking for trying to construct a tree with only two nodes");
    
   testResult = 1;
 

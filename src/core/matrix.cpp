@@ -1476,14 +1476,15 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID) {
         if (theIndex) {
             _Matrix*    vm = (_Matrix*) value;
             hyFloat *dp = vm ->theData;
-            hyFloat *tempDiags = new hyFloat [hDim] {0.0};
+            hyFloat *tempDiags = (hyFloat*) alloca (sizeof(hyFloat) * hDim);
+            InitializeArray(tempDiags, hDim, 0.0);
 
             if (freq_matrix) {
                   for (long i=0; i<lDim; i++) {
                       long p = theIndex[i];
                       if (p != -1) {
                           long h = p/vDim;
-                          p %= vDim;
+                          p -= h*vDim;
                           if (h!=p) {
                               tempDiags[h] += (dp[i] *= freq_matrix->theData[p]);
                           }
@@ -1495,7 +1496,7 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID) {
                       long p = theIndex[i];
                       if (p != -1) {
                           long h = p/vDim;
-                          p %= vDim;
+                          p -= h*vDim;
                           if (h!=p) {
                               tempDiags[h] += dp[i];
                           }
@@ -1507,7 +1508,6 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID) {
                 vm->Store (j,j,-tempDiags[j]);
             }
 
-            delete [] tempDiags;
         } else {
             hyFloat * theMatrix = ((_Matrix*)value)->theData;
 
@@ -1567,7 +1567,7 @@ HBLObjectRef   _Matrix::Compute (void) {
     }
     
     if (storageType != _SIMPLE_FORMULA_TYPE) {
-      theValue = Evaluate(false);
+      theValue  = Evaluate(false);
     } else {
       theValue  = EvaluateSimple ();
     }
@@ -1582,15 +1582,20 @@ HBLObjectRef   _Matrix::ComputeNumeric (bool copy) {
         if (storageType == 0 && ANALYTIC_COMPUTATION_FLAG) {
             return this;
         }
-
-        if (theValue) {
-            DeleteObject (theValue);
-        }
-
         if (storageType != _SIMPLE_FORMULA_TYPE) {
+            if (theValue) {
+                DeleteObject (theValue);
+            }
             theValue  = Evaluate(false);
         } else {
-            theValue  = EvaluateSimple ();
+            if (copy) {
+                if (theValue) {
+                    DeleteObject (theValue);
+                }
+                theValue = EvaluateSimple();
+            } else {
+                theValue = EvaluateSimple((_Matrix*)theValue);
+            }
         }
         return theValue;
     }
@@ -1598,9 +1603,7 @@ HBLObjectRef   _Matrix::ComputeNumeric (bool copy) {
         if (theValue) {
             DeleteObject (theValue);
         }
-
-        theValue = (_Matrix*)makeDynamic();
-        return theValue;
+        return (theValue = (_Matrix*)makeDynamic());
     }
     return this;
 }
@@ -2744,9 +2747,19 @@ void        _Matrix::FillInList (_List& fillMe, bool convert_numbers) const {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef   _Matrix::EvaluateSimple (void) {
+HBLObjectRef   _Matrix::EvaluateSimple (_Matrix* existing_storage) {
 // evaluate the matrix  overwriting the old one
-    _Matrix * result = new _Matrix (hDim, vDim, bool (theIndex), true);
+    _Matrix * result;
+    
+    if (existing_storage && existing_storage->hDim == hDim && existing_storage->vDim == vDim && existing_storage->is_numeric() && ((bool)existing_storage->theIndex == (bool)theIndex)) {
+        existing_storage->ZeroNumericMatrix();
+        result = existing_storage;
+    } else {
+        if (existing_storage) {
+            DeleteObject (existing_storage);
+        }
+        result = new _Matrix (hDim, vDim, bool (theIndex), true);
+    }
 
 
     if (cmd->varIndex.lLength) {
@@ -2767,29 +2780,19 @@ HBLObjectRef   _Matrix::EvaluateSimple (void) {
 
     for (long f = 0; f < cmd->formulasToEval.lLength; f++) {
         cmd->formulaValues [f] = ((_Formula*)cmd->formulasToEval.list_data[f])->ComputeSimple(cmd->theStack, cmd->varValues);
-        /*if (terminate_execution)
-        {
-            ((_Formula*)cmd->formulasToEval.list_data[f])->ConvertFromSimple(cmd->varIndex);
-            _String * s = (_String*)((_Formula*)cmd->formulasToEval.list_data[f])->toStr();
-            WarnError (*s);
-            DeleteObject (s);
-            return result;
-        }*/
     }
 
     long * fidx = cmd->formulaRefs;
 
     if (theIndex) {
-        result->lDim = lDim;
+        if (result->lDim != lDim) {
+            result->lDim = lDim;
+            result->theIndex = (long*)MemReallocate((hyPointer)result->theIndex,sizeof(long)*lDim);
+            result->theData = (hyFloat*)MemReallocate ((hyPointer)result->theData,sizeof(hyFloat)*lDim);
+        }
         result->bufferPerRow = bufferPerRow;
         result->overflowBuffer = overflowBuffer;
         result->allocationBlock = allocationBlock;
-        result->theIndex = (long*)MemReallocate((hyPointer)result->theIndex,sizeof(long)*lDim);
-        result->theData = (hyFloat*)MemReallocate ((hyPointer)result->theData,sizeof(hyFloat)*lDim);
-
-        /*memcpy (result->theIndex,theIndex,sizeof(long)*lDim);*/
-
-
 
 
         for (long i = 0; i<lDim; i++) {
@@ -2802,46 +2805,21 @@ HBLObjectRef   _Matrix::EvaluateSimple (void) {
             result->theIndex[i] = idx;
         }
 
-        /*for (long i = 0; i<lDim; i++)
-        {
-            if (theIndex[i]!=-1)
-            {
-                formValue = theFormulas[i]->ComputeSimple(cmd->theStack, cmd->varValues);
-                result.theData[i] = formValue;
-            }
-        } */
 
         if (hDim==vDim) {
-            hyFloat* diagStorage = new hyFloat [hDim];
-            {
-                for (long i = 0; i<hDim; i++) {
-                    diagStorage[i] = 0.0;
-                }
-            }
+            hyFloat* diagStorage = (hyFloat*)alloca (sizeof(hyFloat) * hDim);
+            InitializeArray(diagStorage, hDim, 0.0);
             for (long i = 0; i<lDim; i++) {
                 long k = result->theIndex[i];
                 if (k!=-1) {
-                    diagStorage[k/hDim] -= result->theData[i];
+                    diagStorage[k/hDim] += result->theData[i];
                 }
             }
-            {
-                for (long i = 0; i<hDim; i++) {
-                    (*result)[i*hDim+i] = diagStorage[i];
-                }
+            for (long i = 0; i<hDim; i++) {
+                (*result)[i*hDim+i] = -diagStorage[i];
             }
-            delete [] diagStorage;
         }
     } else {
-        /*long i;
-        for (i = 0; i<lDim; i++)
-        {
-            if (theFormulas[i]!=(_Formula*)ZEROPOINTER)
-            {
-                formValue = theFormulas[i]->ComputeSimple(cmd->theStack,cmd->varValues);
-                result.theData[i] = formValue;
-                //break;
-            }
-        }       */
 
         for (long i = 0; i<lDim; i++) {
             if (fidx[i]>= 0) {
@@ -2850,21 +2828,23 @@ HBLObjectRef   _Matrix::EvaluateSimple (void) {
         }
 
         if (hDim==vDim)
-            for (long i = 0; i<lDim; i+=vDim+1) {
+            for (long i = 0L, r = 0L; i<lDim; i+=vDim+1L, r++) {
                 if (fidx[i] < 0) { // mod Aug 2 2005
                     //if (theFormulas[i]->IsEmpty())
                     //{
-                    hyFloat st = 0;
-                    long k = i/vDim,j;
-                    for (j = k*vDim; j<k*vDim+k; j++) {
-                        st-=result->theData[j];
+                    
+                    hyFloat st = 0.;
+                    long j;
+                    
+                    for (j = r*vDim; j<r*vDim+r; j++) {
+                        st += result->theData[j];
                     }
 
-                    for (j = k*vDim+k+1; j<(k+1)*vDim; j++) {
-                        st-=result->theData[j];
+                    for (j = r*vDim+r+1; j<(r+1)*vDim; j++) {
+                        st += result->theData[j];
                     }
 
-                    result->theData[i] = st;
+                    result->theData[i] = -st;
                     //}
                 }
             }
@@ -2910,8 +2890,7 @@ void    _Matrix::ClearObjects (void)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Clear (void)
-{
+void    _Matrix::Clear (void) {
     DeleteObject (theValue);
     if (storageType == 2) { // has formulas in it - must delete
         ClearFormulae();
@@ -2929,6 +2908,17 @@ void    _Matrix::Clear (void)
         theData = nil;
     }
 
+}
+
+//_____________________________________________________________________________________________
+
+void    _Matrix::ZeroNumericMatrix (void) {
+    if (is_numeric()) {
+        InitializeArray (theData, lDim, 0.0);
+        if (!is_dense()) {
+            InitializeArray (theIndex, lDim, -1L);
+        }
+    }
 }
 
 //_____________________________________________________________________________________________
@@ -4333,10 +4323,9 @@ void    _Matrix::Transpose (void)
 void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash)
 {
     if (theIndex) {
-        _SimpleList sortedIndex  ((unsigned long)lDim)
-        ,sortedIndex3 ((unsigned long)lDim)
-        ,sortedIndex2
-        ;
+        _SimpleList sortedIndex  ((unsigned long)lDim, (long*)alloca (lDim * sizeof (long))),
+                    sortedIndex3 ((unsigned long)lDim, (long*)alloca (lDim * sizeof (long))),
+                    sortedIndex2;
 
 
         long blockChunk = 32,
@@ -4380,7 +4369,7 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash)
 
 //_____________________________________________________________________________________________
 
-_Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
+_Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Matrix * existing_storage) {
     // find the maximal elements of the matrix
     
     
@@ -4421,9 +4410,16 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
         } else {
             max = 1.;
         }
+       
+        _Matrix *result;
         
-        _Matrix *result = new _Matrix(hDim, vDim , is_polynomial(), !is_polynomial()),
-                temp    (*this);
+        if (!is_polynomial() && existing_storage && existing_storage->hDim == hDim && existing_storage->vDim == vDim && existing_storage->is_numeric() && existing_storage->is_dense()) {
+            result = existing_storage;
+            InitializeArray(result->theData, result->lDim, 0.0);
+        } else {
+            result = new _Matrix(hDim, vDim , is_polynomial(), !is_polynomial());
+        }
+    
         
         // put ones on the diagonal
         
@@ -4447,6 +4443,8 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
         i = 2;
         
         if (precisionArg || is_polynomial()) {
+            _Matrix temp    (*this);
+
             if (!is_polynomial()) {
                 for (; i<=precisionArg; i++) {
                     temp      *= (*this);
@@ -4474,7 +4472,15 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
             
             i=2;
             
+            
             if (is_dense()) { // avoid matrix allocation
+                _Matrix temp ;
+                temp.hDim = hDim;
+                temp.vDim = vDim;
+                temp.lDim = lDim;
+                temp.theData = (hyFloat*)alloca(sizeof (hyFloat) * hDim*vDim);
+                memcpy (temp.theData, theData, sizeof (hyFloat) * hDim*vDim);
+
                 _Matrix tempS;
                 tempS.hDim = hDim;
                 tempS.vDim = vDim;
@@ -4499,8 +4505,10 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition) {
                     memcpy (temp.theData, tempS.theData, lDim * sizeof (hyFloat));
                 }
                 tempS.theData = nil;
+                temp.theData = nil;
                 
             } else  {
+                _Matrix temp    (*this);
                 _Matrix tempS (hDim, vDim, false, temp.storageType);
                 do {
                     temp.MultbyS        (*this,theIndex!=nil, &tempS, stash);

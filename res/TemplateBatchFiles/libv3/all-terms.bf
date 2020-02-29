@@ -484,6 +484,9 @@ namespace terms{
         branches            = "branches";
         meta                = "meta";
         comment             = "comment";
+        neighbor_joining    = "neighbor-joining";
+        data_for_neighbor_joining
+                            = "FILTER_FOR_NEIGHBOR_JOINING";
 
         //node_name = "Name";
         //children = "Children";

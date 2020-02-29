@@ -47,6 +47,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "dataset.h"
 #include "trie.h"
 #include "associative_list.h"
+#include "hy_string_buffer.h"
 
 #include <stdio.h>
 
@@ -289,8 +290,8 @@ public:
     long      get_code                              (void) const { return code; };
     unsigned  long parameter_count                  (void) const { return parameters.countitems();}
     
-    static  const _String   FindNextCommand       (_String&);
-    // finds & returns the next command block in input
+    static    void      FindNextCommand       (_String&, _StringBuffer&);
+    // finds & stores the next command from _String into _StringBuffer
     // chops the input to remove the newly found line
 
     static  long      ExtractConditions     (_String const& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
@@ -424,7 +425,7 @@ protected:
     friend  class     _ExecutionList;
     friend  void      DeleteVariable     (long, bool);
     friend  void      UpdateChangingFlas (long);
-    friend  void      UpdateChangingFlas (_SimpleList&);
+    friend  void      UpdateChangingFlas (_SimpleList const&);
 
 
 private:

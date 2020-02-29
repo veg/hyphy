@@ -2516,7 +2516,12 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
   }
   catch (const _String& error) {
-    success =  _DefaultExceptionHandler (nil, error, current_program);
+    if (hy_env::EnvVariableTrue(hy_env::soft_fileio_exceptions)) {
+         hy_env::EnvVariableSet(hy_env::last_fileio_exception, new _FString (error,false), false);
+         success = true;
+    } else {
+        success =  _DefaultExceptionHandler (nil, error, current_program);
+    }
   }
 
   if (destination_file && destination_file != hy_message_log_file && do_close) {
@@ -3055,10 +3060,11 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
         }
 
         // next, handle lookup of HBL objects
+          
         const _String source_name   = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
         long          object_type = HY_BL_ANY,
                       object_index;
-
+          
         BaseRefConst       source_object = nil;
         try {
           source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
@@ -3316,7 +3322,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     
     _String source_name = *GetIthParameter(0UL);
     if (source_name == kFscanfStdin) {
-    bool need_to_ask_user = true;
+      bool need_to_ask_user = true;
       if (current_program.has_stdin_redirect () || current_program.has_keyword_arguments()) {
           try {
             _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
@@ -3544,7 +3550,11 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     last_call_stream_position += current_stream_position - started_here_position;
 
   } catch (const _String& error) {
-    return  _DefaultExceptionHandler (nil, error, current_program);
+      if (hy_env::EnvVariableTrue(hy_env::soft_fileio_exceptions)) {
+          hy_env::EnvVariableSet(hy_env::last_fileio_exception, new _FString (error,false), false);
+          return true;
+      }
+      return  _DefaultExceptionHandler (nil, error, current_program);
   }
   
   return true;
@@ -3997,7 +4007,9 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
         // and that it is a valid transition matrix
       isExpressionBased = new _Formula;
       _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
-      matrixExpression =  _ElementaryCommand::FindNextCommand (matrixExpression);
+      _StringBuffer  trimmed_expression;
+      _ElementaryCommand::FindNextCommand (matrixExpression,trimmed_expression);
+      matrixExpression = trimmed_expression;
       long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
       if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
         throw (defErrMsg & " parse code = " & parseCode & " " & (parseCode == HY_FORMULA_EXPRESSION ? (_String(", object type code ") & _String((long) isExpressionBased->ObjectClass())) : kEmptyString ));

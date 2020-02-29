@@ -226,8 +226,8 @@ template <typename ARG_TYPE> void DeleteAndZeroObject(ARG_TYPE &object) {
       If the object was deleted, set the pointer to NULL
   */
 
-  DeleteObject(object);
-  object = NULL;
+    DeleteObject(object);
+    object = NULL;
 }
 
 template <typename ARG_TYPE>

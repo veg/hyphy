@@ -92,8 +92,8 @@ namespace hy_global {
                      has_terminal_stderr = true,
                      ignore_kw_defaults  = false;
     
-    FILE            *hy_error_log_file,
-                    *hy_message_log_file;
+    FILE            *hy_error_log_file = NULL,
+                    *hy_message_log_file = NULL;
     
     hyTreeDefinitionPhase
                      isDefiningATree = kTreeNotBeingDefined;
@@ -131,7 +131,7 @@ namespace hy_global {
                      hy_standard_library_directory ("TemplateBatchFiles"),
                      hy_standard_model_directory   ("TemplateModels"),
                      hy_error_log_name             ("errors.log"),
-                     hy_messages_log_name          ("messages.log");
+                     hy_messages_log_name          ; // 20200222 : DISABLE MESSAGES BY DEFAULT
   
   
     _List            _hy_application_globals_aux,
@@ -392,6 +392,7 @@ namespace hy_global {
             for (long file_index = 0; file_index < 2; file_index++) {
                 long                    p   = 1L;
                 
+                if (prefix[file_index]->empty()) continue;
     #ifndef __HYPHYMPI__
                 _String file_name (*prefix[file_index]);
         #if defined  __MINGW32__

@@ -113,9 +113,19 @@ _String*    FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, c
 void        DeleteVariable  (_String const&, bool deleteself = true);
 void        DeleteVariable  (long, bool deleteself, bool do_checks = true);
 
-void        DeleteTreeVariable
-(_String&, _SimpleList&,bool);
+void        SetVariablesToOwnValues (_AVLList const & indices);
 
+void        DeleteTreeVariable (long, _SimpleList&);
+
+template <typename ACTION>
+void DoForEachVariable(ACTION do_this) {
+    for (long i = 0; i < variablePtrs.lLength; i++) {
+        _Variable * ith_var = (_Variable *)variablePtrs.GetItem (i);
+        if (ith_var) {
+            do_this (ith_var, i);
+        }
+    }
+}
 
 
 void        stashParameter  (_String const& name, hyFloat  newVal, bool);

@@ -978,13 +978,14 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     //TODO: Where is data_filter being set?
     if (Type(data_filter) == "String") {
-        return estimators.FitMGREV({
+        return estimators.FitCodonModel({
                 {
                     codon_data__
                 }
             }, {
                 "0": tree
             },
+            generator,
             genetic_code,
             option,
             initial_values)
@@ -1033,7 +1034,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         lf_components[2 * i + 1] = "tree_" + i;
         model.ApplyModelToTree(Eval("&`lf_components[2*i + 1]`"), tree[i], model_assignment, None);
     }
-
+    
 
     partition_omega = {};
 
@@ -1047,7 +1048,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
 
     if (Abs(partition_omega)) {
-
+    
         /**
             declare the global ratios for each branch set
             and add them to the model parameter set

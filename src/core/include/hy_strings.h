@@ -672,7 +672,7 @@ public:
       [CHANGE-NOTE SLKP 20170519 remove the bool argument for memory handling]
    */
 
-  void Trim(long, long);
+  virtual void Trim(long, long);
 
   /**
    * Converts string to a particular case
@@ -686,6 +686,7 @@ public:
       ]
    */
   const _String ChangeCase(hy_string_case conversion_type) const;
+  void   ChangeCaseInPlace(hy_string_case conversion_type);
 
   /**
    * Returns a list from a string split by a substr
@@ -1453,6 +1454,19 @@ public:
   _SimpleList const RegExpAllMatches(_String const &pattern,
                                      bool case_sensitive,
                                      bool handle_errors) const;
+    /** given coordinates start and end, converts then to valid string indices
+     if called on an empty string, returns 0 and does not change start and end
+     if start < 0 it is reset to 0
+     if end < 0 or >= string length it is reset to (string length) - 1
+
+     @param start: start of the range (0-based)
+     @param end  : end of the range
+     @return     : the length of the range
+
+     * Revision history
+     - SLKP 20170517 porting from v3 branch
+     */
+    long NormalizeRange(long &start, long &end) const;
 
 
 private:
@@ -1522,19 +1536,6 @@ private:
   inline void AllocateAndCopyString(const char *source_string,
                                     unsigned long length);
 
-  /** given coordinates start and end, converts then to valid string indices
-   if called on an empty string, returns 0 and does not change start and end
-   if start < 0 it is reset to 0
-   if end < 0 or >= string length it is reset to (string length) - 1
-
-   @param start: start of the range (0-based)
-   @param end  : end of the range
-   @return     : the length of the range
-
-   * Revision history
-   - SLKP 20170517 porting from v3 branch
-   */
-  long NormalizeRange(long &start, long &end) const;
 
   /** Factored out core of RegExpMatch and RegExpAllMatches
    * Revision history

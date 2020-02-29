@@ -606,7 +606,14 @@ void    ProcessConfigStr (_String const & conf) {
               logInputMode = true;
               break;
           }
-          default: {
+
+          case 'm':
+          case 'M': {
+            hy_messages_log_name = "messages.log";
+            break;
+          }
+
+        default: {
               ReportWarning (_String ("Option" ) & _String (c).Enquote() & " is not valid command line option and will be ignored");
           }
         }

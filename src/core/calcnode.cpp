@@ -60,6 +60,8 @@ _CalcNode::_CalcNode    () {
     theProbs = nil;    // default constructor, doesn't do much
     compExp = nil;
     matrixCache = nil;
+    flags = 0;
+    cBase = 0;
 }
 
 //_______________________________________________________________________________________________
@@ -84,6 +86,7 @@ void    _CalcNode::InitializeCN     ( _String const& parms, int, _VariableContai
     if (theIndex < 0) return;
 
     cBase         = 0;
+    flags         = 0;
     theProbs      = nil;
     compExp       = nil;
     matrixCache   = nil;
@@ -166,6 +169,7 @@ long      _CalcNode::SetDependance (long var_index) {
             it needs to be marked as such in this CalcNode
          */
         
+ 
         PopulateAndSort ([&] (_AVLList& avl) -> void {
             LocateVar (var_index)->ScanForVariables (avl,true);
         }).Each ( [&] (long var_index, unsigned long idx) -> void {
@@ -499,11 +503,14 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
   #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
         fprintf (stderr, "[_CalcNode::RecomputeMatrix] Deleting category %ld for node %s at %p\n", categID, GetName()->sData, GetCompExp(categID));
   #endif
-        DeleteObject(GetCompExp(categID, true));
-
+        if (clear_exponentials()) {
+            DeleteObject(GetCompExp(categID, true));
+        }
       } else {
         if (compExp) {
-            DeleteAndZeroObject(compExp);
+            if (clear_exponentials ()) {
+                DeleteAndZeroObject(compExp);
+            }
         }
       }
     }
@@ -580,14 +587,26 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 }
 
 //_______________________________________________________________________________________________
-void        _CalcNode::SetCompExp  (_Matrix* m, long catID) {
-    compExp = m;
+void        _CalcNode::SetCompExp  (_Matrix* m, long catID, bool do_exponentiation) {
+    
+    _Matrix ** store_exp_here;
+    
     if (catID >= 0 && matrixCache) {
         if (remapMyCategories.lLength) {
             catID = remapMyCategories.list_data[catID*(categoryVariables.lLength+1)];
         }
-        matrixCache[catID] = compExp;
+        store_exp_here = &(matrixCache[catID]);
+    } else {
+        store_exp_here = &compExp;
     }
+    
+    if (do_exponentiation) {
+        compExp = m->Exponentiate(1., true, *store_exp_here);
+        reuse_exponentials ();
+    } else {
+        compExp = m;
+    }
+    *store_exp_here = compExp;
 }
 //_______________________________________________________________________________________________
 _Matrix*        _CalcNode::ComputeModelMatrix  (bool) {
@@ -619,7 +638,9 @@ _Matrix*    _CalcNode::GetCompExp       (long catID, bool doClear) const {
         _Matrix* ret = matrixCache?matrixCache[catID]:compExp;
 
         if (doClear && matrixCache) {
-            matrixCache[catID] = nil;
+            if (matrixCache[catID] && matrixCache[catID]->CanFreeMe()) {
+                matrixCache[catID] = nil;
+            } 
         }
         return ret;
     }
@@ -634,6 +655,7 @@ BaseRef     _CalcNode::makeDynamic(void) const {
     res->categoryIndexVars.Duplicate (&categoryIndexVars);
     res->theValue = theValue;
     res->cBase = cBase;
+    res->flags = flags;
     if (cBase) {
         res->theProbs = new hyFloat [cBase];
         CopyArray(res->theProbs, theProbs, cBase);

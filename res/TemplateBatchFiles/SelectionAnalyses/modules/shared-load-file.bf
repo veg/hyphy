@@ -86,9 +86,13 @@ function load_file (prefix) {
         name_mapping = {};
         utility.ForEach (alignments.GetSequenceNames (prefix+".codon_data"), "_value_", "`&name_mapping`[_value_] = _value_");
     }
-
+    
+    utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
+                           codon_data_info[utility.getGlobalValue("terms.data.datafilter")]);
 
     partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+
+    utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"), None);
 
         /**  this will return a dictionary of partition strings and trees; one set per partition, as in
         {

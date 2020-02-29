@@ -39,7 +39,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('Sin("")', "Operation 'Sin' is not implemented/defined for a String"), "Sin String argument is invalid");
   assert(runCommandWithSoftErrors('Sin({})', "Operation 'Sin' is not implemented/defined for a AssociativeList"), "Sin Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('Sin({{"a","b"}})', "evaluated with errors"), "Sin Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('Sin({{"a","b"}})', "Operation 'Sin' is not implemented/defined for a Matrix"), "Sin Matrix argument is invalid");
   assert(runCommandWithSoftErrors('Sin(T)', "Operation 'Sin' is not implemented/defined for a Topology"), "Sin Topology argument is invalid");
   assert(runCommandWithSoftErrors('Sin(TT)', "Operation 'Sin' is not implemented/defined for a Tree"), "Sin Tree argument is invalid");
 

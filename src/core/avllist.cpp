@@ -279,8 +279,7 @@ bool  _AVLList::IsValidIndex(long index) const {
 
 //______________________________________________________________
 
-long  _AVLList::GetByIndex (const long theIndex)
-{
+long  _AVLList::GetByIndex (const long theIndex) {
     if (theIndex == 0) {
         return First();
     }
@@ -475,7 +474,6 @@ const _List  _AVLList::Keys (void) const {
       
       cn = Traverser (hist,ls,root);
       
-      bool first = true;
       while (cn>=0) {
         keys << Retrieve (cn);
         cn = Traverser (hist,ls);
