@@ -1,7 +1,7 @@
 GetString (version, HYPHY_VERSION, 0);
 
 if (+version >= 2.4) {
-    LoadFunctionLibrary ("SelectionAnalyses/FUBAR.bf", {"--alignment" : PATH_TO_CURRENT_BF + "data/CD2_AA.fna", "--model" : "JTT"});
+    LoadFunctionLibrary ("SelectionAnalyses/FADE.bf", {"--alignment" : PATH_TO_CURRENT_BF + "data/CD2_AA.fna", "--model" : "JTT"});
 } else {
     return 0;
 

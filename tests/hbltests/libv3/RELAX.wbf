@@ -1,13 +1,13 @@
 GetString (version, HYPHY_VERSION, 0);
 
 if (+version >= 2.4) {
-    /*LoadFunctionLibrary ("SelectionAnalyses/RELAX.bf", {"--code": "Universal",
+    LoadFunctionLibrary ("SelectionAnalyses/RELAX.bf", {"--code": "Universal",
     "--alignment": PATH_TO_CURRENT_BF + "data/CD2.nex",
     "--mode": "Classic mode",
     "--test": "GROUP1",
     "--reference": "GROUP2",
     "--rates" : "2",
-    "--models": "All"});*/
+    "--models": "All"});
 } else {
     LoadFunctionLibrary ("SelectionAnalyses/RELAX.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "GROUP1", "3" : "GROUP2", "4" : "All"});
 
