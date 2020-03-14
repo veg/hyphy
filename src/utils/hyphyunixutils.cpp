@@ -128,9 +128,10 @@ bool    Get_a_URL (_String& urls, _String*
         //curl_easy_setopt (curl, CURLOPT_VERBOSE, 1);
         curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, (void*)(f?url2File:url2String));
       
-        if (hy_env::EnvVariableTrue (VerbosityLevelString)) {
+        /*if (hy_env::EnvVariableTrue (VerbosityLevelString)) {
             curl_easy_setopt (curl,CURLOPT_NOPROGRESS,1);
-        }
+        }*/
+        
         res = curl_easy_perform (curl);
         curl_easy_cleanup (curl);
 
