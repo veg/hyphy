@@ -94,7 +94,4 @@ utility.ForEachPair (qv,"_index_", "_p_",
                    confirm_site (_index_[0], _p_, test.expected_positives);
                 ");
 
-
-assert (check_value (
-    test.subs_sum, 123, 0.01), "Incorrect # of subs across sites with p <= 1");
     
