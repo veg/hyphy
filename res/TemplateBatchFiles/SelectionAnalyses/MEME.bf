@@ -1,6 +1,5 @@
 RequireVersion("2.4.0");
 
-
 /*------------------------------------------------------------------------------
     Load library files
 */
@@ -40,7 +39,7 @@ meme.analysis_description = {
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    terms.io.version: "2.1.1",
+    terms.io.version: "2.1.2",
     terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
     terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
     terms.io.contact: "spond@temple.edu",
@@ -109,7 +108,9 @@ meme.table_headers = {{"alpha;", "Synonymous substitution rate at a site"}
                      {"LRT", "Likelihood ratio test statistic for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
                      {"p-value", "Asymptotic p-value for episodic diversification, i.e., p<sup>+</sup> &gt; 0 <emph>and<emph> &beta;<sup>+</sup> &gt; &alpha;"}
                      {"# branches under selection", "The (very approximate and rough) estimate of how many branches may have been under selection at this site, i.e., had an empirical Bayes factor of 100 or more for the &beta;<sup>+</sup> rate"}
-                     {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
+                     {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                     {"MEME LogL", "Site Log-likelihood under the MEME model"}
+                     {"FEL LogL", "Site Log-likelihood under the FEL model"}};
 
 
 /**
@@ -258,7 +259,7 @@ parameters.DeclareGlobal ("meme.site_beta_plus", {});
 
 model.generic.AddGlobal  (meme.site.bsrel, "meme.site_mixture_weight", meme.parameter_site_mixture_weight);
 parameters.DeclareGlobal ("meme.site_mixture_weight", {});
-parameters.SetRange ("meme.site_mixture_weight", terms.range01);
+parameters.SetRange ("meme.site_mixture_weight", terms.range_almost_01);
 
 meme.report.count = {{0}};
 
@@ -328,7 +329,8 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
 
     estimators.ApplyExistingEstimates ("meme.site_likelihood_bsrel", meme.site_model_mapping, meme.final_partitioned_mg_results,
                                         terms.globals_only);
-
+                                        
+                                        
     meme.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"meme.site_likelihood","meme.site_likelihood_bsrel"}},
                                    terms.mpi.Models : {{"meme.site.background_fel","meme.site.bsrel"}},
                                    terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
@@ -459,7 +461,7 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 //----------------------------------------------------------------------------------------
 lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
 
-    GetString   (lfInfo, ^lf_fel,-1);
+    GetString   (lfInfo, ^lf_fel,-1);   
 
     //utility.SetEnvVariable ("VERBOSITY_LEVEL", 100);
 
@@ -487,31 +489,68 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
 
-     ^"meme.site_mixture_weight" = 0.75;
-     if (^"meme.site_alpha" > 0) {
-         ^"meme.site_omega_minus" = 1;
-         ^"meme.site_beta_plus"  = ^"meme.site_alpha" * 1.5;
-     } else {
-         ^"meme.site_omega_minus" = ^"meme.site_beta_plus" / Max (^"meme.site_alpha", 1e-6);
-         ^"meme.site_beta_plus" = 0.1;
-         /* avoid 0/0 by making the denominator non-zero*/
+    
+     if ( ^"meme.site_alpha" <  ^"meme.site_beta_plus") { // FEL returns a +-ve site
+        ^"meme.site_mixture_weight" = 0.25;
+         ^"meme.site_omega_minus" = 0.25;
+     } else { // FEL returns a negative site
+        ^"meme.site_mixture_weight" = 0.75;
+         if (^"meme.site_alpha" > 0) {
+             ^"meme.site_omega_minus" = ^"meme.site_beta_plus" / ^"meme.site_alpha";
+        } else {
+            ^"meme.site_omega_minus" = 1;
+        }
+         ^"meme.site_beta_plus" =  ^"meme.site_alpha" * 1.5; 
      }
- 
      
-     /*
-     console.log (pattern_info);
-     console.log (^"meme.site_alpha");
-     console.log (^"meme.site_omega_minus");
-     console.log (^"meme.site_beta_plus");
+     
+   
+    //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
+                  
+    Optimize (results, ^lf_bsrel, {
+            //"OPTIMIZATION_METHOD" : "nedler-mead",
+            "OPTIMIZATION_START_GRID" : 
+             {
+                "0" : {
+                    "meme.site_beta_plus": ^"meme.site_beta_plus",
+                    "meme.site_omega_minus": ^"meme.site_omega_minus",
+                    "meme.site_mixture_weight": ^"meme.site_mixture_weight"
+                },
+                "1" : {
+                    "meme.site_beta_plus": ^"meme.site_beta_plus" * 2,
+                    "meme.site_omega_minus": 0.5,
+                    "meme.site_mixture_weight": 0.5                
+                },
+                "2" : {
+                    "meme.site_beta_plus": ^"meme.site_beta_plus" * 4,
+                    "meme.site_omega_minus": 0.25,
+                    "meme.site_mixture_weight": 0.25                
+                },
+                "3" : {
+                    "meme.site_beta_plus": ^"meme.site_beta_plus",
+                    "meme.site_omega_minus": 0.5,
+                    "meme.site_mixture_weight": 0.5                
+                },
+                "4" : {
+                    "meme.site_beta_plus": ^"meme.site_beta_plus",
+                    "meme.site_omega_minus": 0.75,
+                    "meme.site_mixture_weight": 0.8                
+                },
+                "5" : {
+                    "meme.site_beta_plus": ^"meme.site_beta_plus" * 8,
+                    "meme.site_omega_minus": 0.5,
+                    "meme.site_mixture_weight": 0.8                
+                },
+                "6" : {
+                    "meme.site_beta_plus": ^"meme.site_beta_plus",
+                    "meme.site_omega_minus": 0,
+                    "meme.site_mixture_weight": 0.01              
+                }
+            
+             }
+        });
+        
     
-     console.log ("Optimizing MEME for pattern " + pattern_info);
-     utility.SetEnvVariable ("LF_NEXUS_EXPORT_EXTRA", "Optimize (res,`lf_bsrel`);");
-     io.SpoolLF (lf_bsrel, "/tmp/meme.debug" + (pattern_info['sites'])[0], "MEME");
-     */
-    
-    Optimize (results, ^lf_bsrel);
-    //console.log (results[1][0]);
-
     alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
@@ -531,8 +570,9 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
     branch_ebf       = {};
     branch_posterior = {};
-
-    if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" > 0) {
+    
+ 
+    if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" < 0.999999) {
 
         LFCompute (^lf_bsrel,LF_START_COMPUTE);
         LFCompute (^lf_bsrel,baseline);
@@ -612,16 +652,18 @@ lfunction meme.store_results (node, result, arguments) {
     partition_index = arguments [3];
     pattern_info    = arguments [4];
 
-    result_row          = { { 0, // alpha
-                          0, // beta-
-                          1, // weight-
-                          0, // beta +
-                          0, // weight +
-                          0, // LRT
-                          1, // p-value,
-                          0, // branch count
-                          0  // total branch length of tested branches
-                      } };
+    result_row          = { { 0, // alpha 0 
+                          0, // beta- 1
+                          1, // weight- 2
+                          0, // beta + 3
+                          0, // weight + 4
+                          0, // LRT 5
+                          1, // p-value, 6
+                          0, // branch count 7
+                          0,  // total branch length of tested branches 8
+                          0, // Log L | FEL 9 
+                          0  // Log L | MEME 10
+                          } };
 
       //console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.parameter_site_mixture_weight"));
 
@@ -638,6 +680,8 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [4] = 1-result_row [2];
         result_row [5] = lrt [utility.getGlobalValue("terms.LRT")];
         result_row [6] = lrt [utility.getGlobalValue("terms.p_value")];
+        result_row [9] = (result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")];
+        result_row [10] = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
 
         all_ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
 

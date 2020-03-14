@@ -31,11 +31,11 @@ fel.analysis_description = {
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
     and then beta rates are tested for equality at each site. LRT and permutation tests ar used to assess significance at each site, and FDR is applied alignment wide to call sites with different selective profiles",
     terms.io.version: "0.5",
-    terms.io.reference: "Kosakovsky Pond SL, Frost SDW, Grossman Z, Gravenor MB, Richman DD, Leigh Brown AJ (2006) Adaptation to Different Human Populations by HIV-1 Revealed by Codon-Based Analyses. PLoS Comput Biol 2(6): e62.",
-    terms.io.authors: "Sergei L Kosakovsky Pond",
+    terms.io.reference: "TBD",
+    terms.io.authors: "Sergei L Kosakovsky Pond and Steven Weaver",
     terms.io.contact: "spond@temple.edu",
     terms.io.requirements: "in-frame codon alignment and a phylogenetic tree; only single partition data are supported",
-    terms.io.help : "http://www.hyphy.org/methods/other/fel-contrast/"
+    terms.io.help : "http://www.hyphy.org/methods/other/contrast-fel/"
 };
 
 io.DisplayAnalysisBanner(fel.analysis_description);

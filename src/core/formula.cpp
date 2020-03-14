@@ -2599,7 +2599,7 @@ bool _Formula::CheckFForDependence (_AVLList const& indices, bool checkAll) {
     if (this_op->IsAVariable()) {
       long f = this_op->GetAVariable();
       if (f>=0) {
-        if (indices.FindLong (f)) {
+        if (indices.FindLong (f) >= 0) {
           return true;
         }
         if (checkAll) {

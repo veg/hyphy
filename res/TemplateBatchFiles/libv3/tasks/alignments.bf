@@ -601,7 +601,8 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
         F -> {
             terms.data.sequence: translated sequence (always choose X if available, otherwise first sense resolution)
             terms.sense_codons : N, // number of sense A/A
-            terms.stop_codons : N // number of stop codons
+            terms.stop_codons : N, // number of stop codons
+            terms.terminal_stop : T/F // true if there is a terminal stop codon
         }
  */
 
@@ -616,7 +617,8 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
         translation = ""; translation * 128;
 
         frame_result = {utility.getGlobalValue ("terms.sense_codons") : 0,
-                        utility.getGlobalValue ("terms.stop_codons") : 0
+                        utility.getGlobalValue ("terms.stop_codons") : 0,
+                        utility.getGlobalValue ("terms.terminal_stop") : FALSE
                         };
 
         upper_bound = Abs (try_run);
@@ -624,6 +626,9 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
             if (try_run[i] / "X") { // has_stop
                 translation * "X";
                 frame_result [^"terms.stop_codons"] += 1;
+                if (i == upper_bound - 1) {
+                    frame_result [^"terms.terminal_stop"] = TRUE;
+                }
             } else {
                 translation * (try_run[i])["INDEXORDER"][0];
                 frame_result [^"terms.sense_codons"] += 1;

@@ -1,0 +1,22 @@
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("SelectionAnalyses/SLAC.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/partitioned.nex", "--branches" : "Internal", "--samples" : "20"});
+} else {
+    LoadFunctionLibrary ("SelectionAnalyses/SLAC.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/partitioned.nex", "2" : "Internal", "3" : "20", "4" : "0.1"});
+}
+
+
+LoadFunctionLibrary ("shared.bf");
+
+assert (check_value (
+    ((slac.json["fits"])["Global MG94xREV"])["Log Likelihood"], -5453.42, 0.001), "Incorrect log-likelihood for the Global MG94xREV model");
+    
+
+for (p = 0; p < 5; p += 1) {
+    positive_sites = (((((slac.json["MLE"])["content"])[p])["by-site"])["AVERAGED"])[-1][8];
+    negative_sites = (((((slac.json["MLE"])["content"])[p])["by-site"])["AVERAGED"])[-1][9];
+
+    assert ((+positive_sites["_MATRIX_ELEMENT_VALUE_<=0.1"]) == 0, "Expected 0 positively selected sites for partition " + (1+p));
+    assert ((+positive_sites["_MATRIX_ELEMENT_VALUE_<=0.1"]) == 0, "Expected 0 negatively selected sites for partition " + (1+p));
+}

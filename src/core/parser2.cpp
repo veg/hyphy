@@ -1580,14 +1580,14 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 //__________________________________________________________________________________
 
 long     VerbosityLevel (void) {
-    checkParameter (VerbosityLevelString, verbosity_level, -1L);
+    if (force_verbosity_from_cli)  verbosity_level = 10L;
+    else verbosity_level = hy_env::EnvVariableGetNumber(hy_env::verbosity_level_string, -1.);
     return verbosity_level;
 }
 
 
 //__________________________________________________________________________________
-void  stashParameter (_String const& name, hyFloat v, bool set)
-{
+void  stashParameter (_String const& name, hyFloat v, bool set) {
     static  hyFloat stash = 0.0;
 
     long f = LocateVarByName (name);

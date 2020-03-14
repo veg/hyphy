@@ -61,7 +61,7 @@
 using namespace hyphy_global_objects;
 using namespace hy_global;
 
-  //#define _UBER_VERBOSE_LF_DEBUG 1
+//#define _UBER_VERBOSE_LF_DEBUG 1
 
 //#define    _COMPARATIVE_LF_DEBUG_DUMP
 //#define    _COMPARATIVE_LF_DEBUG_CHECK
@@ -187,7 +187,8 @@ _String  const
                                 kAddLFSmoothing                 ("LF_SMOOTHING_SCALER"),
                                 kOptimizationPrecision          ("OPTIMIZATION_PRECISION"),
                                 kOptimizationMethod             ("OPTIMIZATION_METHOD"),
-                                kReduceLFSmoothing              ("LF_SMOOTHING_REDUCTION");
+                                kReduceLFSmoothing              ("LF_SMOOTHING_REDUCTION"),
+                                kOptimizationStartGrid          ("OPTIMIZATION_START_GRID");
 
 
 
@@ -526,9 +527,20 @@ void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool o
 
 //__________________________________________________________________________________
 
-hyFloat myLog (hyFloat arg)
-{
+hyFloat myLog (hyFloat arg) {
     return (arg>0.0)?log(arg):-1000000.;
+}
+    
+//__________________________________________________________________________________
+
+long addScaler (hyFloat arg, long freq, long scaler) {
+    if (arg > 0.0) {
+        if (scaler > 1) {
+            return freq*scaler;
+        }
+        return freq;
+    }
+    return 0L;
 }
 
 
@@ -2034,11 +2046,14 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 #endif
                         ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
 
-#ifdef _UBER_VERBOSE_LF_DEBUG
-                    fprintf (stderr, "Did compute %16.12g\n", result);
-#endif
                     hyFloat                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
+                    
+                    
+                    
                     UpdateBlockResult               (partID, blockResult);
+                    #ifdef _UBER_VERBOSE_LF_DEBUG
+                        fprintf (stderr, "Did compute tree %d %.16g (%.16g) \n", partID, result, blockResult);
+                    #endif
                     if (blockMatrix) {
                         blockMatrix->theData[partID] = blockResult;
                     } else {
@@ -2049,6 +2064,9 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                         blockMatrix->theData[partID] =  computationalResults.theData[partID];
                     }  else {
                         result += computationalResults.theData[partID];
+                        #ifdef _UBER_VERBOSE_LF_DEBUG
+                            fprintf (stderr, "CACHED tree %d %.16g (%.16g) \n", partID, result, computationalResults.theData[partID]);
+                        #endif
                     }
                 }
             } else {
@@ -2202,7 +2220,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         evalsSinceLastSetup   ++;
         PostCompute ();
 #ifdef _UBER_VERBOSE_LF_DEBUG
-        fprintf (stderr, "%16.12g\n", result);
+        fprintf (stderr, "OVERALL LF = %.16g\n", result);
 #endif
         if (isnan (result)) {
             _TerminateAndDump("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
@@ -3771,7 +3789,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         kMethodNedlerMead                              ("nedler-mead"),
         kMethodHybrid                                  ("hybrid"),
         kMethodGradientDescent                         ("gradient-descent");
-
+ 
         // optimization setting to produce a detailed log of optimization runs
 
     auto   get_optimization_setting = [options] (const _String& arg, const hyFloat def_value) -> hyFloat {
@@ -3792,6 +3810,16 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             }
         }
         return (_FString *)hy_env::EnvVariableGet(arg, STRING);
+    };
+    
+    auto   get_optimization_setting_dict = [options] (const _String& arg) -> _AssociativeList* {
+        if (options) {
+            _AssociativeList * res = (_AssociativeList*)options->GetByKey(arg, ASSOCIATIVE_LIST);
+            if (res) {
+                return res;
+            }
+        }
+        return (_AssociativeList *)hy_env::EnvVariableGet(arg, ASSOCIATIVE_LIST);
     };
     
     
@@ -4064,6 +4092,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         
     }
     
+    
     _OptimiztionProgress progress_tracker;
     //checkParameter (optimizationMethod,optMethodP,4.0);
 
@@ -4091,9 +4120,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 #endif
 
 
-    SetupParameterMapping   ();
-    _Matrix variableValues;
-    GetAllIndependent (variableValues);
 
 
     if (optimization_mode == kOptimizationHybrid && indexInd.countitems() == 1) {
@@ -4106,6 +4132,56 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     } else {
         bP = get_optimization_setting (kBracketingPersistence, 2.5);
     }
+    
+    _AssociativeList * initial_grid = get_optimization_setting_dict (kOptimizationStartGrid);
+    
+    
+    if (initial_grid) {
+        
+        hyFloat max_value = -INFINITY;
+        _AssociativeList * best_values;
+        
+        _SimpleList _sl;
+        _AVLListX all_vars (&_sl);
+        
+        GetIndependentVars().Each ([&all_vars] (long v, unsigned long i) -> void {
+            all_vars.Insert ((BaseRef)v,i,false,false);
+        });
+        
+        auto set_and_compute = [this, &all_vars] (_AssociativeList* init) -> hyFloat {
+            
+            for (AVLListXLIteratorKeyValue key_value : init->ListIterator()) {
+                _Constant * var_value = (_Constant*)key_value.get_object();
+                _String const * var_name = key_value.get_key();
+                long vi = all_vars.FindLong(LocateVarByName(*var_name));
+                if (vi >= 0) {
+                    //printf ("Setting %d to %g\n", all_vars.GetXtra(vi), var_value->Value());
+                    this->SetIthIndependent(all_vars.GetXtra(vi), var_value->Value());
+                }
+            }
+            return this->Compute();
+        };
+        
+        for (AVLListXLIteratorKeyValue key_value : initial_grid->ListIterator()) {
+            _String const * grid_point = key_value.get_key();
+            hyFloat this_point = set_and_compute((_AssociativeList*)key_value.get_object());
+            
+            //printf ("%s %g\n", grid_point->get_str(), this_point);
+            
+            if (this_point > max_value) {
+                max_value = this_point;
+                best_values = (_AssociativeList*)key_value.get_object();
+            }
+        }
+        
+        if (best_values) {
+            set_and_compute (best_values);
+        }
+    }
+   
+    SetupParameterMapping   ();
+    _Matrix variableValues;
+    GetAllIndependent (variableValues);
 
     if (optimization_mode == kOptimizationHybrid || optimization_mode == kOptimizationGradientDescent) { // gradient descent
         _Matrix bestSoFar;
@@ -5077,14 +5153,14 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
     }
 
 
-#ifdef _UBER_VERBOSE_LF_DEBUG
-    if (index < 0) {
-        printf                                 ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
-        for (unsigned long i = 0; i < indexInd.lLength; i++) {
-            printf ("%s = %.16g \n", GetIthIndependentVar(i)->GetName()->get_str(), gradient->get_direct(i));
-        }
-    }
-#endif
+//#ifdef _UBER_VERBOSE_LF_DEBUG
+    //if (index < 0) {
+        //printf                                 ("[Bracket bounds %g - %g (%g)/%g]\n", lowerBound, upperBound, practicalUB, middle);
+        //for (unsigned long i = 0; i < indexInd.lLength; i++) {
+        //    printf ("%s = %.16g \n", GetIthIndependentVar(i)->GetName()->get_str(), gradient->get_direct(i));
+        //}
+    //}
+//#endif
 
     if (verbosity_level > 100) {
         char buf [512];
@@ -5138,7 +5214,6 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             }
 
         }
-
 
 
         if (CheckEqual(middle,saveL)) {
@@ -7878,12 +7953,18 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
     if (computingTemplate&&templateKind) {
         if (!(forceRecomputation||!siteArrayPopulated||HasPartitionChanged(index)||rootFreqsChange)) {
             usedCachedResults = true;
-            //printf ("\n[CACHED]\n");
+             #ifdef _UBER_VERBOSE_LF_DEBUG
+                fprintf (stderr, "CACHED PARTITION %d branch %.16g\n",index,computationalResults.theData[index] );
+            #endif
             return            -1e300;
         }
     } else {
         if (!forceRecomputation && computationalResults.get_used()==optimalOrders.lLength && !siteRes && !HasPartitionChanged(index) && !rootFreqsChange) {
             usedCachedResults = true;
+            #ifdef _UBER_VERBOSE_LF_DEBUG
+                fprintf (stderr, "CACHED PARTITION %d branch %.16g\n",index,computationalResults.theData[index] );
+
+            #endif
             //printf ("\n[CACHED]\n");
             return computationalResults.theData[index];
         }

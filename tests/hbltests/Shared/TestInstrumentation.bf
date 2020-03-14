@@ -122,7 +122,7 @@ function logTestResult (testResult)
 	}
 	else
 	{
-		fprintf (stdout, "[TEST FAILED]\n");
+		assert (0, "[TEST FAILED]");
 	}
 	return testResult != 0; 
 }

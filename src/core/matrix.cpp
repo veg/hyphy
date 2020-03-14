@@ -7646,7 +7646,7 @@ _Matrix*        _Matrix::MakeTreeFromParent (long specCount) {
             throw (_String ("Expected a matrix with 3 columns"));
         }
         if (GetHDim () <= 2*specCount + 1) {
-            throw (_String ("Expected a matrix with at least ") & (2*specCount + 1) & " columns");
+            throw (_String ("Expected a matrix with at least ") & (2*specCount + 1) & " rows");
         }
 
         const long result_rows = 2*(specCount+1);

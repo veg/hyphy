@@ -483,6 +483,7 @@ void DeleteTreeVariable (long tree_variable_index, _SimpleList & parms) {
                     // subnode level
                     will_keep_these.InsertNumber(next_var);
                  } else {
+                    //printf ("Deleting variable %s\n" , next_var_name->get_str());
                     indices_to_delete_avl.InsertNumber (next_var);
                 }
             } else {

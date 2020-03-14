@@ -109,7 +109,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 explicitFormMExp                ("EXPLICIT_FORM_MATRIX_EXPONENTIAL"),
                                 multByFrequencies               ("MULTIPLY_BY_FREQUENCIES"),
                                 defFileString                   ("DEFAULT_FILE_SAVE_NAME"),
-                                VerbosityLevelString            ("VERBOSITY_LEVEL"),
                                 useLastDefinedMatrix            ("USE_LAST_DEFINED_MATRIX"),
                                 dataPanelSourcePath             ("DATA_PANEL_SOURCE_PATH"),
                                 windowTypeTree                  ("TREEWINDOW"),
@@ -2063,7 +2062,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                       }
                       _ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
                       oddCommand->code = 0;
-                      oddCommand->parameters&&(&currentLine);
+                      oddCommand->parameters.AppendNewInstance (new _String (currentLine));
                       AppendNewInstance (oddCommand);
                   } else {
                       while (currentLine.nonempty()) {

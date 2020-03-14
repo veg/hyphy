@@ -1,0 +1,30 @@
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("SelectionAnalyses/BUSTED.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--rates" : "2", "--syn-rates" : "2"});
+} else {
+    return 0;
+}
+LoadFunctionLibrary ("shared.bf");
+
+
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+//fscanf ("data/CD2.nex.BUSTED.json","Raw",json);
+//busted.json = Eval (json);
+
+
+assert (check_value (
+    ((busted.json["fits"])["Unconstrained model"])["Log Likelihood"], -3417.67, 0.001), "Incorrect log-likelihood for the full model");
+
+assert (check_value (
+    ((busted.json["test results"])["p-value"]),0.0019, 0.1), "p-value for the test is incorrect");
+
+
+assert (check_value (
+    +(busted.json["Evidence Ratios"])["optimized null"],204.92, 0.01), "Incorrect sum of evidence ratios");
+    
+
+
+   
+
+
