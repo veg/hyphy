@@ -90,7 +90,8 @@ namespace hy_global {
                      terminate_execution = false,
                      has_terminal_stdout = true,
                      has_terminal_stderr = true,
-                     ignore_kw_defaults  = false;
+                     ignore_kw_defaults  = false,
+                     force_verbosity_from_cli = false;
     
     FILE            *hy_error_log_file = NULL,
                     *hy_message_log_file = NULL;
@@ -118,7 +119,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.2"),
+                     kHyPhyVersion  = _String ("2.5.6"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -422,6 +423,9 @@ namespace hy_global {
         }
 #endif
         
+        if (hy_env::cli_env_settings.nonempty()) {
+            _ExecutionList (hy_env::cli_env_settings).Execute();
+        }
         return hy_error_log_file && hy_message_log_file;
     }
     

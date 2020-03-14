@@ -16,6 +16,15 @@ function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult  	   = 0;
 
+
+    LAST_HBL_EXECUTION_ERROR = "";
+    SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);
+    ExecuteCommands ('GetURL (url_data, "http://www.google.com")');
+    SetParameter(HBL_EXECUTION_ERROR_HANDLING,0,0);
+    if ((LAST_HBL_EXECUTION_ERROR$"This feature requires libcurl")[0] >= 0) {
+        return 1;
+    }
+
     GetURL (url_data, "http://www.google.com");
     assert (Abs(url_data) > 0, "Expected to retrieve non-empty data from http://www.google.com");
     

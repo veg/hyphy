@@ -14,7 +14,7 @@ function runTest () {
 	testResult = 0;
   
   // Simple example likelihood function for use later.
-  DataSet         nucleotideSequences = ReadDataFile ("./../../data/CD2_reduced.fna");
+  DataSet         nucleotideSequences = ReadDataFile (PATH_TO_CURRENT_BF + "../../data/CD2_reduced.fna");
   DataSetFilter   filteredData = CreateFilter (nucleotideSequences,1);
   HarvestFrequencies (observedFreqs, filteredData, 1, 1, 1);
   F81RateMatrix = 
@@ -47,7 +47,7 @@ function runTest () {
   assert(category1Info[0][0] == 0, "Failed to get information from a basic category variable");
 
   // For a DataSetFilter: A string column, where each string is a sequence, ordered the same way they are in the filter.
-  DataSet cd2nex = ReadDataFile ('./../../data/CD2.nex');
+  DataSet cd2nex = ReadDataFile (PATH_TO_CURRENT_BF + '../../data/CD2.nex');
   DataSetFilter onlyFiveThroughEleven = CreateFilter (cd2nex,1,"4-10");
   DataSetFilter onlyFiveThroughTen = CreateFilter (cd2nex,1,"4-9");
   GetInformation(onlyFiveThroughElevenInfo, onlyFiveThroughEleven);

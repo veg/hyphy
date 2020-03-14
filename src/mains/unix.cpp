@@ -82,6 +82,7 @@ const char hy_help_message [] =
 "  -i                       interactive mode; causes HyPhy to always prompt the user for analysis options, even when defaults are available\n"
 "  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
 "                           upon analysis completion\n\n"
+"  -m                       write diagnostic messages to messages.log\n"
 "optional global arguments:\n"
 "  BASEPATH=directory path  defines the base directory for all path operations (default is pwd)\n"
 "  CPU=integer              if compiled with OpenMP multithreading support, requests this many threads; HyPhy could use fewer than this\n"
@@ -89,6 +90,8 @@ const char hy_help_message [] =
 "  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
 "                           or as configured during CMake installation\n"
 "  USEPATH=directory path   specifies the optional working and relative path directory (default is BASEPATH)\n\n"
+"  ENV=expression           set HBL enviroment variables via explicit statements\n"
+"                           for example ENV='DEBUG_MESSAGES=1;WRITE_LOGS=1'\n"
 "  batch file to run        if specified, execute this file, otherwise drop into an interactive mode\n"
 "  analysis arguments       if batch file is present, all remaining positional arguments are interpreted as inputs to analysis prompts\n\n"
 "optional keyword arguments (can appear anywhere); will be consumed by the requested analysis\n"
@@ -168,7 +171,8 @@ _String baseArgDir,
 
 const   _String kLoggedFileEntry ("__USER_ENTRY__"),
                 kHelpKeyword     ("--help"),
-                kVersionKeyword  ("--version");
+                kVersionKeyword  ("--version"),
+                kVerboseKeyword  ("--verbose");
 
 void    ReadInTemplateFiles         (void);
 long    DisplayListOfChoices        (void);
@@ -765,7 +769,7 @@ int main (int argc, char* argv[]) {
     _List positional_arguments;
     _AssociativeList kwargs;
   
-    const _String path_consts [] = {"BASEPATH=", "LIBPATH=", "USEPATH=", "CPU="};
+    const _String path_consts [] = {"BASEPATH=", "LIBPATH=", "USEPATH=", "CPU=", "ENV="};
 
     for (unsigned long i=1UL; i<argc; i++) {
       _String thisArg (argv[i]);
@@ -779,6 +783,10 @@ int main (int argc, char* argv[]) {
               if (thisArg == kVersionKeyword) {
                   StringToConsole(GetVersionString()); NLToConsole();
                   exit (0);
+              }
+              if (thisArg == kVerboseKeyword) {
+                  force_verbosity_from_cli = true;
+                  continue;
               }
               if (i + 1 < argc) {
                   _String payload (argv[++i]);
@@ -817,7 +825,10 @@ int main (int argc, char* argv[]) {
           pathNames&&         &baseDir;
       } else if (thisArg.BeginsWith (path_consts[3])) {
           system_CPU_count  = Maximum (1L, thisArg.Cut(path_consts[3].length(),kStringEnd).to_long());
-      } else
+      } else if (thisArg.BeginsWith (path_consts[4])) {
+          hy_env::cli_env_settings = thisArg.Cut(path_consts[4].length(),kStringEnd);
+      }
+      else
       //argFile = thisArg;
       positional_arguments && &thisArg;
     }

@@ -12,7 +12,7 @@ function runTest () {
 	ASSERTION_BEHAVIOR = 1; /* print warning to console and go to the end of the execution list */
 	testResult  	   = 0;
 
-	DataSet 			fiveSeqs = ReadDataFile ("../../data/5.fas");	
+	DataSet 			fiveSeqs = ReadDataFile (PATH_TO_CURRENT_BF + "../../data/5.fas");	
 	DataSetFilter		nucF	 = CreateFilter (fiveSeqs,1);
 	
 	GetDataInfo 		(seqInfo, nucF, -1);

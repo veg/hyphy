@@ -31,9 +31,8 @@ function runTest ()
 	//-----------------------------------------------------------------------------------------------------------------
 
     assert (runCommandWithSoftErrors ("GetString (a+b, HYPHY_VERSION, 0)", " is not a valid variable identifier in call to GetString"), "Failed error checking for an invalid receptacle");
-    GetString (data, this_object_better_not_exist, 0);
-	assert (Type (data) == "Unknown", "Returned a non-null for an undefined object. Had " + Type(data));
-    
+    assert (runCommandWithSoftErrors ("GetString (data, this_object_better_not_exist, 0)", "No viable object to obtain information from"), "Failed error checking for an invalid object");
+   
     
 
 	//-----------------------------------------------------------------------------------------------------------------
@@ -41,13 +40,13 @@ function runTest ()
 	//-----------------------------------------------------------------------------------------------------------------
 
 	GetString (versionString, HYPHY_VERSION, 0);
-	assert ((versionString$"^[0-9]+\\.[0-9a-zA-Z]+\\.[0-9a-zA-Z]+.+$")[0]==0, "The short version string must be of the form major.minor.patch[alpha|beta]. Had " + versionString);
+	assert ((versionString$"^[0-9]+(\\.[0-9]+)*$")[0]==0, "The short version string must be of the form major.minor.patch[alpha|beta]. Had " + versionString);
 
 	GetString (versionString, HYPHY_VERSION, 1);
-	assert ((versionString$"^HYPHY\\ [0-9]+\\.[0-9a-zA-Z]+.+\\ for .+$")[0]==0, "The full version string must be of the form major.minor.patch.[beta][MP] for platform description. Had " + versionString);
+	assert ((versionString$"^HYPHY\\ [0-9]+(\\.[0-9]+)*(\\(.+\\))? for .+$")[0]==0, "HYPHY version(type) platform for platform description. Had " + versionString);
 
 	GetString (versionString, HYPHY_VERSION, 2);
-	assert ((versionString$"^.+\\ [0-9]+\\.[0-9a-zA-Z]+\\.[0-9a-zA-Z]+.+$")[0]==0, "The intermediate version string must be of the form build type major.minor[beta]. Had " + versionString);
+	assert ((versionString$"HyPhy version [0-9]+(\\.[0-9]+)*")[0]==0, "The intermediate version string must be of the form build type major.minor[beta]. Had " + versionString);
 
 
 	//-----------------------------------------------------------------------------------------------------------------
@@ -64,7 +63,7 @@ function runTest ()
 	// DATA SET
 	//-----------------------------------------------------------------------------------------------------------------
 
-	DataSet 			_testDataSet = ReadDataFile ("../../data/mtDNA.fas");
+	DataSet 			_testDataSet = ReadDataFile (PATH_TO_CURRENT_BF + "../../data/mtDNA.fas");
 
 	GetString (sequenceNames, _testDataSet, -1);
 	assert (Type(sequenceNames) == "Matrix" && Type (sequenceNames[0]) == "String" && Rows(sequenceNames) == 1 && Columns (sequenceNames) == _testDataSet.species, "Retrieve all sequence names from a DataSet");
@@ -181,7 +180,7 @@ function runTest ()
 	// SCFG
 	//-----------------------------------------------------------------------------------------------------------------
 
-    ExecuteAFile (PATH_TO_CURRENT_BF + "res" + DIRECTORY_SEPARATOR + "SCFG" + DIRECTORY_SEPARATOR + "scfgG6c.bf", {"0": "small.txt"});
+    ExecuteAFile (PATH_TO_CURRENT_BF + "res" + DIRECTORY_SEPARATOR + "SCFG" + DIRECTORY_SEPARATOR + "scfgG6c.bf", {"0": PATH_TO_CURRENT_BF + "res" + DIRECTORY_SEPARATOR + "SCFG" + DIRECTORY_SEPARATOR + "small.txt"});
     GetString (scfgID, SCFG, 0);
     assert (scfgID == "G6", "Retrieve an SCFG identifier");
     ExecuteCommands ("GetString (scfgInfoTotal, `scfgID`, -1)");

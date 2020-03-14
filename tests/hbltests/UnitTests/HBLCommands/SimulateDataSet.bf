@@ -14,7 +14,7 @@ function runTest () {
   // NOTE: This just tests the functionality of the SimulateDataSet function, not the underlying logic or the quality of the generated datasets.
 
   // Simple example likelihood function for use later.
-  DataSet         nucleotideSequences = ReadDataFile ("./../../data/CD2_reduced.fna");
+  DataSet         nucleotideSequences = ReadDataFile (PATH_TO_CURRENT_BF + "../../data/CD2_reduced.fna");
   DataSetFilter   filteredData = CreateFilter (nucleotideSequences,1);
   HarvestFrequencies (observedFreqs, filteredData, 1, 1, 1);
   F81RateMatrix = 

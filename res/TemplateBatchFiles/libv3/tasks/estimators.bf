@@ -109,7 +109,8 @@ lfunction estimators.GetGlobalMLE_RegExp(results, re) {
 function estimators.copyGlobals2(key2, value2) {
     if (Type((estimators.ExtractMLEs.results[terms.global])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
-    }
+        // this parameter has already been defined, need to prefix with model name
+    } 
 
     (estimators.ExtractMLEs.results[terms.global])[key2] = {
         terms.id: value2,
@@ -144,9 +145,20 @@ function estimators.CopyFrequencies(model_name, model_decription) {
 }
 
 
+function estimators.SetGlobals2(key2, value) {
+    
+    if (Type(estimators.ApplyExistingEstimates.set_globals[key2]) == "AssociativeList") {
+        key3 = "[`key`] `key2`";
+    } else {
+        key3 = key2;
+    }
 
-function estimators.SetGlobals2(key, value) {
-    __init_value = (initial_values[terms.global])[key];
+    estimators.ApplyExistingEstimates.set_globals[key3] = {
+        terms.id: key3,
+        terms.fit.MLE: value
+    };
+
+    __init_value = (initial_values[terms.global])[key2];
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
@@ -464,6 +476,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
     // the _value_ of category variables to 1, so that we can
     // compute branch lengths
 
+    estimators.ApplyExistingEstimates.set_globals = {};
     model_descriptions["estimators.SetGlobals"][""];
 
 
@@ -650,6 +663,7 @@ lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial
  */
 lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_objects, run_options) {
 
+
     if (Type(data_filter) == "String") {
         return estimators.FitLF ({
             {
@@ -673,14 +687,14 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     };
 
 
+  
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i] = data_filter[i];
         lf_components[2 * i + 1] = &tree_id + "_" + i;
         model.ApplyModelToTree(lf_components[2*i + 1], tree[i], None, model_map[i]);
     }
 
-
-
+ 
 
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
@@ -694,15 +708,21 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
+        //console.log (initial_values);
         df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
 
     can_do_restarts = null;
     
-    /*Export (lfe, likelihoodFunction);
+    
+    /*
+
+    GetString (lfe, likelihoodFunction, -1);
+    console.log (lfe);
     fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
-    utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);*/
+    utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);
+    */
 
     
 

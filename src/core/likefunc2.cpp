@@ -1189,6 +1189,7 @@ hyFloat mapParameterToInverval (hyFloat in, char type, bool inverse)
 
 
 
+extern long likeFuncEvalCallCount;
 
 //_______________________________________________________________________________________________
 
@@ -1227,22 +1228,29 @@ hyFloat _LikelihoodFunction::SumUpSiteLikelihoods (long index, const hyFloat * p
             HandleApplicationError ("Constant-on-partition categories are currently not supported by the evaluation engine");
         } else {
             for (unsigned long patternID = 0UL; patternID < pattern_count; patternID++) {
-                long patternFrequency = index_filter->GetFrequency(patternID);;
+                long patternFrequency = index_filter->GetFrequency(patternID);
                 if (patternFrequency > 1) {
                     logL             += myLog(patternLikelihoods[patternID])*patternFrequency;
-                    cumulativeScaler += patternScalers.list_data[patternID]*patternFrequency;
-                } else
+                    cumulativeScaler += addScaler (patternLikelihoods[patternID],patternScalers.list_data[patternID],patternFrequency);
+                } else {
                     // all this to avoid a double*long multiplication
-                {
                     logL             += myLog(patternLikelihoods[patternID]);
-                    cumulativeScaler += patternScalers.list_data[patternID];
+                    cumulativeScaler += addScaler (patternLikelihoods[patternID], patternScalers.list_data[patternID], 1);
                 }
+                
+                /*if (likeFuncEvalCallCount == 531 || likeFuncEvalCallCount == 702) {
+                    printf ("%lu %d %g\n", patternID, cumulativeScaler, logL);
+                }*/
             }
         }
     }
 
-    return logL - cumulativeScaler * _logLFScaler;
-
+    if (cumulativeScaler == 0L) {
+        return logL;
+    } else {
+        return logL - cumulativeScaler * _logLFScaler;
+    }
+    
 }
 
 //_______________________________________________________________________________________________

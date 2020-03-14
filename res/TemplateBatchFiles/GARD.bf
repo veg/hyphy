@@ -670,7 +670,7 @@ function gard.setBestModelTreeInfoToJson(bestModel) {
         gard.bestModelBreakpointData = {};
         for(i=0; i<gard.bestModelNumberBreakPoints + 1; i += 1) {
             gard.bestModelTrees[i] = {"newickString": (gard.bestModelMultiBreakpointLikelihoodInfo['Trees'])[i]};
-             gard.bestModelBps[i] = {1,2};
+            gard.bestModelBps[i] = {1,2};
             if(i == 0){
                 (gard.bestModelBps[i])[0] = 1;
                 (gard.bestModelBps[i])[1] = gard.bestModelBreakPoints[i];
@@ -690,8 +690,9 @@ function gard.setBestModelTreeInfoToJson(bestModel) {
         }
         gard.json['trees'] = gard.bestModelTrees;
         gard.json['breakpointData'] = gard.bestModelBreakpointData;
+    } else {
+         gard.bestModelMultiBreakpointLikelihoodInfo = gard.fitPartitionedModel({}, gard.model, gard.baseLikelihoodInfo, gard.lfFileLocation, FALSE);
     }
-    return ;
 }
 
 lfunction gard.getSingleTree_cAIC(bestOverallModel) {

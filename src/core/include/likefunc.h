@@ -789,6 +789,7 @@ extern  _Vector      _scalerMultipliers,
 
 hyFloat                  acquireScalerMultiplier (long);
 hyFloat                  myLog                   (hyFloat);
+long                     addScaler               (hyFloat, long, long);
 hyFloat                  mapParameterToInverval  (hyFloat, char, bool);
 
 #ifdef  __HYPHYMPI__

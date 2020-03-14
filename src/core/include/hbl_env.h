@@ -200,9 +200,14 @@ namespace hy_env {
           lf_convergence_criterion,
           try_numeric_sequence_match,
           short_mpi_return,
-          kSCFGCorpus
+          kSCFGCorpus,
+          verbosity_level_string
+
     ;
-  
+    
+    extern _String
+            cli_env_settings
+    ;
   
 };
 

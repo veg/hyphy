@@ -1,5 +1,5 @@
 // Tests associativeListtoJSON function.
-LoadFunctionLibrary("lib2014/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
 test_json    =    {"fits"           : {},
                   "timers"          : {},

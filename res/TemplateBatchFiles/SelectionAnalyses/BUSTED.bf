@@ -331,6 +331,7 @@ if (busted.do_srv)  {
     
 }
 
+
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
 busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
 
@@ -371,7 +372,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
     for the rate distribution parameters
 */
 
- 
+  
 busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
 
 parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
@@ -391,6 +392,7 @@ busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.tree
     terms.search_restarts : busted.N.initial_guesses
 });
     
+            
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
         "retain-lf-object": TRUE,
         terms.run_options.optimization_settings : 

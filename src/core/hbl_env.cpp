@@ -135,6 +135,8 @@ namespace hy_env {
                               .PushPairCopyKey (accept_branch_lengths, new _Constant (HY_CONSTANT_TRUE))
       ;
     }
+
+_String cli_env_settings;
   
 _String const
     accept_branch_lengths                            ("ACCEPT_BRANCH_LENGTHS"),
@@ -300,9 +302,11 @@ _String const
         // the TRUE (1.0) constant
     use_last_model                                  ("USE_LAST_MODEL"),
         // a stand-in for the last declared model
-    use_traversal_heuristic                         ("USE_TRAVERSAL_HEURISTIC")
+    use_traversal_heuristic                         ("USE_TRAVERSAL_HEURISTIC"),
         // TODO (20170413): don't remember what this does; , see @ _DataSetFilter::MatchStartNEnd
         // #DEPRECATE
+    verbosity_level_string                           ("VERBOSITY_LEVEL")
+        // controls verbosity level during optimization and other long-running operations
     ;
     
  

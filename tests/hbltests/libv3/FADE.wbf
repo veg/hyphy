@@ -1,0 +1,49 @@
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("SelectionAnalyses/FUBAR.bf", {"--alignment" : PATH_TO_CURRENT_BF + "data/CD2_AA.fna", "--model" : "JTT"});
+} else {
+    return 0;
+
+}
+LoadFunctionLibrary ("shared.bf");
+
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+//fscanf ("data/CD2_AA.fna.FADE.json","Raw",json);
+//fade.json = Eval (json);
+
+
+/*
+Partition 1.  3.416 subs/site.
+
+|    Site    | Partition  |   target   |    rate    |    bias    |Bayes Factor|Amino acid composition of site|Substitution history on selected branches|
+|:----------:|:----------:|:----------:|:----------:|:----------:|:----------:|:----------------------------:|:---------------------------------------:|
+|    106     |     1      |     M      |      1.75  |     38.73  |    458.37  |         G1,K1,M7,R8          |        M->G(1)K(1)R(1), R->M(1)         |
+|    104     |     1      |     Q      |      0.76  |     39.63  |    254.69  |            L5,Q12            |            L->Q(1), Q->L(2)             |
+----
+*/
+
+
+test.expected_positives = {
+    "M" : {"106" : 1},
+    "Q" : {"104" : 1}
+};
+
+utility.ForEachPair ((fade.json["MLE"])["content"], "_key_", "_value_",
+
+'
+    m = _value_[0];
+    for (i = 0; i < Rows(m); i+=1) {
+        if (m[i][3] >= 100) {
+            assert ((test.expected_positives[_key_])[i+1], "Failed to detect site " + (i+1) + " for residue " + _key_);
+            test.expected_positives[_key_] - (i+1);
+        }
+    }
+'
+);
+
+utility.ForEachPair (test.expected_positives, "_k_","_v_", 
+    '
+    assert (Abs (_v_) == 0, "Failed to detect some expected sites for residue " + _k_)
+    '
+);

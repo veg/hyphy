@@ -327,9 +327,9 @@ lfunction models.codon.BS_REL.set_branch_length(model, value, parameter) {
         return  models.generic.SetBranchLength (model, value, parameter);
     } else {
         if (Type (value) == "AssociativeList") {
-            vcopy = value;
-            vcopy[terms.branch_length] = vcopy[terms.branch_length];
-            return  models.generic.SetBranchLength (model, vcopy, parameter);
+            //vcopy = value;
+            //vcopy[^"terms.branch_length"] = vcopy[^"terms.branch_length"] * 3;
+            return  models.generic.SetBranchLength (model, value, parameter);
 
         }
     }

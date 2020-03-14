@@ -1,0 +1,100 @@
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.5) {
+    //LoadFunctionLibrary ("SelectionAnalyses/FEL-contrast.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branch-set" : "GROUP2"});
+} else {
+   return 0;
+}
+LoadFunctionLibrary ("shared.bf");
+
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+fscanf ("data/CD2.nex.FEL.json","Raw",json);
+fel.json = Eval (json);
+
+
+
+assert (check_value (
+    ((fel.json["fits"])["Global MG94xREV"])["Log Likelihood"], -3457.354, 0.001), "Incorrect log-likelihood for the Global MG94xREV model");
+    
+
+/*
+### For partition 1 these sites are significant at p <=0.05
+
+| Codon  |     alpha      |             beta             |        substitutions         |                  test                  |LRT p-value|Permutation p-value|
+|:------:|:--------------:|:----------------------------:|:----------------------------:|:--------------------------------------:|:---------:|:-----------------:|
+|   7    |        0.000   |        3.270 -     54.054    |              5               |                overall                 |  0.0274   |      0.0500       |
+|   14   |        0.000   |        0.000 -      2.307    |              2               |                overall                 |  0.0346   |      0.1429       |
+|   26   |       15.675   |        0.000 -      2.152    |              3               |                overall                 |  0.0246   |      0.0909       |
+|   28   |        0.000   |        0.000 -      2.345    |              2               |                overall                 |  0.0173   |      0.0833       |
+|   29   |        0.000   |        0.000 -     13.804    |              5               |                overall                 |  0.0024   |      0.0500       |
+|   54   |        1.411   |        0.000 -      7.942    |              4               |                overall                 |  0.0017   |      1.0000       |
+|   61   |        0.000   |        0.557 -      7.023    |              4               |                overall                 |  0.0231   |      0.0526       |
+|   67   |        0.675   |        0.000 -      2.284    |              0               |                overall                 |  0.0356   |      0.0500       |
+|   85   |        1.504   |        2.213 -   9938.183    |              5               |                overall                 |  0.0484   |      0.0500       |
+|   89   |        2.117   |        0.000 -      4.578    |              4               |                overall                 |  0.0058   |      0.0500       |
+|  100   |        1.555   |        0.000 -      2.510    |              2               |                overall                 |  0.0225   |      1.0000       |
+|  102   |        0.000   |        0.502 -      4.854    |              2               |                overall                 |  0.0373   |      0.0667       |
+|  111   |        0.000   |        0.632 -   9942.545    |              4               |                overall                 |  0.0321   |      0.1667       |
+|  122   |        0.000   |        0.000 -      2.289    |              2               |                overall                 |  0.0187   |      0.1667       |
+|  137   |        0.000   |        0.000 -     11.686    |              5               |                overall                 |  0.0359   |      0.2000       |
+|  145   |        0.716   |        0.000 -     11.626    |              4               |                overall                 |  0.0038   |      0.0500       |
+|  147   |        0.000   |        0.000 -      6.093    |              3               |                overall                 |  0.0014   |      0.0500       |
+|  154   |        0.000   |        0.000 -      2.834    |              2               |                overall                 |  0.0240   |      0.5000       |
+|  160   |        1.579   |        0.000 -      3.496    |              4               |                overall                 |  0.0067   |      0.0500       |
+|  174   |        0.655   |        0.000 -     11.711    |              4               |                overall                 |  0.0059   |      0.0909       |
+|  177   |        0.981   |        0.000 -      2.940    |              3               |                overall                 |  0.0152   |      0.0500       |
+|  179   |        0.577   |        0.000 -      3.528    |              4               |                overall                 |  0.0419   |      0.3333       |
+|  180   |        4.724   |        0.449 -      4.884    |              3               |                overall                 |  0.0333   |      0.5000       |
+|  182   |        0.588   |        0.000 -      2.081    |              3               |                overall                 |  0.0173   |      0.0500       |
+|  187   |        2.890   |        0.000 -      1.865    |              1               |                overall                 |  0.0402   |      0.1111       |
+
+### ** Found _25_ sites with different _overall_ dN/dS at p <= 0.05**
+
+### ### False discovery rate correction
+There are 5 sites where the overall p-value passes the False Discovery Rate threshold of 0.2
+
+|     Codon     |       q-value        |
+|:-------------:|:--------------------:|
+|        29     |       0.1466557152   |
+|        54     |       0.1553204952   |
+|       145     |       0.1755212395   |
+|       160     |       0.1786570862   |
+|       174     |       0.1839834269   |
+*/
+
+qv         = (((fel.json["MLE"])["content"])["0"])[-1][5];
+pv         = (((fel.json["MLE"])["content"])["0"])[-1][4];
+subs       = (((fel.json["MLE"])["content"])["0"])[-1][3];
+
+
+test.subs_sum = 0;
+
+test.expected_positives = utility.MatrixToDict({{29,54,145,160,174}});
+
+function confirm_site (site, p, dict) {
+    if (pv[site] <= 0.1) {
+        test.subs_sum += subs[site]
+    }
+    if (p <= 0.2) {
+        if (dict/(site+1)) {
+            dict - (site+1);
+            return TRUE;
+        } else {
+            assert (0, "Failed to correctly classify site " + (site+1));
+        }
+    }
+    if (dict/(site+1)) {
+        assert (0, "Incorrectly classified site " + (site+1));
+    }
+    return FALSE;
+}
+
+utility.ForEachPair (qv,"_index_", "_p_",
+                 "  
+                   confirm_site (_index_[0], _p_, test.expected_positives);
+                ");
+
+
+assert (check_value (
+    test.subs_sum, 123, 0.01), "Incorrect # of subs across sites with p <= 1");
+    

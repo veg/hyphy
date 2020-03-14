@@ -57,20 +57,16 @@ function runTest () {
   // *** set a breakpoint in malloc_error_break to debug
 
   // The code below returns the errors
-  mean1 = {{1,1,1}};
+  mean1 = {{1,1}};
   cov1 = {{1,0}{0,1}};
   a1 = {"PDF":"Gaussian","ARG0":cov1};
   z = Random(mean1,a1);
-  fprintf (stdout, 'z: ', z, '\n');
 
-  //mean2 = {{1,1,1}};
-  //cov2 = {{1,0}{0,1}};
-  //a2 = {"PDF":"Dirichlet","ARG0":cov2};
-  //b = Random(mean2,a2);
-
-  // Treats none or undefined as zero.
-  assert(Random(undefinedVariable,1) > 0, "Failed to treat undefined variable as zero when passed into Random");
-  assert(Random(none,1) >0, "Failed to treat none as zero when passed into Random");
+  mean2 = {{1,1,1}};
+  cov2 = {{1,0}{0,1}};
+  a2 = {"PDF":"Dirichlet","ARG0":cov2};
+  b = Random(mean2,a2);
+  assert(+b == 1, "Dirichet deviate did not sum up to 1");
    
 
   //---------------------------------------------------------------------------------------------------------
