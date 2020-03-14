@@ -610,8 +610,8 @@ makeLink(HYPHYMP hyphy hyphy)
 #-------------------------------------------------------------------------------
 
 add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
-add_test (CODON HYPHYMPI tests/hbltests/SimpleOptimizations/SmallCodon.bf)
-add_test (PROTEIN HYPHYMPI tests/hbltests/SimpleOptimizations/IntermediateProtein.bf)
+add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)
+add_test (PROTEIN HYPHYMP tests/hbltests/SimpleOptimizations/IntermediateProtein.bf)
 add_test (NAME SLAC COMMAND HYPHYMP tests/hbltests/libv3/SLAC.wbf)
 add_test (NAME SLAC-PARTITIONED COMMAND HYPHYMP tests/hbltests/libv3/SLAC-partitioned.wbf)
 add_test (NAME FEL COMMAND HYPHYMP tests/hbltests/libv3/FEL.wbf)
