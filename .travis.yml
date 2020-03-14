@@ -24,8 +24,11 @@ script:
   - export OMP_NUM_THREADS=4
   - travis_wait 60 eval $envSpecificTest
 
-_shared_settings: &shared
-   addons:
+   
+jobs:
+  include:
+    - os: linux
+      addons:
         apt:
           sources:
               - llvm-toolchain-precise
@@ -34,23 +37,29 @@ _shared_settings: &shared
           packages:
               - g++-9
               - gcc-9
-   install:
-        - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
-        - cmake . 
-        - make
-
-jobs:
-  include:
-    - os: linux
-      <<: *_shared_settings
+      install:
+            - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
+            - cmake . 
+            - make
       env:
-        - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
+            - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
     
     - os: linux
       env:
         - envSpecificTest="make test"
-      <<: *_shared_settings
-
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-9
+              - gcc-9
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
+        - cmake . 
+        - make
 
 
     # ---- Just run the hbl unit tests with gcc-4, 5 and 6 ----
