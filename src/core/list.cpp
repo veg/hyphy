@@ -412,6 +412,21 @@ void  _List::Delete (long index, bool delete_object)
 }
 
 // Delete item at index (>=0)
+void  _List::DeleteTail (long from, bool delete_object) {
+    if (from>=0 && from<lLength) {
+        if (delete_object)
+            for (long k = lLength-1; k >= from; k--) {
+                     DeleteObject (((BaseRef*)list_data)[k]);
+            }
+        lLength = from;
+        //memcpy ((hyPointer)list_data+sizeof(BaseRef)*(index),(hyPointer)list_data+sizeof(BaseRef)*(index+1),sizeof(BaseRef)*(lLength-index));
+    }
+    
+    _UpdateStorageType();
+
+}
+
+// Delete item at index (>=0)
 void  _List::DeleteList (const _SimpleList& toDelete)
 {
     if (toDelete.lLength) {

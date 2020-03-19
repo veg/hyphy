@@ -431,6 +431,9 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks) { // set
         }
 
         if (theValue<lowerBound || theValue>upperBound) {
+            /*if (verbosity_level >= 100) {
+                printf ("\n<========== OUT OF BOUNDS FOR VARIABLE %s : value %.16g, range [%.16g, %.16g] =========>\n" , theName->get_str(), theValue, lowerBound, upperBound);
+            }*/
             if (theValue <= lowerBound+1e-50) {
                 theValue = lowerBound;
             } else {

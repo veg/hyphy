@@ -442,7 +442,7 @@ void DeleteVariable (long dv, bool deleteself, bool do_checks) {
 }
 
 //__________________________________________________________________________________
-void DeleteTreeVariable (long tree_variable_index, _SimpleList & parms) {
+void DeleteTreeVariable (long tree_variable_index, _SimpleList & parms, _String * prefix, bool leftovers) {
     if (tree_variable_index>=0) {
         
         /*
@@ -452,7 +452,7 @@ void DeleteTreeVariable (long tree_variable_index, _SimpleList & parms) {
         */
         
         
-        _String const *tree_name  = (_String const*)variableNames.Retrieve (tree_variable_index),
+        _String const *tree_name  = prefix ? prefix : (_String const*)variableNames.Retrieve (tree_variable_index),
                        kDot = ".",
                        tree_prefix = *tree_name&kDot;
         
@@ -528,11 +528,19 @@ void DeleteTreeVariable (long tree_variable_index, _SimpleList & parms) {
         UpdateChangingFlas(all_subdomain_indices);
         // reset compiled formulas that may contain variable indices being deleted
         
-        SetVariablesToOwnValues (will_keep_these);
+        if (leftovers) {
+            SetVariablesToOwnValues (will_keep_these);
+        } else {
+            indices_to_delete << parms;
+        }
+        
         if (touched_dependent_variables.countitems()) {
             SetVariablesToOwnValues (touched_dependent_variables);
         }
         
+        /*if (prefix) {
+            printf ("CLEARING %d variables\n", indices_to_delete.countitems() );
+        }*/
         
         indices_to_delete.Each ([] (long var_idx, unsigned long) -> void {
             _Variable * delvar = LocateVar (var_idx);

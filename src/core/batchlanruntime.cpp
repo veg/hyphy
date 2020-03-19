@@ -1740,6 +1740,171 @@ bool      _ElementaryCommand::HandleUseModel (_ExecutionList& current_program) {
   return true;
 }
 
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_program) {
+/*
+    parameters:
+        [0] -> the string ID of the object to iterate over
+        [1] -> the object to iteratre over
+ 
+    
+    simpleParameters:
+        [0] -> command index for the corresponding advance command
+        [1] -> type of object; 0 - dict, 1 - matrix
+        [2] -> if dict, then this stores the pointer to AVLListXLIterator
+*/
+  current_program.advance();
+  try {
+      // clean up previous iterator states
+      if (parameters.countitems() > 1) {
+          parameters.Delete (1L);
+          if (simpleParameters.get (1) == ASSOCIATIVE_LIST) {
+              delete ((AVLListXLIterator*)simpleParameters.get(2));
+           }
+       }
+      
+      if (simpleParameters.countitems() > 2) {
+          simpleParameters.Delete (2);
+      }
+      
+      
+      HBLObjectRef iterator_substrate = _ProcessAnArgumentByType (*GetIthParameter(0UL), ASSOCIATIVE_LIST | MATRIX, current_program, &parameters);
+      
+      _ElementaryCommand * advance_command = current_program.GetIthCommand(simpleParameters.get (0));
+      
+      if (!advance_command || advance_command->code != HY_HBL_COMMAND_ADVANCE_ITERATOR) {
+          throw _String ("Iterator init command is not linked with an advance command");
+      }
+      
+      advance_command->parameters.DeleteTail(advance_command->simpleParameters.get (1));
+      
+      if (iterator_substrate->ObjectClass() == ASSOCIATIVE_LIST) {
+          _AssociativeList* source_object = (_AssociativeList*)iterator_substrate;
+          simpleParameters[1] = ASSOCIATIVE_LIST; // indicate that this is an ASSOCIATIVE_LIST
+          simpleParameters << (long) new AVLListXLIterator (source_object->ListIterator ());
+      } else { // MATRIX
+          simpleParameters[1] = MATRIX; // indicate that tjis is a MATRIX
+      }
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (nil, error, current_program);
+  }
+
+  return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_program) {
+ /*
+     parameters:
+         [0-2] -> Id of the variable to store stuff in
+         [+1] -> the source object
+         [+2] -> _Variable to store the value in
+         [+3] -> _Variable to store key/index in (could be nil)
+         [+4] -> _Variable to store column index in (if the object is _Matrix)
+         
+  
+     
+     simpleParameters:
+         [0] -> index of the iterator init command in current_program
+         [1] -> number of receptable variables
+         [2] -> for _Matrix iterator, the row index
+         [3] -> for _Matrix iterator, the column index
+*/
+  current_program.advance();
+  try {
+      
+      long reciever_count = simpleParameters.get (1);
+      
+      _ElementaryCommand * init_command = current_program.GetIthCommand(simpleParameters.get (0));
+      if (!init_command || init_command->code != HY_HBL_COMMAND_INIT_ITERATOR) {
+          throw (_String ("Iterator advance command is not linked with an iterator initiaizer"));
+      }
+      
+      bool is_matrix = init_command->simpleParameters.get (1) == MATRIX;
+      bool first_in = false;
+      if (!is_matrix && reciever_count == 3) {
+          throw (_String ("Iterators over dictionaries do not support the 3 argument form"));
+      }
+      
+      if (parameters.countitems () == reciever_count || parameters.GetItem(reciever_count) != init_command->parameters.GetItem(1)) {
+          parameters.DeleteTail (reciever_count, true);
+          parameters << init_command->parameters.GetItem(1);
+          first_in = true;
+          for (long k = 0L; k < reciever_count; k++) {
+              parameters << _ValidateStorageVariable (current_program, k);
+          }
+          if (is_matrix) {
+              if (simpleParameters.countitems() == 2) {
+                  simpleParameters << 0 << 0;
+              } else {
+                  simpleParameters[2] = 0;
+                  simpleParameters[3] = 0;
+              }
+          }
+      }
+      
+      if (is_matrix) {
+          _Matrix* source_object = (_Matrix*)parameters.GetItem (reciever_count);
+          long row    = simpleParameters.get (2),
+               column = simpleParameters.get (3);
+          
+          if (!first_in) {
+              column ++;
+              if (column >= source_object->GetVDim()) {
+                  column = 0;
+                  row ++;
+              }
+           }
+          
+           if (row >= source_object->GetHDim()) {
+               ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false);
+           } else {
+               ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (source_object->GetMatrixCell(row, column), false, false);
+               if (reciever_count == 2) {
+                   ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _Constant (row*source_object->GetVDim () + column), false, false);
+               } else if (reciever_count == 3) {
+                   ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _Constant (row), false, false);
+                   ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue (new _Constant (column ), false, false);
+               }
+           }
+            
+          simpleParameters[2] = row;
+          simpleParameters[3] = column;
+
+
+          
+      } else {
+          AVLListXLIterator * it = (AVLListXLIterator *)init_command->simpleParameters.get (2);
+          if (first_in) {
+              it->begin();
+          } else {
+              ++(*it);
+          }
+          if (!it->is_done()) { // iterator not finished
+              AVLListXLIteratorKeyValue state = *(*it);
+              state.get_object()->AddAReference();
+              if (reciever_count > 1) {
+                  ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue ((HBLObjectRef)state.get_object(), false, false);
+                  ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _FString (*state.get_key()), false, false);
+              } else {
+                  ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue ((HBLObjectRef)state.get_object(), false, false);
+              }
+          } else {
+              ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false);
+              // iterator done
+          }
+      }
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (nil, error, current_program);
+  }
+
+  return true;
+}
+
+
 //____________________________________________________________________________________
 bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_program){
   current_program.advance();

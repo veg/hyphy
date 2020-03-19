@@ -428,7 +428,10 @@ lfunction trees.ExtractTreeInfo(tree_string) {
 
     rooted = utility.Array1D ((flat_tree[(flat_tree[0])["Root"]])["Children"]) == 2;
 
-    DeleteObject (flat_tree, branch_lengths, branch_names, branch_count);
+    flat_tree       = None;
+    branch_lengths  = None;
+    branch_names    = None;
+    branch_count    = None;
 
     return {
         ^"terms.trees.newick": Format(T, 1, 0),
@@ -1093,12 +1096,12 @@ lfunction tree.infer.NJ (datafilter, distances) {
                 treeNodes[i][2] = njm[i][2]; // branch length
             }
 
-            DeleteObject (njm);
+            njm = None;
 		}
 	}
 
     if (flush_distances) {
-        DeleteObject (distances);
+        distances = None;
     }
 
     return tree._matrix2string (treeNodes, N, alignments.GetSequenceNames (datafilter), TRUE);

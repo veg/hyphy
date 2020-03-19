@@ -437,7 +437,8 @@ public:
             if the matrix is sparse, only will out the non-void entries
      */
 
-    _Formula*   GetFormula                  (long, long) const;
+    _Formula*      GetFormula                  (long, long) const;
+    HBLObjectRef   GetMatrixCell               (long, long) const;
     HBLObjectRef   MultByFreqs                 (long);
     HBLObjectRef   EvaluateSimple              (_Matrix* existing_receptacle = nil);
     HBLObjectRef   SortMatrixOnColumn          (HBLObjectRef);

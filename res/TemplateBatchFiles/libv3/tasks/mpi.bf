@@ -180,6 +180,8 @@ namespace mpi {
 
 
                     send_to_nodes * 0;
+                    queue ["cache"] = {};
+
                 }
             }
 
@@ -197,6 +199,8 @@ namespace mpi {
             for (k = 1; k < mpi_node_count; k += 1) {
                 queue [k] = {utility.getGlobalValue("terms.mpi.job_id") : None, utility.getGlobalValue("terms.mpi.callback") : None, utility.getGlobalValue("terms.mpi.arguments"): None};
             }
+            
+            // this will store jobs that were previously sent to each node; avoiding redefinition if possible
         }
         return queue;
     }
@@ -225,8 +229,21 @@ namespace mpi {
                 node = aux._handle_receieve (queue);
             }
 
-
-            complete_function_dump = aux.queue_export_function (job);
+            complete_function_dump = None;
+            
+            if (utility.Has (queue, "cache" , "AssociativeList")) {
+                if ((queue["cache"])[node] == job) {
+                    complete_function_dump = "";
+                    //console.log ("CACHED MPI preamble"); 
+                } else {
+                    (queue["cache"])[node] = job;
+                }
+            } 
+            
+            if (None == complete_function_dump) {
+                complete_function_dump = aux.queue_export_function (job);
+            }
+            
             //console.log (complete_function_dump);
             job_id = get_next_job_id();
             //fprintf (stdout, "Sending to node ", node, "\n");
@@ -261,6 +278,8 @@ namespace mpi {
                 }
             } while (node < mpi_node_count);
         }
+        
+        queue = None
     }
 
     namespace aux {

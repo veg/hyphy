@@ -51,7 +51,8 @@ extern  _List batchLanguageFunctionNames;
 
 //____________________________________________________________________________________
 
-_String    _HYGenerateANameSpace () {
+_String const   _HYGenerateANameSpace () {
+     
     _String nmsp,
             capLetters ("ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
     do {
@@ -59,10 +60,16 @@ _String    _HYGenerateANameSpace () {
 
     } while (_HY_HBL_Namespaces.FindKey (nmsp) != kNotFound);
 
-    _HY_HBL_Namespaces.Insert (nmsp, 0);
+    _HY_HBL_Namespaces.Insert (nmsp, 0L);
+    
     return nmsp;
 }
 
+//____________________________________________________________________________________
+
+void  _HYClearANameSpace (const _String& nm) {
+    _HY_HBL_Namespaces.Delete(nm);
+ }
 
 //____________________________________________________________________________________
 

@@ -140,7 +140,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
 //____________________________________________________________________________________
 
 
-_String  blFor                  ("for("),               // moved
+_String
 blWhile                    ("while("),         // moved
 blFunction                 ("function "),      // moved
 blFFunction                ("ffunction "),     // moved
@@ -2127,6 +2127,10 @@ _ElementaryCommand::~_ElementaryCommand (void) {
                 _Formula* f = (_Formula*)simpleParameters(i);
                 delete (f);
             }
+        } else if (code == HY_HBL_COMMAND_INIT_ITERATOR) {
+            if (simpleParameters.get (1) == ASSOCIATIVE_LIST && simpleParameters.countitems() > 2) {
+                delete (AVLListXLIterator*)simpleParameters.get(2);
+            }
         }
     }
 
@@ -2402,6 +2406,17 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
         case HY_HBL_COMMAND_NESTED_LIST: {
             (*string_form) << "namespace " << parameter_to_string (0) << ";";
+            break;
+        }
+            
+        case HY_HBL_COMMAND_INIT_ITERATOR: {
+            (*string_form) << "Initialize iterator on " << parameter_to_string (0) << ";";
+            break;
+        }
+
+        case HY_HBL_COMMAND_ADVANCE_ITERATOR: {
+            (*string_form) << "Advance iterator into ";
+            (string_form -> AppendNewInstance(parameters.Join(",",0,simpleParameters.get (1)))) << ";";
             break;
         }
 
@@ -3658,13 +3673,23 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
     case HY_HBL_COMMAND_GET_DATA_INFO:
         HandleGetDataInfo(chain);
         break;
+          
+    case HY_HBL_COMMAND_INIT_ITERATOR:
+        HandleInitializeIterator(chain);
+        break;
 
+    case HY_HBL_COMMAND_ADVANCE_ITERATOR:
+        HandleAdvanceIterator(chain);
+        break;
+          
     case HY_HBL_COMMAND_NESTED_LIST:
       chain.currentCommand++;
       {
         ((_ExecutionList*)parameters.GetItem(0))->Execute(&chain);
       }
       break;
+          
+   
 
     default:
         chain.currentCommand++;
@@ -4051,87 +4076,137 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
 
 bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _String*p3 , bool for_or_while, _String& source, _ExecutionList&target) {
 
+    
+    const _String kIterator ("in");
+    
     // extract the for enclosure
     long  beginning = target.lLength,
-          for_return = target.lLength,
-          index;
+          for_return = beginning;
 
     bool   success = true;
     bool   has_increment = false;
+    bool   is_iterator = (p2 && *p2 == kIterator);
 
     _SimpleList bc;
-
-    while (success) {
-
-        if (p1 && p1->nonempty()) { // initialization stage
+    
+    try {
+        if (is_iterator) {
+            if (! (p1 && p3)) {
+                throw (kEmptyString);
+            }
             for_return++;
-            success = success && target.BuildList (*p1, nil, true); // add init step
-        }
-
-        // append condition now
-
-        if (!success) {
-            break;
-        }
-
-        if (for_or_while) {
-            if (p2 && p2->nonempty()) { // condition stage
-                target < new _ElementaryCommand (*p2);
-            }
-        }
-
-        if (source.get_char(0)=='{') {
-            source.Trim(1,kStringEnd);
-        }
-
-        if ((success = success && target.BuildList (source, &bc)) == false) { // construct the main body
-            break;
-        }
-
-        if (p3 && p3->nonempty ()) { // increment stage
-            success = success && target.BuildList (*p3, nil,true); // add increment step
             has_increment = true;
-        }
+            _ElementaryCommand  * init    = new _ElementaryCommand (HY_HBL_COMMAND_INIT_ITERATOR);
+                               
+            long refer_to_init = target.countitems();
+            
+            init->parameters    << p3;
+            target < init;
+            _ElementaryCommand * advance = new _ElementaryCommand (HY_HBL_COMMAND_ADVANCE_ITERATOR);
+            
+            ExtractConditions (*p1,0L,advance->parameters,',',false);
+            if (advance->parameters.countitems() < 1 || advance->parameters.countitems() > 3) {
+                throw (_String("Must have bewteen 1 and 3 arguments for the 'for' iterator loop"));
+            }
+            
+            advance->simpleParameters <<refer_to_init;
+            advance->simpleParameters << advance->parameters.countitems();
+            init->simpleParameters << target.countitems();
+            init->simpleParameters << 0;
+            target < advance;
+            
+            for_return++;
+            target < new _ElementaryCommand ();
 
-        if (!success) {
-            break;
-        }
+            if (source.get_char(0)=='{') {
+                source.Trim(1,kStringEnd);
+            }
 
-        if (for_or_while) {
+            if (target.BuildList (source, &bc) == false) { // construct the main body
+                throw (kEmptyString);
+            }
+            target << advance;
+            
             _ElementaryCommand * loopback = new _ElementaryCommand;
-            success = success && loopback->MakeJumpCommand (nil,for_return,0,target);
+            loopback->MakeJumpCommand (nil,for_return,0,target);
             target < loopback;
-            if (p2 && p2->nonempty()) {
-                success = success && (target.GetIthCommand(for_return))->MakeJumpCommand (p2, for_return+1, target.lLength,target);
-            }
+            
+            // automatically generate
+            // None != iterator_value, but we don't know
+            
+            _StringBuffer iterator_condition;
+            iterator_condition << "None!=" << (_String*)advance->parameters.GetItem (advance->parameters.countitems() -1);
+            target.GetIthCommand(for_return)->MakeJumpCommand (&iterator_condition, for_return+1, target.lLength,target);
+            
         } else {
-            if (p2) {
-                _ElementaryCommand* loopback = new _ElementaryCommand ;
-                success = success && loopback->MakeJumpCommand (p2,for_return,target.lLength+1,target);
+        
+            if (p1 && p1->nonempty()) { // initialization stage
+                for_return++;
+                success = success && target.BuildList (*p1, nil, true); // add init step
+            }
+
+            // append condition now
+
+            if (!success) {
+                throw (kEmptyString);
+            }
+
+            if (for_or_while) {
+                if (p2 && p2->nonempty()) { // condition stage
+                    target < new _ElementaryCommand (*p2);
+                }
+            }
+
+            if (source.get_char(0)=='{') {
+                source.Trim(1,kStringEnd);
+            }
+
+            if ((success = success && target.BuildList (source, &bc)) == false) { // construct the main body
+                throw (kEmptyString);
+            }
+
+            if (p3 && p3->nonempty ()) { // increment stage
+                success = success && target.BuildList (*p3, nil,true); // add increment step
+                has_increment = true;
+            }
+
+            if (!success) {
+                throw (kEmptyString);
+            }
+            
+            if (for_or_while) {
+                _ElementaryCommand * loopback = new _ElementaryCommand;
+                loopback->MakeJumpCommand (nil,for_return,0,target);
                 target < loopback;
+                if (p2 && p2->nonempty()) {
+                    target.GetIthCommand(for_return)->MakeJumpCommand (p2, for_return+1, target.lLength,target);
+                }
+            } else {
+                if (p2) {
+                    _ElementaryCommand* loopback = new _ElementaryCommand ;
+                    success = success && loopback->MakeJumpCommand (p2,for_return,target.lLength+1,target);
+                    target < loopback;
+                }
             }
         }
-        break;
-
-    }
-
-    if (!success) { // clean up
-        for (index = beginning; index<target.lLength; index++) {
-            target.Delete (beginning);
+    } catch (const _String err) {
+        for (long index = target.lLength - 1; index >= beginning; index--) {
+            target.Delete (index);
+        }
+        if (err.nonempty()) {
+            HandleApplicationError(err);
         }
         return false;
-    } else {
-        // write out the breaks and continues
-        for (index = 0; index<bc.lLength; index++) {
-            long loc = bc(index);
-            if (loc>0) { // break
-                (target.GetIthCommand(loc))->MakeJumpCommand (nil, target.lLength, 0,target);
-            } else { // continue
-                (target.GetIthCommand(-loc))->MakeJumpCommand (nil, target.lLength-(has_increment?2:1), 0,target);
-            }
-        }
     }
 
+    bc.Each ([&target, has_increment] (long loc, unsigned long) -> void {
+        if (loc>0) { // break
+            (target.GetIthCommand(loc))->MakeJumpCommand (nil, target.lLength, 0,target);
+        } else { // continue
+            (target.GetIthCommand(-loc))->MakeJumpCommand (nil, target.lLength-(has_increment?2:1), 0,target);
+        }
+    });
+    
     return true;
 }
 
@@ -4605,35 +4680,32 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
 
 //____________________________________________________________________________________
 
-bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long branch1, long branch2, _ExecutionList& parentList)
-{
-    long oldFla = 0;
-    code        = 4;
+bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long branch_true, long branch_false, _ExecutionList& parentList) {
+    long existing_formula_handle = 0L;
+         code        = 4L;
 
     if (simpleParameters.lLength==3) {
         if (source) {
-            _Formula* f = (_Formula*)simpleParameters(2);
-            delete (f);
-        } else {
-            oldFla = simpleParameters(2);
+            delete ((_Formula*)simpleParameters.get(2));
+         } else {
+            existing_formula_handle = simpleParameters.get(2);
         }
     }
 
-    if (branch1==-1) {
-        if (simpleParameters.lLength == 0) {
+    if (branch_true==-1) {
+        if (simpleParameters.empty()) {
             HandleApplicationError("An if-then-else scoping error. Check opening and closing brackets and double else's.");
             return false;
         }
-        branch1 = simpleParameters[0];
+        branch_true = simpleParameters.get (0);
     }
 
     simpleParameters.Clear();
-    simpleParameters<<branch1;
-    simpleParameters<<branch2;
+    simpleParameters<<branch_true<<branch_false;
     if (source) {
         parameters && source;
-    } else if (oldFla) {
-        simpleParameters<<oldFla;
+    } else if (existing_formula_handle) {
+        simpleParameters<<existing_formula_handle;
     }
 
     return true;
@@ -4735,9 +4807,32 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     if (!isNameSpace) {
 
 
-
+      _String extraNamespace;
+        
       if ((mark1=FindBFFunctionName(*funcID)) >= 0L) {
-        ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
+          ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
+          if (batchLanguageFunctionClassification.get (mark1) == kBLFunctionLocal) {
+              // clean up previously used namespaces
+              _ExecutionList * existing = (_ExecutionList *)batchLanguageFunctions.GetItem(mark1);
+              _String * nm = existing->GetNameSpace();
+              if (nm) {
+                  long best_index;
+                  char match = variableNames.FindBest(nm, best_index);
+                  //printf ("PREVIOUS LOCAL FUNCTION %s\n", nm->get_str());
+                  if (best_index >= 0) {
+                      _Variable * namespace_start = LocateVar (best_index);
+                      if (namespace_start->GetName()->BeginsWith(*nm)) {
+                          //printf ("Clearing namespace %s starting at %s for function %s \n", nm->get_str(), namespace_start->GetName()->get_str(), funcID->get_str());
+                          _SimpleList locals;
+                          DeleteTreeVariable (best_index, locals,nm, false);
+                      }
+                  }
+                  if (match == 0) {
+                      DeleteVariable(best_index, true, false);
+                  }
+              }
+          }
+        
       }
 
       _List       arguments;
@@ -4752,8 +4847,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
           return false;
       }
 
-      _String extraNamespace;
-      if (isLFunction)
+      if (isLFunction && extraNamespace.empty())
           extraNamespace = _HYGenerateANameSpace();
 
       for (long k = 0UL; k < arguments.lLength; k++) {
