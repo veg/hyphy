@@ -283,6 +283,12 @@ class _List:public _SimpleList {
         void Delete(long, bool = true);
 
         /**
+        * Delete all items from the starting position to the end of the list
+        * if the bool flag is false, then only remove the reference to the object
+        */
+        void DeleteTail (long, bool = true);
+
+        /**
         */
         virtual void Duplicate(BaseRefConst);
 

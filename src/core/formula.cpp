@@ -452,7 +452,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
                 created_nodes [2]  = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
                 if (!created_nodes [2]) {
-                    throw (4);
+                    throw (3);
                 }
                 node<long>*       XtimesDY = new node<long>;
                 XtimesDY->add_node (*created_nodes [2],*DuplicateFormula (currentSubExpression->go_down(1),tgt));

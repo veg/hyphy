@@ -58,6 +58,7 @@
 #include <float.h>
 #include <signal.h>
 
+//#define __HYPHY_MPI_MESSAGE_LOGGING__
 
 using     namespace hy_env;
 
@@ -119,7 +120,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.6"),
+                     kHyPhyVersion  = _String ("2.5.7"),
     
                     kNoneToken = "None",
                     kNullToken = "null",

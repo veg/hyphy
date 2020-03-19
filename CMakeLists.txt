@@ -495,15 +495,7 @@ else(${OPENMP_FOUND})
     target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 endif(${OPENMP_FOUND})
 
-if(${MPI_FOUND})
-    set_property(
-        TARGET HYPHYDEBUG
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__
-    )
-    target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES} OpenMP::OpenMP_CXX)
-else(${MPI_FOUND})
     target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
-endif(${MPI_FOUND})
 
 
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)

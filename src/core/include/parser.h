@@ -115,7 +115,7 @@ void        DeleteVariable  (long, bool deleteself, bool do_checks = true);
 
 void        SetVariablesToOwnValues (_AVLList const & indices);
 
-void        DeleteTreeVariable (long, _SimpleList&);
+void        DeleteTreeVariable (long, _SimpleList&, _String * prefix = nil, bool return_leftovers = true);
 
 template <typename ACTION>
 void DoForEachVariable(ACTION do_this) {

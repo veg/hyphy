@@ -23,7 +23,7 @@ lfunction distances.nucleotide.tn93 (filter, freqs, options) {
 		K2P = TRUE;
 	}
 	else {
-	    K2P = FASLE;
+	    K2P = FALSE;
 		K1 = 2*freqs[0]*freqs[2]/fR;
 		K2 = 2*freqs[1]*freqs[3]/fY;
 		K3 = 2*(fR*fY-freqs[0]*freqs[2]*fY/fR-freqs[1]*freqs[3]*fR/fY);

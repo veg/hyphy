@@ -3308,16 +3308,14 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
         _Constant * cc = new _Constant (c);
 
         if (storageType == 2) {
-            _String    star ('*');
-            _Operation * cOp = new _Operation (cc),
-            * mOp = new _Operation (star,2);
+            _String const    star ('*');
 
             for (long i=0; i<lDim; i++)
                 if (IsNonEmpty (i)) {
                     long h       = HashBack (i);
                     _Formula * f = GetFormula (h/vDim,h%vDim);
-                    f->GetList().AppendNewInstance (cOp);
-                    f->GetList().AppendNewInstance (mOp);
+                    f->GetList().AppendNewInstance (new _Operation (cc));
+                    f->GetList().AppendNewInstance (new _Operation (star,2));
                 }
         } else {
             if (storageType != 3) {
@@ -5022,7 +5020,15 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
   }
   
   if (ind2>=0) { // element access
-    if (storageType == 2) { // formulas
+    return GetMatrixCell (ind1, ind2);
+  }
+  
+  return new _Constant (0.0);
+}
+
+//_____________________________________________________________________________________________
+HBLObjectRef _Matrix::GetMatrixCell (long ind1, long ind2) const {
+    if (storageType == _FORMULA_TYPE) { // formulas
       if (!theIndex) {
         _Formula * entryFla = (((_Formula**)theData)[ind1*vDim+ind2]);
         if (entryFla) {
@@ -5061,11 +5067,9 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
         return cell;
       }
     }
-  }
-  
-  return new _Constant (0.0);
 }
 
+    
 //_____________________________________________________________________________________________
 _Formula* _Matrix::GetFormula (long ind1, long ind2) const {
 

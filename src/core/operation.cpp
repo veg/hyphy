@@ -259,9 +259,7 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
 
 
 //__________________________________________________________________________________
-_Operation::~_Operation (void)
-{
-
+_Operation::~_Operation (void) {
     if (theNumber) {
         DeleteObject (theNumber);
     }

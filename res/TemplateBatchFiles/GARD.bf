@@ -201,7 +201,10 @@ utility.ForEach (alignments.Extract_site_patterns ("gard.filter"), "_pattern_", 
 
 gard.variableSiteMap = Transpose (utility.DictToArray (gard.variableSiteMap)) % 0; // sort by 1st column
 gard.variableSites = Rows (gard.variableSiteMap);
-gard.inverseVariableSiteMap = unility.SwapKeysAndValues(gard.variableSiteMap);
+gard.inverseVariableSiteMap = {};
+for (index, pattern; in; gard.variableSiteMap) {
+    gard.inverseVariableSiteMap[pattern] = index;
+}
 gard.numberOfPotentialBreakPoints = gard.variableSites - 1;
 
 io.ReportProgressMessage ("", ">Loaded a `gard.dataType` multiple sequence alignment with **`gard.numSeqs`** sequences, **`gard.numSites`** sites (`gard.variableSites` of which are variable) from \`" +
@@ -606,21 +609,17 @@ lfunction gard.createLikelihoodFunctionForExport (id,  model) {
 */
 lfunction gard.validatePartititon (definition, minSize, totalSites) {
     lastBP = 0;
-    //console.log ("");
-    //console.log (definition);
-    bpCount = utility.Array1D (definition);
-    for (i = 0; i < bpCount; i+=1) {
-        if (definition[i] - lastBP + 1 < minSize) {
-            //console.log ("FAIL");
+    
+    for (current_bp; in; definition) {
+        if (current_bp - lastBP + 1 < minSize) {
             return FALSE;
         }
-        lastBP = definition[i];
+        lastBP = current_bp;        
     }
+    
     if (totalSites - lastBP < minSize) {
-        //console.log ("FAIL");
         return FALSE;
     }
-    //console.log ("PASS");
     return TRUE;
 }
 
@@ -631,7 +630,8 @@ lfunction gard.validatePartititon (definition, minSize, totalSites) {
 
  */
 lfunction gard.modelIsNotInMasterList(masterList, breakPoints) {
-    return utility.KeyExists(masterList, '' + breakPoints) == FALSE;
+    return masterList / ('' + breakPoints) == FALSE;
+    //return utility.KeyExists(masterList, '' + breakPoints) == FALSE;
 }
 
 function gard.concludeAnalysis(bestOverallModel) {
@@ -807,7 +807,7 @@ lfunction gard.GA.recombineModels (parentModels, populationSize) {
 
             breakPoints = {numberOfBreakPoints, 1};
             for (breakPointNumber=0; breakPointNumber < numberOfBreakPoints; breakPointNumber += 1) {
-                if (random.TRUE_or_FALSE()) {
+                if (Random(0,1) <= 0.5) {
                     breakPoints[breakPointNumber] = parentModel1[breakPointNumber];
                 } else {
                     breakPoints[breakPointNumber] = parentModel2[breakPointNumber];
@@ -835,16 +835,10 @@ lfunction gard.GA.recombineModels (parentModels, populationSize) {
  * @returns nothing... the gard.GA.storeMultiBreakPointModelResults function gets called which updates the intergenerationalModels object
  */
 function gard.GA.evaluateModels (models) {
-    modelIds = utility.Keys(models);
-    numberOfModels = Columns(modelIds);
-
-    for(modelIndex=0; modelIndex<numberOfModels; modelIndex += 1) {
-        modelId = modelIds[modelIndex];
-        cAIC = models[modelId];
-
-
+    
+    for (modelID, cAIC; in; models)  {
         if (cAIC == math.Infinity) {
-            breakPoints = gard.Helper.convertMatrixStringToMatrix(modelId);
+            breakPoints = gard.Helper.convertMatrixStringToMatrix(modelID);
             mpi.QueueJob (gard.queue, "gard.obtainModel_cAIC", {"0" : breakPoints__,
                                                      "1" : gard.model,
                                                      "2" : gard.baseLikelihoodInfo},
@@ -900,8 +894,7 @@ lfunction gard.GA.selectModels (evaluatedModels, numberOfModelsToKeep) {
  * @returns a {Bolean}
  */
 lfunction gard.GA.modelSetsAreTheSame(modelSet1, modelSet2) {
-    s1 = modelSet1;
-    return (s1-modelSet2) == 0;
+    return modelSet1 == modelSet2;
 }
 
 /**
@@ -930,7 +923,7 @@ lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, 
         while(modelIsValid == FALSE && failedAttempts < ^"gard.maxFailedAttemptsToMakeNewModel") {
             parentModel = gard.Helper.convertMatrixStringToMatrix(modelIds[i]);
             breakPoints = {numberOfBreakPoints, 1};
-            for(breakPointIndex=0; breakPointIndex<numberOfBreakPoints; breakPointIndex=breakPointIndex+1) {
+            for(breakPointIndex=0; breakPointIndex<numberOfBreakPoints; breakPointIndex += 1) {
 
                 if(Random(0,1) < mutationRate) { // keep the break point the same
                     breakPoints[breakPointIndex] = parentModel[breakPointIndex];
@@ -938,12 +931,11 @@ lfunction gard.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, 
                     if(Random(0,1) < rateOfMutationsThatAreSmallShifts) { // move the break point by a random small amount
                         notValid = TRUE;
                         while (notValid) {
-                            distanceOfStep = Min (1,random.poisson(2));
-                            if (random.TRUE_or_FALSE()) { // randomly decide if the break point moves right or left
-                                distanceOfStep = - distanceOfStep;
+                            distanceOfStep = Max (1,random.poisson(1));
+                            if (Random (0,1) <= 0.5) { // randomly decide if the break point moves right or left
+                                distanceOfStep = -distanceOfStep;
                             }
-                            variableSiteMapIndexOfParentBreakPoint = utility.Find(^"gard.variableSiteMap", parentModel[breakPointIndex]);
-                            variableSiteMapIndexOfParentBreakPoint += distanceOfStep;
+                            variableSiteMapIndexOfParentBreakPoint = (^"gard.inverseVariableSiteMap")[parentModel[breakPointIndex]] + distanceOfStep;
                             if (variableSiteMapIndexOfParentBreakPoint >= 0 && variableSiteMapIndexOfParentBreakPoint < (^"gard.variableSites")) {
                                 newBreakPoint = (^"gard.variableSiteMap")[variableSiteMapIndexOfParentBreakPoint];
                                 notValid = FALSE;
@@ -1019,14 +1011,4 @@ lfunction gard.Helper.convertMatrixStringToMatrix(matrixString){
 //sort numeric Nx1 matrix into assending order.
 lfunction gard.Helper.sortedMatrix(matrix) {
     return matrix % 0;
-
-    /*sortedMatrix = {1,Columns(matrix)};
-
-    for (i=0; i<Columns(matrix); i+=1) {
-        minElementLeft=Min(matrix, 1);
-        sortedMatrix[i] = minElementLeft[0];
-        matrix[minElementLeft[1]] = ^"math.Infinity";
-    }
-
-    return sortedMatrix;*/
 }

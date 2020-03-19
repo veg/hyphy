@@ -50,13 +50,9 @@
 #include "hy_string_buffer.h"
 
 
-_String   compileDate = __DATE__,
-          __HYPHY__VERSION__ = _String ("2.5.6");
+_String   compileDate = __DATE__;
 
 using namespace hy_global;
-
-
- 
 
 struct _hy_Valid_ID_Chars_Type {
   unsigned char valid_chars[256];
