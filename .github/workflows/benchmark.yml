@@ -31,7 +31,10 @@ jobs:
       run: |
         echo Add other actions to build,
         echo test, and deploy your project.
-
+        
+    - name: Compile Make
+      run: make
+      
   cmake:
     runs-on: ubuntu-latest
     
@@ -44,7 +47,6 @@ jobs:
     steps:
       - name: Install and run Hyperfine
         run: |
-          make
           wget https://github.com/sharkdp/hyperfine/releases/download/v1.9.0/hyperfine_1.9.0_amd64.deb
           sudo dpkg -i hyperfine_1.9.0_amd64.deb
           hyperfine --min-runs 5 'sleep 0.2' 'sleep 3.2'
