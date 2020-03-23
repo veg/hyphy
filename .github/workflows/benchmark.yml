@@ -36,7 +36,7 @@ jobs:
       run: |
         ls
         pwd
-        make .
+        cmake .
         make install
       
   cmake:
