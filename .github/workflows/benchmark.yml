@@ -33,7 +33,9 @@ jobs:
         echo test, and deploy your project.
         
     - name: Compile Make
-      run: make
+      run: |
+        make .
+        make install
       
   cmake:
     runs-on: ubuntu-latest
