@@ -37,7 +37,7 @@ jobs:
         ls
         pwd
         cmake .
-        make
+        make -j all
       
   cmake:
     runs-on: ubuntu-latest
