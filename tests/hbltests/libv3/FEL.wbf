@@ -57,7 +57,7 @@ assert (check_value (
     
 test.lrt_sum = 0;
 
-test.expected_negatives = utility.MatrixToDict({{11,22,31,36,45,47,60,65,70,71,78,82,87,95,110,116,120,123,125,129,130,132,133,136,164,166e,176}});
+test.expected_negatives = utility.MatrixToDict({{11,22,31,36,45,47,60,65,70,71,78,82,87,95,110,116,120,123,125,129,130,132,133,136,164,166,176}});
 
 utility.ForEachPair (p_values,"_index_", "_p_",
                  "  

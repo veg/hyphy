@@ -56,9 +56,7 @@ lfunction regexp.Split(string, re) {
  * @returns {String} the portion of the string that is matching
  */
 lfunction regexp.Find(string, re) {
-
-   // console.log (string);
-
+    //console.log (string);
     coordinates = string $ re;
     if (coordinates[0] >= 0) {
         return string[coordinates[0]][coordinates[1]];
@@ -122,25 +120,23 @@ lfunction regexp.PartitionByRegularExpressions(strings, rex) {
  */
 lfunction regexp.PartitionByRegularExpressionsWithSub(strings, rex) {
     result = {};
-
     result[""] = {};
     matched_regexp = None;
     subs = None;
 
-    utility.ForEach (strings, "_value_",
-    '
-        `&matched_regexp` = utility.First (`&rex`, "_regex_", "None!=regexp.Find (_value_, _regex_)");
-         if (None == `&matched_regexp`) {
-            `&result`[""] + _value_;
+    for (_value_; in; strings ) {
+        matched_regexp = utility.First (rex, "_regex_", "None!=regexp.Find ('" + _value_ +"', _regex_)");
+        if (None == matched_regexp) {
+            result[""] + _value_;
         } else {
-             `&subs` = Join ("|",regexp.FindSubexpressions (_value_, `&matched_regexp`));
-             if (utility.Has (`&result`,`&subs`,"AssociativeList") == FALSE) {
-                `&result`[`&subs`] = {};
-             }
-             `&result`[`&subs`] + _value_;
+            subs = Join ("|",regexp.FindSubexpressions (_value_, matched_regexp));
+            if (utility.Has (result,subs,"AssociativeList") == FALSE) {
+                result[subs] = {};
+            }
+            result[subs] + _value_;        
         }
-    ');
-
+    }
+    
     return result;
 }
 

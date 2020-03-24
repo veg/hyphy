@@ -332,6 +332,17 @@ function estimators.branch_lengths_in_string(tree_id, lookup) {
  * @returns results
  */
 function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
+    return estimators.ExtractMLEsOptions (likelihood_function_id, model_descriptions, {});
+}
+
+/**
+ * @name estimators.ExtractMLEsOptions
+ * @param {String} likelihood_function_id
+ * @param {String} model_descriptions
+ * @param {Dict} options
+ * @returns results
+ */
+function estimators.ExtractMLEsOptions(likelihood_function_id, model_descriptions, options) {
 
     ExecuteCommands("GetString (estimators.ExtractMLEs.lfInfo, `likelihood_function_id`,-1)");
 
@@ -347,6 +358,9 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
     estimators.ExtractMLEs.results[terms.branch_length] = {};
     estimators.ExtractMLEs.results[terms.fit.trees] = estimators.ExtractMLEs.lfInfo[terms.fit.trees];
 
+    if (options[utility.getGlobalValue("terms.globals_only")]) {
+        return estimators.ExtractMLEs.results;
+    }
 
     for (estimators.ExtractMLEs.i = 0; estimators.ExtractMLEs.i < estimators.ExtractMLEs.partitions; estimators.ExtractMLEs.i += 1) {
         _tree_name = (estimators.ExtractMLEs.lfInfo[terms.fit.trees])[estimators.ExtractMLEs.i];

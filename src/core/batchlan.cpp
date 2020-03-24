@@ -2130,6 +2130,10 @@ _ElementaryCommand::~_ElementaryCommand (void) {
         } else if (code == HY_HBL_COMMAND_INIT_ITERATOR) {
             if (simpleParameters.get (1) == ASSOCIATIVE_LIST && simpleParameters.countitems() > 2) {
                 delete (AVLListXLIterator*)simpleParameters.get(2);
+            } else {
+                if ((simpleParameters.get (1) == TREE ||  simpleParameters.get (1) == TOPOLOGY) && simpleParameters.countitems() > 2) {
+                    delete (node_iterator<long>*)simpleParameters.get(2);
+                }
             }
         }
     }
