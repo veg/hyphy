@@ -1875,11 +1875,12 @@ void    _LikelihoodFunction::PostCompute        (void) {
     //useGlobalUpdateFlag = false;
     // mod 20060125 comment out the compute loop; seems redundant
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
-        _Variable * this_p = GetIthIndependentVar(i);
-        if (this_p->varFlags & HY_VARIABLE_CHANGED) {
+        
+        //_Variable * this_p = GetIthIndependentVar(i);
+        /*if (this_p->varFlags & HY_VARIABLE_CHANGED) {
           this_p->varFlags -= HY_VARIABLE_CHANGED;
-        }
-        //this_p->varFlags = this_p->varFlags & HY_HY_VARIABLE_CHANGED_CLEAR;
+        }*/
+        GetIthIndependentVar(i)->varFlags &= HY_VARIABLE_CHANGED_CLEAR;
     }
 }
 

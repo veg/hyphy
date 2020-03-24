@@ -4384,26 +4384,50 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
 #endif
         
         hyFloat max     = 1.0,
-                *stash = (hyFloat*)alloca(sizeof (hyFloat) * hDim*(1+vDim));
+                *stash,
+                *stash2 = 0;
         //  = new hyFloat[hDim*(1+vDim)];
         
         if (!is_polynomial()) {
+            stash = (hyFloat*)alloca(sizeof (hyFloat) * hDim*(1+vDim));
+            if (theIndex) {
+                // transpose sparse matrix
+                CompressSparseMatrix (true,stash);
+            }
+
             hyFloat t;
+            //bool    censor = false;
             RowAndColumnMax (max, t, stash);
+            /*if (t > 10000. || max > 10000.) {
+                censor = true;
+                t   = MIN (t,10000.);
+                max = MIN (max, 10000.);
+            }*/
             max *= t;
+            //max = MaxElement();
+            //max = max * max;
             if (max > .1) {
                 max             = scale_to*sqrt (10.*max);
                 power2          = (long)((log (max)/_log2))+1L;
                 max             = exp (power2 * _log2);
+                stash2 = (hyFloat*)alloca(sizeof (hyFloat) * lDim);
+                memcpy   (stash2, theData, sizeof (hyFloat) * lDim);
+                /*if (censor) {
+                    for (long i = 0; i < lDim; i++) {
+                        if (theData[i] < -10000.) {
+                            theData[i] = -10000.;
+                        } else {
+                            if (theData[i] > 10000.) {
+                                theData[i] = 10000;
+                            }
+                        }
+                    }
+                }*/
                 (*this)         *= 1.0/max;
             } else {
                 power2 = 0;
             }
             
-            if (theIndex) {
-                // transpose sparse matrix
-                CompressSparseMatrix (true,stash);
-            }
             
         } else {
             max = 1.;
@@ -4543,7 +4567,9 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         }
         
         if (power2) {
-            (*this)*=max;
+            //(*this)*=max;
+            memcpy(theData, stash2, sizeof (hyFloat) * lDim);
+            
         }
         
         if (theIndex) {
@@ -4619,6 +4645,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 
                 ObjectToConsole(this);
                 ObjectToConsole(result);*/
+                
                 throw _String ("Failed to compute a valid transition matrix; this is usually caused by ill-conditioned rate matrices (e.g. very large rate values)");
             }
         }

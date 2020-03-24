@@ -1752,8 +1752,9 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
     
     simpleParameters:
         [0] -> command index for the corresponding advance command
-        [1] -> type of object; 0 - dict, 1 - matrix
+        [1] -> type of object; MATRIX, etc
         [2] -> if dict, then this stores the pointer to AVLListXLIterator
+            -> if tree, then this stores the pointer to a tree iterator
 */
   current_program.advance();
   try {
@@ -1762,7 +1763,11 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
           parameters.Delete (1L);
           if (simpleParameters.get (1) == ASSOCIATIVE_LIST) {
               delete ((AVLListXLIterator*)simpleParameters.get(2));
-           }
+          } else {
+              if (simpleParameters.get (1) == TREE || simpleParameters.get (1) == TOPOLOGY) {
+                  delete ((node_iterator<long>*)simpleParameters.get(2));
+              }
+          }
        }
       
       if (simpleParameters.countitems() > 2) {
@@ -1770,7 +1775,7 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
       }
       
       
-      HBLObjectRef iterator_substrate = _ProcessAnArgumentByType (*GetIthParameter(0UL), ASSOCIATIVE_LIST | MATRIX, current_program, &parameters);
+      HBLObjectRef iterator_substrate = _ProcessAnArgumentByType (*GetIthParameter(0UL), ASSOCIATIVE_LIST | MATRIX | TOPOLOGY | TREE, current_program, &parameters);
       
       _ElementaryCommand * advance_command = current_program.GetIthCommand(simpleParameters.get (0));
       
@@ -1785,7 +1790,13 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
           simpleParameters[1] = ASSOCIATIVE_LIST; // indicate that this is an ASSOCIATIVE_LIST
           simpleParameters << (long) new AVLListXLIterator (source_object->ListIterator ());
       } else { // MATRIX
-          simpleParameters[1] = MATRIX; // indicate that tjis is a MATRIX
+          if (iterator_substrate->ObjectClass() == MATRIX) {
+               simpleParameters[1] = MATRIX; // indicate that tjis is a MATRIX
+          } else {
+              simpleParameters[1] = iterator_substrate->ObjectClass();
+              _TreeTopology * source_tree = (_TreeTopology*)iterator_substrate;
+              simpleParameters << (long) new node_iterator<long> (&source_tree->GetRoot(), _HY_TREE_TRAVERSAL_POSTORDER);
+          }
       }
   } catch (const _String& error) {
     return  _DefaultExceptionHandler (nil, error, current_program);
@@ -1823,9 +1834,10 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
           throw (_String ("Iterator advance command is not linked with an iterator initiaizer"));
       }
       
-      bool is_matrix = init_command->simpleParameters.get (1) == MATRIX;
+      long source_object_class = init_command->simpleParameters.get (1);
+      
       bool first_in = false;
-      if (!is_matrix && reciever_count == 3) {
+      if (source_object_class != MATRIX && reciever_count == 3) {
           throw (_String ("Iterators over dictionaries do not support the 3 argument form"));
       }
       
@@ -1836,7 +1848,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
           for (long k = 0L; k < reciever_count; k++) {
               parameters << _ValidateStorageVariable (current_program, k);
           }
-          if (is_matrix) {
+          if (source_object_class == MATRIX) {
               if (simpleParameters.countitems() == 2) {
                   simpleParameters << 0 << 0;
               } else {
@@ -1846,7 +1858,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
           }
       }
       
-      if (is_matrix) {
+      if (source_object_class == MATRIX) {
           _Matrix* source_object = (_Matrix*)parameters.GetItem (reciever_count);
           long row    = simpleParameters.get (2),
                column = simpleParameters.get (3);
@@ -1877,24 +1889,54 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
 
           
       } else {
-          AVLListXLIterator * it = (AVLListXLIterator *)init_command->simpleParameters.get (2);
-          if (first_in) {
-              it->begin();
-          } else {
-              ++(*it);
-          }
-          if (!it->is_done()) { // iterator not finished
-              AVLListXLIteratorKeyValue state = *(*it);
-              state.get_object()->AddAReference();
-              if (reciever_count > 1) {
-                  ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue ((HBLObjectRef)state.get_object(), false, false);
-                  ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _FString (*state.get_key()), false, false);
+          if (source_object_class == ASSOCIATIVE_LIST) {
+              AVLListXLIterator * it = (AVLListXLIterator *)init_command->simpleParameters.get (2);
+              if (first_in) {
+                  it->begin();
               } else {
-                  ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue ((HBLObjectRef)state.get_object(), false, false);
+                  ++(*it);
+              }
+              if (!it->is_done()) { // iterator not finished
+                  AVLListXLIteratorKeyValue state = *(*it);
+                  state.get_object()->AddAReference();
+                  if (reciever_count > 1) {
+                      ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue ((HBLObjectRef)state.get_object(), false, false);
+                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _FString (*state.get_key()), false, false);
+                  } else {
+                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue ((HBLObjectRef)state.get_object(), false, false);
+                  }
+              } else {
+                  ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false);
+                  // iterator done
               }
           } else {
-              ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false);
-              // iterator done
+              node_iterator<long> * tree_iterator = (node_iterator<long> *)init_command->simpleParameters.get (2);
+              if (first_in) {
+                  if (simpleParameters.countitems() < 3) {
+                      simpleParameters << 0;
+                  } else {
+                      simpleParameters[2] = 0;
+                  }
+              }
+              node<long>*topTraverser = tree_iterator->Next();
+              if (topTraverser && !topTraverser->is_root()) {
+                  _FString *node_name;
+                  if (source_object_class == TREE)
+                      node_name = new _FString (map_node_to_calcnode (topTraverser)->ContextFreeName());
+                  else
+                      node_name = new _FString (((_TreeTopology*)parameters.GetItem (1))->GetNodeName(topTraverser));
+                        
+                  if (reciever_count > 1) {
+                      ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue (node_name, false, false);
+                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _Constant (simpleParameters.get(2)), false, false);
+                  } else {
+                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (node_name, false, false);
+                  }
+                  simpleParameters[2]++;
+              } else {
+                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false);
+              }
+              
           }
       }
   } catch (const _String& error) {
