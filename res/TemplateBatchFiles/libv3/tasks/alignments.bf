@@ -860,6 +860,9 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
     seqPos = 0;
     codon = codon_sequence[seqPos][seqPos + 2];
     currentAA = mapping[codon];
+    if (currentAA == 0) {
+        currentAA = "X";
+    }
 
     mismatch_count = 0;
 
@@ -879,6 +882,7 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
                     if (mismatch_count == this_many_mm) {
                         translString * 0;
                         console.log (translString);
+                        console.log ("\n");
                         console.log (codon_sequence);
                     }
                     assert(mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos + " (codon `seqPos`) : codon '" + codon_sequence[seqPos][seqPos + 2] + "'(`currentAA`) a.a. '`aa_sequence[aaPos]`'");
@@ -895,18 +899,21 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
 
         if (advance) {
             if (copy_codon) {
-                if (currentAA == "X") {
+                if (currentAA == "X" && mapping[codon] == "X") {
                     translString * "---";
                 } else {
                     translString * codon;
                 }
             } else {
                 //fprintf (stdout, "Skipping codon ", codon, "\n");
-                aaPos = aaPos - 1;
+                //aaPos = aaPos - 1;
             }
             seqPos += 3;
             codon = codon_sequence[seqPos][seqPos + 2];
             currentAA = mapping[codon];
+            if (currentAA == 0) {
+                currentAA = "X";
+            }
         }
     }
 
