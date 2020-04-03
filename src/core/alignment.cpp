@@ -146,7 +146,7 @@ long CodonAlignStringsStep( double * const score_matrix
          best_choice = 0,
          i, choice, partial_codons[ 10 ]; // we need to multiply by 3 to get the NUC position
     // 3x5 codon specifications (negative indices)
-    long codon_spec_3x5[ 10 ][ 3 ] = {
+    static long const codon_spec_3x5[ 10 ][ 3 ] = {
         { 5, 4, 3 }, // 11100
         { 5, 4, 2 }, // 11010
         { 5, 4, 1 }, // 11001
@@ -159,7 +159,7 @@ long CodonAlignStringsStep( double * const score_matrix
         { 3, 2, 1 }  // 00111
     };
     // 3x4 codon specifications (negative indices)
-    long codon_spec_3x4[ 4 ][ 3 ] = {
+    static long const long codon_spec_3x4[ 4 ][ 3 ] = {
         { 4, 3, 2 }, // 1110
         { 4, 3, 1 }, // 1101
         { 4, 2, 1 }, // 1011
@@ -168,15 +168,15 @@ long CodonAlignStringsStep( double * const score_matrix
 
     int    local_shortcut_came_from_this_move = -1;
 
-    double choices[ HY_ALIGNMENT_TYPES_COUNT ],
+    double choices[ HY_ALIGNMENT_TYPES_COUNT ] = {-INFINITY},
            max_score = -INFINITY,
            penalty;
 
     // store the scores of our choices in choices,
     // pre-initialize to -infinity
-    for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++ ) {
-        choices[ i ] = -INFINITY;
-    }
+    //for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++ ) {
+    //    choices[ i ] = -INFINITY;
+    //}
     
     // if we're at least a CODON away from the edge...
     // (psst, r is CODONs remember?)
@@ -388,13 +388,20 @@ long CodonAlignStringsStep( double * const score_matrix
     }
 
     // find the best possible choice
-    for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT - (!do_local); ++i ) {
-        /* if ( i > 0 )
-         fprintf( stderr, ", " );
-         fprintf( stderr, "( %ld, %.3g )", i, choices[ i ] ); */
-        if ( choices[ i ] > max_score ) {
-            best_choice = i;
-            max_score = choices[ i ];
+    
+    if (do_local) {
+        for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT ; ++i ) {
+            if ( choices[ i ] > max_score ) {
+                best_choice = i;
+                max_score = choices[ i ];
+            }
+        }
+    } else {
+        for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT - 1; ++i ) {
+            if ( choices[ i ] > max_score ) {
+                best_choice = i;
+                max_score = choices[ i ];
+            }
         }
     }
     

@@ -283,6 +283,33 @@ function doGTR (prefix) {
                                          trees,
                                          gtr_results);
                                          
+                                        
+    KeywordArgument ("kill-zero-lengths", "Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)", "Yes");
+                       
+    kill0 = io.SelectAnOption (
+        {
+            "Yes":"Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)",
+            "No":"Keep all branches"
+        }, 
+        "The set of properties to use in the model") == "Yes";
+        
+         
+    if (kill0) {                   
+        for (index, tree; in; trees) {
+            deleted = {};
+            if (^(prefix + ".selected_branches") / index) {
+                trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], (^(prefix + ".selected_branches"))[index], deleted);       
+            } else {
+                trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], null, deleted);
+            }
+
+            if (utility.Array1D (deleted)) {
+                io.ReportProgressMessageMD(prefix,  'selector', 'Deleted ' + Abs(deleted) + ' zero-length internal branches: \`' + Join (', ',utility.Values(deleted)) + '\`');
+            }
+        }
+    }
+    
+                                         
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
         selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.sample_size")));
 
@@ -342,7 +369,6 @@ function doPartitionedMG (prefix, keep_lf) {
     scaler_variables = utility.PopulateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
 
     utility.ForEach (scaler_variables, "_value_", "parameters.DeclareGlobal(_value_, None);parameters.SetValue(_value_, 3);");
-
 
     partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
         utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"),
