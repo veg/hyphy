@@ -202,6 +202,7 @@ function load_file (prefix) {
 
 function store_tree_information () {
     // Place in own attribute called `tested`
+    
      selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
 
         /**  this will return a dictionary of selected branches; one set per partition, like in
@@ -305,8 +306,15 @@ function doGTR (prefix) {
 
             if (utility.Array1D (deleted)) {
                 io.ReportProgressMessageMD(prefix,  'selector', 'Deleted ' + Abs(deleted) + ' zero-length internal branches: \`' + Join (', ',utility.Values(deleted)) + '\`');
+                for (i,v; in; deleted) {
+                    (gtr_results[^"terms.branch_length"])[index] - v;
+                }
             }
         }
+        for (i = 0; i < partition_count; i+=1) {
+            (partitions_and_trees[i])[^"terms.data.tree"] = trees[i];
+        }   
+        store_tree_information ();
     }
     
                                          
