@@ -328,7 +328,7 @@ if (utility.Has (fade.cache, terms.fade.cache.substitutions, "AssociativeList") 
                                                            fade.baseline_fit,
                                                           {terms.run_options.retain_lf_object: TRUE},
                                                           None
-                                                   )
+                                                   );
 
         fade.baseline_fit[terms.likelihood_function] = "fade.ancestral.rebuild.likelihoodFunction";
     }
