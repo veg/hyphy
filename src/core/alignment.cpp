@@ -168,15 +168,15 @@ long CodonAlignStringsStep( double * const score_matrix
 
     int    local_shortcut_came_from_this_move = -1;
 
-    double choices[ HY_ALIGNMENT_TYPES_COUNT ] = {-INFINITY},
+    double choices[ HY_ALIGNMENT_TYPES_COUNT ],
            max_score = -INFINITY,
            penalty;
 
     // store the scores of our choices in choices,
     // pre-initialize to -infinity
-    //for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++ ) {
-    //    choices[ i ] = -INFINITY;
-    //}
+    for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT; i++ ) {
+        choices[ i ] = -INFINITY;
+    }
     
     // if we're at least a CODON away from the edge...
     // (psst, r is CODONs remember?)
@@ -388,7 +388,6 @@ long CodonAlignStringsStep( double * const score_matrix
     }
 
     // find the best possible choice
-    
     if (do_local) {
         for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT ; ++i ) {
             if ( choices[ i ] > max_score ) {
@@ -397,13 +396,14 @@ long CodonAlignStringsStep( double * const score_matrix
             }
         }
     } else {
-        for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT - 1; ++i ) {
+        for ( i = 0; i < HY_ALIGNMENT_TYPES_COUNT - 1 ; ++i ) {
             if ( choices[ i ] > max_score ) {
                 best_choice = i;
                 max_score = choices[ i ];
             }
         }
     }
+    
     
     //fprintf( stderr, "\nscore: %.3g best: %ld\n", max_score, best_choice );
 
