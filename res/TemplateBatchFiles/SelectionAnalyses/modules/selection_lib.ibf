@@ -73,7 +73,6 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
                             collect_residues[integer_mapping[index]] = 1;
                         }
                     }
-                    console.log (collect_residues);
                     code_lookup [code] = Join ("", utility.Keys (collect_residues));
                 }
             }
