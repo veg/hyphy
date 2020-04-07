@@ -19,6 +19,44 @@ suite.add('SmallCodon.bf', function() {
 })
 
 
+.add('FEL.wbf', function() {
+  exec("./HYPHYMP 'tests/hbltests/libv3/FEL.wbf'", (error, stdout, stderr) => {
+    if (error) {return;}
+    if (stderr) {return;}
+  });
+})
+
+
+.add('SLAC.wbf', function() {
+  exec("./HYPHYMP 'tests/hbltests/libv3/SLAC.wbf'", (error, stdout, stderr) => {
+    if (error) {return;}
+    if (stderr) {return;}
+  });
+})
+
+
+.add('SLAC-partitioned.wbf', function() {
+  exec("./HYPHYMP 'tests/hbltests/libv3/SLAC-partitioned.wbf'", (error, stdout, stderr) => {
+    if (error) {return;}
+    if (stderr) {return;}
+  });
+})
+
+
+.add('MEME.wbf', function() {
+  exec("./HYPHYMP 'tests/hbltests/libv3/MEME.wbf'", (error, stdout, stderr) => {
+    if (error) {return;}
+    if (stderr) {return;}
+  });
+})
+
+.add('BUSTED.wbf', function() {
+  exec("./HYPHYMP 'tests/hbltests/libv3/BUSTED.wbf'", (error, stdout, stderr) => {
+    if (error) {return;}
+    if (stderr) {return;}
+  });
+})
+
 // add listeners
 .on('cycle', function(event) {
   console.log(String(event.target));
