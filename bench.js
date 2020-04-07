@@ -64,28 +64,24 @@ suite.add('SmallCodon.bf', function() {
     if (stderr) {return;}
   });
 })
-
 .add('BGM.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/BGM.wbf''", (error, stdout, stderr) => {
     if (error) {return;}
     if (stderr) {return;}
   });
 })
-
 .add('CFEL.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/CFEL.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
     if (stderr) {return;}
   });
 })
-
 .add('FADE.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/FADE.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
     if (stderr) {return;}
   });
 })
-
 .add('GARD.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/GARD.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
