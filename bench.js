@@ -9,7 +9,6 @@ suite.add('SmallCodon.bf', function() {
       if (error) {return;}
       if (stderr) {return;}
   });
-
 })
 .add('IntermediateProtein.bf', function() {
   exec("./HYPHYMP 'tests/hbltests/SimpleOptimizations/IntermediateProtein.bf'", (error, stdout, stderr) => {
@@ -17,16 +16,12 @@ suite.add('SmallCodon.bf', function() {
     if (stderr) {return;}
   });
 })
-
-
 .add('FEL.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/FEL.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
     if (stderr) {return;}
   });
 })
-
-
 .add('SLAC.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/SLAC.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
