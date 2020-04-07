@@ -28,8 +28,6 @@ suite.add('SmallCodon.bf', function() {
     if (stderr) {return;}
   });
 })
-
-
 .add('SLAC-partitioned.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/SLAC-partitioned.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
