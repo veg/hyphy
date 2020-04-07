@@ -34,36 +34,30 @@ suite.add('SmallCodon.bf', function() {
     if (stderr) {return;}
   });
 })
-
-
 .add('MEME.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/MEME.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
     if (stderr) {return;}
   });
 })
-
 .add('BUSTED.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/BUSTED.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
     if (stderr) {return;}
   });
 })
-
 .add('BUSTED-SRV.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/BUSTED-SRV.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
     if (stderr) {return;}
   });
 })
-
 .add('RELAX.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/RELAX.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
     if (stderr) {return;}
   });
 })
-
 .add('FUBAR.wbf', function() {
   exec("./HYPHYMP 'tests/hbltests/libv3/FUBAR.wbf'", (error, stdout, stderr) => {
     if (error) {return;}
