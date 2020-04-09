@@ -888,6 +888,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                     if (scaleDiff > 0) {
                         ratio *= acquireScalerMultiplier(scaleDiff);
                     }
+                    //printf ("%g\n", ratio);
                     supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
                 }
                 blockTree->AddBranchToForcedRecomputeList (branchID+leafCount);
@@ -896,7 +897,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
     _SimpleList  conversion;
     _AVLListXL   conversionAVL (&conversion);
-    _String      codeBuffer    (unitLength);
+    _String      codeBuffer    ((unsigned long)unitLength);
     _List        *result       = new _List;
 
     for (long k = 0L; k < matrixSize; k++) {

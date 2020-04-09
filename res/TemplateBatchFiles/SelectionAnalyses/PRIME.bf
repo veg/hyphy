@@ -553,10 +553,9 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         ^l = 0;
      }
      
-     /*
-     Export (lfe, ^lf_prop);
-     fprintf ("/Users/sergei/Desktop/prime.bf",CLEAR_FILE,lfe);
-     */
+     /*Export (lfe, ^lf_prop);
+     fprintf ("/Users/sergei/Desktop/prime.bf",CLEAR_FILE,lfe);*/
+     
      
      Optimize (results, ^lf_prop, {
             //"OPTIMIZATION_METHOD" : "gradient-descent",

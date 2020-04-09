@@ -8138,10 +8138,15 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
             }
 
             long np = 1;
+            long sitesPerP    = df->GetPatternCount();
 #ifdef _OPENMP
             np           = MIN(GetThreadCount(),omp_get_max_threads());
+            if (np > sitesPerP) {
+                np = sitesPerP;
+                sitesPerP = 1;
+            } else 
 #endif
-            long sitesPerP    = df->GetPatternCount() / np + 1L;
+            sitesPerP = sitesPerP / np + 1L;
 
 #ifdef _UBER_VERBOSE_LF_DEBUG
                 fprintf (stderr, "NORMAL compute lf \n");
