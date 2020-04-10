@@ -1,0 +1,56 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Benchmark
+
+# Controls when the action will run. Triggers the workflow on push or pull request 
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  Build_Make_Requirements:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+            
+    - name: Compile Make
+      run: |
+        ls
+        pwd
+        cmake .
+        make -j all
+        
+  benchmark:
+    name: Run Javascript Benchmark
+    runs-on: ubuntu-latest
+    needs: [Build_Make_Requirements]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+      - name: Run benchmark
+        run: npm i --save benchmark && npm install && node bench.js | tee output.txt && git config --local user.email "action@github.com" && git config --local user.name "GitHub Action"
+      - name: Store benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          name: Benchmark.js Benchmark
+          tool: 'benchmarkjs'
+          output-file-path: ./output.txt
+          # Use personal access token instead of GITHUB_TOKEN due to https://github.community/t5/GitHub-Actions/Github-action-not-triggering-gh-pages-upon-push/td-p/26869/highlight/false
+          github-token: ${{ secrets.benchmark }}
+          auto-push: true
+          # Show alert with commit comment on detecting possible performance regression
+          alert-threshold: '200%'
+          comment-on-alert: true
+          fail-on-alert: true
+          alert-comment-cc-users: '@rhysd'
+            
+
