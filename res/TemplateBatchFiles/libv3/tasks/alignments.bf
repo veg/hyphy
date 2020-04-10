@@ -881,9 +881,9 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
                 if (this_many_mm == 1) {
                     if (mismatch_count == this_many_mm) {
                         translString * 0;
-                        console.log (translString);
+                        /*console.log (translString);
                         console.log ("\n");
-                        console.log (codon_sequence);
+                        console.log (codon_sequence);*/
                     }
                     assert(mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos + " (codon `seqPos`) : codon '" + codon_sequence[seqPos][seqPos + 2] + "'(`currentAA`) a.a. '`aa_sequence[aaPos]`'");
                 } else {

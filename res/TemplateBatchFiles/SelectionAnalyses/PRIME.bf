@@ -63,6 +63,7 @@ prime.parameter_site_alpha          = "Site relative synonymous rate";
 prime.parameter_site_beta_nuisance  = "Site relative non-synonymous rate (untested branches)";
 prime.parameter_property_prefix     = "Site importance for property ";
 prime.parameter_site_beta           = "Site log (baseline beta)";
+terms.prime_imputed_states          = "Imputed States";
 
 // default cutoff for printing to screen
 prime.pvalue = 0.1;
@@ -80,7 +81,6 @@ prime.display_orders =   {
                          };
 
 selection.io.startTimer (prime.json [terms.json.timers], "Total time", 0);
-
 
 /*------------------------------------------------------------------------------
     Key word arguments
@@ -132,6 +132,16 @@ prime.property_set = io.SelectAnOption (
                 "Custom":"Load the set of properties from a file"
             }, 
             "The set of properties to use in the model");
+            
+KeywordArgument ("impute-states", "Use site-level model fits to impute likely character states for each sequence", "No");
+
+prime.impute_states = io.SelectAnOption (
+            {
+                "Yes":"Impute marginal likelihoods for each codon at each sequence and each site",
+                "No": "Do not impute marginal likelihoods for each codon at each sequence and each site",
+            }, 
+            "Impute likely states for sequences") == "Yes";
+
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'prime.json')", prime.codon_data_info [terms.json.json]);
 prime.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
@@ -326,7 +336,8 @@ prime.report.significant_site = {{"" + (1+((prime.filter_specification[prime.rep
 }};
 
 
-prime.site_results = {};
+prime.site_results        = {};
+prime.imputed_leaf_states = {};
 
 for (prime.partition_index = 0; prime.partition_index < prime.partition_count; prime.partition_index += 1) {
 
@@ -402,7 +413,7 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
     prime.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"prime.site_likelihood","prime.site_likelihood_property"}},
                                    terms.mpi.Models : {{"prime.site.background_fel","prime.site.property_model"}},
                                    terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
-                                   terms.mpi.Variables : {{"prime.selected_branches","prime.pairwise_counts","prime.codon_data_info","prime.lambdas"}}
+                                   terms.mpi.Variables : {{"prime.selected_branches","prime.pairwise_counts","prime.codon_data_info","prime.lambdas","prime.impute_states","terms.prime_imputed_states"}}
                                   });
 
 
@@ -456,8 +467,11 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
 io.ClearProgressBar ();
 
 prime.json [terms.json.MLE ] = {terms.json.headers   : prime.table_headers,
-                               terms.json.content : prime.site_results };
+                                terms.json.content : prime.site_results };
 
+if (prime.impute_states) {
+    (prime.json [terms.json.MLE])[terms.prime_imputed_states] = prime.imputed_leaf_states;
+}
 
 for (key, value; in;  prime.report.count) {
     io.ReportProgressMessageMD ("PRIME", "results", "** Found _" + value + "_ sites where " + key + " property was important at p <= " + prime.pvalue + "**");
@@ -542,7 +556,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     
     }*/
   
-    // fit the universal alternative
+        // fit the universal alternative
      ^"prime.site_beta" = Eval (^"prime.site_beta");   
      LFCompute (^lf_prop,LF_START_COMPUTE);
      LFCompute (^lf_prop,results);
@@ -575,6 +589,24 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
              }*/
         });
         
+    character_map = None;    
+    if (^"prime.impute_states") {
+        DataSet anc = ReconstructAncestors ( ^lf_prop, {{0}}, MARGINAL, DOLEAVES);
+        GetString   (names, anc, -1);
+        GetDataInfo (codon_chars, ^((lfInfo["Datafilters"])[0]) , "CHARACTERS");
+        
+        character_map = {};
+        for (seq_id, seq_name; in; names) {
+            character_map [seq_name] = {};
+            for (char, char_support; in; (anc.marginal_support_matrix)[seq_id][-1]) {
+                if (char_support > 1e-6) {
+                    (character_map [seq_name])[codon_chars[char]] = char_support;
+                }
+            }
+        }
+        
+    }
+        
     
     alternative = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {});
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
@@ -602,10 +634,13 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
 
  
 
-    return {"fel" : fel,
+    return {
+            "fel" : fel,
             utility.getGlobalValue("terms.alternative") : alternative,
             utility.getGlobalValue("terms.Null"): Null,
-            utility.getGlobalValue("terms.model.residue_properties") : constrained_models};
+            utility.getGlobalValue("terms.model.residue_properties") : constrained_models,
+            utility.getGlobalValue("terms.prime_imputed_states") : character_map
+    };
 }
 
 /* echo to screen calls */
@@ -639,6 +674,7 @@ function prime.report.echo (prime.report.site, prime.report.partition, prime.rep
                     prime.table_output_options[utility.getGlobalValue("terms.table_options.header")] = FALSE;
                 }
 
+                io.ClearProgressBar ();
                 fprintf (stdout,
                     io.FormatTableRow (prime.print_row,prime.table_output_options));
             }
@@ -702,12 +738,11 @@ lfunction prime.store_results (node, result, arguments) {
             result_row [property_index+1] = p_values[(^"prime.local_to_property_name")[key]];
         }
         
-    } 
-
- 
-   
+    }   
 
     utility.EnsureKey (^"prime.site_results", partition_index);
+    utility.EnsureKey (^"prime.imputed_leaf_states", partition_index);
+    
 
     sites_mapping_to_pattern = pattern_info[utility.getGlobalValue("terms.data.sites")];
     sites_mapping_to_pattern.count = utility.Array1D (sites_mapping_to_pattern);
@@ -715,17 +750,7 @@ lfunction prime.store_results (node, result, arguments) {
     for (i = 0; i < sites_mapping_to_pattern.count; i+=1) {
         site_index = sites_mapping_to_pattern[i];
         ((^"prime.site_results")[partition_index])[site_index] = result_row;
+        ((^"prime.imputed_leaf_states")[partition_index])[site_index] = result[^"terms.prime_imputed_states"];
         prime.report.echo (site_index, partition_index, result_row);
     }
-
-    /*
-    utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_value_",
-        '
-            (prime.site_results[`&partition_index`])[_value_] = `&result_row`;
-            prime.report.echo (_value_, `&partition_index`, `&result_row`);
-        '
-    );*/
-
-
-    //assert (0);
 }
