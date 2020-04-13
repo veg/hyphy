@@ -265,7 +265,11 @@ lfunction math.minNormalizedRange(object) {
   if (Type (object) == "AssociativeList") {
     object = utility.Values(object);
   }
-  return (Max(object, 0) - Min(object, 0) ) / Min(object, 0);
+  min_value = Min(object, 0);
+  if (min_value == 0) {
+    return ^"math.Infinity";
+  }
+  return (Max(object, 0) - min_value ) / min_value;
 };
 
 
