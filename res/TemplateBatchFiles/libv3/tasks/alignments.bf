@@ -877,7 +877,7 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
                     advance = 0;
                 //}
             } else {
-                mismatch_count += (aa_sequence[aaPos] != currentAA);
+                mismatch_count += (aa_sequence[aaPos] != currentAA && currentAA != "X");
                 if (this_many_mm == 1) {
                     if (mismatch_count == this_many_mm) {
                         translString * 0;
