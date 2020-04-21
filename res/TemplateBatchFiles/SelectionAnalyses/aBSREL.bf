@@ -1,4 +1,4 @@
-RequireVersion ("2.4.0");
+RequireVersion ("2.5.8");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -15,7 +15,8 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
-
+LoadFunctionLibrary("libv3/models/codon/MG_REV_MH.bf");
+LoadFunctionLibrary("libv3/models/codon/MG_REV_TRIP.bf");
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
@@ -35,6 +36,8 @@ absrel.baseline_omega_ratio = "Baseline MG94xREV omega ratio";
 absrel.full_adaptive_model  = "Full adaptive model";
 absrel.rate_classes         = "Rate classes";
 absrel.per_branch_omega     = "Per-branch omega";
+absrel.per_branch_delta     = "Per-branch delta";
+absrel.per_branch_psi       = "Per-branch psi";
 
 absrel.display_orders = {terms.original_name: -1,
                          terms.json.nucleotide_gtr: 0,
@@ -45,7 +48,9 @@ absrel.display_orders = {terms.original_name: -1,
                               terms.json.rate_distribution: 3,
                               terms.LRT: 4,
                               terms.json.uncorrected_pvalue: 5,
-                              terms.json.corrected_pvalue: 6
+                              terms.json.corrected_pvalue: 6,
+                              terms.parameters.multiple_hit_rate: 7,
+                              terms.parameters.triple_hit_rate : 8
                              };
 
 
@@ -57,11 +62,11 @@ absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site ran
                             uses an adaptive random effects branch-site model framework
                             to test whether each branch has evolved under positive selection,
                             using a procedure which infers an optimal number of rate categories per branch.",
-                           terms.io.version : "2.1",
-                           terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353",
-                           terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
-                           terms.io.contact : "spond@temple.edu",
-                           terms.io.requirements : "in-frame codon alignment and a phylogenetic tree"
+                            terms.io.version : "2.2",
+                            terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353. v2.2 adds support for multiple-hit models",
+                            terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
+                            terms.io.contact : "spond@temple.edu",
+                            terms.io.requirements : "in-frame codon alignment and a phylogenetic tree"
                           };
 
 
@@ -98,6 +103,15 @@ namespace absrel {
     load_file ("absrel");
 }
 
+KeywordArgument ("multiple-hits",  "Include support for multiple nucleotide substitutions", "None");
+
+absrel.multi_hit = io.SelectAnOption ({
+                                        {"Double", "Include branch-specific rates for double nucleotide substitutions"}
+                                        {"Double+Triple", "Include branch-specific rates for double and triple nucleotide substitutions"}
+                                        {"None", "[Default] Use standard models which permit only single nucleotide changes to occur instantly"}
+                                  }, "Include support for multiple nucleotide substitutions");
+
+
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'ABSREL.json')", absrel.codon_data_info [terms.json.json]);
 
 absrel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
@@ -108,13 +122,6 @@ utility.ForEachPair (absrel.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
      io.ReportProgressMessageMD('RELAX',  'selector', '* Selected ' + Abs(_selection_) + ' branches for testing: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
-
-/*
-absrel.srv = io.SelectAnOption ({
-                                        {"Yes", "Both synonymous and non-synonymous rates vary in a branch-site fashion (~5x more computationally expensive)"}
-                                        {"No", "[Default] Synonymous rates vary from branch to branch, while the dN/dS ratio varies among branch-site combinations"}
-                                    }, "Enable synonymous rate variation?");
-*/
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Preliminary model fitting", 1);
 
@@ -130,7 +137,39 @@ estimators.fixSubsetOfEstimates(absrel.gtr_results, absrel.gtr_results[terms.glo
 
 io.ReportProgressMessageMD ("absrel", "base", "Fitting the baseline model with a single dN/dS class per branch, and no site-to-site variation. ");
 
-absrel.base.results = estimators.FitMGREV (absrel.filter_names, absrel.trees, absrel.codon_data_info [terms.code], {
+
+// estimators.FitCodonModel (codon_data, tree, "models.codon.MG_REV.ModelDescription", genetic_code, option, initial_values);
+
+absrel.model_generator = "models.codon.MG_REV.ModelDescription";
+
+if (absrel.multi_hit == "Double") {
+    absrel.model_generator = "models.codon.MG_REV_MH.ModelDescription";
+} else {
+    if (absrel.multi_hit == "Double+Triple") {
+    
+        lfunction absrel.codon.MG_REV_TRIP._GenerateRate(fromChar, toChar, namespace, model_type, model) {
+            return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type,
+            model[utility.getGlobalValue("terms.translation_table")],
+                "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"),
+                "beta", utility.getGlobalValue("terms.parameters.nonsynonymous_rate"),
+                "omega", utility.getGlobalValue("terms.parameters.omega_ratio"),
+                "delta", utility.getGlobalValue("terms.parameters.multiple_hit_rate"),
+                "psi", utility.getGlobalValue("terms.parameters.triple_hit_rate"),
+                "psi", utility.getGlobalValue("terms.parameters.triple_hit_rate")
+                );
+        }
+
+
+        lfunction absrel.model.MG_REV_no_islands (type, code) {
+            mdl = models.codon.MG_REV_TRIP.ModelDescription (type,code);
+            mdl[utility.getGlobalValue("terms.model.q_ij")] = "absrel.codon.MG_REV_TRIP._GenerateRate";
+            return mdl;
+        }
+        absrel.model_generator = "absrel.model.MG_REV_no_islands";
+    }
+}
+
+absrel.base.results = estimators.FitCodonModel (absrel.filter_names, absrel.trees, absrel.model_generator, absrel.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
     terms.run_options.retain_lf_object: TRUE,
     terms.run_options.retain_model_object : TRUE
@@ -140,15 +179,32 @@ absrel.base.results = estimators.FitMGREV (absrel.filter_names, absrel.trees, ab
 io.ReportProgressMessageMD("absrel", "base", "* " + selection.io.report_fit (absrel.base.results, 0, absrel.codon_data_info[terms.data.sample_size]));
 
 
-
-
 absrel.baseline.branch_lengths = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "selection.io.branch.length");
 absrel.baseline.omegas = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "absrel.local.omega");
+
+if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
+    absrel.baseline.deltas = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "absrel.local.delta");
+}
+
 
 absrel.omega_stats = math.GatherDescriptiveStats (utility.Map (utility.UniqueValues (absrel.baseline.omegas), "_value_", "0+_value_"));
 
 io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.omega_ratio` distribution has median " +
                                              Format (absrel.omega_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (absrel.omega_stats[terms.math._2.5], 5,2) + " - " + Format (absrel.omega_stats[terms.math._97.5], 5,2));
+
+if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
+    absrel.baseline.deltas = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "absrel.local.delta");
+    absrel.delta_stats = math.GatherDescriptiveStats (utility.Map (utility.UniqueValues (absrel.baseline.deltas), "_value_", "0+_value_"));
+    io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.multiple_hit_rate` distribution has median " +
+                                             Format (absrel.delta_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (absrel.delta_stats[terms.math._2.5], 5,2) + " - " + Format (absrel.delta_stats[terms.math._97.5], 5,2));
+}
+
+if (absrel.multi_hit == "Double+Triple") {
+    absrel.baseline.psi = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "absrel.local.psi");
+    absrel.psi_stats = math.GatherDescriptiveStats (utility.Map (utility.UniqueValues (absrel.baseline.psi), "_value_", "0+_value_"));
+    io.ReportProgressMessageMD("absrel", "base", "* Branch-level `terms.parameters.triple_hit_rate` distribution has median " +
+                                             Format (absrel.psi_stats[terms.math.median], 5,2) + ", and 95% of the weight in " + Format (absrel.psi_stats[terms.math._2.5], 5,2) + " - " + Format (absrel.psi_stats[terms.math._97.5], 5,2));
+}
 
 
 
@@ -176,8 +232,28 @@ absrel.distribution_for_json = {absrel.per_branch_omega :
                                     terms.math._2.5 : absrel.omega_stats[terms.math._2.5],
                                     terms.math._97.5 : absrel.omega_stats[terms.math._97.5]}
                                };
+                            
 
-
+if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
+    absrel.distribution_for_json [absrel.per_branch_delta] = 
+                                   {
+                                        terms.math.mean : absrel.delta_stats[terms.math.mean],
+                                        terms.math.median : absrel.delta_stats[terms.math.median],
+                                        terms.math._2.5 : absrel.delta_stats[terms.math._2.5],
+                                        terms.math._97.5 : absrel.delta_stats[terms.math._97.5]
+                                   };
+                                   
+    if (absrel.multi_hit == "Double+Triple") {
+            absrel.distribution_for_json [absrel.per_branch_psi] = 
+                                   {
+                                        terms.math.mean : absrel.psi_stats[terms.math.mean],
+                                        terms.math.median : absrel.psi_stats[terms.math.median],
+                                        terms.math._2.5 : absrel.psi_stats[terms.math._2.5],
+                                        terms.math._97.5 : absrel.psi_stats[terms.math._97.5]
+                                   };
+        
+    }
+}
 
 //Store MG94 to JSON
 selection.io.json_store_lf_withEFV (absrel.json,
@@ -246,18 +322,53 @@ absrel.branch.complexity       = {};
 utility.ToggleEnvVariable ("USE_LAST_RESULTS", TRUE);
 
 
-absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
-            "0": 35,
-            "1": 10,
-            "2": 10,
-            "3": 20,
-            "4": 15,
-            "5": 15,
-            "6": 15
-            },
-            terms.number_precision : 2};
+if (absrel.multi_hit == "Double") {
+    absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+                "0": 35,
+                "1": 10,
+                "2": 10,
+                "3": 20,
+                "4": 12,
+                "5": 15,
+                "6": 15,
+                "7": 15
+                },
+                terms.number_precision : 2};
 
-fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. dN/dS", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
+    fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. dN/dS", "2x rate", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
+} else {
+    if (absrel.multi_hit == "Double+Triple") {
+        absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+                    "0": 35,
+                    "1": 10,
+                    "2": 10,
+                    "3": 20,
+                    "4": 12,
+                    "5": 12,
+                    "6": 15,
+                    "7": 15,
+                    "8": 15
+                    },
+                    terms.number_precision : 2};
+
+        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. dN/dS", "2x rate", "3x rate", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
+    } else {
+        absrel.complexity_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+                    "0": 35,
+                    "1": 10,
+                    "2": 10,
+                    "3": 20,
+                    "4": 15,
+                    "5": 15,
+                    "6": 15
+                    },
+                    terms.number_precision : 2};
+
+        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Length", "Rates", "Max. dN/dS", "Log(L)", "AIC-c", "Best AIC-c so far"}}, absrel.complexity_table.settings));
+    }
+
+}
+
 absrel.complexity_table.settings [terms.table_options.header] = FALSE;
 
 utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0);
@@ -280,9 +391,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         
         absrel.initial_guess = absrel.ComputeOnAGrid (absrel.PopulateInitialGrid (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch, absrel.current_branch_estimates), absrel.likelihood_function_id);
         absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
-        
-        
-        
+                
         Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id);
         
         absrel.current_test_score = math.GetIC (absrel.stepup.mles[1][0], absrel.current_parameter_count + 2, absrel.codon_data_info[terms.data.sample_size]);
@@ -294,14 +403,24 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         } else {
              absrel.report.row [3] = ">1000 (" + Format (absrel.dn_ds.distro[absrel.current_rate_count-1][1]*100,5,2) + "%)";
         }
-        absrel.report.row [4] = absrel.stepup.mles[1][0];
-        absrel.report.row [5] = absrel.current_test_score;
+        
+        absrel.offset = 0;
+        if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
+            absrel.report.row [4] = (absrel.provisional_estimates[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
+            absrel.offset = 1;
+        } 
+        if (absrel.multi_hit == "Double+Triple") {
+            absrel.report.row [5] = (absrel.provisional_estimates[utility.getGlobalValue ("terms.parameters.triple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
+            absrel.offset += 1;
+        } 
+        absrel.report.row [4+absrel.offset] = absrel.stepup.mles[1][0];
+        absrel.report.row [5+absrel.offset] = absrel.current_test_score;
 
 
         if (absrel.current_test_score < absrel.current_best_score) {
             absrel.current_branch_estimates = absrel.provisional_estimates;
             absrel.current_best_score = absrel.current_test_score;
-            absrel.report.row [6] = absrel.current_test_score;
+            absrel.report.row [6+absrel.offset] = absrel.current_test_score;
             fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.complexity_table.settings));
 
             if (absrel.current_rate_count >= absrel.max_rate_classes) {
@@ -310,7 +429,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
             absrel.current_rate_count      += 1;
             absrel.current_parameter_count += 2;
         } else {
-            absrel.report.row [6] = absrel.current_best_score;
+            absrel.report.row [6+absrel.offset] = absrel.current_best_score;
             fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.complexity_table.settings));
             break;
         }
@@ -375,6 +494,7 @@ selection.io.json_store_branch_attribute(absrel.json, terms.json.rate_distributi
 
 
 
+
 selection.io.json_store_lf (absrel.json,
                             absrel.full_adaptive_model,
                             absrel.full_model.fit[terms.fit.log_likelihood],
@@ -390,20 +510,54 @@ selection.io.json_store_lf (absrel.json,
 selection.io.startTimer (absrel.json [terms.json.timers], "Testing for selection", 5);
 io.ReportProgressMessageMD ("absrel", "testing", "Testing selected branches for selection");
 
-absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
-            "0": 35,
-            "1": 10,
-            "2": 20,
-            "3": 20,
-            "4": 20,
-            },
-            terms.number_precision : 2};
+if (absrel.multi_hit == "Double") {
+        absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+                    "0": 35,
+                    "1": 10,
+                    "2": 20,
+                    "3": 12,
+                    "4": 20,
+                    "5": 20,
+                    },
+                    terms.number_precision : 2};
 
-fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "2x rate", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+} else {
+    if (absrel.multi_hit == "Double+Triple") {
+        absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+                    "0": 35,
+                    "1": 10,
+                    "2": 20,
+                    "3": 12,
+                    "4": 12,
+                    "5": 20,
+                    "6": 20,
+                    },
+                    terms.number_precision : 2};
+
+        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "2x rate","3x rate", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+    } else {
+        absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+                    "0": 35,
+                    "1": 10,
+                    "2": 20,
+                    "3": 20,
+                    "4": 20,
+                    },
+                    terms.number_precision : 2};
+
+        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+    }
+
+}
+
+
 
 absrel.testing_table.settings [terms.table_options.header] = FALSE;
 absrel.branch.p_values                                        = {};
 absrel.branch.lrt                                             = {};
+absrel.branch.delta                                           = {};
+absrel.branch.psi                                             = {};
 
 for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch_id += 1) {
     absrel.current_branch           = absrel.names_sorted_by_length[absrel.branch_id];
@@ -419,9 +573,23 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     } else {
         absrel.report.row [2] = ">1000 (" + Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][1]*100,5,2) + "%)";
     }
+    
+    absrel.offset = 0;
+    absrel.final_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
+
+    if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
+        absrel.report.row [3] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
+        absrel.branch.delta [absrel.current_branch] =  absrel.report.row [3];
+        absrel.offset = 1;
+    } 
+    if (absrel.multi_hit == "Double+Triple") {
+        absrel.report.row [4] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.triple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
+        absrel.branch.psi [absrel.current_branch] =  absrel.report.row [4];
+        absrel.offset += 1;
+    } 
+   
 
     if ((absrel.selected_branches[0])[absrel.current_branch] == terms.tree_attributes.test) {
-
         if (absrel.dn_ds.distro [absrel.branch.complexity[absrel.current_branch]-1][0] > 1) {
             absrel.branch.ConstrainForTesting (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
             Optimize (absrel.null.mles, ^absrel.likelihood_function_id);
@@ -432,16 +600,30 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         }
         absrel.branch.p_values [ absrel.current_branch ] = absrel.branch.test [terms.p_value];
         absrel.branch.lrt       [absrel.current_branch] = absrel.branch.test [terms.LRT];
-        absrel.report.row [3] = absrel.branch.test [terms.LRT];
-        absrel.report.row [4] = Format (absrel.branch.test [terms.p_value], 8, 5);
+        absrel.report.row [3+absrel.offset] = absrel.branch.test [terms.LRT];
+        absrel.report.row [4+absrel.offset] = Format (absrel.branch.test [terms.p_value], 8, 5);
     } else {
         absrel.branch.lrt [absrel.current_branch] = None;
         absrel.branch.p_values [absrel.current_branch] = None;
-        absrel.report.row [3] = "Not selected";
-        absrel.report.row [4] = "for testing";
+        absrel.report.row [3+absrel.offset] = "Not selected";
+        absrel.report.row [4+absrel.offset] = "for testing";
     }
 
     fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.testing_table.settings));
+}
+
+if (Abs (absrel.branch.delta)) {
+    selection.io.json_store_branch_attribute(absrel.json, terms.parameters.multiple_hit_rate, terms.json.branch_label, absrel.display_orders[terms.parameters.multiple_hit_rate],
+                                                      0,
+                                                      absrel.branch.delta);
+
+}
+
+if (Abs (absrel.branch.psi)) {
+    selection.io.json_store_branch_attribute(absrel.json, terms.parameters.triple_hit_rate, terms.json.branch_label, absrel.display_orders[terms.parameters.triple_hit_rate],
+                                                      0,
+                                                      absrel.branch.psi);
+
 }
 
 selection.io.json_store_branch_attribute(absrel.json, terms.LRT, terms.json.branch_label, absrel.display_orders[terms.LRT],
@@ -517,8 +699,10 @@ lfunction absrel.GetBranchEstimates (model, tree_id, branch_id) {
 
 lfunction absrel.GetRateDistribution (local_parameters) {
 
+
+    offset = (^"absrel.multi_hit" == "Double") + (^"absrel.multi_hit" == "Double+Triple")*2;
     result = None;
-    component_count = (Abs (local_parameters))$2;
+    component_count = (Abs (local_parameters)-offset)$2;
     if (component_count > 1) {
         rates = {"rates" : {component_count,1}, "weights" : {component_count,1}};
         for (k = 1; k < component_count; k+=1) {
@@ -684,15 +868,121 @@ lfunction absrel.local.omega(branch_info) {
                                       (branch_info[utility.getGlobalValue ("terms.parameters.synonymous_rate")])[utility.getGlobalValue("terms.fit.MLE")]);
 }
 
+lfunction absrel.local.delta (branch_info) {
+    return (branch_info[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")])[utility.getGlobalValue("terms.fit.MLE")];
+}
+
+lfunction absrel.local.psi (branch_info) {
+    return (branch_info[utility.getGlobalValue ("terms.parameters.triple_hit_rate")])[utility.getGlobalValue("terms.fit.MLE")];
+}
+
 //------------------------------------------------------------------------------
 
 lfunction absrel.BS_REL.ModelDescription (type, code, components) {
     model = models.codon.BS_REL.ModelDescription(type, code, components);
-    model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.BS_REL._DefineQ";
+    if (^"absrel.multi_hit" == "Double") {
+            model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.codon.BS_REL._DefineQ.DH";
+    
+    } else {
+        if (^"absrel.multi_hit" == "Double+Triple") {
+            model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.codon.BS_REL._DefineQ.TH";
+        } else {
+            model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.BS_REL._DefineQ";
+        
+        }
+    }
     return model;
 }
 
 
+//------------------------------------------------------------------------------
+
+
+lfunction absrel.codon.BS_REL._DefineQ.TH (bs_rel, namespace) {
+
+
+    rate_matrices = {};
+
+    bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
+    bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")] = {};
+
+    _aux = parameters.GenerateSequentialNames ("bsrel_mixture_aux", bs_rel[utility.getGlobalValue("terms.model.components")] - 1, "_");
+    _wts = parameters.helper.stick_breaking (_aux, None);
+
+
+    for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
+       key = "component_" + component;
+       ExecuteCommands ("
+        function rate_generator (fromChar, toChar, namespace, model_type, model) {
+               return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate'),
+                'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate'),
+                'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate')
+               );
+            }"
+       );
+
+       if ( component < bs_rel[utility.getGlobalValue("terms.model.components")]) {
+            model.generic.AddLocal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
+            parameters.SetRange (_aux[component-1], utility.getGlobalValue("terms.range_almost_01"));
+       }
+       models.codon.generic.DefineQMatrix(bs_rel, namespace);
+       rate_matrices [key] = bs_rel[utility.getGlobalValue("terms.model.rate_matrix")];
+       (bs_rel [^'terms.mixture.mixture_components'])[key] = _wts [component-1];
+    }
+
+    bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
+    parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
+
+    return bs_rel;
+}
+
+//------------------------------------------------------------------------------
+
+
+
+lfunction absrel.codon.BS_REL._DefineQ.DH (bs_rel, namespace) {
+
+    rate_matrices = {};
+
+    bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
+    bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")] = {};
+
+    _aux = parameters.GenerateSequentialNames ("bsrel_mixture_aux", bs_rel[utility.getGlobalValue("terms.model.components")] - 1, "_");
+    _wts = parameters.helper.stick_breaking (_aux, None);
+
+
+    for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
+       key = "component_" + component;
+       ExecuteCommands ("
+        function rate_generator (fromChar, toChar, namespace, model_type, model) {
+               return  models.codon.MG_REV_MH._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate')
+               );
+            }"
+       );
+
+       if ( component < bs_rel[utility.getGlobalValue("terms.model.components")]) {
+            model.generic.AddLocal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
+            parameters.SetRange (_aux[component-1], utility.getGlobalValue("terms.range_almost_01"));
+       }
+
+       models.codon.generic.DefineQMatrix(bs_rel, namespace);
+       rate_matrices [key] = bs_rel[utility.getGlobalValue("terms.model.rate_matrix")];
+       (bs_rel [^'terms.mixture.mixture_components'])[key] = _wts [component-1];
+    }
+
+    bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
+    parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
+
+    return bs_rel;
+}
 
 //------------------------------------------------------------------------------
 
