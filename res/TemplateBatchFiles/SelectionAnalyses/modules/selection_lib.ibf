@@ -68,7 +68,11 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
 
                 } else {
                     collect_residues = {};
-                    utility.ForEach ( ambig_lookup[-code-2], "_for_each_", "`&collect_residues`[`&integer_mapping`[_for_each_]] = 1");
+                    for (index, acode; in; ambig_lookup[-code-2]) {
+                        if (acode) {
+                            collect_residues[integer_mapping[index]] = 1;
+                        }
+                    }
                     code_lookup [code] = Join ("", utility.Keys (collect_residues));
                 }
             }
@@ -94,7 +98,8 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
                          "(`&result`[slac.substituton_mapper.key])[`&bname`] = `&branch_info`[slac.substituton_mapper.key]");
 
      }
+     
 
-    return result;
+     return result;
 
 }

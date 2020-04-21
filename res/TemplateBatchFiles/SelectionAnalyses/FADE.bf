@@ -167,6 +167,8 @@ KeywordArgument ("tree",      "A rooted phylogenetic tree", null, "Please select
 fade.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (fade.alignment_info[utility.getGlobalValue("terms.data.partitions")],
                                                                               fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")]
                                                                              );
+    
+                                                                             
 fade.partition_count = Abs (fade.partitions_and_trees);
 
 selection.io.json_store_key_value_pair (fade.json, terms.json.input, terms.json.partition_count,fade.partition_count);
@@ -190,6 +192,7 @@ assert (((fade.partitions_and_trees[index])[terms.data.tree])[terms.trees.rooted
 
 
 fade.name_mapping = fade.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
+
 
 
 if (utility.Has (fade.cache, terms.fade.cache.settings, "AssociativeList")) {
@@ -247,6 +250,7 @@ if (utility.Has (fade.cache, terms.fade.cache.baseline, "AssociativeList")) {
         model [utility.getGlobalValue("terms.model.frequency_estimator")] = "frequencies.mle";
         return model;
     }
+    
 
     fade.baseline_fit = estimators.FitSingleModel_Ext (
                                                           fade.filter_names,
@@ -270,8 +274,6 @@ if (utility.Has (fade.run_settings, "method", "String")) {
 
 
 // ===========  FIT BASELINE MODEL
-
-
 
 
 io.ReportProgressMessageMD ("FADE", "baseline", ">Fitted an alignment-wide model. " + selection.io.report_fit (fade.baseline_fit, 0, fade.alignment_sample_size ) +  "\n\nTotal tree lengths by partition\n");
@@ -326,7 +328,7 @@ if (utility.Has (fade.cache, terms.fade.cache.substitutions, "AssociativeList") 
                                                            fade.baseline_fit,
                                                           {terms.run_options.retain_lf_object: TRUE},
                                                           None
-                                                   )
+                                                   );
 
         fade.baseline_fit[terms.likelihood_function] = "fade.ancestral.rebuild.likelihoodFunction";
     }
@@ -522,6 +524,8 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
         fade.trees.names = utility.Map (utility.Range (fade.partition_count, 1, 1), "_index_", "'fade.grid_tree_' + _index_");
         fade.lf.components = {fade.partition_count * 2, 1};
+        
+        
         utility.ForEachPair (fade.filter_names, "_index_", "_filter_",
             '
                 fade.model_assignment = {

@@ -353,6 +353,46 @@ lfunction trees.branch_names(tree, respect_case) {
 
 
 /**
+ * @name trees.KillZeroBranches
+ * Given a tree dict and a list of matching parameter estimates
+ * this returns a modified tree dict with all zero-branch length 
+ * internal branches removed and modifies in in place
+ * @param tree - dict of the tree object
+ * @param estimates - dict with branch length estimates
+ * @param branch_set - if not null, treat as test set and delete branches form it as well
+ * @param zero_internal -- store branches that were deleted here
+ * @return modified tree
+ */
+ 
+lfunction trees.KillZeroBranches (tree, estimates, branch_set, zero_internal) {
+    
+    for (branch, value; in; tree [^"terms.trees.partitioned"]) {
+        if (value == ^"terms.tree_attributes.internal") {
+            if (estimates / branch) {
+                if ((estimates[branch])[^"terms.fit.MLE"] < 1e-10) {
+                    zero_internal + branch;
+                }
+            }
+        }
+    }
+
+    if (Abs (zero_internal) > 0) { // has zero internal branches
+        Topology T = tree[^"terms.trees.newick_annotated"];
+        T -  Columns(zero_internal);
+        if (None != branch_set) {
+            for (branch; in; zero_internal) {
+                branch_set - branch;
+            }
+        }
+        return trees.ExtractTreeInfoFromTopology (&T);
+        
+    }
+    
+    return tree;
+    
+}
+
+/**
  * @name trees.RootTree
  * @param {Dict} tree_info
  * @param {String} root on this node (or prompt if empty)
@@ -381,6 +421,65 @@ lfunction trees.RootTree(tree_info, root_on) {
 }
 
 /**
+ * @name trees.ExtractTreeInfoFromTopology
+ * @param {String} Topology
+ * @returns a {Dictionary} of the following tree information :
+ * - newick string
+ * - newick string with branch lengths
+ * - annotated string
+ * - model map
+ * - internal leaves
+ * - list of models
+ */
+lfunction trees.ExtractTreeInfoFromTopology(topology_object) {
+    
+ 
+    branch_lengths = BranchLength(^topology_object, -1);
+    branch_names   = BranchName(^topology_object, -1);
+    branch_count   = utility.Array1D (branch_names) - 1;
+
+    bls = {};
+
+    for (k = 0; k < branch_count; k+=1) {
+        if (branch_lengths[k] >= 0.) {
+            bls [branch_names[k]] = branch_lengths[k];
+        }
+    }
+
+    GetInformation(modelMap, ^topology_object);
+
+
+    leaves_internals = {};
+    flat_tree = (^topology_object) ^ 0;
+    trees.PartitionTree(flat_tree, leaves_internals);
+
+    utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", TRUE);
+    T.str = "" + ^topology_object;
+    utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", None);
+
+    rooted = utility.Array1D ((flat_tree[(flat_tree[0])["Root"]])["Children"]) == 2;
+
+    flat_tree       = None;
+    branch_lengths  = None;
+    branch_names    = None;
+    branch_count    = None;
+
+    return {
+        ^"terms.trees.newick": Format(^topology_object, 1, 0),
+        ^"terms.trees.newick_with_lengths": Format(^topology_object, 1, 1),
+        ^"terms.branch_length": bls,
+        ^"terms.trees.newick_annotated": T.str,
+        ^"terms.trees.model_map": modelMap,
+        ^"terms.trees.partitioned": leaves_internals,
+        ^"terms.trees.model_list": Columns(modelMap),
+        ^"terms.trees.rooted" : rooted,
+        ^"terms.trees.meta" : Eval(^(topology_object+".__meta")),
+        ^"terms.data.file" : file_name
+
+    };
+}
+
+/**
  * @name trees.ExtractTreeInfo
  * @param {String} tree_string
  * @returns a {Dictionary} of the following tree information :
@@ -401,51 +500,8 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     }
 
     Topology T = tree_string;
+    return trees.ExtractTreeInfoFromTopology (&T);
     
- 
-    branch_lengths = BranchLength(T, -1);
-    branch_names   = BranchName(T, -1);
-    branch_count   = utility.Array1D (branch_names) - 1;
-
-    bls = {};
-
-    for (k = 0; k < branch_count; k+=1) {
-        if (branch_lengths[k] >= 0.) {
-            bls [branch_names[k]] = branch_lengths[k];
-        }
-    }
-
-    GetInformation(modelMap, T);
-
-
-    leaves_internals = {};
-    flat_tree = T ^ 0;
-    trees.PartitionTree(flat_tree, leaves_internals);
-
-    utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", TRUE);
-    T.str = "" + T;
-    utility.ToggleEnvVariable("INCLUDE_MODEL_SPECS", None);
-
-    rooted = utility.Array1D ((flat_tree[(flat_tree[0])["Root"]])["Children"]) == 2;
-
-    flat_tree       = None;
-    branch_lengths  = None;
-    branch_names    = None;
-    branch_count    = None;
-
-    return {
-        ^"terms.trees.newick": Format(T, 1, 0),
-        ^"terms.trees.newick_with_lengths": Format(T, 1, 1),
-        ^"terms.branch_length": bls,
-        ^"terms.trees.newick_annotated": T.str,
-        ^"terms.trees.model_map": modelMap,
-        ^"terms.trees.partitioned": leaves_internals,
-        ^"terms.trees.model_list": Columns(modelMap),
-        ^"terms.trees.rooted" : rooted,
-        ^"terms.trees.meta" : T.__meta,
-        ^"terms.data.file" : file_name
-
-    };
 }
 
 /**

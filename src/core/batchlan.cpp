@@ -4434,7 +4434,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
 
         } else {
             if (operation_type ==  kReconstructAncestors || operation_type == kSampleAncestors) {
-                if (arguments.countitems()>4UL || arguments.countitems()==1L) {
+                if (arguments.countitems()>5UL || arguments.countitems()==1L) {
                     throw  operation_type.Enquote() & " expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.";
                 }
                 _ElementaryCommand * dsc = new _ElementaryCommand (operation_type ==  kReconstructAncestors ? 38 : 50);

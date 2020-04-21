@@ -1115,8 +1115,9 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 char * str1r = nil,
                      * str2r = nil;
 
-                score = AlignStrings (reference_sequence->get_str(),
-                                      sequence2->get_str(),
+               
+                score = AlignStrings (reference_sequence->get_str() ? reference_sequence->get_str() : "",
+                                      sequence2->get_str() ? sequence2->get_str() : "",
                                       str1r,
                                       str2r,
                                       character_map_to_integers,
@@ -2424,7 +2425,17 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
     try {
         source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
     } catch (const _String& error) { // handle cases when the source is not an HBL object
-      _CalcNode* tree_node = (_CalcNode*)FetchObjectFromVariableByType(&source_name, TREE_NODE);
+        
+        _CalcNode* tree_node = nil;
+        
+
+        if (source_name.IsValidIdentifier(fIDAllowFirstNumeric|fIDAllowCompound)) {
+             tree_node = (_CalcNode*)FetchObjectFromVariableByType(&source_name, TREE_NODE);
+        } else{
+            _String converted = source_name.ConvertToAnIdent(fIDAllowFirstNumeric|fIDAllowCompound);
+            tree_node = (_CalcNode*)FetchObjectFromVariableByType(&converted, TREE_NODE);
+        }
+        
       if (tree_node) {
         if (set_this_attribute == _String("MODEL")) {
           _String model_name = AppendContainerName(*GetIthParameter(2UL),current_program.nameSpacePrefix);
