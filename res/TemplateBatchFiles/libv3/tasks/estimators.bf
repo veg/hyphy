@@ -2,6 +2,7 @@ LoadFunctionLibrary("../models/model_functions.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("mpi.bf");
+LoadFunctionLibrary("libv3/convenience/math.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 
@@ -42,6 +43,21 @@ lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
             parameters.SetValue (_name_, _info_ [^"terms.fit.MLE"]);
         }
     }
+}
+
+lfunction estimators.ConstrainAndRunLRT (lf_id, constraint) {
+    savedMLES = estimators.TakeLFStateSnapshot (lf_id);
+    currentLL = estimators.ComputeLF (lf_id);
+    
+    df = Call (constraint, TRUE);
+    Optimize (res, ^lf_id);
+    lrt = math.DoLRT (res[1][0],currentLL,df);
+    
+    estimators.RestoreLFStateFromSnapshot (lf_id, savedMLES);
+    
+    Call (constraint, FALSE);
+    
+    return lrt;
 }
 
 /**
