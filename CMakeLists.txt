@@ -617,4 +617,6 @@ add_test (BGM HYPHYMP tests/hbltests/libv3/BGM.wbf)
 add_test (CONTRAST-FEL HYPHYMP tests/hbltests/libv3/CFEL.wbf)
 add_test (GARD HYPHYMP tests/hbltests/libv3/GARD.wbf)
 add_test (FADE HYPHYMP tests/hbltests/libv3/FADE.wbf)
+add_test (NAME ABSREL COMMAND HYPHYMP tests/hbltests/libv3/ABSREL.wbf)
+add_test (NAME ABSREL-MH COMMAND HYPHYMP tests/hbltests/libv3/ABSREL-MH.wbf)
 

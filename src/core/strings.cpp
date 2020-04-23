@@ -1209,8 +1209,8 @@ const _String  _String::ConvertToAnIdent(int options) const {
   const char default_placeholder = '_';
 
   char       last_char = '\0';
-  bool       allow_compounds = options | fIDAllowCompound,
-             allow_first_numeric = options | fIDAllowFirstNumeric;
+  bool       allow_compounds = options & fIDAllowCompound,
+             allow_first_numeric = options & fIDAllowFirstNumeric;
   
   
   unsigned long current_index = 0UL;

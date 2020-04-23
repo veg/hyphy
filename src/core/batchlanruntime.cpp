@@ -1115,8 +1115,9 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 char * str1r = nil,
                      * str2r = nil;
 
-                score = AlignStrings (reference_sequence->get_str(),
-                                      sequence2->get_str(),
+               
+                score = AlignStrings (reference_sequence->get_str() ? reference_sequence->get_str() : "",
+                                      sequence2->get_str() ? sequence2->get_str() : "",
                                       str1r,
                                       str2r,
                                       character_map_to_integers,

@@ -384,8 +384,9 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                     lastNode = nodeStack.countitems ()-1;
                     parentNode = (node<long>*)nodeStack.get (lastNode);
                     if (mapping) {
-                        _FString * mapped_name = (_FString*)mapping->GetByKey (nodeName, STRING);
+                        _FString * mapped_name = (_FString*)mapping->GetByKey (nodeName.ChangeCase(kStringUpperCase), STRING);
                         if (mapped_name) {
+                            //printf ("%s => %s\n", nodeName.get_str(), mapped_name->get_str().get_str());
                             nodeName = _String (mapped_name->get_str());
                         }
                     }
