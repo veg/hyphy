@@ -171,10 +171,14 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                 }
             } else {
                 models.codon.MG_REV.set_branch_length.lp = 0;
+                
+                
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                     Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     models.codon.MG_REV.set_branch_length.lp += 1;
+
                 }
+                                
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
                     Eval(models.codon.MG_REV.set_branch_length.beta.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     models.codon.MG_REV.set_branch_length.lp += 1;
