@@ -461,6 +461,7 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
                             _set_branch_length_to[terms.branch_length] = _existing_estimate[terms.fit.MLE];
                             _set_branch_length_to[terms.model.branch_length_scaler] = _application_type;
                             keep_track_of_proportional_scalers[_application_type] = 1;
+                            
                         }
                     }
                 }
@@ -540,45 +541,6 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
 
 
-
-            /*
-            ExecuteCommands("GetInformation (estimators.ApplyExistingEstimates.map, `_tree_name`);");
-            estimators.ApplyExistingEstimates.branch_names = Rows(estimators.ApplyExistingEstimates.map);
-
-            for (estimators.ApplyExistingEstimates.b = 0; estimators.ApplyExistingEstimates.b < Abs(estimators.ApplyExistingEstimates.map); estimators.ApplyExistingEstimates.b += 1) {
-                _branch_name = estimators.ApplyExistingEstimates.branch_names[estimators.ApplyExistingEstimates.b];
-
-                if ((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i] / _branch_name) { // have an entry for this branch name
-                   _existing_estimate = ((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name];
-
-                   if (Type(_existing_estimate) == "AssociativeList") {
-                       _set_branch_length_to = (((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])[terms.fit.MLE];
-                        if (None != branch_length_conditions) {
-                            if (Abs(branch_length_conditions)) {
-                                _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
-
-                                if (Type(_application_type) == "String") {
-                                    if (_application_type == terms.model.branch_length_constrain ) {
-                                        estimators.ApplyExistingEstimates.df_correction += estimators.constrainBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
-                                        continue;
-                                    }
-                                    _set_branch_length_to = {};
-                                    _set_branch_length_to[terms.branch_length] = _existing_estimate[terms.fit.MLE];
-                                    _set_branch_length_to[terms.model.branch_length_scaler] = _application_type;
-                                    estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers[_application_type] = 1;
-                                }
-                            }
-                        }
-
-                        estimators.ApplyExistingEstimates.df_correction += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
-                    } else {
-                        if (Type(_existing_estimate) != "Unknown") {
-                            warning.log ("Incorrect type for the initial values object of for branch '" + _branch_name + "' : " + _existing_estimate);
-                        }
-                   }
-                }
-
-            }*/
 
         } else {
         	if (Type((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i]) != "Unknown") {
@@ -1115,10 +1077,11 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         /**
             now replicate the local constraint for individual branches
         */
-
+        
+ 
         alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
         beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
-         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
+        io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];
 
@@ -1126,6 +1089,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);
             branch_map = (option[utility.getGlobalValue("terms.run_options.partitioned_omega")])[i];
+    
+
             component_branches = BranchName( * component_tree, -1);
             for (j = 0; j < Columns(component_branches) - 1; j += 1) {
                 /**

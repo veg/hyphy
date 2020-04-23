@@ -494,7 +494,7 @@ lfunction parameters.IsIndependent(parameter) {
 
     GetString(info, ^ parameter, -1);
     
-    if (Type(info) == "AssociativeList") {
+    if (Type(info) == "AssociativeList") {    
         return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;
     }
     return TRUE;
