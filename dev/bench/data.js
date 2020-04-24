@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1587752371922,
+  "lastUpdate": 1587752519940,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -2054,6 +2054,37 @@ window.BENCHMARK_DATA = {
             "range": "±1.61%",
             "unit": "ops/sec",
             "extra": "81 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevin@klevitz.com",
+            "name": "Kevin Levitz",
+            "username": "kjlevitz"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "33c678ed36433e6ca152ac6da6a8d143023f937f",
+          "message": "Update bench.js",
+          "timestamp": "2020-04-24T14:19:58-04:00",
+          "tree_id": "baf72544493490136ccc17e8159391defd3527f3",
+          "url": "https://github.com/veg/hyphy/commit/33c678ed36433e6ca152ac6da6a8d143023f937f"
+        },
+        "date": 1587752512537,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 344,
+            "range": "±2.98%",
+            "unit": "ops/sec",
+            "extra": "65 samples"
           }
         ]
       }
