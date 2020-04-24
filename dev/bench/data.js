@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1587656897884,
+  "lastUpdate": 1587752371922,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -1925,6 +1925,135 @@ window.BENCHMARK_DATA = {
             "range": "±0.70%",
             "unit": "ops/sec",
             "extra": "85 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevin@klevitz.com",
+            "name": "Kevin Levitz",
+            "username": "kjlevitz"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "be006aef09047db839b3ea82c0a5bb0e6e93269f",
+          "message": "Updated to use execSync\n\nexecSync was confirmed to cause jobs to run synchronously\r\nDuring testing:\r\nIf job had a pause system call then the benchmark would not finish.\r\nJob finish times were synced up correctly with benchmark finish time.",
+          "timestamp": "2020-04-24T14:16:11-04:00",
+          "tree_id": "5ef254972e8398da813e81f934c8a6b2c565dd47",
+          "url": "https://github.com/veg/hyphy/commit/be006aef09047db839b3ea82c0a5bb0e6e93269f"
+        },
+        "date": 1587752364498,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 358,
+            "range": "±2.64%",
+            "unit": "ops/sec",
+            "extra": "71 samples"
+          },
+          {
+            "name": "SmallCodon.bf",
+            "value": 307,
+            "range": "±1.24%",
+            "unit": "ops/sec",
+            "extra": "80 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 304,
+            "range": "±1.03%",
+            "unit": "ops/sec",
+            "extra": "81 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 299,
+            "range": "±1.83%",
+            "unit": "ops/sec",
+            "extra": "80 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 289,
+            "range": "±3.25%",
+            "unit": "ops/sec",
+            "extra": "82 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 290,
+            "range": "±1.54%",
+            "unit": "ops/sec",
+            "extra": "78 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 293,
+            "range": "±1.46%",
+            "unit": "ops/sec",
+            "extra": "83 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 294,
+            "range": "±1.18%",
+            "unit": "ops/sec",
+            "extra": "83 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 297,
+            "range": "±1.41%",
+            "unit": "ops/sec",
+            "extra": "84 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 295,
+            "range": "±1.12%",
+            "unit": "ops/sec",
+            "extra": "79 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 289,
+            "range": "±1.31%",
+            "unit": "ops/sec",
+            "extra": "82 samples"
+          },
+          {
+            "name": "BGM.wbf",
+            "value": 318,
+            "range": "±1.33%",
+            "unit": "ops/sec",
+            "extra": "82 samples"
+          },
+          {
+            "name": "CFEL.wbf",
+            "value": 292,
+            "range": "±1.04%",
+            "unit": "ops/sec",
+            "extra": "83 samples"
+          },
+          {
+            "name": "FADE.wbf",
+            "value": 293,
+            "range": "±1.36%",
+            "unit": "ops/sec",
+            "extra": "83 samples"
+          },
+          {
+            "name": "GARD.wbf",
+            "value": 288,
+            "range": "±1.61%",
+            "unit": "ops/sec",
+            "extra": "81 samples"
           }
         ]
       }
