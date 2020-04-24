@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1587752519940,
+  "lastUpdate": 1587752583178,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -2085,6 +2085,37 @@ window.BENCHMARK_DATA = {
             "range": "±2.98%",
             "unit": "ops/sec",
             "extra": "65 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevin@klevitz.com",
+            "name": "Kevin Levitz",
+            "username": "kjlevitz"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "9101bcfed1fba9b4d6d3d3278ec6a7e4c57ddd2b",
+          "message": "Removed unneeded function",
+          "timestamp": "2020-04-24T14:21:08-04:00",
+          "tree_id": "bd7b99d2b0fe14fedd2ebad9999ef4bfc0bf7b90",
+          "url": "https://github.com/veg/hyphy/commit/9101bcfed1fba9b4d6d3d3278ec6a7e4c57ddd2b"
+        },
+        "date": 1587752576350,
+        "tool": "benchmarkjs",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 410,
+            "range": "±2.91%",
+            "unit": "ops/sec",
+            "extra": "70 samples"
           }
         ]
       }
