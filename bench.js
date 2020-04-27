@@ -5,13 +5,13 @@ var execSync = require('child_process').execSync;
 // add tests
 suite
 .add('SmallCodon.bf', function() {
-  execSync("./HYPHYMP 'tests/hbltests/SimpleOptimizations/SmallCodon.bf'", (error, stdout, stderr) => {
+  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/SimpleOptimizations/SmallCodon.bf'", (error, stdout, stderr) => {
       if (error) { console.log("Error with job = " + error); return;}
       if (stderr) {return;}
   });
 })
 .add('IntermediateProtein.bf', function() {
-  execSync("./HYPHYMP 'tests/hbltests/SimpleOptimizations/IntermediateProtein.bf'", (error, stdout, stderr) => {
+  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/SimpleOptimizations/IntermediateProtein.bf'", (error, stdout, stderr) => {
     if (error) { console.log("Error with job = " + error); return;}
     if (stderr) {return;}
   });
