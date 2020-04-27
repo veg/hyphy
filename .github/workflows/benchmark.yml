@@ -28,6 +28,7 @@ jobs:
         pwd
         cmake .
         make -j all
+        pwd
         ls
         
   benchmark:
