@@ -1452,8 +1452,8 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
         
         for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
             _String * old_name = new _String (*ds->GetSequenceName (i));
-            if (! old_name->IsValidIdentifier(false) ) {
-                *ds->GetSequenceName (i) = ds->GetSequenceName (i)->ConvertToAnIdent(false);
+            if (! old_name->IsValidIdentifier(fIDAllowFirstNumeric) ) {
+                *ds->GetSequenceName (i) = ds->GetSequenceName (i)->ConvertToAnIdent(fIDAllowFirstNumeric);
                 did_something = true;
             }
             if (id_mapping.Find (ds->GetSequenceName (i)) >= 0) {

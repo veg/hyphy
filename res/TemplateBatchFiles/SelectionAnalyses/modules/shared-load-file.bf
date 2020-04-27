@@ -87,6 +87,7 @@ function load_file (prefix) {
         utility.ForEach (alignments.GetSequenceNames (prefix+".codon_data"), "_value_", "`&name_mapping`[_value_] = _value_");
     }
     
+    
     utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
                            codon_data_info[utility.getGlobalValue("terms.data.datafilter")]);
 
