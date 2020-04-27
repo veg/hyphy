@@ -108,6 +108,7 @@ namespace busted {
 
 busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch)", 
                                     "Branch-site" : "Allow synonymous substitution rates to vary using general branch site models",
+                                    "HMM" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch), and use a hidden markov model for spatial correlation on synonymous rates",
                                     "No"  : "Synonymous substitution rates are constant across sites. This is the 'classic' behavior, i.e. the original published test"},
                                     "Synonymous rate variation"
                                     );
@@ -121,7 +122,13 @@ if (busted.do_srv == "Branch-site") {
         busted.do_bs_srv = FALSE;
         busted.do_srv = TRUE;
     } else {
-        busted.do_srv = FALSE;    
+        if (busted.do_srv == "HMM") {
+         busted.do_srv      = TRUE;
+         busted.do_bs_srv   = FALSE;
+         busted.do_srv_hmm  = TRUE; 
+        } else {
+            busted.do_srv = FALSE;  
+        } 
     }
 }                       
                                     

@@ -1098,6 +1098,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
                 */
 
                 node_name = (component_branches[j]);
+                
+                                
                 ExecuteCommands(apply_constraint);
             }
         }

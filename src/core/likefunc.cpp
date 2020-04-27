@@ -2215,18 +2215,30 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 
     if (done) {
 
+        //static hyFloat last_result = -INFINITY;
+        
         likeFuncEvalCallCount ++;
         evalsSinceLastSetup   ++;
         PostCompute ();
 #ifdef _UBER_VERBOSE_LF_DEBUG
         fprintf (stderr, "OVERALL LF = %.16g\n", result);
 #endif
+        
+        
         if (isnan (result)) {
             _TerminateAndDump("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
             //ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
             return -INFINITY;
         }
         
+        
+
+        /*if (isinf (result) && !isinf (last_result)) {
+            _TerminateAndDump("Likelihood function evaluation encountered an infinite value (probably due to a parameterization error or a bug).");
+            return -INFINITY;
+        }*/
+        
+
         if (result >= 0.) {
             if (result >= __DBL_EPSILON__ * 1.e4) {
                 char buffer [2048];
@@ -2236,6 +2248,8 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                 result = 0.;
             }
         }
+
+       // last_result = result;
 
         ComputeParameterPenalty ();
 
@@ -4255,7 +4269,12 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     large_change, // this will store the indices of variables that drive large LF changes
                     last_large_change,
                     glVars,
-                    shuffledOrder;
+                    shuffledOrder,
+                    _variables_that_dont_change (indexInd.lLength, 0, 0);
+        
+        
+        
+        
 
         _List               *stepHistory = nil;
         _Vector      logLHistory;
@@ -4415,6 +4434,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 }
             }
 
+            if (convergenceMode >= 2) {
+                noChange.Clear();
+            }
+            
             oldAverage = averageChange;
 
             averageChange  = 1e-25;
@@ -4697,6 +4720,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     }
                     if ((ch < precisionStep*0.01 /*|| lastLogL - maxSoFar < 1e-6*/) && inCount == 0) {
                         nc2 << current_index;
+                        _variables_that_dont_change[current_index] ++;
                     }
                 } else {
                     averageChange  += ch;
@@ -4741,7 +4765,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             }
 
             
-            if (isnan(maxSoFar-lastMaxValue)) {
+            if (isnan(maxSoFar-lastMaxValue) || isinf (maxSoFar-lastMaxValue)) {
                 nan_counter ++;
                 
                 if (nan_counter > 3) {
@@ -4762,7 +4786,26 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 noChange.Clear();
                 noChange.Duplicate (&nc2);
             } else {
-                noChange.Subtract  (nc2,glVars);
+                _SimpleList at_boundary;
+                
+                noChange.Each ([this,&at_boundary] (long i, unsigned long) -> void {
+                    if (i >= 0) {
+                        hyFloat cv = GetIthIndependent(i);
+                        if (CheckEqual(cv, GetIthIndependentBound(i, true)) || CheckEqual(cv, GetIthIndependentBound(i, false))) {
+                            at_boundary << i;
+                        }
+                    }
+                });
+                
+                if (at_boundary.nonempty()) {
+                    _SimpleList nc3;
+                    nc3.Union (nc2,at_boundary);
+                    noChange.Subtract (nc3,glVars);
+                    //ObjectToConsole(&at_boundary);
+                    //NLToConsole();
+                } else {
+                    noChange.Subtract  (nc2,glVars);
+                }
             }
 
             if (noChange.empty()) {
@@ -5188,18 +5231,18 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             if ( leftStep<initialStep*.1 && index >= 0 || index < 0 && leftStep < STD_GRAD_STEP) {
                 if (!first) {
                     if (go2Bound) {
-                        middle = 0.0;
-                        middleValue = stash_middle = SetParametersAndCompute (index, 0.0, &currentValues, gradient);
+                        middle = lowerBound;
+                        middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                        if (isinf(middleValue)) {
+                            middle = lowerBound + STD_GRAD_STEP;
+                            middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                            //printf ("\nTrying to reset infinity %g %g\n", middle, middleValue);
+                        }
                         if (verbosity_level > 100) {
                           char buf [512];
                           snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket LEFT BOUNDARY (index %ld) UPDATED middle to %15.12g, LogL = %15.12g]", index, middle, middleValue);
                           BufferToConsole (buf);
                         }
-                        /*
-                        if (index < 0) {
-                            _TerminateAndDump(_String ("Failed to improve the log likelihood with gradient descent: ") & _String ((_String*)gradient->toStr()));
-                        }
-                        */
                     }
                     return -2;
                 } else {

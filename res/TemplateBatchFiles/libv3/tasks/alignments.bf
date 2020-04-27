@@ -103,7 +103,7 @@ lfunction alignments.ReadNucleotideDataSet_aux(dataset_name) {
             partitions = Transpose(dfpm);
         }
     }
-
+    
     return {
         utility.getGlobalValue("terms.data.sequences"): Eval("`dataset_name`.species"),
         utility.getGlobalValue("terms.data.sites"): Eval("`dataset_name`.sites"),
@@ -881,9 +881,12 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
                 if (this_many_mm == 1) {
                     if (mismatch_count == this_many_mm) {
                         translString * 0;
-                        /*console.log (translString);
+                        console.log (translString);
                         console.log ("\n");
-                        console.log (codon_sequence);*/
+                        console.log (codon_sequence);
+                        console.log ("\n");
+                        console.log (aa_sequence);
+                        console.log ("\n");
                     }
                     assert(mismatch_count < this_many_mm, "A mismatch between codon and protein sequences at position " + aaPos + " (codon `seqPos`) : codon '" + codon_sequence[seqPos][seqPos + 2] + "'(`currentAA`) a.a. '`aa_sequence[aaPos]`'");
                 } else {
