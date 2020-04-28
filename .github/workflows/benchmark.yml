@@ -24,7 +24,11 @@ jobs:
           make -j all
           pwd
           ls
-          ./HYPHYMP -h
+          npm i --save benchmark
+          npm install
+          node bench.js | tee output.txt
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
       - name: Store benchmark result
         uses: rhysd/github-action-benchmark@v1
         with:
