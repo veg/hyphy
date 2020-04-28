@@ -25,11 +25,13 @@ jobs:
     - name: Compile Make
       run: |
         cmake .
-        make install
+        make -j all
         pwd
         ls
         echo "The location of HYPHYMP is"
         whereis HYPHYMP
+        echo "hyphymp -h"
+        ./HYPHYMP -h
         
   benchmark:
     name: Run Javascript Benchmark
