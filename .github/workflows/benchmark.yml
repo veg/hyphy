@@ -16,8 +16,11 @@ jobs:
     name: Run Javascript Benchmark
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Compile Make
-      - run: |
+        run: |
+          ls
+          pwd
           cmake .
           make -j all
       - uses: actions/checkout@v2
