@@ -19,10 +19,11 @@ jobs:
       - uses: actions/checkout@v2
       - name: Compile Make
         run: |
-          ls
-          pwd
           cmake .
           make -j all
+          pwd
+          ls
+          ./HYPHYMP -h
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
       - name: Run benchmark
