@@ -30,6 +30,7 @@ jobs:
         make -j all
         pwd
         ls
+        whereis HYPHYMP
         
   benchmark:
     name: Run Javascript Benchmark
