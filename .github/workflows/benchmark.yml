@@ -24,12 +24,11 @@ jobs:
             
     - name: Compile Make
       run: |
-        ls
-        pwd
         cmake .
-        make -j all
+        make install
         pwd
         ls
+        echo "The location of HYPHYMP is"
         whereis HYPHYMP
         
   benchmark:
