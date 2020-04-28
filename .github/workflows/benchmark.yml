@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
       - name: Run benchmark
-        run: pwd && ./HYPHYMP -h
+        run: pwd && ls && /home/runner/work/hyphy/hyphy/HYPHYMP -h
       - name: Store benchmark result
         uses: rhysd/github-action-benchmark@v1
         with:
