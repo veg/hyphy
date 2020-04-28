@@ -28,6 +28,7 @@ namespace terms{
     replicates              = "replicates";
     data_type               = "datatype";
     devnull                 = "/dev/null";
+    _namespace              = "namespace";
 
     category            = "category";
     mixture             = "mixture";
@@ -142,6 +143,7 @@ namespace terms{
         PDF                 = "PDF";
         CDF                 = "CDF";
         dCDF                = "dCDF";
+        HMM                 = "HMM";
     }
 
 
@@ -445,8 +447,10 @@ namespace terms{
         gamma_alpha   = "Shape parameter for the gamma distribution (alpha)";
         gamma_beta    = "Variance parameter for the gamma distribution (beta)";
         gamma_p_inv   = "Estimated proportion of invariant sites";
+        hmm_lambda    = "HMM rate switching parameter";
         before        = "before";
         after         = "after";
+        HMM           = "HMM";
     }
 
 

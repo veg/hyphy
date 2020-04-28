@@ -6125,10 +6125,10 @@ HBLObjectRef       _Matrix::pFDR (HBLObjectRef classes) {
         }
 
         if (!is_numeric()) {
-            throw "Only numeric matrices can be passed to && (pFDR)";
+            throw _String("Only numeric matrices can be passed to && (pFDR)");
         } else {
             if (!(is_column() || is_row()) || is_empty())   {
-                throw "The first argument of && (pFDR) must be an Nx1/1xN matrix.";
+                throw _String("The first argument of && (pFDR) must be an Nx1/1xN matrix.");
             } else if (classes->ObjectClass () != NUMBER || classes->Value() > 1. || (p_value = classes->Value()) < 0.0) {
                 throw _String ("Invalid baseline p-value (must be in (0,1)):") & _String((_String*)classes->toStr());
             } else {
@@ -6383,10 +6383,10 @@ HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes) {
         }
 
         if (!is_numeric()) {
-            throw "Only numeric matrices can be passed to <= (K-means)";
+            throw _String("Only numeric matrices can be passed to <= (K-means)");
         } else {
             if (GetVDim () != 2) {
-                throw "The first argument of <= (K-means) must be an Nx2 matrix, with samples in the first column, and counts in the 2nd.";
+                throw _String("The first argument of <= (K-means) must be an Nx2 matrix, with samples in the first column, and counts in the 2nd.");
             } else if (classes->ObjectClass () != MATRIX) {
                 throw _String ("Invalid number of clusters is call to K-means (must be >=1):") & _String((_String*)classes->toStr());
             } else {
@@ -7991,7 +7991,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision ) {
                             m3++;
                         }
                         if ((*this)(i,0) < 0.0) {
-                            throw ("Negative values are not allowed in the first column of the simplex tableau");
+                            throw _String("Negative values are not allowed in the first column of the simplex tableau");
                          }
                     }
                 }
@@ -8127,7 +8127,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision ) {
 
             }
         } else {
-            throw ("SimplexSolve requires a numeric matrix with > 1 row and > 2 columns");
+            throw _String("SimplexSolve requires a numeric matrix with > 1 row and > 2 columns");
         }
 
 
@@ -8178,7 +8178,7 @@ HBLObjectRef   _Matrix::DirichletDeviate (void)
 
 
         if (!is_numeric()) {
-            throw ("Only numeric vectors can be passed to DirichletDeviate");
+            throw _String("Only numeric vectors can be passed to DirichletDeviate");
         }
 
         if (is_row() || is_column ()) {
@@ -8186,7 +8186,7 @@ HBLObjectRef   _Matrix::DirichletDeviate (void)
             
             for (long i = 0L; i < dim; i++) {
                 if (theData[i] < 0.) {
-                    throw ("Dirichlet not defined for negative parameter values.");
+                    throw _String("Dirichlet not defined for negative parameter values.");
                 }
 
                 res.Store (0, i, gammaDeviate(theData[i]));
@@ -8200,7 +8200,7 @@ HBLObjectRef   _Matrix::DirichletDeviate (void)
 
             return (HBLObjectRef) res.makeDynamic();
         } else {
-            throw ("Argument must be a row- or column-vector.");
+            throw _String("Argument must be a row- or column-vector.");
         }
     } catch (_String const err) {
         HandleApplicationError (err);
@@ -8359,11 +8359,11 @@ HBLObjectRef   _Matrix::InverseWishartDeviate (_Matrix & df)
 
 
         if (!is_square_numeric()) {
-            throw "Expecting a numerical square matrix.";
+            throw _String("Expecting a numerical square matrix.");
         }
 
         else if (!df.is_numeric() || !df.check_dimension(n,1)) {
-            throw "Expecting numerical column vector for second argument (degrees of freedom).";
+            throw _String("Expecting numerical column vector for second argument (degrees of freedom).");
         } else {
             // compute Cholesky factor for this matrix inverse, extract the diagonal
             _List   reference_manager;
@@ -8413,14 +8413,14 @@ HBLObjectRef   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
 
 
         if (!(df.is_row () || df.is_column())) {
-            throw ("Expecting row vector for degrees of freedom argument.");
+            throw _String("Expecting row vector for degrees of freedom argument.");
         } else if (df.is_column()) {
             df.Transpose(); // convert column vector to row vector
         }
 
         if (decomp.is_empty()) {    // no second argument, perform Cholesky decomposition
             if (!is_square_numeric()) {
-                throw ("Expecting square numeric matrix.");
+                throw _String("Expecting square numeric matrix.");
             } else {
                 _Matrix     * cholesky = (_Matrix *) CholeskyDecompose();
 

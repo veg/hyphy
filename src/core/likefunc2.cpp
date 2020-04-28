@@ -223,7 +223,7 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
                 }
 
                 if (varIndex <  myCats.lLength) {
-                    throw ("Currently, HyPhy can support at most one HMM or Constant on Partition variable per partition");
+                    throw _String("Currently, HyPhy can support at most one HMM or Constant on Partition variable per partition");
                     
                 }
 
@@ -594,7 +594,8 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                 }
 
                 if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsClassWeights || runMode == _hyphyLFConditionMPIIterate) {
-                    for                 (long currentCat        = hmmCatCount; currentCat <= catCount; currentCat++) {
+                    
+                    for                 (long currentCat        = (runMode == _hyphyLFConditionProbsClassWeights ? 0 : hmmCatCount); currentCat <= catCount; currentCat++) {
                         currentRateWeight *= ((_Matrix**)catWeigths->list_data)[currentCat]->theData[categoryValues.list_data[currentCat]];
                     }
 

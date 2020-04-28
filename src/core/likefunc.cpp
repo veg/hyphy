@@ -1378,7 +1378,7 @@ _Matrix*    _LikelihoodFunction::RemapMatrix(_Matrix* source, const _SimpleList&
         _DataSetFilter  const * dsf = GetIthFilter (partIndex);
         long filterSize = dsf->GetSiteCountInUnits();
 
-        if (HasHiddenMarkov(blockDependancies.get(partIndex))>=0)
+        /*if (HasHiddenMarkov(blockDependancies.get(partIndex))>=0)
             // do nothing, just copy
         {
             for (long rowIndex = 0; rowIndex < hDim; rowIndex++)
@@ -1387,7 +1387,7 @@ _Matrix*    _LikelihoodFunction::RemapMatrix(_Matrix* source, const _SimpleList&
                 }
 
             offsetInSource  +=  filterSize;
-        } else {
+        } else*/ {
             for (long rowIndex = 0; rowIndex < hDim; rowIndex++)
                 for (long columnIndex = 0; columnIndex < filterSize; columnIndex++) {
                     res->Store (rowIndex, columnIndex + offsetInTarget, (*source)(rowIndex, dsf->duplicateMap.get(columnIndex) + offsetInSource));
@@ -1547,9 +1547,24 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
         bool         done         = false;
 
         if (runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities) {
-            long bufferL = PartitionLengths (0, &whichParts);
+            long bufferL = 0L;
+            
+            for (long i=0; i<whichParts.lLength; i++) {
+                long filter_id = whichParts.list_data[i];
+                long hmm = HasHiddenMarkov(blockDependancies.get(filter_id), true);
+                long bl = BlockLength (filter_id);
+                if (hmm >= 0) {
+                    long cc = ((_SimpleList*)((*(_List*)categoryTraversalTemplate(filter_id))(3)))->GetElement(-1);
+                    bl *= cc;
+                }
+                bufferL = MAX (bufferL, bl);
+                
+            }
+
+            
             cache        = new _Matrix (bufferL,2,false,true);
             scalerCache  = new _SimpleList (bufferL,0,0);
+            
         } else {
             if (templateKind < 0) { // HMM
                 _CategoryVariable*hmmVar = (_CategoryVariable*)FetchVar (-templateKind-1);
@@ -1699,12 +1714,17 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
         }
         return result;
     } else {
-        long maxPartSize = 0;
-        for (long whichPart=0; whichPart<whichParts.lLength; whichPart++) {
-            long myWidth        = BlockLength(whichParts.list_data[whichPart]);
-            maxPartSize         = MAX (maxPartSize,myWidth);
-        }
-
+        long            maxPartSize = 0L;
+        
+        _SimpleList     block_sizes;
+        
+        whichParts.Each ([&maxPartSize, this, &block_sizes] (long index, unsigned long) -> void {
+            //bool isHmm = HasHiddenMarkov(blockDependancies.list_data[index]) >= 0;
+            //block_sizes << (isHmm ? GetIthFilter(index)->GetSiteCountInUnits() : BlockLength(index));
+            block_sizes << BlockLength(index);
+            StoreIfGreater(maxPartSize, block_sizes.GetElement(-1));
+        });
+        
         _Vector  allScalers (false);
         _SimpleList     scalers;
         // allocate a buffer big enough to store the matrix for each block
@@ -1721,7 +1741,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
                                               scalers);
 
             allScalers << scalers;
-            long        thisBlockSiteCount = BlockLength(whichParts.list_data[whichPart]);
+            long        thisBlockSiteCount = block_sizes.get (whichPart);//BlockLength(whichParts.list_data[whichPart]);
             result->CopyABlock (holder, 0, maxPartSize, ((_SimpleList*)categoryTraversalTemplate.GetItem (whichParts.list_data[whichPart],1))->Element(-1), thisBlockSiteCount);
 //(*(_List*)categoryTraversalTemplate(whichParts.list_data[whichPart]))(1))->Element(-1),
             maxPartSize += thisBlockSiteCount;
@@ -1729,9 +1749,22 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
         DoneComputing   ();
         DeleteObject    (holder);
 
+        
         if (remap) {
+            
             if (storageID) {
-                _Matrix * remappedCorrections = RemapMatrix(&allScalers, whichParts);
+                allScalers.Trim();
+                // HMM will generate multiple scalers per category, so need to handle that here
+                _Matrix * remappedCorrections;
+                if (allScalers.GetVDim() > result->GetVDim()) {
+                    _Matrix matched_dim (*result);
+                    matched_dim.ForEachCellNumeric([&allScalers] (hyFloat& e, long i, long r, long c) -> void {
+                        e = allScalers[c];
+                    });
+                    remappedCorrections = RemapMatrix(&matched_dim, whichParts);
+                } else {
+                    remappedCorrections = RemapMatrix(&allScalers, whichParts);
+                }
                 _String   scalerID            = (*storageID) & categoryMatrixScalers;
                 CheckReceptacleAndStore (&scalerID, kEmptyString, false, remappedCorrections, false);
                 scalerID = (*storageID) & categoryLogMultiplier;
@@ -1749,12 +1782,12 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
 }
 
 //_______________________________________________________________________________________
-long    _LikelihoodFunction::PartitionLengths       (char runMode,  _SimpleList const * filter)
-{
+long    _LikelihoodFunction::PartitionLengths       (char runMode,  _SimpleList const * filter) {
     long maxDim = 0;
 
     for (long i=0; i<(filter?filter->lLength:theTrees.lLength); i++) {
-        long bl = BlockLength (filter?filter->list_data[i]:i);
+        long filter_id = filter?filter->list_data[i]:i;
+        long bl = BlockLength (filter_id);
         if (runMode == 0) {
             maxDim = MAX (maxDim, bl);
         } else {
@@ -4436,6 +4469,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
             if (convergenceMode >= 2) {
                 noChange.Clear();
+                noChange << -1;
             }
             
             oldAverage = averageChange;
@@ -5968,20 +6002,14 @@ void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,hyFloat& le
 void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize)
 {
     hyFloat funcValue;
-
-    //CheckStep     (gradientStep,unit,&values);
-    /*if (order>1)
-    {
-        _Matrix nG (unit);
-        nG*=-1;
-        CheckStep (gradientStep,nG,&values);
-    }
-    if (gradientStep==0)
-        return;*/
-
     
     if (order==1) {
         funcValue = Compute();
+        
+        if (verbosity_level > 100) {
+            printf ("_LikelihoodFunction::ComputeGradient enter logL = %g\n", funcValue);
+        }
+        
         for (long index=0; index<indexInd.lLength; index++) {
             if (freeze.Find(index)!=-1) {
                 gradient[index]=0.;
@@ -6018,11 +6046,18 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                         gradient.theData[index] = -1000.;
                     }
                     SetIthIndependent(index,currentValue);
+                    if (verbosity_level > 100) {
+                        printf ("_LikelihoodFunction::ComputeGradient %d %s before = %16.12g before+step = %16.12 after = %16.12g\n", index, GetIthIndependentName(index)->get_str(), currentValue, currentValue+testStep, GetIthIndependentName(index));
+                    }
                 } else {
                     gradient[index]= 0.;
                 }
             }
         }
+        if (verbosity_level > 100) {
+            printf ("_LikelihoodFunction::ComputeGradient exit logL = %g\n", Compute());
+        }
+
         /*hyFloat scaler = gradient.AbsValue();
         if (scaler > 1.e2)
             gradient *= 10./(scaler);*/

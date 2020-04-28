@@ -576,7 +576,7 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                         throw (_String ("Site index ") & site & " is invalid: must be in range " & "[0, " & (long)filter_source->GetPatternCount() & "]");
                     }
                 } else {
-                    throw ("This set of arguments is only supported for DataSetFilter objects");
+                    throw _String("This set of arguments is only supported for DataSetFilter objects");
                 }
             }
             break;
@@ -605,7 +605,7 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                         throw (_String (seq1).Enquote() & "," & _String (seq2).Enquote() & " is an invalid sequence pair specification.");
                     }
                 } else {
-                    throw ("This set of options is not supported for DataSet arguments");
+                    throw _String("This set of options is not supported for DataSet arguments");
                 }
             }
             break;
@@ -928,7 +928,7 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
             }
         }
         if (char_count == 0) {
-            throw ("Null alphabet supplied");
+            throw _String("Null alphabet supplied");
         }
 
         bool        do_local       = _NumericValueFromKey (alignment_options,kGapLocal,0.0) > 0.5,
@@ -2199,7 +2199,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
           
       if (need_to_prompt_user) {
         #ifdef __HEADLESS__
-          throw ("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
+          throw _String("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
         #endif
 
 
@@ -2226,7 +2226,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         }
 
         if (model_id == kNotFound) {
-          throw ("Dialog did not return a valid choice after maximum allowed number of tries");
+          throw _String("Dialog did not return a valid choice after maximum allowed number of tries");
           return false;
         }
 
@@ -2303,7 +2303,7 @@ bool      _ElementaryCommand::HandleMPIReceive (_ExecutionList& current_program)
     node_index_storage->SetValue (new _Constant (received_from), false);
 
 #else
-    throw ("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");
+    throw _String("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");
 #endif
 
   } catch (const _String& error) {
@@ -2357,7 +2357,7 @@ bool      _ElementaryCommand::HandleMPISend (_ExecutionList& current_program){
       throw (_String ("An invalid (empty) MPI message"));
     }
 #else
-    throw ("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");
+    throw _String("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");
 #endif
 
   } catch (const _String& error) {
@@ -2489,7 +2489,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
           if (graphMx->check_dimension(num_nodes, num_nodes)) {
             bgm->SetStructure ((_Matrix *) graphMx->makeDynamic());
           } else {
-            throw ("Dimension of graph does not match current graph");
+            throw _String("Dimension of graph does not match current graph");
           }
         } // set constraint matrix
         else if (set_this_attribute == kBGMConstraintMx) {
@@ -2497,7 +2497,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
           if (constraint_mx->check_dimension(num_nodes, num_nodes)) {
             bgm->SetConstraints ((_Matrix *) constraint_mx->makeDynamic());
           } else {
-            throw ("Dimensions of constraint matrix do not match current graph");
+            throw _String("Dimensions of constraint matrix do not match current graph");
           }
         } // set node order
         else if (set_this_attribute == kBGMNodeOrder) {
@@ -2510,7 +2510,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
 
             bgm->SetNodeOrder ( &order_list );
           } else {
-            throw ("Order must be a row vector whose dimension matches the number of nodes in graph");
+            throw _String("Order must be a row vector whose dimension matches the number of nodes in graph");
           }
         } else {
           throw (GetIthParameter (2UL)->Enquote() & " is not a valid parameter for BGM objects");
@@ -3059,7 +3059,7 @@ bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
 
   try {
 #ifdef __HYPHY_NO_SQLITE__
-    throw ("SQLite commands can not be used in a HyPhy version built with the __HYPHY_NO_SQLITE__ flag");
+    throw _String("SQLite commands can not be used in a HyPhy version built with the __HYPHY_NO_SQLITE__ flag");
 #else
 
     if (*GetIthParameter(0UL) == kSQLOpen) { // open a DB from file path
@@ -3425,7 +3425,7 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
                 return_value = export_alist;
               } else {
                 DeleteObject (export_alist);
-                throw "Failed to export node score cache for BGM";
+                throw _String("Failed to export node score cache for BGM");
               }
 
               break;
@@ -3560,7 +3560,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
         
       if (need_to_ask_user){ // read from stdin
         if (hy_env::EnvVariableTrue(hy_env::end_of_file) == false && source_name == hy_scanf_last_file_path)  {
-          throw ("Ran out of standard input");
+          throw _String("Ran out of standard input");
         }
         _String * console_data = new _String (StringFromConsole());
         dynamic_reference_manager < console_data;
@@ -4210,7 +4210,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
     
     if (parameterName->Equal (useLastDefinedMatrix)) {
       if (lastMatrixDeclared<0) {
-        throw "First Call to Model. USE_LAST_DEFINED_MATRIX is meaningless.";
+        throw _String ("First Call to Model. USE_LAST_DEFINED_MATRIX is meaningless.");
       }
       f3 = lastMatrixDeclared;
       f  = modelMatrixIndices[f3];
