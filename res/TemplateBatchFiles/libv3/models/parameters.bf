@@ -135,7 +135,15 @@ function parameters.DeclareCategory.helper (dict, key, default) {
 function parameters.DeclareCategory (def) {
 	 ExecuteCommands ("category " + def[terms.id] + "= (" +
 	 			  Join (",",
-	 			  			utility.Map ({"0": terms.category.bins, "1": terms.category.weights, "2": terms.category.represent, "3": terms.category.PDF, "4": terms.category.CDF, "5": terms.lower_bound, "6": terms.upper_bound, "7": terms.category.dCDF},
+	 			  			utility.Map ({"0": terms.category.bins, 
+	 			  			             "1": terms.category.weights, 
+	 			  			             "2": terms.category.represent, 
+	 			  			             "3": terms.category.PDF, 
+	 			  			             "4": terms.category.CDF, 
+	 			  			             "5": terms.lower_bound, 
+	 			  			             "6": terms.upper_bound, 
+	 			  			             "7": terms.category.dCDF,
+	 			  			             "8": terms.category.HMM},
 	 			  						  "_value_",
 	 			  						  'parameters.DeclareCategory.helper(def[terms.category.category_parameters], _value_, "")')
 	 			  		) + ");");

@@ -324,7 +324,7 @@ lfunction models.codon.BS_REL_SRV._DefineQ(bs_rel, namespace) {
 
 lfunction models.codon.BS_REL.set_branch_length(model, value, parameter) {
     if (Type (value) == "Number") {
-        return  models.generic.SetBranchLength (model, value, parameter);
+        return  models.generic.SetBranchLength (model, value*3, parameter);
     } else {
         if (Type (value) == "AssociativeList") {
             //vcopy = value;
