@@ -120,7 +120,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.11"),
+                     kHyPhyVersion  = _String ("2.5.12"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -824,7 +824,7 @@ namespace hy_global {
           char tmpFileName[] = "/tmp/HYPHY-XXXXXX";
           int fileDescriptor = mkstemp(tmpFileName);
           if (fileDescriptor == -1){
-            throw ("Failed to create a temporary file name");
+            throw _String("Failed to create a temporary file name");
           }
           path_name = tmpFileName;
           CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (path_name, false), false);

@@ -15,8 +15,11 @@ jobs:
   benchmark:
     name: Run Javascript Benchmark
     runs-on: ubuntu-latest
-    needs: [Build_Make_Requirements]
     steps:
+      - name: Compile Make
+      - run: |
+          cmake .
+          make -j all
       - uses: actions/checkout@v2
       - name: Compile Make
         run: |

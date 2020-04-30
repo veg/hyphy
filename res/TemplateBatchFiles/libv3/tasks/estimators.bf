@@ -710,6 +710,8 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     
     /*
 
+    Export (lfe, likelihoodFunction);
+    console.log (lfe);
     GetString (lfe, likelihoodFunction, -1);
     console.log (lfe);
     fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
@@ -1122,7 +1124,6 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
     utility.ForEach (res[utility.getGlobalValue ('terms.parameters.local_independent')], '_value_', '
         parameters.SetRange (_value_,terms.range_clamp_locals);
     ');*/
-
 
 
     //Export (lfe, likelihoodFunction);

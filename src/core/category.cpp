@@ -499,54 +499,56 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
         Parse    (&meanC,*param,fpc, nil);
 
         if (parameters.lLength>8) {
-            _String hmmModelName = AppendContainerName(*(_String*)parameters(8),theP);
-            f = FindModelName(hmmModelName);
-            if (f==-1) {
-                if (constantOnPartition == *(_String*)parameters (8)) {
-                    flags = CONSTANT_ON_PARTITION;
-                } else {
-                    HandleApplicationError (errorMsg & (*(_String*)parameters(8))& " is not an existing model identifier in call to 'category'");
-                    return;
-                }
-            } else {
-                if (covariantVar) {
-                    HandleApplicationError (errorMsg & "Non-independent random variables can't also be hidden Markov.");
-                    return;
-                }
-                long mindex = f;
-                _Matrix * hmm,
-                        * freq;
-
-                bool    mbf;
-
-                RetrieveModelComponents (mindex, hmm, freq, mbf);
-                mbf = false;
-
-                if (hmm) {
-
-                    f = weights->GetHDim()*weights->GetVDim();
-
-                    if (hmm->GetHDim()==f && hmm->GetVDim()==f) {
-                        _SimpleList   hmmVars,
-                                      existingVars (parameterList);
-
-                        _AVLList      sv (&hmmVars);
-
-                        hmm->ScanForVariables (sv,true);
-                        freq->ScanForVariables (sv,true);
-
-
-                        sv.ReorderList();
-                        parameterList.Union (hmmVars,existingVars);
-                        exclude.Subtract (hmmVars,existingVars);
-
-                        hiddenMarkovModel = mindex;
-                        mbf = true;
+            if (((_String*)parameters(8))->nonempty()) {
+                _String hmmModelName = AppendContainerName(*(_String*)parameters(8),theP);
+                f = FindModelName(hmmModelName);
+                if (f==-1) {
+                    if (constantOnPartition == *(_String*)parameters (8)) {
+                        flags = CONSTANT_ON_PARTITION;
+                    } else {
+                        HandleApplicationError (errorMsg & (*(_String*)parameters(8))& " is not an existing model identifier in call to 'category'");
+                        return;
                     }
-                }
+                } else {
+                    if (covariantVar) {
+                        HandleApplicationError (errorMsg & "Non-independent random variables can't also be hidden Markov.");
+                        return;
+                    }
+                    long mindex = f;
+                    _Matrix * hmm,
+                            * freq;
 
-                if (!mbf) {
-                    HandleApplicationError (errorMsg & (*(_String*)parameters(8))& " is not a valid HMM-component model (square matrix of dimension "&_String (f) & ") identifier in call to 'category'");
+                    bool    mbf;
+
+                    RetrieveModelComponents (mindex, hmm, freq, mbf);
+                    mbf = false;
+
+                    if (hmm) {
+
+                        f = weights->GetHDim()*weights->GetVDim();
+
+                        if (hmm->GetHDim()==f && hmm->GetVDim()==f) {
+                            _SimpleList   hmmVars,
+                                          existingVars (parameterList);
+
+                            _AVLList      sv (&hmmVars);
+
+                            hmm->ScanForVariables (sv,true);
+                            freq->ScanForVariables (sv,true);
+
+
+                            sv.ReorderList();
+                            parameterList.Union (hmmVars,existingVars);
+                            exclude.Subtract (hmmVars,existingVars);
+
+                            hiddenMarkovModel = mindex;
+                            mbf = true;
+                        }
+                    }
+
+                    if (!mbf) {
+                        HandleApplicationError (errorMsg & (*(_String*)parameters(8))& " is not a valid HMM-component model (square matrix of dimension "&_String (f) & ") identifier in call to 'category'");
+                    }
                 }
             }
         }

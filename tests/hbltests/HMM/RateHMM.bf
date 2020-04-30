@@ -16,7 +16,7 @@ SmallCodon_part_Categ.weights={
 }
 ;
 
-global						   lambda = 0.1;
+global						   lambda = 0.25;
 lambda :< 1/3;
 
 HMM_transition_matrix 		   = {{1-3*lambda,lambda,lambda,lambda}
@@ -64,7 +64,10 @@ expectedLL 							= -3243.9885;
 diffLL	   							= Abs(expectedLL - res_SmallCodon_LF[1][0]);
 fprintf 							(stdout, SmallCodon_LF, "\nTest optimization took ", timer2-timer, " seconds.\n", diffLL , " difference between obtained and expected likelihood\n\n");
 
-ConstructCategoryMatrix				(mx, SmallCodon_LF, SHORT);
+ConstructCategoryMatrix				(mx,  SmallCodon_LF, SHORT);
+ConstructCategoryMatrix				(mx2,  SmallCodon_LF);
+
+fprintf (stdout, mx2, "\n");
 /* this stores the Viterbi path in mx */
 
 expected = {"0":{{200,3,1}},"1":{{681,1,0}},"2":{{823,0,2}}};
