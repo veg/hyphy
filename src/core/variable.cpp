@@ -397,29 +397,31 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks) { // set
   
     if (valueClass==NUMBER) {
       
-        if (varFormula && do_checks) {
+        if (varFormula) {
 
-            // also update the fact that this variable is no longer dependent in all declared
-            // variable containers which contain references to this variable
-            
-            DoForEachVariable([this] (_Variable* v, long v_idx) -> void {
-                if (v->IsContainer()) {
-                    if (!((_VariableContainer*)v)->RemoveDependance (this->theIndex)) {
-                        ReportWarning ((_String("Can't make variable ")&GetName()->Enquote()&" independent in the context of "&*v->GetName()&" because its template variable is not independent."));
+            if (do_checks) {
+                // also update the fact that this variable is no longer dependent in all declared
+                // variable containers which contain references to this variable
+                
+                DoForEachVariable([this] (_Variable* v, long v_idx) -> void {
+                    if (v->IsContainer()) {
+                        if (!((_VariableContainer*)v)->RemoveDependance (this->theIndex)) {
+                            ReportWarning ((_String("Can't make variable ")&GetName()->Enquote()&" independent in the context of "&*v->GetName()&" because its template variable is not independent."));
+                        }
                     }
-                }
-            });
-            
-            for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
-                if (((_String*)likeFuncNamesList(i))->nonempty()) {
-                    ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(theIndex);
-                }
+                });
+                
+                for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
+                    if (((_String*)likeFuncNamesList(i))->nonempty()) {
+                        ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(theIndex);
+                    }
+            }
 
             //_Formula::Clear();
+            delete varFormula;
+            varFormula = nil;
         }
         
-        delete varFormula;
-        varFormula = nil;
         if (varValue) {
             DeleteAndZeroObject (varValue);
         }
@@ -480,6 +482,7 @@ void  _Variable::SetNumericValue (hyFloat v) // set the value of the var to a nu
     varFlags |= HY_VARIABLE_CHANGED;
     theValue = v;
 
+    
     if (theValue<lowerBound || theValue>upperBound) {
         if (theValue<=lowerBound+1e-50) {
             theValue = lowerBound;

@@ -1276,6 +1276,14 @@ _CategoryVariable*  _LikelihoodFunction::GetIthCategoryVar (long index) const {
 _Variable*  _LikelihoodFunction::GetIthDependentVar (long index) const {
     return LocateVar (indexDep.get(index));
 }
+    
+//_______________________________________________________________________________________
+hyFloat  _LikelihoodFunction::DerivativeCorrection (long index, hyFloat p) const {
+    if (parameterValuesAndRanges) {
+        return obtainDerivativeCorrection(p, parameterTransformationFunction.Element(index));
+    }
+    return 1.;
+}
 //_______________________________________________________________________________________
 void    _LikelihoodFunction::SetIthIndependent (long index, hyFloat p) {
     if (parameterValuesAndRanges) {
@@ -1285,10 +1293,12 @@ void    _LikelihoodFunction::SetIthIndependent (long index, hyFloat p) {
     }
     //printf ("%10.10g\n", p);
     _Variable * v =(_Variable*) LocateVar (indexInd.get(index));
-    v->SetValue (new _Constant (p), false);
+    _Constant c (p);
+    v->SetValue (&c, true, false);
     if (parameterValuesAndRanges) {
       hyFloat check_value = v->Value();
       if (p != check_value) {
+        //printf ("_LikelihoodFunction::SetIthIndependent %e => %e\n", p, check_value);
         parameterValuesAndRanges->Store(index,0,check_value);
       }
     }
@@ -1319,7 +1329,7 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p) {
       if (p!=0.0) {
           set = (fabs((oldValue-p)/p))>kMachineEpsilon;
       } else {
-          set = fabs(oldValue-p)>kMachineEpsilon;
+          set = true;//fabs(oldValue-p)>kMachineEpsilon;
       }
     } else {
       set = true;
@@ -5999,26 +6009,32 @@ void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,hyFloat& le
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize)
-{
+void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize) {
     hyFloat funcValue;
+    static const hyFloat kMaxD = 1.e4;
     
     if (order==1) {
         funcValue = Compute();
         
-        if (verbosity_level > 100) {
+        /*
+         if (verbosity_level > 100) {
             printf ("_LikelihoodFunction::ComputeGradient enter logL = %g\n", funcValue);
         }
+        */
         
         for (long index=0; index<indexInd.lLength; index++) {
             if (freeze.Find(index)!=-1) {
                 gradient[index]=0.;
             } else {
-                //_Variable  *cv            = GetIthIndependentVar (index);
-                hyFloat    currentValue = GetIthIndependent(index),
+                _Variable  *cv            = GetIthIndependentVar (index);
+                
+                
+                hyFloat    currentValue  = GetIthIndependent(index),
                            ub            = GetIthIndependentBound(index,false)-currentValue,
                            lb            = currentValue-GetIthIndependentBound(index,true),
                            testStep      = MAX(currentValue * gradientStep,gradientStep);
+                            
+                           //check_vv      = cv->Value();
 
                 if (testStep >= ub) {
                   if (testStep < lb) {
@@ -6039,24 +6055,33 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                         printf ("Gradient step for %s is %.16g @%.16g %\n", GetIthIndependentVar(index)->GetName()->get_str(), testStep, currentValue);
                     }*/
                     SetIthIndependent(index,currentValue+testStep);
-                    gradient[index]=(Compute()-funcValue)/testStep;
-                    if (gradient.theData[index] > 1000.) {
-                        gradient.theData[index] = 1000.;
-                    } else if (gradient.theData[index] < -1000.) {
-                        gradient.theData[index] = -1000.;
+                    gradient[index]=(Compute()-funcValue)/testStep * DerivativeCorrection (index, currentValue);
+                    if (gradient.theData[index] > kMaxD) {
+                        gradient.theData[index] = kMaxD;
+                    } else if (gradient.theData[index] < -kMaxD) {
+                        gradient.theData[index] = -kMaxD;
                     }
                     SetIthIndependent(index,currentValue);
-                    if (verbosity_level > 100) {
-                        printf ("_LikelihoodFunction::ComputeGradient %d %s before = %16.12g before+step = %16.12 after = %16.12g\n", index, GetIthIndependentName(index)->get_str(), currentValue, currentValue+testStep, GetIthIndependentName(index));
-                    }
+                    /*if (verbosity_level > 100) {
+                        printf ("_LikelihoodFunction::ComputeGradient %d\t%s\t%e\t%e\t%e\t%e\t \n", index, GetIthIndependentName(index)->get_str(), testStep, currentValue, check_vv, cv->Value(), check_vv-cv->Value());
+                    }*/
                 } else {
                     gradient[index]= 0.;
                 }
             }
         }
-        if (verbosity_level > 100) {
-            printf ("_LikelihoodFunction::ComputeGradient exit logL = %g\n", Compute());
-        }
+        /*if (verbosity_level > 100) {
+            hyFloat post_check = Compute();
+            printf ("_LikelihoodFunction::ComputeGradient exit logL = %g\n", post_check);
+            if (fabs (post_check - funcValue) > 0.1) {
+                ObjectToConsole(parameterValuesAndRanges);
+                NLToConsole();
+                ObjectToConsole(&parameterTransformationFunction);
+                NLToConsole();
+                _TerminateAndDump("Likelihood function had different values before and after Gradient calculation");
+            }
+            
+        }*/
 
         /*hyFloat scaler = gradient.AbsValue();
         if (scaler > 1.e2)

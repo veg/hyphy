@@ -65,7 +65,7 @@ diffLL	   							= Abs(expectedLL - res_SmallCodon_LF[1][0]);
 fprintf 							(stdout, SmallCodon_LF, "\nTest optimization took ", timer2-timer, " seconds.\n", diffLL , " difference between obtained and expected likelihood\n\n");
 
 ConstructCategoryMatrix				(mx,  SmallCodon_LF, SHORT);
-ConstructCategoryMatrix				(mx2,  SmallCodon_LF, WEIGHTS);
+ConstructCategoryMatrix				(mx2,  SmallCodon_LF);
 
 fprintf (stdout, mx2, "\n");
 /* this stores the Viterbi path in mx */

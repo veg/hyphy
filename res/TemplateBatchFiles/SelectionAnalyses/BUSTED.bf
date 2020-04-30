@@ -484,7 +484,6 @@ if (busted.do_srv) {
     busted.column_weights       = busted.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
     (busted.json [busted.json.srv_posteriors]) =  busted.cmx_weighted $ busted.column_weights;
     
-    ConstructCategoryMatrix (busted.cmx_weights, ^(busted.full_model[terms.likelihood_function]), WEIGHTS);
     
     if (busted.do_srv_hmm ) {
         ConstructCategoryMatrix (busted.cmx_viterbi, ^(busted.full_model[terms.likelihood_function]), SHORT);
