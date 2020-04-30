@@ -144,6 +144,9 @@ namespace relax {
     LoadFunctionLibrary ("modules/grid_compute.ibf");
 }
 
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'RELAX.json')", relax.codon_data_info [terms.json.json]);
+relax.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
 
 io.ReportProgressMessageMD('RELAX',  'selector', 'Branch sets for RELAX analysis');
 
@@ -610,11 +613,12 @@ function relax.report_multi_class_rates (model_fit, distributions) {
 //------------------------------------
 
 function relax.FitMainTestPair () {
+    _varname_ = model.generic.GetGlobalParameter (relax.model_object_map[relax.model_namespaces[1]] , terms.AddCategory (terms.parameters.omega_ratio,1));
 
     if (relax.do_lhc) {
         relax.nm.precision = -0.00025*relax.final_partitioned_mg_results[terms.fit.log_likelihood];
         parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
-                        
+                               
         relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : relax.model_map},
                                     relax.general_descriptive.fit,
                                     relax.model_object_map, 
@@ -635,8 +639,11 @@ function relax.FitMainTestPair () {
         );
         
     }
-
+    
+    
+    
 	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
+	//io.SpoolLF(relax.alternative_model.fit["LF"], "/tmp/relax", "alt");
 	io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 
 

@@ -96,6 +96,7 @@ public:
     bool        HasLocals                   (void);
 
     virtual     bool        RemoveDependance            (long);
+    virtual     void        RemoveDependance            (_AVLList const&);
     virtual     long        SetDependance               (long);
     bool        SetMDependance              (_SimpleList const&);
 

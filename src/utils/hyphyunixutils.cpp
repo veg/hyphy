@@ -128,9 +128,10 @@ bool    Get_a_URL (_String& urls, _String*
         //curl_easy_setopt (curl, CURLOPT_VERBOSE, 1);
         curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, (void*)(f?url2File:url2String));
       
-        if (hy_env::EnvVariableTrue (VerbosityLevelString)) {
+        /*if (hy_env::EnvVariableTrue (VerbosityLevelString)) {
             curl_easy_setopt (curl,CURLOPT_NOPROGRESS,1);
-        }
+        }*/
+        
         res = curl_easy_perform (curl);
         curl_easy_cleanup (curl);
 
@@ -223,7 +224,7 @@ void    ObjectToConsole (BaseRef obj,  void * extra) {
 #ifdef __HYPHYMPI__
 
 //__________________________________________________________________________________
-void mpiNormalLoop    (int rank, int size, _String & baseDir)
+void mpiNormalLoop    (int  rank, int size, _String & baseDir)
 {
     long         senderID = 0;
 
@@ -231,6 +232,8 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
     _String* theMessage     = MPIRecvString (-1,senderID);   // listen for messages from any node
     _StringBuffer * resStr        = nil;
+    
+    //int loop_count = 0;
 
     while (theMessage->nonempty()) {
         hy_env :: EnvVariableSet (hy_env ::mpi_node_id, new _Constant (rank), false);
@@ -255,6 +258,7 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
         } else {
             if (theMessage->BeginsWith ("#NEXUS")) {
                 _String             msgCopy (*theMessage);
+                //printf ("\n\nMPI Node %d; message \n %s\n", rank, theMessage->get_str());
                 ReportWarning       ("[MPI] Received a likelihood function");
                 //ReportWarning       (msgCopy);
                 ReadDataSetFile     (nil,true,theMessage);
@@ -285,9 +289,14 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
                 }
             } else {
                 //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
+                //printf ("\n\nMPI Node %d; message \n %s\n", rank, theMessage->get_str());
+                //printf ("\n\nMPI Node %d; likefuncs \n %s\n", rank, ((_String*)likeFuncNamesList.toStr())->get_str());
                 _ExecutionList exL (*theMessage);
+                
+                 
                 //ReportWarning (_String ((_String*)batchLanguageFunctionNames.toStr()));
                 HBLObjectRef res = exL.Execute();
+                //printf ("\n==>%d\n", hy_env::EnvVariableTrue (preserveSlaveNodeState));
                 if (res) {
                   resStr = new _StringBuffer ((_String*)res->toStr());
                 } else {
@@ -297,7 +306,16 @@ void mpiNormalLoop    (int rank, int size, _String & baseDir)
 
             MPISendString(*resStr,senderID);
             
+            /*loop_count++;
+            printf ("\n\nMPI Node %d; variable array length %d\n", rank, variableNames.countitems());
+            if (loop_count == 20) {
+                printf ("%s\n", ((_String*)variableNames.toStr())->get_str());
+                abort();
+            }*/
+            
+            
             if (hy_env::EnvVariableTrue (preserveSlaveNodeState) == false) {
+                printf ("\n\nMPI Node %d; PURGING\n", rank);
                 PurgeAll (true);
                 InitializeGlobals ();
                 PushFilePath(baseDir, false, false);

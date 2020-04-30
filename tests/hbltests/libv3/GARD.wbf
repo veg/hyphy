@@ -1,0 +1,15 @@
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("GARD.bf", {"--alignment" : PATH_TO_CURRENT_BF + "data/HRVI.nex"});
+} else {
+    return 0;
+}
+LoadFunctionLibrary ("shared.bf");
+
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+//fscanf ("data/HRVI.nex.GARD.json","Raw",json);
+//gard.json = Eval (json);
+
+assert (Abs ((gard.json["breakpointData"])["bps"] - {{1,428}})==0, "Incorrect breakpoints");
+assert (Max ((gard.json["siteBreakPointSupport"]),1)["key"] == "176", "Incorrect best breakpoint support");

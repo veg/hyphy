@@ -51,7 +51,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define kAppendAnAssignmentToBufferAssignment   0x04
 #define kAppendAnAssignmentToBufferGlobal       0x08
 
-#define _HY_STRING_BUFFER_PREALLOCATE_SLOTS     256
+#define _HY_STRING_BUFFER_PREALLOCATE_SLOTS     1024
 
 class _StringBuffer : public _String {
 
@@ -176,6 +176,14 @@ public:
   virtual void Clear();
 
   /**
+   * Empties this object without clearing the memory
+   *  Revision history
+   - SLKP 20200224 Initial Implementation
+  */
+    
+  virtual void Reset();
+
+  /**
    * Standard destructor
    *  Revision history
    - SLKP 20170614 reviewed while porting from v3 branch
@@ -201,6 +209,9 @@ public:
   */
   void Duplicate (BaseRefConst);
     
+    
+  virtual void Trim(long, long);
+
     
  /**
   * Move semantics for buffer assignment
@@ -266,7 +277,8 @@ public:
    [CHANGE-NOTE SLKP 20170614 return *this for chaining]
    */
   _StringBuffer& AppendNCopies   (_String const& value, unsigned long copies);
-  
+
+
   /**
    * Append a substring of the source string to this buffer
    * @param source the string to copy from

@@ -1,0 +1,81 @@
+GetString (version, HYPHY_VERSION, 0);
+
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("SelectionAnalyses/MEME.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branches" : "All"});
+} else {
+    LoadFunctionLibrary ("SelectionAnalyses/MEME.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "All", "3" : "0.1"});
+
+}
+
+
+LoadFunctionLibrary ("shared.bf");
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+
+//fscanf ("data/CD2.nex.MEME.json","Raw",json);
+//meme.json = Eval (json);
+
+
+
+assert (check_value (
+    ((meme.json["fits"])["Global MG94xREV"])["Log Likelihood"], -3467.00, 0.001), "Incorrect log-likelihood for the Global MG94xREV model");
+    
+
+p_values   = (((meme.json["MLE"])["content"])["0"])[-1][6];
+lrts       = (((meme.json["MLE"])["content"])["0"])[-1][5];
+branches   = (((meme.json["MLE"])["content"])["0"])[-1][7];
+
+/*
+|   Codon    | Partition  |   alpha    |   beta+    |     p+     |    LRT     |Episodic selection detected?| # branches |
+|:----------:|:----------:|:----------:|:----------:|:----------:|:----------:|:--------------------------:|:----------:|
+|     9      |     1      |    0.000   |    2.546   |    0.642   |    4.284   |      Yes, p =  0.0546      |     0      |
+|     34     |     1      |    0.000   |    2.347   |    1.000   |    4.439   |      Yes, p =  0.0504      |     0      |
+|     43     |     1      |    0.000   |    6.816   |    0.130   |    4.591   |      Yes, p =  0.0466      |     1      |
+|     55     |     1      |    0.000   |    7.948   |    0.912   |    3.857   |      Yes, p =  0.0682      |     0      |
+|     64     |     1      |    0.000   |    2.125   |    1.000   |    3.333   |      Yes, p =  0.0896      |     1      |
+|     67     |     1      |    0.000   |   41.453   |    0.176   |    5.645   |      Yes, p =  0.0271      |     1      |
+|     76     |     1      |    0.000   |   20.110   |    0.274   |    9.572   |      Yes, p =  0.0037      |     2      |
+|     81     |     1      |    0.000   |    4.044   |    0.532   |    4.398   |      Yes, p =  0.0515      |     0      |
+|     98     |     1      |    0.000   |   11.418   |    0.427   |    4.576   |      Yes, p =  0.0469      |     0      |
+|    113     |     1      |    0.000   |    3.593   |    0.697   |    5.875   |      Yes, p =  0.0240      |     2      |
+|    117     |     1      |    0.000   |    2.005   |    1.000   |    5.245   |      Yes, p =  0.0332      |     0      |
+|    122     |     1      |    0.000   |    2.029   |    0.431   |    3.333   |      Yes, p =  0.0896      |     2      |
+|    141     |     1      |    0.000   |    9.665   |    0.593   |    3.948   |      Yes, p =  0.0650      |     1      |
+|    149     |     1      |    0.000   |    1.968   |    1.000   |    5.229   |      Yes, p =  0.0335      |     0      |
+|    174     |     1      |    0.737   |   25.356   |    0.176   |    3.851   |      Yes, p =  0.0684      |     1      |
+
+*/
+
+
+test.lrt_sum = 0;
+test.branch_sum = 0;
+
+test.expected_positives = utility.MatrixToDict({{9,34,43,55,64,67,76,81,98,113,117,122,141,149,174}});
+
+function confirm_site (site, p, dict) {
+    if (p <= 0.1) {
+        if (dict/(site+1)) {
+            test.lrt_sum += lrts[site];
+            test.branch_sum += branches[site];
+            dict - (site+1);
+            return TRUE;
+        } else {
+            assert (0, "Failed to correctly classify site " + (site+1));
+        }
+     }
+    if (dict/(site+1)) {
+        assert (0, "Incorrectly classified site " + (site+1));
+    }
+    return FALSE;
+}
+
+utility.ForEachPair (p_values,"_index_", "_p_",
+                 "  
+                   confirm_site (_index_[0], _p_, test.expected_positives);
+                ");
+
+assert (check_value (
+    test.lrt_sum, 72.175, 0.05), "More than 5% difference in cumulative LRT for positively selected sites");
+assert (check_value (
+    test.branch_sum, 11, 0.0001), "Incorrect total # of branches with high EBF");
+    

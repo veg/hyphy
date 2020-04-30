@@ -7,9 +7,11 @@
 "aBSREL","[aBSREL] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).","SelectionAnalyses/aBSREL.bf";
 "RELAX","[RELAX] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).","SelectionAnalyses/RELAX.bf";
 "FADE","[FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).","SelectionAnalyses/FADE.bf";
+"PRIME","[PRIME] ","SelectionAnalyses/PRIME.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
-"Contrast-FEL","[Contrast-FEL] Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.","SelectionAnalyses/contrast-fel.bf";
+"Contrast-FEL","Perform a site-level test for differences in selective pressures between predetermined sets of branches.","SelectionAnalyses/FEL-contrast.bf";
+"FMM", "Fit a model that permits double (and triple) instantaneous nucleotide substitutions","SelectionAnalyses/FitMultiModel.bf";
 
 "","Evolutionary rates on non-coding data.","!Relative evolutionary rate inference";
 "LEISR","Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";

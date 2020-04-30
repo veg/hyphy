@@ -452,7 +452,7 @@ node<long>* _Formula::InternalDifferentiate (node<long>* currentSubExpression, l
 
                 created_nodes [2]  = InternalDifferentiate (currentSubExpression->go_down(2), varID, varRefs, dydx, tgt);
                 if (!created_nodes [2]) {
-                    throw (4);
+                    throw (3);
                 }
                 node<long>*       XtimesDY = new node<long>;
                 XtimesDY->add_node (*created_nodes [2],*DuplicateFormula (currentSubExpression->go_down(1),tgt));
@@ -2580,9 +2580,7 @@ bool _Formula::CheckFForDependence (long varID, bool checkAll) {
           return true;
         }
         if (checkAll) {
-          _Variable * v = LocateVar(f);
-          if (!v->IsIndependent())
-            if (v->CheckFForDependence(varID)) {
+            if (LocateVar(f)->CheckFForDependence(varID)) {
               return true;
             }
         }
@@ -2591,6 +2589,30 @@ bool _Formula::CheckFForDependence (long varID, bool checkAll) {
   }
   return false;
 }
+
+//__________________________________________________________________________________
+bool _Formula::CheckFForDependence (_AVLList const& indices, bool checkAll) {
+  unsigned long const upper_bound = NumberOperations();
+  
+  for (unsigned long i=0UL; i<upper_bound; i++) {
+    _Operation * this_op = ItemAt (i);
+    if (this_op->IsAVariable()) {
+      long f = this_op->GetAVariable();
+      if (f>=0) {
+        if (indices.FindLong (f) >= 0) {
+          return true;
+        }
+        if (checkAll) {
+             if (LocateVar(f)->CheckFForDependence(indices)) {
+              return true;
+            }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 
   //__________________________________________________________________________________
 void  _Formula::LocalizeFormula (_Formula& ref, _String& parentName, _SimpleList& iv, _SimpleList& iiv, _SimpleList& dv, _SimpleList& idv) {

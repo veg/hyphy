@@ -108,6 +108,7 @@ namespace busted {
 
 busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch)", 
                                     "Branch-site" : "Allow synonymous substitution rates to vary using general branch site models",
+                                    "HMM" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch), and use a hidden markov model for spatial correlation on synonymous rates",
                                     "No"  : "Synonymous substitution rates are constant across sites. This is the 'classic' behavior, i.e. the original published test"},
                                     "Synonymous rate variation"
                                     );
@@ -121,7 +122,13 @@ if (busted.do_srv == "Branch-site") {
         busted.do_bs_srv = FALSE;
         busted.do_srv = TRUE;
     } else {
-        busted.do_srv = FALSE;    
+        if (busted.do_srv == "HMM") {
+         busted.do_srv      = TRUE;
+         busted.do_bs_srv   = FALSE;
+         busted.do_srv_hmm  = TRUE; 
+        } else {
+            busted.do_srv = FALSE;  
+        } 
     }
 }                       
                                     
@@ -331,6 +338,7 @@ if (busted.do_srv)  {
     
 }
 
+
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
 busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
 
@@ -371,7 +379,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
     for the rate distribution parameters
 */
 
- 
+  
 busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
 
 parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
@@ -391,6 +399,7 @@ busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.tree
     terms.search_restarts : busted.N.initial_guesses
 });
     
+            
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
         "retain-lf-object": TRUE,
         terms.run_options.optimization_settings : 

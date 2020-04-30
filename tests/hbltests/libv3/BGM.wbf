@@ -1,0 +1,65 @@
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("BGM.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--min-subs" : "5", "--type" : "codon"});
+} else {
+    return 0;
+}
+LoadFunctionLibrary ("shared.bf");
+
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+//fscanf ("data/CD2.nex.BGM.json","Raw",json);
+//bgm.json = Eval (json);
+
+
+/*
+|   Site 1   |   Site 2   |P [Site 1 <-> Site 2]|Subs (1,2,shared)|
+|:----------:|:----------:|:-------------------:|:---------------:|
+|       6    |     146    |        0.956        |     5, 5, 5     |
+|      46    |      61    |        0.760        |     5, 5, 5     |
+|      55    |     111    |        0.726        |     6, 5, 5     |
+|      56    |      85    |        0.510        |     5, 6, 5     |
+|      64    |     178    |        0.600        |     5, 6, 5     |
+|      75    |      85    |        0.559        |     5, 6, 5     |
+*/
+
+
+
+site1     = (((bgm.json["MLE"])["content"]))[-1][0];
+site2     = (((bgm.json["MLE"])["content"]))[-1][1];
+pp        = (((bgm.json["MLE"])["content"]))[-1][4];
+shared    = (((bgm.json["MLE"])["content"]))[-1][7];
+
+test.overall_shared_subs = 0;
+
+test.expected_positives = {
+    "6,146" : "0",
+    "46,61" : "1",
+    "55,111" : "2"
+} ;
+
+function confirm_pair (pair, p, dict) {
+    site = "" + site1[pair] + "," + site2[pair];
+    if (p >= 0.7) {
+        if (dict/(site)) {
+            dict - (site);
+            return TRUE;
+        } else {
+            assert (0, "Failed to correctly classify pair " + (site));
+        }
+    }
+    if (dict/(site)) {
+        assert (0, "Incorrectly classified pair " + (site));
+    }
+    return FALSE;
+}
+
+utility.ForEachPair (pp,"_index_", "_p_",
+                 "  
+                   if (confirm_pair (_index_[0], _p_, test.expected_positives)) {
+                    test.overall_shared_subs  += shared[_index_[0]];
+                   }
+                ");
+
+assert (check_value (
+    test.overall_shared_subs, 15, 0.001), "Incorrect number of cumulative shared substitutions");

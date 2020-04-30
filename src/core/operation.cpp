@@ -259,9 +259,7 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
 
 
 //__________________________________________________________________________________
-_Operation::~_Operation (void)
-{
-
+_Operation::~_Operation (void) {
     if (theNumber) {
         DeleteObject (theNumber);
     }
@@ -447,7 +445,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         if (!isRefVar) {
           if (argument_var->IsIndependent() && (argument_var->ObjectClass() & (TREE|TOPOLOGY)) == 0) {
             // if the variable exists and is independent then
-            // simply swap the value of the var, otherwise
+            // simply swap the 10value of the var, otherwise
             // duplicate the entire variable
             argument_var->varFlags &= HY_VARIABLE_SET;
             if (!argument_var->varValue) {

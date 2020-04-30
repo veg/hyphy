@@ -1115,8 +1115,9 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 char * str1r = nil,
                      * str2r = nil;
 
-                score = AlignStrings (reference_sequence->get_str(),
-                                      sequence2->get_str(),
+               
+                score = AlignStrings (reference_sequence->get_str() ? reference_sequence->get_str() : "",
+                                      sequence2->get_str() ? sequence2->get_str() : "",
                                       str1r,
                                       str2r,
                                       character_map_to_integers,
@@ -1740,6 +1741,213 @@ bool      _ElementaryCommand::HandleUseModel (_ExecutionList& current_program) {
   return true;
 }
 
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_program) {
+/*
+    parameters:
+        [0] -> the string ID of the object to iterate over
+        [1] -> the object to iteratre over
+ 
+    
+    simpleParameters:
+        [0] -> command index for the corresponding advance command
+        [1] -> type of object; MATRIX, etc
+        [2] -> if dict, then this stores the pointer to AVLListXLIterator
+            -> if tree, then this stores the pointer to a tree iterator
+*/
+  current_program.advance();
+  try {
+      // clean up previous iterator states
+      if (parameters.countitems() > 1) {
+          parameters.Delete (1L);
+          if (simpleParameters.get (1) == ASSOCIATIVE_LIST) {
+              delete ((AVLListXLIterator*)simpleParameters.get(2));
+          } else {
+              if (simpleParameters.get (1) == TREE || simpleParameters.get (1) == TOPOLOGY) {
+                  delete ((node_iterator<long>*)simpleParameters.get(2));
+              }
+          }
+       }
+      
+      if (simpleParameters.countitems() > 2) {
+          simpleParameters.Delete (2);
+      }
+      
+      
+      HBLObjectRef iterator_substrate = _ProcessAnArgumentByType (*GetIthParameter(0UL), ASSOCIATIVE_LIST | MATRIX | TOPOLOGY | TREE, current_program, &parameters);
+      
+      _ElementaryCommand * advance_command = current_program.GetIthCommand(simpleParameters.get (0));
+      
+      if (!advance_command || advance_command->code != HY_HBL_COMMAND_ADVANCE_ITERATOR) {
+          throw _String ("Iterator init command is not linked with an advance command");
+      }
+      
+      advance_command->parameters.DeleteTail(advance_command->simpleParameters.get (1));
+      
+      if (iterator_substrate->ObjectClass() == ASSOCIATIVE_LIST) {
+          _AssociativeList* source_object = (_AssociativeList*)iterator_substrate;
+          simpleParameters[1] = ASSOCIATIVE_LIST; // indicate that this is an ASSOCIATIVE_LIST
+          simpleParameters << (long) new AVLListXLIterator (source_object->ListIterator ());
+      } else { // MATRIX
+          if (iterator_substrate->ObjectClass() == MATRIX) {
+               simpleParameters[1] = MATRIX; // indicate that tjis is a MATRIX
+          } else {
+              simpleParameters[1] = iterator_substrate->ObjectClass();
+              _TreeTopology * source_tree = (_TreeTopology*)iterator_substrate;
+              simpleParameters << (long) new node_iterator<long> (&source_tree->GetRoot(), _HY_TREE_TRAVERSAL_POSTORDER);
+          }
+      }
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (nil, error, current_program);
+  }
+
+  return true;
+}
+
+//____________________________________________________________________________________
+
+bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_program) {
+ /*
+     parameters:
+         [0-2] -> Id of the variable to store stuff in
+         [+1] -> the source object
+         [+2] -> _Variable to store the value in
+         [+3] -> _Variable to store key/index in (could be nil)
+         [+4] -> _Variable to store column index in (if the object is _Matrix)
+         
+  
+     
+     simpleParameters:
+         [0] -> index of the iterator init command in current_program
+         [1] -> number of receptable variables
+         [2] -> for _Matrix iterator, the row index
+         [3] -> for _Matrix iterator, the column index
+*/
+  current_program.advance();
+  try {
+      
+      long reciever_count = simpleParameters.get (1);
+      
+      _ElementaryCommand * init_command = current_program.GetIthCommand(simpleParameters.get (0));
+      if (!init_command || init_command->code != HY_HBL_COMMAND_INIT_ITERATOR) {
+          throw (_String ("Iterator advance command is not linked with an iterator initiaizer"));
+      }
+      
+      long source_object_class = init_command->simpleParameters.get (1);
+      
+      bool first_in = false;
+      if (source_object_class != MATRIX && reciever_count == 3) {
+          throw (_String ("Iterators over dictionaries do not support the 3 argument form"));
+      }
+      
+      if (parameters.countitems () == reciever_count || parameters.GetItem(reciever_count) != init_command->parameters.GetItem(1)) {
+          parameters.DeleteTail (reciever_count, true);
+          parameters << init_command->parameters.GetItem(1);
+          first_in = true;
+          for (long k = 0L; k < reciever_count; k++) {
+              parameters << _ValidateStorageVariable (current_program, k);
+          }
+          if (source_object_class == MATRIX) {
+              if (simpleParameters.countitems() == 2) {
+                  simpleParameters << 0 << 0;
+              } else {
+                  simpleParameters[2] = 0;
+                  simpleParameters[3] = 0;
+              }
+          }
+      }
+      
+      if (source_object_class == MATRIX) {
+          _Matrix* source_object = (_Matrix*)parameters.GetItem (reciever_count);
+          long row    = simpleParameters.get (2),
+               column = simpleParameters.get (3);
+          
+          if (!first_in) {
+              column ++;
+              if (column >= source_object->GetVDim()) {
+                  column = 0;
+                  row ++;
+              }
+           }
+          
+           if (row >= source_object->GetHDim()) {
+               ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false);
+           } else {
+               ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (source_object->GetMatrixCell(row, column), false, false);
+               if (reciever_count == 2) {
+                   ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _Constant (row*source_object->GetVDim () + column), false, false);
+               } else if (reciever_count == 3) {
+                   ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _Constant (row), false, false);
+                   ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue (new _Constant (column ), false, false);
+               }
+           }
+            
+          simpleParameters[2] = row;
+          simpleParameters[3] = column;
+
+
+          
+      } else {
+          if (source_object_class == ASSOCIATIVE_LIST) {
+              AVLListXLIterator * it = (AVLListXLIterator *)init_command->simpleParameters.get (2);
+              if (first_in) {
+                  it->begin();
+              } else {
+                  ++(*it);
+              }
+              if (!it->is_done()) { // iterator not finished
+                  AVLListXLIteratorKeyValue state = *(*it);
+                  state.get_object()->AddAReference();
+                  if (reciever_count > 1) {
+                      ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue ((HBLObjectRef)state.get_object(), false, false);
+                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _FString (*state.get_key()), false, false);
+                  } else {
+                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue ((HBLObjectRef)state.get_object(), false, false);
+                  }
+              } else {
+                  ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false);
+                  // iterator done
+              }
+          } else {
+              node_iterator<long> * tree_iterator = (node_iterator<long> *)init_command->simpleParameters.get (2);
+              if (first_in) {
+                  if (simpleParameters.countitems() < 3) {
+                      simpleParameters << 0;
+                  } else {
+                      simpleParameters[2] = 0;
+                  }
+              }
+              node<long>*topTraverser = tree_iterator->Next();
+              if (topTraverser && !topTraverser->is_root()) {
+                  _FString *node_name;
+                  if (source_object_class == TREE)
+                      node_name = new _FString (map_node_to_calcnode (topTraverser)->ContextFreeName());
+                  else
+                      node_name = new _FString (((_TreeTopology*)parameters.GetItem (1))->GetNodeName(topTraverser));
+                        
+                  if (reciever_count > 1) {
+                      ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue (node_name, false, false);
+                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _Constant (simpleParameters.get(2)), false, false);
+                  } else {
+                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (node_name, false, false);
+                  }
+                  simpleParameters[2]++;
+              } else {
+                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false);
+              }
+              
+          }
+      }
+  } catch (const _String& error) {
+    return  _DefaultExceptionHandler (nil, error, current_program);
+  }
+
+  return true;
+}
+
+
 //____________________________________________________________________________________
 bool      _ElementaryCommand::HandleRequireVersion(_ExecutionList& current_program){
   current_program.advance();
@@ -2217,7 +2425,17 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
     try {
         source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
     } catch (const _String& error) { // handle cases when the source is not an HBL object
-      _CalcNode* tree_node = (_CalcNode*)FetchObjectFromVariableByType(&source_name, TREE_NODE);
+        
+        _CalcNode* tree_node = nil;
+        
+
+        if (source_name.IsValidIdentifier(fIDAllowFirstNumeric|fIDAllowCompound)) {
+             tree_node = (_CalcNode*)FetchObjectFromVariableByType(&source_name, TREE_NODE);
+        } else{
+            _String converted = source_name.ConvertToAnIdent(fIDAllowFirstNumeric|fIDAllowCompound);
+            tree_node = (_CalcNode*)FetchObjectFromVariableByType(&converted, TREE_NODE);
+        }
+        
       if (tree_node) {
         if (set_this_attribute == _String("MODEL")) {
           _String model_name = AppendContainerName(*GetIthParameter(2UL),current_program.nameSpacePrefix);
@@ -2516,7 +2734,12 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
   }
   catch (const _String& error) {
-    success =  _DefaultExceptionHandler (nil, error, current_program);
+    if (hy_env::EnvVariableTrue(hy_env::soft_fileio_exceptions)) {
+         hy_env::EnvVariableSet(hy_env::last_fileio_exception, new _FString (error,false), false);
+         success = true;
+    } else {
+        success =  _DefaultExceptionHandler (nil, error, current_program);
+    }
   }
 
   if (destination_file && destination_file != hy_message_log_file && do_close) {
@@ -3055,10 +3278,11 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
         }
 
         // next, handle lookup of HBL objects
+          
         const _String source_name   = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
         long          object_type = HY_BL_ANY,
                       object_index;
-
+          
         BaseRefConst       source_object = nil;
         try {
           source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
@@ -3316,7 +3540,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     
     _String source_name = *GetIthParameter(0UL);
     if (source_name == kFscanfStdin) {
-    bool need_to_ask_user = true;
+      bool need_to_ask_user = true;
       if (current_program.has_stdin_redirect () || current_program.has_keyword_arguments()) {
           try {
             _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
@@ -3544,7 +3768,11 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     last_call_stream_position += current_stream_position - started_here_position;
 
   } catch (const _String& error) {
-    return  _DefaultExceptionHandler (nil, error, current_program);
+      if (hy_env::EnvVariableTrue(hy_env::soft_fileio_exceptions)) {
+          hy_env::EnvVariableSet(hy_env::last_fileio_exception, new _FString (error,false), false);
+          return true;
+      }
+      return  _DefaultExceptionHandler (nil, error, current_program);
   }
   
   return true;
@@ -3997,7 +4225,9 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
         // and that it is a valid transition matrix
       isExpressionBased = new _Formula;
       _FormulaParsingContext fpc (nil, chain.nameSpacePrefix);
-      matrixExpression =  _ElementaryCommand::FindNextCommand (matrixExpression);
+      _StringBuffer  trimmed_expression;
+      _ElementaryCommand::FindNextCommand (matrixExpression,trimmed_expression);
+      matrixExpression = trimmed_expression;
       long parseCode = Parse(isExpressionBased,matrixExpression,fpc, nil);
       if (parseCode != HY_FORMULA_EXPRESSION || isExpressionBased->ObjectClass()!= MATRIX ) {
         throw (defErrMsg & " parse code = " & parseCode & " " & (parseCode == HY_FORMULA_EXPRESSION ? (_String(", object type code ") & _String((long) isExpressionBased->ObjectClass())) : kEmptyString ));

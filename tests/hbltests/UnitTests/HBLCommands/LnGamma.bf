@@ -22,7 +22,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('LnGamma("")', "Operation 'LnGamma' is not implemented/defined for a String"), "LnGamma String argument is invalid");
   assert(runCommandWithSoftErrors('LnGamma({})', "Operation 'LnGamma' is not implemented/defined for a AssociativeList"), "LnGamma Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('LnGamma({{"a","b"}})', "evaluated with errors"), "LnGamma Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('LnGamma({{"a","b"}})', "Operation 'LnGamma' is not implemented/defined for a Matrix"), "LnGamma Matrix argument is invalid");
   assert(runCommandWithSoftErrors('LnGamma(T)', "Operation 'LnGamma' is not implemented/defined for a Topology"), "LnGamma Topology argument is invalid");
   assert(runCommandWithSoftErrors('LnGamma(TT)', "Operation 'LnGamma' is not implemented/defined for a Tree"), "LnGamma Tree argument is invalid");
 

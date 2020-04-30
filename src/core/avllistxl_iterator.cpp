@@ -39,8 +39,6 @@
 
 #include "avllistxl_iterator.h"
 
-#define  AVL_LISTXL_ITERATOR_ENDINDEX (-1L)
-
 AVLListXLIterator::AVLListXLIterator (_AVLListXL const * the_list):
   current_location (AVL_LISTXL_ITERATOR_ENDINDEX),
   traversal_lookup (AVL_LISTXL_ITERATOR_ENDINDEX),

@@ -272,7 +272,8 @@ namespace hy_global {
   terminate_execution,
   has_terminal_stdout,
   has_terminal_stderr,
-  ignore_kw_defaults;
+  ignore_kw_defaults,
+  force_verbosity_from_cli;
   
   extern  int      hy_mpi_node_rank,
   hy_mpi_node_count;

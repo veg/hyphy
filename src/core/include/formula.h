@@ -146,6 +146,8 @@ public:
      */
 
     virtual bool        CheckFForDependence (long, bool checkAll = false);
+    virtual bool        CheckFForDependence (_AVLList const & indices, bool checkAll = false);
+    
     _List&      GetList             (void) {
         return theFormula;
     }

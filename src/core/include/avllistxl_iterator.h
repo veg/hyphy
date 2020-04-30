@@ -42,6 +42,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "avllistxl.h"
 
+#define  AVL_LISTXL_ITERATOR_ENDINDEX (-1L)
+
 //_____________________________________________________________________________
 
 class AVLListXLIteratorKeyValue {
@@ -135,6 +137,10 @@ public:
    * Return an object pointed to by the iterator
    * @return the object pointed to by the iterator
    */
+    
+    bool is_done (void) const {
+        return current_location == AVL_LISTXL_ITERATOR_ENDINDEX;
+    }
 
 };
 

@@ -110,11 +110,19 @@ bool _AssociativeList::ParseStringRepresentation (_String& serialized_form, _For
                   key = *(_String*)key_value_pair(0);
                 }
                 
-                _Formula value      (*(_String*)key_value_pair(1),theP, doErrors?nil :fpc.errMsg());
-                HBLObjectRef   valueC  = compute_keys_values ? value.Compute() : new _MathObject;
-              
+                HBLObjectRef   valueC = nil;
+                if (compute_keys_values) {
+                    _Formula value      (*(_String*)key_value_pair(1),theP, doErrors?nil :fpc.errMsg());
+                    valueC  = value.Compute();
+                    if (valueC) {
+                        valueC->AddAReference();
+                    }
+                } else {
+                    valueC  =  new _MathObject;
+                }
+                
                 if (valueC) {
-                    MStore (key, valueC, compute_keys_values);
+                    MStore (key, valueC, false);
                 } else {
                     throw (((_String*)key_value_pair(1))->Enquote() & " could not be evaluated");
 

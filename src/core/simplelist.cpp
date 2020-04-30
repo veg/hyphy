@@ -94,6 +94,14 @@ _SimpleList::_SimpleList (unsigned long l) : static_data {0L} {
     }
 }
 
+//Length constructor
+_SimpleList::_SimpleList (unsigned long l, long * preallocated_storage) : static_data {0L} {
+    lLength = 0UL;
+    laLength = l;
+    list_data = preallocated_storage;
+    AddAReference();
+}
+
 //Stack copy contructor
 _SimpleList::_SimpleList (_SimpleList const & l, long from, long to) : static_data {0L} {
   Initialize           (false);

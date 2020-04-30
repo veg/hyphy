@@ -190,7 +190,8 @@ public:
 
     void        UpdateIndependent (long,bool,_SimpleList* = nil,_SimpleList* = nil);
     void        UpdateDependent (long);
- 
+    void        UpdateDependent (_AVLList const &);
+
     bool        PreCompute      (void);
     void        PostCompute     (void);
     virtual
@@ -767,6 +768,16 @@ void    StateCounterResultHandler   (_Formula&, _SimpleList*,long&,long&,long,_M
 _LikelihoodFunction*
 FindLikeFuncByName           (_String&);
 
+template <typename ACTION>
+void DoForEachLikelihoodFunction (ACTION cb) {
+    for (long i = 0; i < likeFuncNamesList.lLength; i++) {
+        if (((_String*)likeFuncNamesList.GetItem(i))->nonempty()) {
+            cb ((_LikelihoodFunction*)likeFuncList.GetItem (i), i);
+        }
+    }
+}
+
+
 extern  bool                usedCachedResults;
 
 extern hyFloat           _lfScalerUpwards,
@@ -778,6 +789,7 @@ extern  _Vector      _scalerMultipliers,
 
 hyFloat                  acquireScalerMultiplier (long);
 hyFloat                  myLog                   (hyFloat);
+long                     addScaler               (hyFloat, long, long);
 hyFloat                  mapParameterToInverval  (hyFloat, char, bool);
 
 #ifdef  __HYPHYMPI__

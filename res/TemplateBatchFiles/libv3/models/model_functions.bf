@@ -43,7 +43,7 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 	    // OR
 	    // DEFAULT : model id
 
-
+    
 	    if (Abs (rules["DEFAULT"])) {
             ExecuteCommands ("UseModel (" + rules["DEFAULT"] + ");
                               Tree `id` = " + tree["string"] + ";
@@ -55,6 +55,7 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 
 	    }
 
+
 	    /*
 
 	    debug.log (tree);
@@ -62,7 +63,6 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 	    debug.log (_t);
 
 	    */
-
 
 	    model.ApplyModelToTree.ids = Rows (rules);
 	    for (model.ApplyModelToTree.k = 0; model.ApplyModelToTree.k < Abs (rules); model.ApplyModelToTree.k += 1) {
@@ -382,7 +382,8 @@ function models.generic.ConstrainBranchLength (model, value, parameter) {
  * @returns the number of constraints generated (0 or 1)
  */
 function models.generic.SetBranchLength (model, value, parameter) {
-
+    
+    
      if (Abs((model[terms.parameters])[terms.local]) >= 1) {
         if (Type (model [terms.model.branch_length_string]) == "String") {
             models.generic.SetBranchLength.expression = model [terms.model.branch_length_string];
@@ -416,7 +417,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
              if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p)) {
 
                 if (Type (value) == "AssociativeList") {
-                 	if (Abs (models.generic.SetBranchLength.expression)) {
+                  	if (Abs (models.generic.SetBranchLength.expression)) {
                     	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
                     	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);

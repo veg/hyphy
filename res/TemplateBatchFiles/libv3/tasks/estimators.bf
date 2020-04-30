@@ -2,6 +2,7 @@ LoadFunctionLibrary("../models/model_functions.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("mpi.bf");
+LoadFunctionLibrary("libv3/convenience/math.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 
@@ -42,6 +43,21 @@ lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
             parameters.SetValue (_name_, _info_ [^"terms.fit.MLE"]);
         }
     }
+}
+
+lfunction estimators.ConstrainAndRunLRT (lf_id, constraint) {
+    savedMLES = estimators.TakeLFStateSnapshot (lf_id);
+    currentLL = estimators.ComputeLF (lf_id);
+    
+    df = Call (constraint, TRUE);
+    Optimize (res, ^lf_id);
+    lrt = math.DoLRT (res[1][0],currentLL,df);
+    
+    estimators.RestoreLFStateFromSnapshot (lf_id, savedMLES);
+    
+    Call (constraint, FALSE);
+    
+    return lrt;
 }
 
 /**
@@ -109,7 +125,8 @@ lfunction estimators.GetGlobalMLE_RegExp(results, re) {
 function estimators.copyGlobals2(key2, value2) {
     if (Type((estimators.ExtractMLEs.results[terms.global])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
-    }
+        // this parameter has already been defined, need to prefix with model name
+    } 
 
     (estimators.ExtractMLEs.results[terms.global])[key2] = {
         terms.id: value2,
@@ -144,9 +161,20 @@ function estimators.CopyFrequencies(model_name, model_decription) {
 }
 
 
+function estimators.SetGlobals2(key2, value) {
+    
+    if (Type(estimators.ApplyExistingEstimates.set_globals[key2]) == "AssociativeList") {
+        key3 = "[`key`] `key2`";
+    } else {
+        key3 = key2;
+    }
 
-function estimators.SetGlobals2(key, value) {
-    __init_value = (initial_values[terms.global])[key];
+    estimators.ApplyExistingEstimates.set_globals[key3] = {
+        terms.id: key3,
+        terms.fit.MLE: value
+    };
+
+    __init_value = (initial_values[terms.global])[key2];
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
@@ -320,6 +348,17 @@ function estimators.branch_lengths_in_string(tree_id, lookup) {
  * @returns results
  */
 function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
+    return estimators.ExtractMLEsOptions (likelihood_function_id, model_descriptions, {});
+}
+
+/**
+ * @name estimators.ExtractMLEsOptions
+ * @param {String} likelihood_function_id
+ * @param {String} model_descriptions
+ * @param {Dict} options
+ * @returns results
+ */
+function estimators.ExtractMLEsOptions(likelihood_function_id, model_descriptions, options) {
 
     ExecuteCommands("GetString (estimators.ExtractMLEs.lfInfo, `likelihood_function_id`,-1)");
 
@@ -335,6 +374,9 @@ function estimators.ExtractMLEs(likelihood_function_id, model_descriptions) {
     estimators.ExtractMLEs.results[terms.branch_length] = {};
     estimators.ExtractMLEs.results[terms.fit.trees] = estimators.ExtractMLEs.lfInfo[terms.fit.trees];
 
+    if (options[utility.getGlobalValue("terms.globals_only")]) {
+        return estimators.ExtractMLEs.results;
+    }
 
     for (estimators.ExtractMLEs.i = 0; estimators.ExtractMLEs.i < estimators.ExtractMLEs.partitions; estimators.ExtractMLEs.i += 1) {
         _tree_name = (estimators.ExtractMLEs.lfInfo[terms.fit.trees])[estimators.ExtractMLEs.i];
@@ -419,6 +461,7 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
                             _set_branch_length_to[terms.branch_length] = _existing_estimate[terms.fit.MLE];
                             _set_branch_length_to[terms.model.branch_length_scaler] = _application_type;
                             keep_track_of_proportional_scalers[_application_type] = 1;
+                            
                         }
                     }
                 }
@@ -464,6 +507,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
     // the _value_ of category variables to 1, so that we can
     // compute branch lengths
 
+    estimators.ApplyExistingEstimates.set_globals = {};
     model_descriptions["estimators.SetGlobals"][""];
 
 
@@ -497,45 +541,6 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
 
 
-
-            /*
-            ExecuteCommands("GetInformation (estimators.ApplyExistingEstimates.map, `_tree_name`);");
-            estimators.ApplyExistingEstimates.branch_names = Rows(estimators.ApplyExistingEstimates.map);
-
-            for (estimators.ApplyExistingEstimates.b = 0; estimators.ApplyExistingEstimates.b < Abs(estimators.ApplyExistingEstimates.map); estimators.ApplyExistingEstimates.b += 1) {
-                _branch_name = estimators.ApplyExistingEstimates.branch_names[estimators.ApplyExistingEstimates.b];
-
-                if ((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i] / _branch_name) { // have an entry for this branch name
-                   _existing_estimate = ((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name];
-
-                   if (Type(_existing_estimate) == "AssociativeList") {
-                       _set_branch_length_to = (((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i])[_branch_name])[terms.fit.MLE];
-                        if (None != branch_length_conditions) {
-                            if (Abs(branch_length_conditions)) {
-                                _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
-
-                                if (Type(_application_type) == "String") {
-                                    if (_application_type == terms.model.branch_length_constrain ) {
-                                        estimators.ApplyExistingEstimates.df_correction += estimators.constrainBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
-                                        continue;
-                                    }
-                                    _set_branch_length_to = {};
-                                    _set_branch_length_to[terms.branch_length] = _existing_estimate[terms.fit.MLE];
-                                    _set_branch_length_to[terms.model.branch_length_scaler] = _application_type;
-                                    estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers[_application_type] = 1;
-                                }
-                            }
-                        }
-
-                        estimators.ApplyExistingEstimates.df_correction += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimates.map[_branch_name]], _set_branch_length_to);
-                    } else {
-                        if (Type(_existing_estimate) != "Unknown") {
-                            warning.log ("Incorrect type for the initial values object of for branch '" + _branch_name + "' : " + _existing_estimate);
-                        }
-                   }
-                }
-
-            }*/
 
         } else {
         	if (Type((initial_values[terms.branch_length])[estimators.ApplyExistingEstimates.i]) != "Unknown") {
@@ -650,6 +655,7 @@ lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial
  */
 lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_objects, run_options) {
 
+
     if (Type(data_filter) == "String") {
         return estimators.FitLF ({
             {
@@ -673,14 +679,14 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     };
 
 
+  
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i] = data_filter[i];
         lf_components[2 * i + 1] = &tree_id + "_" + i;
         model.ApplyModelToTree(lf_components[2*i + 1], tree[i], None, model_map[i]);
     }
 
-
-
+ 
 
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
@@ -694,15 +700,21 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
+        //console.log (initial_values);
         df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
 
 
     can_do_restarts = null;
     
-    /*Export (lfe, likelihoodFunction);
+    
+    /*
+
+    GetString (lfe, likelihoodFunction, -1);
+    console.log (lfe);
     fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
-    utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);*/
+    utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);
+    */
 
     
 
@@ -978,13 +990,14 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     //TODO: Where is data_filter being set?
     if (Type(data_filter) == "String") {
-        return estimators.FitMGREV({
+        return estimators.FitCodonModel({
                 {
                     codon_data__
                 }
             }, {
                 "0": tree
             },
+            generator,
             genetic_code,
             option,
             initial_values)
@@ -1033,7 +1046,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         lf_components[2 * i + 1] = "tree_" + i;
         model.ApplyModelToTree(Eval("&`lf_components[2*i + 1]`"), tree[i], model_assignment, None);
     }
-
+    
 
     partition_omega = {};
 
@@ -1047,7 +1060,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
 
     if (Abs(partition_omega)) {
-
+    
         /**
             declare the global ratios for each branch set
             and add them to the model parameter set
@@ -1064,10 +1077,11 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         /**
             now replicate the local constraint for individual branches
         */
-
+        
+ 
         alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
         beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
-         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
+        io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];
 
@@ -1075,6 +1089,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);
             branch_map = (option[utility.getGlobalValue("terms.run_options.partitioned_omega")])[i];
+    
+
             component_branches = BranchName( * component_tree, -1);
             for (j = 0; j < Columns(component_branches) - 1; j += 1) {
                 /**
@@ -1082,6 +1098,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
                 */
 
                 node_name = (component_branches[j]);
+                
+                                
                 ExecuteCommands(apply_constraint);
             }
         }

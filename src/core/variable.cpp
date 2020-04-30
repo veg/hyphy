@@ -138,12 +138,18 @@ unsigned long        _Variable::ObjectClass (void) const {
 }
 
 //__________________________________________________________________________________
-bool _Variable::CheckFForDependence (long idx, bool opt)
-{
+bool _Variable::CheckFForDependence (long idx, bool opt) {
     if (varFormula) {
         return varFormula->CheckFForDependence (idx, opt);
     }
+    return false;
+}
 
+//__________________________________________________________________________________
+bool _Variable::CheckFForDependence (_AVLList const& indices, bool opt) {
+    if (varFormula) {
+        return varFormula->CheckFForDependence (indices, opt);
+    }
     return false;
 }
 
@@ -336,11 +342,51 @@ void  _Variable::SetValue (hyFloat new_value) {
 }
 
 //__________________________________________________________________________________
-void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the var
-{
+void        SetVariablesToOwnValues (_AVLList const & indices) {
+    /* compute current variable values*/
+    _SimpleList  hist;
+    long         ls = -1L, cn;
+    
+    cn = indices.Traverser (hist,ls,indices.GetRoot());
+    
+    _SimpleList _index2value;
+    _AVLList    index2value (&_index2value);
+    
+    while (cn>=0) {
+        _Variable* this_var = LocateVar (indices.RetrieveLong(cn));
+        if (this_var->IsIndependent()) {
+            // do nothing
+        } else {
+            HBLObjectRef curValue = this_var->Compute();
+            curValue->AddAReference();
+            index2value.InsertNumber(this_var->get_index());
+            this_var->SetValue(curValue, false, false);
+            //printf ("SetVariablesToOwnValues : Set own value for %s\n", this_var->GetName()->get_str());
+        }
+        cn = indices.Traverser (hist,ls);
+    }
+    
+    // now clean up variable containers that may have had these as dependent template variables
+    
+    DoForEachVariable([&index2value] (_Variable* v, long v_idx) -> void {
+        if (v->IsContainer()) {
+            ((_VariableContainer*)v)->RemoveDependance (index2value);
+        }
+    });
+    
+    DoForEachLikelihoodFunction ([&index2value] (_LikelihoodFunction *lf, long idx) -> void {
+        lf->UpdateDependent(index2value);
+    });
+    
+    // update likelihood functions that may have had these as dependent variables
+    
+}
+
+//__________________________________________________________________________________
+void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks) { // set the value of the var
     //hasBeenChanged = true;
     if (varFlags & HY_VARIABLE_COMPUTING) {
-        HandleApplicationError (_String ("A recursive dependency error in _Variable::SetValue; this is an HBL implementation bug; offending variable is '") & *GetName() & "'");
+        HandleApplicationError (_String ("A recursive dependency error in _Variable::SetValue; this is an HBL implementation bug; offending variable is ") & GetName()->Enquote());
         return ;
     }
   
@@ -349,44 +395,33 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the 
 
     long     valueClass = theP->ObjectClass();
   
-    /*bool     doPrint = (*theName) == _String("_pattern_info_");
-    if (doPrint) {
-      printf ("Setting %s to %s\n", theName->get_str(), _String((_String*)theP->toStr()).get_str());
-    }*/
-
     if (valueClass==NUMBER) {
       
-      
-        if (varFormula) {
+        if (varFormula && do_checks) {
 
             // also update the fact that this variable is no longer dependent in all declared
             // variable containers which contain references to this variable
             
-            for (unsigned long i = 0UL; i<variablePtrs.lLength; i++) {
-                if (freeSlots.Find(i)>=0) {
-                    continue;
-                }
-                _Variable* theV = (_Variable*)variablePtrs(i);
-                if (theV->IsContainer()) {
-                    _VariableContainer* theVC = (_VariableContainer*)theV;
-                    if (!theVC->RemoveDependance (theIndex)) {
-                        ReportWarning ((_String("Can't make variable ")&*GetName()&" independent in the context of "&*theVC->GetName()&" because its template variable is not independent."));
-                        continue;
+            DoForEachVariable([this] (_Variable* v, long v_idx) -> void {
+                if (v->IsContainer()) {
+                    if (!((_VariableContainer*)v)->RemoveDependance (this->theIndex)) {
+                        ReportWarning ((_String("Can't make variable ")&GetName()->Enquote()&" independent in the context of "&*v->GetName()&" because its template variable is not independent."));
                     }
                 }
-            }
+            });
+            
             for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
                 if (((_String*)likeFuncNamesList(i))->nonempty()) {
                     ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(theIndex);
                 }
 
             //_Formula::Clear();
-            delete varFormula;
-            varFormula = nil;
         }
+        
+        delete varFormula;
+        varFormula = nil;
         if (varValue) {
-            DeleteObject (varValue);
-            varValue=nil;
+            DeleteAndZeroObject (varValue);
         }
 
         theValue = theP->Value();
@@ -396,6 +431,9 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup) // set the value of the 
         }
 
         if (theValue<lowerBound || theValue>upperBound) {
+            /*if (verbosity_level >= 100) {
+                printf ("\n<========== OUT OF BOUNDS FOR VARIABLE %s : value %.16g, range [%.16g, %.16g] =========>\n" , theName->get_str(), theValue, lowerBound, upperBound);
+            }*/
             if (theValue <= lowerBound+1e-50) {
                 theValue = lowerBound;
             } else {
@@ -727,6 +765,19 @@ _String const    _Variable::ContextFreeName(void) const {
        return theName->Cut (location+1L,kStringEnd);
     }  
     return *theName;
+}
+
+//__________________________________________________________________________________
+_StringBuffer&     _Variable::ContextFreeName(_StringBuffer & storage) const {
+    static const _String kDot (".");
+    
+    long location = theName->FindBackwards (kDot, 0L, kStringEnd);
+    if (location > 0L) {
+       return storage.AppendSubstring(*theName,location+1L,kStringEnd);
+    } else {
+        storage << *theName;
+    }
+    return storage;
 }
 
 //__________________________________________________________________________________

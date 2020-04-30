@@ -35,7 +35,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('ZCDF("")', "Operation 'ZCDF' is not implemented/defined for a String"), "ZCDF String argument is invalid");
   assert(runCommandWithSoftErrors('ZCDF({})', "Operation 'ZCDF' is not implemented/defined for a AssociativeList"), "ZCDF Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('ZCDF({{"a","b"}})', "evaluated with errors"), "ZCDF Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('ZCDF({{"a","b"}})', "Operation 'ZCDF' is not implemented/defined for a Matrix"), "ZCDF Matrix argument is invalid");
   assert(runCommandWithSoftErrors('ZCDF(T)', "Operation 'ZCDF' is not implemented/defined for a Topology"), "ZCDF Topology argument is invalid");
   assert(runCommandWithSoftErrors('ZCDF(TT)', "Operation 'ZCDF' is not implemented/defined for a Tree"), "ZCDF Tree argument is invalid");
 

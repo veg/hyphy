@@ -39,7 +39,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('IGamma("", 1)', "Operation 'IGamma' is not implemented/defined for a String"), "IGamma String argument is invalid");
   assert(runCommandWithSoftErrors('IGamma({}, 1)', "Operation 'IGamma' is not implemented/defined for a AssociativeList"), "IGamma Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('IGamma({{"a","b"}}, 1)', "evaluated with errors"), "IGamma Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('IGamma({{"a","b"}}, 1)', "Operation 'IGamma' is not implemented/defined for a Matrix"), "IGamma Matrix argument is invalid");
   assert(runCommandWithSoftErrors('IGamma(T, 1)', "Operation 'IGamma' is not implemented/defined for a Topology"), "IGamma Topology argument is invalid");
   assert(runCommandWithSoftErrors('IGamma(TT, 1)', "Operation 'IGamma' is not implemented/defined for a Tree"), "IGamma Tree argument is invalid");
 

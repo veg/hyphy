@@ -1,8 +1,54 @@
-LoadFunctionLibrary("SelectionAnalyses/RELAX.bf", {
-    "--code": "Universal",
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("SelectionAnalyses/RELAX.bf", {"--code": "Universal",
     "--alignment": PATH_TO_CURRENT_BF + "data/CD2.nex",
     "--mode": "Classic mode",
     "--test": "GROUP1",
     "--reference": "GROUP2",
-    "--models": "All"
-});
+    "--rates" : "2",
+    "--models": "All"});
+} else {
+    LoadFunctionLibrary ("SelectionAnalyses/RELAX.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "GROUP1", "3" : "GROUP2", "4" : "All"});
+
+}
+LoadFunctionLibrary ("shared.bf");
+
+
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+//fscanf ("data/CD2.nex.RELAX.json","Raw",json);
+//relax.json = Eval (json);
+
+
+assert (check_value (
+    ((relax.json["fits"])["General descriptive"])["Log Likelihood"], -3420.63, 0.001), "Incorrect log-likelihood for the full model");
+
+assert (check_value (
+    ((relax.json["test results"])["p-value"]),0.1393, 0.1), "p-value for the test is incorrect");
+
+test.K = ((relax.json["test results"])["relaxation or intensification parameter"]);
+
+assert (check_value (
+    test.K ,0.2, 0.05), "K for the test is incorrect");
+
+test.distribution_alt  = ((relax.json["fits"])["RELAX alternative"])["Rate Distributions"];
+test.distribution_pd = ((relax.json["fits"])["RELAX partitioned descriptive"])["Rate Distributions"];
+
+utility.ForEachPair (test.distribution_alt["Test"], "_key_", "_value_",
+'
+    assert (_value_["proportion"] == ((test.distribution_alt["Reference"])[_key_])["proportion"], "Reference and test distributions had different weights");
+    assert (check_value(_value_["omega"], ((test.distribution_alt["Reference"])[_key_])["omega"]^test.K, 0.001), "Reference and test distributions had incorrect omega scaling");
+'
+);
+
+utility.ForEachPair (test.distribution_pd["Test"], "_key_", "_value_",
+'
+    assert (_value_["proportion"] != ((test.distribution_pd["Reference"])[_key_])["proportion"], "Reference and test distributions had the same weights for EP model");
+'
+);
+
+
+
+   
+
+

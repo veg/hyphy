@@ -603,7 +603,7 @@ _String    _TheTree::FinalizeNode (node<long>* nodie, long number , _String node
         }
 
         if (node_parameters.nonempty()) {
-            ReportWarning ((_String("Model ")&node_parameters.Enquote() &_String(" assigned to ")& nodeName.Enquote()));
+            ReportWarning (_StringBuffer (128UL) << "Model " << '"' << node_parameters << '"' << " assigned to \"" << nodeName << '"');
         } else {
             ReportWarning (_String("No nodel was assigned to ")& nodeName.Enquote());
         }
@@ -659,7 +659,7 @@ _String    _TheTree::FinalizeNode (node<long>* nodie, long number , _String node
                 ReportWarning (_String("Branch parameter of ") & nodeName&" set to " & nodeValue);
             }
         } else {
-            ReportWarning (nodeName&" has "& _String((long)(cNt.iVariables?cNt.iVariables->lLength/2:0)) & " parameters - branch length not assigned");
+            ReportWarning (_StringBuffer (128) << nodeName << " has " << _String ((long)(cNt.iVariables?cNt.iVariables->lLength/2:0)) << " parameters - branch length not assigned");
         }
     }
 
@@ -2190,7 +2190,7 @@ void _TheTree::CleanUpMatrices (void) {
             iterator->ConvertFromSimpleMatrix();
 
             for (long i=0; i<categoryCount; i++) {
-                DeleteObject(iterator->matrixCache[i]);
+                DeleteAndZeroObject(iterator->matrixCache[i]);
             }
 
             delete [] iterator->matrixCache;
@@ -2749,7 +2749,7 @@ void     _TheTree::AddNodeNamesToDS (_DataSet* ds, bool doTips, bool doInternals
 void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catID) {
     _List           matrixQueue, nodesToDo;
     
-    _SimpleList     isExplicitForm;
+    _SimpleList     isExplicitForm ((unsigned long)expNodes.countitems());
     bool            hasExpForm = false;
     
     for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
@@ -2791,7 +2791,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 #endif
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
         if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
-            ((_CalcNode*) nodesToDo(matrixID))->SetCompExp (((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true), catID);
+            ((_CalcNode*) nodesToDo(matrixID))->SetCompExp ((_Matrix*)matrixQueue(matrixID), catID, true);
         } else {
             (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
         }
@@ -2982,7 +2982,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 {
     // process the leaves first
     
-    _SimpleList     taggedInternals                 (flatNodes.lLength, 0, 0);
+    long * storage = (long*)alloca (sizeof (long) * flatNodes.lLength);
+    InitializeArray(storage, flatNodes.lLength, 0L);
+    _SimpleList     taggedInternals                 (flatNodes.lLength, storage);
     unsigned long   const alphabetDimension     =         theFilter->GetDimension(),
     siteCount           =         theFilter->GetPatternCount(),
     alphabetDimensionmod4  =      (alphabetDimension >> 2) << 2;
@@ -3578,8 +3580,8 @@ void            _TheTree::ComputeBranchCache    (
     //printf ("ComputeBranchCache\n");
     
     _SimpleList taggedNodes (flatLeaves.lLength + flatNodes.lLength, 0, 0),
-    nodesToProcess,
-    rootPath;
+                nodesToProcess,
+                rootPath;
     
     long        myParent               = brID       -flatLeaves.lLength;
     

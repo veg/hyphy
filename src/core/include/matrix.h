@@ -180,6 +180,7 @@ public:
     ~_Matrix (void);                            //destructor
 
     virtual void    Clear (void);               //deletes all the entries w/o destroying the matrix
+    virtual void    ZeroNumericMatrix (void);               //deletes all the entries w/o destroying the matrix
 
     void    Initialize (bool = false);                  // zeros all matrix structures
 
@@ -308,7 +309,7 @@ public:
 // square the matrix by Strassen's Multiplication
 
 
-    _Matrix*    Exponentiate (hyFloat scale_to = 1.0, bool check_transition = false);                // exponent of a matrix
+    _Matrix*    Exponentiate (hyFloat scale_to = 1.0, bool check_transition = false, _Matrix * write_here = nil);                // exponent of a matrix
     void        Transpose (void);                   // transpose a matrix
     _Matrix     Gauss   (void);                     // Gaussian Triangularization process
     HBLObjectRef   LUDecompose (void) const;
@@ -436,9 +437,10 @@ public:
             if the matrix is sparse, only will out the non-void entries
      */
 
-    _Formula*   GetFormula                  (long, long) const;
+    _Formula*      GetFormula                  (long, long) const;
+    HBLObjectRef   GetMatrixCell               (long, long) const;
     HBLObjectRef   MultByFreqs                 (long);
-    HBLObjectRef   EvaluateSimple              (void);
+    HBLObjectRef   EvaluateSimple              (_Matrix* existing_receptacle = nil);
     HBLObjectRef   SortMatrixOnColumn          (HBLObjectRef);
     HBLObjectRef   K_Means                     (HBLObjectRef);
     HBLObjectRef   pFDR                        (HBLObjectRef);    // positive false discovery rate

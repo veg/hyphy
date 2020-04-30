@@ -4,6 +4,7 @@ cmake_policy(VERSION 3.0.0)
 #cmake_policy(SET CMP0026 OLD)
 #cmake_policy(SET CMP0004 OLD)
 
+enable_testing()
 
 set(CMAKE_CONFIGURATION_TYPES Release)
 
@@ -418,7 +419,7 @@ if(${MPI_FOUND})
         PROPERTIES
         if(${OPENMP_FOUND})
             COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} "
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g "
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS} "
         else(${OPENMP_FOUND})
             COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} "
             LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
@@ -494,7 +495,11 @@ else(${OPENMP_FOUND})
     target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 endif(${OPENMP_FOUND})
 
+    target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
+
+
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
+
 
 
 
@@ -502,8 +507,8 @@ set_target_properties(
     HYPHYDEBUG
     PROPERTIES
     if(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fsanitize=address -O0 "
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_LINK_FLAGS}  -g -fsanitize=address -O0 "
     else(${OPENMP_FOUND})
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fsanitize=address -O0 "
@@ -590,4 +595,28 @@ macro(makeLink src dest target)
     COMMAND ln -sf ${dest} ${src} DEPENDS ${dest} COMMENT "mklink ${src} -> ${dest}")
 endmacro()
 makeLink(HYPHYMP hyphy hyphy)
+
+
+#-------------------------------------------------------------------------------
+# TESTS
+#-------------------------------------------------------------------------------
+
+add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
+add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)
+add_test (PROTEIN HYPHYMP tests/hbltests/SimpleOptimizations/IntermediateProtein.bf)
+add_test (NAME SLAC COMMAND HYPHYMP tests/hbltests/libv3/SLAC.wbf)
+add_test (NAME SLAC-PARTITIONED COMMAND HYPHYMP tests/hbltests/libv3/SLAC-partitioned.wbf)
+add_test (NAME FEL COMMAND HYPHYMP tests/hbltests/libv3/FEL.wbf)
+add_test (MEME HYPHYMP tests/hbltests/libv3/MEME.wbf)
+add_test (MEME-PARTITIONED HYPHYMP tests/hbltests/libv3/MEME.wbf)
+add_test (BUSTED HYPHYMP tests/hbltests/libv3/BUSTED.wbf)
+add_test (BUSTED-SRV HYPHYMP tests/hbltests/libv3/BUSTED-SRV.wbf)
+add_test (RELAX HYPHYMP tests/hbltests/libv3/RELAX.wbf)
+add_test (FUBAR HYPHYMP tests/hbltests/libv3/FUBAR.wbf)
+add_test (BGM HYPHYMP tests/hbltests/libv3/BGM.wbf)
+add_test (CONTRAST-FEL HYPHYMP tests/hbltests/libv3/CFEL.wbf)
+add_test (GARD HYPHYMP tests/hbltests/libv3/GARD.wbf)
+add_test (FADE HYPHYMP tests/hbltests/libv3/FADE.wbf)
+add_test (NAME ABSREL COMMAND HYPHYMP tests/hbltests/libv3/ABSREL.wbf)
+add_test (NAME ABSREL-MH COMMAND HYPHYMP tests/hbltests/libv3/ABSREL-MH.wbf)
 

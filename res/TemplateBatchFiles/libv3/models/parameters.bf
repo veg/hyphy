@@ -494,7 +494,7 @@ lfunction parameters.IsIndependent(parameter) {
 
     GetString(info, ^ parameter, -1);
     
-    if (Type(info) == "AssociativeList") {
+    if (Type(info) == "AssociativeList") {    
         return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;
     }
     return TRUE;
@@ -824,8 +824,31 @@ lfunction parameters.SetCategoryVariables (model) {
     }
     
     return cat_var_substitutions;
-    
-     
-   
+}
+
+/**
+ * Given a set of strings, convert them to valid IDs that don't clash following renames
+ * @name parameters.ValidateID
+ * @param {Array/Dict} ids - the ids to validate (should be unique), if dict, should be i -> ID
+ * @returns {Dictionary} a dictionary containing old -> new id map
+*/
+
+lfunction parameters.ValidateIDs (ids) {
+    result = {};
+    N = utility.Array1D (ids);
+    for (i = 0; i < N; i+=1) {
+        try_name = ids [i] && 7;
+        if (result / try_name ) {
+            for (k = 2; ; k+=1) {
+                tagged = try_name + "_" + k;
+                if (!(result/tagged)) {
+                    try_name = tagged;
+                    break;
+                }
+            }
+        }
+        result [ids[i]] = try_name;
+    }
+    return result;
 }
 

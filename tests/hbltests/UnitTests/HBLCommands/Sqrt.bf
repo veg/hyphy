@@ -36,7 +36,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('Sqrt("")', "Operation 'Sqrt' is not implemented/defined for a String"), "Sqrt String argument is invalid");
   assert(runCommandWithSoftErrors('Sqrt({})', "Operation 'Sqrt' is not implemented/defined for a AssociativeList"), "Sqrt Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('Sqrt({{"a","b"}})', "evaluated with errors"), "Sqrt Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('Sqrt({{"a","b"}})', "Operation 'Sqrt' is not implemented/defined for a Matrix"), "Sqrt Matrix argument is invalid");
   assert(runCommandWithSoftErrors('Sqrt(T)', "Operation 'Sqrt' is not implemented/defined for a Topology"), "Sqrt Topology argument is invalid");
   assert(runCommandWithSoftErrors('Sqrt(TT)', "Operation 'Sqrt' is not implemented/defined for a Tree"), "Sqrt Tree argument is invalid");
 

@@ -58,6 +58,7 @@
 #include <float.h>
 #include <signal.h>
 
+//#define __HYPHY_MPI_MESSAGE_LOGGING__
 
 using     namespace hy_env;
 
@@ -90,10 +91,11 @@ namespace hy_global {
                      terminate_execution = false,
                      has_terminal_stdout = true,
                      has_terminal_stderr = true,
-                     ignore_kw_defaults  = false;
+                     ignore_kw_defaults  = false,
+                     force_verbosity_from_cli = false;
     
-    FILE            *hy_error_log_file,
-                    *hy_message_log_file;
+    FILE            *hy_error_log_file = NULL,
+                    *hy_message_log_file = NULL;
     
     hyTreeDefinitionPhase
                      isDefiningATree = kTreeNotBeingDefined;
@@ -118,7 +120,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.2"),
+                     kHyPhyVersion  = _String ("2.5.11"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -131,7 +133,7 @@ namespace hy_global {
                      hy_standard_library_directory ("TemplateBatchFiles"),
                      hy_standard_model_directory   ("TemplateModels"),
                      hy_error_log_name             ("errors.log"),
-                     hy_messages_log_name          ("messages.log");
+                     hy_messages_log_name          ; // 20200222 : DISABLE MESSAGES BY DEFAULT
   
   
     _List            _hy_application_globals_aux,
@@ -392,6 +394,7 @@ namespace hy_global {
             for (long file_index = 0; file_index < 2; file_index++) {
                 long                    p   = 1L;
                 
+                if (prefix[file_index]->empty()) continue;
     #ifndef __HYPHYMPI__
                 _String file_name (*prefix[file_index]);
         #if defined  __MINGW32__
@@ -421,6 +424,9 @@ namespace hy_global {
         }
 #endif
         
+        if (hy_env::cli_env_settings.nonempty()) {
+            _ExecutionList (hy_env::cli_env_settings).Execute();
+        }
         return hy_error_log_file && hy_message_log_file;
     }
     

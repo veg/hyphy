@@ -684,6 +684,11 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
               t = &(new _StringBuffer)->SanitizeForRegExAndAppend(get_str());
               break;
             }
+                  
+            case 7L: {
+                t = &(*(new _StringBuffer) <<  get_str().ConvertToAnIdent(fIDAllowCompound));
+                break;
+            }
               
             default:
               t = new _String( get_str().ChangeCase(kStringLowerCase));

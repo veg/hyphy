@@ -78,7 +78,7 @@ public:
                (varValue?varValue->IsIndependent():true);
     }
     virtual     bool        IsConstant (void);
-    void        SetValue (HBLObjectRef, bool = true); // set the value of the variable
+    void        SetValue (HBLObjectRef, bool = true, bool = true); // set the value of the variable
     void        SetValue (hyFloat); // set the value of the variable
     void        SetNumericValue (hyFloat);
     void        CheckAndSet (hyFloat, bool = false);
@@ -135,10 +135,12 @@ public:
 
     virtual     void        ClearConstraints    (void);
     virtual     bool        CheckFForDependence (long, bool = false);
+    virtual     bool        CheckFForDependence (_AVLList const&, bool = false);
     virtual     bool        HasBeenInitialized (void) const {return !(varFlags & HY_VARIABLE_NOTSET);}
     virtual     void        MarkModified  (void) {varFlags = varFlags | HY_VARIABLE_CHANGED;}
 
     _String const     ContextFreeName                 (void) const;
+    _StringBuffer&    ContextFreeName                 (_StringBuffer&) const;
     _String const    ParentObjectName                 (void) const;
  
     _String*    GetName                         (void) const{

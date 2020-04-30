@@ -94,6 +94,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define  HY_VARIABLE_GLOBAL     0x01
 #define  HY_VARIABLE_CHANGED    0x02
+#define  HY_VARIABLE_CHANGED_CLEAR    0xFFFD
 #define  HY_DEP_V_COMPUTED      0x04
 #define  HY_DEP_V_INSPECTED     0x08
 #define  HY_DEP_V_INSPECTED_CLR 0xFF7
@@ -315,8 +316,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_REPLICATE_CONSTRAINT                           565L
 #define   HY_HBL_COMMAND_NESTED_LIST                                    566L
 #define   HY_HBL_COMMAND_KEYWORD_ARGUMENT                               567L
-
-
+#define   HY_HBL_COMMAND_INIT_ITERATOR                                  568L
+#define   HY_HBL_COMMAND_ADVANCE_ITERATOR                               569L
 
 
 //!  HyPhy standard directory locations 

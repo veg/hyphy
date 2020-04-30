@@ -50,13 +50,9 @@
 #include "hy_string_buffer.h"
 
 
-_String   compileDate = __DATE__,
-          __HYPHY__VERSION__ = _String ("2.5.1");
+_String   compileDate = __DATE__;
 
 using namespace hy_global;
-
-
- 
 
 struct _hy_Valid_ID_Chars_Type {
   unsigned char valid_chars[256];
@@ -817,6 +813,18 @@ const _String    _String::ChangeCase (hy_string_case conversion_type) const {
 
 //=============================================================
 
+void   _String::ChangeCaseInPlace (hy_string_case conversion_type) {
+  
+  auto conversion_function = conversion_type == kStringUpperCase ? toupper : tolower;
+  
+  for (unsigned long i = 0UL; i<s_length; i++) {
+    s_data[i] = conversion_function (s_data[i]);
+  }
+  
+}
+
+//=============================================================
+
 const _List _String::Tokenize(const _String& splitter) const {
   _List tokenized;
   
@@ -1201,8 +1209,8 @@ const _String  _String::ConvertToAnIdent(int options) const {
   const char default_placeholder = '_';
 
   char       last_char = '\0';
-  bool       allow_compounds = options | fIDAllowCompound,
-             allow_first_numeric = options | fIDAllowFirstNumeric;
+  bool       allow_compounds = options & fIDAllowCompound,
+             allow_first_numeric = options & fIDAllowFirstNumeric;
   
   
   unsigned long current_index = 0UL;
@@ -1222,13 +1230,15 @@ const _String  _String::ConvertToAnIdent(int options) const {
       first = false;
     } else {
       if ( hy_Valid_ID_Chars.is_valid(current_char)) {
-        if (allow_compounds && current_char == '.') {
-          first = true;
-        }
         converted << current_char;
       } else {
-          if (last_char != default_placeholder) {
-            converted << default_placeholder;
+          if (allow_compounds && current_char == '.') {
+            first = true;
+            converted << current_char;
+          } else {
+              if (last_char != default_placeholder) {
+                converted << default_placeholder;
+              }
           }
       }
     }
@@ -1297,6 +1307,7 @@ bool    _String::IsALiteralArgument (bool strip_quotes) {
 
 hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_object, _String const * context) const {
   if (nonempty()) {
+            
       char first_char    = char_at(0);
       bool is_func_ref   = char_at(s_length-1) == '&';
       
@@ -1306,16 +1317,18 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
           return kStringInvalidReference;
         }
         bool is_global_ref = first_char == '^';
-        _String   plain_name (*this, 1, -1);
+        _StringBuffer   plain_name (length());
+        plain_name.AppendSubstring (*this,1,-1);
         
         if (plain_name.IsValidIdentifier(fIDAllowCompound | fIDAllowFirstNumeric)) {
           if (context) {
-            plain_name = *context & '.' & plain_name;
+            plain_name.Clear();
+            (plain_name << *context << '.').AppendSubstring (*this,1,-1);
           }
           _FString * dereferenced_value = (_FString*)FetchObjectFromVariableByType(&plain_name, STRING);
           if (dereferenced_value && dereferenced_value->get_str().ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
             if (!is_global_ref && context) {
-              referenced_object = *context & '.' & referenced_object;
+              referenced_object = (_StringBuffer (context->length() + 1UL + referenced_object.length()) << *context << '.' << referenced_object);
             }
             return is_global_ref?kStringGlobalDeference:kStringLocalDeference;
           }
@@ -1330,7 +1343,8 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
           }
           if (try_as_expression.ProcessVariableReferenceCases (referenced_object) == kStringDirectReference) {
             if (!is_global_ref && context) {
-              referenced_object = *context & '.' & try_as_expression;
+              //referenced_object = *context & '.' & try_as_expression;
+              referenced_object = (_StringBuffer (context->length() + 1UL + try_as_expression.length()) << *context << '.' << try_as_expression);
             }
             
             return is_global_ref?kStringGlobalDeference:kStringLocalDeference;

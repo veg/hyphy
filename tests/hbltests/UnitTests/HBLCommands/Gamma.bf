@@ -33,7 +33,7 @@ function runTest()
 
   assert(runCommandWithSoftErrors('Gamma("")', "Operation 'Gamma' is not implemented/defined for a String"), "Gamma String argument is invalid");
   assert(runCommandWithSoftErrors('Gamma({})', "Operation 'Gamma' is not implemented/defined for a AssociativeList"), "Gamma Associative list argument is invalid");
-  assert(runCommandWithSoftErrors('Gamma({{"a","b"}})', "evaluated with errors"), "Gamma Matrix argument is invalid");
+  assert(runCommandWithSoftErrors('Gamma({{"a","b"}})', "Operation 'Gamma' is not implemented/defined for a Matrix"), "Gamma Matrix argument is invalid");
   assert(runCommandWithSoftErrors('Gamma(T)', "Operation 'Gamma' is not implemented/defined for a Topology"), "Gamma Topology argument is invalid");
   assert(runCommandWithSoftErrors('Gamma(TT)', "Operation 'Gamma' is not implemented/defined for a Tree"), "Gamma Tree argument is invalid");
 

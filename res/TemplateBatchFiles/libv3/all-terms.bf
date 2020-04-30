@@ -20,6 +20,7 @@ namespace terms{
     dinucleotide            = "dinucleotide";
     binary                  = "binary";
     stop_codons             = "stop";
+    terminal_stop           = "terminal_stop";
     translation_table       = "translation-table";
     synonymous_sub_count    = "synonymous substitution count";
     nonsynonymous_sub_count = "nonsynonymous substitution count";
@@ -115,6 +116,11 @@ namespace terms{
     function aminoacidRate(fromA, toA) {
         return "Substitution rate from amino-acid " + fromA + " to amino-acid " + toA;
     }
+
+    function propertyImportance  (id) {
+        return "Importance factor for property " + id;
+    }
+
     function binaryRate(fromX, toX) {
         return "Substitution rate from character " + fromX + " to character " + toX;
     }
@@ -367,6 +373,7 @@ namespace terms{
         length_expression       = "length-expression";
 
         data                    = "data";
+        residue_properties      = "residue_properties";
 
     }
 
@@ -400,6 +407,7 @@ namespace terms{
         synonymous_rate               = "synonymous rate";
         nonsynonymous_rate            = "non-synonymous rate";
         omega_ratio                   = "non-synonymous/synonymous rate ratio";
+        log_omega_ratio               = "log of non-synonymous/synonymous rate ratio";
         multiple_hit_rate             = "rate at which 2 nucleotides are changed instantly within a single codon";
         triple_hit_rate               = "rate at which 3 nucleotides are changed instantly within a single codon";
         triple_hit_rate_syn           = "rate at which 3 nucleotides are changed instantly within a single codon between synonymous codon islands";
@@ -484,6 +492,9 @@ namespace terms{
         branches            = "branches";
         meta                = "meta";
         comment             = "comment";
+        neighbor_joining    = "neighbor-joining";
+        data_for_neighbor_joining
+                            = "FILTER_FOR_NEIGHBOR_JOINING";
 
         //node_name = "Name";
         //children = "Children";

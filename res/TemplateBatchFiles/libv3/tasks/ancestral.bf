@@ -198,7 +198,12 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     _bacTreeAVLOrder = {};
 
     for (_bacCounter = 1; _bacCounter <= _bacBranchCount; _bacCounter += 1) {
-        _bacTreeAVLOrder[(_bac_tree_avl[_bacCounter])["Name"] && 1] = _bacCounter;
+        _bacNodeName = (_bac_tree_avl[_bacCounter])["Name"];
+        
+         if (Abs ((_bac_tree_avl[_bacCounter])["Children"]) == 0) {
+            _bacNodeName = _bacNodeName && 1;
+         }
+        _bacTreeAVLOrder[_bacNodeName] = _bacCounter;
     }
 
 
@@ -207,12 +212,9 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         _bacMapTreeNodeToDF[_bacTreeAVLOrder[_bacSequenceNames[_bacCounter] && 1] - 1] = _bacCounter;
     }
 
-
     for (_bacCounter = 0; _bacCounter < Columns(_bacAncestralNames); _bacCounter += 1) {
-        _bacMapTreeNodeToDF[_bacTreeAVLOrder[_bacAncestralNames[_bacCounter] && 1] - 1] = _bacCounter + _bacFilterSequenceCount;
+        _bacMapTreeNodeToDF[_bacTreeAVLOrder[_bacAncestralNames[_bacCounter]] - 1] = _bacCounter + _bacFilterSequenceCount;
     }
-
-
 
     /* make some auxiliary variables */
 

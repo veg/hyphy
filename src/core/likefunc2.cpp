@@ -540,6 +540,9 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
         catVariable->SetIntervalValue(0,true);
         if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate || runMode == _hyphyLFConditionProbsClassWeights) {
             (*catWeigths) << catVariable->GetWeights();
+            catVariable->SetIntervalValue(0,false);
+        } else {
+            catVariable->SetIntervalValue(0,true);
         }
     }
 
@@ -571,21 +574,21 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 
                     if (currentRateCombo && remainder  == 0) {
                         categoryValues.list_data[catCount] = 0;
-                        (((_CategoryVariable**)(variables->list_data))[catCount])->SetIntervalValue(0);
+                        (((_CategoryVariable**)(variables->list_data))[catCount])->SetIntervalValue(0,false);
                         for (long uptick = catCount-1; uptick >= 0; uptick --) {
                             categoryValues.list_data[uptick]++;
                             if (categoryValues.list_data[uptick] == categoryCounts->list_data[uptick]) {
                                 categoryValues.list_data[uptick] = 0;
-                                (((_CategoryVariable**)(variables->list_data))[uptick])->SetIntervalValue(0);
+                                (((_CategoryVariable**)(variables->list_data))[uptick])->SetIntervalValue(0,false);
                             } else {
-                                (((_CategoryVariable**)(variables->list_data))[uptick])->SetIntervalValue(categoryValues.list_data[uptick]);
+                                (((_CategoryVariable**)(variables->list_data))[uptick])->SetIntervalValue(categoryValues.list_data[uptick],false);
                                 break;
                             }
                         }
                     } else {
                         if (currentRateCombo) {
                             categoryValues.list_data[catCount]++;
-                            (((_CategoryVariable**)(variables->list_data))[catCount])->SetIntervalValue(remainder);
+                            (((_CategoryVariable**)(variables->list_data))[catCount])->SetIntervalValue(remainder, false);
                         }
                     }
                 }
@@ -885,6 +888,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                     if (scaleDiff > 0) {
                         ratio *= acquireScalerMultiplier(scaleDiff);
                     }
+                    //printf ("%g\n", ratio);
                     supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
                 }
                 blockTree->AddBranchToForcedRecomputeList (branchID+leafCount);
@@ -893,7 +897,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
     _SimpleList  conversion;
     _AVLListXL   conversionAVL (&conversion);
-    _String      codeBuffer    (unitLength);
+    _String      codeBuffer    ((unsigned long)unitLength);
     _List        *result       = new _List;
 
     for (long k = 0L; k < matrixSize; k++) {
@@ -1186,6 +1190,7 @@ hyFloat mapParameterToInverval (hyFloat in, char type, bool inverse)
 
 
 
+extern long likeFuncEvalCallCount;
 
 //_______________________________________________________________________________________________
 
@@ -1224,22 +1229,29 @@ hyFloat _LikelihoodFunction::SumUpSiteLikelihoods (long index, const hyFloat * p
             HandleApplicationError ("Constant-on-partition categories are currently not supported by the evaluation engine");
         } else {
             for (unsigned long patternID = 0UL; patternID < pattern_count; patternID++) {
-                long patternFrequency = index_filter->GetFrequency(patternID);;
+                long patternFrequency = index_filter->GetFrequency(patternID);
                 if (patternFrequency > 1) {
                     logL             += myLog(patternLikelihoods[patternID])*patternFrequency;
-                    cumulativeScaler += patternScalers.list_data[patternID]*patternFrequency;
-                } else
+                    cumulativeScaler += addScaler (patternLikelihoods[patternID],patternScalers.list_data[patternID],patternFrequency);
+                } else {
                     // all this to avoid a double*long multiplication
-                {
                     logL             += myLog(patternLikelihoods[patternID]);
-                    cumulativeScaler += patternScalers.list_data[patternID];
+                    cumulativeScaler += addScaler (patternLikelihoods[patternID], patternScalers.list_data[patternID], 1);
                 }
+                
+                /*if (likeFuncEvalCallCount == 531 || likeFuncEvalCallCount == 702) {
+                    printf ("%lu %d %g\n", patternID, cumulativeScaler, logL);
+                }*/
             }
         }
     }
 
-    return logL - cumulativeScaler * _logLFScaler;
-
+    if (cumulativeScaler == 0L) {
+        return logL;
+    } else {
+        return logL - cumulativeScaler * _logLFScaler;
+    }
+    
 }
 
 //_______________________________________________________________________________________________

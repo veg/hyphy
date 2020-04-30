@@ -109,7 +109,6 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
                                 explicitFormMExp                ("EXPLICIT_FORM_MATRIX_EXPONENTIAL"),
                                 multByFrequencies               ("MULTIPLY_BY_FREQUENCIES"),
                                 defFileString                   ("DEFAULT_FILE_SAVE_NAME"),
-                                VerbosityLevelString            ("VERBOSITY_LEVEL"),
                                 useLastDefinedMatrix            ("USE_LAST_DEFINED_MATRIX"),
                                 dataPanelSourcePath             ("DATA_PANEL_SOURCE_PATH"),
                                 windowTypeTree                  ("TREEWINDOW"),
@@ -141,7 +140,7 @@ globalPolynomialCap             ("GLOBAL_POLYNOMIAL_CAP"),
 //____________________________________________________________________________________
 
 
-_String  blFor                  ("for("),               // moved
+_String
 blWhile                    ("while("),         // moved
 blFunction                 ("function "),      // moved
 blFFunction                ("ffunction "),     // moved
@@ -595,7 +594,7 @@ void ClearBFFunctionLists (long start_here) {
     _SimpleList delete_me (batchLanguageFunctionNames.countitems()-start_here, start_here, 1L);
     
     for (unsigned long k = 0UL; k < delete_me.countitems(); k++) {
-      batchLanguageFunctionNamesIndexed.Delete (batchLanguageFunctionNames.GetItem (delete_me.get (k)));
+      batchLanguageFunctionNamesIndexed.Delete (batchLanguageFunctionNames.GetItem (delete_me.get (k)), true);
     }
 
     batchLanguageFunctionNames.DeleteList           (delete_me);
@@ -610,6 +609,7 @@ void ClearBFFunctionLists (long start_here) {
         batchLanguageFunctionClassification.Clear  ();
         batchLanguageFunctionParameterLists.Clear  ();
         batchLanguageFunctionParameterTypes.Clear  ();
+        batchLanguageFunctionNamesIndexed.Clear    (true);
     }
   }
 }
@@ -1842,13 +1842,13 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
 
   //char const * savePointer = s.get_str();
 
-    _SimpleList          triePath;
     _List                local_object_manager;
+    _StringBuffer        currentLine (128UL);
   
     try {
 
       while (s.nonempty ()) { // repeat while there is stuff left in the buffer
-          _String currentLine (_ElementaryCommand::FindNextCommand (s));
+          _ElementaryCommand::FindNextCommand (s,currentLine);
 
           if (currentLine.get_char(0)=='}') {
               currentLine.Trim(1,kStringEnd);
@@ -1858,8 +1858,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               continue;
           }
 
-          triePath.Clear(false);
-          long prefixTreeCode = _HY_ValidHBLExpressions.FindKey (currentLine, &triePath, true);
+          long prefixTreeCode = _HY_ValidHBLExpressions.FindKey (currentLine, nil, true);
 
           _List *pieces = nil;
           _HBLCommandExtras *commandExtraInfo = nil;
@@ -2051,7 +2050,9 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               // plain ol' formula - parse it as such!
               else {
                   _String checker (currentLine);
-                  if (_ElementaryCommand::FindNextCommand (checker).length ()==currentLine.length()) {
+                  _StringBuffer next_command;
+                  _ElementaryCommand::FindNextCommand (checker,next_command);
+                  if (next_command.length ()==currentLine.length()) {
                       if (currentLine.length()>1)
                           while (currentLine (-1L) ==';') {
                               currentLine.Trim (0,currentLine.length()-2);
@@ -2061,12 +2062,12 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                       }
                       _ElementaryCommand* oddCommand = new _ElementaryCommand(currentLine);
                       oddCommand->code = 0;
-                      oddCommand->parameters&&(&currentLine);
+                      oddCommand->parameters.AppendNewInstance (new _String (currentLine));
                       AppendNewInstance (oddCommand);
                   } else {
                       while (currentLine.nonempty()) {
-                          _String part (_ElementaryCommand::FindNextCommand (currentLine));
-                          BuildList (part,bc,processed);
+                          _ElementaryCommand::FindNextCommand (currentLine,next_command);
+                          BuildList (next_command,bc,processed);
                       }
                   }
               }
@@ -2125,6 +2126,14 @@ _ElementaryCommand::~_ElementaryCommand (void) {
             for (long i = 0; i<simpleParameters.lLength; i++) {
                 _Formula* f = (_Formula*)simpleParameters(i);
                 delete (f);
+            }
+        } else if (code == HY_HBL_COMMAND_INIT_ITERATOR) {
+            if (simpleParameters.get (1) == ASSOCIATIVE_LIST && simpleParameters.countitems() > 2) {
+                delete (AVLListXLIterator*)simpleParameters.get(2);
+            } else {
+                if ((simpleParameters.get (1) == TREE ||  simpleParameters.get (1) == TOPOLOGY) && simpleParameters.countitems() > 2) {
+                    delete (node_iterator<long>*)simpleParameters.get(2);
+                }
             }
         }
     }
@@ -2269,6 +2278,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_CHOICE_LIST:
         case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
         case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
+        case HY_HBL_COMMAND_GET_INFORMATION:
         case HY_HBL_COMMAND_SIMULATE_DATA_SET: {
             (*string_form) << procedure (code);
         }
@@ -2400,6 +2410,17 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
         case HY_HBL_COMMAND_NESTED_LIST: {
             (*string_form) << "namespace " << parameter_to_string (0) << ";";
+            break;
+        }
+            
+        case HY_HBL_COMMAND_INIT_ITERATOR: {
+            (*string_form) << "Initialize iterator on " << parameter_to_string (0) << ";";
+            break;
+        }
+
+        case HY_HBL_COMMAND_ADVANCE_ITERATOR: {
+            (*string_form) << "Advance iterator into ";
+            (string_form -> AppendNewInstance(parameters.Join(",",0,simpleParameters.get (1)))) << ";";
             break;
         }
 
@@ -3234,16 +3255,16 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         SetStatusLine (_String("Constructing Tree ")&treeIdent);
         long  varID = LocateVarByName (treeIdent);
 
-        hyFloat rtv = 0.0; // mod 11/19/2003
-        checkParameter (replaceTreeStructure, rtv, 0.0); // mod 11/19/2003
+        
+        bool replace_tree_structure = hy_env::EnvVariableTrue(replaceTreeStructure);
 
         _SimpleList   leftOverVars; // mod 02/03/2003
         if (varID>=0)
             if (FetchVar(varID)->ObjectClass()==TREE) {
-                if (rtv>0.5) {
+                if (replace_tree_structure) {
                     DeleteVariable(*FetchVar(varID)->GetName());    // mod 11/19/2003
                 } else {
-                    DeleteTreeVariable(*FetchVar(varID)->GetName(),leftOverVars,true);    // mod 02/03/2003
+                    DeleteTreeVariable(varID,leftOverVars);    // mod 02/03/2003
                 }
             }
 
@@ -3260,7 +3281,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
                     tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
                 } else if (formRes->ObjectClass () == TREE) {
                     for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
-                        //printf ("%s\n", LocateVar(leftOverVars.list_data[i])->GetName()->sData);
+                        //rintf ("%s\n", LocateVar(leftOverVars.list_data[i])->GetName()->get_str());
                         DeleteVariable(leftOverVars.list_data[i], true);
                     }
                     leftOverVars.Clear();
@@ -3656,13 +3677,23 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
     case HY_HBL_COMMAND_GET_DATA_INFO:
         HandleGetDataInfo(chain);
         break;
+          
+    case HY_HBL_COMMAND_INIT_ITERATOR:
+        HandleInitializeIterator(chain);
+        break;
 
+    case HY_HBL_COMMAND_ADVANCE_ITERATOR:
+        HandleAdvanceIterator(chain);
+        break;
+          
     case HY_HBL_COMMAND_NESTED_LIST:
       chain.currentCommand++;
       {
         ((_ExecutionList*)parameters.GetItem(0))->Execute(&chain);
       }
       break;
+          
+   
 
     default:
         chain.currentCommand++;
@@ -3674,12 +3705,13 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 //____________________________________________________________________________________
 
 
-const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
+void   _ElementaryCommand::FindNextCommand  (_String& input, _StringBuffer &result) {
 
     long    index     = input.length();
+    result.Reset();
 
     if (index == 0L) {
-      return kEmptyString;
+      return;
     }
 
     bool    skipping  = false;
@@ -3705,7 +3737,6 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
 
     _SimpleList is_DoWhileLoop;
 
-    _StringBuffer result (128L);
 
     char    last_char = '\0';
         // a look back character
@@ -3847,7 +3878,8 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
             if (parentheses_depth < 0L) {
                 HandleApplicationError (_String("Too many closing ')' near '") & input.Cut (MAX(0,index-32),index) & "'.");
                 input.Clear();
-                return kEmptyString;
+                result.Reset();
+                return ;
             }
             last_char = '\0';
             continue;
@@ -3864,7 +3896,8 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
             if (bracket_depth < 0L) {
                 HandleApplicationError (_String("Too many closing ']' near '") & input.Cut (MAX(0,index-32),index) & "'.");
                 input.Clear();
-                return kEmptyString;
+                result.Reset();
+                return ;
             }
             last_char = '\0';
             continue;
@@ -3921,9 +3954,10 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
                        & (literal_state == single_quote?" In a '' literal. ":kEmptyString) &
                        (comment_state == slash_star ? " In a /* */ comment ":kEmptyString) & '\n' & input);
             input.Clear();
-            return kEmptyString;
+            result.Reset();
+            return ;
         } else {
-            result = kEmptyString;
+            result.Reset();
         }
     }
 
@@ -3953,9 +3987,6 @@ const _String   _ElementaryCommand::FindNextCommand  (_String& input) {
         input.Clear();
     }
 
-
-
-    return result;
 }
 //____________________________________________________________________________________
 
@@ -4049,87 +4080,137 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
 
 bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _String*p3 , bool for_or_while, _String& source, _ExecutionList&target) {
 
+    
+    const _String kIterator ("in");
+    
     // extract the for enclosure
     long  beginning = target.lLength,
-          for_return = target.lLength,
-          index;
+          for_return = beginning;
 
     bool   success = true;
     bool   has_increment = false;
+    bool   is_iterator = (p2 && *p2 == kIterator);
 
     _SimpleList bc;
-
-    while (success) {
-
-        if (p1 && p1->nonempty()) { // initialization stage
+    
+    try {
+        if (is_iterator) {
+            if (! (p1 && p3)) {
+                throw (kEmptyString);
+            }
             for_return++;
-            success = success && target.BuildList (*p1, nil, true); // add init step
-        }
-
-        // append condition now
-
-        if (!success) {
-            break;
-        }
-
-        if (for_or_while) {
-            if (p2 && p2->nonempty()) { // condition stage
-                target < new _ElementaryCommand (*p2);
-            }
-        }
-
-        if (source.get_char(0)=='{') {
-            source.Trim(1,kStringEnd);
-        }
-
-        if ((success = success && target.BuildList (source, &bc)) == false) { // construct the main body
-            break;
-        }
-
-        if (p3 && p3->nonempty ()) { // increment stage
-            success = success && target.BuildList (*p3, nil,true); // add increment step
             has_increment = true;
-        }
+            _ElementaryCommand  * init    = new _ElementaryCommand (HY_HBL_COMMAND_INIT_ITERATOR);
+                               
+            long refer_to_init = target.countitems();
+            
+            init->parameters    << p3;
+            target < init;
+            _ElementaryCommand * advance = new _ElementaryCommand (HY_HBL_COMMAND_ADVANCE_ITERATOR);
+            
+            ExtractConditions (*p1,0L,advance->parameters,',',false);
+            if (advance->parameters.countitems() < 1 || advance->parameters.countitems() > 3) {
+                throw (_String("Must have bewteen 1 and 3 arguments for the 'for' iterator loop"));
+            }
+            
+            advance->simpleParameters <<refer_to_init;
+            advance->simpleParameters << advance->parameters.countitems();
+            init->simpleParameters << target.countitems();
+            init->simpleParameters << 0;
+            target < advance;
+            
+            for_return++;
+            target < new _ElementaryCommand ();
 
-        if (!success) {
-            break;
-        }
+            if (source.get_char(0)=='{') {
+                source.Trim(1,kStringEnd);
+            }
 
-        if (for_or_while) {
+            if (target.BuildList (source, &bc) == false) { // construct the main body
+                throw (kEmptyString);
+            }
+            target << advance;
+            
             _ElementaryCommand * loopback = new _ElementaryCommand;
-            success = success && loopback->MakeJumpCommand (nil,for_return,0,target);
+            loopback->MakeJumpCommand (nil,for_return,0,target);
             target < loopback;
-            if (p2 && p2->nonempty()) {
-                success = success && (target.GetIthCommand(for_return))->MakeJumpCommand (p2, for_return+1, target.lLength,target);
-            }
+            
+            // automatically generate
+            // None != iterator_value, but we don't know
+            
+            _StringBuffer iterator_condition;
+            iterator_condition << "None!=" << (_String*)advance->parameters.GetItem (advance->parameters.countitems() -1);
+            target.GetIthCommand(for_return)->MakeJumpCommand (&iterator_condition, for_return+1, target.lLength,target);
+            
         } else {
-            if (p2) {
-                _ElementaryCommand* loopback = new _ElementaryCommand ;
-                success = success && loopback->MakeJumpCommand (p2,for_return,target.lLength+1,target);
+        
+            if (p1 && p1->nonempty()) { // initialization stage
+                for_return++;
+                success = success && target.BuildList (*p1, nil, true); // add init step
+            }
+
+            // append condition now
+
+            if (!success) {
+                throw (kEmptyString);
+            }
+
+            if (for_or_while) {
+                if (p2 && p2->nonempty()) { // condition stage
+                    target < new _ElementaryCommand (*p2);
+                }
+            }
+
+            if (source.get_char(0)=='{') {
+                source.Trim(1,kStringEnd);
+            }
+
+            if ((success = success && target.BuildList (source, &bc)) == false) { // construct the main body
+                throw (kEmptyString);
+            }
+
+            if (p3 && p3->nonempty ()) { // increment stage
+                success = success && target.BuildList (*p3, nil,true); // add increment step
+                has_increment = true;
+            }
+
+            if (!success) {
+                throw (kEmptyString);
+            }
+            
+            if (for_or_while) {
+                _ElementaryCommand * loopback = new _ElementaryCommand;
+                loopback->MakeJumpCommand (nil,for_return,0,target);
                 target < loopback;
+                if (p2 && p2->nonempty()) {
+                    target.GetIthCommand(for_return)->MakeJumpCommand (p2, for_return+1, target.lLength,target);
+                }
+            } else {
+                if (p2) {
+                    _ElementaryCommand* loopback = new _ElementaryCommand ;
+                    success = success && loopback->MakeJumpCommand (p2,for_return,target.lLength+1,target);
+                    target < loopback;
+                }
             }
         }
-        break;
-
-    }
-
-    if (!success) { // clean up
-        for (index = beginning; index<target.lLength; index++) {
-            target.Delete (beginning);
+    } catch (const _String err) {
+        for (long index = target.lLength - 1; index >= beginning; index--) {
+            target.Delete (index);
+        }
+        if (err.nonempty()) {
+            HandleApplicationError(err);
         }
         return false;
-    } else {
-        // write out the breaks and continues
-        for (index = 0; index<bc.lLength; index++) {
-            long loc = bc(index);
-            if (loc>0) { // break
-                (target.GetIthCommand(loc))->MakeJumpCommand (nil, target.lLength, 0,target);
-            } else { // continue
-                (target.GetIthCommand(-loc))->MakeJumpCommand (nil, target.lLength-(has_increment?2:1), 0,target);
-            }
-        }
     }
 
+    bc.Each ([&target, has_increment] (long loc, unsigned long) -> void {
+        if (loc>0) { // break
+            (target.GetIthCommand(loc))->MakeJumpCommand (nil, target.lLength, 0,target);
+        } else { // continue
+            (target.GetIthCommand(-loc))->MakeJumpCommand (nil, target.lLength-(has_increment?2:1), 0,target);
+        }
+    });
+    
     return true;
 }
 
@@ -4187,7 +4268,8 @@ bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&targ
         source.Trim (upto,-1);
         target.AppendNewInstance (new _ElementaryCommand);
 
-        _String nextCommand (FindNextCommand(source));
+        _StringBuffer nextCommand;
+        _ElementaryCommand::FindNextCommand(source,nextCommand);
         success *= target.BuildList (nextCommand, bc, true);
 
     }
@@ -4352,7 +4434,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
 
         } else {
             if (operation_type ==  kReconstructAncestors || operation_type == kSampleAncestors) {
-                if (arguments.countitems()>4UL || arguments.countitems()==1L) {
+                if (arguments.countitems()>5UL || arguments.countitems()==1L) {
                     throw  operation_type.Enquote() & " expects 1-4 parameters: likelihood function ident (mandatory), an matrix expression to specify the list of partition(s) to reconstruct/sample from (optional), and, for ReconstructAncestors, an optional MARGINAL flag, plus an optional DOLEAVES flag.";
                 }
                 _ElementaryCommand * dsc = new _ElementaryCommand (operation_type ==  kReconstructAncestors ? 38 : 50);
@@ -4414,10 +4496,10 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
     if (mark1!=-1) {
         mark2 = source.FindBackwards(')',mark1+1,-1);
         if (mark2!=-1) {
-            source = source.Cut (mark1+1,mark2-1);
+            _String definition (source,mark1+1,mark2-1);
             _List args;
-            ExtractConditions (source,0,args,',');
-            if (args.lLength>=7UL) {
+            ExtractConditions (definition,0,args,',');
+            if (args.countitems()>=7UL) {
                 _ElementaryCommand * cv = new _ElementaryCommand (20);
                 cv->parameters&&(&catID);
                 cv->addAndClean(target,&args,0);
@@ -4602,35 +4684,32 @@ bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&targe
 
 //____________________________________________________________________________________
 
-bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long branch1, long branch2, _ExecutionList& parentList)
-{
-    long oldFla = 0;
-    code        = 4;
+bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long branch_true, long branch_false, _ExecutionList& parentList) {
+    long existing_formula_handle = 0L;
+         code        = 4L;
 
     if (simpleParameters.lLength==3) {
         if (source) {
-            _Formula* f = (_Formula*)simpleParameters(2);
-            delete (f);
-        } else {
-            oldFla = simpleParameters(2);
+            delete ((_Formula*)simpleParameters.get(2));
+         } else {
+            existing_formula_handle = simpleParameters.get(2);
         }
     }
 
-    if (branch1==-1) {
-        if (simpleParameters.lLength == 0) {
+    if (branch_true==-1) {
+        if (simpleParameters.empty()) {
             HandleApplicationError("An if-then-else scoping error. Check opening and closing brackets and double else's.");
             return false;
         }
-        branch1 = simpleParameters[0];
+        branch_true = simpleParameters.get (0);
     }
 
     simpleParameters.Clear();
-    simpleParameters<<branch1;
-    simpleParameters<<branch2;
+    simpleParameters<<branch_true<<branch_false;
     if (source) {
         parameters && source;
-    } else if (oldFla) {
-        simpleParameters<<oldFla;
+    } else if (existing_formula_handle) {
+        simpleParameters<<existing_formula_handle;
     }
 
     return true;
@@ -4732,9 +4811,32 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     if (!isNameSpace) {
 
 
-
+      _String extraNamespace;
+        
       if ((mark1=FindBFFunctionName(*funcID)) >= 0L) {
-        ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
+          ReportWarning (_String("Overwritten previously defined function:'") & *funcID & '\'');
+          if (batchLanguageFunctionClassification.get (mark1) == kBLFunctionLocal) {
+              // clean up previously used namespaces
+              _ExecutionList * existing = (_ExecutionList *)batchLanguageFunctions.GetItem(mark1);
+              _String * nm = existing->GetNameSpace();
+              if (nm) {
+                  long best_index;
+                  char match = variableNames.FindBest(nm, best_index);
+                  //printf ("PREVIOUS LOCAL FUNCTION %s\n", nm->get_str());
+                  if (best_index >= 0) {
+                      _Variable * namespace_start = LocateVar (best_index);
+                      if (namespace_start->GetName()->BeginsWith(*nm)) {
+                          //printf ("Clearing namespace %s starting at %s for function %s \n", nm->get_str(), namespace_start->GetName()->get_str(), funcID->get_str());
+                          _SimpleList locals;
+                          DeleteTreeVariable (best_index, locals,nm, false);
+                      }
+                  }
+                  if (match == 0) {
+                      DeleteVariable(best_index, true, false);
+                  }
+              }
+          }
+        
       }
 
       _List       arguments;
@@ -4749,8 +4851,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
           return false;
       }
 
-      _String extraNamespace;
-      if (isLFunction)
+      if (isLFunction && extraNamespace.empty())
           extraNamespace = _HYGenerateANameSpace();
 
       for (long k = 0UL; k < arguments.lLength; k++) {

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/veg/hyphy.svg?branch=master)](https://travis-ci.org/veg/hyphy)
+
 # HyPhy - Hypothesis testing using Phylogenies
 
 HyPhy is an open-source software package for the analysis of genetic sequences using techniques in phylogenetics, molecular evolution, and machine learning. It features a complete graphical user interface (GUI) and a rich scripting language for limitless customization of analyses. Additionally, HyPhy features support for parallel computing environments (via message passing interface (MPI)) and it can be compiled as a shared library and called from other programming environments such as Python and R. HyPhy is the computational backbone powering datamonkey.org. Additional information is available at hyphy.org.
@@ -97,13 +99,13 @@ To test HyPhy, build with the  GTEST target and run ./HYPHYGTEST from the source
 
 By default, HyPhy installs into `/usr/local` but it can be installed on any location of your system by providing an installation prefix
 
-`cmake -DINSTALL_PREFIX=/location/of/choice`
+`cmake -DCMAKE_INSTALL_PREFIX:PATH=/location/of/choice`
 
 For example, this configuration will install hyphy at /opt/hyphy
 
 `mkdir -p /opt/hyphy`
 
-`cmake -DINSTALL_PREFIX=/opt/hyphy .`
+`cmake -DCMAKE_INSTALL_PREFIX:PATH=/opt/hyphy .`
 
 #### Building Documentation
 

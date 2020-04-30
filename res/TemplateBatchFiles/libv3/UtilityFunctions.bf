@@ -142,9 +142,8 @@ lfunction utility.CheckCacheFile (data_info) {
  * @returns -1 if value is not found, otherwise returns the position
  */
 lfunction utility.Find (array, value) {
-    d = Rows (array) * Columns (array);
-    for (i = 0; i < d; i+=1) {
-        if (array [i] == value) {
+    for (i, v; in; array) {
+        if (v == value) {
             return i;
         }
     }

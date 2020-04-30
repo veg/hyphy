@@ -30,6 +30,7 @@ flu_part2_Freqs={
 {    0.231481289428}
 }
 ;
+
 Model flu_part2_HKY85_model=(flu_part2_HKY85,flu_part2_Freqs);
 
 UseModel (flu_part2_HKY85_model);

@@ -25,15 +25,30 @@ function runTest () {
   assert("Aladin" >= "Zoro" == 0, "Failed to return false for two strings in alphabetical order");
   assert("abcde" >= "abcde" == 1, "Failed to return true for two identical strings");
   // Comparing to none
-  assert(none>=1 == 0, "Failed to return false for none greater than or equal to int");
-  assert(1>=none == 1, "Failed to return true for int greater than or equal to an none");
-  assert(none>=-1 == 1, "test");
-  assert(none>=none == 1, "Failed to return true for none less than or equal to none");
 
   // Matrices (Creates a tree from the parent matrix passed in)
-  matrix1 = {{0,7,11}{7,0,6}{11,6,0}};
-  constructedTree = matrix1 >= 3;
-  expectedTree = {{4, 0, 0, 0, -1}{0, 0, 0, 0, 0} {0, 0, 0, 0, 0} {0, 0, 0, 0, 0}{0, 0, 0, 11, 0}{1, 1, 0, 0, 0} {0, 0, 0, 0, 0} {0, 0, 0, 0, 0}};
+  
+  distance_matrix = {{0,0.3,0.5,0.6}
+	                 {0.3,0,0.6,0.5}
+	                 {0.5,0.6,0,0.9}
+	                 {0.6,0.5,0.9,0}};
+	                   
+  
+  constructedTree = (distance_matrix > 0) >= 4;
+  
+  expectedTree = {
+        {0, 2, 0.09999999999999998, 2, 0} 
+        {2, 2, 0.4, 0, -1} 
+        {4, 1, 0.09999999999999998, 0, 0} 
+        {1, 1, 0.09999999999999998, 0, 0} 
+        {3, 1, 0.4, 0, 0} 
+        {6, 0, 0, 0, 0} 
+        {0, 0, 0, 0, 0} 
+        {0, 0, 0, 0, 0} 
+        {0, 0, 0, 0, 0} 
+        {0, 0, 0, 0, 0} 
+        };
+
   assert(constructedTree == expectedTree, "Failed to construct a tree from a parent matrix");
 
 
