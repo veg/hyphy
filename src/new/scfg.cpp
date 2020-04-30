@@ -99,7 +99,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
     try {
     
       if (termRules == 0L) {
-        throw ("A SCFG can not be constructed from an empty set of <Nonterminal>-><Terminal> production rules");
+        throw _String("A SCFG can not be constructed from an empty set of <Nonterminal>-><Terminal> production rules");
       }
       
       _List         ruleProbabilities,            // an auxiliary list used to store strings describing production probabilities

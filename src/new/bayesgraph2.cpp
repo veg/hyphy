@@ -435,7 +435,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
         }
 
         if (theData.is_empty() == 0) {
-            throw ("Uh-oh, there's no node score cache nor is there any data matrix to compute scores from!");
+            throw _String("Uh-oh, there's no node score cache nor is there any data matrix to compute scores from!");
         }
 
     
@@ -604,7 +604,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix const& yb, _Matrix cons
     
     // sometimes the eigendecomposition fails
       if ( eigen->countitems() == 0 ) {
-        throw "Eigendecomposition failed in bayesgraph2.cpp BottcherScore().";
+        throw _String("Eigendecomposition failed in bayesgraph2.cpp BottcherScore().");
       }
     
       _Matrix *        eigenvalues = (_Matrix *)eigen->GetByKey(0, MATRIX);
@@ -669,7 +669,7 @@ void _check_impute_settings (long impute_maxsteps, long impute_burnin, long impu
   impute_samples  = hy_env :: EnvVariableGetNumber(kHYBgm_IMPUTE_SAMPLES, 0.);
 
   if (impute_maxsteps <= 0 || impute_burnin < 0 || impute_samples <= 0 || impute_samples > impute_maxsteps) {
-    throw "Invalid IMPUTE setting(s)";
+    throw _String("Invalid IMPUTE setting(s)");
   }
 }
 

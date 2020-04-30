@@ -706,7 +706,6 @@ int main (int argc, char* argv[]) {
     hy_mpi_node_rank  = rank;
     hy_mpi_node_count = size;
     
-   
     
     /*if (rank > 0) {
         volatile int i = 0;
@@ -727,7 +726,9 @@ int main (int argc, char* argv[]) {
      if (signal (SIGINT, hyphy_sigterm_handler) == SIG_IGN)
          signal (SIGINT, SIG_IGN);
 #endif
-    
+    //printf ("%e\n", mapParameterToInverval (1.322753E-23, 0x2, false));
+    //exit (0);
+
     /*long read = 0L;
     hyFloat value = 0.0;
     
