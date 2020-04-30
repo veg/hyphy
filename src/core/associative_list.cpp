@@ -333,7 +333,7 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
                 if (index >= 0L) {
                   result = (*mode == kAVLIteratorOrder )? (new _FString(*(_String*)avl.Retrieve(index),false)): ((HBLObjectRef)avl.GetXtra (index)->makeDynamic());
                 } else {
-                  throw ("Index out of bounds in call to AVL iterator (by index)");
+                  throw _String("Index out of bounds in call to AVL iterator (by index)");
                 }
             }
           
@@ -341,7 +341,7 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
               return result;
             }
         } else {
-            throw ("Both arguments must be Strings (or a String Literal and a number) in an iterator call for Associative Arrays");
+            throw _String("Both arguments must be Strings (or a String Literal and a number) in an iterator call for Associative Arrays");
         }
     } catch (const _String err) {
         HandleApplicationError (err);

@@ -180,6 +180,7 @@ public:
     hyFloat  GetIthIndependentBound      (long, bool isLower = true) const;
     // get the lower / upper bound for the i-th indepdendent variable
 
+    hyFloat        DerivativeCorrection (long, hyFloat) const;     // obtain the g'(x) for the chain rule differentiation under transformed variables
     void        SetIthIndependent (long, hyFloat);           // set the value of i-th independent variable
     bool        CheckAndSetIthIndependent (long, hyFloat);   // set the value of i-th independent variable
     void        SetIthDependent           (long, hyFloat);   // set the value of i-th dependent variable
@@ -791,6 +792,7 @@ hyFloat                  acquireScalerMultiplier (long);
 hyFloat                  myLog                   (hyFloat);
 long                     addScaler               (hyFloat, long, long);
 hyFloat                  mapParameterToInverval  (hyFloat, char, bool);
+hyFloat                  obtainDerivativeCorrection (hyFloat, char);
 
 #ifdef  __HYPHYMPI__
 extern                  _Matrix     resTransferMatrix;

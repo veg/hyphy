@@ -167,6 +167,36 @@ lfunction selection.io.report_distribution (distribution) {
 
 //------------------------------------------------------------------------------
 
+lfunction selection.io.report_viterbi_path (path) {
+
+    // TODO remove hardcoding
+    settings = {"header" : TRUE, "column-widths": {
+            "0": 35,
+            "1": 15,
+            "2": 15
+            }};
+
+    fprintf (stdout, "\n", io.FormatTableRow ({{"Site", "From class", "To class"}}, settings));
+    rates = Rows (distribution);
+    settings ["header"] = FALSE;
+    last_state = path[0];
+    
+    
+    row_matrix = {{index, last_state, rate}};
+    
+    for (index, rate; in; path) {
+        if (rate != last_state) {
+            fprintf (stdout, io.FormatTableRow (row_matrix, settings));
+            last_state = rate;
+        }
+    }
+    
+    fprintf (stdout, "\n");
+    return row_matrix;
+}
+
+//------------------------------------------------------------------------------
+
 lfunction selection.io.report_dnds (distribution) {
 
     // TODO remove hardcoding
