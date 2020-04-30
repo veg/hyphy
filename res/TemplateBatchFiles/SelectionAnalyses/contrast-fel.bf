@@ -526,10 +526,6 @@ fel.json [terms.json.MLE ] = {
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");
 
-// SW20200220 - TODO
-//fprintf(stdout, LIST_ALL_VARIABLES);
-//fel.store_additional_branch_attributes();
-
 io.SpoolJSON (fel.json, fel.codon_data_info[terms.json.json]);
 
 
@@ -867,31 +863,6 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
         }
     }
 }
-
-// SW20200220 - TODO
-//function fel.store_additional_branch_attributes() {
-//    console.log(fel);
-//    for (fel.site = 0; fel.site < fel.partition_sites; fel.site += 1) {
-//        console.log("hi");
-//        fel.branch_attributes = selection.substitution_mapper(ancestors["MATRIX"], ancestors["TREE_AVL"], ancestors["AMBIGS"], counts, ancestors ["MAPPING"], fel.codon_data_info[terms.code]);
-
-//        selection.io.json_store_branch_attribute(fel.json, terms.codon, terms.json.node_label, 0,
-//                                                 fel.i,
-//                                                 fel.branch_attributes[terms.codon]);
-
-//        selection.io.json_store_branch_attribute(fel.json, terms.amino_acid, terms.json.node_label, 1,
-//                                                 fel.i,
-//                                                 fel.branch_attributes[terms.amino_acid]);
-
-//        selection.io.json_store_branch_attribute(fel.json, terms.synonymous_sub_count, terms.json.branch_label, 0,
-//                                                 fel.i,
-//                                                 fel.branch_attributes[terms.synonymous_sub_count]);
-
-//        selection.io.json_store_branch_attribute(fel.json, terms.nonsynonymous_sub_count, terms.json.branch_label, 1,
-//                                                 fel.i,
-//                                                 fel.branch_attributes[terms.nonsynonymous_sub_count]);
-//    }
-//}
 
 
 lfunction fel.store_results (node, result, arguments) {
