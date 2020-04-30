@@ -2008,7 +2008,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
                       BuildList (currentLine,bc,true);
 
                       if (lif<0 || lif>=lLength) {
-                          throw ("'else' w/o an if to latch on to...");
+                          throw _String("'else' w/o an if to latch on to...");
                       }
 
                     
@@ -3054,13 +3054,13 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         }
 
         if (base_set.length() < alphabet_matrix->GetVDim ()) {
-            throw ("The alphabet is mis-specified; it either has redundant characters or multi-character/non-string entries");
+            throw _String("The alphabet is mis-specified; it either has redundant characters or multi-character/non-string entries");
         }
 
         long unit_size = ((_FString*)alphabet_matrix->GetFormula(1,0)->Compute())->get_str().to_long();
 
         if (unit_size < 1L) {
-            throw ("The evolutionary unit size in the alphabet matrix is mis-specified");
+            throw _String("The evolutionary unit size in the alphabet matrix is mis-specified");
         }
 
         _Formula* exclusion_formula = alphabet_matrix->GetFormula(1,1);
@@ -3073,7 +3073,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         _TheTree * spawning_tree = (_TheTree*)tree_var;
 
         if (parameters.lLength>6 && (spawning_tree->CountTreeCategories()>1)) {
-            throw ("Can't use spool to file option in Simulate when the tree depends on category variables.");
+            throw _String("Can't use spool to file option in Simulate when the tree depends on category variables.");
         }
 
         if (given_state.length()>1) {
@@ -3081,7 +3081,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
             if ((given_state.length() >= unit_size)&&(given_state.length() % unit_size == 0)) {
                 site_count = given_state.length()/unit_size;
             } else {
-                throw ("Root state string is either too short or has length which is not divisible by the unit size");
+                throw _String("Root state string is either too short or has length which is not divisible by the unit size");
             }
         }
 

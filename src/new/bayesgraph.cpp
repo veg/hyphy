@@ -203,7 +203,7 @@ _BayesianGraphicalModel::_BayesianGraphicalModel (_AssociativeList * nodes) {
 
             _FString *name = (_FString*)this_avl->GetByKey (_HYBgm_NODE_INDEX, STRING);
             if (!name){
-                throw "Invalid node name (expected a string) passed to a BGM constructor";
+                throw _String("Invalid node name (expected a string) passed to a BGM constructor");
             }
             
             node_names < new _StringBuffer (name->get_str());  // append a pointer to _String duplicate
@@ -433,7 +433,7 @@ bool _BayesianGraphicalModel::SetStructure (_Matrix const * structure) {
     try {
     
         if (!structure->check_dimension(num_nodes, num_nodes)) {
-            throw ("Structure incompatible dimensions to graph.");
+            throw _String("Structure incompatible dimensions to graph.");
         }
         
         structure->ForEachCellNumeric ([this] (hyFloat value, long index, long row, long col) -> void {
@@ -483,10 +483,10 @@ bool _BayesianGraphicalModel::SetNodeOrder (_SimpleList const * order) {
 
     try {
         if (order->countitems() != num_nodes) {
-            throw ("Node order argument has incorrect length.");
+            throw _String("Node order argument has incorrect length.");
         }
         if (!GraphObeysOrder (theStructure, *order)) {
-            throw ("Node order incompatible with current graph.");
+            throw _String("Node order incompatible with current graph.");
         }
         
         node_order_arg.Duplicate(order);
@@ -987,7 +987,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
                                 family_scores->Store (score, nk_tuple);
                               } while (remaining);
                             } else {
-                              throw ("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
+                              throw _String("Failed to initialize _NTupleStorage object in Bgm::CacheNodeScores().\n");
                             }
                             
                             list_of_matrices->AppendNewInstance(family_scores);   // append duplicate to storage
@@ -1424,7 +1424,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (_AssociativeList const * options 
 
            long mcmc_nchains = hy_env :: EnvVariableGetNumber(kHYBgm_MCMC_NCHAINS, 1.);
            if (mcmc_nchains <= 0) {
-              throw ("You must run at least one chain in MCMC.");
+              throw _String("You must run at least one chain in MCMC.");
           }
 
 
@@ -1433,7 +1433,7 @@ _Matrix *   _BayesianGraphicalModel::Optimize (_AssociativeList const * options 
           if (mcmc_nchains > 1) {
               hyFloat mcmc_dtemp = hy_env :: EnvVariableGetNumber (kHYBgm_MCMC_TEMP, 1.);
               if (mcmc_dtemp <= 1.) {
-                  throw ("Temperature increment must be greater than 1.");
+                  throw _String("Temperature increment must be greater than 1.");
               }
 
               hyFloat  chain_T = 1. / (1. + mcmc_dtemp*rank);
@@ -1740,7 +1740,7 @@ _Matrix*    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcm
 
           ReportWarning (_String ("Starting GraphMetropolis() using node_order_arg:\n ") & _String((_String *) proposed_order->toStr()));
         } else {
-              throw ("ERROR: Structure does not match order, aborting GraphMetropolis().");
+              throw _String("ERROR: Structure does not match order, aborting GraphMetropolis().");
         }
     } else {
       *proposed_order = GetOrderFromGraph (*proposed_graph);

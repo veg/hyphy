@@ -1,5 +1,5 @@
 LoadFunctionLibrary("parameters.bf");
-
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 
 /** @module rate_variation */
 
@@ -34,8 +34,45 @@ function rate_variation.modifier_everything (q_ij, from, to, namespace, cat_name
 	return q_ij;
 }
 
+
+lfunction rate_variation_define_HMM (categories, namespace, globals, definition) {
+    
+    lambda = parameters.ApplyNameSpace   ("hmm_lambda", namespace);
+    parameters.DeclareGlobalWithRanges (lambda, .1/categories, 0, 1/(categories-1));
+    globals[utility.getGlobalValue("terms.rate_variation.hmm_lambda")] = lambda;
+
+    hmm_T = parameters.ApplyNameSpace   ("hmm_transition_matrix", namespace);
+    hmm_F = parameters.ApplyNameSpace   ("hmm_starting_freqs", namespace);
+    hmm_M = parameters.ApplyNameSpace   ("hmm_model", namespace);
+    matrix_def = ""; matrix_def * 128;
+    
+    matrix_def * "`hmm_T` = {`categories`, `categories`}; \n`hmm_F` = {`categories`, 1};\n";
+    
+    f_def = {categories,1};
+    
+    cm1 = categories-1;
+    
+    for (k = 0; k < categories; k+=1) {
+        matrix_def * ('`hmm_T`[`k`][`k`] := 1-`cm1`*`lambda`;\n');
+        matrix_def * ('`hmm_F`[`k`] = 1/`categories`;\n');
+        //f_def[k] = "" + 1/categories;
+        for (k2 = k+1; k2 < categories; k2+=1) {
+        matrix_def * ('`hmm_T`[`k`][`k2`] := `lambda`;\n');
+        matrix_def * ('`hmm_T`[`k2`][`k`] := `lambda`;\n');
+        }
+    }
+    
+    matrix_def * "Model `hmm_M` =  (`hmm_T`, `hmm_F`, 0);\n";
+    matrix_def * 0;
+    utility.ExecuteInGlobalNamespace (matrix_def);
+    (definition[utility.getGlobalValue("terms.category.category_parameters")])[utility.getGlobalValue("terms.category.HMM")] = hmm_M;
+}
+
 lfunction rate_variation_define_gamma (options, namespace) {
 
+ 	if (utility.Has (options, utility.getGlobalValue("terms._namespace"), "String")) {
+ 	    namespace = options [utility.getGlobalValue("terms._namespace")];
+ 	}
 
 	alpha = parameters.ApplyNameSpace("rv_gamma_alpha", namespace);
 	parameters.DeclareGlobalWithRanges (alpha, 0.5, 0.01, 100);
@@ -46,6 +83,8 @@ lfunction rate_variation_define_gamma (options, namespace) {
 	} else {
 		categories = 4;
 	}
+	
+	globals = {utility.getGlobalValue("terms.rate_variation.gamma_alpha") : alpha};
 	
 	definition = {utility.getGlobalValue("terms.id") : parameters.ApplyNameSpace("rv_gamma", namespace),
 				  utility.getGlobalValue("terms.description") : "Discretized unit mean Gamma distribution with " + categories + " categories", 
@@ -62,14 +101,22 @@ lfunction rate_variation_define_gamma (options, namespace) {
 				  utility.getGlobalValue("terms.rate_variation.before") : None,
 				  utility.getGlobalValue("terms.rate_variation.after") : None,
 				  };
+
+	if (utility.Has (options, utility.getGlobalValue("terms.rate_variation.HMM"), "String")) {
+	    rate_variation_define_HMM (categories, namespace, globals, definition);
+	}
 				  
-	return {utility.getGlobalValue("terms.global") : {utility.getGlobalValue("terms.rate_variation.gamma_alpha") : alpha},
+	return {utility.getGlobalValue("terms.global") : globals,
 		    utility.getGlobalValue("terms.category") : definition};
 
 
 }
 
 lfunction rate_variation_define_gdd(options, namespace) {
+
+ 	if (utility.Has (options, utility.getGlobalValue("terms._namespace"), "String")) {
+ 	    namespace = options [utility.getGlobalValue("terms._namespace")];
+ 	}
 
 	if (utility.Has (options, utility.getGlobalValue("terms.rate_variation.bins"), "Number")) {
 		categories = options[utility.getGlobalValue("terms.rate_variation.bins")] $ 1;
@@ -116,6 +163,10 @@ lfunction rate_variation_define_gdd(options, namespace) {
 				  utility.getGlobalValue("terms.rate_variation.after") : None,
 				  };
 				
+	if (utility.Has (options, utility.getGlobalValue("terms.rate_variation.HMM"), "String")) {
+	    rate_variation_define_HMM (categories, namespace, globals, definition);
+	}
+
 	return {utility.getGlobalValue("terms.global") : globals,
 		    utility.getGlobalValue("terms.category") : definition};
 
@@ -123,6 +174,10 @@ lfunction rate_variation_define_gdd(options, namespace) {
 }
 
 lfunction rate_variation_define_gamma_inv (options, namespace) {
+
+ 	if (utility.Has (options, utility.getGlobalValue("terms._namespace"), "String")) {
+ 	    namespace = options [utility.getGlobalValue("terms._namespace")];
+ 	}
 
 	alpha = parameters.ApplyNameSpace("rv_gamma_inv_alpha", namespace);
 	beta  = parameters.ApplyNameSpace("rv_gamma_inv_beta", namespace);
@@ -137,6 +192,10 @@ lfunction rate_variation_define_gamma_inv (options, namespace) {
 	} else {
 		categories = 4;
 	}
+
+	globals = { utility.getGlobalValue("terms.rate_variation.gamma_alpha") : alpha,
+							                           utility.getGlobalValue("terms.rate_variation.gamma_beta") : beta,
+							                           utility.getGlobalValue("terms.rate_variation.gamma_p_inv") : p};
 
 	parameters.DeclareGlobalWithRanges (p, 1/(categories+1), 0, 1);
 
@@ -169,10 +228,12 @@ lfunction rate_variation_define_gamma_inv (options, namespace) {
 				  utility.getGlobalValue("terms.rate_variation.after"): None,
 				  };
 				  
-				  
-	return {utility.getGlobalValue("terms.global") : { utility.getGlobalValue("terms.rate_variation.gamma_alpha") : alpha,
-							                           utility.getGlobalValue("terms.rate_variation.gamma_beta") : beta,
-							                           utility.getGlobalValue("terms.rate_variation.gamma_p_inv") : p},
+
+	if (utility.Has (options, utility.getGlobalValue("terms.rate_variation.HMM"), "String")) {
+	    rate_variation_define_HMM (categories, namespace, globals, definition);
+	}
+
+	return {utility.getGlobalValue("terms.global") : globals,
 		    utility.getGlobalValue("terms.category") : definition};
 
 

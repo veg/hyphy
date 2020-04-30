@@ -1,4 +1,4 @@
-RequireVersion ("2.4.0");
+RequireVersion ("2.5.12");
 
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
@@ -28,9 +28,9 @@ Assuming there is evidence of positive selection (i.e. there is an omega > 1),  
 style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, 
 and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point.
 Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead. Version 3.0 implements the option
-for branch-site variation in synonymous substitution rates
+for branch-site variation in synonymous substitution rates. Version 3.1 adds HMM auto-correlation option for SRV, and binds SRV distributions for multiple branch sets
 ",
-                               terms.io.version : "3.0",
+                               terms.io.version : "3.1",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
@@ -52,6 +52,7 @@ busted.json.background = busted.background;
 busted.json.site_logl  = "Site Log Likelihood";
 busted.json.evidence_ratios  = "Evidence Ratios";
 busted.json.srv_posteriors  = "Synonymous site-posteriors";
+busted.json.srv_viterbi = "Viterbi synonymous rate path";
 busted.rate_classes = 3;
 busted.synonymous_rate_classes = 3;
 busted.initial_grid.N = 250;
@@ -121,6 +122,7 @@ if (busted.do_srv == "Branch-site") {
     if (busted.do_srv == "Yes") {
         busted.do_bs_srv = FALSE;
         busted.do_srv = TRUE;
+        busted.do_srv_hmm  = FALSE; 
     } else {
         if (busted.do_srv == "HMM") {
          busted.do_srv      = TRUE;
@@ -218,11 +220,19 @@ if (busted.do_srv) {
         busted.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
         busted.rate_class_arguments = {{busted.synonymous_rate_classes__,busted.rate_classes__}};
     } else {
+    
         lfunction busted.model.with.GDD (type, code, rates) {        
             def = models.codon.BS_REL.ModelDescription (type, code, rates);
-            def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory ({utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("busted.synonymous_rate_classes")});
+            options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("busted.synonymous_rate_classes"),
+                       utility.getGlobalValue("terms._namespace") : "busted._shared_srv"};
+
+            if (utility.getGlobalValue("busted.do_srv_hmm")) {
+                    options [utility.getGlobalValue ("terms.rate_variation.HMM")] = "equal";
+            }
+            def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory (options);
             return def;
         }
+        
         busted.model_generator = "busted.model.with.GDD";
         busted.rate_class_arguments = busted.rate_classes;
     }
@@ -252,7 +262,7 @@ busted.background.bsrel_model =  model.generic.DefineMixtureModel(busted.model_g
 models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 
 
-if (busted.do_srv) {
+/*if (busted.do_srv) {
     if (busted.do_bs_srv) {
         models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, "Mean scaler variable for");
         models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), "SRV [0-9]+"));
@@ -260,7 +270,7 @@ if (busted.do_srv) {
         models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, "GDD rate category");
         models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " for GDD category ");
     }
-}
+}*/
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
 
@@ -398,8 +408,8 @@ busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.tree
     terms.search_grid     : busted.initial_grid,
     terms.search_restarts : busted.N.initial_guesses
 });
-    
-            
+                                
+                
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
         "retain-lf-object": TRUE,
         terms.run_options.optimization_settings : 
@@ -408,11 +418,21 @@ busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted
             } 
                                     
     });
+    
+
 
 KeywordArgument ("save-fit", "Save BUSTED model fit to this file (default is not to save)", "/dev/null");
 io.SpoolLFToPath(busted.full_model[terms.likelihood_function], io.PromptUserForFilePath ("Save BUSTED model fit to this file ['/dev/null' to skip]"));
 
 io.ReportProgressMessageMD("BUSTED", "main", "* " + selection.io.report_fit (busted.full_model, 9, busted.codon_data_info[terms.data.sample_size]));
+
+if (busted.do_srv_hmm) {
+    busted.hmm_lambda = selection.io.extract_global_MLE (busted.full_model, terms.rate_variation.hmm_lambda);
+    io.ReportProgressMessageMD("BUSTED", "main", "* HMM switching rate = " +  Format (busted.hmm_lambda, 8, 3));
+
+}
+
+
 io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the following rate distribution for branch-site combinations was inferred");
 
 selection.io.stopTimer (busted.json [terms.json.timers], "Unconstrained BUSTED model fitting");
@@ -421,12 +441,16 @@ busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (bus
 selection.io.report_dnds (busted.inferred_test_distribution);
 
 
+
 busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                          "_index_",
                                                          "{terms.json.omega_ratio : busted.inferred_test_distribution [_index_][0],
                                                            terms.json.proportion : busted.inferred_test_distribution [_index_][1]}")
                                 };
 
+if (busted.do_srv_hmm) {
+    busted.distribution_for_json [terms.rate_variation.hmm_lambda] = busted.hmm_lambda;
+}
 
 if (busted.has_background) {
     io.ReportProgressMessageMD("BUSTED", "main", "* For *background* branches, the following rate distribution for branch-site combinations was inferred");
@@ -459,6 +483,15 @@ if (busted.do_srv) {
     busted.column_weights       = {1, Rows (busted.cmx_weights)}["1"] * busted.cmx_weighted;
     busted.column_weights       = busted.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
     (busted.json [busted.json.srv_posteriors]) =  busted.cmx_weighted $ busted.column_weights;
+    
+    
+    if (busted.do_srv_hmm ) {
+        ConstructCategoryMatrix (busted.cmx_viterbi, ^(busted.full_model[terms.likelihood_function]), SHORT);
+        (busted.json [busted.json.srv_viterbi]) = busted.cmx_viterbi;
+        io.ReportProgressMessageMD("BUSTED", "main", "* The following switch points for synonymous rates were inferred");
+        selection.io.report_viterbi_path (busted.cmx_viterbi);
+        
+    }
 
 }
 

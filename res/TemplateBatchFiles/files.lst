@@ -10,8 +10,8 @@
 "PRIME","[PRIME] ","SelectionAnalyses/PRIME.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
-"Contrast-FEL","Perform a site-level test for differences in selective pressures between predetermined sets of branches.","SelectionAnalyses/FEL-contrast.bf";
 "FMM", "Fit a model that permits double (and triple) instantaneous nucleotide substitutions","SelectionAnalyses/FitMultiModel.bf";
+"Contrast-FEL","[Contrast-FEL] "Perform a site-level test for differences in selective pressures between predetermined sets of branches."","SelectionAnalyses/contrast-fel.bf";
 
 "","Evolutionary rates on non-coding data.","!Relative evolutionary rate inference";
 "LEISR","Infer relative evolutionary rates on a nucleotide or protein alignment, in a spirit similar to Rate4Site (PMID: 12169533).","LEISR.bf";
