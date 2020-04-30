@@ -1,7 +1,7 @@
 GetString (version, HYPHY_VERSION, 0);
 
 if (+version >= 2.5) {
-    LoadFunctionLibrary ("SelectionAnalyses/FEL-contrast.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branch-set" : "GROUP2"});
+    LoadFunctionLibrary ("SelectionAnalyses/contrast-fel.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branch-set" : "GROUP2"});
 } else {
    return 0;
 }
