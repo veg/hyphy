@@ -89,6 +89,20 @@ suite
   });
 })
 
+.add('aBSREL.wbf', function() {
+  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/libv3/aBSREL.wbf'", (error, stdout, stderr) => {
+    if (error) { console.log("Error with job = " + error); return;}
+    if (stderr) {return;}
+  });
+})
+
+.add('aBSREL-MH.wbf', function() {
+  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/libv3/aBSREL-MH.wbf'", (error, stdout, stderr) => {
+    if (error) { console.log("Error with job = " + error); return;}
+    if (stderr) {return;}
+  });
+})
+
 // add listeners
 .on('cycle', function(event) {
   console.log(String(event.target));
