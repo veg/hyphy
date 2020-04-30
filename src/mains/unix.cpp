@@ -109,6 +109,7 @@ const char hy_help_message [] =
 const char hy_available_cli_analyses [] =
 "Available standard analyses and their [standard analysis name] are listed below:\n\n"
 "        [meme] Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).\n"
+"        [contrast-fel] Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.\n"
 "        [fel] Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).\n"
 "        [fubar] Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).\n"
 "        [fade] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).\n"
