@@ -153,7 +153,6 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     GetString(_bacSequenceNames, ^ _bac_filterID, -1);
 
 
-
     /* 3; obtain ID->string mapping for the datafilter;
     	  also deduce how many chars/state there are */
 
@@ -186,10 +185,16 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         _bacBranchCount,
         _bacAF.sites
     };
+    
     _bacHandledResolutions = {};
-    _bacHandledResolutionsChars = {};
     _bacHandledResolutionsAmbig = {};
-    _bacHandledResolutionsCodons = {};
+    
+    for (i,_bacCounter; in; _bacCharHandles) {
+        _bacHandledResolutions[_bacCounter] = i + 1;
+    }
+    
+    
+    
 
     /* map where sequences are in the filter vs where they are in the
 	tree structure */
@@ -258,23 +263,16 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
                         GetDataInfo(_bacCharState, _bacAF, _bacRowIndex - _bacFilterSequenceCount, _bacAncestralPatternMap[_bacSiteCounter]);
                     }
                     _bacResolutionCount = +_bacCharState;
-                    if (_bacResolutionCount == 1) {
-                        /* fully resolved */
-                        resolved_index = (_bacSequenceRow * _bacCharState)[0];
-                        _bacHandledResolutions[_bacCurrentState] = resolved_index + 1;
-                        _bacMatrixOfResolutions[_bacBranchCounter - 1][_bacSiteCounter] = resolved_index;
-                    } else {
-                        if (_bacResolutionCount == Columns(_bacCharHandles)) {
+                    if (_bacResolutionCount == Columns(_bacCharHandles)) {
                             /* gap/full ambig */
-                            _bacHandledResolutions[_bacCurrentState] = -1;
-                            _bacMatrixOfResolutions[_bacBranchCounter - 1][_bacSiteCounter] = -1;
-                        } else {
-                            _bacHandledResolutions[_bacCurrentState] = -2 - Abs(_bacHandledResolutionsAmbig);
-                            _bacHandledResolutionsAmbig + _bacCharState;
-                            _bacMatrixOfResolutions[_bacBranchCounter - 1][_bacSiteCounter] = _bacHandledResolutions[_bacCurrentState];
-                        }
+                        _bacHandledResolutions[_bacCurrentState] = -1;
+                        _bacMatrixOfResolutions[_bacBranchCounter - 1][_bacSiteCounter] = -1;
+                    } else {
+                        _bacHandledResolutions[_bacCurrentState] = -2 - Abs(_bacHandledResolutionsAmbig);
+                        _bacHandledResolutionsAmbig + _bacCharState;
+                        _bacMatrixOfResolutions[_bacBranchCounter - 1][_bacSiteCounter] = _bacHandledResolutions[_bacCurrentState];
                     }
-                }
+                 }
             }
         }
     }

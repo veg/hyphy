@@ -1329,7 +1329,7 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p) {
       if (p!=0.0) {
           set = (fabs((oldValue-p)/p))>kMachineEpsilon;
       } else {
-          set = true;//fabs(oldValue-p)>kMachineEpsilon;
+          set = oldValue != p;
       }
     } else {
       set = true;
