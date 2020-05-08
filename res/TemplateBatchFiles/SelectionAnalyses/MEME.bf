@@ -483,7 +483,9 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
     //console.log ("Optimizing FEL for pattern " + pattern_info);
     //io.SpoolLF (lf_fel, "/tmp/meme.debug" + ^"MPI_NODE_ID", "FEL");
-    Optimize (results, ^lf_fel);
+    Optimize (results, ^lf_fel
+        , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-4}
+    );
 
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
@@ -508,7 +510,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
                   
     Optimize (results, ^lf_bsrel, {
-            //"OPTIMIZATION_METHOD" : "gradient-descent",
+            "OPTIMIZATION_METHOD" : "nedler-mead",
             "OPTIMIZATION_START_GRID" : 
              {
                 "0" : {

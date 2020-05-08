@@ -4195,7 +4195,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     if (initial_grid) {
         
         hyFloat max_value = -INFINITY;
-        _AssociativeList * best_values;
+        _AssociativeList * best_values = nil;
         
         _SimpleList _sl;
         _AVLListX all_vars (&_sl);

@@ -254,14 +254,83 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     if (^"fel.srv"){
         ^"fel.alpha_scaler" = 1;
-    } else
-    {
+        start.grid = {
+            "0" : {
+                "fel.beta_scaler_test": 0.1,
+                "fel.beta_scaler_nuisance" : 0.1,
+                "fel.alpha_scaler" : 0.01
+            },
+            "1" : {
+                "fel.beta_scaler_test": 0.1,
+                "fel.beta_scaler_nuisance" : 0.1,
+                "fel.alpha_scaler" : 1
+            },
+            "2" : {
+                "fel.beta_scaler_test": 0.5,
+                "fel.beta_scaler_nuisance" : 0.5,
+                "fel.alpha_scaler" : 1
+            },
+            "3" : {
+                "fel.beta_scaler_test": 1.,
+                "fel.beta_scaler_nuisance" : 1.,
+                "fel.alpha_scaler" : 1
+            },
+            "4" : {
+                "fel.beta_scaler_test": 5.,
+                "fel.beta_scaler_nuisance" : 5.,
+                "fel.alpha_scaler" : 1
+            },
+            "5" : {
+                "fel.beta_scaler_test": 0.1,
+                "fel.beta_scaler_nuisance" : 0.1,
+                "fel.alpha_scaler" : 10.
+            }
+        };
+    } else {
         ^"fel.alpha_scaler" := 1;
+        start.grid = {
+            "0" : {
+                "fel.beta_scaler_test": 0.01,
+                "fel.beta_scaler_nuisance" : 0.01 
+            },
+            "1" : {
+                "fel.beta_scaler_test": 0.1,
+                "fel.beta_scaler_nuisance" : 0.1 
+            },
+            "2" : {
+                "fel.beta_scaler_test": 0.25,
+                "fel.beta_scaler_nuisance" : 1 
+            },
+            "3" : {
+                "fel.beta_scaler_test": 0.5,
+                "fel.beta_scaler_nuisance" : 0.5
+            },
+            "4" : {
+                "fel.beta_scaler_test": 1.0,
+                "fel.beta_scaler_nuisance" : 1.0
+            },
+            "5" : {
+                "fel.beta_scaler_test": 5.0,
+                "fel.beta_scaler_nuisance" : 5.0
+            }
+        };
     }
     ^"fel.beta_scaler_test"  = 1;
     ^"fel.beta_scaler_nuisance"  = 1;
+    
+    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+    
 
-    Optimize (results, ^lf);
+    Optimize (results, ^lf
+        , {
+            "OPTIMIZATION_METHOD" : "nedler-mead", 
+            "OPTIMIZATION_PRECISION" : 1e-5,
+            "OPTIMIZATION_START_GRID" : start.grid             
+           }
+    );
+    
+    //assert (0);
+    //Optimize (results, ^lf);
 
     alternative = estimators.ExtractMLEs (lf, model_mapping);
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
@@ -269,6 +338,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
     parameters.SetConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
 
+    //Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-5});
     Optimize (results, ^lf);
 
     Null = estimators.ExtractMLEs (lf, model_mapping);

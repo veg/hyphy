@@ -545,7 +545,9 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     ^"prime.site_beta"  = 1;
     ^"prime.site_beta" :> 0;
 
-    Optimize (results, ^lf_fel);
+    Optimize (results, ^lf_fel
+                , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-4}
+    );
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
     //console.log ("\n" + results[1][0]);
@@ -572,6 +574,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
      
      
      Optimize (results, ^lf_prop, {
+            "OPTIMIZATION_METHOD" : "nedler-mead",
             //"OPTIMIZATION_METHOD" : "gradient-descent",
             /*"OPTIMIZATION_START_GRID" : 
              {

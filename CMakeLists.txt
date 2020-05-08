@@ -351,7 +351,7 @@ include_directories(
 #-------------------------------------------------------------------------------
 # shared hyphy hbl stdlib target
 #-------------------------------------------------------------------------------
-install(DIRECTORY res/ DESTINATION lib/hyphy)
+install(DIRECTORY res/ DESTINATION share/hyphy)
 
 #-------------------------------------------------------------------------------
 # HYPHYMP target
@@ -409,7 +409,7 @@ if(${MPI_FOUND})
     # set definitions here 'cause "s_t_p" below doesn't like lists
     set_property(
         TARGET HYPHYMPI
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
     )
 
     message ("${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -564,12 +564,12 @@ set_property(
 
 set_property(
     TARGET hyphy HYPHYGTEST HYPHYDEBUG
-    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
 )
 
 set_property(
     TARGET hyphy HYPHYGTEST HYPHYDEBUG HYPHY-PROFILE
-    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/lib/hyphy"
+    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
 )
 
 
