@@ -1329,7 +1329,7 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p) {
       if (p!=0.0) {
           set = (fabs((oldValue-p)/p))>kMachineEpsilon;
       } else {
-          set = true;//fabs(oldValue-p)>kMachineEpsilon;
+          set = oldValue != p;
       }
     } else {
       set = true;
@@ -4195,7 +4195,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     if (initial_grid) {
         
         hyFloat max_value = -INFINITY;
-        _AssociativeList * best_values;
+        _AssociativeList * best_values = nil;
         
         _SimpleList _sl;
         _AVLListX all_vars (&_sl);

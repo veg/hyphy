@@ -20,8 +20,6 @@ LoadFunctionLibrary("libv3/models/codon/MG_REV_TRIP.bf");
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
-utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 1/2);
-utility.SetEnvVariable ("LF_SMOOTHING_REDUCTION",4);
 utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
 
 
@@ -389,10 +387,16 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         parameters.SetValues (absrel.current_branch_estimates);
         
         
-        absrel.initial_guess = absrel.ComputeOnAGrid (absrel.PopulateInitialGrid (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch, absrel.current_branch_estimates), absrel.likelihood_function_id);
+        //absrel.initial_guess = 
         absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
-                
-        Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id);
+                                
+        Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id
+           , {
+               "OPTIMIZATION_METHOD" : "nedler-mead", 
+               "OPTIMIZATION_PRECISION": 1e-4,
+               "OPTIMIZATION_START_GRID" : absrel.ComputeOnAGrid (absrel.PopulateInitialGrid (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch, absrel.current_branch_estimates), absrel.likelihood_function_id)
+             }
+        );
         
         absrel.current_test_score = math.GetIC (absrel.stepup.mles[1][0], absrel.current_parameter_count + 2, absrel.codon_data_info[terms.data.sample_size]);
 
@@ -448,7 +452,6 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
 
     utility.AddToSet (absrel.full_model_parameters,
                      utility.Map (absrel.current_branch_estimates, "_parameter_", "_parameter_[terms.id]"));
-
 
 
     absrel.branch.complexity [absrel.current_branch] = absrel.current_rate_count;
@@ -592,7 +595,9 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     if ((absrel.selected_branches[0])[absrel.current_branch] == terms.tree_attributes.test) {
         if (absrel.dn_ds.distro [absrel.branch.complexity[absrel.current_branch]-1][0] > 1) {
             absrel.branch.ConstrainForTesting (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
-            Optimize (absrel.null.mles, ^absrel.likelihood_function_id);
+            Optimize (absrel.null.mles, ^absrel.likelihood_function_id
+                //, {"OPTIMIZATION_METHOD" : "nedler-mead", "OPTIMIZATION_PRECISION": 1e-3}
+            );
             absrel.branch.test = absrel.ComputeLRT ( absrel.full_model.fit[terms.fit.log_likelihood], absrel.null.mles[1][0]);
             estimators.RestoreLFStateFromSnapshot (absrel.likelihood_function_id, absrel.full_model.mle_set);
         } else {
@@ -758,16 +763,39 @@ lfunction absrel.PopulateInitialGrid (model, tree_id, branch_id, current_estimat
     local_parameters = (model[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")];
 
     grid = {};
+    
 
     if (component_count == 2) {
         omega1   = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), 1);
         omega2   = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), 2);
         mixture1 = terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1 );
+        
+        if (^"absrel.multi_hit" == "Double")  {
+                doubleH = utility.getGlobalValue ("terms.parameters.multiple_hit_rate");
+                grid ["`tree_id`.`branch_id`.`local_parameters[^'terms.parameters.synonymous_rate']`"] = {4,1}["(current_estimates[^'terms.parameters.synonymous_rate'])[^'terms.fit.MLE']*(1+(2-_MATRIX_ELEMENT_ROW_)*0.25)"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[omega1]`"]   = {4,1}["_MATRIX_ELEMENT_ROW_ * 0.2"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[omega2]`"]   = {5,1}["(1+(_MATRIX_ELEMENT_ROW_-3)^3)*(_MATRIX_ELEMENT_ROW_>=3)+(_MATRIX_ELEMENT_ROW_*0.25+0.25)*(_MATRIX_ELEMENT_ROW_<3)"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[mixture1]`"] = {{0.98}{0.90}{0.75}{0.5}};
+                grid ["`tree_id`.`branch_id`.`local_parameters[doubleH]`"] =  {{0.01}{0.2}{0.5}{1.0}};
+        
+        } else {
+            if (^"absrel.multi_hit" == "Double+Triple")  {
+                doubleH = utility.getGlobalValue ("terms.parameters.multiple_hit_rate");
+                tripleH = utility.getGlobalValue ("terms.parameters.triple_hit_rate");
+                grid ["`tree_id`.`branch_id`.`local_parameters[^'terms.parameters.synonymous_rate']`"] = {4,1}["(current_estimates[^'terms.parameters.synonymous_rate'])[^'terms.fit.MLE']*(1+(2-_MATRIX_ELEMENT_ROW_)*0.25)"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[omega1]`"]   = {3,1}["_MATRIX_ELEMENT_ROW_ * 0.2"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[omega2]`"]   = {4,1}["(1+(_MATRIX_ELEMENT_ROW_-3)^3)*(_MATRIX_ELEMENT_ROW_>=3)+(_MATRIX_ELEMENT_ROW_*0.25+0.25)*(_MATRIX_ELEMENT_ROW_<3)"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[mixture1]`"] = {{0.98}{0.90}{0.5}};
+                grid ["`tree_id`.`branch_id`.`local_parameters[doubleH]`"] =  {{0.01}{0.2}{1.0}};
+                grid ["`tree_id`.`branch_id`.`local_parameters[tripleH]`"] =  {{0.1}{1.0}{5.0}};
 
-        grid ["`tree_id`.`branch_id`.`local_parameters[^'terms.parameters.synonymous_rate']`"] = {5,1}["(current_estimates[^'terms.parameters.synonymous_rate'])[^'terms.fit.MLE']*(1+(2-_MATRIX_ELEMENT_ROW_)*0.25)"];
-        grid ["`tree_id`.`branch_id`.`local_parameters[omega1]`"]   = {5,1}["_MATRIX_ELEMENT_ROW_ * 0.2"];
-        grid ["`tree_id`.`branch_id`.`local_parameters[omega2]`"]   = {7,1}["(1+(_MATRIX_ELEMENT_ROW_-3)^3)*(_MATRIX_ELEMENT_ROW_>=3)+(_MATRIX_ELEMENT_ROW_*0.25+0.25)*(_MATRIX_ELEMENT_ROW_<3)"];
-        grid ["`tree_id`.`branch_id`.`local_parameters[mixture1]`"] = {{0.98}{0.95}{0.90}{0.75}{0.5}};
+            } else {
+                grid ["`tree_id`.`branch_id`.`local_parameters[^'terms.parameters.synonymous_rate']`"] = {5,1}["(current_estimates[^'terms.parameters.synonymous_rate'])[^'terms.fit.MLE']*(1+(2-_MATRIX_ELEMENT_ROW_)*0.25)"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[omega1]`"]   = {5,1}["_MATRIX_ELEMENT_ROW_ * 0.2"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[omega2]`"]   = {7,1}["(1+(_MATRIX_ELEMENT_ROW_-3)^3)*(_MATRIX_ELEMENT_ROW_>=3)+(_MATRIX_ELEMENT_ROW_*0.25+0.25)*(_MATRIX_ELEMENT_ROW_<3)"];
+                grid ["`tree_id`.`branch_id`.`local_parameters[mixture1]`"] = {{0.98}{0.95}{0.90}{0.75}{0.5}};
+            }
+        }
     } else {
         omega_prev = current_estimates [terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component_count - 1)];
         omega_last = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component_count);
@@ -791,19 +819,13 @@ lfunction absrel.ComputeOnAGrid (grid_definition, lfname) {
     parameter_count = Abs (grid_definition);
     grid_dimensions = {};
     total_grid_points = 1;
+    explicit.grid = {};
 
     utility.ForEachPair (grid_definition, "_key_", "_value_",
     '
         `&grid_dimensions`[_key_] = utility.Array1D (_value_);
         `&total_grid_points` = `&total_grid_points` * `&grid_dimensions`[_key_];
     ');
-
-
-    best_val :> -1e100;
-    best_val = -1e100;
-
-
-    LFCompute (^lfname,LF_START_COMPUTE);
 
 
     for (grid_point = 0; grid_point < total_grid_points; grid_point += 1) {
@@ -816,21 +838,13 @@ lfunction absrel.ComputeOnAGrid (grid_definition, lfname) {
             current_state[p_name] = (grid_definition[p_name])[index % grid_dimensions[p_name]];
             index = index $ grid_dimensions[p_name];
         }
-
-        absrel.SetValues (current_state);
-
-        LFCompute (^lfname, try_value);
         
-        if (try_value > best_val) {
-            best_state  = current_state;
-            best_val = try_value;
-        }
+        explicit.grid + current_state;
+
     }
     
-    absrel.SetValues (best_state);
-    LFCompute(^lfname,LF_DONE_COMPUTE);
-
-    return best_state;
+    
+    return explicit.grid;
 
 }
 

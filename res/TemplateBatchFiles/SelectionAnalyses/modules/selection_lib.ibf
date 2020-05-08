@@ -33,6 +33,7 @@
  */
 lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_counts, code_to_codon, genetic_code) {
 
+
     site_count   = Columns (matrix);
     branch_count = Rows (matrix);
     aa_mapping   = genetic_code.DefineCodonToAAMapping (genetic_code);
@@ -59,7 +60,7 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
         for (s = 0; s < site_count; s += 1) {
             code        = matrix[b][s];
             parent_code = matrix[parent][s];
-
+            
             (branch_info[utility.getGlobalValue("terms.codon")])[s] = code_to_codon[code];
 
             if (Type(code_lookup [code]) != "String") {

@@ -66,7 +66,8 @@ fubar.display_orders = {terms.original_name: -1,
 fubar.prompts = {
     "grid" : TRUE,
     "chain" : TRUE,
-    "method" : TRUE
+    "method" : TRUE,
+    "non-zero" : TRUE
 };
 
 fubar.run_settings = {
@@ -76,7 +77,8 @@ fubar.run_settings = {
     "burn-in" : 1e6,
     "samples" : 100,
     "concentration" : 0.5,
-    "posterior" : 0.9
+    "posterior" : 0.9,
+    "non-zero" : FALSE
 };
 
 
@@ -120,8 +122,9 @@ fubar.json[terms.json.analysis] = fubar.analysis_description;
 KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+
 // Additional Keyword Arguments ("output" and "cache") called below after namespace fubar.
-// Additional Keyword Arguments ("grid", "method", "chain", "chain-length", "burn-in", "samples" and "concentration") called from within the "fubar.RunPrompts" function.
+// Additional Keyword Arguments ("non-zero" "grid", "method", "chain", "chain-length", "burn-in", "samples" and "concentration") called from within the "fubar.RunPrompts" function.
 
 
 namespace fubar {
@@ -225,7 +228,7 @@ if (utility.Has (fubar.cache, terms.fubar.cache.grid, "Matrix") && utility.Has (
     // define FUBAR model
 
     fubar.RunPrompts (fubar.prompts);
-    fubar.grid.matrix                            = fubar.DefineAlphaBetaGrid (fubar.run_settings["grid size"]);
+    fubar.grid.matrix                            = fubar.DefineAlphaBetaGrid (fubar.run_settings["grid size"], fubar.run_settings["non-zero"]);
 
     io.ReportProgressMessageMD                  ("fubar", "codon_fit", "Computing the phylogenetic likelihood function on the grid ");
     io.ReportProgressMessageMD                  ("fubar", "codon_fit", "* Determining appropriate tree scaling based on the best score from a  `fubar.run_settings['grid size']` x `fubar.run_settings['grid size']` rate grid");
@@ -679,6 +682,8 @@ lfunction fubar.ComputeENFP_CI (p_i,sig_level) {
 //----------------------------------------------------------------------------
 
 function     fubar.RunPrompts (prompts) {
+
+ 
      if (prompts["grid"]) {
         KeywordArgument ("grid", "The number of grid points", "20");
         fubar.run_settings["grid size"] = io.PromptUser ("> Number of grid points per dimension (total number is D^2)",fubar.run_settings["grid size"],5,50,TRUE);
@@ -715,6 +720,19 @@ function     fubar.RunPrompts (prompts) {
         fubar.run_settings["concentration"] = io.PromptUser  ("> The concentration parameter of the Dirichlet prior",fubar.run_settings["concentration"],0.001,1,FALSE);
         prompts["chain"] = FALSE;
     }
+
+   if (prompts["non-zero"]) {
+    
+        KeywordArgument ("non-zero", "Enforce non-zero synonymous rates on the grid to enable dN/dS calculations", "No");
+        
+        fubar.run_settings["non-zero"] = io.SelectAnOption  ({
+                                                                "Yes" : "The grid will exclude zero synonymous rates, resulting in finite dN/dS values",
+                                                                "No"  : "The grid will include zero synonymous rates, resulting in infinite dN/dS values"
+                                                             }, "Enforce non-zero synonymous rates on the grid") == "Yes";
+                                                             
+        prompts["non-zero"] = FALSE;
+     }
+
 }
 
 //------------------------------------------------------------------------------
@@ -771,7 +789,7 @@ lfunction fubar.scalers.Unconstrain (tree_name, node_name, model_description) {
 
 //------------------------------------------------------------------------------------------------//
 
-lfunction fubar.DefineAlphaBetaGrid (one_d_points) {
+lfunction fubar.DefineAlphaBetaGrid (one_d_points, non_zero) {
 
 
     one_d_points    = Max (one_d_points, 5);
@@ -797,12 +815,24 @@ lfunction fubar.DefineAlphaBetaGrid (one_d_points) {
     }
 
     _p = 0;
-    for (_r = 0; _r < one_d_points; _r += 1) {
-        for (_c = 0; _c < one_d_points; _c += 1) {
-           alphaBetaGrid[_p][0] = oneDGrid[_r];
-           alphaBetaGrid[_p][1] = oneDGrid[_c];
-           _p += 1;
+    if (non_zero) {
+       min_value = Max (1e-3, oneDGrid[0]);
+        for (_r = 0; _r < one_d_points; _r += 1) {
+            for (_c = 0; _c < one_d_points; _c += 1) {
+               alphaBetaGrid[_p][0] = Max (oneDGrid[_r], min_value);
+               alphaBetaGrid[_p][1] = oneDGrid[_c];
+               _p += 1;
+            }
         }
+        
+    } else {
+        for (_r = 0; _r < one_d_points; _r += 1) {
+            for (_c = 0; _c < one_d_points; _c += 1) {
+               alphaBetaGrid[_p][0] = oneDGrid[_r];
+               alphaBetaGrid[_p][1] = oneDGrid[_c];
+               _p += 1;
+            }
+        }       
     }
 
     return alphaBetaGrid;

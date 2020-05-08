@@ -817,7 +817,7 @@ lfunction tree.Annotate (tree_id, labels, chars, doLengths) {
             }
         }
 
-        if (doLengths) {
+        if (doLengths ) {
 
              if (nodeIndex < treeSize - 1) {
                 _ost * ":";

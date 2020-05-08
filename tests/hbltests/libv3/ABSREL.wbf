@@ -1,9 +1,9 @@
 GetString (version, HYPHY_VERSION, 0);
 
 if (+version >= 2.4) {
-    LoadFunctionLibrary ("SelectionAnalyses/ABSREL.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branches" : "Internal"});
+    LoadFunctionLibrary ("SelectionAnalyses/aBSREL.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branches" : "Internal"});
 } else {
-    LoadFunctionLibrary ("SelectionAnalyses/ABSREL.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "Internal", "3" : "Yes", "4" : "0.1"});
+    LoadFunctionLibrary ("SelectionAnalyses/aBSREL.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "Internal", "3" : "Yes", "4" : "0.1"});
 
 }
 LoadFunctionLibrary ("shared.bf");

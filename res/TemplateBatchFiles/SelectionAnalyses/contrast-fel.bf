@@ -663,13 +663,31 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     }
 
     // all rates free
-    utility.ForEach (^"fel.scaler_parameter_names", "_pname_",
-    '
+    
+    start.grid_init = {};
+    pnames = {};
+    
+    for (k, _pname_; in; ^"fel.scaler_parameter_names") {
         ^_pname_ = 1;
-    '
-    );
-
-    Optimize (results, ^lf);
+        pnames + _pname_;
+        start.grid_init [_pname_] = {"0.1" : 1, "1" : 1};
+    }
+    
+    start.grid = {};
+    for (k, v; in; utility.CatersianProduct (start.grid_init)) {
+        values = {};
+        for (vi, vv; in; v) {
+            values[pnames[vi]] = +vv;
+        }
+        start.grid + values;
+    }
+        
+    Optimize (results, ^lf, {
+                "OPTIMIZATION_METHOD" : "nedler-mead", 
+                "OPTIMIZATION_PRECISION" : 1e-5,
+                "OPTIMIZATION_START_GRID" : start.grid    
+            }
+           );
     
     /**
         infer and report ancestral substitutions

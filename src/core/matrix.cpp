@@ -5496,8 +5496,8 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                 }
             }
         } else {
-            long loopBound = vDim - vDim % 4;
-
+            long loopBound = (vDim >> 2) << 2;
+            //vDim - vDim % 4;
 
             // loop interchange rocks!
 
