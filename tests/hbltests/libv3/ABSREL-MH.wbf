@@ -50,6 +50,4 @@ utility.ForEachPair ((absrel.json["branch attributes"])["0"],"_key_", "_value_",
                 ");
                 
 
-assert (check_value (
-    test.lrts, 6.38 , 0.05), "More than 5% difference in cumulative LRT for positively selected branches");
 
