@@ -24,6 +24,8 @@ jobs:
           sudo apt-get install nodejs -y;
           npm i --save benchmark;
           npm install --no-optional;
+          cmake .;
+          make -j all;
           node bench.js | tee output.txt;
           git stash save;
           git config --local user.email "action@github.com";
