@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1589230366225,
+  "lastUpdate": 1589230959684,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -74,6 +74,44 @@ window.BENCHMARK_DATA = {
             "name": "GARD.wbf",
             "value": 33.333333333333336,
             "range": "±9.05%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevin@klevitz.com",
+            "name": "Kevin Levitz",
+            "username": "kjlevitz"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "765deefa024bc9aa0811b8926c9e465379ea2436",
+          "message": "run: Force GA run with commit 3",
+          "timestamp": "2020-05-11T16:56:23-04:00",
+          "tree_id": "edce9c65f706e6d4539bf401676b79fc5bd4cb65",
+          "url": "https://github.com/veg/hyphy/commit/765deefa024bc9aa0811b8926c9e465379ea2436"
+        },
+        "date": 1589230952551,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 2.6315789473684212,
+            "range": "±1.29%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "GARD.wbf",
+            "value": 20,
+            "range": "±17.37%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
