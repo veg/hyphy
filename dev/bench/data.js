@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1588793897123,
+  "lastUpdate": 1589229158430,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -229,6 +229,44 @@ window.BENCHMARK_DATA = {
             "value": 0.04,
             "range": "±13.88%",
             "unit": "ops/sec",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevin@klevitz.com",
+            "name": "Kevin Levitz",
+            "username": "kjlevitz"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c68a73f944d2a773643cf7f67abbc9eb475c724b",
+          "message": "fix: Replaced cmake code",
+          "timestamp": "2020-05-11T16:25:07-04:00",
+          "tree_id": "b96ce6ecfd341d5316e7da9d9b9e762bca34fb6b",
+          "url": "https://github.com/veg/hyphy/commit/c68a73f944d2a773643cf7f67abbc9eb475c724b"
+        },
+        "date": 1589229151133,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 2.6315789473684212,
+            "range": "±1.95%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "GARD.wbf",
+            "value": 20,
+            "range": "±11.24%",
+            "unit": "secs/op",
             "extra": "5 samples"
           }
         ]
