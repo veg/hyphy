@@ -498,6 +498,7 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                         throw _String ("Unexpected end of tree string while searching for a node name");
                     } else {
                         nodeName = parms.Cut (i, end_of_id-1);
+                        nodeName.StripQuotes("'\"","'\"");
                     }
                     
                     i = end_of_id - 1;
@@ -822,6 +823,15 @@ _String const  _TreeTopology::GetNodeStringForTree  (node<long> * n , int flags)
 
   if (flags & fGetNodeStringForTreeName) {
     node_desc = GetNodeName (n);
+    // check to see if the node name has any chars that are a part of the Newick spec, and if so, enquote the string
+    _any_char_in_set newick_delimiter (" (),{}[];:'\"");
+    if (node_desc.Any ([&newick_delimiter](char c, unsigned long i) -> bool {
+          return newick_delimiter==c;
+      }
+    ) != kNotFound) {
+        node_desc = _StringBuffer ().SanitizeAndAppend(node_desc).Enquote('"');
+    }
+    
   }
 
   if (flags & fGetNodeStringForTreeModel) {
