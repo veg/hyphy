@@ -1,9 +1,9 @@
 name: Benchmark
 on:
   push:
-    branches: [ klevitz-dev ]
+    branches: [ master ]
   pull_request:
-    branches: [ klevitz-dev ]
+    branches: [ master ]
 jobs:
   benchmark:
     name: Run Javascript Benchmark
