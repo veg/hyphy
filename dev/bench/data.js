@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1589408770871,
+  "lastUpdate": 1589483069490,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -568,6 +568,37 @@ window.BENCHMARK_DATA = {
             "name": "GARD.wbf",
             "value": 33.333333333333336,
             "range": "±5.24%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kevin@klevitz.com",
+            "name": "Kevin Levitz",
+            "username": "kjlevitz"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "fa4498c8748b5108fb18bf6defc9879dae4b1378",
+          "message": "add: underscore install",
+          "timestamp": "2020-05-14T13:41:38-04:00",
+          "tree_id": "42fda4d2597ee0074bec67b1acaf3f4045807cc2",
+          "url": "https://github.com/veg/hyphy/commit/fa4498c8748b5108fb18bf6defc9879dae4b1378"
+        },
+        "date": 1589483061919,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "CFEL.wbf",
+            "value": 485.43689320388347,
+            "range": "±4.553060%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
