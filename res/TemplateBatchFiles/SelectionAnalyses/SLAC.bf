@@ -206,7 +206,7 @@ slac.counting_bias_array + slac.counting_bias_matrix;
 slac.counting_bias_array + slac.counting_bias_matrix;
 slac.counting_bias_array + slac.counting_bias_matrix;
 
-//io.SpoolLF (slac.partitioned_mg_results[terms.likelihood_function], slac.codon_data_info[terms.data.file], "slac");
+io.SpoolLF (slac.partitioned_mg_results[terms.likelihood_function], slac.codon_data_info[terms.data.file], "slac");
 io.ReportProgressMessageMD("slac", "anc", "Performing joint maximum likelihood ancestral state reconstruction");
 slac.counts    = genetic_code.ComputePairwiseDifferencesAndExpectedSites (slac.codon_data_info[terms.code], {terms.genetic_code.count_stop_codons : FALSE, terms.genetic_code.weighting_matrix : slac.counting_bias_array});
 slac.results   = {};

@@ -8160,11 +8160,11 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
             return computationalResults.theData[index];
         }
     }
-
+    
     if (conditionalInternalNodeLikelihoodCaches) {
 
         long        catID            = siteRes?currentRateClass:-1;
-        _AVLListX * var_to_node_map = variable_to_node_map ? (_AVLListX *)variable_to_node_map->GetItem(index,1) : nil;
+        _AVLListX * var_to_node_map = variable_to_node_map && evalsSinceLastSetup > 0 ? (_AVLListX *)variable_to_node_map->GetItem(index,1) : nil;
 
         if (conditionalInternalNodeLikelihoodCaches[index]) {
             // not a 2 sequence analysis
