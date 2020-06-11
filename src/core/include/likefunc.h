@@ -132,8 +132,7 @@ enum _LikelihoodFunctionCountType {
 
 //_______________________________________________________________________________________
 
-class   _LikelihoodFunction: public BaseObj
-{
+class   _LikelihoodFunction: public BaseObj {
 
 public:
 
@@ -183,7 +182,6 @@ public:
     hyFloat        DerivativeCorrection (long, hyFloat) const;     // obtain the g'(x) for the chain rule differentiation under transformed variables
     void        SetIthIndependent (long, hyFloat);           // set the value of i-th independent variable
     bool        CheckAndSetIthIndependent (long, hyFloat);   // set the value of i-th independent variable
-    void        SetIthDependent           (long, hyFloat);   // set the value of i-th dependent variable
     bool        IsIthParameterGlobal      (long) const;
 
     long        SetAllIndependent         (_Matrix*);
@@ -196,7 +194,7 @@ public:
     bool        PreCompute      (void);
     void        PostCompute     (void);
     virtual
-    hyFloat  Compute         (void);
+    hyFloat     Compute         (void);
 
     void        PrepareToCompute (bool = false);
     void        DoneComputing    (bool = false);
@@ -221,7 +219,7 @@ public:
     // optional list of parameters to estimate the conditional covariance for
 
 
-    virtual     void        RescanAllVariables      (void);
+    virtual     void        RescanAllVariables      (bool obtain_variable_mapping = false);
 
     long        DependOnTree            (_String const&) const;
     long        DependOnModel           (_String const&) const;
@@ -566,8 +564,8 @@ protected:
                                 _hyphyCategoryCOP
                      */
                     indVarsByPartition,
-                    depVarsByPartition;
-
+                    depVarsByPartition,
+                    *variable_to_node_map;
 
 
     long            evalsSinceLastSetup,
@@ -613,7 +611,7 @@ protected:
     _Formula*       computingTemplate;
     MSTCache*       mstCache;
 
-    hyFloat      smoothingTerm,
+    hyFloat         smoothingTerm,
                     smoothingReduction,
                     smoothingPenalty;
 
@@ -661,10 +659,13 @@ protected:
                         canUseReversibleSpeedups,
                         // a partition will be tagged with '1' if its tree has only
                         // time-reversible models
-                        siteScalerBuffer
+                        siteScalerBuffer,
                         // used for LF with category variables to
                         // store site-by-site scaling factors
+                        *_variables_changed_during_last_compute
                         ;
+    
+    _AVLList*           variables_changed_during_last_compute;
 
     _List               localUpdatePolicy,
                         matricesToExponentiate,
@@ -698,7 +699,7 @@ public:
     _CustomFunction         (const _String& , _VariableContainer const * context = nil);
 
     virtual     hyFloat     Compute                 (void);
-    virtual     void        RescanAllVariables      (void) {}
+    virtual     void        RescanAllVariables      (bool obtain_variable_mapping = false) {}
     virtual void            SerializeLF             (_StringBuffer& res, char=0, _SimpleList* = nil, _SimpleList* = nil) {
                res.AppendNewInstance ((_String*)myBody.toStr(kFormulaStringConversionNormal));
     }

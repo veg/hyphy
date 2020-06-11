@@ -9,26 +9,41 @@ LoadFunctionLibrary("libv3/all-terms.bf");
 //------------------------------------------------------------------------------
 lfunction selection.io.defineBranchSets(partition_info) {
 
-    available_models = {};
     branch_set = {};
 
     tree_for_analysis = None;
 
 
-
-    if (Abs (partition_info) == 1) { // allow more refined selections if there is only one tree
-        tree_for_analysis = (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
+    key_counts = {};
+    for (k = 0; k < Abs (partition_info); k+=1) {
+        tree_for_analysis = (partition_info[k])[utility.getGlobalValue("terms.data.tree")];
+        available_models = {};
         utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
-        list_models   = utility.sortStrings(utility.Keys   (available_models)); // get keys
-        option_count  = Abs (available_models);
+        
+        for (k2; in; utility.Keys   (available_models)) {
+            key_counts[k2] = key_counts[k2] + 1;
+        }
+    }
+    
+    
+    
+    list_models = {};
+    for (k,v; in; key_counts) {
+        if (v == Abs (partition_info)) {
+            list_models[k] = 1;
+        }
+    }
+    option_count = Abs (list_models);
 
-    } else {
-        option_count = 0;
+    if (option_count > 0) {
+        list_models   = utility.sortStrings(utility.Keys   (list_models));
     }
 
+     
     selectTheseForTesting = {
         option_count + 3, 2
     };
+    
 
     selectTheseForTesting[0][0] = "All";
     selectTheseForTesting[0][1] = "Include all branches in the analysis";

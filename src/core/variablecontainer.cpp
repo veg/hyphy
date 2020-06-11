@@ -452,24 +452,23 @@ _Variable* _VariableContainer::GetIthParameter (long index) const {
 //__________________________________________________________________________________
 
 bool _VariableContainer::NeedToExponentiate (bool ignoreCats) const {
-    if (HY_VC_NO_CHECK&varFlags) {
-        return false;
-    }
-
-    auto has_changed = [=] (long var_index, long ref_index, unsigned long) -> bool {
-        if (ref_index >= 0L) {
+    if ((HY_VC_NO_CHECK&varFlags) == 0) {
+        auto has_changed = [=] (long var_index, long ref_index, unsigned long) -> bool {
+            if (ref_index >= 0L) {
+                return LocateVar (var_index) -> HasChanged (ignoreCats);
+            }
+            return false;
+        };
+        auto has_changed_global = [=] (long var_index, unsigned long) -> bool {
             return LocateVar (var_index) -> HasChanged (ignoreCats);
-        }
-        return false;
-    };
-    auto has_changed_global = [=] (long var_index, unsigned long) -> bool {
-        return LocateVar (var_index) -> HasChanged (ignoreCats);
-    };
+        };
 
-    
-    return AnyLocalVariable (iVariables, has_changed) ||
-           gVariables && gVariables->Any(has_changed_global) ||
-           AnyLocalVariable (dVariables, has_changed);
+        
+        return AnyLocalVariable (iVariables, has_changed) ||
+               gVariables && gVariables->Any(has_changed_global) ||
+               AnyLocalVariable (dVariables, has_changed);
+    }
+    return false;
     
 }
 
@@ -682,19 +681,19 @@ void      _VariableContainer::CopyMatrixParameters (_VariableContainer* source, 
                 if (source_var >= 0UL) {
                     long which_idx = model_vars_in_source.list_data[source_var];
                     which_idx = which_idx >= 0 ? source->iVariables->get (which_idx) : source->dVariables->get (-which_idx-2L);
-                    LocateVar (iVariables->get (model_vars_in_target.get(index)))->SetValue (LocateVar (which_idx)->Compute());
+                    LocateVar (iVariables->get (model_vars_in_target.get(index)))->SetValue (LocateVar (which_idx)->Compute(),true,true,NULL);
                 }
             });
             
         } else {
             if (source->iVariables) {
                 for (unsigned long i=0UL; i<iVariables->lLength && i< source->iVariables->lLength; i+=2UL) {
-                    LocateVar (iVariables->get(i))->SetValue(LocateVar (source->iVariables->get(i))->Compute());
+                    LocateVar (iVariables->get(i))->SetValue(LocateVar (source->iVariables->get(i))->Compute(),true,true,NULL);
                 }
             }
         }
     }
-    SetValue (source->Compute());
+    SetValue (source->Compute(),true,true,NULL);
 }
 
 //__________________________________________________________________________________
@@ -860,7 +859,7 @@ void      _VariableContainer::CopyModelParameterValue (long var_idx, long ref_id
     if (ref_idx >= 0) {
         _Variable * model_var = LocateVar (ref_idx);
         if (model_var -> IsIndependent()) {
-            model_var->SetValue (LocateVar (var_idx)->Compute());
+            model_var->SetValue (LocateVar (var_idx)->Compute(),true,true,NULL);
             
 #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
             if (1 || l == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
@@ -985,13 +984,21 @@ bool _VariableContainer::IsConstant (void) {
 
 //__________________________________________________________________________________
 
-void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight) {
+void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight, _AVLListX * map_variables_to_nodes, long track_node) {
     
     //printf ("_VariableContainer::ScanContainerForVariable %x\n", this);
     ForEachLocalVariable(iVariables, [&] (long var_idx, long ref_idx, unsigned long) -> void {
-        l.Insert((BaseRef)var_idx);
+        long insert_location = l.Insert((BaseRef)var_idx);
         if (tagger) {
             tagger->UpdateValue ((BaseRef)var_idx, weight, 0);
+        }
+        if (map_variables_to_nodes) {
+            //printf ("%ld (%s) -> %ld\n", var_idx, LocateVar (var_idx)->GetName()->get_str(), insert_location);
+            if (insert_location >= 0) { // was inserted
+                map_variables_to_nodes->Insert ((BaseRef)var_idx, track_node, false, false);
+            } else { // was already there
+                map_variables_to_nodes->UpdateValue((BaseRef)var_idx, -1, 1);
+            }
         }
     });
     
@@ -1004,13 +1011,20 @@ void _VariableContainer::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _A
             LocateVar (var_idx)->ScanForVariables(ta, true, tagger, weight);
         });
 
-        ta.ReorderList();
+        //ta.ReorderList();
         temp.Each([&] (long var_index, unsigned long) -> void {
             _Variable * v = LocateVar(var_index);
             if (!v->IsGlobal() && v->IsIndependent()) {
-                l.Insert ((BaseRef)var_index);
+                long insert_location = l.Insert ((BaseRef)var_index);
                 if (tagger) {
                     tagger->UpdateValue ((BaseRef)var_index, weight, 0);
+                }
+                if (map_variables_to_nodes) {
+                    if (insert_location >= 0) { // was inserted
+                        map_variables_to_nodes->Insert ((BaseRef)var_index, track_node, false, false);
+                    } else { // was already there
+                        map_variables_to_nodes->UpdateValue((BaseRef)var_index, -1, 1);
+                    }
                 }
             }
         });
@@ -1039,10 +1053,9 @@ void _VariableContainer::GetListOfModelParameters (_List& rec) {
 
 void _VariableContainer::ScanForGVariables (_AVLList& independent,_AVLList& dependent, _AVLListX* tagger, long weight) const {
     
-    
     auto insert_g_var = [&] (_Variable *v, long var_idx) -> void {
         if (v->IsIndependent()) {
-            independent.Insert ((BaseRef)var_idx);
+            long insert_location = independent.Insert ((BaseRef)var_idx);
             if (tagger) {
                 tagger->UpdateValue((BaseRef)var_idx, weight, 0);
             }
@@ -1065,7 +1078,7 @@ void _VariableContainer::ScanForGVariables (_AVLList& independent,_AVLList& depe
         ForEachLocalVariable(dVariables, [&] (long var_idx, long ref_idx, unsigned long) -> void {
             LocateVar (var_idx)->ScanForVariables(al, true);
         });
-        al.ReorderList();
+        //al.ReorderList();
         var_list.Each ([&] (long var_idx, unsigned long) -> void {
             _Variable * v = LocateVar(var_idx);
             if (v->IsGlobal()) {

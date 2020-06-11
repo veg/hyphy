@@ -206,7 +206,7 @@ _Variable::_Variable (_String const&s, _String const &f, bool isG) {
     if (varFormula->IsAConstant()) {
         HBLObjectRef theP = varFormula->Compute();
         if (theP) {
-            SetValue (theP);
+            SetValue (theP,true,true,NULL);
             delete   (varFormula);
             varFormula = nil;
         } else {
@@ -338,7 +338,7 @@ void  _Variable::CompileListOfDependents (_SimpleList& rec)
 //__________________________________________________________________________________
 void  _Variable::SetValue (hyFloat new_value) {
 // set the value of the var
-  this->SetValue (new _Constant (new_value), false);
+  this->SetValue (new _Constant (new_value), false,true,NULL);
 }
 
 //__________________________________________________________________________________
@@ -360,7 +360,7 @@ void        SetVariablesToOwnValues (_AVLList const & indices) {
             HBLObjectRef curValue = this_var->Compute();
             curValue->AddAReference();
             index2value.InsertNumber(this_var->get_index());
-            this_var->SetValue(curValue, false, false);
+            this_var->SetValue(curValue, false, false, NULL);
             //printf ("SetVariablesToOwnValues : Set own value for %s\n", this_var->GetName()->get_str());
         }
         cn = indices.Traverser (hist,ls);
@@ -383,7 +383,7 @@ void        SetVariablesToOwnValues (_AVLList const & indices) {
 }
 
 //__________________________________________________________________________________
-void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks) { // set the value of the var
+void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks, _AVLList* keep_track_of_changes) { // set the value of the var
     //hasBeenChanged = true;
     if (varFlags & HY_VARIABLE_COMPUTING) {
         HandleApplicationError (_String ("A recursive dependency error in _Variable::SetValue; this is an HBL implementation bug; offending variable is ") & GetName()->Enquote());
@@ -392,6 +392,10 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks) { // set
   
     varFlags &= HY_VARIABLE_SET;
     varFlags |= HY_VARIABLE_CHANGED;
+    
+    if (keep_track_of_changes) {
+        keep_track_of_changes->InsertNumber (get_index());
+    }
 
     long     valueClass = theP->ObjectClass();
   
@@ -494,11 +498,9 @@ void  _Variable::SetNumericValue (hyFloat v) // set the value of the var to a nu
 
 //__________________________________________________________________________________
 
-void  _Variable::CheckAndSet (hyFloat c, bool oob) // set the value of the var
+void  _Variable::CheckAndSet (hyFloat c, bool oob, _AVLList * keep_track_of_changes) // set the value of the var
 {
     //hasBeenChanged = true;
-    varFlags &= HY_VARIABLE_SET;
-    varFlags |= HY_VARIABLE_CHANGED;
     hyFloat l = lowerBound+1.0e-30,
                u = upperBound-1.0e-30;
     if (c<l || c>u ) {
@@ -513,6 +515,13 @@ void  _Variable::CheckAndSet (hyFloat c, bool oob) // set the value of the var
         }
     } else {
         theValue = c;
+    }
+    
+    varFlags &= HY_VARIABLE_SET;
+    varFlags |= HY_VARIABLE_CHANGED;
+
+    if (keep_track_of_changes) {
+        keep_track_of_changes->InsertNumber (get_index());
     }
 
     if (varValue) {
@@ -540,9 +549,9 @@ void    _Variable::EnsureTheValueIsInBounds (void)
     if (ObjectClass () == NUMBER && IsIndependent()) {
         _Constant*   myValue = (_Constant*) Compute();
         if (myValue->Value() < lowerBound) {
-            SetValue (new _Constant (lowerBound),false);
+            SetValue (new _Constant (lowerBound),false,true,NULL);
         } else if (myValue->Value() > upperBound) {
-            SetValue (new _Constant (upperBound),false);
+            SetValue (new _Constant (upperBound),false,true,NULL);
         }
     }
 }
@@ -553,7 +562,7 @@ void    _Variable::ClearConstraints (void)
 {
     if (IsCategory ()) {
         _Variable newVar (*GetName(), IsGlobal());
-        newVar.SetValue ((HBLObjectRef)Compute()->makeDynamic(),false);
+        newVar.SetValue ((HBLObjectRef)Compute()->makeDynamic(),false,true,NULL);
         ReplaceVar ( &newVar);
         /*_Matrix * modelMatrix = (_Matrix*)LocateVar(modelMatrixIndices.list_data[1])->GetValue();
         for (long k=0; k<4; k++)
@@ -568,7 +577,7 @@ void    _Variable::ClearConstraints (void)
         //printf ("ClearConstraints %s %x\n", GetName()->get_str(), varFormula);
 
         if (!IsIndependent()) {
-            SetValue ((HBLObjectRef)Compute()->makeDynamic(),false);
+            SetValue ((HBLObjectRef)Compute()->makeDynamic(),false,true,NULL);
         }
         SetBounds (DEFAULTLOWERBOUND,DEFAULTUPPERBOUND);
     }
@@ -723,11 +732,6 @@ bool  _Variable::HasChanged (bool ignoreCats) {
         if (useGlobalUpdateFlag && (varFlags&HY_DEP_V_COMPUTED)) {
             return false;
         }
-
-        /*if (varFlags&HY_DEP_V_INSPECTED) {
-            return ignoreCats?(varFlags&HY_DEP_V_MODIFIED_CATS):(varFlags&HY_DEP_V_MODIFIED);
-        }*/
-        // SLKP 20170202: seems to be unused
 
        return  !varValue || varFormula->HasChanged(ignoreCats) ;
 

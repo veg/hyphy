@@ -415,6 +415,9 @@ class _List:public _SimpleList {
          
          */
         const _String GenerateUniqueNameForList (_String const& base, bool sorted) const;
+    
+        virtual bool is_numeric_list (void) const { return false;}
+
 
 };
 

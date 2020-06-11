@@ -577,6 +577,7 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
                 if (cp == false && clear) {
                     DeleteObject (b);
                 }
+                // already exists, return the node it mapped to
                 return -p-1;
             }
             if (balanceFactor.list_data[p] != 0) {
@@ -705,10 +706,6 @@ long  _AVLList::Insert (BaseRef b, long xtra,bool cp,bool clear) {
         return p;
     }
 
-    /*dataList->InsertElement (b,-1,false,false);
-    leftChild  << -1;
-    rightChild << -1;
-    balanceFactor << 0;*/
     root =InsertData (b, xtra,cp);
 
     return 0;

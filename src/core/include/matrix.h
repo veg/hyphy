@@ -439,7 +439,7 @@ public:
 
     _Formula*      GetFormula                  (long, long) const;
     HBLObjectRef   GetMatrixCell               (long, long) const;
-    HBLObjectRef   MultByFreqs                 (long);
+    HBLObjectRef   MultByFreqs                 (long, bool = false);
     HBLObjectRef   EvaluateSimple              (_Matrix* existing_receptacle = nil);
     HBLObjectRef   SortMatrixOnColumn          (HBLObjectRef);
     HBLObjectRef   K_Means                     (HBLObjectRef);

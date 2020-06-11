@@ -773,7 +773,7 @@ void _SimpleList::Initialize(bool doMemAlloc) {
 void _SimpleList::InsertElement (BaseRef br, long insertAt, bool store, bool pointer) {
     lLength++;
     if (lLength>laLength) {
-        unsigned long incBy = (MEMORYSTEP*5 > lLength)? MEMORYSTEP: lLength/5;
+        unsigned long incBy = ((MEMORYSTEP << 2) > lLength)? MEMORYSTEP: (lLength >> 2);
 
         laLength+=incBy;
 

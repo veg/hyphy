@@ -737,7 +737,7 @@ lfunction absrel.SetBranchConstraints (model, tree_id, branch_id) {
         parameters.SetRange ("`tree_id`.`branch_id`.`local_parameters[omega_k]`", utility.getGlobalValue ("terms.range01"));
     }
     omega_k   = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), k);
-    parameters.SetRange ("`tree_id`.`branch_id`.`local_parameters[omega_k]`", utility.getGlobalValue ("terms.range_any"));
+    parameters.SetRange ("`tree_id`.`branch_id`.`local_parameters[omega_k]`", utility.getGlobalValue ("terms.range_positive"));
 }
 
 //------------------------------------------------------------------------------------------------------------------------

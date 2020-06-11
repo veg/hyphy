@@ -261,7 +261,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                     if(scannedVarsList.lLength==1) {
                         if (scannedVarsList[0]==hy_n_variable->get_index()) {
                               for (unsigned long i=0UL; i<intervals; i++) {
-                                hy_n_variable->SetValue(new _Constant ((hyFloat)i), false);
+                                hy_n_variable->SetValue(new _Constant ((hyFloat)i), false, true, NULL);
                                 (*weights)[i]= probabilities.Compute()->Value();
                             }
                             check = checkWeightMatrix (*weights);
@@ -743,7 +743,7 @@ hyFloat  _CategoryVariable::SetIntervalValue (long ival, bool recalc)
     } else {
         newIntervalValue = ((_Matrix*)values->RetrieveNumeric())->theData[ival];
     }
-    SetValue (new _Constant(newIntervalValue),false);
+    SetValue (new _Constant(newIntervalValue),false,true,NULL);
     /*if (ival == 0) {
         printf ("\n\n");
     }
@@ -1055,10 +1055,10 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force) {
                         values->theData[i] = density.MeanIntegral (hy_x_variable,currentLeft,(*intervalEnds)[i])/(*ew)[i];
                     } else {
                         _Constant    currentRight ((*intervalEnds)[i]);
-                        hy_x_variable->SetValue(&currentRight);
+                        hy_x_variable->SetValue(&currentRight, true, true, NULL);
                         values->theData[i] = meanC.Compute()->Value();
                         currentRight.SetValue(currentLeft);
-                        hy_x_variable->SetValue(&currentRight);
+                        hy_x_variable->SetValue(&currentRight, true, true, NULL);
                         values->theData[i] = x_min+((*values)[i]- meanC.Compute()->Value())/(*ew)[i];
                         if (values->theData[i]>x_max) {
                             values->theData[i] = x_max;
@@ -1095,10 +1095,10 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force) {
                     (*values)[i] = density.MeanIntegral (hy_x_variable,currentLeft,(*intervalEnds)[i],true)/(*ew)[i];
                 } else {
                     _Constant    currentRight (x_max);
-                    hy_x_variable->SetValue(&currentRight);
+                    hy_x_variable->SetValue(&currentRight, true, false, NULL);
                     values->theData[i] = meanC.Compute()->Value();
                     currentRight.SetValue(currentLeft);
-                    hy_x_variable->SetValue(&currentRight);
+                    hy_x_variable->SetValue(&currentRight, true, false, NULL);
                     values->theData[i] = x_min+((*values)[i]- meanC.Compute()->Value())/(*ew)[i];
                     if (values->theData[i]>x_max) {
                         values->theData[i] = x_max;
@@ -1131,8 +1131,7 @@ bool        _CategoryVariable::UpdateIntervalsAndValues (bool force) {
             if (meanC.IsEmpty()) {
                 distMean = density.MeanIntegral (hy_x_variable,x_min,x_max, true);
             } else {
-                _Constant    currentRight (x_max);
-                hy_x_variable->SetValue(&currentRight);
+                hy_x_variable->SetValue(new _Constant (x_max), false, false, NULL);
                 distMean = meanC.Compute()->Value();
             }
 

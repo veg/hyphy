@@ -1453,9 +1453,9 @@ HBLObjectRef   _Matrix::Inverse (void) const {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _Matrix::MultByFreqs (long freqID) {
+HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
 // multiply this transition probs matrix by frequencies
-    HBLObjectRef value = ComputeNumeric(true);
+    HBLObjectRef value = ComputeNumeric(true);//!reuse_value_object);
     
     //printf ("\n%s\n", _String ((_String*)toStr()).get_str());
 
@@ -4862,9 +4862,9 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
                     * cr = CheckReceptacle(&hy_env::matrix_element_row, kEmptyString, false),
                     * cc = CheckReceptacle(&hy_env::matrix_element_column, kEmptyString, false);
         
-        cv->CheckAndSet (0.0);
-        cr->CheckAndSet (0.0);
-        cc->CheckAndSet (0.0);
+        cv->CheckAndSet (0.0, false, NULL);
+        cr->CheckAndSet (0.0, false, NULL);
+        cc->CheckAndSet (0.0, false, NULL);
         
         f.Compute();
         if (terminate_execution) {
@@ -4971,10 +4971,10 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
             delete  [] varValues;
           } else {
             for (long r=0; r<hDim; r++) {
-              cr->CheckAndSet (r);
+              cr->CheckAndSet (r,false, NULL);
               for (long c=0; c<vDim; c++) {
-                cc->CheckAndSet (c);
-                cv->CheckAndSet ((*this)(r,c));
+                cc->CheckAndSet (c,false, NULL);
+                  cv->CheckAndSet ((*this)(r,c),false, NULL);
                 HBLObjectRef fv;
                 
                 if (conditionalCheck) {
@@ -7096,7 +7096,7 @@ void    SetIncrement (int m) {
 //_____________________________________________________________________________________________
 void    _Matrix::InitMxVar (_SimpleList& mxVariables, hyFloat glValue) {
     mxVariables.Each ([&] (long value, unsigned long) -> void {
-        LocateVar(value)->SetValue (new _Constant (glValue), false);
+        LocateVar(value)->SetValue (new _Constant (glValue), false,true, NULL);
     });
 }
 //_____________________________________________________________________________________________

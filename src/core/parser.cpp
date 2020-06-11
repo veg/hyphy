@@ -402,7 +402,7 @@ void DeleteVariable (long dv, bool deleteself, bool do_checks) {
                     if (self_variable != check_variable && check_variable->CheckFForDependence (vidx,false)) {
                         HBLObjectRef current_variable_value = check_variable->Compute();
                         current_variable_value->AddAReference(); // if this isn't done; the object will be deleted when the formula is cleared in SetValue
-                        check_variable->SetValue (current_variable_value);
+                        check_variable->SetValue (current_variable_value,true,true,NULL);
                         DeleteObject (current_variable_value);
                     }
                 }
@@ -716,7 +716,7 @@ bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool 
 {
     _Variable *theV = CheckReceptacleCommandID (name, id, checkValid, isGlobal);
     if (theV) {
-        theV->SetValue (v, dup);
+        theV->SetValue (v, dup, true, NULL);
         return true;
     }
     if (!dup) {
@@ -730,7 +730,7 @@ bool CheckReceptacleCommandIDAndStore (_String const* name, const long id, bool 
 bool CheckReceptacleAndStore (_String const* name, _String fID, bool checkValid, HBLObjectRef v, bool dup) {
     _Variable * theV = CheckReceptacle(name, fID, checkValid);
     if (theV) {
-        theV->SetValue (v, dup);
+        theV->SetValue (v, dup, true, NULL);
         return true;
     }
     if (!dup) {

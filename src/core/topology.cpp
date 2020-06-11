@@ -2632,9 +2632,19 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
     } else {
         // move to parent now
         node<long>*     iterator_parent = iterator->get_parent();
+        
+        /*
+        StringToConsole(GetNodeName(iterator)); NLToConsole();
+        if (iterator_parent) {
+            StringToConsole(GetNodeName(iterator_parent)); NLToConsole();
+        }
+        */
 
-        if (iterator != theRoot) { // not root yet
-            res<<'(';
+        if (iterator_parent) { // not root yet
+            bool is_root_next = iterator_parent->get_parent() == NULL;
+            if (!is_root_next) {
+                res<<'(';
+            }
             long the_index_of_this_child = iterator->get_child_num();
             RerootTreeInternalTraverser (iterator_parent, the_index_of_this_child ,false,res,settings,branch_length_mode,variable_ref,first_time);
 
@@ -2647,14 +2657,18 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
                   }
               }
              }
-            res<<')';
-            if (!first_time) {
-              _String node_name = GetNodeName (iterator);
-              if (!node_name.BeginsWith(settings.inode_prefix)) {
-                res<<node_name;
-              }
+            
+            if (!is_root_next) {
+                res<<')';
+            
+                if (!first_time) {
+                  _String node_name = GetNodeName (iterator);
+                  if (!node_name.BeginsWith(settings.inode_prefix)) {
+                    res<<node_name;
+                  }
+                }
+                PasteBranchLength (iterator,res,branch_length_mode, variable_ref);
             }
-            PasteBranchLength (iterator,res,branch_length_mode, variable_ref);
         } else {
             /* passing old root
                create a new root with >=2 children nodes - this node,

@@ -846,7 +846,7 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
                 profileDump->MStore ("INSTRUCTION INDEX", instCounter, false);
                 profileDump->MStore ("INSTRUCTION", descList, false);
                 profileDump->MStore ("STATS", execProfile, false);
-                outVar->SetValue (profileDump,false);
+                outVar->SetValue (profileDump,false,true,NULL);
                 chain.doProfile = 0;
                 DeleteObject (chain.profileCounter);
                 chain.profileCounter = nil;
