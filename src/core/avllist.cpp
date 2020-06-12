@@ -311,8 +311,11 @@ long  _AVLList::GetByIndex (const long theIndex) {
 //______________________________________________________________
 
 void  _AVLList::ReorderList (_SimpleList *s) {
-    _SimpleList reorderMe ((unsigned long)(dataList->lLength-emptySlots.lLength+1)),
-                nodeStack ((unsigned long)64);
+    
+    unsigned long item_count = (dataList->lLength-emptySlots.lLength+1);
+    
+    _SimpleList reorderMe (item_count),
+                nodeStack (64UL, (long*)alloca (64*sizeof (unsigned long)));
 
     long        curNode = root;
 
@@ -327,9 +330,8 @@ void  _AVLList::ReorderList (_SimpleList *s) {
             if (s) {
                 (*s) << curNode;
             }
+            
             reorderMe.InsertElement (((BaseRef*)dataList->list_data)[curNode],-1,false,false);
-
-            //TODO:???
             curNode = rightChild.list_data[curNode];
             nodeStack.Delete (h, false);
 
@@ -339,14 +341,6 @@ void  _AVLList::ReorderList (_SimpleList *s) {
     }
 
     reorderMe.TrimMemory ();
-    
-
-    /*long* t             = dataList->list_data;
-    dataList->list_data     = reorderMe.list_data;
-    dataList->lLength   = reorderMe.lLength;
-    dataList->laLength  = reorderMe.laLength;
-    reorderMe.list_data     = t;*/
-    
     *dataList = reorderMe;
 }
 

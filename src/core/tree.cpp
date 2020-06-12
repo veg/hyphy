@@ -2959,11 +2959,25 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
                   parent_index = flatParents.list_data[dir_index];
               }
           }
-          //if (likeFuncEvalCallCount == 7) {
-          //    ObjectToConsole(&updateNodes); NLToConsole();
-          //}
 
           _SimpleList children;
+          
+          /*nodesToUpdate.Populate (flatTree.lLength, 0, 0);
+          
+          for (long i = 0; i < updateNodes.lLength; i++) {
+              long tagged_node = updateNodes.get (i);
+              if (tagged_node >= flatLeaves.lLength) {
+                  nodesToUpdate.list_data [tagged_node - flatLeaves.lLength] = true;
+              }
+          }
+          
+          for (long i = 0; i < flatParents.lLength - 1; i++) {
+              long my_parent = flatParents.list_data [i];
+              if (nodesToUpdate.list_data[my_parent]) {
+                  children << i;
+              }
+          }*/
+          
           for (long i = 0; i < flatParents.lLength - 1; i++) {
               long my_parent = flatParents.list_data [i] + flatLeaves.lLength;
               if (uniques.FindLong (my_parent) >= 0) {
@@ -2975,12 +2989,13 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
               uniques.InsertNumber(children.get (i));
           }
           
-          //if (likeFuncEvalCallCount == 7) {
-          //    ObjectToConsole(&updateNodes); NLToConsole();
-          //}
-          updateNodes.Sort();
+           if (uniques.countitems() <= 32) {
+              updateNodes.BubbleSort();
+          } else {
+              uniques.ReorderList();
+          }
+          
           updateNodes.Pop();
-          //uniques.ReorderList();
           
       } else {
           updateNodes.Clear(false);
@@ -3262,6 +3277,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         unsigned long k = 0UL;
                         unsigned long target_index = siteState;
                         unsigned long shifter = alphabetDimension << 2;
+                        
+                        
                         for (; k < alphabetDimensionmod4; k+=4UL, target_index += shifter) {
                             parentConditionals[k]    *= tMatrix[target_index];
                             parentConditionals[k+1L] *= tMatrix[target_index + alphabetDimension];
@@ -3556,6 +3573,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         didScale                                            = -1;
                     }
                 }
+                /*if (sum == 0.) {
+                    printf ("Zeroed out at %d (%d) node %s\n", nodeCode, parentCode, ((_CalcNode*)(isLeaf ? flatCLeaves.GetItem(nodeCode) : flatTree.GetItem(nodeCode)))->GetName()->get_str());
+                }*/
                 childVector    += alphabetDimension;
             }
             
