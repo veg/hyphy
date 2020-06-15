@@ -292,7 +292,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 
     _FString*    sentVal = new _FString ((_String*)theMessage.makeDynamic());
     _Variable *   mpiMsgVar = CheckReceptacle (&hy_env::mpi_last_sent_message, kEmptyString, false);
-    mpiMsgVar->SetValue (sentVal, false);
+    mpiMsgVar->SetValue (sentVal, false, true, NULL);
     //setParameter (mpiLastSentMsg, &sentVal);
 
 }
