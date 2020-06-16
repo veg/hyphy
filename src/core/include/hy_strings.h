@@ -108,7 +108,7 @@ public:
    * Revision history
    - SLKP 20170517 porting from v3 branch
    */
-  virtual void Initialize(bool = false);
+  virtual void Initialize(bool = true);
 
   /**
    * Clear the string (delete allocated memory)
