@@ -5461,7 +5461,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
         if (rightValue<=middleValue && leftValue<=middleValue) {
             if (verbosity_level > 100) {
                 char buf [512];
-                snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket SUCCESSFUL: LEFT = %18.15g MIDDLE = %18.15g RIGHT = %18.15g", index, leftValue, middleValue,rightValue);
+                snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) SUCCESSFUL: LEFT = %18.15g MIDDLE = %18.15g RIGHT = %18.15g", index, leftValue, middleValue,rightValue);
                 BufferToConsole (buf);
             }
             successful = true;
