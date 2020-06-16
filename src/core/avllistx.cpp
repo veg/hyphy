@@ -82,7 +82,20 @@ BaseRef _AVLListX::toStr (unsigned long) {
     if (countitems() == 0) {
         (*str) << "Empty Associative List";
     } else {
-        _SimpleList  hist;
+        bool is_simple = dataList->is_numeric_list();
+        
+        for (AVLListXIteratorKeyValue list_iterator : AVLListXIterator (this)) {
+            if (is_simple) {
+                (*str) <<  _String(RetrieveLong (list_iterator.get_index()));
+            } else {
+                (*str)  << (_String*)Retrieve (list_iterator.get_index());
+            }
+            (*str)  << " : "
+                    << _String(list_iterator.get_value())
+                    << '\n';
+        }
+        
+        /*_SimpleList  hist;
         long         ls, cn;
 
         cn = Traverser (hist,ls,root);
@@ -95,7 +108,7 @@ BaseRef _AVLListX::toStr (unsigned long) {
                     << '\n';
           
             cn = Traverser (hist,ls);
-        }
+        }*/
     }
 
     return str;

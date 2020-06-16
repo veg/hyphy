@@ -57,8 +57,9 @@ public:
 
     _PolynomialData (void);
     _PolynomialData (long);
-    _PolynomialData (_PolynomialData&);
+    _PolynomialData (_PolynomialData const&);
     _PolynomialData (long,long, hyFloat*);
+    _PolynomialData const & operator = (_PolynomialData const&);
 
     virtual ~_PolynomialData ();
 

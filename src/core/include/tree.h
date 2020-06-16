@@ -133,27 +133,27 @@ public:
     void        PurgeTree                       (void);
 
     long        ComputeReleafingCost            (_DataSetFilter const*, long, long, _SimpleList* = nil, long = 0) const;
-    long        ComputeReleafingCostChar        (_DataSetFilter const*, long, long, _SimpleList const* = nil) const;
+    long        ComputeReleafingCostChar        (_DataSetFilter const*, long, long, _SimpleList const*) const;
     void        DumpingOrder                    (_DataSetFilter*, _SimpleList&);
     void        SetTreeCodeBase                 (long);
     long        IsLinkedToALF                   (long&) const;
 
-    bool        HasCache                        (void) {
+    bool        HasCache                        (void) const {
         return topLevelNodes.lLength>0;
     }
 
-    long        GetLeafCount                    (void) {
+    long        GetLeafCount                    (void) const {
         return flatLeaves.lLength;
     }
 
-    long        GetINodeCount                   (void) {
+    long        GetINodeCount                   (void) const {
         return flatNodes.lLength    ;
     }
     
     const _SimpleList& get_flat_nodes (void) {return flatNodes;}
 
     void        ScanAndAttachVariables          (void) const;
-    void        ScanContainerForVariables       (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0) const;
+    void        ScanContainerForVariables       (_AVLList& l, _AVLList& l2, _AVLListX* tagger = nil, long weight = 0, _AVLListX* map_variables_to_nodes = nil) const;
     void        ScanForDVariables               (_AVLList& l, _AVLList& l2) const;
     void        ScanForGVariables               (_AVLList&, _AVLList&, _AVLListX* tagger = nil, long weight = 0) const;
     void        ScanForCVariables               (_AVLList&) const;
@@ -244,7 +244,7 @@ public:
     void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, hyFloat const*, _List&, _SimpleList*, _List&, hyFloat const*, long);
 
     hyFloat      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, hyFloat*, long*, hyFloat*, _Vector*, long&, long, long, long = -1, hyFloat* = nil, long* = nil, long = -1, long * = nil);
-    long            DetermineNodesForUpdate         (_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true);
+    long            DetermineNodesForUpdate         (_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true, _AVLListX * var_mapping = nil, _AVLList * changed_variables = nil);
     void            ExponentiateMatrices            (_List&, long, long = -1);
     void            FillInConditionals              (_DataSetFilter const*, hyFloat*,  _SimpleList*);
 
@@ -333,8 +333,8 @@ protected:
 struct      bitMasks {
     unsigned long masks[_HY_BITMASK_WIDTH_];
     bitMasks (void) {
-        unsigned long aBit = 1;
-        for (long k=0; k<_HY_BITMASK_WIDTH_; k++) {
+        unsigned long aBit = 1UL;
+        for (unsigned long k=0UL; k<_HY_BITMASK_WIDTH_; k++) {
             masks[k] = aBit;
             aBit = aBit << 1;
         }

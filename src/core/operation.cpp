@@ -445,7 +445,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
         if (!isRefVar) {
           if (argument_var->IsIndependent() && (argument_var->ObjectClass() & (TREE|TOPOLOGY)) == 0) {
             // if the variable exists and is independent then
-            // simply swap the 10value of the var, otherwise
+            // simply swap the value of the var, otherwise
             // duplicate the entire variable
             argument_var->varFlags &= HY_VARIABLE_SET;
             if (!argument_var->varValue) {
@@ -457,7 +457,7 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
             existingIVars<<argument_var->get_index();
           } else {
             _Variable *newV = new _Variable (*argument_k);
-            newV->SetValue(nthterm,false);
+            newV->SetValue(nthterm,false,true, NULL);
             existingDVars<<argument_var->get_index();
             displacedVars<<argument_var; // 2 references
             argument_var->AddAReference(); // 3 references

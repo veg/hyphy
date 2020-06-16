@@ -166,7 +166,7 @@ public:
    *  Revision history
    - SLKP 20170613 reviewed while porting from v3 branch
    */
-  virtual void Initialize(bool = false);
+  virtual void Initialize(bool = true);
 
   /**
    * Clears this object

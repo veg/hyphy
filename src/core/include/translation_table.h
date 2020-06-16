@@ -70,6 +70,9 @@ public:
 
    */
   _TranslationTable(_TranslationTable const &);
+   
+   _TranslationTable const& operator = (_TranslationTable const &);
+
   virtual ~_TranslationTable(void) {
     if (checkTable) {
       free(checkTable);

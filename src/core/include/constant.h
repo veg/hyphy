@@ -127,7 +127,7 @@ public:
         return this;
     };
 
-    virtual   void    Initialize            (bool = false);
+    virtual   void    Initialize            (bool = true);
     virtual   void    Duplicate             (BaseRefConst);
     virtual   BaseRef makeDynamic           (void) const;
     virtual   BaseRef toStr                 (unsigned long = 0UL);

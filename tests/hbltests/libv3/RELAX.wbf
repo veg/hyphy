@@ -1,5 +1,6 @@
 GetString (version, HYPHY_VERSION, 0);
 
+
 if (+version >= 2.4) {
     LoadFunctionLibrary ("SelectionAnalyses/RELAX.bf", {"--code": "Universal",
     "--alignment": PATH_TO_CURRENT_BF + "data/CD2.nex",

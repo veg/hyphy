@@ -177,8 +177,8 @@ _DataSetFilterNumeric::_DataSetFilterNumeric(_Matrix *freqs, _List &values,
   hyFloat *storeHere = probabilityVectors.theData;
 
   long refShifter = 0;
-  for (long cc = 0; cc < categoryCount;
-       cc++, refShifter += theOriginalOrder.lLength * dimension) {
+  for (long cat_counter = 0; cat_counter < categoryCount;
+       cat_counter++, refShifter += theOriginalOrder.lLength * dimension) {
     for (long spec = 0; spec < theNodeMap.lLength; spec++) {
       _Matrix *specMatrix = (_Matrix *)values(spec);
       for (long site = 0; site < theFrequencies.lLength; site++)

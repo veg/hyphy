@@ -52,6 +52,7 @@ io.DisplayAnalysisBanner(fel.analysis_description);
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 
+
 /*------------------------------------------------------------------------------
     Globals
 */

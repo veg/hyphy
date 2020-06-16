@@ -83,7 +83,7 @@ public:
 
     void        ScanAndAttachVariables      (void);
 
-    void        ScanContainerForVariables               (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0);
+    void        ScanContainerForVariables               (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0, _AVLListX * map_variables_to_nodes = nil, long track_node = 0);
     virtual     void        ScanForDVariables           (_AVLList&,_AVLList&) const;
     virtual     void        ScanForGVariables           (_AVLList&,_AVLList&, _AVLListX* tagger = nil, long weight = 0) const;
 

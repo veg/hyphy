@@ -1086,6 +1086,7 @@ for (rateType = 0; rateType < 15; rateType += 1) {
 	}
 
 	LikelihoodFunction lf = (filteredData,givenTree);
+	
 
     first_time = FALSE;
 

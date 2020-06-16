@@ -181,10 +181,10 @@ long      _CalcNode::SetDependance (long var_index) {
         // also clear out previously computed matrix exponentials
         if (compExp) {
             DeleteAndZeroObject(compExp);
-        } else {
+        } /*else {
             if (matrixCache) {
             }
-        }
+        }*/
     }
     return var_index;
 }
@@ -195,7 +195,7 @@ void    _CalcNode::SetCodeBase (int codeBase) {
     if (codeBase>0) {
         if (codeBase != cBase || !theProbs) {
             if (theProbs) {
-                delete theProbs;
+                delete [] theProbs;
             }
             theProbs = new hyFloat [codeBase];
             cBase = codeBase;
@@ -543,7 +543,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             if (isExplicitForm) {
                 temp = (_Matrix*)myModelMatrix->makeDynamic();
             } else {
-                temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel);
+                temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel, true);
             }
             
             // copy updated model (local) constrained parameters to their external references
@@ -553,7 +553,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     if (!model_var -> IsIndependent()) {
                         _Variable * param_var = LocateVar (var_idx);
                         if (param_var->IsIndependent()) {
-                            param_var->SetValue(param_var->Compute());
+                            param_var->SetValue(param_var->Compute(),true,true,NULL);
                         }
                     }
                 }

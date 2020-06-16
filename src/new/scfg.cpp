@@ -1484,7 +1484,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
                          nextProbs.theData[ruleCount] / nextProbs.theData[nRules+ruleCount]);
                     BufferToConsole(buf);
                      */
-                    theParameter->SetValue (nextValue.Compute());
+                    theParameter->SetValue (nextValue.Compute(),true,true,NULL);
                 }
 
             }

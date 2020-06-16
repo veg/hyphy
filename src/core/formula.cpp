@@ -138,8 +138,16 @@ void _Formula::Initialize (void) {
 
 //__________________________________________________________________________________
 _Formula::_Formula (_Formula const& rhs) {
-    Initialize();
-    Duplicate (&rhs);
+    *this = rhs;
+}
+
+//__________________________________________________________________________________
+const _Formula& _Formula::operator =  (_Formula const& rhs) {
+    if (this != &rhs) {
+        Initialize();
+        Duplicate (&rhs);
+    }
+    return *this;
 }
 
 //__________________________________________________________________________________

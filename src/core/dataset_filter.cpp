@@ -41,6 +41,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "global_object_lists.h"
 #include "avllistxl_iterator.h"
+#include "dataset_filter.h"
 #include "batchlan.h"
 
 //_________________________________________________________
@@ -1163,12 +1164,12 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                             long k = 0,
                             u = GetDimension (false);
                             
-                            for (long i = 0; i<u; i++) {
-                                if (i==theExclusions.list_data[k] && k<theExclusions.lLength) {
+                            for (long idx = 0; idx<u; idx++) {
+                                if (idx==theExclusions.list_data[k] && k<theExclusions.lLength) {
                                     k++;
                                     continue;
                                 }
-                                freqsAtSite->theData[i-k] = freqsAtSite->theData[i];
+                                freqsAtSite->theData[idx-k] = freqsAtSite->theData[idx];
                             }
                         }
                         //XferwCorrection (freqsAtSite->theData, freqsAtSite->theData, mxDim);
@@ -1399,7 +1400,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
         
         return res;
     }
-    catch (const _String error) {
+    catch (const _String& error) {
         HandleApplicationError(error);
         return    new _Matrix (1,1,false,true);
         
@@ -1914,7 +1915,7 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       kFormatPAML                       = 11
   } datafile_format = kFormatMEGASequential;
   
-  auto trim_to_10 = [] (const _String& seq_name) -> _String const& {
+  auto trim_to_10 = [] (const _String& seq_name) -> _String const {
     if (seq_name.length() >= 10) {
       return seq_name.Cut (0,9) & ' ';
     }

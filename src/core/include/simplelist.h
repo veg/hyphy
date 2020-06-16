@@ -610,6 +610,8 @@ class _SimpleList:public BaseObj {
         * Request space for a given # of elements 
         */
         void RequestSpace(long);
+    
+        virtual bool is_numeric_list (void) const { return true;}
 
         void Subtract(_SimpleList const &, _SimpleList const&);
 

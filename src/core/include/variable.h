@@ -60,7 +60,7 @@ public:
 
     virtual ~_Variable (void);
 
-    virtual   void          Initialize (bool = false);
+    virtual   void          Initialize (bool = true);
     virtual   void          Duplicate (BaseRefConst);
     virtual   BaseRef       makeDynamic(void) const;
     virtual   BaseRef       toStr (unsigned long = 0UL);
@@ -78,10 +78,11 @@ public:
                (varValue?varValue->IsIndependent():true);
     }
     virtual     bool        IsConstant (void);
-    void        SetValue (HBLObjectRef, bool = true, bool = true); // set the value of the variable
+    //void        SetValue (HBLObjectRef, bool = true, bool = true); // set the value of the variable
+    void        SetValue (HBLObjectRef, bool duplicate_value, bool do_checks, _AVLList* keep_track_of_changes);
     void        SetValue (hyFloat); // set the value of the variable
     void        SetNumericValue (hyFloat);
-    void        CheckAndSet (hyFloat, bool = false);
+    void        CheckAndSet (hyFloat, bool, _AVLList* keep_track_of_changed);
     // set the value of the variable
     // bool flag is used to indicate that out of bounds values should be rejected
 

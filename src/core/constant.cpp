@@ -60,8 +60,6 @@ _Formula *chi2 = nil,
 extern hyFloat tolerance;
 
 long                        lastMatrixDeclared = -1,
-                            dummyVariable1,
-                            dummyVariable2,
                             expressionsParsed = 0;
 
 unsigned char               _Constant::preallocated_buffer [_HY_CONSTANT_PREALLOCATE_SLOTS*sizeof (_Constant)];
@@ -411,7 +409,7 @@ hyFloat _igamma (hyFloat a, hyFloat x) {
     // IGamma (a,x)=exp(-x) x^a 1/x+/1-a/1+/1/x+/2-a/1+/2/x+...
     
     hyFloat lastTerm = 0., a0 = 1.0, a1 = x, b0 = 0.0, b1 = 1.0, factor = 1.0, an, ana, anf;
-    for (int count = 1; count<500; ++count) {
+for (int count = 1; count<500; ++count) {
         an = count;
         ana = an - a;
         a0 = (a1+a0*ana)*factor;
@@ -770,14 +768,16 @@ HBLObjectRef _Constant::InvChi2 (HBLObjectRef n) {
         chi2 = new _Formula (_String ("IGamma(") &  kNVariableName & "," & kXVariableName & ")", nil);
         derchi2 = new _Formula (kXVariableName & "^(" & kNVariableName & "-1)/Gamma(" & kNVariableName & ")/Exp(" & kXVariableName & ")",nil);
     }
-    _Constant halfn (((_Constant*)n)->theValue*.5);
-    if (theValue<0. || halfn.theValue< 0.|| theValue> 1.0) {
+    hyFloat half_n = ((_Constant*)n)->theValue*.5;
+    if (theValue<0. || half_n < 0.|| theValue> 1.0) {
         ReportWarning ("InvChi2(x,n) is defined for n > 0, and x in [0,1]");
         return new _Constant (0.0);
     }
-    LocateVar(dummyVariable2)->SetValue (&halfn);
-    halfn.SetValue(chi2->Newton(*derchi2,theValue,1e-25,1.e100,LocateVar(dummyVariable1))*2);
-    return (HBLObjectRef)halfn.makeDynamic();
+    
+    _Constant* result = new _Constant (half_n);
+    hy_n_variable->SetValue (result, true, true, NULL);
+    result->SetValue(chi2->Newton(*derchi2,theValue,1e-25,1.e100,hy_x_variable)*2);
+    return result;
 }
 
 //__________________________________________________________________________________

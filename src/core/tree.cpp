@@ -401,7 +401,7 @@ void    _TheTree::PostTreeConstructor (bool make_copy, _AssociativeList* meta) {
       if (theRoot->get_num_nodes() <= 2) { // rooted tree - check
         if (accept_rooted == false) {
           
-          long node_index = theRoot->get_data();
+          //long node_index = theRoot->get_data();
           bool recurse = false;
           
           if (theRoot->get_num_nodes() == 2) {
@@ -635,7 +635,7 @@ _String    _TheTree::FinalizeNode (node<long>* nodie, long number , _String node
                             expressionToSolveFor = new _Formula (*result);
                             for (unsigned long cc = 0; cc < cNt.categoryVariables.countitems(); cc++) {
                                _CategoryVariable * thisCC = cNt.get_ith_category (cc);
-                              thisCC -> SetValue (new _Constant(thisCC->Mean()), false);
+                              thisCC -> SetValue (new _Constant(thisCC->Mean()), false, true, NULL);
                             }
                             settings.parser_cache->Insert ((BaseRef)nodeModelID, (long)expressionToSolveFor, false, false);
                         }
@@ -648,14 +648,14 @@ _String    _TheTree::FinalizeNode (node<long>* nodie, long number , _String node
                         _Variable * solveForMe = LocateVar (cNt.iVariables->list_data[1]);
                         hyFloat modelP = expressionToSolveFor->Brent (solveForMe,solveForMe->GetLowerBound(), solveForMe->GetUpperBound(), 1e-6, nil, val.Value());
                         ReportWarning (_String("Branch parameter of ") & nodeName.Enquote() &" set to " & modelP);
-                        cNt.GetIthIndependent(0) ->SetValue(new _Constant (modelP), false);
+                        cNt.GetIthIndependent(0) ->SetValue(new _Constant (modelP), false,true, NULL);
                         use_direct_value = false;
                     }
                 }
             }
 
             if (use_direct_value) {
-                cNt.GetIthIndependent(0)->SetValue (&val);
+                cNt.GetIthIndependent(0)->SetValue (&val,true,true,NULL);
                 ReportWarning (_String("Branch parameter of ") & nodeName&" set to " & nodeValue);
             }
         } else {
@@ -667,7 +667,7 @@ _String    _TheTree::FinalizeNode (node<long>* nodie, long number , _String node
 
     if (nodeVar == NULL) return kEmptyString;
 
-    nodeVar->SetValue (&val);
+    nodeVar->SetValue (&val,true,true,NULL);
 
     node_parameters.Clear();
     nodeValue.Clear();
@@ -934,7 +934,6 @@ node<nodeCoord>* _TheTree::AlignedTipsMapping (node<long>* iterator, hyFloat& cu
         long descendants = theRoot->get_num_nodes();
         node<nodeCoord>* aRoot = new node<nodeCoord>; // reslove rootedness here
         aRoot->in_object.varRef = -1;
-        aRoot->go_next(); // dumbass initialization for later
         if (rooted == UNROOTED || !respectRoot) {
             for (long k=1L; k<=descendants; k++) {
                 aRoot->add_node(*AlignedTipsMapping(theRoot->go_down(k), current_offset));
@@ -1009,7 +1008,7 @@ hyFloat       _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef,
             branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
         }
     } else {
-        auto match_pattern = [&] (long local_idx, long template_index, unsigned long index) -> bool {
+        auto match_pattern = [&] (long local_idx, long template_index, unsigned long index) -> void {
             _Variable * local_parameter = LocateVar(local_idx);
             if (local_parameter->GetName()->EndsWith(matchString)) {
                 branchLength = local_parameter->Compute()->Value();
@@ -2216,11 +2215,27 @@ void _TheTree::RemoveModel (void) {
 
 //__________________________________________________________________________________
 
-void _TheTree::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight) const {
-    unsigned long traversal_order = 0UL;
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+void _TheTree::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * tagger, long weight, _AVLListX * map_variables_to_nodes) const {
+    /**
+        map_variables_to_nodes, if supplied, will be used to map variable IDs to "post-order" node index of nodes that they affect, IF they only affect one node; otherwise they will be tagged with '-1'
+     */
+    
+    unsigned long traversal_order = 0UL,
+                  leaf_index = 0UL,
+                  int_index = 0UL;
+    
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
-        iterator->ScanContainerForVariables(l,l2, tagger, weight +  flatNodes.lLength + flatLeaves.lLength - traversal_order);
+        bool is_leaf = ti.IsAtLeaf();
+        
+        
+        iterator->ScanContainerForVariables(l,l2, tagger, weight +  flatNodes.lLength + flatLeaves.lLength - traversal_order, map_variables_to_nodes, is_leaf ? leaf_index : int_index + flatLeaves.lLength);
+        
+        if (is_leaf) {
+            leaf_index ++;
+        } else {
+            int_index ++;
+        }
         traversal_order ++;
     }
 }
@@ -2228,7 +2243,7 @@ void _TheTree::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * 
 //__________________________________________________________________________________
 
 void _TheTree::ScanAndAttachVariables (void) const {
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
         iterator->ScanAndAttachVariables();
     }
@@ -2237,7 +2252,7 @@ void _TheTree::ScanAndAttachVariables (void) const {
 //__________________________________________________________________________________
 
 void _TheTree::ScanForDVariables (_AVLList& l,_AVLList& l2) const {
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
       iterator->ScanForDVariables(l,l2);
     }
@@ -2248,8 +2263,8 @@ void _TheTree::ScanForDVariables (_AVLList& l,_AVLList& l2) const {
 void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger, long weight) const {
     _SimpleList cL;
     _AVLList    cLL (&cL);
-
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot );
+    
     while   (_CalcNode* iterator = ti.Next()) {
 
         _Formula *explicitFormMExp = iterator->GetExplicitFormModel ();
@@ -2289,7 +2304,7 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
 //__________________________________________________________________________________
 
 void _TheTree::ScanForCVariables (_AVLList& lcat) const {
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
         for (unsigned long i = 0UL; i < iterator->categoryVariables.lLength; i++) {
             lcat.Insert ((BaseRef)iterator->categoryVariables.Element(i));
@@ -2300,7 +2315,7 @@ void _TheTree::ScanForCVariables (_AVLList& lcat) const {
 //__________________________________________________________________________________
 
 bool _TheTree::HasChanged (bool) {
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
         if (iterator->HasChanged()) {
             return true;
@@ -2319,7 +2334,7 @@ bool _TheTree::HasChanged2 (void) {
     }
   }
 
-  _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+  _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
   while   (_CalcNode* iterator = ti.Next()) {
     if (iterator->_VariableContainer::HasChanged()) {
       return true;
@@ -2630,16 +2645,21 @@ long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firs
             if (myParent >= 0) {
                 marked_nodes [myParent] = true;
             }
-            if (child_count) {
-                theCost += child_count->get (i);
-            } else {
-                theCost += ((node <long>*)(flatNodes.list_data[i]))->get_num_nodes();
-            }
+            theCost += child_count->get (i);
         }
     }
 
     return theCost;
-
+    
+    /*_SimpleList store_nodes (flatTree.lLength, (long*)alloca (flatTree.lLength * sizeof (long)));
+    _AVLList    touched_nodes (&store_nodes);
+    
+    flatLeaves.Each ([&] (long node, unsigned long node_index) -> void {
+        long f = dsf->theNodeMap.list_data[node_index];
+        if (thisState[f] != pastState[f]) {
+            touched_nodes.InsertNumber(flatParents.get(node_index));
+        }
+    });*/
 }
 
 //_______________________________________________________________________________________________
@@ -2851,69 +2871,186 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List* expNodes, long catID, long addOne, bool canClear) {
-  nodesToUpdate.Populate (flatLeaves.lLength + flatTree.lLength, 0, 0);
+long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List* expNodes, long catID, long addOne, bool canClear,
+                                                _AVLListX * var_to_node_map, _AVLList * changed_variables) {
   _CalcNode       *currentTreeNode;
   long            lastNodeID = -1;
-  
+  unsigned long   tagged_node_count = 0UL;
+
     // look for nodes with model changes and mark the path up to the root as needing an update
-  
+    
   #define DIRECT_INDEX(N) (flatParents.list_data[N]+flatLeaves.lLength)
-  
-  if (addOne >= 0) {
-    nodesToUpdate.list_data[addOne] = 2;
-  }
-  
-  if (forceRecalculationOnTheseBranches.nonempty()) {
-    forceRecalculationOnTheseBranches.Each ([this] (long value, unsigned long) -> void {
-      this->nodesToUpdate.list_data [value] = 2L;
-    });
     
-    if (canClear) {
-      forceRecalculationOnTheseBranches.Clear();
-    }
-  }
-  
-  for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++) {
-    bool    isLeaf     = nodeID < flatLeaves.lLength;
-    
-    if (isLeaf) {
-      currentTreeNode = (((_CalcNode**) flatCLeaves.list_data)[nodeID]);
-    } else {
-      currentTreeNode = (((_CalcNode**) flatTree.list_data)  [nodeID - flatLeaves.lLength]);
-    }
-    
-    if (currentTreeNode->NeedNewCategoryExponential (catID)) {
-      if (expNodes) {
-        (*expNodes) << currentTreeNode;
-        lastNodeID = nodeID;
+  auto _handle_node = [&] (long node_id, bool do_list)->void {
+      bool    isLeaf     = node_id < flatLeaves.lLength;
+      
+      if (isLeaf) {
+        currentTreeNode = (((_CalcNode**) flatCLeaves.list_data)[node_id]);
       } else {
-        currentTreeNode->RecomputeMatrix (catID, categoryCount, nil);
+        currentTreeNode = (((_CalcNode**) flatTree.list_data)  [node_id - flatLeaves.lLength]);
       }
       
-      nodesToUpdate.list_data[nodeID] = 2;
-    }
+      if (currentTreeNode->NeedNewCategoryExponential (catID)) {
+        if (expNodes) {
+          (*expNodes) << currentTreeNode;
+          lastNodeID = node_id;
+        } else {
+          currentTreeNode->RecomputeMatrix (catID, categoryCount, nil);
+        }
+        
+        if (do_list) {
+            nodesToUpdate.list_data[node_id] = 2;
+            tagged_node_count++;
+        }
+      }
+      
+      if (do_list && nodesToUpdate.list_data[node_id]) {
+        long parent_index = DIRECT_INDEX(node_id);
+        //if (nodesToUpdate.list_data[parent_index] == 0) {
+            nodesToUpdate.list_data[parent_index] = 2;
+            tagged_node_count++;
+        //}
+      }
+  };
+
+  bool already_done = false;
+  if (changed_variables && var_to_node_map && changed_variables->countitems() < 8 && forceRecalculationOnTheseBranches.empty()) {
+      already_done = true;
+      //_SimpleList   nodes;
+      updateNodes.RequestSpace (changed_variables->countitems());
+      _AVLList uniques (&updateNodes);
+
+      for (long i = 0L; i < changed_variables->dataList->lLength; i++) {
+          long var_index = changed_variables->dataList->list_data[i];
+          long node_index = var_to_node_map->FindAndGetXtra ((BaseRefConst)var_index,-1L);
+          if (node_index < 0) {
+              already_done = false;
+              break;
+          }
+          //updateNodes << node_index;
+          uniques.InsertNumber(node_index);
+      }
+      //already_done = false;
+      //if (likeFuncEvalCallCount == 7) {
+      //    ObjectToConsole(&updateNodes); NLToConsole();
+      //}
+      if (already_done) {
+          if (addOne >= 0) {
+              uniques.InsertNumber(addOne);
+          }
+          long i = 0L;
+          for (; i < updateNodes.lLength; i++) {
+              _handle_node (updateNodes.get (i), false);
+          }
+          //if (likeFuncEvalCallCount == 7) {
+          //    ObjectToConsole(&updateNodes); NLToConsole();
+          //}
+          
+
+          for (long i2 = 0; i2 < i; i2++) {
+              long  my_index = updateNodes.get (i2),
+                    parent_index = flatParents.list_data[my_index];
+                            
+              while (parent_index >= 0) {
+                  long dir_index = parent_index + flatLeaves.lLength;
+                  //if (uniques.InsertNumber(dir_index) >= 0) { // performed insertion
+                  //    node<long>* parent_node = (node<long>*)flatNodes.get (parent_index);
+                  //}
+                  uniques.InsertNumber(dir_index);
+                  parent_index = flatParents.list_data[dir_index];
+              }
+          }
+
+          _SimpleList children;
+          
+          /*nodesToUpdate.Populate (flatTree.lLength, 0, 0);
+          
+          for (long i = 0; i < updateNodes.lLength; i++) {
+              long tagged_node = updateNodes.get (i);
+              if (tagged_node >= flatLeaves.lLength) {
+                  nodesToUpdate.list_data [tagged_node - flatLeaves.lLength] = true;
+              }
+          }
+          
+          for (long i = 0; i < flatParents.lLength - 1; i++) {
+              long my_parent = flatParents.list_data [i];
+              if (nodesToUpdate.list_data[my_parent]) {
+                  children << i;
+              }
+          }*/
+          
+          for (long i = 0; i < flatParents.lLength - 1; i++) {
+              long my_parent = flatParents.list_data [i] + flatLeaves.lLength;
+              if (uniques.FindLong (my_parent) >= 0) {
+                  children << i;
+              }
+          }
+          
+          for (long i = 0; i < children.lLength; i++) {
+              uniques.InsertNumber(children.get (i));
+          }
+          
+           if (uniques.countitems() <= 32) {
+              updateNodes.BubbleSort();
+          } else {
+              uniques.ReorderList();
+          }
+          
+          updateNodes.Pop();
+          
+      } else {
+          updateNodes.Clear(false);
+      }
+  }
     
-    if (nodesToUpdate.list_data[nodeID]) {
-      nodesToUpdate.list_data[DIRECT_INDEX(nodeID)] = 2;
-    }
-  }
-  
-    // one more pass to pick up all DIRECT descendants of changed internal nodes
-  
-  for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++)
-    if (nodesToUpdate.list_data[nodeID] == 0 && nodesToUpdate.list_data[DIRECT_INDEX(nodeID)] == 2) {
-      nodesToUpdate.list_data[nodeID] = 1;
-    }
-  
-    // write out all changed nodes
-  
-  for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++) {
-    if (nodesToUpdate.list_data[nodeID]) {
-      updateNodes << nodeID;
-    }
-  }
-  
+    
+   if (!already_done) {
+       nodesToUpdate.Populate (flatLeaves.lLength + flatTree.lLength, 0, 0);
+       
+       if (addOne >= 0) {
+         nodesToUpdate.list_data[addOne] = 2;
+         tagged_node_count++;
+       }
+       
+       if (forceRecalculationOnTheseBranches.nonempty()) {
+         forceRecalculationOnTheseBranches.Each ([this] (long value, unsigned long) -> void {
+           this->nodesToUpdate.list_data [value] = 2L;
+         });
+         tagged_node_count += forceRecalculationOnTheseBranches.countitems();
+         
+         if (canClear) {
+           forceRecalculationOnTheseBranches.Clear();
+         }
+       }
+
+       for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++) {
+            _handle_node (nodeID, true);
+       }
+       
+      
+        // one more pass to pick up all DIRECT descendants of changed internal nodes
+      
+       for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++)
+        if (nodesToUpdate.list_data[nodeID] == 0 && nodesToUpdate.list_data[DIRECT_INDEX(nodeID)] == 2) {
+          nodesToUpdate.list_data[nodeID] = 1;
+          tagged_node_count++;
+        }
+       
+ 
+        // write out all changed nodes
+      updateNodes.RequestSpace(tagged_node_count);
+      // 20200610: for larger trees, this helps with reducing memory allocations
+      for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++) {
+        if (nodesToUpdate.list_data[nodeID]) {
+          updateNodes << nodeID;
+        }
+      }
+   }
+    
+   /*printf ("%ld ", likeFuncEvalCallCount);
+   ObjectToConsole(&updateNodes);
+   printf ("\n");*/
+
   if (expNodes && expNodes->countitems() == 1) {
     return lastNodeID;
   }
@@ -3141,6 +3278,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         unsigned long k = 0UL;
                         unsigned long target_index = siteState;
                         unsigned long shifter = alphabetDimension << 2;
+                        
+                        
                         for (; k < alphabetDimensionmod4; k+=4UL, target_index += shifter) {
                             parentConditionals[k]    *= tMatrix[target_index];
                             parentConditionals[k+1L] *= tMatrix[target_index + alphabetDimension];
@@ -3435,6 +3574,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         didScale                                            = -1;
                     }
                 }
+                /*if (sum == 0.) {
+                    printf ("Zeroed out at %d (%d) node %s\n", nodeCode, parentCode, ((_CalcNode*)(isLeaf ? flatCLeaves.GetItem(nodeCode) : flatTree.GetItem(nodeCode)))->GetName()->get_str());
+                }*/
                 childVector    += alphabetDimension;
             }
             
@@ -3579,9 +3721,13 @@ void            _TheTree::ComputeBranchCache    (
      */
     //printf ("ComputeBranchCache\n");
     
-    _SimpleList taggedNodes (flatLeaves.lLength + flatNodes.lLength, 0, 0),
+    long *tagged_node_cache = (long*)alloca ((flatLeaves.lLength + flatNodes.lLength)*sizeof (long));
+    
+    _SimpleList taggedNodes (flatLeaves.lLength + flatNodes.lLength, tagged_node_cache),
                 nodesToProcess,
                 rootPath;
+    
+    taggedNodes.Populate (flatLeaves.lLength + flatNodes.lLength, 0, 0);
     
     long        myParent               = brID       -flatLeaves.lLength;
     
@@ -4551,7 +4697,8 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     stateCacheDim                    = (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount));
     
     long            *stateCache                     = new long [patternCount*(iNodeCount-1)*alphabetDimension],
-    *leafBuffer                     = new long [(alsoDoLeaves?leafCount*patternCount:1)*alphabetDimension];
+                    *leafBuffer                     = new long [(alsoDoLeaves?leafCount*patternCount:1)*alphabetDimension],
+                    *initiaStateCache               = stateCache;
     
     // a Patterns x Int-Nodes x CharStates integer table
     // with the best character assignment for node i given that its parent state is j for a given site
@@ -4776,7 +4923,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         }
     }
     
-    delete [] stateCache;
+    delete [] initiaStateCache;
     delete [] leafBuffer;
     delete [] buffer;
     

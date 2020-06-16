@@ -40,8 +40,9 @@ relax.analysis_description = {
                                terms.io.info : "RELAX (a random effects test of selection relaxation) uses a random effects branch-site model framework to test whether a set of 'Test' branches evolves under relaxed selection relative to a set of 'Reference' branches (R), as measured by the relaxation parameter (K).
                                                 Version 2.1 adds a check for stability in K estimates to try to mitigate convergence problems. 
                                                 Version 3 provides support for >2 branch sets.
-                                                Version 3.1 adds LHC + Nedler-Mead initial fit phase and keyword support",
-                               terms.io.version : "3.1",
+                                                Version 3.1 adds LHC + Nedler-Mead initial fit phase and keyword support.
+                                                Version 3.1.1 adds some bug fixes for better convergence.",
+                               terms.io.version : "3.1.1",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                                terms.io.contact : "spond@temple.edu",
@@ -180,7 +181,8 @@ function relax.echo_group (group, description) {
 relax.branch_sets ["relax.echo_group"][""];
 
 if (relax.numbers_of_tested_groups > 2) {
-	relax.reference_set_name = io.SelectAnOption (relax.group_choices, "Choose the set of branches to use as the _reference_ set");
+    KeywordArgument ("reference-group",  "Branches to use as the reference group", null);
+	relax.reference_set_name = io.SelectAnOption (relax.group_choices, "Choose the set of branches to use as the _reference_ group");
 	if (relax.branch_sets [relax.reference_set_name] > 0) {
 		relax.k = utility.Keys (relax.branch_sets);
 		for (relax.i = 0; relax.i < relax.numbers_of_tested_groups; relax.i += 1) {
@@ -304,14 +306,14 @@ if (relax.model_set == "All") { // run all the models
             math.Mean ( 
                 utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+"), "_v_", "_v_[terms.fit.MLE]"));
                 
-            //console.log (relax.initial.test_mean);
             relax.init_grid_setup        (relax.distribution);
             relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
             relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
                 'relax._renormalize (_v_, "relax.distribution", relax.initial.test_mean)'
             );
             relax.nm.precision = -0.00025*relax.final_partitioned_mg_results[terms.fit.log_likelihood];
-
+            
+            
             parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
                         
             //VERBOSITY_LEVEL = 10;             
@@ -363,10 +365,6 @@ if (relax.model_set == "All") { // run all the models
                                             });
        }
 
-
-
-
-        
 
         estimators.TraverseLocalParameters (relax.general_descriptive.fit [terms.likelihood_function], relax.model_object_map, "relax.set.k2");
 
@@ -525,6 +523,7 @@ relax.model_map = utility.Map (relax.model_to_group_name, "_groupid_", 'utility.
 
 relax.do_lhc = FALSE;
 
+
 if (relax.model_set != "All") {
     /*
     relax.ge_guess = relax.DistributionGuess(((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE]);
@@ -533,7 +532,7 @@ if (relax.model_set != "All") {
     relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.model_object_map[relax.reference_model_namespace]);
     relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE];
     relax.init_grid_setup        (relax.distribution);
-   
+    relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
     //parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
 }
 
@@ -618,7 +617,7 @@ function relax.FitMainTestPair () {
     if (relax.do_lhc) {
         relax.nm.precision = -0.00025*relax.final_partitioned_mg_results[terms.fit.log_likelihood];
         parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
-                               
+        
         relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : relax.model_map},
                                     relax.general_descriptive.fit,
                                     relax.model_object_map, 
@@ -950,7 +949,7 @@ lfunction relax.set.k (tree_name, node_name, model_description) {
 
 lfunction relax.set.k2 (tree_name, node_name, model_description) {
     if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.relax.k"), "String")) {
-        k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];
+        k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];        
         parameters.RemoveConstraint (tree_name + "." + node_name + "." + k);
     }
     return tree_name + "." + node_name + "." + k;

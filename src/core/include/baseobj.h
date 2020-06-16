@@ -92,7 +92,7 @@ public:
     
     virtual BaseObj *makeDynamic(void) const = 0;
     
-    virtual void Initialize(bool = false) { reference_counter = 1L; }
+    virtual void Initialize(bool = true) { reference_counter = 1L; }
     
     virtual void Duplicate(BaseObj const * ref) = 0;
     

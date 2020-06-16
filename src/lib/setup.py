@@ -1,8 +1,7 @@
 #!/usr/bin/python
 
 from distutils.core      import setup, Extension
-from distutils.sysconfig import get_python_inc
-from os                  import listdir, getcwd, path
+from os                  import path
 from glob                import glob
 import sys
 

@@ -100,7 +100,7 @@ public:
     bool            ExecutePolynomial   (_Stack&,_VariableContainer* nameSpace = nil, _String* errMsg = nil);
     virtual   BaseObj*      toStr               (unsigned long = 0UL);    //convert the op to string
 
-    virtual   void          Initialize          (bool = false);
+    virtual   void          Initialize          (bool = true);
     const _String&    GetCode             (void) {
         return (opCode>-1)&&(numberOfTerms>=0)?*(_String*)BuiltInFunctions(opCode): hy_global::kEmptyString;
     }

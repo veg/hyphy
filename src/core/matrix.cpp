@@ -396,13 +396,13 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
         storageType = 2; // formula elements
         checkParameter (ANAL_COMP_FLAG, ANALYTIC_COMPUTATION_FLAG, 0L);
         if ((ANALYTIC_COMPUTATION_FLAG)&&!isAConstant) {
-          ConvertFormulas2Poly (false);
+          _Matrix::ConvertFormulas2Poly (false);
         }
         
         if (isAConstant) { // a matrix of numbers - store as such
-          Evaluate ();
+          _Matrix::Evaluate ();
         }
-        AmISparse();
+        _Matrix::AmISparse();
       }
     }
   } catch (const _String& err) {
@@ -1000,7 +1000,7 @@ bool        _Matrix::ValidateFormulaEntries (bool callback (long, long, _Formula
     if (storageType == _FORMULA_TYPE) {
         _Formula ** formula_entires = (_Formula**)theData;
         
-        unsigned long direct_index = 0UL;
+        long direct_index = 0L;
         for (unsigned long row = 0UL; row < hDim ; row++) {
             for (unsigned long col = 0UL; col < vDim ; col++) {
                 _Formula * this_cell;
@@ -1009,7 +1009,7 @@ bool        _Matrix::ValidateFormulaEntries (bool callback (long, long, _Formula
                 } else {
                     direct_index = Hash (row,col);
                     if (direct_index >= 0) {
-                        this_cell = formula_entires[direct_index++];
+                        this_cell = formula_entires[direct_index];
                     } else {
                         this_cell = nil;
                     }
@@ -1453,9 +1453,9 @@ HBLObjectRef   _Matrix::Inverse (void) const {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _Matrix::MultByFreqs (long freqID) {
+HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
 // multiply this transition probs matrix by frequencies
-    HBLObjectRef value = ComputeNumeric(true);
+    HBLObjectRef value = ComputeNumeric(true);//!reuse_value_object);
     
     //printf ("\n%s\n", _String ((_String*)toStr()).get_str());
 
@@ -2939,9 +2939,8 @@ void    _Matrix::Resize (long newH)
 
 //_____________________________________________________________________________________________
 
-_Matrix::~_Matrix (void)
-{
-    Clear();
+_Matrix::~_Matrix (void) {
+    _Matrix::Clear();
 }
 
 //_____________________________________________________________________________________________
@@ -2967,7 +2966,8 @@ _Matrix const&    _Matrix::operator = (_Matrix const& m) {
 _Matrix const&    _Matrix::operator = (_Matrix const* m) {
     //Clear();
     //DuplicateMatrix (this, m);
-    return (*this = m);
+    *this = *m;
+    return *this;
 }
 
 
@@ -4452,7 +4452,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
             }
         } else {
             for (i=0; i<(*result).hDim*(*result).vDim; i+=vDim+1) {
-                (*result).StoreObject(i,new _Polynomial (1.),true);
+                (*result).StoreObject(i,new _Polynomial (1.),false);
             }
         }
         
@@ -4652,7 +4652,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         
         return result;
     }
-    catch (const _String e) {
+    catch (const _String& e) {
         HandleApplicationError(e);
     }
     
@@ -4862,9 +4862,9 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
                     * cr = CheckReceptacle(&hy_env::matrix_element_row, kEmptyString, false),
                     * cc = CheckReceptacle(&hy_env::matrix_element_column, kEmptyString, false);
         
-        cv->CheckAndSet (0.0);
-        cr->CheckAndSet (0.0);
-        cc->CheckAndSet (0.0);
+        cv->CheckAndSet (0.0, false, NULL);
+        cr->CheckAndSet (0.0, false, NULL);
+        cc->CheckAndSet (0.0, false, NULL);
         
         f.Compute();
         if (terminate_execution) {
@@ -4971,10 +4971,10 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
             delete  [] varValues;
           } else {
             for (long r=0; r<hDim; r++) {
-              cr->CheckAndSet (r);
+              cr->CheckAndSet (r,false, NULL);
               for (long c=0; c<vDim; c++) {
-                cc->CheckAndSet (c);
-                cv->CheckAndSet ((*this)(r,c));
+                cc->CheckAndSet (c,false, NULL);
+                  cv->CheckAndSet ((*this)(r,c),false, NULL);
                 HBLObjectRef fv;
                 
                 if (conditionalCheck) {
@@ -5731,10 +5731,10 @@ void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
         theData = (hyFloat*) tempStorage;
         storageType = 0;
         if (!theIndex) {
-            _Polynomial zero;
+            _Polynomial zero_polynomial;
             for (i=0; i<lDim; i++)
                 if (!GetMatrixObject (i)) {
-                    StoreObject (i,&zero,true);
+                    StoreObject (i,&zero_polynomial,true);
                 }
         }
     } else {
@@ -6103,7 +6103,7 @@ HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp) {
             }
             return new _Constant (res);
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError  (err);
         return new _MathObject;
     }
@@ -6200,7 +6200,7 @@ HBLObjectRef       _Matrix::pFDR (HBLObjectRef classes) {
         resMx->theData[1] = uberPFDRUpperLimit;
 
         return resMx;
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError  (err);
         return new _MathObject;
     }
@@ -6270,7 +6270,7 @@ HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
                 else {
                     for (unsigned long vv = 0; vv< rows; vv++)
                         for (unsigned long k=0; k<remapped.lLength; k++) {
-                            unsigned long ki = remapped.list_data[k];
+                            long ki = remapped.list_data[k];
                             if ((ki = Hash (vv,ki)) >= 0) {
                                 res->Store (vv,k,theData[ki]);
                             }
@@ -6352,7 +6352,7 @@ HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
         } else {
             throw _String ("Invalid argument passes to matrix Random (should be a number, an associative list or a string):") & _String((_String*)kind->toStr());
         }
-    } catch (_String const err) {
+    } catch (_String const& err) {
         HandleApplicationError (err);
     }
     return new _Matrix (1,1);
@@ -6523,7 +6523,7 @@ HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes) {
             res->theData[cluster_count]   = minError;
             res->theData[cluster_count+1] = hit_min_error;
         }
-    } catch (_String const err) {
+    } catch (_String const& err) {
         HandleApplicationError (err);
     }
 
@@ -7096,7 +7096,7 @@ void    SetIncrement (int m) {
 //_____________________________________________________________________________________________
 void    _Matrix::InitMxVar (_SimpleList& mxVariables, hyFloat glValue) {
     mxVariables.Each ([&] (long value, unsigned long) -> void {
-        LocateVar(value)->SetValue (new _Constant (glValue), false);
+        LocateVar(value)->SetValue (new _Constant (glValue), false,true, NULL);
     });
 }
 //_____________________________________________________________________________________________
@@ -7150,7 +7150,6 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
 
     while (k<mDim*mDim) {
         i = 0;
-        _Polynomial* thisCell = new _Polynomial (varList);
         while (fc!='{') {
             fc = fgetc (theSource);
             buffer[i] = fc;
@@ -7159,6 +7158,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 return false;
             }
         }
+        _Polynomial* thisCell = new _Polynomial (varList);
         m = atol (buffer);
         hyFloat* theCoeffs = (hyFloat*)MatrixMemAllocate(m*sizeof(hyFloat));
         j = 0;
@@ -7178,12 +7178,12 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 return false;
             }
         }
-        _PolynomialData *pd = new _PolynomialData (varList.countitems(),j,theCoeffs);
-        MatrixMemFree (theCoeffs);
         fc = fgetc(theSource);
         if (fc != '{') {
             return false;
         }
+        _PolynomialData *pd = new _PolynomialData (varList.countitems(),j,theCoeffs);
+        MatrixMemFree (theCoeffs);
         c1.Clear();
         while (fc!='}') {
             i = 0;
@@ -8131,7 +8131,7 @@ _Matrix*    _Matrix::SimplexSolve (hyFloat desiredPrecision ) {
         }
 
 
-    } catch (_String const err) {
+    } catch (_String const& err) {
         HandleApplicationError (err);
     }
     return new _Matrix;
@@ -8202,7 +8202,7 @@ HBLObjectRef   _Matrix::DirichletDeviate (void)
         } else {
             throw _String("Argument must be a row- or column-vector.");
         }
-    } catch (_String const err) {
+    } catch (_String const& err) {
         HandleApplicationError (err);
     }
     return new _Matrix (1,1,false,true);
@@ -8262,7 +8262,7 @@ HBLObjectRef   _Matrix::GaussianDeviate (_Matrix & cov)
             throw (_String("Error in _Matrix::GaussianDeviate(), incompatible dimensions in covariance matrix: ") & cov.GetHDim() & "x" & cov.GetVDim());
 
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError (err);
     }
 
@@ -8376,7 +8376,7 @@ HBLObjectRef   _Matrix::InverseWishartDeviate (_Matrix & df)
             
             return WishartDeviate (df, *invCD);
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError (err);
     }
     return new _Matrix;
@@ -8455,7 +8455,7 @@ HBLObjectRef   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
         decomp *= rd_transpose; // D^T A^T A D
  
         return (HBLObjectRef) decomp.makeDynamic();
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError(err);
     }
     return new _Matrix;

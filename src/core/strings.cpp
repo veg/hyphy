@@ -91,7 +91,7 @@ Constructors/Destructors/Copiers
 */
 
 _String::_String (void) {
-  Initialize();
+  _String::Initialize();
 }
 
 //=============================================================
@@ -152,8 +152,8 @@ _String::_String(const hyFloat val, unsigned char digits) {
 //=============================================================
 
 _String::_String(const _String &s) {
-    Initialize ();
-    Duplicate(& s);
+    _String::Initialize ();
+    _String::Duplicate(& s);
 }
 
 //=============================================================
@@ -258,7 +258,7 @@ _String::_String (const _String& str, unsigned long copies) {
 
 //=============================================================
 _String::_String(FILE * file, long read_this_many) {
-    Initialize ();
+    _String::Initialize ();
     if (file) {
         if (read_this_many < 0) {
           fseek(file, 0, SEEK_END);
@@ -379,6 +379,7 @@ char& _String::operator [] (long index) {
         return s_data[index];
     }
     HandleApplicationError (_String ("Internal error at ") & __PRETTY_FUNCTION__ & ": an invalid index requested");
+    return s_data[0];
 }
 
 //=============================================================
@@ -1192,6 +1193,21 @@ bool _String::StripQuotes(char open_char, char close_char) {
     }
   }
     return false;
+}
+
+//=============================================================
+
+bool _String::StripQuotes(char const* open_chars, char const * close_chars) {
+  if (s_length >= 2UL) {
+      int count = strlen (open_chars);
+      for (int i = 0; i < count; i++) {
+          if (s_data [0] == open_chars[i] && s_data [s_length - 1UL] == close_chars[i]) {
+            Trim (1, s_length - 2UL);
+              return true;
+          }
+      }
+  }
+  return false;
 }
 
 

@@ -176,7 +176,7 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
                 }
             }
         });
-    } catch (const _String e) {
+    } catch (const _String& e) {
         HandleApplicationError (e, true);
     }
 }
@@ -223,7 +223,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         if (code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
             // copy by value or by reference?
             //formulaValue->AddAReference();
-            LocateVar (reference)->SetValue (formulaValue);
+            LocateVar (reference)->SetValue (formulaValue, true,true,NULL);
             return 1;
         }
 
@@ -231,7 +231,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
             _hyExecutionContext localContext (nameSpace);
             _Variable * theV = f->Dereference(assignment_type == kStringGlobalDeference, &localContext);
             if (theV) {
-                theV->SetValue (formulaValue);
+                theV->SetValue (formulaValue, true,true,NULL);
             } else {
                 return 0;
             }
@@ -571,9 +571,9 @@ long _parserHelperHandleInlineAssignmentCases (_String& s, _FormulaParsingContex
         if (twoToken && s.get_char(i-1) == '+') {
             _List arg;
             arg <<  varObj;
-            theV->SetValue(theV->Compute()->ExecuteSingleOp(HY_OP_CODE_ADD,&arg));
+            theV->SetValue(theV->Compute()->ExecuteSingleOp(HY_OP_CODE_ADD,&arg), true,true,NULL);
         } else {
-            theV->SetValue(varObj);
+            theV->SetValue(varObj, true,true,NULL);
         }
     } else {
         theV->SetFormula (newF);
@@ -1595,11 +1595,9 @@ void  stashParameter (_String const& name, hyFloat v, bool set) {
         _Variable *thisV = FetchVar(f);
         if (set) {
             stash = thisV->Value();
-            _Constant dummy (v);
-            thisV->SetValue (&dummy);
+            thisV->SetValue (new _Constant (v),false,true,NULL);
         } else {
-            _Constant dummy (stash);
-            thisV->SetValue (&dummy);
+            thisV->SetValue (new _Constant (stash), false,true,NULL);
         }
     } else if (set) {
         stash = v;
@@ -1620,7 +1618,7 @@ void  setParameter (_String const & name, hyFloat def, _String* namespc)
             _Variable cornholio(name);
             setParameter (name,def);
         } else {
-            FetchVar(f)->SetValue(new _Constant (def), false);
+            FetchVar(f)->SetValue(new _Constant (def), false,true,NULL);
         }
     }
 }
@@ -1638,7 +1636,7 @@ void  setParameter (_String const& name, HBLObjectRef def, _String* namespc, boo
             _Variable cornholio(name);
             setParameter (name,def,nil, dup);
         } else {
-            FetchVar(f)->SetValue(def,dup);
+            FetchVar(f)->SetValue(def,dup,true,NULL);
         }
     }
 }

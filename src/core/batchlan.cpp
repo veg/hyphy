@@ -292,7 +292,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 
     _FString*    sentVal = new _FString ((_String*)theMessage.makeDynamic());
     _Variable *   mpiMsgVar = CheckReceptacle (&hy_env::mpi_last_sent_message, kEmptyString, false);
-    mpiMsgVar->SetValue (sentVal, false);
+    mpiMsgVar->SetValue (sentVal, false, true, NULL);
     //setParameter (mpiLastSentMsg, &sentVal);
 
 }
@@ -741,7 +741,7 @@ void KillLFRecord (long lfID, bool completeKill) {
                 thisTree->CompileListOfModels (myVars);
                 _TreeIterator ti (thisTree, _HY_TREE_TRAVERSAL_POSTORDER);
                 while (_CalcNode* tNode = ti.Next()) {
-                    tNode->SetValue (new _Constant (tNode->ComputeBranchLength()),false);
+                    tNode->SetValue (new _Constant (tNode->ComputeBranchLength()),false,true,NULL);
                 }
                 thisTree->RemoveModel();
             }
@@ -1102,16 +1102,14 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
             if (kwarg_tags && kwarg_tags->countitems() > currentKwarg) {
                 _List* current_tag = (_List*)kwarg_tags->GetItem(currentKwarg++);
                 
-                
                 // check to see if we need to match with the current dialog prompt
                 if (current_tag -> countitems() > 3UL) {
                     _String check_against = dialog_tag ? *dialog_tag : dialogPrompt;
-                    
                     if (check_against != *(_String*)current_tag->GetItem(3)) {
                         throw (1L);
                     }
                 }
-     
+                     
                 if (kwargs) {
                     user_argument = kwargs->GetByKey(*(_String*)current_tag->GetItem(0));
                 }
@@ -1394,7 +1392,7 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent, bool ign
       CopyCLIToVariables();
     }
 
-  } catch (const _String err) {
+  } catch (const _String& err) {
     HandleApplicationError(err);
   }
 
@@ -1593,7 +1591,7 @@ void        _ExecutionList::CopyCLIToVariables(void) {
     cli->varList.Each ([this] (long index, unsigned long idx) -> void {
         _Variable * mv = LocateVar(index);
         if (mv->ObjectClass() == NUMBER) {
-            mv->SetValue (new _Constant (this->cli->values[idx].value),false);
+            mv->SetValue (new _Constant (this->cli->values[idx].value),false,true,NULL);
         }
     });
 }
@@ -2943,10 +2941,10 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
         ((_LikelihoodFunction*)likeFuncList(f))->Simulate(*ds,theExclusions,catValues,catNames);
 
         if (catValues) {
-            catValVar->SetValue(catValues,false);
+            catValVar->SetValue(catValues,false,true,NULL);
         }
         if (catNames) {
-            catNameVar->SetValue(catNames,false);
+            catNameVar->SetValue(catNames,false,true,NULL);
         }
 
         StoreADataSet (ds, resultingDSName);
@@ -3198,8 +3196,8 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         }
         
         
-        category_values_id->SetValue(category_values, false);
-        category_names_id->SetValue(category_names, false);
+        category_values_id->SetValue(category_values, false,true,NULL);
+        category_names_id->SetValue(category_names, false,true,NULL);
 
         
         StoreADataSet (sim_dataset, sim_name);
@@ -3493,7 +3491,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         _Variable * result  = CheckReceptacle(&fName,blImport.Cut(0,blImport.length()-2),true);
         if (result) {
             _Matrix   * storage = new _Matrix (1,1,false,true);
-            result->SetValue(storage,false);
+            result->SetValue(storage,false,true,NULL);
             lastMatrixDeclared = result->get_index();
             if (!storage->ImportMatrixExp(theDump)) {
                 HandleApplicationError("Matrix import failed - the file has an invalid format.");
@@ -4193,7 +4191,7 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
                 }
             }
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         for (long index = target.lLength - 1; index >= beginning; index--) {
             target.Delete (index);
         }
@@ -4466,7 +4464,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
                 throw _String ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);");
             }
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleErrorWhileParsing (err, source);
         return false;
     }
@@ -4629,7 +4627,7 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionLi
         }
 
         datafilter_command->addAndClean (target,&arguments);
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleErrorWhileParsing (err, source);
         DeleteObject (datafilter_command);
         return false;

@@ -89,6 +89,11 @@ namespace terms{
         upper_bound: "1e25"
     };
 
+    range_positive = {
+        lower_bound: "0",
+        upper_bound: "1e5"
+    };
+
     range_clamp_locals = {
         lower_bound: "0",
         upper_bound: "100"

@@ -96,6 +96,7 @@ public:
     
     _Formula (HBLObjectRef, bool isAVar = false);
     _Formula (_Formula const & rhs);
+    const _Formula & operator = (_Formula const & rhs);
     virtual ~_Formula (void);
     HBLObjectRef   Compute             (long = 0, _VariableContainer const* = nil, _List* additionalCacheArguments = nil, _String *errMsg = nil, long object_type = HY_ANY_OBJECT);
     // compute the value of the formula

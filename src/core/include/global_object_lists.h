@@ -35,6 +35,10 @@
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+
+#ifndef __GLOBAL_OBJECT_LISTS_H__
+
+#define  __GLOBAL_OBJECT_LISTS_H__
 #include "dataset_filter.h"
 #include "avllistxl_iterator.h"
 
@@ -299,3 +303,5 @@ namespace hyphy_global_objects {
     extern   _AVLListX batchLanguageFunctionNamesIndexed;
   
 }
+
+#endif

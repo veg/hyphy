@@ -131,7 +131,7 @@ bool _AssociativeList::ParseStringRepresentation (_String& serialized_form, _For
                 throw (((_String*)splitKeys(k))->Enquote() & " does not appear to specify a valid key:value pair");
             }
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         if (doErrors) {
             HandleApplicationError(err);
         }
@@ -242,7 +242,7 @@ HBLObjectRef _AssociativeList::Random (HBLObjectRef p) {
         } else {
             throw (_String ("Unsupported argument type"));
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError (err);
     }
     return new _MathObject;
@@ -343,7 +343,7 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
         } else {
             throw _String("Both arguments must be Strings (or a String Literal and a number) in an iterator call for Associative Arrays");
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError (err);
     }
     return new _Constant (done);

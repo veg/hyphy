@@ -87,9 +87,16 @@ _PolynomialData::_PolynomialData (long vars)
 }
 
 //__________________________________________________________________________________
-_PolynomialData::_PolynomialData (_PolynomialData& source)
-{
+_PolynomialData::_PolynomialData (_PolynomialData const& source) {
     Duplicate(&source);
+}
+
+//__________________________________________________________________________________
+_PolynomialData const & _PolynomialData::operator = (_PolynomialData const& source) {
+    if (this != &source) {
+        Duplicate(&source);
+    }
+    return *this;
 }
 
 //__________________________________________________________________________________

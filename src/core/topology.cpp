@@ -65,7 +65,7 @@ _TreeTopology::_TreeTopology () {
 
 //_______________________________________________________________________________________________
 _TreeTopology::_TreeTopology (_TheTree const *top):_CalcNode (*top->GetName(), kEmptyString) {
-    PreTreeConstructor   (false);
+    _TreeTopology::PreTreeConstructor   (false);
     if (top->theRoot) {
         isDefiningATree         = kTreeIsBeingParsed;
         theRoot                 = top->theRoot->duplicate_tree ();
@@ -92,16 +92,20 @@ _TreeTopology::_TreeTopology (_TheTree const *top):_CalcNode (*top->GetName(), k
 //_______________________________________________________________________________________________
 _TreeTopology::_TreeTopology (_TreeTopology const &top) {
     //PreTreeConstructor   (false);
+    *this = top;
+}
+
+//_______________________________________________________________________________________________
+_TreeTopology const &  _TreeTopology::operator = (_TreeTopology const &top) {
     if (top.theRoot) {
         theRoot                 = top.theRoot->duplicate_tree ();
-        
         flatTree.Duplicate(&top.flatTree),
         flatCLeaves.Duplicate(&top.flatCLeaves);
         rooted = top.rooted;
     } else {
         HandleApplicationError ("Can't create an empty tree");
-        return;
     }
+    return *this;
 }
 
 
@@ -109,11 +113,11 @@ _TreeTopology::_TreeTopology (_TreeTopology const &top) {
 _TreeTopology::_TreeTopology    (_String const & name, _String const & parms, bool dupMe, _AssociativeList* mapping):_CalcNode (name,kEmptyString)
 // builds a tree from a string
 {
-    PreTreeConstructor   (dupMe);
+    _TreeTopology::PreTreeConstructor   (dupMe);
     _TreeTopologyParseSettings parse_settings = CollectParseSettings();
   
     if (_AssociativeList * meta = MainTreeConstructor  (parms, parse_settings, false, mapping)) {
-        PostTreeConstructor  (dupMe, meta);
+        _TreeTopology::PostTreeConstructor  (dupMe, meta);
     } else {
         DeleteObject     (compExp);
         compExp = nil;
@@ -498,6 +502,7 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                         throw _String ("Unexpected end of tree string while searching for a node name");
                     } else {
                         nodeName = parms.Cut (i, end_of_id-1);
+                        nodeName.StripQuotes("'\"","'\"");
                     }
                     
                     i = end_of_id - 1;
@@ -507,7 +512,7 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
           
             lastChar = look_at_me;
         }
-    } catch (const _String error) {
+    } catch (const _String& error) {
         isDefiningATree = kTreeNotBeingDefined;
         HandleApplicationError (   error & ", in the following string context " &
                                 parms.Cut(i>31L?i-32L:0L,i)&
@@ -672,7 +677,7 @@ void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
         } else {
            throw _String ("An invalid argument (not a string or a string matrix) supplied");
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError (err & " in " & __PRETTY_FUNCTION__);
     }
 
@@ -744,7 +749,7 @@ void    _TreeTopology::AddANode (HBLObjectRef newNode) {
         } else {
             throw _String ("An invalid argument (not an associative array) supplied");
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError (err & " in " & __PRETTY_FUNCTION__);
     }
     
@@ -822,6 +827,15 @@ _String const  _TreeTopology::GetNodeStringForTree  (node<long> * n , int flags)
 
   if (flags & fGetNodeStringForTreeName) {
     node_desc = GetNodeName (n);
+    // check to see if the node name has any chars that are a part of the Newick spec, and if so, enquote the string
+    _any_char_in_set newick_delimiter (" (),{}[];:'\"");
+    if (node_desc.Any ([&newick_delimiter](char c, unsigned long i) -> bool {
+          return newick_delimiter==c;
+      }
+    ) != kNotFound) {
+        node_desc = _StringBuffer ().SanitizeAndAppend(node_desc).Enquote('"');
+    }
+    
   }
 
   if (flags & fGetNodeStringForTreeModel) {
@@ -1074,7 +1088,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
             default:
                 WarnNotDefined (this, opCode,context);
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         context->ReportError(err);
     }
     
@@ -1179,8 +1193,8 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
         CheckArgumentType(parameters, ASSOCIATIVE_LIST, true);
         _AssociativeList * arguments = (_AssociativeList *)parameters;
         
-        _AssociativeList * labels    = (_AssociativeList *)arguments->GetByKeyException(kMPLabels, ASSOCIATIVE_LIST),
-                         * scores    = (_AssociativeList *)arguments->GetByKey(kMPScore, ASSOCIATIVE_LIST);
+        _AssociativeList * labels    = (_AssociativeList *)arguments->GetByKeyException(kMPLabels, ASSOCIATIVE_LIST);
+                         //* scores    = (_AssociativeList *)arguments->GetByKey(kMPScore, ASSOCIATIVE_LIST);
         
         _List           id2name; // integer label -> string label
         
@@ -1378,7 +1392,7 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
         
         return result;
         
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleApplicationError(err);
     }
     return new  _MathObject;
@@ -2202,7 +2216,7 @@ bool _recurse_and_reshuffle (node<long>* root, long& from, long &to, long &leaf_
         if (node_rates) {
             try {
                 shuffle_rate = node_rates->GetNumberByKey(T.GetNodeName(root));
-            } catch (const _String e) {
+            } catch (const _String& e) {
             }
         }
         
@@ -2259,7 +2273,7 @@ HBLObjectRef _TreeTopology::RandomizeTips (HBLObjectRef rate) {
                 node_level_shuffle_rates = (_AssociativeList*)rate;
                 try {
                     default_shuffle_rate = node_level_shuffle_rates->GetNumberByKey("default");
-                } catch (const _String err) { // no default shuffle rate
+                } catch (const _String& err) { // no default shuffle rate
                     
                 }
             }
@@ -2313,7 +2327,7 @@ HBLObjectRef _TreeTopology::RandomizeTips (HBLObjectRef rate) {
             }
         }
 
-    } catch (const _String e) {
+    } catch (const _String& e) {
         HandleApplicationError(e);
     }
     return new _MathObject;
@@ -2622,9 +2636,19 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
     } else {
         // move to parent now
         node<long>*     iterator_parent = iterator->get_parent();
+        
+        /*
+        StringToConsole(GetNodeName(iterator)); NLToConsole();
+        if (iterator_parent) {
+            StringToConsole(GetNodeName(iterator_parent)); NLToConsole();
+        }
+        */
 
-        if (iterator != theRoot) { // not root yet
-            res<<'(';
+        if (iterator_parent) { // not root yet
+            bool is_root_next = iterator_parent->get_parent() == NULL;
+            if (!is_root_next) {
+                res<<'(';
+            }
             long the_index_of_this_child = iterator->get_child_num();
             RerootTreeInternalTraverser (iterator_parent, the_index_of_this_child ,false,res,settings,branch_length_mode,variable_ref,first_time);
 
@@ -2637,14 +2661,18 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
                   }
               }
              }
-            res<<')';
-            if (!first_time) {
-              _String node_name = GetNodeName (iterator);
-              if (!node_name.BeginsWith(settings.inode_prefix)) {
-                res<<node_name;
-              }
+            
+            if (!is_root_next) {
+                res<<')';
+            
+                if (!first_time) {
+                  _String node_name = GetNodeName (iterator);
+                  if (!node_name.BeginsWith(settings.inode_prefix)) {
+                    res<<node_name;
+                  }
+                }
+                PasteBranchLength (iterator,res,branch_length_mode, variable_ref);
             }
-            PasteBranchLength (iterator,res,branch_length_mode, variable_ref);
         } else {
             /* passing old root
                create a new root with >=2 children nodes - this node,
@@ -2878,7 +2906,7 @@ _String             _TreeTopology::CompareTrees      (_TreeTopology* compareTo) 
 
         char compRes;
 
-        if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo))>0) {
+        if (internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo)>0) {
             rerootAt = kCompareEqualWithoutReroot;
         } else {
             long   tCount = 0;
@@ -3105,7 +3133,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
             }
 
             node<long>* sacLamb = iterator;
-            iterator = ni.Next();
+            ni.Next();
 
             if (sacLamb->parent->get_num_nodes()==1) {
               DeleteObject((BaseRef)sacLamb->parent->in_object);
@@ -3207,7 +3235,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
 
     char compRes;
 
-    if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo, true))>0) {
+    if (internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo, true)>0) {
       rerootAt = kCompareEqualWithoutReroot;
     } else {
       long   tCount = 0;

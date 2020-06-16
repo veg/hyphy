@@ -182,7 +182,7 @@ public:
     virtual void    Clear (void);               //deletes all the entries w/o destroying the matrix
     virtual void    ZeroNumericMatrix (void);               //deletes all the entries w/o destroying the matrix
 
-    void    Initialize (bool = false);                  // zeros all matrix structures
+    void    Initialize (bool = true);                  // zeros all matrix structures
 
     virtual void        Serialize (_StringBuffer&,_String&);
     // write the matrix definition in HBL
@@ -439,7 +439,7 @@ public:
 
     _Formula*      GetFormula                  (long, long) const;
     HBLObjectRef   GetMatrixCell               (long, long) const;
-    HBLObjectRef   MultByFreqs                 (long);
+    HBLObjectRef   MultByFreqs                 (long, bool = false);
     HBLObjectRef   EvaluateSimple              (_Matrix* existing_receptacle = nil);
     HBLObjectRef   SortMatrixOnColumn          (HBLObjectRef);
     HBLObjectRef   K_Means                     (HBLObjectRef);

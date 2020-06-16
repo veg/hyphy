@@ -115,7 +115,6 @@ set(HYPHY_VERSION 2.1)
 # setup the files we'll be using
 #-------------------------------------------------------------------------------
 file(GLOB SRC_CORE src/core/*.cpp)
-file(GLOB SRC_GTESTS tests/gtests/*.cpp)
 file(GLOB SRC_NEW src/new/*.cpp)
 file(GLOB SRC_CONTRIB src/contrib/*.cpp)
 
@@ -276,14 +275,6 @@ if(${CURL_FOUND} AND NOT APPLE)
     add_definitions (-D__HYPHYCURL__)
 endif(${CURL_FOUND} AND NOT APPLE)
 
-#-------------------------------------------------------------------------------
-# gtest dependency
-#-------------------------------------------------------------------------------
-add_subdirectory(contrib/gtest-1.7.0)
-set_property(
-    TARGET gtest gtest_main
-    PROPERTY EXCLUDE_FROM_ALL true
-)
 
 
 #-------------------------------------------------------------------------------
@@ -343,8 +334,6 @@ include_directories(
     src/contrib
     src/lib/Link src/new/include
     contrib/SQLite-3.8.2 # SQLite
-    contrib/gtest-1.7.0/include
-    tests/gtests
 )
 
 
@@ -449,11 +438,11 @@ set_target_properties(
     HYPHY-PROFILE
     PROPERTIES
     if(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate "
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate -fanalyzer "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate -fanalyzer "
     else(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}-g -fprofile-generate "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -fprofile-generate "
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}-g -fprofile-generate -fanalyzer "
+        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -fprofile-generate -fanalyzer "
     endif(${OPENMP_FOUND})
 )
 
@@ -474,7 +463,7 @@ set_target_properties(
   set_target_properties(
      HYPHY-GPERF
      PROPERTIES
-          COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  "
+         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  "
          LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -L/usr/local/Cellar/gperftools/2.7/lib/ -lprofiler -ltcmalloc  "
      endif(${OPENMP_FOUND})
  )
@@ -517,34 +506,6 @@ set_target_properties(
 
 
 
-#-------------------------------------------------------------------------------
-# hyphy gtest target
-#-------------------------------------------------------------------------------
-add_executable(
-    HYPHYGTEST
-    EXCLUDE_FROM_ALL
-    ${SRC_COMMON} ${SRC_GTESTS} ${SRC_UNIXMAIN}
-)
-add_dependencies(HYPHYGTEST gtest)
-target_link_libraries(HYPHYGTEST ${DEFAULT_LIBRARIES} gtest)
-add_custom_target(GTEST DEPENDS HYPHYGTEST)
-
-set_property(
-    TARGET HYPHYGTEST
-    APPEND PROPERTY COMPILE_DEFINITIONS __UNITTEST__
-)
-set_target_properties(
-    HYPHYGTEST
-    PROPERTIES
-    if(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
-    else(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -msse3 -g -fprofile-arcs -ftest-coverage -pg"
-    endif(${OPENMP_FOUND})
-)
-
 
 #-------------------------------------------------------------------------------
 # target-specific and occasionally-shared properties
@@ -552,7 +513,7 @@ set_target_properties(
 
 if(UNIX)
     set_property(
-        TARGET hyphy HYPHYGTEST HYPHYDEBUG HYPHY-PROFILE HYPHY-GPERF
+        TARGET hyphy HYPHYDEBUG HYPHY-PROFILE HYPHY-GPERF
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
 endif(UNIX)
@@ -563,18 +524,18 @@ set_property(
 )
 
 set_property(
-    TARGET hyphy HYPHYGTEST HYPHYDEBUG
+    TARGET hyphy HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
 )
 
 set_property(
-    TARGET hyphy HYPHYGTEST HYPHYDEBUG HYPHY-PROFILE
+    TARGET hyphy HYPHYDEBUG HYPHY-PROFILE
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
 )
 
 
 set_property(
-    TARGET HYPHYDEBUG HYPHYGTEST
+    TARGET HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYDEBUG__
 )
 

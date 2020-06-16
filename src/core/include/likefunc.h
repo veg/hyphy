@@ -132,8 +132,7 @@ enum _LikelihoodFunctionCountType {
 
 //_______________________________________________________________________________________
 
-class   _LikelihoodFunction: public BaseObj
-{
+class   _LikelihoodFunction: public BaseObj {
 
 public:
 
@@ -141,7 +140,8 @@ public:
 
     _LikelihoodFunction (void); // default - doesn't do much
     _LikelihoodFunction (_String&, _VariableContainer*); // from triplets
-    _LikelihoodFunction (_LikelihoodFunction&); // stack copy
+    _LikelihoodFunction (_LikelihoodFunction const&); // stack copy
+    const _LikelihoodFunction & operator = (_LikelihoodFunction const&);
     void        Init      (void);
 
     bool        Construct (_List&,_VariableContainer*);
@@ -183,7 +183,6 @@ public:
     hyFloat        DerivativeCorrection (long, hyFloat) const;     // obtain the g'(x) for the chain rule differentiation under transformed variables
     void        SetIthIndependent (long, hyFloat);           // set the value of i-th independent variable
     bool        CheckAndSetIthIndependent (long, hyFloat);   // set the value of i-th independent variable
-    void        SetIthDependent           (long, hyFloat);   // set the value of i-th dependent variable
     bool        IsIthParameterGlobal      (long) const;
 
     long        SetAllIndependent         (_Matrix*);
@@ -196,7 +195,7 @@ public:
     bool        PreCompute      (void);
     void        PostCompute     (void);
     virtual
-    hyFloat  Compute         (void);
+    hyFloat     Compute         (void);
 
     void        PrepareToCompute (bool = false);
     void        DoneComputing    (bool = false);
@@ -221,7 +220,7 @@ public:
     // optional list of parameters to estimate the conditional covariance for
 
 
-    virtual     void        RescanAllVariables      (void);
+    virtual     void        RescanAllVariables      (bool obtain_variable_mapping = false);
 
     long        DependOnTree            (_String const&) const;
     long        DependOnModel           (_String const&) const;
@@ -416,7 +415,7 @@ protected:
     void            InitMPIOptimizer            (void);
     void            CleanupMPIOptimizer         (void);
     void            ComputeBlockInt1            (long,hyFloat&,_TheTree*,_DataSetFilter*, char);
-    void            CheckStep                   (hyFloat&, _Matrix, _Matrix* selection = nil);
+    void            CheckStep                   (hyFloat&, const _Matrix&, _Matrix* selection = nil);
     void            GetGradientStepBound        (_Matrix&, hyFloat &, hyFloat &, long* = nil);
     void            ComputeGradient             (_Matrix&,  hyFloat&, _Matrix&, _SimpleList&,
             long, bool normalize = true);
@@ -566,8 +565,8 @@ protected:
                                 _hyphyCategoryCOP
                      */
                     indVarsByPartition,
-                    depVarsByPartition;
-
+                    depVarsByPartition,
+                    *variable_to_node_map;
 
 
     long            evalsSinceLastSetup,
@@ -613,7 +612,7 @@ protected:
     _Formula*       computingTemplate;
     MSTCache*       mstCache;
 
-    hyFloat      smoothingTerm,
+    hyFloat         smoothingTerm,
                     smoothingReduction,
                     smoothingPenalty;
 
@@ -661,10 +660,13 @@ protected:
                         canUseReversibleSpeedups,
                         // a partition will be tagged with '1' if its tree has only
                         // time-reversible models
-                        siteScalerBuffer
+                        siteScalerBuffer,
                         // used for LF with category variables to
                         // store site-by-site scaling factors
+                        *_variables_changed_during_last_compute
                         ;
+    
+    _AVLList*           variables_changed_during_last_compute;
 
     _List               localUpdatePolicy,
                         matricesToExponentiate,
@@ -698,7 +700,7 @@ public:
     _CustomFunction         (const _String& , _VariableContainer const * context = nil);
 
     virtual     hyFloat     Compute                 (void);
-    virtual     void        RescanAllVariables      (void) {}
+    virtual     void        RescanAllVariables      (bool obtain_variable_mapping = false) {}
     virtual void            SerializeLF             (_StringBuffer& res, char=0, _SimpleList* = nil, _SimpleList* = nil) {
                res.AppendNewInstance ((_String*)myBody.toStr(kFormulaStringConversionNormal));
     }

@@ -69,17 +69,24 @@ public:
         weights = nil;
         conditionalWeights = nil;
     };
-    _CategoryVariable (_CategoryVariable& cv) {
+    
+    _CategoryVariable (_CategoryVariable const & cv) {
         Duplicate (&cv);
     }
+    
     _CategoryVariable (_String& name, _List* parms, _VariableContainer*);
+    
+    _CategoryVariable const & operator = (_CategoryVariable const& cv) {
+        if (this != &cv) {
+            Duplicate (&cv);
+        }
+        return *this;
+    }
 
     // std functions
     virtual
     ~_CategoryVariable () {
-        DeleteObject (values);
-        DeleteObject (intervalEnds);
-        DeleteObject (weights);
+        BatchDelete(values, intervalEnds, weights, conditionalWeights);
     };
     virtual
     BaseRef     makeDynamic             (void) const;

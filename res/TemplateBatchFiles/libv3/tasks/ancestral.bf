@@ -151,7 +151,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     _bac_tree_avl = ( ^ _bac_treeID) ^ 0;
     
     GetString(_bacSequenceNames, ^ _bac_filterID, -1);
-
+    
 
     /* 3; obtain ID->string mapping for the datafilter;
     	  also deduce how many chars/state there are */
@@ -162,6 +162,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     _bacFilterDimension = Columns(_bacCharHandles);
     _bacCharsPerState = _bacCharProperties["ATOM_SIZE"];
     DataSetFilter _bacAF = CreateFilter(_bac_ancDS, _bacCharsPerState, "", "", _bacCharProperties["EXCLUSIONS"]);
+    
     GetString(_bacAncestralNames, _bacAF, -1);
     GetDataInfo(_bacAncestralPatternMap, _bacAF);
 
@@ -188,9 +189,12 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     
     _bacHandledResolutions = {};
     _bacHandledResolutionsAmbig = {};
+
+    reverse_mapping = {};
     
     for (i,_bacCounter; in; _bacCharHandles) {
         _bacHandledResolutions[_bacCounter] = i + 1;
+        reverse_mapping [i] = _bacCounter;
     }
     
     
@@ -265,29 +269,23 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
                     _bacResolutionCount = +_bacCharState;
                     if (_bacResolutionCount == Columns(_bacCharHandles)) {
                             /* gap/full ambig */
-                        _bacHandledResolutions[_bacCurrentState] = -1;
+                        if ( (reverse_mapping/(-1)) == FALSE) {
+                            _bacHandledResolutions[_bacCurrentState] = -1;
+                            reverse_mapping[-1] = _bacCurrentState;
+                        }
                         _bacMatrixOfResolutions[_bacBranchCounter - 1][_bacSiteCounter] = -1;
                     } else {
                         _bacHandledResolutions[_bacCurrentState] = -2 - Abs(_bacHandledResolutionsAmbig);
                         _bacHandledResolutionsAmbig + _bacCharState;
                         _bacMatrixOfResolutions[_bacBranchCounter - 1][_bacSiteCounter] = _bacHandledResolutions[_bacCurrentState];
+                        reverse_mapping [_bacHandledResolutions[_bacCurrentState]] = _bacCurrentState;
                     }
                  }
             }
         }
     }
 
-    reverse_mapping = {};
-    all_chars = Rows(_bacHandledResolutions);
-    for (_bacCounter = 0; _bacCounter < Abs(_bacHandledResolutions); _bacCounter += 1) {
-        value = _bacHandledResolutions[all_chars[_bacCounter]];
-        if (value > 0) {
-            value += -1;
-        }
-        reverse_mapping[value] = all_chars[_bacCounter];
-
-    }
-
+    
 
     return {
         "DIMENSIONS": {

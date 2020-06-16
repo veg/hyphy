@@ -108,7 +108,7 @@ public:
    * Revision history
    - SLKP 20170517 porting from v3 branch
    */
-  virtual void Initialize(bool = false);
+  virtual void Initialize(bool = true);
 
   /**
    * Clear the string (delete allocated memory)
@@ -1212,6 +1212,19 @@ public:
    */
   bool StripQuotes(char open_char = '"', char close_char = '"');
 
+    /**
+     * Strips quotes from around the string if present (in place) for multiple delimiters at once
+     * \n\n \b Example: \code _String("\"hyphy\"").StripQuotes("\"'","\"'")\endcode
+     * @param open_char : the opening quote chars (paired with close_char)
+     * @param close_char : the closing quote char (paired with open char)
+     * @return : true if the string was enquoted and the quotes had been stripped
+
+     *  Revision history
+        - SLKP 20200508  initial
+
+     */
+  bool StripQuotes(char const *, char const *);
+
   /**
    * Checks if String is valid ident
    * \n A valid ident is any alphanumeric or '_'
@@ -1304,6 +1317,23 @@ public:
             cb ( s_data[i], i );
         }
     }
+
+/** a by-character matching iterator
+     
+     
+     @param  cb : a void (char c, unsigned long index) callback argument
+     @param  start_at : start the iteration at this position in the string
+
+         - SLKP 20171008   introduced this function
+
+     */
+
+      template <typename CALLBACK> long Any (CALLBACK cb, unsigned long start_at = 0) const {
+          for (unsigned long i = start_at; i<s_length; i++) {
+              if (cb ( s_data[i], i )) return i;
+          }
+          return kNotFound;
+      }
 
   /**
   * Compute Adler-32 CRC for a string
