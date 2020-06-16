@@ -164,7 +164,7 @@ BaseRef _VariableContainer::toStr (unsigned long) {
 //__________________________________________________________________________________
 
 _VariableContainer::_VariableContainer (_String const & theName, _String theTmplt, _VariableContainer* theP) : iVariables(nil), dVariables(nil), gVariables(nil) {
-    InitializeVarCont (theName, theTmplt,theP);
+    _VariableContainer::InitializeVarCont (theName, theTmplt,theP);
 }
 
 //__________________________________________________________________________________
@@ -678,7 +678,7 @@ void      _VariableContainer::CopyMatrixParameters (_VariableContainer* source, 
             _SimpleList the_mapping;
             target_vars.Map (source_vars, the_mapping);
             the_mapping.Each ([=] (long source_var, unsigned long index) -> void {
-                if (source_var >= 0UL) {
+                if (source_var >= 0L) {
                     long which_idx = model_vars_in_source.list_data[source_var];
                     which_idx = which_idx >= 0 ? source->iVariables->get (which_idx) : source->dVariables->get (-which_idx-2L);
                     LocateVar (iVariables->get (model_vars_in_target.get(index)))->SetValue (LocateVar (which_idx)->Compute(),true,true,NULL);

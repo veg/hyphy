@@ -934,7 +934,6 @@ node<nodeCoord>* _TheTree::AlignedTipsMapping (node<long>* iterator, hyFloat& cu
         long descendants = theRoot->get_num_nodes();
         node<nodeCoord>* aRoot = new node<nodeCoord>; // reslove rootedness here
         aRoot->in_object.varRef = -1;
-        aRoot->go_next(); // dumbass initialization for later
         if (rooted == UNROOTED || !respectRoot) {
             for (long k=1L; k<=descendants; k++) {
                 aRoot->add_node(*AlignedTipsMapping(theRoot->go_down(k), current_offset));
@@ -1009,7 +1008,7 @@ hyFloat       _TheTree::DetermineBranchLengthGivenScalingParameter (long varRef,
             branchLength = HY_REPLACE_BAD_BRANCH_LENGTH_WITH_THIS;
         }
     } else {
-        auto match_pattern = [&] (long local_idx, long template_index, unsigned long index) -> bool {
+        auto match_pattern = [&] (long local_idx, long template_index, unsigned long index) -> void {
             _Variable * local_parameter = LocateVar(local_idx);
             if (local_parameter->GetName()->EndsWith(matchString)) {
                 branchLength = local_parameter->Compute()->Value();
@@ -4697,7 +4696,8 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     stateCacheDim                    = (alsoDoLeaves? (iNodeCount + leafCount): (iNodeCount));
     
     long            *stateCache                     = new long [patternCount*(iNodeCount-1)*alphabetDimension],
-    *leafBuffer                     = new long [(alsoDoLeaves?leafCount*patternCount:1)*alphabetDimension];
+                    *leafBuffer                     = new long [(alsoDoLeaves?leafCount*patternCount:1)*alphabetDimension],
+                    *initiaStateCache               = stateCache;
     
     // a Patterns x Int-Nodes x CharStates integer table
     // with the best character assignment for node i given that its parent state is j for a given site
@@ -4922,7 +4922,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
         }
     }
     
-    delete [] stateCache;
+    delete [] initiaStateCache;
     delete [] leafBuffer;
     delete [] buffer;
     

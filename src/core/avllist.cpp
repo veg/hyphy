@@ -71,13 +71,13 @@ _AVLList::_AVLList (_AVLList const &) {
 
 BaseRef _AVLList::makeDynamic (void) const {
     HandleApplicationError("Called _AVLList::makeDynamic:  method stub that is not implemented");
+    return nil;
 }
 
 //______________________________________________________________
 
 void _AVLList::Duplicate (BaseRefConst) {
     HandleApplicationError("Called _AVLList::Duplicate:  method stub that is not implemented");
-    
 }
 
 //______________________________________________________________

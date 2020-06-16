@@ -91,7 +91,7 @@ Constructors/Destructors/Copiers
 */
 
 _String::_String (void) {
-  Initialize();
+  _String::Initialize();
 }
 
 //=============================================================
@@ -152,8 +152,8 @@ _String::_String(const hyFloat val, unsigned char digits) {
 //=============================================================
 
 _String::_String(const _String &s) {
-    Initialize ();
-    Duplicate(& s);
+    _String::Initialize ();
+    _String::Duplicate(& s);
 }
 
 //=============================================================
@@ -258,7 +258,7 @@ _String::_String (const _String& str, unsigned long copies) {
 
 //=============================================================
 _String::_String(FILE * file, long read_this_many) {
-    Initialize ();
+    _String::Initialize ();
     if (file) {
         if (read_this_many < 0) {
           fseek(file, 0, SEEK_END);
@@ -379,6 +379,7 @@ char& _String::operator [] (long index) {
         return s_data[index];
     }
     HandleApplicationError (_String ("Internal error at ") & __PRETTY_FUNCTION__ & ": an invalid index requested");
+    return s_data[0];
 }
 
 //=============================================================

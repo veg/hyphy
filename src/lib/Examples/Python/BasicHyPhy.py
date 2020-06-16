@@ -44,7 +44,7 @@ print ("The value of z is ", hyphyResult.sData)
 # to execute prewritten analyses from HBL files
 
 print ("Executing the example F81.bf file")
-hyphyResult = hyphyInstance.ExecuteBF ("ExecuteAFile(\"../HBL/F81.bf\")");
+hyphyInstance.ExecuteBF ("ExecuteAFile(\"../HBL/F81.bf\")");
 
 # retrive the standard output, error and runtime warnings
 

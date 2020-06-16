@@ -37,6 +37,9 @@
  
  */
 
+#ifndef __ALIGNMENT_HEADER_FILE__
+
+#define __ALIGNMENT_HEADER_FILE__
 #include "baseobj.h"
 #include "likefunc.h"
 #include "matrix.h"
@@ -86,3 +89,5 @@ hyFloat LinearSpaceAlign( _String const * s1           // first string
                            , char parentGapLink
                            , char * ha
                            );
+
+#endif

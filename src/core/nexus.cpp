@@ -318,7 +318,6 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
                     ReportWarning ( _String ("TAXALABELS provided ") &
                                     _String ((long)result.GetNames().lLength) &" species, whereas the NTAX statement promised:" &
                                     _String (speciesExpected) & ". HYPHY will use TAXALABELS count.");
-                     (key1);
                 }
                 done = true;
             }

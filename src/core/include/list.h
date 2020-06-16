@@ -129,7 +129,7 @@ class _List:public _SimpleList {
         /**
         * Element location functions - read only
         */
-        virtual const _List operator = (const _List&);
+        const _List& operator = (const _List&);
 
         template <typename MAPPER> void ForEach (MAPPER mapper, long startAt = 0) const {
           for (unsigned long i = startAt; i<lLength; i++) {

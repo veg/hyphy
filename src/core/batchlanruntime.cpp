@@ -87,7 +87,7 @@ const _String   _ElementaryCommand::ExtractStatementAssignment (_String const& s
         
         end_at ++;
         
-    } catch (const _String err) {
+    } catch (const _String& err) {
         if (exceptions) {
             throw err;
         }
@@ -452,7 +452,7 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                 _String argument;
                 try {
                     argument = _ProcessALiteralArgument (*GetIthParameter(2),current_program);
-                } catch (const _String err) {
+                } catch (const _String& err) {
                     //printf ("%s\n", err.get_str());
                     // not a string
                 }
@@ -1425,21 +1425,21 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                 if (operation_var) {
                     _SimpleList pattern_match (operation_var->GetName()->RegExpMatch(hy_replicate_constraint_regexp, 0));
                     if (pattern_match.nonempty()) {
-                        unsigned long index = operation_var->GetName()->Cut (pattern_match (2), pattern_match (3)).to_long() - 1UL;
-                        if (index >= templated_operations.countitems()) {
+                        unsigned long var_index = operation_var->GetName()->Cut (pattern_match (2), pattern_match (3)).to_long() - 1UL;
+                        if (var_index >= templated_operations.countitems()) {
                             throw (operation_var->GetName()->Enquote() & " does not have a matched positional argument");
                         }
                         if (is_lhs) {
-                            reference_argument = index;
+                            reference_argument = var_index;
                         }
                         _List * term_record = new _List;
                         term_record->AppendNewInstance (new _String (*operation_var->GetName(), pattern_match (4), pattern_match (5)));
                         (*term_record) << op;
                         //printf ("[term_record] %s\n", ((_String*) (term_record->toStr()))->get_str());
 
-                        ((_List*)templated_operations.GetItem(index))->AppendNewInstance(term_record);
+                        ((_List*)templated_operations.GetItem(var_index))->AppendNewInstance(term_record);
                         *((_List*)(substitution_variables.GetItem(0))) << operation_var->GetName();
-                        substitution_variable_by_index << index;
+                        substitution_variable_by_index << var_index;
                     }
                 }
             });
@@ -2054,7 +2054,7 @@ bool      _ElementaryCommand::HandleGetURL(_ExecutionList& current_program){
     } else {
       if (*action == save_to_file_action) {
         _String file_name = _ProcessALiteralArgument (*GetIthParameter(1UL),current_program);
-        if (!ProcessFileName (file_name, true,true,(hyPointer)current_program.nameSpacePrefix),false,&current_program) {
+        if (!ProcessFileName (file_name, true,true,(hyPointer)current_program.nameSpacePrefix,false,&current_program)) {
           return false;
         }
         if (!Get_a_URL(url, &file_name)) {
@@ -2177,7 +2177,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
         try {
             _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
             option = current_program.FetchFromStdinRedirect (&kPromptText, false, !(redirect&&redirect->has_data()));
-        } catch (const _String e) {
+        } catch (const _String& e) {
             if (e != kNoKWMatch) {
                 throw (e);
             }
@@ -3162,7 +3162,7 @@ bool      _ElementaryCommand::HandleKeywordArgument (_ExecutionList& current_pro
                         }
                     }
                 }
-            } catch (_String const e){
+            } catch (_String const& e){
                     throw _String ("Not a valid type for the default expression value");
             }
         }
@@ -3551,7 +3551,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
             
             dynamic_reference_manager < redirected;
             need_to_ask_user = false;
-          } catch (const _String e) {
+          } catch (const _String& e) {
               if (e != kNoKWMatch) {
                   throw (e);
               }
@@ -3979,7 +3979,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                 try {
                     _FString * redirect = (_FString*)hy_env::EnvVariableGet(hy_env::fprintf_redirect, STRING);
                     user_choice = current_program.FetchFromStdinRedirect(&dialog_title, required > 1, !(redirect && redirect->has_data())); // handle multiple selections
-                } catch (const _String e) {
+                } catch (const _String& e) {
                     if (e == kNoKWMatch) {
                         break;
                     } else {
@@ -3997,6 +3997,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                                 selections << match_found;
                             }
                         });
+                        DeleteObject(multiple_choice);
                     }
                 }
                 

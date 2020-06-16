@@ -70,7 +70,7 @@ _List::_List (unsigned long l):_SimpleList(l) {
 _List::_List (const _List& l, long from, long to) {
     if (from == 0 && to == -1) { // copy the whole thing
         BaseRef   br = (BaseRef)&l;
-        Duplicate (br);
+        _List::Duplicate (br);
     } else {
         Initialize           ();
         NormalizeCoordinates (from, to, l.lLength);
@@ -157,7 +157,7 @@ BaseRef _List::GetItemRangeCheck(const unsigned long i) const {
 
 
 // Assignment operator
-const _List _List::operator = (const _List& l) {
+const _List & _List::operator = (const _List& l) {
 
     Clear(true);
     lLength = l.lLength;

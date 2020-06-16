@@ -1392,7 +1392,7 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent, bool ign
       CopyCLIToVariables();
     }
 
-  } catch (const _String err) {
+  } catch (const _String& err) {
     HandleApplicationError(err);
   }
 
@@ -4191,7 +4191,7 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
                 }
             }
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         for (long index = target.lLength - 1; index >= beginning; index--) {
             target.Delete (index);
         }
@@ -4464,7 +4464,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
                 throw _String ("Expected DataSet ident = ReadDataFile(filename); or DataSet ident = SimulateDataSet (LikelihoodFunction); or DataSet ident = Combine (list of DataSets); or DataSet ident = Concatenate (list of DataSets); or DataSet ident = ReconstructAnscetors (likelihood function); or DataSet ident = SampleAnscetors (likelihood function) or DataSet	  dataSetid = ReadFromString (string);");
             }
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleErrorWhileParsing (err, source);
         return false;
     }
@@ -4627,7 +4627,7 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionLi
         }
 
         datafilter_command->addAndClean (target,&arguments);
-    } catch (const _String err) {
+    } catch (const _String& err) {
         HandleErrorWhileParsing (err, source);
         DeleteObject (datafilter_command);
         return false;

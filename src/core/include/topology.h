@@ -192,6 +192,7 @@ public:
     _TreeTopology                       (_String const*);
     _TreeTopology                       (_TheTree const*);
     _TreeTopology                       (const _TreeTopology& );
+    _TreeTopology const&                operator = (const _TreeTopology& );
 
     virtual                 ~_TreeTopology                      (void);
 

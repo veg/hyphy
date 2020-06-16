@@ -176,7 +176,7 @@ void        PopulateArraysForASimpleFormula (_SimpleList& vars, _SimpleFormulaDa
                 }
             }
         });
-    } catch (const _String e) {
+    } catch (const _String& e) {
         HandleApplicationError (e, true);
     }
 }

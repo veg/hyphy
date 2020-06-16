@@ -79,12 +79,20 @@ _TranslationTable::_TranslationTable(unsigned char baseL) {
 
 //_________________________________________________________
 _TranslationTable::_TranslationTable(_TranslationTable const &t) {
-  tokensAdded = t.tokensAdded;
-  baseLength = t.baseLength;
-  baseSet = t.baseSet;
-  translationsAdded << t.translationsAdded;
-  checkTable = NULL;
+   *this = t;
 }
+                                                 
+//_________________________________________________________
+_TranslationTable const & _TranslationTable::operator = (_TranslationTable const &t) {
+   if (this != &t) {
+       tokensAdded = t.tokensAdded;
+       baseLength = t.baseLength;
+       baseSet = t.baseSet;
+       translationsAdded << t.translationsAdded;
+       checkTable = NULL;
+    }
+    return *this;
+ }
 
 //_________________________________________________________
 _TranslationTable::_TranslationTable(_String &alphabet) {
@@ -948,7 +956,7 @@ _TranslationTable::MergeTables(_TranslationTable const *table2) const
       for (long i = 0; i < table2->tokensAdded.length(); i++) {
         long f = tokensAdded.Find(table2->tokensAdded[i]);
         if (f == -1) {
-          result->tokensAdded && table2->tokensAdded[i];
+          result->tokensAdded = result->tokensAdded & table2->tokensAdded[i];
           // SLKP 20071002 added the next line;
           // was not adding the translation for the new token
           result->translationsAdded << table2->translationsAdded(i);

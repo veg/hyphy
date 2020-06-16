@@ -369,10 +369,7 @@ unsigned long     _Trie::Delete (const _List& key){
      unsigned long how_many = 0;
     for (long k = 0; k < key.lLength; k++) {
         _String serializedKey ((_String*)((BaseRef*)key.list_data)[k]->toStr());
-        
-        long this_index = Delete (serializedKey);
-        
-        if (this_index >= 0) {
+        if (Delete (serializedKey)) {
             how_many ++;
         }
     }

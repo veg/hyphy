@@ -140,7 +140,8 @@ public:
 
     _LikelihoodFunction (void); // default - doesn't do much
     _LikelihoodFunction (_String&, _VariableContainer*); // from triplets
-    _LikelihoodFunction (_LikelihoodFunction&); // stack copy
+    _LikelihoodFunction (_LikelihoodFunction const&); // stack copy
+    const _LikelihoodFunction & operator = (_LikelihoodFunction const&);
     void        Init      (void);
 
     bool        Construct (_List&,_VariableContainer*);
@@ -414,7 +415,7 @@ protected:
     void            InitMPIOptimizer            (void);
     void            CleanupMPIOptimizer         (void);
     void            ComputeBlockInt1            (long,hyFloat&,_TheTree*,_DataSetFilter*, char);
-    void            CheckStep                   (hyFloat&, _Matrix, _Matrix* selection = nil);
+    void            CheckStep                   (hyFloat&, const _Matrix&, _Matrix* selection = nil);
     void            GetGradientStepBound        (_Matrix&, hyFloat &, hyFloat &, long* = nil);
     void            ComputeGradient             (_Matrix&,  hyFloat&, _Matrix&, _SimpleList&,
             long, bool normalize = true);

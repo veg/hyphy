@@ -798,16 +798,19 @@ namespace hy_global {
     time (&c_time);
     
     if (do_gmt) {
-      tm* gmt = gmtime (&c_time);
+      tm  gmt;
+      gmtime_r (&c_time, &gmt);
       
-      return _StringBuffer (_String((long)1900+gmt->tm_year)) << '/' << _String (1+(long)gmt->tm_mon) << '/'
-             << _String ((long)gmt->tm_mday) << ' ' << _String ((long)gmt->tm_hour) << ':' & _String ((long)gmt->tm_min);
+      return _StringBuffer (_String((long)1900+gmt.tm_year)) << '/' << _String (1+(long)gmt.tm_mon) << '/'
+            << _String ((long)gmt.tm_mday) << ' ' << _String ((long)gmt.tm_hour) << ':' & _String ((long)gmt.tm_min);
     }
     
-    tm*     local_time = localtime (&c_time);
+    tm    local_time;
+    localtime_r (&c_time, &local_time);
+    char  time_buffer [128];
     
-    return  asctime (local_time);
-    
+    asctime_r (&local_time, time_buffer);
+    return time_buffer;
   }
   
   //____________________________________________________________________________________

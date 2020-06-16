@@ -181,10 +181,10 @@ long      _CalcNode::SetDependance (long var_index) {
         // also clear out previously computed matrix exponentials
         if (compExp) {
             DeleteAndZeroObject(compExp);
-        } else {
+        } /*else {
             if (matrixCache) {
             }
-        }
+        }*/
     }
     return var_index;
 }
@@ -195,7 +195,7 @@ void    _CalcNode::SetCodeBase (int codeBase) {
     if (codeBase>0) {
         if (codeBase != cBase || !theProbs) {
             if (theProbs) {
-                delete theProbs;
+                delete [] theProbs;
             }
             theProbs = new hyFloat [codeBase];
             cBase = codeBase;

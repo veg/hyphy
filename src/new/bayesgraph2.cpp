@@ -659,7 +659,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix const& yb, _Matrix cons
 
 //___________________________________________________________________________________________________
 
-void _check_impute_settings (long impute_maxsteps, long impute_burnin, long impute_samples) {
+void _check_impute_settings (long& impute_maxsteps, long& impute_burnin, long& impute_samples) {
   static const _String          kHYBgm_IMPUTE_MAXSTEPS    ("BGM_IMPUTE_MAXSTEPS"),
                                 kHYBgm_IMPUTE_BURNIN      ("BGM_IMPUTE_BURNIN"),
                                 kHYBgm_IMPUTE_SAMPLES     ("BGM_IMPUTE_SAMPLES");

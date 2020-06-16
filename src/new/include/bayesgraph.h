@@ -27,7 +27,9 @@
  */
 
 
+#ifndef __BAYES_GRAPH_H__
 
+#define __BAYES_GRAPH_H__
 #include "list.h"
 #include "simplelist.h"
 #include "classes.h"
@@ -195,5 +197,5 @@ protected:
 
 };
 
-
+#endif
 

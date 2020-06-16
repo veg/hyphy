@@ -272,7 +272,7 @@ public:
                         site2c[i] = GetColumn (site2 + i);
                     }
                     
-                    theNodeMap.Each ([site1c,site2c,this,&callback] (long ci, unsigned long i) -> void {
+                    theNodeMap.Each ([site1c,site2c,this,&callback] (long ci, unsigned long ) -> void {
                             for (int i = 0; i < this->unitLength; i++) {
                                 if (site1c[i][ci] != site2c[i][ci]) {
                                     callback (ci, i);

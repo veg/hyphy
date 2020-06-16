@@ -660,7 +660,7 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
       }
     }
 
-    if ( f<0L ) {
+    {
         _Variable dummy (*name, isGlobal);
         f = LocateVarByName (*name);
     }

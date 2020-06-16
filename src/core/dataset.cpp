@@ -1619,7 +1619,7 @@ void    processCommand (_String * s, FileState*fs) {
                     
             }
         }
-    } catch (const _String warning) {
+    } catch (const _String& warning) {
         ReportWarning (warning);
     }
 }
@@ -1672,7 +1672,7 @@ void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine) {
             file = f;
         }
         
-        virtual const char get_char(long index) {
+        virtual char get_char(long index) {
             if (index >= 0L && index < s_length) {
                 return s_data[index];
             } else {
@@ -2332,7 +2332,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                 nexusBFBody         = kEmptyString;
             }
         }
-    } catch (const _String err) {
+    } catch (const _String& err) {
         DeleteObject (result);
         HandleApplicationError(err);
         result = nil;
