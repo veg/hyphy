@@ -1193,8 +1193,8 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
         CheckArgumentType(parameters, ASSOCIATIVE_LIST, true);
         _AssociativeList * arguments = (_AssociativeList *)parameters;
         
-        _AssociativeList * labels    = (_AssociativeList *)arguments->GetByKeyException(kMPLabels, ASSOCIATIVE_LIST),
-                         * scores    = (_AssociativeList *)arguments->GetByKey(kMPScore, ASSOCIATIVE_LIST);
+        _AssociativeList * labels    = (_AssociativeList *)arguments->GetByKeyException(kMPLabels, ASSOCIATIVE_LIST);
+                         //* scores    = (_AssociativeList *)arguments->GetByKey(kMPScore, ASSOCIATIVE_LIST);
         
         _List           id2name; // integer label -> string label
         
@@ -2906,7 +2906,7 @@ _String             _TreeTopology::CompareTrees      (_TreeTopology* compareTo) 
 
         char compRes;
 
-        if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo))>0) {
+        if (internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo)>0) {
             rerootAt = kCompareEqualWithoutReroot;
         } else {
             long   tCount = 0;
@@ -3133,7 +3133,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
             }
 
             node<long>* sacLamb = iterator;
-            iterator = ni.Next();
+            ni.Next();
 
             if (sacLamb->parent->get_num_nodes()==1) {
               DeleteObject((BaseRef)sacLamb->parent->in_object);
@@ -3235,7 +3235,7 @@ const _String _TreeTopology::MatchTreePattern (_TreeTopology const* compareTo) c
 
     char compRes;
 
-    if ((compRes=internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo, true))>0) {
+    if (internalTreeCompare (myCT, otherCT, reindexer, 1, myLeaves.lLength, nil, compareTo, true)>0) {
       rerootAt = kCompareEqualWithoutReroot;
     } else {
       long   tCount = 0;

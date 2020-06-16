@@ -401,7 +401,7 @@ void    _TheTree::PostTreeConstructor (bool make_copy, _AssociativeList* meta) {
       if (theRoot->get_num_nodes() <= 2) { // rooted tree - check
         if (accept_rooted == false) {
           
-          long node_index = theRoot->get_data();
+          //long node_index = theRoot->get_data();
           bool recurse = false;
           
           if (theRoot->get_num_nodes() == 2) {
@@ -2286,7 +2286,7 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
                 _Variable* v = LocateVar (p);
                 if (v&&v->IsGlobal()) {
                     if(v->IsIndependent()) {
-                        long insert_location = li.Insert ((BaseRef)p);
+                        li.Insert ((BaseRef)p);
                         if (tagger) {
                             tagger->UpdateValue((BaseRef)p, weight, 0);
                         }
@@ -2953,9 +2953,10 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
                             
               while (parent_index >= 0) {
                   long dir_index = parent_index + flatLeaves.lLength;
-                  if (uniques.InsertNumber(dir_index) >= 0) { // performed insertion
-                      node<long>* parent_node = (node<long>*)flatNodes.get (parent_index);
-                  }
+                  //if (uniques.InsertNumber(dir_index) >= 0) { // performed insertion
+                  //    node<long>* parent_node = (node<long>*)flatNodes.get (parent_index);
+                  //}
+                  uniques.InsertNumber(dir_index);
                   parent_index = flatParents.list_data[dir_index];
               }
           }

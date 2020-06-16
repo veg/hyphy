@@ -3989,8 +3989,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 bP,
                 percentDone         = 0.0;
     
-    long        fnDim               = MaximumDimension(),
-                evalsIn             = likeFuncEvalCallCount,
+    long        evalsIn             = likeFuncEvalCallCount,
                 exponentiationsIn   = matrix_exp_count;
 
 
@@ -4217,13 +4216,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     }
 
     
-    if (optimization_mode != kOptimizationCoordinateWise) {
-        bP = get_optimization_setting (kBracketingPersistence, 2.5);
-    } else {
-        bP = get_optimization_setting (kBracketingPersistence, 2.5);
-    }
-    
-    _AssociativeList * initial_grid = get_optimization_setting_dict (kOptimizationStartGrid);
+     _AssociativeList * initial_grid = get_optimization_setting_dict (kOptimizationStartGrid);
     
     
     if (initial_grid) {
@@ -4253,7 +4246,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         };
         
         for (AVLListXLIteratorKeyValue key_value : initial_grid->ListIterator()) {
-            _String const * grid_point = key_value.get_key();
+            //_String const * grid_point = key_value.get_key();
             hyFloat this_point = set_and_compute((_AssociativeList*)key_value.get_object());
             
             //printf ("%s %g\n", grid_point->get_str(), this_point);
@@ -4291,7 +4284,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
                 }
             } else {
-                maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,nil,maxSoFar);
+                ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,nil,maxSoFar);
             }
         } else {
             hyFloat current_precision = MAX(1., precision);
@@ -4313,12 +4306,11 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         }
 #endif
 #endif
-        maxSoFar = Compute();
+        Compute();
         if (optimization_mode != kOptimizationGradientDescent) {
             optimization_mode = kOptimizationCoordinateWise;
         }
         currentPrecision = kOptimizationGradientDescent==7?sqrt(precision):intermediateP;
-        percentDone = 10.0;
     }
 
 
@@ -4561,10 +4553,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 shuffledOrder.Flip();
             }
 
-            hyFloat stepScale = 1.;
 
             if (use_adaptive_step) {
-                stepScale = 1./shrink_factor;
                 if (verbosity_level>5) {
                     snprintf (buffer, sizeof(buffer),"\n[BRACKET SHRINKAGE: %g]", shrink_factor);
                     BufferToConsole (buffer);
@@ -4608,7 +4598,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                             ((_Vector*)(*stepHistory)(k))->Store (bestMSoFar.theData[k]);
                         }
 
-                        stepScale = 1.;
                         logLHistory.Store(maxSoFar);
                         last_gradient_search = loopCounter;
                     }
@@ -4968,7 +4957,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         if (optimization_mode == kOptimizationGradientDescent) {
             _Matrix bestMSoFar (indexInd.lLength,1,false,true);
             GetAllIndependent(bestMSoFar);
-            maxSoFar = ConjugateGradientDescent (currentPrecision*.01, bestMSoFar);
+            ConjugateGradientDescent (currentPrecision*.01, bestMSoFar);
         }
         DeleteObject (stepHistory);
 
