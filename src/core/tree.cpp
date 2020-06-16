@@ -2225,9 +2225,10 @@ void _TheTree::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * 
                   leaf_index = 0UL,
                   int_index = 0UL;
     
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
         bool is_leaf = ti.IsAtLeaf();
+        
         
         iterator->ScanContainerForVariables(l,l2, tagger, weight +  flatNodes.lLength + flatLeaves.lLength - traversal_order, map_variables_to_nodes, is_leaf ? leaf_index : int_index + flatLeaves.lLength);
         
@@ -2243,7 +2244,7 @@ void _TheTree::ScanContainerForVariables (_AVLList& l,_AVLList& l2, _AVLListX * 
 //__________________________________________________________________________________
 
 void _TheTree::ScanAndAttachVariables (void) const {
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
         iterator->ScanAndAttachVariables();
     }
@@ -2252,7 +2253,7 @@ void _TheTree::ScanAndAttachVariables (void) const {
 //__________________________________________________________________________________
 
 void _TheTree::ScanForDVariables (_AVLList& l,_AVLList& l2) const {
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
       iterator->ScanForDVariables(l,l2);
     }
@@ -2263,7 +2264,7 @@ void _TheTree::ScanForDVariables (_AVLList& l,_AVLList& l2) const {
 void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger, long weight) const {
     _SimpleList cL;
     _AVLList    cLL (&cL);
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot );
     
     while   (_CalcNode* iterator = ti.Next()) {
 
@@ -2304,7 +2305,7 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
 //__________________________________________________________________________________
 
 void _TheTree::ScanForCVariables (_AVLList& lcat) const {
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
         for (unsigned long i = 0UL; i < iterator->categoryVariables.lLength; i++) {
             lcat.Insert ((BaseRef)iterator->categoryVariables.Element(i));
@@ -2315,7 +2316,7 @@ void _TheTree::ScanForCVariables (_AVLList& lcat) const {
 //__________________________________________________________________________________
 
 bool _TheTree::HasChanged (bool) {
-    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+    _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
         if (iterator->HasChanged()) {
             return true;
@@ -2334,7 +2335,7 @@ bool _TheTree::HasChanged2 (void) {
     }
   }
 
-  _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER);
+  _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
   while   (_CalcNode* iterator = ti.Next()) {
     if (iterator->_VariableContainer::HasChanged()) {
       return true;

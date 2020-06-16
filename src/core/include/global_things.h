@@ -320,7 +320,7 @@ namespace hy_global {
   
   extern _Variable * hy_x_variable, * hy_n_variable;
     
-  extern hyFloat     kMachineEpsilon;
+  extern const hyFloat     kMachineEpsilon;
   
   extern regex_t   * hy_float_regex,
                    * hy_replicate_constraint_regexp;

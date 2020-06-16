@@ -1102,16 +1102,14 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
             if (kwarg_tags && kwarg_tags->countitems() > currentKwarg) {
                 _List* current_tag = (_List*)kwarg_tags->GetItem(currentKwarg++);
                 
-                
                 // check to see if we need to match with the current dialog prompt
                 if (current_tag -> countitems() > 3UL) {
                     _String check_against = dialog_tag ? *dialog_tag : dialogPrompt;
-                    
                     if (check_against != *(_String*)current_tag->GetItem(3)) {
                         throw (1L);
                     }
                 }
-     
+                     
                 if (kwargs) {
                     user_argument = kwargs->GetByKey(*(_String*)current_tag->GetItem(0));
                 }

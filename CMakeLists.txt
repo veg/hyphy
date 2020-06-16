@@ -474,7 +474,7 @@ set_target_properties(
   set_target_properties(
      HYPHY-GPERF
      PROPERTIES
-          COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  "
+         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  "
          LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -L/usr/local/Cellar/gperftools/2.7/lib/ -lprofiler -ltcmalloc  "
      endif(${OPENMP_FOUND})
  )

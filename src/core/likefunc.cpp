@@ -4322,7 +4322,9 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                    lastMaxValue,
                    averageChange2 = 0.0,
                    //currentPrecision2 = precision,
-                    doShuffle;
+                   doShuffle;
+        
+        const       hyFloat kNonDecreaseBound = kMachineEpsilon * PartitionLengths (1);
 
         long        inCount       = 0,
                     termFactor,
@@ -4736,14 +4738,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                         brackStep     = vH->theData[0];
                         precisionStep = MAX(0.001,brackStep * 0.1);
                     }
-
-                    /*if (brackStep < 1e-4) {
-                        brackStep = 1e-4;
-                    }
-                    if (precisionStep < 1e-6) {
-                        precisionStep = 1e-6;
-                    }*/
-
                 } else {
                     if (is_global)
                         brackStep = pow(currentPrecision/**(bestVal>1.?pow(e,long(log(bestVal))):1.)*/,
@@ -4760,6 +4754,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
                 
                 
+                //verbosity_level = 101;
                 if (use_adaptive_step) {
                     if (convergenceMode < 2) {
                         LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, go2Bound, precisionStep);
@@ -4774,6 +4769,11 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 
                 if (maxSoFar - lastLogL > precision) {
                     large_change << current_index;
+                }
+                
+                if ((maxSoFar - lastLogL)/lastLogL > kNonDecreaseBound  ) {
+                    _TerminateAndDump(_String ("Worsened log-likelihood during coordinate descent from ") & _String (lastLogL, "%18.16g") & "=>" & _String (maxSoFar, "%18.16g") &
+                                      ", diff = " & _String (lastLogL-maxSoFar, "%18.16g"));
                 }
 
                 hyFloat  cj = GetIthIndependent(current_index),
@@ -5230,9 +5230,12 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
     practicalUB = upperBound>DEFAULTPARAMETERUBOUND?DEFAULTPARAMETERUBOUND:upperBound;
     long               funcCounts = likeFuncEvalCallCount;
 
-
+    hyFloat         current_best_value = 0.,
+                    current_log_l = middleValue;
+    
     if (index >= 0) {
         middle  =  GetIthIndependent (index);
+        current_best_value = middle;
     } else {
         middle  = initialStep;
     }
@@ -5288,19 +5291,33 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
 
     while (1) {
 
-        while (middle-leftStep <= lowerBound) {
+        while (middle-leftStep < lowerBound) {
             if (verbosity_level > 100) {
               char buf [512];
               snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : LB = %g, current try = %.16g, current evaluated midpoint value = %.16g (%s)", index, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
               BufferToConsole (buf);
             }
 
-            leftStep*=.125;
+            leftStep = MIN (leftStep*0.125, middle-lowerBound);
+            
             if ( leftStep<initialStep*.1 && index >= 0 || index < 0 && leftStep < STD_GRAD_STEP) {
                 if (!first) {
                     if (go2Bound) {
                         middle = lowerBound;
                         middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
+
+                        if (index >= 0) {
+                            if (current_best_value >= lowerBound && current_best_value <= right && current_log_l >= leftValue && current_log_l >= middleValue) {
+                                middle      = current_best_value;
+                                middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                                if (verbosity_level > 100) {
+                                  char buf [512];
+                                  snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket LEFT BOUNDARY (index %ld) RESETTING TO %20.16g, LogL = %20.16g]", index, middle, middleValue);
+                                  BufferToConsole (buf);
+                                }
+                            }
+                        }
+                        
                         if (isinf(middleValue)) {
                             middle = lowerBound + STD_GRAD_STEP;
                             middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
@@ -5308,7 +5325,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                         }
                         if (verbosity_level > 100) {
                           char buf [512];
-                          snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket LEFT BOUNDARY (index %ld) UPDATED middle to %15.12g, LogL = %15.12g]", index, middle, middleValue);
+                          snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket LEFT BOUNDARY (index %ld) UPDATED middle to %20.16g, LogL = %20.16g]", index, middle, middleValue);
                           BufferToConsole (buf);
                         }
                     }
@@ -5321,12 +5338,40 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
         }
 
 
-        while (rightStep+middle >= upperBound) {
-            rightStep*=.125;
-            if (rightStep<initialStep*.1 && index >= 10 || index < 0 && rightStep < STD_GRAD_STEP) {
+        while (rightStep+middle > upperBound) {
+            rightStep = rightStep*.125; //MIN (rightStep*.125,upperBound - middle);
+            if (rightStep<initialStep*.1 && index >= 0 || index < 0 && rightStep < STD_GRAD_STEP) {
                 if (!first) {
                     if (go2Bound) {
-                        middleValue = stash_middle = SetParametersAndCompute (index, middle=upperBound, &currentValues, gradient);
+                        
+                        middle=upperBound;
+                        middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                        
+                        if (index >= 0) {
+                            if (current_best_value >= left && current_best_value <= upperBound && current_log_l >= leftValue && current_log_l >= middleValue) {
+                                middle      = current_best_value;
+                                middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                            }
+                            if (verbosity_level > 100) {
+                              char buf [512];
+                              snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket RIGHT BOUNDARY (index %ld) RESETTING TO %20.16g, LogL = %20.16g]", index, middle, middleValue);
+                              BufferToConsole (buf);
+                            }
+                        }
+                        
+                        if (isinf(middleValue)) {
+                            middle = upperBound - STD_GRAD_STEP;
+                            middleValue = stash_middle = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                            //printf ("\nTrying to reset infinity %g %g\n", middle, middleValue);
+                        }
+                        
+                        
+                        
+                        if (verbosity_level > 100) {
+                          char buf [512];
+                          snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket RIGHT BOUNDARY (index %ld) UPDATED middle to %20.16g, LogL = %20.16g]", index, middle, middleValue);
+                          BufferToConsole (buf);
+                        }
                     }
                     return -2;
                 } else {
@@ -5404,6 +5449,11 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
 
 
         if (rightValue<=middleValue && leftValue<=middleValue) {
+            if (verbosity_level > 100) {
+                char buf [512];
+                snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket SUCCESSFUL: LEFT = %18.15g MIDDLE = %18.15g RIGHT = %18.15g", index, leftValue, middleValue,rightValue);
+                BufferToConsole (buf);
+            }
             successful = true;
             break;
         }
@@ -5418,6 +5468,11 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             }
             middle     = right;
             movingLeft = false;
+            if (verbosity_level > 100) {
+                char buf [512];
+                snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): MOVING BRACKET RIGHT, LEFT STEP = %15.12g, RIGHT STEP = %15.12g MIDDLE = %15.12g", index, leftStep,rightStep,middle);
+                BufferToConsole (buf);
+            }
         } else // case 2
             if (rightValue<=middleValue && middleValue<=leftValue) {
                 if (!movingLeft && !first) {
@@ -5438,26 +5493,35 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     middle     = left;
                 }
                 movingLeft = true;
+                if (verbosity_level > 100) {
+                    char buf [512];
+                    snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): MOVING BRACKET LEFT, LEFT STEP = %15.12g, RIGHT STEP = %15.12g MIDDLE = %15.12g", index, leftStep,rightStep,middle);
+                    BufferToConsole (buf);
+                }
             } else {
                 if (movingLeft) {
                     middle = left;
                 } else {
                     middle = right;
                 }
+                if (verbosity_level > 100) {
+                    char buf [512];
+                    snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): MOVED MIDDLE %s MIDDLE = %15.12g", index, movingLeft ? "LEFT" : "RIGHT", middle);
+                    BufferToConsole (buf);
+                }
+
             }
 
         if (middle>=practicalUB) {
             stash_middle = middleValue         = SetParametersAndCompute (index, middle = practicalUB, &currentValues, gradient);
             //if (index < 0) printf ("\nmiddle>=practicalUB\n");
+            if (verbosity_level > 100) {
+                char buf [512];
+                snprintf (buf, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld): EXITING practicalUB = %15.12g, stash_middle = %15.12g ", index, practicalUB, stash_middle);
+                BufferToConsole (buf);
+            }
             break;
         }
-        /*
-        if (middle-lowerBound < STD_GRAD_STEP*0.5) {
-            middleValue         = SetParametersAndCompute (index, middle = lowerBound+STD_GRAD_STEP*0.5, &currentValues, gradient);
-            //if (index < 0) printf ("\nmiddle-lowerBound < STD_GRAD_STEP*0.5\n");
-            break;
-        }
-        */
         first = false;
 
     }
@@ -6774,7 +6838,12 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
     if (outcome != -1) { // successfull bracket
         
         if (outcome == -2) { // boundary case; leave the value where it is
-            maxSoFar = middleValue;
+            if (middleValue > maxSoFar || CheckEqual(middleValue, maxSoFar)) {
+                maxSoFar = middleValue;
+            } else {
+                SetIthIndependent(index, bestVal); // worsened likelihood, reset
+                //printf ("\nResetting value at %d from %18.16g to %18.16g\n", index, middle, bestVal);
+            }
         } else {
             if (right - left < 4*brentPrec) {
                brentPrec = (right-left) * 0.2;

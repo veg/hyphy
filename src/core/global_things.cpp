@@ -100,7 +100,7 @@ namespace hy_global {
     hyTreeDefinitionPhase
                      isDefiningATree = kTreeNotBeingDefined;
     
-    hyFloat          kMachineEpsilon = 2.*DBL_EPSILON;
+    const hyFloat    kMachineEpsilon = 2.*DBL_EPSILON;
 
     
     _String const    kEmptyString,
@@ -120,7 +120,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.14"),
+                     kHyPhyVersion  = _String ("2.5.15"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
