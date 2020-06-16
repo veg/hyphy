@@ -333,8 +333,8 @@ protected:
 struct      bitMasks {
     unsigned long masks[_HY_BITMASK_WIDTH_];
     bitMasks (void) {
-        unsigned long aBit = 1;
-        for (long k=0; k<_HY_BITMASK_WIDTH_; k++) {
+        unsigned long aBit = 1UL;
+        for (unsigned long k=0UL; k<_HY_BITMASK_WIDTH_; k++) {
             masks[k] = aBit;
             aBit = aBit << 1;
         }
