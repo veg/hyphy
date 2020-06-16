@@ -2299,8 +2299,8 @@ bool      _ElementaryCommand::HandleMPIReceive (_ExecutionList& current_program)
     }
 
     long received_from;
-    receptacle->SetValue(new _FString (MPIRecvString (target_node,received_from)), false);
-    node_index_storage->SetValue (new _Constant (received_from), false);
+    receptacle->SetValue(new _FString (MPIRecvString (target_node,received_from)), false, true,NULL);
+    node_index_storage->SetValue (new _Constant (received_from), false, true, NULL);
 
 #else
     throw _String("Command not supported for non-MPI versions of HyPhy. HBL scripts need to check for MPI before calling MPI features");
