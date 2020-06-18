@@ -98,7 +98,8 @@ selection.io.startTimer (fel.json [terms.json.timers], "Total time", 0);
 
 namespace fel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
-    load_file ({utility.getGlobalValue("terms.prefix"): "fel", utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "fel.select_branches"}});
+    load_file ({utility.getGlobalValue("terms.prefix"): "fel", 
+                utility.getGlobalValue("terms.settings") : {utility.getGlobalValue("terms.settings.branch_selector") : "fel.select_branches"}});
 }
 
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");

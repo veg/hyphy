@@ -2827,7 +2827,7 @@ void    _Formula::ConvertToTree (bool err_msg) {
             } else {
                 theTree = (node<long>*)nodeStack(0);
             }
-        } catch (_String const e) {
+        } catch (_String const& e) {
             if (err_msg) {
                 HandleApplicationError(e);
             }

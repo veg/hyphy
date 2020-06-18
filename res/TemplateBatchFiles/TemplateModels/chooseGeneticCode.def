@@ -540,21 +540,14 @@ lfunction CompareCodonProperties(codon1, codon2, code)
 /*----------------------------------------------------------------------------------------------------------*/
 
 function defineCodonToAA() {
-    codonToAAMap = {};
-    nucChars = "ACGT";
-
-    for (p1 = 0; p1 < 64; p1 = p1 + 1) {
-        codonToAAMap[nucChars[p1$16] + nucChars[p1 % 16 $4] + nucChars[p1 % 4]] = _hyphyAAOrdering[_Genetic_Code[p1]];
-    }
-
-    return codonToAAMap;
+    return defineCodonToAAGivenCode(_Genetic_Code);
 }
 
 /*----------------------------------------------------------------------------------------------------------*/
 
 function defineCodonToAAGivenCode(code) {
     codonToAAMap = {};
-    nucChars = "ACGT";
+    nucChars     = "ACGT";
 
     for (p1 = 0; p1 < 64; p1 += 1) {
         codonToAAMap[nucChars[p1$16] + nucChars[p1 % 16 $4] + nucChars[p1 % 4]] = _hyphyAAOrdering[code[p1]];

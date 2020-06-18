@@ -2309,7 +2309,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         if (result >= 0.) {
             if (result >= __DBL_EPSILON__ * 1.e4) {
                 char buffer [2048];
-                snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood (%g) at evaluation %ld, mode %ld, template %ld. This is usually a consequence of 'infinite-like' parameter values", result, likeFuncEvalCallCount-1, computeMode, templateKind);
+                snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood (%g) at evaluation %ld, mode %d, template %ld. This is usually a consequence of 'infinite-like' parameter values", result, likeFuncEvalCallCount-1, computeMode, templateKind);
                 _TerminateAndDump(buffer, true);
             } else {
                 result = 0.;

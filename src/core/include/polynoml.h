@@ -124,7 +124,8 @@ public:
 
     _Polynomial             (void);
     _Polynomial             (_SimpleList&);
-    _Polynomial             (_Polynomial&);
+    _Polynomial             (_Polynomial const&);
+    _Polynomial const &     operator = (_Polynomial const&);
     _Polynomial             (hyFloat);
     _Polynomial             (_Variable&);
     virtual                 ~_Polynomial ();

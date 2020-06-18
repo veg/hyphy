@@ -3181,8 +3181,43 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                          pp[setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
                     }
                 } else {
-                    for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
-                        InitializeArray(pp, alphabetDimension, (hyFloat)localScalingFactor[k]);
+                    if (alphabetDimensionmod4 == 60) {
+                        for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
+                            hyFloat lsf = localScalingFactor[k];
+                            pp[0] = lsf;pp[1] = lsf;pp[2] = lsf;pp[3] = lsf;
+                            pp[4] = lsf;pp[5] = lsf;pp[6] = lsf;pp[7] = lsf;
+                            pp[8] = lsf;pp[9] = lsf;pp[10] = lsf;pp[11] = lsf;
+                            pp[12] = lsf;pp[13] = lsf;pp[14] = lsf;pp[15] = lsf;
+                            pp[16] = lsf;pp[17] = lsf;pp[18] = lsf;pp[19] = lsf;
+                            pp[20] = lsf;pp[21] = lsf;pp[22] = lsf;pp[23] = lsf;
+                            pp[24] = lsf;pp[25] = lsf;pp[26] = lsf;pp[27] = lsf;
+                            pp[28] = lsf;pp[29] = lsf;pp[30] = lsf;pp[31] = lsf;
+                            pp[32] = lsf;pp[33] = lsf;pp[34] = lsf;pp[35] = lsf;
+                            pp[36] = lsf;pp[37] = lsf;pp[38] = lsf;pp[39] = lsf;
+                            pp[40] = lsf;pp[41] = lsf;pp[42] = lsf;pp[43] = lsf;
+                            pp[44] = lsf;pp[45] = lsf;pp[46] = lsf;pp[47] = lsf;
+                            pp[48] = lsf;pp[49] = lsf;pp[50] = lsf;pp[51] = lsf;
+                            pp[52] = lsf;pp[53] = lsf;pp[54] = lsf;pp[55] = lsf;
+                            pp[56] = lsf;pp[57] = lsf;pp[58] = lsf;pp[59] = lsf;
+                            for (long k2 = alphabetDimensionmod4; k2 < alphabetDimension; k2++) {
+                                pp[k2] = lsf;
+                            }
+                        }
+                    } else {
+                        if (alphabetDimension == 20UL) {
+                            for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
+                                hyFloat lsf = localScalingFactor[k];
+                                pp[0] = lsf; pp[1] = lsf; pp[2] = lsf; pp[3] = lsf;
+                                pp[4] = lsf; pp[5] = lsf; pp[6] = lsf; pp[7] = lsf;
+                                pp[8] = lsf; pp[9] = lsf; pp[10] = lsf; pp[11] = lsf;
+                                pp[12] = lsf; pp[13] = lsf; pp[14] = lsf; pp[15] = lsf;
+                                pp[16] = lsf; pp[17] = lsf; pp[18] = lsf; pp[19] = lsf;
+                            }
+                        } else {
+                            for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
+                                InitializeArray(pp, alphabetDimension, (hyFloat)localScalingFactor[k]);
+                            }
+                        }
                     }
                 }
             }
@@ -3487,7 +3522,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 #endif // regular code
                         
                         if (alphabetDimension == 61) {
-                            sum += (parentConditionals[p] *= accumulator + tMatrix[alphabetDimensionmod4] * childVector[alphabetDimensionmod4]);
+                            sum += (parentConditionals[p] *= accumulator + tMatrix[60] * childVector[60]);
                         } else {
                             for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
                                 accumulator +=  tMatrix[c] * childVector[c];

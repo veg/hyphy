@@ -252,7 +252,7 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
 
                 categoryTraversalTemplate.AppendNewInstance(container);
             }
-            catch (const _String error) {
+            catch (const _String& error) {
                 BatchDelete (catVarReferences,catVarCounts,catVarOffsets,hmmAndCOP,varType,container);
                 HandleApplicationError (error);
                 return;

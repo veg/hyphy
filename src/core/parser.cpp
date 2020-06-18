@@ -688,7 +688,7 @@ _Variable* CheckReceptacleCommandIDException (_String const* name, const long id
     }
   }
   
-  if (f<0L) {
+  {
     _Variable (*name, isGlobal);
     f = LocateVarByName (*name);
   }

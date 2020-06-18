@@ -515,7 +515,8 @@ lfunction alignments.serialize_site_filter (data_filter, site_index) {
 lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
     l = Abs (sequence);
 	translation = "";
-	translation * (l/3+1);
+	translation * (l/3+1);		
+			
 	for (k = offset; k < l; k += 3) {
 		codon = sequence[k][k+2];
 		if (code [utility.getGlobalValue("terms.code.mapping")] / codon) {
@@ -525,7 +526,7 @@ lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
 		    if (codon == "---") {
 			    translation * "-";
 		    } else {
-			    translation * "?";
+		        translation * "?";
 			}
 	    }
 	}

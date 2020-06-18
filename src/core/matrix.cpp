@@ -8337,7 +8337,7 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
             }
         }
     }
-    catch (_String const err) {
+    catch (_String const& err) {
         HandleApplicationError (err);
     }
     return new _Matrix;
