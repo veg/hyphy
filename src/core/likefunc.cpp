@@ -5290,7 +5290,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
 
     while (1) {
 
-        while (middle-leftStep < lowerBound) {
+        while (middle-leftStep <= lowerBound) {
             if (verbosity_level > 100) {
               char buf [512];
               snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : LB = %g, current try = %.16g, current evaluated midpoint value = %.16g (%s)", index, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
@@ -5337,7 +5337,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
         }
 
 
-        while (rightStep+middle > upperBound) {
+        while (rightStep+middle >= upperBound) {
             rightStep = rightStep*.125; //MIN (rightStep*.125,upperBound - middle);
             if (rightStep<initialStep*.1 && index >= 0 || index < 0 && rightStep < STD_GRAD_STEP) {
                 if (!first) {
