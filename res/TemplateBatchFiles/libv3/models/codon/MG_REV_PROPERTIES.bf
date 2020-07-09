@@ -425,4 +425,6 @@ lfunction  models.codon.MG_REV_PROP.post_definition (model) {
         parameters.SetRange(id, prop_range);
         parameters.SetValue(id, 0.1);
     }
+    
+    models.generic.post.definition (model);
 }

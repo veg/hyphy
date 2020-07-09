@@ -1796,7 +1796,7 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
           } else {
               simpleParameters[1] = iterator_substrate->ObjectClass();
               _TreeTopology * source_tree = (_TreeTopology*)iterator_substrate;
-              simpleParameters << (long) new node_iterator<long> (&source_tree->GetRoot(), _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
+              simpleParameters << (long) new node_iterator<long> (&source_tree->GetRoot(), _HY_TREE_TRAVERSAL_POSTORDER);
           }
       }
   } catch (const _String& error) {
