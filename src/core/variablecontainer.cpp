@@ -853,6 +853,8 @@ void      _VariableContainer::ClearConstraints(void) {
     }
 }
 
+//#define _UBER_VERBOSE_MX_UPDATE_DUMP
+
 //__________________________________________________________________________________
 
 void      _VariableContainer::CopyModelParameterValue (long var_idx, long ref_idx, unsigned long) {
@@ -862,9 +864,7 @@ void      _VariableContainer::CopyModelParameterValue (long var_idx, long ref_id
             model_var->SetValue (LocateVar (var_idx)->Compute(),true,true,NULL);
             
 #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-            if (1 || l == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL) {
                 fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", LocateVar (var_idx)->GetName()->get_str(), model_var->GetName()->get_str(), model_var->Compute()->Value());
-            }
 #endif
         }
     }

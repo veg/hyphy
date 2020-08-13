@@ -120,11 +120,12 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.15"),
+                     kHyPhyVersion  = _String ("2.5.16"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
-                    kNoKWMatch = "__input_value_not_given__";
+                    kNoKWMatch = "__input_value_not_given__",
+                    kEndIteration = "__iterator_end__loop__";
   
     _String
                      hy_base_directory,

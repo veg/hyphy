@@ -26,6 +26,22 @@ lfunction model.GetParameters_RegExp(model, re) {
     return result;
 }
 
+lfunction model.GetLocalParameters_RegExp(model, re) {
+
+    names = utility.Filter (utility.Keys ((model[utility.getGlobalValue ("terms.parameters")])[ utility.getGlobalValue("terms.local")]),
+                            "_parameter_description_",
+                            "None != regexp.Find (_parameter_description_, `&re`)");
+
+    result = {};
+    count  = utility.Array1D (names);
+    for (k = 0; k < count; k += 1) {
+        result [names[k]] = ((model[utility.getGlobalValue ("terms.parameters")])[ utility.getGlobalValue("terms.local")])[names[k]];
+    }
+
+    return result;
+}
+
+
 /**
  * @name model.ApplyModelToTree
  * @param id {String}
@@ -43,7 +59,7 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 	    // OR
 	    // DEFAULT : model id
 
-    
+
 	    if (Abs (rules["DEFAULT"])) {
             ExecuteCommands ("UseModel (" + rules["DEFAULT"] + ");
                               Tree `id` = " + tree["string"] + ";
@@ -90,13 +106,13 @@ function model.ApplyModelToTree (id, tree, model_list, rules) {
 
 	} else {
 	    // TO DO: REMOVE HARDCODING
-	    
-	    
+
+
 		model.ApplyModelToTree.modelID = model_list[model_list ["INDEXORDER"][0]];
 		ExecuteCommands ("UseModel (" + model.ApplyModelToTree.modelID[terms.id] + ");
 						  Tree `id` = " + tree["string"] + ";
 						  ");
-						  
+
 	}
 }
 
@@ -223,7 +239,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
 
 
- 
+
 	// Add data filter information to model description
 	if ( None != data_filter) {
 	    models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
@@ -234,8 +250,8 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 
     // Define type of frequency estimator
-    
-    
+
+
 	if (None != estimator_type) {
 		model.generic.DefineModel.model [terms.model.frequency_estimator] = estimator_type;
 	}
@@ -351,7 +367,7 @@ function models.generic.ConstrainBranchLength (model, value, parameter) {
     if (Type (value) == "Number") {
         if (Abs((model[terms.parameters])[terms.local]) == 1) {
             if (Type (model [terms.model.branch_length_string]) == "String") {
-            
+
                 models.generic.ConstrainBranchLength.expression = model [terms.model.branch_length_string];
                 models.generic.ConstrainBranchLength.bl = (Columns ((model[terms.parameters])[terms.local]))[0];
                 models.generic.ConstrainBranchLength.bl.p = parameter + "." + models.generic.ConstrainBranchLength.bl;
@@ -382,8 +398,8 @@ function models.generic.ConstrainBranchLength (model, value, parameter) {
  * @returns the number of constraints generated (0 or 1)
  */
 function models.generic.SetBranchLength (model, value, parameter) {
-    
-    
+
+
      if (Abs((model[terms.parameters])[terms.local]) >= 1) {
         if (Type (model [terms.model.branch_length_string]) == "String") {
             models.generic.SetBranchLength.expression = model [terms.model.branch_length_string];
@@ -537,7 +553,7 @@ lfunction models.BindGlobalParameters (models, filter) {
 
 
     if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
-    
+
         reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
         candidate_set = utility.UniqueValues(utility.Filter (utility.Keys (reference_set), "_key_",
             "regexp.Find (_key_,`&filter`)"

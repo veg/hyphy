@@ -3191,6 +3191,12 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         SetStatusLine ("Simulating Data");
         { // lf must be deleted before the referenced datafilters
             _LikelihoodFunction lf (filter_specification, nil);
+            
+            /*_SimpleList gl;
+            lf.GetGlobalVars(gl);
+            gl.Each ([] (long vi, unsigned long) -> void { StringToConsole(*LocateVar(vi)->GetName()); NLToConsole();});
+            */
+            
             lf.Simulate (*sim_dataset, exclusions, category_values, category_names, root_states, do_internals?(main_file?&spool_file:&kEmptyString):nil);
             SetStatusLine ("Idle");
         }
@@ -4137,7 +4143,8 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
             // None != iterator_value, but we don't know
             
             _StringBuffer iterator_condition;
-            iterator_condition << "None!=" << (_String*)advance->parameters.GetItem (advance->parameters.countitems() -1);
+            iterator_condition << kEndIteration.Enquote() << "!=" << (_String*)advance->parameters.GetItem (advance->parameters.countitems() -1);
+            //StringToConsole(iterator_condition);NLToConsole();
             target.GetIthCommand(for_return)->MakeJumpCommand (&iterator_condition, for_return+1, target.lLength,target);
             
         } else {

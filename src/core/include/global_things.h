@@ -308,7 +308,8 @@ namespace hy_global {
   kErrorStringUnterminatedMatrix,
   kNoneToken,
   kNullToken,
-  kNoKWMatch;
+  kNoKWMatch,
+  kEndIteration;
   
   extern  _String  hy_base_directory,
   hy_error_log_name,

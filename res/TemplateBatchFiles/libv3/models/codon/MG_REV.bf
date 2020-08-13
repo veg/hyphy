@@ -14,7 +14,7 @@ LoadFunctionLibrary("../../UtilityFunctions.bf");
 lfunction models.codon.MG_REV.ModelDescription(type, code) {
 
     codons = models.codon.MapCode(code);
-    
+
     return {
         utility.getGlobalValue("terms.alphabet"): codons[utility.getGlobalValue("terms.sense_codons")],
         utility.getGlobalValue("terms.bases"): utility.getGlobalValue("models.DNA.alphabet"),
@@ -122,8 +122,8 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
     if (model[terms.model.type] == terms.global) {
         // boost numeric branch length values by a factor of 3
-          
-        if (Type(value) == "AssociativeList") { 
+
+        if (Type(value) == "AssociativeList") {
             models.codon.MG_REV.set_branch_length.p = value;
             if (models.codon.MG_REV.set_branch_length.p / terms.branch_length) {
                 models.codon.MG_REV.set_branch_length.p[terms.branch_length] =  models.codon.MG_REV.set_branch_length.p[terms.branch_length] * 3;
@@ -131,20 +131,20 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
         } else {
             models.codon.MG_REV.set_branch_length.p = 3*value;
         }
-    
+
         return models.generic.SetBranchLength(model, models.codon.MG_REV.set_branch_length.p, parameter);
     }
 
 
     models.codon.MG_REV.set_branch_length.beta = model.generic.GetLocalParameter(model, terms.parameters.nonsynonymous_rate);
     models.codon.MG_REV.set_branch_length.alpha = model.generic.GetLocalParameter(model, terms.parameters.synonymous_rate);
-    
+
     if ( null != models.codon.MG_REV.set_branch_length.beta &&  null != models.codon.MG_REV.set_branch_length.alpha) {
-    
+
 
         models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
         models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
-    
+
         if (Type(value) == "AssociativeList") {
             if (value[terms.model.branch_length_scaler] == terms.model.branch_length_constrain) {
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
@@ -171,14 +171,14 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                 }
             } else {
                 models.codon.MG_REV.set_branch_length.lp = 0;
-                
-                
+
+
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                     Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     models.codon.MG_REV.set_branch_length.lp += 1;
 
                 }
-                                
+
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {
                     Eval(models.codon.MG_REV.set_branch_length.beta.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     models.codon.MG_REV.set_branch_length.lp += 1;
@@ -187,13 +187,13 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
             }
         } else {
 
-            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) { // alpha is unconstrained; 
-                if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) { // beta is unconstrained; 
-                    
+            if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) { // alpha is unconstrained;
+                if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) { // beta is unconstrained;
+
                     models.codon.MG_REV.set_branch_length.lp = parameters.NormalizeRatio(Eval(models.codon.MG_REV.set_branch_length.beta.p), Eval(models.codon.MG_REV.set_branch_length.alpha.p));
                     parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
-                
-                
+
+
                     ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                     Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
                     parameters.RemoveConstraint(models.codon.MG_REV.set_branch_length.beta);
@@ -201,21 +201,21 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                 } else { // beta IS constrained
                     //parameters.SetConstraint (models.codon.MG_REV.set_branch_length.beta, parameters.GetConstraint (models.codon.MG_REV.set_branch_length.alpha.p),"");
                     //parameters.SetConstraint (models.codon.MG_REV.set_branch_length.alpha, models.codon.MG_REV.set_branch_length.alpha.p,"");
-                
-                    /** the branch length expression is going to be in terms of ** template ** parameters, but constraints will be in 
+
+                    /** the branch length expression is going to be in terms of ** template ** parameters, but constraints will be in
                         terms of instantiated parameters, so the expression to solve for needs to be temporarily bound to the global variable **/
 
-                
                     parameters.SetConstraint ( models.codon.MG_REV.set_branch_length.alpha.p,  models.codon.MG_REV.set_branch_length.alpha, "");
                     parameters.SetConstraint ( models.codon.MG_REV.set_branch_length.beta,  models.codon.MG_REV.set_branch_length.beta.p, "");
-                
+
                     ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                     Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
                     parameters.RemoveConstraint ( models.codon.MG_REV.set_branch_length.beta);
                     parameters.RemoveConstraint ( models.codon.MG_REV.set_branch_length.alpha.p);
-                                    
+
+
                     messages.log ("models.codon.MG_REV.set_branch_length: " + models.codon.MG_REV.set_branch_length.alpha.p + "=" + models.codon.MG_REV.set_branch_length.lp);
-                
+                    model["models.codon.MG_REV.set_branch_length"] = {models.codon.MG_REV.set_branch_length.alpha.p : models.codon.MG_REV.set_branch_length.lp};
                 }
             }
         }

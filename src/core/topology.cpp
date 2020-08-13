@@ -293,6 +293,8 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
     
     static _String       kBootstrap ("bootstrap"),
                          kComment   ("comment");
+    
+    static long          kBLLookahead = 128;
   
     _SimpleList nodeStack,
     nodeNumbers;
@@ -477,10 +479,26 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                     }
                     nodeValue = parms.Cut (numerical_match(0), numerical_match(1));
                     i = numerical_match(1);*/
+                    
+                    /** SLKP 20200813
+                        sscanf is going to call strlen every time, which on long strings could be QUITE expensive!
+                        to limit the cost of this, we are going to assume that the float, if it's there is present within kBLLookahead characters of the current position, copy out the next kBLLookahead chars, and read from there.
+                    */
+                    
                     int end_at;
                     hyFloat length = 0.;
-                    if (sscanf (parms.get_str()+i+1, "%lf%n", &length, &end_at) != 1) {
-                        throw _String("Failed to read a number for the branch length following ':'");
+
+                    if (i + kBLLookahead < parms.length()) {
+                        char buffer [kBLLookahead+1];
+                        memcpy (buffer, parms.get_str() + i + 1, kBLLookahead);
+                        buffer [kBLLookahead] = 1;
+                        if (sscanf (buffer, "%lf%n", &length, &end_at) != 1) {
+                            throw _String("Failed to read a number for the branch length following ':'");
+                        }
+                    } else {
+                        if (sscanf (parms.get_str()+i+1, "%lf%n", &length, &end_at) != 1) {
+                            throw _String("Failed to read a number for the branch length following ':'");
+                        }
                     }
                     nodeValue = parms.Cut (i+1, i+end_at);
                     i += end_at;

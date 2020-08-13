@@ -298,7 +298,7 @@ function utility.MapWithKey (object, key_name, lambda_name, transform) {
             utility.MapWithKey.return_object = {utility.MapWithKey.rows,  utility.MapWithKey.columns};
 
             ^(lambda_name) := object [utility.MapWithKey.r][utility.MapWithKey.c];
-            ^(key_name) := {{utility.MapWithKey.r,utility.MapWithKey.c}}
+            ^(key_name) := {{utility.MapWithKey.r,utility.MapWithKey.c}};
             for (utility.MapWithKey.r = 0; utility.MapWithKey.r < utility.MapWithKey.rows; utility.MapWithKey.r += 1) {
                 for (utility.MapWithKey.c = 0; utility.MapWithKey.c < utility.MapWithKey.columns; utility.MapWithKey.c += 1) {
                     utility.MapWithKey.temp = Eval (transform);

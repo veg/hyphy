@@ -72,6 +72,7 @@ function load_file (prefix) {
 
     sample_size=codon_data_info[utility.getGlobalValue("terms.data.sites")]*codon_data_info[utility.getGlobalValue("terms.data.sequences")];
 
+
     codon_data_info[utility.getGlobalValue("terms.data.sample_size")] = sample_size;
     upper_prefix = prefix && 1; //uppercase the prefix for json name
     codon_data_info[utility.getGlobalValue("terms.json.json")] = codon_data_info[utility.getGlobalValue("terms.data.file")] + "."+upper_prefix+".json";
@@ -86,8 +87,19 @@ function load_file (prefix) {
         name_mapping = {};
         utility.ForEach (alignments.GetSequenceNames (prefix+".codon_data"), "_value_", "`&name_mapping`[_value_] = _value_");
     }
-    
-    
+
+    // check for duplicates
+    duplicate_sequences = codon_data_info[^"terms.data.sequences"] - alignments.HasDuplicateSequences (codon_data_info[^"terms.data.datafilter"],-1);
+    if (duplicate_sequences > 0) {
+      fprintf(stdout, "\n-------\n", io.FormatLongStringToWidth(
+      ">[WARNING] This dataset contains " + duplicate_sequences + " duplicate " + io.SingularOrPlural (duplicate_sequences, 'sequence', 'sequences') + ".
+      Identical sequences do not contribute any information to the analysis and only slow down computation.
+      Please consider removing duplicate or 'nearly' duplicate sequences,
+      e.g. using https://github.com/veg/hyphy-analyses/tree/master/remove-duplicates
+      prior to running selection analyses", 72),
+      "\n-------\n");
+    }
+
     utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
                            codon_data_info[utility.getGlobalValue("terms.data.datafilter")]);
 
@@ -122,7 +134,7 @@ function load_file (prefix) {
             },
             ...
         */
-        
+
 
     partition_count = Abs (partitions_and_trees);
 
@@ -203,7 +215,7 @@ function load_file (prefix) {
 
 function store_tree_information () {
     // Place in own attribute called `tested`
-    
+
      selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
 
         /**  this will return a dictionary of selected branches; one set per partition, like in
@@ -277,30 +289,30 @@ function doGTR (prefix) {
                                         terms.nucleotideRate ("G","T") : { utility.getGlobalValue ("terms.fit.MLE") : 0.25}
                                     }
                                  });
-            
+
 
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
 
     gtr_results = estimators.FitGTR(filter_names,
                                          trees,
                                          gtr_results);
-                                         
-                                        
+
+
     KeywordArgument ("kill-zero-lengths", "Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)", "Yes");
-                       
+
     kill0 = io.SelectAnOption (
         {
             "Yes":"Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)",
             "No":"Keep all branches"
-        }, 
+        },
         "The set of properties to use in the model") == "Yes";
-        
-         
-    if (kill0) {                   
+
+
+    if (kill0) {
         for (index, tree; in; trees) {
             deleted = {};
             if (^(prefix + ".selected_branches") / index) {
-                trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], (^(prefix + ".selected_branches"))[index], deleted);       
+                trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], (^(prefix + ".selected_branches"))[index], deleted);
             } else {
                 trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], null, deleted);
             }
@@ -314,11 +326,11 @@ function doGTR (prefix) {
         }
         for (i = 0; i < partition_count; i+=1) {
             (partitions_and_trees[i])[^"terms.data.tree"] = trees[i];
-        }   
+        }
         store_tree_information ();
     }
-    
-                                         
+
+
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
         selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.sample_size")));
 
@@ -393,7 +405,7 @@ function doPartitionedMG (prefix, keep_lf) {
 
     if (partition_count > 1) {
        //partition_scalers = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.parameters.omega_ratio"));
-   
+
     }
 
     /** extract and report dN/dS estimates */

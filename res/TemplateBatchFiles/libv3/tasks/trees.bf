@@ -102,7 +102,7 @@ lfunction trees.GetTreeString._sanitize(string) {
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", None);
     }
-    
+
     return string;
 }
 
@@ -135,9 +135,9 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
             utility.SetEnvVariable ("LAST_FILE_IO_EXCEPTION", None);
             utility.ToggleEnvVariable ("SOFT_FILE_IO_EXCEPTIONS",TRUE);
             fscanf(PROMPT_FOR_FILE, REWIND, "Raw", treeString);
-            
+
             look_for_newick_tree = utility.getGlobalValue ("LAST_FILE_PATH");
-            
+
             if (None != utility.GetEnvVariable ("LAST_FILE_IO_EXCEPTION")) {
                 if (utility.getGlobalValue ("LAST_RAW_FILE_PROMPT") ==  utility.getGlobalValue ("terms.trees.neighbor_joining")) {
                     datafilter_name = utility.GetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"));
@@ -148,11 +148,11 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
                 }
                 utility.SetEnvVariable ("LAST_FILE_IO_EXCEPTION", None);
             }
-            
+
             utility.ToggleEnvVariable ("SOFT_FILE_IO_EXCEPTIONS",None);
             fprintf(stdout, "\n");
 
-  
+
             if (regexp.Find(treeString, "^#NEXUS")) {
                 ExecuteCommands(treeString);
 
@@ -254,7 +254,13 @@ lfunction trees.LoadAnnotatedTopology(look_for_newick_tree) {
 lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
 
     reverse = {};
-    utility.ForEach(utility.Keys(mapping), "_key_", "`&reverse`[`&mapping`[_key_]] = _key_");
+
+    for (k,v; in; mapping) {
+      reverse[v] = k;
+    }
+
+    //utility.ForEach(utility.Keys(mapping), "_key_", "`&reverse`[`&mapping`[_key_]] = _key_");
+    
     io.CheckAssertion("Abs (`&mapping`) == Abs (`&reverse`)", "The mapping between original and normalized tree sequence names must be one to one");
     utility.ToggleEnvVariable("TREE_NODE_NAME_MAPPING", reverse);
     result = trees.ExtractTreeInfo(trees.GetTreeString(look_for_newick_tree));
@@ -354,7 +360,7 @@ lfunction trees.branch_names(tree, respect_case) {
 /**
  * @name trees.KillZeroBranches
  * Given a tree dict and a list of matching parameter estimates
- * this returns a modified tree dict with all zero-branch length 
+ * this returns a modified tree dict with all zero-branch length
  * internal branches removed and modifies in in place
  * @param tree - dict of the tree object
  * @param estimates - dict with branch length estimates
@@ -362,9 +368,9 @@ lfunction trees.branch_names(tree, respect_case) {
  * @param zero_internal -- store branches that were deleted here
  * @return modified tree
  */
- 
+
 lfunction trees.KillZeroBranches (tree, estimates, branch_set, zero_internal) {
-    
+
     for (branch, value; in; tree [^"terms.trees.partitioned"]) {
         if (value == ^"terms.tree_attributes.internal") {
             if (estimates / branch) {
@@ -384,11 +390,11 @@ lfunction trees.KillZeroBranches (tree, estimates, branch_set, zero_internal) {
             }
         }
         return trees.ExtractTreeInfoFromTopology (&T);
-        
+
     }
-    
+
     return tree;
-    
+
 }
 
 /**
@@ -431,8 +437,8 @@ lfunction trees.RootTree(tree_info, root_on) {
  * - list of models
  */
 lfunction trees.ExtractTreeInfoFromTopology(topology_object) {
-    
- 
+
+
     branch_lengths = BranchLength(^topology_object, -1);
     branch_names   = BranchName(^topology_object, -1);
     branch_count   = utility.Array1D (branch_names) - 1;
@@ -500,7 +506,7 @@ lfunction trees.ExtractTreeInfo(tree_string) {
 
     Topology T = tree_string;
     return trees.ExtractTreeInfoFromTopology (&T);
-    
+
 }
 
 /**
@@ -993,11 +999,11 @@ lfunction tree._GenerateRandomTreeDraw2 (nodes) {
     do {
         n2 = Random (0,n) $ 1;
     } while (n1 == n2);
-    
-    
+
+
     nodes - r[n1];
     nodes - r[n2];
-    
+
     return {"0" : +r[n1], "1" : +r[n2]};
 }
 
@@ -1011,18 +1017,18 @@ lfunction tree.GenerateRandomTree (N, rooted, branch_name, branch_length) {
 
     total_nodes = N + internal_nodes;
     flat_tree  = {total_nodes, 4}["-1"];
-    
+
 
     available_to_join = {};
     for (k = 0; k < N; k+=1) {
         available_to_join[k] = TRUE;
     }
-    
+
 
     current_parent_node = N;
     downto = 1 + (rooted == 0);
-    
-    
+
+
     while (Abs (available_to_join) > downto) {
         pair = tree._GenerateRandomTreeDraw2 (available_to_join);
         flat_tree[pair[0]][0] = current_parent_node;
@@ -1032,13 +1038,13 @@ lfunction tree.GenerateRandomTree (N, rooted, branch_name, branch_length) {
         available_to_join[current_parent_node] = TRUE;
         current_parent_node += 1;
     }
-    
+
     if (!rooted) { // attach the last node to the root
         available_to_join - (total_nodes-1);
         leaf_index = +((Rows(available_to_join))[0]);
         flat_tree[leaf_index][0] = total_nodes-1;
         flat_tree[total_nodes-1][3] = leaf_index;
-        
+
     }
 
     return tree._NewickFromMatrix (&flat_tree, total_nodes-1, branch_name, branch_length);
@@ -1068,7 +1074,7 @@ lfunction tree._NewickFromMatrix (flat_tree, index, branch_name, branch_length) 
             } else {
                 bn := "";
             }
-            
+
             return "("   +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][1], branch_name, branch_length) +
                      "," +  tree._NewickFromMatrix (flat_tree, (^flat_tree)[index][2], branch_name, branch_length) +
                      ")" + bn + bl;

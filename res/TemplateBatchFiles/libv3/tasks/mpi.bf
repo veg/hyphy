@@ -314,6 +314,7 @@ namespace mpi {
                                            "1" : jobs [i],
                                            "2" : &scores}, callback);
         }
+        
 
         Call (callback, -1, Call (handler, lf_id, jobs[0], &scores), {"0" : lf_id, "1" : jobs [0], "2" : &scores});
 
@@ -339,7 +340,6 @@ namespace mpi {
         task_ids = utility.Keys (tasks);
         task_count = Abs (tasks);
         for (i = 0; i < task_count; i+=1) {
-
             parameters.SetValues (tasks[task_ids[i]]);
             LFCompute (^lf_id, ll);
             results [task_ids[i]] = ll;
