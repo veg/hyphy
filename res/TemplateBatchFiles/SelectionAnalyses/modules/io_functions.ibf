@@ -19,14 +19,14 @@ lfunction selection.io.defineBranchSets(partition_info) {
         tree_for_analysis = (partition_info[k])[utility.getGlobalValue("terms.data.tree")];
         available_models = {};
         utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
-        
+
         for (k2; in; utility.Keys   (available_models)) {
             key_counts[k2] = key_counts[k2] + 1;
         }
     }
-    
-    
-    
+
+
+
     list_models = {};
     for (k,v; in; key_counts) {
         if (v == Abs (partition_info)) {
@@ -39,11 +39,11 @@ lfunction selection.io.defineBranchSets(partition_info) {
         list_models   = utility.sortStrings(utility.Keys   (list_models));
     }
 
-     
+
     selectTheseForTesting = {
         option_count + 3, 2
     };
-    
+
 
     selectTheseForTesting[0][0] = "All";
     selectTheseForTesting[0][1] = "Include all branches in the analysis";
@@ -61,7 +61,7 @@ lfunction selection.io.defineBranchSets(partition_info) {
             selectTheseForTesting[3 + k][1] = "Set of " + available_models[list_models[k]] + " unlabeled branches";
         }
     }
-    
+
     ChoiceList(testSet, "Choose the set of branches to test for selection", 1, NO_SKIP, selectTheseForTesting);
 
     io.CheckAssertion ("`&testSet` >= 0", "User cancelled branch selection; analysis terminating");
@@ -195,17 +195,17 @@ lfunction selection.io.report_viterbi_path (path) {
     rates = Rows (distribution);
     settings ["header"] = FALSE;
     last_state = path[0];
-    
-    
+
+
     row_matrix = {{index, last_state, rate}};
-    
+
     for (index, rate; in; path) {
         if (rate != last_state) {
             fprintf (stdout, io.FormatTableRow (row_matrix, settings));
             last_state = rate;
         }
     }
-    
+
     fprintf (stdout, "\n");
     return row_matrix;
 }
@@ -414,6 +414,15 @@ function selection.io.json_store_branch_attribute(json, attribute_name, attribut
     ((json[terms.json.branch_attributes])[terms.json.attribute])[attribute_name] = {terms.json.attribute_type : attribute_type,
                                                                                             terms.json.display_order: display_order};
 
+
+
+    for (selection.io.json_store_branch_attribute.branch_name,selection.io.json_store_branch_attribute.branch_tag; in; values) {
+      utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name);
+      (((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = selection.io.json_store_branch_attribute.branch_tag;
+    }
+
+
+    /*
     utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
                              "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
 
@@ -422,6 +431,7 @@ function selection.io.json_store_branch_attribute(json, attribute_name, attribut
                                     (((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name];
                                 }
                               ");
+    */
  }
 
 
@@ -436,4 +446,3 @@ function selection.io.extract_branch_info(branch_spec, callback) {
     branch_spec["selection.io._aux.extract_branch_info.callback"][""];
     return selection.io.extract_branch_info_result;
 }
-

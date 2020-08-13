@@ -2624,42 +2624,36 @@ long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firs
     const char *pastState = dsf->GetColumn(firstIndex),
                *thisState = dsf->GetColumn(secondIndex);
 
+    long rootIndex = flatTree.lLength - 1,
+         theCost = child_count->list_data[rootIndex],
+         offset = flatLeaves.countitems();
 
     bool * marked_nodes = (bool*) alloca (sizeof(bool) * flatTree.lLength);
     InitializeArray(marked_nodes, flatTree.lLength, false);
-    
-    flatLeaves.Each ([&] (long node, unsigned long node_index) -> void {
-        long f = dsf->theNodeMap.list_data[node_index];
-        if (thisState[f] != pastState[f]) {
-            marked_nodes [flatParents.get(node_index)] = true;
-        }
-    });
+     
+    for (long node_index = 0L; node_index < flatLeaves.lLength; node_index++) {
+         long seq_index = dsf->theNodeMap.list_data[node_index];
+         if (thisState[seq_index] != pastState[seq_index]) {
+             /*long parentIndex = flatParents.list_data[node_index];
+             while (marked_nodes[parentIndex] == false && parentIndex < rootIndex) {
+                 marked_nodes[parentIndex]  = true;
+                 theCost += child_count->list_data [parentIndex];
+                 parentIndex = flatParents.list_data[parentIndex+offset];
+             }*/
+             marked_nodes [flatParents.list_data[node_index]] = true;
+         }
+    }
 
-    long theCost = 0L,
-         offset = flatLeaves.countitems();
-    
-
-    for (long i=0; i<flatTree.lLength; i++) {
+    // the root will always be changed, so don't need to check it
+    for (long i=0; i<flatTree.lLength - 1; i++) {
         if (marked_nodes[i]) {
-            long myParent = flatParents.get (i + offset);
-            if (myParent >= 0) {
-                marked_nodes [myParent] = true;
-            }
-            theCost += child_count->get (i);
+            marked_nodes [flatParents.list_data [i + offset]] = true;
+            theCost += child_count->list_data [i];
         }
     }
 
     return theCost;
-    
-    /*_SimpleList store_nodes (flatTree.lLength, (long*)alloca (flatTree.lLength * sizeof (long)));
-    _AVLList    touched_nodes (&store_nodes);
-    
-    flatLeaves.Each ([&] (long node, unsigned long node_index) -> void {
-        long f = dsf->theNodeMap.list_data[node_index];
-        if (thisState[f] != pastState[f]) {
-            touched_nodes.InsertNumber(flatParents.get(node_index));
-        }
-    });*/
+
 }
 
 //_______________________________________________________________________________________________
@@ -2674,7 +2668,7 @@ void    _TheTree::ClearConstraints (void) {
 
 //_______________________________________________________________________________________________
 
-long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstIndex, long secondIndex, _SimpleList* traversalTags, long orderIndex) const {
+long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstIndex, long secondIndex, _SimpleList* traversalTags, long orderIndex, _SimpleList const* childCount) const {
 
     long        filterL = dsf->GetPatternCount();
 
@@ -2688,22 +2682,44 @@ long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstInd
         marked_nodes [this->flatParents.list_data[di]] = true;
     });
     
-    long theCost = 0;
+    long theCost = 0,
+         rootIndex = flatTree.lLength - 1;
 
-
-    for (long i=0; i<flatTree.lLength; i++) {
-        if (marked_nodes[i]) {
-            long myParent    =  flatParents.list_data[flatLeaves.lLength + i];
-            if (myParent >= 0) {
-                marked_nodes[myParent] = true;
+    // don't check the root; it is always "dirty"
+    
+    if (childCount) {
+        if (traversalTags && orderIndex) {
+            for (long i=0; i<rootIndex; i++) {
+               if (marked_nodes[i]) {
+                   marked_nodes[flatParents.list_data[flatLeaves.lLength + i]] = true;
+                   theCost += childCount->list_data[i];
+               } else {
+                   long theIndex = filterL * i + orderIndex;
+                   traversalTags->list_data[theIndex/_HY_BITMASK_WIDTH_] |= bitMaskArray.masks[theIndex%_HY_BITMASK_WIDTH_];
+               }
+           }
+        }
+        
+        for (long i=0; i<rootIndex; i++) {
+            if (marked_nodes[i]) {
+                marked_nodes[flatParents.list_data[flatLeaves.lLength + i]] = true;
+                theCost += childCount->list_data[i];
             }
-            theCost         += ((node <long>*)(flatNodes.list_data[i]))->get_num_nodes();
-        } else if (traversalTags && orderIndex) {
-            long theIndex = filterL * i + orderIndex;
-            traversalTags->list_data[theIndex/_HY_BITMASK_WIDTH_] |= bitMaskArray.masks[theIndex%_HY_BITMASK_WIDTH_];
+        }
+    } else {
+        for (long i=0; i<rootIndex; i++) {
+            if (marked_nodes[i]) {
+                marked_nodes[flatParents.list_data[flatLeaves.lLength + i]] = true;
+                theCost += ((node <long>*)(flatNodes.list_data[i]))->get_num_nodes();
+            } else if (traversalTags && orderIndex) {
+                long theIndex = filterL * i + orderIndex;
+                traversalTags->list_data[theIndex/_HY_BITMASK_WIDTH_] |= bitMaskArray.masks[theIndex%_HY_BITMASK_WIDTH_];
+            }
         }
     }
 
+    theCost += ((node <long>*)(flatNodes.list_data[rootIndex]))->get_num_nodes();
+    
     return theCost;
 
 }
@@ -3154,8 +3170,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             
             if (alphabetDimension == 4UL) {
                 long k3     = 0;
-                if (matchSet)
-                    
+                if (matchSet) {
                     for (long k = siteFrom; k < siteTo; k++, k3+=4) {
                         parentConditionals [k3]   = 0.;
                         parentConditionals [k3+1] = 0.;
@@ -3163,14 +3178,18 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         parentConditionals [k3+3] = 0.;
                         parentConditionals [k3+setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
                     }
-                else {
-                    
-                    for (long k = siteFrom; k < siteTo; k++, k3+=4) {
+                } else {
+                     for (long k = siteFrom; k < siteTo; k++, k3+=4) {
                         hyFloat scaler = localScalingFactor[k];
                         parentConditionals [k3]   = scaler;
                         parentConditionals [k3+1] = scaler;
                         parentConditionals [k3+2] = scaler;
                         parentConditionals [k3+3] = scaler;
+                         
+                        /*if (parentCode == 32194L && k == 1205L) {
+                        #pragma omp critical
+                            printf ("Site %ld, scaler %lg\n", k, scaler);
+                        }*/
                     }
                 }
             } else {
@@ -3181,8 +3200,43 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                          pp[setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
                     }
                 } else {
-                    for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
-                        InitializeArray(pp, alphabetDimension, (hyFloat)localScalingFactor[k]);
+                    if (alphabetDimensionmod4 == 60) {
+                        for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
+                            hyFloat lsf = localScalingFactor[k];
+                            pp[0] = lsf;pp[1] = lsf;pp[2] = lsf;pp[3] = lsf;
+                            pp[4] = lsf;pp[5] = lsf;pp[6] = lsf;pp[7] = lsf;
+                            pp[8] = lsf;pp[9] = lsf;pp[10] = lsf;pp[11] = lsf;
+                            pp[12] = lsf;pp[13] = lsf;pp[14] = lsf;pp[15] = lsf;
+                            pp[16] = lsf;pp[17] = lsf;pp[18] = lsf;pp[19] = lsf;
+                            pp[20] = lsf;pp[21] = lsf;pp[22] = lsf;pp[23] = lsf;
+                            pp[24] = lsf;pp[25] = lsf;pp[26] = lsf;pp[27] = lsf;
+                            pp[28] = lsf;pp[29] = lsf;pp[30] = lsf;pp[31] = lsf;
+                            pp[32] = lsf;pp[33] = lsf;pp[34] = lsf;pp[35] = lsf;
+                            pp[36] = lsf;pp[37] = lsf;pp[38] = lsf;pp[39] = lsf;
+                            pp[40] = lsf;pp[41] = lsf;pp[42] = lsf;pp[43] = lsf;
+                            pp[44] = lsf;pp[45] = lsf;pp[46] = lsf;pp[47] = lsf;
+                            pp[48] = lsf;pp[49] = lsf;pp[50] = lsf;pp[51] = lsf;
+                            pp[52] = lsf;pp[53] = lsf;pp[54] = lsf;pp[55] = lsf;
+                            pp[56] = lsf;pp[57] = lsf;pp[58] = lsf;pp[59] = lsf;
+                            for (long k2 = alphabetDimensionmod4; k2 < alphabetDimension; k2++) {
+                                pp[k2] = lsf;
+                            }
+                        }
+                    } else {
+                        if (alphabetDimension == 20UL) {
+                            for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
+                                hyFloat lsf = localScalingFactor[k];
+                                pp[0] = lsf; pp[1] = lsf; pp[2] = lsf; pp[3] = lsf;
+                                pp[4] = lsf; pp[5] = lsf; pp[6] = lsf; pp[7] = lsf;
+                                pp[8] = lsf; pp[9] = lsf; pp[10] = lsf; pp[11] = lsf;
+                                pp[12] = lsf; pp[13] = lsf; pp[14] = lsf; pp[15] = lsf;
+                                pp[16] = lsf; pp[17] = lsf; pp[18] = lsf; pp[19] = lsf;
+                            }
+                        } else {
+                            for (long k = siteFrom; k < siteTo; k++, pp += alphabetDimension) {
+                                InitializeArray(pp, alphabetDimension, (hyFloat)localScalingFactor[k]);
+                            }
+                        }
                     }
                 }
             }
@@ -3256,7 +3310,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             hyFloat  const *tMatrix = transitionMatrix;
             hyFloat  sum         = 0.0;
             
-            char        didScale = 0;
+            long        didScale = 0;
             
             if (isLeaf) {
                 long siteState;
@@ -3335,6 +3389,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
             if (alphabetDimension == 4L) { // special case for nuc data
                 
+                //hyFloat stash [4] = {parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3]};
+                
 #ifdef _SLKP_USE_AVX_INTRINSICS
                 _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
 #else
@@ -3345,8 +3401,29 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 // for example if a change must happen on a zero-branch length
                 
                 sum     = (parentConditionals [0] + parentConditionals [1]) + (parentConditionals [2] + parentConditionals [3]);
+                
+                /*if (isnan(sum)) {
+                    char buffer[512];
+                    long child_count = 0;
+                    for (long k = 0; k < flatParents.lLength; k++) {
+                        child_count += flatParents.list_data [k] == parentCode;
+                    }
+                    
+                    snprintf (buffer, 512, "Encountered a NAN in parentConditionals at node %s (%ld code, %ld children of parent), site %ld: %lg %lg %lg %lg (%lg, %lg, %lg, %lg); scaler = %lg", currentTreeNode->GetName()->get_str(), parentCode, child_count, siteID, parentConditionals[0],parentConditionals[1], parentConditionals[2], parentConditionals[3],
+                              childVector[0],childVector[1],childVector[2],childVector[3],_lfScalerUpwards);
+                    HandleApplicationError(buffer);
+                }*/
+                
                 if (sum < _lfScalingFactorThreshold && sum > 0.0) {
                     hyFloat tryScale                                 = scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards;
+                    
+                    /*if (siteID == 1205) {
+                        #pragma omp critical
+                        {
+                            printf ("Scaling UP at node %s, Sum = %lg, scaler = %lg\n",  currentTreeNode->GetName()->get_str(), sum, tryScale);
+                        }
+                    }*/
+                    
                     if (tryScale < HUGE_VAL) {
                         parentConditionals [0]                             *= _lfScalerUpwards;
                         parentConditionals [1]                             *= _lfScalerUpwards;
@@ -3358,14 +3435,36 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     }
                 } else {
                     if (sum > _lfScalerUpwards) {
-                        scalingAdjustments [parentCode*siteCount + siteID] *= _lfScalingFactorThreshold;
-                        parentConditionals [0]                             *= _lfScalingFactorThreshold;
-                        parentConditionals [1]                             *= _lfScalingFactorThreshold;
-                        parentConditionals [2]                             *= _lfScalingFactorThreshold;
-                        parentConditionals [3]                             *= _lfScalingFactorThreshold;
-                        localScalerChange                                  -= theFilter->theFrequencies.get (siteOrdering.list_data[siteID]);
-                        didScale                                            = -1;
+                        if (sum < HUGE_VAL) { // no point scaling an infinity
+                            
+                            didScale                                            = -1;
+                            
+                            hyFloat scaler                                 = scalingAdjustments [parentCode*siteCount + siteID] * _lfScalingFactorThreshold;
+                            //hyFloat save_sum = sum;
+                            sum *= _lfScalingFactorThreshold;
+                            while (sum > _lfScalerUpwards) {
+                                sum     *= _lfScalingFactorThreshold;
+                                scaler  *= _lfScalingFactorThreshold;
+                                didScale --;
+                            }
+                            
+                            /*#pragma omp critical
+                            if (siteID == 1205) {
+                                printf ("Scaling down from %lg to %lg; scaler %lg, steps %ld\n", save_sum, sum, scaler, didScale);
+                            }*/
+                            
+                            parentConditionals [0]                             *= scaler;
+                            parentConditionals [1]                             *= scaler;
+                            parentConditionals [2]                             *= scaler;
+                            parentConditionals [3]                             *= scaler;
+                           
+                            localScalerChange                                  += didScale * theFilter->theFrequencies (siteOrdering.list_data[siteID]);
+                            scalingAdjustments [parentCode*siteCount + siteID] = scaler;
+                            //didScale                                         = -1;
+                        }
+                        
                     }
+                
                 }
                 
                 childVector += 4;
@@ -3487,7 +3586,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 #endif // regular code
                         
                         if (alphabetDimension == 61) {
-                            sum += (parentConditionals[p] *= accumulator + tMatrix[alphabetDimensionmod4] * childVector[alphabetDimensionmod4]);
+                            sum += (parentConditionals[p] *= accumulator + tMatrix[60] * childVector[60]);
                         } else {
                             for (long c = alphabetDimensionmod4; c < alphabetDimension; c++) {
                                 accumulator +=  tMatrix[c] * childVector[c];
@@ -3635,20 +3734,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             long                rootState = setBranchTo[siteOrdering.list_data[siteID]];
             accumulator         = rootConditionals[rootIndex + rootState] * theProbs[rootState];
             rootIndex           += alphabetDimension;
-        } else
+        } else {
+            
             for (long p = 0; p < alphabetDimension; p++,rootIndex++) {
                 accumulator += rootConditionals[rootIndex] * theProbs[p];
+                
             }
+        }
+           
+        /*#pragma omp critical
+        if (siteID == 1205) {
+            printf ("\n ACCUMULATOR = %lg (%ld)\n", accumulator, likeFuncEvalCallCount);
+        }*/
                 
         /*#pragma omp critical
          {
-         if (likeFuncEvalCallCount == 0) {
-         eval_buffer [siteID] = accumulator;
-         } else {
-         if (!CheckEqual (eval_buffer [siteID], accumulator)) {
-         printf ("EVAL %ld, Site %ld/%ld, LogL %g, %g (%d)\n", likeFuncEvalCallCount, siteFrom, siteID, accumulator, eval_buffer [siteID],localScalerChange);
-         }
-         eval_buffer [siteID] = accumulator;
+         if (true || likeFuncEvalCallCount == 8) {
+             printf ("EVAL %ld, Site %ld/%ld, %g (freq = %d, log L = %g), (%g) is le0 = %d\n", likeFuncEvalCallCount, siteID, siteTo, accumulator , theFilter->theFrequencies (siteOrdering.list_data[siteID]), log (accumulator), correction, accumulator <= 0.0);
          }
          }*/
         
@@ -3659,6 +3761,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 result = -INFINITY;
 #pragma omp critical
                 {
+                    //printf ("BAILING WITH INFINITY %ld\n", siteID);
                     hy_global::ReportWarning (_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a 0 probability in ComputeTreeBlockByBranch");
                 }
                 break;
@@ -3965,7 +4068,7 @@ void            _TheTree::ComputeBranchCache    (
             }
             
             hyFloat sum      = .0;
-            char       didScale = 0;
+            long       didScale = 0;
             
             if (alphabetDimension == 4UL) { // special case for nuc data
 #ifdef _SLKP_USE_AVX_INTRINSICS
@@ -3986,16 +4089,35 @@ void            _TheTree::ComputeBranchCache    (
                             
                             localScalerChange                                  += theFilter->theFrequencies (siteOrdering.list_data[siteID]);
                             didScale                                            = 1;
+                            scalingAdjustments [nodeCode*siteCount + siteID]    = tryScale;
                         }
                     } else {
                         if (sum > _lfScalerUpwards) {
-                            parentConditionals [0]                             *= _lfScalingFactorThreshold;
-                            parentConditionals [1]                             *= _lfScalingFactorThreshold;
-                            parentConditionals [2]                             *= _lfScalingFactorThreshold;
-                            parentConditionals [3]                             *= _lfScalingFactorThreshold;
+                            if (sum < HUGE_VAL) { // no point scaling an infinity
+                                
+                                didScale                                            = -1;
+                                
+                                
+                                hyFloat scaler = scalingAdjustments [parentCode*siteCount + siteID] * _lfScalingFactorThreshold;
+                                
+                                sum *= _lfScalingFactorThreshold;
+                                while (sum > _lfScalerUpwards) {
+                                    sum     *= _lfScalingFactorThreshold;
+                                    scaler  *= _lfScalingFactorThreshold;
+                                    didScale --;
+                                }
+                                
+                                
+                                parentConditionals [0]                             *= scaler;
+                                parentConditionals [1]                             *= scaler;
+                                parentConditionals [2]                             *= scaler;
+                                parentConditionals [3]                             *= scaler;
+                               
+                                localScalerChange                                  += didScale * theFilter->theFrequencies (siteOrdering.list_data[siteID]);
+                                //didScale                                         = -1;
+                                scalingAdjustments [nodeCode*siteCount + siteID]    = scaler;
+                            }
                             
-                            localScalerChange                                  -= theFilter->theFrequencies (siteOrdering.list_data[siteID]);
-                            didScale                                            = -1;
                         }
                     }
                 }

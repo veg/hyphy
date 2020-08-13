@@ -54,6 +54,9 @@
 using namespace hy_global;
 using namespace hy_env;
 
+//#define _UBER_VERBOSE_MX_UPDATE_DUMP
+//#define _UBER_VERBOSE_MX_UPDATE_DUMP_EVAL 1
+
 //_______________________________________________________________________________________________
 
 _CalcNode::_CalcNode    () {
@@ -480,12 +483,12 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     }
   
     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-      if (1|| likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
+     // if (1|| likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
         for (unsigned long i=0; i<gVariables->lLength; i++) {
           _Variable* curVar = LocateVar(gVariables->GetElement(i));
-          fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->sData, curVar->GetName()->sData, curVar->Compute()->Value());
+          fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", GetName()->get_str(), curVar->GetName()->get_str(), curVar->Compute()->Value());
         }
-      }
+      //}
     #endif
 
     /*
@@ -501,7 +504,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     if (!storeRateMatrix) {
       if (totalCategs>1) {
   #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-        fprintf (stderr, "[_CalcNode::RecomputeMatrix] Deleting category %ld for node %s at %p\n", categID, GetName()->sData, GetCompExp(categID));
+        fprintf (stderr, "[_CalcNode::RecomputeMatrix] Deleting category %ld for node %s at %p\n", categID, GetName()->get_str(), GetCompExp(categID));
   #endif
         if (clear_exponentials()) {
             DeleteObject(GetCompExp(categID, true));
@@ -520,7 +523,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     if (isExplicitForm && bufferedOps) {
         _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel()->Compute (0,nil, bufferedOps);
         #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-            fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting (buffered) category %ld/%ld for node %s\n", categID, totalCategs, GetName()->sData);
+            fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting (buffered) category %ld/%ld for node %s\n", categID, totalCategs, GetName()->get_str());
          #endif
         SetCompExp ((_Matrix*)bufferedExp->makeDynamic(), totalCategs>1?categID:-1);
         return false;
@@ -575,7 +578,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             }
 
             #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-                fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting category %ld/%ld for node %s\n", categID, totalCategs, GetName()->sData);
+                fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting category %ld/%ld for node %s\n", categID, totalCategs, GetName()->get_str());
             #endif
             SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate(1., true)), totalCategs>1?categID:-1);
 

@@ -132,7 +132,7 @@ public:
     _List*      SampleAncestors                 (_DataSetFilter*, node<long>*);
     void        PurgeTree                       (void);
 
-    long        ComputeReleafingCost            (_DataSetFilter const*, long, long, _SimpleList* = nil, long = 0) const;
+    long        ComputeReleafingCost            (_DataSetFilter const*, long, long, _SimpleList* = nil, long = 0, _SimpleList const* = nil) const;
     long        ComputeReleafingCostChar        (_DataSetFilter const*, long, long, _SimpleList const*) const;
     void        DumpingOrder                    (_DataSetFilter*, _SimpleList&);
     void        SetTreeCodeBase                 (long);

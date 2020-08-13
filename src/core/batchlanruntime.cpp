@@ -1873,7 +1873,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
            }
           
            if (row >= source_object->GetHDim()) {
-               ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false, NULL);
+               ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _FString (kEndIteration), false, false, NULL); // end loop
            } else {
                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (source_object->GetMatrixCell(row, column), false, false, NULL);
                if (reciever_count == 2) {
@@ -1907,7 +1907,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
                       ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue ((HBLObjectRef)state.get_object(), false, false,NULL);
                   }
               } else {
-                  ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false,NULL);
+                  ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _FString (kEndIteration), false, false,NULL);
                   // iterator done
               }
           } else {
@@ -1935,7 +1935,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
                   }
                   simpleParameters[2]++;
               } else {
-                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _MathObject, false, false,NULL);
+                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _FString (kEndIteration), false, false,NULL);
               }
               
           }
@@ -3471,16 +3471,26 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
               }
               else {  // formula string
 
-                if (index1 == -3) {
+                if (index1 == -3 || index1 == -4) {
                   _StringBuffer local, global;
+                    
                   _SimpleList var_index;
-                  var_index << var->get_index ();
-                  if (var->IsIndependent()) {
-                      //printf ("ExportIndVariables\n");
-                    ExportIndVariables (global, local, &var_index);
+                  if (index1 == -3 || var->IsIndependent())  {
+                      var_index << var->get_index ();
+                      if (var->IsIndependent()) {
+                          //printf ("ExportIndVariables\n");
+                        ExportIndVariables (global, local, &var_index);
+                      } else {
+                          //printf ("ExportDepVariables\n");
+                        ExportDepVariables(global, local, &var_index);
+                      }
                   } else {
-                      //printf ("ExportDepVariables\n");
-                    ExportDepVariables(global, local, &var_index);
+                      _AVLList vl (&var_index);
+                      var->ScanForVariables(vl, true);
+                      _SimpleList ind_vars = var_index.Filter([] (long index, unsigned long) -> bool {return LocateVar(index)->IsIndependent();}),
+                                  dep_vars = var_index.Filter([] (long index, unsigned long) -> bool {return !LocateVar(index)->IsIndependent();});
+                      ExportIndVariables(global, local, &ind_vars);
+                      ExportDepVariables(global, local, &dep_vars);
                   }
                   return_value = make_fstring_pointer ( & ((*new _StringBuffer (128L)) << global << local << '\n'));
 

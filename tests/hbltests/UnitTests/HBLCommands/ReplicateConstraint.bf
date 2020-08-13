@@ -171,7 +171,6 @@ function runTest () {
 		   );
 
 
-
 	testResult = 1;
 
 	return testResult;

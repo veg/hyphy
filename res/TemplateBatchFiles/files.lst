@@ -95,7 +95,6 @@
 
 "","Test for recombination.","!Recombination";
 "GARD","[GARD] Screen an alignment using GARD (requires an MPI environment).","GARD.bf";
-"GRDR","Process GARD results.","GARDProcessor.bf";
 "LHT","A Likelihood Ratio Test to detect conflicting phylogenetic signal Huelsenbeck and Bull, 1996. [Contributed by Olivier Fedrigo].","LHT.bf";
 "SBL","Search an alignment for a single breakpoint.","SingleBreakpointRecomb.bf";
 "SPL","Plot genetic distances (similarity) of one sequence against all others in an alignment, using a sliding window. Optionally, determine NJ-based clustering and bootstrap support in every window. This is a HyPhy adaptation of the excellent (but Windows only tool) SimPlot (and/or VarPlot) written by Stuart Ray (http://sray.med.som.jhmi.edu/SCRoftware/simplot/)","SimilarityPlot.bf";

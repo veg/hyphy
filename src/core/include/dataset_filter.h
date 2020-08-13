@@ -352,8 +352,19 @@ private:
   void internalToStr(FILE *, _StringBuffer *);
   
   
-   void retrieve_individual_site_from_raw_coordinates (_String & store_here, unsigned long site, unsigned long sequence) const;
-   inline char direct_index_character (unsigned long site, unsigned long sequence) const;
+   inline void retrieve_individual_site_from_raw_coordinates (_String & store, unsigned long site, unsigned long sequence) const {
+        if (unitLength==1UL) {
+          store.set_char (0, (((_String**)theData->list_data)[theData->theMap.list_data[theMap.list_data[site]]])->char_at (sequence));
+        } else {
+          site*=unitLength;
+          for (unsigned long k = 0UL; k<unitLength; k++) {
+            store.set_char (k, ((_String**)theData->list_data)[theData->theMap.list_data[theMap.list_data[site++]]]->char_at(sequence));
+          }
+        }
+   }
+    inline char direct_index_character (unsigned long site, unsigned long sequence) const {
+        return (((_String**)theData->list_data)[theData->theMap.list_data[theMap.list_data[site]]])->char_at(sequence);
+    }
   
    _String *accessCache;
 

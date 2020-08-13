@@ -517,6 +517,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
 
 
     selected_branch_total_length  = +selected_branches_lengths;
+        
     io.CheckAssertion ("`&selected_branch_total_length`>0", "SLAC cannot be applied to a branch selection with total zero branch length (i.e. no variation)");
 
     /*  columns
@@ -593,7 +594,7 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
                     relative_branch_length = 1;
                     fr = Eval (fully_resolved);
                     relative_branch_length = selected_branches_lengths[i] / selected_branch_total_length;
-
+                    
                     for (k = 0; k < 4; k += 1) {
                         report_resolved_by_branch[i*column_count + k] += fr[k];
                         report_averaged_by_branch[i*column_count + k] += fr[k];
@@ -605,12 +606,12 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
                             by_site_scaler [s] += (-selected_branches_lengths[i]);
                             psi = parent_state*state_count+parent_state;
 
-
-                            fr = Eval (fully_resolved);
+                            /*fr = Eval (fully_resolved);
+                            
                             for (k = 0; k < 2; k += 1) {
                                 report_averaged[s*column_count + k] += fr[k];
                                 report_resolved[s*column_count + k] += fr[k];
-                            }
+                            }*/
 
                             relative_branch_length = 1;
                             fr = Eval (fully_resolved);

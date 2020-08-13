@@ -1907,19 +1907,96 @@ bool    _Matrix::IsValidTransitionMatrix() const {
 //_____________________________________________________________________________________________
 
 bool    _Matrix::IsReversible(_Matrix* freqs) {
-    if (!is_square() || (freqs && freqs->GetHDim () * freqs->GetVDim () != GetHDim())
-            || (!is_numeric() && !is_expression_based() ) ||
-            (freqs && !freqs->is_numeric() && !freqs->is_expression_based())) {
-        return false;
-    }
+    
+    try {
+        
+        if (!is_square()) {
+            throw _String ("Not a square matrix in _Matrix::IsReversible");
+        }
+        
+        if (freqs && freqs->GetHDim () * freqs->GetVDim () != GetHDim()) {
+            throw _String ("Incompatible frequency and rate matrix dimensions in _Matrix::IsReversible");
+        }
+        
+        if (!is_numeric() && !is_expression_based()) {
+            throw _String ("Unsupported rate matrix type in _Matrix::IsReversible");
+        }
 
-    bool   needAnalytics = is_expression_based() || (freqs && freqs->is_expression_based());
-    if (needAnalytics) {
-        if (freqs) {
-            for (long r = 0; r < hDim; r++)
-                for (long c = r+1; c < hDim; c++) {
-                    bool compResult = true;
-                    if (is_expression_based()) {
+        if (freqs && !freqs->is_numeric() && !freqs->is_expression_based()) {
+            throw _String ("Unsupported frequency matrix type in _Matrix::IsReversible");
+        }
+
+
+        bool   needAnalytics = is_expression_based() || (freqs && freqs->is_expression_based());
+        if (needAnalytics) {
+            if (freqs) {
+                for (long r = 0; r < hDim; r++)
+                    for (long c = r+1; c < hDim; c++) {
+                        bool compResult = true;
+                        if (is_expression_based()) {
+                            _Formula* rc = GetFormula(r,c),
+                                      * cr = GetFormula(c,r);
+
+                            if (rc && cr) {
+                                _Polynomial *rcp = (_Polynomial *)rc->ConstructPolynomial(),
+                                             *crp = (_Polynomial *)cr->ConstructPolynomial();
+
+                                if (rcp && crp) {
+                                    HBLObjectRef     tr = nil,
+                                                     tc = nil;
+
+                                    if (freqs->is_expression_based()) {
+                                        if (freqs->GetFormula(r,0)) {
+                                            tr = freqs->GetFormula(r,0)->ConstructPolynomial();
+                                            if (tr) {
+                                                tr->AddAReference();
+                                            } else {
+                                                throw _String ("Could not convert matrix cell (") & r & ',' & c & ") to a polynomial";
+                                            }
+                                        }
+                                        if (freqs->GetFormula(c,0)) {
+                                            tc = freqs->GetFormula(c,0)->ConstructPolynomial();
+                                            if (tc) {
+                                                tc->AddAReference();
+                                            } else {
+                                                DeleteObject (tr);
+                                                throw _String ("Could not convert frequency cell (") & c & ") to a polynomial";
+                                             }
+                                        }
+                                    } else {
+                                        tr = new _Constant ((*freqs)[r]);
+                                        tc = new _Constant ((*freqs)[c]);
+                                    }
+                                    if (tr && tc) {
+                                        _Polynomial        * rcpF = (_Polynomial*)rcp->Mult(tr),
+                                                           * crpF = (_Polynomial*)crp->Mult(tc);
+
+                                        compResult         = rcpF->Equal(crpF);
+                                        DeleteObject (rcpF);
+                                        DeleteObject (crpF);
+                                        
+                                    } else {
+                                        compResult = !(tr||tc);
+                                    }
+                                    
+                                    DeleteObject (tr);
+                                    DeleteObject (tc);
+                                    
+                                    if (!compResult) {
+                                         throw _String ("Unequal cells at (") & r & ',' & c & ")";
+                                    }
+                                } else {
+                                    throw _String ("Could not convert a matrix cell at (") & r & ',' & c & ") to a polynomial: " & _StringBuffer ((_StringBuffer*)rc->toStr(kFormulaStringConversionNormal));
+                                }
+                             } else {
+                                compResult = !(rc || cr);
+                            }
+                        }
+                    }
+            } else {
+                for (long r = 0; r < hDim; r++)
+                    for (long c = r+1; c < hDim; c++) {
+                        bool compResult = true;
                         _Formula* rc = GetFormula(r,c),
                                   * cr = GetFormula(c,r);
 
@@ -1928,109 +2005,39 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                          *crp = (_Polynomial *)cr->ConstructPolynomial();
 
                             if (rcp && crp) {
-                                HBLObjectRef     tr = nil,
-                                              tc = nil;
-
-                                if (freqs->is_expression_based()) {
-                                    if (freqs->GetFormula(r,0)) {
-                                        tr = freqs->GetFormula(r,0)->ConstructPolynomial();
-                                        if (tr) {
-                                            tr->AddAReference();
-                                        } else {
-                                            return false;
-                                        }
-                                    }
-                                    if (freqs->GetFormula(c,0)) {
-                                        tc = freqs->GetFormula(c,0)->ConstructPolynomial();
-                                        if (tc) {
-                                            tc->AddAReference();
-                                        } else {
-                                            DeleteObject (tr);
-                                            return false;
-                                        }
-                                    }
-
-                                } else {
-                                    tr = new _Constant ((*freqs)[r]);
-                                    tc = new _Constant ((*freqs)[c]);
-                                }
-                                if (tr && tc) {
-                                    _Polynomial        * rcpF = (_Polynomial*)rcp->Mult(tr),
-                                                       * crpF = (_Polynomial*)crp->Mult(tc);
-
-                                    compResult         = rcpF->Equal(crpF);
-                                    
-                                    /*if (!compResult) {
-                                        ObjectToConsole(rcpF);
-                                        NLToConsole();
-                                        ObjectToConsole(crpF);
-                                        NLToConsole();
-                                    }*/
-                                    
-                                    DeleteObject (rcpF);
-                                    DeleteObject (crpF);
-                                } else {
-                                    compResult = !(tr||tc);
-                                }
-
-                                DeleteObject (tr);
-                                DeleteObject (tc);
+                                compResult = rcp->Equal(crp);
                             } else {
-                                compResult = false;
+                                compResult = rc->EqualFormula(cr);
                             }
-
-                            //DeleteObject (rcp); DeleteObject (crp);
                         } else {
                             compResult = !(rc || cr);
                         }
-                    }
-                    if (!compResult) {
-                        return false;
-                    }
-                }
-        } else {
-            for (long r = 0; r < hDim; r++)
-                for (long c = r+1; c < hDim; c++) {
-                    bool compResult = true;
-                    _Formula* rc = GetFormula(r,c),
-                              * cr = GetFormula(c,r);
 
-                    if (rc && cr) {
-                        _Polynomial *rcp = (_Polynomial *)rc->ConstructPolynomial(),
-                                     *crp = (_Polynomial *)cr->ConstructPolynomial();
-
-                        if (rcp && crp) {
-                            compResult = rcp->Equal(crp);
-                        } else {
-                            compResult = rc->EqualFormula(cr);
+                        if (!compResult) {
+                            return false;
                         }
-
-                        //DeleteObject (rcp); DeleteObject (crp);
-                    } else {
-                        compResult = !(rc || cr);
                     }
-
-                    if (!compResult) {
-                        return false;
-                    }
-                }
-        }
-        return true;
-    } else {
-        if (freqs) {
-            for (long r = 0; r < hDim; r++)
-                for (long c = r+1; c < hDim; c++)
-                    if (! CheckEqual ((*this)(r,c)*(*freqs)[r], (*this)(c,r)*(*freqs)[c])) {
-                        return false;
-                    }
+            }
+            return true;
         } else {
-            for (long r = 0; r < hDim; r++)
-                for (long c = r+1; c < hDim; c++)
-                    if (! CheckEqual ((*this)(r,c), (*this)(c,r))) {
-                        return false;
-                    }
+            if (freqs) {
+                for (long r = 0; r < hDim; r++)
+                    for (long c = r+1; c < hDim; c++)
+                        if (! CheckEqual ((*this)(r,c)*(*freqs)[r], (*this)(c,r)*(*freqs)[c])) {
+                            return false;
+                        }
+            } else {
+                for (long r = 0; r < hDim; r++)
+                    for (long c = r+1; c < hDim; c++)
+                        if (! CheckEqual ((*this)(r,c), (*this)(c,r))) {
+                            return false;
+                        }
+            }
+            return true;
         }
-        return true;
+    } catch (const _String reason) {
+        ReportWarning (_String ("Reversibility checks failed: ") & reason);
+        return false;
     }
     return false;
 }
@@ -8337,7 +8344,7 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
             }
         }
     }
-    catch (_String const err) {
+    catch (_String const& err) {
         HandleApplicationError (err);
     }
     return new _Matrix;

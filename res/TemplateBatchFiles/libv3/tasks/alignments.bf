@@ -103,7 +103,7 @@ lfunction alignments.ReadNucleotideDataSet_aux(dataset_name) {
             partitions = Transpose(dfpm);
         }
     }
-    
+
     return {
         utility.getGlobalValue("terms.data.sequences"): Eval("`dataset_name`.species"),
         utility.getGlobalValue("terms.data.sites"): Eval("`dataset_name`.sites"),
@@ -406,6 +406,22 @@ function alignments.ReadNucleotideAlignment(file_name, dataset_name, datafilter_
 }
 
 /**
+ * Take an input filter and check if it has duplicate sequences
+ * @name alignments.HasDuplicateSequences
+ * @param {String} filter_in - The name of an existing filter
+ * @param {Number} check_mode -
+      -1 : exact match
+      -2 : exact match + gaps match non-gaps");
+      -3 : superset filtering
+      -4 : partial match filtering
+ - @returns the number of *duplicate* sequences
+ */
+lfunction alignments.HasDuplicateSequences (filter_in, check_mode) {
+  GetDataInfo (duplicate_info, ^filter_in, check_mode);
+  return duplicate_info["UNIQUE_SEQUENCES"];
+}
+
+/**
  * Take an input filter, replace all identical sequences with a single copy
  * Optionally, rename the sequences to indicate copy # by adding ':copies'
  * @name alignments.CompressDuplicateSequences
@@ -416,7 +432,7 @@ function alignments.ReadNucleotideAlignment(file_name, dataset_name, datafilter_
  */
 lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) {
 
-    GetDataInfo (duplicate_info, ^filter_in, -2);    
+    GetDataInfo (duplicate_info, ^filter_in, -2);
     DataSetFilter ^filter_out = CreateFilter (^filter_in, 1, "", Join (",", duplicate_info["UNIQUE_INDICES"]));
 
     if (rename) {
@@ -516,6 +532,7 @@ lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
     l = Abs (sequence);
 	translation = "";
 	translation * (l/3+1);
+
 	for (k = offset; k < l; k += 3) {
 		codon = sequence[k][k+2];
 		if (code [utility.getGlobalValue("terms.code.mapping")] / codon) {
@@ -525,7 +542,7 @@ lfunction alignments.TranslateCodonsToAminoAcids (sequence, offset, code) {
 		    if (codon == "---") {
 			    translation * "-";
 		    } else {
-			    translation * "?";
+		        translation * "?";
 			}
 	    }
 	}
@@ -953,9 +970,9 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
 
 lfunction alignment.ExportPartitionedNEXUS (filter, breakPoints, trees, file, isCodon) {
     utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", 4);
-    
+
     fprintf (file, CLEAR_FILE, KEEP_OPEN, ^filter, "\n");
-    
+
     breakPointsCount = utility.Array1D (breakPoints);
     partCount      = breakPointsCount + 1;
     currentStart    = 0;
@@ -974,10 +991,10 @@ lfunction alignment.ExportPartitionedNEXUS (filter, breakPoints, trees, file, is
             }
             currentEnd = currentEnd - 1;
         }
- 
+
         fprintf (file, "\tCHARSET span_", p + 1, " = ", currentStart + 1, "-", currentEnd + 1, ";\n");
-        
- 
+
+
         if (!lastPartition) {
             currentStart = breakPoints[p] + 1;
         }
@@ -987,7 +1004,7 @@ lfunction alignment.ExportPartitionedNEXUS (filter, breakPoints, trees, file, is
     for (p = 0; p < partCount; p += 1) {
         fprintf (file, "\tTREE tree_", p + 1, " = ", trees[p], ";\n");
     }
-    
+
     fprintf (file, "END;\n");
     utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", None);
 }

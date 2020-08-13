@@ -1842,8 +1842,14 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                       * next_op = GetIthTerm(i + 1UL);
 
               if (! cacheUpdated && next_op->CanResultsBeCached(this_op)) {
+                  /*
+                   StringToConsole("\n----\n");
+                  ObjectToConsole(FetchVar(LocateVarByName("k"))->Compute());
+                  NLToConsole();*/
+
                   _Stack temp;
                   this_op->Execute (temp);
+                  
 
                   _Matrix *currentArg  = (_Matrix*)temp.Pop(true),
                           *cachedArg   = (_Matrix*)((HBLObjectRef)(*resultCache)(cacheID)),
@@ -2827,7 +2833,7 @@ void    _Formula::ConvertToTree (bool err_msg) {
             } else {
                 theTree = (node<long>*)nodeStack(0);
             }
-        } catch (_String const e) {
+        } catch (_String const& e) {
             if (err_msg) {
                 HandleApplicationError(e);
             }

@@ -283,10 +283,23 @@ if (relax.model_set == "All") { // run all the models
                 relax.filter_names,
                 None);
 
+        relax.distribution          = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
+        relax.weight_multipliers    = parameters.helper.stick_breaking (utility.SwapKeysAndValues(utility.MatrixToDict(relax.distribution["weights"])),None);
+        relax.constrain_parameters   = parameters.ConstrainMeanOfSet(relax.distribution["rates"],relax.weight_multipliers,1,"relax");
+        
+        for (key, value; in; relax.constrain_parameters[terms.global]){
+            model.generic.AddGlobal (relax.ge.bsrel_model, value, key);
+            parameters.SetRange (value, terms.range_almost_01);
+        }
+        
+        relax.distribution["rates"] = Transpose (utility.Values (relax.constrain_parameters[terms.global]));
+        
         for (relax.i = 1; relax.i < relax.rate_classes; relax.i += 1) {
             parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)), terms.range_almost_01);
         }
         parameters.SetRange (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
+        
+        // constrain the mean of this distribution to 1
         
 
         relax.model_object_map = { "relax.ge" :       relax.ge.bsrel_model };
@@ -294,10 +307,11 @@ if (relax.model_set == "All") { // run all the models
         io.ReportProgressMessageMD ("RELAX", "gd", "Fitting the general descriptive (separate k per branch) model");
         selection.io.startTimer (relax.json [terms.json.timers], "General descriptive model fitting", 2);
 
-        relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
         PARAMETER_GROUPING = {};
         PARAMETER_GROUPING + relax.distribution["rates"];
         PARAMETER_GROUPING + relax.distribution["weights"];
+        
+        
 
         if (Type (relax.ge_guess) != "Matrix") {
             // first time in 
@@ -315,8 +329,6 @@ if (relax.model_set == "All") { // run all the models
             
             
             parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
-                        
-            //VERBOSITY_LEVEL = 10;             
                          
             relax.grid_search.results =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : {"DEFAULT" : "relax.ge"}},
                                         relax.final_partitioned_mg_results,
@@ -429,6 +441,12 @@ if (relax.model_set == "All") { // run all the models
         selection.io.json_store_branch_attribute(relax.json, "k (general descriptive)", terms.json.branch_label, relax.display_orders[relax.general_descriptive_name],
                                                      0,
                                                      relax.k_estimates);
+
+
+        for (relax.i = 1; relax.i <= relax.rate_classes; relax.i += 1) {
+            //console.log (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
+            parameters.RemoveConstraint (model.generic.GetGlobalParameter (relax.ge.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.i)));
+        }
 
         break;
     }

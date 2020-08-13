@@ -779,19 +779,26 @@ _Polynomial::_Polynomial (_Variable& v)
 
 //__________________________________________________________________________________
 
-_Polynomial::_Polynomial (_Polynomial& p)
-{
-    variableIndex.Duplicate (&p.variableIndex);
-    theTerms = new _PolynomialData;
-    if (p.theTerms) {
-        theTerms->Duplicate (p.theTerms);
-    } else {
-        theTerms->numberVars = variableIndex.countitems();
-    }
-    compList1.Duplicate (&p.compList1);
-    compList2.Duplicate (&p.compList2);
+_Polynomial::_Polynomial (_Polynomial const& p) {
+    *this = p;
 }
 
+//__________________________________________________________________________________
+
+_Polynomial const & _Polynomial::operator = (_Polynomial const& p) {
+    if (this != &p) {
+        variableIndex.Duplicate (&p.variableIndex);
+        theTerms = new _PolynomialData;
+        if (p.theTerms) {
+            theTerms->Duplicate (p.theTerms);
+        } else {
+            theTerms->numberVars = variableIndex.countitems();
+        }
+        compList1.Duplicate (&p.compList1);
+        compList2.Duplicate (&p.compList2);
+    }
+    return *this;
+}
 //__________________________________________________________________________________
 
 _Polynomial::~_Polynomial ()

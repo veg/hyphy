@@ -156,6 +156,8 @@ void ArrayForEach(ARG_TYPE *array, unsigned long dimension,
 template <typename ARG_TYPE>
 void InitializeArray(ARG_TYPE *array, unsigned long dimension,
                      ARG_TYPE &&value) {
+  #pragma clang loop unroll_count(8)
+  #pragma GCC unroll 4
   for (unsigned long i = 0UL; i < dimension; i++) {
     array[i] = value;
   }

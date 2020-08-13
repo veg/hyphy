@@ -2309,7 +2309,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         if (result >= 0.) {
             if (result >= __DBL_EPSILON__ * 1.e4) {
                 char buffer [2048];
-                snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood (%g) at evaluation %ld, mode %ld, template %ld. This is usually a consequence of 'infinite-like' parameter values", result, likeFuncEvalCallCount-1, computeMode, templateKind);
+                snprintf (buffer, 2047, "Internal error: Encountered a positive log-likelihood (%g) at evaluation %ld, mode %d, template %ld. This is usually a consequence of 'infinite-like' parameter values", result, likeFuncEvalCallCount-1, computeMode, templateKind);
                 _TerminateAndDump(buffer, true);
             } else {
                 result = 0.;
@@ -5290,7 +5290,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
 
     while (1) {
 
-        while (middle-leftStep < lowerBound) {
+        while (middle-leftStep <= lowerBound) {
             if (verbosity_level > 100) {
               char buf [512];
               snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : LB = %g, current try = %.16g, current evaluated midpoint value = %.16g (%s)", index, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
@@ -5337,7 +5337,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
         }
 
 
-        while (rightStep+middle > upperBound) {
+        while (rightStep+middle >= upperBound) {
             rightStep = rightStep*.125; //MIN (rightStep*.125,upperBound - middle);
             if (rightStep<initialStep*.1 && index >= 0 || index < 0 && rightStep < STD_GRAD_STEP) {
                 if (!first) {
@@ -8135,6 +8135,9 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
                         alreadyDone = alreadyDoneModels.GetXtra (alreadyDone);
                     } else {
                         alreadyDone = IsModelReversible (treeModels.list_data[m]);
+                        if (!alreadyDone) {
+                            ReportWarning (_String ("Model ") & GetObjectNameByType(HY_BL_MODEL, treeModels.list_data[m])->Enquote() & " was determined to be non-reversible");
+                        }
                         alreadyDoneModels.Insert ((BaseRef)treeModels.list_data[m], alreadyDone);
                     }
                     if (alreadyDone) {
@@ -8148,6 +8151,10 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
                             _Matrix * my_freqs = (_Matrix*)f->GetValue();
                             if (!my_freqs->Equal (base_frequencies)) {
                                 isReversiblePartition = false;
+                                if (!alreadyDone) {
+                                    ReportWarning (_String ("Model ") & GetObjectNameByType(HY_BL_MODEL, treeModels.list_data[m])->Enquote() & " has a different base frequency vector compared to other models");
+                                }
+
                             }
                         }
                     }
@@ -8398,6 +8405,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
               hyFloat correction = 0.;
                 
               for (blockID = 0; blockID < np; blockID ++)  {
+                //printf ("EVAL %ld BLOCK %ld (sites per %ld), RESULT %g\n", likeFuncEvalCallCount, blockID, sitesPerP, thread_results[blockID]);
                 if (thread_results[blockID] == -INFINITY) {
                   sum = -INFINITY;
                   break;
@@ -8720,6 +8728,10 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
 
 void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _SimpleList const * clone) {
 
+    //printf ("\nEntered _LikelihoodFunction::OptimalOrder\n");
+    //TimeDifference tracker;
+    //tracker.Start();
+    
     _DataSetFilter const* df = GetIthFilter (index);
     _TheTree            * t   = GetIthTree(index);
     long                vLevel       = VerbosityLevel();
@@ -8769,7 +8781,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _
                       child_count (t->get_flat_nodes().MapList([] (long n, unsigned long ) -> long {
                           return ((node <long>*)n)->get_num_nodes();
                       }));
-
+        
 
         while (completedSites<totalSites) {
             if (totalSites-completedSites<partition) {
@@ -8789,7 +8801,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _
             } else {
                 for (k=completedSites+1; k<completedSites+partition; k++) {
                     partitionSites<<k;
-                    distances<<t->ComputeReleafingCost (df, completedSites, k);
+                    distances<<t->ComputeReleafingCost (df, completedSites, k, nil, 0, &child_count);
                     edges<<completedSites;
                 }
             }
@@ -8995,6 +9007,9 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _
             }
         }
     }
+    
+    //printf ("Finished in %g seconds\n%s\n", tracker.TimeSinceStart (), buffer);
+
 
 }
 
@@ -9070,8 +9085,12 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
         }
     }
 
-    _String *lfName = (_String *)likeFuncNamesList(
+    _String const *lfName = (_String const *)likeFuncNamesList.GetItemRangeCheck(
         likeFuncList._SimpleList::Find((long) this));
+    
+    if (!lfName) { // inline LF
+        lfName = &kEmptyString;
+    }
 
     ReportWarning(_String("Serializing ") & *lfName & " with mode " &
                   _String((long) opt));
@@ -9115,6 +9134,10 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
             (long)(GetDataFilter(redirector->get(idx))
                        ->GetData()));
 
+        if (tIdx < 0) {
+            HandleApplicationError(_String("Can't serialize 'temporary' likelihood functions"));
+            return;
+        }
 
         tIdx = taggedDS.Insert((BaseRef) tIdx, taggedDS.countitems());
 
