@@ -201,7 +201,8 @@ namespace hy_env {
           try_numeric_sequence_match,
           short_mpi_return,
           kSCFGCorpus,
-          verbosity_level_string
+          verbosity_level_string,
+          tolerate_numerical_errors;
 
     ;
     

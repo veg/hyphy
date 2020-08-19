@@ -5289,6 +5289,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
     }
 
     while (1) {
+        
 
         while (middle-leftStep <= lowerBound) {
             if (verbosity_level > 100) {
@@ -5330,7 +5331,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     }
                     return -2;
                 } else {
-                    middle=MIN(lowerBound+initialStep*.1,upperBound-rightStep);
+                    middle=lowerBound+2.*leftStep;
                     first = false;
                 }
             }
@@ -5374,7 +5375,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     }
                     return -2;
                 } else {
-                    middle=MAX(upperBound-initialStep*.1,lowerBound+leftStep);
+                    middle=MAX(upperBound-2.*rightStep,lowerBound+leftStep);
                     first = false;
                 }
             }
@@ -8371,7 +8372,9 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 #endif
 
             hyFloat* thread_results = (hyFloat*) alloca (sizeof(hyFloat)*np);
-
+            /*if (likeFuncEvalCallCount==11035) {
+               printf ("REGULAR overallScalingFactors = %ld\n", overallScalingFactors[0]);
+           }*/
 #ifdef _OPENMP
 #if _OPENMP>=201511
 #pragma omp  parallel for default(shared) schedule(monotonic:guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
@@ -8399,6 +8402,42 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                     branchIndex,
                                                     branchIndex >= 0 ? branchValues->list_data: nil);
               }
+            
+            /*if (likeFuncEvalCallCount == 68700) {
+                
+                NLToConsole();
+                BufferToConsole(df->GetColumn (1141));
+                NLToConsole();
+                NLToConsole();
+                BufferToConsole(df->GetColumn (1140));
+                NLToConsole();
+                NLToConsole();
+                BufferToConsole(df->GetColumn (1142));
+                NLToConsole();
+
+                blockID = 0;
+                long bl = BlockLength (0);
+                hyFloat * site_results = new hyFloat [bl];
+                t->ComputeTreeBlockByBranch (*sl,
+                *branches,
+                tcc,
+                df,
+                inc,
+                conditionalTerminalNodeStateFlag[index],
+                ssf,
+                (_Vector*)conditionalTerminalNodeLikelihoodCaches(index),
+                overallScalingFactors.list_data[index],
+                blockID * sitesPerP,
+                (1+blockID) * sitesPerP,
+                catID,
+                site_results,
+                scc,
+                branchIndex,
+                branchIndex >= 0 ? branchValues->list_data: nil);
+                for (long k = 0; k < bl; k++) {
+                    fprintf (stderr, "REGULAR,%ld,%15.12lg\n", k, site_results[k]);
+                }
+            }*/
 
 
             if (np > 1) {
@@ -8441,6 +8480,10 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                     branchIndex >= 0 ? branchValues->list_data: nil);
             }*/
 
+            
+            /*if (likeFuncEvalCallCount == 11035) {
+                printf ("\n\nREGULAR compute result %15.12lg %ld %15.12lg %15.12lg\n", sum, overallScalingFactors.list_data[index], _logLFScaler * overallScalingFactors.list_data[index], sum - _logLFScaler * overallScalingFactors.list_data[index]);
+            }*/
             sum -= _logLFScaler * overallScalingFactors.list_data[index];
             
 
@@ -8460,6 +8503,11 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 /*for (unsigned long p_id = 0; p_id < indexInd.lLength; p_id++) {
                   printf ("%ld %s = %15.12g\n", p_id, GetIthIndependentVar(p_id)->GetName()->sData, (*parameterValuesAndRanges)(p_id,0));
                 }*/
+                
+                /*if (likeFuncEvalCallCount==11035) {
+                    printf ("BEFORE CONSTRUCT CACHE overallScalingFactors = %ld\n", overallScalingFactors[0]);
+                }*/
+                
 #ifdef _OPENMP
   #if _OPENMP>=201511
     #pragma omp  parallel for default(shared) schedule(monotonic:guided,1) private(blockID) proc_bind(spread) num_threads (np) if (np>1)
@@ -8483,6 +8531,10 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
                 // check results
 
+                /*if (likeFuncEvalCallCount==11035) {
+                    printf ("AFTER CONSTRUCT CACHE overallScalingFactors = %ld\n", overallScalingFactors[0]);
+                }*/
+                
                 if (sum > -INFINITY) {
                    hyFloat checksum = t->ComputeLLWithBranchCache (*sl,
                                                      doCachedComp,
@@ -8493,6 +8545,24 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                      catID,
                                                      siteRes)
                   - _logLFScaler * overallScalingFactors.list_data[index];
+                    
+                    /*if (likeFuncEvalCallCount == 68700) {
+                        blockID = 0;
+                        long bl = BlockLength (0);
+                        hyFloat * site_results = new hyFloat [bl];
+                        t->ComputeLLWithBranchCache (*sl,
+                        doCachedComp,
+                        bc,
+                        df,
+                        0,
+                        df->GetPatternCount (),
+                        catID,
+                                                     site_results);
+                        for (long k = 0; k < bl; k++) {
+                            fprintf (stderr, "CACHE,%ld,%15.12lg\n", k, site_results[k]);
+                        }
+                    }*/
+                    
 
                   if (fabs ((checksum-sum)/sum) > 1.e-10 * df->GetPatternCount ()) {
                     /*hyFloat check2 = t->ComputeTreeBlockByBranch (*sl,
@@ -8512,13 +8582,25 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                                      branchIndex,
                                                                      branchIndex >= 0 ? branchValues->list_data: nil);*/
 
-                    _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName();
+                    _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName(),
+                             err_msg = _String("Internal error in ComputeBranchCache (branch ") & *node_name &
+                             +                                       ", eval #" & likeFuncEvalCallCount &" ) reversible model cached likelihood = "& _String (checksum, "%20.16g") & ", directly computed likelihood = " & _String (sum, "%20.16g") &
+                        +                                       ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables; for smaller errors, this could be due to numerical instability of calculations for larger alignments).";
+                      
+                    
+                      
+                     if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
+                         NLToConsole();
+                         BufferToConsole("***WARNING***\n");
+                         StringToConsole(err_msg);
+                         NLToConsole();
+                     } else {
+                         _TerminateAndDump (err_msg);
+                         return -INFINITY;
+                     }
 
-                    _TerminateAndDump (_String("Internal error in ComputeBranchCache (branch ") & *node_name &
-                                         +                                       " ) reversible model cached likelihood = "& _String (checksum, "%20.16g") & ", directly computed likelihood = " & _String (sum, "%20.16g") &
-                                         +                                       ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables).");
-
-                     return -INFINITY;
+                    
+                     
                   }
                 }
 

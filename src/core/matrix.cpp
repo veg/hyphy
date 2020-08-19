@@ -2035,7 +2035,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
             }
             return true;
         }
-    } catch (const _String reason) {
+    } catch (const _String& reason) {
         ReportWarning (_String ("Reversibility checks failed: ") & reason);
         return false;
     }
