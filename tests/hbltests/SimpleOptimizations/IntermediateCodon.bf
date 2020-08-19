@@ -611,7 +611,7 @@ Model LargeNuc_part_MG94xREV_3x4_model=(LargeNuc_part_MG94xREV_3x4,LargeNuc_part
 
 UseModel (LargeNuc_part_MG94xREV_3x4_model);
 
-DataSet flu 					= 	ReadDataFile("../data/fluHA_codon.nex");
+DataSet flu 				= 	ReadDataFile(PATH_TO_CURRENT_BF + "/../data/fluHA.nex");
 Tree LargeNuc_tree				=	DATAFILE_TREE;
 
 
