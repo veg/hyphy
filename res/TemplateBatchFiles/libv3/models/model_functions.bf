@@ -617,11 +617,22 @@ lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
 	by_expr = {};
 	dim = Rows (q);
 	can_alias = Type (freqs[0]) == "Number";
+  stencil = utility.GetEnvVariable ("BRANCH_LENGTH_STENCIL");
+
+  if (Type (stencil) == "Matrix") {
+    if (Rows (stencil) != dim) {
+      stencil = None;
+    }
+  }
+
+  if (Type (stencil) != "Matrix") {
+    stencil = {dim,dim}["1"];
+  }
 
 	if (can_alias) {
 		for (i = 0; i < dim; i+=1) {
 			for (j = 0; j < dim; j+=1) {
-				if (i != j) {
+				if (i != j && stencil[i][j]) {
 					expr = q[i][j];
 					if (Abs (expr)) {
 						if (is_canonical == TRUE) {
@@ -634,15 +645,22 @@ lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
 			}
 		}
 		expr = {};
-		utility.ForEachPair (by_expr, "_expr_", "_wt_",
+
+    for (_expr_, _wt_; in; by_expr) {
+      expr + ("(" + _expr_ + ")*" + _wt_);
+    }
+
+		/*
+    utility.ForEachPair (by_expr, "_expr_", "_wt_",
 		'
 			`&expr` + ("(" + _expr_ + ")*" + _wt_)
 		');
+    */
 	} else {
 		expr = {};
 		for (i = 0; i < dim; i+=1) {
 			for (j = 0; j < dim; j+=1) {
-				if (i != j) {
+				if (i != j && stencil[i][j]) {
 					rate = q[i][j];
 					if (Abs (rate)) {
 						if (is_canonical) {

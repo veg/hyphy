@@ -373,6 +373,7 @@ namespace terms{
         set_branch_length       = "set-branch-length";
         constrain_branch_length = "constrain-branch-length";
         branch_length_string    = "branch-length-string";
+        branch_length_string_conditional = "branch-length-string-conditional";
         branch_length_scaler    = "branch length scaler";
         post_definition         = "post-definition";
         length                  = "length";
@@ -531,12 +532,3 @@ namespace terms{
     }
 
 }
-
-
-
-
-
-
-
-
-
