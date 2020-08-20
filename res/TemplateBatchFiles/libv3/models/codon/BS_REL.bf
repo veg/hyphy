@@ -363,7 +363,6 @@ function models.codon.BS_REL.get_branch_length(model, tree, node) {
   if (Type (bl) == "Matrix") {
     if (utility.Has (model [terms.model.branch_length_string_conditional], bl, "String") == FALSE) {
         (model [terms.model.branch_length_string_conditional])[bl] = model.BranchLengthExpression (model);
-        console.log ((model [terms.model.branch_length_string_conditional])[bl]);
     }
     bl = Eval ((model [utility.getGlobalValue("terms.model.branch_length_string_conditional")])[bl]);
   } else {
