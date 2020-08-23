@@ -455,16 +455,19 @@ set_target_properties(
      ${SRC_COMMON} ${SRC_UNIXMAIN}
  )
 
-  target_link_libraries(HYPHY-PROFILE ${DEFAULT_LIBRARIES})
+  if(${OPENMP_FOUND})
+    target_link_libraries(HYPHY-GPERF PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+  else(${OPENMP_FOUND})
+    target_link_libraries(HYPHY-GPERF PRIVATE ${DEFAULT_LIBRARIES})
+  endif(${OPENMP_FOUND})
 
   add_custom_target(GPERF DEPENDS HYPHY-GPERF)
-
 
   set_target_properties(
      HYPHY-GPERF
      PROPERTIES
-         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  "
-         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -L/usr/local/Cellar/gperftools/2.7/lib/ -lprofiler -ltcmalloc  "
+         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g"
+         LINK_FLAGS "${DEFAULT_LINK_FLAGS}  -g -lprofiler -ltcmalloc"
      endif(${OPENMP_FOUND})
  )
 
@@ -560,7 +563,7 @@ makeLink(HYPHYMP hyphy hyphy)
 
 #-------------------------------------------------------------------------------
 # TESTS
-#-------------------------------------------------------------------------------
+#---------------------------------------------geany----------------------------------
 
 add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
 add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)
