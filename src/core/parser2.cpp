@@ -304,6 +304,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
 
     if ( code== HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT || code== HY_FORMULA_FORMULA_VALUE_ASSIGNMENT || code == HY_FORMULA_FORMULA_VALUE_INCREMENT) {
         _Formula newF;
+        HBLObjectRef rhsValue = nil;
 
         if (f2->IsEmpty()) {
             HandleApplicationError ("Empty RHS in an assignment.");
@@ -313,7 +314,9 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         if (code == HY_FORMULA_FORMULA_FORMULA_ASSIGNMENT) {
             newF.DuplicateReference(f2);
         } else {
-            newF.theFormula.AppendNewInstance(new _Operation((HBLObjectRef)f2->Compute(0, nameSpace)->makeDynamic()));
+            //newF.theFormula.AppendNewInstance(new _Operation((HBLObjectRef)f2->Compute(0, nameSpace)->makeDynamic()));
+            rhsValue = (HBLObjectRef)f2->Compute(0, nameSpace);
+            //newF.theFormula.AppendNewInstance(new _Operation(rhs_value));
         }
 
         long stackD = -1L,
@@ -387,7 +390,11 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
 
             if (mmx->CheckCoordinates (hC,vC)) {
                 if (!ANALYTIC_COMPUTATION_FLAG) {
-                    mmx->MStore (hC, vC, newF, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
+                    if (rhsValue) {
+                        mmx->MStore (hC, vC, rhsValue, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
+                    } else {
+                        mmx->MStore (hC, vC, newF, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
+                    }
                 } else {
                     HBLObjectRef newP = newF.ConstructPolynomial();
                     if (!newP) {
@@ -399,7 +406,10 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
                 mmx->CheckIfSparseEnough();
             }
         } else if (mma) { // Associative array LHS
-            mma->MStore (coordMx, newF.Compute(), true, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
+            if (rhsValue)
+                mma->MStore (coordMx, rhsValue, true, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
+            else
+                mma->MStore (coordMx, newF.Compute(), true, (code==HY_FORMULA_FORMULA_VALUE_INCREMENT)?HY_OP_CODE_ADD:HY_OP_CODE_NONE);
         }
 
         return 1;

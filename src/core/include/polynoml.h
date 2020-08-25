@@ -129,17 +129,17 @@ public:
     _Polynomial             (hyFloat);
     _Polynomial             (_Variable&);
     virtual                 ~_Polynomial ();
-    virtual                 _MathObject* ExecuteSingleOp (long opCode, _List *arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);   // execute this operation with the list of Args
+    virtual                 _MathObject* ExecuteSingleOp (long opCode, _List *arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext, HBLObjectRef cache = nil);   // execute this operation with the list of Args
 
     virtual BaseObj*        makeDynamic(void) const;
     virtual void            Duplicate  (BaseRefConst);
 
-    virtual _MathObject*    Add                 (_MathObject*);
-    virtual _MathObject*    Plus                (_MathObject*, bool subtract = false);
-    virtual _MathObject*    Sub                 (_MathObject*);
-    virtual _MathObject*    Raise               (_MathObject*);
-    virtual _MathObject*    Minus               (void);
-    virtual _MathObject*    Mult                (_MathObject*);
+    virtual _MathObject*    Add                 (_MathObject*, HBLObjectRef cache);
+    virtual _MathObject*    Plus                (_MathObject*, bool subtract, HBLObjectRef cache);
+    virtual _MathObject*    Sub                 (_MathObject*, HBLObjectRef cache);
+    virtual _MathObject*    Raise               (_MathObject*,  HBLObjectRef cache);
+    virtual _MathObject*    Minus               (HBLObjectRef cache);
+    virtual _MathObject*    Mult                (_MathObject*, HBLObjectRef cache);
     virtual _MathObject*    Compute             (void);
     virtual bool            Equal               (_MathObject*);
     hyFloat                 ComputePolynomial   (void);

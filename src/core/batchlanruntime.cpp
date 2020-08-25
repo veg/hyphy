@@ -565,7 +565,7 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
 
                             for (long species_index = filter_source->NumberSpecies()-1; species_index >= 0; species_index --) {
                                 filter_source->RetrieveState(site,species_index,*buffer, false);
-                                filter_source->Translate2Frequencies (*buffer, storage->theData,  count_gaps >= 0.5);
+                                filter_source->Translate2Frequencies (*buffer, storage->theData,  count_gaps);
                                 *accumulator += *storage;
                             }
                             receptacle -> SetValue (accumulator, false,true, NULL);

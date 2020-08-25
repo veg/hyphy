@@ -21,7 +21,7 @@ for filename in ./tests/hbltests/UnitTests/HBLCommands/*.bf; do
   fi
 
   ((testsRun++))
-  
+
 done
 
 if [ $testFailed ]

@@ -164,12 +164,18 @@ void _AssociativeList::Duplicate (BaseRefConst br) {
 
 //_____________________________________________________________________________________________
 
-HBLObjectRef _AssociativeList::MCoord (HBLObjectRef p) {
+HBLObjectRef _AssociativeList::MCoord (HBLObjectRef p, HBLObjectRef cache) {
+    if (cache && cache->ObjectClass() == STRING) {
+        _StringBuffer * content = new _StringBuffer ((_String*)p->toStr());
+        content->AddAReference();
+        ((_FString*)cache)->SetStringContent (content);
+        return cache;
+    }
     return new _FString ((_String*)p->toStr());
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef _AssociativeList::MAccess (HBLObjectRef p) {
+HBLObjectRef _AssociativeList::MAccess (HBLObjectRef p, HBLObjectRef) {
     long        f;
 
     if (p->ObjectClass() == STRING) {
@@ -207,12 +213,18 @@ bool _AssociativeList::Equal (HBLObjectRef p) {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef _AssociativeList::Random (HBLObjectRef p) {
+HBLObjectRef _AssociativeList::Random (HBLObjectRef p, HBLObjectRef cache) {
     bool with_replacement = false;
     
     try {
         if (p->ObjectClass() == NUMBER) {
-            _AssociativeList * result = new _AssociativeList;
+            _AssociativeList * result;
+            if (cache && cache->ObjectClass() == ASSOCIATIVE_LIST) {
+                result = (_AssociativeList*)cache;
+                result->Clear();
+            } else {
+                result = new _AssociativeList;
+            }
             with_replacement = !CheckEqual(0.0, p->Compute()->Value());
             
             //unsigned long items = countitems();
@@ -249,7 +261,7 @@ HBLObjectRef _AssociativeList::Random (HBLObjectRef p) {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
+HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cache) {
     
     const _String     kAVLIteratorOrder          = "INDEXORDER",
                       kAVLIteratorOrderValue     = "VALUEINDEXORDER";
@@ -346,7 +358,7 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2) {
     } catch (const _String& err) {
         HandleApplicationError (err);
     }
-    return new _Constant (done);
+    return _returnConstantOrUseCache(done, cache);
 }
 
 //_____________________________________________________________________________________________
@@ -628,7 +640,7 @@ void        _AssociativeList::Merge (HBLObjectRef p) {
 }
 
   //_____________________________________________________________________________________________
-HBLObjectRef        _AssociativeList::ExtremeValue (bool do_mimimum) const {
+HBLObjectRef        _AssociativeList::ExtremeValue (bool do_mimimum, HBLObjectRef cache) const {
   _String const * best_key = nil;
   hyFloat best_value = do_mimimum ? INFINITY : -INFINITY;
   
@@ -663,7 +675,7 @@ HBLObjectRef        _AssociativeList::ExtremeValue (bool do_mimimum) const {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef        _AssociativeList::Sum (void) {
+HBLObjectRef        _AssociativeList::Sum (HBLObjectRef cache) {
     hyFloat sum = 0.;
         
     for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
@@ -676,31 +688,35 @@ HBLObjectRef        _AssociativeList::Sum (void) {
                 sum += ((_FString*)value)->get_str().to_float();
                 break;
             case MATRIX: {
-                _Constant * sumOfValue = (_Constant*) ((_Matrix*)value->Compute())->Sum();
+                _Constant * sumOfValue = (_Constant*) ((_Matrix*)value->Compute())->Sum(cache);
                 sum += sumOfValue->Value();
-                DeleteObject (sumOfValue);
+                if (sumOfValue != sumOfValue) {
+                    DeleteObject (sumOfValue);
+                }
                 break;
             }
             case ASSOCIATIVE_LIST: {
-                _Constant * sumOfValue = (_Constant*) ((_AssociativeList*)value->Compute())->Sum();
+                _Constant * sumOfValue = (_Constant*) ((_AssociativeList*)value->Compute())->Sum(cache);
                 sum += sumOfValue->Value();
-                DeleteObject (sumOfValue);
+                if (sumOfValue != sumOfValue) {
+                    DeleteObject (sumOfValue);
+                }
                 break;
             }
         }
     }
     
-    return new _Constant (sum);
+    return _returnConstantOrUseCache (sum, cache);
 }
 
 //__________________________________________________________________________________
 
 
-HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)  {
+HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context, HBLObjectRef cache)  {
   
   switch (opCode) {
     case HY_OP_CODE_ABS:
-      return new _Constant (Length());
+     return _returnConstantOrUseCache(Length(), cache);
       
     case HY_OP_CODE_EVAL:
       return (HBLObjectRef) makeDynamic();
@@ -739,13 +755,13 @@ HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _
     }
       
     case HY_OP_CODE_TYPE: // Type
-      return Type();
+      return Type(cache);
       
     case HY_OP_CODE_MAX: // Max
-      return ExtremeValue (false);
+      return ExtremeValue (false, cache);
       
     case HY_OP_CODE_MIN: // Max
-      return ExtremeValue (true);
+      return ExtremeValue (true, cache);
      
 
     
@@ -760,57 +776,57 @@ HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _
         if (!MStore (new_key, arg0, true)) {
             DeleteObject (new_key);
         }
-        return new _Constant (avl.countitems());
+        return _returnConstantOrUseCache(avl.countitems(), cache);
       }
-      return Sum ();
+      return Sum (cache);
   }
   
 
   if (arg0) {
     switch (opCode) { // operations that require exactly one argument
        case HY_OP_CODE_EQ:
-        return new _Constant (Equal(arg0));
+        return _returnConstantOrUseCache (Equal(arg0), cache);
             
        case HY_OP_CODE_NEQ:
-        return new _Constant (!Equal(arg0));
+        return _returnConstantOrUseCache (!Equal(arg0), cache);
             
       case HY_OP_CODE_MCOORD: // MCoord
-        return MCoord (arg0);
+        return MCoord (arg0, cache);
         
       case HY_OP_CODE_MUL: // merge
         Merge (arg0);
-        return new _Constant (avl.countitems());
+        return _returnConstantOrUseCache (avl.countitems(), cache);
         
       case HY_OP_CODE_SUB:
         DeleteByKey (arg0);
-        return new _Constant (avl.countitems());
-        
+         return _returnConstantOrUseCache (avl.countitems(), cache);
+
         case HY_OP_CODE_RANDOM:
-            return Random (arg0);
+            return Random (arg0, cache);
 
         case HY_OP_CODE_DIV:
         
         if (arg0->ObjectClass () == STRING) {
           if (avl.Find (&((_FString*)arg0)->get_str()) >= 0L) {
-            return new _Constant (1.0);
+            return _returnConstantOrUseCache (1., cache);
           }
         } else {
           _String serialized ((_String*)arg0->toStr());
           if (avl.Find (&serialized) >= 0L) {
-            return new _Constant (1.0);
+            return _returnConstantOrUseCache (1., cache);
           }
         }
-        return new _Constant (0.0);
-        
+        return _returnConstantOrUseCache (0., cache);
+
     }
     _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
     
     switch (opCode) { //  check operations with 1 or 2 arguments
       case HY_OP_CODE_MACCESS: // MAccess
         if (arg1) {
-          return MIterator (arg0,arg1);
+          return MIterator (arg0,arg1, cache);
         } else {
-          return MAccess   (arg0);
+          return MAccess   (arg0, cache);
         }
     }
   }

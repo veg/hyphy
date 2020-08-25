@@ -32,6 +32,8 @@ absrel.MG94                 = "MG94xREV with separate omega for each branch";
 absrel.baseline_mg94xrev    = "Baseline MG94xREV";
 absrel.baseline_omega_ratio = "Baseline MG94xREV omega ratio";
 absrel.full_adaptive_model  = "Full adaptive model";
+absrel.full_adaptive_model.ES  = "Full adaptive model (synonymous subs/site)";
+absrel.full_adaptive_model.EN  = "Full adaptive model (non-synonymous subs/site)";
 absrel.rate_classes         = "Rate classes";
 absrel.per_branch_omega     = "Per-branch omega";
 absrel.per_branch_delta     = "Per-branch delta";
@@ -48,7 +50,9 @@ absrel.display_orders = {terms.original_name: -1,
                               terms.json.uncorrected_pvalue: 5,
                               terms.json.corrected_pvalue: 6,
                               terms.parameters.multiple_hit_rate: 7,
-                              terms.parameters.triple_hit_rate : 8
+                              terms.parameters.triple_hit_rate : 8,
+                              absrel.full_adaptive_model.ES: 9,
+                              absrel.full_adaptive_model.EN: 10
                              };
 
 
@@ -88,7 +92,7 @@ selection.io.startTimer (absrel.json [terms.json.timers], "Overall", 0);
 
 KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
-KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:"); 
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
 KeywordArgument ("branches",  "Branches to test", "All");
 // One additional KeywordArgument ("output") is called below after namespace absrel.
 
@@ -144,7 +148,7 @@ if (absrel.multi_hit == "Double") {
     absrel.model_generator = "models.codon.MG_REV_MH.ModelDescription";
 } else {
     if (absrel.multi_hit == "Double+Triple") {
-    
+
         lfunction absrel.codon.MG_REV_TRIP._GenerateRate(fromChar, toChar, namespace, model_type, model) {
             return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type,
             model[utility.getGlobalValue("terms.translation_table")],
@@ -230,26 +234,26 @@ absrel.distribution_for_json = {absrel.per_branch_omega :
                                     terms.math._2.5 : absrel.omega_stats[terms.math._2.5],
                                     terms.math._97.5 : absrel.omega_stats[terms.math._97.5]}
                                };
-                            
+
 
 if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
-    absrel.distribution_for_json [absrel.per_branch_delta] = 
+    absrel.distribution_for_json [absrel.per_branch_delta] =
                                    {
                                         terms.math.mean : absrel.delta_stats[terms.math.mean],
                                         terms.math.median : absrel.delta_stats[terms.math.median],
                                         terms.math._2.5 : absrel.delta_stats[terms.math._2.5],
                                         terms.math._97.5 : absrel.delta_stats[terms.math._97.5]
                                    };
-                                   
+
     if (absrel.multi_hit == "Double+Triple") {
-            absrel.distribution_for_json [absrel.per_branch_psi] = 
+            absrel.distribution_for_json [absrel.per_branch_psi] =
                                    {
                                         terms.math.mean : absrel.psi_stats[terms.math.mean],
                                         terms.math.median : absrel.psi_stats[terms.math.median],
                                         terms.math._2.5 : absrel.psi_stats[terms.math._2.5],
                                         terms.math._97.5 : absrel.psi_stats[terms.math._97.5]
                                    };
-        
+
     }
 }
 
@@ -385,19 +389,19 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         absrel.report.row [2] =  Format(absrel.current_rate_count,0,0);
         model.ApplyToBranch ((absrel.model_defintions [absrel.current_rate_count])[terms.id], absrel.tree_id, absrel.current_branch);
         parameters.SetValues (absrel.current_branch_estimates);
-        
-        
-        //absrel.initial_guess = 
+
+
+        //absrel.initial_guess =
         absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
-                                
+
         Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id
            , {
-               "OPTIMIZATION_METHOD" : "nedler-mead", 
+               "OPTIMIZATION_METHOD" : "nedler-mead",
                "OPTIMIZATION_PRECISION": 1e-4,
                "OPTIMIZATION_START_GRID" : absrel.ComputeOnAGrid (absrel.PopulateInitialGrid (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch, absrel.current_branch_estimates), absrel.likelihood_function_id)
              }
         );
-        
+
         absrel.current_test_score = math.GetIC (absrel.stepup.mles[1][0], absrel.current_parameter_count + 2, absrel.codon_data_info[terms.data.sample_size]);
 
         absrel.provisional_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
@@ -407,16 +411,16 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         } else {
              absrel.report.row [3] = ">1000 (" + Format (absrel.dn_ds.distro[absrel.current_rate_count-1][1]*100,5,2) + "%)";
         }
-        
+
         absrel.offset = 0;
         if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
             absrel.report.row [4] = (absrel.provisional_estimates[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
             absrel.offset = 1;
-        } 
+        }
         if (absrel.multi_hit == "Double+Triple") {
             absrel.report.row [5] = (absrel.provisional_estimates[utility.getGlobalValue ("terms.parameters.triple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
             absrel.offset += 1;
-        } 
+        }
         absrel.report.row [4+absrel.offset] = absrel.stepup.mles[1][0];
         absrel.report.row [5+absrel.offset] = absrel.current_test_score;
 
@@ -459,6 +463,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
 
 }
 
+
 selection.io.json_store_branch_attribute(absrel.json, absrel.rate_classes, terms.json.branch_label, absrel.display_orders[absrel.rate_classes],
                                                       0,
                                                       absrel.branch.complexity);
@@ -494,6 +499,24 @@ absrel.branch.rate_distributions = selection.io.extract_branch_info((absrel.full
 selection.io.json_store_branch_attribute(absrel.json, terms.json.rate_distribution, terms.json.branch_label, absrel.display_orders[terms.json.rate_distribution],
                                                       0,
                                                       absrel.branch.rate_distributions);
+
+
+absrel.full_model.fit [terms.likelihood_function] = absrel.likelihood_function_id;
+absrel.full_model.fit [terms.model] = absrel.model_object_map;
+
+absrel.ESEN_trees = estimators.FitMGREVExtractComponentBranchLengths (absrel.codon_data_info , absrel.full_model.fit );
+
+absrel.stree_info  = trees.ExtractTreeInfo ((absrel.ESEN_trees [terms.fit.synonymous_trees])[0]);
+absrel.nstree_info = trees.ExtractTreeInfo ((absrel.ESEN_trees [terms.fit.nonsynonymous_trees])[0]);
+
+selection.io.json_store_branch_attribute(absrel.json,
+                                        absrel.full_adaptive_model.ES, terms.json.branch_label,absrel.display_orders[absrel.full_adaptive_model.ES],
+                                             0,
+                                             absrel.stree_info[terms.branch_length]);
+
+selection.io.json_store_branch_attribute(absrel.json, absrel.full_adaptive_model.EN, terms.json.branch_label, absrel.display_orders[absrel.full_adaptive_model.EN],
+                                            0,
+                                            absrel.nstree_info[terms.branch_length]);
 
 
 
@@ -576,7 +599,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     } else {
         absrel.report.row [2] = ">1000 (" + Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][1]*100,5,2) + "%)";
     }
-    
+
     absrel.offset = 0;
     absrel.final_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
 
@@ -584,13 +607,13 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         absrel.report.row [3] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
         absrel.branch.delta [absrel.current_branch] =  absrel.report.row [3];
         absrel.offset = 1;
-    } 
+    }
     if (absrel.multi_hit == "Double+Triple") {
         absrel.report.row [4] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.triple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
         absrel.branch.psi [absrel.current_branch] =  absrel.report.row [4];
         absrel.offset += 1;
-    } 
-   
+    }
+
 
     if ((absrel.selected_branches[0])[absrel.current_branch] == terms.tree_attributes.test) {
         if (absrel.dn_ds.distro [absrel.branch.complexity[absrel.current_branch]-1][0] > 1) {
@@ -763,13 +786,13 @@ lfunction absrel.PopulateInitialGrid (model, tree_id, branch_id, current_estimat
     local_parameters = (model[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")];
 
     grid = {};
-    
+
 
     if (component_count == 2) {
         omega1   = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), 1);
         omega2   = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), 2);
         mixture1 = terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1 );
-        
+
         if (^"absrel.multi_hit" == "Double")  {
                 doubleH = utility.getGlobalValue ("terms.parameters.multiple_hit_rate");
                 grid ["`tree_id`.`branch_id`.`local_parameters[^'terms.parameters.synonymous_rate']`"] = {4,1}["(current_estimates[^'terms.parameters.synonymous_rate'])[^'terms.fit.MLE']*(1+(2-_MATRIX_ELEMENT_ROW_)*0.25)"];
@@ -777,7 +800,7 @@ lfunction absrel.PopulateInitialGrid (model, tree_id, branch_id, current_estimat
                 grid ["`tree_id`.`branch_id`.`local_parameters[omega2]`"]   = {5,1}["(1+(_MATRIX_ELEMENT_ROW_-3)^3)*(_MATRIX_ELEMENT_ROW_>=3)+(_MATRIX_ELEMENT_ROW_*0.25+0.25)*(_MATRIX_ELEMENT_ROW_<3)"];
                 grid ["`tree_id`.`branch_id`.`local_parameters[mixture1]`"] = {{0.98}{0.90}{0.75}{0.5}};
                 grid ["`tree_id`.`branch_id`.`local_parameters[doubleH]`"] =  {{0.01}{0.2}{0.5}{1.0}};
-        
+
         } else {
             if (^"absrel.multi_hit" == "Double+Triple")  {
                 doubleH = utility.getGlobalValue ("terms.parameters.multiple_hit_rate");
@@ -838,12 +861,12 @@ lfunction absrel.ComputeOnAGrid (grid_definition, lfname) {
             current_state[p_name] = (grid_definition[p_name])[index % grid_dimensions[p_name]];
             index = index $ grid_dimensions[p_name];
         }
-        
+
         explicit.grid + current_state;
 
     }
-    
-    
+
+
     return explicit.grid;
 
 }
@@ -896,13 +919,13 @@ lfunction absrel.BS_REL.ModelDescription (type, code, components) {
     model = models.codon.BS_REL.ModelDescription(type, code, components);
     if (^"absrel.multi_hit" == "Double") {
             model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.codon.BS_REL._DefineQ.DH";
-    
+
     } else {
         if (^"absrel.multi_hit" == "Double+Triple") {
             model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.codon.BS_REL._DefineQ.TH";
         } else {
             model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.BS_REL._DefineQ";
-        
+
         }
     }
     return model;

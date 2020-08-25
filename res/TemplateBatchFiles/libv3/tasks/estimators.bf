@@ -48,15 +48,15 @@ lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
 lfunction estimators.ConstrainAndRunLRT (lf_id, constraint) {
     savedMLES = estimators.TakeLFStateSnapshot (lf_id);
     currentLL = estimators.ComputeLF (lf_id);
-    
+
     df = Call (constraint, TRUE);
     Optimize (res, ^lf_id);
     lrt = math.DoLRT (res[1][0],currentLL,df);
-    
+
     estimators.RestoreLFStateFromSnapshot (lf_id, savedMLES);
-    
+
     Call (constraint, FALSE);
-    
+
     return lrt;
 }
 
@@ -126,7 +126,7 @@ function estimators.copyGlobals2(key2, value2) {
     if (Type((estimators.ExtractMLEs.results[terms.global])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
         // this parameter has already been defined, need to prefix with model name
-    } 
+    }
 
     (estimators.ExtractMLEs.results[terms.global])[key2] = {
         terms.id: value2,
@@ -162,7 +162,7 @@ function estimators.CopyFrequencies(model_name, model_decription) {
 
 
 function estimators.SetGlobals2(key2, value) {
-    
+
     if (Type(estimators.ApplyExistingEstimates.set_globals[key2]) == "AssociativeList") {
         key3 = "[`key`] `key2`";
     } else {
@@ -461,7 +461,7 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
                             _set_branch_length_to[terms.branch_length] = _existing_estimate[terms.fit.MLE];
                             _set_branch_length_to[terms.model.branch_length_scaler] = _application_type;
                             keep_track_of_proportional_scalers[_application_type] = 1;
-                            
+
                         }
                     }
                 }
@@ -679,14 +679,14 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     };
 
 
-  
+
     for (i = 0; i < components; i += 1) {
         lf_components[2 * i] = data_filter[i];
         lf_components[2 * i + 1] = &tree_id + "_" + i;
         model.ApplyModelToTree(lf_components[2*i + 1], tree[i], None, model_map[i]);
     }
 
- 
+
 
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
@@ -706,8 +706,8 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
 
     can_do_restarts = null;
-    
-    
+
+
     /*
 
     Export (lfe, likelihoodFunction);
@@ -718,7 +718,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);
     */
 
-    
+
 
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
         grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
@@ -969,7 +969,7 @@ lfunction estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_resul
     fit_results[^"terms.fit.synonymous_trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
 
     utility.SetEnvVariable ("BRANCH_LENGTH_STENCIL", stencils[^"terms.genetic_code.nonsynonymous"]);
-     fit_results[^"terms.fit.nonsynonymous_trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
+    fit_results[^"terms.fit.nonsynonymous_trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
 
     utility.SetEnvVariable ("BRANCH_LENGTH_STENCIL", None);
 
@@ -1048,7 +1048,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         lf_components[2 * i + 1] = "tree_" + i;
         model.ApplyModelToTree(Eval("&`lf_components[2*i + 1]`"), tree[i], model_assignment, None);
     }
-    
+
 
     partition_omega = {};
 
@@ -1062,7 +1062,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
 
     if (Abs(partition_omega)) {
-    
+
         /**
             declare the global ratios for each branch set
             and add them to the model parameter set
@@ -1079,8 +1079,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         /**
             now replicate the local constraint for individual branches
         */
-        
- 
+
+
         alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
         beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
@@ -1091,7 +1091,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);
             branch_map = (option[utility.getGlobalValue("terms.run_options.partitioned_omega")])[i];
-    
+
 
             component_branches = BranchName( * component_tree, -1);
             for (j = 0; j < Columns(component_branches) - 1; j += 1) {
@@ -1100,8 +1100,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
                 */
 
                 node_name = (component_branches[j]);
-                
-                                
+
+
                 ExecuteCommands(apply_constraint);
             }
         }
@@ -1128,9 +1128,9 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     //Export (lfe, likelihoodFunction);
     //console.log (lfe);
-    
+
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
-    
+
     Optimize(mles, likelihoodFunction);
 
     if (Type(initial_values) == "AssociativeList") {
@@ -1344,4 +1344,3 @@ lfunction estimators.LHC (ranges, samples) {
 
     return result;
 }
-

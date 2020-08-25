@@ -296,6 +296,8 @@ _String const
         // but rather set the last_fileio_exception variable to the value of the exception
     status_bar_update_string                        ("STATUS_BAR_STATUS_STRING"),
         // used to set the progress message displayed to the user
+    tolerate_numerical_errors                       ("TOLERATE_NUMERICAL_ERRORS"),
+        // if set, numerical errors that would cause termination are instead trated as warnings
     try_numeric_sequence_match                      ("TRY_NUMERIC_SEQUENCE_MATCH"),
         // try matching sequences by 0 (or 1) based index, if matching by name fails
     true_const                                      ("TRUE"),

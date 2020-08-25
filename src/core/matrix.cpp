@@ -136,6 +136,7 @@ void _Matrix::Initialize (bool) {                            // default construc
   storageType     = _NUMERICAL_TYPE;
   allocationBlock = 1;
   theValue        = nil;
+  compressedIndex = nil;
   
 }
 
@@ -438,7 +439,7 @@ _Matrix::_Matrix (_SimpleList const& sl, long colArg) {
 
 //_____________________________________________________________________________________________
 
-_Matrix::_Matrix (hyFloat* inList, unsigned long rows, unsigned long columns) {
+_Matrix::_Matrix (hyFloat const* inList, unsigned long rows, unsigned long columns) {
   CreateMatrix (this, rows, columns, false, true, false);
   for (unsigned long k = 0; k < rows*columns; k++) {
     theData[k] = inList[k];
@@ -520,10 +521,12 @@ void    _Matrix::CreateMatrix    (_Matrix* populate_me, long rows, long columns,
         populate_me->hDim = rows;
         populate_me->vDim = columns;
         populate_me->SetupSparseMatrixAllocations ();
+        populate_me->compressedIndex = nil;
     } else {
         populate_me->lDim      = 0L;
         populate_me->theIndex  = nil;
         populate_me->theData   = nil;
+        populate_me->compressedIndex = nil;
         populate_me->hDim = 0UL;
         populate_me->vDim = 0UL;
     }
@@ -544,12 +547,18 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
   targetMatrix->overflowBuffer = sourceMatrix->overflowBuffer;
   targetMatrix->allocationBlock = sourceMatrix->allocationBlock;
   targetMatrix->theValue = nil;
+    
+  targetMatrix->compressedIndex = nil;
   
   if (sourceMatrix->theIndex) {
     if (!(targetMatrix->theIndex = (long*)MatrixMemAllocate(sizeof(long) *sourceMatrix->lDim))) { // allocate element index storage
       HandleApplicationError ( kErrorStringMemoryFail );
     } else {
       memcpy ((void*)targetMatrix->theIndex,(void*)sourceMatrix->theIndex,sourceMatrix->lDim*sizeof(long));
+    }
+    if (sourceMatrix->compressedIndex) {
+        targetMatrix->compressedIndex = (long*)MatrixMemAllocate(sizeof(long) *(sourceMatrix->lDim+sourceMatrix->hDim));
+        memcpy ((void*)targetMatrix->compressedIndex,(void*)sourceMatrix->compressedIndex,sizeof(long) *(sourceMatrix->lDim+sourceMatrix->hDim));
     }
   } else {
     targetMatrix->theIndex = nil;
@@ -1026,7 +1035,7 @@ bool        _Matrix::ValidateFormulaEntries (bool callback (long, long, _Formula
 
 
 //__________________________________________________________________________________
-HBLObjectRef   _Matrix::Eigensystem (void) const {
+HBLObjectRef   _Matrix::Eigensystem (HBLObjectRef cache) const {
     // find the eigenvectors of a symmetric matrix using Jacobi rotations
     // The original matrix is preserved.
     // returns an associative list with a sorted vector of eigenvalues and
@@ -1048,15 +1057,14 @@ HBLObjectRef   _Matrix::Eigensystem (void) const {
                 //WarnError (nonSym);
 
  
-                _Matrix            *cpy = new _Matrix (*this),
+                _Matrix            cpy (*this),
                 *rl  = new _Matrix,
                 *im  = new _Matrix;
 
-                cpy->CheckIfSparseEnough(true);
-                cpy->Balance ();
-                cpy->Schur   ();
-                cpy->EigenDecomp (*rl,*im);
-                DeleteObject (cpy);
+                cpy.CheckIfSparseEnough(true);
+                cpy.Balance ();
+                cpy.Schur   ();
+                cpy.EigenDecomp (*rl,*im);
 
                 return & ((*new _AssociativeList) < _associative_list_key_value {"0", rl}
                        < _associative_list_key_value {"1", im});
@@ -1170,7 +1178,7 @@ HBLObjectRef   _Matrix::Eigensystem (void) const {
     }
 
     _Constant sc (0.0);
-    dss = (_Matrix*)ds.SortMatrixOnColumn (&sc);
+    dss = (_Matrix*)ds.SortMatrixOnColumn (&sc, nil);
 
     for (long r=0; r<hDim; r++) {
         d->theData[r] = -dss->theData[2*r];
@@ -1403,9 +1411,17 @@ HBLObjectRef   _Matrix::CholeskyDecompose (void) const
 
 
 //__________________________________________________________________________________
-template <typename CALLBACK> HBLObjectRef   _Matrix::ApplyScalarOperation (CALLBACK && functor) const {
+template <typename CALLBACK> HBLObjectRef   _Matrix::ApplyScalarOperation (CALLBACK && functor, HBLObjectRef cache) const {
     if (storageType==_NUMERICAL_TYPE) {
-        _Matrix* res = new _Matrix (*this);
+        _Matrix* res;
+        
+        if (cache && cache->ObjectClass() == MATRIX) {
+            res = (_Matrix*)cache;
+            *res = *this;
+            res->AddAReference();
+        } else {
+            res = new _Matrix (*this);
+        }
       
         res->ForEach ([&] (hyFloat&& value, unsigned long index, long hashed) -> void {res->theData[hashed] = functor(value);},
                       [&] (unsigned long index) -> hyFloat {return theData[index];});
@@ -1417,7 +1433,7 @@ template <typename CALLBACK> HBLObjectRef   _Matrix::ApplyScalarOperation (CALLB
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _Matrix::Inverse (void) const {
+HBLObjectRef   _Matrix::Inverse (HBLObjectRef cache) const {
     if (!is_square_numeric(false)) {
         return    new _MathObject;
     }
@@ -1425,7 +1441,7 @@ HBLObjectRef   _Matrix::Inverse (void) const {
     _Matrix * LUdec = (_Matrix*)LUDecompose();
     if (LUdec) {
         _Matrix b      (hDim,1,false,true),
-                * result = new _Matrix (hDim,vDim,false,true);
+                * result = (_Matrix*)_returnMatrixOrUseCache(hDim,vDim,_NUMERICAL_TYPE,false, cache);
         b.theData[0]=1.0;
       for (long i=0L; i<hDim; i++) {
             if (i) {
@@ -1621,25 +1637,25 @@ HBLObjectRef   _Matrix::RetrieveNumeric (void) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _Matrix::Sum (void) {
-    return new _Constant (MaxElement (1));
+HBLObjectRef   _Matrix::Sum (HBLObjectRef cache) {
+    return _returnConstantOrUseCache(MaxElement (1), cache);
 }
 
 //__________________________________________________________________________________
 
 
-HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)  {
+HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context, HBLObjectRef cache)  {
 
   
     switch (opCode) { // first check operations without arguments
       case HY_OP_CODE_ABS: // Abs
-        return Abs();
+        return Abs(cache);
       case HY_OP_CODE_COLUMNS:  //Columns
-        return new _Constant (vDim);
+        return _returnConstantOrUseCache(vDim, cache);
       case HY_OP_CODE_INVERSE: //Inverse
-        return Inverse();
+        return Inverse(cache);
       case HY_OP_CODE_EIGENSYSTEM: //Eigensystem
-        return Eigensystem();
+        return Eigensystem(cache);
       case HY_OP_CODE_EVAL: //Eval
         return (HBLObjectRef)ComputeNumeric()->makeDynamic();
       case HY_OP_CODE_EXP: //Exp
@@ -1647,18 +1663,18 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
       case HY_OP_CODE_LUDECOMPOSE: // LUDecompose
         return LUDecompose();
       case HY_OP_CODE_LOG: // Log
-        return ApplyScalarOperation ([] (hyFloat h) -> hyFloat {return log (h);});
+        return ApplyScalarOperation ([] (hyFloat h) -> hyFloat {return log (h);}, cache);
       case HY_OP_CODE_ROWS: // Rows
-        return new _Constant (hDim);
+        return _returnConstantOrUseCache (hDim, cache);
       case HY_OP_CODE_SIMPLEX: // Simplex
         return SimplexSolve();
       case HY_OP_CODE_TRANSPOSE: { // Transpose
-        _Matrix* result = (_Matrix*)makeDynamic();
+        _Matrix* result = new _Matrix (*this);
         result->Transpose();
         return result;
       }
       case HY_OP_CODE_TYPE: // Type
-        return Type();
+        return Type(cache);
    }
   
   _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
@@ -1666,16 +1682,18 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
   switch (opCode) { // next check operations without arguments or with one argument
     case HY_OP_CODE_ADD: // +
       if (arg0) {
-        return AddObj (arg0);
+        return AddObj (arg0, cache);
       } else {
-        return Sum ();
+        return Sum (cache);
       }
       break;
     case HY_OP_CODE_SUB: // -
       if (arg0) {
-        return SubObj(arg0);
+        return SubObj(arg0, cache);
       } else {
-        return (HBLObjectRef)((*this)*(-1.0)).makeDynamic();
+        return ApplyScalarOperation ([] (hyFloat h) -> hyFloat {return -h;}, cache);
+
+        //return (HBLObjectRef)((*this)*(-1.0)).makeDynamic();
       }
       break;
   }
@@ -1684,36 +1702,36 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
     switch (opCode) { // operations that require exactly one argument
       case HY_OP_CODE_IDIV: // $
       case HY_OP_CODE_DIV:  // /
-        return MultElements(arg0,opCode == HY_OP_CODE_DIV);
+        return MultElements(arg0,opCode == HY_OP_CODE_DIV, cache);
       case HY_OP_CODE_MOD: // %
-        return SortMatrixOnColumn (arg0);
+        return SortMatrixOnColumn (arg0, cache);
       case HY_OP_CODE_AND: // &&
-        return pFDR (arg0);
+        return pFDR (arg0, cache);
       case HY_OP_CODE_MUL: // *
-        return MultObj(arg0);
+        return MultObj(arg0, cache);
       case HY_OP_CODE_LESS: // <
-        return PathLogLikelihood(arg0);
+        return PathLogLikelihood(arg0, cache);
       case HY_OP_CODE_LEQ: // <=
-        return K_Means(arg0);
+        return K_Means(arg0, cache);
       case HY_OP_CODE_EQ: // ==
-        return new _Constant (Equal (arg0));
+        return _returnConstantOrUseCache(Equal (arg0), cache);
         //return ProfileMeanFit(arg0);
       case HY_OP_CODE_GREATER: // >
-        return NeighborJoin (!CheckEqual(arg0->Value(),0.0));
+        return NeighborJoin (!CheckEqual(arg0->Value(),0.0), cache);
       case HY_OP_CODE_GEQ: // >=
-        return MakeTreeFromParent (arg0->Value());
+        return MakeTreeFromParent (arg0->Value(), cache);
       case HY_OP_CODE_CCHI2: //CChi2
         if (arg0->ObjectClass()==NUMBER && arg0->Value()>0.999 ) {
-          return new _Constant (FisherExact(5.,80.,1.));
+          return _returnConstantOrUseCache (FisherExact(5.,80.,1.), cache);
         } else {
-          return new _Constant (FisherExact(0.,0.,0.));
+          return _returnConstantOrUseCache (FisherExact(0.,0.,0.), cache);
         }
       case HY_OP_CODE_LUSOLVE: // LUSolve
         return LUSolve (arg0);
       case HY_OP_CODE_RANDOM: // Random
-        return Random (arg0);
+        return Random (arg0, cache);
       case HY_OP_CODE_POWER: // ^ (Poisson log-likelihood)
-          return  PoissonLL (arg0);
+          return  PoissonLL (arg0, cache);
       case HY_OP_CODE_MAX: // Max
       case HY_OP_CODE_MIN: // Max
         if (arg0->ObjectClass()==NUMBER) {
@@ -1724,17 +1742,17 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
             return new _Matrix (v,1,2);
           }
         }
-        return new _Constant (opCode == HY_OP_CODE_MAX?MaxElement (0):MinElement (0));
+        return _returnConstantOrUseCache (opCode == HY_OP_CODE_MAX?MaxElement (0):MinElement (0), cache);
    }
     _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
     
      switch (opCode) {
         
       case HY_OP_CODE_MACCESS: // MAccess
-        return MAccess (arg0,arg1);
+        return MAccess (arg0,arg1, cache);
         
       case HY_OP_CODE_MCOORD: // MCoord
-        return MCoord (arg0, arg1);
+        return MCoord (arg0, arg1, cache);
     }
     
   }
@@ -1968,8 +1986,8 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                         tc = new _Constant ((*freqs)[c]);
                                     }
                                     if (tr && tc) {
-                                        _Polynomial        * rcpF = (_Polynomial*)rcp->Mult(tr),
-                                                           * crpF = (_Polynomial*)crp->Mult(tc);
+                                        _Polynomial        * rcpF = (_Polynomial*)rcp->Mult(tr, nil),
+                                                           * crpF = (_Polynomial*)crp->Mult(tc, nil);
 
                                         compResult         = rcpF->Equal(crpF);
                                         DeleteObject (rcpF);
@@ -2035,7 +2053,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
             }
             return true;
         }
-    } catch (const _String reason) {
+    } catch (const _String& reason) {
         ReportWarning (_String ("Reversibility checks failed: ") & reason);
         return false;
     }
@@ -2897,22 +2915,35 @@ void    _Matrix::ClearObjects (void)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Clear (void) {
+void    _Matrix::Clear (bool complete) {
     DeleteObject (theValue);
-    if (storageType == 2) { // has formulas in it - must delete
+    if (is_expression_based()) { // has formulas in it - must delete
         ClearFormulae();
     }
-    if (storageType == 0) { // has objects in it - must delete
+    if (is_polynomial()) { // has objects in it - must delete
         ClearObjects();
     }
+        
     if (theIndex) {
-        MatrixMemFree (theIndex);
-        theIndex = nil;
+        if (complete) {
+            MatrixMemFree (theIndex);
+            theIndex = nil;
+        } else {
+            InitializeArray(theIndex, lDim, -1L);
+        }
     }
     if (theData) {
-        MatrixMemFree (theData);
-        hDim = vDim = 0;
-        theData = nil;
+        if (complete) {
+            MatrixMemFree (theData);
+            hDim = vDim = 0;
+            theData = nil;
+        } else {
+            memset (theData, 0, lDim * (is_numeric() ? sizeof (hyFloat): sizeof (void*)));
+        }
+    }
+    if (compressedIndex) {
+        MatrixMemFree (compressedIndex);
+        compressedIndex = nil;
     }
 
 }
@@ -2993,12 +3024,12 @@ hyFloat _Matrix::AbsValue (void) const{
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef _Matrix::Abs (void)
+HBLObjectRef _Matrix::Abs (HBLObjectRef cache)
 {
     if (storageType == 1 && (hDim==1 || vDim == 1)) {
-        return new _Constant (AbsValue());
+        return _returnConstantOrUseCache(AbsValue(), cache);
     }
-    return new _Constant(MaxElement());
+    return _returnConstantOrUseCache(MaxElement(), cache);
 
 }
 
@@ -3017,7 +3048,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
         return;
     }
 
-    if (storageType == 1) {
+    if (is_numeric()) {
         if (&storage != this) { // not an add&store operation
             // copy *this to storage
             if (theIndex) { //sparse matrix
@@ -3071,12 +3102,17 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             hyFloat * _hprestrict_ argData = secondArg.theData;
             hyFloat * _hprestrict_ stData  = storage.theData;
             
-            long    upto = secondArg.lDim - secondArg.lDim%4;
+            long    upto = secondArg.lDim >> 4 << 4;
                        
-            if (subtract)
+            if (subtract) {
 #ifdef  _SLKP_USE_AVX_INTRINSICS
-                for (long idx = 0; idx < upto; idx+=4) {
-                    _mm256_storeu_pd (stData+idx, _mm256_sub_pd (_mm256_loadu_pd (stData+idx), _mm256_loadu_pd (argData+idx)));
+            #define     CELL_OP(x) _mm256_storeu_pd (stData+x, _mm256_sub_pd (_mm256_loadu_pd (stData+x), _mm256_loadu_pd (argData+x)))
+                
+                for (long idx = 0; idx < upto; idx+=16) {
+                    CELL_OP (idx);
+                    CELL_OP (idx+4);
+                    CELL_OP (idx+8);
+                    CELL_OP (idx+12);
                 }
 #else
                 for (long idx = 0; idx < upto; idx+=4) {
@@ -3086,12 +3122,19 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                     stData[idx+3]-=argData[idx+3];
                 }
 #endif
-            else
+            } else {
 #ifdef  _SLKP_USE_AVX_INTRINSICS
-            for (long idx = 0; idx < upto; idx+=4) {
-                    _mm256_storeu_pd (stData+idx, _mm256_add_pd (_mm256_loadu_pd (stData+idx), _mm256_loadu_pd (argData+idx)));
+            #define     CELL_OP(x) _mm256_storeu_pd (stData+x, _mm256_add_pd (_mm256_loadu_pd (stData+x), _mm256_loadu_pd (argData+x)))
+                 
+                 for (long idx = 0; idx < upto; idx+=16) {
+                     CELL_OP (idx);
+                     CELL_OP (idx+4);
+                     CELL_OP (idx+8);
+                     CELL_OP (idx+12);
+                 }
             }
-#else
+
+ #else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]+=argData[idx];
                     stData[idx+1]+=argData[idx+1];
@@ -3296,19 +3339,37 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
 // internal function
 
 {
-    if (storageType == 1) { // numbers
+    if (is_numeric()) { // numbers
         hyFloat * _hprestrict_  destination = storage.theData;
         hyFloat const *  source      = theData;
             
         if (theIndex) {
-            for (long k = 0; k < lDim; k++)
+            for (long k = 0L; k < lDim; k++)
                 if (storage.theIndex[k] != -1) {
                     destination[k] = source[k]*c;
                 }
         } else {
-            for (long k = 0; k < lDim; k++) {
+  #ifdef  _SLKP_USE_AVX_INTRINSICS
+  #define                 CELL_OP(k) _mm256_storeu_pd (destination + k, _mm256_mul_pd(value_op, _mm256_loadu_pd (source+k)))
+        long lDimM4 = lDim >> 4 << 4,
+             k = 0;
+            
+        __m256d  value_op = _mm256_set1_pd (c);
+         for (k = 0L; k < lDimM4; k+=16) {
+             CELL_OP (k);
+             CELL_OP (k+4);
+             CELL_OP (k+8);
+             CELL_OP (k+12);
+        }
+        for (; k < lDim; k++) {
+            destination[k] = source[k]*c;
+        }
+            
+  #else
+            for (long k = 0L; k < lDim; k++) {
                 destination[k] = source[k]*c;
             }
+  #endif
         }
             
     } else {
@@ -3678,78 +3739,159 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 */
               
               if (vDim == 61) {
-                for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
-                  long m = theIndex[k];
-                  if (m >= 0L) {
-                    long i = ((unsigned long)m)%61;
-                  
-                    hyFloat  value                            = theData[k];
-                    hyFloat  * _hprestrict_ res               = storage.theData    + (m-i);
-                    hyFloat  * _hprestrict_ secArg            = secondArg.theData  + i*61;
+                
+                if (compressedIndex) {
+                    long currentXIndex = 0L;
+                    hyFloat  * _hprestrict_ res               = storage.theData;
                     
-  #ifdef  _SLKP_USE_AVX_INTRINSICS
-                      __m256d  value_op = _mm256_set1_pd (value);
-                    
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-    #define                 CELL_OP(x) _mm256_storeu_pd (res+x, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+x),_mm256_loadu_pd(res+x)))
-#else
-    #define                 CELL_OP(x) _mm256_storeu_pd (res+x,   _mm256_add_pd (_mm256_loadu_pd(res+x),    _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+x))))
-#endif
-                      CELL_OP(0);CELL_OP(4);CELL_OP(8);CELL_OP(12);
-                      CELL_OP(16);CELL_OP(20);CELL_OP(24);CELL_OP(28);
-                      CELL_OP(32);CELL_OP(36);CELL_OP(40);CELL_OP(44);
-                      CELL_OP(48);CELL_OP(52);CELL_OP(56);
-  #else
-                      for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
-                        res[i]   += value * secArg[i];
-                        res[i+1] += value * secArg[i+1];
-                        res[i+2] += value * secArg[i+2];
-                        res[i+3] += value * secArg[i+3];
-                       }
-  #endif
-                      res[60]   += value * secArg[60];
+                    for (long i = 0; i < hDim; i++) { // row in source
+                      while (currentXIndex < compressedIndex[i]) {
+                            long currentXColumn = compressedIndex[currentXIndex + hDim];
+                            // go into the second matrix and look up all the non-zero entries in the currentXColumn row
+                          
+                            hyFloat value = theData[currentXIndex];
+                            hyFloat  * _hprestrict_ secArg            = secondArg.theData  + currentXColumn*61;
+                            #ifdef  _SLKP_USE_AVX_INTRINSICS
+                                __m256d  value_op = _mm256_set1_pd (value);
+                                #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                    #define                 CELL_OP(x) _mm256_storeu_pd (res+x, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+x),_mm256_loadu_pd(res+x)))
+                                #else
+                                    #define                 CELL_OP(x) _mm256_storeu_pd (res+x,   _mm256_add_pd (_mm256_loadu_pd(res+x),    _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+x))))
+                                #endif
+                              
+                                CELL_OP(0);CELL_OP(4);CELL_OP(8);CELL_OP(12);
+                                CELL_OP(16);CELL_OP(20);CELL_OP(24);CELL_OP(28);
+                                CELL_OP(32);CELL_OP(36);CELL_OP(40);CELL_OP(44);
+                                CELL_OP(48);CELL_OP(52);CELL_OP(56);
+                          
+                            #else
+                                for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
+                                    res[i]   += value * secArg[i];
+                                    res[i+1] += value * secArg[i+1];
+                                    res[i+2] += value * secArg[i+2];
+                                    res[i+3] += value * secArg[i+3];
+                                }
+                            #endif
+                            res[60]   += value * secArg[60];
+                            currentXIndex ++;
+                      }
+                      res += vDim;
+
                   }
+                    
                   
+                    
+                } else {
+                     for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
+                      long m = theIndex[k];
+                      if (m >= 0L) {
+                        long i = ((unsigned long)m)%61;
+                      
+                        hyFloat  value                            = theData[k];
+                        hyFloat  * _hprestrict_ res               = storage.theData    + (m-i);
+                        hyFloat  * _hprestrict_ secArg            = secondArg.theData  + i*61;
+                        
+                        #ifdef  _SLKP_USE_AVX_INTRINSICS
+                          __m256d  value_op = _mm256_set1_pd (value);
+                        
+                         #ifdef _SLKP_USE_FMA3_INTRINSICS
+                            #define                 CELL_OP(x) _mm256_storeu_pd (res+x, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+x),_mm256_loadu_pd(res+x)))
+                          #else
+                            #define                 CELL_OP(x) _mm256_storeu_pd (res+x,   _mm256_add_pd (_mm256_loadu_pd(res+x),    _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+x))))
+                          #endif
+                          CELL_OP(0);CELL_OP(4);CELL_OP(8);CELL_OP(12);
+                          CELL_OP(16);CELL_OP(20);CELL_OP(24);CELL_OP(28);
+                          CELL_OP(32);CELL_OP(36);CELL_OP(40);CELL_OP(44);
+                          CELL_OP(48);CELL_OP(52);CELL_OP(56);
+                        #else
+                          for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
+                            res[i]   += value * secArg[i];
+                            res[i+1] += value * secArg[i+1];
+                            res[i+2] += value * secArg[i+2];
+                            res[i+3] += value * secArg[i+3];
+                           }
+                        #endif
+                          res[60]   += value * secArg[60];
+                      }
+                     }
                 }
                 
               } else {
                   long loopBound = (vDim >> 2) << 2;
-
-                  for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
-                      long m = theIndex[k];
-                      if  (m != -1L ) { // non-zero
-                          long i = ((unsigned long)m)%vDim;
-                          // this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
-                          // in the form of A_rc * B_cc'
-
-                          hyFloat  value                           = theData[k];
-                          hyFloat  *_hprestrict_ res               = storage.theData    + (m-i);
-                          hyFloat  *_hprestrict_ secArg            = secondArg.theData  + i*vDim;
-#ifdef  _SLKP_USE_AVX_INTRINSICS
-                          __m256d  value_op = _mm256_set1_pd (value);
-#endif
+                  
+                  if (compressedIndex) {
+                    long currentXIndex = 0L;
+                    hyFloat  * _hprestrict_ res               = storage.theData;
+                    
+                    for (long i = 0; i < hDim; i++) { // row in source
+                      while (currentXIndex < compressedIndex[i]) {
+                            long currentXColumn = compressedIndex[currentXIndex + hDim];
+                            // go into the second matrix and look up all the non-zero entries in the currentXColumn row
                           
-                          for (unsigned long i = 0UL; i < loopBound; i+=4) {
-#ifdef  _SLKP_USE_AVX_INTRINSICS
-    #ifdef _SLKP_USE_FMA3_INTRINSICS
-                                  _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
-    #else
-                                  _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
-    #endif
-#else
-                              
-                              res[i]   += value * secArg[i];
-                              res[i+1] += value * secArg[i+1];
-                              res[i+2] += value * secArg[i+2];
-                              res[i+3] += value * secArg[i+3];
-#endif
-                          }
-                           for (unsigned long i = loopBound; i < vDim; i++) {
-                              res[i]   += value * secArg[i];
-                          }
-
+                            hyFloat value = theData[currentXIndex];
+                            hyFloat  * _hprestrict_ secArg            = secondArg.theData  + currentXColumn*61;
+                            #ifdef  _SLKP_USE_AVX_INTRINSICS
+                                __m256d  value_op = _mm256_set1_pd (value);
+                            #endif
+                            for (unsigned long i = 0UL; i < loopBound; i+=4) {
+                                  #ifdef  _SLKP_USE_AVX_INTRINSICS
+                                  #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                        _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
+                                  #else
+                                        _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
+                                  #endif
+                                  #else
+                                    res[i]   += value * secArg[i];
+                                    res[i+1] += value * secArg[i+1];
+                                    res[i+2] += value * secArg[i+2];
+                                    res[i+3] += value * secArg[i+3];
+                                  #endif
+                            }
+                            for (unsigned long i = loopBound; i < vDim; i++) {
+                                res[i]   += value * secArg[i];
+                            }
+                            currentXIndex ++;
                       }
-                  }
+                      res += vDim;
+
+                 }
+             }else {
+
+                      for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
+                          long m = theIndex[k];
+                          if  (m != -1L ) { // non-zero
+                              long i = ((unsigned long)m)%vDim;
+                              // this element will contribute to (r, c' = [0..vDim-1]) entries in the result matrix
+                              // in the form of A_rc * B_cc'
+
+                              hyFloat  value                           = theData[k];
+                              hyFloat  *_hprestrict_ res               = storage.theData    + (m-i);
+                              hyFloat  *_hprestrict_ secArg            = secondArg.theData  + i*vDim;
+                              #ifdef  _SLKP_USE_AVX_INTRINSICS
+                                    __m256d  value_op = _mm256_set1_pd (value);
+                              #endif
+                              
+                              for (unsigned long i = 0UL; i < loopBound; i+=4) {
+                              #ifdef  _SLKP_USE_AVX_INTRINSICS
+                                #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                      _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
+                                #else
+                                      _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
+                                #endif
+                                #else
+                                  res[i]   += value * secArg[i];
+                                  res[i+1] += value * secArg[i+1];
+                                  res[i+2] += value * secArg[i+2];
+                                  res[i+3] += value * secArg[i+3];
+                                #endif
+                              }
+                               for (unsigned long i = loopBound; i < vDim; i++) {
+                                  res[i]   += value * secArg[i];
+                              }
+
+                          }
+                      }
+                 }
               } // special codon case
             } else {
                 for (long k=0; k<lDim; k++) {
@@ -3854,88 +3996,118 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
             }
 
         }
-    } else
+    } else {
         //sparse by sparse
-    {
-        long *indexTable,
-             *indexTable2,
-             *indexVector,
-             //indexTableDim = secondArg.hDim*(secondArg.vDim+1),
-             indexTableDim = secondArg.hDim*secondArg.vDim,
-             t,
-             //dd = secondArg.vDim+1 ;
-             dd = secondArg.vDim;
-        indexTable  = (long*)MatrixMemAllocate( sizeof(long)*indexTableDim);
-        indexTable2 = (long*)MatrixMemAllocate( sizeof(long)*indexTableDim);
-        indexVector = (long*)MatrixMemAllocate( sizeof(long)*secondArg.hDim);
-
-        if (!(indexTable&&indexTable2&&indexVector)) {
-            HandleApplicationError ( kErrorStringMemoryFail );
-            return;
-        }
-
-        memset (indexTable,0,indexTableDim*sizeof(long));
-        memset (indexTable2,0,indexTableDim*sizeof(long));
-        memset (indexVector,0,secondArg.hDim*sizeof(long));
-        if (storageType == 1)
-            // numeric
-        {
-            for (long i=0; i<secondArg.lDim; i++) {
-                if ((t=secondArg.theIndex[i])!=-1) {
-                    long k = t/secondArg.vDim;
-                    long j = k*dd+(indexVector[k]++);
-                    indexTable [j] = t%secondArg.vDim;
-                    indexTable2[j] = i;
+        
+        /**
+             X Y where both X and Y are sparse can be multipled more efficiently than O (N^3)
+             if cell (i,j) is non-zero in X, it will contribute to cells (i,k) in the result matrix,
+             it will contribute to the cells of the result matrix (i,k) where k is such that there are non-zero entries in thh k-th row of matrix Y
+        */
+        
+        if (compressedIndex && secondArg.compressedIndex) {
+            long currentXIndex = 0,
+                 storageIndex  = 0;
+            
+            for (long i = 0; i < hDim; i++) { // row in source
+                
+                while (currentXIndex < compressedIndex[i]) {
+                    long currentXColumn = compressedIndex[currentXIndex + hDim];
+                    // go into the second matrix and look up all the non-zero entries in the currentXColumn row
+                    hyFloat c = theData[currentXIndex];
+                    long from = currentXColumn ? secondArg.compressedIndex[currentXColumn-1] : 0,
+                          to   = secondArg.compressedIndex[currentXColumn];
+                    for (long secondIndex = from; secondIndex < to; secondIndex ++) {
+                        storage.theData[storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim]] += c*secondArg.theData[secondIndex];
+                    }
+                    currentXIndex ++;
                 }
+                
+                storageIndex += secondArg.vDim;
+
             }
-            for (long k=0; k<lDim; k++) {
-                if ((t=theIndex[k])!=-1) {
-                    long i = t/vDim;
-                    long j = t - i * vDim;
-                    hyFloat c = theData[k];
-                    long n = j*dd;
-                    long m = i*secondArg.vDim;
-                    for (long l=n; l<n+indexVector[j]; l++) {
-                        storage.theData[m+indexTable[l]]+= c*secondArg.theData[indexTable2[l]];
+        } else {
+        
+            long * indexVector = (long*)alloca ( sizeof(long)*secondArg.hDim);
+                // how many non-zero elements are there in the i-th row of matrix Y
+            memset (indexVector,0,secondArg.hDim*sizeof(long));
+            
+            long *indexTable,
+                 *indexTable2,
+                 indexTableColumnWidth = secondArg.vDim,
+                 indexTableDim = secondArg.hDim*indexTableColumnWidth;
+
+            indexTable  = (long*)MatrixMemAllocate( sizeof(long)*indexTableDim);
+              // element (i,j) of this matrix is the COLUMN index in which the j-th non-zero entry appears in row i of matrix Y
+            indexTable2 = (long*)MatrixMemAllocate( sizeof(long)*indexTableDim);
+              // element (i,j) of this matrix is the index (in theData) for the j-th non-zero entry appears in row i of matrix Y
+
+            memset (indexTable,0,indexTableDim*sizeof(long));
+            memset (indexTable2,0,indexTableDim*sizeof(long));
+             
+            if (is_numeric()) {
+                // numeric
+                
+                for (long i=0; i<secondArg.lDim; i++) {
+                    long elementIndex = secondArg.theIndex[i];
+                    if (__builtin_expect (elementIndex >= 0L,1)) {
+                        long k = elementIndex/secondArg.vDim;
+                        long j = k*secondArg.vDim+(indexVector[k]++);
+                        indexTable [j] = elementIndex % secondArg.vDim;
+                        indexTable2[j] = i;
                     }
                 }
-            }
-        } else { // polynomial entries
-            for (long i=0; i<secondArg.lDim; i++) {
-                t=secondArg.theIndex[i];
-                if (IsNonEmpty(i)) {
-                    long k = t/secondArg.vDim;
-                    long j = k*dd+(indexVector[k]++);
-                    indexTable [j] = t%secondArg.vDim;
-                    indexTable2[j] = i;
-                }
-            }
-            for (long k=0; k<lDim; k++) {
-                if (IsNonEmpty(k)) {
-                    long i = theIndex[k]/vDim;
-                    long j = theIndex[k]%vDim;
-                    _MathObject* p = GetMatrixObject(k);
-                    long n = j*dd;
-                    long m = i*secondArg.vDim;
-                    for (long l=n; l<n+indexVector[j]; l++) {
-                        _MathObject* temp = p->Mult (secondArg.GetMatrixObject (indexTable2[l]));
-                        tempP = storage.GetMatrixObject(m+indexTable[l]%secondArg.vDim);
-                        if (tempP) {
-                            storage.StoreObject (m+indexTable[l]%secondArg.vDim, tempP->Add (temp));
-                        } else {
-                            storage.StoreObject (m+indexTable[l]%secondArg.vDim, temp, true);
+                for (long k=0; k<lDim; k++) {
+                    long elementIndex = theIndex[k];
+                    if (__builtin_expect (elementIndex >= 0L,1)) {
+                        hyFloat c = theData[k];
+                        long i = elementIndex / vDim,
+                             j = elementIndex - i*vDim,
+                             n = j*indexTableColumnWidth,
+                             m = i*secondArg.vDim,
+                             nonZeroCount = indexVector[j];
+                        
+                        for (long l=n; l<n+nonZeroCount; l++) {
+                            storage.theData[m+indexTable[l]] += c*secondArg.theData[indexTable2[l]];
                         }
+                    }
+                }
+            } else { // polynomial entries
+                 
+                for (long i=0; i<secondArg.lDim; i++) {
+                    long elementIndex  = secondArg.theIndex[i];
+                    if (IsNonEmpty(i)) {
+                        long k = elementIndex/secondArg.vDim;
+                        long j = k*secondArg.vDim+(indexVector[k]++);
+                        indexTable [j] = elementIndex%secondArg.vDim;
+                        indexTable2[j] = i;
+                    }
+                }
+                for (long k=0; k<lDim; k++) {
+                    if (IsNonEmpty(k)) {
+                        long i = theIndex[k]/vDim;
+                        long j = theIndex[k]%vDim;
+                        _MathObject* p = GetMatrixObject(k);
+                        long n = j*secondArg.vDim;
+                        long m = i*secondArg.vDim;
+                        for (long l=n; l<n+indexVector[j]; l++) {
+                            _MathObject* temp = p->Mult (secondArg.GetMatrixObject (indexTable2[l]));
+                            tempP = storage.GetMatrixObject(m+indexTable[l]%secondArg.vDim);
+                            if (tempP) {
+                                storage.StoreObject (m+indexTable[l]%secondArg.vDim, tempP->Add (temp));
+                            } else {
+                                storage.StoreObject (m+indexTable[l]%secondArg.vDim, temp, true);
+                            }
 
-                        DeleteObject (temp);
+                            DeleteObject (temp);
+                        }
                     }
                 }
             }
+
+            MatrixMemFree( indexTable);
+            MatrixMemFree( indexTable2);
         }
-
-        MatrixMemFree( indexTable);
-        MatrixMemFree( indexTable2);
-        MatrixMemFree( indexVector);
-
     }
 
 
@@ -4083,17 +4255,28 @@ void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
 
 //_____________________________________________________________________________________________
 
-bool    _Matrix::IsMaxElement  (hyFloat bench)
+bool    _Matrix::IsMaxElement  (hyFloat bench) {
 // returns matrix's largest abs value element
-{
-    if (storageType == 1) {
-        hyFloat t,
-                   mBench = -bench;
-        for (long i = 0; i<lDim; i++) {
-            t = theData[i];
-            if ((t<mBench)||(t>bench)) {
-                return true;
+    if (is_numeric()) {
+        
+        hyFloat mBench = -bench;
+        if (!theIndex || compressedIndex) {
+            for (long i = 0; i<lDim; i++) {
+                hyFloat t = theData[i];
+                if ( t<mBench || t>bench ) {
+                    return true;
+                }
             }
+        } else {
+            for (long i = 0; i<lDim; i++) {
+                if (theIndex [i] >= 0) {
+                    hyFloat t = theData[i];
+                    if ( t<mBench || t>bench ) {
+                        return true;
+                    }
+                }
+            }
+
         }
         return false;
     } else if (storageType == 0) {
@@ -4325,49 +4508,132 @@ void    _Matrix::Transpose (void)
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash)
-{
+void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
+    /**
+        The purpose of this function is to "pack" the elements of a sparse matrix into an index array (theIndex) so that
+                    (1) there are no "unused" elements in the middle
+                    (2) the elements in theIndex are in the same order as they are in the matrix (row by row)
+     
+        Optonally, the packe matrix can be transposed.
+    */
     if (theIndex) {
         _SimpleList sortedIndex  ((unsigned long)lDim, (long*)alloca (lDim * sizeof (long))),
                     sortedIndex3 ((unsigned long)lDim, (long*)alloca (lDim * sizeof (long))),
                     sortedIndex2;
 
 
-        long blockChunk = 32,
-             blockShift = hDim / blockChunk + 1,
-             max        = 0;
+        /*const long blockChunk = 32,
+                   blockShift = hDim / blockChunk + 1*/
+        
+        long  max        = 0,
+              secondDim = transpose ? hDim : vDim,
+              firstDim  = transpose ? vDim : hDim;
 
 
-        for (long i2=0; i2<lDim; i2++) {
-            long k = theIndex[i2];
-            if  (k!=-1) {
-                long r = transpose?(k/vDim):(k%vDim),
-                     c = transpose?(k%vDim):(k/vDim),
-                     r2 = c / blockChunk * blockShift + r / blockChunk,
-                     r3 = r2 * lDim + r * vDim + c;
+        if (transpose) {
+            for (long i2=0; i2<lDim; i2++) {
+                long k = theIndex[i2];
+                if  (__builtin_expect (k!=-1,1)) {
+                    /*
+                    long r = k/vDim,
+                         c = k%vDim,
+                         r2 = c / blockChunk * blockShift + r / blockChunk,
+                         r3 = r2 * lDim + r * vDim + c;
 
-                sortedIndex  << (c*vDim + r);
-                sortedIndex3 << r3;
-                stash[sortedIndex.lLength-1] = theData[i2];
-                if (r3 > max) {
-                    max = r3;
+                    sortedIndex  << (c*vDim + r);
+                    sortedIndex3 << r3;
+                    stash[sortedIndex.lLength-1] = theData[i2];
+                    if (r3 > max) {
+                        max = r3;
+                    }*/
+                    long transposed_index = (k%vDim) * vDim + k/vDim;
+                    stash[sortedIndex.lLength] = theData[i2];
+                    sortedIndex  << transposed_index;
+                    sortedIndex3 << transposed_index;
+                    if (max < transposed_index) max = transposed_index;
+                    
                 }
             }
-        }
+        } else {
+            for (long i2=0; i2<lDim; i2++) {
+                long k = theIndex[i2];
+                if  (__builtin_expect (k!=-1,1)) {
+                    /*long r = k%vDim,
+                         c = k/vDim,
+                         r2 = c / blockChunk * blockShift + r / blockChunk,
+                         r3 = r2 * lDim + r * vDim + c;
 
-        if (max > (lDim<<4)) {
+                    sortedIndex  << (c*vDim + r);
+                    sortedIndex3 << r3;
+                    stash[sortedIndex.lLength-1] = theData[i2];
+                    if (r3 > max) {
+                        max = r3;
+                    }*/
+                    stash[sortedIndex.lLength] = theData[i2];
+                    sortedIndex  << k;
+                    sortedIndex3 << k;
+                    if (max < k) max = k;
+}
+            }
+        }
+        
+
+        //printf ("_Matrix::CompressSparseMatrix %d\n%s\n%ld\n", transpose, _String ((_String*)sortedIndex3.toStr()).get_str(),max);
+        
+        /*if (max > (lDim<<4)) {
             sortedIndex2. Populate(sortedIndex.lLength,0,1);
             SortLists(&sortedIndex3,&sortedIndex2);
-        } else {
-            DeleteObject (sortedIndex3.CountingSort(-1, &sortedIndex2));
+        } else {*/
+            sortedIndex3.CountingSort(max+1, &sortedIndex2,false);
+        //}
+        
+       lDim = sortedIndex.lLength;
+
+       /*for (long i=0; i<sortedIndex.lLength; i++) {
+           //printf ("%ld %ld", i, theIndex[i]);
+           theIndex[i] = sortedIndex.list_data[sortedIndex2.list_data[i]];
+           theData[i]  = stash[sortedIndex2.list_data[i]];
+       }*/
+
+        if (compressedIndex) {
+            MatrixMemFree(compressedIndex);
         }
+        
+        compressedIndex = (long*) MatrixMemAllocate((lDim + firstDim) * sizeof (long));
+        
+        long              currentRow = 0;
+        lDim = sortedIndex.lLength;
 
         for (long i=0; i<sortedIndex.lLength; i++) {
-            theIndex[i] = sortedIndex.list_data[sortedIndex2.list_data[i]];
+            //printf ("%ld %ld", i, theIndex[i]);
+            long entryIndex = sortedIndex.list_data[sortedIndex2.list_data[i]];
+            theIndex[i] = entryIndex;
+            
+            long indexRow = entryIndex / secondDim,
+                 indexColumn = entryIndex - indexRow * secondDim;
+ 
+            //printf ("[%ld] %ld %ld %ld\n", i, indexRow, indexColumn, currentRow);
+
+            compressedIndex[i + firstDim] = indexColumn;
+            if (indexRow > currentRow) {
+                for (long l = currentRow; l < indexRow; l++) {
+                    compressedIndex[l] = i;
+                }
+                //printf (">[%ld] %ld\n", currentRow, compressedIndex[currentRow]);
+                currentRow = indexRow;
+            } /*else {
+                if (currentRow > indexRow) {
+                    printf ("\n\n\nBARF\n\n\n");
+                }
+            }*/
+            
+            //printf (" %ld\n", theIndex[i]);
             theData[i]  = stash[sortedIndex2.list_data[i]];
         }
+        compressedIndex[firstDim-1] = lDim;
+        //printf (">[%ld] %ld\n", firstDim-1, compressedIndex[firstDim-1]);
+        //exit (1);
 
-        lDim = sortedIndex.lLength;
     }
 }
 
@@ -4747,14 +5013,14 @@ _Matrix*        _Matrix::ExtractElementsByEnumeration (_SimpleList*h, _SimpleLis
 
 
 //_____________________________________________________________________________________________
-HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
+HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cache) {
   if (!p) {
     HandleApplicationError ( kErrorStringInvalidMatrixIndex );
-    return new _Constant (0.0);
+    return _returnConstantOrUseCache (0., cache);
   }
   
   if (hDim <= 0L || vDim <= 0L) {
-    return new _Constant (0.0);
+    return _returnConstantOrUseCache (0., cache);
   }
   
   if (p->ObjectClass() == MATRIX) {
@@ -5050,40 +5316,40 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2) {
   
   if (ind1<0 || ind1>=hDim || ind2>=vDim) {
     MatrixIndexError     (ind1,ind2,hDim,vDim);
-    return new _Constant (0.0);
+    return _returnConstantOrUseCache (0., cache);
   }
   
   if (ind2>=0) { // element access
-    return GetMatrixCell (ind1, ind2);
+    return GetMatrixCell (ind1, ind2, cache);
   }
   
-  return new _Constant (0.0);
+  return _returnConstantOrUseCache (0., cache);
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef _Matrix::GetMatrixCell (long ind1, long ind2) const {
-    if (storageType == _FORMULA_TYPE) { // formulas
+HBLObjectRef _Matrix::GetMatrixCell (long ind1, long ind2, HBLObjectRef cache) const {
+    if (is_expression_based()) { // formulas
       if (!theIndex) {
         _Formula * entryFla = (((_Formula**)theData)[ind1*vDim+ind2]);
         if (entryFla) {
           return (HBLObjectRef)entryFla->Compute()->makeDynamic();
         } else {
-          return new _Constant (0.0);
+          return _returnConstantOrUseCache (0., cache);
         }
       } else {
         long p = Hash (ind1, ind2);
         if (p<0) {
-          return new _Constant (0.0);
+          return _returnConstantOrUseCache (0., cache);
         } else {
           return (HBLObjectRef)(((_Formula**)theData)[p])->Compute()->makeDynamic();
         }
       }
     } else {
-      if (storageType == 1) {
+      if (is_numeric()) {
         if (theIndex) {
-          return new _Constant ((*this)(ind1,ind2));
+          return _returnConstantOrUseCache ((*this)(ind1,ind2), cache);
         } else {
-          return new _Constant (theData[ind1*vDim+ind2]);
+          return _returnConstantOrUseCache (theData[ind1*vDim+ind2], cache);
         }
         
       } else {
@@ -5148,8 +5414,7 @@ _Formula* _Matrix::GetFormula (long ind1, long ind2) const {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef _Matrix::MCoord (HBLObjectRef p, HBLObjectRef p2)
-{
+HBLObjectRef _Matrix::MCoord (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cachedResult) {
     long ind1 = -1L,
          ind2 = -1L;
 
@@ -5179,12 +5444,18 @@ HBLObjectRef _Matrix::MCoord (HBLObjectRef p, HBLObjectRef p2)
         ind2 = ind1%vDim;
         ind1 = ind1/vDim;
     }
-
-    _Matrix * res = new _Matrix (1L,2L,false,true);
-    if (res) {
-        res->theData[0]=ind1;
-        res->theData[1]=ind2;
+    _Matrix * res = nil;
+    if (cachedResult && cachedResult->ObjectClass() == MATRIX) {
+        res = (_Matrix*)cachedResult;
+        if (!(res->is_numeric() && res->check_dimension(1,2))){
+            res = nil;
+        }
     }
+    if (!res)
+        res = new _Matrix (1L,2L,false,true);
+
+    res->theData[0]=ind1;
+    res->theData[1]=ind2;
     return res;
 
 }
@@ -5241,8 +5512,7 @@ bool _Matrix::CheckCoordinates (long& ind1, long& ind2)
 
 
 //_____________________________________________________________________________________________
-void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode)
-{
+void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode) {
     if (ind2>=0) { // element storage
         if (storageType == 2) { // formulas
             if (opCode == HY_OP_CODE_ADD) {
@@ -5260,6 +5530,37 @@ void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode)
             } else {
                 HBLObjectRef res = f.Compute();
                 hyFloat toStore = res->Value();
+                if (opCode == HY_OP_CODE_ADD) {
+                    toStore += (*this)(ind1,ind2);
+                }
+                Store(ind1,ind2,toStore);
+            }
+        }
+    }
+}
+
+//_____________________________________________________________________________________________
+void _Matrix::MStore (long ind1, long ind2, HBLObjectRef value, long opCode) {
+    if (ind2>=0) { // element storage
+        if (is_expression_based()) { // formulas
+            value->AddAReference();
+            if (opCode == HY_OP_CODE_ADD) {
+                _Formula * addOn = GetFormula(ind1,ind2);
+                if (addOn) {
+                    StoreFormula (ind1,ind2,*_Formula::PatchFormulasTogether(*addOn, value, HY_OP_CODE_ADD),false);
+                    return;
+                }
+            }
+            _Formula * f = new _Formula (value);
+            StoreFormula (ind1,ind2,*f,false);
+        } else {
+            if (value->ObjectClass() != NUMBER) {
+                Convert2Formulas();
+                value->AddAReference();
+                _Formula * f = new _Formula (value);
+                StoreFormula (ind1,ind2,*f,false);
+            } else {
+                hyFloat toStore = value->Value();
                 if (opCode == HY_OP_CODE_ADD) {
                     toStore += (*this)(ind1,ind2);
                 }
@@ -5288,8 +5589,7 @@ void _Matrix::MStore (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef poly)
 
 }
 //_____________________________________________________________________________________________
-void _Matrix::MStore (long ind1, long ind2, HBLObjectRef poly)
-{
+void _Matrix::MStore (long ind1, long ind2, HBLObjectRef poly) {
     if (ind2>=0) { // element storage
         if (storageType == 0) { // formulas
             StoreObject (ind1,ind2,poly,true);
@@ -5685,7 +5985,7 @@ void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
                             }
                             long h = Hash (r,j);
                             if (h>=0) {
-                                _Polynomial * temp = (_Polynomial *)diag.Sub(tempStorage[h]);
+                                _Polynomial * temp = (_Polynomial *)diag.Sub(tempStorage[h], nil);
                                 diag.Duplicate (temp);
                                 DeleteObject (temp);
                             }
@@ -5721,7 +6021,7 @@ void        _Matrix::ConvertFormulas2Poly (bool force2numbers)
                         if (j==i) {
                             continue;
                         }
-                        _Polynomial * temp = (_Polynomial *)diag.Sub(tempStorage[j]);
+                        _Polynomial * temp = (_Polynomial *)diag.Sub(tempStorage[j], nil);
                         diag.Duplicate (temp);
                         DeleteObject (temp);
                     }
@@ -5911,7 +6211,7 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index) {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::SortMatrixOnColumn (HBLObjectRef mp)
+HBLObjectRef       _Matrix::SortMatrixOnColumn (HBLObjectRef mp, HBLObjectRef cache)
 {
     if (storageType!=1) {
         HandleApplicationError  ("Only numeric matrices can be sorted");
@@ -5970,7 +6270,7 @@ HBLObjectRef       _Matrix::SortMatrixOnColumn (HBLObjectRef mp)
     }
 
     theColumn.RecursiveIndexSort (0, hDim-1, &idx);
-    _Matrix                 *result     = new _Matrix (hDim, vDim, theIndex, 1);
+    _Matrix                 *result     = (_Matrix*)_returnMatrixOrUseCache(hDim, vDim, _NUMERICAL_TYPE, theIndex, cache);
 
     if (theIndex) {
         _SimpleList    revIdx (hDim,0,1);
@@ -6000,9 +6300,9 @@ HBLObjectRef       _Matrix::SortMatrixOnColumn (HBLObjectRef mp)
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::PoissonLL (HBLObjectRef mp)
+HBLObjectRef       _Matrix::PoissonLL (HBLObjectRef mp, HBLObjectRef cache)
 {
-    if (storageType!=1) {
+    if (!is_numeric()) {
         HandleApplicationError ("Only numeric matrices can be passed to Poisson Log-Likelihood");
         return new _MathObject;
     }
@@ -6058,12 +6358,12 @@ HBLObjectRef       _Matrix::PoissonLL (HBLObjectRef mp)
 
     delete      [] logFactorials;
 
-    return new _Constant (loglik);
+    return _returnConstantOrUseCache(loglik, cache);
 }
 
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp) {
+HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp, HBLObjectRef cache) {
     try {
         _Matrix                 *m          = nil;
 
@@ -6106,10 +6406,10 @@ HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp) {
             if (t>0.0) {
                 res += log (t);
             } else {
-                return new _Constant (-1.e300);
+                return _returnConstantOrUseCache(-1.e300, cache);
             }
-            return new _Constant (res);
         }
+        return _returnConstantOrUseCache(res, cache);
     } catch (const _String& err) {
         HandleApplicationError  (err);
         return new _MathObject;
@@ -6118,7 +6418,7 @@ HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp) {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::pFDR (HBLObjectRef classes) {
+HBLObjectRef       _Matrix::pFDR (HBLObjectRef classes, HBLObjectRef cache) {
     try {
         long            steps     = 20,
                         iter_count = 500;
@@ -6196,16 +6496,15 @@ HBLObjectRef       _Matrix::pFDR (HBLObjectRef classes) {
                 minMSE = mse;
                 uberPFDR = pFDRs.theData[k];
                 _Constant  zer (0.0);
-                _Matrix* sorted = (_Matrix*)ITpDFR.SortMatrixOnColumn (&zer);
+                _Matrix* sorted = (_Matrix*)ITpDFR.SortMatrixOnColumn (&zer, nil);
                 uberPFDRUpperLimit = sorted->theData[((long)(0.95*iter_count))];
                 DeleteObject (sorted);
             }
         }
 
-        _Matrix * resMx = new _Matrix(2,1,false,true);
+        _Matrix * resMx = (_Matrix *) _returnMatrixOrUseCache (2,1,_NUMERICAL_TYPE,false, cache);
         resMx->theData[0] = uberPFDR;
         resMx->theData[1] = uberPFDRUpperLimit;
-
         return resMx;
     } catch (const _String& err) {
         HandleApplicationError  (err);
@@ -6248,7 +6547,7 @@ hyFloat      _Matrix::computePFDR (hyFloat lambda, hyFloat gamma)
 
 //_____________________________________________________________________________________________
 
-HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
+HBLObjectRef _Matrix::Random (HBLObjectRef kind, HBLObjectRef cache) {
 
     try {
         long columns = GetVDim(),
@@ -6267,7 +6566,7 @@ HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
 
 
             if (is_numeric()) {   // numeric matrix
-                _Matrix * res = new _Matrix (rows, columns,theIndex != nil,true);
+                _Matrix * res = (_Matrix *)_returnMatrixOrUseCache(rows, columns,_NUMERICAL_TYPE, theIndex != nil,cache);
 
                 if (is_dense())
                     for (unsigned long vv = 0; vv<lDim; vv+=columns)
@@ -6366,7 +6665,7 @@ HBLObjectRef _Matrix::Random (HBLObjectRef kind) {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes) {
+HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes, HBLObjectRef cache) {
     // K-means clustering on scalar data
     /*
      
@@ -6416,7 +6715,7 @@ HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes) {
             throw _String ("More clusters requested than available data points");
         }
 
-        _Matrix * res = new _Matrix (2, cluster_count, false, true);
+        _Matrix * res = (_Matrix*)_returnMatrixOrUseCache(2, cluster_count, _NUMERICAL_TYPE, false, cache);
 
         if (cluster_count == 1L) {
             hyFloat sampleMean    = 0.,
@@ -6527,8 +6826,10 @@ HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes) {
               for (long k2 = 0; k2 < cluster_count; k2++) {
                 res->theData[k2] = best_cluster_means.get (k2, 0);
             }
+            
             res->theData[cluster_count]   = minError;
             res->theData[cluster_count+1] = hit_min_error;
+            return res;
         }
     } catch (_String const& err) {
         HandleApplicationError (err);
@@ -6546,40 +6847,24 @@ void            _Matrix::PopulateConstantMatrix (hyFloat v) {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::AddObj (HBLObjectRef mp)
+HBLObjectRef       _Matrix::AddObj (HBLObjectRef mp, HBLObjectRef cache)
 {
     if (_Matrix::ObjectClass()!=mp->ObjectClass()) {
         if (mp->ObjectClass () == STRING) {
             _FormulaParsingContext def;
             _Matrix * convMatrix = new _Matrix (((_FString*)mp)->get_str(), false, def),
             * res;
-            res = (_Matrix*)AddObj (convMatrix);
+            res = (_Matrix*)AddObj (convMatrix, cache);
             DeleteObject (convMatrix);
             return res;
         }
         if (mp->ObjectClass () == NUMBER) {
             _Matrix* aNum = (_Matrix*)ComputeNumeric ();
-            if (aNum->storageType == 1) {
-                _Matrix * plusStuff = new _Matrix (hDim,vDim,false,true);
-                hyFloat plusValue = mp->Value();
-
-                if (theIndex) {
-                    for (long k=0; k<hDim*vDim; k++) {
-                        plusStuff->theData[k] = plusValue;
-                    }
-
-                    for (long l=0; l<lDim; l++) {
-                        long rI = theIndex[l];
-                        if (rI>0) {
-                            plusStuff->theData[rI] += theData[l];
-                        }
-                    }
-                } else
-                    for (long r=0; r<lDim; r++) {
-                        plusStuff->theData[r] = theData[r] + plusValue;
-                    }
-
-                return plusStuff;
+            
+            hyFloat pValue = mp->Value();
+            
+            if (aNum->is_numeric()) {
+                return ApplyScalarOperation ([=] (hyFloat h) -> hyFloat {return h + pValue;}, cache);
             }
         }
 
@@ -6589,7 +6874,7 @@ HBLObjectRef       _Matrix::AddObj (HBLObjectRef mp)
 
     _Matrix * m = (_Matrix*)mp;
     AgreeObjects (*m);
-    _Matrix * result = new _Matrix (hDim, vDim, theIndex && m->theIndex , storageType);
+    _Matrix * result = (_Matrix *)_returnMatrixOrUseCache( hDim, vDim, storageType, theIndex && m->theIndex, cache);
     AddMatrix (*result,*m);
     return result;
 }
@@ -6675,7 +6960,7 @@ bool       _Matrix::Equal(HBLObjectRef mp)
 
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::SubObj (HBLObjectRef mp)
+HBLObjectRef       _Matrix::SubObj (HBLObjectRef mp, HBLObjectRef cache)
 {
     if (mp->ObjectClass()!=ObjectClass()) {
         HandleApplicationError ( kErrorStringIncompatibleOperands );
@@ -6684,8 +6969,7 @@ HBLObjectRef       _Matrix::SubObj (HBLObjectRef mp)
 
     _Matrix * m = (_Matrix*)mp;
     AgreeObjects (*m);
-    _Matrix * result = new _Matrix (hDim, vDim, bool( theIndex && m->theIndex ), storageType);
-    
+    _Matrix * result = (_Matrix*) _returnMatrixOrUseCache(hDim, vDim, storageType,theIndex && m->theIndex, cache);
     Subtract (*result,*m);
     return result;
 }
@@ -6751,8 +7035,7 @@ void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalSt
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::MultObj (HBLObjectRef mp)
-{
+HBLObjectRef       _Matrix::MultObj (HBLObjectRef mp, HBLObjectRef cache) {
   
   if (mp->ObjectClass()!=ObjectClass()) {
     if (mp->ObjectClass()!=NUMBER) {
@@ -6768,15 +7051,14 @@ HBLObjectRef       _Matrix::MultObj (HBLObjectRef mp)
   if (!CheckDimensions (*m)) return new _MathObject;
   AgreeObjects    (*m);
   
-  _Matrix*      result = new _Matrix (hDim, m->vDim, false, storageType);
-  
+  _Matrix*      result = (_Matrix*) _returnMatrixOrUseCache(hDim, m->vDim, storageType, false, cache);
   Multiply      (*result,*m);
   return        result;
   
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef       _Matrix::MultElements (HBLObjectRef mp, bool elementWiseDivide) {
+HBLObjectRef       _Matrix::MultElements (HBLObjectRef mp, bool elementWiseDivide, HBLObjectRef cache) {
     
     if (mp->ObjectClass()!=ObjectClass()) {
         HandleApplicationError ( kErrorStringIncompatibleOperands );
@@ -6784,8 +7066,7 @@ HBLObjectRef       _Matrix::MultElements (HBLObjectRef mp, bool elementWiseDivid
     }
     
     _Matrix* m = (_Matrix*)mp;
-    
-    
+
     bool by_column = false;
     // if the second argument has dimension 1xcolumns of the first matrix, then
     // result [i][j] is assigned this [i][j] * / argument [0][j]
@@ -6810,12 +7091,12 @@ HBLObjectRef       _Matrix::MultElements (HBLObjectRef mp, bool elementWiseDivid
         }
     }
     
-    if (storageType!=1 || m->storageType != 1) {
+    if (! is_numeric() || ! m->is_numeric() ) {
         HandleApplicationError ("Element-wise multiplication/division only works on numeric matrices");
         return new _Matrix (1,1);
     }
     
-    _Matrix*      result = new _Matrix (GetHDim(), m->GetVDim(), false, true);
+    _Matrix*      result = (_Matrix*) _returnMatrixOrUseCache(GetHDim(), m->GetVDim(), _NUMERICAL_TYPE, false, cache);
     
     if (theIndex || m->theIndex) {
         auto operation = elementWiseDivide ? DivNumbers : MultNumbers;
@@ -7461,7 +7742,7 @@ _List*      _Matrix::ComputeRowAndColSums (void) {
 
 //_____________________________________________________________________________________________
 
-_Matrix* _Matrix::NeighborJoin (bool methodIndex)
+_Matrix* _Matrix::NeighborJoin (bool methodIndex, HBLObjectRef cache)
 {
     long          specCount = GetHDim();
 
@@ -7476,10 +7757,10 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
     _SimpleList          useColumn     (specCount,0,1),
                          columnIndex   (specCount,0,1);
 
-    _Matrix*             res = new _Matrix         ((specCount+1)*2,3,false,true);
+    _Matrix*             res = (_Matrix* )_returnMatrixOrUseCache((specCount+1)*2,3,_NUMERICAL_TYPE,false,cache);
 
-    for (long k=0; k<specCount ; k=k+1) {
-        for (long j=0; j<k; j=j+1) {
+    for (long k=0; k<specCount ; k++) {
+        for (long j=0; j<k; j++) {
             hyFloat d = theData[j*specCount+k];
 
             netDivergence.theData[k] += d;
@@ -7669,7 +7950,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex)
 }
 
 //_____________________________________________________________________________________________
-_Matrix*        _Matrix::MakeTreeFromParent (long specCount) {
+_Matrix*        _Matrix::MakeTreeFromParent (long specCount, HBLObjectRef cache) {
     if (is_empty()) {
         return new _Matrix;
     }
@@ -7688,8 +7969,8 @@ _Matrix*        _Matrix::MakeTreeFromParent (long specCount) {
         }
 
         const long result_rows = 2*(specCount+1);
-        _Matrix     *tree = new _Matrix (result_rows,5,false,true),
-        CI  (2*(specCount+1),1,false,true);
+        _Matrix     *tree = (_Matrix* )_returnMatrixOrUseCache(result_rows,5,_NUMERICAL_TYPE,false,cache),
+                    CI  (2*(specCount+1),1,false,true);
 
 
         for (long kk = 0; kk < specCount-1; kk++) {
@@ -8296,7 +8577,7 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
             throw _String ("Expecting numerical Nx2 (with N>=1) matrix.");
         } else {
             _Constant one (1.);
-            sorted = (_Matrix*) eval->SortMatrixOnColumn(&one);
+            sorted = (_Matrix*) eval->SortMatrixOnColumn(&one, nil);
             reference_manager < sorted;
             hyFloat      sum = 0.;
 
@@ -8375,7 +8656,7 @@ HBLObjectRef   _Matrix::InverseWishartDeviate (_Matrix & df)
             // compute Cholesky factor for this matrix inverse, extract the diagonal
             _List   reference_manager;
             
-            _Matrix * inv       = (_Matrix *) Inverse();
+            _Matrix * inv       = (_Matrix *) Inverse(nil);
             _Matrix * invCD     = (_Matrix *) (inv->CholeskyDecompose());
             
             DeleteObject (inv);
@@ -8466,5 +8747,22 @@ HBLObjectRef   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
         HandleApplicationError(err);
     }
     return new _Matrix;
+}
+
+//-----------------------------------------------------------------------------------------------------------------
+
+HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_sparse, HBLObjectRef cache) {
+    if (cache && cache->ObjectClass() == MATRIX) {
+        _Matrix *cached_mx = (_Matrix*)cache;
+        if (cached_mx->check_dimension(nrow, ncol) && cached_mx->has_type (type) && cached_mx->is_dense() == !is_sparse) {
+            cached_mx->Clear(false);
+        } else {
+            cached_mx->Clear();
+            _Matrix::CreateMatrix (cached_mx, nrow, ncol, is_sparse, type == _NUMERICAL_TYPE ? true : false);
+        }
+        cached_mx->AddAReference();
+        return cached_mx;
+    }
+    return new _Matrix (nrow, ncol, is_sparse, type == _NUMERICAL_TYPE ? true : false);
 }
 

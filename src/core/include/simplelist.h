@@ -676,7 +676,7 @@ class _SimpleList:public BaseObj {
         *
         */
     
-        _SimpleList* CountingSort(long, _SimpleList* = nil);
+        _SimpleList* CountingSort(long, _SimpleList* = nil, bool wantResult = true);
 
         void BubbleSort(void);
         void QuickSort(long, long);

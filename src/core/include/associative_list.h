@@ -75,7 +75,7 @@ public:
      */
 
     virtual BaseRef     toStr           (unsigned long = 0UL);
-    virtual HBLObjectRef   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual HBLObjectRef   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext, HBLObjectRef cache = nil);
     // execute this operation with the list of Args
     virtual BaseRef     makeDynamic     (void) const;
     virtual HBLObjectRef   Compute         (void);
@@ -93,14 +93,14 @@ public:
     virtual bool        Equal               (HBLObjectRef);
 
     virtual void        Duplicate           (BaseRefConst);
-    HBLObjectRef           Random           (HBLObjectRef);
+    HBLObjectRef           Random           (HBLObjectRef, HBLObjectRef cache);
     /* Randomize key - value assignments, sampling values with
         (argument is truthy) or without replacement
      
      */
-    HBLObjectRef           MAccess          (HBLObjectRef);
+    HBLObjectRef           MAccess          (HBLObjectRef,HBLObjectRef cache);
 
-    HBLObjectRef           MIterator        (HBLObjectRef, HBLObjectRef);
+    HBLObjectRef           MIterator        (HBLObjectRef, HBLObjectRef, HBLObjectRef cache);
     /* perform a function call (ID stored in the first argument)
        having performed [an optional] conditional check on the associated key (either empty for noop or a function ID)
        Both functional IDs MUST be defined and take TWO and ONE argumens respectively
@@ -114,7 +114,7 @@ public:
     HBLObjectRef           GetByKey        (long, long) const;
     void                   DeleteByKey     (HBLObjectRef);
     void                   DeleteByKey     (_String const&);
-    HBLObjectRef           MCoord          (HBLObjectRef);
+    HBLObjectRef           MCoord          (HBLObjectRef, HBLObjectRef);
     bool                   MStore          (_String*,     HBLObjectRef, bool = true, long = HY_OP_CODE_NONE);
     void                   MStore          (HBLObjectRef, HBLObjectRef, bool = true, long = HY_OP_CODE_NONE);
     // SLKP 20100811: see the comment for _Matrix::MStore
@@ -153,14 +153,14 @@ public:
      * All values that cannot be cast to a float will be treated as 0.
      * @return The sum of all dictionary elements.
      */
-    HBLObjectRef           Sum             (void);
+    HBLObjectRef           Sum             (HBLObjectRef cache);
     /**
      * Traverse the dictionary, and return { "key" : key, "value" : min / max over the list}
      * All values that cannot be cast to a float will be IGNORED.
      * If no valid numbers could be found, "key" will be None, and min/max will be an +/-Inf
      * @return The minimum or maximum numeric value and corresponding key
      */
-    HBLObjectRef           ExtremeValue    (bool do_mimimum) const;
+    HBLObjectRef           ExtremeValue    (bool do_mimimum, HBLObjectRef cache) const;
     
     /**
      Added 20180902 as a convenience function; throws a const _String error if key is of wrong type

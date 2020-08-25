@@ -185,7 +185,7 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
                     temp *= yb;
                     mu += temp;
 
-                    _Matrix     * tauinv = (_Matrix *) tau.Inverse();
+                    _Matrix     * tauinv = (_Matrix *) tau.Inverse(nil);
                     temp = *tauinv;
                     temp *= mu;
                     mu = temp;
@@ -220,7 +220,7 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
                     rec << "}},{'PDF':'InverseWishart','ARG0':{{";
                     rec << _String(rho);
                     rec << "}}})*";
-                    rec << _String((_String*)tau.Inverse()->toStr());
+                    rec << _String((_String*)tau.Inverse(nil)->toStr());
                     rec << "})\"";
 
                     if (pa < num_parent_combos-1) {
@@ -569,7 +569,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix const& yb, _Matrix cons
       if (tau.check_dimension(1L,1L)) {
         temp_mat *= 1./(tau(0,0)); // just use scalar multiplication of the reciprocal
       } else {
-        _Matrix * tauinv = (_Matrix *) tau.Inverse();
+        _Matrix * tauinv = (_Matrix *) tau.Inverse(nil);
         temp_mat *= *tauinv;
         DeleteObject (tauinv);
       }
@@ -600,7 +600,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix const& yb, _Matrix cons
     
     //ReportWarning (_String("BottcherScore() calling Eigensystem on matrix ") & (_String *) temp_mat.toStr() );
     
-      _AssociativeList *  eigen       = (_AssociativeList *) temp_mat.Eigensystem();
+      _AssociativeList *  eigen       = (_AssociativeList *) temp_mat.Eigensystem(nil);
     
     // sometimes the eigendecomposition fails
       if ( eigen->countitems() == 0 ) {
@@ -635,7 +635,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix const& yb, _Matrix cons
 
       temp_mat = next_mat;
     
-      _Matrix * scaleinv = (_Matrix *) scale.Inverse();
+      _Matrix * scaleinv = (_Matrix *) scale.Inverse(nil);
       temp_mat *= *scaleinv;  // N x N
       DeleteObject (scaleinv);
     
