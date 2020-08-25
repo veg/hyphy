@@ -1856,7 +1856,7 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                           *diff        = nil;
 
                   if (cachedArg->ObjectClass() == MATRIX) {
-                      diff =  (_Matrix*)cachedArg->SubObj(currentArg);
+                      diff =  (_Matrix*)cachedArg->SubObj(currentArg, nil);
                   }
 
                   if (diff && diff->MaxElement() <= 1e-12) {
@@ -1952,7 +1952,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                                 *diff        = nil;
 
                         if (cachedArg->ObjectClass() == MATRIX) {
-                            diff =  (_Matrix*)cachedArg->SubObj(currentArg);
+                            diff =  (_Matrix*)cachedArg->SubObj(currentArg, nil);
                         }
 
                         bool    no_difference = diff && diff->MaxElement() <= 1e-12;
@@ -1993,7 +1993,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
         } else {
 
             for (unsigned long i=startAt; i< term_count; i++) {
-                  if (!ItemAt (i)->Execute(*scrap_here, nameSpace, errMsg)) {
+                  if (!ItemAt (i)->Execute(*scrap_here, nameSpace, errMsg, call_count == 1)) {
                       wellDone = false;
                       break;
                   }
@@ -2090,6 +2090,15 @@ _Formula* _Formula::PatchFormulasTogether (const _Formula& op1, const _Formula& 
     _Formula * result = new _Formula;
     result->DuplicateReference(&op1);
     result->DuplicateReference(&op2);
+    result->theFormula.AppendNewInstance(new _Operation (op_code, 2));
+    return result;
+}
+
+//__________________________________________________________________________________
+_Formula* _Formula::PatchFormulasTogether (const _Formula& op1, HBLObjectRef op2, const char op_code) {
+    _Formula * result = new _Formula;
+    result->DuplicateReference(&op1);
+    result->theFormula.AppendNewInstance(new _Operation (op2));
     result->theFormula.AppendNewInstance(new _Operation (op_code, 2));
     return result;
 }

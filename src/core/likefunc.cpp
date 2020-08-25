@@ -4917,7 +4917,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 });
                 arguments < new _Constant (maxSoFar) < parameters;
 
-                HBLObjectRef convegence_check = custom_convergence_callback_name->Call (&arguments, nil);
+                HBLObjectRef convegence_check = custom_convergence_callback_name->Call (&arguments, nil, nil);
                 
                 if (convegence_check->Value () <= precision/termFactor) {
                     inCount ++;
@@ -5375,7 +5375,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     }
                     return -2;
                 } else {
-                    middle=MAX(upperBound-2.*rightStep,lowerBound+leftStep);
+                    middle=MAX(upperBound-2.0*rightStep,lowerBound+leftStep);
                     first = false;
                 }
             }
@@ -6042,7 +6042,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
             SetIthIndependent (useIndirectIndexing?parameterList->list_data[parameter_count]:parameter_count,t1);
         }
     }
-    return hessian.Inverse();
+    return hessian.Inverse(nil);
     //return (_Matrix*)hessian.makeDynamic();
 }
 
@@ -7100,7 +7100,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
     };
     
     auto resort_values = [&zero] (_Matrix& v) -> void {
-        _Matrix *sorted = (_Matrix *)v.SortMatrixOnColumn(&zero);
+        _Matrix *sorted = (_Matrix *)v.SortMatrixOnColumn(&zero, nil);
         v = *sorted;
         DeleteObject (sorted);
     };
@@ -10507,7 +10507,7 @@ long    _LikelihoodFunction::SequenceCount (long partID)
 {
     if ((partID>=0)&&(partID<theTrees.lLength)) {
         _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(partID))));
-        HBLObjectRef  seqs = cT->TipCount();
+        HBLObjectRef  seqs = cT->TipCount(nil);
         long res = seqs->Value();
         DeleteObject (seqs);
         return res;

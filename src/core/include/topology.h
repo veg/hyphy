@@ -138,7 +138,7 @@ protected:
         @return whether or not the nodes are equal
     */
     bool            internalNodeCompare                 (node<long>* n1, node<long>*, _SimpleList& subTreeMap, _SimpleList* reindexer, bool cangoup, long totalSize, node<long>* n22, _TreeTopology const* tree2, bool isPattern = false) const;
-    virtual HBLObjectRef       FlatRepresentation                  (void);
+    virtual HBLObjectRef       FlatRepresentation                  (HBLObjectRef cache);
     void            FindCOTHelper                       (node<long>*, long, _Matrix&, _Matrix&, _Matrix&, _List&, _AVLListX&, hyFloat);
     void            FindCOTHelper2                      (node<long>*, _Matrix&, _Matrix&, _AVLListX&, node<long>*, hyFloat);
     static          const   _TreeTopologyParseSettings  CollectParseSettings (void);
@@ -196,32 +196,30 @@ public:
 
     virtual                 ~_TreeTopology                      (void);
 
-    virtual  _FString*      Compare                             (HBLObjectRefConst) const;
+    virtual  _FString*      Compare                             (HBLObjectRefConst, HBLObjectRef cache) const;
     virtual  BaseRef        makeDynamic                         (void) const;
     node<long>* CopyTreeStructure                   (node<long>*, bool) const;
     virtual  _String           FinalizeNode                        (node<long>*, long, _String, _String const&, _String&, _TreeTopologyParseSettings const & settings);
 
 
-    virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext,HBLObjectRef cache = nil);
     virtual void            EdgeCount                           (long&, long&) const;
     // SLKP 20100827: a utility function to count edges in a tree
     //              : note that the root node WILL be counted as an internal node
     //              : writes [leaf count, internal node count] into the arguments
 
-    virtual HBLObjectRef       TipCount                            (void);
-    virtual HBLObjectRef       BranchCount                         (void);
-    virtual HBLObjectRef       AVLRepresentation                   (HBLObjectRef);
-    virtual unsigned long   ObjectClass                         (void) const {
+    virtual HBLObjectRef       TipCount                            (HBLObjectRef cache);
+    virtual HBLObjectRef       BranchCount                         (HBLObjectRef cache);
+    virtual HBLObjectRef       AVLRepresentation                   (HBLObjectRef, HBLObjectRef cache);
+    virtual unsigned long      ObjectClass                         (void) const {
         return TOPOLOGY;
     }
     virtual bool IsDegenerate(void) const { return theRoot && theRoot->get_num_nodes() == 1L && theRoot->go_down(1)->get_num_nodes() == 0L; }
   
  
-    virtual _AssociativeList*
-    FindCOT                             (HBLObjectRef);
+    virtual _AssociativeList*           FindCOT                             (HBLObjectRef,HBLObjectRef cache);
 
-    virtual HBLObjectRef
-    MaximumParsimony                    (HBLObjectRef);
+    virtual HBLObjectRef                MaximumParsimony                    (HBLObjectRef,HBLObjectRef cache);
 
     node<long>      *FindNodeByName                     (_String const*) const;
     /*
@@ -264,7 +262,7 @@ public:
     const _List     RetrieveNodeNames                   (bool doTips, bool doInternals, int travseralType) const;
     void            SubTreeString                       (node<long>* root, _StringBuffer & result, _TreeTopologyParseSettings const& settings, bool all_names = false, hyTopologyBranchLengthMode mode = kTopologyBranchLengthNone, long branch_length_variable = -1, _AVLListXL * substitutions  = nil) const;
 
-    virtual HBLObjectRef       RandomizeTips            (HBLObjectRef);
+    virtual HBLObjectRef       RandomizeTips            (HBLObjectRef, HBLObjectRef cache);
     /**
         Shuffle the order of tips in the tree by permuting the order of children of
         each node with certain probability
@@ -276,16 +274,17 @@ public:
         Returns a Topology object representing the reshuffled tree
      */
 
-    _String         CompareTrees                        (_TreeTopology*) const;
-    const _String         MatchTreePattern                    (_TreeTopology const*) const;
-    virtual HBLObjectRef       TipName                             (HBLObjectRef);
-    HBLObjectRef       TreeBranchName                          (HBLObjectRef node_ref, bool get_subtree = false, HBLObjectRef mapping_mode = nil);
-    virtual HBLObjectRef       BranchLength                        (HBLObjectRef);
-    virtual HBLObjectRef       RerootTree                          (HBLObjectRef);
-    _List*          SplitTreeIntoClusters               (unsigned long, unsigned long) const;
-    _String  const       DetermineBranchLengthMappingMode    (_String const*, hyTopologyBranchLengthMode&) const;
-    _AssociativeList*
-    SplitsIdentity                      (HBLObjectRef) const;
+    _String                     CompareTrees                        (_TreeTopology*) const;
+    const _String               MatchTreePattern                    (_TreeTopology const*) const;
+    virtual HBLObjectRef        TipName                             (HBLObjectRef,HBLObjectRef cache);
+    //HBLObjectRef                TreeBranchName                      (HBLObjectRef node_ref, bool get_subtree = false, HBLObjectRef mapping_mode = nil);
+    HBLObjectRef                TreeBranchName                      (HBLObjectRef node_ref, bool get_subtree, HBLObjectRef mapping_mode, HBLObjectRef cache);
+    virtual HBLObjectRef        BranchLength                        (HBLObjectRef,HBLObjectRef cache);
+    virtual HBLObjectRef        RerootTree                          (HBLObjectRef, HBLObjectRef cache);
+    _List*                      SplitTreeIntoClusters               (unsigned long, unsigned long) const;
+    _String  const              DetermineBranchLengthMappingMode    (_String const*, hyTopologyBranchLengthMode&) const;
+    _AssociativeList*           SplitsIdentity                      (HBLObjectRef, HBLObjectRef cache) const;
+    
     /* 20090609: SLKP
         given a tree agrument (p), the function returns an AVL with a 2x1 matrix (key "CLUSTERS")
         and a string (key "CONSENSUS");

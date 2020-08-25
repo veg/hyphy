@@ -491,7 +491,7 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                     if (i + kBLLookahead < parms.length()) {
                         char buffer [kBLLookahead+1];
                         memcpy (buffer, parms.get_str() + i + 1, kBLLookahead);
-                        buffer [kBLLookahead] = 1;
+                        buffer [kBLLookahead] = 0;
                         if (sscanf (buffer, "%lf%n", &length, &end_at) != 1) {
                             throw _String("Failed to read a number for the branch length following ':'");
                         }
@@ -946,18 +946,18 @@ void _TreeTopology::toFileStr(FILE* f, unsigned long padding) {
 
 //__________________________________________________________________________________
 
-HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
+HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context,HBLObjectRef cache) {
     const static _String kSplitNodeNames ("SPLIT_NODE_NAMES");
     
     switch (opCode) { // first check operations without arguments
         case HY_OP_CODE_ABS: // Abs
-            return FlatRepresentation();
+            return FlatRepresentation(cache);
         case HY_OP_CODE_BRANCHCOUNT: //BranchCount
-            return BranchCount();
+            return BranchCount(cache);
         case HY_OP_CODE_TIPCOUNT: // TipCount
-            return TipCount();
+            return TipCount(cache);
         case HY_OP_CODE_TYPE: // Type
-            return Type();
+            return Type(cache);
     }
     
     _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
@@ -966,22 +966,23 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
         switch (opCode) { // next check operations without arguments or with one argument
             case HY_OP_CODE_ADD: // +
                 if (!arg0) {
-                    return Sum();
+                    return Sum(cache);
                 }
                 AddANode (arg0);
-                return new _Constant (0.0);
+                return _returnConstantOrUseCache(0.0, cache);
+                
             case HY_OP_CODE_SUB:
                 if (!arg0) {
                     return new _MathObject;
                 }
                 RemoveANode (arg0);
-                return new _Constant (0.0);
+                return _returnConstantOrUseCache(0.0, cache);
         }
         
         if (arg0) {
             switch (opCode) { // operations that require exactly one argument
                 case HY_OP_CODE_MUL: // compute the strict consensus between T1 and T2
-                    return SplitsIdentity (arg0);
+                    return SplitsIdentity (arg0, cache);
                     
                 case HY_OP_CODE_LEQ: { // MatchPattern (<=)
                     
@@ -989,26 +990,26 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                         throw _String ("Invalid (not a tree/topology) 2nd argument is call to <= (MatchPattern) for trees/topologies.");
                     }
                     _String  res (((_TreeTopology*)arg0)->MatchTreePattern (this));
-                    return new _Constant (!res.BeginsWith("Unequal"));
+                    return _returnConstantOrUseCache (!res.BeginsWith("Unequal"), cache);
                 }
                 case HY_OP_CODE_EQ: // ==
-                    return  Compare(arg0);
+                    return  Compare(arg0,cache);
                 case HY_OP_CODE_BRANCHLENGTH: //BranchLength
-                    return BranchLength(arg0);
+                    return BranchLength(arg0,cache);
                 case HY_OP_CODE_BRANCHNAME: //BranchName
-                    return TreeBranchName(arg0);
+                    return TreeBranchName(arg0,false,nil,cache);
                 case HY_OP_CODE_TIPNAME: //BranchName
-                    return TipName(arg0);
+                    return TipName(arg0,cache);
                 case HY_OP_CODE_MIN: // COT (Min)
-                    return FindCOT (arg0);
+                    return FindCOT (arg0,cache);
                 case HY_OP_CODE_MAX: // Maximum parsimony
-                    return MaximumParsimony (arg0);
+                    return MaximumParsimony (arg0,cache);
                case HY_OP_CODE_REROOTTREE: // RerootTree
-                    return RerootTree(arg0);
+                    return RerootTree(arg0, cache);
                 case HY_OP_CODE_POWER: //^
-                    return AVLRepresentation (arg0);
+                    return AVLRepresentation (arg0, cache);
                 case HY_OP_CODE_RANDOM:
-                    return RandomizeTips (arg0);
+                    return RandomizeTips (arg0, cache);
                 case HY_OP_CODE_IDIV: { // Split ($) - 2nd argument
                     if (arg0->ObjectClass()!=NUMBER) {
                         throw _String ("Invalid (not a number) 2nd argument is call to $ (split)for trees.");
@@ -1016,7 +1017,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                     
                     _List ref_manager;
                     
-                    _Constant*  cc     = (_Constant*)TipCount();
+                    _Constant*  cc     = (_Constant*)TipCount(nil);
                     
                     ref_manager < cc;
                     
@@ -1071,7 +1072,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
             
             switch (opCode) {
                 case HY_OP_CODE_MACCESS: // MAccess
-                    return TreeBranchName (arg0,true, arg1);
+                    return TreeBranchName (arg0,true, arg1, cache);
             }
             
             
@@ -1081,7 +1082,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                         _StringBuffer  *tStr = new _StringBuffer  (1024UL);
                         SubTreeString (theRoot, *tStr, CollectParseSettings(), arg0->Compute()->Value() > 0.1 , arg1->Compute()->Value() > 0.1 ? kTopologyBranchLengthExpectedSubs : kTopologyBranchLengthNone, -1, nil);
                         tStr->TrimSpace();
-                        return new _FString (tStr);
+                        return _returnStringOrUseCache(tStr,cache);
                     }
                         
                 }
@@ -1200,7 +1201,7 @@ void _TreeTopology::FindCOTHelper2 (node<long>* aNode, _Matrix& branchSpans, _Ma
 
 //__________________________________________________________________________________
 
-HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
+HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters,HBLObjectRef cache) {
     static const _String
         kMPScore                ("score"),
         kMPLabels               ("labels"),
@@ -1419,7 +1420,7 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters) {
 }
 //__________________________________________________________________________________
 
-_AssociativeList* _TreeTopology::FindCOT (HBLObjectRef p) {
+_AssociativeList* _TreeTopology::FindCOT (HBLObjectRef p, HBLObjectRef cache) {
     // Find the Center of the Tree (COT) location
     // using an L_p metric (L_2 works well)
 
@@ -1780,19 +1781,19 @@ _AssociativeList* _TreeTopology::FindCOT (HBLObjectRef p) {
 
 //__________________________________________________________________________________
 
-_FString*    _TreeTopology::Compare (HBLObjectRefConst p) const {
+_FString*    _TreeTopology::Compare (HBLObjectRefConst p, HBLObjectRef cache) const {
 // compare tree topologies
     long objClass = p->ObjectClass();
 
     if (objClass==TREE || objClass==TOPOLOGY) {
         _String cmp = CompareTrees ((_TreeTopology*)p);
         if (cmp.BeginsWith(kCompareEqualWithReroot)) {
-            return new _FString (cmp.Cut(kCompareEqualWithReroot.length() + ((_TreeTopology*)p)->GetName()->length() + 1, cmp.length()-2), false);
+            return (_FString*)_returnStringOrUseCache(cmp.Cut(kCompareEqualWithReroot.length() + ((_TreeTopology*)p)->GetName()->length() + 1, cmp.length()-2), cache);
         } else if (cmp == kCompareEqualWithoutReroot) {
-            return new _FString (_String (' '), false);
+            return (_FString*)_returnStringOrUseCache (_String (' '), cache);
         }
     }
-    return new _FString;
+    return (_FString*)_returnStringOrUseCache (kEmptyString, cache);
 }
 
 
@@ -2098,21 +2099,21 @@ void _TreeTopology::EdgeCount (long& leaves, long& internals) const {
 
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::TipCount (void) {
+HBLObjectRef _TreeTopology::TipCount (HBLObjectRef cache) {
     long leaves, ints;
     EdgeCount (leaves, ints);
-    return new _Constant (leaves);
+    return _returnConstantOrUseCache(leaves, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::BranchCount (void) {
+HBLObjectRef _TreeTopology::BranchCount (HBLObjectRef cache) {
     long leaves, ints;
     EdgeCount (leaves, ints);
-    return new _Constant (ints-1.);
+    return _returnConstantOrUseCache(ints-1., cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::FlatRepresentation (void) {
+HBLObjectRef _TreeTopology::FlatRepresentation (HBLObjectRef cache) {
     _SimpleList     flatTree;
 
     unsigned long      count = 0UL;
@@ -2124,7 +2125,7 @@ HBLObjectRef _TreeTopology::FlatRepresentation (void) {
     }
 
 
-    _Matrix * res = new _Matrix (1,count, false, true);
+    _Matrix * res = (_Matrix*)_returnMatrixOrUseCache(1,count, _NUMERICAL_TYPE, false, cache);
 
     ni.Reset (theRoot);
     count = 0UL;
@@ -2142,7 +2143,7 @@ HBLObjectRef _TreeTopology::FlatRepresentation (void) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::AVLRepresentation (HBLObjectRef layoutOption) {
+HBLObjectRef _TreeTopology::AVLRepresentation (HBLObjectRef layoutOption, HBLObjectRef cache) {
 
     if (layoutOption->ObjectClass () == NUMBER) {
         bool               preOrder = layoutOption->Compute()->Value()>0.5;
@@ -2200,7 +2201,7 @@ HBLObjectRef _TreeTopology::AVLRepresentation (HBLObjectRef layoutOption) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::TipName (HBLObjectRef p) {
+HBLObjectRef _TreeTopology::TipName (HBLObjectRef p, HBLObjectRef cache) {
 
     if (p&& p->ObjectClass()==NUMBER) {
         long tip_index        = p->Value(),
@@ -2215,12 +2216,12 @@ HBLObjectRef _TreeTopology::TipName (HBLObjectRef p) {
           if (iterator->is_leaf()) {
             count++;
             if (count == tip_index) {
-              return new _FString (GetNodeName (iterator));
+              return _returnStringOrUseCache (GetNodeName (iterator), cache);
             }
           }
         }
     }
-    return new _FString (kEmptyString);
+    return _returnStringOrUseCache(kEmptyString, cache);
 }
 
 //__________________________________________________________________________________
@@ -2277,7 +2278,7 @@ bool _recurse_and_reshuffle (node<long>* root, long& from, long &to, long &leaf_
     return false;
 }
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::RandomizeTips (HBLObjectRef rate) {
+HBLObjectRef _TreeTopology::RandomizeTips (HBLObjectRef rate, HBLObjectRef cache) {
     _TreeTopology * reshuffled = nil;
     
     try {
@@ -2353,7 +2354,7 @@ HBLObjectRef _TreeTopology::RandomizeTips (HBLObjectRef rate) {
 
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::BranchLength (HBLObjectRef p) {
+HBLObjectRef _TreeTopology::BranchLength (HBLObjectRef p, HBLObjectRef cache) {
   hyFloat branch_length = HY_INVALID_RETURN_VALUE;
 
   if (p) {
@@ -2452,12 +2453,12 @@ HBLObjectRef _TreeTopology::BranchLength (HBLObjectRef p) {
     return new _MathObject ();
   }
 
-  return new _Constant (branch_length);
+  return _returnConstantOrUseCache(branch_length, cache);
 }
 
 //__________________________________________________________________________________
 
-HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subtree, HBLObjectRef mapping_mode) {
+HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subtree, HBLObjectRef mapping_mode, HBLObjectRef cache) {
   _StringBuffer branch_name;
     
 
@@ -2587,8 +2588,8 @@ HBLObjectRef _TreeTopology::TreeBranchName (HBLObjectRef node_ref, bool get_subt
       }
     }
   }
-  return new _FString (branch_name, false);
-
+  //return new _FString (branch_name, false);
+  return _returnStringOrUseCache(branch_name, cache);
 }
 
   //__________________________________________________________________________________
@@ -2783,7 +2784,7 @@ const _String            _TreeTopology::GetBranchVarValue  (node<long> *, long) 
 
 
 //__________________________________________________________________________________
-HBLObjectRef _TreeTopology::RerootTree (HBLObjectRef new_root) {
+HBLObjectRef _TreeTopology::RerootTree (HBLObjectRef new_root, HBLObjectRef cache) {
     _StringBuffer * res = new _StringBuffer (256UL);
 
     _TreeTopologyParseSettings settings = CollectParseSettings();
@@ -2813,7 +2814,7 @@ HBLObjectRef _TreeTopology::RerootTree (HBLObjectRef new_root) {
     }
 
     res->TrimSpace();
-    return new _FString (res);
+    return _returnStringOrUseCache(res, cache);
 }
 
 
@@ -3511,7 +3512,7 @@ bool        _TreeTopology::ConvertToPSW (_AVLListX& nodeMap, _List* inames, _Sim
 
 //__________________________________________________________________________________
 
-_AssociativeList *   _TreeTopology::SplitsIdentity (HBLObjectRef p)  const {
+_AssociativeList *   _TreeTopology::SplitsIdentity (HBLObjectRef p, HBLObjectRef cache)  const {
     // compare tree topologies
     _Matrix     * result  = new _Matrix (2,1,false,true),
                 * result2 = nil;

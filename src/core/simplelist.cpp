@@ -97,9 +97,20 @@ _SimpleList::_SimpleList (unsigned long l) : static_data {0L} {
 //Length constructor
 _SimpleList::_SimpleList (unsigned long l, long * preallocated_storage) : static_data {0L} {
     lLength = 0UL;
-    laLength = l;
-    list_data = preallocated_storage;
-    AddAReference();
+    if (preallocated_storage) {
+        laLength = l;
+        list_data = preallocated_storage;
+        AddAReference();
+    } else {
+        if (l <= MEMORYSTEP) {
+            laLength = MEMORYSTEP;
+            list_data   = (long*)&static_data;
+        } else {
+            laLength = (l/MEMORYSTEP + 1)*MEMORYSTEP;
+            list_data = (long*)MemAllocate (laLength * sizeof(hyPointer));
+        }
+        memset (list_data,0,laLength * sizeof(hyPointer));
+    }
 }
 
 //Stack copy contructor
@@ -402,7 +413,9 @@ long    _SimpleList::CountCommonElements (_SimpleList const& l1, bool yesNo) con
 
 
 
-_SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering) {
+_SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering, bool wantResult) {
+    static const unsigned long kAllocaLimit = 4096UL;
+    
     if (ordering) {
         ordering->Clear();
     }
@@ -412,8 +425,14 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
             upperBound = Max()+1;
         }
 
-        _SimpleList buffer      (upperBound, 0, 0),
-                   *result    =  new _SimpleList (lLength);
+        long * storage = upperBound < kAllocaLimit ? (long*)alloca (sizeof (long) * upperBound) : nil;
+        
+        if (storage) {
+            memset (storage, 0, sizeof (long) * upperBound);
+        }
+        
+        _SimpleList buffer     (upperBound, storage);
+        _SimpleList *result    =  (wantResult || !ordering) ? new _SimpleList (lLength) : nil;
         
         for (long pass1 = 0; pass1 < lLength; pass1 ++) {
             buffer.list_data[list_data[pass1]] ++;
@@ -421,22 +440,32 @@ _SimpleList*  _SimpleList::CountingSort (long upperBound, _SimpleList* ordering)
         for (long pass2 = 1; pass2 < upperBound; pass2 ++) {
             buffer.list_data[pass2] += buffer.list_data[pass2-1];
         }
-        if (ordering) {
+        
+        if (!wantResult && ordering) {
             ordering->Populate (lLength, 0, 0);
             for (long pass3 = lLength-1; pass3 >=0; pass3--) {
-                result->list_data[--buffer.list_data[list_data[pass3]]] = list_data[pass3];
-                ordering->list_data[buffer.list_data[list_data[pass3]]] = pass3;
+                ordering->list_data[--buffer.list_data[list_data[pass3]]] = pass3;
             }
-        } else
-            for (long pass3 = lLength-1; pass3 >=0; pass3--) {
-                result->list_data[--buffer.list_data[list_data[pass3]]] = list_data[pass3];
-            }
+        } else {
+            if (ordering) {
+                ordering->Populate (lLength, 0, 0);
+                for (long pass3 = lLength-1; pass3 >=0; pass3--) {
+                    result->list_data[--buffer.list_data[list_data[pass3]]] = list_data[pass3];
+                    ordering->list_data[buffer.list_data[list_data[pass3]]] = pass3;
+                }
+            } else
+                for (long pass3 = lLength-1; pass3 >=0; pass3--) {
+                    result->list_data[--buffer.list_data[list_data[pass3]]] = list_data[pass3];
+                }
+            
+            result->lLength = lLength;
+        }
         
-        result->lLength = lLength;
+        
 
         return result;
     }
-    return new _SimpleList;
+    return wantResult ? new _SimpleList : nil;
 }
 
 void  _SimpleList::Clear (bool completeClear) {

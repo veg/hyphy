@@ -98,6 +98,22 @@ protected:
     // actual storage allocated
     
     long*       theIndex;                       // indices of matrix elements in logical storage
+    long*       compressedIndex;
+        /**
+            20200821 SLKP to speed sparse caclulations CompressSparseMatrix will create this DENSE index, which has the following structure
+                - Entries in theIndex are expected to be compressed (no -1) and arranged BY ROW
+                - First hDim values: the INDEX of the non-first non zero index for this ROW in theData
+                - Next lDim values: the COLUMN index for the corresponding entry
+         
+                [x,1,2,x]
+                [1,2,x,x]
+                [x,x,2,x]
+                [x,x,x,3]
+         
+                theIndex : [1,2,4,5,10,15]
+                compressedIndex: [0,2,4,5,1,2,0,1,2,3]
+                        
+        */
     
 private:
     
@@ -162,7 +178,7 @@ public:
 
     _Matrix ( _List const &, bool parse_escapes = true);                         //make string matrix from a list
 
-    _Matrix (hyFloat *, unsigned long, unsigned long);
+    _Matrix (const hyFloat *, unsigned long, unsigned long);
     /*
         20110616 SLKP
             added a simple constructor from a list of floating point values
@@ -179,7 +195,7 @@ public:
 
     ~_Matrix (void);                            //destructor
 
-    virtual void    Clear (void);               //deletes all the entries w/o destroying the matrix
+    virtual void    Clear (bool complete = true);               //deletes all the entries w/o destroying the matrix
     virtual void    ZeroNumericMatrix (void);               //deletes all the entries w/o destroying the matrix
 
     void    Initialize (bool = true);                  // zeros all matrix structures
@@ -199,19 +215,21 @@ public:
     inline bool        is_expression_based (void) const {return storageType == _FORMULA_TYPE;}
     inline bool        is_numeric (void) const {return storageType == _NUMERICAL_TYPE;}
     inline bool        is_polynomial (void) const {return storageType == _POLYNOMIAL_TYPE;}
+    inline bool        has_type (int t) const {return storageType == t;}
 
     HBLObjectRef           Evaluate (bool replace = true); // evaluates the matrix if contains formulas
     // if replace is true, overwrites the original
 
-    virtual HBLObjectRef   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual HBLObjectRef   ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext, HBLObjectRef cache = nil);
     // execute this operation with the list of Args
 
-    HBLObjectRef   MAccess (HBLObjectRef, HBLObjectRef);
+    HBLObjectRef   MAccess (HBLObjectRef, HBLObjectRef, HBLObjectRef cache = nil);
     // implements the M[i][j] operation for formulas
-    HBLObjectRef   MCoord (HBLObjectRef, HBLObjectRef);
+    HBLObjectRef   MCoord (HBLObjectRef, HBLObjectRef, HBLObjectRef cache = nil);
     // implements the M[i][j] operation for formulas
 
     void        MStore (long, long, _Formula&, long = -1);
+    void        MStore (long, long, HBLObjectRef, long);
     bool        MResolve (HBLObjectRef, HBLObjectRef, long&, long&);
     // resolve coordiates from two Number arguments
 
@@ -257,17 +275,17 @@ public:
     _Matrix const&     operator = (_Matrix const&);             // assignment operation on matrices
     _Matrix const&     operator = (_Matrix const*);             // assignment operation on matrices with temp results
 
-    virtual HBLObjectRef    Random (HBLObjectRef);    // reshuffle the matrix
+    virtual HBLObjectRef    Random (HBLObjectRef, HBLObjectRef cache);    // reshuffle the matrix
 
-    virtual HBLObjectRef    AddObj (HBLObjectRef);    // addition operation on matrices
+    virtual HBLObjectRef    AddObj (HBLObjectRef, HBLObjectRef cache);    // addition operation on matrices
 
-    virtual HBLObjectRef    SubObj (HBLObjectRef);    // subtraction operation on matrices
+    virtual HBLObjectRef    SubObj (HBLObjectRef, HBLObjectRef cache);    // subtraction operation on matrices
 
-    virtual HBLObjectRef    MultObj (HBLObjectRef);   // multiplication operation on matrices
+    virtual HBLObjectRef    MultObj (HBLObjectRef, HBLObjectRef cache);   // multiplication operation on matrices
 
-    virtual HBLObjectRef    MultElements (HBLObjectRef, bool elementWiseDivide = false);  // element wise multiplication/division operation on matrices
+    virtual HBLObjectRef    MultElements (HBLObjectRef, bool elementWiseDivide, HBLObjectRef cache);  // element wise multiplication/division operation on matrices
 
-    virtual HBLObjectRef    Sum          (void);
+    virtual HBLObjectRef    Sum          (HBLObjectRef cache);
 
     _Matrix     operator + (_Matrix&);          // addition operation on matrices
 
@@ -299,8 +317,8 @@ public:
     //               added a boolean flag to allow numeric matrices
     //               to be implicitly converted to strings
 
-    _Matrix*    NeighborJoin                    (bool);
-    _Matrix*    MakeTreeFromParent              (long);
+    _Matrix*    NeighborJoin                    (bool, HBLObjectRef cache);
+    _Matrix*    MakeTreeFromParent              (long, HBLObjectRef cache);
     _Matrix*    ExtractElementsByEnumeration    (_SimpleList*,_SimpleList*,bool=false);
     _Matrix*    SimplexSolve                    (hyFloat = 1.e-6);
 
@@ -315,16 +333,16 @@ public:
     HBLObjectRef   LUDecompose (void) const;
     HBLObjectRef   CholeskyDecompose (void) const;
     // added by afyp July 6, 2009
-    HBLObjectRef   Eigensystem (void) const;
+    HBLObjectRef   Eigensystem (HBLObjectRef) const;
     HBLObjectRef   LUSolve (HBLObjectRef) const;
-    HBLObjectRef   Inverse (void) const;
-    HBLObjectRef   Abs (void);                     // returns the norm of a matrix
+    HBLObjectRef   Inverse (HBLObjectRef cache) const;
+    HBLObjectRef   Abs (HBLObjectRef cache);                     // returns the norm of a matrix
     // if it is a vector - returns the Euclidean length
     // otherwise returns the largest element
 
     hyFloat  AbsValue                        (void) const;
     
-    template <typename CALLBACK>  HBLObjectRef ApplyScalarOperation (CALLBACK && functor) const;
+    template <typename CALLBACK>  HBLObjectRef ApplyScalarOperation (CALLBACK && functor, HBLObjectRef cache) const;
     
     // return the matrix of logs of every matrix element
     
@@ -438,13 +456,13 @@ public:
      */
 
     _Formula*      GetFormula                  (long, long) const;
-    HBLObjectRef   GetMatrixCell               (long, long) const;
+    HBLObjectRef   GetMatrixCell               (long, long, HBLObjectRef cache = nil) const;
     HBLObjectRef   MultByFreqs                 (long, bool = false);
     HBLObjectRef   EvaluateSimple              (_Matrix* existing_receptacle = nil);
-    HBLObjectRef   SortMatrixOnColumn          (HBLObjectRef);
-    HBLObjectRef   K_Means                     (HBLObjectRef);
-    HBLObjectRef   pFDR                        (HBLObjectRef);    // positive false discovery rate
-    HBLObjectRef   PoissonLL                   (HBLObjectRef);    // log likelihood of a vector of poisson samples given a parameter value
+    HBLObjectRef   SortMatrixOnColumn          (HBLObjectRef, HBLObjectRef cache);
+    HBLObjectRef   K_Means                     (HBLObjectRef, HBLObjectRef cache);
+    HBLObjectRef   pFDR                        (HBLObjectRef, HBLObjectRef cache);    // positive false discovery rate
+    HBLObjectRef   PoissonLL                   (HBLObjectRef, HBLObjectRef cache);    // log likelihood of a vector of poisson samples given a parameter value
 
 
     // added by afyp, July 1, 2009
@@ -614,7 +632,7 @@ private:
     void        InitMxVar           (_SimpleList&   , hyFloat);
     bool        ProcessFormulas     (long&, _AVLList&, _SimpleList&, _SimpleList&, _AVLListX&, bool = false, _Matrix* = nil);
 
-    HBLObjectRef   PathLogLikelihood   (HBLObjectRef);
+    HBLObjectRef   PathLogLikelihood   (HBLObjectRef, HBLObjectRef cache);
     /* SLKP: 20100812
 
      This function assumes that 'this' an 3xK matrix, where each column is of the form
@@ -698,6 +716,7 @@ extern  _Matrix *GlobalFrequenciesMatrix;
 // the matrix of frequencies for the trees to be set by block likelihood evaluator
 extern  long  ANALYTIC_COMPUTATION_FLAG;
 
+HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_sparse, HBLObjectRef cache);
 
 #ifdef  _SLKP_USE_AVX_INTRINSICS
     inline double _avx_sum_4 (__m256d const & x) {

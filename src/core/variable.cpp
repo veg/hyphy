@@ -258,8 +258,8 @@ HBLObjectRef  _Variable::ComputeMatchingType(long type) {
 
 //__________________________________________________________________________________
 
-HBLObjectRef  _Variable::Compute (void) // compute or return the value
-{
+HBLObjectRef  _Variable::Compute (void) {
+    // compute or return the value
     // call_count++;
     
     auto update_var_value = [this] () -> void {
@@ -525,10 +525,15 @@ void  _Variable::CheckAndSet (hyFloat c, bool oob, _AVLList * keep_track_of_chan
     }
 
     if (varValue) {
+        if (varValue->ObjectClass() == NUMBER && varValue->SingleReference()) {
+            ((_Constant*)varValue)->theValue = theValue;
+            return;
+        }
         DeleteObject (varValue);
     }
-
+    
     varValue =  new _Constant(theValue);
+    
 }
 
 //__________________________________________________________________________________
