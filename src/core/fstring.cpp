@@ -831,17 +831,17 @@ HBLObjectRef   _FString::MapStringToVector (HBLObjectRef p, HBLObjectRef cache) 
 //__________________________________________________________________________________
 HBLObjectRef   _FString::CharAccess (HBLObjectRef p,HBLObjectRef p2,HBLObjectRef cache)
 {
-    unsigned long index = p->Value();
+    long index = p->Value();
 
     if (p2) {
-        unsigned long index2 = p2->Value();
+        long index2 = p2->Value();
         return _returnStringOrUseCache(get_str().Cut (index,index2), cache);
         
         //return new _FString (new _String (get_str().Cut (index,index2)));
     } else if (index<get_str().length()) {
         //return new _FString (new _String (get_str().char_at(index)));
         char buffer[2];
-        buffer[0] = get_str().char_at (index);
+        buffer[0] = get_str()(index);
         buffer[1] = 0;
         return _returnStringOrUseCache(buffer, cache);
      }

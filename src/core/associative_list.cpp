@@ -167,7 +167,7 @@ void _AssociativeList::Duplicate (BaseRefConst br) {
 HBLObjectRef _AssociativeList::MCoord (HBLObjectRef p, HBLObjectRef cache) {
     if (cache && cache->ObjectClass() == STRING) {
         _StringBuffer * content = new _StringBuffer ((_String*)p->toStr());
-        content->AddAReference();
+        //content->AddAReference();
         ((_FString*)cache)->SetStringContent (content);
         return cache;
     }
@@ -175,7 +175,7 @@ HBLObjectRef _AssociativeList::MCoord (HBLObjectRef p, HBLObjectRef cache) {
 }
 
 //_____________________________________________________________________________________________
-HBLObjectRef _AssociativeList::MAccess (HBLObjectRef p, HBLObjectRef) {
+HBLObjectRef _AssociativeList::MAccess (HBLObjectRef p, HBLObjectRef cache) {
     long        f;
 
     if (p->ObjectClass() == STRING) {
@@ -186,7 +186,8 @@ HBLObjectRef _AssociativeList::MAccess (HBLObjectRef p, HBLObjectRef) {
     }
     if (f>=0L) {
         HBLObjectRef res = (HBLObjectRef)avl.GetXtra (f);
-        res->AddAReference();
+        if (cache != res)
+            res->AddAReference();
         return res;
     } else {
         return kAssociativeListDefaultReturn;
@@ -299,6 +300,7 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2, HBLOb
                     actionFormula.GetList() < new _Operation()
                                             < new _Operation()
                                             < new _Operation(kEmptyString,-callback-1L);
+                    
 
                     if (filter >= 0L) {
                         testFormula.GetList() < new _Operation() < new _Operation(kEmptyString,-filter-1L);
@@ -319,6 +321,7 @@ HBLObjectRef _AssociativeList::MIterator (HBLObjectRef p, HBLObjectRef p2, HBLOb
                             }
                             actionFormula.GetIthTerm(0)->SetNumber(fKey);
                             actionFormula.GetIthTerm(1)->SetNumber((HBLObjectRef)filter_key_value.get_object());
+                            //StringToConsole((_String*)actionFormula.toStr(kFormulaStringConversionNormal)); NLToConsole();
                             actionFormula.Compute();
                             done ++;
                         }

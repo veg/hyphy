@@ -5514,7 +5514,7 @@ bool _Matrix::CheckCoordinates (long& ind1, long& ind2)
 //_____________________________________________________________________________________________
 void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode) {
     if (ind2>=0) { // element storage
-        if (storageType == 2) { // formulas
+        if (is_expression_based()) { // formulas
             if (opCode == HY_OP_CODE_ADD) {
                 _Formula * addOn = GetFormula(ind1,ind2);
                 if (addOn) {
@@ -6391,10 +6391,10 @@ HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp, HBLObjectRef cac
             
             long        i1 = get (0,step),
                         i2 = get (1,step);
-            hyFloat     t  = get (2, step);
+            hyFloat     t  = get (2,step);
 
             if (i1<0 || i2 < 0 || i1 >= maxDim || i2 >= maxDim || t<0.0) {
-                throw (_String ("An invalid transition in step ") & (step+1) & " of the chain: " & i1 & " to " & i2 & " in time " & t);
+                throw (_String ("An invalid transition in step ") & _String ((long)(step+1L)) & " of the chain: " & i1 & " to " & i2 & " in time " & t);
             }
 
             _Matrix         rateMx (*m);
@@ -8760,7 +8760,7 @@ HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_s
             cached_mx->Clear();
             _Matrix::CreateMatrix (cached_mx, nrow, ncol, is_sparse, type == _NUMERICAL_TYPE ? true : false);
         }
-        cached_mx->AddAReference();
+        //cached_mx->AddAReference();
         return cached_mx;
     }
     return new _Matrix (nrow, ncol, is_sparse, type == _NUMERICAL_TYPE ? true : false);
