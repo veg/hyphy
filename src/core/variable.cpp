@@ -426,16 +426,8 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks, _AVLList
             varFormula = nil;
         }
         
-        if (varValue) {
-            DeleteAndZeroObject (varValue);
-        }
-
         theValue = theP->Value();
-
-        if (!dup) {
-            DeleteObject (theP);
-        }
-
+        
         if (theValue<lowerBound || theValue>upperBound) {
             /*if (verbosity_level >= 100) {
                 printf ("\n<========== OUT OF BOUNDS FOR VARIABLE %s : value %.16g, range [%.16g, %.16g] =========>\n" , theName->get_str(), theValue, lowerBound, upperBound);
@@ -446,6 +438,21 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks, _AVLList
                 theValue = upperBound;
             }
         }
+        
+        if (varValue) {
+            if (varValue->ObjectClass() == NUMBER && varValue->SingleReference()) {
+                ((_Constant*)varValue)->SetValue(theValue);
+            } else {
+                DeleteAndZeroObject (varValue);
+            }
+        }
+
+
+        if (!dup) {
+            DeleteObject (theP);
+        }
+
+        
     } else {
         if (varFormula) {
             /*if (doPrint) {
@@ -455,20 +462,35 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks, _AVLList
             varFormula = nil;
             //theFormula.Clear();
         }
+        
+        
         if (varValue) {
+            if (dup && varValue->SingleReference() && varValue->ObjectClass() == theP->ObjectClass()) {
+                switch (varValue->ObjectClass()) {
+                    case STRING: {
+                        _FString *existing   = (_FString*)varValue,
+                                 *new_string = ((_FString*)theP);
+                        
+                        if (new_string->empty()) {
+                            existing->SetData (kEmptyString);
+                        } else {
+                            existing->SetData (((_FString*)theP)->get_str());
+                        }
+                        return;
+                    }
+                        
+                }
+            }
+                        
             DeleteObject (varValue);
             varValue=nil;
         }
       
-        /*if (valueClass & (TREE)) {
-            variablePtrs.list_data[theIndex] = (long)(((_TheTree*)theP)->makeDynamicCopy(GetName()));
-            DeleteObject(this);
-        } else*/ {
-            if (dup) {
-                varValue = (HBLObjectRef)theP->makeDynamic();
-            } else {
-                varValue = theP;
-            }
+        
+        if (dup) {
+            varValue = (HBLObjectRef)theP->makeDynamic();
+        } else {
+            varValue = theP;
         }
     }
 }
