@@ -76,7 +76,6 @@ KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 
 if (bgm.type == "nucleotide") {
-   KeywordArgument ("branches",  "Branches to test", "All");
    bgm.alignment_info = alignments.ReadNucleotideDataSet ("bgm.dataset", None);
    bgm.baseline_model = "models.DNA.GTR.ModelDescription";
 } else {
@@ -90,7 +89,6 @@ if (bgm.type == "nucleotide") {
         bgm.run_settings ["model"] = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
         bgm.baseline_model = (utility.Extend (models.protein.empirical.plusF_generators , {"GTR" : "models.protein.REV.ModelDescription"}))[bgm.run_settings ["model"]];
     } else { // codon
-        KeywordArgument ("branches",  "Branches to test", "All");
         bgm.alignment_info = alignments.PromptForGeneticCodeAndAlignment("bgm.dataset","bgm.codon.filter");
         LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
         bgm.baseline_model = "models.codon.MG_REV.ModelDescription";
