@@ -94,7 +94,7 @@ Use `make test` after running `cmake .`.
 
 #### Benchmarks for CMake Tests
 
-Benchmarks, using Github Actions, can be found at hyphy.org/bench
+Benchmarks, using Github Actions, can be found at http://hyphy.org/bench
 
 #### Executable Location
 
