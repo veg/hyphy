@@ -3495,14 +3495,14 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                         }
                     }
                     
-                    _Constant * sum = (_Constant*)partition_weights.Sum();
+                    _Constant * sum = (_Constant*)partition_weights.Sum(nil);
                     partition_weights *= (slaveNodes/sum->Value());
                     for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
                         partition_weights.Store (i, 1, i);
                     }
                     
                     sum->SetValue(0.);
-                    _Matrix * sorted_by_weight = (_Matrix*)partition_weights.SortMatrixOnColumn(sum);
+                    _Matrix * sorted_by_weight = (_Matrix*)partition_weights.SortMatrixOnColumn(sum, nil);
                     DeleteObject (sum);
                     
 
