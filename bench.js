@@ -72,7 +72,7 @@ suite
   });
 })
 .add('BGM.wbf', function() {
-  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/libv3/BGM.wbf''", (error, stdout, stderr) => {
+  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/libv3/BGM.wbf'", (error, stdout, stderr) => {
     if (error) { console.log("Error with job = " + error); return;}
     if (stderr) {return;}
   });
@@ -97,14 +97,14 @@ suite
 })
 
 .add('ABSREL.wbf', function() {
-  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/libv3/aBSREL.wbf'", (error, stdout, stderr) => {
+  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/libv3/ABSREL.wbf'", (error, stdout, stderr) => {
     if (error) { console.log("Error with job = " + error); return;}
     if (stderr) {return;}
   });
 })
 
 .add('ABSREL-MH.wbf', function() {
-  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/libv3/aBSREL-MH.wbf'", (error, stdout, stderr) => {
+  execSync("/home/runner/work/hyphy/hyphy/HYPHYMP 'tests/hbltests/libv3/ABSREL-MH.wbf'", (error, stdout, stderr) => {
     if (error) { console.log("Error with job = " + error); return;}
     if (stderr) {return;}
   });
