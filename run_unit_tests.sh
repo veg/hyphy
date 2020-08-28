@@ -5,6 +5,8 @@
 #export ASAN_OPTIONS=detect_leaks=1
 
 currentDir=$PWD
+export ASAN_OPTIONS=detect_leaks=1
+#HYPHYMP=$PWD/HYPHYDEBUG
 HYPHYMP=$PWD/HYPHYMP
 
 testsRun=0
@@ -21,7 +23,7 @@ for filename in ./tests/hbltests/UnitTests/HBLCommands/*.bf; do
   fi
 
   ((testsRun++))
-  
+
 done
 
 if [ $testFailed ]

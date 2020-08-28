@@ -39,6 +39,25 @@ function runTest () {
   assert(1 + "4" + 2 == 7, "Failed to add a number, a string (which is converted to a number) and another number (in that order; i.e. number first); should return the sum of the numbers");
 
 
+  // test recursive sum on objects
+  nested = {
+    "0" : 1,
+    "1" : {{2,3,4,5}},
+    "2" : {
+        "A" : {{6,7,8}},
+        "B" : {"0" : 9, "1" : 10}
+    }
+  };
+  
+  
+  sum = 0;
+  for (i = 0; i < 10; i+=1) {
+    sum += (+nested);
+  }
+  
+  assert(sum == 550, "Failed to correctly sum up a nested object");
+  
+
   Topology T = ((a,b)N1,c,d);
   // + on topologies works in place
   T + {"NAME":"e", "WHERE": "b", "PARENT": "f"};

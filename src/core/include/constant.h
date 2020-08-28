@@ -49,10 +49,10 @@
 class _Constant : public _MathObject {
 
 private:
-    template <class T> HBLObjectRef _check_type_and_compute (HBLObjectRef operand, T functor) {
+    template <class T> HBLObjectRef _check_type_and_compute (HBLObjectRef operand, T functor, HBLObjectRef cache) {
         if (operand) {
             if (operand->ObjectClass() == NUMBER) {
-                return new _Constant (functor (Value (), ((_Constant*)operand)->Value()));
+                return _returnConstantOrUseCache(functor (Value (), ((_Constant*)operand)->Value()), cache);
             } else {
                 hy_global::HandleApplicationError (_String("<'constant' operation 'X'>, where 'X' is not a number. \nconstant = ") & (_String((_String*)toStr())) & "\n'X' = " & (_String((_String*)operand->toStr())));
             }
@@ -62,9 +62,9 @@ private:
         return new _MathObject;
     }
     
-    template <class T> HBLObjectRef _check_type_and_compute_3 (HBLObjectRef operand, HBLObjectRef operand2, T functor) {
+    template <class T> HBLObjectRef _check_type_and_compute_3 (HBLObjectRef operand, HBLObjectRef operand2, T functor, HBLObjectRef cache) {
         if (operand && operand2 && operand->ObjectClass() == NUMBER && operand2->ObjectClass() == NUMBER) {
-            return new _Constant (functor (Value (), ((_Constant*)operand)->Value(), ((_Constant*)operand2)->Value()));
+            return _returnConstantOrUseCache (functor (Value (), ((_Constant*)operand)->Value(), ((_Constant*)operand2)->Value()), cache);
         }
         hy_global::HandleApplicationError ("Not a numeric 'X' type in a <'constant' operation 'X'> call");
         return new _MathObject;
@@ -77,52 +77,50 @@ public:
     _Constant (void);
     ~_Constant (void) {}
 
-    virtual HBLObjectRef Add           (HBLObjectRef);
-    virtual HBLObjectRef Sub           (HBLObjectRef);
-    virtual HBLObjectRef Minus         (void) ;
-    virtual HBLObjectRef Sum           (void) ;
-    virtual HBLObjectRef Mult          (HBLObjectRef);
-    virtual HBLObjectRef Div           (HBLObjectRef);
-    virtual HBLObjectRef lDiv          (HBLObjectRef);
-    virtual HBLObjectRef longDiv       (HBLObjectRef);
-    virtual HBLObjectRef Raise         (HBLObjectRef);
+    virtual HBLObjectRef Add           (HBLObjectRef, HBLObjectRef cache = nil);
+    virtual HBLObjectRef Sub           (HBLObjectRef, HBLObjectRef cache = nil);
+    virtual HBLObjectRef Minus         (HBLObjectRef cache = nil) ;
+    virtual HBLObjectRef Sum           (HBLObjectRef cache = nil) ;
+    virtual HBLObjectRef Mult          (HBLObjectRef, HBLObjectRef cache = nil);
+    virtual HBLObjectRef Div           (HBLObjectRef, HBLObjectRef cache = nil);
+    virtual HBLObjectRef lDiv          (HBLObjectRef, HBLObjectRef cache = nil);
+    virtual HBLObjectRef longDiv       (HBLObjectRef, HBLObjectRef cache = nil);
+    virtual HBLObjectRef Raise         (HBLObjectRef, HBLObjectRef cache = nil);
     virtual bool         Equal         (HBLObjectRef);
-    virtual HBLObjectRef Abs           (void);
-    virtual HBLObjectRef Sin           (void);
-    virtual HBLObjectRef Cos           (void);
-    virtual HBLObjectRef Tan           (void);
-    virtual HBLObjectRef Exp           (void);
-    virtual HBLObjectRef Log           (void);
-    virtual HBLObjectRef Sqrt          (void);
-    virtual HBLObjectRef Time          (void);
-    virtual HBLObjectRef Arctan        (void);
-    virtual HBLObjectRef Gamma         (void);
-    virtual HBLObjectRef LnGamma       (void);         /* <- added by afyp, February 8, 2007 */
-    virtual HBLObjectRef Beta          (HBLObjectRef);
-    virtual HBLObjectRef Min           (HBLObjectRef);
-    virtual HBLObjectRef Max           (HBLObjectRef);
-    virtual HBLObjectRef GammaDist     (HBLObjectRef,HBLObjectRef);
-    virtual HBLObjectRef CGammaDist    (HBLObjectRef,HBLObjectRef);
-    virtual HBLObjectRef IBeta         (HBLObjectRef,HBLObjectRef);
-    virtual HBLObjectRef IGamma        (HBLObjectRef);
-    virtual HBLObjectRef CChi2         (HBLObjectRef);
-    virtual HBLObjectRef InvChi2       (HBLObjectRef);
-    virtual HBLObjectRef Erf           (void);
-    virtual HBLObjectRef ZCDF          (void);
-    virtual HBLObjectRef Less          (HBLObjectRef);
-    virtual HBLObjectRef Greater       (HBLObjectRef);
-    virtual HBLObjectRef LessEq        (HBLObjectRef);
-    virtual HBLObjectRef GreaterEq     (HBLObjectRef);
-    virtual HBLObjectRef AreEqual      (HBLObjectRef);
-    virtual HBLObjectRef NotEqual      (HBLObjectRef);
-    virtual HBLObjectRef LAnd          (HBLObjectRef);
-    virtual HBLObjectRef LOr           (HBLObjectRef);
-    virtual HBLObjectRef LNot          ();
-    virtual HBLObjectRef Random        (HBLObjectRef);
-    virtual hyFloat
-    Value       (void);
-    virtual HBLObjectRef FormatNumberString
-    (HBLObjectRef,HBLObjectRef);
+    virtual HBLObjectRef Abs           (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Sin           (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Cos           (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Tan           (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Exp           (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Log           (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Sqrt          (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Time          (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Arctan        (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Gamma         (HBLObjectRef cache = nil);
+    virtual HBLObjectRef LnGamma       (HBLObjectRef cache = nil);         /* <- added by afyp, February 8, 2007 */
+    virtual HBLObjectRef Beta          (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef Min           (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef Max           (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef GammaDist     (HBLObjectRef,HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef CGammaDist    (HBLObjectRef,HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef IBeta         (HBLObjectRef,HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef IGamma        (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef CChi2         (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef InvChi2       (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef Erf           (HBLObjectRef cache = nil);
+    virtual HBLObjectRef ZCDF          (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Less          (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef Greater       (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef LessEq        (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef GreaterEq     (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef AreEqual      (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef NotEqual      (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef LAnd          (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef LOr           (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual HBLObjectRef LNot          (HBLObjectRef cache = nil);
+    virtual HBLObjectRef Random        (HBLObjectRef,HBLObjectRef cache = nil);
+    virtual hyFloat      Value       (void);
+    virtual HBLObjectRef FormatNumberString (HBLObjectRef,HBLObjectRef, HBLObjectRef cache = nil);
     virtual HBLObjectRef Compute       (void) {
         return this;
     };

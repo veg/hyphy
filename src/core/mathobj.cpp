@@ -52,31 +52,31 @@ _MathObject* _MathObject:: _null_handler() {
     return this;
 }
 
-_MathObject* _MathObject:: Add        (_MathObject*)     {
+_MathObject* _MathObject:: Add        (_MathObject*, _MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: Sub        (_MathObject*)     {
+_MathObject* _MathObject:: Sub        (_MathObject*, _MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: Minus      (void)             {
+_MathObject* _MathObject:: Minus      (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Sum        (void)             {
+_MathObject* _MathObject:: Sum        (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Mult       (_MathObject*)     {
+_MathObject* _MathObject:: Mult       (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: Div        (_MathObject*)     {
+_MathObject* _MathObject:: Div        (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: lDiv       (_MathObject*)     {
+_MathObject* _MathObject:: lDiv       (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: longDiv    (_MathObject*)     {
+_MathObject* _MathObject:: longDiv    (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: Raise      (_MathObject*)     {
+_MathObject* _MathObject:: Raise      (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
 
@@ -88,138 +88,138 @@ bool _MathObject::         Equal      (_MathObject* rhs)     {
     // null is equal to null, otherwise false\
     return false;
 }
-_MathObject* _MathObject:: Abs        (void)             {
+_MathObject* _MathObject:: Abs        (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Sin        (void)             {
+_MathObject* _MathObject:: Sin        (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Cos        (void)             {
+_MathObject* _MathObject:: Cos        (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Tan        (void)             {
+_MathObject* _MathObject:: Tan        (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Exp        (void)             {
+_MathObject* _MathObject:: Exp        (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Log        (void)             {
+_MathObject* _MathObject:: Log        (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Sqrt       (void)             {
+_MathObject* _MathObject:: Sqrt       (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Gamma      (void)             {
+_MathObject* _MathObject:: Gamma      (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Erf        (void)             {
+_MathObject* _MathObject:: Erf        (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: LnGamma    (void)             {
-    return _null_handler();
-}
-
-_MathObject* _MathObject:: Beta       (_MathObject*)     {
-    return _null_handler();
-}
-_MathObject* _MathObject:: IGamma     (_MathObject*)     {
-    return _null_handler();
-}
-_MathObject* _MathObject:: CChi2      (_MathObject*)     {
-    return _null_handler();
-}
-_MathObject* _MathObject:: IBeta      (_MathObject*,_MathObject*) {
-    return _null_handler();
-}
-_MathObject* _MathObject:: Simplex    (void)             {
+_MathObject* _MathObject:: LnGamma    (_MathObject*)             {
     return _null_handler();
 }
 
-_MathObject* _MathObject:: Simplify    (void)             {
+_MathObject* _MathObject:: Beta       (_MathObject*,_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: IGamma     (_MathObject*,_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: CChi2      (_MathObject*,_MathObject*)     {
+    return _null_handler();
+}
+_MathObject* _MathObject:: IBeta      (_MathObject*,_MathObject*,_MathObject*) {
+    return _null_handler();
+}
+_MathObject* _MathObject:: Simplex    (_MathObject*)             {
     return _null_handler();
 }
 
-_MathObject* _MathObject:: Min        (_MathObject*)     {
+_MathObject* _MathObject:: Simplify    (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Max        (_MathObject*)     {
+
+_MathObject* _MathObject:: Min        (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: InvChi2    (_MathObject*)     {
+_MathObject* _MathObject:: Max        (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: ZCDF       (void)             {
+_MathObject* _MathObject:: InvChi2    (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: Time       (void)             {
+_MathObject* _MathObject:: ZCDF       (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Arctan     (void)             {
+_MathObject* _MathObject:: Time       (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Less       (_MathObject*)     {
+_MathObject* _MathObject:: Arctan     (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: Random     (_MathObject*)     {
+_MathObject* _MathObject:: Less       (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: Greater    (_MathObject*)     {
+_MathObject* _MathObject:: Random     (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: LessEq     (_MathObject*)     {
+_MathObject* _MathObject:: Greater    (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: GreaterEq  (_MathObject*)     {
+_MathObject* _MathObject:: LessEq     (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: AreEqual   (_MathObject*)     {
+_MathObject* _MathObject:: GreaterEq  (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: NotEqual   (_MathObject*)     {
+_MathObject* _MathObject:: AreEqual   (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: LAnd       (_MathObject*)     {
+_MathObject* _MathObject:: NotEqual   (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: LOr        (_MathObject*)     {
+_MathObject* _MathObject:: LAnd       (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: GammaDist  (_MathObject*,_MathObject*) {
+_MathObject* _MathObject:: LOr        (_MathObject*,_MathObject*)     {
     return _null_handler();
 }
-_MathObject* _MathObject:: CGammaDist (_MathObject*,_MathObject*) {
+_MathObject* _MathObject:: GammaDist  (_MathObject*,_MathObject*,_MathObject*) {
     return _null_handler();
 }
-_MathObject* _MathObject:: LNot       (void)             {
+_MathObject* _MathObject:: CGammaDist (_MathObject*,_MathObject*,_MathObject*) {
     return _null_handler();
 }
-_MathObject* _MathObject:: TipCount   (void)             {
+_MathObject* _MathObject:: LNot       (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: BranchCount (void)            {
+_MathObject* _MathObject:: TipCount   (_MathObject*)             {
     return _null_handler();
 }
-_MathObject* _MathObject:: TipName     (_MathObject*)    {
+_MathObject* _MathObject:: BranchCount (_MathObject*)            {
     return _null_handler();
 }
-_MathObject* _MathObject:: BranchName  (_MathObject*)    {
+_MathObject* _MathObject:: TipName     (_MathObject*,_MathObject*)    {
     return _null_handler();
 }
-_MathObject* _MathObject:: BranchLength(_MathObject*)    {
+_MathObject* _MathObject:: BranchName  (_MathObject*,_MathObject*)    {
     return _null_handler();
 }
-_MathObject* _MathObject:: RerootTree  (_MathObject*)    {
+_MathObject* _MathObject:: BranchLength(_MathObject*,_MathObject*)    {
     return _null_handler();
 }
-_MathObject* _MathObject:: TEXTreeString(_MathObject*) const {
+_MathObject* _MathObject:: RerootTree  (_MathObject*,_MathObject*)    {
+    return _null_handler();
+}
+_MathObject* _MathObject:: TEXTreeString(_MathObject*,_MathObject*) const {
     HandleApplicationError (kErrorStringNullOperand);
     return new _MathObject;
 }
 
-_MathObject* _MathObject:: PlainTreeString(_MathObject*,_MathObject*) {
+_MathObject* _MathObject:: PlainTreeString(_MathObject*,_MathObject*,_MathObject*) {
     return _null_handler();
 }
-_MathObject* _MathObject:: FormatNumberString (_MathObject*,_MathObject*) {
+_MathObject* _MathObject:: FormatNumberString (_MathObject*,_MathObject*,_MathObject*) {
     return _null_handler();
 }
 hyFloat _MathObject::   Value (void)              {
@@ -236,49 +236,57 @@ _MathObject* _MathObject:: _extract_argument (_List * arguments, unsigned long i
 }
 
 
+HBLObjectRef _returnConstantOrUseCache (hyFloat value, HBLObjectRef cache) {
+    if (cache && cache->ObjectClass() == NUMBER) {
+        ((_Constant*)cache)->theValue = value;
+        return cache;
+    }
+    return new _Constant (value);
+}
+
 //SW: This calls the function with the opcode after it's been parsed
-HBLObjectRef _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
+HBLObjectRef _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context, HBLObjectRef cache) {
 
     switch (opCode) { // first check operations without arguments
       case HY_OP_CODE_NOT: // !
-        return LNot();
+        return LNot(cache);
       case HY_OP_CODE_ABS: // Abs
-        return Abs();
+        return Abs(cache);
       case HY_OP_CODE_ARCTAN: // Arctan
-        return Arctan();
+        return Arctan(cache);
       case HY_OP_CODE_COS: // Cos
-        return Cos();
+        return Cos(cache);
       case HY_OP_CODE_COLUMNS: // Columns
       case HY_OP_CODE_ROWS: // Rows
-        return new _Constant (0.0);
+        return _returnConstantOrUseCache (0., cache);
       case HY_OP_CODE_ERF: // Erf
-        return Erf();
+        return Erf(cache);
       case HY_OP_CODE_EVAL:
         return (HBLObjectRef)Compute()->makeDynamic();
       case HY_OP_CODE_EXP: // Exp
-        return Exp();
+        return Exp(cache);
       case HY_OP_CODE_GAMMA: // Gamma
-        return Gamma();
+        return Gamma(cache);
       case HY_OP_CODE_LNGAMMA: // LnGamma
-        return LnGamma();
+        return LnGamma(cache);
       case HY_OP_CODE_LOG: // Log
-        return Log();
+        return Log(cache);
       case HY_OP_CODE_MACCESS:
         return new _MathObject; // indexing None returns None
       case HY_OP_CODE_SIMPLEX: // Simplex
-        return Simplex();
+        return Simplex(cache);
       case HY_OP_CODE_SIN: // Sin
-        return Sin();
+        return Sin(cache);
       case HY_OP_CODE_SQRT: // Sqrt
-        return Sqrt();
+        return Sqrt(cache);
       case HY_OP_CODE_TAN: // Tan
-        return Tan();
+        return Tan(cache);
       case HY_OP_CODE_TIME: // Time
-        return Time();
+        return Time(cache);
       case HY_OP_CODE_TYPE: // Type
-        return Type();
+        return Type(cache);
       case HY_OP_CODE_ZCDF: // ZCDF
-        return ZCDF();
+        return ZCDF(cache);
     }
   
     _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
@@ -286,12 +294,12 @@ HBLObjectRef _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExe
     switch (opCode) { // next check operations without arguments or with one argument
       case HY_OP_CODE_ADD: // +
         if (arg0)
-          return Add(arg0);
-        return Sum ();
+          return Add(arg0,cache);
+        return Sum (cache);
       case HY_OP_CODE_SUB: // -
         if (arg0)
-          return Sub(arg0);
-        return Minus();
+          return Sub(arg0,cache);
+        return Minus(cache);
         break;
     }
   
@@ -300,62 +308,66 @@ HBLObjectRef _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExe
           case HY_OP_CODE_NEQ: // !=
             if (ObjectClass () == HY_UNDEFINED) {
               if (arg0->ObjectClass () == HY_UNDEFINED)
-                return new HY_CONSTANT_FALSE;
+                return _returnConstantOrUseCache (0., cache);
+                //return new HY_CONSTANT_FALSE;
               else
-                return new HY_CONSTANT_TRUE;
+                return _returnConstantOrUseCache (1., cache);
+                //return new HY_CONSTANT_TRUE;
             }
             if (arg0->ObjectClass() == NUMBER)
-              return NotEqual(arg0);
+              return NotEqual(arg0,cache);
             return new HY_CONSTANT_TRUE;
           case HY_OP_CODE_IDIV: // $
-            return longDiv(arg0);
+            return longDiv(arg0,cache);
           case HY_OP_CODE_MOD: // %
-            return lDiv(arg0);
+            return lDiv(arg0,cache);
           case HY_OP_CODE_AND: // &&
-            return LAnd(arg0);
+            return LAnd(arg0,cache);
           case HY_OP_CODE_MUL: // *
-            return Mult(arg0);
+            return Mult(arg0,cache);
           case HY_OP_CODE_DIV: // /
-            return Div(arg0);
+            return Div(arg0,cache);
           case HY_OP_CODE_LESS: // <
-            return Less(arg0);
+            return Less(arg0,cache);
           case HY_OP_CODE_LEQ: // <=
-            return LessEq(arg0);
+            return LessEq(arg0,cache);
           case HY_OP_CODE_EQ: // ==
           {
             if (ObjectClass () == HY_UNDEFINED) {
               if (arg0->ObjectClass () == HY_UNDEFINED)
-                return new HY_CONSTANT_TRUE;
+                return _returnConstantOrUseCache (1., cache);
+                //return new HY_CONSTANT_TRUE;
               else
-                return new HY_CONSTANT_FALSE;
+                return _returnConstantOrUseCache (0., cache);
+                //return new HY_CONSTANT_FALSE;
             }
             if (arg0->ObjectClass() == NUMBER)
-              return AreEqual(arg0);
+              return AreEqual(arg0,cache);
             return new HY_CONSTANT_FALSE;
           }
             break;
           case HY_OP_CODE_GREATER: // >
-            return Greater(arg0);
+            return Greater(arg0,cache);
           case HY_OP_CODE_GEQ: // >=
-            return GreaterEq(arg0);
+            return GreaterEq(arg0,cache);
           case HY_OP_CODE_BETA: // Beta
-            return Beta(arg0);
+            return Beta(arg0,cache);
           case HY_OP_CODE_CCHI2: // CChi2
-            return CChi2(arg0);
+            return CChi2(arg0,cache);
           case HY_OP_CODE_IGAMMA: // IGamma
-            return IGamma(arg0);
+            return IGamma(arg0,cache);
           case HY_OP_CODE_INVCHI2: // InvChi2
-            return InvChi2(arg0);
+            return InvChi2(arg0,cache);
           case HY_OP_CODE_MAX: // Max
-            return Max(arg0);
+            return Max(arg0,cache);
           case HY_OP_CODE_MIN: // Min
-            return Min(arg0);
+            return Min(arg0,cache);
           case HY_OP_CODE_RANDOM: // Random
-            return Random(arg0);
+            return Random(arg0,cache);
           case HY_OP_CODE_POWER: // ^
-            return Raise(arg0);
+            return Raise(arg0,cache);
           case HY_OP_CODE_OR: // ||
-            return LOr(arg0);
+            return LOr(arg0,cache);
       }
       
       _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
@@ -365,13 +377,13 @@ HBLObjectRef _MathObject::ExecuteSingleOp (long opCode, _List* arguments, _hyExe
         
         switch (opCode) {
           case HY_OP_CODE_CGAMMADIST: // CGammaDist
-            return CGammaDist(arg0,arg1);
+            return CGammaDist(arg0,arg1,cache);
           case HY_OP_CODE_FORMAT: // Format
-            return FormatNumberString(arg0,arg1);
+            return FormatNumberString(arg0,arg1,cache);
           case HY_OP_CODE_GAMMADIST: // GammaDist
-            return GammaDist(arg0,arg1);
+            return GammaDist(arg0,arg1,cache);
           case HY_OP_CODE_IBETA: // IBeta
-            return IBeta(arg0,arg1);
+            return IBeta(arg0,arg1,cache);
         }
       }
  
@@ -427,7 +439,7 @@ void _MathObject::Duplicate (BaseRefConst) {
 //__________________________________________________________________________________
 
   //SW: Why do we need a string for the type?
-HBLObjectRef _MathObject::Type (void) {
+HBLObjectRef _MathObject::Type (HBLObjectRef cache) {
   
   static const _FString kNumber       ("Number", false);
   static const _FString kMatrix       ("Matrix", false);

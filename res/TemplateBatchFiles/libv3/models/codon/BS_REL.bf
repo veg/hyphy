@@ -71,14 +71,14 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing.ModelDescription(type, code, com
  * @param {Matrix} components (alpha, beta) components
  */
 lfunction models.codon.BS_REL_SRV.ModelDescription(type, code, components) {
- 
+
     io.CheckAssertion ('`&type`==terms.global', 'Only ' + ^'terms.global' + ' model type is supported for BS_REL_SRV');
- 
+
     io.CheckAssertion ('Type (`&components`) == "Matrix" && utility.Array1D (`&components`) == 2', "must have a 2 dimensional matrix of rate counts in models.codon.BS_REL_SRV.ModelDescription");
     components = utility.Map (components, "_value_", "math.Int(_value_)");
     io.CheckAssertion ("Min(`&components`,0) >= 1 && Max(`&components`,0) <= 10", "must have between 1 and 10 components in call to models.codon.BS_REL_SRV.ModelDescription");
-    
-    
+
+
  	template = models.codon.BS_REL.ModelDescription(type, code, 3);
 	template [utility.getGlobalValue("terms.model.defineQ")] = "models.codon.BS_REL_SRV._DefineQ";
 	template [utility.getGlobalValue("terms.model.components")] = components;
@@ -137,11 +137,11 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
 
 lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
     count = bs_rel [utility.getGlobalValue ("terms.model.components")];
-    
+
     if (Type (count) == "Matrix") {
         count = count[1];
     }
-    
+
     rates = {count, 1};
     weights = {count-1, 1};
 
@@ -151,7 +151,7 @@ lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
             weights [i-1] = ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.global")])[terms.AddCategory (utility.getGlobalValue ("terms.mixture.mixture_aux_weight"), i )];
         }
     }
-    
+
 
     return {"rates" : rates, "weights" : weights };
 }
@@ -241,7 +241,7 @@ lfunction models.codon.BS_REL_SRV._DefineQ(bs_rel, namespace) {
 
     ns_components  = (bs_rel[(utility.getGlobalValue("terms.model.components"))])[1];
     syn_components = (bs_rel[(utility.getGlobalValue("terms.model.components"))])[0];
-    
+
 
     _aux = parameters.GenerateSequentialNames (namespace + ".bsrel_mixture_aux", ns_components - 1, "_");
     _wts = parameters.helper.stick_breaking (_aux, None);
@@ -250,13 +250,13 @@ lfunction models.codon.BS_REL_SRV._DefineQ(bs_rel, namespace) {
     _wts_srv = parameters.helper.stick_breaking (_aux_srv, None);
 
     _alphas = parameters.GenerateSequentialNames (namespace + ".alpha", syn_components, "_");
-    
-    
+
+
     mixture = {};
-    
+
 
     for (s_component = 1; s_component <= syn_components; s_component += 1) {
-    
+
         ExecuteCommands ("
             function rate_multiplier (option) {
                 return {
@@ -273,9 +273,9 @@ lfunction models.codon.BS_REL_SRV._DefineQ(bs_rel, namespace) {
 
         for (component = 1; component <= ns_components; component += 1) {
            key = "component_" + s_component + "_" + component;
-        
-             
-            
+
+
+
            ExecuteCommands ("
             function rate_generator (fromChar, toChar, namespace, model_type, model) {
 
@@ -283,7 +283,7 @@ lfunction models.codon.BS_REL_SRV._DefineQ(bs_rel, namespace) {
                     'alpha_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.synonymous_rate'), s_component),
                     'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                     'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
-                    
+
                 }"
            );
 
@@ -302,7 +302,7 @@ lfunction models.codon.BS_REL_SRV._DefineQ(bs_rel, namespace) {
     }
 
     __rp    = parameters.ConstrainMeanOfSet (_alphas, _wts_srv, 1, namespace);
-    
+
     parameters.DeclareGlobal (__rp[^'terms.global'], null);
     parameters.helper.copy_definitions (bs_rel[^'terms.parameters'], __rp);
 
@@ -344,6 +344,7 @@ lfunction models.codon.BS_REL.set_branch_length(model, value, parameter) {
 
 function models.codon.BS_REL.post_definition(model) {
     model [terms.model.branch_length_string] = model.BranchLengthExpression (model);
+    model [terms.model.branch_length_string_conditional] = {};
     return model;
 }
 
@@ -358,8 +359,14 @@ function models.codon.BS_REL.post_definition(model) {
 function models.codon.BS_REL.get_branch_length(model, tree, node) {
 	parameters.SetLocalModelParameters (model, tree, node);
 	parameters.SetCategoryVariables   (model);
-	bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]) / 3;
-	//console.log ("Branch length = " + bl);
+    bl = utility.GetEnvVariable ("BRANCH_LENGTH_STENCIL");
+    if (Type (bl) == "Matrix") {
+        if (utility.Has (model [terms.model.branch_length_string_conditional], bl, "String") == FALSE) {
+            (model [terms.model.branch_length_string_conditional])[bl] = model.BranchLengthExpression (model);
+        }
+        bl = Eval ((model [utility.getGlobalValue("terms.model.branch_length_string_conditional")])[bl]);
+    } else {
+      bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]);
+    }
 	return bl;
 }
-

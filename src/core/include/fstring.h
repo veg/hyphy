@@ -54,6 +54,7 @@ public:
     _FString (_String const&, bool = true);
     _FString (long);
     _FString (_String*);
+    _FString (const char*);
     _FString (void);
     _FString (const _FString&);
     _FString (_FString&&);
@@ -62,28 +63,28 @@ public:
 
     virtual BaseRef   makeDynamic       (void) const;
     virtual void      Duplicate         (BaseRefConst);
-    virtual HBLObjectRef Add               (HBLObjectRef);
+    virtual HBLObjectRef Add               (HBLObjectRef, HBLObjectRef cache);
     virtual long      AddOn             (HBLObjectRef);
-    virtual HBLObjectRef AreEqual          (HBLObjectRef);
-    virtual HBLObjectRef AreEqualCIS       (HBLObjectRef);
-    virtual HBLObjectRef Less              (HBLObjectRef);
-    virtual HBLObjectRef LessEq            (HBLObjectRef);
-    virtual HBLObjectRef Greater           (HBLObjectRef);
-    virtual HBLObjectRef GreaterEq         (HBLObjectRef);
-    virtual HBLObjectRef NotEqual          (HBLObjectRef);
-    virtual HBLObjectRef RerootTree        (HBLObjectRef);
-    virtual HBLObjectRef EqualAmb          (HBLObjectRef);
-    virtual HBLObjectRef EqualRegExp       (HBLObjectRef,bool = false);
-    virtual HBLObjectRef ReplaceReqExp     (HBLObjectRef);
-    virtual HBLObjectRef CountGlobalObjects(void);
-    virtual HBLObjectRef FileExists        (void);
-    virtual HBLObjectRef Call              (_List*,_hyExecutionContext*);
-    virtual HBLObjectRef Sum               (void);
+    virtual HBLObjectRef AreEqual          (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef AreEqualCIS       (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef Less              (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef LessEq            (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef Greater           (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef GreaterEq         (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef NotEqual          (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef RerootTree        (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef EqualAmb          (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef EqualRegExp       (HBLObjectRef,bool, HBLObjectRef cache);
+    virtual HBLObjectRef ReplaceReqExp     (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef CountGlobalObjects(HBLObjectRef cache);
+    virtual HBLObjectRef FileExists        (HBLObjectRef cache);
+    virtual HBLObjectRef Call              (_List*,_hyExecutionContext*,HBLObjectRef cache);
+    virtual HBLObjectRef Sum               (HBLObjectRef cache);
     virtual HBLObjectRef Evaluate          (_hyExecutionContext* context = _hyDefaultExecutionContext);
     virtual HBLObjectRef SubstituteAndSimplify
-                                        (HBLObjectRef arguments);
-    virtual HBLObjectRef Join              (HBLObjectRef);
-    virtual HBLObjectRef Differentiate     (HBLObjectRef);
+                                        (HBLObjectRef arguments,HBLObjectRef cache);
+    virtual HBLObjectRef Join              (HBLObjectRef,HBLObjectRef cache);
+    virtual HBLObjectRef Differentiate     (HBLObjectRef,HBLObjectRef cache);
     virtual unsigned long      ObjectClass       (void) const {
         return STRING;
     }
@@ -96,15 +97,24 @@ public:
      */
     
     void  SetStringContent (_StringBuffer * );
+    template <class T> void  SetData          (T src) {
+        if (the_string) {
+            the_string->Clear();
+            (*the_string) << src;
+        } else {
+            SetStringContent (new _StringBuffer (src));
+        }
+    }
+    
     
     virtual HBLObjectRef Compute           (void) {
         return this;
     }
     HBLObjectRef         Dereference       (bool ignore_context, _hyExecutionContext* context = _hyDefaultExecutionContext, bool return_variable_ref = false);
 
-    virtual HBLObjectRef MapStringToVector (HBLObjectRef);
-    virtual HBLObjectRef CharAccess        (HBLObjectRef,HBLObjectRef);
-    virtual HBLObjectRef ExecuteSingleOp   (long opCode, _List* args = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual HBLObjectRef MapStringToVector (HBLObjectRef, HBLObjectRef cache);
+    virtual HBLObjectRef CharAccess        (HBLObjectRef,HBLObjectRef,HBLObjectRef cache);
+    virtual HBLObjectRef ExecuteSingleOp   (long opCode, _List* args = nil, _hyExecutionContext* context = _hyDefaultExecutionContext, HBLObjectRef cache = nil);
     virtual BaseRef   toStr             (unsigned long = 0UL);
 
     virtual bool      IsVariable        (void) {
@@ -132,5 +142,12 @@ protected:
     _StringBuffer*          the_string;
   
 };
+
+template <class T> HBLObjectRef _returnStringOrUseCache (T source, HBLObjectRef cache) {
+    if (cache && cache->ObjectClass() == STRING) {
+        ((_FString*)cache)->SetData(source);
+    }
+    return new _FString (source);
+}
 
 #endif

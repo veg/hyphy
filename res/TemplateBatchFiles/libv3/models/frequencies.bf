@@ -200,9 +200,9 @@ function frequencies.codon.multiply_in_frequencies (model, __estimates) {
 
                 if (Abs ((model[terms.model.rate_matrix])[_colChar][_rowChar])) {
                     __diff = models.codon.diff.complete (__alphabet[_rowChar], __alphabet[_colChar]);
-                    for (__diff_id = 0; __diff_id < Abs (__diff); __diff_id += 1) {
-                        (model[terms.model.rate_matrix])[_rowChar][_colChar] += "*" + (__estimates[(__diff[__diff_id])["to"]])[(__diff[__diff_id])["position"]];
-                        (model[terms.model.rate_matrix])[_colChar][_rowChar] += "*" + (__estimates[(__diff[__diff_id])["from"]])[(__diff[__diff_id])["position"]];
+                    for (__diff_id, __diff_value; in; __diff) {
+                        (model[terms.model.rate_matrix])[_rowChar][_colChar] += "*" + (__estimates[__diff_value["to"]])[__diff_value["position"]];
+                        (model[terms.model.rate_matrix])[_colChar][_rowChar] += "*" + (__estimates[__diff_value["from"]])[__diff_value["position"]];
                     }
                 }
             }

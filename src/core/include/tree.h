@@ -107,8 +107,8 @@ public:
         return TREE;
     }
 
-    virtual HBLObjectRef       ExecuteSingleOp                     (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
-    virtual  HBLObjectRef      PlainTreeString             (HBLObjectRef,HBLObjectRef);
+    virtual HBLObjectRef       ExecuteSingleOp            (long, _List* = nil, _hyExecutionContext* context = _hyDefaultExecutionContext, HBLObjectRef cache = nil);
+    virtual  HBLObjectRef      PlainTreeString            (HBLObjectRef,HBLObjectRef, HBLObjectRef cache);
 
     virtual _String const   GetNodeName                 (node<long> *, bool = false) const;
     virtual _String const   GetNodeName                 (_CalcNode const *cn, bool = false) const;

@@ -56,62 +56,62 @@ protected:
 
 public:
 
-    virtual _MathObject* Add        (_MathObject*)     ;
-    virtual _MathObject* Sub        (_MathObject*)     ;
-    virtual _MathObject* Minus      (void)             ;
-    virtual _MathObject* Sum        (void)             ;
-    virtual _MathObject* Mult       (_MathObject*)     ;
-    virtual _MathObject* Div        (_MathObject*)     ;
-    virtual _MathObject* lDiv       (_MathObject*)     ;
-    virtual _MathObject* longDiv    (_MathObject*)     ;
-    virtual _MathObject* Raise      (_MathObject*)     ;
+    virtual _MathObject* Add        (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* Sub        (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* Minus      (_MathObject* cache = nil)             ;
+    virtual _MathObject* Sum        (_MathObject* cache = nil)             ;
+    virtual _MathObject* Mult       (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* Div        (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* lDiv       (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* longDiv    (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* Raise      (_MathObject*, _MathObject* cache = nil)     ;
     virtual bool         Equal      (_MathObject*)     ;
-    virtual _MathObject* Abs        (void)             ;
-    virtual _MathObject* Sin        (void)             ;
-    virtual _MathObject* Cos        (void)             ;
-    virtual _MathObject* Tan        (void)             ;
-    virtual _MathObject* Exp        (void)             ;
-    virtual _MathObject* Log        (void)             ;
-    virtual _MathObject* Sqrt       (void)             ;
-    virtual _MathObject* Gamma      (void)             ;
-    virtual _MathObject* Erf        (void)             ;
-    virtual _MathObject* LnGamma    (void)             ;
-    virtual _MathObject* Beta       (_MathObject*)     ;
-    virtual _MathObject* IGamma     (_MathObject*)     ;
-    virtual _MathObject* CChi2      (_MathObject*)     ;
-    virtual _MathObject* IBeta      (_MathObject*,_MathObject*) ;
-    virtual _MathObject* Simplex    (void)             ;
+    virtual _MathObject* Abs        (_MathObject* cache = nil)             ;
+    virtual _MathObject* Sin        (_MathObject* cache = nil)             ;
+    virtual _MathObject* Cos        (_MathObject* cache = nil)             ;
+    virtual _MathObject* Tan        (_MathObject* cache = nil)             ;
+    virtual _MathObject* Exp        (_MathObject* cache = nil)             ;
+    virtual _MathObject* Log        (_MathObject* cache = nil)             ;
+    virtual _MathObject* Sqrt       (_MathObject* cache = nil)             ;
+    virtual _MathObject* Gamma      (_MathObject* cache = nil)             ;
+    virtual _MathObject* Erf        (_MathObject* cache = nil)             ;
+    virtual _MathObject* LnGamma    (_MathObject* cache = nil)             ;
+    virtual _MathObject* Beta       (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* IGamma     (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* CChi2      (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* IBeta      (_MathObject*,_MathObject*, _MathObject* cache = nil) ;
+    virtual _MathObject* Simplex    (_MathObject* cache = nil)             ;
     
-    virtual _MathObject* Simplify    (void)             ;
+    virtual _MathObject* Simplify    (_MathObject* cache = nil)             ;
     
-    virtual _MathObject* Min        (_MathObject*)     ;
-    virtual _MathObject* Max        (_MathObject*)     ;
-    virtual _MathObject* InvChi2    (_MathObject*)     ;
-    virtual _MathObject* ZCDF       (void)             ;
-    virtual _MathObject* Time       (void)             ;
-    virtual _MathObject* Arctan     (void)             ;
-    virtual _MathObject* Less       (_MathObject*)     ;
-    virtual _MathObject* Random     (_MathObject*)     ;
-    virtual _MathObject* Greater    (_MathObject*)     ;
-    virtual _MathObject* LessEq     (_MathObject*)     ;
-    virtual _MathObject* GreaterEq  (_MathObject*)     ;
-    virtual _MathObject* AreEqual   (_MathObject*)     ;
-    virtual _MathObject* NotEqual   (_MathObject*)     ;
-    virtual _MathObject* LAnd       (_MathObject*)     ;
-    virtual _MathObject* LOr        (_MathObject*)     ;
-    virtual _MathObject* GammaDist  (_MathObject*,_MathObject*) ;
-    virtual _MathObject* CGammaDist (_MathObject*,_MathObject*) ;
-    virtual _MathObject* LNot       (void)             ;
-    virtual _MathObject* TipCount   (void)             ;
-    virtual _MathObject* BranchCount (void)            ;
-    virtual _MathObject* TipName     (_MathObject*)    ;
-    virtual _MathObject* BranchName  (_MathObject*)    ;
-    virtual _MathObject* BranchLength(_MathObject*)    ;
-    virtual _MathObject* RerootTree  (_MathObject*)    ;
-    virtual _MathObject* TEXTreeString(_MathObject*) const ;
-    virtual _MathObject* Type                          (void);
-    virtual _MathObject* PlainTreeString(_MathObject*,_MathObject*) ;
-    virtual _MathObject* FormatNumberString (_MathObject*,_MathObject*) ;
+    virtual _MathObject* Min        (_MathObject*,_MathObject* cache = nil)     ;
+    virtual _MathObject* Max        (_MathObject*,_MathObject* cache = nil)     ;
+    virtual _MathObject* InvChi2    (_MathObject*,_MathObject* cache = nil)     ;
+    virtual _MathObject* ZCDF       (_MathObject* cache = nil)             ;
+    virtual _MathObject* Time       (_MathObject* cache = nil)             ;
+    virtual _MathObject* Arctan     (_MathObject* cache = nil)             ;
+    virtual _MathObject* Less       (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* Random     (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* Greater    (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* LessEq     (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* GreaterEq  (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* AreEqual   (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* NotEqual   (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* LAnd       (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* LOr        (_MathObject*, _MathObject* cache = nil)     ;
+    virtual _MathObject* GammaDist  (_MathObject*,_MathObject*, _MathObject* cache = nil) ;
+    virtual _MathObject* CGammaDist (_MathObject*,_MathObject*, _MathObject* cache = nil) ;
+    virtual _MathObject* LNot       (_MathObject* cache = nil)             ;
+    virtual _MathObject* TipCount   (_MathObject* cache = nil)             ;
+    virtual _MathObject* BranchCount (_MathObject* cache = nil)            ;
+    virtual _MathObject* TipName     (_MathObject*, _MathObject* cache = nil)    ;
+    virtual _MathObject* BranchName  (_MathObject*, _MathObject* cache = nil)    ;
+    virtual _MathObject* BranchLength(_MathObject*, _MathObject* cache = nil)    ;
+    virtual _MathObject* RerootTree  (_MathObject*, _MathObject* cache = nil)    ;
+    virtual _MathObject* TEXTreeString(_MathObject*, _MathObject* cache = nil) const ;
+    virtual _MathObject* Type                          (_MathObject* cache = nil);
+    virtual _MathObject* PlainTreeString(_MathObject*,_MathObject*, _MathObject* cache = nil) ;
+    virtual _MathObject* FormatNumberString (_MathObject*,_MathObject*, _MathObject* cache = nil) ;
     virtual hyFloat   Value (void)              ;
     
     virtual _MathObject* Compute (void)            {
@@ -145,7 +145,7 @@ public:
     // 4 - matrix
 
   
-    virtual _MathObject* ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext);
+    virtual _MathObject* ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext, _MathObject* cache = nil);
     // execute this operation with the list of Args
 
     virtual bool         HasChanged (bool = false) {
@@ -164,9 +164,10 @@ public:
 };
 
 // pointer to a math object
+
 typedef _MathObject* HBLObjectRef ;
 typedef _MathObject const * HBLObjectRefConst ;
 
-
+HBLObjectRef   _returnConstantOrUseCache (hyFloat value, HBLObjectRef cache);
 
 #endif

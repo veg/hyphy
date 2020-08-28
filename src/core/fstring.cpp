@@ -80,6 +80,12 @@ _FString::_FString (_String* data) {
 }
 
 //__________________________________________________________________________________
+
+_FString::_FString (const char* data) {
+    the_string = new _StringBuffer (data);
+}
+
+//__________________________________________________________________________________
 _FString::_FString (long in_data){
    the_string = new _StringBuffer (new _String (in_data));
 }
@@ -151,8 +157,9 @@ void _FString::SetStringContent (_StringBuffer * arg){
     the_string = arg;
  }
 
+
 //__________________________________________________________________________________
-HBLObjectRef _FString::Add (HBLObjectRef p) {
+HBLObjectRef _FString::Add (HBLObjectRef p, HBLObjectRef cache) {
     _StringBuffer  * res;
   
     if (p->ObjectClass()==STRING) {
@@ -168,8 +175,8 @@ HBLObjectRef _FString::Add (HBLObjectRef p) {
 
 //__________________________________________________________________________________
 
-HBLObjectRef _FString::Sum (void) {
-  return new _Constant (get_str().to_float());
+HBLObjectRef _FString::Sum (HBLObjectRef cache) {
+  return _returnConstantOrUseCache (get_str().to_float(), cache);
 }
 
 //__________________________________________________________________________________
@@ -191,25 +198,25 @@ long _FString::AddOn (HBLObjectRef p) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::AreEqual (HBLObjectRef p) {
+HBLObjectRef _FString::AreEqual (HBLObjectRef p, HBLObjectRef cache) {
     if (p->ObjectClass()==STRING) {
-        return new _Constant (get_str() == ((_FString*)p)->get_str());
+        return _returnConstantOrUseCache (get_str() == ((_FString*)p)->get_str(), cache);
     } else {
-        return new HY_CONSTANT_FALSE;
+        return _returnConstantOrUseCache (0., cache);
     }
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::AreEqualCIS (HBLObjectRef p) {
+HBLObjectRef _FString::AreEqualCIS (HBLObjectRef p, HBLObjectRef cache) {
   if (p->ObjectClass()==STRING) {
-    return new _Constant (get_str().CompareIgnoringCase(((_FString*)p)->get_str()) == kCompareEqual);
+      return _returnConstantOrUseCache (get_str().CompareIgnoringCase(((_FString*)p)->get_str()) == kCompareEqual, cache);
   } else {
-    return new HY_CONSTANT_FALSE;
+    return _returnConstantOrUseCache (0., cache);
   }
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::Join (HBLObjectRef p) {
+HBLObjectRef _FString::Join (HBLObjectRef p, HBLObjectRef cache) {
     _List theStrings;
 
     if (p->ObjectClass()==MATRIX) {
@@ -218,11 +225,11 @@ HBLObjectRef _FString::Join (HBLObjectRef p) {
         ((_AssociativeList*)(p->Compute()))->FillInList (theStrings);
     }
 
-    return new _FString((_String*)theStrings.Join(get_str()));
+    return _returnStringOrUseCache ((_String*)theStrings.Join(get_str()), cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::EqualAmb (HBLObjectRef p) {
+HBLObjectRef _FString::EqualAmb (HBLObjectRef p, HBLObjectRef cache) {
     bool result;
     if (p->ObjectClass()==STRING) {
         result = the_string->EqualWithWildChar (((_FString*)p)->get_str());
@@ -231,13 +238,13 @@ HBLObjectRef _FString::EqualAmb (HBLObjectRef p) {
         result = the_string->EqualWithWildChar(convStr);
     }
 
-    return new _Constant (result);
+    return _returnConstantOrUseCache (result, cache);
 
 }
 
 //__________________________________________________________________________________
 
-HBLObjectRef _FString::EqualRegExp (HBLObjectRef p, bool match_all)
+HBLObjectRef _FString::EqualRegExp (HBLObjectRef p, bool match_all, HBLObjectRef cache)
 {
     if (p->ObjectClass()==STRING) {
        _SimpleList matches  = match_all ? the_string->RegExpAllMatches(((_FString*)p)->get_str(), true, true) :
@@ -256,7 +263,7 @@ HBLObjectRef _FString::EqualRegExp (HBLObjectRef p, bool match_all)
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::ReplaceReqExp (HBLObjectRef p) {
+HBLObjectRef _FString::ReplaceReqExp (HBLObjectRef p, HBLObjectRef cache) {
     if (has_data ()) {
       
         if (p->ObjectClass()==MATRIX) {
@@ -291,9 +298,11 @@ HBLObjectRef _FString::ReplaceReqExp (HBLObjectRef p) {
                             *replaced << the_string->char_at(k++);
                         }
                     }
-                    res = new _FString (replaced);
+                    return _returnStringOrUseCache (replaced, cache);
+                    //res = new _FString (replaced);
                 } else {
-                    res = new _FString (get_str(), false);
+                    return _returnStringOrUseCache (get_str(), cache);
+                    //res = new _FString (get_str(), false);
                 }
 
                 return res;
@@ -302,7 +311,7 @@ HBLObjectRef _FString::ReplaceReqExp (HBLObjectRef p) {
 
         HandleApplicationError ("Invalid 2nd argument in call to string^{{pattern,replacement}}");
     }
-    return new _FString (kEmptyString,false);
+    return _returnStringOrUseCache(kEmptyString,cache);
 }
 
 //__________________________________________________________________________________
@@ -323,35 +332,35 @@ hyComparisonType _FString::Compare  (HBLObjectRef p, bool convert_non_strings) {
 
 //__________________________________________________________________________________
 
-HBLObjectRef _FString::NotEqual (HBLObjectRef p) {
-    return new _Constant (Compare (p, true) != kCompareEqual);
+HBLObjectRef _FString::NotEqual (HBLObjectRef p, HBLObjectRef cache) {
+    return _returnConstantOrUseCache(Compare (p, true) != kCompareEqual, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::Less (HBLObjectRef p) {
-  return new _Constant (Compare (p, true) == kCompareLess);
+HBLObjectRef _FString::Less (HBLObjectRef p, HBLObjectRef cache) {
+  return _returnConstantOrUseCache(Compare (p, true) == kCompareLess, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::LessEq (HBLObjectRef p) {
+HBLObjectRef _FString::LessEq (HBLObjectRef p, HBLObjectRef cache) {
   hyComparisonType r = Compare (p, true);
-  return new _Constant (r == kCompareLess || r == kCompareEqual);
+  return _returnConstantOrUseCache (r == kCompareLess || r == kCompareEqual, cache);
 }
 
   //__________________________________________________________________________________
-HBLObjectRef _FString::GreaterEq (HBLObjectRef p) {
+HBLObjectRef _FString::GreaterEq (HBLObjectRef p, HBLObjectRef cache) {
   hyComparisonType r = Compare (p, true);
-  return new _Constant (r == kCompareGreater || r == kCompareEqual);
+  return _returnConstantOrUseCache (r == kCompareGreater || r == kCompareEqual, cache);
 }
 
   //__________________________________________________________________________________
-HBLObjectRef _FString::Greater (HBLObjectRef p) {
-  return new _Constant (Compare (p, true) == kCompareGreater);
+HBLObjectRef _FString::Greater (HBLObjectRef p, HBLObjectRef cache) {
+  return _returnConstantOrUseCache (Compare (p, true) == kCompareGreater, cache);
 }
 
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::Differentiate (HBLObjectRef p) {
+HBLObjectRef _FString::Differentiate (HBLObjectRef p, HBLObjectRef cache) {
     _Formula F;
 
     _String  *X,
@@ -380,7 +389,12 @@ HBLObjectRef _FString::Differentiate (HBLObjectRef p) {
         DeleteObject (X);
     }
 
-    return new _FString (DFDX?DFDX:new _String());
+    if (DFDX)
+        return _returnStringOrUseCache(DFDX, cache);
+    
+    return _returnStringOrUseCache (kEmptyString, cache);
+    
+    //return new _FString (DFDX?DFDX:new _String());
 
 }
 
@@ -392,7 +406,7 @@ BaseRef  _FString::toStr(unsigned long) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _FString::RerootTree (HBLObjectRef) {
+HBLObjectRef _FString::RerootTree (HBLObjectRef root, HBLObjectRef cache) {
     // TODO SKLP 20170921 This needs algorithmic review
   
     static const _String _internal_reroot_tree ("_INTERNAL_REROOT_TREE_");
@@ -407,13 +421,15 @@ HBLObjectRef _FString::RerootTree (HBLObjectRef) {
     if (rTree.IsDegenerate()) { // no need to reroot two-sequence trees
         lastMatrixDeclared = stashed_model_id;
         DeleteVariable  (_internal_reroot_tree);
-        return new _FString (get_str(), false);
+        return _returnStringOrUseCache(get_str(), cache);
+        //return new _FString (get_str(), false);
     }
 
     if (terminate_execution) {
         lastMatrixDeclared = stashed_model_id;
         DeleteVariable  (_internal_reroot_tree);
-        return new _FString;
+        return _returnStringOrUseCache(kEmptyString, cache);
+        //return new _FString;
     }
   
 
@@ -461,12 +477,12 @@ HBLObjectRef _FString::RerootTree (HBLObjectRef) {
   
     counted_descendants->delete_tree(true);
 
-    _FString* res;
+    HBLObjectRef res;
     if (rerootAt) {
         _FString    rAt  (rerootAt->ContextFreeName());
-        res = (_FString*)rTree.RerootTree (&rAt);
+        res = (_FString*)rTree.RerootTree (&rAt, cache);
     } else {
-        res = new _FString (get_str(), false);
+        res = _returnStringOrUseCache (get_str(), cache);
     }
 
     DeleteVariable  (_internal_reroot_tree);
@@ -493,7 +509,7 @@ HBLObjectRef _FString::Evaluate (_hyExecutionContext* context) {
 
   //__________________________________________________________________________________
 
-HBLObjectRef _FString::SubstituteAndSimplify(HBLObjectRef arguments) {
+HBLObjectRef _FString::SubstituteAndSimplify(HBLObjectRef arguments, HBLObjectRef cache) {
   /**
    "arguments" is expected to be a dictionary of with key : value pairs like
     "x" : 3, 
@@ -532,7 +548,7 @@ HBLObjectRef _FString::SubstituteAndSimplify(HBLObjectRef arguments) {
       }
       
       evaluator.SimplifyConstants();
-      return new _FString ((_String*)evaluator.toStr(kFormulaStringConversionNormal));
+      return _returnStringOrUseCache(((_String*)evaluator.toStr(kFormulaStringConversionNormal)), cache);
     }
   }
   return new _MathObject;
@@ -571,29 +587,29 @@ HBLObjectRef _FString::Dereference(bool ignore_context, _hyExecutionContext* con
 //__________________________________________________________________________________
 
 
-HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context)   {
+HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context, HBLObjectRef cache)   {
   
   switch (opCode) { // first check operations without arguments
     case HY_OP_CODE_NOT: // !
-      return FileExists();
+      return FileExists(cache);
     case HY_OP_CODE_ABS: // Abs
-      return new _Constant (get_str().length());
+      return _returnConstantOrUseCache (get_str().length(), cache);
     case HY_OP_CODE_EVAL: // Eval
         return Evaluate(context);
     case HY_OP_CODE_EXP: // Exp
-      return new _Constant (get_str().LempelZivProductionHistory(nil));
+      return _returnConstantOrUseCache (get_str().LempelZivProductionHistory(nil), cache);
     case HY_OP_CODE_LOG: // Log - check sum
-      return new _Constant (get_str().Adler32());
+      return _returnConstantOrUseCache (get_str().Adler32(), cache);
     case HY_OP_CODE_INVERSE:  // Inverse
-      return new _FString (new _String (get_str().Reverse()));
+      return _returnStringOrUseCache(get_str().Reverse(), cache);
     case HY_OP_CODE_MCOORD: // MCoord
-      return new _FString (get_str(), true);
+      return _returnStringOrUseCache(get_str(), cache);
     case HY_OP_CODE_TYPE: // Type
-      return Type();
+      return Type(cache);
     case HY_OP_CODE_REROOTTREE: // RerootTree
-      return RerootTree (nil);
+      return RerootTree (nil, cache);
     case HY_OP_CODE_ROWS: // Count Objects of given type
-      return CountGlobalObjects();
+      return CountGlobalObjects(cache);
   }
   
   _MathObject * arg0 = _extract_argument (arguments, 0UL, false);
@@ -603,38 +619,38 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
       if (arg0) {
         // NOT a dereference
         if (arg0->ObjectClass() == MATRIX) {
-          return      MapStringToVector (arg0);
+          return      MapStringToVector (arg0, cache);
         } else {
-          return new _Constant(AddOn(arg0));
+          return _returnConstantOrUseCache (AddOn(arg0), cache);
         }
       } else {
-        return Dereference(false, context);
+          return Dereference(false, context, cache);
       }
     case HY_OP_CODE_ADD: // +
       if (arg0) {
-        return Add(arg0);
+        return Add(arg0, cache);
       } else {
-        return Sum();
+        return Sum(cache);
       }
     case HY_OP_CODE_POWER: {
       // Replace (^)
       if (arg0)
-        return ReplaceReqExp (arg0);
-      return Dereference(true, context);
+        return ReplaceReqExp (arg0, cache);
+      return Dereference(true, context, cache);
     }
       
     case HY_OP_CODE_CALL: // call the function
-      return Call (arguments, context);
+      return Call (arguments, context, cache);
   }
   
   if (arg0) {
     switch (opCode) {
       case HY_OP_CODE_NEQ: // !=
-        return NotEqual(arg0);
+        return NotEqual(arg0, cache);
       case HY_OP_CODE_IDIV: // $ match regexp
-        return EqualRegExp(arg0);
+        return EqualRegExp(arg0, false, cache);
       case HY_OP_CODE_MOD: // % equal case insenstive
-        return AreEqualCIS(arg0);
+        return AreEqualCIS(arg0, cache);
             
       case HY_OP_CODE_MIN: {// resolve file path
           hyFloat local_resolve = 0.0;
@@ -643,7 +659,7 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
           }
           _String value = get_str();
           ProcessFileName (value, false, false, (hyPointer) (context ? context->GetContext() : nil), false, nil, !CheckEqual(local_resolve,0.0));
-          return new _FString (value, false);
+          return _returnStringOrUseCache(value, cache);
       }
             
       case HY_OP_CODE_AND: { // && upcase or lowercase
@@ -695,37 +711,37 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
               break;
           }
           
-          return new _FString (t);
+          return _returnStringOrUseCache (t, cache);
         }
       }
         
       case HY_OP_CODE_DIV: // /
-        return EqualAmb(arg0);
+        return EqualAmb(arg0, cache);
       case HY_OP_CODE_LESS: // <
-        return Less(arg0);
+        return Less(arg0, cache);
       case HY_OP_CODE_LEQ: // <=
-        return LessEq(arg0);
+        return LessEq(arg0, cache);
       case HY_OP_CODE_EQ: // ==
-        return AreEqual(arg0);
+        return AreEqual(arg0, cache);
       case HY_OP_CODE_GREATER: // >
-        return Greater(arg0);
+        return Greater(arg0, cache);
       case HY_OP_CODE_GEQ: // >=
-        return GreaterEq(arg0);
+        return GreaterEq(arg0, cache);
       case HY_OP_CODE_DIFF: // Differentiate
-        return Differentiate(arg0);
+        return Differentiate(arg0, cache);
       case HY_OP_CODE_JOIN: // JOIN
-        return Join (arg0);
+        return Join (arg0, cache);
       case HY_OP_CODE_SIMPLIFY: // Simplify an expression
-        return SubstituteAndSimplify (arg0);
+        return SubstituteAndSimplify (arg0, cache);
       case HY_OP_CODE_OR: // Match all instances of the reg.ex (||)
-        return EqualRegExp (arg0, true);
+        return EqualRegExp (arg0, true, cache);
     }
     
     _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
     
     switch (opCode) {
       case HY_OP_CODE_MACCESS: // MAccess
-        return CharAccess(arg0,arg1);
+        return CharAccess(arg0,arg1,cache);
     }
     
     if (arg1) {
@@ -738,7 +754,7 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
             
           }
           if (fv) {
-            return ((_Constant*)fv)->FormatNumberString (arg0,arg1);
+            return ((_Constant*)fv)->FormatNumberString (arg0,arg1, cache);
           } else {
             ReportWarning (_String("Failed to evaluate ")& get_str() & " to a number in call to Format (string...)");
             return new _FString();
@@ -778,7 +794,7 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _FString::MapStringToVector (HBLObjectRef p) {
+HBLObjectRef   _FString::MapStringToVector (HBLObjectRef p, HBLObjectRef cache) {
     if (has_data() && p->ObjectClass () == MATRIX) {
         _Matrix         * factoringMatrix = (_Matrix *)p;
 
@@ -813,38 +829,45 @@ HBLObjectRef   _FString::MapStringToVector (HBLObjectRef p) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _FString::CharAccess (HBLObjectRef p,HBLObjectRef p2)
+HBLObjectRef   _FString::CharAccess (HBLObjectRef p,HBLObjectRef p2,HBLObjectRef cache)
 {
-    unsigned long index = p->Value();
+    long index = p->Value();
 
     if (p2) {
-        unsigned long index2 = p2->Value();
-        return new _FString (new _String (get_str().Cut (index,index2)));
+        long index2 = p2->Value();
+        return _returnStringOrUseCache(get_str().Cut (index,index2), cache);
+        
+        //return new _FString (new _String (get_str().Cut (index,index2)));
     } else if (index<get_str().length()) {
-        return new _FString (new _String (get_str().char_at(index)));
+        //return new _FString (new _String (get_str().char_at(index)));
+        char buffer[2];
+        buffer[0] = get_str()(index);
+        buffer[1] = 0;
+        return _returnStringOrUseCache(buffer, cache);
      }
 
-    return new _FString (kEmptyString, false);
+    return _returnStringOrUseCache(kEmptyString, cache);
+    //return new _FString (kEmptyString, false);
 }
 //__________________________________________________________________________________
-HBLObjectRef   _FString::FileExists (void) {
-    _Constant  * retValue = new _Constant (0.0);
+HBLObjectRef   _FString::FileExists (HBLObjectRef cache) {
+    hyFloat exists = 0.0;
     if (has_data()) {
         _String cpy (get_str());
         if (ProcessFileName(cpy)) {
             // TODO use fstat instead
           FILE * test = doFileOpen (cpy, "rb");
           if (test) {
-              retValue->SetValue (1.0);
+              exists = 1.0;
               fclose (test);
           }
         }
     }
-    return retValue;
+    return _returnConstantOrUseCache(exists, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _FString::Call (_List* arguments, _hyExecutionContext* context) {
+HBLObjectRef   _FString::Call (_List* arguments, _hyExecutionContext* context, HBLObjectRef cache) {
   long function_id = FindBFFunctionName (get_str(), NULL);
   if (function_id >= 0) {
        _Formula the_call;
@@ -876,7 +899,7 @@ HBLObjectRef   _FString::Call (_List* arguments, _hyExecutionContext* context) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef   _FString::CountGlobalObjects (void)
+HBLObjectRef   _FString::CountGlobalObjects (HBLObjectRef cache)
 {
     hyFloat res = 0.0;
 
@@ -887,13 +910,13 @@ HBLObjectRef   _FString::CountGlobalObjects (void)
 
     switch (standardType) {
     case HY_BL_LIKELIHOOD_FUNCTION:
-        return new _Constant (likeFuncList.lLength);
+        return _returnConstantOrUseCache(likeFuncList.lLength, cache);
     case HY_BL_DATASET:
-        return new _Constant (dataSetList.lLength);
+        return _returnConstantOrUseCache(dataSetList.lLength, cache);
     case HY_BL_DATASET_FILTER:
-        return new _Constant (CountObjectsByType (HY_BL_DATASET_FILTER));
+        return _returnConstantOrUseCache(CountObjectsByType (HY_BL_DATASET_FILTER), cache);
     case HY_BL_HBL_FUNCTION:
-        return new _Constant (GetBFFunctionCount());
+        return _returnConstantOrUseCache(GetBFFunctionCount(), cache);
     case HY_BL_TREE: {
         _SimpleList tc;
         long        si,
@@ -908,10 +931,9 @@ HBLObjectRef   _FString::CountGlobalObjects (void)
     }
 
     case HY_BL_SCFG:
-        return new _Constant (scfgList.lLength);
+        return _returnConstantOrUseCache(scfgList.lLength, cache);
     case HY_BL_VARIABLE:
-        return new _Constant (variableNames.countitems());
-
+        return _returnConstantOrUseCache(variableNames.countitems(), cache);
     }
 
     if (standardType < 0) {
@@ -923,5 +945,7 @@ HBLObjectRef   _FString::CountGlobalObjects (void)
             }
         }
     }
-    return new _Constant (res);
+    return _returnConstantOrUseCache (res, cache);
 }
+
+

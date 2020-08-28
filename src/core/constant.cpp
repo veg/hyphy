@@ -500,53 +500,53 @@ BaseRef _Constant::toStr(unsigned long) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Add (HBLObjectRef theObj) {
+HBLObjectRef _Constant::Add (HBLObjectRef theObj, HBLObjectRef cache) {
     if (theObj->ObjectClass() == STRING) {
-        return new _Constant (theValue+((_FString*)theObj)->get_str().to_float());
+        return _returnConstantOrUseCache (theValue+((_FString*)theObj)->get_str().to_float(), cache);
     }
-    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a + b;});
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a + b;}, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Sub (HBLObjectRef theObj) {
-    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a - b;});
+HBLObjectRef _Constant::Sub (HBLObjectRef theObj, HBLObjectRef cache) {
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a - b;}, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Minus (void) {
-    return     new  _Constant (-Value());
+HBLObjectRef _Constant::Minus (HBLObjectRef cache) {
+    return     _returnConstantOrUseCache (-Value(), cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Sum (void) {
-    return     new  _Constant (Value());
+HBLObjectRef _Constant::Sum (HBLObjectRef cache) {
+    return     _returnConstantOrUseCache (Value(), cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Mult (HBLObjectRef theObj) {
-    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a * b;});
+HBLObjectRef _Constant::Mult (HBLObjectRef theObj, HBLObjectRef cache) {
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a * b;}, cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Div (HBLObjectRef theObj) {
-    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a / b;});
+HBLObjectRef _Constant::Div (HBLObjectRef theObj,  HBLObjectRef cache) {
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a / b;}, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::lDiv (HBLObjectRef theObj) { // %
+HBLObjectRef _Constant::lDiv (HBLObjectRef theObj, HBLObjectRef cache) { // %
     return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {
             long       denom = b;
             return     denom != 0L ? (long(a) % denom): a;
-    });
+    }, cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::longDiv (HBLObjectRef theObj)  {// div
+HBLObjectRef _Constant::longDiv (HBLObjectRef theObj, HBLObjectRef cache)  {// div
     return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {
         long       denom = b;
         return     denom != 0L ? (long(a) / denom): 0.0;
-    });
+    }, cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Raise (HBLObjectRef theObj) {
+HBLObjectRef _Constant::Raise (HBLObjectRef theObj, HBLObjectRef cache) {
     return _check_type_and_compute (theObj, [] (hyFloat base, hyFloat expon) -> hyFloat {
         if (base>0.0) {
             if (expon == 1.) {
@@ -567,18 +567,18 @@ HBLObjectRef _Constant::Raise (HBLObjectRef theObj) {
             else
                 return     1.0;
         }
-    });
+    }, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Random (HBLObjectRef upperB) {
+HBLObjectRef _Constant::Random (HBLObjectRef upperB, HBLObjectRef cache) {
     return _check_type_and_compute (upperB, [] (hyFloat l, hyFloat u) -> hyFloat {
         hyFloat r = l;
         if (u>l) {
             r = l + (u-l) * genrand_real1();
         }
         return r;
-    });
+    }, cache);
 }
 
 //__________________________________________________________________________________
@@ -587,30 +587,32 @@ bool     _Constant::Equal (HBLObjectRef theObj) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Abs (void) {
-    return     new _Constant (fabs(theValue));
+HBLObjectRef _Constant::Abs (HBLObjectRef cache) {
+    return     _returnConstantOrUseCache(fabs(theValue), cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Sin (void){
-    return     new  _Constant (sin(theValue));
+HBLObjectRef _Constant::Sin (HBLObjectRef cache){
+    return     _returnConstantOrUseCache(sin(theValue), cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Cos (void){
-    return     new _Constant  (cos(theValue));
+HBLObjectRef _Constant::Cos (HBLObjectRef cache){
+    return     _returnConstantOrUseCache(cos(theValue) , cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Tan (void){
-    return     new _Constant  (tan(theValue));
+HBLObjectRef _Constant::Tan (HBLObjectRef cache){
+    return     _returnConstantOrUseCache(tan(theValue) , cache);
 }
+
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Exp (void){
-    return     new _Constant  (exp(theValue));
+HBLObjectRef _Constant::Exp (HBLObjectRef cache){
+    return     _returnConstantOrUseCache(exp(theValue) , cache);
 }
+
 //__________________________________________________________________________________
-HBLObjectRef _Constant::FormatNumberString (HBLObjectRef p, HBLObjectRef p2) {
+HBLObjectRef _Constant::FormatNumberString (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cache) {
     long       a1 = p->Value(),
                a2 = p2->Value();
 
@@ -648,109 +650,107 @@ HBLObjectRef _Constant::FormatNumberString (HBLObjectRef p, HBLObjectRef p2) {
 
 #endif
     snprintf    (buffer,256, format,Value());
-    return     new _FString (new _String (buffer));
+    return _returnStringOrUseCache(buffer, cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Log (void) {
-    return     new _Constant  (log(theValue));
+HBLObjectRef _Constant::Log (HBLObjectRef cache) {
+    return     _returnConstantOrUseCache(log(theValue), cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Sqrt (void) {
-    return     new _Constant  (sqrt(theValue));
+HBLObjectRef _Constant::Sqrt (HBLObjectRef cache) {
+    return     _returnConstantOrUseCache(sqrt (theValue), cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Arctan (void) {
-    return     new _Constant  (atan(theValue));
+HBLObjectRef _Constant::Arctan (HBLObjectRef cache) {
+    return     _returnConstantOrUseCache(atan (theValue), cache);
 }
-
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Gamma (void) {
-    return new _Constant (_gamma (theValue));
+HBLObjectRef _Constant::Gamma (HBLObjectRef cache) {
+    return     _returnConstantOrUseCache(_gamma (theValue), cache);
 }
-
 //__________________________________________________________________________________
-HBLObjectRef _Constant::LnGamma (void) {
-   return new _Constant (_ln_gamma (theValue));
+HBLObjectRef _Constant::LnGamma (HBLObjectRef cache) {
+    return     _returnConstantOrUseCache(_ln_gamma (theValue), cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Beta (HBLObjectRef arg) {
+HBLObjectRef _Constant::Beta (HBLObjectRef arg,HBLObjectRef cache) {
     return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
         return exp (_ln_gamma (a) + _ln_gamma (b) - _ln_gamma (a + b));
-    });
+    }, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::IBeta (HBLObjectRef arg1, HBLObjectRef arg2) {
+HBLObjectRef _Constant::IBeta (HBLObjectRef arg1, HBLObjectRef arg2,HBLObjectRef cache) {
     return _check_type_and_compute_3 (arg1, arg2, [] (hyFloat a, hyFloat b, hyFloat c) -> hyFloat {
         return _ibeta(a,b,c);
-    });
+    },cache);
 }
 
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::IGamma (HBLObjectRef arg) {
-    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return _igamma(a, b);});
+HBLObjectRef _Constant::IGamma (HBLObjectRef arg, HBLObjectRef cache) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return _igamma(a, b);}, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Erf (void) {
+HBLObjectRef _Constant::Erf (HBLObjectRef cache) {
     hyFloat ig = _igamma (0.5, theValue * theValue);
     if (theValue < 0.) {
         ig = -ig;
     }
-    return new _Constant (ig);
+    return _returnConstantOrUseCache (ig, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::ZCDF (void) {
+HBLObjectRef _Constant::ZCDF (HBLObjectRef cache) {
     hyFloat ig = _igamma (0.5, theValue * theValue * 0.5);
     
     if (theValue > 0.) {
-        return new _Constant (0.5 * (ig + 1.));
+        return _returnConstantOrUseCache (0.5 * (ig + 1.), cache);
     }
-    return new _Constant (0.5 * ( 1. - ig));
+    return _returnConstantOrUseCache (0.5 * ( 1. - ig), cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Time (void) {
-    _Constant * result = new _Constant;
+HBLObjectRef _Constant::Time (HBLObjectRef cache) {
+    //_Constant * result = new _Constant;
     if (theValue<1.0) {
-        result->theValue = ((hyFloat)clock()/CLOCKS_PER_SEC);
+        return  _returnConstantOrUseCache (((hyFloat)clock()/CLOCKS_PER_SEC), cache);
     } else {
         time_t tt;
-        result->theValue = ((hyFloat)time(&tt));
+        return  _returnConstantOrUseCache  ((hyFloat)time(&tt), cache);
     }
-    return     result;
+    //return     result;
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Less (HBLObjectRef theObj) {
-   return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a < b;});
+HBLObjectRef _Constant::Less (HBLObjectRef theObj, HBLObjectRef cache) {
+   return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a < b;}, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Greater (HBLObjectRef theObj) {
-    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a > b;});
+HBLObjectRef _Constant::Greater (HBLObjectRef theObj, HBLObjectRef cache) {
+    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a > b;}, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::GammaDist (HBLObjectRef alpha, HBLObjectRef beta) {
+HBLObjectRef _Constant::GammaDist (HBLObjectRef alpha, HBLObjectRef beta, HBLObjectRef cache) {
     return _check_type_and_compute_3 (alpha, beta, [] (hyFloat x, hyFloat a, hyFloat b) -> hyFloat {
         hyFloat gamma_dist = exp(a * log(b) -b*x +(a-1.)*log(x));
         return gamma_dist / _gamma (a);
-    });
+    }, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::CGammaDist (HBLObjectRef alpha, HBLObjectRef beta) {
+HBLObjectRef _Constant::CGammaDist (HBLObjectRef alpha, HBLObjectRef beta, HBLObjectRef cache) {
     return _check_type_and_compute_3 (alpha, beta, [] (hyFloat x, hyFloat a, hyFloat b) -> hyFloat {
         return _igamma (a, b * x);
-    });
+    }, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::CChi2 (HBLObjectRef n) {
+HBLObjectRef _Constant::CChi2 (HBLObjectRef n, HBLObjectRef cache) {
 // chi^2 n d.f. probability up to x
     return _check_type_and_compute (n, [] (hyFloat x, hyFloat b) -> hyFloat {
         if (x < 0.0 || b <= 0.) {
@@ -758,11 +758,11 @@ HBLObjectRef _Constant::CChi2 (HBLObjectRef n) {
             return 0.0;
         }
         return _igamma( b*0.5 , x * 0.5);
-    });
+    }, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::InvChi2 (HBLObjectRef n) {
+HBLObjectRef _Constant::InvChi2 (HBLObjectRef n, HBLObjectRef cache) {
 // chi^2 n d.f. probability up to x
     if (!chi2) {
         chi2 = new _Formula (_String ("IGamma(") &  kNVariableName & "," & kXVariableName & ")", nil);
@@ -771,7 +771,7 @@ HBLObjectRef _Constant::InvChi2 (HBLObjectRef n) {
     hyFloat half_n = ((_Constant*)n)->theValue*.5;
     if (theValue<0. || half_n < 0.|| theValue> 1.0) {
         ReportWarning ("InvChi2(x,n) is defined for n > 0, and x in [0,1]");
-        return new _Constant (0.0);
+        return _returnConstantOrUseCache(0., cache);
     }
     
     _Constant* result = new _Constant (half_n);
@@ -781,61 +781,61 @@ HBLObjectRef _Constant::InvChi2 (HBLObjectRef n) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::LessEq (HBLObjectRef arg) {
-    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return a <= b;});
+HBLObjectRef _Constant::LessEq (HBLObjectRef arg, HBLObjectRef cache) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return a <= b;}, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::GreaterEq (HBLObjectRef arg) {
-    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return a >= b;});
+HBLObjectRef _Constant::GreaterEq (HBLObjectRef arg, HBLObjectRef cache) {
+    return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat { return a >= b;}, cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::AreEqual (HBLObjectRef arg) {
+HBLObjectRef _Constant::AreEqual (HBLObjectRef arg, HBLObjectRef cache) {
     return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
         if (a==0.0) {
             return b==0.0;
         }
         return fabs ((a-b)/a)<tolerance;
-    });
+    }, cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::NotEqual (HBLObjectRef arg) {
+HBLObjectRef _Constant::NotEqual (HBLObjectRef arg, HBLObjectRef cache) {
     return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
         if (a==0.0) {
             return b!=0.0;
         }
         
         return fabs ((a-b)/a)>=tolerance;
-    });
+    }, cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::LAnd (HBLObjectRef arg) {
+HBLObjectRef _Constant::LAnd (HBLObjectRef arg, HBLObjectRef cache) {
     return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
         return long (a) && long (b);
-    });
+    }, cache);
 }
 //__________________________________________________________________________________
-HBLObjectRef _Constant::LOr (HBLObjectRef arg) {
+HBLObjectRef _Constant::LOr (HBLObjectRef arg,HBLObjectRef cache) {
 return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
     return long (a) || long (b);
-});
+}, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::LNot () {
-    return new _Constant (CheckEqual(theValue, 0.0));
+HBLObjectRef _Constant::LNot (HBLObjectRef cache) {
+    return _returnConstantOrUseCache(CheckEqual(theValue, 0.0), cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Min (HBLObjectRef arg) {
+HBLObjectRef _Constant::Min (HBLObjectRef arg, HBLObjectRef cache) {
     return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
         return a < b ? a : b;
-    });
+    }, cache);
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _Constant::Max (HBLObjectRef arg) {
+HBLObjectRef _Constant::Max (HBLObjectRef arg, HBLObjectRef cache) {
     return _check_type_and_compute (arg, [] (hyFloat a, hyFloat b) -> hyFloat {
         return a > b ? a : b;
-    });
+    }, cache);
 }

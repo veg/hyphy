@@ -69,6 +69,7 @@ void    _Operation::Initialize(bool) {
     numberOfTerms = 0;
     theData = -1;
     theNumber = nil;
+    cachedResult = nil;
     opCode = -1;
 }
 
@@ -86,8 +87,12 @@ _Operation::_Operation (_Operation const& rhs) {
     theData        = rhs.theData;
     theNumber      = rhs.theNumber;
     opCode         = rhs.opCode;
+    cachedResult   = rhs.cachedResult;
     if (theNumber) {
         theNumber->AddAReference();
+    }
+    if (cachedResult) {
+        cachedResult->AddAReference();
     }
 }
 
@@ -100,8 +105,12 @@ void    _Operation::Duplicate(BaseRefConst r) {
     theData        = o->theData;
     theNumber      = o->theNumber;
     opCode         = o->opCode;
+    cachedResult   = o->cachedResult;
     if (theNumber) {
         theNumber->AddAReference();
+    }
+    if (cachedResult) {
+        cachedResult->AddAReference();
     }
 }
 
@@ -134,13 +143,13 @@ BaseRef _Operation::toStr (unsigned long) {
 }
 
 //__________________________________________________________________________________
-_Operation::_Operation  (const long theCode, const long opNo = 2)
+_Operation::_Operation  (const long theCode, const long opNo = 2) {
 // by opcode
-{
     opCode = theCode;
     numberOfTerms = opNo;
     theData       = -1;
     theNumber     = nil;
+    cachedResult  = nil;
 }
 
 //__________________________________________________________________________________
@@ -161,6 +170,7 @@ _Operation::_Operation  (_String const& opc, const long opNo = 2) {
     numberOfTerms = opNo;
     theData       = -1;
     theNumber     = nil;
+    cachedResult  = nil;
 }
 //__________________________________________________________________________________
 _Operation::_Operation  (HBLObjectRef theObj) {
@@ -168,6 +178,7 @@ _Operation::_Operation  (HBLObjectRef theObj) {
     theData       = -1;
     opCode        = -1;
     theNumber     = theObj;
+    cachedResult = nil;
 }
 
 //__________________________________________________________________________________
@@ -176,11 +187,11 @@ _Operation::_Operation  (_Variable const & v) {
     theData       = v.get_index();
     opCode        = -1;
     theNumber     = nil;
+    cachedResult  = nil;
 }
 
 //__________________________________________________________________________________
-bool _Operation::CanResultsBeCached (_Operation* prev, bool exp_only)
-{
+bool _Operation::CanResultsBeCached (_Operation* prev, bool exp_only) {
     if (theNumber == nil && theData == -1 && numberOfTerms == 1) {
         if ((prev->theNumber && prev->theNumber->ObjectClass() == MATRIX)
            || (prev->theData >= 0 && LocateVar (prev->theData)->ObjectClass () == MATRIX)) {
@@ -203,8 +214,7 @@ bool   _Operation::IsConstantOfType   (const long type) const {
 
 //__________________________________________________________________________________
 
-bool _Operation::HasChanged (void)
-{
+bool _Operation::HasChanged (void) {
     if (theNumber) {
         return theNumber->HasChanged();
     }
@@ -254,15 +264,14 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
         theData = -1L;
     }
     opCode = -1L;
-
+    cachedResult = nil;
 }
 
 
 //__________________________________________________________________________________
 _Operation::~_Operation (void) {
-    if (theNumber) {
-        DeleteObject (theNumber);
-    }
+   DeleteAndZeroObject (theNumber);
+   DeleteAndZeroObject (cachedResult);
 }
 
 //__________________________________________________________________________________
@@ -274,7 +283,6 @@ bool _Operation::IsAVariable(bool deep) {
         return false;
     }
     return true;
-
 }
 
 //__________________________________________________________________________________
@@ -370,7 +378,7 @@ long        _Operation::StackDepth (void) const {
 
 
 //__________________________________________________________________________________
-bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nameSpace, _String* errMsg) {
+bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nameSpace, _String* errMsg, bool canCache) {
   if (theNumber) { // push value
     theScrap.Push(theNumber);
     return true;
@@ -589,11 +597,24 @@ bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nam
   if (numberOfTerms > 1) {
     _List arguments;
 
-    for (long k = 1; k < numberOfTerms; k ++) {
-      arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength - numberOfTerms + k]);
+    if (numberOfTerms == 2) {
+        arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength - 1]);
+    } else {
+        for (long k = 1; k < numberOfTerms; k ++) {
+          arguments.AppendNewInstance ((HBLObjectRef)theScrap.theStack.list_data[theScrap.theStack.lLength - numberOfTerms + k]);
+        }
     }
     
-    temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
+    if (canCache) {
+        temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext, cachedResult);
+        if (temp != cachedResult) {
+            DeleteObject(cachedResult);
+            cachedResult = temp;
+        }
+        temp->AddAReference();
+    } else {
+        temp =  arg0->ExecuteSingleOp(opCode, &arguments, &localContext);
+    }
     theScrap.theStack.lLength -= (numberOfTerms);
 
   } else {

@@ -852,11 +852,11 @@ bool _TheTree::AllBranchesHaveModels (long matchSize) const {
 
 //__________________________________________________________________________________
 
-HBLObjectRef _TheTree::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context) {
+HBLObjectRef _TheTree::ExecuteSingleOp (long opCode, _List* arguments, _hyExecutionContext* context, HBLObjectRef cache) {
 
     switch (opCode) {
        case HY_OP_CODE_TYPE: // Type
-        return Type();
+        return Type(cache);
         break;
     }
 
@@ -865,7 +865,7 @@ HBLObjectRef _TheTree::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
     if (arg0) {
       switch (opCode) {
         case HY_OP_CODE_TEXTREESTRING: // TEXTreeString
-          return TEXTreeString(arg0);
+          return TEXTreeString(arg0, cache);
        }
 
       _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
@@ -873,7 +873,7 @@ HBLObjectRef _TheTree::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
       if (arg1) {
         switch (opCode) {
           case HY_OP_CODE_PSTREESTRING: //PlainTreeString
-            return PlainTreeString(arg0,arg1);
+            return PlainTreeString(arg0,arg1, cache);
         }
       }
     }
@@ -1266,7 +1266,7 @@ hyFloat _TheTree::PSStringWidth (_String const& s) {
 }
 
 //__________________________________________________________________________________
-HBLObjectRef _TheTree::PlainTreeString (HBLObjectRef p, HBLObjectRef p2) {
+HBLObjectRef _TheTree::PlainTreeString (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cache) {
     // 20180618 TODO:  SLKP this needs review and possibly deprecation
     
     
@@ -1710,7 +1710,7 @@ HBLObjectRef _TheTree::PlainTreeString (HBLObjectRef p, HBLObjectRef p2) {
         ReportWarning ("An invalid 2nd parameter was passed to PSTreeString.");
     }
     res->TrimSpace();
-    return new _FString (res);
+    return _returnStringOrUseCache(res, cache);
 }
 
 
@@ -3553,49 +3553,78 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         
 #elif defined _SLKP_USE_AVX_INTRINSICS // end _SLKP_USE_SSE_INTRINSICS
                         if (alphabetDimensionmod4 == 60) {
-                            __m256d matrix_quad1 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix),_mm256_loadu_pd (childVector));
-                            __m256d matrix_quad2 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+4),_mm256_loadu_pd (childVector+4));
-                            __m256d matrix_quad3 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+8),_mm256_loadu_pd (childVector+8));
-                            __m256d matrix_quad4 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+12),_mm256_loadu_pd (childVector+12));
-                            __m256d matrix_quad5 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+16),_mm256_loadu_pd (childVector+16));
-                            __m256d matrix_quad6 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+20),_mm256_loadu_pd (childVector+20));
-                            __m256d matrix_quad7 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+24),_mm256_loadu_pd (childVector+24));
-                            __m256d matrix_quad8 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+28),_mm256_loadu_pd (childVector+28));
-                            __m256d matrix_quad9 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+32),_mm256_loadu_pd (childVector+32));
-                            __m256d matrix_quad10 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+36),_mm256_loadu_pd (childVector+36));
-                            __m256d matrix_quad11 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+40),_mm256_loadu_pd (childVector+40));
-                            __m256d matrix_quad12 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+44),_mm256_loadu_pd (childVector+44));
-                            __m256d matrix_quad13 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+48),_mm256_loadu_pd (childVector+48));
-                            __m256d matrix_quad14 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+52),_mm256_loadu_pd (childVector+52));
-                            __m256d matrix_quad15 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+56),_mm256_loadu_pd (childVector+56));
+                            
+ 
+                            #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                __m256d matrix_quad2 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix),_mm256_loadu_pd (childVector));
+                                matrix_quad2 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+4),_mm256_loadu_pd (childVector+4),matrix_quad2);
+                                
+                                __m256d matrix_quad4 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+8),_mm256_loadu_pd (childVector+8));
+                                matrix_quad4 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+12),_mm256_loadu_pd (childVector+12),matrix_quad4);
 
-                            matrix_quad1 = _mm256_add_pd (matrix_quad1,matrix_quad2);
-                            matrix_quad3 = _mm256_add_pd (matrix_quad3,matrix_quad4);
-                            matrix_quad5 = _mm256_add_pd (matrix_quad5,matrix_quad6);
-                            matrix_quad7 = _mm256_add_pd (matrix_quad7,matrix_quad8);
-                            matrix_quad9 = _mm256_add_pd (matrix_quad9,matrix_quad10);
-                            matrix_quad11 = _mm256_add_pd (matrix_quad11,matrix_quad12);
-                            matrix_quad13 = _mm256_add_pd (matrix_quad13,matrix_quad14);
+                                __m256d matrix_quad6 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+16),_mm256_loadu_pd (childVector+16));
+                                matrix_quad6 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+20),_mm256_loadu_pd (childVector+20),matrix_quad6);
 
-                            matrix_quad2 = _mm256_add_pd (matrix_quad1,matrix_quad3);
-                            matrix_quad4 = _mm256_add_pd (matrix_quad5,matrix_quad7);
-                            matrix_quad6 = _mm256_add_pd (matrix_quad9,matrix_quad11);
-                            matrix_quad8 = _mm256_add_pd (matrix_quad13,matrix_quad15);
+                                __m256d matrix_quad8 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+24),_mm256_loadu_pd (childVector+24));
+                                matrix_quad8 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+28),_mm256_loadu_pd (childVector+28),matrix_quad8);
 
-                            accumulator = _avx_sum_4(_mm256_add_pd (_mm256_add_pd(matrix_quad2,matrix_quad4), _mm256_add_pd(matrix_quad6,matrix_quad8)));
+                                matrix_quad2 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+32),_mm256_loadu_pd (childVector+32),matrix_quad2);
+                                matrix_quad4 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+36),_mm256_loadu_pd (childVector+36),matrix_quad4);
+                                matrix_quad6 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+40),_mm256_loadu_pd (childVector+40),matrix_quad6);
+                                matrix_quad8 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+44),_mm256_loadu_pd (childVector+44),matrix_quad8);
+
+                                matrix_quad2 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+48),_mm256_loadu_pd (childVector+48),matrix_quad2);
+                                matrix_quad4 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+52),_mm256_loadu_pd (childVector+52),matrix_quad4);
+                                matrix_quad6 = _mm256_fmadd_pd (_mm256_loadu_pd (tMatrix+56),_mm256_loadu_pd (childVector+56),matrix_quad6);
+                                
+                            
+                            #else
+                                __m256d matrix_quad1 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix),_mm256_loadu_pd (childVector));
+                                __m256d matrix_quad2 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+4),_mm256_loadu_pd (childVector+4));
+                                matrix_quad1 = _mm256_add_pd (matrix_quad1,matrix_quad2);
+                                __m256d matrix_quad3 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+8),_mm256_loadu_pd (childVector+8));
+                                __m256d matrix_quad4 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+12),_mm256_loadu_pd (childVector+12));
+                                matrix_quad3 = _mm256_add_pd (matrix_quad3,matrix_quad4);
+                                __m256d matrix_quad5 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+16),_mm256_loadu_pd (childVector+16));
+                                __m256d matrix_quad6 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+20),_mm256_loadu_pd (childVector+20));
+                                matrix_quad5 = _mm256_add_pd (matrix_quad5,matrix_quad6);
+                                __m256d matrix_quad7 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+24),_mm256_loadu_pd (childVector+24));
+                                __m256d matrix_quad8 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+28),_mm256_loadu_pd (childVector+28));
+                                matrix_quad7 = _mm256_add_pd (matrix_quad7,matrix_quad8);
+                                __m256d matrix_quad9 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+32),_mm256_loadu_pd (childVector+32));
+                                __m256d matrix_quad10 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+36),_mm256_loadu_pd (childVector+36));
+                                matrix_quad9 = _mm256_add_pd (matrix_quad9,matrix_quad10);
+                                __m256d matrix_quad11 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+40),_mm256_loadu_pd (childVector+40));
+                                __m256d matrix_quad12 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+44),_mm256_loadu_pd (childVector+44));
+                                matrix_quad11 = _mm256_add_pd (matrix_quad11,matrix_quad12);
+                                __m256d matrix_quad13 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+48),_mm256_loadu_pd (childVector+48));
+                                __m256d matrix_quad14 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+52),_mm256_loadu_pd (childVector+52));
+                                matrix_quad13 = _mm256_add_pd (matrix_quad13,matrix_quad14);
+                                __m256d matrix_quad15 = _mm256_mul_pd(_mm256_loadu_pd (tMatrix+56),_mm256_loadu_pd (childVector+56));
+
+
+                                matrix_quad2 = _mm256_add_pd (matrix_quad1,matrix_quad3);
+                                matrix_quad4 = _mm256_add_pd (matrix_quad5,matrix_quad7);
+                                matrix_quad6 = _mm256_add_pd (matrix_quad9,matrix_quad11);
+                                matrix_quad8 = _mm256_add_pd (matrix_quad13,matrix_quad15);
+
+                            #endif
+                                
+                                accumulator = _avx_sum_4(_mm256_add_pd (_mm256_add_pd(matrix_quad2,matrix_quad4), _mm256_add_pd(matrix_quad6,matrix_quad8)));
+                            
  
                         } else {
                         
                         __m256d sum256 = _mm256_setzero_pd();
                             for (long c = 0L; c < alphabetDimensionmod4; c+=4L) {
                                 __m256d matrix_quad = _mm256_loadu_pd (tMatrix+c),
-                                child_quad = _mm256_loadu_pd (childVector+c);
-    #ifdef _SLKP_USE_FMA3_INTRINSICS
-                                sum256 = _mm256_fmadd_pd (matrix_quad,child_quad, sum256);
-    #else
-                                __m256d prod = _mm256_mul_pd (matrix_quad, child_quad);
-                                sum256 = _mm256_add_pd (sum256,prod);
-    #endif
+                                         child_quad = _mm256_loadu_pd (childVector+c);
+                                #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                    sum256 = _mm256_fmadd_pd (matrix_quad,child_quad, sum256);
+                                #else
+                                    __m256d prod = _mm256_mul_pd (matrix_quad, child_quad);
+                                    sum256 = _mm256_add_pd (sum256,prod);
+                                #endif
             
                            }
                            accumulator = _avx_sum_4(sum256);

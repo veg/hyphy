@@ -93,5 +93,11 @@ long _Stack::StackDepth (void) const { // returns the depth of the stack
 
 //__________________________________________________________________________________
 void _Stack::Reset (void) {  // clears the stack
+    /*for (long i = 0; i < theStack.lLength; i++) {
+        HBLObjectRef this_item = (HBLObjectRef)theStack.GetItem(i);
+        if (this_item->ObjectClass() == MATRIX) {
+            printf ("%ld=>%ld (%p)\n", i, this_item->CanFreeMe(), this_item);
+        }
+    }*/
     theStack.Clear();
 }
