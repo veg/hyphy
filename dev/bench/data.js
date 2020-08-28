@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1598595933631,
+  "lastUpdate": 1598639451530,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -3260,6 +3260,100 @@ window.BENCHMARK_DATA = {
             "range": "±2.041454%",
             "unit": "secs/op",
             "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sweaver@temple.edu",
+            "name": "Steven Weaver",
+            "username": "stevenweaver"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "822088f613156aecba49f76314752fa5896ba551",
+          "message": "Merge pull request #1209 from veg/develop\n\nrc 2.5.18",
+          "timestamp": "2020-08-28T12:50:38-04:00",
+          "tree_id": "15c10045635e15d47c3a50c7012ac914a3acf51c",
+          "url": "https://github.com/veg/hyphy/commit/822088f613156aecba49f76314752fa5896ba551"
+        },
+        "date": 1598639444129,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 2.3031710058408414,
+            "range": "±1.291852%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 9.215825415403332,
+            "range": "±0.830349%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 54.41584589432443,
+            "range": "±4.361183%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 3.8806769452863357,
+            "range": "±3.693769%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 17.02098687681912,
+            "range": "±3.095671%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 237.41690408357078,
+            "range": "±4.079259%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 59.024908511391814,
+            "range": "±22.159531%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 89.46944618412813,
+            "range": "±41.437545%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 118.72254541137362,
+            "range": "±8.388293%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 0.45923107267653185,
+            "range": "±2.047034%",
+            "unit": "secs/op",
+            "extra": "10 samples"
           }
         ]
       }
