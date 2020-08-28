@@ -73,7 +73,7 @@ _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
 
 int _Matrix::precisionArg = 0;
 int _Matrix::storageIncrement = 16;
-int _Matrix::switchThreshold = 40;
+int _Matrix::switchThreshold = 25;
 
 hyFloat  _Matrix::truncPrecision = 1e-13;
 #define     MatrixMemAllocate(X) MemAllocate(X, false, 64)
@@ -1846,12 +1846,13 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     }
 
     long k = 0L,
-         i,
          threshold = lDim*_Matrix::switchThreshold/100;
     
-    for (i=0; i<lDim && k < threshold; i++) {
-          if (theData[i]!=ZEROOBJECT) {
-              k++;
+    for (unsigned long i=0UL; i<lDim ; i++) {
+          if (__builtin_expect(theData[i] != ZEROOBJECT, 1L)) {
+              if (++k >= threshold) {
+                  break;
+              }
           }
     }
 
@@ -1862,19 +1863,14 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
             k = 1L;
         }
 
-       hyFloat *          newData  = (hyFloat*)MatrixMemAllocate (k*sizeof(hyFloat));
+        hyFloat *          newData  = (hyFloat*)MatrixMemAllocate (k*sizeof(hyFloat));
+        
         if (whereTo.theIndex) {
             free (whereTo.theIndex);
         }
         whereTo.theIndex               = (long*)MemAllocate (k*sizeof(long));
 
-        if (! newData&&whereTo.theIndex) {
-            HandleApplicationError ( kErrorStringMemoryFail );
-            return false;
-        }
-
         long p = 0;
-
         whereTo.theIndex[0] = -1;
 
         for (unsigned long i=0; i < lDim; i++)
@@ -4907,8 +4903,11 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     return this->Exponentiate(scale_to * 100, true);
                 }
                 
-                /*for (unsigned long r = 0L; r < hDim; r ++) {
+                /*printf ("SCALE %lg : \n", scale_to);
+                
+                for (unsigned long r = 0L; r < hDim; r ++) {
                     hyFloat sum = 0.;
+                    printf ("%ld %18.16lg %18.16lg\n", r, (*result)(r,r), (*result)(r,r) - 1.);
                     for (unsigned long c = 0L; c < vDim; c++) {
                         sum += (*this)(r,c);
                     }
@@ -5514,7 +5513,7 @@ bool _Matrix::CheckCoordinates (long& ind1, long& ind2)
 //_____________________________________________________________________________________________
 void _Matrix::MStore (long ind1, long ind2, _Formula& f, long opCode) {
     if (ind2>=0) { // element storage
-        if (storageType == 2) { // formulas
+        if (is_expression_based()) { // formulas
             if (opCode == HY_OP_CODE_ADD) {
                 _Formula * addOn = GetFormula(ind1,ind2);
                 if (addOn) {
@@ -5820,20 +5819,27 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
 #ifdef _SLKP_USE_AVX_INTRINSICS
                 if (vDim == 61UL) {
                   for (unsigned long i = 0; i < lDim; i += 61) {
-                    hyFloat * row = theData + i;
+                    hyFloat * _hprestrict_ row = theData + i;
                     
                     
-                    __m256d   sum256 = _mm256_setzero_pd();
+                     __m256d   sum256;
                     
 #ifdef _SLKP_USE_FMA3_INTRINSICS
-                    for (unsigned long k = 0UL; k < 60UL; k += 12UL) {
-                        
-                        sum256 =  _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k),
-                                                    _mm256_fmadd_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4),
-                                                    _mm256_fmadd_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8), sum256))
-                                                   );
-                    }
+                      
+                    
+                        sum256 = _mm256_fmadd_pd (_mm256_loadu_pd (row), _mm256_loadu_pd (column),
+                                                 _mm256_fmadd_pd (_mm256_loadu_pd (row+4), _mm256_loadu_pd (column+4),
+                                         _mm256_mul_pd (_mm256_loadu_pd (row+8), _mm256_loadu_pd (column+8))));
+                      
+                        for (unsigned long k = 12UL; k < 60UL; k += 12UL) {
+                            sum256 =  _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k),
+                                                        _mm256_fmadd_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4),
+                                                        _mm256_fmadd_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8), sum256))
+                                                       );
+                        }
 #else
+                      
+                    sum256 = _mm256_setzero_pd();
                     for (unsigned long k = 0UL; k < 60UL; k += 12UL) {
                       __m256d term0 = _mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k));
                       __m256d term1 = _mm256_mul_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4));
@@ -6391,10 +6397,10 @@ HBLObjectRef       _Matrix::PathLogLikelihood (HBLObjectRef mp, HBLObjectRef cac
             
             long        i1 = get (0,step),
                         i2 = get (1,step);
-            hyFloat     t  = get (2, step);
+            hyFloat     t  = get (2,step);
 
             if (i1<0 || i2 < 0 || i1 >= maxDim || i2 >= maxDim || t<0.0) {
-                throw (_String ("An invalid transition in step ") & (step+1) & " of the chain: " & i1 & " to " & i2 & " in time " & t);
+                throw (_String ("An invalid transition in step ") & _String ((long)(step+1L)) & " of the chain: " & i1 & " to " & i2 & " in time " & t);
             }
 
             _Matrix         rateMx (*m);
@@ -8760,7 +8766,7 @@ HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_s
             cached_mx->Clear();
             _Matrix::CreateMatrix (cached_mx, nrow, ncol, is_sparse, type == _NUMERICAL_TYPE ? true : false);
         }
-        cached_mx->AddAReference();
+        //cached_mx->AddAReference();
         return cached_mx;
     }
     return new _Matrix (nrow, ncol, is_sparse, type == _NUMERICAL_TYPE ? true : false);

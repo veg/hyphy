@@ -407,8 +407,8 @@ if(${MPI_FOUND})
         HYPHYMPI
         PROPERTIES
         if(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} "
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS} "
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g "
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g "
         else(${OPENMP_FOUND})
             COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} "
             LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
@@ -420,22 +420,22 @@ endif(${MPI_FOUND})
 # hyphy profile target
 #-------------------------------------------------------------------------------
 add_executable(
-    HYPHY-PROFILE
+    HYPHYPROFILE
     EXCLUDE_FROM_ALL
     ${SRC_COMMON} ${SRC_UNIXMAIN}
 )
 
 if(${OPENMP_FOUND})
-    target_link_libraries(HYPHY-PROFILE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+    target_link_libraries(HYPHYPROFILE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
 else(${OPENMP_FOUND})
-    target_link_libraries(HYPHY-PROFILE ${DEFAULT_LIBRARIES})
+    target_link_libraries(HYPHYPROFILE ${DEFAULT_LIBRARIES})
 endif(${OPENMP_FOUND})
 
-add_custom_target(PROFILE DEPENDS HYPHY-PROFILE)
+add_custom_target(PROFILE DEPENDS HYPHYPROFILE)
 
 
 set_target_properties(
-    HYPHY-PROFILE
+    HYPHYPROFILE
     PROPERTIES
     if(${OPENMP_FOUND})
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate -fanalyzer "
@@ -450,21 +450,24 @@ set_target_properties(
  # hyphy profile target
  #-------------------------------------------------------------------------------
  add_executable(
-     HYPHY-GPERF
+     HYPHYGPERF
      EXCLUDE_FROM_ALL
      ${SRC_COMMON} ${SRC_UNIXMAIN}
  )
 
-  target_link_libraries(HYPHY-PROFILE ${DEFAULT_LIBRARIES})
+  if(${OPENMP_FOUND})
+    target_link_libraries(HYPHYGPERF PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
+  else(${OPENMP_FOUND})
+    target_link_libraries(HYPHYGPERF PRIVATE ${DEFAULT_LIBRARIES})
+  endif(${OPENMP_FOUND})
 
-  add_custom_target(GPERF DEPENDS HYPHY-GPERF)
-
+  add_custom_target(GPERF DEPENDS HYPHYGPERF)
 
   set_target_properties(
-     HYPHY-GPERF
+     HYPHYGPERF
      PROPERTIES
-         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  "
-         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -L/usr/local/Cellar/gperftools/2.7/lib/ -lprofiler -ltcmalloc  "
+         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g"
+         LINK_FLAGS "${DEFAULT_LINK_FLAGS}  -g -lprofiler -ltcmalloc"
      endif(${OPENMP_FOUND})
  )
 
@@ -513,7 +516,7 @@ set_target_properties(
 
 if(UNIX)
     set_property(
-        TARGET hyphy HYPHYDEBUG HYPHY-PROFILE HYPHY-GPERF
+        TARGET hyphy HYPHYDEBUG HYPHYPROFILE HYPHYGPERF
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
 endif(UNIX)
@@ -529,7 +532,7 @@ set_property(
 )
 
 set_property(
-    TARGET hyphy HYPHYDEBUG HYPHY-PROFILE
+    TARGET hyphy HYPHYDEBUG HYPHYPROFILE
     APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
 )
 
@@ -560,7 +563,7 @@ makeLink(HYPHYMP hyphy hyphy)
 
 #-------------------------------------------------------------------------------
 # TESTS
-#-------------------------------------------------------------------------------
+#---------------------------------------------geany----------------------------------
 
 add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
 add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)

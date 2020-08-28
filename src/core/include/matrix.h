@@ -731,6 +731,7 @@ HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_s
                                        ));
        */
         __m256d sum      = _mm256_hadd_pd(x, x);
+        // sum now has (x[0]+x[1],x[0]+x[1],x[2]+x[3],x[2]+x[3])
         return _mm_cvtsd_f64(_mm_add_pd(_mm256_extractf128_pd(sum, 1), _mm256_castpd256_pd128(sum)));
         /*double  __attribute__ ((aligned (32))) array[4];
         _mm256_store_pd (array, x);

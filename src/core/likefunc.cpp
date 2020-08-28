@@ -1303,6 +1303,7 @@ hyFloat  _LikelihoodFunction::DerivativeCorrection (long index, hyFloat p) const
 }
 //_______________________________________________________________________________________
 void    _LikelihoodFunction::SetIthIndependent (long index, hyFloat p) {
+    
     if (parameterValuesAndRanges) {
         parameterValuesAndRanges->Store(index,1,p);
         p = mapParameterToInverval(p,parameterTransformationFunction.Element(index),true);
@@ -1311,9 +1312,15 @@ void    _LikelihoodFunction::SetIthIndependent (long index, hyFloat p) {
     //printf ("%10.10g\n", p);
     _Variable * v =(_Variable*) LocateVar (indexInd.get(index));
     _Constant c (p);
+    /*if (p < 0.) {
+        printf ("Trying to set %s to a negative value (%15.12lg)\n", v->GetName()->get_str(), p);
+    }*/
     v->SetValue (&c, true, false, variables_changed_during_last_compute);
     if (parameterValuesAndRanges) {
       hyFloat check_value = v->Value();
+      /*if (check_value < 0.) {
+          printf ("[2] Trying to set %s to a negative value (%15.12lg / %15.12lg)\n", v->GetName()->get_str(), p, check_value);
+      }*/
       if (p != check_value) {
         //printf ("_LikelihoodFunction::SetIthIndependent %e => %e\n", p, check_value);
         parameterValuesAndRanges->Store(index,0,check_value);
@@ -1351,6 +1358,10 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p) {
     } else {
       set = true;
     }
+    
+    /*if (p < 0.) {
+        printf ("Trying to set %s to a negative value (%15.12lg/%15.12lg)\n", v->GetName()->get_str(), p);
+    }*/
 
     if (set) {
         v->SetValue (new _Constant (p), false, true, variables_changed_during_last_compute);
@@ -1358,12 +1369,12 @@ bool    _LikelihoodFunction::CheckAndSetIthIndependent (long index, hyFloat p) {
          SLKP : because 'p' may be moved back into parameter bounds,
          if parameterValuesAndRanges is being used, we may need to update that the set
          */
-        /*if (parameterValuesAndRanges) {
+        if (parameterValuesAndRanges) {
           hyFloat check_value = v->Value();
           if (p != check_value) {
             parameterValuesAndRanges->Store(index,0,check_value);
           }
-        }*/
+        }
 
     }
 
@@ -3484,14 +3495,14 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                         }
                     }
                     
-                    _Constant * sum = (_Constant*)partition_weights.Sum();
+                    _Constant * sum = (_Constant*)partition_weights.Sum(nil);
                     partition_weights *= (slaveNodes/sum->Value());
                     for (unsigned long i = 0UL; i < theDataFilters.lLength; i++) {
                         partition_weights.Store (i, 1, i);
                     }
                     
                     sum->SetValue(0.);
-                    _Matrix * sorted_by_weight = (_Matrix*)partition_weights.SortMatrixOnColumn(sum);
+                    _Matrix * sorted_by_weight = (_Matrix*)partition_weights.SortMatrixOnColumn(sum, nil);
                     DeleteObject (sum);
                     
 
@@ -6147,6 +6158,9 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                     } else if (gradient.theData[index] < -kMaxD) {
                         gradient.theData[index] = -kMaxD;
                     }
+                    /*if (currentValue < 0.) {
+                        printf ("Negative value stashed %15.12lg\n", currentValue);
+                    }*/
                     SetIthIndependent(index,currentValue);
                     /*if (verbosity_level > 100) {
                         printf ("_LikelihoodFunction::ComputeGradient %d\t%s\t%e\t%e\t%e\t%e\t \n", index, GetIthIndependentName(index)->get_str(), testStep, currentValue, check_vv, cv->Value(), check_vv-cv->Value());

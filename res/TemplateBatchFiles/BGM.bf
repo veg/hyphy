@@ -9,15 +9,8 @@ LoadFunctionLibrary("libv3/tasks/ancestral.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
-
-
 LoadFunctionLibrary("SelectionAnalyses/modules/io_functions.ibf");
-
 LoadFunctionLibrary ("libv3/tasks/bayesgraph.ibf");
-
-
-
-
 
 // --- display analysis information -----------------------
 
@@ -33,14 +26,14 @@ distribution given the data.  Each node in the network
 represents a codon site in the alignment, and links (edges)
 between nodes indicate high posterior support for correlated
 substitutions at the two sites over time, which implies coevolution.",
-    terms.io.version: "1.1",
+    terms.io.version: "1.2",
     terms.io.reference: "Spidermonkey: rapid detection of co-evolving sites using Bayesian graphical models (2008). _Bioinformatics_ 24(17): 1949-1950",
     terms.io.authors: "Art FY Poon, Fraser I Lewis, Simon DW Frost and Sergei L Kosakovsky Pond",
     terms.io.contact: "apoon42@uwo.ca",
     terms.io.requirements: "in-frame codon alignment and a phylogenetic tree"
 };
-io.DisplayAnalysisBanner(bgm.analysis_description);
 
+io.DisplayAnalysisBanner(bgm.analysis_description);
 
 namespace bgm {
     LoadFunctionLibrary ("SelectionAnalyses/modules/shared-load-file.bf");
@@ -60,6 +53,7 @@ selection.io.startTimer (bgm.json [terms.json.timers], "Overall", 0);
 bgm.data_types = {terms.nucleotide  : "Nucleotide multiple sequence alignment",
                  terms.amino_acid   : "Protein multiple sequence alignment",
                  terms.codon        : "Codon multiple sequence alignment"};
+
 KeywordArgument ("type", "nucleotide, amino-acid or codon", "codon");
 bgm.type = io.SelectAnOption (bgm.data_types, "Data type");
 
@@ -80,12 +74,8 @@ bgm.run_settings = {
 
 KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
-KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
 
-
-
-if (bgm.run_type == "nucleotide") {
-   KeywordArgument ("branches",  "Branches to test", "All");
+if (bgm.type == "nucleotide") {
    bgm.alignment_info = alignments.ReadNucleotideDataSet ("bgm.dataset", None);
    bgm.baseline_model = "models.DNA.GTR.ModelDescription";
 } else {
@@ -98,9 +88,7 @@ if (bgm.run_type == "nucleotide") {
         KeywordArgument ("baseline_model", "Which amino acid substitution model should be used", "LG");
         bgm.run_settings ["model"] = io.SelectAnOption (models.protein.empirical_models, "Baseline substitution model");
         bgm.baseline_model = (utility.Extend (models.protein.empirical.plusF_generators , {"GTR" : "models.protein.REV.ModelDescription"}))[bgm.run_settings ["model"]];
-        KeywordArgument ("branches",  "Branches to test", "All");
     } else { // codon
-        KeywordArgument ("branches",  "Branches to test", "All");
         bgm.alignment_info = alignments.PromptForGeneticCodeAndAlignment("bgm.dataset","bgm.codon.filter");
         LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
         bgm.baseline_model = "models.codon.MG_REV.ModelDescription";
@@ -127,6 +115,8 @@ bgm.path.base = (bgm.json [terms.json.input])[terms.json.file];
 bgm.sample_size = bgm.alignment_info[terms.data.sequences] * bgm.alignment_info[terms.data.sites];
 alignments.EnsureMapping ("bgm.dataset", bgm.alignment_info);
 
+KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+KeywordArgument ("branches",  "Branches to test", "All");
 bgm.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (
                                                                              bgm.alignment_info[utility.getGlobalValue("terms.data.partitions")],
                                                                              bgm.alignment_info[utility.getGlobalValue("terms.data.name_mapping")]

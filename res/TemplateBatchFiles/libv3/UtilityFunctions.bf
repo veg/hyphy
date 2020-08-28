@@ -1033,22 +1033,20 @@ lfunction utility.CatersianProduct (arguments) {
     return product;
 }
 
-function _sortStringsAux (theKey, theValue)
-{
-	for (_gb_idx2 = 0; _gb_idx2 < theValue; _gb_idx2=_gb_idx2+1)
-	{
+function _sortStringsAux (theKey, theValue) {
+    
+ 	for (_gb_idx2 = 0; _gb_idx2 < theValue; _gb_idx2 += 1) {
 		_gb_sortedStrings [_gb_idx] = theKey;
-		_gb_idx = _gb_idx + 1;
+		_gb_idx += 1;
+		console.log (_gb_idx);
 	}
 	return 0;
 }
 
-function utility.sortStrings (_theList)
-{
+function utility.sortStrings (_theList) {
 	_gb_dim = Rows (_theList)*Columns (_theList);
 	_toSort = {};
-	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1)
-	{
+	for (_gb_idx = 0; _gb_idx < _gb_dim; _gb_idx = _gb_idx + 1) {
 		_toSort[_theList[_gb_idx]] = _toSort[_theList[_gb_idx]]+1;
 	}
 	_gb_sortedStrings = {_gb_dim,1};
