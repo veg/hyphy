@@ -3824,7 +3824,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                             // go into the second matrix and look up all the non-zero entries in the currentXColumn row
                           
                             hyFloat value = theData[currentXIndex];
-                            hyFloat  * _hprestrict_ secArg            = secondArg.theData  + currentXColumn*61;
+                            hyFloat  * _hprestrict_ secArg            = secondArg.theData  + currentXColumn*vDim;
                             #ifdef  _SLKP_USE_AVX_INTRINSICS
                                 __m256d  value_op = _mm256_set1_pd (value);
                             #endif
@@ -3850,8 +3850,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       res += vDim;
 
                  }
-             }else {
-
+             } else {
                       for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
                           long m = theIndex[k];
                           if  (m != -1L ) { // non-zero
@@ -4511,6 +4510,8 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
      
         Optonally, the packe matrix can be transposed.
     */
+    
+    
     if (theIndex) {
         _SimpleList sortedIndex  ((unsigned long)lDim, (long*)alloca (lDim * sizeof (long))),
                     sortedIndex3 ((unsigned long)lDim, (long*)alloca (lDim * sizeof (long))),
@@ -4568,7 +4569,7 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
                     sortedIndex  << k;
                     sortedIndex3 << k;
                     if (max < k) max = k;
-}
+                }
             }
         }
         
@@ -4628,6 +4629,28 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
         compressedIndex[firstDim-1] = lDim;
         //printf (">[%ld] %ld\n", firstDim-1, compressedIndex[firstDim-1]);
         //exit (1);
+        
+        
+        // this code checks conversion consistency
+         
+        /*long ei = 0;
+        long from = 0;
+        for (long i=0; i<hDim; i++) {
+            for (long k = from; k < compressedIndex[i]; k++, ei++) {
+                long my_row = theIndex[ei] / vDim,
+                     my_column = theIndex[ei] % vDim;
+                
+                if (my_row != i || my_column != compressedIndex[hDim+k]) {
+                    printf ("BARF\n");
+                }
+            }
+            from = compressedIndex[i];
+        }
+        
+        if (ei != lDim) {
+            printf ("BARF\n");
+        }*/
+        
 
     }
 }

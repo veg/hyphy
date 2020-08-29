@@ -124,7 +124,6 @@ utility.ForEachPair (absrel.selected_branches, "_partition_", "_selection_",
     "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
      io.ReportProgressMessageMD('RELAX',  'selector', '* Selected ' + Abs(_selection_) + ' branches for testing: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
 
-
 selection.io.startTimer (absrel.json [terms.json.timers], "Preliminary model fitting", 1);
 
 
