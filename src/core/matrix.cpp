@@ -3128,8 +3128,6 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                      CELL_OP (idx+8);
                      CELL_OP (idx+12);
                  }
-            }
-
  #else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]+=argData[idx];
@@ -3138,7 +3136,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                     stData[idx+3]+=argData[idx+3];
                 }
 #endif
-                
+            }
             if (subtract)
                 for (long idx = upto; idx < secondArg.lDim; idx++) {
                     stData[idx]-=argData[idx];
