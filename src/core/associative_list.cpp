@@ -693,7 +693,7 @@ HBLObjectRef        _AssociativeList::Sum (HBLObjectRef cache) {
             case MATRIX: {
                 _Constant * sumOfValue = (_Constant*) ((_Matrix*)value->Compute())->Sum(cache);
                 sum += sumOfValue->Value();
-                if (sumOfValue != sumOfValue) {
+                if (sumOfValue != cache) {
                     DeleteObject (sumOfValue);
                 }
                 break;
@@ -701,7 +701,7 @@ HBLObjectRef        _AssociativeList::Sum (HBLObjectRef cache) {
             case ASSOCIATIVE_LIST: {
                 _Constant * sumOfValue = (_Constant*) ((_AssociativeList*)value->Compute())->Sum(cache);
                 sum += sumOfValue->Value();
-                if (sumOfValue != sumOfValue) {
+                if (sumOfValue != cache) {
                     DeleteObject (sumOfValue);
                 }
                 break;

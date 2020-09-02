@@ -359,14 +359,14 @@ function models.codon.BS_REL.post_definition(model) {
 function models.codon.BS_REL.get_branch_length(model, tree, node) {
 	parameters.SetLocalModelParameters (model, tree, node);
 	parameters.SetCategoryVariables   (model);
-  bl = utility.GetEnvVariable ("BRANCH_LENGTH_STENCIL");
-  if (Type (bl) == "Matrix") {
-    if (utility.Has (model [terms.model.branch_length_string_conditional], bl, "String") == FALSE) {
-        (model [terms.model.branch_length_string_conditional])[bl] = model.BranchLengthExpression (model);
+    bl = utility.GetEnvVariable ("BRANCH_LENGTH_STENCIL");
+    if (Type (bl) == "Matrix") {
+        if (utility.Has (model [terms.model.branch_length_string_conditional], bl, "String") == FALSE) {
+            (model [terms.model.branch_length_string_conditional])[bl] = model.BranchLengthExpression (model);
+        }
+        bl = Eval ((model [utility.getGlobalValue("terms.model.branch_length_string_conditional")])[bl]);
+    } else {
+      bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]);
     }
-    bl = Eval ((model [utility.getGlobalValue("terms.model.branch_length_string_conditional")])[bl]);
-  } else {
-	  bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]);
-  }
 	return bl;
 }

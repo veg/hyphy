@@ -1038,7 +1038,6 @@ function _sortStringsAux (theKey, theValue) {
  	for (_gb_idx2 = 0; _gb_idx2 < theValue; _gb_idx2 += 1) {
 		_gb_sortedStrings [_gb_idx] = theKey;
 		_gb_idx += 1;
-		console.log (_gb_idx);
 	}
 	return 0;
 }

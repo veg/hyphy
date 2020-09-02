@@ -5,7 +5,7 @@
 #export ASAN_OPTIONS=detect_leaks=1
 
 currentDir=$PWD
-#export ASAN_OPTIONS=detect_leaks=1
+export ASAN_OPTIONS=detect_leaks=1
 #HYPHYMP=$PWD/HYPHYDEBUG
 HYPHYMP=$PWD/HYPHYMP
 
