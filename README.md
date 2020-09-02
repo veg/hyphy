@@ -88,12 +88,13 @@ And then run make install to install the software
 +   HyPhy's standard library of batchfiles will go into `/location/of/choice/lib/hyphy`
 
 
-#### Building for Testing
-HYPHYGTEST isn't installed normally, because it serves no utility outside of testing.
+#### Testing
 
-To test HyPhy, build with the  GTEST target and run ./HYPHYGTEST from the source directory.  
-`make GTEST`  
-`./HYPHYGTEST`
+Use `make test` after running `cmake .`.
+
+#### Benchmarks for CMake Tests
+
+Benchmarks, using Github Actions, can be found at http://hyphy.org/bench
 
 #### Executable Location
 
