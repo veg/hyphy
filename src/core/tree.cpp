@@ -3659,39 +3659,82 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 else {
 #ifdef _SLKP_USE_AVX_INTRINSICS
                     if (alphabetDimension == 20UL) {
-                        for (long p = 0; p < alphabetDimension; p++) {
-                            __m256d t_matrix[5] = {_mm256_loadu_pd(tMatrix),
-                                _mm256_loadu_pd(tMatrix+4UL),
-                                _mm256_loadu_pd(tMatrix+8UL),
-                                _mm256_loadu_pd(tMatrix+12UL),
-                                _mm256_loadu_pd(tMatrix+16UL)},
-                            
-                            c_vector[5] = {_mm256_loadu_pd(childVector),
+                        bool is_aligned = ((long int)childVector & 0b11111) == 0 && ((long int)tMatrix & 0b11111) == 0 ;
+                        
+                        if (is_aligned) {
+                            __m256d c_vector[5] = {_mm256_load_pd(childVector),
+                                                    _mm256_load_pd(childVector+4UL),
+                                                    _mm256_load_pd(childVector+8UL),
+                                                    _mm256_load_pd(childVector+12UL),
+                                                    _mm256_load_pd(childVector+16UL)};
+
+                            for (long p = 0; p < 20L; p++) {
+                                __m256d t_matrix[5] = {_mm256_load_pd(tMatrix),
+                                                       _mm256_load_pd(tMatrix+4UL),
+                                                       _mm256_load_pd(tMatrix+8UL),
+                                                       _mm256_load_pd(tMatrix+12UL),
+                                                       _mm256_load_pd(tMatrix+16UL)
+                                                      };
+                                
+    #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                t_matrix[0] = _mm256_fmadd_pd(t_matrix[0], c_vector[0], _mm256_mul_pd(t_matrix[1], c_vector[1]));
+                                t_matrix[2] = _mm256_fmadd_pd(t_matrix[2], c_vector[2],
+                                                                _mm256_fmadd_pd (t_matrix[3], c_vector[3], _mm256_mul_pd(t_matrix[4], c_vector[4])));
+                                
+                                tMatrix               += 20UL;
+                                sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[2])));
+    #else
+                                t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
+                                t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
+                                t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
+                                t_matrix[3] = _mm256_mul_pd(t_matrix[3], c_vector[3]);
+                                t_matrix[4] = _mm256_mul_pd(t_matrix[4], c_vector[4]);
+                                
+                                t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
+                                t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
+                                t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
+                                
+                                tMatrix               += 20UL;
+                                sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
+    #endif
+                            }
+                        } else {
+                            __m256d c_vector[5] = {_mm256_loadu_pd(childVector),
                                 _mm256_loadu_pd(childVector+4UL),
                                 _mm256_loadu_pd(childVector+8UL),
                                 _mm256_loadu_pd(childVector+12UL),
                                 _mm256_loadu_pd(childVector+16UL)};
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-                            t_matrix[0] = _mm256_fmadd_pd(t_matrix[0], c_vector[0], _mm256_mul_pd(t_matrix[1], c_vector[1]));
-                            t_matrix[2] = _mm256_fmadd_pd(t_matrix[2], c_vector[2],
-                                                            _mm256_fmadd_pd (t_matrix[3], c_vector[3], _mm256_mul_pd(t_matrix[4], c_vector[4])));
-                            
-                            tMatrix               += 20UL;
-                            sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[2])));
-#else
-                            t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
-                            t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
-                            t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
-                            t_matrix[3] = _mm256_mul_pd(t_matrix[3], c_vector[3]);
-                            t_matrix[4] = _mm256_mul_pd(t_matrix[4], c_vector[4]);
-                            
-                            t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
-                            t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
-                            t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
-                            
-                            tMatrix               += 20UL;
-                            sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
-#endif
+
+                            for (long p = 0; p < 20L; p++) {
+                                __m256d t_matrix[5] = {_mm256_loadu_pd(tMatrix),
+                                                       _mm256_loadu_pd(tMatrix+4UL),
+                                                       _mm256_loadu_pd(tMatrix+8UL),
+                                                       _mm256_loadu_pd(tMatrix+12UL),
+                                                       _mm256_loadu_pd(tMatrix+16UL)
+                                                      };
+                                
+    #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                t_matrix[0] = _mm256_fmadd_pd(t_matrix[0], c_vector[0], _mm256_mul_pd(t_matrix[1], c_vector[1]));
+                                t_matrix[2] = _mm256_fmadd_pd(t_matrix[2], c_vector[2],
+                                                                _mm256_fmadd_pd (t_matrix[3], c_vector[3], _mm256_mul_pd(t_matrix[4], c_vector[4])));
+                                
+                                tMatrix               += 20UL;
+                                sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[2])));
+    #else
+                                t_matrix[0] = _mm256_mul_pd(t_matrix[0], c_vector[0]);
+                                t_matrix[1] = _mm256_mul_pd(t_matrix[1], c_vector[1]);
+                                t_matrix[2] = _mm256_mul_pd(t_matrix[2], c_vector[2]);
+                                t_matrix[3] = _mm256_mul_pd(t_matrix[3], c_vector[3]);
+                                t_matrix[4] = _mm256_mul_pd(t_matrix[4], c_vector[4]);
+                                
+                                t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[1]);
+                                t_matrix[2] = _mm256_add_pd (t_matrix[2],t_matrix[3]);
+                                t_matrix[0] = _mm256_add_pd (t_matrix[0],t_matrix[2]);
+                                
+                                tMatrix               += 20UL;
+                                sum += (parentConditionals[p] *= _avx_sum_4(_mm256_add_pd (t_matrix[0],t_matrix[4])));
+    #endif
+                            }
                         }
                     } else
 #endif // _SLKP_USE_AVX_INTRINSICS
