@@ -28,6 +28,22 @@ script:
 jobs:
   include:
     - os: linux
+      language: cpp
+      before_install:
+        - pip install --user cpp-coveralls
+      addons:
+        apt:
+          packages:
+            - g++-9
+            - gcc-9
+            - gcov
+      install:
+            - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
+            - cmake .
+            - make GTEST
+      env:
+        - envSpecificTest="coveralls --gcov-options '\-lp'""
+    - os: linux
       addons:
         apt:
           sources:
