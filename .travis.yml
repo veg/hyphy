@@ -34,11 +34,10 @@ jobs:
       addons:
         apt:
           packages:
-            - g++-9
-            - gcc-9
-            - gcov
+            - g++-5
+            - gcc-5
       install:
-            - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
+            - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
             - cmake .
             - make GTEST
       env:
