@@ -38,8 +38,7 @@ jobs:
             - gcc-5
       install:
             - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
-            - cmake .
-            - make GTEST
+            - cmake . && make HYPHYGTEST
       env:
         - envSpecificTest="coveralls --gcov-options '\-lp'""
     - os: linux
