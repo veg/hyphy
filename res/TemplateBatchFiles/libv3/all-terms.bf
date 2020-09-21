@@ -374,6 +374,7 @@ namespace terms{
         constrain_branch_length = "constrain-branch-length";
         branch_length_string    = "branch-length-string";
         branch_length_string_conditional = "branch-length-string-conditional";
+        branch_length_string_expr = = "branch-length-string-expression";
         branch_length_scaler    = "branch length scaler";
         post_definition         = "post-definition";
         length                  = "length";

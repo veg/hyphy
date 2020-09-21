@@ -2020,6 +2020,8 @@ void    _LikelihoodFunction::ComputeBlockForTemplate2       (long i, hyFloat* re
     }
 }
 
+//unsigned long last100e = 0L, last100s = 0L, last100t = 0L;
+    
 //_______________________________________________________________________________________
 
 hyFloat  _LikelihoodFunction::Compute        (void)
@@ -2035,6 +2037,17 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 {
 
     hyFloat result = 0.;
+    
+    /*if (likeFuncEvalCallCount % 100 == 0) {
+       
+        fprintf (stderr, "Evals = %ld, Exponentials = %ld, Squarings = %ld (%lg), Taylor terms = %ld (%lg)\n", likeFuncEvalCallCount, matrix_exp_count, squarings_count, squarings_count / (double)matrix_exp_count, taylor_terms_count,taylor_terms_count/(double)matrix_exp_count);
+        
+        fprintf (stderr, "\t\t Exponentials = %ld, Squarings = %ld (%lg), Taylor terms = %ld (%lg)\n", (matrix_exp_count-last100e), (squarings_count-last100s), (squarings_count-last100s) / (double)(matrix_exp_count-last100e), taylor_terms_count-last100t,(taylor_terms_count-last100t)/((double)matrix_exp_count - last100e));
+
+        last100e = matrix_exp_count;
+        last100s = squarings_count;
+        last100t = taylor_terms_count;
+    }*/
 
     if (!PreCompute()) {
         return -INFINITY;

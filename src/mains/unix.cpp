@@ -764,6 +764,36 @@ int main (int argc, char* argv[]) {
     hy_base_directory = baseDir;
     baseArgDir    = hy_base_directory;
     
+    /*long testdim = 61;
+    
+    _Matrix testSQR (testdim,testdim,false,true);
+    hyFloat * stash  = (hyFloat *)MemAllocate(testdim*(1+testdim)*sizeof (hyFloat), false, 64),
+            * stash2 = (hyFloat *)MemAllocate(testdim*(1+testdim)*sizeof (hyFloat), false, 64);
+            
+    for (long i = 0; i < 10; i++) {
+        testSQR.ForEachCellNumeric([&] (hyFloat& value, unsigned long index, unsigned long row, unsigned long column)->void{
+            if (row != column) {
+                value = RandomNumber(0., 0.1);
+            } else {
+                value = 0.;
+            }
+        });
+        testSQR.ForEachCellNumeric([&] (hyFloat value, unsigned long index, unsigned long row, unsigned long column)->void{
+            if (row != column) {
+                testSQR.theData[row*testdim+row] -= value;
+            }
+        });
+        _Matrix cpy (testSQR);
+        cpy.Sqr (stash, false);
+        _Matrix cpy2 (testSQR);
+        cpy2.Sqr (stash2, true);
+        _Matrix direct = testSQR * testSQR;
+        printf ("%d %15.12lg %15.12lg %15.12lg\n", i, (cpy-direct).MaxElement(), (cpy2-direct).MaxElement(), (cpy-cpy2).MaxElement());
+    }
+    
+    exit (1);*/
+    
+    
     
 #ifdef _OPENMP
     system_CPU_count = omp_get_max_threads();

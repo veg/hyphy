@@ -1066,13 +1066,15 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
         
         _Matrix     *res   = new _Matrix  (mxDim,mxDim,false,true);
         
-        hyFloat  *sm1   = new hyFloat[mxDim],
-        *sm2   = new hyFloat[mxDim];
+        hyFloat  *sm1   = (hyFloat*)alloca (sizeof(hyFloat)*mxDim),
+                 *sm2   = (hyFloat*)alloca (sizeof(hyFloat)*mxDim);
         
         
+        char    *buffer1 = (char*)alloca (sizeof (char) * (1+unitLength)),
+                *buffer2 = (char*)alloca (sizeof (char) * (1+unitLength));
         
-        _String      state1 ((unsigned long)unitLength),
-                     state2 ((unsigned long)unitLength);
+        _String      state1 ((unsigned long)unitLength, buffer1),
+                     state2 ((unsigned long)unitLength, buffer2);
         
         
         if (conversionCache.lLength == 0) {
@@ -1399,8 +1401,6 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
             }
         }
         
-        delete[] sm1;
-        delete[] sm2;
         
         return res;
     }

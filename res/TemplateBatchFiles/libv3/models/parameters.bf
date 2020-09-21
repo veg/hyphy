@@ -393,11 +393,13 @@ function parameters.StringMatrixToFormulas(id, matrix) {
 
     ExecuteCommands("`id` = {__N,__M}");
 
+    __expr := "`id`[__r][__c] := " + matrix[__r][__c];
+
     for (__r = 0; __r < __N; __r += 1) {
         for (__c = 0; __c < __M; __c += 1) {
 
             if (Abs(matrix[__r][__c])) {
-                ExecuteCommands("`id`[__r][__c] := " + matrix[__r][__c]);
+                ExecuteCommands(__expr);
             }
         }
     }

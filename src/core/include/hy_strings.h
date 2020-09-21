@@ -132,11 +132,13 @@ public:
    * Construct a string long enough to hold the specified # of chars
    * Contents will be initialized to 0
    * @param lengths: the number of chars to store
+   * @param buffer: if specified, use an externally allocated buffer (to avoid memory calls)
 
    * Revision history
-   - SLKP 20170517 reviewed while porting from v3 branch
+      - SLKP 20170517 reviewed while porting from v3 branch
+      - SLKP 2020921 added the option to use external buffers
    */
-  _String(const unsigned long sL);
+  _String(const unsigned long sL, char *buffer = nil);
 
   /**
    * Construct a string representation of a hyFloat(double) to string,

@@ -224,10 +224,12 @@ function estimators.ExtractBranchInformation.copy_local(key, value) {
 
     estimators.ExtractBranchInformation.copy_local.var_name = estimators.extractBranchLength.parameter_tag + "." + value;
 
-    estimators.extractBranchLength.result[key] = {
-        terms.id: value,
+    estimators.extractBranchLength.result[key] = {};
+    (estimators.extractBranchLength.result[key])[terms.id] = value;
+    (estimators.extractBranchLength.result[key])[terms.fit.MLE] = Eval(estimators.ExtractBranchInformation.copy_local.var_name);
+    /*   terms.id: value,
         terms.fit.MLE: Eval(estimators.ExtractBranchInformation.copy_local.var_name)
-    };
+    };*/
 
     if (parameters.IsIndependent(estimators.ExtractBranchInformation.copy_local.var_name) != TRUE) {
         (estimators.extractBranchLength.result[key])[terms.constraint] = parameters.GetConstraint(estimators.ExtractBranchInformation.copy_local.var_name);

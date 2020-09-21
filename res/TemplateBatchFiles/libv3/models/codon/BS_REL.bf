@@ -344,6 +344,8 @@ lfunction models.codon.BS_REL.set_branch_length(model, value, parameter) {
 
 function models.codon.BS_REL.post_definition(model) {
     model [terms.model.branch_length_string] = model.BranchLengthExpression (model);
+    model [terms.model.branch_length_string_expr] = model [terms.id] + ".__model_bl_expression";
+    Eval (model [terms.model.branch_length_string_expr] + ":=" + model [terms.model.branch_length_string]);
     model [terms.model.branch_length_string_conditional] = {};
     return model;
 }
@@ -366,7 +368,13 @@ function models.codon.BS_REL.get_branch_length(model, tree, node) {
         }
         bl = Eval ((model [utility.getGlobalValue("terms.model.branch_length_string_conditional")])[bl]);
     } else {
-      bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]);
+      if (model / terms.model.branch_length_string_expr) {
+        bl = Eval (model [terms.model.branch_length_string_exp]);
+        //console.log (bl);
+        //console.log (Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]));
+      } else {
+        bl = Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]);
+      }
     }
 	return bl;
 }

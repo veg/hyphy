@@ -589,7 +589,7 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                     if ( seq1>=0 && seq2 >=0 && seq1< filter_source->NumberSpecies() && seq2 <filter_source->NumberSpecies()) {
                         _String const *  res_flag = GetIthParameter(4);
                         _Matrix * res;
-
+                        
                         if (kPairwiseCountAmbiguitiesAverage == *res_flag) {
                             res = filter_source->ComputePairwiseDifferences (seq1,seq2,kAmbiguityHandlingAverageFrequencyAware);
                         } else if (kPairwiseCountAmbiguitiesResolve == *res_flag) {
