@@ -27,36 +27,6 @@ script:
    
 jobs:
   include:
-    - os: linux
-      language: cpp
-      before_install:
-        - pip install --user cpp-coveralls
-      addons:
-        apt:
-          packages:
-            - g++-5
-            - gcc-5
-      install:
-            - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
-            - cmake . && make HYPHYGTEST
-      env:
-        - envSpecificTest="coveralls --gcov-options '\-lp'""
-    - os: linux
-      addons:
-        apt:
-          sources:
-              - llvm-toolchain-precise
-              - ubuntu-toolchain-r-test
-              - george-edison55-precise-backports
-          packages:
-              - g++-9
-              - gcc-9
-      install:
-            - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
-            - cmake . 
-            - make
-      env:
-            - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
     
     - os: linux
       env:
