@@ -500,6 +500,9 @@ endif(${OPENMP_FOUND})
 
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
+
+
+
 set_target_properties(
     HYPHYDEBUG
     PROPERTIES
