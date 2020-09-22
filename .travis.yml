@@ -27,6 +27,22 @@ script:
    
 jobs:
   include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+              - llvm-toolchain-precise
+              - ubuntu-toolchain-r-test
+              - george-edison55-precise-backports
+          packages:
+              - g++-9
+              - gcc-9
+      install:
+            - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
+            - cmake . 
+            - make
+      env:
+            - envSpecificTest="export PATH=$PATH:$(pwd); cd; git clone https://gitlab.com/rdvelazquez/testiphy.git; cd testiphy; ./testiphy HYPHYMP"
     
     - os: linux
       env:
