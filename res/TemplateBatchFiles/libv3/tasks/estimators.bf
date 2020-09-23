@@ -1267,17 +1267,12 @@ lfunction estimators.CreateInitialGrid (values, N, init) {
         for (i = 0; i < N; i+=1) {
             entry = {};
             for (v = 0; v < var_count; v += 1) {
+                entry [var_names[v]] = {};
+                (entry [var_names[v]])[^"terms.id"] = var_names[v];
                 if (Random (0,1) < toggle) {
-                    entry [var_names[v]] = {
-                        ^"terms.id" : var_names[v],
-                        ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
-                    };
+                    (entry [var_names[v]])[^"terms.fit.MLE"] = (values[var_names[v]])[Random (0, var_dim[v])$1];
                 } else {
-                   entry [var_names[v]] = {
-                        ^"terms.id" : var_names[v],
-                        ^"terms.fit.MLE" : (values[var_names[v]])[init[var_names[v]]]
-                    };
-
+                    (entry [var_names[v]])[^"terms.fit.MLE"] =  (values[var_names[v]])[init[var_names[v]]];
                 }
             }
             result + entry;
@@ -1288,10 +1283,9 @@ lfunction estimators.CreateInitialGrid (values, N, init) {
         for (i = 0; i < N; i+=1) {
             entry = {};
             for (v = 0; v < var_count; v += 1) {
-                entry [var_names[v]] = {
-                    ^"terms.id" : var_names[v],
-                    ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
-                };
+                 entry [var_names[v]] = {};
+                 (entry [var_names[v]])[^"terms.id"] = var_names[v];
+                 (entry [var_names[v]])[^"terms.fit.MLE"] =  (values[var_names[v]])[Random (0, var_dim[v])$1];
             }
             result + entry;
         }
@@ -1336,10 +1330,9 @@ lfunction estimators.LHC (ranges, samples) {
     for (i = 0; i < samples; i+=1) {
         entry = {};
         for (v = 0; v < var_count; v += 1) {
-            entry [var_names[v]] = {
-                ^"terms.id" : var_names[v],
-                ^"terms.fit.MLE" : var_def[v][0] + (var_samplers[v])[i] * var_def[v][1]
-            };
+            entry [var_names[v]] = {};
+            (entry [var_names[v]])[^"terms.id"] = var_names[v];
+            (entry [var_names[v]])[^"terms.fit.MLE"] = var_def[v][0] + (var_samplers[v])[i] * var_def[v][1];
         }
         result + entry;
     }

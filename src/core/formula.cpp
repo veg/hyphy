@@ -71,6 +71,7 @@ _Formula::_Formula (HBLObjectRef p, bool is_a_var) {
     resultCache = nil;
     recursion_calls = nil;
     call_count = 0UL;
+    simpleExpressionStatus = nil;
 
     if (!is_a_var) {
         theFormula.AppendNewInstance (new _Operation (p));
@@ -82,6 +83,7 @@ _Formula::_Formula (HBLObjectRef p, bool is_a_var) {
 
 //__________________________________________________________________________________
 _Formula::_Formula (_String const &s, _VariableContainer const* theParent, _String* reportErrors) {
+    simpleExpressionStatus = nil;
     ParseFormula (s, theParent, reportErrors);
 }
 
@@ -134,6 +136,7 @@ void _Formula::Initialize (void) {
     resultCache = nil;
     call_count = 0UL;
     recursion_calls = nil;
+    simpleExpressionStatus = nil;
 }
 
 //__________________________________________________________________________________
@@ -166,7 +169,7 @@ void _Formula::Duplicate  (_Formula const * f_cast) {
     } else {
         theTree = nil;
     }
-
+    simpleExpressionStatus = nil;
     if (f_cast->resultCache) {
         resultCache = (_List*)f_cast->resultCache->makeDynamic();
     } else {
@@ -246,6 +249,11 @@ void    _Formula::Clear (void) {
     theTree = nil;
     if (resultCache) {
         DeleteAndZeroObject(resultCache);
+    }
+    
+    if (simpleExpressionStatus){
+        delete [] simpleExpressionStatus;
+        simpleExpressionStatus = nil;
     }
 
     theFormula.Clear();
@@ -2232,13 +2240,22 @@ bool _Formula::IsArrayAccess (void){
 //__________________________________________________________________________________
 bool _Formula::ConvertToSimple (_AVLList& variable_index) {
     bool has_volatiles = false;
+    if (simpleExpressionStatus) {
+        delete [] simpleExpressionStatus;
+        simpleExpressionStatus = nil;
+    }
     if (!theFormula.empty()) {
+        
+        simpleExpressionStatus = new long [theFormula.countitems()];
+        
         for (unsigned long i=0UL; i<theFormula.countitems(); i++) {
             _Operation* this_op = ItemAt (i);
+            simpleExpressionStatus[i] = -2L;
             if (this_op->theNumber) {
-                continue;
+                simpleExpressionStatus[i] = -1L;
             } else if (this_op->theData >= 0) {
                 this_op->theData = variable_index.FindLong (this_op->theData);
+                simpleExpressionStatus[i] = this_op->theData;
             } else if (this_op->opCode == HY_OP_CODE_SUB && this_op->numberOfTerms == 1) {
                 this_op->opCode = (long)MinusNumber;
             } else {
@@ -2261,6 +2278,8 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
 
 //__________________________________________________________________________________
 void _Formula::ConvertFromSimple (_AVLList const& variableIndex) {
+  delete [] simpleExpressionStatus;
+  simpleExpressionStatus = nil;
   ConvertFromSimpleList (*variableIndex.dataList);
 }
 
@@ -2301,14 +2320,17 @@ hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum
         unsigned long upper_bound = NumberOperations();
 
         for (unsigned long i=0UL; i<upper_bound; i++) {
-            _Operation const* thisOp = ItemAt (i);
-            if (thisOp->theNumber) {
+            
+            if (simpleExpressionStatus[i] == -1L) {
+                stack[stackTop++].value = ItemAt (i)->theNumber->Value();             
+            /*if (thisOp->theNumber) {
                 stack[stackTop++].value = thisOp->theNumber->Value();
-                continue;
+                continue;*/
             } else {
-                if (thisOp->theData>-1) {
-                    stack[stackTop++] = varValues[thisOp->theData];
+                if (simpleExpressionStatus[i] >= 0) {
+                    stack[stackTop++] = varValues[simpleExpressionStatus[i]];
                 } else {
+                    _Operation const* thisOp = ItemAt (i);
                     stackTop--;
                     if (thisOp->numberOfTerms==2) {
                         hyFloat  (*theFunc) (hyFloat, hyFloat);

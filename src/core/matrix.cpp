@@ -5857,8 +5857,17 @@ void        _Matrix::StoreObject (long k, _MathObject* value, bool dup)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool simplify)
-{
+void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool simplify) {
+    
+    auto do_simplify = [] (_Formula *f) -> void {
+        _Polynomial*    is_poly = (_Polynomial*)f->ConstructPolynomial();
+        if (is_poly) {
+            _Formula pf (is_poly);
+            f->Duplicate(&pf);
+        }
+        f->SimplifyConstants();
+    };
+    
     if (is_expression_based()) {
         long lIndex = Hash (i, j);
         if (lIndex == -1) {
@@ -5866,11 +5875,14 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
             lIndex = Hash (i, j);
         }
 
+        //printf ("In (%d) %s\n",simplify, _String ((_String*)f.toStr (kFormulaStringConversionNormal)).get_str());
+        
         if (lIndex<0) {
             theIndex[-lIndex-2] = i*vDim+j;
             ((_Formula**)theData)[-lIndex-2] = copyF?(_Formula*)f.makeDynamic():&f;
             if (simplify) {
-                ((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
+                do_simplify (((_Formula**)theData)[-lIndex-2]);
+                //((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
             }
         } else {
             if (((_Formula**)theData)[lIndex]!=(_Formula*)ZEROPOINTER) {
@@ -5878,9 +5890,12 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
             }
             ((_Formula**)theData)[lIndex] = copyF?(_Formula*)f.makeDynamic():&f;
             if (simplify) {
-                ((_Formula**)theData)[lIndex]->SimplifyConstants();
+                do_simplify (((_Formula**)theData)[lIndex]);
+                //((_Formula**)theData)[lIndex]->SimplifyConstants();
             }
         }
+        //printf ("Stored %s\n", _String ((_String*)(((_Formula**)theData)[lIndex >= 0 ? lIndex : -lIndex-2])->toStr (kFormulaStringConversionNormal)).get_str());
+
 
         CheckIfSparseEnough();
     }

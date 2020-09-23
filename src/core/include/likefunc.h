@@ -367,7 +367,7 @@ protected:
     //long          GradientBracketOneVar (_Matrix&, _Matrix& , _Matrix& , _Matrix&,  hyFloat& ,
     //                                      hyFloat&, hyFloat&, hyFloat&, bool retry = false);
     void            LocateTheBump         (long,hyFloat , hyFloat& , hyFloat&, bool, hyFloat = -1.);
-    void            GradientLocateTheBump (hyFloat, hyFloat&, _Matrix&, _Matrix&);
+    hyFloat         GradientLocateTheBump (hyFloat, hyFloat&, _Matrix&, _Matrix&);
     void            GradientDescent       (hyFloat& , _Matrix& );
     hyFloat            ConjugateGradientDescent
     (hyFloat , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hyFloat check_lf = -INFINITY);
@@ -493,7 +493,7 @@ protected:
      /** optimization logger functions **/
 
     void LoggerLogL               (hyFloat logL);
-    void LoggerAddGradientPhase   (hyFloat precision);
+    void LoggerAddGradientPhase   (hyFloat precision, hyFloat beta, hyFloat scalar_product);
     void LoggerAddCoordinatewisePhase (hyFloat shrinkage, char convergence_mode);
     void LoggerAllVariables          ();
     void LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, unsigned long bracket_evals, unsigned long brent_evals);

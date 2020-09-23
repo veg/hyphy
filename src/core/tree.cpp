@@ -3996,8 +3996,6 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             hyFloat term;
             long   const    site_frequency = theFilter->theFrequencies (siteOrdering.list_data[siteID]);
             
-            
-            
             if (site_frequency > 1L) {
                 term = log(accumulator) * site_frequency - correction;
             } else {
@@ -4005,9 +4003,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             }
             // Kahan sum
             
-            /*if (likeFuncEvalCallCount == 11035) {
-               fprintf (stderr, "REGULAR, %ld, %ld, %20.15lg, %20.15lg, %20.15lg\n", likeFuncEvalCallCount, siteID, accumulator, correction, term);
-            }*/
+            //if (likeFuncEvalCallCount == 2 + system_CPU_count - 2) {
+            //   fprintf (stderr, "REGULAR, %ld, %ld, %20.15lg\n", likeFuncEvalCallCount, 1L+siteOrdering.list_data[siteID], accumulator);
+            //}
                         
             hyFloat temp_sum = result + term;
             correction = (temp_sum - result) - term;

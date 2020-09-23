@@ -80,6 +80,7 @@ protected:
     _List*              resultCache;
     _Stack              theStack;
     _List               theFormula;
+    long*                simpleExpressionStatus;
 
     node<long>* theTree; // this formula converted to a tree for operation purposes
     // such as simplification, differentiation and printing.
