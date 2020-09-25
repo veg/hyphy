@@ -1848,10 +1848,15 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     long k = 0L,
          threshold = lDim*_Matrix::switchThreshold/100;
     
+    //speculatively allocate memory to store non-zero indices
+    
+    long * non_zero_index = (long*)alloca (threshold*sizeof(long));
+    
     for (unsigned long i=0UL; i<lDim ; i++) {
           if (__builtin_expect(theData[i] != ZEROOBJECT, 1L)) {
-              if (++k >= threshold) {
-                  break;
+              non_zero_index[k++] = i;
+              if (k == threshold) {
+                  return false;
               }
           }
     }
@@ -1864,20 +1869,24 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
         }
 
         hyFloat *          newData  = (hyFloat*)MatrixMemAllocate (k*sizeof(hyFloat));
-        
         if (whereTo.theIndex) {
             free (whereTo.theIndex);
         }
-        whereTo.theIndex               = (long*)MemAllocate (k*sizeof(long));
-
+        whereTo.theIndex               = (long*)MatrixMemAllocate (k*sizeof(long));
         long p = 0;
         whereTo.theIndex[0] = -1;
+        
+        for (unsigned long i = 0UL; i < k; i++) {
+            whereTo.theIndex[i] = non_zero_index[i];
+            newData[i] = theData [non_zero_index[i]];
+        }
 
-        for (unsigned long i=0; i < lDim; i++)
+        /*for (unsigned long i=0; i < lDim; i++)
             if (theData[i]!=ZEROOBJECT) {
                 whereTo.theIndex[p] = i;
                 newData[p++] = theData[i];
-            }
+            }*/
+        
 
         whereTo.lDim     = k;
         free     (whereTo.theData);

@@ -81,6 +81,20 @@ protected:
     _Stack              theStack;
     _List               theFormula;
     long*                simpleExpressionStatus;
+    /**
+        SLKP: 20200924
+            Added this shorthand to improve memory locality and speed-up SimpleCompute performance
+            one entry per formula operator with the following values
+                -1     : constant value
+                >=0 : reference to variable value
+                   - 2: matrix storage
+                   - 3 : matrix access
+                   - 4 : no shortcut
+                < -10000:
+                   - HY_OP_CODE : (-10000-HY_OP_CODE for binary operatons)
+                < -100000:
+                   - HY_OP_CODE (-100000-HY_OP_CODE for unary operatons)
+     */
 
     node<long>* theTree; // this formula converted to a tree for operation purposes
     // such as simplification, differentiation and printing.
