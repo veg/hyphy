@@ -662,8 +662,9 @@ PARAMETER_GROUPING = {"0" : {{"R","AC","AT","CT"}}};
 LikelihoodFunction lf = (filteredData,givenTree);
 OPTIMIZATION_PRECISION     = 0.001;
 VERBOSITY_LEVEL	           = 1;
-OPTIMIZATION_METHOD		   = 4;
+OPTIMIZATION_METHOD		   = 7;
 USE_ADAPTIVE_VARIABLE_STEP = 1;
+
 
 Optimize 			(res,lf);
 

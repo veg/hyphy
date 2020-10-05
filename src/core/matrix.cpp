@@ -75,7 +75,7 @@ int _Matrix::precisionArg = 0;
 int _Matrix::storageIncrement = 16;
 int _Matrix::switchThreshold = 25;
 
-hyFloat  _Matrix::truncPrecision = 1e-13;
+hyFloat  _Matrix::truncPrecision = 1e-16;
 #define     MatrixMemAllocate(X) MemAllocate(X, false, 64)
 #define     MatrixMemFree(X)     free(X)
 #define     MX_ACCESS(a,b) theData[(a)*hDim+(b)]
@@ -1848,10 +1848,15 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     long k = 0L,
          threshold = lDim*_Matrix::switchThreshold/100;
     
+    //speculatively allocate memory to store non-zero indices
+    
+    long * non_zero_index = (long*)alloca (threshold*sizeof(long));
+    
     for (unsigned long i=0UL; i<lDim ; i++) {
           if (__builtin_expect(theData[i] != ZEROOBJECT, 1L)) {
-              if (++k >= threshold) {
-                  break;
+              non_zero_index[k++] = i;
+              if (k == threshold) {
+                  return false;
               }
           }
     }
@@ -1864,20 +1869,24 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
         }
 
         hyFloat *          newData  = (hyFloat*)MatrixMemAllocate (k*sizeof(hyFloat));
-        
         if (whereTo.theIndex) {
             free (whereTo.theIndex);
         }
-        whereTo.theIndex               = (long*)MemAllocate (k*sizeof(long));
-
+        whereTo.theIndex               = (long*)MatrixMemAllocate (k*sizeof(long));
         long p = 0;
         whereTo.theIndex[0] = -1;
+        
+        for (unsigned long i = 0UL; i < k; i++) {
+            whereTo.theIndex[i] = non_zero_index[i];
+            newData[i] = theData [non_zero_index[i]];
+        }
 
-        for (unsigned long i=0; i < lDim; i++)
+        /*for (unsigned long i=0; i < lDim; i++)
             if (theData[i]!=ZEROOBJECT) {
                 whereTo.theIndex[p] = i;
                 newData[p++] = theData[i];
-            }
+            }*/
+        
 
         whereTo.lDim     = k;
         free     (whereTo.theData);
@@ -3443,93 +3452,72 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
 
                 const hyFloat * row = theData;
                 hyFloat  * dest = storage.theData;
-              
+                #ifdef _SLKP_USE_FMA3_INTRINSICS
+                    #define DO_GROUP_OP(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); _mm256_storeu_pd (dest + row_offset + k, _mm256_fmadd_pd (A4,Y,X));
+                    #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_fmadd_pd (A4,Y,X);
+                    #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
+#else
+                    #define DO_GROUP_OP(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k);  Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); _mm256_storeu_pd (dest + row_offset + k, _mm256_add_pd (X, _mm256_mul_pd(A4, Y)));
+                    #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_add_pd (X, _mm256_mul_pd(A4, Y));
+                    #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
+               #endif
 
+                
 #ifndef _SLKP_SSE_VECTORIZATION_
             
               
               if (dimm4 == vDim) {
                 InitializeArray (dest, lDim, 0.0);
-                for (unsigned long c = 0UL; c < secondArg.vDim; c ++) {
+                  #ifdef  _SLKP_USE_AVX_INTRINSICS
+                  long ti = 0L,
+                       row_offset = 0L;
+                  if (vDim == 20UL) {
+                      for (long r = 0; r < 20; r++, row_offset += 20) {
+                          long col_offset = 0L;
+                          for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
+                              __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              //for (long k = 0; k < 20L; k+=4) {
+                                  __m256d D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
+                                  DO_GROUP_OP1 (D4, B4, 0);
+                                  DO_GROUP_OP1 (D4_1, B4_1, 4);
+                                  DO_GROUP_OP1 (D4_2, B4_2, 8);
+                                  DO_GROUP_OP1 (D4_3, B4_3, 12);
+                                  DO_GROUP_OP1 (D4_4, B4_4, 16);
+                                  DO_GROUP_OP2 (D4, 0);
+                                  DO_GROUP_OP2 (D4_1, 4);
+                                  DO_GROUP_OP2 (D4_2, 8);
+                                  DO_GROUP_OP2 (D4_3, 12);
+                                  DO_GROUP_OP2 (D4_4, 16);
+                              //}
+                        }
+                      }
+                  } else if (vDim == 60UL) {
+                      for (long r = 0; r < 60; r++, row_offset += 60) {
+                          long col_offset = 0L;
+                          for (long c = 0; c < 60L; c++, ti++, col_offset += 60L) {
+                              __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              for (long k = 0; k < 60L; k+=4) {
+                                  __m256d D4, B4;
+                                  DO_GROUP_OP (D4, B4, k);
+                              }
+                        }
+                      }
+                  } else
+                      for (long r = 0; r < vDim; r++, row_offset += vDim) {
+                          long col_offset = 0L;
+                          for (long c = 0; c < vDim; c++, ti++, col_offset += vDim) {
+                              __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              for (long k = 0; k < vDim; k+=4) {
+                                  __m256d D4, B4;
+                                  DO_GROUP_OP (D4, B4, k);
+                              }
+                        }
+                      }
+                  return;
+                  #endif
                   
-#ifdef  _SLKP_USE_AVX_INTRINSICS
+                for (unsigned long c = 0UL; c < secondArg.vDim; c ++) {
 
-                  if (vDim == 20UL) { // special case for amino-acids
-                    
-                    __m256d __attribute__ ((aligned (32))) col_buffer[5];
-                    
-                      hyFloat   quad1[4] __attribute__ ((aligned (32))),
-                                quad2[4] __attribute__ ((aligned (32))),
-                                quad3[4] __attribute__ ((aligned (32))),
-                                quad4[4] __attribute__ ((aligned (32))),
-                                quad5[4] __attribute__ ((aligned (32)));
-                      
-
-                                quad1 [0] = secondArg.theData[c];
-                                quad1 [1] = secondArg.theData[c + 20UL];
-                                quad1 [2] = secondArg.theData[c + 40UL];
-                                quad1 [3] = secondArg.theData[c + 60UL];
-
-                                quad2 [0] = secondArg.theData[c + 80UL];
-                                quad2 [1] = secondArg.theData[c + 100UL];
-                                quad2 [2] = secondArg.theData[c + 120UL];
-                                quad2 [3] = secondArg.theData[c + 140UL];
-
-                                quad3 [0] = secondArg.theData[c + 160UL];
-                                quad3 [1] = secondArg.theData[c + 180UL];
-                                quad3 [2] = secondArg.theData[c + 200UL];
-                                quad3 [3] = secondArg.theData[c + 220UL];
-
-                                quad4 [0] = secondArg.theData[c + 240UL];
-                                quad4 [1] = secondArg.theData[c + 260UL];
-                                quad4 [2] = secondArg.theData[c + 280UL];
-                                quad4 [3] = secondArg.theData[c + 300UL];
-
-                                quad5 [0] = secondArg.theData[c + 320UL];
-                                quad5 [1] = secondArg.theData[c + 340UL];
-                                quad5 [2] = secondArg.theData[c + 360UL];
-                                quad5 [3] = secondArg.theData[c + 380UL];
-
-                              col_buffer[0] = _mm256_load_pd (quad1);
-                              col_buffer[1] = _mm256_load_pd (quad2);
-                              col_buffer[2] = _mm256_load_pd (quad3);
-                              col_buffer[3] = _mm256_load_pd (quad4);
-                              col_buffer[4] = _mm256_load_pd (quad5);
-                      
-                    hyFloat const * p = theData;
-                    hyFloat row [20];
-                    for (unsigned long r = 0UL; r < 20UL; r ++, p += 20UL) {
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-                        __m256d sum1 = _mm256_fmadd_pd (_mm256_loadu_pd(p), col_buffer[0], _mm256_mul_pd(_mm256_loadu_pd(p+4UL), col_buffer[1]));
-                        __m256d sum2 = _mm256_fmadd_pd (_mm256_loadu_pd(p+8UL), col_buffer[2],
-                                                        _mm256_fmadd_pd(_mm256_loadu_pd(p+12UL), col_buffer[3],
-                                                        _mm256_mul_pd(_mm256_loadu_pd(p+16UL), col_buffer[4])));
-                        
-                        //dest[r*vDim + c] = _avx_sum_4  (_mm256_add_pd (sum1, sum2));
-                        row[r] = _avx_sum_4  (_mm256_add_pd (sum1, sum2));
-#else
-                      __m256d r0 = _mm256_mul_pd(_mm256_loadu_pd(p), col_buffer[0]);
-                      __m256d r1 = _mm256_mul_pd(_mm256_loadu_pd(p+4UL), col_buffer[1]);
-                      __m256d r2 = _mm256_mul_pd(_mm256_loadu_pd(p+8UL), col_buffer[2]);
-                      __m256d r3 = _mm256_mul_pd(_mm256_loadu_pd(p+12UL), col_buffer[3]);
-                      __m256d r4 = _mm256_mul_pd(_mm256_loadu_pd(p+16UL), col_buffer[4]);
-                      
-                      __m256d s01 = _mm256_add_pd(r0, r1);
-                      __m256d s23 = _mm256_add_pd(r2, r3);
-                      __m256d s234 = _mm256_add_pd(s23, r4);
-                      row[r] = _avx_sum_4 (_mm256_add_pd(s01, s234));
-                       //dest[r*vDim + c] = _avx_sum_4 (_mm256_add_pd(s01, s234));
-#endif
-                    }
-                      
-                      
-                    for (unsigned long r = 0UL, idx = c; r < 20UL; r++, idx += 20UL) {
-                        dest[idx] = row[r];
-                    }
-                    continue;
-                  }
-
-#endif
                   /*
                    load a series of 4 consecutive elements from a column in the second matrix,
                    say c [] = [i,i+1,i+2,i+3: c]
@@ -3573,38 +3561,160 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                    }
                 }
               } else {
-                  const unsigned long
-                          column_shift2 = secondArg.vDim << 1,
-                          column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
-                          column_shift4 = secondArg.vDim << 2;
+                  #ifdef  _SLKP_USE_AVX_INTRINSICS
+                    /*
+                     
+                        dest [i,j] = sum_k A[i,k] * B[k,j]
+                     
+                        # data from B[k,j], B[k,j+1], B[k,j+2], B[k,j+3] goes into dest[i,j] ... dest [i,j+3]
+                        # dest [i,x] will take data from dest A[i,x]
+                     
+                        9x9 matrix
+                     
+                        dest [0,0] = A[0,0] * B[0,0] + A[0,1] * B[1,0] + A[0,2] * B[2,0] + A[0,3] * B[3,0] + ...;
+                        dest [0,1] = A[0,0] * B[0,1] + A[0,1] * B[1,1] + A[0,2] * B[2,1] + A[0,3] * B[3,1] + ...;
+                        dest [0,2] = A[0,0] * B[0,2] + A[0,1] * B[1,2] + A[0,2] * B[2,2] + A[0,3] * B[3,2] + ...;
+                        dest [0,3] = A[0,0] * B[0,3] + A[0,1] * B[1,3] + A[0,2] * B[2,3] + A[0,3] * B[3,3] + ...;
+                        dest [0,4] = A[0,0] * B[0,4] + A[0,1] * B[1,4] + A[0,2] * B[2,4] + A[0,3] * B[3,4] + ...;
+                        dest [0,5] = A[0,0] * B[0,5] + A[0,1] * B[1,5] + A[0,2] * B[2,5] + A[0,3] * B[3,5] + ...;
+                        dest [0,6] = A[0,0] * B[0,6] + A[0,1] * B[1,6] + A[0,2] * B[2,6] + A[0,3] * B[3,6] + ...;
+                        dest [0,7] = A[0,0] * B[0,7] + A[0,1] * B[1,7] + A[0,2] * B[2,7] + A[0,3] * B[3,7] + ...;
+                        dest [0,8] = A[0,0] * B[0,8] + A[0,1] * B[1,8] + A[0,2] * B[2,8] + A[0,3] * B[3,8] + ...;
 
-                  for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
-                      for (unsigned long j=0UL; j<secondArg.vDim; j++) {
-                          hyFloat resCell  = 0.0;
+                        ...
 
-                          unsigned long k = 0UL,
-                                       column = j;
+                        dest [3,0] = A[3,0] * B[0,0] + A[3,1] * B[1,0] + A[3,2] * B[2,0] + A[3,3] * B[3,0] + ...;
+                        dest [3,1] = A[3,0] * B[0,1] + A[3,1] * B[1,1] + A[3,2] * B[2,1] + A[3,3] * B[3,1] + ...;
+                        dest [3,2] = A[3,0] * B[0,2] + A[3,1] * B[1,2] + A[3,2] * B[2,2] + A[3,3] * B[3,2] + ...;
+                        dest [3,3] = A[3,0] * B[0,3] + A[3,1] * B[1,3] + A[3,2] * B[2,3] + A[3,3] * B[3,3] + ...;
+                        ....
+                        dest [3,8] = A[3,0] * B[0,8] + A[3,1] * B[1,8] + A[3,2] * B[2,8] + A[3,3] * B[3,8] + ...;
+                     
+                        ...
+
+                        iterate by row  (R)
+                            iterate by column (C)
+                                A4 = load element A[R,C] into a 4 element vector
+                     
+                                iterate by summing index (K), stride 4
+                                    D4 = destination [R:K, R:K+4] // linear access
+                                    B4 = B [C:K, C:K+4] // linear access
+                                    D4 += A4*B4
+                                    write D4 back to memory
+                                    
                         
-                          
-                          for (; k < dimm4; k+=4, column += column_shift4) {
-                              hyFloat pr1 = row[k]   * secondArg.theData [column],                         
-                                         pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],      
-                                         pr3 = row[k+2] * secondArg.theData [column + column_shift2],
-                                         pr4 = row[k+3] * secondArg.theData [column + column_shift3];
-                            
-                              pr1 += pr2;
-                              pr3 += pr4;
-                            
-                              resCell += pr1 + pr3;
+                                if something is left over
+                     
+                                iterate by summing index (K)
+                                    desination [R,K] += A[R,C] * B[C,K],
+
+                     */
+                    long ti = 0L,
+                         row_offset = 0L;
+
+                  if (dimm4 == 60UL) { // codons
+                      
+                      
+                      for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                          long col_offset = 0L;
+                          for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
+                              __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              
+                              __m256d D4_1, D4_2, D4_3, D4_4;
+                              __m256d B4_1, B4_2, B4_3, B4_4;
+                              
+                              DO_GROUP_OP1 (D4_1,B4_1,0);
+                              DO_GROUP_OP1 (D4_2,B4_2,4);
+                              DO_GROUP_OP1 (D4_3,B4_3,8);
+                              DO_GROUP_OP1 (D4_4,B4_4,12);
+                              DO_GROUP_OP2 (D4_1,0);
+                              DO_GROUP_OP2 (D4_2,4);
+                              DO_GROUP_OP2 (D4_3,8);
+                              DO_GROUP_OP2 (D4_4,12);
+
+                              DO_GROUP_OP1 (D4_1,B4_1,16);
+                              DO_GROUP_OP1 (D4_2,B4_2,20);
+                              DO_GROUP_OP1 (D4_3,B4_3,24);
+                              DO_GROUP_OP1 (D4_4,B4_4,28);
+                              DO_GROUP_OP2 (D4_1,16);
+                              DO_GROUP_OP2 (D4_2,20);
+                              DO_GROUP_OP2 (D4_3,24);
+                              DO_GROUP_OP2 (D4_4,28);
+
+                              DO_GROUP_OP1 (D4_1,B4_1,32);
+                              DO_GROUP_OP1 (D4_2,B4_2,36);
+                              DO_GROUP_OP1 (D4_3,B4_3,40);
+                              DO_GROUP_OP1 (D4_4,B4_4,44);
+                              DO_GROUP_OP2 (D4_1,32);
+                              DO_GROUP_OP2 (D4_2,36);
+                              DO_GROUP_OP2 (D4_3,40);
+                              DO_GROUP_OP2 (D4_4,44);
+
+                              DO_GROUP_OP1 (D4_1,B4_1,48);
+                              DO_GROUP_OP1 (D4_2,B4_2,52);
+                              DO_GROUP_OP1 (D4_3,B4_3,56);
+                              DO_GROUP_OP2 (D4_1,48);
+                              DO_GROUP_OP2 (D4_2,52);
+                              DO_GROUP_OP2 (D4_3,56);
+
+                              for (long k = dimm4; k < vDim; k++) {
+                                  dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
+                              }
                           }
-                          
-                          for (; k < vDim; k++, column += secondArg.vDim) {
-                              resCell += row[k] * secondArg.theData[column];
+                      }
+                  } else { // something else
+                      for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                          long col_offset = 0L;
+                          for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
+                              __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              for (long k = 0; k < dimm4; k+=4) {
+                                  __m256d D4, B4;
+                                  DO_GROUP_OP (D4, B4, k);
+                              }
+                              
+                              for (long k = dimm4; k < vDim; k++) {
+                                  dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
+                              }
                           }
-                        
-                          dest[cumulativeIndex++] = resCell;
-                     }
+                      }
                   }
+                  
+                  #else
+                      const unsigned long
+                              column_shift2 = secondArg.vDim << 1,
+                              column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
+                              column_shift4 = secondArg.vDim << 2;
+
+                      for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
+                          for (unsigned long j=0UL; j<secondArg.vDim; j++) {
+                              hyFloat resCell  = 0.0;
+
+                              unsigned long k = 0UL,
+                                           column = j;
+                            
+                              
+                              for (; k < dimm4; k+=4, column += column_shift4) {
+                                  hyFloat pr1 = row[k]   * secondArg.theData [column],
+                                             pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],
+                                             pr3 = row[k+2] * secondArg.theData [column + column_shift2],
+                                             pr4 = row[k+3] * secondArg.theData [column + column_shift3];
+                                
+                                  pr1 += pr2;
+                                  pr3 += pr4;
+                                
+                                  resCell += pr1 + pr3;
+                              }
+                              
+                              for (; k < vDim; k++, column += secondArg.vDim) {
+                                  resCell += row[k] * secondArg.theData[column];
+                              }
+                            
+                              dest[cumulativeIndex++] = resCell;
+                         }
+                      }
+                  
+                    
+                    #endif
               }
               
 #else
@@ -4807,9 +4917,12 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     temp      *= 1.0/i;
                     (*result) += temp;
                     i         ++;
-#ifndef _OPENMP
+/*#ifndef _OPENMP
                     taylor_terms_count++;
-#endif
+#else
+            #pragma omp atomic
+                taylor_terms_count++;
+#endif*/
                 } while (temp.IsMaxElement(tMax*truncPrecision*i));
                 
                 
@@ -4828,9 +4941,12 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     temp      *= 1.0/i;
                     (*result) += temp;
                     i         ++;
-    #ifndef _OPENMP
+/*    #ifndef _OPENMP
+                        taylor_terms_count++;
+    #else
+                #pragma omp atomic
                     taylor_terms_count++;
-    #endif
+    #endif*/
                 } while (temp.IsMaxElement(tMax*truncPrecision*i));
             }
             
@@ -4877,12 +4993,15 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         
        
         //_Matrix stash_mx (*result);
-        
+                
         for (long s = 0; s<power2; s++) {
-#ifndef _OPENMP
-            squarings_count++;
-#endif
-           /* for (i = 0; i < hDim; i++) {
+/*#ifndef _OPENMP
+                    squarings_count++;
+#else
+            #pragma omp atomic
+                squarings_count++;
+#endif*/
+        /* for (i = 0; i < hDim; i++) {
                 if ((*result)(i,i) > 1.) {
                     printf ("\n%ld\n", s);
                     ObjectToConsole(result);
@@ -4896,7 +5015,18 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 }
             }*/
             
-            if (result->Sqr(stash) < DBL_EPSILON * 1.e3) {
+            /*if (squarings_count == 3606) {
+                for (long i = 0, c= 0; i < hDim; i++) {
+                    for (long j = 0; j < vDim; j++,c++) {
+                        fprintf (stderr, "%ld\t%ld\t%16.12g\n", i,j, result->theData[c]);
+                    }
+                }
+            }*/
+            hyFloat maxDiff = result->Sqr(stash);
+            /*if (squarings_count == 3606) {
+                fprintf (stderr, "\n\n%16.12g\n\n", maxDiff);
+            }*/
+            if (maxDiff < DBL_EPSILON * 1.e3) {
                 break;
             }
         }
@@ -5736,8 +5866,17 @@ void        _Matrix::StoreObject (long k, _MathObject* value, bool dup)
 }
 
 //_____________________________________________________________________________________________
-void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool simplify)
-{
+void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool simplify) {
+    
+    auto do_simplify = [] (_Formula *f) -> void {
+        _Polynomial*    is_poly = (_Polynomial*)f->ConstructPolynomial();
+        if (is_poly) {
+            _Formula pf (is_poly);
+            f->Duplicate(&pf);
+        }
+        f->SimplifyConstants();
+    };
+    
     if (is_expression_based()) {
         long lIndex = Hash (i, j);
         if (lIndex == -1) {
@@ -5745,11 +5884,14 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
             lIndex = Hash (i, j);
         }
 
+        //printf ("In (%d) %s\n",simplify, _String ((_String*)f.toStr (kFormulaStringConversionNormal)).get_str());
+        
         if (lIndex<0) {
             theIndex[-lIndex-2] = i*vDim+j;
             ((_Formula**)theData)[-lIndex-2] = copyF?(_Formula*)f.makeDynamic():&f;
             if (simplify) {
-                ((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
+                do_simplify (((_Formula**)theData)[-lIndex-2]);
+                //((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
             }
         } else {
             if (((_Formula**)theData)[lIndex]!=(_Formula*)ZEROPOINTER) {
@@ -5757,9 +5899,12 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
             }
             ((_Formula**)theData)[lIndex] = copyF?(_Formula*)f.makeDynamic():&f;
             if (simplify) {
-                ((_Formula**)theData)[lIndex]->SimplifyConstants();
+                do_simplify (((_Formula**)theData)[lIndex]);
+                //((_Formula**)theData)[lIndex]->SimplifyConstants();
             }
         }
+        //printf ("Stored %s\n", _String ((_String*)(((_Formula**)theData)[lIndex >= 0 ? lIndex : -lIndex-2])->toStr (kFormulaStringConversionNormal)).get_str());
+
 
         CheckIfSparseEnough();
     }
@@ -5797,14 +5942,13 @@ void        _Matrix::AplusBx (_Matrix& B, hyFloat x)
 hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
     
     hyFloat diff = 0.;
-    if (hDim!=vDim) {
+    if (hDim != vDim) {
         return diff;
     }
     // not a square matrix
 
-    if (theIndex|| storageType!=1 )
+    if (! (is_dense() && is_numeric()) ) {
         // sparse or non-numeric matrix
-    {
         _Matrix temp (hDim, vDim, storageType==0?theIndex!=nil:false, storageType);
         Multiply (temp, *this);
         Swap(temp);
@@ -5815,19 +5959,257 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
         {
             for (unsigned long i=0UL, k = 0UL; i<16; i+=4) {
                 for (unsigned long j=0UL; j<4UL; j++, k++) {
-                  hyFloat p1 = theData[i]   * theData [j];
-                  hyFloat p2 = theData[i+1] * theData [j+4];
+                   hyFloat p1 = theData[i]   * theData [j];
+                   hyFloat p2 = theData[i+1] * theData [j+4];
                    p1 += theData[i+2] * theData [j+8];
                    p2 += theData[i+3] * theData [j+12];
-                  
                    stash[k] = p1+p2;
                 }
             }
         } else {
             long loopBound = (vDim >> 2) << 2;
             //vDim - vDim % 4;
-
             // loop interchange rocks!
+            
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+            #define DO_GROUP_OP0(X,Y,k) Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_mul_pd(A4, Y);
+            #ifdef _SLKP_USE_FMA3_INTRINSICS
+                #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_fmadd_pd (A4,Y,X);
+                #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
+            #else
+                #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_add_pd (X, _mm256_mul_pd(A4, Y));
+                #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
+           #endif
+           if (true) {
+               hyFloat  * _hprestrict_ dest = stash;
+
+               long ti = 0L,
+                    row_offset = 0L;
+               
+               if (loopBound == 60UL) { // codons
+                   if (hDim == 61) { // special case universal genetic code
+                       for (long r = 0; r < 61; r++, row_offset += 61) {
+                           long col_offset = 0L;
+                           
+                           {  // handle first row separately to zero out the dest entries
+                               __m256d A4 = _mm256_set1_pd(theData[ti]);
+                               __m256d D4_1, D4_2, D4_3, D4_4;
+                               __m256d B4_1, B4_2, B4_3, B4_4;
+                               
+                               DO_GROUP_OP0 (D4_1,B4_1,0);
+                               DO_GROUP_OP0 (D4_2,B4_2,4);
+                               DO_GROUP_OP0 (D4_3,B4_3,8);
+                               DO_GROUP_OP0 (D4_4,B4_4,12);
+                               DO_GROUP_OP2 (D4_1,0);
+                               DO_GROUP_OP2 (D4_2,4);
+                               DO_GROUP_OP2 (D4_3,8);
+                               DO_GROUP_OP2 (D4_4,12);
+
+                               DO_GROUP_OP0 (D4_1,B4_1,16);
+                               DO_GROUP_OP0 (D4_2,B4_2,20);
+                               DO_GROUP_OP0 (D4_3,B4_3,24);
+                               DO_GROUP_OP0 (D4_4,B4_4,28);
+                               DO_GROUP_OP2 (D4_1,16);
+                               DO_GROUP_OP2 (D4_2,20);
+                               DO_GROUP_OP2 (D4_3,24);
+                               DO_GROUP_OP2 (D4_4,28);
+
+                               DO_GROUP_OP0 (D4_1,B4_1,32);
+                               DO_GROUP_OP0 (D4_2,B4_2,36);
+                               DO_GROUP_OP0 (D4_3,B4_3,40);
+                               DO_GROUP_OP0 (D4_4,B4_4,44);
+                               DO_GROUP_OP2 (D4_1,32);
+                               DO_GROUP_OP2 (D4_2,36);
+                               DO_GROUP_OP2 (D4_3,40);
+                               DO_GROUP_OP2 (D4_4,44);
+
+                               DO_GROUP_OP0 (D4_1,B4_1,48);
+                               DO_GROUP_OP0 (D4_2,B4_2,52);
+                               DO_GROUP_OP0 (D4_3,B4_3,56);
+                               DO_GROUP_OP2 (D4_1,48);
+                               DO_GROUP_OP2 (D4_2,52);
+                               DO_GROUP_OP2 (D4_3,56);
+
+                               dest[row_offset + 60] = theData[ti] * theData[60];
+                               ti++;
+                               col_offset = vDim;
+                           }
+                           for (long c = 1; c < 61; c++, ti++, col_offset += 61) {
+                               __m256d A4 = _mm256_set1_pd(theData[ti]);
+                               
+                               __m256d D4_1, D4_2, D4_3, D4_4;
+                               __m256d B4_1, B4_2, B4_3, B4_4;
+                               
+                               DO_GROUP_OP1 (D4_1,B4_1,0);
+                               DO_GROUP_OP1 (D4_2,B4_2,4);
+                               DO_GROUP_OP1 (D4_3,B4_3,8);
+                               DO_GROUP_OP1 (D4_4,B4_4,12);
+                               DO_GROUP_OP2 (D4_1,0);
+                               DO_GROUP_OP2 (D4_2,4);
+                               DO_GROUP_OP2 (D4_3,8);
+                               DO_GROUP_OP2 (D4_4,12);
+
+                               DO_GROUP_OP1 (D4_1,B4_1,16);
+                               DO_GROUP_OP1 (D4_2,B4_2,20);
+                               DO_GROUP_OP1 (D4_3,B4_3,24);
+                               DO_GROUP_OP1 (D4_4,B4_4,28);
+                               DO_GROUP_OP2 (D4_1,16);
+                               DO_GROUP_OP2 (D4_2,20);
+                               DO_GROUP_OP2 (D4_3,24);
+                               DO_GROUP_OP2 (D4_4,28);
+
+                               DO_GROUP_OP1 (D4_1,B4_1,32);
+                               DO_GROUP_OP1 (D4_2,B4_2,36);
+                               DO_GROUP_OP1 (D4_3,B4_3,40);
+                               DO_GROUP_OP1 (D4_4,B4_4,44);
+                               DO_GROUP_OP2 (D4_1,32);
+                               DO_GROUP_OP2 (D4_2,36);
+                               DO_GROUP_OP2 (D4_3,40);
+                               DO_GROUP_OP2 (D4_4,44);
+
+                               DO_GROUP_OP1 (D4_1,B4_1,48);
+                               DO_GROUP_OP1 (D4_2,B4_2,52);
+                               DO_GROUP_OP1 (D4_3,B4_3,56);
+                               DO_GROUP_OP2 (D4_1,48);
+                               DO_GROUP_OP2 (D4_2,52);
+                               DO_GROUP_OP2 (D4_3,56);
+
+                               dest[row_offset + 60] += theData[ti] * theData[col_offset + 60];
+                               
+                           }
+                       }
+                       
+                   } else {
+                       for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                           long col_offset = 0L;
+                           
+                           {  // handle first row separately to zero out the dest entries
+                               __m256d A4 = _mm256_set1_pd(theData[ti]);
+                               __m256d D4_1, D4_2, D4_3, D4_4;
+                               __m256d B4_1, B4_2, B4_3, B4_4;
+                               
+                               DO_GROUP_OP0 (D4_1,B4_1,0);
+                               DO_GROUP_OP0 (D4_2,B4_2,4);
+                               DO_GROUP_OP0 (D4_3,B4_3,8);
+                               DO_GROUP_OP0 (D4_4,B4_4,12);
+                               DO_GROUP_OP2 (D4_1,0);
+                               DO_GROUP_OP2 (D4_2,4);
+                               DO_GROUP_OP2 (D4_3,8);
+                               DO_GROUP_OP2 (D4_4,12);
+
+                               DO_GROUP_OP0 (D4_1,B4_1,16);
+                               DO_GROUP_OP0 (D4_2,B4_2,20);
+                               DO_GROUP_OP0 (D4_3,B4_3,24);
+                               DO_GROUP_OP0 (D4_4,B4_4,28);
+                               DO_GROUP_OP2 (D4_1,16);
+                               DO_GROUP_OP2 (D4_2,20);
+                               DO_GROUP_OP2 (D4_3,24);
+                               DO_GROUP_OP2 (D4_4,28);
+
+                               DO_GROUP_OP0 (D4_1,B4_1,32);
+                               DO_GROUP_OP0 (D4_2,B4_2,36);
+                               DO_GROUP_OP0 (D4_3,B4_3,40);
+                               DO_GROUP_OP0 (D4_4,B4_4,44);
+                               DO_GROUP_OP2 (D4_1,32);
+                               DO_GROUP_OP2 (D4_2,36);
+                               DO_GROUP_OP2 (D4_3,40);
+                               DO_GROUP_OP2 (D4_4,44);
+
+                               DO_GROUP_OP0 (D4_1,B4_1,48);
+                               DO_GROUP_OP0 (D4_2,B4_2,52);
+                               DO_GROUP_OP0 (D4_3,B4_3,56);
+                               DO_GROUP_OP2 (D4_1,48);
+                               DO_GROUP_OP2 (D4_2,52);
+                               DO_GROUP_OP2 (D4_3,56);
+
+                               for (long k = loopBound; k < vDim; k++) {
+                                   dest[row_offset + k] = theData[ti] * theData[k];
+                               }
+                               ti++;
+                               col_offset = vDim;
+                           }
+                           for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
+                               __m256d A4 = _mm256_set1_pd(theData[ti]);
+                               
+                               __m256d D4_1, D4_2, D4_3, D4_4;
+                               __m256d B4_1, B4_2, B4_3, B4_4;
+                               
+                               DO_GROUP_OP1 (D4_1,B4_1,0);
+                               DO_GROUP_OP1 (D4_2,B4_2,4);
+                               DO_GROUP_OP1 (D4_3,B4_3,8);
+                               DO_GROUP_OP1 (D4_4,B4_4,12);
+                               DO_GROUP_OP2 (D4_1,0);
+                               DO_GROUP_OP2 (D4_2,4);
+                               DO_GROUP_OP2 (D4_3,8);
+                               DO_GROUP_OP2 (D4_4,12);
+
+                               DO_GROUP_OP1 (D4_1,B4_1,16);
+                               DO_GROUP_OP1 (D4_2,B4_2,20);
+                               DO_GROUP_OP1 (D4_3,B4_3,24);
+                               DO_GROUP_OP1 (D4_4,B4_4,28);
+                               DO_GROUP_OP2 (D4_1,16);
+                               DO_GROUP_OP2 (D4_2,20);
+                               DO_GROUP_OP2 (D4_3,24);
+                               DO_GROUP_OP2 (D4_4,28);
+
+                               DO_GROUP_OP1 (D4_1,B4_1,32);
+                               DO_GROUP_OP1 (D4_2,B4_2,36);
+                               DO_GROUP_OP1 (D4_3,B4_3,40);
+                               DO_GROUP_OP1 (D4_4,B4_4,44);
+                               DO_GROUP_OP2 (D4_1,32);
+                               DO_GROUP_OP2 (D4_2,36);
+                               DO_GROUP_OP2 (D4_3,40);
+                               DO_GROUP_OP2 (D4_4,44);
+
+                               DO_GROUP_OP1 (D4_1,B4_1,48);
+                               DO_GROUP_OP1 (D4_2,B4_2,52);
+                               DO_GROUP_OP1 (D4_3,B4_3,56);
+                               DO_GROUP_OP2 (D4_1,48);
+                               DO_GROUP_OP2 (D4_2,52);
+                               DO_GROUP_OP2 (D4_3,56);
+
+                               for (long k = loopBound; k < vDim; k++) {
+                                   dest[row_offset + k] += theData[ti] * theData[col_offset + k];
+                               }
+                           }
+                       }
+                   }
+               } else { // something else
+                   for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                       long col_offset = 0L;
+                       
+                       {
+                           __m256d A4 = _mm256_set1_pd(theData[ti]);
+                           for (long k = 0; k < loopBound; k+=4) {
+                               __m256d D4, B4;
+                               DO_GROUP_OP0 (D4, B4, k);
+                               DO_GROUP_OP2 (D4,k);
+                           }
+                           
+                           for (long k = loopBound; k < vDim; k++) {
+                               dest[row_offset + k] = theData[ti] * theData[k];
+                           }
+                           col_offset = vDim;
+                           ti++;
+                       }
+                       
+                       for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
+                           __m256d A4 = _mm256_set1_pd(theData[ti]);
+                           for (long k = 0; k < loopBound; k+=4) {
+                               __m256d D4, B4;
+                               DO_GROUP_OP1 (D4, B4, k);
+                               DO_GROUP_OP2 (D4,k);
+                           }
+                           
+                           for (long k = loopBound; k < vDim; k++) {
+                               dest[row_offset + k] += theData[ti] * theData[col_offset + k];
+                           }
+                       }
+                   }
+               }
+           } else {
+
+#endif
 
           
             hyFloat  * _hprestrict_ column = stash+lDim;
@@ -5904,7 +6286,9 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                       
                   }
                 }
-
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+            }
+#endif
 #else
                 for (long i = 0; i < lDim; i += vDim) {
                     hyFloat * row    = theData + i,
@@ -7770,8 +8154,7 @@ _List*      _Matrix::ComputeRowAndColSums (void) {
 
 //_____________________________________________________________________________________________
 
-_Matrix* _Matrix::NeighborJoin (bool methodIndex, HBLObjectRef cache)
-{
+_Matrix* _Matrix::NeighborJoin (bool methodIndex, HBLObjectRef cache) {
     long          specCount = GetHDim();
 
     if (storageType != 1 ||  specCount!= GetVDim() || specCount < 4) {
@@ -7836,7 +8219,7 @@ _Matrix* _Matrix::NeighborJoin (bool methodIndex, HBLObjectRef cache)
             break;
         }
 
-        for (long i=1; i<useColumn.lLength; i=i+1) {
+        for (long i=1; i<useColumn.lLength; i++) {
             long c1 = useColumn.list_data[i];
 
             for (long j=0; j<i; j=j+1) {

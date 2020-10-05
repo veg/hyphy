@@ -224,10 +224,12 @@ function estimators.ExtractBranchInformation.copy_local(key, value) {
 
     estimators.ExtractBranchInformation.copy_local.var_name = estimators.extractBranchLength.parameter_tag + "." + value;
 
-    estimators.extractBranchLength.result[key] = {
-        terms.id: value,
+    estimators.extractBranchLength.result[key] = {};
+    (estimators.extractBranchLength.result[key])[terms.id] = value;
+    (estimators.extractBranchLength.result[key])[terms.fit.MLE] = Eval(estimators.ExtractBranchInformation.copy_local.var_name);
+    /*   terms.id: value,
         terms.fit.MLE: Eval(estimators.ExtractBranchInformation.copy_local.var_name)
-    };
+    };*/
 
     if (parameters.IsIndependent(estimators.ExtractBranchInformation.copy_local.var_name) != TRUE) {
         (estimators.extractBranchLength.result[key])[terms.constraint] = parameters.GetConstraint(estimators.ExtractBranchInformation.copy_local.var_name);
@@ -1265,17 +1267,12 @@ lfunction estimators.CreateInitialGrid (values, N, init) {
         for (i = 0; i < N; i+=1) {
             entry = {};
             for (v = 0; v < var_count; v += 1) {
+                entry [var_names[v]] = {};
+                (entry [var_names[v]])[^"terms.id"] = var_names[v];
                 if (Random (0,1) < toggle) {
-                    entry [var_names[v]] = {
-                        ^"terms.id" : var_names[v],
-                        ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
-                    };
+                    (entry [var_names[v]])[^"terms.fit.MLE"] = (values[var_names[v]])[Random (0, var_dim[v])$1];
                 } else {
-                   entry [var_names[v]] = {
-                        ^"terms.id" : var_names[v],
-                        ^"terms.fit.MLE" : (values[var_names[v]])[init[var_names[v]]]
-                    };
-
+                    (entry [var_names[v]])[^"terms.fit.MLE"] =  (values[var_names[v]])[init[var_names[v]]];
                 }
             }
             result + entry;
@@ -1286,10 +1283,9 @@ lfunction estimators.CreateInitialGrid (values, N, init) {
         for (i = 0; i < N; i+=1) {
             entry = {};
             for (v = 0; v < var_count; v += 1) {
-                entry [var_names[v]] = {
-                    ^"terms.id" : var_names[v],
-                    ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
-                };
+                 entry [var_names[v]] = {};
+                 (entry [var_names[v]])[^"terms.id"] = var_names[v];
+                 (entry [var_names[v]])[^"terms.fit.MLE"] =  (values[var_names[v]])[Random (0, var_dim[v])$1];
             }
             result + entry;
         }
@@ -1334,10 +1330,9 @@ lfunction estimators.LHC (ranges, samples) {
     for (i = 0; i < samples; i+=1) {
         entry = {};
         for (v = 0; v < var_count; v += 1) {
-            entry [var_names[v]] = {
-                ^"terms.id" : var_names[v],
-                ^"terms.fit.MLE" : var_def[v][0] + (var_samplers[v])[i] * var_def[v][1]
-            };
+            entry [var_names[v]] = {};
+            (entry [var_names[v]])[^"terms.id"] = var_names[v];
+            (entry [var_names[v]])[^"terms.fit.MLE"] = var_def[v][0] + (var_samplers[v])[i] * var_def[v][1];
         }
         result + entry;
     }

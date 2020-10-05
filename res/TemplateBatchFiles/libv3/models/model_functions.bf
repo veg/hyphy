@@ -609,7 +609,7 @@ lfunction model.BranchLengthExpression (model) {
 		expr = Join ("+", components);
 	}
 
-	return "(" + expr + ")/3";
+	return Simplify("(" + expr + ")*(1/3)",{});
 }
 
 lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
@@ -670,5 +670,5 @@ lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
     }
 
     expr = Join ("+", expr);
-    return expr;
+    return Simplify(expr,{});
 }

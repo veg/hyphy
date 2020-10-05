@@ -399,6 +399,24 @@ const _String GetStringFromFormula (_String const* data,_VariableContainer* theP
 bool    numericalParameterSuccessFlag = true;
 
 hyFloat  _ProcessNumericArgumentWithExceptions (_String& data, _VariableContainer const* theP) {
+
+    /*if (data == _String("unit")) {
+        printf ("%s\n", AppendContainerName (data, theP).get_str());
+    }*/
+
+    HBLObjectRef simple_var = FetchObjectFromVariableByType (&AppendContainerName (data, theP), NUMBER | STRING);
+    if (simple_var) {
+        hyFloat res;
+        if (simple_var->ObjectClass() == NUMBER) {
+          res = simple_var->Value();
+        } else {
+          res = _String((_String*)((_FString*)simple_var)->toStr()).to_float();
+        }
+        //DeleteObject (simple_var);
+        return res;
+    }
+    
+    
     _String   errMsg;
     _Formula  nameForm (data,theP, &errMsg);
 
