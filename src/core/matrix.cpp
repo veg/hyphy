@@ -1888,7 +1888,7 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
             whereTo.theIndex               = (long*)MatrixMemAllocate (whereTo.lDim*sizeof(long));
         }
         
-        hyFloat _hprestrict_ *          newData  =  canReuse ? whereTo.theData : (hyFloat*)MatrixMemAllocate (whereTo.lDim*sizeof(hyFloat));
+        hyFloat * _hprestrict_          newData  =  canReuse ? whereTo.theData : (hyFloat*)MatrixMemAllocate (whereTo.lDim*sizeof(hyFloat));
         
         if (whereTo.compressedIndex) {
             MatrixMemFree(whereTo.compressedIndex);
