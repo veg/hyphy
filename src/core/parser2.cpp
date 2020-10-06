@@ -612,6 +612,14 @@ void        _parse_new_level (long & level, _List & operations, _List& operands,
 }
 
 
+//#define _TRACK_PARSE_COUNTS
+
+#ifdef _TRACK_PARSE_COUNTS
+    unsigned long parse_counter = 0UL;
+    _List       _parse_counter_list;
+    _AVLListX   _parse_counter_dict (&_parse_counter_list);
+#endif
+
 
 //__________________________________________________________________________________
 long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingContext, _Formula* f2)
@@ -655,6 +663,32 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
 {
   //static bool inAssignment = false;
+    
+    static _String kEmptyDict   = "{}";
+    static _String kEmptyStringQuote = "\"\"";
+    if ( s == kEmptyDict) {
+        // SLKP 20200921: this is a common enough case that its worth shortcutting it
+        f->theFormula.AppendNewInstance (new _Operation (new _AssociativeList));
+        return HY_FORMULA_EXPRESSION;
+    }
+    if ( s == kEmptyStringQuote) {
+        // SLKP 20200921: this is a common enough case that its worth shortcutting it
+        f->theFormula.AppendNewInstance (new _Operation (new _FString));
+        return HY_FORMULA_EXPRESSION;
+    }
+    
+    // also check to see if the expression is a number
+    
+    if ( s.length () > 0 && s.length () < 30) {
+        hyFloat number;
+        int upto;
+        if (sscanf (s.get_str(), "%lf%n", &number, &upto) == 1) {
+            if (upto == s.length()) {
+                f->theFormula.AppendNewInstance (new _Operation (new _Constant (number)));
+                return HY_FORMULA_EXPRESSION;
+            }
+        }
+    }
 
     _List           operations,
                     operands,
@@ -676,6 +710,23 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
 
 
+#ifdef _TRACK_PARSE_COUNTS
+    if (s.nonempty()) {
+        _parse_counter_dict.UpdateValue (new _String (s), 1, 0);
+        parse_counter++;
+        if (parse_counter % 50000 == 0) {
+            printf ("\n>>%ld FORMULA PARSE<<\n", parse_counter);
+            for (AVLListXIteratorKeyValue variable_record : AVLListXIterator (&_parse_counter_dict)) {
+                if (variable_record.get_value() > parse_counter * 0.001) {
+                    printf ("%s: %ld\n", ((_String*)_parse_counter_dict.Retrieve (variable_record.get_index()))->get_str(), variable_record.get_value());
+                    
+                }
+            }
+            NLToConsole(); NLToConsole();
+        }
+    }
+#endif
+    
     long            level                 = -1;
     /* 04252006 mlevel = -1, */
     /* mcount = 0 ; */

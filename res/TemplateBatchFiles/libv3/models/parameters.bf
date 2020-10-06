@@ -393,11 +393,13 @@ function parameters.StringMatrixToFormulas(id, matrix) {
 
     ExecuteCommands("`id` = {__N,__M}");
 
+    __expr := "`id`[__r][__c] := " + matrix[__r][__c];
+
     for (__r = 0; __r < __N; __r += 1) {
         for (__c = 0; __c < __M; __c += 1) {
 
             if (Abs(matrix[__r][__c])) {
-                ExecuteCommands("`id`[__r][__c] := " + matrix[__r][__c]);
+                ExecuteCommands(__expr);
             }
         }
     }
@@ -605,11 +607,9 @@ function parameters.RemoveConstraint(id) {
  * @returns nothing
  */
 function parameters.helper.copy_definitions(target, source) {
-    parameters.helper.copy_definitions.key_iterator = {
-        {
-            terms.local, terms.global
-        }
-    };
+    parameters.helper.copy_definitions.key_iterator = {1,2};
+    parameters.helper.copy_definitions.key_iterator [0] = terms.local;
+    parameters.helper.copy_definitions.key_iterator [1] = terms.global;
 
     for (parameters.helper.copy_definitions.i = 0; parameters.helper.copy_definitions.i < Columns(parameters.helper.copy_definitions.key_iterator); parameters.helper.copy_definitions.i += 1) {
         parameters.helper.copy_definitions.key = parameters.helper.copy_definitions.key_iterator[parameters.helper.copy_definitions.i];

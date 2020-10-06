@@ -145,6 +145,7 @@ private:
  
 
 public:
+    
 
     // constructors
 
@@ -327,7 +328,7 @@ public:
 // square the matrix by Strassen's Multiplication
 
 
-    _Matrix*    Exponentiate (hyFloat scale_to = 1.0, bool check_transition = false, _Matrix * write_here = nil);                // exponent of a matrix
+    _Matrix*    Exponentiate (hyFloat scale_to = 0.5, bool check_transition = false, _Matrix * write_here = nil);                // exponent of a matrix
     void        Transpose (void);                   // transpose a matrix
     _Matrix     Gauss   (void);                     // Gaussian Triangularization process
     HBLObjectRef   LUDecompose (void) const;
@@ -572,7 +573,7 @@ public:
         return true;
     }
 
-    void              CheckIfSparseEnough (bool = false);       // check if matrix is sparse enough to justify
+    bool              CheckIfSparseEnough (bool = false, bool copy = true);       // check if matrix is sparse enough to justify
     void              Convert2Formulas      (void);     // converts a numeric matrix to formula-based mx
     // sparse storage
 

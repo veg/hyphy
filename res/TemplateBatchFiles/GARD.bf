@@ -189,7 +189,15 @@ gard.numSeqs                = gard.alignment[terms.data.sequences];
 gard.variableSiteMap = {};
 
 
+for (_pattern_; in; alignments.Extract_site_patterns ("gard.filter")) {
+    if (_pattern_[terms.data.is_constant]==FALSE) {
+        for (_key_, _value_; in; _pattern_[terms.data.sites]) {
+             gard.variableSiteMap + (gard.siteMultiplier*_value_ + gard.siteShift);
+        }
+    }
+}
 
+/*
 utility.ForEach (alignments.Extract_site_patterns ("gard.filter"), "_pattern_", "
     if (_pattern_[terms.data.is_constant]==FALSE) {
         utility.ForEachPair (_pattern_[terms.data.sites], '_key_', '_value_',
@@ -197,7 +205,7 @@ utility.ForEach (alignments.Extract_site_patterns ("gard.filter"), "_pattern_", 
             gard.variableSiteMap + (gard.siteMultiplier*_value_ + gard.siteShift);
         ');
     }
-");
+");*/
 
 gard.variableSiteMap = Transpose (utility.DictToArray (gard.variableSiteMap)) % 0; // sort by 1st column
 gard.variableSites = Rows (gard.variableSiteMap);
@@ -313,6 +321,7 @@ namespace gard {
                                                      "1" : model,
                                                      "2" : baseLikelihoodInfo},
                                                      "gard.storeSingleBreakPointModelResults");
+                                                     
 
     }
 
@@ -544,7 +553,8 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
             currentStart = breakPoints[p] + 1;
         }
     }
-
+    
+    
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lfComponents`)");
 
@@ -557,6 +567,11 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
         df = estimators.ApplyExistingEstimates(&likelihoodFunction, modelObjects, initialValues, None);
     }
+
+    /*if (breakPointsCount > 0) {
+        io.SpoolLF (&likelihoodFunction, "/Users/sergei/Desktop/gard","debug");
+        assert (0);
+    }*/
 
     res = estimators.FitExistingLF (&likelihoodFunction, modelObjects);
 

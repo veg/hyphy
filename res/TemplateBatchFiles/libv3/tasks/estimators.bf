@@ -224,10 +224,12 @@ function estimators.ExtractBranchInformation.copy_local(key, value) {
 
     estimators.ExtractBranchInformation.copy_local.var_name = estimators.extractBranchLength.parameter_tag + "." + value;
 
-    estimators.extractBranchLength.result[key] = {
-        terms.id: value,
+    estimators.extractBranchLength.result[key] = {};
+    (estimators.extractBranchLength.result[key])[terms.id] = value;
+    (estimators.extractBranchLength.result[key])[terms.fit.MLE] = Eval(estimators.ExtractBranchInformation.copy_local.var_name);
+    /*   terms.id: value,
         terms.fit.MLE: Eval(estimators.ExtractBranchInformation.copy_local.var_name)
-    };
+    };*/
 
     if (parameters.IsIndependent(estimators.ExtractBranchInformation.copy_local.var_name) != TRUE) {
         (estimators.extractBranchLength.result[key])[terms.constraint] = parameters.GetConstraint(estimators.ExtractBranchInformation.copy_local.var_name);
@@ -741,7 +743,8 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         //assert (0);
     }
 
-
+    
+    
     if (Type (can_do_restarts) == "AssociativeList") {
         //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
         bestlog    = -1e100;
@@ -1109,7 +1112,9 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
 
     LikelihoodFunction likelihoodFunction = (lf_components);
-
+    GetString (params, likelihoodFunction,-1);
+    utility.ToggleEnvVariable ("PARAMETER_GROUPING", {"0" : params["Global Independent"]});
+ 
     if (utility.Has (option,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
         df += Call (option[utility.getGlobalValue("terms.run_options.apply_user_constraints")], &likelihoodFunction, lf_components, codon_data, tree, model_map, initial_values, model_id_to_object);
     }
@@ -1130,13 +1135,19 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
     //console.log (lfe);
 
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
-
-    Optimize(mles, likelihoodFunction);
+    
+    if (utility.Has (option,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+        Optimize(mles, likelihoodFunction, option[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+    } else {
+        Optimize(mles, likelihoodFunction);
+    }
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
     }
 
+    utility.ToggleEnvVariable ("PARAMETER_GROUPING", None);
+    
     results = estimators.ExtractMLEs( & likelihoodFunction, model_id_to_object);
 
 
@@ -1265,17 +1276,12 @@ lfunction estimators.CreateInitialGrid (values, N, init) {
         for (i = 0; i < N; i+=1) {
             entry = {};
             for (v = 0; v < var_count; v += 1) {
+                entry [var_names[v]] = {};
+                (entry [var_names[v]])[^"terms.id"] = var_names[v];
                 if (Random (0,1) < toggle) {
-                    entry [var_names[v]] = {
-                        ^"terms.id" : var_names[v],
-                        ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
-                    };
+                    (entry [var_names[v]])[^"terms.fit.MLE"] = (values[var_names[v]])[Random (0, var_dim[v])$1];
                 } else {
-                   entry [var_names[v]] = {
-                        ^"terms.id" : var_names[v],
-                        ^"terms.fit.MLE" : (values[var_names[v]])[init[var_names[v]]]
-                    };
-
+                    (entry [var_names[v]])[^"terms.fit.MLE"] =  (values[var_names[v]])[init[var_names[v]]];
                 }
             }
             result + entry;
@@ -1286,10 +1292,9 @@ lfunction estimators.CreateInitialGrid (values, N, init) {
         for (i = 0; i < N; i+=1) {
             entry = {};
             for (v = 0; v < var_count; v += 1) {
-                entry [var_names[v]] = {
-                    ^"terms.id" : var_names[v],
-                    ^"terms.fit.MLE" : (values[var_names[v]])[Random (0, var_dim[v])$1]
-                };
+                 entry [var_names[v]] = {};
+                 (entry [var_names[v]])[^"terms.id"] = var_names[v];
+                 (entry [var_names[v]])[^"terms.fit.MLE"] =  (values[var_names[v]])[Random (0, var_dim[v])$1];
             }
             result + entry;
         }
@@ -1334,10 +1339,9 @@ lfunction estimators.LHC (ranges, samples) {
     for (i = 0; i < samples; i+=1) {
         entry = {};
         for (v = 0; v < var_count; v += 1) {
-            entry [var_names[v]] = {
-                ^"terms.id" : var_names[v],
-                ^"terms.fit.MLE" : var_def[v][0] + (var_samplers[v])[i] * var_def[v][1]
-            };
+            entry [var_names[v]] = {};
+            (entry [var_names[v]])[^"terms.id"] = var_names[v];
+            (entry [var_names[v]])[^"terms.fit.MLE"] = var_def[v][0] + (var_samplers[v])[i] * var_def[v][1];
         }
         result + entry;
     }

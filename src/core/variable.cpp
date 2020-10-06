@@ -661,7 +661,7 @@ void  _Variable::SetFormula (_Formula& theF) {
     theF.ScanFForVariables (vA,true);
 
     if (vA.Find((BaseRefConst)theIndex)>=0) {
-        HandleApplicationError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr(kFormulaStringConversionNormal))&" because it would create a circular dependance."));
+        HandleApplicationError ((_String("Can't set variable ")&*GetName()&" to "&*((_String*)theF.toStr(kFormulaStringConversionNormal))&" because it would create a circular dependence."));
         if (&theF!=right_hand_side) {
             delete right_hand_side;
         }

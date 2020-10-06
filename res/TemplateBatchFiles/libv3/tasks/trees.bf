@@ -1183,7 +1183,8 @@ lfunction tree.infer.NJ (datafilter, distances) {
 
     N = ^(datafilter + ".species");
     assert (N == Rows (distances), "Incompatible dimensions for the distance matrix and datafilter");
-
+    
+ 
     if (N == 2) {
 		d1 = distances[0][1]/2;
 		treeNodes = {{0,1,d1__},
@@ -1204,11 +1205,12 @@ lfunction tree.infer.NJ (datafilter, distances) {
 			cladesInfo = {{3,0}};
 		}
 		else {
+				
 			njm = (distances > 0) >= N;
 
 			treeNodes 		= {2*N,3};
 
-           for (i = 0; i < 2*N; i += 1) {
+            for (i = 0; i < 2*N; i += 1) {
                 treeNodes[i][0] = njm[i][0]; // node index; leaves in [0,N), internal nodes N and higher
                 treeNodes[i][1] = njm[i][1]; // node depth relative to the root
                 treeNodes[i][2] = njm[i][2]; // branch length

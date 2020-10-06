@@ -795,8 +795,28 @@ lfunction alignments.Extract_site_patterns (data_filter) {
     GetDataInfo (pattern_list, ^data_filter);
     site_characters = {};
     sequence_count = ^(data_filter + ".species");
+    
+    
+    for (_site_index_, _pattern_; in; pattern_list) {
+        utility.EnsureKey (site_info, _pattern_);
+        utility.EnsureKey (site_info[_pattern_], ^"terms.data.sites");
+        if ((site_info[_pattern_])[^"terms.data.sites"] + _site_index_ == 1) { 
+            // first time we see this site
+            GetDataInfo (site_characters, ^data_filter, -1, _pattern_);
+            sc = {};
+            for (_value_; in; site_characters) {
+                if (+_value_ > 0) {
+                    sc + (+_value_);
+                }
+            }
+            site_characters = sc;
+            (site_info[_pattern_])[^"terms.data.is_constant"] = Abs (site_characters) <= 1;
+        }
+        
+        
+    }
 
-    utility.ForEachPair (pattern_list, "_site_index_", "_pattern_",
+    /*utility.ForEachPair (pattern_list, "_site_index_", "_pattern_",
         '
         utility.EnsureKey (`&site_info`, _pattern_);
         utility.EnsureKey (`&site_info`[_pattern_], utility.getGlobalValue("terms.data.sites"));
@@ -810,11 +830,13 @@ lfunction alignments.Extract_site_patterns (data_filter) {
                                                  "_value_",
                                                  "(+_value_>0)");
 
-            (`&site_info`[_pattern_])[utility.getGlobalValue("terms.data.is_constant")] = Abs (`&site_characters`) <= 1;
+            (`&site_info`[_pattern_])[^"terms.data.is_constant"] = Abs (`&site_characters`) <= 1;
 
         }
         '
-    );
+    );*/
+    
+    
 
     utility.ToggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
 

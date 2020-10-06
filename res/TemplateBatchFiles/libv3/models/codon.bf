@@ -189,25 +189,25 @@ lfunction models.codon.generate_stencil (type, model) {
 }
 
 lfunction models.codon.diff (a,b) {
-    r = {utility.getGlobalValue("terms.diff.from") : None,
-         utility.getGlobalValue("terms.diff.to") : None,
-         utility.getGlobalValue("terms.diff.position") : None};
 
+    r = {};
+    r [^"terms.diff.position"] = None;
+    
     for (i = 0; i < 3; i += 1) {
         if (a[i] != b[i]) {
-            if (r[utility.getGlobalValue("terms.diff.position")] != None) {
+            if (r[^"terms.diff.position"] != None) {
                 return None;
             }
-            r[utility.getGlobalValue("terms.diff.from")] = a[i];
-            r[utility.getGlobalValue("terms.diff.to")] = b[i];
-            r[utility.getGlobalValue("terms.diff.position")] = i;
+            r[^("terms.diff.from")] = a[i];
+            r[^("terms.diff.to")] = b[i];
+            r[^("terms.diff.position")] = i;
         }
     }
-
-    if (r [utility.getGlobalValue("terms.diff.position")] == None) {
+    if (r[^"terms.diff.position"] == None)  {
         return None;
     }
     return r;
+    
 }
 
 
@@ -218,11 +218,11 @@ lfunction models.codon.diff.complete (a,b) {
 
     for (i = 0; i < 3; i += 1) {
         if (a[i] != b[i]) {
-            r + {
-                utility.getGlobalValue("terms.diff.from") : a[i],
-                utility.getGlobalValue("terms.diff.to") : b[i],
-                utility.getGlobalValue("terms.diff.position") : i
-            };
+            c = {};
+            c[^"terms.diff.from"] = a[i];
+            c[^"terms.diff.to"] = b[i];
+            c[^"terms.diff.position"] = i;
+            r+c;
         }
     }
 

@@ -1024,7 +1024,7 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                     long        size   = cc->Value()/arg0->Value();
                     
                     if  (size<=4 || size * 2 >cc->Value()) {
-                        throw _String("Poor choice of the 2nd numeric agrument in to $ (split) for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
+                        throw _String("Poor choice of the 2nd numeric argument in to $ (split) for tree. Either the resulting cluster size is too big(>half of the tree), or too small (<4)!");
                     }
                     
                     long        checkSize = 1L,

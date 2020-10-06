@@ -137,7 +137,7 @@ set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-
 
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    execute_process(
+     execute_process(
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
         OUTPUT_VARIABLE GCC_VERSION
     )
@@ -147,16 +147,18 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif()
 
     if(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14 ")
     else(${GCC_VERSION} VERSION_LESS 6.0)
       set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=c++14")
     endif(${GCC_VERSION} VERSION_LESS 6.0)
+
+    #set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info")
 
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
         if(NOSSE3)
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
-        else(NOSSE)
+        else(NOSSE3)
             PCL_CHECK_FOR_SSE3()
             if(${HAVE_SSE3_EXTENSIONS})
                 add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
@@ -187,11 +189,12 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3")
+    #set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3  -fsave-optimization-record=yaml ")
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 ")
     if(NOAVX)
         if(NOSSE3)
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
-        else(NOSSE)
+        else(NOSSE3)
             PCL_CHECK_FOR_SSE3()
             if(${HAVE_SSE3_EXTENSIONS})
                 add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
@@ -223,7 +226,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     )
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
-set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  ")
+#set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info -fopt-info-vec-missed")
+set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}")
 MESSAGE ("Set compiler flags to ${DEFAULT_COMPILE_FLAGS}")
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
@@ -407,11 +411,11 @@ if(${MPI_FOUND})
         HYPHYMPI
         PROPERTIES
         if(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g"
         else(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} "
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
+            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} -g"
+            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} -g"
         endif(${OPENMP_FOUND})
     )
 endif(${MPI_FOUND})
@@ -568,6 +572,9 @@ makeLink(HYPHYMP hyphy hyphy)
 add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
 add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)
 add_test (PROTEIN HYPHYMP tests/hbltests/SimpleOptimizations/IntermediateProtein.bf)
+add_test (MTCODON HYPHYMP tests/hbltests/libv3/mtDNA-code.wbf)
+add_test (ALGAE HYPHYMP tests/hbltests/libv3/algae-mtDNA.wbf)
+add_test (CILIATES HYPHYMP tests/hbltests/libv3/ciliate-code.wbf)
 add_test (NAME SLAC COMMAND HYPHYMP tests/hbltests/libv3/SLAC.wbf)
 add_test (NAME SLAC-PARTITIONED COMMAND HYPHYMP tests/hbltests/libv3/SLAC-partitioned.wbf)
 add_test (NAME FEL COMMAND HYPHYMP tests/hbltests/libv3/FEL.wbf)

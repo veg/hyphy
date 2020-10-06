@@ -657,7 +657,11 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
 
     _Polynomial*p = nil;
     if (theNumber) {
-        p= new _Polynomial(theNumber->Value());
+        if (theNumber->ObjectClass() == NUMBER) {
+            p= new _Polynomial(theNumber->Value());
+        } else {
+            return false;
+        }
     }
 
     if (theData>-1) {

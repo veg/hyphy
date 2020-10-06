@@ -221,7 +221,7 @@ const _String _TranslationTable::ExpandToken(char token) const {
   _String const *base_set = &GetAlphabetString();
   _StringBuffer expansion(base_set->length());
 
-  for (unsigned long tc = 0; tc < resolution_count; tc++) {
+  for (long tc = 0; tc < resolution_count; tc++) {
     expansion << base_set->char_at(buf[tc]);
   }
 
