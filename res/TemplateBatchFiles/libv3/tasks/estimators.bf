@@ -1132,8 +1132,12 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
     //console.log (lfe);
 
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
-
-    Optimize(mles, likelihoodFunction);
+    
+    if (utility.Has (option,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+        Optimize(mles, likelihoodFunction, option[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+    } else {
+        Optimize(mles, likelihoodFunction);
+    }
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);

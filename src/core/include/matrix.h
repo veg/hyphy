@@ -145,6 +145,7 @@ private:
  
 
 public:
+    
 
     // constructors
 
@@ -572,7 +573,7 @@ public:
         return true;
     }
 
-    void              CheckIfSparseEnough (bool = false);       // check if matrix is sparse enough to justify
+    bool              CheckIfSparseEnough (bool = false, bool copy = true);       // check if matrix is sparse enough to justify
     void              Convert2Formulas      (void);     // converts a numeric matrix to formula-based mx
     // sparse storage
 

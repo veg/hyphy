@@ -1165,7 +1165,7 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
                 user_argument->AddAReference();
                 throw (user_argument);
             } else {
-                throw _String ("Multi-choice keyword arguement not supported in this context");
+                throw _String ("Multi-choice keyword argument not supported in this context");
             }
         }
     }

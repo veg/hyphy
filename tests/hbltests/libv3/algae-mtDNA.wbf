@@ -1,0 +1,29 @@
+GetString (version, HYPHY_VERSION, 0);
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("support/FitMG94.bf", {"--code" : "Mold-Protozoan-mtDNA", "--alignment" : PATH_TO_CURRENT_BF + "data/algae_coxI_aligned.fas"});
+} else {
+    LoadFunctionLibrary ("SelectionAnalyses/BUSTED.bf", {"0" : "Mold-Protozoan-mtDNA", "1" : PATH_TO_CURRENT_BF + "data/algae_coxI_aligned.fas"});
+}
+
+LoadFunctionLibrary ("shared.bf");
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+
+
+assert (check_value (
+    (fitter.results)["LogL"], -2345.80, 0.05), "Incorrect log-likelihood for the codon model");
+
+assert (check_value (
+    (((fitter.results)["global"])["non-synonymous/synonymous rate ratio"])["MLE"], 0.0040, 0.01), "Incorrect dN/dS ratio");
+   
+bl_sum = 0;
+for (bl; in; (fitter.results["branch length"])["0"]){
+    bl_sum += bl["MLE"];
+}
+
+assert (check_value (
+    bl_sum, 2.0732, 0.05), "Incorrect total branch length");
+
+   
+
+

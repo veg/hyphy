@@ -1505,7 +1505,10 @@ OPTIMIZATION_METHOD        		= 4;
 PRODUCE_OPTIMIZATION_LOG        = 1;
 
 Optimize(res_IntermediateCodon_AA_LF,IntermediateCodon_AA_LF);
-fprintf (stdout, "\n\n", IntermediateCodon_AA_LF.trace, "\n\n");
+
+
+USE_JSON_FOR_MATRIX = 1;
+fprintf ("optimization_log.json", CLEAR_FILE,  IntermediateCodon_AA_LF.trace);
 
 fprintf (stdout, res_IntermediateCodon_AA_LF[1][0], "\n");
 

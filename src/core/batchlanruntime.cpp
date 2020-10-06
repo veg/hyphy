@@ -321,8 +321,8 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
 
         _Formula parsed_expression;
         _CheckExpressionForCorrectness (parsed_expression, expression, currentProgram);
-        _Variable * target_variable = _ValidateStorageVariable (currentProgram, 2); // create variable if it doesn't exist
-        target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
+        _ValidateStorageVariable (currentProgram, 2);
+        _Variable * target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),currentProgram,NUMBER);
 
         if (!parsed_expression.DependsOnVariable(target_variable->get_index()) && !do_integrate) {
             throw (expression.Enquote() & " does not depend on the variable " & target_variable->GetName()->Enquote());
@@ -2008,7 +2008,7 @@ bool      _ElementaryCommand::HandleDeleteObject(_ExecutionList& current_program
     if  (source_object) {
       KillLFRecord (object_index,!do_shallow);
     } else {
-      ReportWarning(GetIthParameter(i)->Enquote() & " is not a supported agrument type for " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(get_code()));
+      ReportWarning(GetIthParameter(i)->Enquote() & " is not a supported argument type for " & _HY_ValidHBLExpressions.RetrieveKeyByPayload(get_code()));
     }
   }
   return true;
