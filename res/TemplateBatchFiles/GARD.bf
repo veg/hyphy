@@ -568,6 +568,11 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
         df = estimators.ApplyExistingEstimates(&likelihoodFunction, modelObjects, initialValues, None);
     }
 
+    /*if (breakPointsCount > 0) {
+        io.SpoolLF (&likelihoodFunction, "/Users/sergei/Desktop/gard","debug");
+        assert (0);
+    }*/
+
     res = estimators.FitExistingLF (&likelihoodFunction, modelObjects);
 
     if (Type (saveToFile) == "String") {

@@ -356,11 +356,28 @@ function doGTR (prefix) {
 
 
     /* Store branch lengths */
+    
+    gtr_bls_over_10 = 0;
+    
     for (partition_index = 0; partition_index < Abs(filter_specification); partition_index += 1) {
         selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.json.nucleotide_gtr"), utility.getGlobalValue ("terms.branch_length"), display_orders[terms.json.nucleotide_gtr],
                                          partition_index,
                                          selection.io.extract_branch_info((gtr_results[utility.getGlobalValue ("terms.branch_length")])[partition_index], "selection.io.branch.length"));
+    
+        for (bl; in; (gtr_results[utility.getGlobalValue ("terms.branch_length")])[partition_index]) {
+            if (bl[^"terms.fit.MLE"] > 10.) {
+                gtr_bls_over_100 += 1;
+            }
         }
+    }
+    
+    if (gtr_bls_over_10 > 0) {
+      fprintf(stdout, "\n-------\n", io.FormatLongStringToWidth(
+      ">[WARNING] Some of the branches (" + gtr_bls_over_10 + ") in this alignment appear to be 'infinitely' long. 
+      While in *rare* cases this may be biologically reasonable, such overly long branches typically indicate either alignment issues (e.g. codon sequences aligned as nucleotides, improperly trimmed genes, etc),
+      or lack of sequence homology (too distantly related species). Consider inspecting your alignment to confirm that it does not contain problematic sequences and that it is of suitable quality.", 72),
+      "\n-------\n");
+   }
 
 }
 
