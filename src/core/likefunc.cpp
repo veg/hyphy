@@ -5330,7 +5330,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             leftStep = MIN (leftStep*0.125, middle-lowerBound);
             
             if ( leftStep<initialStep*.1 && index >= 0 || index < 0 && leftStep < STD_GRAD_STEP) {
-                if (!first || index >= 0) {
+                if (!first /*|| index >= 0*/) {
                     if (go2Bound) {
                         middle = lowerBound;
                         
