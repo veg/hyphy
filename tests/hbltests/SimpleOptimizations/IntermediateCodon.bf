@@ -618,10 +618,21 @@ Tree LargeNuc_tree				=	DATAFILE_TREE;
 DataSetFilter LargeNuc_part = CreateFilter(flu,3,"","","TAA,TAG,TGA");
 VERBOSITY_LEVEL = 1;
 LikelihoodFunction LargeNuc_LF = (LargeNuc_part,LargeNuc_tree);
-//AUTO_PARALLELIZE_OPTIMIZE = 1;
-OPTIMIZATION_PRECISION    = 0.001;
+
+PARAMETER_GROUPING = {"0" : {{"CG","AC","AT","CT","GT"}}};
+
+VERBOSITY_LEVEL 			  		= 	1;
+OPTIMIZATION_METHOD					=   4;
+OPTIMIZATION_PROGRESS_QUANTUM 		= 	0.5;
+OPTIMIZATION_PROGRESS_STATUS  		= 	"OPTIMIZING THE LIKELIHOOD FUNCTION";
+OPTIMIZATION_PROGRESS_TEMPLATE 		= 	"$1 $2 $3% $4 $5 $6";
+PRODUCE_OPTIMIZATION_LOG        = 1;
+
 
 Optimize(res_LargeNuc_LF,LargeNuc_LF);
+
+fprintf ("codon_optimization_log.json", CLEAR_FILE,  LargeNuc_LF.trace);
+
 
 /* test epilogue */
 	timeMatrix = endTestTimer 				  (_testDescription);

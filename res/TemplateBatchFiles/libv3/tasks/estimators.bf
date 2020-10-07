@@ -743,7 +743,8 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         //assert (0);
     }
 
-
+    
+    
     if (Type (can_do_restarts) == "AssociativeList") {
         //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
         bestlog    = -1e100;
@@ -1111,7 +1112,9 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
 
     LikelihoodFunction likelihoodFunction = (lf_components);
-
+    GetString (params, likelihoodFunction,-1);
+    utility.ToggleEnvVariable ("PARAMETER_GROUPING", {"0" : params["Global Independent"]});
+ 
     if (utility.Has (option,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
         df += Call (option[utility.getGlobalValue("terms.run_options.apply_user_constraints")], &likelihoodFunction, lf_components, codon_data, tree, model_map, initial_values, model_id_to_object);
     }
@@ -1132,13 +1135,19 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
     //console.log (lfe);
 
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
-
-    Optimize(mles, likelihoodFunction);
+    
+    if (utility.Has (option,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
+        Optimize(mles, likelihoodFunction, option[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+    } else {
+        Optimize(mles, likelihoodFunction);
+    }
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
     }
 
+    utility.ToggleEnvVariable ("PARAMETER_GROUPING", None);
+    
     results = estimators.ExtractMLEs( & likelihoodFunction, model_id_to_object);
 
 

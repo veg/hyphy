@@ -243,26 +243,26 @@ public:
 #ifdef  _SLKP_LFENGINE_REWRITE_
     void            SampleAncestorsBySequence       (_DataSetFilter const*, _SimpleList const&, node<long>*, _AVLListX const*, hyFloat const*, _List&, _SimpleList*, _List&, hyFloat const*, long);
 
-    hyFloat      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList*, _DataSetFilter const*, hyFloat*, long*, hyFloat*, _Vector*, long&, long, long, long = -1, hyFloat* = nil, long* = nil, long = -1, long * = nil);
+    hyFloat      ComputeTreeBlockByBranch        (_SimpleList&, _SimpleList&, _SimpleList* __restrict, _DataSetFilter const*, hyFloat* __restrict, long* __restrict, hyFloat* __restrict, _Vector* __restrict, long&, long, long, long = -1, hyFloat* __restrict = nil, long* = nil, long = -1, long * __restrict = nil);
     long            DetermineNodesForUpdate         (_SimpleList&,  _List* = nil, long = -1, long = -1, bool = true, _AVLListX * var_mapping = nil, _AVLList * changed_variables = nil);
     void            ExponentiateMatrices            (_List&, long, long = -1);
     void            FillInConditionals              (_DataSetFilter const*, hyFloat*,  _SimpleList*);
 
     void            ComputeBranchCache              ( _SimpleList&,
             long nodeID,
-            hyFloat*         cache,
-            hyFloat*         iNodeCache,
+            hyFloat* __restrict        cache,
+            hyFloat* __restrict        iNodeCache,
             _DataSetFilter const*     theFilter,
-            long           *        lNodeFlags,
-            hyFloat*         scalingAdjustments,
-            long*                   siteCorrectionCounts,
-            _Vector const*     lNodeResolutions,
+            long           *__restrict        lNodeFlags,
+            hyFloat* __restrict        scalingAdjustments,
+            long*  __restrict                 siteCorrectionCounts,
+            _Vector const* __restrict     lNodeResolutions,
             long&                   overallScaler,
             long const                    siteFrom,
             long                    siteTo,
             long const                   catID,
-            _SimpleList const *            = nil,
-            hyFloat*         = nil
+            _SimpleList const * __restrict           = nil,
+            hyFloat* __restrict        = nil
                                                     );
 
     hyFloat          ComputeLLWithBranchCache         (
@@ -327,6 +327,9 @@ protected:
 
 };
 
+hyFloat _computeReductionScaler (hyFloat currentScaler, hyFloat sum, long& didScale);
+hyFloat _computeBoostScaler     (hyFloat currentScaler, hyFloat sum, long& didScale);
+inline void _handle4x4_pruning_case (double const* childVector, double const* tMatrix, double* parentConditionals, void* transposed_mx);
 
 #define    _HY_BITMASK_WIDTH_ (8*sizeof (unsigned long))
 

@@ -90,7 +90,7 @@ const char hy_help_message [] =
 "  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
 "                           or as configured during CMake installation\n"
 "  USEPATH=directory path   specifies the optional working and relative path directory (default is BASEPATH)\n\n"
-"  ENV=expression           set HBL enviroment variables via explicit statements\n"
+"  ENV=expression           set HBL environment variables via explicit statements\n"
 "                           for example ENV='DEBUG_MESSAGES=1;WRITE_LOGS=1'\n"
 "  batch file to run        if specified, execute this file, otherwise drop into an interactive mode\n"
 "  analysis arguments       if batch file is present, all remaining positional arguments are interpreted as inputs to analysis prompts\n\n"
@@ -102,7 +102,7 @@ const char hy_help_message [] =
 "Select a standard analysis from the list : \n\thyphy -i \n"
 "Run a standard analysis with default options and one required user argument; \n\thyphy busted --alignment path/to/file\n"
 "Run a standard analysis with additional keyword arguments \n\thyphy busted --alignment path/to/file --srv No\n"
-"See whcih arguments are understood by a standard analysis \n\thyphy busted --help\n"
+"See which arguments are understood by a standard analysis \n\thyphy busted --help\n"
 "Run a custom analysis and pass it some arguments \n\thyphy path/to/hyphy.script argument1 'argument 2' \n"
 ;
 
@@ -689,8 +689,55 @@ void    SetStatusLineUser   (_String const s) {
 
 //__________________________________________________________________________________
 
+#include <chrono>
+
 #ifndef __UNITTEST__
 int main (int argc, char* argv[]) {
+    
+    /*long    N       = 1000L;
+    long    repeats = 20L;
+    long    density = 0.25 * RAND_MAX;
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    srand(time(0));
+    
+    _Matrix::switchThreshold = atoi (argv[1]);
+    
+    printf ("%ld\n", _Matrix::switchThreshold);
+    
+    for (long i = 0; i < N; i++) {
+        _Matrix test (61,61,false,true);
+        test.ForEachCellNumeric([density] (hyFloat& e, long i, long r, long c) -> void {
+            if (r != c && rand() < density) {
+                e = genrand_real1 ();
+            } else {
+                e = 0.0;
+            }
+        });
+        for (long r = 0; r < 61; r++) {
+            double s = 0.;
+            for (long c = 0; c < 61; c++) {
+                s += test (r, c);
+            }
+            test.theData[r*61+r] = -s;
+        }
+        
+        test.AmISparse();
+        //ObjectToConsole(&test);
+        
+        //printf ("%d\n", test.is_dense());
+        for (long j = 0; j < repeats; j++) {
+            DeleteObject (test.Exponentiate());
+            //return 0;
+        }
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    printf ("%15.12g s\n", elapsed.count());
+    
+    return 0;*/
     
  
 #ifdef _COMPARATIVE_LF_DEBUG_DUMP

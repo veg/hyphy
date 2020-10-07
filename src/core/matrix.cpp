@@ -73,7 +73,7 @@ _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
 
 int _Matrix::precisionArg = 0;
 int _Matrix::storageIncrement = 16;
-int _Matrix::switchThreshold = 25;
+int _Matrix::switchThreshold = 35;
 
 hyFloat  _Matrix::truncPrecision = 1e-16;
 #define     MatrixMemAllocate(X) MemAllocate(X, false, 64)
@@ -1788,33 +1788,37 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
 }
 
 //_____________________________________________________________________________________________
-bool    _Matrix::AmISparse(void)
-{
+bool    _Matrix::AmISparse(void) {
     if (theIndex) {
         return true;    // duh!
     }
   
-    if (storageType== _FORMULA_TYPE || _SIMPLE_FORMULA_TYPE) {
+    if (storageType == _FORMULA_TYPE || storageType == _SIMPLE_FORMULA_TYPE) {
         return false;
     }
 
-    long k=0L;
+    long const threshhold = lDim * _Matrix::switchThreshold / 100 + 1;
+    long k = 0L;
+    
     if (storageType==_NUMERICAL_TYPE) {
       for (long i=0; i<lDim; i++) {
           if (theData[i]!=ZEROOBJECT) {
               k++;
+              if (k == threshhold) break;
           }
       }
     } else {
       for (long i=0; i<lDim; i++) {
           if (IsNonEmpty(i) && !GetMatrixObject(i)->IsObjectEmpty()) {
               k++;
+              if (k == threshhold) break;
           }
       }
     }
+    
+ 
 
-
-    if ((hyFloat(k)/lDim*100.)<=_Matrix::switchThreshold) {
+    if (k < threshhold) {
         // we indeed are sparse enough
         _Matrix sparseMe (hDim,vDim,true,storageType==_NUMERICAL_TYPE);
         if (storageType==_NUMERICAL_TYPE) {
@@ -1853,7 +1857,7 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     long * non_zero_index = (long*)alloca (threshold*sizeof(long));
     
     for (unsigned long i=0UL; i<lDim ; i++) {
-          if (__builtin_expect(theData[i] != ZEROOBJECT, 1L)) {
+          if (__builtin_expect(theData[i] != ZEROOBJECT, 0L)) {
               non_zero_index[k++] = i;
               if (k == threshold) {
                   return false;
@@ -1864,33 +1868,63 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     if (k < threshold) {
         // we indeed are sparse enough
         
-        if (k == 0L) {
-            k = 1L;
+        bool canReuse = whereTo.lDim > k;
+                
+        if (k == 0L) { // empty matrix
+            //printf ("\nZERO SIZE\n");
+            whereTo.lDim = 1L;
+        } else {
+            whereTo.lDim = k;
         }
-
-        hyFloat *          newData  = (hyFloat*)MatrixMemAllocate (k*sizeof(hyFloat));
+        
         if (whereTo.theIndex) {
-            free (whereTo.theIndex);
+            if (canReuse) {
+                whereTo.theIndex               = (long*)MemReallocate (whereTo.theIndex , whereTo.lDim*sizeof(long));
+            } else {
+                free (whereTo.theIndex);
+                whereTo.theIndex               = (long*)MatrixMemAllocate (whereTo.lDim*sizeof(long));
+            }
+        } else {
+            whereTo.theIndex               = (long*)MatrixMemAllocate (whereTo.lDim*sizeof(long));
         }
-        whereTo.theIndex               = (long*)MatrixMemAllocate (k*sizeof(long));
-        long p = 0;
-        whereTo.theIndex[0] = -1;
         
-        for (unsigned long i = 0UL; i < k; i++) {
-            whereTo.theIndex[i] = non_zero_index[i];
-            newData[i] = theData [non_zero_index[i]];
+        hyFloat * _hprestrict_          newData  =  canReuse ? whereTo.theData : (hyFloat*)MatrixMemAllocate (whereTo.lDim*sizeof(hyFloat));
+        
+        if (whereTo.compressedIndex) {
+            MatrixMemFree(whereTo.compressedIndex);
         }
-
-        /*for (unsigned long i=0; i < lDim; i++)
-            if (theData[i]!=ZEROOBJECT) {
-                whereTo.theIndex[p] = i;
-                newData[p++] = theData[i];
-            }*/
+        whereTo.compressedIndex = (long*) MatrixMemAllocate((whereTo.lDim + hDim) * sizeof (long));
         
+        long              currentRow = 0L;
 
-        whereTo.lDim     = k;
-        free     (whereTo.theData);
-        whereTo.theData = newData;
+        for (long i=0L; i<k; i++) {
+            //printf ("%ld %ld", i, theIndex[i]);
+            long entryIndex = non_zero_index[i];
+            whereTo.theIndex[i] = entryIndex;
+            
+            long indexRow = entryIndex / vDim,
+                 indexColumn = entryIndex - indexRow * vDim;
+ 
+            whereTo.compressedIndex[i + hDim] = indexColumn;
+            if (indexRow > currentRow) {
+                for (long l = currentRow; l < indexRow; l++) {
+                    whereTo.compressedIndex[l] = i;
+                }
+                currentRow = indexRow;
+            }
+            newData[i]  = theData [entryIndex];
+        }
+        
+        for (long l = currentRow; l < hDim; l++)
+            whereTo.compressedIndex[l] = whereTo.lDim;
+        
+        if (canReuse) {
+            whereTo.theData = (hyFloat*) MemReallocate(newData, whereTo.lDim*sizeof(hyFloat));
+        } else {
+            free     (whereTo.theData);
+            whereTo.theData = newData;
+        }
+        
         return true;
     }
 
@@ -2067,7 +2101,7 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::CheckIfSparseEnough(bool force) {
+bool    _Matrix::CheckIfSparseEnough(bool force, bool copy) {
 
 // check if matrix is sparse enough to justify compressed storage
 
@@ -2082,22 +2116,26 @@ void    _Matrix::CheckIfSparseEnough(bool force) {
             hyPointer* tempData = (hyPointer*) MemAllocate (square_dimension*sizeof(hyPointer));
             InitializeArray(tempData, square_dimension, (hyPointer)nil);
             
-            for (unsigned long i = 0UL; i<lDim; i++) {
-                if (IsNonEmpty(i)) {
-                    tempData[theIndex[i]]=((hyPointer*)theData)[i];
+            if (copy) {
+                for (unsigned long i = 0UL; i<lDim; i++) {
+                    if (IsNonEmpty(i)) {
+                        tempData[theIndex[i]]=((hyPointer*)theData)[i];
+                    }
                 }
             }
             MatrixMemFree( theData);
             theData = (hyFloat*)tempData;
        } else {
             //objects
-            hyFloat* tempData = (hyFloat*) MemAllocate (square_dimension*sizeof(hyFloat));
-            InitializeArray(tempData, square_dimension, 0.0);
+            hyFloat* tempData = (hyFloat*) MemAllocate (square_dimension*sizeof(hyFloat), true, 64);
+           // InitializeArray(tempData, square_dimension, 0.0);
 
-            for (unsigned long i = 0UL; i<lDim; i++) {
-                long k = theIndex[i];
-                if (k >= 0) {
-                    tempData [k] = ((hyFloat*)theData) [i];
+            if (copy) {
+                for (unsigned long i = 0UL; i<lDim; i++) {
+                    long k = theIndex[i];
+                    if (k >= 0) {
+                        tempData [k] = ((hyFloat*)theData) [i];
+                    }
                 }
             }
             MatrixMemFree( theData);
@@ -2107,7 +2145,9 @@ void    _Matrix::CheckIfSparseEnough(bool force) {
         lDim = square_dimension;
         MatrixMemFree( theIndex);
         theIndex = nil;
+        return true;
     }
+    return false;
 }
 
 //_____________________________________________________________________________________________
@@ -3354,21 +3394,20 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
                 }
         } else {
   #ifdef  _SLKP_USE_AVX_INTRINSICS
-  #define                 CELL_OP(k) _mm256_storeu_pd (destination + k, _mm256_mul_pd(value_op, _mm256_loadu_pd (source+k)))
-        long lDimM4 = lDim >> 4 << 4,
-             k = 0;
-            
-        __m256d  value_op = _mm256_set1_pd (c);
-         for (k = 0L; k < lDimM4; k+=16) {
-             CELL_OP (k);
-             CELL_OP (k+4);
-             CELL_OP (k+8);
-             CELL_OP (k+12);
-        }
-        for (; k < lDim; k++) {
-            destination[k] = source[k]*c;
-        }
-            
+      #define                 CELL_OP(k) _mm256_storeu_pd (destination + k, _mm256_mul_pd(value_op, _mm256_loadu_pd (source+k)))
+            long lDimM4 = lDim >> 4 << 4,
+                 k = 0;
+                
+            __m256d  value_op = _mm256_set1_pd (c);
+             for (k = 0L; k < lDimM4; k+=16) {
+                 CELL_OP (k);
+                 CELL_OP (k+4);
+                 CELL_OP (k+8);
+                 CELL_OP (k+12);
+            }
+            for (; k < lDim; k++) {
+                destination[k] = source[k]*c;
+            }
   #else
             for (long k = 0L; k < lDim; k++) {
                 destination[k] = source[k]*c;
@@ -3452,69 +3491,132 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
 
                 const hyFloat * row = theData;
                 hyFloat  * dest = storage.theData;
+                
+#if defined _SLKP_USE_AVX_INTRINSICS
                 #ifdef _SLKP_USE_FMA3_INTRINSICS
                     #define DO_GROUP_OP(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); _mm256_storeu_pd (dest + row_offset + k, _mm256_fmadd_pd (A4,Y,X));
                     #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_fmadd_pd (A4,Y,X);
                     #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
-#else
+                #else
                     #define DO_GROUP_OP(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k);  Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); _mm256_storeu_pd (dest + row_offset + k, _mm256_add_pd (X, _mm256_mul_pd(A4, Y)));
                     #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_add_pd (X, _mm256_mul_pd(A4, Y));
                     #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
                #endif
+                
+#elif _SLKP_USE_SSE_INTRINSICS
+            #define DO_GROUP_OP1(X,Y,k) X = _mm_loadu_pd(dest + row_offset + k); Y = _mm_loadu_pd(secondArg.theData + col_offset + k); X = _mm_add_pd (X, _mm_mul_pd(A4, Y));
+            #define DO_GROUP_OP2(X,k) _mm_storeu_pd (dest + row_offset + k,X);
+#endif
 
                 
 #ifndef _SLKP_SSE_VECTORIZATION_
             
               
               if (dimm4 == vDim) {
-                InitializeArray (dest, lDim, 0.0);
-                  #ifdef  _SLKP_USE_AVX_INTRINSICS
-                  long ti = 0L,
-                       row_offset = 0L;
-                  if (vDim == 20UL) {
-                      for (long r = 0; r < 20; r++, row_offset += 20) {
-                          long col_offset = 0L;
-                          for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
-                              __m256d A4 = _mm256_set1_pd(theData[ti]);
-                              //for (long k = 0; k < 20L; k+=4) {
-                                  __m256d D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
-                                  DO_GROUP_OP1 (D4, B4, 0);
-                                  DO_GROUP_OP1 (D4_1, B4_1, 4);
-                                  DO_GROUP_OP1 (D4_2, B4_2, 8);
-                                  DO_GROUP_OP1 (D4_3, B4_3, 12);
-                                  DO_GROUP_OP1 (D4_4, B4_4, 16);
-                                  DO_GROUP_OP2 (D4, 0);
-                                  DO_GROUP_OP2 (D4_1, 4);
-                                  DO_GROUP_OP2 (D4_2, 8);
-                                  DO_GROUP_OP2 (D4_3, 12);
-                                  DO_GROUP_OP2 (D4_4, 16);
-                              //}
-                        }
-                      }
-                  } else if (vDim == 60UL) {
-                      for (long r = 0; r < 60; r++, row_offset += 60) {
-                          long col_offset = 0L;
-                          for (long c = 0; c < 60L; c++, ti++, col_offset += 60L) {
-                              __m256d A4 = _mm256_set1_pd(theData[ti]);
-                              for (long k = 0; k < 60L; k+=4) {
-                                  __m256d D4, B4;
-                                  DO_GROUP_OP (D4, B4, k);
-                              }
-                        }
-                      }
-                  } else
-                      for (long r = 0; r < vDim; r++, row_offset += vDim) {
-                          long col_offset = 0L;
-                          for (long c = 0; c < vDim; c++, ti++, col_offset += vDim) {
-                              __m256d A4 = _mm256_set1_pd(theData[ti]);
-                              for (long k = 0; k < vDim; k+=4) {
-                                  __m256d D4, B4;
-                                  DO_GROUP_OP (D4, B4, k);
-                              }
-                        }
-                      }
-                  return;
-                  #endif
+                  memset (dest, 0, lDim * sizeof (hyFloat));
+                  #if defined  _SLKP_USE_AVX_INTRINSICS
+                      long ti = 0L,
+                           row_offset = 0L;
+                  
+                      if (vDim == 20UL) {
+                          for (long r = 0; r < 20; r++, row_offset += 20) {
+                              long col_offset = 0L;
+                              for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
+                                  __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                  //for (long k = 0; k < 20L; k+=4) {
+                                      __m256d D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
+                                      DO_GROUP_OP1 (D4, B4, 0);
+                                      DO_GROUP_OP1 (D4_1, B4_1, 4);
+                                      DO_GROUP_OP1 (D4_2, B4_2, 8);
+                                      DO_GROUP_OP1 (D4_3, B4_3, 12);
+                                      DO_GROUP_OP1 (D4_4, B4_4, 16);
+                                      DO_GROUP_OP2 (D4, 0);
+                                      DO_GROUP_OP2 (D4_1, 4);
+                                      DO_GROUP_OP2 (D4_2, 8);
+                                      DO_GROUP_OP2 (D4_3, 12);
+                                      DO_GROUP_OP2 (D4_4, 16);
+                                  //}
+                            }
+                          }
+                      } else if (vDim == 60UL) {
+                          for (long r = 0; r < 60; r++, row_offset += 60) {
+                              long col_offset = 0L;
+                              for (long c = 0; c < 60L; c++, ti++, col_offset += 60L) {
+                                  __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                  for (long k = 0; k < 60L; k+=4) {
+                                      __m256d D4, B4;
+                                      DO_GROUP_OP (D4, B4, k);
+                                  }
+                            }
+                          }
+                      } else
+                          for (long r = 0; r < vDim; r++, row_offset += vDim) {
+                              long col_offset = 0L;
+                              for (long c = 0; c < vDim; c++, ti++, col_offset += vDim) {
+                                  __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                 #pragma GCC unroll 4
+                                 #pragma clang loop vectorize(enable)
+                                 #pragma clang loop interleave(enable)
+                                 #pragma clang loop unroll(enable)
+                                 for (long k = 0; k < vDim; k+=4) {
+                                      __m256d D4, B4;
+                                      DO_GROUP_OP (D4, B4, k);
+                                  }
+                            }
+                          }
+                      return;
+                  #elif _SLKP_USE_SSE_INTRINSICS
+                      long ti = 0L,
+                           row_offset = 0L;
+                  
+                      if (vDim == 20UL) {
+                          for (long r = 0; r < 20; r++, row_offset += 20) {
+                              long col_offset = 0L;
+                              for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
+                                  __m128d A4 = _mm_set1_pd(theData[ti]);
+                                  //for (long k = 0; k < 20L; k+=4) {
+                                      __m128d D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
+                                      DO_GROUP_OP1 (D4, B4, 0);
+                                      DO_GROUP_OP1 (D4_1, B4_1, 2);
+                                      DO_GROUP_OP1 (D4_2, B4_2, 4);
+                                      DO_GROUP_OP1 (D4_3, B4_3, 6);
+                                      DO_GROUP_OP1 (D4_4, B4_4, 8);
+                                      DO_GROUP_OP2 (D4, 0);
+                                      DO_GROUP_OP2 (D4_1, 2);
+                                      DO_GROUP_OP2 (D4_2, 4);
+                                      DO_GROUP_OP2 (D4_3, 6);
+                                      DO_GROUP_OP2 (D4_4, 8);
+                                      DO_GROUP_OP1 (D4, B4, 10);
+                                      DO_GROUP_OP1 (D4_1, B4_1, 12);
+                                      DO_GROUP_OP1 (D4_2, B4_2, 14);
+                                      DO_GROUP_OP1 (D4_3, B4_3, 16);
+                                      DO_GROUP_OP1 (D4_4, B4_4, 18);
+                                      DO_GROUP_OP2 (D4, 10);
+                                      DO_GROUP_OP2 (D4_1, 12);
+                                      DO_GROUP_OP2 (D4_2, 14);
+                                      DO_GROUP_OP2 (D4_3, 16);
+                                      DO_GROUP_OP2 (D4_4, 18);
+                                  //}
+                            }
+                          }
+                      } else
+                          for (long r = 0; r < vDim; r++, row_offset += vDim) {
+                              long col_offset = 0L;
+                              for (long c = 0; c < vDim; c++, ti++, col_offset += vDim) {
+                                  __m128d A4 = _mm_set1_pd(theData[ti]);
+                                  #pragma GCC unroll 4
+                                  #pragma clang loop vectorize(enable)
+                                  #pragma clang loop interleave(enable)
+                                  #pragma clang loop unroll(enable)
+                                  for (long k = 0; k < vDim; k+=2) {
+                                      __m128d D4, B4;
+                                      DO_GROUP_OP1 (D4, B4, k);
+                                      DO_GROUP_OP2 (D4, k);
+                                  }
+                            }
+                          }
+                      return;
+                #endif
                   
                 for (unsigned long c = 0UL; c < secondArg.vDim; c ++) {
 
@@ -3561,7 +3663,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                    }
                 }
               } else {
-                  #ifdef  _SLKP_USE_AVX_INTRINSICS
+                  #if defined  _SLKP_USE_AVX_INTRINSICS
                     /*
                      
                         dest [i,j] = sum_k A[i,k] * B[k,j]
@@ -3667,6 +3769,10 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           long col_offset = 0L;
                           for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
                               __m256d A4 = _mm256_set1_pd(theData[ti]);
+                            #pragma GCC unroll 4
+                            #pragma clang loop vectorize(enable)
+                            #pragma clang loop interleave(enable)
+                            #pragma clang loop unroll(enable)
                               for (long k = 0; k < dimm4; k+=4) {
                                   __m256d D4, B4;
                                   DO_GROUP_OP (D4, B4, k);
@@ -3678,7 +3784,115 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           }
                       }
                   }
-                  
+                  #elif _SLKP_USE_SSE_INTRINSICS
+                              long ti = 0L,
+                                   row_offset = 0L;
+
+                              if (dimm4 == 60UL) { // codons
+                                
+                                
+                                for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                                    long col_offset = 0L;
+                                    for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
+                                        __m128d A4 = _mm_set1_pd(theData[ti]);
+                                        
+                                        __m128d D4_1, D4_2, D4_3, D4_4;
+                                        __m128d B4_1, B4_2, B4_3, B4_4;
+                                        
+                                        DO_GROUP_OP1 (D4_1,B4_1,0);
+                                        DO_GROUP_OP1 (D4_2,B4_2,2);
+                                        DO_GROUP_OP1 (D4_3,B4_3,4);
+                                        DO_GROUP_OP1 (D4_4,B4_4,6);
+                                        DO_GROUP_OP2 (D4_1,0);
+                                        DO_GROUP_OP2 (D4_2,2);
+                                        DO_GROUP_OP2 (D4_3,4);
+                                        DO_GROUP_OP2 (D4_4,6);
+
+                                        DO_GROUP_OP1 (D4_1,B4_1,8);
+                                        DO_GROUP_OP1 (D4_2,B4_2,10);
+                                        DO_GROUP_OP1 (D4_3,B4_3,12);
+                                        DO_GROUP_OP1 (D4_4,B4_4,14);
+                                        DO_GROUP_OP2 (D4_1,8);
+                                        DO_GROUP_OP2 (D4_2,10);
+                                        DO_GROUP_OP2 (D4_3,12);
+                                        DO_GROUP_OP2 (D4_4,14);
+
+                                        DO_GROUP_OP1 (D4_1,B4_1,16);
+                                        DO_GROUP_OP1 (D4_2,B4_2,18);
+                                        DO_GROUP_OP1 (D4_3,B4_3,20);
+                                        DO_GROUP_OP1 (D4_4,B4_4,22);
+                                        DO_GROUP_OP2 (D4_1,16);
+                                        DO_GROUP_OP2 (D4_2,18);
+                                        DO_GROUP_OP2 (D4_3,20);
+                                        DO_GROUP_OP2 (D4_4,22);
+
+                                        DO_GROUP_OP1 (D4_1,B4_1,24);
+                                        DO_GROUP_OP1 (D4_2,B4_2,26);
+                                        DO_GROUP_OP1 (D4_3,B4_3,28);
+                                        DO_GROUP_OP1 (D4_4,B4_4,30);
+                                        DO_GROUP_OP2 (D4_1,24);
+                                        DO_GROUP_OP2 (D4_2,26);
+                                        DO_GROUP_OP2 (D4_3,28);
+                                        DO_GROUP_OP2 (D4_4,30);
+
+                                        DO_GROUP_OP1 (D4_1,B4_1,32);
+                                        DO_GROUP_OP1 (D4_2,B4_2,34);
+                                        DO_GROUP_OP1 (D4_3,B4_3,36);
+                                        DO_GROUP_OP1 (D4_4,B4_4,38);
+                                        DO_GROUP_OP2 (D4_1,32);
+                                        DO_GROUP_OP2 (D4_2,34);
+                                        DO_GROUP_OP2 (D4_3,36);
+                                        DO_GROUP_OP2 (D4_4,38);
+
+                                        DO_GROUP_OP1 (D4_1,B4_1,40);
+                                        DO_GROUP_OP1 (D4_2,B4_2,42);
+                                        DO_GROUP_OP1 (D4_3,B4_3,44);
+                                        DO_GROUP_OP1 (D4_4,B4_4,46);
+                                        DO_GROUP_OP2 (D4_1,40);
+                                        DO_GROUP_OP2 (D4_2,42);
+                                        DO_GROUP_OP2 (D4_3,44);
+                                        DO_GROUP_OP2 (D4_4,46);
+
+                                        DO_GROUP_OP1 (D4_1,B4_1,48);
+                                        DO_GROUP_OP1 (D4_2,B4_2,50);
+                                        DO_GROUP_OP1 (D4_3,B4_3,52);
+                                        DO_GROUP_OP1 (D4_4,B4_4,54);
+                                        DO_GROUP_OP2 (D4_1,48);
+                                        DO_GROUP_OP2 (D4_2,50);
+                                        DO_GROUP_OP2 (D4_3,52);
+                                        DO_GROUP_OP2 (D4_4,54);
+                                        
+                                        DO_GROUP_OP1 (D4_1,B4_1,56);
+                                        DO_GROUP_OP1 (D4_2,B4_2,58);
+                                        DO_GROUP_OP2 (D4_1,56);
+                                        DO_GROUP_OP2 (D4_2,58);
+                                        
+                                        for (long k = dimm4; k < vDim; k++) {
+                                            dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
+                                        }
+                                    }
+                                }
+                              } else { // something else
+                                for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                                    long col_offset = 0L;
+                                    for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
+                                        __m128d A4 = _mm_set1_pd(theData[ti]);
+                                        #pragma GCC unroll 4
+                                        #pragma clang loop vectorize(enable)
+                                        #pragma clang loop interleave(enable)
+                                        #pragma clang loop unroll(enable)
+                                        for (long k = 0; k < dimm4; k+=2) {
+                                            __m128d D4, B4;
+                                            DO_GROUP_OP1 (D4, B4, k);
+                                            DO_GROUP_OP2 (D4, k);
+                                        }
+                                        
+                                        for (long k = dimm4; k < vDim; k++) {
+                                            dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
+                                        }
+                                    }
+                                }
+                            }
                   #else
                       const unsigned long
                               column_shift2 = secondArg.vDim << 1,
@@ -3722,6 +3936,10 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 for (long i=0; i<hDim; i++, row += vDim) {
                     for (long j=0; j<hDim; j++) {
                         hyFloat resCell  = 0.0;
+                        #pragma GCC unroll 8
+                        #pragma clang loop vectorize(enable)
+                        #pragma clang loop interleave(enable)
+                        #pragma clang loop unroll(enable)
                         for (long k = 0, column = j*hDim; k < vDim; k++, column ++) {
                             resCell += row[k] * secondArg.theData [column];
                         }
@@ -4736,7 +4954,10 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
             //printf (" %ld\n", theIndex[i]);
             theData[i]  = stash[sortedIndex2.list_data[i]];
         }
-        compressedIndex[firstDim-1] = lDim;
+        
+        for (long l = currentRow; l < firstDim; l++)
+            compressedIndex[l] = lDim;
+        //compressedIndex[firstDim-1] = lDim;
         //printf (">[%ld] %ld\n", firstDim-1, compressedIndex[firstDim-1]);
         //exit (1);
         
@@ -4909,7 +5130,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 tempS.vDim = vDim;
                 tempS.lDim = lDim;
                 tempS.theData = stash;
-                // zero out the stash
+                // zero out the stash 20200929 : is this necessary?
                 memset (stash, 0, sizeof (hyFloat)*lDim);
                 do {
                     temp.MultbyS        (*this,false, &tempS, nil);
@@ -4941,7 +5162,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     temp      *= 1.0/i;
                     (*result) += temp;
                     i         ++;
-/*    #ifndef _OPENMP
+    /*#ifndef _OPENMP
                         taylor_terms_count++;
     #else
                 #pragma omp atomic
@@ -7412,6 +7633,9 @@ void        _Matrix::operator *= (_Matrix& m) {
     }
 }
 
+//long count_sparse_successes = 0L;
+//long total_multbys = 0L;
+
 //_____________________________________________________________________________________________
 void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalStorage, hyFloat* stash) {
     _Matrix * result = nil;
@@ -7428,20 +7652,33 @@ void        _Matrix::MultbyS (_Matrix& m, bool leftMultiply, _Matrix* externalSt
     }
 
     if (theIndex&&m.theIndex) {
+        //total_multbys++;
+        // 20200928: speculatively compress the matrix; convert back to dense if storage is too large
+        /*CompressSparseMatrix(false,stash);
+        if (lDim >= hDim * vDim *_Matrix::switchThreshold/100) {
+            Swap            (*receptacle);
+        }*/
+        
         if (receptacle->AmISparseFast(*this) == false) {
             Swap            (*receptacle);
-        } else {
+        } /*else {
             CompressSparseMatrix(false,stash);
-        }
+        }*/
+        
+        //if (total_multbys % 100) {
+        //    printf ("%ld / %ld\n", count_sparse_successes, total_multbys);
+        //}
     } else { // both dense
         Swap            (*receptacle);
     }
+    
 
     if (!externalStorage) {
         DeleteObject (result);
     } else {
-        externalStorage->CheckIfSparseEnough (true);
-        memset (externalStorage->theData, 0, sizeof (hyFloat)*externalStorage->lDim);
+        if (!externalStorage->CheckIfSparseEnough (true, false)) { // no conversion took place; reset memory
+            memset (externalStorage->theData, 0, sizeof (hyFloat)*externalStorage->lDim);
+        }
         //for (long s = 0; s < externalStorage->lDim; s++) externalStorage->theData[s] = 0.0;
     }
 }

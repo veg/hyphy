@@ -155,6 +155,22 @@ namespace meme {
     doPartitionedMG ("meme", FALSE);
 }
 
+/*io.ReportProgressMessageMD ("MEME", "codon-refit-prelim", "Improving branch lengths under a full codon model");
+
+estimators.fixSubsetOfEstimates(meme.partitioned_mg_results, meme.partitioned_mg_results[terms.global]);
+
+meme.final_partitioned_mg_results_bl = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
+    terms.run_options.model_type: terms.local,
+    terms.run_options.partitioned_omega: meme.selected_branches,
+    terms.run_options.retain_lf_object: FALSE,
+    terms.run_options.optimization_settings: {"OPTIMIZATION_PRECISION" : Max(meme.partitioned_mg_results[terms.fit.log_likelihood] * 0.00001, 0.1)}
+}, meme.partitioned_mg_results);
+
+
+io.ReportProgressMessageMD("MEME", "codon-refit-prelim", "* Log(L) = " + Format(meme.final_partitioned_mg_results_bl[terms.fit.log_likelihood],8,2));
+meme.global_dnds = selection.io.extract_global_MLE_re (meme.final_partitioned_mg_results_bl, "^" + terms.parameters.omega_ratio);
+utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME", "codon-refit-prelim", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
+*/
 
 io.ReportProgressMessageMD ("MEME", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 

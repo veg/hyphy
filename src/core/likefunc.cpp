@@ -2039,7 +2039,7 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 
     hyFloat result = 0.;
     
-    /*if (likeFuncEvalCallCount % 100 == 0) {
+    /*if (likeFuncEvalCallCount % 5 == 0) {
        
         fprintf (stderr, "Evals = %ld, Exponentials = %ld, Squarings = %ld (%lg), Taylor terms = %ld (%lg)\n", likeFuncEvalCallCount, matrix_exp_count, squarings_count, squarings_count / (double)matrix_exp_count, taylor_terms_count,taylor_terms_count/(double)matrix_exp_count);
         
@@ -3819,7 +3819,7 @@ void        _LikelihoodFunction::LoggerAllVariables (void) {
 
 //_______________________________________________________________________________________
 
-void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, unsigned long bracket_evals, unsigned long brent_evals) {
+void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, hyFloat movement, unsigned long bracket_evals, unsigned long brent_evals) {
 
   if (optimizatonHistory) {
     _AssociativeList* new_phase = new _AssociativeList;
@@ -3829,7 +3829,7 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
                 < (_associative_list_key_value){"bracket width", new _Constant (bracket_width)}
                 < (_associative_list_key_value){"bracket evals", new _Constant (bracket_evals)}
                 < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)}
-                < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)};
+                < (_associative_list_key_value){"movement", new _Constant (movement)};
 
     *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
 
@@ -4312,7 +4312,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
                 }
             } else {
-                ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,nil,maxSoFar);
+                maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,nil,maxSoFar);
             }
         } else {
             hyFloat current_precision = MAX(1., precision);
@@ -4343,6 +4343,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
 
     if (optimization_mode == kOptimizationCoordinateWise) {
+
         bool      forward = false;
 
         hyFloat averageChange = 0,
@@ -4378,7 +4379,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         _List               *stepHistory = nil;
         _Vector      logLHistory;
 
-        maxSoFar  = lastMaxValue = Compute();
+        lastMaxValue = Compute();
+        maxSoFar = lastMaxValue;
 
         logLHistory.Store(maxSoFar);
 
@@ -4651,12 +4653,13 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             large_change.Clear();
 
             LoggerAddCoordinatewisePhase (shrink_factor, convergenceMode);
-
+            
             for (jjj=forward?0:indexInd.lLength-1; forward?(jjj<indexInd.lLength):jjj>=0; forward?jjj++:jjj--) {
+                
                 if (hardLimitOnOptimizationValue < INFINITY && timer.TimeSinceStart() > hardLimitOnOptimizationValue) {
                     break;
                 }
-
+                
                 unsigned long current_index = doShuffle > 0.1 ? shuffledOrder.list_data[jjj] : jjj;
 
                 bool is_global = GetIthIndependentVar(current_index)->IsGlobal();
@@ -4779,8 +4782,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
                 hyFloat         lastLogL = maxSoFar;
 
-                
-                
                 //verbosity_level = 101;
                 if (use_adaptive_step) {
                     if (convergenceMode < 2) {
@@ -5160,7 +5161,7 @@ bool CheckArgumentType (HBLObjectRef object, long type, bool exceptions) {
     }
     
     if (exceptions) {
-        throw (_String ("Unsupported agrument type ") & FetchObjectNameFromType (object->ObjectClass()).Enquote());
+        throw (_String ("Unsupported argument type ") & FetchObjectNameFromType (object->ObjectClass()).Enquote());
     }
     return false;
 }
@@ -5329,10 +5330,16 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             leftStep = MIN (leftStep*0.125, middle-lowerBound);
             
             if ( leftStep<initialStep*.1 && index >= 0 || index < 0 && leftStep < STD_GRAD_STEP) {
-                if (!first) {
+                if (!first || index >= 0 && current_log_l > -INFINITY) {
                     if (go2Bound) {
                         middle = lowerBound;
-                        middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                        
+                        if (left == lowerBound) {
+                            middleValue = leftValue;
+                            SetParametersAndCompute(index, middle, &currentValues, gradient, true);
+                        } else {
+                            middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                        }
 
                         if (index >= 0) {
                             if (current_best_value >= lowerBound && current_best_value <= right && current_log_l >= leftValue && current_log_l >= middleValue) {
@@ -6319,7 +6326,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
                 maxSoFar          = Compute(),
                 initial_value     = maxSoFar,
                 currentPrecision = localOnly?step_precision:.01;
-
+    
     if (check_value != -INFINITY) {
         if (!CheckEqual(check_value, maxSoFar)) {
             _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]";
@@ -6450,7 +6457,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
     if (verbosity_level>1) {
         BufferToConsole("\n");
     }
-
+    
     return maxSoFar;
 }
 
@@ -6863,7 +6870,8 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                middleValue       = maxSoFar,
                rightValue,
                bp               = 2.*gPrecision,
-               brentPrec        = bracketSetting>0.?bracketSetting:gPrecision;
+               brentPrec        = bracketSetting>0.?bracketSetting:gPrecision,
+               originalValue         = index >= 0 ? GetIthIndependent(index) : 0.;
 
     DetermineLocalUpdatePolicy           ();
 
@@ -6881,6 +6889,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
         
         if (outcome == -2) { // boundary case; leave the value where it is
             if (middleValue > maxSoFar || CheckEqual(middleValue, maxSoFar)) {
+                //printf ("HERE %lg\n", middleValue);
                 maxSoFar = middleValue;
             } else {
                 SetIthIndependent(index, bestVal); // worsened likelihood, reset
@@ -7007,6 +7016,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
 
             }
 
+            
             if (verbosity_level > 50) {
                 char buf [256];
                 snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) GOLDEN RATIO SEARCH SUCCESSFUL: precision %g, parameter moved from %15.12g to %15.12g, Log L new/old = %15.12g/%15.12g ]\n\n", index, brentPrec, bestVal, X, -FX, maxSoFar);
@@ -7048,7 +7058,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
     }
 
     if (index >= 0) {
-      LoggerSingleVariable (index, maxSoFar, bp, brentPrec, outcome != -1 ? right-left : -1., bracket_step_count, likeFuncEvalCallCount-inCount-bracket_step_count);
+      LoggerSingleVariable (index, maxSoFar, bp, brentPrec, outcome != -1 ? right-left : -1., GetIthIndependent(index)-originalValue, bracket_step_count, likeFuncEvalCallCount-inCount-bracket_step_count);
     }
 
     oneDFCount += likeFuncEvalCallCount-inCount-bracket_step_count;
