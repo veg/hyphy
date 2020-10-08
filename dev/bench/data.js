@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1602188787799,
+  "lastUpdate": 1602191028361,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -4416,6 +4416,58 @@ window.BENCHMARK_DATA = {
             "name": "SLAC.wbf",
             "value": 4.265392736036171,
             "range": "±0.394250%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "spond@temple.edu",
+            "name": "Sergei Pond",
+            "username": "spond"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7310a2811f4d89c878be1c13a8737ccc1c918b1d",
+          "message": "Merge pull request #1230 from veg/develop\n\n2.5.19",
+          "timestamp": "2020-10-06T11:21:51-04:00",
+          "tree_id": "93f587c230059a7aea283b434f8ac9a4797fba8e",
+          "url": "https://github.com/veg/hyphy/commit/7310a2811f4d89c878be1c13a8737ccc1c918b1d"
+        },
+        "date": 1602191020701,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.955775993240838,
+            "range": "±1.642112%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 7.836990595611286,
+            "range": "±1.017034%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 47.50819516366574,
+            "range": "±1.726660%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 4.129228329809725,
+            "range": "±0.920440%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
