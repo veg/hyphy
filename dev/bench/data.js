@@ -697,13 +697,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 396.3535473642489,
             "range": "±4.725597%",
@@ -723,20 +716,6 @@ window.BENCHMARK_DATA = {
             "range": "±12.530422%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -829,13 +808,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 371.8854592785422,
             "range": "±8.531154%",
@@ -855,20 +827,6 @@ window.BENCHMARK_DATA = {
             "range": "±10.442328%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -961,13 +919,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 374.67216185837395,
             "range": "±5.332657%",
@@ -987,20 +938,6 @@ window.BENCHMARK_DATA = {
             "range": "±12.117000%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -1093,13 +1030,6 @@ window.BENCHMARK_DATA = {
             "extra": "9 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 357.14285714285717,
             "range": "±3.488908%",
@@ -1119,20 +1049,6 @@ window.BENCHMARK_DATA = {
             "range": "±19.793579%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -1225,13 +1141,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 354.7357218871941,
             "range": "±8.655593%",
@@ -1251,20 +1160,6 @@ window.BENCHMARK_DATA = {
             "range": "±11.881240%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -1357,13 +1252,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 317.7629488401652,
             "range": "±5.370678%",
@@ -1383,20 +1271,6 @@ window.BENCHMARK_DATA = {
             "range": "±14.844115%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -1493,13 +1367,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 378.50113550340654,
             "range": "±6.885032%",
@@ -1519,20 +1386,6 @@ window.BENCHMARK_DATA = {
             "range": "±9.182529%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -1625,13 +1478,6 @@ window.BENCHMARK_DATA = {
             "extra": "9 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 406.5040650406504,
             "range": "±9.892892%",
@@ -1644,27 +1490,6 @@ window.BENCHMARK_DATA = {
             "range": "±0.904260%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "GARD.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -1759,13 +1584,6 @@ window.BENCHMARK_DATA = {
             "range": "±1.269618%",
             "unit": "secs/op",
             "extra": "10 samples"
-          },
-          {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           },
           {
             "name": "CFEL.wbf",
@@ -1872,13 +1690,6 @@ window.BENCHMARK_DATA = {
             "extra": "9 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 407.000407000407,
             "range": "±5.525055%",
@@ -1898,20 +1709,6 @@ window.BENCHMARK_DATA = {
             "range": "±9.188271%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -2008,13 +1805,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 381.2428516965307,
             "range": "±5.124235%",
@@ -2034,20 +1824,6 @@ window.BENCHMARK_DATA = {
             "range": "±15.615244%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -2144,13 +1920,6 @@ window.BENCHMARK_DATA = {
             "extra": "9 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 436.4906154517678,
             "range": "±6.552459%",
@@ -2170,20 +1939,6 @@ window.BENCHMARK_DATA = {
             "range": "±10.176251%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -2280,13 +2035,6 @@ window.BENCHMARK_DATA = {
             "extra": "11 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 330.57851239669424,
             "range": "±9.437272%",
@@ -2306,20 +2054,6 @@ window.BENCHMARK_DATA = {
             "range": "±21.678948%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -2416,13 +2150,6 @@ window.BENCHMARK_DATA = {
             "extra": "9 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 408.6636697997548,
             "range": "±5.454304%",
@@ -2442,20 +2169,6 @@ window.BENCHMARK_DATA = {
             "range": "±14.668700%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -2548,13 +2261,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 335.9086328518643,
             "range": "±7.594167%",
@@ -2574,20 +2280,6 @@ window.BENCHMARK_DATA = {
             "range": "±4.628333%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -2680,13 +2372,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 323.10177705977384,
             "range": "±7.636198%",
@@ -2706,20 +2391,6 @@ window.BENCHMARK_DATA = {
             "range": "±10.838986%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "aBSREL.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
-            "name": "aBSREL-MH.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           }
         ]
       },
@@ -4072,13 +3743,6 @@ window.BENCHMARK_DATA = {
             "extra": "10 samples"
           },
           {
-            "name": "BGM.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "CFEL.wbf",
             "value": 340.71550255536624,
             "range": "±5.273798%",
@@ -4409,13 +4073,6 @@ window.BENCHMARK_DATA = {
             "extra": "6 samples"
           },
           {
-            "name": "IntermediateProtein.bf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
-          },
-          {
             "name": "FEL.wbf",
             "value": 43.53883664228492,
             "range": "±0.998934%",
@@ -4428,13 +4085,6 @@ window.BENCHMARK_DATA = {
             "range": "±1.359199%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "SLAC-partitioned.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           },
           {
             "name": "MEME.wbf",
@@ -4456,13 +4106,6 @@ window.BENCHMARK_DATA = {
             "range": "±51.946204%",
             "unit": "secs/op",
             "extra": "5 samples"
-          },
-          {
-            "name": "RELAX.wbf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           },
           {
             "name": "FUBAR.wbf",
@@ -4629,13 +4272,6 @@ window.BENCHMARK_DATA = {
             "range": "±23.758712%",
             "unit": "secs/op",
             "extra": "6 samples"
-          },
-          {
-            "name": "IntermediateProtein.bf",
-            "value": null,
-            "range": "±0.000000%",
-            "unit": "secs/op",
-            "extra": "0 samples"
           },
           {
             "name": "FEL.wbf",
