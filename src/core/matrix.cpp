@@ -550,7 +550,7 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
     
   targetMatrix->compressedIndex = nil;
   
-  if (sourceMatrix->theIndex) {
+  if (! sourceMatrix->is_dense()) {
     if (!(targetMatrix->theIndex = (long*)MatrixMemAllocate(sizeof(long) *sourceMatrix->lDim))) { // allocate element index storage
       HandleApplicationError ( kErrorStringMemoryFail );
     } else {
@@ -568,7 +568,7 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
   targetMatrix->theData = nil;
   
   if (sourceMatrix->lDim) {
-    if (sourceMatrix->storageType==0)
+    if (sourceMatrix->is_polynomial())
       // matrix will store pointers to elements
     {
       if (targetMatrix->lDim) {
@@ -576,7 +576,7 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
           HandleApplicationError ( kErrorStringMemoryFail );
         } else {
           memcpy ((void*)targetMatrix->theData,(void*)sourceMatrix->theData,sourceMatrix->lDim*sizeof(void*));
-          if (!sourceMatrix->theIndex) { // non-sparse matrix
+          if (sourceMatrix->is_dense()) { // non-sparse matrix
             for (long i=0; i<sourceMatrix->lDim; i++)
               if (sourceMatrix->GetMatrixObject(i)) {
                 (sourceMatrix->GetMatrixObject(i))->AddAReference();
@@ -591,12 +591,12 @@ void    DuplicateMatrix (_Matrix* targetMatrix, _Matrix const* sourceMatrix) {
           
         }
       }
-    } else if (sourceMatrix->storageType==2) {
+    } else if (sourceMatrix->is_expression_based()) {
       if (targetMatrix->lDim) {
         targetMatrix->theData = (hyFloat*)MatrixMemAllocate(sourceMatrix->lDim*sizeof(void*));
         _Formula ** theFormulas = (_Formula**)(sourceMatrix->theData), **newFormulas =
         (_Formula**)(targetMatrix->theData);
-        if (sourceMatrix->theIndex) {
+        if (sourceMatrix->is_dense() == false) {
           for (long i = 0; i<sourceMatrix->lDim; i++)
             if (sourceMatrix->IsNonEmpty(i)) {
               newFormulas[i] = (_Formula*)theFormulas[i]->makeDynamic();
@@ -653,10 +653,10 @@ _Matrix::_Matrix (long theHDim, long theVDim, bool sparse, bool allocateStorage)
 //_____________________________________________________________________________________________
 
 inline  bool    _Matrix::IsNonEmpty  (long logicalIndex) const {
-    if (theIndex) {
-        return theIndex[logicalIndex] != -1;
+    if (is_dense() == false) {
+        return theIndex [logicalIndex] != -1;
     }
-    if (storageType == _NUMERICAL_TYPE) {
+    if (is_numeric()) {
         return true;
     }
     return GetMatrixObject(logicalIndex)!=ZEROPOINTER;
@@ -707,7 +707,7 @@ bool        _Matrix::is_square_numeric(bool dense) const {
     if (storageType!=_NUMERICAL_TYPE || hDim != vDim || hDim==0L){
         HandleApplicationError ("Square numerical matrix required");
     }
-    if (dense && theIndex) {
+    if (dense && !is_dense()) {
         HandleApplicationError ("Square dense numerical matrix required");
     }
     return true;
@@ -1228,9 +1228,10 @@ HBLObjectRef   _Matrix::LUDecompose (void) const {
     }
     else {
       for (long i=0; i<lDim; i++) {
-        if (IsNonEmpty(i)) {
+        if (theIndex[i] != -1) {
           long cell_coord = theIndex[i];
-          result->Store(cell_coord/vDim,cell_coord%vDim,theData[i]);
+          long r = cell_coord / hDim;
+          result->Store(r,cell_coord-r*vDim,theData[i]);
         }
       }
     }
@@ -1491,37 +1492,77 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
 
         if (theIndex) {
             _Matrix*    vm = (_Matrix*) value;
-            hyFloat *dp = vm ->theData;
-            hyFloat *tempDiags = (hyFloat*) alloca (sizeof(hyFloat) * hDim);
-            InitializeArray(tempDiags, hDim, 0.0);
+            hyFloat * __restrict dp = vm ->theData;
 
-            if (freq_matrix) {
-                  for (long i=0; i<lDim; i++) {
-                      long p = theIndex[i];
-                      if (p != -1) {
-                          long h = p/vDim;
-                          p -= h*vDim;
-                          if (h!=p) {
-                              tempDiags[h] += (dp[i] *= freq_matrix->theData[p]);
+            if (vm->compressedIndex) {
+                //vm->_validateCompressedStorage();
+                long from = 0L;
+                if (freq_matrix) {
+                    for (long r = 0; r < hDim; r++) {
+                        long diagEntry = -1;
+                        hyFloat diagAccumulator = 0.;
+                        for (long c = from; c < vm->compressedIndex[r]; c++) {
+                            long col_index = vm->compressedIndex[c+hDim];
+                            if (col_index != r) {
+                                dp[c] *= freq_matrix->theData[col_index];
+                                diagAccumulator -= dp[c];
+                            } else {
+                                diagEntry = c;
+                            }
+                        }
+                        from = vm->compressedIndex[r];
+                        dp[diagEntry] = diagAccumulator;
+                    }
+                } else {
+                    for (long r = 0; r < hDim; r++) {
+                        long diagEntry = -1;
+                        hyFloat diagAccumulator = 0.;
+                        for (long c = from; c < vm->compressedIndex[r]; c++) {
+                            //printf ("%ld\n", vm->theIndex[c]);
+                            if (vm->compressedIndex[c+hDim] != r) {
+                                diagAccumulator -= dp[c];
+                            } else {
+                                diagEntry = c;
+                            }
+                        }
+                        //printf ("%ld %ld %g\n", r, diagEntry, diagAccumulator);
+                        from = vm->compressedIndex[r];
+                        dp[diagEntry] = diagAccumulator;
+                    }
+                }
+                //vm->_validateCompressedStorage();
+            } else {
+                hyFloat *tempDiags = (hyFloat*) alloca (sizeof(hyFloat) * hDim);
+                InitializeArray(tempDiags, hDim, 0.0);
+
+                if (freq_matrix) {
+                      for (long i=0; i<lDim; i++) {
+                          long p = theIndex[i];
+                          if (p != -1) {
+                              long h = p / vDim;
+                                   p = p - h*vDim;
+                              if (h!=p) {
+                                  tempDiags[h] += (dp[i] *= freq_matrix->theData[p]);
+                              }
                           }
                       }
-                  }
-            }
-            else {
-                  for (long i=0; i<lDim; i++) {
-                      long p = theIndex[i];
-                      if (p != -1) {
-                          long h = p/vDim;
-                          p -= h*vDim;
-                          if (h!=p) {
-                              tempDiags[h] += dp[i];
+                }
+                else {
+                      for (long i=0; i<lDim; i++) {
+                          long p = theIndex[i];
+                          if (p != -1) {
+                              long h = p / vDim;
+                                   p = p - h*vDim;
+                              if (h!=p) {
+                                  tempDiags[h] += dp[i];
+                              }
                           }
                       }
-                  }
-            }
+                }
           
-            for (long j=0L; j<hDim; j++) {
-                vm->Store (j,j,-tempDiags[j]);
+                for (long j=0L; j<hDim; j++) {
+                    vm->Store (j,j,-tempDiags[j]);
+                }
             }
 
         } else {
@@ -1529,9 +1570,7 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
 
             if (freq_matrix) {
                 if (freq_matrix->theIndex) {
-                    for (long i=0; i<lDim; i++) {
-                        theMatrix[i] *= (*freq_matrix)[i%vDim];
-                    }
+                    HandleApplicationError(_String("Sparse frequency matrices are not supported"));
                 } else {
                     for (unsigned long column=0UL; column<vDim; column++) {
                       const hyFloat freq_i = freq_matrix->theData[column];
@@ -1855,14 +1894,14 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     //speculatively allocate memory to store non-zero indices
     
     long * non_zero_index = (long*)alloca (threshold*sizeof(long));
-    
-    for (unsigned long i=0UL; i<lDim ; i++) {
-          if (__builtin_expect(theData[i] != ZEROOBJECT, 0L)) {
-              non_zero_index[k++] = i;
-              if (k == threshold) {
-                  return false;
-              }
-          }
+   
+    for (long i = 0; i < lDim; i++) {
+        if (theData[i] != 0.0) {
+            non_zero_index[k++] = i;
+            if (k == threshold) {
+                return false;
+            }
+        }
     }
 
     if (k < threshold) {
@@ -2151,53 +2190,33 @@ bool    _Matrix::CheckIfSparseEnough(bool force, bool copy) {
 }
 
 //_____________________________________________________________________________________________
-bool    _Matrix::IncreaseStorage    (void)
-{
+bool    _Matrix::IncreaseStorage    (void) {
+    if (compressedIndex) {
+        HandleApplicationError("Internal error. Called _Matrix::IncreaseStorage on compressed index matrix");
+        return false;
+    }
     lDim += allocationBlock;
-
-    long* tempIndex, i;
-
-    if (!(tempIndex = (long*)MatrixMemAllocate(lDim*sizeof(long)))) {
-        HandleApplicationError ( kErrorStringMemoryFail );
-    } else {
-        memcpy (tempIndex, theIndex, (lDim-allocationBlock)*sizeof(long));
-        MatrixMemFree( theIndex);
-
-        for (i = lDim-1; i>=lDim-allocationBlock; i--) {
-            tempIndex [i] = -1;
-        }
-        theIndex = tempIndex;
+    theIndex = (long*)MemReallocate(theIndex,  lDim*sizeof(long));
+    for (long i = lDim-allocationBlock; i < lDim; i++) {
+        theIndex [i] = -1;
     }
 
-    if (storageType != 1)
+    if (!is_numeric()) {
         // pointers or formulas
-    {
         _MathObject** tempData;
         if (!(tempData = (_MathObject**) MatrixMemAllocate(sizeof( char)* lDim*sizeof(void*)))) {
             HandleApplicationError ( kErrorStringMemoryFail );
         } else {
-            memcpy (tempData, theData, (lDim-allocationBlock)*sizeof(void*));
-            MatrixMemFree (theData);
-            for (i = lDim-1; i>=lDim-allocationBlock; i--) {
-                tempData [i] = ZEROPOINTER;
+            theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(void*));
+            for (long i = lDim-allocationBlock; i < lDim; i++) {
+                theData [i] = ZEROPOINTER;
             }
-            theData = (hyFloat*)tempData;
         }
-    } else
+    } else {
         //objects
-    {
-        hyFloat* tempData;
-        if (!(tempData =  (hyFloat*)MatrixMemAllocate(sizeof(hyFloat)* lDim))) {
-            HandleApplicationError ( kErrorStringMemoryFail );
-        } else {
-            for (i = lDim-1; i>=lDim-allocationBlock; i--) {
-                tempData [i] = ZEROOBJECT;
-            }
-            for (; i>=0; i--) {
-                tempData [i] = ((hyFloat*)theData) [i];
-            }
-            MatrixMemFree( theData);
-            theData = tempData;
+        theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(hyFloat));
+        for (long i = lDim-allocationBlock; i < lDim; i++) {
+            theData [i] = ZEROOBJECT;
         }
     }
     return TRUE;
@@ -2209,10 +2228,10 @@ bool    _Matrix::IncreaseStorage    (void)
 
 void    _Matrix::Convert2Formulas (void)
 {
-    if (storageType == 1) {
-        storageType = 2;
+    if (is_numeric()) {
+        storageType = _FORMULA_TYPE;
         _Formula** tempData = (_Formula**)MatrixMemAllocate (sizeof(void*)*lDim);
-        if (!theIndex) {
+        if (is_dense()) {
             for (long i = 0; i<lDim; i++) {
                 tempData[i] = new _Formula (new _Constant (((hyFloat*)theData)[i]));
             }
@@ -2575,7 +2594,7 @@ _String*        _Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf) {
 
 //_____________________________________________________________________________________________
 void        _Matrix::MakeMeSimple (void) {
-    if (storageType == _FORMULA_TYPE) {
+    if (is_expression_based()) {
         long            stackLength = 0L;
 
         _SimpleList     newFormulas,
@@ -2588,6 +2607,10 @@ void        _Matrix::MakeMeSimple (void) {
         _SimpleList varListAux;
         _AVLList    varList (&varListAux);
       
+        
+        if (!is_dense()) {
+            CompressSparseMatrix(false, (hyFloat*)alloca (sizeof (hyFloat) * lDim));
+        }
         if (ProcessFormulas (stackLength,varList,newFormulas,references,flaStrings)) {
             storageType = _SIMPLE_FORMULA_TYPE;
 
@@ -2817,6 +2840,51 @@ void        _Matrix::FillInList (_List& fillMe, bool convert_numbers) const {
 }
 
 //_____________________________________________________________________________________________
+bool   _Matrix::_validateCompressedStorage (void) const {
+    if (theIndex && compressedIndex) {
+        long from = 0L;
+        long last_index = -1L;
+        for (long r = 0; r < hDim; r++) {
+            if (compressedIndex[r] < from || compressedIndex[r] > lDim ) {
+                HandleApplicationError(_String ("Inconsistent compressedIndex row element count at " ) & r & " : " & from & " vs " & compressedIndex[r]);
+                return false;
+            }
+            for (long c = from; c < compressedIndex[r]; c++) {
+                long myIndex = theIndex[c];
+                if (myIndex <= last_index) {
+                    HandleApplicationError(_String ("Lack of sortedness in theIndex at " ) & c & " : " & myIndex & " vs " & last_index);
+                    return false;
+                }
+                if (myIndex < 0 || myIndex >= hDim * vDim) {
+                    HandleApplicationError(_String ("Out of bounds in theIndex at " ) & c & " : " & myIndex & ", lDim = " & lDim);
+                    return false;
+                }
+                last_index = myIndex;
+                if (c > from) {
+                    if (compressedIndex[c+hDim] <= compressedIndex [c-1+hDim]) {
+                        HandleApplicationError(_String ("Lack of sortedness in columns at " ) & c & " : " & compressedIndex[c+hDim] & " vs " & compressedIndex[c+hDim-1]);
+                        return false;
+                    }
+                }
+                if (myIndex / vDim != r || myIndex % hDim != compressedIndex[c+vDim]) {
+                    HandleApplicationError(_String ("Stored index does match row/column " ) & myIndex & "(" & c & ") : " & r & " , " & compressedIndex[c+hDim]);
+                    return false;
+                }
+            }
+            from = compressedIndex[r];
+        }
+        
+        if (compressedIndex[hDim-1] != lDim) {
+            HandleApplicationError(_String ("Incompatible compressedIndex[hDim-1] and lDim: " ) & compressedIndex[hDim-1] & " : " & lDim);
+            return false;
+        }
+        
+        return true;
+    }
+    return false;
+}
+
+//_____________________________________________________________________________________________
 HBLObjectRef   _Matrix::EvaluateSimple (_Matrix* existing_storage) {
 // evaluate the matrix  overwriting the old one
     _Matrix * result;
@@ -2848,46 +2916,152 @@ HBLObjectRef   _Matrix::EvaluateSimple (_Matrix* existing_storage) {
     }
 
 
-    for (long f = 0; f < cmd->formulasToEval.lLength; f++) {
+    for (long f = 0L; f < cmd->formulasToEval.lLength; f++) {
         cmd->formulaValues [f] = ((_Formula*)cmd->formulasToEval.list_data[f])->ComputeSimple(cmd->theStack, cmd->varValues);
     }
 
     long * fidx = cmd->formulaRefs;
 
     if (theIndex) {
-        if (result->lDim != lDim) {
-            result->lDim = lDim;
-            result->theIndex = (long*)MemReallocate((hyPointer)result->theIndex,sizeof(long)*lDim);
-            result->theData = (hyFloat*)MemReallocate ((hyPointer)result->theData,sizeof(hyFloat)*lDim);
-        }
+        
         result->bufferPerRow = bufferPerRow;
         result->overflowBuffer = overflowBuffer;
         result->allocationBlock = allocationBlock;
+        
+        long* diagIndices = nil;
 
-
-        for (long i = 0; i<lDim; i++) {
-            long idx = theIndex[i];
-
-            if (idx != -1) {
-                result->theData[i] = cmd->formulaValues[fidx[i]];
+        if (compressedIndex) {
+            if (result->lDim < lDim + hDim) {
+                result->theIndex = (long*)MemReallocate((hyPointer)result->theIndex,sizeof(long)*(lDim + hDim));
+                result->theData = (hyFloat*)MemReallocate ((hyPointer)result->theData,sizeof(hyFloat)*(lDim+hDim));
+                
+            }
+            
+            result->lDim = lDim;
+            
+            if (result->compressedIndex) {
+                result->compressedIndex = (long*)MemReallocate ((hyPointer)result->compressedIndex,sizeof(long)*(lDim+hDim+hDim));
+            } else {
+                result->compressedIndex = (long*)MemAllocate (sizeof(long)*(lDim+hDim+hDim));
+            }
+            
+            if (hDim == vDim) {
+                
+                long elements_added                   = 0L;
+                long current_element_index_old_matrix = 0L;
+                long current_element_index_new_matrix = 0L;
+                long from = 0L;
+                auto copy_indices = [&] () -> void {
+                    result->theIndex[current_element_index_new_matrix] = theIndex[current_element_index_old_matrix];
+                    result->compressedIndex[current_element_index_new_matrix+hDim] = compressedIndex[hDim+current_element_index_old_matrix];
+                };
+                diagIndices = (long*)alloca (sizeof (long) * hDim);
+                auto inject_diagonal = [&] (long r) -> void {
+                    elements_added++;
+                    result->lDim ++;
+                    diagIndices [r] = current_element_index_new_matrix;
+                    result->theIndex[current_element_index_new_matrix] = r*vDim + r;
+                    result->theData[current_element_index_new_matrix] = 0.;
+                    result->compressedIndex[current_element_index_new_matrix+hDim] = r;
+                    current_element_index_new_matrix++;
+                };
+                /*if (!_validateCompressedStorage()) {
+                    HandleApplicationError("Error in compressed storage [before]");
+                }*/
+                for (long r = 0; r < hDim; r++) {
+                    diagIndices[r] = -1L;
+                    for (long c = from; c < compressedIndex[r]; c++, current_element_index_old_matrix++, current_element_index_new_matrix++) {
+                        if (compressedIndex[c + hDim] < r) { // column before diagonal; copy data
+                            result->theData[current_element_index_new_matrix] = cmd->formulaValues[fidx[current_element_index_old_matrix]];
+                            copy_indices();
+                        } else if (compressedIndex[c + hDim] > r) {
+                            if (diagIndices[r] == -1) { // no diagonal entry
+                                inject_diagonal(r);
+                            }
+                            result->theData[current_element_index_new_matrix] = cmd->formulaValues[fidx[current_element_index_old_matrix]];
+                            copy_indices();
+                        } else { // diagnoal entry
+                           copy_indices();
+                           diagIndices[r] = current_element_index_new_matrix;
+                        }
+                    }
+                    if (diagIndices[r] == -1) { // no diagonal entry
+                        inject_diagonal(r);
+                    }
+                    from = compressedIndex[r];
+                    result->compressedIndex[r] = from+elements_added;
+                    
+                }
+                /*if (!result->_validateCompressedStorage()) {
+                    HandleApplicationError("Error in compressed storage");
+                }*/
+            } else {
+                for (long i = 0; i<lDim; i++) {
+                    long idx = theIndex[i];
+                    result->theData[i] = cmd->formulaValues[fidx[i]];
+                    result->theIndex[i] = idx;
+                    result->compressedIndex[i] = compressedIndex[i];
+                }
+                for (long i = lDim; i<lDim+hDim; i++) {
+                    result->compressedIndex[i] = compressedIndex[i];
+                }
             }
 
-            result->theIndex[i] = idx;
+        } else {
+            
+            if (result->lDim != lDim) {
+                result->lDim = lDim;
+                result->theIndex = (long*)MemReallocate((hyPointer)result->theIndex,sizeof(long)*lDim);
+                result->theData = (hyFloat*)MemReallocate ((hyPointer)result->theData,sizeof(hyFloat)*lDim);
+            }
+            
+            for (long i = 0; i<lDim; i++) {
+                long idx = theIndex[i];
+
+                if (idx != -1) {
+                    result->theData[i] = cmd->formulaValues[fidx[i]];
+                }
+
+                result->theIndex[i] = idx;
+            }
         }
 
 
         if (hDim==vDim) {
-            hyFloat* diagStorage = (hyFloat*)alloca (sizeof(hyFloat) * hDim);
-            InitializeArray(diagStorage, hDim, 0.0);
-            for (long i = 0; i<lDim; i++) {
-                long k = result->theIndex[i];
-                if (k!=-1) {
-                    diagStorage[k/hDim] += result->theData[i];
+            
+            if (result->compressedIndex) {
+                long from = 0L;
+                for (long r = 0; r < hDim; r++) {
+                    //printf ("%ld\n", diagIndices[r]);
+                    long di = diagIndices[r];
+                    for (long c = from; c < result->compressedIndex[r]; c++) {
+                        //printf ("%ld %g\n", c, result->theData[c]);
+                        if (c != di) {
+                            result->theData[di] -= result->theData[c];
+                        }
+                    }
+                    from = result->compressedIndex[r];
                 }
+                /*for (long r = 0; r < hDim; r++) {
+                    printf ("%ld %g\n", diagIndices[r], result->theData[diagIndices[r]]);
+                }
+                exit (0);*/
             }
-            for (long i = 0; i<hDim; i++) {
-                (*result)[i*hDim+i] = -diagStorage[i];
-            }
+            else {
+                hyFloat* diagStorage = (hyFloat*)alloca (sizeof(hyFloat) * hDim);
+                memset (diagStorage, 0, sizeof(hyFloat) * hDim);
+                for (long i = 0; i<lDim; i++) {
+                    long k = result->theIndex[i];
+                    if (k!=-1) {
+                        diagStorage[k/hDim] += result->theData[i];
+                    }
+                }
+                for (long i = 0; i<hDim; i++) {
+                     (*result)[i*hDim+i] = -diagStorage[i];
+                }
+           }
+            
+           
         }
     } else {
 
@@ -2997,7 +3171,7 @@ void    _Matrix::Clear (bool complete) {
 
 void    _Matrix::ZeroNumericMatrix (void) {
     if (is_numeric()) {
-        InitializeArray (theData, lDim, 0.0);
+        memset (theData, 0, sizeof (hyFloat) * lDim);
         if (!is_dense()) {
             InitializeArray (theIndex, lDim, -1L);
         }
@@ -3006,9 +3180,8 @@ void    _Matrix::ZeroNumericMatrix (void) {
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Resize (long newH)
-{
-    if (newH >= 0 && newH != hDim && storageType == 1 && theIndex == nil) {
+void    _Matrix::Resize (long newH) {
+    if (newH >= 0 && newH != hDim && is_numeric() && is_dense()) {
         hDim = newH;
         lDim = newH*vDim;
 
@@ -3153,7 +3326,11 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
 #ifdef  _SLKP_USE_AVX_INTRINSICS
             #define     CELL_OP(x) _mm256_storeu_pd (stData+x, _mm256_sub_pd (_mm256_loadu_pd (stData+x), _mm256_loadu_pd (argData+x)))
                 
-                for (long idx = 0; idx < upto; idx+=16) {
+        #pragma GCC unroll 4
+        #pragma clang loop vectorize(enable)
+        #pragma clang loop interleave(enable)
+        #pragma clang loop unroll(enable)
+               for (long idx = 0; idx < upto; idx+=16) {
                     CELL_OP (idx);
                     CELL_OP (idx+4);
                     CELL_OP (idx+8);
@@ -3170,14 +3347,19 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             } else {
 #ifdef  _SLKP_USE_AVX_INTRINSICS
             #define     CELL_OP(x) _mm256_storeu_pd (stData+x, _mm256_add_pd (_mm256_loadu_pd (stData+x), _mm256_loadu_pd (argData+x)))
-                 
+
+
+            #pragma GCC unroll 4
+            #pragma clang loop vectorize(enable)
+            #pragma clang loop interleave(enable)
+            #pragma clang loop unroll(enable)
                  for (long idx = 0; idx < upto; idx+=16) {
                      CELL_OP (idx);
                      CELL_OP (idx+4);
                      CELL_OP (idx+8);
                      CELL_OP (idx+12);
                  }
-
+        
  #else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]+=argData[idx];
@@ -4481,7 +4663,42 @@ hyFloat  _Matrix::MaxElement  (char runMode, long* indexStore) const {
             }
             return max;
         } else {
-            for (long i = 0; i<lDim; i++) {
+            
+            if (doAbsValue) {
+                if (doMaxElement) {
+                    for (long i = 0; i<lDim; i++) {
+                        hyFloat t = fabs(theData[i]);
+                        if (t > max) {
+                            max = t;
+                            if (indexStore) {
+                                *indexStore = i;
+                            }
+                        }
+                    }
+                } else {
+                    for (long i = 0; i<lDim; i++) {
+                        max += fabs (theData[i]);
+                    }
+                }
+            } else {
+                if (doMaxElement) {
+                    for (long i = 0; i<lDim; i++) {
+                        hyFloat t = theData[i];
+                        if (t > max) {
+                            max = t;
+                            if (indexStore) {
+                                *indexStore = i;
+                            }
+                        }
+                    }
+                } else {
+                    for (long i = 0; i<lDim; i++) {
+                        max += theData[i];
+                    }
+                }
+            }
+            
+            /*for (long i = 0; i<lDim; i++) {
                 temp = theData[i];
                 if (doAbsValue && temp<0.0) {
                     temp = -temp;
@@ -4497,7 +4714,7 @@ hyFloat  _Matrix::MaxElement  (char runMode, long* indexStore) const {
                 } else {
                     max += temp;
                 }
-            }
+            }*/
             return max;
         }
     }
@@ -4510,13 +4727,11 @@ hyFloat  _Matrix::MaxElement  (char runMode, long* indexStore) const {
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
+void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache) {
 
 // returns the maximum row sum / column sum
 // the cache must be big enough to hold hDim + vDim
 // leave as nil to allocate cache run time
-
-{
     r = c = 10.;
 
     if (is_numeric()) { // numeric matrix
@@ -4531,23 +4746,39 @@ void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache)
         hyFloat * rowMax = maxScratch,
                      * colMax = maxScratch + hDim;
 
-        if (theIndex)
-            // sparse matrix
-            for (long i = 0; i<lDim; i++) {
-                long k = theIndex[i];
-                if  (k!=-1) {
-                    hyFloat temp = theData[i];
+        if (theIndex) {
+            if (compressedIndex) {
+                long from = 0L;
+                for (long r = 0; r < hDim; r++) {
+                    for (long c = from; c < compressedIndex[r]; c++) {
+                        hyFloat temp = theData[c];
+                        if (temp > 0.0) {
+                            rowMax[r] += temp;
+                            colMax[compressedIndex[c+hDim]] += temp;
+                        } else {
+                            rowMax[r] -= temp;
+                            colMax[compressedIndex[c+hDim]] -= temp;
+                        }
+                    }
+                    from = compressedIndex[r];
+                }
+            } else {
+                for (long i = 0; i<lDim; i++) {
+                    long k = theIndex[i];
+                    if  (k!=-1) {
+                        hyFloat temp = theData[i];
 
-                    if (temp<0.0) {
-                        rowMax[k/vDim] -= temp;
-                        colMax[k%vDim] -= temp;
-                    } else {
-                        rowMax[k/vDim] += temp;
-                        colMax[k%vDim] += temp;
+                        if (temp>0.0) {
+                            rowMax[k/vDim] += temp;
+                            colMax[k%vDim] += temp;
+                        } else {
+                            rowMax[k/vDim] -= temp;
+                            colMax[k%vDim] -= temp;
+                        }
                     }
                 }
             }
-        else
+        } else
             // dense matrix
             for (long i = 0, k=0; i<hDim; i++) {
                 for (long j=0; j<vDim; j++, k++) {
@@ -4585,7 +4816,7 @@ bool    _Matrix::IsMaxElement  (hyFloat bench) {
         if (!theIndex || compressedIndex) {
             for (long i = 0; i<lDim; i++) {
                 hyFloat t = theData[i];
-                if ( t<mBench || t>bench ) {
+                if ( t>bench || t<mBench ) {
                     return true;
                 }
             }
@@ -4593,7 +4824,7 @@ bool    _Matrix::IsMaxElement  (hyFloat bench) {
             for (long i = 0; i<lDim; i++) {
                 if (theIndex [i] >= 0) {
                     hyFloat t = theData[i];
-                    if ( t<mBench || t>bench ) {
+                    if ( t>bench || t<mBench ) {
                         return true;
                     }
                 }
@@ -4841,6 +5072,73 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
     
     
     if (theIndex) {
+        
+        if (compressedIndex && transpose) {
+            long ai = 0;
+            long from = 0L;
+            memcpy (stash, theData, sizeof (hyFloat)*lDim);
+            long * by_column_counts = (long*)alloca ((hDim + lDim) * sizeof (long));
+            
+            memset (by_column_counts, 0, hDim * sizeof (long));
+            
+            // pass 1 : count records by column
+            long * stored_by_col = (long*)alloca (hDim * sizeof (long));
+            memset (stored_by_col, 0, hDim * sizeof (long));
+
+            for (long r = 0L; r < hDim; r++) {
+                for (long c = from; c < compressedIndex[r]; c++) {
+                    by_column_counts[compressedIndex[hDim+c]] ++;
+                }
+                from = compressedIndex[r];
+            }
+            
+            
+            for (long r = 1L; r < hDim; r++) {
+                by_column_counts[r] += by_column_counts[r-1];
+                //printf ("%ld %ld (%ld)\n", r, by_column_counts[r], compressedIndex[r]);
+            }
+            
+            // pass 2 : invert indices
+            from = 0L;
+            
+            
+            for (long r = 0L; r < hDim; r++) {
+                for (long c = from; c < compressedIndex[r]; c++) {
+                    long my_col = compressedIndex[c+hDim];
+                    // (i,j) => (j,i)
+                    long new_index = my_col * hDim + r;
+                    long col_offset = my_col ? by_column_counts[my_col-1] : 0;
+                    long new_compressed_index = stored_by_col[my_col] + col_offset;
+                    //printf ("%ld => %ld (%ld, %ld)\n", c, new_compressed_index,r*hDim + my_col, new_index);
+                    theIndex[new_compressed_index] = new_index;
+                    theData[new_compressed_index] = stash[c];
+                    by_column_counts[hDim + new_compressed_index] = r;
+                    stored_by_col[my_col]++;
+                }
+                from = compressedIndex[r];
+            }
+            
+            
+            
+            memcpy (compressedIndex, by_column_counts, sizeof (long)*(lDim+hDim));
+            //_validateCompressedStorage();
+            
+            /*for (long r = 0; r < hDim; r++) {
+                long trow = r;
+                for (long c = from; c < compressedIndex[r]; c++) {
+                    long tcol = compressedIndex[hDim+c];
+                    long transposed_index = tcol * vDim + trow;
+                    stash[ai] = theData[c];
+                    //sortedIndex.list_data[ai] = transposed_index;
+                    //sortedIndex3.list_data[ai] = transposed_index;
+                    ai++;
+                    //if (max < transposed_index) max = transposed_index;
+                }
+                from = compressedIndex[r];
+            }*/
+            return;
+        }
+        
         _SimpleList sortedIndex  ((unsigned long)lDim, (long*)alloca (lDim * sizeof (long))),
                     sortedIndex3 ((unsigned long)lDim, (long*)alloca (lDim * sizeof (long))),
                     sortedIndex2;
@@ -4855,44 +5153,27 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
 
 
         if (transpose) {
+            long ai = 0L;
+            
             for (long i2=0; i2<lDim; i2++) {
                 long k = theIndex[i2];
                 if  (__builtin_expect (k!=-1,1)) {
-                    /*
-                    long r = k/vDim,
-                         c = k%vDim,
-                         r2 = c / blockChunk * blockShift + r / blockChunk,
-                         r3 = r2 * lDim + r * vDim + c;
-
-                    sortedIndex  << (c*vDim + r);
-                    sortedIndex3 << r3;
-                    stash[sortedIndex.lLength-1] = theData[i2];
-                    if (r3 > max) {
-                        max = r3;
-                    }*/
-                    long transposed_index = (k%vDim) * vDim + k/vDim;
-                    stash[sortedIndex.lLength] = theData[i2];
-                    sortedIndex  << transposed_index;
-                    sortedIndex3 << transposed_index;
+                    long trow = k/vDim, tcol = k - trow*vDim;
+                    long transposed_index = tcol * vDim + trow;
+                    stash[ai] = theData[i2];
+                    sortedIndex.list_data[ai] = transposed_index;
+                    sortedIndex3.list_data[ai] = transposed_index;
+                    ai++;
                     if (max < transposed_index) max = transposed_index;
-                    
                 }
             }
+            
+            sortedIndex3.lLength = ai;
+            sortedIndex.lLength = ai;
         } else {
             for (long i2=0; i2<lDim; i2++) {
                 long k = theIndex[i2];
                 if  (__builtin_expect (k!=-1,1)) {
-                    /*long r = k%vDim,
-                         c = k/vDim,
-                         r2 = c / blockChunk * blockShift + r / blockChunk,
-                         r3 = r2 * lDim + r * vDim + c;
-
-                    sortedIndex  << (c*vDim + r);
-                    sortedIndex3 << r3;
-                    stash[sortedIndex.lLength-1] = theData[i2];
-                    if (r3 > max) {
-                        max = r3;
-                    }*/
                     stash[sortedIndex.lLength] = theData[i2];
                     sortedIndex  << k;
                     sortedIndex3 << k;
@@ -4957,32 +5238,6 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
         
         for (long l = currentRow; l < firstDim; l++)
             compressedIndex[l] = lDim;
-        //compressedIndex[firstDim-1] = lDim;
-        //printf (">[%ld] %ld\n", firstDim-1, compressedIndex[firstDim-1]);
-        //exit (1);
-        
-        
-        // this code checks conversion consistency
-         
-        /*long ei = 0;
-        long from = 0;
-        for (long i=0; i<hDim; i++) {
-            for (long k = from; k < compressedIndex[i]; k++, ei++) {
-                long my_row = theIndex[ei] / vDim,
-                     my_column = theIndex[ei] % vDim;
-                
-                if (my_row != i || my_column != compressedIndex[hDim+k]) {
-                    printf ("BARF\n");
-                }
-            }
-            from = compressedIndex[i];
-        }
-        
-        if (ei != lDim) {
-            printf ("BARF\n");
-        }*/
-        
-
     }
 }
 
@@ -5323,6 +5578,13 @@ long    _Matrix::Hash  (long i, long j) const {
         return i*vDim+j;
     }
     // ordinary matrix
+    
+    if (compressedIndex) {
+        for (long c = i ? compressedIndex[i-1] : 0; c < compressedIndex[i]; c++) {
+            if (compressedIndex[hDim+c] == j) return c;
+        }
+        return -1;
+    }
 
     long elementIndex = i*vDim+j, k, l, m=i*bufferPerRow,n,p;
 

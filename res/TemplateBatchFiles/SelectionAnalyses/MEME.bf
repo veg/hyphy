@@ -118,7 +118,7 @@ This table is meant for HTML rendering in the results web-app; can use HTML char
 is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
 the next set of variables.
 */
-meme.table_screen_output  = {{"Codon", "Partition", "alpha", "beta+", "p+", "LRT", "Episodic selection detected?", "# branches"}};
+meme.table_screen_output  = {{"Codon", "Partition", "alpha", "beta+", "p+", "LRT", "Episodic selection detected?", "# branches", "Most common codon substitutions at this site"}};
 meme.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 12, terms.table_options.align : "center"};
 
 
@@ -279,6 +279,8 @@ parameters.SetRange ("meme.site_mixture_weight", terms.range_almost_01);
 
 meme.report.count = {{0}};
 
+meme.site.composition.string = "";
+
 meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.partition])[terms.data.coverage])[meme.report.site]),
                                     meme.report.partition + 1,
                                     Format(meme.report.row[0],7,3),
@@ -286,7 +288,8 @@ meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.pa
                                     Format(meme.report.row[4],7,3),
                                     Format(meme.report.row[5],7,3),
                                     "Yes, p = " + Format(meme.report.row[6],7,4),
-                                    Format(meme.report.row[7],0,0)
+                                    Format(meme.report.row[7],0,0),
+                                    meme.site.composition.string
 }};
 
 meme.site_results = {};
@@ -522,7 +525,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
      }
      
      
-    //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
+    io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
                   
     Optimize (results, ^lf_bsrel, {
             "OPTIMIZATION_METHOD" : "nedler-mead",
@@ -575,13 +578,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     ancestral_info = ancestral.build (lf_bsrel,0,FALSE);
 
     //TODO
-    branch_substitution_information = selection.substitution_mapper (ancestral_info ["MATRIX"],
-                                                      ancestral_info ["TREE_AVL"],
-                                                      ancestral_info ["AMBIGS"],
-                                                      ^"meme.pairwise_counts",
-                                                      ancestral_info ["MAPPING"],
-                                                      (^"meme.codon_data_info")[utility.getGlobalValue("terms.code")]);
-
+    branch_substitution_information = (ancestral.ComputeSubstitutionBySite (ancestral_info,0,None))[^"terms.substitutions"];
+    
 
     DeleteObject (ancestral_info);
 
@@ -666,6 +664,60 @@ function meme.report.echo (meme.report.site, meme.report.partition, meme.report.
 
 lfunction meme.store_results (node, result, arguments) {
 
+    sub_profile = result[utility.getGlobalValue("terms.branch_selection_attributes")];
+    
+/**
+
+{
+ "AGA":{
+   "AGG":{
+     "0":"Node1"
+    }
+  },
+ "AGG":{
+   "AAA":{
+     "0":"Node3",
+     "1":"HORSE"
+    },
+   "ACG":{
+     "0":"Node12"
+    },
+   "GCA":{
+     "0":"CAT"
+    }
+  }
+}
+
+**/
+
+    if (None != sub_profile) {
+        total_sub_count = 0;
+    
+        sub_by_count = {};
+        for (i, v; in; sub_profile) {
+            for (j, b; in; v) {
+                c = Abs (b);
+                total_sub_count += c;
+                if ((sub_by_count/c)==0) {
+                    sub_by_count [c] = {};
+                }
+                sub_by_count[c] + (i + ">" + j);
+            }
+        }
+        
+        sorted_subs = {Abs (sub_by_count), 1};
+        j = 0;
+        for (i, v; in; sub_by_count) {
+            sorted_subs[j] = -(+i);
+            j += 1; 
+        }
+        sub_profile = {};
+        for (i; in; sorted_subs % 0) {
+            sub_profile + ("[" + (-i) + "]" + Join (",",sub_by_count [-i]));
+        }
+        ^"meme.site.composition.string" = Join ("|", sub_profile);
+    }
+
     partition_index = arguments [3];
     pattern_info    = arguments [4];
 
@@ -730,6 +782,7 @@ lfunction meme.store_results (node, result, arguments) {
     sites_mapping_to_pattern = pattern_info[utility.getGlobalValue("terms.data.sites")];
     sites_mapping_to_pattern.count = utility.Array1D (sites_mapping_to_pattern);
 
+
     for (i = 0; i < sites_mapping_to_pattern.count; i+=1) {
         site_index = sites_mapping_to_pattern[i];
         ((^"meme.site_results")[partition_index])[site_index] = result_row;
@@ -752,3 +805,4 @@ lfunction meme.store_results (node, result, arguments) {
 
     //assert (0);
 }
+

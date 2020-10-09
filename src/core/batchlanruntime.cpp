@@ -541,13 +541,16 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
 
                     if (site >=0 && site<filter_source->GetPatternCount()) {
                         if ( seq>=0 && seq<filter_source->NumberSpecies()) {
+                            bool count_gaps = hy_env::EnvVariableTrue(hy_env::harvest_frequencies_gap_options);
                             _Matrix             * res = new _Matrix (filter_source->GetDimension (true), 1, false, true);
 
                             bool                only_the_index = hy_env::EnvVariableTrue(hy_env::get_data_info_returns_only_the_index);
 
                             _String             character (filter_source->RetrieveState(site, seq));
-                            long                theValue = filter_source->Translate2Frequencies (character, res->theData,  true);
-
+                            
+                            
+                            long                theValue = filter_source->Translate2Frequencies (character, res->theData,  count_gaps);
+  
                             if (only_the_index) {
                                 receptacle->SetValue (new _Constant (theValue),false,true, NULL);
                                 DeleteObject     (res);
