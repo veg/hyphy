@@ -246,6 +246,7 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
     slac.table_output_options[terms.table_options.header] = TRUE;
 
     slac.ancestors         = ancestral.build (slac.partitioned_mg_results[terms.likelihood_function], slac.i, None);
+    
     slac.results           [slac.i] = slac.compute_the_counts (slac.ancestors["MATRIX"], slac.ancestors["TREE_AVL"], slac.ancestors["AMBIGS"], slac.selected_branches[slac.i], slac.counts);
 
     slac.partition_sites   = utility.Array1D ((slac.filter_specification[slac.i])[terms.data.coverage]);
@@ -575,11 +576,11 @@ lfunction slac.compute_the_counts (matrix, tree, lookup, selected_branches, coun
             relative_branch_length = selected_branches_lengths[i] / selected_branch_total_length;
 
             parent_branch          = selected_branches_parents[i];
-
+ 
              for (s = 0; s < site_count; s += 1) {
                 this_state      = matrix[this_branch][s];
                 parent_state    = matrix[parent_branch][s];
-
+                
                 // parent state can only be resolved or --- (-1)
 
                 if (this_state >= 0) { // child fully resolved (this means that the parent is fully resolved as well)

@@ -142,7 +142,7 @@ private:
     
     // matrix exp truncation precision
     
- 
+    bool        _validateCompressedStorage (void) const;
 
 public:
     
@@ -517,9 +517,6 @@ public:
     }
     long              MatrixType (void) {
         return storageType;
-    }
-    bool              SparseDataStructure (void) {
-        return theIndex;
     }
     
     template <typename CALLBACK, typename EXTRACTOR>  void ForEach (CALLBACK&& cbv, EXTRACTOR&& accessor) const {

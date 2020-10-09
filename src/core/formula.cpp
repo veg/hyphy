@@ -2057,7 +2057,7 @@ bool _Formula::CheckSimpleTerm (HBLObjectRef thisObj) {
         if (oc != NUMBER) {
             if (oc ==MATRIX) {
                 _Matrix * mv = (_Matrix*)thisObj->Compute();
-                if (!mv->SparseDataStructure() && mv->IsIndependent ()) {
+                if (mv->is_dense() && mv->IsIndependent ()) {
                     return true;
                 }
             }
