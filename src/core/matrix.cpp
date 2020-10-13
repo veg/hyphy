@@ -1907,14 +1907,16 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
             if (res & 8) { non_zero_index[k++] = i+3; if (k == threshold) break; };
         }
     }
-    for (long i = lDimMOD4; i < lDim; i++) {
-        if (theData[i] != 0.0) {
-            non_zero_index[k++] = i;
-            if (k == threshold) {
-                return false;
+    
+    if (k < threshold)
+        for (long i = lDimMOD4; i < lDim; i++) {
+            if (theData[i] != 0.0) {
+                non_zero_index[k++] = i;
+                if (k == threshold) {
+                    return false;
+                }
             }
         }
-    }
 #else
     for (long i = 0; i < lDim; i++) {
         if (theData[i] != 0.0) {
@@ -1958,7 +1960,8 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
         }
         whereTo.compressedIndex = (long*) MatrixMemAllocate((whereTo.lDim + hDim) * sizeof (long));
         
-        long              currentRow = 0L;
+        long                    currentRow = 0L;
+        long   * __restrict     wci = (long*)whereTo.compressedIndex;
 
         for (long i=0L; i<k; i++) {
             //printf ("%ld %ld", i, theIndex[i]);
@@ -1968,10 +1971,10 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
             long indexRow = entryIndex / vDim,
                  indexColumn = entryIndex - indexRow * vDim;
  
-            whereTo.compressedIndex[i + hDim] = indexColumn;
+            wci[i + hDim] = indexColumn;
             if (indexRow > currentRow) {
                 for (long l = currentRow; l < indexRow; l++) {
-                    whereTo.compressedIndex[l] = i;
+                    wci[l] = i;
                 }
                 currentRow = indexRow;
             }
@@ -5520,11 +5523,27 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         
         if (theIndex) {
             // transpose back
-            for (i=0; i<lDim; i++) {
-                long k = theIndex[i];
-                if  (k!=-1) {
-                    long div = k / vDim;
-                    theIndex[i] = (k - div * vDim)*vDim + div;
+            if (compressedIndex) {
+                long from = 0L, i = 0;
+                for (long r = 0; r < hDim; r++) {
+                    #pragma GCC unroll 4
+                    #pragma clang loop vectorize(enable)
+                    #pragma clang loop interleave(enable)
+                    #pragma clang loop unroll(enable)
+                    for (long c = from; c < compressedIndex[r]; c++, i++) {
+                        theIndex[i] = compressedIndex[c+hDim] * vDim + r;
+                    }
+                    from = compressedIndex[r];
+                }
+                MatrixMemFree(compressedIndex);
+                compressedIndex = nil;
+            } else {
+                for (i=0; i<lDim; i++) {
+                    long k = theIndex[i];
+                    if  (k!=-1) {
+                        long div = k / vDim;
+                        theIndex[i] = (k - div * vDim)*vDim + div;
+                    }
                 }
             }
             result->Transpose();
