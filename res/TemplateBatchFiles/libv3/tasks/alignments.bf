@@ -453,6 +453,8 @@ lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) 
     //DataSetFilter ^filter_out = CreateFilter (filter_in);
 }
 
+
+
 /**
  * Defines filters for multiple partitions
  * @name alignments.DefineFiltersForPartitions

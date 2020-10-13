@@ -1894,7 +1894,30 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     //speculatively allocate memory to store non-zero indices
     
     long * non_zero_index = (long*)alloca (threshold*sizeof(long));
-   
+    
+#ifdef _SLKP_USE_AVX_INTRINSICS
+    __m256d zeros = _mm256_setzero_pd();
+    long lDimMOD4 = lDim >> 2 << 2;
+    for (long i = 0; i < lDimMOD4; i+=4) {
+         int res  = _mm256_movemask_pd(_mm256_cmp_pd (_mm256_loadu_pd (theData+i), zeros, _CMP_NEQ_OQ));
+         if (res) { // something is different
+            if (res & 1) { non_zero_index[k++] = i; if (k == threshold) break; };
+            if (res & 2) { non_zero_index[k++] = i+1; if (k == threshold) break; };
+            if (res & 4) { non_zero_index[k++] = i+2; if (k == threshold) break; };
+            if (res & 8) { non_zero_index[k++] = i+3; if (k == threshold) break; };
+        }
+    }
+    
+    if (k < threshold)
+        for (long i = lDimMOD4; i < lDim; i++) {
+            if (theData[i] != 0.0) {
+                non_zero_index[k++] = i;
+                if (k == threshold) {
+                    return false;
+                }
+            }
+        }
+#else
     for (long i = 0; i < lDim; i++) {
         if (theData[i] != 0.0) {
             non_zero_index[k++] = i;
@@ -1903,6 +1926,9 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
             }
         }
     }
+#endif
+   
+    
 
     if (k < threshold) {
         // we indeed are sparse enough
@@ -1934,7 +1960,8 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
         }
         whereTo.compressedIndex = (long*) MatrixMemAllocate((whereTo.lDim + hDim) * sizeof (long));
         
-        long              currentRow = 0L;
+        long                    currentRow = 0L;
+        long   * __restrict     wci = (long*)whereTo.compressedIndex;
 
         for (long i=0L; i<k; i++) {
             //printf ("%ld %ld", i, theIndex[i]);
@@ -1944,10 +1971,10 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
             long indexRow = entryIndex / vDim,
                  indexColumn = entryIndex - indexRow * vDim;
  
-            whereTo.compressedIndex[i + hDim] = indexColumn;
+            wci[i + hDim] = indexColumn;
             if (indexRow > currentRow) {
                 for (long l = currentRow; l < indexRow; l++) {
-                    whereTo.compressedIndex[l] = i;
+                    wci[l] = i;
                 }
                 currentRow = indexRow;
             }
@@ -3324,17 +3351,24 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                        
             if (subtract) {
 #ifdef  _SLKP_USE_AVX_INTRINSICS
-            #define     CELL_OP(x) _mm256_storeu_pd (stData+x, _mm256_sub_pd (_mm256_loadu_pd (stData+x), _mm256_loadu_pd (argData+x)))
+            #define     CELL_OP1(x,y) __m256d y = _mm256_sub_pd (_mm256_loadu_pd (stData+x), _mm256_loadu_pd (argData+x))
+#define CELL_OP2(x,y) _mm256_storeu_pd (stData+x,y)
                 
         #pragma GCC unroll 4
         #pragma clang loop vectorize(enable)
         #pragma clang loop interleave(enable)
         #pragma clang loop unroll(enable)
+        #pragma GCC ivdep
+        #pragma ivdep
                for (long idx = 0; idx < upto; idx+=16) {
-                    CELL_OP (idx);
-                    CELL_OP (idx+4);
-                    CELL_OP (idx+8);
-                    CELL_OP (idx+12);
+                    CELL_OP1 (idx,r1);
+                    CELL_OP1 (idx+4,r2);
+                    CELL_OP1 (idx+8,r3);
+                    CELL_OP1 (idx+12,r4);
+                    CELL_OP2 (idx,r1);
+                    CELL_OP2 (idx+4,r2);
+                    CELL_OP2 (idx+8,r3);
+                    CELL_OP2 (idx+12,r4);
                 }
 #else
                 for (long idx = 0; idx < upto; idx+=4) {
@@ -3675,12 +3709,14 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 hyFloat  * dest = storage.theData;
                 
 #if defined _SLKP_USE_AVX_INTRINSICS
+                #define DO_GROUP_OP0(X,Y,k) Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_mul_pd (A4,Y);
                 #ifdef _SLKP_USE_FMA3_INTRINSICS
                     #define DO_GROUP_OP(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); _mm256_storeu_pd (dest + row_offset + k, _mm256_fmadd_pd (A4,Y,X));
                     #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_fmadd_pd (A4,Y,X);
                     #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
                 #else
                     #define DO_GROUP_OP(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k);  Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); _mm256_storeu_pd (dest + row_offset + k, _mm256_add_pd (X, _mm256_mul_pd(A4, Y)));
+
                     #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_add_pd (X, _mm256_mul_pd(A4, Y));
                     #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
                #endif
@@ -3695,7 +3731,6 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
             
               
               if (dimm4 == vDim) {
-                  memset (dest, 0, lDim * sizeof (hyFloat));
                   #if defined  _SLKP_USE_AVX_INTRINSICS
                       long ti = 0L,
                            row_offset = 0L;
@@ -3703,10 +3738,23 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       if (vDim == 20UL) {
                           for (long r = 0; r < 20; r++, row_offset += 20) {
                               long col_offset = 0L;
-                              for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
-                                  __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              __m256d D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
+                              DO_GROUP_OP0 (D4, B4, 0);
+                              DO_GROUP_OP0 (D4_1, B4_1, 4);
+                              DO_GROUP_OP0 (D4_2, B4_2, 8);
+                              DO_GROUP_OP0 (D4_3, B4_3, 12);
+                              DO_GROUP_OP0 (D4_4, B4_4, 16);
+                              DO_GROUP_OP2 (D4, 0);
+                              DO_GROUP_OP2 (D4_1, 4);
+                              DO_GROUP_OP2 (D4_2, 8);
+                              DO_GROUP_OP2 (D4_3, 12);
+                              DO_GROUP_OP2 (D4_4, 16);
+                              ti++;
+                              col_offset = 20L;
+                              for (long c = 1; c < 20L; c++, ti++, col_offset += 20L) {
+                                  A4 = _mm256_set1_pd(theData[ti]);
                                   //for (long k = 0; k < 20L; k+=4) {
-                                      __m256d D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
                                       DO_GROUP_OP1 (D4, B4, 0);
                                       DO_GROUP_OP1 (D4_1, B4_1, 4);
                                       DO_GROUP_OP1 (D4_2, B4_2, 8);
@@ -3723,8 +3771,16 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       } else if (vDim == 60UL) {
                           for (long r = 0; r < 60; r++, row_offset += 60) {
                               long col_offset = 0L;
-                              for (long c = 0; c < 60L; c++, ti++, col_offset += 60L) {
-                                  __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              for (long k = 0; k < 60L; k+=4) {
+                                  __m256d D4, B4;
+                                  DO_GROUP_OP0 (D4, B4, k);
+                                  DO_GROUP_OP2 (D4, k);
+                              }
+                              col_offset = 60L;
+                              ti++;
+                              for (long c = 1; c < 60L; c++, ti++, col_offset += 60L) {
+                                  A4 = _mm256_set1_pd(theData[ti]);
                                   for (long k = 0; k < 60L; k+=4) {
                                       __m256d D4, B4;
                                       DO_GROUP_OP (D4, B4, k);
@@ -3734,8 +3790,16 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       } else
                           for (long r = 0; r < vDim; r++, row_offset += vDim) {
                               long col_offset = 0L;
-                              for (long c = 0; c < vDim; c++, ti++, col_offset += vDim) {
-                                  __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              __m256d A4 = _mm256_set1_pd(theData[ti]);
+                              for (long k = 0; k < vDim; k+=4) {
+                                  __m256d D4, B4;
+                                  DO_GROUP_OP0 (D4, B4, k);
+                                  DO_GROUP_OP2 (D4, k);
+                              }
+                              col_offset = vDim;
+                              ti++;
+                              for (long c = 1; c < vDim; c++, ti++, col_offset += vDim) {
+                                 A4 = _mm256_set1_pd(theData[ti]);
                                  #pragma GCC unroll 4
                                  #pragma clang loop vectorize(enable)
                                  #pragma clang loop interleave(enable)
@@ -3748,7 +3812,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           }
                       return;
                   #elif _SLKP_USE_SSE_INTRINSICS
-                      long ti = 0L,
+                    memset (dest, 0, lDim * sizeof (hyFloat));
+                     long ti = 0L,
                            row_offset = 0L;
                   
                       if (vDim == 20UL) {
@@ -3799,7 +3864,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           }
                       return;
                 #endif
-                  
+                memset (dest, 0, lDim * sizeof (hyFloat));
+
                 for (unsigned long c = 0UL; c < secondArg.vDim; c ++) {
 
                   /*
@@ -5457,11 +5523,27 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         
         if (theIndex) {
             // transpose back
-            for (i=0; i<lDim; i++) {
-                long k = theIndex[i];
-                if  (k!=-1) {
-                    long div = k / vDim;
-                    theIndex[i] = (k - div * vDim)*vDim + div;
+            if (compressedIndex) {
+                long from = 0L, i = 0;
+                for (long r = 0; r < hDim; r++) {
+                    #pragma GCC unroll 4
+                    #pragma clang loop vectorize(enable)
+                    #pragma clang loop interleave(enable)
+                    #pragma clang loop unroll(enable)
+                    for (long c = from; c < compressedIndex[r]; c++, i++) {
+                        theIndex[i] = compressedIndex[c+hDim] * vDim + r;
+                    }
+                    from = compressedIndex[r];
+                }
+                MatrixMemFree(compressedIndex);
+                compressedIndex = nil;
+            } else {
+                for (i=0; i<lDim; i++) {
+                    long k = theIndex[i];
+                    if  (k!=-1) {
+                        long div = k / vDim;
+                        theIndex[i] = (k - div * vDim)*vDim + div;
+                    }
                 }
             }
             result->Transpose();
@@ -5586,32 +5668,54 @@ long    _Matrix::Hash  (long i, long j) const {
         return -1;
     }
 
-    long elementIndex = i*vDim+j, k, l, m=i*bufferPerRow,n,p;
-
-    for (k = 0; k<lDim/allocationBlock; k++,m+=allocationBlock) {
-        for (l=m; l<m+bufferPerRow; l++) {
-            p = theIndex[l];
-            if (p!=elementIndex) {
-                if (p==-1) {
-                    return -l-2;
-                }
-            } else {
-                return l;
-            }
+    long elementIndex   = i*vDim+j,
+         m              = i*bufferPerRow;
+    
+    for (long allocation_block_index = 0L; allocation_block_index < lDim; allocation_block_index += allocationBlock, m += allocationBlock) {
+        // look within the row for this allocation block
+        for (long l = m; l < m + bufferPerRow; l++) {
+            long try_me = theIndex[l];
+            if (try_me != elementIndex) {
+                if (try_me == -1) return -l - 2;
+            } else return l;
         }
-        n = (k+1)*allocationBlock-1;
-        for (l = n; l>n-overflowBuffer; l--) {
-            p = theIndex[l];
-            if (p!=elementIndex) {
-                if (p==-1) {
-                    return -l-2;
-                }
-            } else {
-                return l;
-            }
+        // if not found, look in the overflow are for this block
+        long upper_bound = MIN (lDim, allocation_block_index + allocationBlock);
+        for (long n = upper_bound - overflowBuffer; n < upper_bound; n++) {
+            long try_me = theIndex[n];
+            if (try_me != elementIndex) {
+                if (try_me == -1) return -n - 2;
+            } else return n;
         }
     }
     return -1;
+    
+
+    
+    /*for (long blockIndex = 0; blockIndex<lDim/allocationBlock; blockIndex++,m+=allocationBlock) {
+        for (long l=m; l<m+bufferPerRow; l++) {
+            long p = theIndex[l];
+            if (p!=elementIndex) {
+                if (p==-1) {
+                    return -l-2;
+                }
+            } else {
+                return l;
+            }
+        }
+        long n = (blockIndex+1)*allocationBlock-1;
+        for (long l = n; l>n-overflowBuffer; l--) {
+            long p = theIndex[l];
+            if (p!=elementIndex) {
+                if (p==-1) {
+                    return -l-2;
+                }
+            } else {
+                return l;
+            }
+        }
+    }*/
+    //return -1;
 }
 
 //_____________________________________________________________________________________________
