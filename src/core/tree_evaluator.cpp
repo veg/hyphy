@@ -45,6 +45,8 @@
 #include "global_things.h"
 #include "likefunc.h"
 
+extern  long likeFuncEvalCallCount;
+
 
 using namespace hy_global;
 using namespace hy_env;
@@ -144,11 +146,24 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
         }
         if (__builtin_expect(siteState >= 0L,1)) {
             // a single character state; sweep down the appropriate column
+            /*if (likeFuncEvalCallCount == 15098 && nodeCode == 3706 && siteID == 91) {
+                fprintf (stderr, "\nSITE CHECK: ID %ld, STATE %ld\n", nodeCode, siteState);
+                for (long e = 0; e < 4; e++) {
+                    fprintf (stderr, "%ld => %lg\n", e, parentConditionals[e]);
+                }
+            }*/
+            
             #pragma unroll(4)
             #pragma GCC unroll 4
             for (long k = 0L; k < D; k++) {
                 parentConditionals[k] *= tMatrix[siteState+D*k];
             }
+            /*if (likeFuncEvalCallCount == 15098 && nodeCode == 3706 && siteID == 91) {
+                fprintf (stderr, "\nSITE CHECK: ID %ld, STATE %ld\n", nodeCode, siteState);
+                for (long e = 0; e < 4; e++) {
+                    fprintf (stderr, "%ld => %lg\n", e, parentConditionals[e]);
+                }
+            }*/
             return true;
         } else {
             childVector = lNodeResolutions->theData + (-siteState-1) * D;
@@ -471,11 +486,18 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
         
         hyFloat scaler = _computeBoostScaler(scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards, sum, didScale);
         
+        
+        /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+            fprintf (stderr, "UP %ld (%ld) %lg\n", didScale, parentCode, scaler);
+        }*/
         if (didScale) {
             #pragma unroll(4)
             #pragma GCC unroll 4
             for (long c = 0; c < D; c++) {
                 parentConditionals [c] *= scaler;
+                /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+                    fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
+                }*/
             }
             
             if (siteFrequency == 1L) {
@@ -492,13 +514,19 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
             if (sum < HUGE_VAL) { // no point scaling an infinity
                 
                 hyFloat scaler = _computeReductionScaler (scalingAdjustments [parentCode*siteCount + siteID] * _lfScalingFactorThreshold, sum, didScale);
+                /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+                    fprintf (stderr, "DOWN %ld (%ld) %lg\n", didScale, parentCode, scaler);
+                }*/
                 
                 if (didScale) {
                     #pragma unroll(4)
                     #pragma GCC unroll 4
                     for (long c = 0; c < D; c++) {
-                         parentConditionals [c] *= scaler;
-                     }
+                        parentConditionals [c] *= scaler;
+                        /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+                            fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
+                        }*/
+                    }
                     
                     if (siteFrequency == 1L) {
                         localScalerChange += didScale;
@@ -858,7 +886,16 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         
         hyFloat  const * _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
         
-        
+        /*
+         if (likeFuncEvalCallCount == 15098 && parentCode == 3688) {
+            //if (currentTreeNode->GetName()->EndsWith("mt811400_SARS2_orf1ab_usa__4")) {
+            fprintf (stderr, "\nBRANCH ID %ld (%ld = parent ID, parent name = %s) (%s)\n", nodeCode, parentCode, ((_CalcNode*)flatTree (parentCode))->GetName()->get_str(), currentTreeNode->GetName()->get_str());
+                for (long e = 0; e < 16; e++) {
+                    fprintf (stderr, "%ld => %lg\n", transitionMatrix[e]);
+                }
+            //}
+        }
+         */
         
         long currentTCCIndex,currentTCCBit,parentTCCIIndex,parentTCCIBit;
         __ll_handle_tcc_init (tcc, isLeaf, siteCount, siteFrom, nodeCode, parentCode, parentTCCIBit, parentTCCIIndex, currentTCCBit, currentTCCIndex);
@@ -885,7 +922,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                                                                       lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
                     continue;
                 }
-
+                
+                
                      
                 #ifdef _SLKP_USE_AVX_INTRINSICS
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
@@ -1245,7 +1283,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 accumulator += rootConditionals[rootIndex] * theProbs[p];
             }
         }
-           
+        /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+            fprintf (stderr, "\nREGULAR COMPUTE %lg (%ld) (%lg %lg %lg %lg)\n", accumulator, setBranch, rootConditionals[rootIndex-4],rootConditionals[rootIndex-3],rootConditionals[rootIndex-2],rootConditionals[rootIndex-1]);
+        }*/
         if (storageVec) {
             storageVec [siteOrdering.list_data[siteID]] = accumulator;
         } else {
@@ -1297,7 +1337,6 @@ template<long D> inline bool __lcache_loop_preface (bool isLeaf, long* __restric
             for (long k = 0L; k < D; k++, target_index+=D) {
                 parentConditionals[k]   *= tMatrix[target_index];
             }
-            
             return true;
         } else {
             childVector = lNodeResolutions->theData + (-siteState-1) * D;
@@ -1563,6 +1602,16 @@ void            _TheTree::ComputeBranchCache    (
     taggedNodes.Populate (flatTree.lLength, 0, 0);
     rootPath.Flip ();
     
+    /*if (likeFuncEvalCallCount == 15098) {
+        fprintf (stderr, "\nCaching branch %ld\n", brID);
+        rootPath.Each ([&](long n, unsigned long i) -> void {
+            _CalcNode * current_node = (_CalcNode*) (n < flatLeaves.lLength ?  flatCLeaves (n):
+                                                                              flatTree    (n-flatLeaves.lLength));
+            fprintf (stderr, "[%d: %d] %s\n", i, n,current_node->GetName()->get_str());
+        });
+        ObjectToConsole(&nodesToProcess);NLToConsole();
+    }*/
+    
     long const node_count = nodesToProcess.lLength + rootPath.lLength - 2L;
     
     for  (long nodeID = 0; nodeID < node_count; nodeID++) {
@@ -1585,9 +1634,8 @@ void            _TheTree::ComputeBranchCache    (
         }
         
         hyFloat * parentConditionals = iNodeCache +            (siteFrom + parentCode  * siteCount) * alphabetDimension;
-        if (taggedNodes.list_data[parentCode] == 0L)
+        if (taggedNodes.list_data[parentCode] == 0L) {
             // mark the parent for update and clear its conditionals if needed
-        {
             //printf ("Resetting parentCode = %ld\n", parentCode);
             taggedNodes.list_data[parentCode]     = 1L;
             hyFloat     const *localScalingFactor      = scalingAdjustments + parentCode*siteCount;
@@ -1616,10 +1664,11 @@ void            _TheTree::ComputeBranchCache    (
         _CalcNode    * currentTreeNode = (_CalcNode*) (isLeaf?  flatCLeaves (nodeCode):
                                                        flatTree    (notPassedRoot?nodeCode:parentCode));
         
-         hyFloat  const *  transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+        /*if (likeFuncEvalCallCount == 15098) {
+            fprintf (stderr, "%ld/%ld (%ld/%ld) => %s\n", nodeID, nodeCode, isLeaf, notPassedRoot, currentTreeNode->GetName()->get_str());
+        }*/
         
-
-        
+        hyFloat  const *  transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
         hyFloat  *       childVector,*     lastUpdatedSite;
         
         if (!isLeaf) {
@@ -1630,8 +1679,7 @@ void            _TheTree::ComputeBranchCache    (
         long currentTCCIndex,currentTCCBit,parentTCCIIndex,parentTCCIBit;
         __ll_handle_tcc_init (tcc, isLeaf, siteCount, siteFrom, nodeCode, parentCode, parentTCCIBit, parentTCCIIndex, currentTCCBit, currentTCCIndex);
 
-        bool canScale = !notPassedRoot;
-
+ 
         if (alphabetDimension == 4L) {
             #ifdef _SLKP_USE_AVX_INTRINSICS
                 __m256d tmatrix_transpose [4] = {
@@ -1642,9 +1690,13 @@ void            _TheTree::ComputeBranchCache    (
                 };
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 4L) {
+                bool canScale = !notPassedRoot;
                 hyFloat  const *tMatrix = transitionMatrix;
                 if (__lcache_loop_preface<4>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions)) {
+                    /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+                        fprintf (stderr, "__lcache_loop_preface (%ld) %g %g %g %g\n", nodeCode, parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3]);
+                    }*/
                     continue;
                 }
                 long     didScale =  0;
@@ -1659,6 +1711,9 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_loop_handle_scaling<4L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
                 }
+                /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+                    fprintf (stderr, "NODE = %ld, PARENT = %ld (%ld), P(G) = %lg, P(T) = %lg, scale = %ld\n", nodeCode, parentCode, canScale, parentConditionals[2], parentConditionals[3], didScale);
+                }*/
                 childVector += 4L;
                 __handle_site_corrections(didScale, siteID);
             }
@@ -1667,6 +1722,7 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_handle_matrix_transpose<20>(transitionMatrix, tMatrixT);
                 #endif
                 for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 20L) {
+                    bool canScale = !notPassedRoot;
                     hyFloat  const *tMatrix = transitionMatrix;
                     if (__lcache_loop_preface<20>(
                     isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions)) {
@@ -1699,6 +1755,7 @@ void            _TheTree::ComputeBranchCache    (
                 __ll_handle_matrix_transpose<60L>(transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 60L) {
+                bool canScale = !notPassedRoot;
                 hyFloat  const *tMatrix = transitionMatrix;
                 if (__lcache_loop_preface<60>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions)) {
@@ -1738,6 +1795,7 @@ void            _TheTree::ComputeBranchCache    (
                 __ll_handle_matrix_transpose<61L>(transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 61L) {
+                bool canScale = !notPassedRoot;
                 hyFloat  const *tMatrix = transitionMatrix;
                 if (__lcache_loop_preface<61>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions)) {
@@ -1782,6 +1840,7 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_product_sum_loop<61L> (tMatrix, childVector, parentConditionals, sum);
                 #endif
                 if (canScale) {
+                    bool canScale = !notPassedRoot;
                     #if defined _SLKP_USE_AVX_INTRINSICS
                         sum = _avx_sum_4(grandTotal) + s60;
                     #elif defined _SLKP_USE_SSE_INTRINSICS
@@ -1797,6 +1856,7 @@ void            _TheTree::ComputeBranchCache    (
                 __ll_handle_matrix_transpose<62L>(transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 62L) {
+                bool canScale = !notPassedRoot;
                 hyFloat  const *tMatrix = transitionMatrix;
                 if (__lcache_loop_preface<62>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions)) {
@@ -1876,6 +1936,7 @@ void            _TheTree::ComputeBranchCache    (
                 __ll_handle_matrix_transpose<63L>(transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 63L) {
+                bool canScale = !notPassedRoot;
                 hyFloat  const *tMatrix = transitionMatrix;
                 if (__lcache_loop_preface<63>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions)) {
@@ -1972,6 +2033,8 @@ void            _TheTree::ComputeBranchCache    (
         } else  {
               
               for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += alphabetDimension) {
+                bool canScale = !notPassedRoot;
+
                 hyFloat  const *tMatrix = transitionMatrix;
                 if (__lcache_loop_preface_generic(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions, alphabetDimension)) {
@@ -2007,7 +2070,9 @@ void            _TheTree::ComputeBranchCache    (
     const unsigned long site_bound = alphabetDimension*siteTo;
     for (unsigned long ii = siteFrom * alphabetDimension; ii < site_bound; ii++) {
         state[ii] = rootConditionals[ii];
-        //printf ("Root conditional [%ld] = %g, node state [%ld] = %g\n", ii, state[ii], ii, cache[ii]);
+        /*if (likeFuncEvalCallCount == 15098 && ii / alphabetDimension == 91) {
+            printf ("Site %ld, Root conditional [%ld] = %g, node state [%ld] = %g\n", ii/alphabetDimension, ii, state[ii], ii, cache[ii]);
+        }*/
     }
     
     if (!siteCorrectionCounts && localScalerChange) {
