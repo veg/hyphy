@@ -339,7 +339,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
     parameters.SetConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
 
-    //Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-5});
+    //Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});
     Optimize (results, ^lf);
 
     Null = estimators.ExtractMLEs (lf, model_mapping);

@@ -20,7 +20,7 @@ fscanf ("data/CD2.nex.MEME.json","Raw",json);
 
 
 assert (check_value (
-    ((meme.json["fits"])["Unconstrained model"])["Log Likelihood"], -3466.56, 0.001), "Incorrect log-likelihood for the Global MG94xREV model");
+    ((meme.json["fits"])["Global MG94xREV"])["Log Likelihood"], -3466.57, 0.001), "Incorrect log-likelihood for the Global MG94xREV model");
     
 
 p_values   = (((meme.json["MLE"])["content"])["0"])[-1][6];
@@ -60,10 +60,9 @@ function confirm_site (site, p, dict, kind) {
     return FALSE;
 }
 
-utility.ForEachPair (p_values,"_index_", "_p_",
-                 "  
-                   confirm_site (_index_[0], _p_, test.expected_positives, 1))
-                ");
+for (_index_,_p_; in; p_values) {
+    confirm_site (_index_, _p_, test.expected_positives, 1);
+}
 
 assert (check_value (
     test.lrt_sum, 20.33, 0.05), "More than 5% difference in cumulative LRT for positively selected sites");
