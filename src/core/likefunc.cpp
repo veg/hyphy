@@ -5288,6 +5288,10 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
 
     if (index < 0) {
         leftStep = middle;
+    } else {
+        if (middle - leftStep <= lowerBound) {
+            leftStep = MAX ((middle - lowerBound)*0.9, 1e-8);
+        }
     }
 
     if (saveM != middle) {
@@ -5330,7 +5334,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
             leftStep = MIN (leftStep*0.125, middle-lowerBound);
             
             if ( leftStep<initialStep*.1 && index >= 0 || index < 0 && leftStep < STD_GRAD_STEP) {
-                if (!first ||  index >= 0 && current_log_l > -INFINITY && leftStep < 1e-10) {
+                if (!first ||  index >= 0 && current_log_l > -INFINITY && leftStep <= 1e-8) {
                     if (go2Bound) {
                         middle = lowerBound;
                         
