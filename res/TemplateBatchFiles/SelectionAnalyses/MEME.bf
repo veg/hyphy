@@ -605,7 +605,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         LFCompute (^lf_bsrel,LF_DONE_COMPUTE);
 
         ^"meme.site_beta_plus" := ^"meme.site_alpha";
-        Optimize (results, ^lf_bsrel);
+        Optimize (results, ^lf_bsrel, {"OPTIMIZATION_METHOD" : "nedler-mead"});
         //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME-null");
 
         Null = estimators.ExtractMLEs (lf_bsrel, model_mapping);

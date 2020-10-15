@@ -3050,6 +3050,11 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
             storageVec [direct_index] = accumulator;
         } else {
             if (accumulator <= 0.0) {
+                //fprintf (stderr, "ZERO TERM AT SITE %ld (direct %ld) EVAL %ld\n",siteID,direct_index, likeFuncEvalCallCount);
+                /*for (long s = 0; s < theFilter->NumberSpecies(); s++) {
+                    fprintf (stderr, "%s", theFilter->RetrieveState(direct_index, s).get_str());
+                }
+                fprintf (stderr, "\n");*/
                 throw (1L+direct_index);
             }
             
@@ -3061,7 +3066,7 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 term = log(accumulator) - correction;
             }
             
-            /*if (likeFuncEvalCallCount == 11035) {
+            /*if (likeFuncEvalCallCount == 15098) {
                 fprintf (stderr, "CACHE, %ld, %ld, %20.15lg, %20.15lg, %20.15lg\n", likeFuncEvalCallCount, siteID, accumulator, correction, term);
             }*/
             
@@ -3093,6 +3098,12 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
     
     
     // cases by alphabet dimension
+    /*if (likeFuncEvalCallCount == 15098) {
+        fprintf (stderr, "\nBRANCH ID %ld (%s)\n", brID, givenTreeNode->GetName()->get_str());
+        for (long e = 0; e < 16; e++) {
+            fprintf (stderr, "%ld => %lg\n", transitionMatrix[e]);
+        }
+    }*/
     
     try {
         switch (alphabetDimension) {
