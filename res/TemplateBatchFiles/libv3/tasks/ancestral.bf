@@ -267,7 +267,7 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
                         GetDataInfo(_bacCharState, _bacAF, _bacRowIndex - _bacFilterSequenceCount, _bacAncestralPatternMap[_bacSiteCounter]);
                     }
                     _bacResolutionCount = +_bacCharState;
-                    if (_bacResolutionCount == Columns(_bacCharHandles)) {
+                    if (_bacResolutionCount == Columns(_bacCharHandles) || _bacResolutionCount == 0) {
                             /* gap/full ambig */
                         if ( (reverse_mapping/(-1)) == FALSE) {
                             _bacHandledResolutions[_bacCurrentState] = -1;
@@ -538,10 +538,11 @@ lfunction ancestral.ComputeSubstitutionBySite (ancestral_data, site, branch_filt
         parent = (selected_branches[b])[1];
         own_state    = (ancestral_data["MATRIX"])[self][site];
         parent_state = (ancestral_data["MATRIX"])[parent][site];
-
+        
+        
         if  ((own_state != parent_state) && (own_state != -1) && (parent_state != -1)) {
-            own_state = (ancestral_data["CHARS"])[own_state];
-            parent_state = (ancestral_data["CHARS"])[parent_state];
+            own_state = (ancestral_data["MAPPING"])[own_state];
+            parent_state = (ancestral_data["MAPPING"])[parent_state];
             utility.EnsureKey (result, parent_state);
             utility.EnsureKey (result[parent_state], own_state);
             ((result[parent_state])[own_state]) + selected_branch_names[b];

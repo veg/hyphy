@@ -662,10 +662,10 @@ bool        _Operation::ExecutePolynomial (_Stack& theScrap, _VariableContainer*
         } else {
             return false;
         }
-    }
-
-    if (theData>-1) {
-        p=  new _Polynomial(*LocateVar(theData>-1?theData:-theData-2));
+    } else {
+        if (theData>-1) {
+            p=  new _Polynomial(*LocateVar(theData>-1?theData:-theData-2));
+        }
     }
 
     if (p) {

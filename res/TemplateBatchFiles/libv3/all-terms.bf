@@ -179,6 +179,7 @@ namespace terms{
         coverage       = "coverage";
         filter_string  = "filter-string";
         is_constant    = "is_constant";
+        characters     = "characters";
         pattern_id     = "pattern id";
         filename_to_index = "filename-to-index";
     }

@@ -748,7 +748,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         );
     }
 
-    Optimize (results, ^lf);
+    Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});
     Null = estimators.ExtractMLEs (lf, model_mapping);
     Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
@@ -761,7 +761,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
                 estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
                 parameters.SetConstraint ((^"fel.scaler_parameter_names")[v1n],(^"fel.scaler_parameter_names")[v2n], "");
-                Optimize (results, ^lf);
+                Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});
                 pairwise[v1n + "|" + v2n] = estimators.ExtractMLEs (lf, model_mapping);
                 (pairwise[v1n + "|" + v2n])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
            }

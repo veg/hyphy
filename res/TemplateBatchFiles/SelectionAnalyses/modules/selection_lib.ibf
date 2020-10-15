@@ -97,7 +97,7 @@ lfunction selection.substitution_mapper (matrix, tree, ambig_lookup, pairwise_co
         
         
         for (key, value; in; branch_info) {
-            result[key][bname] = value;
+            (result[key])[bname] = value;
         }
 
         //utility.ForEach (utility.Keys (branch_info), "slac.substituton_mapper.key",

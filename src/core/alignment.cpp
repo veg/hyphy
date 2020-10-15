@@ -994,6 +994,7 @@ double AlignStrings( char const * r_str
 
                     // if anything drops below 0, something bad happened
                     if ( i < 0 || j < 0 ) {
+                        delete [] edit_ops;
                         return -INFINITY;
                     }
 

@@ -453,6 +453,8 @@ lfunction alignments.CompressDuplicateSequences (filter_in, filter_out, rename) 
     //DataSetFilter ^filter_out = CreateFilter (filter_in);
 }
 
+
+
 /**
  * Defines filters for multiple partitions
  * @name alignments.DefineFiltersForPartitions
@@ -796,6 +798,8 @@ lfunction alignments.Extract_site_patterns (data_filter) {
     site_characters = {};
     sequence_count = ^(data_filter + ".species");
     
+    GetDataInfo (filter_characters, ^data_filter, "CHARACTERS");
+    
     
     for (_site_index_, _pattern_; in; pattern_list) {
         utility.EnsureKey (site_info, _pattern_);
@@ -810,6 +814,10 @@ lfunction alignments.Extract_site_patterns (data_filter) {
                 }
             }
             site_characters = sc;
+            (site_info[_pattern_])[^"terms.data.characters"] = {};
+            for (i,v; in; site_characters) {
+                ((site_info[_pattern_])[^"terms.data.characters"])[filter_characters[+i]] = v;
+            }
             (site_info[_pattern_])[^"terms.data.is_constant"] = Abs (site_characters) <= 1;
         }
         
