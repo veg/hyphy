@@ -2236,7 +2236,7 @@ bool    _Matrix::IncreaseStorage    (void) {
         } else {
             theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(void*));
             for (long i = lDim-allocationBlock; i < lDim; i++) {
-                theData [i] = ZEROPOINTER;
+                theData [i] = ZEROOBJECT;
             }
         }
     } else {
