@@ -32,7 +32,8 @@ ChoiceList (DATA_FILE_PRINT_FORMAT,"Output Format",1,SKIP_NONE,
 			/* 8 */ "CSV", "Comma separated characters",
 			/* 9 */ "FASTA sequential","FASTA Sequential Format.",
 			/* 10 */ "FASTA interleaved","FASTA Interleaved Format.",
-			/* 11 */ "PAML compatible", "PAML Compatible PHYLIP-like format");
+			/* 11 */ "PAML compatible", "PAML Compatible PHYLIP-like format",
+			/* 12 */ "STOCKHOLM", "STOCKHOLM format");
 			
 if (DATA_FILE_PRINT_FORMAT<0)
 {

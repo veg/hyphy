@@ -482,10 +482,16 @@ inline void __ll_product_sum_loop_generic (hyFloat const* _hprestrict_ tMatrix, 
 }
 
 template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum, hyFloat* _hprestrict_ parentConditionals, hyFloat* _hprestrict_ scalingAdjustments, long& didScale, long parentCode, long siteCount, long siteID, long& localScalerChange, long siteFrequency) {
+    
+    /*if (sum == 0.) {
+        fprintf (stderr, "THE SUM IS EXACTLY ZERO parent code %ld\n", parentCode);
+    }*/
+    
     if (__builtin_expect(sum < _lfScalingFactorThreshold && sum > 0.0,0)) {
         
         hyFloat scaler = _computeBoostScaler(scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards, sum, didScale);
         
+        //fprintf (stderr, "UP %ld (%ld) %lg\n", didScale, parentCode, scaler);
         
         /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
             fprintf (stderr, "UP %ld (%ld) %lg\n", didScale, parentCode, scaler);
@@ -495,9 +501,9 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
             #pragma GCC unroll 4
             for (long c = 0; c < D; c++) {
                 parentConditionals [c] *= scaler;
-                /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
-                    fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
-                }*/
+                //if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+                //fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
+                // }
             }
             
             if (siteFrequency == 1L) {
@@ -523,9 +529,9 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
                     #pragma GCC unroll 4
                     for (long c = 0; c < D; c++) {
                         parentConditionals [c] *= scaler;
-                        /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
-                            fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
-                        }*/
+                        //if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+                        //   fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
+                        // }
                     }
                     
                     if (siteFrequency == 1L) {
@@ -1062,7 +1068,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             #else
                 __ll_product_sum_loop<61L> (tMatrix, childVector, parentConditionals, sum);
             #endif
-
+            
             __ll_loop_handle_scaling<61L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
             childVector += 61;

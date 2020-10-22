@@ -119,6 +119,7 @@ function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
  */
 function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
+   
 
     if (model[terms.model.type] == terms.global) {
         // boost numeric branch length values by a factor of 3
@@ -162,17 +163,18 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                     }
 
                     //fprintf (stdout, models.codon.MG_REV.set_branch_length.alpha.p, "\n");
+                    
+                    
 
                     parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta.p, "(" + 3 * value[terms.branch_length] + " - " + models.codon.MG_REV.set_branch_length.alpha.p + "*(" + model[terms.parameters.synonymous_rate] + "))/(" + model[terms.parameters.nonsynonymous_rate] + ")", "");
                     return 1;
 
                 } else {
-                    assert(0, "TBA in models.codon.MG_REV.set_branch_length");
+                    assert(0, "TBD in models.codon.MG_REV.set_branch_length");
                 }
             } else {
                 models.codon.MG_REV.set_branch_length.lp = 0;
-
-
+                   
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                     Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     models.codon.MG_REV.set_branch_length.lp += 1;

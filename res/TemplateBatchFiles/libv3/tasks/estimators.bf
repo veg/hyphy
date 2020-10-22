@@ -467,13 +467,15 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
                         }
                     }
                 }
-
+ 
                 estimators.ApplyExistingEstimatesToTree.constraint_count += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimatesToTree.map[_branch_name]], _set_branch_length_to);
             } else {
                 if (Type(_existing_estimate) != "Unknown") {
                     warning.log ("Incorrect type for the initial values object of for branch '" + _branch_name + "' : " + _existing_estimate);
                 }
            }
+        } else {
+            //warning.log ("No initial branch length object of for branch '" + _branch_name);
         }
     }
 
@@ -532,7 +534,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
             if (Type (branch_length_conditions) == "AssociativeList") {
                 if (Abs(branch_length_conditions) > estimators.ApplyExistingEstimates.i) {
                     _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
-                }
+                 }
             }
 
             estimators.ApplyExistingEstimates.df_correction +=  estimators.ApplyExistingEstimatesToTree  ((estimators.ApplyExistingEstimates.lfInfo[terms.fit.trees])[estimators.ApplyExistingEstimates.i],
@@ -890,7 +892,6 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     	Optimize (mles, likelihoodFunction);
     }
 
-
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
     }
@@ -1094,17 +1095,14 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);
             branch_map = (option[utility.getGlobalValue("terms.run_options.partitioned_omega")])[i];
-
-
+            
             component_branches = BranchName( * component_tree, -1);
             for (j = 0; j < Columns(component_branches) - 1; j += 1) {
                 /**
                     -1 in the upper bound because we don't want to count the root node
                 */
 
-                node_name = (component_branches[j]);
-
-
+                node_name = (component_branches[j]); 
                 ExecuteCommands(apply_constraint);
             }
         }
@@ -1113,6 +1111,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     LikelihoodFunction likelihoodFunction = (lf_components);
     GetString (params, likelihoodFunction,-1);
+        
     utility.ToggleEnvVariable ("PARAMETER_GROUPING", {"0" : params["Global Independent"]});
  
     if (utility.Has (option,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
@@ -1130,6 +1129,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         parameters.SetRange (_value_,terms.range_clamp_locals);
     ');*/
 
+    //io.SpoolLF ("likelihoodFunction", "/tmp/hyphy-spool", "cfit");
 
     //Export (lfe, likelihoodFunction);
     //console.log (lfe);
