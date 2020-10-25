@@ -297,7 +297,6 @@ function doGTR (prefix) {
                                          trees,
                                          gtr_results);
 
-
     KeywordArgument ("kill-zero-lengths", "Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)", "Yes");
 
     kill0 = io.SelectAnOption (
@@ -414,6 +413,8 @@ function doPartitionedMG (prefix, keep_lf) {
         utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
         utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
     }, gtr_results);
+    
+    
 
 
     io.ReportProgressMessageMD("`prefix`", "codon-fit", "* " + selection.io.report_fit (partitioned_mg_results, 0, (^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));

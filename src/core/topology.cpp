@@ -2697,6 +2697,7 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
                create a new root with >=2 children nodes - this node,
                and one more containing all other children (>=2 of them)
             */
+            
             long count               = 0L,
                  root_children_count = theRoot->get_num_nodes();
 
@@ -2726,7 +2727,7 @@ void _TreeTopology::RerootTreeInternalTraverser (node<long>* iterator, long orig
             if (root_children_count > 2) {
                 res<<')';
             }
-
+            
             PasteBranchLength (stash_originator,res, branch_length_mode, variable_ref);
         }
     }
@@ -2742,6 +2743,8 @@ void            _TreeTopology::PasteBranchLength (node<long>* node, _StringBuffe
             result << ':' << _String (value.to_float()*factor);
         }
     };
+    
+    //printf ("_TreeTopology::PasteBranchLength %d %g %s\n", mode, GetNodeName(node).get_str(), GetBranchLength(node));
     
     switch (mode) {
         case kTopologyBranchLengthExpectedSubs: {
@@ -2805,7 +2808,7 @@ HBLObjectRef _TreeTopology::RerootTree (HBLObjectRef new_root, HBLObjectRef cach
               (*res)<<'('; // opening tree (
               RerootTreeInternalTraverser (reroot_at, reroot_at->get_child_num(),false,*res,settings,kTopologyBranchLengthUserLengths,-1,true);
               (*res)<<',';
-              SubTreeString (reroot_at, *res,settings,kTopologyBranchLengthUserLengths);
+              SubTreeString (reroot_at, *res,settings,false, kTopologyBranchLengthUserLengths);
               (*res)<<')';
             }
         }

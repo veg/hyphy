@@ -1919,7 +1919,8 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
       kFormatCharacterList              = 8,
       kFormatFASTASequential            = 9,
       kFormatFASTAInterleaved           = 10,
-      kFormatPAML                       = 11
+      kFormatPAML                       = 11,
+      kFormatSTOCKHOLM                  = 12
   } datafile_format = kFormatMEGASequential;
   
   auto trim_to_10 = [] (const _String& seq_name) -> _String const {
@@ -2241,6 +2242,19 @@ void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffe
         write_here << kStringFileWrapperNewLine;
       }
       break;
+    }
+          
+    case kFormatSTOCKHOLM: {
+        write_here << "# STOCKHOLM 1.0" << kStringFileWrapperNewLine;
+        for (unsigned long i = 0UL; i< sequence_count; i++) {
+            write_here << GetSequenceName(i) << " ";
+          for (unsigned long j = 1UL; j<site_count; j++) {
+            write_here << (*theData)(theOriginalOrder(j),theNodeMap(i),1);
+          }
+          write_here << kStringFileWrapperNewLine;
+        }
+        write_here << "//" << kStringFileWrapperNewLine;
+        break;
     }
       
     default: { // hash-mark sequential

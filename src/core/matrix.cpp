@@ -4815,18 +4815,18 @@ void    _Matrix::RowAndColumnMax  (hyFloat& r, hyFloat &c, hyFloat * cache) {
         if (theIndex) {
             if (compressedIndex) {
                 long from = 0L;
-                for (long r = 0; r < hDim; r++) {
-                    for (long c = from; c < compressedIndex[r]; c++) {
-                        hyFloat temp = theData[c];
+                for (long row = 0; row < hDim; row++) {
+                    for (long col = from; col < compressedIndex[row]; col++) {
+                        hyFloat temp = theData[col];
                         if (temp > 0.0) {
-                            rowMax[r] += temp;
-                            colMax[compressedIndex[c+hDim]] += temp;
+                            rowMax[row] += temp;
+                            colMax[compressedIndex[col+hDim]] += temp;
                         } else {
-                            rowMax[r] -= temp;
-                            colMax[compressedIndex[c+hDim]] -= temp;
+                            rowMax[row] -= temp;
+                            colMax[compressedIndex[col+hDim]] -= temp;
                         }
                     }
-                    from = compressedIndex[r];
+                    from = compressedIndex[row];
                 }
             } else {
                 for (long i = 0; i<lDim; i++) {
