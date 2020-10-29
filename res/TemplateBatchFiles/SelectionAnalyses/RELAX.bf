@@ -1,5 +1,4 @@
-
-RequireVersion("2.3.3");
+RequireVersion ("2.5.21");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -25,14 +24,14 @@ LoadFunctionLibrary("modules/selection_lib.ibf");
 LoadFunctionLibrary("libv3/models/codon/BS_REL.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
+LoadFunctionLibrary("libv3/models/rate_variation.bf");
 
 
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
-utility.SetEnvVariable ("LF_SMOOTHING_SCALER",0.05);
-
+u
 
 /*------------------------------------------------------------------------------*/
 
@@ -41,7 +40,8 @@ relax.analysis_description = {
                                                 Version 2.1 adds a check for stability in K estimates to try to mitigate convergence problems. 
                                                 Version 3 provides support for >2 branch sets.
                                                 Version 3.1 adds LHC + Nedler-Mead initial fit phase and keyword support.
-                                                Version 3.1.1 adds some bug fixes for better convergence.",
+                                                Version 3.1.1 adds some bug fixes for better convergence.
+                                                Version 4.0 adds support for synonymous rate variation.",
                                terms.io.version : "3.1.1",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
@@ -58,9 +58,15 @@ relax.json    = { terms.json.analysis: relax.analysis_description,
 
 relax.relaxation_parameter        = "relax.K";
 relax.rate_classes                = 3;
+relax.synonymous_rate_classes     = 3;
+relax.SRV                         = "Synonymous site-to-site rates";
+relax.json.srv_posteriors  = "Synonymous site-posteriors";
+relax.json.srv_viterbi = "Viterbi synonymous rate path";
+
 
 relax.initial_ranges              = {};
 relax.initial_grid.N              = 500;
+
 
 relax.MG94_name = terms.json.mg94xrev_sep_rates;
 relax.general_descriptive_name = "General descriptive";
@@ -135,6 +141,7 @@ KeywordArgument ("reference",  "Branches to use as the reference set", null, "Ch
 
 
 
+
 io.DisplayAnalysisBanner ( relax.analysis_description );
 
 selection.io.startTimer (relax.json [terms.json.timers], "Overall", 0);
@@ -148,6 +155,11 @@ namespace relax {
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'RELAX.json')", relax.codon_data_info [terms.json.json]);
 relax.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
+KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);
+relax.initial_grid.N = io.PromptUser ("The number of points in the initial distributional guess for likelihood fitting", 250, 1, 10000, TRUE);
+
+KeywordArgument ("starting-points", "The number of initial random guesses to seed rate values optimization", 1);
+relax.N.initial_guesses = io.PromptUser ("The number of initial random guesses to 'seed' rate values optimization", 1, 1, relax.initial_grid.N$10, TRUE);
 
 io.ReportProgressMessageMD('RELAX',  'selector', 'Branch sets for RELAX analysis');
 
@@ -211,6 +223,43 @@ relax.model_set = io.SelectAnOption ({
                                         {"All", "[Default] Fit descriptive models AND run the relax test (4 models)"}
                                         {"Minimal", "Run only the RELAX test (2 models)"}
                                     }, "RELAX analysis type");
+ 
+KeywordArgument ("srv", "Include synonymous rate variation", "No");          
+                          
+relax.do_srv = io.SelectAnOption (
+                                {
+                                    "Yes" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch)", 
+                                    "Branch-site" : "Allow synonymous substitution rates to vary using general branch site models",
+                                    "HMM" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch), and use a hidden markov model for spatial correlation on synonymous rates",
+                                    "No"  : "Synonymous substitution rates are constant across sites. This is the 'classic' behavior, i.e. the original published test"
+                                },
+                                "Synonymous rate variation"
+);
+
+if (relax.do_srv == "Branch-site") {
+    relax.do_bs_srv = TRUE;
+    relax.do_srv = TRUE;
+    (relax.json[terms.json.analysis])[terms.settings] = "Branch-site synonymous rate variation";
+} else {
+    if (relax.do_srv == "Yes") {
+        relax.do_bs_srv = FALSE;
+        relax.do_srv = TRUE;
+        relax.do_srv_hmm  = FALSE; 
+    } else {
+        if (relax.do_srv == "HMM") {
+         relax.do_srv      = TRUE;
+         relax.do_bs_srv   = FALSE;
+         relax.do_srv_hmm  = TRUE; 
+        } else {
+            relax.do_srv = FALSE;  
+        } 
+    }
+}    
+
+if (relax.do_srv) {
+    KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", relax.synonymous_rate_classes);
+    relax.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", relax.synonymous_rate_classes, 1, 10, TRUE);
+}  
 
 selection.io.startTimer (relax.json [terms.json.timers], "Preliminary model fitting", 1);
 
@@ -245,8 +294,6 @@ utility.ForEach (relax.global_dnds, "_value_", '
 ');
 
 
-
-
 //Store MG94 to JSON
 selection.io.json_store_lf_withEFV (relax.json,
                             relax.MG94_name,
@@ -264,9 +311,40 @@ utility.ForEachPair (relax.filter_specification, "_key_", "_value_",
 
 
 
+relax.model_generator = "models.codon.BS_REL.ModelDescription";
+
+if (relax.do_srv) {
+    if (relax.do_bs_srv) {
+        relax.model_generator = "relax.model.with.GDD";
+        relax.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
+        relax.rate_class_arguments = {{relax.synonymous_rate_classes__,relax.rate_classes__}};
+    } else {
+    
+        lfunction relax.model.with.GDD (type, code, rates) {        
+            def = models.codon.BS_REL.ModelDescription (type, code, rates);
+            options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("relax.synonymous_rate_classes"),
+                       utility.getGlobalValue("terms._namespace") : "relax._shared_srv"};
+
+            if (utility.getGlobalValue("relax.do_srv_hmm")) {
+                    options [utility.getGlobalValue ("terms.rate_variation.HMM")] = "equal";
+            }
+            def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory (options);
+            return def;
+        }
+        
+        relax.model_generator = "relax.model.with.GDD";
+        relax.rate_class_arguments = relax.rate_classes;
+    }
+} else {
+    relax.rate_class_arguments = relax.rate_classes;
+}
 
 selection.io.stopTimer (relax.json [terms.json.timers], "Preliminary model fitting");
 parameters.DeclareGlobalWithRanges (relax.relaxation_parameter, 1, 0, 50);
+
+PARAMETER_GROUPING = {};
+PARAMETER_GROUPING + relax.distribution["rates"];
+PARAMETER_GROUPING + relax.distribution["weights"];
 
 if (relax.model_set == "All") { // run all the models
 
@@ -307,9 +385,6 @@ if (relax.model_set == "All") { // run all the models
         io.ReportProgressMessageMD ("RELAX", "gd", "Fitting the general descriptive (separate k per branch) model");
         selection.io.startTimer (relax.json [terms.json.timers], "General descriptive model fitting", 2);
 
-        PARAMETER_GROUPING = {};
-        PARAMETER_GROUPING + relax.distribution["rates"];
-        PARAMETER_GROUPING + relax.distribution["weights"];
         
         
 
@@ -329,6 +404,7 @@ if (relax.model_set == "All") { // run all the models
             
             
             parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
+            
                          
             relax.grid_search.results =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : {"DEFAULT" : "relax.ge"}},
                                         relax.final_partitioned_mg_results,
@@ -346,7 +422,8 @@ if (relax.model_set == "All") { // run all the models
                                                     "OPTIMIZATION_PRECISION" : relax.nm.precision
                                                 } ,
                                      
-                                            terms.search_grid : relax.initial_grid
+                                            terms.search_grid : relax.initial_grid,
+                                            terms.search_restarts : relax.N.initial_guesses
                                         }
             );
             
@@ -406,7 +483,6 @@ if (relax.model_set == "All") { // run all the models
                     relax.ge_guess[relax.i][0] = relax.inferred_ge_distribution[relax.i + relax.shift][0];
                     relax.ge_guess[relax.i][1] = relax.inferred_ge_distribution[relax.i + relax.shift][1];
                 }
-                //console.log (relax.ge_guess);
                 continue;
             }
         }
@@ -476,6 +552,7 @@ if (relax.numbers_of_tested_groups == 2) {
 	relax.model_to_relax_parameter  ["relax.test"] = relax.relaxation_parameter;
 	relax.model_namespaces = {{"relax.reference","relax.test"}};
 	relax.model_to_group_name = {"relax.reference" : relax.reference_branches_name, "relax.test" : relax.test_branches_name};
+	relax.model_for_srv      = "relax.test";
 
 } else {
 	
@@ -489,24 +566,24 @@ if (relax.numbers_of_tested_groups == 2) {
 		relax.model_namespaces[_value_] = relax.k;
 	");
 	relax.reference_model_namespace = relax.model_namespaces[0];
-	//console.log (relax.model_namespaces);
-	//console.log (relax.reference_model_namespace);
+	relax.model_for_srv      = relax.model_namespaces[0];
 }
+
+ 
 
 //console.log (relax.model_namespaces);
 //explicit loop to avoid re-entrance errors 
 
 relax.relax_parameter_terms = {};
-
-relax.bound_weights = {};
+relax.bound_weights         = {};
 
 for (relax.k = 0; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
 	relax.model_nmsp = relax.model_namespaces[relax.k ];
-	relax.model_object_map[relax.model_nmsp] = model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
+	relax.model_object_map[relax.model_nmsp] = model.generic.DefineMixtureModel(relax.model_generator,
         relax.model_nmsp, {
             "0": parameters.Quote(terms.global),
             "1": relax.codon_data_info[terms.code],
-            "2": parameters.Quote (relax.rate_classes) // the number of rate classes
+            "2": parameters.Quote (relax.rate_class_arguments) // the number of rate classes
         },
         relax.filter_names,
         None);
@@ -525,12 +602,34 @@ for (relax.k = 0; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
     	 } else {
     	 	model.generic.AddGlobal (relax.model_object_map[relax.model_nmsp], relax.model_to_relax_parameter  [relax.model_nmsp], terms.relax.k);
     	 }
-    	 relax.bound_weights * models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.model_object_map[relax.model_nmsp]}, terms.mixture.mixture_aux_weight + ".+");
+    	 relax.bound_weights * models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.model_object_map[relax.model_nmsp]}, terms.mixture.mixture_aux_weight + " for category");
 		 models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.model_object_map[relax.model_nmsp]}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 		 for (relax.i = 1; relax.i <= relax.rate_classes; relax.i += 1) {
 			parameters.SetConstraint (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)),
 									  model.generic.GetGlobalParameter (relax.model_object_map[relax.reference_model_namespace] , terms.AddCategory (terms.parameters.omega_ratio,relax.i)) + "^" + relax.model_to_relax_parameter  [relax.model_nmsp],
 									  terms.global);
+		}
+		if (relax.do_bs_srv) {
+		    for (description,var_id; in;  ((relax.model_object_map[relax.reference_model_namespace])[terms.parameters])[terms.global]) {
+		        
+		        if (None != regexp.Find (description, terms.parameters.synonymous_rate + " for category")) {
+		            var_id_2 = utility.GetByKey (((relax.model_object_map[relax.model_nmsp])[terms.parameters])[terms.global], description, "String");
+		            if (None != var_id_2) {
+		                parameters.SetConstraint (var_id, var_id_2, terms.global);                
+		             }
+		        }
+
+                if (None != regexp.Find (description, terms.mixture.mixture_aux_weight + " for category SRV ")) {
+		            var_id_2 = utility.GetByKey (((relax.model_object_map[relax.model_nmsp])[terms.parameters])[terms.global], description, "String");
+		            if (None != var_id_2) {
+		                if (parameters.IsIndependent (var_id_2)) {
+		                    parameters.SetConstraint (var_id, var_id_2, terms.global);                
+		                }
+		             }
+		        }		        
+ 		    }
+		    
+		    
 		}
    }
 }
@@ -541,6 +640,43 @@ relax.model_map = utility.Map (relax.model_to_group_name, "_groupid_", 'utility.
 
 relax.do_lhc = FALSE;
 
+if (relax.do_srv)  {
+
+    if (relax.do_bs_srv) {
+        relax.srv_rate_regex   = "Mean scaler variable for";
+        relax.srv_weight_regex = terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), "SRV [0-9]+");
+        
+        relax.srv_rate_reporting = regexp.PartitionByRegularExpressions(utility.Keys (((relax.model_object_map[relax.model_for_srv])[terms.parameters])[terms.global]), 
+            {"0" : "^" + utility.getGlobalValue('terms.parameters.synonymous_rate'), 
+             "1" :  relax.srv_weight_regex});
+
+
+        relax.srv_rate_reporting = {
+          'rates' : utility.UniqueValues (utility.Map ( relax.srv_rate_reporting ["^" + utility.getGlobalValue('terms.parameters.synonymous_rate') ]  , "_value_", '(((relax.model_object_map[relax.model_for_srv])[terms.parameters])[terms.global])[_value_]')),
+           'weights' : utility.UniqueValues (utility.Map (relax.srv_rate_reporting [relax.srv_weight_regex ]  , "_value_", '(((relax.model_object_map[relax.model_for_srv])[terms.parameters])[terms.global])[_value_]'))
+        };
+        
+        
+        
+    } else {
+        relax.srv_rate_regex  = "GDD rate category [0-9]+";
+        relax.srv_weight_regex = "Mixture auxiliary weight for GDD category [0-9]+";
+    }
+    relax.srv_distribution = regexp.PartitionByRegularExpressions(utility.Keys (((relax.model_object_map[relax.model_for_srv])[terms.parameters])[terms.global]), {"0" : relax.srv_rate_regex, "1" : relax.srv_weight_regex});
+
+    
+    relax.srv_distribution = {
+        'rates' : utility.UniqueValues (utility.Map (relax.srv_distribution [relax.srv_rate_regex ]  , "_value_", '(((relax.model_object_map[relax.model_for_srv])[terms.parameters])[terms.global])[_value_]')),
+        'weights' : utility.UniqueValues (utility.Map (relax.srv_distribution [relax.srv_weight_regex ]  , "_value_", '(((relax.model_object_map[relax.model_for_srv])[terms.parameters])[terms.global])[_value_]'))
+    };
+    
+ 
+    PARAMETER_GROUPING + relax.srv_distribution["rates"];
+    PARAMETER_GROUPING + relax.srv_distribution["weights"];
+
+    relax.init_grid_setup (relax.srv_distribution);
+    
+}
 
 if (relax.model_set != "All") {
     /*
@@ -555,11 +691,11 @@ if (relax.model_set != "All") {
 }
 
 if (relax.has_unclassified) {
-    relax.unclassified.bsrel_model =  model.generic.DefineMixtureModel("models.codon.BS_REL.ModelDescription",
+    relax.unclassified.bsrel_model =  model.generic.DefineMixtureModel(relax.model_generator,
         "relax.unclassified", {
             "0": parameters.Quote(terms.global),
             "1": relax.codon_data_info[terms.code],
-            "2": parameters.Quote (relax.rate_classes) // the number of rate classes
+            "2": parameters.Quote (relax.rate_class_arguments) // the number of rate classes
         },
         relax.filter_names,
         None);
@@ -580,51 +716,115 @@ if (relax.has_unclassified) {
     models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.unclassified.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 }
 
+
+
 //------------------------------------
 
 
 
 function relax.report_multi_class_rates (model_fit, distributions) {
-			io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **" + relax.model_to_group_name[relax.reference_model_namespace] + "** (reference) branches");
-			relax.inferred_distribution_ref = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map[relax.reference_model_namespace])) % 0;
-			selection.io.report_dnds (relax.inferred_distribution_ref);
+    io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **" + relax.model_to_group_name[relax.reference_model_namespace] + "** (reference) branches");
+    relax.inferred_distribution_ref = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map[relax.reference_model_namespace])) % 0;
+    selection.io.report_dnds (relax.inferred_distribution_ref);
 
-			relax.distribution_for_json = {};
-			relax.distribution_for_json [relax.model_to_group_name[relax.reference_model_namespace]] = utility.Map (utility.Range (relax.rate_classes, 0, 1),
-															 "_index_",
-															 "{terms.json.omega_ratio : relax.inferred_distribution_ref [_index_][0],
-															   terms.json.proportion  : relax.inferred_distribution_ref [_index_][1]}");
+    relax.distribution_for_json = {};
+    relax.distribution_for_json [relax.model_to_group_name[relax.reference_model_namespace]] = utility.Map (utility.Range (relax.rate_classes, 0, 1),
+                                                     "_index_",
+                                                     "{terms.json.omega_ratio : relax.inferred_distribution_ref [_index_][0],
+                                                       terms.json.proportion  : relax.inferred_distribution_ref [_index_][1]}");
 
-			if (None != model_fit || distributions) {
-		
-				if (None != model_fit) {
-					relax.fitted.K = {};
-					relax.fitted.K [relax.model_to_group_name[relax.reference_model_namespace]] = 1;
-				}
-	
+    if (None != model_fit || distributions) {
 
-				for (relax.k = 1; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
-					relax.model_nmsp = relax.model_namespaces[relax.k ];
-					relax.branch_set = relax.model_to_group_name[relax.model_nmsp];
-					if (None != model_fit) {
-						if (relax.k > 1) {
-							relax.fitted.K_group = estimators.GetGlobalMLE (model_fit,relax.relax_parameter_terms[relax.k]);
-						} else {
-							relax.fitted.K_group = estimators.GetGlobalMLE (model_fit,terms.relax.k);
-						}
-						relax.fitted.K [relax.model_to_group_name[relax.model_nmsp]] = relax.fitted.K_group ;
-				
-						io.ReportProgressMessageMD("RELAX", "alt", "* Relaxation/intensification parameter (K) for branch set `relax.branch_set` = " + Format(relax.fitted.K_group ,8,2));
-					}
-					io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **`relax.branch_set`** branches");
-					relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map[relax.model_nmsp])) % 0;
-					selection.io.report_dnds (relax.inferred_distribution);
-					relax.distribution_for_json [relax.model_to_group_name[relax.model_nmsp]] = utility.Map (utility.Range (relax.rate_classes, 0, 1),
-																 "_index_",
-																 "{terms.json.omega_ratio : relax.inferred_distribution [_index_][0],
-																   terms.json.proportion  : relax.inferred_distribution [_index_][1]}");
-				}
-			}
+        if (None != model_fit) {
+            relax.fitted.K = {};
+            relax.fitted.K [relax.model_to_group_name[relax.reference_model_namespace]] = 1;
+        }
+
+
+        for (relax.k = 1; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
+            relax.model_nmsp = relax.model_namespaces[relax.k ];
+            relax.branch_set = relax.model_to_group_name[relax.model_nmsp];
+            if (None != model_fit) {
+                if (relax.k > 1) {
+                    relax.fitted.K_group = estimators.GetGlobalMLE (model_fit,relax.relax_parameter_terms[relax.k]);
+                } else {
+                    relax.fitted.K_group = estimators.GetGlobalMLE (model_fit,terms.relax.k);
+                }
+                relax.fitted.K [relax.model_to_group_name[relax.model_nmsp]] = relax.fitted.K_group ;
+        
+                io.ReportProgressMessageMD("RELAX", "alt", "* Relaxation/intensification parameter (K) for branch set `relax.branch_set` = " + Format(relax.fitted.K_group ,8,2));
+            }
+            io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution was inferred for **`relax.branch_set`** branches");
+            relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map[relax.model_nmsp])) % 0;
+            selection.io.report_dnds (relax.inferred_distribution);
+            relax.distribution_for_json [relax.model_to_group_name[relax.model_nmsp]] = utility.Map (utility.Range (relax.rate_classes, 0, 1),
+                                                         "_index_",
+                                                         "{terms.json.omega_ratio : relax.inferred_distribution [_index_][0],
+                                                           terms.json.proportion  : relax.inferred_distribution [_index_][1]}");
+        }
+        
+        
+        
+    }
+}
+
+//------------------------------------
+
+function relax._report_srv (relax_model_fit, is_null) {
+
+    if (relax.do_srv_hmm) {
+        relax.hmm_lambda = selection.io.extract_global_MLE (relax_model_fit, terms.rate_variation.hmm_lambda);
+        if (is_null) {
+            io.ReportProgressMessageMD("relax", "main", "* HMM switching rate = " +  Format (relax.hmm_lambda, 8, 3));
+            relax.distribution_for_json [terms.rate_variation.hmm_lambda] = relax.hmm_lambda;    
+        } else {
+            relax.hmm_lambda.CI = parameters.GetProfileCI(((relax_model_fit[terms.global])[terms.rate_variation.hmm_lambda])[terms.id],
+                                        relax_model_fit[terms.likelihood_function], 0.95);
+ 
+            io.ReportProgressMessageMD ("relax", "main", "* HMM switching rate = " + Format (relax.hmm_lambda,8,4) + 
+                            " (95% profile CI " + Format ((relax.hmm_lambda.CI )[terms.lower_bound],8,4) + "-" + Format ((relax.hmm_lambda.CI )[terms.upper_bound],8,4) + ")");
+                    
+            relax.distribution_for_json [terms.rate_variation.hmm_lambda] = relax.hmm_lambda.CI;    
+                        
+        }
+        
+    }
+
+    if (relax.do_srv) {
+        if (relax.do_bs_srv) {
+            relax.srv_info = parameters.GetStickBreakingDistribution ( relax.srv_rate_reporting) % 0;
+        } else {
+            relax.srv_info = Transpose((rate_variation.extract_category_information((relax.model_object_map[relax.model_for_srv])))["VALUEINDEXORDER"][0])%0;
+        }
+        io.ReportProgressMessageMD("RELAX", "alt", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
+        selection.io.report_distribution (relax.srv_info);
+
+        relax.distribution_for_json [relax.SRV] = (utility.Map (utility.Range (relax.synonymous_rate_classes, 0, 1),
+                                                                 "_index_",
+                                                                 "{terms.json.rate :relax.srv_info [_index_][0],
+                                                                   terms.json.proportion : relax.srv_info [_index_][1]}"));
+                                   
+        if (is_null == FALSE) {                        
+            ConstructCategoryMatrix (relax.cmx, ^(relax_model_fit[terms.likelihood_function]));
+            ConstructCategoryMatrix (relax.cmx_weights, ^(relax_model_fit[terms.likelihood_function]), WEIGHTS);
+            relax.cmx_weighted         = (relax.cmx_weights[-1][0]) $ relax.cmx; // taking the 1st column fixes a bug with multiple partitions 
+            relax.column_weights       = {1, Rows (relax.cmx_weights)}["1"] * relax.cmx_weighted;
+            relax.column_weights       = relax.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
+            (relax.json [relax.json.srv_posteriors]) =  relax.cmx_weighted $ relax.column_weights;
+    	}
+
+        if (relax.do_srv_hmm && is_null == FALSE ) {
+            ConstructCategoryMatrix (relax.cmx_viterbi, ^(relax_model_fit[terms.likelihood_function]), SHORT);
+            (relax.json [relax.json.srv_viterbi]) = relax.cmx_viterbi;
+            io.ReportProgressMessageMD("relax", "main", "* The following switch points for synonymous rates were inferred");
+            selection.io.report_viterbi_path (relax.cmx_viterbi);
+    
+        }
+    }
+    
+    if (relax.do_srv_hmm) {
+        relax.distribution_for_json [terms.rate_variation.hmm_lambda] = relax.hmm_lambda;
+    }
 }
 
 //------------------------------------
@@ -635,6 +835,7 @@ function relax.FitMainTestPair () {
     if (relax.do_lhc) {
         relax.nm.precision = -0.00025*relax.final_partitioned_mg_results[terms.fit.log_likelihood];
         parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
+        
         
         relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : relax.model_map},
                                     relax.general_descriptive.fit,
@@ -651,16 +852,15 @@ function relax.FitMainTestPair () {
                                                 "OPTIMIZATION_PRECISION" : relax.nm.precision
                                             } ,
                                  
-                                        terms.search_grid : relax.initial_grid
+                                        terms.search_grid : relax.initial_grid,
+                                        terms.search_restarts : relax.N.initial_guesses
                                     }
         );
         
     }
     
-    
-    
+
 	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
-	//io.SpoolLF(relax.alternative_model.fit["LF"], "/tmp/relax", "alt");
 	io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 
 
@@ -753,7 +953,11 @@ function relax.FitMainTestPair () {
 		relax.report_multi_class_rates (relax.alternative_model.fit, TRUE);
 	}
 
-
+    relax._report_srv (relax.alternative_model.fit, FALSE);
+        
+    KeywordArgument ("save-fit", "Save RELAX alternative model fit to this file (default is not to save)", "/dev/null");
+    io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]"));
+        
 	selection.io.json_store_lf (relax.json,
 								relax.alternative_name,
 								relax.alternative_model.fit[terms.fit.log_likelihood],
@@ -774,6 +978,8 @@ function relax.FitMainTestPair () {
 	selection.io.startTimer (relax.json [terms.json.timers], "RELAX null model fitting", 4);
 
 	io.ReportProgressMessageMD ("RELAX", "null", "Fitting the null (K := 1) model");
+    
+
 
 	for (relax.k = 1; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
 		relax.model_nmsp = relax.model_namespaces[relax.k ];
@@ -783,7 +989,6 @@ function relax.FitMainTestPair () {
 			parameters.SetConstraint (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.relax.k), terms.parameters.one, terms.global);
 		}
 	}
-
 
 
 	relax.null_model.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
@@ -804,6 +1009,8 @@ function relax.FitMainTestPair () {
 	} else {
 		relax.report_multi_class_rates (None, FALSE);
 	}
+	
+    relax._report_srv (relax.null_model.fit, TRUE);
 
 	selection.io.json_store_lf (relax.json,
 								relax.null_name ,

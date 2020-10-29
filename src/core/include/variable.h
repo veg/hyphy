@@ -90,7 +90,11 @@ public:
         return varValue;   // get the value of the variable
     }
     void        SetFormula (_Formula&); // set the variable to a new formula
-  
+
+    void   ClearValue (void) {
+        if (varValue) { delete (varValue); varValue = nil;}
+    }
+
     const     _Formula * get_constraint (void) const {
       return varFormula;
     }
@@ -139,7 +143,8 @@ public:
     virtual     bool        CheckFForDependence (_AVLList const&, bool = false);
     virtual     bool        HasBeenInitialized (void) const {return !(varFlags & HY_VARIABLE_NOTSET);}
     virtual     void        MarkModified  (void) {varFlags = varFlags | HY_VARIABLE_CHANGED;}
-
+    virtual     void        ClearModified  (void) {if (varFlags & HY_VARIABLE_CHANGED) varFlags -= HY_VARIABLE_CHANGED;}
+    
     _String const     ContextFreeName                 (void) const;
     _StringBuffer&    ContextFreeName                 (_StringBuffer&) const;
     _String const    ParentObjectName                 (void) const;

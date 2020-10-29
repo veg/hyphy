@@ -558,6 +558,7 @@ lfunction models.BindGlobalParameters (models, filter) {
         candidate_set = utility.UniqueValues(utility.Filter (utility.Keys (reference_set), "_key_",
             "regexp.Find (_key_,`&filter`)"
         ));
+        
 
         constraints_set = {};
 
@@ -569,7 +570,7 @@ lfunction models.BindGlobalParameters (models, filter) {
                         if (parameters.IsIndependent (`&parameter_set`[_p_])) {
                             parameters.SetConstraint (`&parameter_set`[_p_], `&reference_set`[_p_], '');
                             `&constraints_set` [`&parameter_set`[_p_]] = `&reference_set`[_p_];
-                        }
+                        } 
                     }"
                 );
             }

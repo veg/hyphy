@@ -162,7 +162,10 @@ io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nuc
 fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
     terms.run_options.partitioned_omega: fel.selected_branches,
-    terms.run_options.retain_lf_object: TRUE
+    terms.run_options.retain_lf_object: TRUE,
+    terms.run_options.optimization_settings: {
+        "OPTIMIZATION_METHOD" : "coordinate-wise"
+    }
 }, fel.partitioned_mg_results);
 
 

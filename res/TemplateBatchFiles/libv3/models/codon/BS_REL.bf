@@ -164,6 +164,11 @@ lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
 
 lfunction models.codon.BS_REL.ExtractMixtureDistributionFromFit (bs_rel, fit) {
     count = bs_rel [utility.getGlobalValue ("terms.model.components")];
+    
+    if (Type (count) == "Matrix") {
+        count = count[1];
+    }
+    
     rates = {count, 1};
     weights = {count-1, 1};
 
@@ -171,6 +176,34 @@ lfunction models.codon.BS_REL.ExtractMixtureDistributionFromFit (bs_rel, fit) {
         rates [i-1] = estimators.GetGlobalMLE (fit, terms.AddCategory (utility.getGlobalValue ("terms.parameters.omega_ratio"), i));
         if (i < count ) {
             weights [i-1] = estimators.GetGlobalMLE (fit, terms.AddCategory (utility.getGlobalValue ("terms.mixture.mixture_aux_weight"), i ));
+        }
+    }
+
+    return {utility.getGlobalValue ("terms.parameters.rates") : rates, utility.getGlobalValue ("terms.parameters.weights") : weights };
+}
+
+/**
+ * @name models.codon.BS_REL.ExtractSynMixtureDistributionFromFit
+ * @param {Dict} bs_rel
+ * @returns {Dict} mixture distribution parameters
+ */
+
+lfunction models.codon.BS_REL.ExtractSynMixtureDistributionFromFit (bs_rel, fit) {
+    count = bs_rel [utility.getGlobalValue ("terms.model.components")];
+    
+    if (Type (count) == "Matrix") {
+        count = count[0];
+    } else {
+        assert (0, "models.codon.BS_REL.ExtractSynMixtureDistributionFromFit called for a model without a bivariate component" );
+    }
+    
+    rates = {count, 1};
+    weights = {count-1, 1};
+
+    for (i = 1; i <= count; i+=1) {
+        rates [i-1] = estimators.GetGlobalMLE (fit, terms.AddCategory (utility.getGlobalValue ("terms.parameters.synonymous_rate"), i));
+        if (i < count ) {
+            weights [i-1] = estimators.GetGlobalMLE (fit, terms.AddCategory (utility.getGlobalValue ("terms.mixture.mixture_aux_weight"), "SRV " + i));
         }
     }
 
@@ -359,6 +392,7 @@ function models.codon.BS_REL.post_definition(model) {
  */
 
 function models.codon.BS_REL.get_branch_length(model, tree, node) {
+
 	parameters.SetLocalModelParameters (model, tree, node);
 	parameters.SetCategoryVariables   (model);
     bl = utility.GetEnvVariable ("BRANCH_LENGTH_STENCIL");
@@ -369,7 +403,7 @@ function models.codon.BS_REL.get_branch_length(model, tree, node) {
         bl = Eval ((model [utility.getGlobalValue("terms.model.branch_length_string_conditional")])[bl]);
     } else {
       if (model / terms.model.branch_length_string_expr) {
-        bl = Eval (model [terms.model.branch_length_string_exp]);
+        bl = Eval (model [terms.model.branch_length_string_expr]);
         //console.log (bl);
         //console.log (Eval (model [utility.getGlobalValue("terms.model.branch_length_string")]));
       } else {

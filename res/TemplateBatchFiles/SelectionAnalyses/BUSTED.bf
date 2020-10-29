@@ -1,4 +1,4 @@
-RequireVersion ("2.5.12");
+RequireVersion ("2.5.21");
 
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
@@ -214,9 +214,7 @@ busted.model_generator = "models.codon.BS_REL.ModelDescription";
 
 
 if (busted.do_srv) {
-
     if (busted.do_bs_srv) {
-        busted.model_generator = "busted.model.with.GDD";
         busted.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
         busted.rate_class_arguments = {{busted.synonymous_rate_classes__,busted.rate_classes__}};
     } else {
@@ -262,15 +260,20 @@ busted.background.bsrel_model =  model.generic.DefineMixtureModel(busted.model_g
 models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 
 
-/*if (busted.do_srv) {
+if (busted.do_srv) {
     if (busted.do_bs_srv) {
-        models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, "Mean scaler variable for");
+        for (description,var_id; in;  (busted.background.bsrel_model[terms.parameters])[terms.global]) {
+            if (regexp.Find (description, terms.parameters.synonymous_rate + " for category")) {
+                var_id_2 = utility.GetByKey ((busted.test.bsrel_model[terms.parameters])[terms.global], description, "String");
+                if (None != var_id_2) {
+                   parameters.SetConstraint (var_id, var_id_2, terms.global);
+                }
+	        }
+		}
+
         models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), "SRV [0-9]+"));
-    } else {
-        models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, "GDD rate category");
-        models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, utility.getGlobalValue("terms.mixture.mixture_aux_weight") + " for GDD category ");
-    }
-}*/
+    } 
+}
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
 
@@ -408,8 +411,8 @@ busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.tree
     terms.search_grid     : busted.initial_grid,
     terms.search_restarts : busted.N.initial_guesses
 });
-                                
-                
+
+                                                
 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
         "retain-lf-object": TRUE,
         terms.run_options.optimization_settings : 
@@ -426,11 +429,6 @@ io.SpoolLFToPath(busted.full_model[terms.likelihood_function], io.PromptUserForF
 
 io.ReportProgressMessageMD("BUSTED", "main", "* " + selection.io.report_fit (busted.full_model, 9, busted.codon_data_info[terms.data.sample_size]));
 
-if (busted.do_srv_hmm) {
-    busted.hmm_lambda = selection.io.extract_global_MLE (busted.full_model, terms.rate_variation.hmm_lambda);
-    io.ReportProgressMessageMD("BUSTED", "main", "* HMM switching rate = " +  Format (busted.hmm_lambda, 8, 3));
-
-}
 
 
 io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the following rate distribution for branch-site combinations was inferred");
@@ -448,9 +446,7 @@ busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.r
                                                            terms.json.proportion : busted.inferred_test_distribution [_index_][1]}")
                                 };
 
-if (busted.do_srv_hmm) {
-    busted.distribution_for_json [terms.rate_variation.hmm_lambda] = busted.hmm_lambda;
-}
+
 
 if (busted.has_background) {
     io.ReportProgressMessageMD("BUSTED", "main", "* For *background* branches, the following rate distribution for branch-site combinations was inferred");
@@ -464,6 +460,19 @@ if (busted.has_background) {
 
 if (busted.do_srv) {
     
+    if (busted.do_srv_hmm) {
+        busted.hmm_lambda = selection.io.extract_global_MLE (busted.full_model, terms.rate_variation.hmm_lambda);
+        busted.hmm_lambda.CI = parameters.GetProfileCI(((busted.full_model[terms.global])[terms.rate_variation.hmm_lambda])[terms.id],
+                                    busted.full_model[terms.likelihood_function], 0.95);
+        io.ReportProgressMessageMD("BUSTED", "main", "* HMM switching rate = " +  Format (busted.hmm_lambda, 8, 3));
+
+        io.ReportProgressMessageMD ("BUSTED", "main", "* HMM switching rate = " + Format (busted.hmm_lambda,8,4) + 
+                        " (95% profile CI " + Format ((busted.hmm_lambda.CI )[terms.lower_bound],8,4) + "-" + Format ((busted.hmm_lambda.CI )[terms.upper_bound],8,4) + ")");
+                    
+        busted.distribution_for_json [terms.rate_variation.hmm_lambda] = busted.hmm_lambda.CI;
+    }
+
+
     if (busted.do_bs_srv) {
         busted.srv_info = parameters.GetStickBreakingDistribution ( busted.srv_rate_reporting) % 0
     } else {
@@ -560,10 +569,16 @@ if (!busted.run_test) {
 
     if (busted.do_srv) {
         if (busted.do_bs_srv) {
-            busted.srv_info = parameters.GetStickBreakingDistribution ( busted.srv_rate_reporting) % 0
+            busted.srv_info = parameters.GetStickBreakingDistribution ( busted.srv_rate_reporting) % 0;
         } else {
             busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
         }
+        if (busted.do_srv_hmm) {
+            busted.hmm_lambda = selection.io.extract_global_MLE (busted.full_model, terms.rate_variation.hmm_lambda);
+            io.ReportProgressMessageMD("BUSTED", "main", "* HMM switching rate = " +  Format (busted.hmm_lambda, 8, 3));
+            busted.distribution_for_json [terms.rate_variation.hmm_lambda] = busted.hmm_lambda;
+        }
+
         io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
         selection.io.report_distribution (busted.srv_info);
 
