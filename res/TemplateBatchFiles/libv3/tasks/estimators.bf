@@ -123,6 +123,7 @@ lfunction estimators.GetGlobalMLE_RegExp(results, re) {
  * @returns nothing
  */
 function estimators.copyGlobals2(key2, value2) {
+
     if (Type((estimators.ExtractMLEs.results[terms.global])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
         // this parameter has already been defined, need to prefix with model name
@@ -163,26 +164,38 @@ function estimators.CopyFrequencies(model_name, model_decription) {
 
 function estimators.SetGlobals2(key2, value) {
 
+
     if (Type(estimators.ApplyExistingEstimates.set_globals[key2]) == "AssociativeList") {
         key3 = "[`key`] `key2`";
     } else {
         key3 = key2;
     }
 
+    
+ 
+    
+
     estimators.ApplyExistingEstimates.set_globals[key3] = {
         terms.id: key3,
         terms.fit.MLE: value
     };
 
-    __init_value = (initial_values[terms.global])[key2];
+    __init_value = (initial_values[terms.global])[key3];
+    
+    if (Type(__init_value) != "AssociativeList") {
+        __init_value = (initial_values[terms.global])[key2];
+    }
+        
+    
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
             ExecuteCommands("`value` := " + __init_value[terms.fit.MLE]);
+            //_did_set [value] = 1;
         } else {
             if (parameters.IsIndependent (value)) {
-                //fprintf (stdout, "Setting `value` to " + __init_value[terms.fit.MLE] + "\n", parameters.IsIndependent (value), "\n");
                 ExecuteCommands("`value` = " + __init_value[terms.fit.MLE]);
+                //_did_set [value] = 1;
             } else {
                 messages.log (value + " was already constrained in estimators.SetGlobals2");
             }
@@ -197,7 +210,14 @@ function estimators.SetGlobals2(key2, value) {
  * @returns nothing
  */
 function estimators.SetGlobals(key, value) {
+    /*_did_set = {};
+    for (i,v; in; ((value[terms.parameters])[terms.global])) {
+        _did_set [v] = 0;
+    }*/
+
     ((value[terms.parameters])[terms.global])["estimators.SetGlobals2"][""];
+    
+    //console.log (_did_set);
 }
 
 /**
@@ -437,6 +457,7 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
  * @returns number of constrained parameters;
  */
 function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions, initial_values, _application_type, keep_track_of_proportional_scalers) {
+
     estimators.ApplyExistingEstimatesToTree.constraint_count = 0;
 
 
@@ -467,13 +488,15 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
                         }
                     }
                 }
-
+ 
                 estimators.ApplyExistingEstimatesToTree.constraint_count += estimators.applyBranchLength(_tree_name, _branch_name, model_descriptions[estimators.ApplyExistingEstimatesToTree.map[_branch_name]], _set_branch_length_to);
             } else {
                 if (Type(_existing_estimate) != "Unknown") {
                     warning.log ("Incorrect type for the initial values object of for branch '" + _branch_name + "' : " + _existing_estimate);
                 }
            }
+        } else {
+            //warning.log ("No initial branch length object of for branch '" + _branch_name);
         }
     }
 
@@ -532,7 +555,7 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
             if (Type (branch_length_conditions) == "AssociativeList") {
                 if (Abs(branch_length_conditions) > estimators.ApplyExistingEstimates.i) {
                     _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
-                }
+                 }
             }
 
             estimators.ApplyExistingEstimates.df_correction +=  estimators.ApplyExistingEstimatesToTree  ((estimators.ApplyExistingEstimates.lfInfo[terms.fit.trees])[estimators.ApplyExistingEstimates.i],
@@ -710,15 +733,15 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     can_do_restarts = null;
 
 
-    /*
+    
 
-    Export (lfe, likelihoodFunction);
-    console.log (lfe);
-    GetString (lfe, likelihoodFunction, -1);
-    console.log (lfe);
-    fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
-    utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);
-    */
+    //Export (lfe, likelihoodFunction);
+    //console.log (lfe);
+    //GetString (lfe, likelihoodFunction, -1);
+    //console.log (lfe);
+    //fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
+    
 
 
 
@@ -889,7 +912,6 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     } else {
     	Optimize (mles, likelihoodFunction);
     }
-
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", None);
@@ -1094,17 +1116,14 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);
             branch_map = (option[utility.getGlobalValue("terms.run_options.partitioned_omega")])[i];
-
-
+            
             component_branches = BranchName( * component_tree, -1);
             for (j = 0; j < Columns(component_branches) - 1; j += 1) {
                 /**
                     -1 in the upper bound because we don't want to count the root node
                 */
 
-                node_name = (component_branches[j]);
-
-
+                node_name = (component_branches[j]); 
                 ExecuteCommands(apply_constraint);
             }
         }
@@ -1113,6 +1132,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     LikelihoodFunction likelihoodFunction = (lf_components);
     GetString (params, likelihoodFunction,-1);
+        
     utility.ToggleEnvVariable ("PARAMETER_GROUPING", {"0" : params["Global Independent"]});
  
     if (utility.Has (option,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
@@ -1130,6 +1150,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         parameters.SetRange (_value_,terms.range_clamp_locals);
     ');*/
 
+    //io.SpoolLF ("likelihoodFunction", "/tmp/hyphy-spool", "cfit");
 
     //Export (lfe, likelihoodFunction);
     //console.log (lfe);

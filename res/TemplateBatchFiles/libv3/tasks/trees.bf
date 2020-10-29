@@ -85,7 +85,11 @@ LoadFunctionLibrary("distances.bf");
 lfunction trees.GetTreeString._sanitize(string) {
 
     if (utility.GetEnvVariable("_DO_TREE_REBALANCE_")) {
+        console.log ("BEFORE REBALANCE\n");
+        console.log (string);
         string = RerootTree(string, 0);
+        console.log ("AFTER REBALANCE\n");
+        console.log (string);
     }
 
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {

@@ -707,6 +707,7 @@ void  _Variable::SetFormula (_Formula& theF) {
               for (AVLListXIteratorKeyValue variable_record : AVLListXIterator (&variableNames)) {
                   _Variable * theV = LocateVar(variable_record.get_value());
                   //printf ("%s\n", theV->GetName()->get_str());
+                  // SLKP 20201028 TODO: this is slow for large trees, because the entire variable space is being traversed.
                   if (theV->IsContainer()) {
                       _VariableContainer* theVC = (_VariableContainer*)theV;
                       if (theVC->SetDependance(theIndex) == -2) {

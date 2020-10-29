@@ -163,7 +163,10 @@ meme.final_partitioned_mg_results_bl = estimators.FitMGREV (meme.filter_names, m
     terms.run_options.model_type: terms.local,
     terms.run_options.partitioned_omega: meme.selected_branches,
     terms.run_options.retain_lf_object: FALSE,
-    terms.run_options.optimization_settings: {"OPTIMIZATION_PRECISION" : Max(meme.partitioned_mg_results[terms.fit.log_likelihood] * 0.00001, 0.1)}
+    terms.run_options.optimization_settings: {
+        "OPTIMIZATION_METHOD" : "coordinate-wise",
+        "OPTIMIZATION_PRECISION" : Max(meme.partitioned_mg_results[terms.fit.log_likelihood] * 0.00001, 0.1)
+    }
 }, meme.partitioned_mg_results);
 
 
@@ -177,7 +180,10 @@ io.ReportProgressMessageMD ("MEME", "codon-refit", "Improving branch lengths, nu
 meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
     terms.run_options.partitioned_omega: meme.selected_branches,
-    terms.run_options.retain_lf_object: TRUE
+    terms.run_options.retain_lf_object: TRUE,
+    terms.run_options.optimization_settings: {
+        "OPTIMIZATION_METHOD" : "coordinate-wise"
+    }
 }, meme.partitioned_mg_results);
 
 
@@ -526,11 +532,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
      
      
     //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME");
-                  
-    Optimize (results, ^lf_bsrel, {
-            "OPTIMIZATION_METHOD" : "nedler-mead",
-            "OPTIMIZATION_START_GRID" : 
-             {
+    
+    initial_guess_grid = {
                 "0" : {
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": ^"meme.site_omega_minus",
@@ -565,14 +568,53 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": 0,
                     "meme.site_mixture_weight": 0.01              
+                },
+                "7" : {
+                    "meme.site_beta_plus": ^"meme.site_beta_plus",
+                    "meme.site_omega_minus": ^"meme.site_omega_minus",
+                    "meme.site_mixture_weight": 1.0              
                 }
             
-             }
+             };
+             
+    //before_opt = {"alpha" : ^"meme.site_alpha", "other" : initial_guess_grid};
+    
+    
+                      
+    ^"meme.site_alpha" = ^"meme.site_alpha";   
+    // SLKP 20201028 : without this, there are occasional initialization issues with 
+    // the likelihood function below
+                      
+    Optimize (results, ^lf_bsrel, {
+            "OPTIMIZATION_METHOD" : "nedler-mead",
+            "OPTIMIZATION_START_GRID" : initial_guess_grid
         });
+        
+    /*after_opt = {
+                    "alpha" : Eval("meme.site_alpha"), 
+                    "meme.site_beta_plus": Eval("meme.site_beta_plus"),
+                    "meme.site_omega_minus": Eval("meme.site_omega_minus"),
+                    "meme.site_mixture_weight": Eval("meme.site_mixture_weight")
+                };*/
         
     
     alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+
+    /*init_grid_best = ^"LF_INITIAL_GRID_MAXIMUM";
+    if (Abs((results[1][0]-init_grid_best)/results[1][0]) > 0.05) {
+        console.log (before_opt);
+        console.log (^"LF_INITIAL_GRID_MAXIMUM_VALUE");
+        console.log (after_opt);
+        console.log ("" + results[1][0] + " vs " + init_grid_best);
+         
+        //fprintf (stdout, ^lf_bsrel, "\n");
+        //utility.SetEnvVariable ("VERBOSITY_LEVEL",10);
+        
+    }
+    
+    
+    console.log ("--------");*/
 
 
     ancestral_info = ancestral.build (lf_bsrel,0,FALSE);

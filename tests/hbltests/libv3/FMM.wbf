@@ -1,0 +1,40 @@
+GetString (version, HYPHY_VERSION, 0);
+
+/*PRODUCE_OPTIMIZATION_LOG        = 1;*/
+
+if (+version >= 2.4) {
+    LoadFunctionLibrary ("SelectionAnalyses/FitMultiModel.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex"});
+} else {
+    LoadFunctionLibrary ("SelectionAnalyses/FitMultiModel.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "GROUP1", "3" : "Yes", "4" : "0.1"});
+
+}
+LoadFunctionLibrary ("shared.bf");
+LoadFunctionLibrary ("libv3/IOFunctions.bf");
+
+/*fprintf ("logger.hbl", CLEAR_F    ILE, ^((fitter.results[terms.likelihood_function])+".trace"));*/
+
+
+assert (check_value (
+    ((fitter.json["fits"])["Standard MG94"])["Log Likelihood"], -3405.53, 0.001), "Incorrect log-likelihood for the 1H model");
+
+assert (check_value (
+    ((fitter.json["fits"])["MG94 with double instantaneous substitutions"])["Log Likelihood"], -3403.0265, 0.01), "Incorrect log-likelihood for the 2H model");
+
+assert (check_value (
+    ((fitter.json["fits"])["MG94 with double and triple instantaneous substitutions"])["Log Likelihood"], -3403.026, 0.01), "Incorrect log-likelihood for the 2H model");
+
+assert (check_value (
+    (((((fitter.json["fits"])["MG94 with double and triple instantaneous substitutions"])["Rate Distributions"])["parameters"])["rate at which 2 nucleotides are changed instantly within a single codon"]), 0.157, 0.05), "Incorrect 2H rate estimate for the 3H model");
+
+assert (check_value (
+    (((fitter.json["test results"])["Double-hit vs single-hit"])["p-value"]),0.0251, 0.01), "p-value for the 2H:1H test is incorrect");
+
+assert (check_value (
+    (+(fitter.json["Evidence Ratios"])["Three-hit"]), 187.000, 0.05), "Incorrect sum of ER for 3H");
+
+    
+
+
+   
+
+
