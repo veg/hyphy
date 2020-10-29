@@ -3897,8 +3897,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         kMethodCoordinate                              ("coordinate-wise"),
         kMethodNedlerMead                              ("nedler-mead"),
         kMethodHybrid                                  ("hybrid"),
-        kMethodGradientDescent                         ("gradient-descent");
- 
+        kMethodGradientDescent                         ("gradient-descent"),
+        kInitialGridMaximum                            ("LF_INITIAL_GRID_MAXIMUM"),
+        kInitialGridMaximumValue                       ("LF_INITIAL_GRID_MAXIMUM_VALUE");
+
         // optimization setting to produce a detailed log of optimization runs
 
     auto   get_optimization_setting = [options] (const _String& arg, const hyFloat def_value) -> hyFloat {
@@ -4137,7 +4139,14 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         GetInitialValues();
     }
 
-    
+    if (keepStartingPoint) {
+        indexInd.Each ([this] (long v, unsigned long i) -> void {
+            _Variable *iv = GetIthIndependentVar (i);
+            if (iv->HasBeenInitialized()) {
+                iv->ClearModified();
+            }
+        });
+    }
 
     if (!keepStartingPoint) {
         hyFloat  global_starting_point = get_optimization_setting (kGlobalStartingPoint, 0.1);
@@ -4277,6 +4286,12 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             //_String const * grid_point = key_value.get_key();
             hyFloat this_point = set_and_compute((_AssociativeList*)key_value.get_object());
             
+            if (verbosity_level > 100) {
+                char buffer[512];
+                snprintf (buffer, 512, "[GRID INITIAL VALUE CALCULATION] At point %s, LF = %15.12g\n", key_value.get_key()->get_str(), this_point);
+                BufferToConsole(buffer);
+            }
+            
             //printf ("%s %g\n", grid_point->get_str(), this_point);
             
             if (this_point > max_value) {
@@ -4286,7 +4301,14 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         }
         
         if (best_values) {
-            set_and_compute (best_values);
+            maxSoFar = set_and_compute (best_values);
+            hy_env::EnvVariableSet(kInitialGridMaximum, new _Constant (maxSoFar), false);
+            hy_env::EnvVariableSet(kInitialGridMaximumValue, best_values, true);
+            if (verbosity_level > 100) {
+                char buffer[512];
+                snprintf (buffer, 512, "[GRID INITIAL VALUE CALCULATION: BEST VALUE] LF = %15.12g\n", maxSoFar);
+                BufferToConsole(buffer);
+            }
         }
     }
    
@@ -6193,10 +6215,10 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                     /*if (currentValue < 0.) {
                         printf ("Negative value stashed %15.12lg\n", currentValue);
                     }
-                    hyFloat check_vv = GetIthIndependent(index);
-                    if (verbosity_level > 100) {
-                        printf ("_LikelihoodFunction::ComputeGradient %d\t%s\t%20.18g\t%e\t%e\t%e\t%e\t%15.12g\t \n", index, GetIthIndependentName(index)->get_str(), funcValue, testStep, currentValue, check_vv, check_vv-currentValue, DerivativeCorrection (index, currentValue));
-                    }*/
+                    hyFloat check_vv = GetIthIndependent(index);*/
+                    if (verbosity_level > 150) {
+                        printf ("_LikelihoodFunction::ComputeGradient %d\t%s\t%20.18g\t%e\t%e\t%e\t%e\t%15.12g\n", index, GetIthIndependentName(index)->get_str(), funcValue, testStep, currentValue, check_vv, check_vv-currentValue, DerivativeCorrection (index, currentValue));
+                    }
                     SetIthIndependent(index,currentValue);
                 } else {
                     gradient[index]= 0.;
@@ -6330,6 +6352,8 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
                 maxSoFar          = Compute(),
                 initial_value     = maxSoFar,
                 currentPrecision = localOnly?step_precision:.01;
+    
+    //printf ("\n\n_LikelihoodFunction::ConjugateGradientDescent ==> %d (%lg)\n", usedCachedResults, maxSoFar);
     
     if (check_value != -INFINITY) {
         if (!CheckEqual(check_value, maxSoFar)) {
@@ -7114,6 +7138,7 @@ hyFloat      _LikelihoodFunction::replaceAPoint (_Matrix&m, long row, _Matrix&p,
 }
 
 
+    
 //_______________________________________________________________________________________
 hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned long iterations, unsigned long max_evaluations) {
     
@@ -7155,7 +7180,13 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
     auto set_point_and_compute = [this,&lf_evaluations] (_Matrix& v) -> hyFloat {
         lf_evaluations++;
         SetAllIndependent (&v);
-        return -Compute();
+        hyFloat ll = -Compute();
+        /*
+        if (fabs (ll  - 22.3935843505) < 0.001 ) {
+            _TerminateAndDump(_String ("Checkpoint ") & likeFuncEvalCallCount);
+        }
+        */
+        return ll;
     };
     
     auto resort_values = [&zero] (_Matrix& v) -> void {
@@ -7163,12 +7194,34 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
         v = *sorted;
         DeleteObject (sorted);
     };
+    
+    auto echo_values = [=] (_Matrix &v, hyFloat lf)-> void {
+        char buffer [512];
+        snprintf(buffer, 512, "\n\t%15.12g (LF)", lf);
+        BufferToConsole(buffer);
+        for (long i = 0; i < N; i++) {
+            snprintf(buffer, 512, "\n\t%15.12g (%s)", GetIthIndependent(i,false), GetIthIndependentName(i)->get_str());
+            BufferToConsole(buffer);
+        }
+    };
+    
+    auto echo_simplex_values = [=] (_Matrix &function_values)-> void {
+        char buffer [512];
+        for (long i = 0; i <= N; i++) {
+            snprintf(buffer, 512, "\n\tSimple point %d => %15.12g (map to point %d)", i, function_values (i,0), (long)function_values(i,1));
+            BufferToConsole(buffer);
+        }
+    };
 
     GetAllIndependent(simplex[0]);
     
     // current FEASIBLE point
     function_values.Store (0,0, set_point_and_compute (simplex[0]));
                             
+    if (verbosity_level > 100) {
+        BufferToConsole ("\n[SIMPLEX SETUP]");
+        echo_values(simplex[0], function_values(0,0));
+    }
     for (long i = 0L; i < N; i++) {
         simplex[i+1] = simplex[0];
         
@@ -7177,10 +7230,11 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
                 lb = GetIthIndependentBound(i, true),
                 ub = GetIthIndependentBound(i, false);
         
-#ifdef NEDLER_MEAD_DEBUG
-        printf ("\nCoordinate %ld, value %g, range [%g, %g]\n", i, ith_coordinate, lb, ub);
-#endif
-
+        if (verbosity_level > 100) {
+            char buffer[512];
+            snprintf (buffer, 512, "\n\tVariable %s, coordinate %ld, value %g, range [%g, %g]", GetIthIndependentName(i)->get_str(), i, ith_coordinate, lb, ub);
+            BufferToConsole(buffer);
+        }
         if (CheckEqual(ith_coordinate, lb)) {
             simplex[i+1][i] += MIN(DEFAULT_STEP_OFF_BOUND, (ub-lb)*0.5);
         }
@@ -7194,19 +7248,20 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
             }
         }
         
-#ifdef NEDLER_MEAD_DEBUG
-       ObjectToConsole(&simplex[i+1]);
-#endif
-        //SetAllIndependent(&simplex[i+1]);
         function_values.Store(i+1,0, set_point_and_compute (simplex[i+1]));
         function_values.Store(i+1,1, i+1);
+        if (verbosity_level > 100) {
+            echo_values(simplex[i+1], function_values(i+1,0));
+        }
+        
     }
     
     resort_values (function_values);
-#ifdef NEDLER_MEAD_DEBUG
-    printf ("\n**********\nSimplex iteration in\n");
-    ObjectToConsole(&function_values);
-#endif
+    if (verbosity_level > 100) {
+        BufferToConsole ("\nInitial simplex");
+        echo_simplex_values (function_values);
+    }
+    
     for (long it_count = 0L; it_count <= iterations && lf_evaluations <= max_evaluations; it_count ++) {
         /** compute the centroid of all EXCEPT the WORST point **/
         
@@ -7232,46 +7287,55 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
         new_point += t;
         hyFloat trial_value = set_point_and_compute (new_point);
 
-#ifdef NEDLER_MEAD_DEBUG
-        printf ("\tTrial point value %g\n", trial_value);
-#endif
+        if (verbosity_level > 100) {
+            char buffer[512];
+            snprintf (buffer, 512, "\n>Simplex iteration %d", (it_count+1));
+            BufferToConsole(buffer);
+            echo_values(new_point, trial_value);
+        }
+
         bool  do_shrink = false;
 
         if (trial_value >= function_values(0,0) && trial_value < function_values (N-1,0)) {
             // accept the reflection
-#ifdef NEDLER_MEAD_DEBUG
-            printf ("### ACCEPT REFLECTION replace %d\n", (long)function_values(N,1));
-#endif
+            if (verbosity_level > 100) {
+                char buffer[512];
+                snprintf (buffer, 512, "\nACCEPT REFLECTION replace point %d\n", (long)function_values(N,1));
+                BufferToConsole (buffer);
+            }
             replace_point (new_point, trial_value, (long)function_values(N,1), N);
         } else {
             if (trial_value < function_values(0,0)) { // try expansion
                 // x[e] = ¯x +β(x[r] − ¯x)
-#ifdef NEDLER_MEAD_DEBUG
-                printf ("--- Trying expansion\n");
-#endif
+                if (verbosity_level > 100) {
+                    BufferToConsole ("\nTrying expansion");
+                }
                 _Matrix expansion (centroid),
                         t (new_point);
                 t -= centroid;
                 t *= simplex_beta;
                 expansion += t;
                 hyFloat expansion_value = set_point_and_compute (expansion);
+                if (verbosity_level > 100) {
+                    echo_values(expansion, expansion_value);
+                }
                 if (expansion_value < trial_value) {
-#ifdef NEDLER_MEAD_DEBUG
-                    printf ("### ACCEPT EXPANSION\n");
-#endif
+                    if (verbosity_level > 100) {
+                        BufferToConsole ("\nACCEPT EXPANSION");
+                    }
                     replace_point (expansion, expansion_value, (long)function_values(N,1), N);
                 } else {
-#ifdef NEDLER_MEAD_DEBUG
-                    printf ("### REJECT EXPANSION, ACCEPT REFLECTION\n");
-#endif
+                    if (verbosity_level > 100) {
+                        BufferToConsole ("\nREJECT EXPANSION, ACCEPT REFLECTION");
+                    }
                     replace_point (new_point, trial_value, (long)function_values(N,1), N);
                 }
             } else {
                 //if (trial_value >= function_values (N,0)) {
                     long worst_index = function_values (N,1);
-#ifdef NEDLER_MEAD_DEBUG
-                    printf ("--- Trying CONTRACTION\n");
-#endif
+                    if (verbosity_level > 100) {
+                        BufferToConsole ("\nTRYING CONTRACTION");
+                    }
                     // x[ic] = x ̄− γ (x ̄−x[n+1])
                     // x[oc] = ¯x ̄+γ alpha (x ̄−x[n+1])
                     _Matrix cv (centroid),
@@ -7281,65 +7345,67 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
                     t *= simplex_gamma;
                     bool inside = false;
                     if (trial_value >= function_values (N,0)) { // INSIDE
-#ifdef NEDLER_MEAD_DEBUG
-                        printf ("--- INSIDE contraction\n");
-#endif
+                        if (verbosity_level > 100) {
+                            BufferToConsole ("\nINSIDE contraction");
+                        }
                         inside = true;
                         cv -= t;
                     } else {
-#ifdef NEDLER_MEAD_DEBUG
-                        printf ("--- OUTSIDE contraction\n");
-#endif
-                         t *= simplex_alpha;
+                        if (verbosity_level > 100) {
+                            BufferToConsole ("\nOUTSIDE contraction");
+                        }
+                        t *= simplex_alpha;
                         cv += t;
                     }
                 
                     hyFloat contraction_value = set_point_and_compute (cv);
-                
-#ifdef NEDLER_MEAD_DEBUG
-                    printf ("--Contraction value = %g (relected = %g, worst = %g)\n", contraction_value, trial_value, function_values (N,0));
-#endif
+                    if (verbosity_level > 100) {
+                        echo_values(cv, contraction_value);
+                        char buffer[512];
+                        snprintf (buffer, 512, "\n\tContraction value = %g (relected = %g, worst = %g)", contraction_value, trial_value, function_values (N,0));
+                    }
                     if ((inside && contraction_value < function_values (N,0)) || (!inside && contraction_value < trial_value))  {
-#ifdef NEDLER_MEAD_DEBUG
-                        printf ("### ACCEPT contraction\n");
-#endif
+
+                        if (verbosity_level > 100) {
+                            BufferToConsole ("\nACCEPT contraction");
+                        }
                         replace_point (cv, contraction_value, worst_index, N);
                     } else {
-#ifdef NEDLER_MEAD_DEBUG
-                        printf ("### REJECT contraction\n");
-#endif
+                        if (verbosity_level > 100) {
+                            BufferToConsole ("\nREJECT contraction");
+                        }
                         do_shrink = true;
                     }
             }
         }
         if (do_shrink) {
             long best_idx = function_values(0,1);
-#ifdef NEDLER_MEAD_DEBUG
-            printf ("### PEFRORM SHRINKAGE\n");
-            BufferToConsole("\nBest point\n");
-            ObjectToConsole(&simplex[best_idx]);
-#endif
+            if (verbosity_level > 100) {
+                BufferToConsole ("\n\tPerform Shrinkage");
+                echo_values(simplex[best_idx], function_values(0,0));
+            }
+
             //x[i] = x[1] + δ(x[i] − x[1]).
             for (long i = 1L; i <= N; i++) {
                 long idx = function_values(i,1);
                 _Matrix t (simplex[idx]);
                 t -= simplex[best_idx];
                 t *= simplex_delta;
-#ifdef NEDLER_MEAD_DEBUG
-                BufferToConsole("\nOld point\n");
-                ObjectToConsole(&simplex[idx]);
-#endif
                 simplex[idx] = simplex[best_idx];
                 simplex[idx] += t;
-#ifdef NEDLER_MEAD_DEBUG
-                BufferToConsole("\nMoved point\n");
-                ObjectToConsole(&simplex[idx]);
-#endif
+
                 function_values.Store (i, 0, set_point_and_compute(simplex[idx]));
+                if (verbosity_level > 100) {
+                    echo_values(simplex[idx], function_values(i,0));
+                }
             }
         }
         resort_values (function_values);
-        
+        if (verbosity_level > 100) {
+            BufferToConsole ("\nCurrent simplex");
+            echo_simplex_values (function_values);
+            NLToConsole();
+        }
         if (verbosity_level==1) {
             UpdateOptimizationStatus (-function_values (0,0),progress_tracker.PushValue (-function_values (0,0)),1,true,progressFileString);
         } else {
@@ -7370,10 +7436,30 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
 #endif
     }
     
-    
+    /*
+        BufferToConsole("\n$$$$$\nFunction values\n");
+        ObjectToConsole(&function_values);
+        BufferToConsole("\nBest point\n");
+        ObjectToConsole(&simplex[(long)function_values(0,1)]);
+    */
+
     long best_idx = function_values(0,1);
     
+    /*for (long i = 0; i < simplex[best_idx].GetHDim(); i++) {
+        fprintf (stdout, "%d %s %g\n", i, GetIthIndependentName(i)->get_str(), simplex[best_idx][i]);
+    }*/
+    
     N_inv = -set_point_and_compute (simplex[best_idx]);
+    
+    if (verbosity_level > 100) {
+        BufferToConsole ("\nFinal simplex point");
+        echo_values (simplex[best_idx], N_inv);
+        NLToConsole();
+    }
+    
+    if (!CheckEqual(N_inv , -function_values(0,0))) {
+        _TerminateAndDump(_String("Internal error in _SimplexMethod; final point log-likelihood does not match the best recorded log-L: ") & N_inv & " vs " & -function_values(0,0));
+    }
     
     delete [] simplex;
     return N_inv;
@@ -7932,22 +8018,47 @@ void    _LikelihoodFunction::UpdateIndependent (long index, bool purgeResults, _
     if (f!=-1) {
         theList->Delete(f);
         (*secondList)<<index;
-
+        
+        
         _SimpleList   newVars;
-        {
-            _AVLList  al (&newVars);
-            LocateVar(index)->ScanForVariables(al,true);
-            al.ReorderList();
-        }
+        _AVLList  al (&newVars);
+        LocateVar(index)->ScanForVariables(al,true);
+        al.ReorderList();
+        
+        
+        /* SLKP 20201027 TODO
+            This involves linear searches of potentially large arrays; especially if there are many variables in `newVars`
+        */
+        newVars.Each([theList] (long idx, unsigned long ) -> void {
+            if (LocateVar(idx)->IsIndependent() && theList->Find(idx)==-1) {
+                (*theList) << idx;
+            }
+        });
 
-        for (f=0; f<newVars.countitems(); f++) {
+        /*for (f=0; f<newVars.countitems(); f++) {
             _Variable* cv = LocateVar(newVars.list_data[f]);
             if (cv->IsIndependent()&& theList->Find(newVars.list_data[f])==-1) {
                 (*theList) << newVars.list_data[f];
             }
-        }
+        }*/
+        
+        
 
         if (theList!=whichList) {
+            /* SLKP 20201026
+                if the variable is being set to a constant value, and some other variables depend on it,
+                this could create the situation where they don't get properly refreshed
+            */
+            if (purgeResults) {
+                for (long i = 0; i < indexDep.lLength; i++) {
+                    _Variable* ith_dep = GetIthDependentVar(i);
+                    if (ith_dep->CheckFForDependence(index)) {
+                        ith_dep->ClearValue ();
+                        ith_dep->Compute();
+                    }
+                }
+            }
+            
             for (f = 0; f < indVarsByPartition.lLength; f++) {
                 UpdateIndependent (index, false, (_SimpleList*)indVarsByPartition(f), (_SimpleList*)depVarsByPartition(f));
             }
@@ -8335,7 +8446,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                     long snID = -1;
 
                     if (nodeID == 1) {
-                        if (matrices->lLength == 2) {
+                        if (matrices->lLength > 1) {
                             branches->Clear(false);
                             matrices->Clear(false);
 
@@ -8385,8 +8496,9 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 branches->Populate (t->GetINodeCount()+t->GetLeafCount()-1,0,1);
             }
 
+
 #ifdef _UBER_VERBOSE_LF_DEBUG
-            fprintf (stderr, "%d matrices, %d branches marked for rate class %d\n", matrices->lLength, branches->lLength, catID);
+            fprintf (stderr, "\n%d matrices, %d branches marked for rate class %d, doCachedComp = %d\n", matrices->lLength, branches->lLength, catID, doCachedComp);
             if (matrices->lLength == 0) {
                 fprintf (stderr, "Hmm\n");
             }
@@ -8590,6 +8702,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 /*if (likeFuncEvalCallCount==11035) {
                     printf ("AFTER CONSTRUCT CACHE overallScalingFactors = %ld\n", overallScalingFactors[0]);
                 }*/
+                
                 
                 if (sum > -INFINITY) {
                    hyFloat checksum = t->ComputeLLWithBranchCache (*sl,

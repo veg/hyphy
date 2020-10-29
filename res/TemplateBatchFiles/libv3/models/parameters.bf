@@ -202,10 +202,12 @@ function parameters.SetLocalValue(tree, branch, id, value) {
 
 function parameters.SetValues(set) {
     if (Type (set) == "AssociativeList") {
-        utility.ForEachPair (set, "_key_", "_value_",
-        '
-            parameters.SetValue (_value_[terms.id], _value_[terms.fit.MLE]);
-        ');
+        for (_key_, _value_; in; set) {
+            if (parameters.IsIndependent (_value_[terms.id])) {
+                parameters.SetValue (_value_[terms.id], _value_[terms.fit.MLE]);
+            }
+        }
+        
     }
 }
 
@@ -231,10 +233,8 @@ lfunction parameters.ConstrainMeanOfSet (set, weights, mean, namespace) {
             return;
         }
     }
-    
-
-    scaler_variables = {};
         
+    scaler_variables = {};
     utility.ForEach (unscaled, "_name_", 'parameters.DeclareGlobal (_name_, null)');
     global_scaler = namespace + ".scaler_variable";
     parameters.SetConstraint (global_scaler, Join ("+", constraint), "global");
@@ -492,18 +492,21 @@ function parameters.SetRange(id, ranges) {
 
 }
 
+
 /**
  * Check if parameter is independent
  * @name parameters.IsIndependent
  * @param parameter - id of parameter to check
  * @returns {Bool} TRUE if independent, FALSE otherwise
  */
-lfunction parameters.IsIndependent(parameter) {
+function parameters.IsIndependent(parameter) {
 
-    //console.log(parameter);
-
-    GetString(info, ^ parameter, -1);
-    
+    SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);
+    GetString(info, ^parameter, -1);    
+    SetParameter(HBL_EXECUTION_ERROR_HANDLING,0,0);
+    if (Abs (LAST_HBL_EXECUTION_ERROR)) { // variable does not exist
+        return TRUE;
+    }
     if (Type(info) == "AssociativeList") {    
         return (utility.CheckKey(info, "Local", "Matrix") && utility.CheckKey(info, "Global", "Matrix")) == FALSE;
     }
@@ -639,7 +642,6 @@ lfunction parameters.SetStickBreakingDistribution (parameters, values) {
     left_over  = 1;
 
     for (i = 0; i < rate_count; i += 1) {
-
         parameters.SetValue ((parameters["rates"])[i], values[i][0]);
         if (i < rate_count - 1) {
             break_here = values[i][1] / left_over;

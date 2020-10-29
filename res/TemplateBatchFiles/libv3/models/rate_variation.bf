@@ -38,7 +38,7 @@ function rate_variation.modifier_everything (q_ij, from, to, namespace, cat_name
 lfunction rate_variation_define_HMM (categories, namespace, globals, definition) {
     
     lambda = parameters.ApplyNameSpace   ("hmm_lambda", namespace);
-    parameters.DeclareGlobalWithRanges (lambda, .1/categories, 0, 1/(categories-1));
+    parameters.DeclareGlobalWithRanges (lambda, .1/categories, 1e-6, 1/(categories));
     globals[utility.getGlobalValue("terms.rate_variation.hmm_lambda")] = lambda;
 
     hmm_T = parameters.ApplyNameSpace   ("hmm_transition_matrix", namespace);

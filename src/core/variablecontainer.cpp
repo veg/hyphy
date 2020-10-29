@@ -456,6 +456,12 @@ bool _VariableContainer::NeedToExponentiate (bool ignoreCats) const {
         auto has_changed = [=] (long var_index, long ref_index, unsigned long) -> bool {
             if (ref_index >= 0L) {
                 return LocateVar (var_index) -> HasChanged (ignoreCats);
+                /*bool haz = LocateVar (var_index) -> HasChanged (ignoreCats);
+                if (haz) {
+                    _Variable *lv = LocateVar (var_index);
+                    fprintf (stderr, "==> %s HAZ changed in the context of %s (%d, %x, %d)\n", lv->GetName()->get_str(), GetName()->get_str(), lv->varFlags, LocateVar (var_index)->varValue, lv->varValue->IsVariable());
+                }
+                return haz;*/
             }
             return false;
         };

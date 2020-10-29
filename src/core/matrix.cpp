@@ -5451,7 +5451,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 tempS.vDim = vDim;
                 tempS.lDim = lDim;
                 tempS.theData = stash;
-                // zero out the stash 20200929 : is this necessary?
+                // zero out the stash TODO: 20200929 : is this necessary?
                 memset (stash, 0, sizeof (hyFloat)*lDim);
                 do {
                     temp.MultbyS        (*this,false, &tempS, nil);
@@ -6901,12 +6901,34 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
            }
         }
         
-        //memcpy (theData, stash, lDim * sizeof (hyFloat));
+        
+        long lDimmod4 = (lDim >> 2) << 2;
+        hyFloat diffs[4] = {0.0,0.0,0.0,0.0};
+        
+        for (long s = 0; s < lDimmod4; s+=4) {
+            hyFloat d1 = fabs (theData[s  ] - stash[s  ]);
+            hyFloat d2 = fabs (theData[s+1] - stash[s+1]);
+            hyFloat d3 = fabs (theData[s+2] - stash[s+2]);
+            hyFloat d4 = fabs (theData[s+3] - stash[s+3]);
+            if (d1 > diffs[0]) diffs[0] = d1;
+            if (d2 > diffs[1]) diffs[1] = d2;
+            if (d3 > diffs[2]) diffs[2] = d3;
+            if (d4 > diffs[3]) diffs[3] = d4;
+        }
+        
+        for (long s = lDimmod4; s < lDim; s++) {
+            hyFloat d1 = fabs (theData[s] - stash[s]);
+            if (d1 > diffs[0]) diffs[0] = d1;
+        }
+        
+        diff = MAX (MAX (diffs[0], diffs[1]), MAX (diffs[2], diffs[3]));
 
-        for (long s = 0; s < lDim; s++) {
+        memcpy (theData, stash, lDim * sizeof (hyFloat));
+
+        /*for (long s = 0; s < lDim; s++) {
             StoreIfGreater(diff, fabs (theData[s] - stash[s]));
             theData[s] = stash[s];
-        }
+        }*/
     }
     return diff;
 }

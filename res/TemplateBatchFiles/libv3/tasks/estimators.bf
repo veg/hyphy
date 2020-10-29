@@ -123,6 +123,7 @@ lfunction estimators.GetGlobalMLE_RegExp(results, re) {
  * @returns nothing
  */
 function estimators.copyGlobals2(key2, value2) {
+
     if (Type((estimators.ExtractMLEs.results[terms.global])[key2]) == "AssociativeList") {
         key2 = "[`key`] `key2`";
         // this parameter has already been defined, need to prefix with model name
@@ -163,26 +164,38 @@ function estimators.CopyFrequencies(model_name, model_decription) {
 
 function estimators.SetGlobals2(key2, value) {
 
+
     if (Type(estimators.ApplyExistingEstimates.set_globals[key2]) == "AssociativeList") {
         key3 = "[`key`] `key2`";
     } else {
         key3 = key2;
     }
 
+    
+ 
+    
+
     estimators.ApplyExistingEstimates.set_globals[key3] = {
         terms.id: key3,
         terms.fit.MLE: value
     };
 
-    __init_value = (initial_values[terms.global])[key2];
+    __init_value = (initial_values[terms.global])[key3];
+    
+    if (Type(__init_value) != "AssociativeList") {
+        __init_value = (initial_values[terms.global])[key2];
+    }
+        
+    
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
             ExecuteCommands("`value` := " + __init_value[terms.fit.MLE]);
+            //_did_set [value] = 1;
         } else {
             if (parameters.IsIndependent (value)) {
-                //fprintf (stdout, "Setting `value` to " + __init_value[terms.fit.MLE] + "\n", parameters.IsIndependent (value), "\n");
                 ExecuteCommands("`value` = " + __init_value[terms.fit.MLE]);
+                //_did_set [value] = 1;
             } else {
                 messages.log (value + " was already constrained in estimators.SetGlobals2");
             }
@@ -197,7 +210,14 @@ function estimators.SetGlobals2(key2, value) {
  * @returns nothing
  */
 function estimators.SetGlobals(key, value) {
+    /*_did_set = {};
+    for (i,v; in; ((value[terms.parameters])[terms.global])) {
+        _did_set [v] = 0;
+    }*/
+
     ((value[terms.parameters])[terms.global])["estimators.SetGlobals2"][""];
+    
+    //console.log (_did_set);
 }
 
 /**
@@ -437,6 +457,7 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
  * @returns number of constrained parameters;
  */
 function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions, initial_values, _application_type, keep_track_of_proportional_scalers) {
+
     estimators.ApplyExistingEstimatesToTree.constraint_count = 0;
 
 
@@ -712,15 +733,15 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     can_do_restarts = null;
 
 
-    /*
+    
 
-    Export (lfe, likelihoodFunction);
-    console.log (lfe);
-    GetString (lfe, likelihoodFunction, -1);
-    console.log (lfe);
-    fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
-    utility.ToggleEnvVariable("VERBOSITY_LEVEL", 1);
-    */
+    //Export (lfe, likelihoodFunction);
+    //console.log (lfe);
+    //GetString (lfe, likelihoodFunction, -1);
+    //console.log (lfe);
+    //fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
+    
 
 
 

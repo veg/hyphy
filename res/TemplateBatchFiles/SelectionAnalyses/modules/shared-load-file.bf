@@ -389,7 +389,7 @@ function doGTR (prefix) {
 
 
 /**
- * @name doPartitionMG
+ * @name doPartitionedMG
  * Can only be used after including shared-load-file
  * @return
  */
