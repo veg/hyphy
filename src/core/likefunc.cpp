@@ -6217,7 +6217,7 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                     }
                     hyFloat check_vv = GetIthIndependent(index);*/
                     if (verbosity_level > 150) {
-                        printf ("_LikelihoodFunction::ComputeGradient %d\t%s\t%20.18g\t%e\t%e\t%e\t%e\t%15.12g\n", index, GetIthIndependentName(index)->get_str(), funcValue, testStep, currentValue, check_vv, check_vv-currentValue, DerivativeCorrection (index, currentValue));
+                        printf ("_LikelihoodFunction::ComputeGradient %ld\t%s\t%20.18g\t%e\t%e\t%e\t%e\t%15.12g\n", index, GetIthIndependentName(index)->get_str(), funcValue, testStep, currentValue, check_vv, check_vv-currentValue, DerivativeCorrection (index, currentValue));
                     }
                     SetIthIndependent(index,currentValue);
                 } else {
@@ -7208,7 +7208,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
     auto echo_simplex_values = [=] (_Matrix &function_values)-> void {
         char buffer [512];
         for (long i = 0; i <= N; i++) {
-            snprintf(buffer, 512, "\n\tSimple point %d => %15.12g (map to point %d)", i, function_values (i,0), (long)function_values(i,1));
+            snprintf(buffer, 512, "\n\tSimple point %ld => %15.12g (map to point %ld)", i, function_values (i,0), (long)function_values(i,1));
             BufferToConsole(buffer);
         }
     };
@@ -7289,7 +7289,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
 
         if (verbosity_level > 100) {
             char buffer[512];
-            snprintf (buffer, 512, "\n>Simplex iteration %d", (it_count+1));
+            snprintf (buffer, 512, "\n>Simplex iteration %ld", (it_count+1));
             BufferToConsole(buffer);
             echo_values(new_point, trial_value);
         }
@@ -7300,7 +7300,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
             // accept the reflection
             if (verbosity_level > 100) {
                 char buffer[512];
-                snprintf (buffer, 512, "\nACCEPT REFLECTION replace point %d\n", (long)function_values(N,1));
+                snprintf (buffer, 512, "\nACCEPT REFLECTION replace point %ld\n", (long)function_values(N,1));
                 BufferToConsole (buffer);
             }
             replace_point (new_point, trial_value, (long)function_values(N,1), N);
@@ -7457,7 +7457,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
         NLToConsole();
     }
     
-    if (!CheckEqual(N_inv , -function_values(0,0))) {
+    if (fabs(N_inv + function_values(0,0)) > .1) {
         _TerminateAndDump(_String("Internal error in _SimplexMethod; final point log-likelihood does not match the best recorded log-L: ") & N_inv & " vs " & -function_values(0,0));
     }
     
