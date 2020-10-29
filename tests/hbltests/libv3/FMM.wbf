@@ -1,9 +1,9 @@
 GetString (version, HYPHY_VERSION, 0);
 
-//PRODUCE_OPTIMIZATION_LOG        = 1;
+/*PRODUCE_OPTIMIZATION_LOG        = 1;*/
 
 if (+version >= 2.4) {
-    LoadFunctionLibrary ("SelectionAnalyses/FitMultiModel.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branches" : "GROUP1", "--srv" : "No", "--starting-points" : "5"});
+    LoadFunctionLibrary ("SelectionAnalyses/FitMultiModel.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex"});
 } else {
     LoadFunctionLibrary ("SelectionAnalyses/FitMultiModel.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "GROUP1", "3" : "Yes", "4" : "0.1"});
 
@@ -11,7 +11,7 @@ if (+version >= 2.4) {
 LoadFunctionLibrary ("shared.bf");
 LoadFunctionLibrary ("libv3/IOFunctions.bf");
 
-//fprintf ("logger.hbl", CLEAR_FILE, ^((fitter.results[terms.likelihood_function])+".trace"));
+/*fprintf ("logger.hbl", CLEAR_F    ILE, ^((fitter.results[terms.likelihood_function])+".trace"));*/
 
 
 assert (check_value (
