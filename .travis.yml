@@ -35,6 +35,7 @@ jobs:
               - ubuntu-toolchain-r-test
               - george-edison55-precise-backports
           packages:
+              - openmpi-bin
               - g++-9
               - gcc-9
       install:
@@ -54,6 +55,7 @@ jobs:
               - ubuntu-toolchain-r-test
               - george-edison55-precise-backports
           packages:
+              - openmpi-bin
               - g++-9
               - gcc-9
       install:
@@ -74,6 +76,7 @@ jobs:
               - ubuntu-toolchain-r-test
               - george-edison55-precise-backports
           packages:
+              - openmpi-bin
               - g++-4.9
               - gcc-4.9
       install:
@@ -92,6 +95,7 @@ jobs:
               - ubuntu-toolchain-r-test
               - george-edison55-precise-backports
           packages:
+              - openmpi-bin
               - g++-5
               - gcc-5
       install:
@@ -110,6 +114,7 @@ jobs:
               - ubuntu-toolchain-r-test
               - george-edison55-precise-backports
           packages:
+              - openmpi-bin
               - g++-6
               - gcc-6
       install:
@@ -127,6 +132,7 @@ jobs:
               - ubuntu-toolchain-r-test
               - george-edison55-precise-backports
           packages:
+              - openmpi-bin
               - g++-7
               - gcc-7
       install:
@@ -144,6 +150,7 @@ jobs:
               - ubuntu-toolchain-r-test
               - george-edison55-precise-backports
           packages:
+              - openmpi-bin
               - g++-8
               - gcc-8
       install:
