@@ -4126,11 +4126,16 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
          }
     }
     
+    
+    _SimpleList untag;
     if (keepStartingPoint) {
-        indexInd.Each ([this] (long v, unsigned long i) -> void {
+        indexInd.Each ([this, &untag] (long v, unsigned long i) -> void {
             _Variable *iv = GetIthIndependentVar (i);
             if (iv->HasBeenInitialized()) {
-                iv->MarkModified();
+                if (!iv->IsModified()) {
+                    iv->MarkModified();
+                    untag << i;
+                }
             }
         });
     }
@@ -4140,11 +4145,9 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     }
 
     if (keepStartingPoint) {
-        indexInd.Each ([this] (long v, unsigned long i) -> void {
+        untag.Each ([this] (long v, unsigned long i) -> void {
             _Variable *iv = GetIthIndependentVar (i);
-            if (iv->HasBeenInitialized()) {
-                iv->ClearModified();
-            }
+            iv->ClearModified();
         });
     }
 

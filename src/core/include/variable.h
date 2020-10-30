@@ -143,6 +143,7 @@ public:
     virtual     bool        CheckFForDependence (_AVLList const&, bool = false);
     virtual     bool        HasBeenInitialized (void) const {return !(varFlags & HY_VARIABLE_NOTSET);}
     virtual     void        MarkModified  (void) {varFlags = varFlags | HY_VARIABLE_CHANGED;}
+    virtual     bool        IsModified  (void) const {return varFlags & HY_VARIABLE_CHANGED;}
     virtual     void        ClearModified  (void) {if (varFlags & HY_VARIABLE_CHANGED) varFlags -= HY_VARIABLE_CHANGED;}
     
     _String const     ContextFreeName                 (void) const;
