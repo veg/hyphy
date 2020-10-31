@@ -4336,7 +4336,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             //ConjugateGradientDescent (0.5, bestSoFar, true, 10);
             if (gradientBlocks.nonempty()) {
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
-                    _SimpleList * this_block = (_SimpleList*)(gradientBlocks(b));
+                    _SimpleList * this_block = (_SimpleList*)gradientBlocks(b);
                     if (this_block->countitems() <= maxGradientBlockDimension) {
                         //printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
                         maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,this_block,maxSoFar);
