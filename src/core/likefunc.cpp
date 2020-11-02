@@ -9562,7 +9562,9 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     }
 
     ExportIndVariables(glVars, locVars, indepVarList);
+    locVars << "SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);\n";
     ExportDepVariables(glVars, locVars, depVarList);
+    locVars << "SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);\n";
 
     glVars.TrimSpace();
     locVars.TrimSpace();

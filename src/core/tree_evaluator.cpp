@@ -487,6 +487,18 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
         fprintf (stderr, "THE SUM IS EXACTLY ZERO parent code %ld\n", parentCode);
     }*/
     
+    /*
+     if (isnan (sum)) {
+        HandleApplicationError(_String("Site ") & siteID & " evaluated to a NaN probability in ComputeTreeBlockByBranch at branch " & parentCode & "; this is not a recoverable error and indicates some serious COVFEFE taking place.");
+    }*/
+    
+    /*if (sum == 0.) {
+        printf ("Exactly 0 in __ll_loop_handle_scaling: site = %ld, branch = %ld\n", siteID, parentCode);
+    }
+    if (isinf(sum)) {
+        printf ("Infinity at __ll_loop_handle_scaling: site = %ld, branch = %ld\n", siteID, parentCode);
+    }*/
+    
     if (__builtin_expect(sum < _lfScalingFactorThreshold && sum > 0.0,0)) {
         
         hyFloat scaler = _computeBoostScaler(scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards, sum, didScale);
@@ -504,6 +516,9 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
                 //if (likeFuncEvalCallCount == 15098 && siteID == 91) {
                 //fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
                 // }
+                //if (isnan (parentConditionals [c])) {
+                //    HandleApplicationError(_String("Site ") & siteID & " evaluated to a NaN probability in ComputeTreeBlockByBranch at branch " & parentCode & "; this is not a recoverable error and indicates some serious COVFEFE taking place.");
+                //}
             }
             
             if (siteFrequency == 1L) {
@@ -529,6 +544,9 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
                     #pragma GCC unroll 4
                     for (long c = 0; c < D; c++) {
                         parentConditionals [c] *= scaler;
+                        //if (isnan (parentConditionals [c])) {
+                        //    HandleApplicationError(_String("Site ") & siteID & " evaluated to a NaN probability in ComputeTreeBlockByBranch at branch " & parentCode & "; this is not a recoverable error and indicates some serious COVFEFE taking place.");
+                        //}
                         //if (likeFuncEvalCallCount == 15098 && siteID == 91) {
                         //   fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
                         // }
@@ -1030,10 +1048,33 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     
             
             #ifdef _SLKP_USE_AVX_INTRINSICS
+            //Site 297 evaluated to a NaN probability in ComputeTreeBlockByBranch at branch 9698; this is not a recoverable error and indicates some serious COVFEFE taking place.
+            
+                /*if (siteID == 297 && parentCode == 9507) {
+                    printf ("\nCONDITIONAL DUMP @ %s %ld (%ld parent)\n", currentTreeNode->GetName()->get_str(), nodeCode, parentCode);
+                    for (int i = 0; i < 61; i++) {
+                        printf ("%d %lg %lg\n", i, childVector[i], parentConditionals[i]);
+                    }
+                }*/
+
                 __m256d grandTotal = __ll_handle_block20_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil);
+                /*if (siteID ==  297 && parentCode == 9698) {
+                    double checkGT [4];
+                    _mm256_storeu_pd (checkGT, grandTotal);
+                    printf ("\n%g %g %g %g", checkGT [0], checkGT [1], checkGT [2], checkGT [3]);
+                }*/
                 grandTotal = __ll_handle_block20_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                /*if (siteID ==  297 && parentCode == 9698) {
+                    double checkGT [4];
+                    _mm256_storeu_pd (checkGT, grandTotal);
+                    printf ("\n%g %g %g %g", checkGT [0], checkGT [1], checkGT [2], checkGT [3]);
+                }*/
                 grandTotal = __ll_handle_block20_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    
+                /*if (siteID ==  297 && parentCode == 9698) {
+                    double checkGT [4];
+                    _mm256_storeu_pd (checkGT, grandTotal);
+                    printf ("\n%g %g %g %g", checkGT [0], checkGT [1], checkGT [2], checkGT [3]);
+                }*/
                 
                 hyFloat const * __restrict tT = tMatrix + 61*60;
                 __m256d lastTotal;
@@ -1044,6 +1085,22 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 hyFloat s60 = _avx_sum_4(lastTotal) + childVector[60] * tT[60];
                 parentConditionals[60] *= s60;
                 sum += _avx_sum_4(grandTotal) + s60;
+                /*if (siteID ==  297 && parentCode == 9698) {
+                    printf ("\n%g => %g\n", s60, sum);
+                }*/
+            
+                /*if (siteID == 297 && parentCode == 9507) {
+                printf ("\nPRE-SCALE @ %s %ld\n", currentTreeNode->GetName()->get_str(), nodeCode);
+                    for (int i = 0; i < 61; i++) {
+                        printf ("%d %lg %lg\n", i, childVector[i], parentConditionals[i]);
+                    }
+                }
+                for (int i = 0; i < 61; i++) {
+                    if (isnan (parentConditionals[i])) {
+                        HandleApplicationError(_String("Site ") & siteID & " evaluated to a NaN probability in ComputeTreeBlockByBranch; this is not a recoverable error and indicates some serious COVFEFE taking place, node " & long(nodeCode) & "\n\n");
+                    }
+                }*/
+                
             
             #elif defined _SLKP_USE_SSE_INTRINSICS
                     __m128d grandTotal;
@@ -1070,6 +1127,12 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             #endif
             
             __ll_loop_handle_scaling<61L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
+            /*if (siteID == 297 && parentCode == 9507) {
+                printf ("\nPOST-SCALE @ %s %ld\n", currentTreeNode->GetName()->get_str(), nodeCode);
+                for (int i = 0; i < 61; i++) {
+                    printf ("%d %lg %lg\n", i, childVector[i], parentConditionals[i]);
+                }
+            }*/
 
             childVector += 61;
             __ll_loop_epilogue
@@ -1305,20 +1368,24 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 break;
             }
             
-            hyFloat term;
-            long   const    site_frequency = theFilter->theFrequencies (siteOrdering.list_data[siteID]);
-            
-            if (site_frequency > 1L) {
-                term = log(accumulator) * site_frequency - correction;
-            } else {
-                term = log(accumulator) - correction;
-            }
-            // Kahan sum
-            
+            if (!isnan (accumulator)) {
+                hyFloat term;
+                long   const    site_frequency = theFilter->theFrequencies (siteOrdering.list_data[siteID]);
+                
+                if (site_frequency > 1L) {
+                    term = log(accumulator) * site_frequency - correction;
+                } else {
+                    term = log(accumulator) - correction;
+                }
+                // Kahan sum
+                
 
-            hyFloat temp_sum = result + term;
-            correction = (temp_sum - result) - term;
-            result = temp_sum;
+                hyFloat temp_sum = result + term;
+                correction = (temp_sum - result) - term;
+                result = temp_sum;
+            } else {
+                HandleApplicationError(_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a NaN probability in ComputeTreeBlockByBranch; this is not a recoverable error and indicates some serious COVFEFE taking place.");
+            }
 
         }
     }

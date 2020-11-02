@@ -171,6 +171,7 @@ namespace terms{
         file           = "file";
         cache          = "cache";
         name           = "name";
+        value          = "value";
         name_mapping   = "name-mapping";
         partitions     = "partitions";
         tree           = "tree";

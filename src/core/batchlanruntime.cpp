@@ -2400,7 +2400,8 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
       bool defer_status = _ProcessNumericArgumentWithExceptions (*GetIthParameter(1),current_program.nameSpacePrefix);
       if (defer_status) {
         deferSetFormula = new _SimpleList;
-      } else if (deferSetFormula) {
+        deferClearConstraint = new _AVLList (new _SimpleList);
+      } else if (deferSetFormula || deferClearConstraint){
         FinishDeferredSF ();
       }
       return true;
@@ -3547,11 +3548,16 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
     long     current_stream_position = 0L,
              started_here_position   = 0L;
     
-    unsigned long      has_rewind  = simpleParameters.Element(-1L) < 0 ? 1UL : 0UL;
-    
+    unsigned long      has_rewind  = simpleParameters.Element(-1L) == -1 ? 1UL : 0UL,
+                       has_create  = simpleParameters.Element(-1L) == -2 ? 1UL : 0UL;
+      
     _String const * input_data = nil;
     
     _String source_name = *GetIthParameter(0UL);
+
+    unsigned long argument_index = 0UL,
+                  upper_bound = (has_rewind || has_create)? simpleParameters.countitems() - 1L : simpleParameters.countitems();
+
     if (source_name == kFscanfStdin) {
       bool need_to_ask_user = true;
       if (current_program.has_stdin_redirect () || current_program.has_keyword_arguments()) {
@@ -3588,7 +3594,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
           hy_scanf_last_file_path = kEmptyString;
         }
         
-        if (source_name != hy_scanf_last_file_path || has_rewind) { // new stream, or rewind on the current stream
+        if (source_name != hy_scanf_last_file_path || has_rewind || has_create) { // new stream, or rewind on the current stream
           hy_scanf_last_file_path = source_name;
           current_stream_position = 0L;
           last_call_stream_position = 0L;
@@ -3603,23 +3609,49 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
         }
       } else {
          _String file_path;
+          
+
+          
+         if (file_path == hy_env::kDevNull) {
+             return true;
+         }
+          
          if (source_name == kPromptForFilePlaceholder) {
              file_path = source_name;
          } else {
              file_path = ((_FString*)_ProcessAnArgumentByType(source_name,STRING,current_program,&dynamic_reference_manager))->get_str();
          }
+          
+          
          if (!ProcessFileName(file_path, true,false,(hyPointer)current_program.nameSpacePrefix, false, &current_program)) {
               return false;
          }
         
         FILE * input_stream = doFileOpen (file_path.get_str(), "rb");
+        hy_env::EnvVariableSet(hy_env::file_created, new HY_CONSTANT_FALSE, false);
         if (!input_stream) {
+            if (has_create) {
+                input_stream = doFileOpen (file_path.get_str(), "wb");
+                if (input_stream){
+                    while (argument_index < upper_bound) {
+                      _Variable * store_here = _ValidateStorageVariable (current_program, argument_index + 1UL);
+                      store_here->SetValue(new _MathObject, false, true, nil);
+                      argument_index++;
+                    }
+                    hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
+                    hy_env::EnvVariableSet(hy_env::file_created, new HY_CONSTANT_TRUE, false);
+                    return true;
+                } else {
+                    throw     (file_path.Enquote() & " could not be opened for reading or writing (CREATE mode) by fscanf. Path stack:\n\t" & GetPathStack("\n\t"));
+                }
+            }
+            
           throw     (file_path.Enquote() & " could not be opened for reading by fscanf. Path stack:\n\t" & GetPathStack("\n\t"));
         }
         if (hy_env::EnvVariableTrue(hy_env::end_of_file)) { // reset path
           hy_scanf_last_file_path = kEmptyString;
         }
-        if (source_name != hy_scanf_last_file_path || has_rewind) { // new stream, or rewind on the current stream
+        if (source_name != hy_scanf_last_file_path || has_rewind || has_create) { // new stream, or rewind on the current stream
           hy_scanf_last_file_path = source_name;
           last_call_stream_position = 0L;
         }
@@ -3644,8 +3676,6 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
       }
     }
       
-    unsigned long argument_index = 0UL,
-                  upper_bound = has_rewind ? simpleParameters.countitems() - 1L : simpleParameters.countitems();
     
     while (argument_index < upper_bound && current_stream_position < input_data->length()) {
       _Variable * store_here = _ValidateStorageVariable (current_program, argument_index + 1UL);
@@ -3771,7 +3801,7 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
       current_stream_position = lookahead + 1L;
       argument_index ++;
     }
-    if (argument_index + has_rewind <simpleParameters.countitems()) {
+    if (argument_index + has_rewind + has_create <simpleParameters.countitems()) {
       hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
       throw (_String("Could not read all the parameters requested."));
     } else {

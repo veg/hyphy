@@ -158,16 +158,36 @@ namespace fel {
 
 io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
-
-fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
-    terms.run_options.model_type: terms.local,
-    terms.run_options.partitioned_omega: fel.selected_branches,
-    terms.run_options.retain_lf_object: TRUE,
-    terms.run_options.optimization_settings: {
-        "OPTIMIZATION_METHOD" : "coordinate-wise"
+fel.run_full_mg94 = TRUE;
+    
+if (Type (fel.save_intermediate_fits) == "AssociativeList") {
+    if (None != fel.save_intermediate_fits[^"terms.data.value"]) {
+        if (utility.Has (fel.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
+            fel.final_partitioned_mg_results = (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
+            if (utility.Has (fel.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
+                ExecuteCommands ((fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
+                fel.run_full_mg94 = FALSE;
+            }
+        }        
     }
-}, fel.partitioned_mg_results);
-
+}
+    
+if (fel.run_full_mg94) {    
+    fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
+        terms.run_options.model_type: terms.local,
+        terms.run_options.partitioned_omega: fel.selected_branches,
+        terms.run_options.retain_lf_object: TRUE,
+        terms.run_options.optimization_settings: {
+            "OPTIMIZATION_METHOD" : "coordinate-wise"
+        }
+    }, fel.partitioned_mg_results);
+    if (Type (fel.save_intermediate_fits) == "AssociativeList") {
+        (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = fel.final_partitioned_mg_results;        
+        Export (lfe, ^fel.final_partitioned_mg_results[^"terms.likelihood_function"]);
+        (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
+        io.SpoolJSON (fel.save_intermediate_fits[^"terms.data.value"],fel.save_intermediate_fits[^"terms.data.file"]);      
+    }
+}
 
 
 

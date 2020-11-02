@@ -458,6 +458,9 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
  */
 function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions, initial_values, _application_type, keep_track_of_proportional_scalers) {
 
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+
+
     estimators.ApplyExistingEstimatesToTree.constraint_count = 0;
 
 
@@ -499,6 +502,9 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
             //warning.log ("No initial branch length object of for branch '" + _branch_name);
         }
     }
+
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
+
 
     //fprintf (stdout, Format (^_tree_name, 1,1), "\n");
 
@@ -1125,6 +1131,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
         beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
+        
+        SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];
 
@@ -1143,7 +1151,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
                 ExecuteCommands(apply_constraint);
             }
         }
-    } else {}
+        SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
+   } else {}
 
 
     LikelihoodFunction likelihoodFunction = (lf_components);

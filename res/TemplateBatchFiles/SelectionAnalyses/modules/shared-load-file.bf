@@ -292,10 +292,33 @@ function doGTR (prefix) {
 
 
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
+    
+    KeywordArgument ("intermediate-fits", "Use/save parameter estimates from 'initial-guess' model fits to a JSON file (default is not to save)", "/dev/null");
+    save_intermediate_fits = io.ReadFromOrCreate ("Use/Save parameter estimates from 'initial-guess' model fits", {});
+    
+    run_gtr = TRUE;
+    
+    if (None != save_intermediate_fits[^"terms.data.value"]) {
+        if (utility.Has (save_intermediate_fits[^"terms.data.value"], "GTR", "AssociativeList")) {
+            gtr_results = (save_intermediate_fits[^"terms.data.value"])["GTR"];
+            run_gtr = FALSE;
+        }        
+    } else {
+        save_intermediate_fits = None;
+    }
+    
 
-    gtr_results = estimators.FitGTR(filter_names,
-                                         trees,
-                                         gtr_results);
+
+    if (run_gtr) {
+        gtr_results = estimators.FitGTR(filter_names,
+                                             trees,
+                                             gtr_results);
+                                             
+       if (Type (save_intermediate_fits) == "AssociativeList") {                                             
+               (save_intermediate_fits[^"terms.data.value"])["GTR"] = gtr_results;
+               io.SpoolJSON (save_intermediate_fits[^"terms.data.value"],save_intermediate_fits[^"terms.data.file"]);     
+       }                         
+    }
 
     KeywordArgument ("kill-zero-lengths", "Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)", "Yes");
 
@@ -332,7 +355,6 @@ function doGTR (prefix) {
 
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
         selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.sample_size")));
-
 
 
     /* Store nucleotide fit */
@@ -406,14 +428,41 @@ function doPartitionedMG (prefix, keep_lf) {
     scaler_variables = utility.PopulateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
 
     utility.ForEach (scaler_variables, "_value_", "parameters.DeclareGlobal(_value_, None);parameters.SetValue(_value_, 3);");
-
-    partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
-        utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"),
-        utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,
-        utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
-        utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
-    }, gtr_results);
     
+    run_mg94 = TRUE;
+    
+    if (Type (save_intermediate_fits) == "AssociativeList") {
+        if (None != save_intermediate_fits[^"terms.data.value"]) {
+            if (utility.Has (save_intermediate_fits[^"terms.data.value"], "MG94", "AssociativeList")) {
+                partitioned_mg_results = (save_intermediate_fits[^"terms.data.value"])["MG94"];
+                if (keep_lf) {
+                    if (utility.Has (save_intermediate_fits[^"terms.data.value"], "MG94-LF", "String")) {
+                        ExecuteCommands ((save_intermediate_fits[^"terms.data.value"])["MG94-LF"]);
+                        run_mg94 = FALSE;
+                    } 
+                } else {
+                    run_mg94 = FALSE;
+                }
+            }        
+        }
+    }
+    
+    if (run_mg94) {
+        partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
+            utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"),
+            utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,
+            utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
+            utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
+        }, gtr_results);
+        if (Type (save_intermediate_fits) == "AssociativeList") {
+            (save_intermediate_fits[^"terms.data.value"])["MG94"] = partitioned_mg_results;
+            if (keep_lf) {
+                Export (lfe, ^(partitioned_mg_results[^"terms.likelihood_function"]));
+                (save_intermediate_fits[^"terms.data.value"])["MG94-LF"] = lfe;
+            }
+            io.SpoolJSON (save_intermediate_fits[^"terms.data.value"],save_intermediate_fits[^"terms.data.file"]);      
+        }
+    }
     
 
 

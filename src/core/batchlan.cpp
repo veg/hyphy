@@ -1801,8 +1801,9 @@ void  _ExecutionList::BuildExecuteCommandInstruction (_List * pieces, long code)
 
 void  _ExecutionList::BuildFscanf(_List * pieces, long code) {  
 
-    static const _String kFscanfRewind ("REWIND");
-
+    static const _String kFscanfRewind ("REWIND"),
+                  kScanfCreate ("CREATE_FILE");
+    
     long    names_vs_types_offset = 0L;
   
     _List   local_object_manager;
@@ -1812,26 +1813,26 @@ void  _ExecutionList::BuildFscanf(_List * pieces, long code) {
     scanf->parameters << pieces->GetItem(0);
 
     bool                 has_rewind = *(_String*) pieces->GetItem (1) == kFscanfRewind;
-
+    bool                 has_create = *(_String*) pieces->GetItem (1) == kScanfCreate;
 
       // process argument types
 
     local_object_manager < scanf;
     _List     argument_types;
-    _String*  argument_type_spec = (_String*)pieces->GetItem(has_rewind ? 2L : 1L);
+    _String*  argument_type_spec = (_String*)pieces->GetItem(has_rewind || has_create ? 2L : 1L);
     argument_type_spec->StripQuotes();
     _ElementaryCommand::ExtractConditions(*argument_type_spec, 0, argument_types, ',');
 
     argument_types.ForEach ([&] (BaseRefConst t, unsigned long) -> void {
-      long argument_type = _ElementaryCommand :: fscanf_allowed_formats.FindObject(t);
-      if (argument_type == kNotFound) {
-        throw (((_String*)t)->Enquote() & " is not one of the supported argument types: " & _ElementaryCommand :: fscanf_allowed_formats.Join (", "));
-      }
-      scanf->simpleParameters << argument_type;
-    }
-                            );
+          long argument_type = _ElementaryCommand :: fscanf_allowed_formats.FindObject(t);
+          if (argument_type == kNotFound) {
+            throw (((_String*)t)->Enquote() & " is not one of the supported argument types: " & _ElementaryCommand :: fscanf_allowed_formats.Join (", "));
+          }
+          scanf->simpleParameters << argument_type;
+        }
+    );
 
-    for (unsigned long index = has_rewind ? 3L : 2L; index < pieces->countitems(); index ++) {
+    for (unsigned long index = has_rewind  || has_create? 3L : 2L; index < pieces->countitems(); index ++) {
       scanf->parameters << pieces->GetItem(index);
     }
 
@@ -1842,6 +1843,9 @@ void  _ExecutionList::BuildFscanf(_List * pieces, long code) {
 
     if (has_rewind) {
       scanf->simpleParameters << -1L;
+    }
+    if (has_create) {
+      scanf->simpleParameters << -2L;
     }
 
     local_object_manager.Pop();
@@ -5100,10 +5104,11 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
 
         _StringBuffer glVars (128L),
                 locVars(128L);
+        
 
         ExportIndVariables (glVars,locVars, &ind);
         ExportDepVariables (glVars,locVars, &dep);
-        rec << glVars <<locVars;
+        rec << "SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);\n" << glVars <<locVars << "SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);\n" ;
         ExportCatVariables (rec,&cat);
     }
 
