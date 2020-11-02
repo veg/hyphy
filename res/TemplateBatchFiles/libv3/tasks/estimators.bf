@@ -906,11 +906,27 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     this_namespace = this_namespace[0][Abs (this_namespace)-3];
 
     df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options, None);
+    
+    /*
+        partition parameters into groups
+    */
+    
+    pg = utility.getEnvVariable ("PARAMETER_GROUPING");
+    
+    if (Type (pg) != "AssociativeList") {
+        GetString (params, likelihoodFunction,-1);
+        pg = {"0" : params["Global Independent"]};
+        utility.ToggleEnvVariable ("PARAMETER_GROUPING", pg);
+    } 
 
     if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
         Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
     } else {
     	Optimize (mles, likelihoodFunction);
+    }
+
+    if (Type (pg) == "AssociativeList") {
+         utility.ToggleEnvVariable ("PARAMETER_GROUPING", None);
     }
 
     if (Type(initial_values) == "AssociativeList") {

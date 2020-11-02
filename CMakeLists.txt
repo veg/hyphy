@@ -567,7 +567,7 @@ makeLink(HYPHYMP hyphy hyphy)
 
 #-------------------------------------------------------------------------------
 # TESTS
-#---------------------------------------------geany----------------------------------
+#-------------------------------------------------------------------------------
 
 add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
 add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)
@@ -579,6 +579,7 @@ add_test (NAME SLAC COMMAND HYPHYMP tests/hbltests/libv3/SLAC.wbf)
 add_test (NAME SLAC-PARTITIONED COMMAND HYPHYMP tests/hbltests/libv3/SLAC-partitioned.wbf)
 add_test (NAME FEL COMMAND HYPHYMP tests/hbltests/libv3/FEL.wbf)
 add_test (MEME HYPHYMP tests/hbltests/libv3/MEME.wbf)
+#add_test (MEME_MPI mpirun -np 4 HYPHYMPI tests/hbltests/libv3/MEME.wbf)
 add_test (MEME-PARTITIONED HYPHYMP tests/hbltests/libv3/MEME-partitioned.wbf)
 add_test (BUSTED HYPHYMP tests/hbltests/libv3/BUSTED.wbf)
 add_test (BUSTED-SRV HYPHYMP tests/hbltests/libv3/BUSTED-SRV.wbf)
