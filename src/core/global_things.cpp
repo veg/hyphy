@@ -112,6 +112,7 @@ namespace hy_global {
  http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n"),
                      kXVariableName ("_x_"),
                      kNVariableName ("_n_"),
+                     kNamespaceName ("_namespace_"),
                      kErrorStringIncompatibleOperands ("Incompatible operands"),
                      kErrorStringBadMatrixDefinition  ("Invalid matrix definition "),
                      kErrorStringInvalidMatrixIndex   ("Invalid matrix index "),
@@ -120,7 +121,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.21"),
+                     kHyPhyVersion  = _String ("2.5.22"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -266,7 +267,8 @@ namespace hy_global {
             &kNVariableName,
             &status_bar_update_string,
             &last_model_parameter_list,
-            &use_last_model
+            &use_last_model,
+            &kNamespaceName
         };
         
         for (_String const * item : mark_as_globals) {

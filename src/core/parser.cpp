@@ -82,6 +82,9 @@ _SimpleList     freeSlots,
                 deferIsConstant,
                 *deferSetFormula = nil;
 
+
+_AVLList       *deferClearConstraint = nil;
+
 bool            useGlobalUpdateFlag = false;
 
 
@@ -1254,9 +1257,23 @@ void  FinishDeferredSF (void) {
                 }
             }
         });
+    }
+    if (deferClearConstraint && deferClearConstraint->countitems()) {
+        DoForEachVariable ([](_Variable* v, long v_idx) -> void {
+            if (v->IsContainer()) {
+                ((_VariableContainer*)v)->RemoveDependance (*deferClearConstraint);
+            }
+        });
         
-
-       
+        for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
+            if (((_String*)likeFuncNamesList(i))->nonempty()) {
+                ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(*deferClearConstraint);
+            }
+    }
+    
+    if (deferClearConstraint) {
+        delete deferClearConstraint->dataList;
+        DeleteAndZeroObject(deferClearConstraint);
     }
     DeleteObject (deferSetFormula);
     deferSetFormula = nil;

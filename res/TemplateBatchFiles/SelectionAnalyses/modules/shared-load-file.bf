@@ -274,7 +274,7 @@ function store_tree_information () {
 
 
 
-
+//------------------------------------------------------------------------------
 
 function doGTR (prefix) {
 
@@ -292,22 +292,48 @@ function doGTR (prefix) {
 
 
     //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
+    
+    KeywordArgument ("intermediate-fits", "Use/save parameter estimates from 'initial-guess' model fits to a JSON file (default is not to save)", "/dev/null");
+    save_intermediate_fits = io.ReadFromOrCreate ("Use/Save parameter estimates from 'initial-guess' model fits", {});
+    
+    run_gtr = TRUE;
+    
+    if (None != save_intermediate_fits[^"terms.data.value"]) {
+        if (utility.Has (save_intermediate_fits[^"terms.data.value"], "GTR", "AssociativeList")) {
+            gtr_results = (save_intermediate_fits[^"terms.data.value"])["GTR"];
+            run_gtr = FALSE;
+        }        
+    } else {
+        save_intermediate_fits = None;
+    }
+    
 
-    gtr_results = estimators.FitGTR(filter_names,
-                                         trees,
-                                         gtr_results);
+
+    if (run_gtr) {
+        gtr_results = estimators.FitGTR(filter_names,
+                                             trees,
+                                             gtr_results);
+                                             
+       if (Type (save_intermediate_fits) == "AssociativeList") {                                             
+               (save_intermediate_fits[^"terms.data.value"])["GTR"] = gtr_results;
+               io.SpoolJSON (save_intermediate_fits[^"terms.data.value"],save_intermediate_fits[^"terms.data.file"]);     
+       }                         
+    }
 
     KeywordArgument ("kill-zero-lengths", "Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)", "Yes");
 
     kill0 = io.SelectAnOption (
         {
             "Yes":"Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)",
+            "Constrain":"Keep zero-length branches, but constrain their values to 0",
             "No":"Keep all branches"
         },
-        "The set of properties to use in the model") == "Yes";
+        "Reduce zero-length branches");
 
+    zero_branch_length_constrain = NULL;
+    deleted_by_tree = NULL;
 
-    if (kill0) {
+    if (kill0 == "Yes") {
         for (index, tree; in; trees) {
             deleted = {};
             if (^(prefix + ".selected_branches") / index) {
@@ -327,12 +353,37 @@ function doGTR (prefix) {
             (partitions_and_trees[i])[^"terms.data.tree"] = trees[i];
         }
         store_tree_information ();
+    } else {
+        if (kill0 == "Constrain") {
+            zero_branch_length_constrain = ^"namespace_tag"+".constrain_zero_branches";
+            deleted_by_tree = {};
+            for (index, tree; in; trees) {
+                deleted = {};
+                if (^(prefix + ".selected_branches") / index) {
+                    trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], (^(prefix + ".selected_branches"))[index], deleted);
+                } else {
+                    trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], null, deleted);
+                }
+
+                if (utility.Array1D (deleted)) {
+                    io.ReportProgressMessageMD(prefix,  'selector', 'Marked ' + Abs(deleted) + ' zero-length internal branches to be constrained: \`' + Join (', ',utility.Values(deleted)) + '\`');
+                }
+                if (Abs (deleted)) { 
+                   deleted_dict = {};
+                   for (v; in; deleted) {
+                    deleted_dict[v] = 1;
+                   }   
+                   deleted_by_tree[index] = deleted_dict;
+                } else {
+                    deleted_by_tree[index] = deleted;
+                }
+            }    
+        }
     }
 
 
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
         selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.sample_size")));
-
 
 
     /* Store nucleotide fit */
@@ -406,14 +457,41 @@ function doPartitionedMG (prefix, keep_lf) {
     scaler_variables = utility.PopulateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
 
     utility.ForEach (scaler_variables, "_value_", "parameters.DeclareGlobal(_value_, None);parameters.SetValue(_value_, 3);");
-
-    partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
-        utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"),
-        utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,
-        utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
-        utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
-    }, gtr_results);
     
+    run_mg94 = TRUE;
+    
+    if (Type (save_intermediate_fits) == "AssociativeList") {
+        if (None != save_intermediate_fits[^"terms.data.value"]) {
+            if (utility.Has (save_intermediate_fits[^"terms.data.value"], "MG94", "AssociativeList")) {
+                partitioned_mg_results = (save_intermediate_fits[^"terms.data.value"])["MG94"];
+                if (keep_lf) {
+                    if (utility.Has (save_intermediate_fits[^"terms.data.value"], "MG94-LF", "String")) {
+                        ExecuteCommands ((save_intermediate_fits[^"terms.data.value"])["MG94-LF"]);
+                        run_mg94 = FALSE;
+                    } 
+                } else {
+                    run_mg94 = FALSE;
+                }
+            }        
+        }
+    }
+    
+    if (run_mg94) {
+        partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
+            utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"),
+            utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,
+            utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
+            utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
+        }, gtr_results);
+        if (Type (save_intermediate_fits) == "AssociativeList") {
+            (save_intermediate_fits[^"terms.data.value"])["MG94"] = partitioned_mg_results;
+            if (keep_lf) {
+                Export (lfe, ^(partitioned_mg_results[^"terms.likelihood_function"]));
+                (save_intermediate_fits[^"terms.data.value"])["MG94-LF"] = lfe;
+            }
+            io.SpoolJSON (save_intermediate_fits[^"terms.data.value"],save_intermediate_fits[^"terms.data.file"]);      
+        }
+    }
     
 
 
@@ -428,3 +506,34 @@ function doPartitionedMG (prefix, keep_lf) {
 
     /** extract and report dN/dS estimates */
 }
+
+//------------------------------------------------------------------------------
+
+
+function constrain_zero_branches (lf_id, components, data_filter, tree, model_map, initial_values, model_objects) {
+   SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+   //console.log (">>>IN constrain_zero_branches");
+   constrain_zero_branches.parameters = estimators.TraverseLocalParameters (lf_id, model_objects, ^"namespace_tag" + ".constrain_one_branch");
+   constrain_zero_branches.parameters = +constrain_zero_branches.parameters;
+   SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
+   return constrain_zero_branches.parameters;
+}
+
+//------------------------------------------------------------------------------
+
+function constrain_one_branch (tree_name, node_name, model_description,i) {
+   //console.log (">>>IN constrain_one_branch") 
+   constrain_one_branch.tag = ^"namespace_tag" + ".deleted_by_tree";
+    if (Type (^constrain_one_branch.tag) == "AssociativeList") {
+        if ((^constrain_one_branch.tag)[i] / node_name) {
+            if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.parameters.synonymous_rate"), "String")) {
+                constrain_one_branch.t = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")];
+                //console.log (tree_name + "." + node_name + "." + constrain_one_branch.t + " => " + Eval (tree_name + "." + node_name + "." + constrain_one_branch.t));
+                parameters.SetConstraint (tree_name + "." + node_name + "." + constrain_one_branch.t, "0", "");
+                return 1;
+            }
+        }
+    }
+    return 0;
+ }
+

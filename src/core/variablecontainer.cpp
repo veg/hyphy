@@ -777,8 +777,7 @@ long      _VariableContainer::SetDependance (long varIndex) {
 }
 
 //__________________________________________________________________________________
-bool      _VariableContainer::SetMDependance (_SimpleList const & mDep)
-{
+bool      _VariableContainer::SetMDependance (_SimpleList const & mDep) {
   if (iVariables) {
     if (mDep.lLength*2 > iVariables->lLength)
       for (long k=iVariables->lLength-2; k>=0; k-=2) {

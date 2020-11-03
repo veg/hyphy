@@ -1159,7 +1159,7 @@ lfunction relax.extract.k(branch_info) {
 
 //------------------------------------------------------------------------------
 
-lfunction relax.set.k (tree_name, node_name, model_description) {
+lfunction relax.set.k (tree_name, node_name, model_description, ignore) {
     if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.relax.k"), "String")) {
         k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];
         t = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")];
@@ -1172,7 +1172,7 @@ lfunction relax.set.k (tree_name, node_name, model_description) {
 
 //------------------------------------------------------------------------------
 
-lfunction relax.set.k2 (tree_name, node_name, model_description) {
+lfunction relax.set.k2 (tree_name, node_name, model_description, ignore) {
     if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.relax.k"), "String")) {
         k = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.relax.k")];        
         parameters.RemoveConstraint (tree_name + "." + node_name + "." + k);

@@ -8,6 +8,7 @@ terms.rate_variation.Gamma = "Gamma";
 
 namespace terms{
 
+
     /* Generic terms which are used in a variety of contexts */
     alphabet                = "alphabet";
     code                    = "code";
@@ -171,6 +172,7 @@ namespace terms{
         file           = "file";
         cache          = "cache";
         name           = "name";
+        value          = "value";
         name_mapping   = "name-mapping";
         partitions     = "partitions";
         tree           = "tree";
