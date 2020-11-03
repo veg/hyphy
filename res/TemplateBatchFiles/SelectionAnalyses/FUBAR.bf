@@ -780,7 +780,7 @@ lfunction fubar.scalers.Constrain (tree_name, node_name, model_description, igno
 
 //------------------------------------------------------------------------------
 
-lfunction fubar.scalers.Unconstrain (tree_name, node_name, model_description) {
+lfunction fubar.scalers.Unconstrain (tree_name, node_name, model_description, ignore) {
     parameters.RemoveConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")]);
     parameters.RemoveConstraint (tree_name + "." + node_name + "." + (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.nonsynonymous_rate")]);
 }
