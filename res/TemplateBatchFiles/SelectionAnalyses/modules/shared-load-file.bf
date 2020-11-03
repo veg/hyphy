@@ -274,7 +274,7 @@ function store_tree_information () {
 
 
 
-
+//------------------------------------------------------------------------------
 
 function doGTR (prefix) {
 
@@ -325,12 +325,15 @@ function doGTR (prefix) {
     kill0 = io.SelectAnOption (
         {
             "Yes":"Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)",
+            "Constrain":"Keep zero-length branches, but constrain their values to 0",
             "No":"Keep all branches"
         },
-        "The set of properties to use in the model") == "Yes";
+        "Reduce zero-length branches");
 
+    zero_branch_length_constrain = NULL;
+    deleted_by_tree = NULL;
 
-    if (kill0) {
+    if (kill0 == "Yes") {
         for (index, tree; in; trees) {
             deleted = {};
             if (^(prefix + ".selected_branches") / index) {
@@ -350,6 +353,32 @@ function doGTR (prefix) {
             (partitions_and_trees[i])[^"terms.data.tree"] = trees[i];
         }
         store_tree_information ();
+    } else {
+        if (kill0 == "Constrain") {
+            zero_branch_length_constrain = ^"namespace_tag"+".constrain_zero_branches";
+            deleted_by_tree = {};
+            for (index, tree; in; trees) {
+                deleted = {};
+                if (^(prefix + ".selected_branches") / index) {
+                    trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], (^(prefix + ".selected_branches"))[index], deleted);
+                } else {
+                    trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], null, deleted);
+                }
+
+                if (utility.Array1D (deleted)) {
+                    io.ReportProgressMessageMD(prefix,  'selector', 'Marked ' + Abs(deleted) + ' zero-length internal branches to be constrained: \`' + Join (', ',utility.Values(deleted)) + '\`');
+                }
+                if (Abs (deleted)) { 
+                   deleted_dict = {};
+                   for (v; in; deleted) {
+                    deleted_dict[v] = 1;
+                   }   
+                   deleted_by_tree[index] = deleted_dict;
+                } else {
+                    deleted_by_tree[index] = deleted;
+                }
+            }    
+        }
     }
 
 
@@ -477,3 +506,34 @@ function doPartitionedMG (prefix, keep_lf) {
 
     /** extract and report dN/dS estimates */
 }
+
+//------------------------------------------------------------------------------
+
+
+function constrain_zero_branches (lf_id, components, data_filter, tree, model_map, initial_values, model_objects) {
+   SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+   //console.log (">>>IN constrain_zero_branches");
+   constrain_zero_branches.parameters = estimators.TraverseLocalParameters (lf_id, model_objects, ^"namespace_tag" + ".constrain_one_branch");
+   constrain_zero_branches.parameters = +constrain_zero_branches.parameters;
+   SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
+   return constrain_zero_branches.parameters;
+}
+
+//------------------------------------------------------------------------------
+
+function constrain_one_branch (tree_name, node_name, model_description,i) {
+   //console.log (">>>IN constrain_one_branch") 
+   constrain_one_branch.tag = ^"namespace_tag" + ".deleted_by_tree";
+    if (Type (^constrain_one_branch.tag) == "AssociativeList") {
+        if ((^constrain_one_branch.tag)[i] / node_name) {
+            if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.parameters.synonymous_rate"), "String")) {
+                constrain_one_branch.t = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")];
+                //console.log (tree_name + "." + node_name + "." + constrain_one_branch.t + " => " + Eval (tree_name + "." + node_name + "." + constrain_one_branch.t));
+                parameters.SetConstraint (tree_name + "." + node_name + "." + constrain_one_branch.t, "0", "");
+                return 1;
+            }
+        }
+    }
+    return 0;
+ }
+

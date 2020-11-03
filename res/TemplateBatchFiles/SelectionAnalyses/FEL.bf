@@ -145,6 +145,7 @@ utility.ForEachPair (fel.selected_branches, "_partition_", "_selection_",
 
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
 
+namespace_tag = "fel";
 
 namespace fel {
     doGTR ("fel");
@@ -173,10 +174,12 @@ if (Type (fel.save_intermediate_fits) == "AssociativeList") {
 }
     
 if (fel.run_full_mg94) {    
+
     fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
         terms.run_options.model_type: terms.local,
         terms.run_options.partitioned_omega: fel.selected_branches,
         terms.run_options.retain_lf_object: TRUE,
+        terms.run_options.apply_user_constraints: fel.zero_branch_length_constrain,
         terms.run_options.optimization_settings: {
             "OPTIMIZATION_METHOD" : "coordinate-wise"
         }

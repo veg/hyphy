@@ -143,6 +143,8 @@ meme.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(m
 
 selection.io.startTimer (meme.json [terms.json.timers], "Model fitting",1);
 
+namespace_tag = "meme";
+
 namespace meme {
     doGTR ("meme");
 }
@@ -199,6 +201,7 @@ if (meme.run_full_mg94) {
         terms.run_options.model_type: terms.local,
         terms.run_options.partitioned_omega: meme.selected_branches,
         terms.run_options.retain_lf_object: TRUE,
+        terms.run_options.apply_user_constraints: meme.zero_branch_length_constrain,
         terms.run_options.optimization_settings: {
             "OPTIMIZATION_METHOD" : "coordinate-wise"
         }

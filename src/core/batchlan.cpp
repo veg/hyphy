@@ -3715,7 +3715,17 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
     case HY_HBL_COMMAND_NESTED_LIST:
       chain.currentCommand++;
       {
+        _FString *stash_current = (_FString*)hy_env::EnvVariableGet(kNamespaceName, STRING);
+        if (stash_current) {
+            stash_current->AddAReference();
+        }
+        hy_env::EnvVariableSet(kNamespaceName, new _FString ((_String*)GetIthParameter(1)->toStr(), false), false);
         ((_ExecutionList*)parameters.GetItem(0))->Execute(&chain);
+        if (stash_current) {
+            hy_env::EnvVariableSet(kNamespaceName, stash_current, false);
+        } else {
+            hy_env::EnvVariableSet(kNamespaceName, new _MathObject, false);
+        }
       }
       break;
           
@@ -4787,13 +4797,13 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain) {
 // syntax: function <ident> (comma separated list of parameters) {body}
 
-
     bool    isFFunction = source.BeginsWith (blFFunction),
             isLFunction = ! isFFunction && source.BeginsWith (blLFunction),
             isCFunction = ! isFFunction && ! isLFunction && source.BeginsWith (blCFunction),
             isNameSpace = ! isFFunction && ! isLFunction && ! isCFunction && source.BeginsWith (blNameSpace);
 
     _hy_nested_check save_state = isInFunction;
+    
     
     if (!isNameSpace) {
       if (isInFunction == _HY_FUNCTION) {
@@ -4803,6 +4813,8 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
     }
     
     long mark1, mark2;
+    
+    _FString *save_nmspc = nil;
     
     if (isNameSpace) {
         mark1 = source.FirstNonSpaceIndex(blNameSpace.length(), kStringEnd, kStringDirectionForward);
@@ -4944,23 +4956,30 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
         return false;
       }
       _String          namespace_text (source, mark2+1,source.length()-2);
+
       bool             success = false;
 
       isInFunction = _HY_NAMESPACE;
       _ExecutionList   * namespace_payload = new _ExecutionList (namespace_text, funcID, false, &success);
-      DeleteObject (funcID);
+        
         // 20180713 SLKP -- this was marked as deleted in one of the v2.3 branches
       if (success) {
         _ElementaryCommand * nested_list = new _ElementaryCommand (HY_HBL_COMMAND_NESTED_LIST);
         nested_list->parameters.AppendNewInstance(namespace_payload);
+        nested_list->parameters << funcID;
         chain.AppendNewInstance(nested_list);
+        DeleteObject (funcID);
       } else {
         DeleteObject (namespace_payload);
+        DeleteObject (funcID);
+
         return false;
       }
 
     }
-
+    if (isNameSpace) {
+        
+    }
 
     isInFunction = save_state;
     return true;

@@ -442,7 +442,7 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
         branch_names = Rows (map);
         for (b = 0; b < Abs(map); b += 1) {
             _branch_name = branch_names[b];
-            result[_branch_name] = Call (callback, tree_name, _branch_name, (model_descriptions [map[_branch_name]])[utility.getGlobalValue ("terms.parameters")]);
+            result[_branch_name] = Call (callback, tree_name, _branch_name, (model_descriptions [map[_branch_name]])[utility.getGlobalValue ("terms.parameters")], i);
         }
     }
     return result;
@@ -665,7 +665,7 @@ lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial
 
         if (Type(initial_values) == "AssociativeList") {
             utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-                df = estimators.ApplyExistingEstimates(lf_id, model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+            df = estimators.ApplyExistingEstimates(lf_id, model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
         }
 
         if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
