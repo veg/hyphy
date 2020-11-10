@@ -57,6 +57,8 @@ using namespace hyphy_global_objects;
 hyFloat const sqrtPi = 1.77245385090551603,
               twoOverSqrtPi = 2./sqrtPi;
 
+_Formula * current_formula_being_computed = nil;
+
 //__________________________________________________________________________________
 
 
@@ -1914,6 +1916,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
 // TODO SLKP 20170925 Needs code review
 {
     _Stack * scrap_here;
+    current_formula_being_computed = this;
     if (theFormula.empty()) {
         theStack.theStack.Clear();
         theStack.Push (new _MathObject, false);
@@ -2021,6 +2024,8 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                 }
                 errorText & "\n------------------\n";
             }
+            
+            current_formula_being_computed = nil;
 
             if (errMsg) {
                 *errMsg = *errMsg & errorText;
@@ -2047,6 +2052,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
           recursion_calls = nil;
         }
     }
+    current_formula_being_computed = nil;
     return valid_type == HY_ANY_OBJECT ? return_value : ((return_value->ObjectClass() & valid_type) ? return_value : nil);
 }
 
