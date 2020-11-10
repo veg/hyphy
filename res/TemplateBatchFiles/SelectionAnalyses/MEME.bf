@@ -145,9 +145,11 @@ selection.io.startTimer (meme.json [terms.json.timers], "Model fitting",1);
 
 namespace_tag = "meme";
 
+
 namespace meme {
     doGTR ("meme");
 }
+
 
 
 estimators.fixSubsetOfEstimates(meme.gtr_results, meme.gtr_results[terms.global]);
