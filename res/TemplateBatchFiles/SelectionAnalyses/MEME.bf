@@ -563,41 +563,59 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     
     initial_guess_grid = {
                 "0" : {
+                
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": ^"meme.site_omega_minus",
                     "meme.site_mixture_weight": ^"meme.site_mixture_weight"
+                   
                 },
                 "1" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus" * 2,
                     "meme.site_omega_minus": 0.5,
                     "meme.site_mixture_weight": 0.5                
                 },
                 "2" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus" * 4,
                     "meme.site_omega_minus": 0.25,
                     "meme.site_mixture_weight": 0.25                
                 },
                 "3" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": 0.5,
                     "meme.site_mixture_weight": 0.5                
                 },
                 "4" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": 0.75,
                     "meme.site_mixture_weight": 0.8                
                 },
                 "5" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus" * 8,
                     "meme.site_omega_minus": 0.5,
                     "meme.site_mixture_weight": 0.8                
                 },
                 "6" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": 0,
                     "meme.site_mixture_weight": 0.01              
                 },
                 "7" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": ^"meme.site_omega_minus",
                     "meme.site_mixture_weight": 1.0              

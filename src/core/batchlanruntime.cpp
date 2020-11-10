@@ -1694,7 +1694,7 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_p
       source_object->DoneComputing (true);
     } else {
       if (!source_object->HasBeenSetup()) {
-        throw (_String("Please call LFCompute (, ") & *GetIthParameter (0UL)& kLFStartCompute & ") before evaluating the likelihood function");
+        throw (_String("Please call LFCompute (") & *GetIthParameter (0UL)& ", " & kLFStartCompute & ") before evaluating the likelihood function");
       } else {
         if (op_kind == kLFTrackCache) {
           source_object->DetermineLocalUpdatePolicy();

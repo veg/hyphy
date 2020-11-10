@@ -179,12 +179,38 @@ namespace busted {
 }
 
 
+busted.run_full_mg94 = TRUE;
+    
+if (Type (busted.save_intermediate_fits) == "AssociativeList") {
+    if (None != busted.save_intermediate_fits[^"terms.data.value"]) {
+        if (utility.Has (busted.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
+            busted.final_partitioned_mg_results = (busted.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
+            busted.run_full_mg94 = FALSE;
+        }        
+    }
+}
+
 io.ReportProgressMessageMD ("BUSTED", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
-busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, busted.trees, busted.codon_data_info [terms.code], {
-    terms.run_options.model_type: terms.local,
-    terms.run_options.partitioned_omega: busted.selected_branches,
-}, busted.partitioned_mg_results);
+if (busted.run_full_mg94) {        
+    busted.final_partitioned_mg_results = estimators.FitMGREV (busted.filter_names, busted.trees, busted.codon_data_info [terms.code], {
+            terms.run_options.model_type: terms.local,
+            terms.run_options.partitioned_omega: busted.selected_branches,
+            terms.run_options.apply_user_constraints: busted.zero_branch_length_constrain,
+            terms.run_options.optimization_settings: {
+                "OPTIMIZATION_METHOD" : "coordinate-wise"
+            }
+        }, busted.partitioned_mg_results);
+
+    if (Type (busted.save_intermediate_fits) == "AssociativeList") {
+        (busted.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = busted.final_partitioned_mg_results;        
+        Export (lfe, ^busted.final_partitioned_mg_results[^"terms.likelihood_function"]);
+        (busted.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
+        io.SpoolJSON (busted.save_intermediate_fits[^"terms.data.value"],busted.save_intermediate_fits[^"terms.data.file"]);      
+    }
+}
+
+
 
 
 io.ReportProgressMessageMD("BUSTED", "codon-refit", "* " + selection.io.report_fit (busted.final_partitioned_mg_results, 0, busted.codon_data_info[terms.data.sample_size]));
@@ -317,6 +343,7 @@ if (busted.has_background) {
     busted.model_object_map = { "busted.test" :       busted.test.bsrel_model };
 }
 
+
 if (busted.do_srv)  {
 
     if (busted.do_bs_srv) {
@@ -394,6 +421,12 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
 
   
 busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
+
+if (busted.do_srv_hmm) {
+    busted.hmm_lambda = selection.io.extract_global_MLE (busted.full_model, terms.rate_variation.hmm_lambda);
+    //parameters.SetConstraint (((busted.test.bsrel_model[terms.parameters])[terms.global])[terms.rate_variation.hmm_lambda],"1e-6", "");
+}
+                                    
 
 parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
 busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {

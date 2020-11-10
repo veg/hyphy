@@ -560,17 +560,26 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
   
         // fit the universal alternative
      ^"prime.site_beta" = Eval (^"prime.site_beta");   
-     LFCompute (^lf_prop,LF_START_COMPUTE);
+     /*LFCompute (^lf_prop,LF_START_COMPUTE);
      LFCompute (^lf_prop,results);
-     LFCompute (^lf_prop,LF_DONE_COMPUTE);
+     LFCompute (^lf_prop,LF_DONE_COMPUTE);*/
+     
      parameters.SetConstraint ("prime.site_beta", Eval(^"prime.site_beta"),"");
    
+     console.log (^"prime.site_beta" + "\n");
+     
+     start_grid = {};
+     propN = utility.Array1D (^"prime.lambdas");
+     
+     for (k = 0; k )
+   
      for (l; in; ^"prime.lambdas") {
+        console.log (l);
         ^l = 0;
      }
      
-     /*Export (lfe, ^lf_prop);
-     fprintf ("/Users/sergei/Desktop/prime.bf",CLEAR_FILE,lfe);*/
+     //Export (lfe, ^lf_prop);
+     //fprintf ("/Users/sergei/Desktop/prime." + ^"MPI_NODE_ID" + ".bf",CLEAR_FILE,lfe);
      
      
      Optimize (results, ^lf_prop, {
@@ -579,13 +588,13 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
             /*"OPTIMIZATION_START_GRID" : 
              {
                 "0" : {
-                    "prime.site_beta": -0.75,
+                    "prime.site_beta": -2,
                 },
                 "1" : {
-                    "prime.site_beta": -0.5,
+                    "prime.site_beta": -1,
                 },
                 "2" : {
-                    "prime.site_beta": -0.25,
+                    "prime.site_beta": -0,
                 }
 
             

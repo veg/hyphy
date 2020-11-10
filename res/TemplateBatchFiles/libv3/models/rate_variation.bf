@@ -37,8 +37,11 @@ function rate_variation.modifier_everything (q_ij, from, to, namespace, cat_name
 
 lfunction rate_variation_define_HMM (categories, namespace, globals, definition) {
     
+    
+    W =  (definition[utility.getGlobalValue("terms.category.category_parameters")])[utility.getGlobalValue("terms.category.weight_vector")];
+    
     lambda = parameters.ApplyNameSpace   ("hmm_lambda", namespace);
-    parameters.DeclareGlobalWithRanges (lambda, .1/categories, 1e-6, 1/(categories));
+    parameters.DeclareGlobalWithRanges (lambda, .1/categories, 1e-6, 0.9999999999);
     globals[utility.getGlobalValue("terms.rate_variation.hmm_lambda")] = lambda;
 
     hmm_T = parameters.ApplyNameSpace   ("hmm_transition_matrix", namespace);
@@ -50,18 +53,21 @@ lfunction rate_variation_define_HMM (categories, namespace, globals, definition)
     
     f_def = {categories,1};
     
-    cm1 = categories-1;
-    
     for (k = 0; k < categories; k+=1) {
-        matrix_def * ('`hmm_T`[`k`][`k`] := 1-`cm1`*`lambda`;\n');
-        matrix_def * ('`hmm_F`[`k`] = 1/`categories`;\n');
-        //f_def[k] = "" + 1/categories;
-        for (k2 = k+1; k2 < categories; k2+=1) {
-        matrix_def * ('`hmm_T`[`k`][`k2`] := `lambda`;\n');
-        matrix_def * ('`hmm_T`[`k2`][`k`] := `lambda`;\n');
+        matrix_def * ('`hmm_F`[`k`] = ' + W[k] + ';\n');
+        diag = {};
+        for (k2 = 0; k2 < categories; k2+=1) {
+            w = W[k2];
+            if (k != k2) {
+                matrix_def * ('`hmm_T`[`k`][`k2`] := `lambda`*(`w`);\n');
+                diag + ('`lambda`*(`w`)');
+            }
         }
+        diag = Join ("-", diag);
+        matrix_def * ('`hmm_T`[`k`][`k`] := 1-`diag`;\n');
     }
-    
+ 
+   
     matrix_def * "Model `hmm_M` =  (`hmm_T`, `hmm_F`, 0);\n";
     matrix_def * 0;
     utility.ExecuteInGlobalNamespace (matrix_def);
@@ -158,6 +164,7 @@ lfunction rate_variation_define_gdd(options, namespace) {
 				  		utility.getGlobalValue("terms.category.CDF"): "{{" + Join (",", utility.Map (rates, "_value_", "'('+_value_+')/`normalizer`'")) + "}}",
 				  		utility.getGlobalValue("terms.lower_bound") : 0,
 				  		utility.getGlobalValue("terms.upper_bound") : 1e25,
+				  		utility.getGlobalValue("terms.category.weight_vector") : weight_vector
 				  },
 				  utility.getGlobalValue("terms.rate_variation.before") : None,
 				  utility.getGlobalValue("terms.rate_variation.after") : None,
