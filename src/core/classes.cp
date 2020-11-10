@@ -185,28 +185,34 @@ template <class node_data> void node<node_data>::delete_tree(bool delSelf){
 }
 
   //-------------------------------------------------------------
-template <class node_data> node<node_data>* node<node_data>::duplicate_tree(void (callback) (node<node_data>*)) {
+template <class node_data> node<node_data>* node<node_data>::duplicate_tree(void (callback) (node<node_data>*, node<node_data>*)) {
     
     node<node_data>* result = new node<node_data>;
     
     for (int i=1; i<=get_num_nodes(); i++) {
-        result->add_node(*(go_down(i)->duplicate_tree()));
+        result->add_node(*(go_down(i)->duplicate_tree(callback)));
     }
     
+
     if (callback) {
-        callback (result);
+        callback (this, result);
+    } else {
+        result->in_object = in_object;
     }
     
-    result->in_object = in_object;
     return result;
 }
 
   //-------------------------------------------------------------
 
-template <class node_data> void node_count_descendants (node<node_data>* n) {
-    n->in_object = 0L;
-    for (int i=1; i<=n->get_num_nodes(); i++) {
-      n->in_object += n->go_down(i)->in_object;
+template <class node_data> void node_count_descendants (node<node_data>* source, node<node_data>* n) {
+    if (n->get_num_nodes() == 0) {
+        n->in_object = 1L;
+    } else {
+        n->in_object = 0L;
+        for (int i=1; i<=n->get_num_nodes(); i++) {
+          n->in_object += n->go_down(i)->in_object;
+        }
     }
 }
 

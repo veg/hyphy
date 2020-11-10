@@ -332,7 +332,7 @@ function doGTR (prefix) {
 
     zero_branch_length_constrain = NULL;
     deleted_by_tree = NULL;
-
+    
     if (kill0 == "Yes") {
         for (index, tree; in; trees) {
             deleted = {};
