@@ -5175,7 +5175,7 @@ bool CheckEqual (hyFloat a, hyFloat b, hyFloat tolerance) {
         a = (a>b)?(a-b)/a:(b-a)/a;
         return a>0.0 ? a<=tolerance : a>=-tolerance;
     }
-    return (b<=tolerance)&&(b>=-tolerance);
+    return fabs(b)<=tolerance;
 }
     
 //_______________________________________________________________________________________

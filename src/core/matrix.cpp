@@ -2002,13 +2002,20 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
 bool    _Matrix::IsValidTransitionMatrix() const {
     if (is_square() && is_numeric()) {
         long d = GetHDim();
-        hyFloat * sums = new hyFloat [d] {0.0};
+        hyFloat * sums = (hyFloat*)alloca (sizeof (hyFloat)*d);
         long idx = 0L;
         for (long r = 0L; r < d; r++) {
             for (long c = 0L; c < d; c++, idx++) {
                 hyFloat term = theData[idx];
                 if (term < 0.0 || term > 1.0) {
-                    delete [] sums;
+                    if (CheckEqual(term, 0.0)) {
+                        theData[idx] = 0.;
+                        continue;
+                    }
+                    if (CheckEqual(term, 1.0)) {
+                        theData[idx] = 1.;
+                        continue;
+                    }
                     return false;
                 }
                 sums[r] += term;
@@ -2016,11 +2023,9 @@ bool    _Matrix::IsValidTransitionMatrix() const {
         }
         for (long r = 0L; r < d; r++) {
             if (!CheckEqual(1.0, sums[r])) {
-                delete [] sums;
                 return false;
             }
         }
-        delete [] sums;
         return true;
     }
     return false;
