@@ -145,6 +145,7 @@ namespace terms{
         category_parameters = "category parameters";
         bins                = "bins";
         weights             = "weights";
+        weight_vector       = "weight_vector";
         represent           = "represent";
         PDF                 = "PDF";
         CDF                 = "CDF";

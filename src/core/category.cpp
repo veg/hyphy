@@ -872,7 +872,7 @@ _Matrix*    _CategoryVariable::GetIntervalEnds (void)
 _Matrix*    _CategoryVariable::ComputeHiddenMarkov (void) {
     _Matrix *hmmr = (_Matrix*)((_Matrix*)LocateVar (modelMatrixIndices.list_data[hiddenMarkovModel])->GetValue())->ComputeNumeric();
     if (!hmmr->IsValidTransitionMatrix()) {
-        HandleApplicationError(_String ("Hidden Markov Model transition matrix variable did not compute to a valid transition matrix"));
+        HandleApplicationError(_String ("Hidden Markov Model transition matrix variable did not compute to a valid transition matrix: ") & _String ((_String*)hmmr->toStr()));
     }
     return hmmr;
 }

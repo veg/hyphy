@@ -238,7 +238,7 @@ public:
     int                 next            (void);
     int                 up              (void);
     void                delete_tree     (bool = false);
-    node<node_data>*    duplicate_tree  (void (callback) (node<node_data>*) = nil);
+    node<node_data>*    duplicate_tree  (void (callback) (node<node_data>*, node<node_data>*) = nil);
     // traverse from this node down duplicating the tree and return
     // pointer to the root of the duplicate;
     bool                compare_subtree (node<node_data>*);

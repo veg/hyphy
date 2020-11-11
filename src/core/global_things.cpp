@@ -348,6 +348,7 @@ namespace hy_global {
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
         isInFunction        = _HY_NO_FUNCTION;
         isDefiningATree     = kTreeNotBeingDefined;
+        current_formula_being_computed = nil;
 #ifdef __HYPHYMPI__
         MPI_Comm_size   (MPI_COMM_WORLD, &hy_mpi_node_count);
         EnvVariableSet  (mpi_node_count, new _Constant (hy_mpi_node_count), false);
@@ -600,6 +601,10 @@ namespace hy_global {
         
         if (doDefault) {
             (*error_message) << "Error:\n" << theMessage;
+            
+            if (current_formula_being_computed) {
+                (*error_message) << "\n\tWhile computing: " << (_String*)current_formula_being_computed->toStr(kFormulaStringConversionNormal);
+            }
             
             if (calls.nonempty()) {
                 (*error_message) << "\n\nFunction call stack\n";
