@@ -2014,6 +2014,7 @@ bool    _Matrix::IsValidTransitionMatrix() const {
                     }
                     if (CheckEqual(term, 1.0)) {
                         theData[idx] = 1.;
+                        sums[r] += term;
                         continue;
                     }
                     return false;
