@@ -90,6 +90,7 @@ extern      _SimpleList     BuiltInFunctionParameterCount,
 
 
 extern      _AVLListX       variableNames;
+extern      _AVLList        *deferClearConstraint;
 
 extern      _String         HalfOps;
 

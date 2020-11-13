@@ -143,6 +143,8 @@ meme.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(m
 
 selection.io.startTimer (meme.json [terms.json.timers], "Model fitting",1);
 
+namespace_tag = "meme";
+
 namespace meme {
     doGTR ("meme");
 }
@@ -158,6 +160,7 @@ namespace meme {
 /*io.ReportProgressMessageMD ("MEME", "codon-refit-prelim", "Improving branch lengths under a full codon model");
 
 estimators.fixSubsetOfEstimates(meme.partitioned_mg_results, meme.partitioned_mg_results[terms.global]);
+
 
 meme.final_partitioned_mg_results_bl = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
@@ -177,15 +180,40 @@ utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME
 
 io.ReportProgressMessageMD ("MEME", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
-meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
-    terms.run_options.model_type: terms.local,
-    terms.run_options.partitioned_omega: meme.selected_branches,
-    terms.run_options.retain_lf_object: TRUE,
-    terms.run_options.optimization_settings: {
-        "OPTIMIZATION_METHOD" : "coordinate-wise"
-    }
-}, meme.partitioned_mg_results);
 
+meme.run_full_mg94 = TRUE;
+    
+if (Type (meme.save_intermediate_fits) == "AssociativeList") {
+    if (None != meme.save_intermediate_fits[^"terms.data.value"]) {
+        if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
+            meme.final_partitioned_mg_results = (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
+            if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
+                ExecuteCommands ((meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
+                meme.run_full_mg94 = FALSE;
+            }
+        }        
+    }
+}
+
+
+if (meme.run_full_mg94) {    
+    meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
+        terms.run_options.model_type: terms.local,
+        terms.run_options.partitioned_omega: meme.selected_branches,
+        terms.run_options.retain_lf_object: TRUE,
+        terms.run_options.apply_user_constraints: meme.zero_branch_length_constrain,
+        terms.run_options.optimization_settings: {
+            "OPTIMIZATION_METHOD" : "coordinate-wise"
+        }
+    }, meme.partitioned_mg_results);
+
+    if (Type (meme.save_intermediate_fits) == "AssociativeList") {
+        (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = meme.final_partitioned_mg_results;        
+        Export (lfe, ^meme.final_partitioned_mg_results[^"terms.likelihood_function"]);
+        (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
+        io.SpoolJSON (meme.save_intermediate_fits[^"terms.data.value"],meme.save_intermediate_fits[^"terms.data.file"]);      
+    }
+}
 
 //meme.final_partitioned_mg_results = meme.partitioned_mg_results;
 
@@ -535,41 +563,59 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     
     initial_guess_grid = {
                 "0" : {
+                
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": ^"meme.site_omega_minus",
                     "meme.site_mixture_weight": ^"meme.site_mixture_weight"
+                   
                 },
                 "1" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus" * 2,
                     "meme.site_omega_minus": 0.5,
                     "meme.site_mixture_weight": 0.5                
                 },
                 "2" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus" * 4,
                     "meme.site_omega_minus": 0.25,
                     "meme.site_mixture_weight": 0.25                
                 },
                 "3" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": 0.5,
                     "meme.site_mixture_weight": 0.5                
                 },
                 "4" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": 0.75,
                     "meme.site_mixture_weight": 0.8                
                 },
                 "5" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus" * 8,
                     "meme.site_omega_minus": 0.5,
                     "meme.site_mixture_weight": 0.8                
                 },
                 "6" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": 0,
                     "meme.site_mixture_weight": 0.01              
                 },
                 "7" : {
+                    "meme.site_alpha" : ^"meme.site_alpha",
+                    "meme.site_beta_nuisance" : ^"meme.site_beta_nuisance",
                     "meme.site_beta_plus": ^"meme.site_beta_plus",
                     "meme.site_omega_minus": ^"meme.site_omega_minus",
                     "meme.site_mixture_weight": 1.0              

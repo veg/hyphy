@@ -112,6 +112,7 @@ namespace hy_global {
  http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n"),
                      kXVariableName ("_x_"),
                      kNVariableName ("_n_"),
+                     kNamespaceName ("_namespace_"),
                      kErrorStringIncompatibleOperands ("Incompatible operands"),
                      kErrorStringBadMatrixDefinition  ("Invalid matrix definition "),
                      kErrorStringInvalidMatrixIndex   ("Invalid matrix index "),
@@ -120,7 +121,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.21"),
+                     kHyPhyVersion  = _String ("2.5.22"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -266,7 +267,8 @@ namespace hy_global {
             &kNVariableName,
             &status_bar_update_string,
             &last_model_parameter_list,
-            &use_last_model
+            &use_last_model,
+            &kNamespaceName
         };
         
         for (_String const * item : mark_as_globals) {
@@ -346,6 +348,7 @@ namespace hy_global {
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
         isInFunction        = _HY_NO_FUNCTION;
         isDefiningATree     = kTreeNotBeingDefined;
+        current_formula_being_computed = nil;
 #ifdef __HYPHYMPI__
         MPI_Comm_size   (MPI_COMM_WORLD, &hy_mpi_node_count);
         EnvVariableSet  (mpi_node_count, new _Constant (hy_mpi_node_count), false);
@@ -598,6 +601,10 @@ namespace hy_global {
         
         if (doDefault) {
             (*error_message) << "Error:\n" << theMessage;
+            
+            if (current_formula_being_computed) {
+                (*error_message) << "\n\tWhile computing: " << (_String*)current_formula_being_computed->toStr(kFormulaStringConversionNormal);
+            }
             
             if (calls.nonempty()) {
                 (*error_message) << "\n\nFunction call stack\n";

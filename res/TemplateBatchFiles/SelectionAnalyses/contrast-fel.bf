@@ -267,6 +267,12 @@ fel.table_output_options = {terms.table_options.header : TRUE, terms.table_optio
                             terms.table_options.column_widths : { "0" : 8, "1" : 16, "2" : 30, "3" : 30, "4" : 40, "5" : 10, "6" : 10}};
 
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
+
+namespace fel {
+    doGTR ("fel");
+}
+
+
 estimators.fixSubsetOfEstimates(fel.gtr_results, fel.gtr_results[terms.global]);
 
 namespace fel {
@@ -290,7 +296,6 @@ fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.tr
 io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
 fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
 utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
-
 
 
 
@@ -682,6 +687,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         }
         start.grid + values;
     }
+    
         
     Optimize (results, ^lf, {
                 "OPTIMIZATION_METHOD" : "nedler-mead", 

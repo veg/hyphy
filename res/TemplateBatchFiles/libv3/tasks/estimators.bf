@@ -442,7 +442,7 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
         branch_names = Rows (map);
         for (b = 0; b < Abs(map); b += 1) {
             _branch_name = branch_names[b];
-            result[_branch_name] = Call (callback, tree_name, _branch_name, (model_descriptions [map[_branch_name]])[utility.getGlobalValue ("terms.parameters")]);
+            result[_branch_name] = Call (callback, tree_name, _branch_name, (model_descriptions [map[_branch_name]])[utility.getGlobalValue ("terms.parameters")], i);
         }
     }
     return result;
@@ -457,6 +457,9 @@ lfunction estimators.TraverseLocalParameters (likelihood_function_id, model_desc
  * @returns number of constrained parameters;
  */
 function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions, initial_values, _application_type, keep_track_of_proportional_scalers) {
+
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+
 
     estimators.ApplyExistingEstimatesToTree.constraint_count = 0;
 
@@ -499,6 +502,9 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
             //warning.log ("No initial branch length object of for branch '" + _branch_name);
         }
     }
+
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
+
 
     //fprintf (stdout, Format (^_tree_name, 1,1), "\n");
 
@@ -659,7 +665,7 @@ lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial
 
         if (Type(initial_values) == "AssociativeList") {
             utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-                df = estimators.ApplyExistingEstimates(lf_id, model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+            df = estimators.ApplyExistingEstimates(lf_id, model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
         }
 
         if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
@@ -906,11 +912,27 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     this_namespace = this_namespace[0][Abs (this_namespace)-3];
 
     df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options, None);
+    
+    /*
+        partition parameters into groups
+    */
+    
+    pg = utility.getEnvVariable ("PARAMETER_GROUPING");
+    
+    if (Type (pg) != "AssociativeList") {
+        GetString (params, likelihoodFunction,-1);
+        pg = {"0" : params["Global Independent"]};
+        utility.ToggleEnvVariable ("PARAMETER_GROUPING", pg);
+    } 
 
     if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
         Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
     } else {
     	Optimize (mles, likelihoodFunction);
+    }
+
+    if (Type (pg) == "AssociativeList") {
+         utility.ToggleEnvVariable ("PARAMETER_GROUPING", None);
     }
 
     if (Type(initial_values) == "AssociativeList") {
@@ -1109,6 +1131,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
         alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
         beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
+        
+        SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];
 
@@ -1127,7 +1151,8 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
                 ExecuteCommands(apply_constraint);
             }
         }
-    } else {}
+        SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
+   } else {}
 
 
     LikelihoodFunction likelihoodFunction = (lf_components);

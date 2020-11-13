@@ -188,6 +188,9 @@ _String const
     end_of_file                                     ("END_OF_FILE"),
         // set by IO operations, like fscanf to indicate whetehr the end of the input stream has
         // been reached
+    file_created                                   ("FILE_CREATED"),
+    // set by IO operations, like fscanf to indicate whetehr the end of the input stream has
+    // been reached
     error_report_format_expression                  ("ERROR_REPORT_FORMAT_EXPRESSION"),
         // if provided, this expression (assumed string valued), will be used to format the error
         // message, with special placeholder variables (see below) will be replaced with the

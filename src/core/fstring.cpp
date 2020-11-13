@@ -448,7 +448,7 @@ HBLObjectRef _FString::RerootTree (HBLObjectRef root, HBLObjectRef cache) {
     while       (_CalcNode * iterator = ti.Next()) {
         node<long>* counter_tree = ni.Next();
         long      nodeMin    = totalNodeCount-counter_tree->in_object-1L;
-        hyFloat thisRatio = nodeMin/(1L+counter_tree->in_object);
+        hyFloat thisRatio = nodeMin/(1.+counter_tree->in_object);
 
         if (thisRatio>1.0) {
             thisRatio = 1.0/thisRatio;
@@ -473,6 +473,8 @@ HBLObjectRef _FString::RerootTree (HBLObjectRef root, HBLObjectRef cache) {
                 rerootAt = nil;
             }
         }
+        
+        //printf ("Node %s, nodeMin = %ld, bRatio = %lg\n", iterator->GetName()->get_str(), nodeMin, thisRatio);
     }
   
     counted_descendants->delete_tree(true);
@@ -480,6 +482,7 @@ HBLObjectRef _FString::RerootTree (HBLObjectRef root, HBLObjectRef cache) {
     HBLObjectRef res;
     if (rerootAt) {
         _FString    rAt  (rerootAt->ContextFreeName());
+        //BufferToConsole("\nREROOT AT:"); ObjectToConsole(&rAt); NLToConsole();
         res = (_FString*)rTree.RerootTree (&rAt, cache);
     } else {
         res = _returnStringOrUseCache (get_str(), cache);

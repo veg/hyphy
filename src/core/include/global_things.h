@@ -298,6 +298,7 @@ namespace hy_global {
   kHyphyCiteString,
   kXVariableName,
   kNVariableName,
+  kNamespaceName,
   kErrorStringIncompatibleOperands,        // -101
   kErrorStringBadMatrixDefinition,         // -104
   kErrorStringInvalidMatrixIndex,          // -106

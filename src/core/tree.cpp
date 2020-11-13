@@ -96,11 +96,11 @@ extern  long likeFuncEvalCallCount,
               matrix_exp_count;
 
 
-hyFloat             _lfScalerPower            = 100.,
+hyFloat             _lfScalerPower            = 64,
                     _lfScalerUpwards          = pow(2.,_lfScalerPower),
                     _lfScalingFactorThreshold = 1./_lfScalerUpwards,
                     _logLFScaler              = _lfScalerPower *log(2.),
-                    _lfMaxScaler              = DBL_MAX * 1.e-10,
+                    _lfMaxScaler              = sqrt(DBL_MAX * 1.e-10),
                     _lfMinScaler              = 1./_lfMaxScaler;
 
 
@@ -2584,7 +2584,8 @@ long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstInd
     
     
     bool * marked_nodes = (bool*) alloca (sizeof(bool) * flatTree.lLength);
-    InitializeArray(marked_nodes, flatTree.lLength, false);
+    memset (marked_nodes, 0, sizeof(bool) * flatTree.lLength);
+    //InitializeArray(marked_nodes, flatTree.lLength, false);
 
     
     dsf->CompareTwoSitesCallback (firstIndex, secondIndex, [marked_nodes, this] (long idx, unsigned long di)->void{

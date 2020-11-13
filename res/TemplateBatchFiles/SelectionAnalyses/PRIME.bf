@@ -174,11 +174,53 @@ if (Type (debug.checkpoint) != "String") {
 
     io.ReportProgressMessageMD ("PRIME", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
-    prime.final_partitioned_mg_results = estimators.FitMGREV (prime.filter_names, prime.trees, prime.codon_data_info [terms.code], {
-        terms.run_options.model_type: terms.local,
-        terms.run_options.partitioned_omega: prime.selected_branches,
-        terms.run_options.retain_lf_object: TRUE
-    }, prime.partitioned_mg_results);
+    prime.run_full_mg94 = TRUE;
+    
+    if (Type (prime.save_intermediate_fits) == "AssociativeList") {
+        if (None != prime.save_intermediate_fits[^"terms.data.value"]) {
+            if (utility.Has (prime.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
+                prime.final_partitioned_mg_results = (prime.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
+                if (utility.Has (prime.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
+                    ExecuteCommands ((prime.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
+                    prime.run_full_mg94 = FALSE;
+                }
+            }        
+        }
+    }
+
+
+    if (prime.run_full_mg94) {   
+    
+        prime.final_partitioned_mg_results = estimators.FitMGREV (prime.filter_names, prime.trees, prime.codon_data_info [terms.code], {
+            terms.run_options.model_type: terms.local,
+            terms.run_options.partitioned_omega: prime.selected_branches,
+            terms.run_options.retain_lf_object: TRUE,
+            terms.run_options.apply_user_constraints: prime.zero_branch_length_constrain,
+            terms.run_options.optimization_settings: {
+                "OPTIMIZATION_METHOD" : "coordinate-wise"
+            }
+        }, prime.partitioned_mg_results);
+     
+        /*prime.final_partitioned_mg_results = estimators.FitMGREV (prime.filter_names, prime.trees, prime.codon_data_info [terms.code], {
+            terms.run_options.model_type: terms.local,
+            terms.run_options.partitioned_omega: prime.selected_branches,
+            terms.run_options.retain_lf_object: TRUE,
+            terms.run_options.apply_user_constraints: prime.zero_branch_length_constrain,
+            terms.run_options.optimization_settings: {
+                "OPTIMIZATION_METHOD" : "coordinate-wise"
+            }
+        }, prime.partitioned_mg_results);*/
+
+        if (Type (prime.save_intermediate_fits) == "AssociativeList") {
+            (prime.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = prime.final_partitioned_mg_results;        
+            Export (lfe, ^prime.final_partitioned_mg_results[^"terms.likelihood_function"]);
+            (prime.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
+            io.SpoolJSON (prime.save_intermediate_fits[^"terms.data.value"],prime.save_intermediate_fits[^"terms.data.file"]);      
+        }
+    }
+
+
+    
     
     debug.spool = utility.GetEnvVariable ("DEBUG_CHECKPOINT_STORE");
     if (Type (debug.spool) == "String" ) {
@@ -560,37 +602,43 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
   
         // fit the universal alternative
      ^"prime.site_beta" = Eval (^"prime.site_beta");   
-     LFCompute (^lf_prop,LF_START_COMPUTE);
+     /*LFCompute (^lf_prop,LF_START_COMPUTE);
      LFCompute (^lf_prop,results);
-     LFCompute (^lf_prop,LF_DONE_COMPUTE);
+     LFCompute (^lf_prop,LF_DONE_COMPUTE);*/
+     
      parameters.SetConstraint ("prime.site_beta", Eval(^"prime.site_beta"),"");
    
-     for (l; in; ^"prime.lambdas") {
-        ^l = 0;
+     
+     start_grid = {};
+     propN = utility.Array1D (^"prime.lambdas");
+     
+     for (sp = 0; sp < 100; sp += 1) {
+        point = {};
+        point ["prime.site_alpha"] = Random (0.75, 1.25);
+        point ["prime.site_beta"] = Random (0.5, 1.5);
+        point ["prime.site_beta_nuisance"] = Random (0.5, 1.5);
+        for (l; in; ^"prime.lambdas") {
+          point [l] = Random (-0.5,0.5);
+        }
+        start_grid + point;
      }
      
-     /*Export (lfe, ^lf_prop);
-     fprintf ("/Users/sergei/Desktop/prime.bf",CLEAR_FILE,lfe);*/
+     
+     //console.log (start_grid);
+     
+     
+     //Export (lfe, ^lf_prop);
+     //fprintf ("/Users/sergei/Desktop/prime." + ^"MPI_NODE_ID" + ".bf",CLEAR_FILE,lfe);
      
      
      Optimize (results, ^lf_prop, {
             "OPTIMIZATION_METHOD" : "nedler-mead",
             //"OPTIMIZATION_METHOD" : "gradient-descent",
-            /*"OPTIMIZATION_START_GRID" : 
-             {
-                "0" : {
-                    "prime.site_beta": -0.75,
-                },
-                "1" : {
-                    "prime.site_beta": -0.5,
-                },
-                "2" : {
-                    "prime.site_beta": -0.25,
-                }
-
-            
-             }*/
+            "OPTIMIZATION_START_GRID" : start_grid
         });
+        
+        
+    //console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM" + " : " + results[1][0] + "\n");
         
     character_map = None;    
     if (^"prime.impute_states") {

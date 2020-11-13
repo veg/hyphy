@@ -670,7 +670,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
                 tips.AppendNewInstance (new _String (iterator->ContextFreeName ()));
             }
             if (iterator->GetModelIndex () == HY_NO_MODEL) {
-                throw _String ("Model is not associated with the node:") & iterator->ContextFreeName();
+                throw _String ("No model is not associated with node ") & iterator->ContextFreeName().Enquote();
             } else if (iterator->GetModelDimension() != dfDim) {
                 throw _String ("The dimension of the transition matrix at node ") & iterator->ContextFreeName ().Enquote() & " is not equal to the state count in the data filter associated with the tree.";
             }
@@ -3899,7 +3899,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         kMethodHybrid                                  ("hybrid"),
         kMethodGradientDescent                         ("gradient-descent"),
         kInitialGridMaximum                            ("LF_INITIAL_GRID_MAXIMUM"),
-        kInitialGridMaximumValue                       ("LF_INITIAL_GRID_MAXIMUM_VALUE");
+        kInitialGridMaximumValue                       ("LF_INITIAL_GRID_MAXIMUM_VALUE"),
+        kMaxGradientDimension                          ("MAXIMUM_GRADIENT_DIMENSION");
 
         // optimization setting to produce a detailed log of optimization runs
 
@@ -4026,6 +4027,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     TimeDifference timer;
 
     hyFloat                 hardLimitOnOptimizationValue = hy_env::EnvVariableGetNumber(kOptimizationHardLimit, (hyFloat) INFINITY);
+    long                    maxGradientBlockDimension = hy_env::EnvVariableGetNumber(kMaxGradientDimension, 1000.);
 
     hardLimitOnOptimizationValue = MAX (hardLimitOnOptimizationValue, 0.0);
     if (hardLimitOnOptimizationValue != INFINITY) {
@@ -4334,7 +4336,13 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             //ConjugateGradientDescent (0.5, bestSoFar, true, 10);
             if (gradientBlocks.nonempty()) {
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
-                    maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
+                    _SimpleList * this_block = (_SimpleList*)gradientBlocks(b);
+                    if (this_block->countitems() <= maxGradientBlockDimension) {
+                        //printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
+                        maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,this_block,maxSoFar);
+                    } else {
+                        //printf ("\n...Skipping a large gradient block with %ld variables\n", this_block->countitems());
+                    }
                 }
             } else {
                 maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,nil,maxSoFar);
@@ -4642,7 +4650,11 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
                         if (gradientBlocks.nonempty()) {
                             for (long b = 0; b < gradientBlocks.lLength; b++) {
-                                maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
+                                _SimpleList * this_block = (_SimpleList*)(gradientBlocks(b));
+                                if (this_block->countitems() <= maxGradientBlockDimension) {
+                                    maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,this_block,maxSoFar);
+                                }
+                                //maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,(_SimpleList*)(gradientBlocks(b)),maxSoFar);
                             }
                         } else {
                             maxSoFar = ConjugateGradientDescent (prec, bestMSoFar,true,10,nil,maxSoFar);
@@ -5163,7 +5175,7 @@ bool CheckEqual (hyFloat a, hyFloat b, hyFloat tolerance) {
         a = (a>b)?(a-b)/a:(b-a)/a;
         return a>0.0 ? a<=tolerance : a>=-tolerance;
     }
-    return (b<=tolerance)&&(b>=-tolerance);
+    return fabs(b)<=tolerance;
 }
     
 //_______________________________________________________________________________________
@@ -6378,7 +6390,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
     if (only_these_parameters) {
         only_these_parameters->Sort();
         _SimpleList all (indexInd.lLength,0,1);
-        freeze.Intersect (all, *only_these_parameters);
+        freeze.Subtract (all, *only_these_parameters);
     }
 
 
@@ -9550,7 +9562,9 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     }
 
     ExportIndVariables(glVars, locVars, indepVarList);
+    locVars << "SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);\n";
     ExportDepVariables(glVars, locVars, depVarList);
+    locVars << "SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);\n";
 
     glVars.TrimSpace();
     locVars.TrimSpace();

@@ -278,4 +278,6 @@ protected:
 
 };
 
+extern _Formula * current_formula_being_computed;
+
 #endif

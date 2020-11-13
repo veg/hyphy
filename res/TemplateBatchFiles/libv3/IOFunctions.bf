@@ -67,6 +67,30 @@ lfunction io.PromptUserForString(prompt) {
 }
 
 /**
+ * @name io.HandleCacheRequest
+ * @param prompt
+ */
+lfunction io.ReadFromOrCreate (prompt, default_value) {
+    SetDialogPrompt (prompt);
+    contents = None;
+    fscanf (PROMPT_FOR_FILE, CREATE_FILE, "Raw", contents);
+        
+    if (^"FILE_CREATED") {
+        contents = default_value;   
+    } else {
+        if (None != contents) {
+            contents =  Eval (contents);
+        } else {
+            contents = default_value;
+        }
+    }
+    return {
+        ^"terms.data.file" : ^"LAST_FILE_PATH",
+        ^"terms.data.value" : contents
+    };
+}
+
+/**
  * @name io.PromptUserForFilePath
  * @param prompt
  */

@@ -182,6 +182,7 @@ namespace hy_env {
           get_data_info_returns_only_the_index,
           defer_constrain_assignment,
           end_of_file,
+          file_created,
           produce_markdown_output,
           integration_precision_factor,
           integration_maximum_iterations,

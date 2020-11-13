@@ -407,18 +407,22 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks, _AVLList
                 // also update the fact that this variable is no longer dependent in all declared
                 // variable containers which contain references to this variable
                 
-                DoForEachVariable([this] (_Variable* v, long v_idx) -> void {
-                    if (v->IsContainer()) {
-                        if (!((_VariableContainer*)v)->RemoveDependance (this->theIndex)) {
-                            ReportWarning ((_String("Can't make variable ")&GetName()->Enquote()&" independent in the context of "&*v->GetName()&" because its template variable is not independent."));
+                if (deferClearConstraint) {
+                    deferClearConstraint->InsertNumber(theIndex);
+                } else {
+                    DoForEachVariable([this] (_Variable* v, long v_idx) -> void {
+                        if (v->IsContainer()) {
+                            if (!((_VariableContainer*)v)->RemoveDependance (this->theIndex)) {
+                                ReportWarning ((_String("Can't make variable ")&GetName()->Enquote()&" independent in the context of "&*v->GetName()&" because its template variable is not independent."));
+                            }
                         }
-                    }
-                });
-                
-                for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
-                    if (((_String*)likeFuncNamesList(i))->nonempty()) {
-                        ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(theIndex);
-                    }
+                    });
+                    
+                    for (unsigned long i = 0UL; i<likeFuncList.lLength; i++)
+                        if (((_String*)likeFuncNamesList(i))->nonempty()) {
+                            ((_LikelihoodFunction*)likeFuncList(i))->UpdateDependent(theIndex);
+                        }
+                }
             }
 
             //_Formula::Clear();
