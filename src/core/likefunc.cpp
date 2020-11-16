@@ -4066,12 +4066,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     _variables_changed_during_last_compute = new _SimpleList ();
     variables_changed_during_last_compute = new _AVLList (_variables_changed_during_last_compute);
     
-    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
-        if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
-            variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
-        }
-    }
-
+    
 
 #ifdef __HYPHYMPI__
     if (hy_mpi_node_rank == 0) {
@@ -4178,6 +4173,13 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             }
         }
     }
+    
+    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+        if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
+            variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
+        } 
+    }
+
 
 #if !defined __UNIX__ || defined __HEADLESS__
     SetStatusBarValue (5,maxSoFar,(likeFuncEvalCallCount-evalsIn)/timer.TimeSinceStart());
