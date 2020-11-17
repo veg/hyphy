@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1605580076602,
+  "lastUpdate": 1605625987780,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -6153,6 +6153,54 @@ window.BENCHMARK_DATA = {
             "name": "SLAC.wbf",
             "value": 4.171794497403058,
             "range": "±1.828495%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "committer": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "id": "51d0d03cf6a37293bc1ec73bac8835246e534600",
+          "message": "Develop",
+          "timestamp": "2020-11-17T13:40:05Z",
+          "url": "https://github.com/veg/hyphy/pull/1249/commits/51d0d03cf6a37293bc1ec73bac8835246e534600"
+        },
+        "date": 1605625975914,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.5243832726374726,
+            "range": "±2.520198%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 7.614812332950055,
+            "range": "±0.943659%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 35.40324293705304,
+            "range": "±0.447989%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 4.284104686382117,
+            "range": "±1.824054%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
