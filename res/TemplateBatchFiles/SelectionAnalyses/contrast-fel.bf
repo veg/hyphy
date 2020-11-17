@@ -268,6 +268,8 @@ fel.table_output_options = {terms.table_options.header : TRUE, terms.table_optio
 
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
 
+namespace_tag = "fel";
+
 namespace fel {
     doGTR ("fel");
 }

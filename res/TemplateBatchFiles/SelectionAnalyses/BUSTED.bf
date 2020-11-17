@@ -166,6 +166,8 @@ busted.json[busted.json.background] =  busted.has_background;
 
 selection.io.startTimer (busted.json [terms.json.timers], "Preliminary model fitting", 1);
 
+namespace_tag = "busted";
+
 namespace busted {
     doGTR ("busted");
 }
