@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1605572682774,
+  "lastUpdate": 1605580076602,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -6105,6 +6105,54 @@ window.BENCHMARK_DATA = {
             "name": "ABSREL-MH.wbf",
             "value": 179.8237727027513,
             "range": "±0.957759%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "committer": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "id": "ec43aa2abf0c8792db28ee88fb9fe8d3b0564814",
+          "message": "Possible fix for an initial value error in Optimize",
+          "timestamp": "2020-11-13T18:01:33Z",
+          "url": "https://github.com/veg/hyphy/pull/1248/commits/ec43aa2abf0c8792db28ee88fb9fe8d3b0564814"
+        },
+        "date": 1605580068315,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.4319549335143325,
+            "range": "±0.506288%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 7.284435346994077,
+            "range": "±0.708062%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 33.5401643468053,
+            "range": "±0.646728%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 4.171794497403058,
+            "range": "±1.828495%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
