@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1605628862131,
+  "lastUpdate": 1605635477223,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -6433,6 +6433,68 @@ window.BENCHMARK_DATA = {
             "range": "±1.274053%",
             "unit": "secs/op",
             "extra": "9 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "committer": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "id": "1cd1f98e390426c041eec4781b25f5b60bb821a6",
+          "message": "2.5.23 rc",
+          "timestamp": "2020-11-17T15:04:55Z",
+          "url": "https://github.com/veg/hyphy/pull/1250/commits/1cd1f98e390426c041eec4781b25f5b60bb821a6"
+        },
+        "date": 1605635469359,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.4443478336226843,
+            "range": "±0.824465%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 7.254946059476048,
+            "range": "±0.662738%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 33.8478202003791,
+            "range": "±2.234754%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 4.116768007772458,
+            "range": "±0.686705%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": null,
+            "range": "±0.000000%",
+            "unit": "secs/op",
+            "extra": "0 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 97.97198001371606,
+            "range": "±0.736190%",
+            "unit": "secs/op",
+            "extra": "5 samples"
           }
         ]
       }
