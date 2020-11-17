@@ -685,17 +685,27 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         for (vi, vv; in; v) {
             values[pnames[vi]] = +vv;
         }
+        if (^"fel.srv"){
+         values[^"fel.alpha.scaler"] = Random (0.75, 1.25);
+        } 
         start.grid + values;
     }
     
-        
+    /*
+    GetString (p, ^lf, -1);
+    console.log (p);
+    console.log (values);
+    assert (0);
+    */
+    
     Optimize (results, ^lf, {
                 "OPTIMIZATION_METHOD" : "nedler-mead", 
                 "OPTIMIZATION_PRECISION" : 1e-5,
                 "OPTIMIZATION_START_GRID" : start.grid    
             }
            );
-    
+           
+               
     /**
         infer and report ancestral substitutions
     */
@@ -738,20 +748,17 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     ref_parameter = (^"fel.scaler_parameter_names")[(^"fel.branches.testable")["VALUEINDEXORDER"][0]];
 
     ^ref_parameter = sum /denominator;
+    
 
     if (testable == 1) {
         parameters.SetConstraint ((^"fel.scaler_parameter_names")[^"terms.tree_attributes.background"],ref_parameter, "");
     } else {
-        utility.ForEach (^"fel.branches.testable", "_gname_",
-        '
-            //console.log ("REF " + `&ref_parameter`);
+        for (_gname_; in; ^"fel.branches.testable") {
             _pname_ =  (^"fel.scaler_parameter_names")[_gname_];
-            if (_pname_ != `&ref_parameter`) {
-            	//console.log (_pname_ + "=>" + `&ref_parameter`);
-                parameters.SetConstraint (_pname_,`&ref_parameter`, "");
+            if (_pname_ != ref_parameter) {
+                ^_pname_ := ^ref_parameter;
             }
-        '
-        );
+        }
     }
 
     Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});

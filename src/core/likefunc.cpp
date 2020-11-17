@@ -256,8 +256,14 @@ void         BenchmarkThreads (_LikelihoodFunction* lf) {
     lf->SetThreadCount (1);
 #endif
     TimeDifference timer;
-    lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
-    lf->Compute           ();
+#ifdef  __HYPHYMPI__
+    if (hy_mpi_node_rank == 0)
+#endif
+
+    {
+        lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
+        lf->Compute           ();
+    }
 
 
 
@@ -276,6 +282,7 @@ hyFloat            tdiff = timer.TimeSinceStart();
             lf->SetThreadCount              (k);
             TimeDifference timer;
             lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex));
+            
             lf->Compute                     ();
             tdiff = timer.TimeSinceStart();
             if (tdiff < minDiff) {
@@ -4063,15 +4070,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     SetupLFCaches       ();
     SetupCategoryCaches ();
     computationalResults.Clear();
-    _variables_changed_during_last_compute = new _SimpleList ();
-    variables_changed_during_last_compute = new _AVLList (_variables_changed_during_last_compute);
     
-    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
-        if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
-            variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
-        }
-    }
-
+    
 
 #ifdef __HYPHYMPI__
     if (hy_mpi_node_rank == 0) {
@@ -4104,13 +4104,13 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 #ifdef __HYPHYMPI__
     if (hy_mpi_node_rank == 0) {
 #endif
-
     BenchmarkThreads (this);
-
-
 #ifdef __HYPHYMPI__
     }
 #endif
+
+    _variables_changed_during_last_compute = new _SimpleList ();
+    variables_changed_during_last_compute = new _AVLList (_variables_changed_during_last_compute);
 
 
     bool            skipCG                  = ! CheckEqual (get_optimization_setting (kSkipConjugateGradient, 0.0), 0.0),
@@ -4133,7 +4133,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     if (keepStartingPoint) {
         indexInd.Each ([this, &untag] (long v, unsigned long i) -> void {
             _Variable *iv = GetIthIndependentVar (i);
-            if (iv->HasBeenInitialized()) {
+            if (!iv->IsGlobal() && iv->HasBeenInitialized()) {
                 if (!iv->IsModified()) {
                     iv->MarkModified();
                     untag << i;
@@ -4178,6 +4178,13 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             }
         }
     }
+    
+    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+        if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
+            variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
+        }
+    }
+
 
 #if !defined __UNIX__ || defined __HEADLESS__
     SetStatusBarValue (5,maxSoFar,(likeFuncEvalCallCount-evalsIn)/timer.TimeSinceStart());
