@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1605644538062,
+  "lastUpdate": 1605644689106,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -6757,6 +6757,121 @@ window.BENCHMARK_DATA = {
             "name": "ABSREL-MH.wbf",
             "value": 236.23907394283015,
             "range": "±0.580160%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "dave@bx.psu.edu",
+            "name": "Dave B",
+            "username": "davebx"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d502052ad94d08ae2ed44b4f951af46d8f2db8da",
+          "message": "Merge pull request #1251 from veg/fix_coverage\n\nUse version 2 of setup-miniconda",
+          "timestamp": "2020-11-17T14:01:06-05:00",
+          "tree_id": "53227aece306c5d269e95a449bc6cab62e354d9f",
+          "url": "https://github.com/veg/hyphy/commit/d502052ad94d08ae2ed44b4f951af46d8f2db8da"
+        },
+        "date": 1605644677623,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.9151988263661592,
+            "range": "±23.376838%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 8.916232000356649,
+            "range": "±3.004792%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 39.744048328762766,
+            "range": "±1.349967%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 4.415537392978412,
+            "range": "±1.239106%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 16.905884938547107,
+            "range": "±1.729922%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 112.84134506883322,
+            "range": "±1.106527%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 47.927150730889046,
+            "range": "±53.051857%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 49.897709695124995,
+            "range": "±15.068965%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 73.6865374696043,
+            "range": "±11.185799%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 0.5057444988906494,
+            "range": "±1.277487%",
+            "unit": "secs/op",
+            "extra": "9 samples"
+          },
+          {
+            "name": "BGM.wbf",
+            "value": 4.239623521431297,
+            "range": "±2.821413%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "CFEL.wbf",
+            "value": null,
+            "range": "±0.000000%",
+            "unit": "secs/op",
+            "extra": "0 samples"
+          },
+          {
+            "name": "FADE.wbf",
+            "value": 4.107214733400692,
+            "range": "±1.195266%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
