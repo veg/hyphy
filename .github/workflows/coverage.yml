@@ -21,7 +21,7 @@ jobs:
       - name: Get HyPhy code
         uses: actions/checkout@v2
       - name: Install and activate miniconda
-        uses: goanpeca/setup-miniconda@v1
+        uses: goanpeca/setup-miniconda@v2.0.0
         with:
           activate-environment: 'hyphy-test-env'
           environment-file: '.coveralls.env.yml'
