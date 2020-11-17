@@ -4101,6 +4101,9 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 #endif
 
 
+    _variables_changed_during_last_compute = new _SimpleList ();
+    variables_changed_during_last_compute = new _AVLList (_variables_changed_during_last_compute);
+
 #ifdef __HYPHYMPI__
     if (hy_mpi_node_rank == 0) {
 #endif
@@ -4108,9 +4111,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 #ifdef __HYPHYMPI__
     }
 #endif
-
-    _variables_changed_during_last_compute = new _SimpleList ();
-    variables_changed_during_last_compute = new _AVLList (_variables_changed_during_last_compute);
 
 
     bool            skipCG                  = ! CheckEqual (get_optimization_setting (kSkipConjugateGradient, 0.0), 0.0),
