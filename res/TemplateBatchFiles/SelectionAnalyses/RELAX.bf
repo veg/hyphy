@@ -263,6 +263,8 @@ if (relax.do_srv) {
 
 selection.io.startTimer (relax.json [terms.json.timers], "Preliminary model fitting", 1);
 
+namespace_tag = "relax";
+
 namespace relax {
     doGTR ("relax");
 }
