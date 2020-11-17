@@ -145,6 +145,8 @@ utility.ForEachPair (slac.selected_branches, "_partition_", "_selection_",
 
 selection.io.startTimer (slac.json [terms.json.timers], "Model fitting",1 );
 
+namespace_tag = "slac";
+
 namespace slac {
     doGTR ("slac");
 }

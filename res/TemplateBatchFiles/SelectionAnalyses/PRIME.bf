@@ -159,6 +159,7 @@ prime.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(
 selection.io.startTimer (prime.json [terms.json.timers], "Model fitting",1);
 
 if (Type (debug.checkpoint) != "String") {
+    namespace_tag = "prime";
     namespace prime {
         doGTR ("prime");
     }
