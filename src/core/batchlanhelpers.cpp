@@ -68,14 +68,18 @@ _String const   _HYGenerateANameSpace () {
 //____________________________________________________________________________________
 
 void  _HYClearANameSpace (const _String& nm) {
+    /*BufferToConsole("Deleting key: ");
+    BufferToConsole(nm.get_str());
+    NLToConsole();
+    ObjectToConsole(&_HY_HBL_Namespaces);
+    NLToConsole();*/
     _HY_HBL_Namespaces.Delete(nm);
  }
 
 //____________________________________________________________________________________
 
 
-void    ReadModelList(void)
-{
+void    ReadModelList(void) {
     if (templateModelList.empty() == false) return;
 
     _String     modelListFile (GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & "models.lst"),
