@@ -344,10 +344,11 @@ bool    _Trie::Delete (const _String& key){
                 emptySlots << history.list_data[k];
                 payload.list_data[history.list_data[k]] = 0L;
                 parents.list_data[history.list_data[k]] = -1L;
-                _SimpleList * parentList = ((_SimpleList**)list_data)[history.list_data[k-1]];
+                _SimpleList * parentList = ((_SimpleList**)list_data)[k ? history.list_data[k-1] : 0];
                 unsigned long parentNode = parentList->FindStepping (history.list_data[k],2, 1) - 1;
                 parentList->Delete (parentNode);
                 parentList->Delete (parentNode);
+                
                 DeleteObject (current_list);
                 ((_SimpleList**)list_data)[history.list_data[k]] = nil;
                 inserted_values--;
@@ -450,7 +451,9 @@ BaseRef     _Trie::toStr(unsigned long) {
            }
         } else {
             _String * this_string = RetrieveStringFromPath(traversal_history, &alph);
-            (*serialized) << '"' << this_string << "\":" << _String (GetValue (traversal_history.list_data[traversal_history.lLength-2]));
+            (*serialized) << '"';
+            (*serialized).AppendNewInstance(this_string);
+            (*serialized) << "\":" << _String (GetValue (traversal_history.list_data[traversal_history.lLength-2]));
             if (doComma) {
                 (*serialized) << ',';
             } else {
