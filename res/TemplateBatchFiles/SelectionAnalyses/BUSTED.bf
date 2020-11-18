@@ -429,34 +429,41 @@ if (busted.do_srv_hmm) {
     //parameters.SetConstraint (((busted.test.bsrel_model[terms.parameters])[terms.global])[terms.rate_variation.hmm_lambda],"1e-6", "");
 }
                                     
-
-parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
-busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
-    "retain-lf-object": TRUE,
-    terms.run_options.proportional_branch_length_scaler : 
-                                            {"0" : "busted.bl.scaler"},
-                                            
-    terms.run_options.optimization_settings : 
-        {
-            "OPTIMIZATION_METHOD" : "nedler-mead",
-            "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
-            "OPTIMIZATION_PRECISION" : busted.nm.precision
-        } ,
-                                     
-    terms.search_grid     : busted.initial_grid,
-    terms.search_restarts : busted.N.initial_guesses
-});
-
-                                                
-busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
+debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
+       
+if (Type (debug.checkpoint) != "String") {
+    parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
+    busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
         "retain-lf-object": TRUE,
+        terms.run_options.proportional_branch_length_scaler : 
+                                                {"0" : "busted.bl.scaler"},
+                                            
         terms.run_options.optimization_settings : 
             {
-                "OPTIMIZATION_METHOD" : "hybrid"
-            } 
-                                    
+                "OPTIMIZATION_METHOD" : "nedler-mead",
+                "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
+                "OPTIMIZATION_PRECISION" : busted.nm.precision
+            } ,
+                                     
+        terms.search_grid     : busted.initial_grid,
+        terms.search_restarts : busted.N.initial_guesses
     });
-    
+
+                                                
+    busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
+            "retain-lf-object": TRUE,
+            terms.run_options.optimization_settings : 
+                {
+                    "OPTIMIZATION_METHOD" : "hybrid",
+                } 
+                                    
+        });
+} else {
+    ExecuteAFile (debug.checkpoint);
+    GetString (lf, LikelihoodFunction, 0);
+    busted.full_model = estimators.ExtractMLEs (lf, busted.model_object_map);
+    busted.full_model[terms.likelihood_function] = lf;
+}
 
 
 KeywordArgument ("save-fit", "Save BUSTED model fit to this file (default is not to save)", "/dev/null");

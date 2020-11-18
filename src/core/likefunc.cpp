@@ -4110,8 +4110,12 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     BenchmarkThreads (this);
 #ifdef __HYPHYMPI__
     }
+    
+    
 #endif
 
+    //ObjectToConsole(variables_changed_during_last_compute);
+    //NLToConsole();
 
     bool            skipCG                  = ! CheckEqual (get_optimization_setting (kSkipConjugateGradient, 0.0), 0.0),
                     keepStartingPoint       = ! CheckEqual (get_optimization_setting (kUseLastResults, 0.0), 0.0),
@@ -4128,7 +4132,14 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
          }
     }
     
-    
+    for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+        if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
+            variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
+            //if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
+            //    printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
+        }
+    }
+
     _SimpleList untag;
     if (keepStartingPoint) {
         indexInd.Each ([this, &untag] (long v, unsigned long i) -> void {
@@ -4136,6 +4147,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             if (!iv->IsGlobal() && iv->HasBeenInitialized()) {
                 if (!iv->IsModified()) {
                     iv->MarkModified();
+                    //printf ("TAG [before] %s\n",GetIthIndependentName(i)->get_str());
                     untag << i;
                 }
             }
@@ -4148,12 +4160,11 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
     if (keepStartingPoint) {
         untag.Each ([this] (long v, unsigned long i) -> void {
-            _Variable *iv = GetIthIndependentVar (i);
+            _Variable *iv = GetIthIndependentVar (v);
+            //printf ("UNTAG [before] %s\n",GetIthIndependentName(i)->get_str());
             iv->ClearModified();
         });
-    }
-
-    if (!keepStartingPoint) {
+    } else {
         hyFloat  global_starting_point = get_optimization_setting (kGlobalStartingPoint, 0.1);
         
         if (CheckEqual (get_optimization_setting (kRandomStartingPerturbations, 0.0), 0.0)) {
@@ -4182,6 +4193,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
             variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
+            //if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
+            //    printf ("Insert [after] %s\n",GetIthIndependentName(i)->get_str());
         }
     }
 
