@@ -396,12 +396,26 @@ fel.site_patterns = alignments.Extract_site_patterns ((fel.filter_specification[
 // alpha = alpha_scaler * branch_length
 // beta  = beta_scaler_test * branch_length or beta_nuisance_test * branch_length
 
-utility.ForEach (fel.case_respecting_node_names, "_node_",
-        '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
-         _beta_scaler = fel.scaler_parameter_names[_node_class_];
-         fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.alpha.scaler, _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
-    ');
+fel.lengths_by_class = {};
 
+for (_node_; in; fel.case_respecting_node_names) {
+    _node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
+    _beta_scaler = fel.scaler_parameter_names[_node_class_];
+    fel.lengths_by_class[_node_class_] += fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.alpha.scaler, _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
+}
+
+fel.ignorable = {};
+for (fel.t; in; fel.branches.testable) {
+    if ( fel.lengths_by_class[fel.t] == 0) {
+      fprintf(stdout, "\n-------\n", io.FormatLongStringToWidth(
+      ">[WARNING] The cumulative branch length in the _" + fel.t + "_ class is 0. 
+      Rates along these branches are not identifiable; testing will not be formally conducted (all p-values set to 1).", 72),
+      "\n-------\n");        
+      fel.ignorable [fel.scaler_parameter_names[fel.t]] = 1;
+    } else {
+      fel.ignorable [fel.scaler_parameter_names[fel.t]] = 0;
+    }
+}
 
 
 // create the likelihood function for this site
@@ -644,6 +658,8 @@ function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_par
         `node_name`.`alpha_parameter` := (`alpha_factor`) * fel.branch_length__;
         `node_name`.`beta_parameter`  := (`beta_factor`)  * fel.branch_length__;
     ");
+    
+    return fel.branch_length;
 }
 //----------------------------------------------------------------------------------------
 
@@ -724,8 +740,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         ');
     }
     
-    
-            
     snapshot = estimators.TakeLFStateSnapshot (lf);
     alternative = estimators.ExtractMLEs (lf, model_mapping);
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
@@ -757,8 +771,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     } else {
         for (_gname_; in; ^"fel.branches.testable") {
             _pname_ =  (^"fel.scaler_parameter_names")[_gname_];
-            if (_pname_ != ref_parameter) {
-                ^_pname_ := ^ref_parameter;
+            if (_pname_ != ref_parameter && (^"fel.ignorable")[_pname_] == 0) {
+                 parameters.SetConstraint (_pname_,ref_parameter, "");
             }
         }
     }
@@ -773,12 +787,17 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
             for (v2 = v + 1; v2 < testable; v2+=1) {
                 v1n = (^"fel.branches.testable")[v];
                 v2n = (^"fel.branches.testable")[v2];
-
                 estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
-                parameters.SetConstraint ((^"fel.scaler_parameter_names")[v1n],(^"fel.scaler_parameter_names")[v2n], "");
-                Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});
-                pairwise[v1n + "|" + v2n] = estimators.ExtractMLEs (lf, model_mapping);
-                (pairwise[v1n + "|" + v2n])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+              
+                if ((^"fel.ignorable")[(^"fel.scaler_parameter_names")[v1n]] || (^"fel.ignorable")[(^"fel.scaler_parameter_names")[v2n]]) {
+                    //console.log (v1n + "|" + v2n + " is ignorable");
+                    (pairwise[v1n + "|" + v2n]) = alternative;
+                } else {                
+                    parameters.SetConstraint ((^"fel.scaler_parameter_names")[v1n],(^"fel.scaler_parameter_names")[v2n], "");
+                    Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});
+                    pairwise[v1n + "|" + v2n] = estimators.ExtractMLEs (lf, model_mapping);
+                    (pairwise[v1n + "|" + v2n])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+                }
            }
         }
     } else {
