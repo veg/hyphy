@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1605644689106,
+  "lastUpdate": 1605669098667,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -6874,6 +6874,103 @@ window.BENCHMARK_DATA = {
             "range": "±1.195266%",
             "unit": "secs/op",
             "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "committer": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "id": "a36d8f62f80fe198104a08cac03cdeb244385e56",
+          "message": "2.5.23 rc",
+          "timestamp": "2020-11-17T19:01:10Z",
+          "url": "https://github.com/veg/hyphy/pull/1250/commits/a36d8f62f80fe198104a08cac03cdeb244385e56"
+        },
+        "date": 1605669091469,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.5690458632105817,
+            "range": "±1.330219%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 7.457399604757821,
+            "range": "±1.306255%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 36.64345914254306,
+            "range": "±0.840071%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 3.9237382238806555,
+            "range": "±1.597565%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 14.176956774458795,
+            "range": "±0.872490%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 108.51871947911016,
+            "range": "±1.690610%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 36.67302332404283,
+            "range": "±38.129545%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 54.87269534679543,
+            "range": "±19.934190%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 66.31739505272233,
+            "range": "±11.208636%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 0.4419830897269871,
+            "range": "±1.328232%",
+            "unit": "secs/op",
+            "extra": "10 samples"
+          },
+          {
+            "name": "BGM.wbf",
+            "value": null,
+            "range": "±0.000000%",
+            "unit": "secs/op",
+            "extra": "0 samples"
           }
         ]
       }
