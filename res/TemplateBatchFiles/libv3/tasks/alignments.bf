@@ -991,15 +991,8 @@ lfunction alignment.MapCodonsToAA(codon_sequence, aa_sequence, this_many_mm, map
  * @param {String} file - write the result here
  * @param {Bool}   isCodon - is the filter a codon filter?
 
- * @returns {String} the mapped sequence
+ * @returns None
 
- * @example
-    GCAAAATCATTAGGGACTATGGAAAACAGA
-    -AKSLGTMEN-R
-
-    maps to
-
-    ---GCAAAATCATTAGGGACTATGGAAAAC---AGA
 
  */
 

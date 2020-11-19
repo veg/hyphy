@@ -694,51 +694,6 @@ void    SetStatusLineUser   (_String const s) {
 #ifndef __UNITTEST__
 int main (int argc, char* argv[]) {
     
-    /*long    N       = 1000L;
-    long    repeats = 20L;
-    long    density = 0.25 * RAND_MAX;
-    
-    auto start = std::chrono::high_resolution_clock::now();
-    
-    srand(time(0));
-    
-    _Matrix::switchThreshold = atoi (argv[1]);
-    
-    printf ("%ld\n", _Matrix::switchThreshold);
-    
-    for (long i = 0; i < N; i++) {
-        _Matrix test (61,61,false,true);
-        test.ForEachCellNumeric([density] (hyFloat& e, long i, long r, long c) -> void {
-            if (r != c && rand() < density) {
-                e = genrand_real1 ();
-            } else {
-                e = 0.0;
-            }
-        });
-        for (long r = 0; r < 61; r++) {
-            double s = 0.;
-            for (long c = 0; c < 61; c++) {
-                s += test (r, c);
-            }
-            test.theData[r*61+r] = -s;
-        }
-        
-        test.AmISparse();
-        //ObjectToConsole(&test);
-        
-        //printf ("%d\n", test.is_dense());
-        for (long j = 0; j < repeats; j++) {
-            DeleteObject (test.Exponentiate());
-            //return 0;
-        }
-    }
-
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    printf ("%15.12g s\n", elapsed.count());
-    
-    return 0;*/
-    
  
 #ifdef _COMPARATIVE_LF_DEBUG_DUMP
     FILE * comparative_lf_debug_matrix_content_file = doFileOpen (_COMPARATIVE_LF_DEBUG_DUMP, "w");
