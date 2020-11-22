@@ -666,12 +666,34 @@ function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_par
 //----------------------------------------------------------------------------------------
 lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, branch_sets, parameter_names, permutation) {
 
-    utility.ForEach (utility.Keys (branch_sets), "_node_",
+
+    lengths_by_class = {};
+
+    for (_node_; in; utility.Keys (branch_sets)) {
+        _node_class_ = branch_sets[_node_];
+        _beta_scaler = parameter_names[_node_class_];
+        lengths_by_class[_node_class_] += fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.alpha.scaler, _beta_scaler, 
+            (( (^"fel.final_partitioned_mg_results")[^"terms.branch_length"])[partition_index])[_node_]);    
+    }
+
+    /*utility.ForEach (utility.Keys (branch_sets), "_node_",
         '_node_class_ = (`&branch_sets`)[_node_];
          _beta_scaler = (`&parameter_names`)[_node_class_];
          fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.alpha.scaler, _beta_scaler, 
             (( fel.final_partitioned_mg_results[terms.branch_length])[partition_index])[_node_]);
-    ');
+    ');*/
+    
+    ignorable = {};
+    for (fel.t; in; utility.Values (branch_sets)) {
+        if ( lengths_by_class[fel.t] == 0) {
+          ignorable [parameter_names[fel.t]] = 1;
+        } else {
+          ignorable [parameter_names[fel.t]] = 0;
+        }
+    }
+    
+    //console.log (lengths_by_class);
+    //console.log (ignorable);
 
     GetString (lfInfo, ^lf,-1);    
     ExecuteCommands (filter_data);
@@ -765,13 +787,15 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     ^ref_parameter = sum /denominator;
     
+    
+    
 
     if (testable == 1) {
         parameters.SetConstraint ((^"fel.scaler_parameter_names")[^"terms.tree_attributes.background"],ref_parameter, "");
     } else {
         for (_gname_; in; ^"fel.branches.testable") {
             _pname_ =  (^"fel.scaler_parameter_names")[_gname_];
-            if (_pname_ != ref_parameter && (^"fel.ignorable")[_pname_] == 0) {
+            if (_pname_ != ref_parameter && (ignorable)[_pname_] == 0) {
                  parameters.SetConstraint (_pname_,ref_parameter, "");
             }
         }
@@ -788,8 +812,9 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                 v1n = (^"fel.branches.testable")[v];
                 v2n = (^"fel.branches.testable")[v2];
                 estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
+                
               
-                if ((^"fel.ignorable")[(^"fel.scaler_parameter_names")[v1n]] || (^"fel.ignorable")[(^"fel.scaler_parameter_names")[v2n]]) {
+                if ((ignorable)[(^"fel.scaler_parameter_names")[v1n]] || (ignorable)[(^"fel.scaler_parameter_names")[v2n]]) {
                     //console.log (v1n + "|" + v2n + " is ignorable");
                     (pairwise[v1n + "|" + v2n]) = alternative;
                 } else {                
@@ -811,6 +836,9 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     p_values = {};
     p_values ["overall"] = lrt[^'terms.p_value'];
     test_keys = {};
+    
+    //estimators.RestoreLFStateFromSnapshot (lf_id, snapshot);
+
 
     if (^'fel.report.test_count' > 1) {
 
@@ -826,7 +854,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         }
     }
     
-
     p_values = math.HolmBonferroniCorrection (p_values);
         
     if (permutation == FALSE && (Min (p_values,0))["value"] <= ^'fel.p_value') {

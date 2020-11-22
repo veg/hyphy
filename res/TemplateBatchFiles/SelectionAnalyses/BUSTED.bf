@@ -455,6 +455,7 @@ if (Type (debug.checkpoint) != "String") {
             terms.run_options.optimization_settings : 
                 {
                     "OPTIMIZATION_METHOD" : "hybrid",
+                    //"OPTIMIZATION_PRECISION" : 1.
                 } 
                                     
         });
@@ -471,6 +472,7 @@ io.SpoolLFToPath(busted.full_model[terms.likelihood_function], io.PromptUserForF
 
 io.ReportProgressMessageMD("BUSTED", "main", "* " + selection.io.report_fit (busted.full_model, 9, busted.codon_data_info[terms.data.sample_size]));
 
+//VERBOSITY_LEVEL = 101;
 
 
 io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the following rate distribution for branch-site combinations was inferred");

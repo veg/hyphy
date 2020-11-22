@@ -4144,6 +4144,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     if (keepStartingPoint) {
         indexInd.Each ([this, &untag] (long v, unsigned long i) -> void {
             _Variable *iv = GetIthIndependentVar (i);
+            //printf ("%s = %g, global %d, initialized %d, changed %d\n",GetIthIndependentName(i)->get_str(), GetIthIndependent(i), iv->IsGlobal(), iv->HasBeenInitialized(), iv->IsModified());
             if (!iv->IsGlobal() && iv->HasBeenInitialized()) {
                 if (!iv->IsModified()) {
                     iv->MarkModified();
@@ -4161,7 +4162,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     if (keepStartingPoint) {
         untag.Each ([this] (long v, unsigned long i) -> void {
             _Variable *iv = GetIthIndependentVar (v);
-            //printf ("UNTAG [before] %s\n",GetIthIndependentName(i)->get_str());
+            //printf ("UNTAG [before] %s\n",GetIthIndependentName(v)->get_str());
             iv->ClearModified();
         });
     } else {
