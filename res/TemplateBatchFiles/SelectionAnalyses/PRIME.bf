@@ -129,6 +129,7 @@ prime.property_set = io.SelectAnOption (
             {
                 "Atchley":"Use the five properties derived from a factor analysis of 500 amino-acid properties [Table 2 in PNAS (2005) 102(18) 6395-6400 doi: 10.1073/pnas.0408677102]",
                 "LCAP":"Use the five properties defined in the Conant and Stadler LCAP model [Mol Biol Evol (2009) 26 (5): 1155-1161. doi: 10.1093/molbev/msp031]",
+                "Random" : "Random properties (for null hypothesis testing)",
                 "Custom":"Load the set of properties from a file"
             }, 
             "The set of properties to use in the model");
