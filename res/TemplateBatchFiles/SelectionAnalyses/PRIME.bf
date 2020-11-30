@@ -21,6 +21,9 @@ LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
 
 
+
+
+
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
 /*------------------------------------------------------------------------------ 
     Display analysis information
@@ -103,7 +106,11 @@ This table is meant for HTML rendering in the results web-app; can use HTML char
 is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
 the next set of variables.
 */
-prime.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "Property Description", "Importance", "p-value"}};
+
+prime.site.composition.string = "";
+
+
+prime.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "Property Description", "Importance", "p-value","Most common codon substitutions at this site"}};
 prime.table_output_options = {  terms.table_options.header : TRUE, 
                                 terms.table_options.minimum_column_width: 12, 
                                 terms.table_options.align : "center",
@@ -112,9 +119,10 @@ prime.table_output_options = {  terms.table_options.header : TRUE,
                                     "1" : 12,
                                     "2" : 12,
                                     "3" : 12,
-                                    "4" : 50,
+                                    "4" : 40,
                                     "5" : 12,
-                                    "6" : 12}
+                                    "6" : 12,
+                                    "7" : 70}
                              };
 
 
@@ -129,6 +137,7 @@ prime.property_set = io.SelectAnOption (
             {
                 "Atchley":"Use the five properties derived from a factor analysis of 500 amino-acid properties [Table 2 in PNAS (2005) 102(18) 6395-6400 doi: 10.1073/pnas.0408677102]",
                 "LCAP":"Use the five properties defined in the Conant and Stadler LCAP model [Mol Biol Evol (2009) 26 (5): 1155-1161. doi: 10.1093/molbev/msp031]",
+                "Random" : "Random properties (for null hypothesis testing)",
                 "Custom":"Load the set of properties from a file"
             }, 
             "The set of properties to use in the model");
@@ -155,6 +164,7 @@ for (_partition_, _selection_; in; prime.selected_branches) {
 }
 
 prime.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(prime.codon_data_info[terms.code], None);
+prime.codon_table = genetic_code.DefineCodonToAAMapping (prime.codon_data_info[terms.code]);
 
 selection.io.startTimer (prime.json [terms.json.timers], "Model fitting",1);
 
@@ -296,6 +306,9 @@ prime.lambda_range = {
         terms.upper_bound: "15"
     };
     
+    
+
+    
 prime.table_headers = { 6 + 3*prime.properties.N, 2};
     
 prime.table_headers[0][0] = "alpha;"; prime.table_headers[0][1] = "Synonymous substitution rate at a site";
@@ -375,7 +388,8 @@ prime.report.significant_site = {{"" + (1+((prime.filter_specification[prime.rep
                                     Format(prime.report.row[1],7,3),  // beta
                                     prime.property_report_name,  // property name
                                     prime.rate_to_screen ( prime.property_report_name,,prime.report_rate), // property importance 
-                                    Format(prime.report.row[prime.print_index],7,3) // property p-value 
+                                    Format(prime.report.row[prime.print_index],7,3), // property p-value 
+                                    Join ("|", prime.site.composition.string[prime.property_report_name])
 }};
 
 
@@ -659,6 +673,9 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         
     }
         
+    ancestral_info = ancestral.build (lf_prop,0,FALSE);
+    branch_substitution_information = (ancestral.ComputeSubstitutionBySite (ancestral_info,0,None))[^"terms.substitutions"];
+    DeleteObject (ancestral_info);
     
     alternative = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {});
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
@@ -691,6 +708,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
             utility.getGlobalValue("terms.alternative") : alternative,
             utility.getGlobalValue("terms.Null"): Null,
             utility.getGlobalValue("terms.model.residue_properties") : constrained_models,
+            utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information,
             utility.getGlobalValue("terms.prime_imputed_states") : character_map
     };
 }
@@ -737,6 +755,71 @@ function prime.report.echo (prime.report.site, prime.report.partition, prime.rep
 //----------------------------------------------------------------------------------------
 
 lfunction prime.store_results (node, result, arguments) {
+
+    sub_profile = result[utility.getGlobalValue("terms.branch_selection_attributes")];
+    
+
+
+    if (None != sub_profile) {
+    
+       total_sub_count = 0;
+
+
+    
+        sub_by_count = {"Overall" : {}};
+
+        for (p,v; in; ^"prime.properties") {
+            sub_by_count[p] = {};     
+        }
+
+        for (i, v; in; sub_profile) {
+            for (j, b; in; v) {
+                c = Abs (b);
+                total_sub_count += c;
+                ai = (^"prime.codon_table")[i];
+                aj = (^"prime.codon_table")[j];
+                if (Abs (ai) == 0) {ai = "?";}
+                if (Abs (aj) == 0) {aj = "?";}
+
+ 
+                for (p, counts; in; sub_by_count) {           
+                    if ((counts/c)==0) {
+                        counts [c] = {};
+                    }
+            
+                    delta = "";
+                    if (p != "Overall") {
+                        delta = "("+Format (Abs (((^"prime.properties")[p])[ai]-((^"prime.properties")[p])[aj]),0,2) + ")";
+                    }
+        
+                    if (ai != aj) {
+                        counts[c] + (((^"prime.codon_table")[i] + ">" + (^"prime.codon_table")[j]) + delta);
+                    } else {
+                        counts[c] + ai;
+                    }
+                }
+            }
+        }
+
+        sub_profile = {};
+        for (p,count; in; sub_by_count) {
+
+            sorted_subs = {Abs (count), 1};
+            j = 0;
+            for (i, v; in; count) {
+                sorted_subs[j] = -(+i);
+                j += 1; 
+            }
+            sub_profile1 = {};
+            for (i; in; sorted_subs % 0) {
+                sub_profile1 + ("[" + (-i) + "]" + Join (",",count [-i]));
+            }
+
+            sub_profile [p] = sub_profile1;
+        }
+        ^"prime.site.composition.string" = sub_profile;
+    }
+
 
     partition_index = arguments [3];
     pattern_info    = arguments [4];
