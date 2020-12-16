@@ -48,8 +48,10 @@ includePaths += [linkPath, contribPath, sqlitePath]
 define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
 
 # openmp on Mac OS X Lion is broken
-major, minor = mac_ver()[0].split('.')
-openmp = ['-fopenmp'] if int(major) < 10 or (int(major) == 10 and int(minor) < 7) else []
+#major, minor = mac_ver()[0].split('.')
+#openmp = ['-fopenmp'] if int(major) < 10 or (int(major) == 10 and int(minor) < 7) else []
+
+openmp = []
 
 setup(
     name = 'HyPhy',
@@ -59,7 +61,7 @@ setup(
     author_email = 'spond@temple.edu',
     url = 'http://www.hyphy.org/',
     packages = ['HyPhy'],
-    package_dir = {'HyPhy': 'LibraryModules/Python/HyPhy'},
+    package_dir = {'HyPhy': './'},
 #    data_files = resFiles,
     # py_modules = ['HyPhy'],
     ext_modules = [Extension('_HyPhy',

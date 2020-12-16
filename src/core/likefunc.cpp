@@ -559,8 +559,7 @@ _LikelihoodFunction::_LikelihoodFunction (void) {
 
 //_______________________________________________________________________________________
 
-void _LikelihoodFunction::Init (void)
-{
+void _LikelihoodFunction::Init (void) {
     siteResults         = nil;
     bySiteResults       = nil;
     hasBeenSetUp        = 0;
@@ -571,6 +570,7 @@ void _LikelihoodFunction::Init (void)
     evalsSinceLastSetup = 0;
     siteArrayPopulated  = false;
     smoothingTerm       = 0.;
+    errorTolerance      = 1.;
     smoothingPenalty    = 0.;
 
     conditionalInternalNodeLikelihoodCaches = nil;
@@ -3638,7 +3638,8 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 #endif
 
     evalsSinceLastSetup = 0L;
-
+    unsigned long  maxFilterSize = 1;
+    
     for (unsigned long i=0UL; i<theTrees.lLength; i++) {
         _TheTree * cT = GetIthTree(i);
         _DataSetFilter const *theFilter = GetIthFilter(i);
@@ -3663,6 +3664,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 
         long ambig_resolution_count = 1L;
 
+        maxFilterSize = MAX (maxFilterSize, theFilter->GetSiteCountInUnits());
         if (leafCount > 1UL) {
             conditionalInternalNodeLikelihoodCaches[i] = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount, false, 64);
             branchCaches[i]                            = (hyFloat*)MemAllocate (sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount, false, 64);
@@ -3688,8 +3690,8 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
         _AVLListX    foundCharacters (&foundCharactersAux);
         _String      aState ((unsigned long)atomSize);
 
-        char  const ** columnBlock      = (char const**)malloc(atomSize*sizeof (const char*));
-        hyFloat      * translationCache  = (hyFloat*)malloc (sizeof (hyFloat)* stateSpaceDim);
+        char  const ** columnBlock      = (char const**)alloca(atomSize*sizeof (const char*));
+        hyFloat      * translationCache  = (hyFloat*)alloca (sizeof (hyFloat)* stateSpaceDim);
         _Vector  * ambigs            = new _Vector();
 
         for (unsigned long siteID = 0UL; siteID < patternCount; siteID ++) {
@@ -3724,9 +3726,9 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
                 conditionalTerminalNodeStateFlag [i][leafID*patternCount + siteID] = translation;
             }
         }
-        free (columnBlock); free (translationCache);
+       // free (columnBlock); free (translationCache);
         conditionalTerminalNodeLikelihoodCaches < ambigs;
-
+        errorTolerance = MAX (1.,round (log (1.+maxFilterSize)/log (10)));
 #ifdef MDSOCL
 		OCLEval[i].init(patternCount, theFilter->GetDimension(), conditionalInternalNodeLikelihoodCaches[i]);
 #endif
@@ -5643,7 +5645,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                   (or involves a paremeter that has very little effect on the LF), recomputation could be within numerical error
          
         **/
-        if (rightValue - middleValue > 1e-9 || leftValue - middleValue > 1e-9) {
+        if (rightValue - middleValue > 1e-12*errorTolerance || leftValue - middleValue > 1e-12*errorTolerance) {
          char buf[256], buf2[512];
          snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
          snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %20.16g <= %20.16g >= %20.16g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
@@ -6514,7 +6516,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
     }
 
     SetAllIndependent (&bestVal);
-    if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value,  kMachineEpsilon * 100.) == false) {
+    if (maxSoFar < initial_value && CheckEqual(maxSoFar, initial_value,  kMachineEpsilon * errorTolerance) == false) {
         HandleApplicationError (_String("Internal optimization error in _LikelihoodFunction::ConjugateGradientDescent. Worsened likelihood score from ") & initial_value & " to " & maxSoFar);
     }
 
@@ -6888,7 +6890,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
           bestVal     = current_best_vector;
         }
 
-        if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, 100. * kMachineEpsilon)) {
+        if (maxSoFar < initialValue && !CheckEqual (maxSoFar, initialValue, kMachineEpsilon*errorTolerance)) {
           _TerminateAndDump(_String (" _LikelihoodFunction::GradientLocateTheBump: in the Brent loop iteration ") & long(outcome) & ". " & _String (maxSoFar, "%18.16g") & " / " & _String (initialValue,"%18.16g") & ".\n Optimization direction: \n" & _String ((_String*)gradient.toStr()) );
 
           return 0.;
@@ -7095,7 +7097,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                   snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) RESETTING THE VALUE (worse log likelihood obtained; current value %20.16g, best value %20.16g) ]\n\n", index, GetIthIndependent(index), bestVal);
                   BufferToConsole (buf);
                 }
-                if (CheckEqual(GetIthIndependent(index), bestVal) && fabs (middleValue-maxSoFar) > 1e-9) {
+                if (CheckEqual(GetIthIndependent(index), bestVal) && fabs (middleValue-maxSoFar) > 1e-12*errorTolerance) {
                     char buf[256];
                     snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::LocateTheBump (index %ld) current value %20.16g (parameter = %20.16g), best value %20.16g (parameter = %20.16g)); delta = %20.16g ]\n\n", index, middleValue, GetIthIndependent(index), maxSoFar, bestVal, maxSoFar - middleValue);
                     _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));

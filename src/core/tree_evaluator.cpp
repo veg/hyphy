@@ -122,6 +122,11 @@ inline double _sse_sum_2 (__m128d const & x) {
 }
 #endif
 
+#ifdef _SLKP_USE_ARM_NEON
+inline double _neon_sum_2 (float64x2_t const & x) {
+    return vgetq_lane_f64 (x,0) + vgetq_lane_f64 (x,1);
+}
+#endif
 
 template<long D> inline void __ll_handle_matrix_transpose (hyFloat const * __restrict transitionMatrix, hyFloat * __restrict tMatrixT) {
     long i = 0L;
@@ -268,6 +273,40 @@ template<long D, long S> inline void __ll_handle_block10_product_sum_linear (hyF
 }
 #endif
 
+#ifdef _SLKP_USE_ARM_NEON
+template<long D, long S> inline void __ll_handle_block10_product_sum_linear (hyFloat const* _hprestrict_ tT, hyFloat * _hprestrict_ childVector, float64x2_t * lastTotal) {
+        
+    float64x2_t T [5] = {
+                            vld1q_f64 (tT+S),
+                            vld1q_f64 (tT+S+2),
+                            vld1q_f64 (tT+S+4),
+                            vld1q_f64 (tT+S+6),
+                            vld1q_f64 (tT+S+8)
+                         };
+    
+    float64x2_t C [5] =  {
+                            vld1q_f64 (childVector+S),
+                            vld1q_f64 (childVector+S+2),
+                            vld1q_f64 (childVector+S+4),
+                            vld1q_f64 (childVector+S+6),
+                            vld1q_f64 (childVector+S+8)
+                        };
+
+     if (S) {
+        T[0] = vfmaq_f64 (vmulq_f64 (T[1], C[1]), T[0], C[0]); //0+1
+        T[2] = vfmaq_f64 (vmulq_f64 (T[3], C[3]), T[2], C[2]); //2+3
+        T[3] = vfmaq_f64 (T[0], T[4], C[4]); //0+1+4
+        T[0] = vaddq_f64 (T[3], T[2]); // 0+1+2+3+4
+        *lastTotal = vaddq_f64 (*lastTotal, T[0]);
+    } else {
+        T[0] = vfmaq_f64 (vmulq_f64 (T[1], C[1]), T[0], C[0]); //0+1
+        T[2] = vfmaq_f64 (vmulq_f64 (T[3], C[3]), T[2], C[2]); //2+3
+        T[3] = vfmaq_f64 (T[0], T[4], C[4]); //0+1+4
+        *lastTotal  = vaddq_f64 (T[3], T[2]); // 0+1+2+3+4
+    }
+}
+#endif
+
 #ifdef _SLKP_USE_AVX_INTRINSICS
 template<long D, long S> inline void __ll_handle_block20_product_sum_linear (hyFloat const* _hprestrict_ tT, hyFloat * _hprestrict_ childVector, __m256d * lastTotal) {
         
@@ -374,11 +413,62 @@ template<long D, long S> inline __m128d __ll_handle_block10_product_sum (hyFloat
     _mm_storeu_pd(parentConditionals+S+8, P[4]);
 
     P[0] =_mm_add_pd (P[0],P[1]);
-    P[1] =_mm_add_pd (P[2],P[3]);
+    P[2] =_mm_add_pd (P[2],P[3]);
     P[0] =_mm_add_pd (P[0],P[4]);
-    P[2] =_mm_add_pd (P[0],P[1]);
+    P[2] =_mm_add_pd (P[0],P[2]);
     if (grandTotal) {
         *grandTotal = _mm_add_pd (P[2],*grandTotal);
+        return *grandTotal;
+    }
+    return P[2];
+    
+}
+#endif
+
+#ifdef _SLKP_USE_ARM_NEON
+template<long D, long S> inline float64x2_t __ll_handle_block10_product_sum (hyFloat const* _hprestrict_ transposedMatrix, hyFloat * _hprestrict_ childVector, hyFloat * _hprestrict_ parentConditionals, float64x2_t * grandTotal) {
+    
+    float64x2_t P [5] = {
+                vdupq_n_f64(0.),
+                vdupq_n_f64(0.),
+                vdupq_n_f64(0.),
+                vdupq_n_f64(0.),
+                vdupq_n_f64(0.)
+                };
+                                    
+    hyFloat const * __restrict tT = transposedMatrix;
+
+    for (long col_idx = 0; col_idx < D; col_idx++, tT+=D) {
+        if (childVector[col_idx] > 0.) {
+            float64x2_t C     = vdupq_n_f64(childVector[col_idx]);
+            
+            P[0] = vfmaq_f64 (P[0], vld1q_f64 (tT+S), C);
+            P[1] = vfmaq_f64 (P[1], vld1q_f64 (tT+S+2), C);
+            P[2] = vfmaq_f64 (P[2], vld1q_f64 (tT+S+4), C);
+            P[3] = vfmaq_f64 (P[3], vld1q_f64 (tT+S+6), C);
+            P[4] = vfmaq_f64 (P[4], vld1q_f64 (tT+S+8), C);
+        }
+    }
+
+    
+    P[0] = vmulq_f64(vld1q_f64(parentConditionals+S),     P[0]);
+    P[1] = vmulq_f64(vld1q_f64(parentConditionals+S+2),   P[1]);
+    P[2] = vmulq_f64(vld1q_f64(parentConditionals+S+4),   P[2]);
+    P[3] = vmulq_f64(vld1q_f64(parentConditionals+S+6),   P[3]);
+    P[4] = vmulq_f64(vld1q_f64(parentConditionals+S+8),   P[4]);
+    
+    vst1q_f64(parentConditionals+S, P[0]);
+    vst1q_f64(parentConditionals+S+2, P[1]);
+    vst1q_f64(parentConditionals+S+4, P[2]);
+    vst1q_f64(parentConditionals+S+6, P[3]);
+    vst1q_f64(parentConditionals+S+8, P[4]);
+
+    P[0] = vaddq_f64 (P[0],P[1]);
+    P[2] = vaddq_f64 (P[2],P[3]);
+    P[0] = vaddq_f64 (P[0],P[4]);
+    P[2] = vaddq_f64 (P[0],P[2]);
+    if (grandTotal) {
+        *grandTotal = vaddq_f64 (P[2],*grandTotal);
         return *grandTotal;
     }
     return P[2];
@@ -728,11 +818,12 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
     
 #elif defined _SLKP_USE_AVX_INTRINSICS
     
-    __m256d c3     = _mm256_set1_pd(childVector[3]),
-    c0     = _mm256_set1_pd(childVector[0]),
-    c1     = _mm256_set1_pd(childVector[1]),
-    c2     = _mm256_set1_pd(childVector[2]),
-    t0,t1,t2,t3;
+    __m256d
+            c0     = _mm256_set1_pd(childVector[0]),
+            c1     = _mm256_set1_pd(childVector[1]),
+            c2     = _mm256_set1_pd(childVector[2]),
+            c3     = _mm256_set1_pd(childVector[3]),
+            t0,t1,t2,t3;
   
     if (transposed_mx) {
       t0    = ((__m256d*)transposed_mx)[0];
@@ -761,9 +852,38 @@ inline void _handle4x4_pruning_case (double const* childVector, double const* tM
 
 #endif
     
+#elif defined _SLKP_USE_ARM_NEON
+    float64x2_t c0     = vdupq_n_f64(childVector[0]),
+                c1     = vdupq_n_f64(childVector[1]),
+                c2     = vdupq_n_f64(childVector[2]),
+                c3     = vdupq_n_f64(childVector[3]);
     
+    float64x2x2_t t0, t1, t2, t3;
+  
+    if (transposed_mx) {
+        t0    = ((float64x2x2_t*)transposed_mx)[0];
+        t1    = ((float64x2x2_t*)transposed_mx)[1];
+        t2    = ((float64x2x2_t*)transposed_mx)[2];
+        t3    = ((float64x2x2_t*)transposed_mx)[3];
+    } else {
+        t0    = (float64x2x2_t){tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]};
+        t1    = (float64x2x2_t){tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]};
+        t2    = (float64x2x2_t){tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]};
+        t3    = (float64x2x2_t){tMatrix[3],tMatrix[7],tMatrix[11],tMatrix[15]};
+    }
     
+    t0.val[0] = vfmaq_f64 (vmulq_f64  (c1,t1.val[0]),c0,t0.val[0]);
+    t0.val[1] = vfmaq_f64 (vmulq_f64  (c1,t1.val[1]),c0,t0.val[1]);
+    t2.val[0] = vfmaq_f64 (vmulq_f64  (c3,t3.val[0]),c2,t2.val[0]);
+    t2.val[1] = vfmaq_f64 (vmulq_f64  (c3,t3.val[1]),c2,t2.val[1]);
+    
+    vst1q_f64 (parentConditionals,
+                vmulq_f64  (vld1q_f64 (parentConditionals), vaddq_f64 (t0.val[0], t2.val[0])));
+    vst1q_f64 (parentConditionals+2,  vmulq_f64  (vld1q_f64 (parentConditionals+2), vaddq_f64 (t0.val[1], t2.val[1])));
+
 #else
+    
+    
     // 12 multiplications, 16 additions, 3 subtractions
     
     /*hyFloat t1 = childVector[0] - childVector[3],
@@ -836,7 +956,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         siteTo = siteCount;
     }
     
-    #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+    #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
         hyFloat * tMatrixT = nil;
         switch (alphabetDimension) {
             case 20:
@@ -940,6 +1060,16 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
             };
             #endif
+            
+            #ifdef _SLKP_USE_ARM_NEON
+                float64x2x2_t tmatrix_transpose [4] = {
+                    (float64x2x2_t) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                    (float64x2x2_t) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                    (float64x2x2_t) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                    (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+                };
+            #endif
+            
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 4UL) {
                 __ll_loop_preamble
                 if (__ll_handle_conditional_array_initialization<4> (
@@ -949,7 +1079,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 
                 
                      
-                #ifdef _SLKP_USE_AVX_INTRINSICS
+                #if defined _SLKP_USE_AVX_INTRINSICS or defined _SLKP_USE_ARM_NEON
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
                 #else
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, nil);
@@ -968,7 +1098,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         
 // START AMINO-ACID CASE
         else if (alphabetDimension == 20UL) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
                 __ll_handle_matrix_transpose<20> (transitionMatrix, tMatrixT);
             #endif
             
@@ -985,6 +1115,11 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     grandTotal = __ll_handle_block10_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil);
                     grandTotal = __ll_handle_block10_product_sum<20,10> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal;
                     sum = _sse_sum_2 (grandTotal);
+                #elif defined _SLKP_USE_ARM_NEON
+                    float64x2_t grandTotal
+                               = __ll_handle_block10_product_sum<20,0>  (tMatrixT, childVector, parentConditionals, nil);
+                    grandTotal = __ll_handle_block10_product_sum<20,10> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal;
+                    sum = _neon_sum_2 (grandTotal);
                 #else
                     __ll_product_sum_loop<20L> (tMatrix, childVector, parentConditionals, sum);
                 #endif
@@ -999,7 +1134,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     // END AMINO-ACID CASE
     // START UNIVERSAL CODE
     else if (alphabetDimension == 60UL) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
                 __ll_handle_matrix_transpose<60> (transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 60L) {
@@ -1025,6 +1160,15 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     grandTotal = __ll_handle_block10_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
                     grandTotal = __ll_handle_block10_product_sum<60,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
                     sum += _sse_sum_2(grandTotal);
+                #elif defined _SLKP_USE_ARM_NEON
+                    float64x2_t grandTotal
+                               = __ll_handle_block10_product_sum<60,0> (tMatrixT, childVector, parentConditionals, nil);
+                    grandTotal = __ll_handle_block10_product_sum<60,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<60,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<60,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<60,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    sum += _neon_sum_2(grandTotal);
                 #else
                     __ll_product_sum_loop<60L> (tMatrix, childVector, parentConditionals, sum);
                 #endif
@@ -1036,7 +1180,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             }
     }
     else if (alphabetDimension == 61UL) {
-        #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+        #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
             __ll_handle_matrix_transpose<61> (transitionMatrix, tMatrixT);
         #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 61L) {
@@ -1122,6 +1266,26 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     hyFloat s60 = _sse_sum_2(lastTotal) + childVector[60] * tT[60];
                     parentConditionals[60] *= s60;
                     sum += _sse_sum_2(grandTotal) + s60;
+            #elif defined _SLKP_USE_ARM_NEON
+                    float64x2_t grandTotal;
+                    grandTotal = __ll_handle_block10_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil);
+                    grandTotal = __ll_handle_block10_product_sum<61,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<61,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<61,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
+
+                    hyFloat const * __restrict tT = tMatrix + 61*60;
+                    float64x2_t lastTotal;
+                    __ll_handle_block10_product_sum_linear<61,0> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,10> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,20> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,30> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,40> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,50> (tT, childVector, &lastTotal);
+                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60];
+                    parentConditionals[60] *= s60;
+                    sum += _neon_sum_2(grandTotal) + s60;
             #else
                 __ll_product_sum_loop<61L> (tMatrix, childVector, parentConditionals, sum);
             #endif
@@ -1138,7 +1302,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             __ll_loop_epilogue
         }
     } else if (alphabetDimension == 62UL) {
-        #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+        #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
             __ll_handle_matrix_transpose<62> (transitionMatrix, tMatrixT);
         #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 62L) {
@@ -1206,6 +1370,40 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     parentConditionals[61] *= s61;
 
                     sum += _sse_sum_2(grandTotal) + s60 + s61;
+            #elif defined _SLKP_USE_ARM_NEON
+                    float64x2_t grandTotal
+                               = __ll_handle_block10_product_sum<62,0> (tMatrixT, childVector, parentConditionals, nil);
+                    grandTotal = __ll_handle_block10_product_sum<62,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<62,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<62,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<62,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<62,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
+
+                    hyFloat const * __restrict tT = tMatrix + 62*60;
+            
+                    float64x2_t lastTotal;
+                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal);
+                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61];
+                    parentConditionals[60] *= s60;
+
+                    tT += 62;
+                    float64x2_t lastTotal2;
+                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal2);
+
+                    hyFloat s61 = _neon_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
+                    parentConditionals[61] *= s61;
+
+                    sum += _neon_sum_2(grandTotal) + s60 + s61;
             #else
                 __ll_product_sum_loop<62L> (tMatrix, childVector, parentConditionals, sum);
             #endif
@@ -1216,7 +1414,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             __ll_loop_epilogue
         }
     } else if (alphabetDimension == 63UL) {
-        #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+        #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
             __ll_handle_matrix_transpose<63> (transitionMatrix, tMatrixT);
         #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 63L) {
@@ -1305,6 +1503,51 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 parentConditionals[62] *= s62;
 
                 sum += _sse_sum_2(grandTotal) + s60 + s61 + s62;
+            #elif defined _SLKP_USE_ARM_NEON
+                float64x2_t grandTotal
+                           = __ll_handle_block10_product_sum<63,0> (tMatrixT, childVector, parentConditionals, nil);
+                grandTotal = __ll_handle_block10_product_sum<63,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                grandTotal = __ll_handle_block10_product_sum<63,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                grandTotal = __ll_handle_block10_product_sum<63,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                grandTotal = __ll_handle_block10_product_sum<63,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                grandTotal = __ll_handle_block10_product_sum<63,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
+
+                hyFloat const * __restrict tT = tMatrix + 63*60;
+                float64x2_t lastTotal;
+                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal);
+                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal);
+                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal);
+                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal);
+                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal);
+                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal);
+                hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
+                parentConditionals[60] *= s60;
+
+                tT += 63;
+                float64x2_t lastTotal2;
+                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal2);
+                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal2);
+                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal2);
+                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal2);
+                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal2);
+                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal2);
+
+                hyFloat s61 = _neon_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];;
+                parentConditionals[61] *= s61;
+
+                tT += 63;
+                float64x2_t lastTotal3;
+                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal3);
+                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal3);
+                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal3);
+                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal3);
+                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
+                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal3);
+
+                hyFloat s62 = _neon_sum_2(lastTotal3) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];;
+                parentConditionals[62] *= s62;
+
+                sum += _neon_sum_2(grandTotal) + s60 + s61 + s62;
             #else
                 __ll_product_sum_loop<63L> (tMatrix, childVector, parentConditionals, sum);
             #endif
@@ -1568,7 +1811,7 @@ void            _TheTree::ComputeBranchCache    (
         myParent = flatParents.list_data[myParent+flatLeaves.lLength];
     } while (myParent >= 0);
 
-#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
     hyFloat * tMatrixT = nil;
     switch (alphabetDimension) {
         case 20:
@@ -1755,11 +1998,20 @@ void            _TheTree::ComputeBranchCache    (
  
         if (alphabetDimension == 4L) {
             #ifdef _SLKP_USE_AVX_INTRINSICS
-                __m256d tmatrix_transpose [4] = {
-                    (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
-                    (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
-                    (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
-                    (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+            __m256d tmatrix_transpose [4] = {
+                (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+            };
+            #endif
+
+            #ifdef _SLKP_USE_ARM_NEON
+                float64x2x2_t tmatrix_transpose [4] = {
+                    (float64x2x2_t) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                    (float64x2x2_t) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                    (float64x2x2_t) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                    (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
                 };
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 4L) {
@@ -1773,7 +2025,7 @@ void            _TheTree::ComputeBranchCache    (
                     continue;
                 }
                 long     didScale =  0;
-                #ifdef _SLKP_USE_AVX_INTRINSICS
+                #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_ARM_NEON
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
                 #else
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, nil);
@@ -1791,7 +2043,7 @@ void            _TheTree::ComputeBranchCache    (
                 __handle_site_corrections(didScale, siteID);
             }
         } else if (alphabetDimension == 20L) {
-                #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+                #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || _SLKP_USE_ARM_NEON
                     __ll_handle_matrix_transpose<20>(transitionMatrix, tMatrixT);
                 #endif
                 for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 20L) {
@@ -1809,6 +2061,11 @@ void            _TheTree::ComputeBranchCache    (
                         __m128d s128;
                         s128 =  __ll_handle_block10_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil);
                         s128 =  __ll_handle_block10_product_sum<20,10> (tMatrixT, childVector, parentConditionals, &s128);
+                    #elif defined _SLKP_USE_ARM_NEON
+                        float64x2_t grandTotal = vdupq_n_f64(0.);
+                        grandTotal = __ll_handle_block10_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil);
+                        grandTotal = __ll_handle_block10_product_sum<20,10> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal;
+                        sum = _neon_sum_2 (grandTotal);
                     #else
                         __ll_product_sum_loop<20L> (tMatrix, childVector, parentConditionals, sum);
                     #endif
@@ -1824,7 +2081,7 @@ void            _TheTree::ComputeBranchCache    (
                     __handle_site_corrections(didScale, siteID);
                 }
         } else if (alphabetDimension == 60L) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || _SLKP_USE_ARM_NEON
                 __ll_handle_matrix_transpose<60L>(transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 60L) {
@@ -1849,6 +2106,14 @@ void            _TheTree::ComputeBranchCache    (
                     grandTotal = __ll_handle_block10_product_sum<60,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
                     grandTotal = __ll_handle_block10_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
                     grandTotal = __ll_handle_block10_product_sum<60,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                #elif defined _SLKP_USE_ARM_NEON
+                    float64x2_t
+                    grandTotal = __ll_handle_block10_product_sum<60,0> (tMatrixT, childVector, parentConditionals, nil);
+                    grandTotal = __ll_handle_block10_product_sum<60,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<60,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<60,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<60,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
                 #else
                     __ll_product_sum_loop<60L> (tMatrix, childVector, parentConditionals, sum);
                 #endif
@@ -1864,7 +2129,7 @@ void            _TheTree::ComputeBranchCache    (
                 __handle_site_corrections(didScale, siteID);
             }
         } else if (alphabetDimension == 61L) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
                 __ll_handle_matrix_transpose<61L>(transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 61L) {
@@ -1909,6 +2174,25 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_handle_block10_product_sum_linear<61,50> (tT, childVector, &lastTotal);
                     hyFloat s60 = _sse_sum_2(lastTotal) + childVector[60] * tT[60];
                     parentConditionals[60] *= s60;
+                #elif defined _SLKP_USE_ARM_NEON
+                    float64x2_t grandTotal;
+                    grandTotal = __ll_handle_block10_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil);
+                    grandTotal = __ll_handle_block10_product_sum<61,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<61,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<61,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
+
+                    hyFloat const * __restrict tT = tMatrix + 61*60;
+                    float64x2_t lastTotal;
+                    __ll_handle_block10_product_sum_linear<61,0> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,10> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,20> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,30> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,40> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<61,50> (tT, childVector, &lastTotal);
+                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60];
+                    parentConditionals[60] *= s60;
                 #else
                     __ll_product_sum_loop<61L> (tMatrix, childVector, parentConditionals, sum);
                 #endif
@@ -1925,7 +2209,7 @@ void            _TheTree::ComputeBranchCache    (
                 __handle_site_corrections(didScale, siteID);
             }
         }  else if (alphabetDimension == 62L) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
                 __ll_handle_matrix_transpose<62L>(transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 62L) {
@@ -1990,6 +2274,36 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal2);
                     hyFloat s61 = _sse_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
                     parentConditionals[61] *= s61;
+                #elif defined _SLKP_USE_ARM_NEON
+                    float64x2_t grandTotal
+                               = __ll_handle_block10_product_sum<62,0> (tMatrixT, childVector, parentConditionals, nil);
+                    grandTotal = __ll_handle_block10_product_sum<62,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<62,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<62,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<62,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<62,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
+
+                    hyFloat const * __restrict tT = tMatrix + 62*60;
+                    float64x2_t lastTotal;
+                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal);
+                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61];
+                    parentConditionals[60] *= s60;
+
+                    tT += 62;
+                    float64x2_t lastTotal2;
+                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal2);
+                    hyFloat s61 = _neon_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
+                    parentConditionals[61] *= s61;
                 #else
                     __ll_product_sum_loop<62L> (tMatrix, childVector, parentConditionals, sum);
                 #endif
@@ -2005,7 +2319,7 @@ void            _TheTree::ComputeBranchCache    (
                 __handle_site_corrections(didScale, siteID);
             }
         } else if (alphabetDimension == 63L) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS
+            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
                 __ll_handle_matrix_transpose<63L>(transitionMatrix, tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 63L) {
@@ -2088,6 +2402,48 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
                     __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal3);
                     hyFloat s62 = _sse_sum_2(lastTotal3) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
+                    parentConditionals[62] *= s62;
+                
+                #elif defined _SLKP_USE_ARM_NEON
+                    float64x2_t
+                    grandTotal = __ll_handle_block10_product_sum<63,0> (tMatrixT, childVector, parentConditionals, nil);
+                    grandTotal = __ll_handle_block10_product_sum<63,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<63,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<63,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<63,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
+                    grandTotal = __ll_handle_block10_product_sum<63,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
+
+                    hyFloat const * __restrict tT = tMatrix + 63*60;
+                    float64x2_t lastTotal;
+                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal);
+                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal);
+                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
+                    parentConditionals[60] *= s60;
+
+                    tT += 63;
+                    float64x2_t lastTotal2;
+                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal2);
+                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal2);
+                    hyFloat s61 = _neon_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
+                    parentConditionals[61] *= s61;
+
+                    tT += 63;
+                    float64x2_t lastTotal3;
+                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal3);
+                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal3);
+                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal3);
+                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal3);
+                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
+                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal3);
+                    hyFloat s62 = _neon_sum_2(lastTotal3) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
                     parentConditionals[62] *= s62;
                 #else
                     __ll_product_sum_loop<63L> (tMatrix, childVector, parentConditionals, sum);
