@@ -3690,8 +3690,8 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
         _AVLListX    foundCharacters (&foundCharactersAux);
         _String      aState ((unsigned long)atomSize);
 
-        char  const ** columnBlock      = (char const**)alloca(atomSize*sizeof (const char*));
-        hyFloat      * translationCache  = (hyFloat*)alloca (sizeof (hyFloat)* stateSpaceDim);
+        char  const ** columnBlock      = (char const**)malloc(atomSize*sizeof (const char*));
+        hyFloat      * translationCache  = (hyFloat*)malloc (sizeof (hyFloat)* stateSpaceDim);
         _Vector  * ambigs            = new _Vector();
 
         for (unsigned long siteID = 0UL; siteID < patternCount; siteID ++) {
@@ -3726,7 +3726,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
                 conditionalTerminalNodeStateFlag [i][leafID*patternCount + siteID] = translation;
             }
         }
-       // free (columnBlock); free (translationCache);
+        free (columnBlock); free (translationCache);
         conditionalTerminalNodeLikelihoodCaches < ambigs;
         errorTolerance = MAX (1.,round (log (1.+maxFilterSize)/log (10)));
 #ifdef MDSOCL

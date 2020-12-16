@@ -5,7 +5,6 @@ from os                  import path
 from glob                import glob
 import sys
 
-from platform import architecture, mac_ver
 
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
