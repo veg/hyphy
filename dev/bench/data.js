@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1608130041345,
+  "lastUpdate": 1608137791720,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -7708,6 +7708,54 @@ window.BENCHMARK_DATA = {
             "name": "SLAC.wbf",
             "value": 3.6074775795268432,
             "range": "±0.535647%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "committer": {
+            "name": "veg",
+            "username": "veg"
+          },
+          "id": "30845f8e5b40f9f1394e426725217bf222a78f56",
+          "message": "Fixing tag/untag bug",
+          "timestamp": "2020-11-18T16:25:31Z",
+          "url": "https://github.com/veg/hyphy/pull/1252/commits/30845f8e5b40f9f1394e426725217bf222a78f56"
+        },
+        "date": 1608137781778,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.3287606251021484,
+            "range": "±8.056652%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 6.500893872907525,
+            "range": "±2.469799%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 32.169856844137044,
+            "range": "±3.746276%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 4.027191597667451,
+            "range": "±2.636265%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
