@@ -336,9 +336,15 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 //TODO 20170413: not sure where to put the conditional includes below
+#ifdef _SLKP_USE_ARM_NEON
+    #include <arm_neon.h>
+#endif
 
 #ifdef _SLKP_USE_SSE_INTRINSICS
-#include <pmmintrin.h>
+    //#include "sse2neon.h"
+    //#else
+    #include <pmmintrin.h>
+    //#endif
 #endif
 
 #ifdef _SLKP_USE_AVX_INTRINSICS

@@ -614,7 +614,8 @@ protected:
 
     hyFloat         smoothingTerm,
                     smoothingReduction,
-                    smoothingPenalty;
+                    smoothingPenalty,
+                    errorTolerance;
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
     /*
