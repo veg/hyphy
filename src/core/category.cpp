@@ -874,12 +874,20 @@ _Matrix*    _CategoryVariable::ComputeHiddenMarkov (void) {
     if (!hmmr->IsValidTransitionMatrix()) {
         HandleApplicationError(_String ("Hidden Markov Model transition matrix variable did not compute to a valid transition matrix: ") & _String ((_String*)hmmr->toStr()));
     }
+    /*BufferToConsole("\n\n_CategoryVariable::ComputeHiddenMarkov\n");
+    _SimpleList _x;
+    _AVLList x (&_x);
+    GetHiddenMarkov()->ScanForVariables (x,true);
+    for (long k = 0; k < _x.lLength; k++) {
+        _Variable * vid = LocateVar(_x.get (k));
+        printf ("%s => %g\n", vid->GetName()->get_str(), vid->Compute()->Value());
+    }
+    ObjectToConsole (hmmr); NLToConsole();*/
     return hmmr;
 }
 
 //___________________________________________________________________________________________
-_Matrix*    _CategoryVariable::ComputeHiddenMarkovFreqs (void)
-{
+_Matrix*    _CategoryVariable::ComputeHiddenMarkovFreqs (void) {
     long       fIndex = modelFrequenciesIndices.list_data[hiddenMarkovModel];
     if (fIndex<0) {
         fIndex = -fIndex-1;

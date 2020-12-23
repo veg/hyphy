@@ -160,11 +160,7 @@ blDataSetFilter            ("DataSetFilter "),
 blTree                     ("Tree "),
 blLF                       ("LikelihoodFunction "),
 blLF3                  ("LikelihoodFunction3 "),
-blMolClock                 ("MolecularClock("),
-blfprintf              ("fprintf("),
 blGetString                ("GetString("),
-blfscanf                   ("fscanf("),
-blsscanf                   ("sscanf("),
 blExport                   ("Export("),
 blReplicate                ("ReplicateConstraint("),
 blImport                   ("Import"),
@@ -173,30 +169,11 @@ blClearConstraints         ("ClearConstraints("),
 blSetDialogPrompt      ("SetDialogPrompt("),
 blModel                    ("Model "),
 blChoiceList               ("ChoiceList("),
-blGetInformation           ("GetInformation("),
-blExecuteCommands      ("ExecuteCommands("),
-blExecuteAFile         ("ExecuteAFile("),
-blLoadFunctionLibrary      ("LoadFunctionLibrary("),
-blDifferentiate            ("Differentiate("),
-blFindRoot             ("FindRoot("),
-blMPIReceive               ("MPIReceive("),
-blMPISend                  ("MPISend("),
-blGetDataInfo              ("GetDataInfo("),
-blStateCounter             ("StateCounter("),
-blIntegrate                ("Integrate("),
-blLFCompute                ("LFCompute("),
-blGetURL                   ("GetURL("),
-blDoSQL                    ("DoSQL("),
 blTopology                 ("Topology "),
-blAlignSequences           ("AlignSequences("),
-blGetNeutralNull           ("GetNeutralNull("),
 blHBLProfile               ("#profile"),
-blDeleteObject         ("DeleteObject("),
-blRequireVersion           ("RequireVersion("),
 blSCFG                     ("SCFG "),
 blBGM                      ("BayesianGraphicalModel "),
-blSimulateDataSet          ("SimulateDataSet"),
-blAssert                   ("assert(");
+blSimulateDataSet          ("SimulateDataSet");
 
 _Trie    _HY_HBL_KeywordsPreserveSpaces  ;
 
@@ -3864,13 +3841,35 @@ void   _ElementaryCommand::FindNextCommand  (_String& input, _StringBuffer &resu
 
         skipping = false;
 
-        result<<c;
 
         if (literal_state != normal_text && c == '\\') {
+            // if the next character is 0, i.e. \0xx, treat as a terminal code
+            char next_char = input.get_char(++index);
+            if (next_char == '0') { // octal character; read all the subsequent numbers and convert
+                _SimpleList digits;
+                while (isdigit (next_char = input.get_char(++index)) && digits.countitems() <= 3) {
+                    digits << _String (next_char).to_long();
+                }
+                switch (digits.countitems()) {
+                    case 1:
+                        next_char = digits.get(0); break;
+                    case 2:
+                        next_char = digits.get(0) * 8 + digits.get(1) ; break;
+                    case 3:
+                        next_char = digits.get(0) * 64 + digits.get(1) * 8 + digits.get(2) ; break;
+                    default:
+                        next_char = '\0'; break;
+                }
+                index--;
+            } else {
+                result<<c;
+            }
             // escape character \x
-            result<< input.get_char(++index);
+            result<< next_char;
             continue;
         }
+
+        result<<c;
 
         // are we inside a string literal?
 
@@ -4100,6 +4099,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
             }
 
             receptacle < strip_last_space (source,last_delim,index);
+            //printf ("%s\n", ((_String*)receptacle.GetItem(receptacle.lLength-1))->get_str());
             last_delim = index+1;
             continue;
         }
@@ -4107,6 +4107,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
 
     if (include_empty_conditions || last_delim <= index-1) {
         receptacle < strip_last_space (source,last_delim,index);
+        //printf ("%s\n", ((_String*)receptacle.GetItem(receptacle.lLength-1))->get_str());
     }
     return index+1L;
 }

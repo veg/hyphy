@@ -201,10 +201,14 @@ function parameters.SetLocalValue(tree, branch, id, value) {
 
 
 function parameters.SetValues(set) {
+    //console.log ("\n====  parameters.SetValues === \n");
     if (Type (set) == "AssociativeList") {
         for (_key_, _value_; in; set) {
             if (parameters.IsIndependent (_value_[terms.id])) {
+                //console.log (_value_[terms.id] + " (" + Eval (_value_[terms.id]) + ") =>" + _value_[terms.fit.MLE]);
                 parameters.SetValue (_value_[terms.id], _value_[terms.fit.MLE]);
+            } else {
+                //console.log (_value_[terms.id] + " is NOT independent");
             }
         }
         
@@ -300,7 +304,6 @@ lfunction parameters.FixParameterSet (set) {
     } 
     
     return {};
-    
 }
 
 

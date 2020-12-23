@@ -59,14 +59,7 @@ _String     isDynamicGraph          ("BGM_DYNAMIC"),
             treeNodeNameMapping     ("TREE_NODE_NAME_MAPPING");
 
 
-extern      _String                 blDoSQL,
-            blAlignSequences,
-            blGetNeutralNull,
-            blHBLProfile,
-            blDeleteObject,
-            blGetString,
-            blRequireVersion,
-            blAssert;
+extern      _String  blHBLProfile;
 
 _SimpleList _HY_HBLCommandHelperAux;
             

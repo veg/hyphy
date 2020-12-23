@@ -293,6 +293,7 @@ hyFloat            tdiff = timer.TimeSinceStart();
             }
         }
         lf->SetThreadCount (bestTC);
+        lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex)); // reset the value of variable 0
         ReportWarning       (_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
     } 
 #endif
@@ -3728,7 +3729,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
         }
         free (columnBlock); free (translationCache);
         conditionalTerminalNodeLikelihoodCaches < ambigs;
-        errorTolerance = MAX (1.,round (log (1.+maxFilterSize)/log (10)));
+        errorTolerance = MAX (10.,round (log (1.+maxFilterSize)/log (10)));
 #ifdef MDSOCL
 		OCLEval[i].init(patternCount, theFilter->GetDimension(), conditionalInternalNodeLikelihoodCaches[i]);
 #endif
@@ -4137,13 +4138,15 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
             variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
-            //if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
-            //    printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
+            if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
+                printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
         }
     }
 
     _SimpleList untag;
     if (keepStartingPoint) {
+        
+        ///printf ("\n====================\n");
         indexInd.Each ([this, &untag] (long v, unsigned long i) -> void {
             _Variable *iv = GetIthIndependentVar (i);
             //printf ("%s = %g, global %d, initialized %d, changed %d\n",GetIthIndependentName(i)->get_str(), GetIthIndependent(i), iv->IsGlobal(), iv->HasBeenInitialized(), iv->IsModified());
@@ -4154,6 +4157,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     untag << i;
                 }
             }
+            
         });
     }
     
@@ -4360,11 +4364,11 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             if (gradientBlocks.nonempty()) {
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
                     _SimpleList * this_block = (_SimpleList*)gradientBlocks(b);
-                    if (this_block->countitems() <= maxGradientBlockDimension) {
+                    if (this_block->countitems() > 1 && this_block->countitems() <= maxGradientBlockDimension) {
                         //printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
                         maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,this_block,maxSoFar);
                     } else {
-                        //printf ("\n...Skipping a large gradient block with %ld variables\n", this_block->countitems());
+                        //printf ("\n...Skipping a large gradient (or a trivial) block with %ld variables\n", this_block->countitems());
                     }
                 }
             } else {
@@ -7191,7 +7195,7 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
      **/
      
     // the dimension of the problem
-    
+        
     _OptimiztionProgress progress_tracker;
     
     long  N = indexInd.countitems(),

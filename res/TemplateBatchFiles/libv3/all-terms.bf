@@ -109,8 +109,11 @@ namespace terms{
     function characterFrequency (character) {
         return "Equilibrium frequency for " + character;
     }
+    
+    nucleotideRatePrefix = "Substitution rate from nucleotide ";
+    
     function nucleotideRate(fromC, toC) {
-        return "Substitution rate from nucleotide " + fromC + " to nucleotide " + toC;
+        return  nucleotideRatePrefix + fromC + " to nucleotide " + toC;
     }
 
     function nucleotideRateReversible (fromC, toC) {

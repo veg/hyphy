@@ -694,7 +694,7 @@ void    SetStatusLineUser   (_String const s) {
 #ifndef __UNITTEST__
 int main (int argc, char* argv[]) {
     
- 
+    
 #ifdef _COMPARATIVE_LF_DEBUG_DUMP
     FILE * comparative_lf_debug_matrix_content_file = doFileOpen (_COMPARATIVE_LF_DEBUG_DUMP, "w");
 #endif
