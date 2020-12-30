@@ -57,34 +57,36 @@ using namespace hyphy_global_objects;
 //_________________________________________________________
 
 _DataSet* lastNexusDataMatrix = nil;
-_String   nexusBFBody;
+_StringBuffer   nexusBFBody;
+
 
 
 void    checkTTStatus               (FileState* fs);
-void    processCommand              (_String*s, FileState*fs);
-void    FilterRawString             (_String& s, FileState* fs, _DataSet & ds);
-long    ProcessLine                 (_String&s , FileState *fs, _DataSet& ds);
+void    processCommand              (_StringBuffer*s, FileState*fs);
+void    FilterRawString             (_StringBuffer& s, FileState* fs, _DataSet & ds);
+long    ProcessLine                 (_StringBuffer&s , FileState *fs, _DataSet& ds);
 void    PadLine                     (FileState& fState, _DataSet& result);
-void    ISelector                   (FileState& fState, _String& CurrentLine, _DataSet& result);
-bool    SkipLine                    (_String& theLine, FileState* fS);
-void    TrimPhylipLine              (_String& CurrentLine, _DataSet& ds);
-bool    ProcessNexusData            (FileState&, long,  FILE*, _String&, _DataSet&);
-void    ProcessNexusHYPHY           (FileState&, long,  FILE*, _String&, _DataSet&);
-void    ProcessNexusAssumptions     (FileState&, long,  FILE*, _String&, _DataSet&);
-void    ProcessNexusTaxa            (FileState&,long, FILE*, _String&, _DataSet&);
-void    ProcessNexusTrees           (FileState&, long, FILE*, _String&, _DataSet&);
-bool    FindNextNexusToken          (FileState& fState, FILE* f, _String& CurrentLine, long pos);
-bool    SkipUntilNexusBlockEnd      (FileState& fState, FILE* f, _String& CurrentLine, long pos);
-bool    ReadNextNexusStatement      (FileState&, FILE* , _String&, long, _StringBuffer&, bool, bool = true, bool = true, bool = false, bool = false, bool = false);
-long    ReadNextNexusEquate         (FileState&, FILE* , _String&, long, _String&, bool = false, bool = true);
-void    NexusParseEqualStatement    (_String&);
+void    ISelector                   (FileState& fState, _StringBuffer& CurrentLine, _DataSet& result);
+bool    SkipLine                    (_StringBuffer& theLine, FileState* fS);
+void    TrimPhylipLine              (_StringBuffer& CurrentLine, _DataSet& ds);
+bool    ProcessNexusData            (FileState&, long,  FILE*, _StringBuffer&, _DataSet&);
+void    ProcessNexusHYPHY           (FileState&, long,  FILE*, _StringBuffer&, _DataSet&);
+void    ProcessNexusAssumptions     (FileState&, long,  FILE*, _StringBuffer&, _DataSet&);
+void    ProcessNexusTaxa            (FileState&,long, FILE*, _StringBuffer&, _DataSet&);
+void    ProcessNexusTrees           (FileState&, long, FILE*, _StringBuffer&, _DataSet&);
+bool    FindNextNexusToken          (FileState& fState, FILE* f, _StringBuffer& CurrentLine, long pos);
+bool    SkipUntilNexusBlockEnd      (FileState& fState, FILE* f, _StringBuffer& CurrentLine, long pos);
+bool    ReadNextNexusStatement      (FileState&, FILE* , _StringBuffer&, long, _StringBuffer&, bool, bool = true, bool = true, bool = false, bool = false, bool = false);
+long    ReadNextNexusEquate         (FileState&, FILE* , _StringBuffer&, long, _String&, bool = false, bool = true);
+void    NexusParseEqualStatement    (_StringBuffer&);
 
 static auto  error_conext = [] (_String const& buffer, long position) -> const _String {return (buffer.Cut (0,position) & " <=? " & buffer.Cut (position+1,kStringEnd)).Enquote();};
 
 
 //_________________________________________________________
 
-bool    FindNextNexusToken (FileState& fState, FILE* f, _String& CurrentLine, long pos) {
+bool    FindNextNexusToken (FileState& fState, FILE* f, _StringBuffer& CurrentLine, long pos) {
+
     pos = CurrentLine.FirstNonSpaceIndex (pos,-1,kStringDirectionForward);
     if (pos==kNotFound) {
         ReadNextLine(f,&CurrentLine,&fState,false);
@@ -100,7 +102,7 @@ bool    FindNextNexusToken (FileState& fState, FILE* f, _String& CurrentLine, lo
 
 //_________________________________________________________
 
-bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _String& CurrentLine, long pos) {
+bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _StringBuffer& CurrentLine, long pos) {
     static const _String endMark ("END");
     pos = CurrentLine.Find (endMark,pos+1,kStringEnd);
     while (pos == kNotFound) {
@@ -126,7 +128,7 @@ bool    SkipUntilNexusBlockEnd (FileState& fState, FILE* file, _String& CurrentL
     return false;
 }
 //_________________________________________________________
-void    NexusParseEqualStatement (_String& source)
+void    NexusParseEqualStatement (_StringBuffer& source)
 {
     long f = source.Find('=');
     if (f != kNotFound) {
@@ -141,7 +143,7 @@ void    NexusParseEqualStatement (_String& source)
 }
 //_________________________________________________________
 
-bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, long pos, _StringBuffer & blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes) {
+bool ReadNextNexusStatement (FileState& fState, FILE* f, _StringBuffer& CurrentLine, long pos, _StringBuffer & blank, bool stopOnSpace, bool stopOnComma, bool stopOnQuote, bool NLonly, bool preserveSpaces, bool preserveQuotes) {
     bool done          = false,
          insideLiteral = false,
          startedReading = false;
@@ -227,7 +229,7 @@ bool ReadNextNexusStatement (FileState& fState, FILE* f, _String& CurrentLine, l
 
 //_________________________________________________________
 
-long    ReadNextNexusEquate (FileState& fState, FILE* f, _String& CurrentLine, long pos2, _String& blank, bool resetP, bool demandSemicolon) {
+long    ReadNextNexusEquate (FileState& fState, FILE* f, _StringBuffer& CurrentLine, long pos2, _String& blank, bool resetP, bool demandSemicolon) {
     long pos = blank.Find ('=',pos2,-1), res;
     if (pos>=0) {
         if (pos<blank.length()-1) {
@@ -261,7 +263,7 @@ long    ReadNextNexusEquate (FileState& fState, FILE* f, _String& CurrentLine, l
 }
 
 //_________________________________________________________
-void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result) {
+void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _StringBuffer& CurrentLine, _DataSet& result) {
     static const _String key1 = "DIMENSIONS", key2 = "NTAX", key3 = "TAXLABELS", keyEnd = "END";
 
     bool    done = false;
@@ -342,7 +344,7 @@ void    ProcessNexusTaxa (FileState& fState, long pos, FILE*f, _String& CurrentL
 
 //_________________________________________________________
 
-void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet&) {
+void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _StringBuffer& CurrentLine, _DataSet&) {
     static const _String key1 = "CHARSET", keyEnd = "END";
  
     bool    done = false;
@@ -568,7 +570,7 @@ void    ProcessNexusAssumptions (FileState& fState, long pos, FILE*f, _String& C
 
 //_________________________________________________________
 
-void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result) {
+void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _StringBuffer& CurrentLine, _DataSet& result) {
     static _String const key1 = "TRANSLATE", key2 = "TREE", errMsg, keyEnd = "END";
 
     bool    done = false, readResult, good;
@@ -813,7 +815,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, FILE*f, _String& Current
 
 //_________________________________________________________
 
-void    ProcessNexusHYPHY (FileState& fState, long pos, FILE*file, _String& CurrentLine, _DataSet&) {
+void    ProcessNexusHYPHY (FileState& fState, long pos, FILE*file, _StringBuffer& CurrentLine, _DataSet&) {
     static _String const endMark ("END;");
     _StringBuffer bfBody  (128UL);
 
@@ -861,7 +863,7 @@ void    ProcessNexusHYPHY (FileState& fState, long pos, FILE*file, _String& Curr
 
 //_________________________________________________________
 
-bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _String& CurrentLine, _DataSet& result) {
+bool    ProcessNexusData (FileState& fState, long pos, FILE*f, _StringBuffer& CurrentLine, _DataSet& result) {
     static const _String key1 ("DIMENSIONS"), key11 ("NTAX"), key12 ("NCHAR"),
             key2 ("FORMAT"),key21 ("DATATYPE"), key22 ("MISSING"), key23 ("GAP"), key24 ("SYMBOLS"),
             key25 ("EQUATE"), key26 ("MATCHCHAR"), key27 ("NOLABELS"), key28 ("INTERLEAVE"), key3 ("MATRIX"), keyEnd ("END");
@@ -1264,7 +1266,7 @@ void    ReadNexusFile (FileState& fState, FILE*file, _DataSet& result) {
     static const _String beginMark ("BEGIN"), endMark ("END"), data ("DATA"), chars ("CHARACTERS"),
             taxa ("TAXA"), trees ("TREES"), assumptions ("ASSUMPTIONS"), hyphy ("HYPHY"), sets ("SETS");
   
-    _String CurrentLine, blockName;
+    _StringBuffer CurrentLine, blockName;
 
     ReadNextLine(file,&CurrentLine,&fState,false);
     while (CurrentLine.nonempty()) {

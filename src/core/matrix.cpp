@@ -1247,6 +1247,7 @@ HBLObjectRef   _Matrix::LUDecompose (void) const {
 
         if (row_max==0.0) {
             HandleApplicationError (_String("LUDecompose doesn't work on singular matrices (row ") & i & ')');
+            delete [] scalings;
             return    new _MathObject;
         }
         scalings[i]=1.0/row_max;
@@ -2139,16 +2140,18 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                     DeleteObject (tr);
                                     DeleteObject (tc);
                                     
-                                    if (!compResult) {
-                                         throw _String ("Unequal cells at (") & r & ',' & c & ")";
-                                    }
+                                    
                                 } else {
                                     throw _String ("Could not convert a matrix cell at (") & r & ',' & c & ") to a polynomial: " & _StringBuffer ((_StringBuffer*)rc->toStr(kFormulaStringConversionNormal));
                                 }
                              } else {
                                 compResult = !(rc || cr);
                             }
+                            if (!compResult) {
+                                 throw _String ("Unequal cells at (") & r & ',' & c & ")";
+                            }
                         }
+                        
                     }
             } else {
                 for (long r = 0; r < hDim; r++)
@@ -2264,15 +2267,11 @@ bool    _Matrix::IncreaseStorage    (void) {
 
     if (!is_numeric()) {
         // pointers or formulas
-        _MathObject** tempData;
-        if (!(tempData = (_MathObject**) MatrixMemAllocate(sizeof( char)* lDim*sizeof(void*)))) {
-            HandleApplicationError ( kErrorStringMemoryFail );
-        } else {
-            theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(void*));
-            for (long i = lDim-allocationBlock; i < lDim; i++) {
-                theData [i] = ZEROOBJECT;
-            }
+        theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(void*));
+        for (long i = lDim-allocationBlock; i < lDim; i++) {
+            ((_Formula**)theData) [i] = ZEROPOINTER;
         }
+        
     } else {
         //objects
         theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(hyFloat));
@@ -3794,7 +3793,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 unsigned long cumulativeIndex = 0UL;
                 const unsigned long dimm4 = (vDim >> 2) << 2;
 
-                const hyFloat * row = theData;
+                //const hyFloat * row = theData;
                 hyFloat  * dest = storage.theData;
                 
 #if defined _SLKP_USE_AVX_INTRINSICS
@@ -8961,6 +8960,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 buffer[i] = fc = fgetc (theSource);
                 i++;
                 if (feof(theSource)) {
+                    DeleteObject (thisCell);
                     return false;
                 }
             } while ((fc!=',')&&(fc!='}'));
@@ -8968,6 +8968,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
             theCoeffs[j]=atof (buffer);
             j++;
             if (j>m) {
+                DeleteObject (thisCell);
                 return false;
             }
         }
@@ -8984,6 +8985,8 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 buffer[i] = fc = fgetc (theSource);
                 i++;
                 if (feof(theSource)) {
+                    DeleteObject (thisCell);
+                    DeleteObject (pd);
                     return false;
                 }
             } while ((fc!=',')&&(fc!='}'));
@@ -8992,6 +8995,8 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
         }
         fc = fgetc(theSource);
         if (fc != '{') {
+            DeleteObject (thisCell);
+            DeleteObject (pd);
             return false;
         }
         c2.Clear();
@@ -9001,6 +9006,8 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 buffer[i] = fc = fgetc (theSource);
                 i++;
                 if (feof(theSource)) {
+                    DeleteObject (thisCell);
+                    DeleteObject (pd);
                     return false;
                 }
             } while ((fc!=',')&&(fc!='}'));

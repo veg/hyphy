@@ -3202,47 +3202,7 @@ inline hyFloat sqr (hyFloat x)
       }
     }
   }
-//_______________________________________________________________________________________
 
-void        _LikelihoodFunction::SetReferenceNodes (void) {
-    /*
-    hyFloat          cv;
-
-    checkParameter      (useDuplicateMatrixCaching, cv, 0.);
-
-    if (cv>0.5) {
-        _List               mappedNodes;
-        _SimpleList         mappedTo,
-                            canMap;
-
-        for (unsigned i=0UL; i<theTrees.lLength; i++) {
-            _TreeIterator ti (GetIthTree(i), _HY_TREE_TRAVERSAL_POSTORDER);
-
-            while (_CalcNode* iterator = ti.Next()) {
-                long rV = iterator->CheckForReferenceNode ();
-                if (rV >= 0) {
-                    mappedNodes << iterator;
-                    mappedTo    << rV;
-                } else {
-                    canMap << iterator->get_index();
-                }
-            }
-        }
-
-        if (mappedNodes.lLength) {
-            canMap.Sort();
-            for (unsigned long i=0UL; i<mappedNodes.lLength; i++) {
-                if (canMap.BinaryFind (mappedTo.list_data[i])>=0) {
-                    _CalcNode * travNode = (_CalcNode*)mappedNodes(i);
-                    travNode->SetRefNode (mappedTo.list_data[i]);
-                    ((_CalcNode*)LocateVar(mappedTo.list_data[i]))->AddRefNode();
-                    ReportWarning (_String ("Matrix for node ") & *travNode->GetName() & " mapped to " &
-                                   *LocateVar(mappedTo.list_data[i])->GetName());
-                }
-            }
-        }
-    }*/
-}
 
 //_______________________________________________________________________________________
 
@@ -4086,7 +4046,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
     if (hyphyMPIOptimizerMode == _hyphyLFMPIModeNone) {
 #endif
-        SetReferenceNodes();
         for (unsigned long tree_index = 0UL; tree_index <theTrees.lLength; tree_index ++) {
           _TheTree *ith_tree = GetIthTree (tree_index);
           ith_tree->SetUpMatrices(ith_tree->categoryCount);
@@ -4372,7 +4331,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     }
                 }
             } else {
-                maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,nil,maxSoFar);
+                ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,nil,maxSoFar);
             }
         } else {
             hyFloat current_precision = MAX(1., precision);
@@ -5802,7 +5761,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 
         _String xxv = "_xxv";
         
-        _String     fString     = _String("function _profileFit(") & xxv & ",_variableIndex){SetParameter(" &*myName&",_variableIndex," &xxv&");LFCompute("
+        _StringBuffer     fString     = _String("function _profileFit(") & xxv & ",_variableIndex){SetParameter(" &*myName&",_variableIndex," &xxv&");LFCompute("
                                   //    &*myName&(",_xxres);  fprintf (stdout,\"\\n\",_xxv_,\" \",_xxres);  return _xxres;}");
                                   &*myName & _String (",_xxres);") //"fprintf (stdout,\"\\n\",") & xxv & ",\" \",_xxres);
                                   &"return _xxres;}";
@@ -6614,7 +6573,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
                 bestVal += delta;
                 //see which variable changed the least
                 temp = INFINITY;
-                long  suspect,f;
+                long  suspect = indexInd.lLength,f;
                 for (long i = 0; i<indexInd.lLength; i++) {
                     if (fabs(delta(i,0))<temp) {
                         if (freeze.Find(i)!=-1) {
@@ -9119,6 +9078,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _
                 // search for the shortest branch to add to the tree.
                 max = 0x0fffffff;
                 long * pl  = distances.list_data;
+                startpt = 0;
 
                 for (k=0; k<distances.lLength; k++,pl++)
                     if (*pl<=max) {
@@ -9160,7 +9120,7 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _
                     }
                 } else {
                     for (k=0; k<distances.lLength; k++) {
-                        j = t->ComputeReleafingCost (df,endpt, partitionSites.list_data[k]);
+                        j = t->ComputeReleafingCost (df,endpt, partitionSites.list_data[k], nil, 0, &child_count);
                         if (j<distances.list_data[k]) {
                             distances.list_data[k]=j;
                             edges.list_data[k] = endpt;
@@ -10508,6 +10468,9 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
             BuildLeafProbs (*curNode.go_down(1), baseVector, vecSize, target, curTree, leafCount, false, baseLength, dsf,DSOffset,intNodes);
             return;
         }
+        if (curNode.get_num_nodes() == 0) {
+            HandleApplicationError("Called ancestral state recovery with a null tree");
+        }
     }
 
     // now scan the "children" and pass on the parameters as needed
@@ -10765,7 +10728,6 @@ void    _LikelihoodFunction::PrepareToCompute (bool disableClear) {
 
         SetupCategoryCaches   ();
         SetupLFCaches         ();
-        SetReferenceNodes     ();
 
         if (disableClear) {
             hasBeenSetUp = 0x6FFFFFFF;

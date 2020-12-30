@@ -212,7 +212,7 @@ if (busted.run_full_mg94) {
     }
 }
 
-
+busted.save_intermediate_fits = None;
 
 
 io.ReportProgressMessageMD("BUSTED", "codon-refit", "* " + selection.io.report_fit (busted.final_partitioned_mg_results, 0, busted.codon_data_info[terms.data.sample_size]));

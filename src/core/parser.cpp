@@ -439,7 +439,7 @@ void DeleteVariable (long dv, bool deleteself, bool do_checks) {
         }
 
         for (unsigned long k=0; k< toDelete.lLength; k++) {
-            DeleteVariable (*(_String*)toDelete(k));
+            DeleteVariable (*(_String*)toDelete(k), true, do_checks);
         }
     }
 }
@@ -560,85 +560,12 @@ void DeleteTreeVariable (long tree_variable_index, _SimpleList & parms, _String 
         
 
         return;
-         
-        /*_String const *tree_name  = (_String const*)variableNames.Retrieve (dv),
-                       tree_prefix = *tree_name&".";
         
-        long    variable_index   = variableNames.GetXtra (dv);
-
-        UpdateChangingFlas (variable_index);
-
-        _SimpleList recCache;
-        variableNames.Find (tree_name,recCache);
-        _String     nextVarID;
-        long        nvid;
-        if ((nvid = variableNames.Next (dv,recCache))>=0) {
-            nextVarID = *(_String*)variableNames.Retrieve(nvid);
-        }
-
-
-        
-        {
-            _SimpleList tcache;
-            long        iv,
-                        k = variableNames.Traverser (tcache, iv, variableNames.GetRoot());
-
-            for (; k>=0; k = variableNames.Traverser (tcache, iv)) {
-                _Variable * thisVar = FetchVar(k);
-
-                if (thisVar->CheckFForDependence (variable_index,false)) {
-                    HBLObjectRef curValue = thisVar->Compute();
-                    curValue->AddAReference();
-                    thisVar->SetValue (curValue, false);
-                    //DeleteObject (curValue);
-                }
-            }
-        }
-
-        _Variable* delvar = (FetchVar(dv));
-        if (delvar->ObjectClass() != TREE) {
-            variableNames.Delete (variableNames.Retrieve(dv),true);
-            (*((_SimpleList*)&variablePtrs))[variable_index]=0;
-            freeSlots<<variable_index;
-            DeleteObject (delvar);
-        } else {
-            ((_VariableContainer*)delvar)->Clear();
-        }
-        if (doDeps) {
-            _List toDelete;
-            recCache.Clear();
-            long nextVar = variableNames.Find (&nextVarID,recCache);
-            for (; nextVar>=0; nextVar = variableNames.Next (nextVar, recCache)) {
-                _String dependent = *(_String*)variableNames.Retrieve (nextVar);
-                if (dependent.BeginsWith(tree_prefix)) {
-                    if (dependent.Find ('.', tree_prefix.length()+1, -1)>=0) {
-                        _Variable * checkDep = FetchVar (nextVar);
-                        if (!checkDep->IsIndependent()) {
-                            HBLObjectRef curValue = checkDep->Compute();
-                            curValue->AddAReference();
-                            checkDep->SetValue (curValue);
-                            DeleteObject (curValue);
-                        }
-                        parms << variableNames.GetXtra (nextVar);
-                    } else {
-                        toDelete && & dependent;
-                    }
-                } else {
-                    break;
-                }
-            }
-
-            for (unsigned long k=0; k<toDelete.lLength; k++) {
-                //StringToConsole (*(_String*)toDelete(k));
-                //BufferToConsole ("\n");
-                DeleteTreeVariable (LocateVarByName(*(_String*)toDelete(k)),parms,false);
-            }
-        }*/
     }
 }
 //__________________________________________________________________________________
-void DeleteVariable (_String const &name, bool deleteself) {
-    DeleteVariable(LocateVarByName (name), deleteself);
+void DeleteVariable (_String const &name, bool deleteself, bool do_checks) {
+    DeleteVariable(LocateVarByName (name), deleteself, do_checks);
 }
 
 
@@ -656,17 +583,14 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
     
       if (clear_trees && (existing->ObjectClass() == TREE || existing->ObjectClass() == TOPOLOGY)) {
         DeleteVariable (*existing->GetName());
-        f = -1L;
       }
       else {
         return existing;
       }
     }
 
-    {
-        _Variable dummy (*name, isGlobal);
-        f = LocateVarByName (*name);
-    }
+    _Variable dummy (*name, isGlobal);
+    f = LocateVarByName (*name);
 
     return FetchVar(f);
 }
@@ -674,29 +598,26 @@ _Variable* CheckReceptacle (_String const * name, _String const & fID, bool chec
 //__________________________________________________________________________________
 _Variable* CheckReceptacleCommandIDException (_String const* name, const long id, bool checkValid, bool isGlobal, _ExecutionList* context) {
     // TODO: allow ^name and such to constitute valid run-time references
-   if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
-    throw  (name->Enquote('\'') & " is not a valid variable identifier");
-   }
-  
-  long    f = LocateVarByName (*name);
-  
-  if (f>=0L) {
-    _Variable * existing = FetchVar (f);
-    if (existing->ObjectClass() == TREE) {
-      DeleteVariable (*existing->GetName());
-      f = -1L;
+    if (checkValid && (!name->IsValidIdentifier(fIDAllowCompound))) {
+        throw  (name->Enquote('\'') & " is not a valid variable identifier");
     }
-    else {
-      return existing;
+
+    long    f = LocateVarByName (*name);
+
+    if (f>=0L) {
+        _Variable * existing = FetchVar (f);
+        if (existing->ObjectClass() == TREE) {
+          DeleteVariable (*existing->GetName());
+        }
+        else {
+          return existing;
+        }
     }
-  }
-  
-  {
+
     _Variable (*name, isGlobal);
     f = LocateVarByName (*name);
-  }
-  
-  return FetchVar(f);
+
+    return FetchVar(f);
 }
 
 

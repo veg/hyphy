@@ -102,7 +102,7 @@ _HBLCommandExtras* _hyInitCommandExtras (const long cut, const long conditions, 
 
 //____________________________________________________________________________________
 
-bool      _ElementaryCommand::ExtractValidateAddHBLCommand (_String& current_stream,const long command_code,  _List* pieces, _HBLCommandExtras* command_spec, _ExecutionList& command_list)
+bool      _ElementaryCommand::ExtractValidateAddHBLCommand (_StringBuffer& current_stream,const long command_code,  _List* pieces, _HBLCommandExtras* command_spec, _ExecutionList& command_list)
 
 {
     if (command_spec->is_assignment) {
@@ -523,7 +523,7 @@ void         InsertStringListIntoAVL    (_AssociativeList* theList , _String con
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ConstructProfileStatement (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructProfileStatement (_StringBuffer&source, _ExecutionList&target)
 // syntax: #profile START|PAUSE|RESUME|indetifier to dump in
 {
 
@@ -795,56 +795,25 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
 {
     chain.currentCommand++;
 
-    _String     errStr;
+    const _String kStart ("START"),
+                  kPause ("PAUSE"),
+                  kResume ("RESUME");
+    
     _String *   profileCode   = (_String*)parameters(0);
-
-    if (*profileCode == _String ("START")) {
-        if (chain.profileCounter) {
-            DeleteObject (chain.profileCounter);
-        }
-        chain.profileCounter = new _Matrix (chain.lLength, 2, false, true);
-        chain.doProfile = 1;
-    } else if (*profileCode == _String ("PAUSE")) {
+    
+    if (*profileCode == kStart) {
+        chain.StartProfile();
+    } else if (*profileCode == kPause) {
         chain.doProfile = 2;
-    } else if (*profileCode == _String ("RESUME")) {
+    } else if (*profileCode == kResume) {
         chain.doProfile = 1;
     } else {
         _Variable * outVar = CheckReceptacle (&AppendContainerName(*profileCode,chain.nameSpacePrefix), blHBLProfile, true);
         if (outVar) {
             if (chain.profileCounter) {
-                _AssociativeList * profileDump = new _AssociativeList;
-
-                _SimpleList      instructions;
-                _List            descriptions;
-
-                for (unsigned long k=1UL; k<2*chain.lLength; k+=2UL) {
-                    if (chain.profileCounter->theData[k] > 0.0) {
-                        instructions << k/2;
-                        descriptions.AppendNewInstance((_String*)((_ElementaryCommand*)chain(k/2))->toStr());
-                    }
-                }
-
-                _Matrix         * execProfile = new _Matrix (instructions.lLength,2,false,true),
-                * instCounter = new _Matrix (instructions),
-                * descList    = new _Matrix (descriptions);
-
-                unsigned long k2 = 0UL;
-                for (unsigned long m=1UL; m<2*chain.lLength; m+=2UL) {
-                    if (chain.profileCounter->theData[m] > 0.0) {
-                        execProfile->theData[k2++] = chain.profileCounter->theData[m];
-                        execProfile->theData[k2++] = chain.profileCounter->theData[m-1];
-                    }
-                }
-
-                profileDump->MStore ("INSTRUCTION INDEX", instCounter, false);
-                profileDump->MStore ("INSTRUCTION", descList, false);
-                profileDump->MStore ("STATS", execProfile, false);
-                outVar->SetValue (profileDump,false,true,NULL);
-                chain.doProfile = 0;
-                DeleteObject (chain.profileCounter);
-                chain.profileCounter = nil;
+                outVar->SetValue (chain.CollectProfile(),false,true,NULL);
             } else {
-                errStr = "Profiler dump invoked before #profile START; ";
+                HandleApplicationError("Profiler dump invoked before #profile START;");
             }
         }
     }
@@ -1045,7 +1014,7 @@ bool    _ElementaryCommand::DecompileFormulae (void) {
 }
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target) {
+bool    _ElementaryCommand::ConstructSCFG (_StringBuffer&source, _ExecutionList&target) {
 // syntax: SCFG ident = (Rules1, Rules2 <,start>)
 
     long    mark1 = source.FirstNonSpaceFollowingSpace (),
@@ -1078,7 +1047,7 @@ bool    _ElementaryCommand::ConstructSCFG (_String&source, _ExecutionList&target
 }
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructBGM (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructBGM (_StringBuffer&source, _ExecutionList&target)
 // syntax: BGM ident = (<nodes>)
 {
     //ReportWarning(_String("ConstructBGM()"));

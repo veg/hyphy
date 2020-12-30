@@ -193,7 +193,7 @@ if (fel.run_full_mg94) {
 }
 
 
-
+fel.save_intermediate_fits = None;
 
 
 io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
@@ -359,7 +359,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     //assert (0);
     //Optimize (results, ^lf);
 
-    alternative = estimators.ExtractMLEs (lf, model_mapping);
+    //alternative = estimators.ExtractMLEs (lf, model_mapping);
+    alternative = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
@@ -368,8 +369,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     //Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});
     Optimize (results, ^lf);
 
-    Null = estimators.ExtractMLEs (lf, model_mapping);
-
+    //Null = estimators.ExtractMLEs (lf, model_mapping);
+    Null = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
 
     Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
@@ -462,14 +463,14 @@ lfunction fel.store_results (node, result, arguments) {
 
 
         sum = 0;
-        alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
+        /*alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
 
         utility.ForEach (^"fel.case_respecting_node_names", "_node_",
                 '_node_class_ = ((^"fel.selected_branches")[`&partition_index`])[_node_];
                  if (_node_class_ == utility.getGlobalValue("terms.tree_attributes.test")) {
                     `&sum` += ((`&alternative_lengths`)[_node_])[utility.getGlobalValue("terms.fit.MLE")];
                  }
-            ');
+            ');*/
 
         result_row [5] = sum;
     }
@@ -504,6 +505,19 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     // alpha = alpha_scaler * branch_length
     // beta  = beta_scaler_test * branch_length or beta_nuisance_test * branch_length
 
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+
+    for (_node_; in; fel.case_respecting_node_names) {
+        _node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
+         if (_node_class_ == terms.tree_attributes.test) {
+            _beta_scaler = fel.scalers[1];
+         } else {
+            _beta_scaler = fel.scalers[2];
+         }
+         fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
+    }
+
+    /*
     utility.ForEach (fel.case_respecting_node_names, "_node_",
             '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
              if (_node_class_ == terms.tree_attributes.test) {
@@ -513,6 +527,9 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
              }
              fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
         ');
+    */
+
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
 
 
     // create the likelihood function for this site

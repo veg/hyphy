@@ -429,7 +429,8 @@ namespace hy_global {
 #endif
         
         if (hy_env::cli_env_settings.nonempty()) {
-            _ExecutionList (hy_env::cli_env_settings).Execute();
+            _StringBuffer code (hy_env::cli_env_settings);
+            _ExecutionList (code).Execute();
         }
         return hy_error_log_file && hy_message_log_file;
     }

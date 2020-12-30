@@ -111,7 +111,7 @@ _String const&    AppendContainerName     (_String const&, _VariableContainer co
 _String const&    AppendContainerName     (_String const&, _String const*);
 _String*    FetchMathObjectNameOfTypeByIndex (const unsigned long objectClass, const long objectIndex);
 
-void        DeleteVariable  (_String const&, bool deleteself = true);
+void        DeleteVariable  (_String const&, bool deleteself = true, bool do_checks = true);
 void        DeleteVariable  (long, bool deleteself, bool do_checks = true);
 
 void        SetVariablesToOwnValues (_AVLList const & indices);

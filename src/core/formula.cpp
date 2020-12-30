@@ -1992,7 +1992,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                        continue;
                     }
                 }
-                if (!thisOp->Execute(*scrap_here,nameSpace, errMsg)) { // does this always get executed?
+                if (!thisOp->Execute(*scrap_here,nameSpace, errMsg, true)) { // does this always get executed?
                     wellDone = false;
                     break;
                 }
@@ -2046,7 +2046,9 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
          if (--call_count) {
           recursion_calls = return_value;
           return_value->AddAReference();
-          delete scrap_here;
+          if (scrap_here != &theStack) {
+              delete scrap_here;
+          }
 
         } else {
           recursion_calls = nil;

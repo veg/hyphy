@@ -1799,7 +1799,7 @@ void            _TheTree::ComputeBranchCache    (
     long        myParent               = brID       -flatLeaves.lLength;
     
     const long  alphabetDimension     =            theFilter->GetDimension(),
-    alphabetDimensionmod4  =         alphabetDimension - alphabetDimension % 4,
+    //alphabetDimensionmod4  =         alphabetDimension - alphabetDimension % 4,
     siteCount               =            theFilter->GetPatternCount();
 
     if (siteTo  > siteCount)    {
@@ -2197,7 +2197,6 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_product_sum_loop<61L> (tMatrix, childVector, parentConditionals, sum);
                 #endif
                 if (canScale) {
-                    bool canScale = !notPassedRoot;
                     #if defined _SLKP_USE_AVX_INTRINSICS
                         sum = _avx_sum_4(grandTotal) + s60;
                     #elif defined _SLKP_USE_SSE_INTRINSICS

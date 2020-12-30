@@ -912,8 +912,8 @@ int main (int argc, char* argv[]) {
     }
 
     if (pipeMode) {
-        _String bfIn (stdin);
-        _ExecutionList exIn (bfIn);
+        _StringBuffer code = _String (stdin);
+        _ExecutionList exIn (code);
         exIn.Execute();
         GlobalShutdown();
         return 0;

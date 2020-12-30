@@ -204,20 +204,7 @@ const _String *  PeekFilePath (void) {
 }
 
 
-//____________________________________________________________________________________
 
-
-void   ExecuteBLString (_String& BLCommand, _VariableContainer* theP)
-{
-    _ExecutionList ex;
-    if (theP) {
-        ex.SetNameSpace(*theP->GetName());
-    }
-    ex.BuildList   (BLCommand);
-    terminate_execution = false;
-    ex.Execute      ();
-    terminate_execution = false;
-}
 
 //____________________________________________________________________________________
 
