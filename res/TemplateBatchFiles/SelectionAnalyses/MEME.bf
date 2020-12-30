@@ -424,9 +424,14 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                                  });
 
 
+    meme.pattern_count_all  = utility.Array1D (meme.site_patterns);
+    meme.pattern_count_this = 0;
+
     /* run the main loop over all unique site pattern combinations */
     utility.ForEachPair (meme.site_patterns, "_pattern_", "_pattern_info_",
         '
+            meme.pattern_count_this += 1;
+            io.ReportProgressBar("", "Working on site pattern " + (meme.pattern_count_this) + "/" +  meme.pattern_count_all + " in partition " + (1+meme.partition_index));
             if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")]) {
                 meme.store_results (-1,None,{"0" : "meme.site_likelihood",
                                              "1" : "meme.site_likelihood_bsrel",
@@ -447,8 +452,11 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                                                                     },
                                                                     "meme.store_results");
             }
+            pattern_count_all
         '
     );
+    
+    io.ClearProgressBar();
 
     mpi.QueueComplete (meme.queue);
     meme.partition_matrix = {Abs (meme.site_results[meme.partition_index]), Rows (meme.table_headers)};
@@ -793,6 +801,7 @@ function meme.report.echo (meme.report.site, meme.report.partition, meme.report.
     }
 
      if (None != meme.print_row) {
+            io.ClearProgressBar();
             if (!meme.report.header_done) {
                 io.ReportProgressMessageMD("MEME", "" + meme.report.partition, "For partition " + (meme.report.partition+1) + " these sites are significant at p <=" + meme.pvalue + "\n");
                 fprintf (stdout,

@@ -418,6 +418,7 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
     }
 
      if (None != fel.print_row) {
+            io.ClearProgressBar();
             if (!fel.report.header_done) {
                 io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
                 fprintf (stdout,
@@ -556,9 +557,16 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
 
 
     /* run the main loop over all unique site pattern combinations */
+    
+    fel.pattern_count_all = utility.Array1D (fel.site_patterns);
+    fel.pattern_count_this = 0;
+    
     utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
         '
-            if (_pattern_info_[terms.data.is_constant]) {
+           fel.pattern_count_this += 1;
+           io.ReportProgressBar("", "Working on site pattern " + (fel.pattern_count_this) + "/" +  fel.pattern_count_all + " in partition " + (1+fel.partition_index));
+
+           if (_pattern_info_[terms.data.is_constant]) {
                 fel.store_results (-1,None,{"0" : "fel.site_likelihood",
                                                                 "1" : None,
                                                                 "2" : fel.partition_index,
@@ -578,6 +586,8 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
             }
         '
     );
+    
+    io.ClearProgressBar();
 
     mpi.QueueComplete (fel.queue);
     fel.partition_matrix = {Abs (fel.site_results[fel.partition_index]), Rows (fel.table_headers)};
