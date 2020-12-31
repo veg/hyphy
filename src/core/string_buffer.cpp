@@ -61,9 +61,16 @@ Utility Functions
 void _StringBuffer::AllocateBufferSpace(const unsigned long character_count) {
   sa_length = character_count;
   if (s_data) {
-    s_data = (char *)MemReallocate(s_data, sa_length + 1UL);
+    if (s_data  != allocated_ptr) {
+        char * t =  (char *)MemAllocate(sa_length + 1UL);
+        memcpy (t, s_data, s_length );
+        free (allocated_ptr);
+        allocated_ptr = s_data = t;
+    } else {
+        allocated_ptr = s_data = (char *)MemReallocate(allocated_ptr, sa_length + 1UL);
+    }
   } else {
-    s_data = (char *)MemAllocate(sa_length + 1UL);
+    allocated_ptr = s_data = (char *)MemAllocate(sa_length + 1UL);
   }
 
 }
@@ -90,6 +97,7 @@ void _StringBuffer::ResizeString(void) {
 
 void _StringBuffer::Initialize(bool) {
   sa_length = 0UL;
+  allocated_ptr = s_data;
 }
 
 //=============================================================
@@ -103,8 +111,10 @@ void _StringBuffer::TrimSpace (void) {
 //=============================================================
 
 void _StringBuffer::Clear() {
+  s_data = allocated_ptr;
   _String::Clear();
   sa_length = 0UL;
+  allocated_ptr = s_data;
 }
 
 //=============================================================
@@ -151,10 +161,36 @@ _StringBuffer::_StringBuffer(const _String& buffer) : _String () {
   (*this) << buffer;
 }
 
+
+
+//=============================================================
+_StringBuffer::_StringBuffer(const _StringBuffer &source, long start, long end) {
+    if (source.s_length) {
+        
+        long requested_range = source.NormalizeRange(start, end);
+        
+        if (requested_range > 0L) {
+            AllocateBufferSpace (requested_range);
+            s_length = requested_range;
+            memcpy (s_data, source.s_data + start, sizeof(char)*requested_range);
+            s_data[requested_range] = '\0';
+            return;
+            
+        }
+    }
+    
+    s_length = 0UL;
+    sa_length = 0UL;
+    allocated_ptr = s_data = (char *)MemAllocate(1UL);
+    s_data[0] = '\0';
+    
+}
+
 //=============================================================
 
 _StringBuffer::_StringBuffer(_String&& buffer) : _String (std::move (buffer)) {
     sa_length = s_length;
+    allocated_ptr = s_data;
 }
 
 //=============================================================
@@ -166,9 +202,12 @@ _StringBuffer::_StringBuffer(const _StringBuffer &s): _String () {
   //=============================================================
 _StringBuffer::_StringBuffer(_String* buffer): _String (buffer) {
   sa_length = s_length;
+  allocated_ptr = s_data;
 }
 
 _StringBuffer::~_StringBuffer (void ){
+    if (s_data && allocated_ptr)
+        s_data = allocated_ptr;
     sa_length = 0L;
 }
 /*
@@ -178,8 +217,12 @@ Cloners and Copiers
 */
 
 void _StringBuffer::Duplicate (BaseRefConst ref) {
+  if (s_data && s_data != allocated_ptr) {
+    s_data = allocated_ptr;
+  }
   _String::Duplicate (ref);
   this->sa_length = this->s_length;
+  this->allocated_ptr = this->s_data;
 }
 
 //=============================================================
@@ -200,7 +243,22 @@ _StringBuffer& _StringBuffer::operator = (_StringBuffer && rhs) {
         s_data = rhs.s_data;
         s_length = rhs.s_length;
         sa_length = rhs.sa_length;
+        allocated_ptr = rhs.allocated_ptr;
+        rhs.allocated_ptr = nil;
         rhs._String::Initialize();
+    }
+    return *this;
+}
+
+//=============================================================
+
+
+_StringBuffer& _StringBuffer::operator = (_StringBuffer const & rhs) {
+    if (&rhs != this) {
+        Clear();
+        Initialize();
+        AllocateBufferSpace(rhs.s_length);
+        (*this) << rhs;
     }
     return *this;
 }
@@ -302,11 +360,14 @@ _StringBuffer& _StringBuffer::AppendSubstring(const _String& source, long start,
 
 void _StringBuffer::Trim(long start, long end) {
     
-    long resulting_length = NormalizeRange(start, end);
     
+    long resulting_length = NormalizeRange(start, end);
+
     if (resulting_length > 0L) {
         if (start > 0L) {
-            memmove(s_data, s_data + start, resulting_length);
+             s_data    += start;
+             sa_length -= start;
+            //memmove(s_data, s_data + start, resulting_length);
         }
         if (s_length != resulting_length) {
             s_length = resulting_length;

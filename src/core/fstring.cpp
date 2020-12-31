@@ -488,7 +488,7 @@ HBLObjectRef _FString::RerootTree (HBLObjectRef root, HBLObjectRef cache) {
         res = _returnStringOrUseCache (get_str(), cache);
     }
 
-    DeleteVariable  (_internal_reroot_tree);
+    DeleteVariable  (_internal_reroot_tree, true, false);
     lastMatrixDeclared = stashed_model_id;
 
     return      res;

@@ -160,11 +160,7 @@ blDataSetFilter            ("DataSetFilter "),
 blTree                     ("Tree "),
 blLF                       ("LikelihoodFunction "),
 blLF3                  ("LikelihoodFunction3 "),
-blMolClock                 ("MolecularClock("),
-blfprintf              ("fprintf("),
 blGetString                ("GetString("),
-blfscanf                   ("fscanf("),
-blsscanf                   ("sscanf("),
 blExport                   ("Export("),
 blReplicate                ("ReplicateConstraint("),
 blImport                   ("Import"),
@@ -173,30 +169,11 @@ blClearConstraints         ("ClearConstraints("),
 blSetDialogPrompt      ("SetDialogPrompt("),
 blModel                    ("Model "),
 blChoiceList               ("ChoiceList("),
-blGetInformation           ("GetInformation("),
-blExecuteCommands      ("ExecuteCommands("),
-blExecuteAFile         ("ExecuteAFile("),
-blLoadFunctionLibrary      ("LoadFunctionLibrary("),
-blDifferentiate            ("Differentiate("),
-blFindRoot             ("FindRoot("),
-blMPIReceive               ("MPIReceive("),
-blMPISend                  ("MPISend("),
-blGetDataInfo              ("GetDataInfo("),
-blStateCounter             ("StateCounter("),
-blIntegrate                ("Integrate("),
-blLFCompute                ("LFCompute("),
-blGetURL                   ("GetURL("),
-blDoSQL                    ("DoSQL("),
 blTopology                 ("Topology "),
-blAlignSequences           ("AlignSequences("),
-blGetNeutralNull           ("GetNeutralNull("),
 blHBLProfile               ("#profile"),
-blDeleteObject         ("DeleteObject("),
-blRequireVersion           ("RequireVersion("),
 blSCFG                     ("SCFG "),
 blBGM                      ("BayesianGraphicalModel "),
-blSimulateDataSet          ("SimulateDataSet"),
-blAssert                   ("assert(");
+blSimulateDataSet          ("SimulateDataSet");
 
 _Trie    _HY_HBL_KeywordsPreserveSpaces  ;
 
@@ -279,7 +256,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
     }
 
     while (messageLength-transferCount>MPI_SEND_CHUNK) {
-        printf("%s",theMessage.get_str());
+        //printf("%s",theMessage.get_str());
         ReportMPIError(MPI_Send((void*)(theMessage.get_str()+transferCount), MPI_SEND_CHUNK, MPI_CHAR, destID, HYPHY_MPI_STRING_TAG, MPI_COMM_WORLD),true);
         transferCount += MPI_SEND_CHUNK;
     }
@@ -948,7 +925,7 @@ _ExecutionList::_ExecutionList () {
 } // doesn't do much
 
 //____________________________________________________________________________________
-_ExecutionList::_ExecutionList (_String& source, _String* namespaceID , bool copySource, bool* successFlag) {
+_ExecutionList::_ExecutionList (_StringBuffer& source, _String* namespaceID , bool copySource, bool* successFlag) {
     Init (namespaceID);
 
     if (copySource) {
@@ -960,6 +937,8 @@ _ExecutionList::_ExecutionList (_String& source, _String* namespaceID , bool cop
         *successFlag = result;
     }
 }
+
+
 
 //____________________________________________________________________________________
 void _ExecutionList::Init (_String* namespaceID) {
@@ -1085,6 +1064,52 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
         default:
             HandleApplicationError (errMsg);
     }
+}
+
+//____________________________________________________________________________________
+void    _ExecutionList::StartProfile (void) {
+    if (profileCounter) {
+        DeleteObject (profileCounter);
+    }
+    profileCounter= new _Matrix (lLength, 2, false, true);
+    doProfile = 1;
+}
+
+//____________________________________________________________________________________
+_AssociativeList*    _ExecutionList::CollectProfile (void) {
+    _AssociativeList * profileDump = new _AssociativeList;
+
+    if (profileCounter) {
+        _SimpleList      instructions;
+        _List            descriptions;
+
+        for (unsigned long k=1UL; k<2*lLength; k+=2UL) {
+            if (profileCounter->theData[k] > 0.0) {
+                instructions << k/2;
+                descriptions.AppendNewInstance((_String*)((_ElementaryCommand*)(*this)(k/2))->toStr());
+            }
+        }
+
+        _Matrix         * execProfile = new _Matrix (instructions.lLength,2,false,true),
+        * instCounter = new _Matrix (instructions),
+        * descList    = new _Matrix (descriptions);
+
+        unsigned long k2 = 0UL;
+        for (unsigned long m=1UL; m<2*lLength; m+=2UL) {
+            if (profileCounter->theData[m] > 0.0) {
+                execProfile->theData[k2++] = profileCounter->theData[m];
+                execProfile->theData[k2++] = profileCounter->theData[m-1];
+            }
+        }
+
+        profileDump->MStore ("INSTRUCTION INDEX", instCounter, false);
+        profileDump->MStore ("INSTRUCTION", descList, false);
+        profileDump->MStore ("STATS", execProfile, false);
+        doProfile = 0;
+        DeleteAndZeroObject (profileCounter);
+    }
+    
+    return profileDump;
 }
 
 //____________________________________________________________________________________
@@ -1855,7 +1880,7 @@ void  _ExecutionList::BuildFscanf(_List * pieces, long code) {
   //____________________________________________________________________________________
 
 
-bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool processed, bool empty_is_success) {
+bool        _ExecutionList::BuildList   (_StringBuffer& s, _SimpleList* bc, bool processed, bool empty_is_success) {
     if (terminate_execution) {
         return false;
     }
@@ -1883,13 +1908,14 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
           _List *pieces = nil;
           _HBLCommandExtras *commandExtraInfo = nil;
 
+          local_object_manager < (pieces = new _List);
           if (prefixTreeCode != kNotFound) {
               prefixTreeCode = _HY_ValidHBLExpressions.GetValue(prefixTreeCode);
               long commandExtra = _HY_HBLCommandHelper.FindLong (prefixTreeCode);
               if (commandExtra >= 0) { // pre-trim all strings as needed
                   commandExtraInfo = (_HBLCommandExtras*)_HY_HBLCommandHelper.GetXtra (commandExtra);
                   if (!commandExtraInfo->extract_conditions.empty()) {
-                      local_object_manager < (pieces = new _List);
+                      
                     
                       long upto = _ElementaryCommand::ExtractConditions (currentLine, commandExtraInfo->cut_string,*pieces,commandExtraInfo->extract_condition_separator),
                            condition_index_match = commandExtraInfo->extract_conditions.Find(pieces->lLength);
@@ -2069,7 +2095,7 @@ bool        _ExecutionList::BuildList   (_String& s, _SimpleList* bc, bool proce
               }
               // plain ol' formula - parse it as such!
               else {
-                  _String checker (currentLine);
+                  _StringBuffer checker (currentLine);
                   _StringBuffer next_command;
                   _ElementaryCommand::FindNextCommand (checker,next_command);
                   if (next_command.length ()==currentLine.length()) {
@@ -2935,6 +2961,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
             _String  matrixName (chain.AddNameSpaceToID(*(_String*)parameters(3)));
 
             if (!(catValVar = CheckReceptacle(&matrixName,blSimulateDataSet,true))) {
+                DeleteObject (ds);
                 return;
             } else {
                 catValues = new _Matrix (1,1,false,true);
@@ -2955,7 +2982,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
 
         if (!resultingDSName->IsValidIdentifier(fIDAllowCompound)) {
             errMsg = *resultingDSName & " is not a valid receptacle identifier in call to " & blSimulateDataSet;
-            DeleteObject (resultingDSName);
+            DeleteObject (resultingDSName);DeleteObject (catValues);DeleteObject (catNames); DeleteObject (ds);
             HandleApplicationError (errMsg);
             return;
         }
@@ -3741,7 +3768,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 //____________________________________________________________________________________
 
 
-void   _ElementaryCommand::FindNextCommand  (_String& input, _StringBuffer &result) {
+void   _ElementaryCommand::FindNextCommand  (_StringBuffer& input, _StringBuffer &result) {
 
     long    index     = input.length();
     result.Reset();
@@ -3864,13 +3891,35 @@ void   _ElementaryCommand::FindNextCommand  (_String& input, _StringBuffer &resu
 
         skipping = false;
 
-        result<<c;
 
         if (literal_state != normal_text && c == '\\') {
+            // if the next character is 0, i.e. \0xx, treat as a terminal code
+            char next_char = input.get_char(++index);
+            if (next_char == '0') { // octal character; read all the subsequent numbers and convert
+                _SimpleList digits;
+                while (isdigit (next_char = input.get_char(++index)) && digits.countitems() <= 3) {
+                    digits << _String (next_char).to_long();
+                }
+                switch (digits.countitems()) {
+                    case 1:
+                        next_char = digits.get(0); break;
+                    case 2:
+                        next_char = digits.get(0) * 8 + digits.get(1) ; break;
+                    case 3:
+                        next_char = digits.get(0) * 64 + digits.get(1) * 8 + digits.get(2) ; break;
+                    default:
+                        next_char = '\0'; break;
+                }
+                index--;
+            } else {
+                result<<c;
+            }
             // escape character \x
-            result<< input.get_char(++index);
+            result<< next_char;
             continue;
         }
+
+        result<<c;
 
         // are we inside a string literal?
 
@@ -4026,7 +4075,7 @@ void   _ElementaryCommand::FindNextCommand  (_String& input, _StringBuffer &resu
 }
 //____________________________________________________________________________________
 
-long _ElementaryCommand::ExtractConditions (_String const& source, long start_at, _List& receptacle, char delimeter, bool include_empty_conditions) {
+long _ElementaryCommand::ExtractConditions (_StringBuffer const& source, long start_at, _List& receptacle, char delimeter, bool include_empty_conditions) {
 
     long parentheses_depth = 1L,
          // this is because extaction will work from the first character following a '(', e.g. CreateFilter([start parsing here]....)
@@ -4100,6 +4149,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
             }
 
             receptacle < strip_last_space (source,last_delim,index);
+            //printf ("%s\n", ((_String*)receptacle.GetItem(receptacle.lLength-1))->get_str());
             last_delim = index+1;
             continue;
         }
@@ -4107,6 +4157,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
 
     if (include_empty_conditions || last_delim <= index-1) {
         receptacle < strip_last_space (source,last_delim,index);
+        //printf ("%s\n", ((_String*)receptacle.GetItem(receptacle.lLength-1))->get_str());
     }
     return index+1L;
 }
@@ -4114,7 +4165,7 @@ long _ElementaryCommand::ExtractConditions (_String const& source, long start_at
 //____________________________________________________________________________________
 
 
-bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _String*p3 , bool for_or_while, _String& source, _ExecutionList&target) {
+bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _String*p3 , bool for_or_while, _StringBuffer& source, _ExecutionList&target) {
 
     
     const _String kIterator ("in");
@@ -4183,7 +4234,8 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
         
             if (p1 && p1->nonempty()) { // initialization stage
                 for_return++;
-                success = success && target.BuildList (*p1, nil, true); // add init step
+                _StringBuffer code (*p1);
+                success = success && target.BuildList (code, nil, true); // add init step
             }
 
             // append condition now
@@ -4207,7 +4259,8 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
             }
 
             if (p3 && p3->nonempty ()) { // increment stage
-                success = success && target.BuildList (*p3, nil,true); // add increment step
+                _StringBuffer code (*p3);
+                success = success && target.BuildList (code, nil,true); // add increment step
                 has_increment = true;
             }
 
@@ -4225,7 +4278,7 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
             } else {
                 if (p2) {
                     _ElementaryCommand* loopback = new _ElementaryCommand ;
-                    success = success && loopback->MakeJumpCommand (p2,for_return,target.lLength+1,target);
+                    loopback->MakeJumpCommand (p2,for_return,target.lLength+1,target);
                     target < loopback;
                 }
             }
@@ -4254,7 +4307,7 @@ bool       _ElementaryCommand::MakeGeneralizedLoop  (_String*p1, _String*p2, _St
 //____________________________________________________________________________________
 
 
-bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target,  _List * pieces)
+bool       _ElementaryCommand::BuildFor (_StringBuffer&source, _ExecutionList&target,  _List * pieces)
 
 /* the for loop becomes this:
 
@@ -4277,7 +4330,7 @@ bool       _ElementaryCommand::BuildFor (_String&source, _ExecutionList&target, 
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::BuildWhile          (_String&source, _ExecutionList&target,  _List * pieces)
+bool    _ElementaryCommand::BuildWhile          (_StringBuffer&source, _ExecutionList&target,  _List * pieces)
 {
     if (pieces)
       return MakeGeneralizedLoop (nil,(_String*)pieces->GetItem(0),nil,true,source,target);
@@ -4287,7 +4340,7 @@ bool    _ElementaryCommand::BuildWhile          (_String&source, _ExecutionList&
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&target, _SimpleList* bc)
+bool    _ElementaryCommand::BuildIfThenElse (_StringBuffer &source, _ExecutionList&target, _SimpleList* bc)
 {
     _List   pieces;
     long    upto = ExtractConditions (source,3,pieces),
@@ -4331,7 +4384,7 @@ bool    _ElementaryCommand::BuildIfThenElse (_String&source, _ExecutionList&targ
 
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::BuildDoWhile            (_StringBuffer&source, _ExecutionList&target)
 {
     long upto = source.FindBackwards(_String('}'), 0, -1);
     if (upto >= 0) {
@@ -4359,7 +4412,7 @@ bool    _ElementaryCommand::BuildDoWhile            (_String&source, _ExecutionL
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ProcessInclude      (_String&source, _ExecutionList&target) {
+bool    _ElementaryCommand::ProcessInclude      (_StringBuffer&source, _ExecutionList&target) {
     _String         fileName (source, blInclude.length (),(long)source.length () - 2L);
     ProcessFileName(fileName, false,false,(hyPointer)target.nameSpacePrefix);
     if (terminate_execution) {
@@ -4392,7 +4445,7 @@ void _ElementaryCommand::addAndClean (_ExecutionList&target,_List* parameter_lis
 //____________________________________________________________________________________
 
 
-bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructDataSet (_StringBuffer&source, _ExecutionList&target)
 // DataSet    dataSetid = ReadDataFile ("..");
 // or
 // DataSet    dataSetid = SimulateDataSet (likeFunc);
@@ -4512,7 +4565,7 @@ bool    _ElementaryCommand::ConstructDataSet (_String&source, _ExecutionList&tar
 }
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructCategory (_StringBuffer&source, _ExecutionList&target)
 // category <id> = (number of int, weights, method for representation, density, cumulative, left bound, right bound);
 {
 
@@ -4550,7 +4603,7 @@ bool    _ElementaryCommand::ConstructCategory (_String&source, _ExecutionList&ta
 
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&target) {
+bool    _ElementaryCommand::ConstructChoiceList(_StringBuffer&source, _ExecutionList&target) {
     _List args;
 
 
@@ -4592,7 +4645,7 @@ bool    _ElementaryCommand::ConstructChoiceList(_String&source, _ExecutionList&t
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ConstructTree (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructTree (_StringBuffer&source, _ExecutionList&target)
 // Tree   treeid = (...) or Topology = (...);
 {
     long    mark1 = source.FirstSpaceIndex(0,-1,kStringDirectionForward);
@@ -4602,7 +4655,7 @@ bool    _ElementaryCommand::ConstructTree (_String&source, _ExecutionList&target
 
 
     long    mark2 = source.FindTerminator(mark1, "=");
-    long    mark3 = mark2;
+
 
     if ( mark1 < 0 || mark2 < 0 || mark2 - mark1 < 1) {
         HandleApplicationError ("Tree declaration missing a valid identifier");
@@ -4613,7 +4666,7 @@ bool    _ElementaryCommand::ConstructTree (_String&source, _ExecutionList&target
     // now look for the opening paren
 
     //(long& from, char open, char close, bool respectQuote, bool respectEscape)
-    mark3 = source.ExtractEnclosedExpression (mark1, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
+    long mark3 = source.ExtractEnclosedExpression (mark1, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
 
 
     if (mark1 < 0 || mark3 < 0 || mark3 <= mark1) {
@@ -4634,7 +4687,7 @@ bool    _ElementaryCommand::ConstructTree (_String&source, _ExecutionList&target
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionList&target) {
+bool    _ElementaryCommand::ConstructDataSetFilter (_StringBuffer&source, _ExecutionList&target) {
 // DataSetFilter      dataSetFilterid = CreateFilter (datasetid;unit;vertical partition; horizontal partition; alphabet exclusions);
     // first we must segment out the data set name
     
@@ -4677,7 +4730,7 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_String&source, _ExecutionLi
 
 //____________________________________________________________________________________
 
-bool    _ElementaryCommand::ConstructModel (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructModel (_StringBuffer&source, _ExecutionList&target)
 
 // Model ID = (inst transition matrix ident, equilibrium frequencies ident, <multiply by frequencies>);
 // if the third parameter is explicitFormMExp, then inst transition matrix ident is expected to be an explicit matrix exponential
@@ -4755,7 +4808,7 @@ bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long bra
 
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
+bool    _ElementaryCommand::ConstructLF (_StringBuffer&source, _ExecutionList&target)
 // syntax: LikelihoodFunction id = (filter1, tree1, ..., filterN, treeN, optional compute template)
 // or LikelihoodFunction3 id = (filter1, tree1, freq1, ... filterN, treeN, freqN, optional compute template)
 {
@@ -4794,7 +4847,7 @@ bool    _ElementaryCommand::ConstructLF (_String&source, _ExecutionList&target)
 
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& chain) {
+bool    _ElementaryCommand::ConstructFunction (_StringBuffer&source, _ExecutionList& chain) {
 // syntax: function <ident> (comma separated list of parameters) {body}
 
     bool    isFFunction = source.BeginsWith (blFFunction),
@@ -4906,7 +4959,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
       }
 
 
-      _String          sfunctionBody (source, upto+1,source.length ()-2);
+      _StringBuffer    sfunctionBody (source, upto+1,source.length ()-2);
       _ExecutionList * functionBody;
 
       isInFunction = _HY_FUNCTION;
@@ -4955,7 +5008,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
         HandleApplicationError (_String("Namespace declaration is missing a body."));
         return false;
       }
-      _String          namespace_text (source, mark2+1,source.length()-2);
+      _StringBuffer    namespace_text (source, mark2+1,source.length()-2);
 
       bool             success = false;
 
@@ -4986,7 +5039,7 @@ bool    _ElementaryCommand::ConstructFunction (_String&source, _ExecutionList& c
 }
 
 //____________________________________________________________________________________
-bool    _ElementaryCommand::ConstructReturn (_String&source, _ExecutionList&target) {
+bool    _ElementaryCommand::ConstructReturn (_StringBuffer&source, _ExecutionList&target) {
 // syntax: return <statement>
 
     long    mark1 = source.FirstNonSpaceIndex(blReturn.length(),kStringEnd,kStringDirectionForward);
@@ -5037,7 +5090,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
     if (!f) {
         HandleApplicationError (_String("Could not read batch file '") & fName & "'.\nPath stack:\n\t" & GetPathStack("\n\t"));
     } else {
-        _String source_file (f);
+        _StringBuffer source_file (f);
 
         if (source_file.BeginsWith ("#NEXUS",false)) {
             ReadDataSetFile (f,1,nil,&fName, nil, &hy_default_translation_table, &target);

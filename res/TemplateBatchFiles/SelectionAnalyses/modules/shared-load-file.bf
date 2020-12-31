@@ -211,6 +211,8 @@ function load_file (prefix) {
     */
 
     store_tree_information ();
+ 
+
  }
 
 function store_tree_information () {
@@ -267,6 +269,7 @@ function store_tree_information () {
                                          partition_index,
                                          name_mapping);
     }
+
 
 
 }

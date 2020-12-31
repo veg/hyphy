@@ -213,31 +213,6 @@ void _DataSet::AddSite(char c) {
     }
 
     (*((_StringBuffer *)list_data[0])) << c;
-
-    /*long  f;
-
-    if (!dsh)
-    {
-        checkPointer (dsh = new _DSHelper);
-        for (f=0; f<256; f++)
-            dsh->characterPositions << -1;
-    }
-
-    f = dsh->characterPositions.list_data[c];
-
-    if (f!=-1)
-    {
-        _Site* nC = new _Site(f);
-        checkPointer(nC);
-        theFrequencies[f]++;
-        theFrequencies<<0;
-        (*this)<<nC;
-        nC->nInstances --;
-    }
-    else
-    {
-        dsh->characterPositions.list_data[c] = lLength;*/
-    //}
   }
 }
 //_______________________________________________________________________
@@ -347,28 +322,7 @@ void _DataSet::Write2Site(long index, char c) {
   }
 }
 
-//_______________________________________________________________________
 
-void _DataSet::CheckMapping(long index) {
-  if (index >= lLength) {
-    HandleApplicationError(
-        "Internal Error in 'CheckMapping' - index is too high", true);
-  }
-
-  _Site *s = (_Site *)list_data[index];
-
-  for (long k = 0L; k < index; k++) {
-    _Site *ss = (_Site *)list_data[k];
-    if (ss->GetRefNo() == -1) {
-      if (s->Equal(ss)) {
-        theFrequencies[index]--;
-        theFrequencies[k]++;
-        s->Clear();
-        s->SetRefNo(k);
-      }
-    }
-  }
-}
 
 //_______________________________________________________________________
 
@@ -770,8 +724,8 @@ _Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, 
         }
     }
     
-    if (unit%atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
-        HandleApplicationError (_String("Atom must divide unit, had ") & _String ((long)unit) & "/" & _String ((long)atom));
+    if (atom == 0 || unit%atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
+        HandleApplicationError (_String("Atom must be non-zero and divide unit, had ") & _String ((long)unit) & "/" & _String ((long)atom));
         return new _Matrix (1,1);
     }
     
@@ -1677,7 +1631,7 @@ void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine) {
             if (index >= 0L && index < s_length) {
                 return s_data[index];
             } else {
-                _String  next_line;
+                _StringBuffer  next_line;
                 ReadNextLine (file,&next_line,file_state, false);
                 if (next_line.nonempty()) {
                     *this << next_line;
@@ -1700,7 +1654,7 @@ void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine) {
          end_index   = CurrentLine.ExtractEnclosedExpression(start_index, '(', ')', fExtractRespectQuote|fExtractRespectEscape);
     
     while (start_index == kNotFound || end_index == kNotFound) {
-        _String next_line;
+        _StringBuffer next_line;
         ReadNextLine (f,&next_line,fState, false);
         CurrentLine = CurrentLine & next_line;
         start_index = 0L;
@@ -1795,7 +1749,7 @@ void    PadLine (FileState& fState, _DataSet& result) { // make sure that there 
 }
 
 //_________________________________________________________
-void    ISelector (FileState& fState, _String& CurrentLine, _DataSet& result) {
+void    ISelector (FileState& fState, _StringBuffer& CurrentLine, _DataSet& result) {
     if (fState.interleaved) { // interleaved file
         if (fState.curSpecies&&(!((fState.curSpecies)%fState.totalSpeciesExpected))) { // read a chunk of all species
             if (fState.totalSitesRead && !result.InternalStorageMode()) {
@@ -1838,7 +1792,7 @@ void    ISelector (FileState& fState, _String& CurrentLine, _DataSet& result) {
 }
 
 //_________________________________________________________
-bool SkipLine (_String& theLine, FileState* fS) {
+bool SkipLine (_StringBuffer& theLine, FileState* fS) {
     
     if ( theLine.char_at(0) =='/' && theLine.char_at(1)=='/' ) {
         return true;
@@ -1855,7 +1809,7 @@ bool SkipLine (_String& theLine, FileState* fS) {
 
 
 //_________________________________________________________
-void ReadNextLine (FILE* fp, _String *s, FileState* fs, bool, bool upCase) {
+void ReadNextLine (FILE* fp, _StringBuffer *s, FileState* fs, bool, bool upCase) {
     _StringBuffer  tempBuffer (1024L);
   
     fs->currentFileLine ++;
@@ -2022,24 +1976,11 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
         }
         // done initializing
         
-        long     fileLength = 0;
-        
-    #ifdef __HYPHYMPI__
-        if (hy_mpi_node_rank == 0L) {
-    #endif
-            if       (f) {
-                fseek    (f,0,SEEK_END);
-                fileLength = ftell(f);
-                rewind  (f);
-            } else {
-                fileLength = theS->length();
-            }
-            
-    #ifdef __HYPHYMPI__
+        if       (f) {
+            rewind  (f);
         }
-    #endif
         
-        _String     CurrentLine;
+        _StringBuffer     CurrentLine;
         
         //if (f==NULL) return (_DataSet*)result.makeDynamic();
         // nothing to do
@@ -2323,13 +2264,26 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                 if (namespaceID) {
                     nexusBF->SetNameSpace(*namespaceID);
                 }
-                nexusBF->BuildList(nexusBFBody, nil, false, true);
+                
+                
+                bool do_profile = hy_env::EnvVariableTrue("_PROFILE_NEXUS_LOADS_");
+                
+                
+                nexusBF->BuildList(nexusBFBody,nil, false, true);
                 //_ExecutionList nexusBF (nexusBFBody,namespaceID);
+                
+                
                 if (bfName) {
                     nexusBF->sourceFile = *bfName;
                 }
 
+                if (do_profile) {
+                    nexusBF->StartProfile();
+                }
                 nexusBF->ExecuteAndClean(bfl);
+                if (do_profile) {
+                    CheckReceptacleAndStore("_NEXUS_PROFILE_DATA_", kEmptyString, false , nexusBF->CollectProfile(), false);
+                }
 
                 if (nexusBF != ex) {
                     DeleteObject (nexusBF);

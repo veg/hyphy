@@ -348,9 +348,7 @@ protected:
     // added the option to pass an interior branch (referenced by the 3rd argument in the same order as flatTree)
     // and a set of values for each site pattern (indexed left to right) in the 4th argument
 
-    void            SetReferenceNodes       (void);
-    // compute likelihood over block index i
-
+ 
     // internal Setup, called from within constructors
 
 //      void            DumpingOrder            (long index, _SimpleList& sl);
@@ -614,7 +612,8 @@ protected:
 
     hyFloat         smoothingTerm,
                     smoothingReduction,
-                    smoothingPenalty;
+                    smoothingPenalty,
+                    errorTolerance;
 
 #ifdef  _SLKP_LFENGINE_REWRITE_
     /*

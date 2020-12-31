@@ -230,7 +230,7 @@ void mpiNormalLoop    (int  rank, int size, _String & baseDir)
 
     ReportWarning ("[MPI] Entered mpiNormalLoop");
 
-    _String* theMessage     = MPIRecvString (-1,senderID);   // listen for messages from any node
+    _String * theMessage     = MPIRecvString (-1,senderID);   // listen for messages from any node
     _StringBuffer * resStr        = nil;
     
     //int loop_count = 0;
@@ -291,7 +291,8 @@ void mpiNormalLoop    (int  rank, int size, _String & baseDir)
                 //ReportWarning(_String ("[MPI] Received commands\n") & *theMessage & "\n");
                 //printf ("\n\nMPI Node %d; message \n %s\n", rank, theMessage->get_str());
                 //printf ("\n\nMPI Node %d; likefuncs \n %s\n", rank, ((_String*)likeFuncNamesList.toStr())->get_str());
-                _ExecutionList exL (*theMessage);
+                _StringBuffer code (*theMessage);
+		_ExecutionList exL (code);
                 
                  
                 //ReportWarning (_String ((_String*)batchLanguageFunctionNames.toStr()));
@@ -404,7 +405,9 @@ void mpiBgmLoop (int rank, int size)
     _String* theMessage = MPIRecvString (-1, senderID);
 
     while (theMessage->nonempty()) {
-        _ExecutionList  exL (*theMessage);
+
+	_StringBuffer code (*theMessage);
+        _ExecutionList  exL (code);
         HBLObjectRef       res = exL.Execute();    // should send this process into CacheNodeScores()
 
         resStr = res ? (_String*)res->toStr() : new _String ("0");

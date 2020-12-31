@@ -1688,6 +1688,7 @@ _StringBuffer *   Scfg::BestParseTree(void) {
                     }
                 }
             }
+            DeleteObject (theMatrix);
         }
 
         // apply stack to reconstructing best parse

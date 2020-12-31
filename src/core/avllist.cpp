@@ -406,7 +406,7 @@ void  _AVLList::ConsistencyCheck (void)
 long  _AVLList::Traverser (_SimpleList &nodeStack, long& t, long r) const {
     if  (r >= 0) {
         t = r;
-        nodeStack.Clear();
+        nodeStack.Clear(false);
     }
 
     while (t >= 0) {

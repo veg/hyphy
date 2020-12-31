@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(HyPhy)
 cmake_policy(VERSION 3.0.0)
-#cmake_policy(SET CMP0026 OLD)
-#cmake_policy(SET CMP0004 OLD)
 
 enable_testing()
 
@@ -14,6 +12,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 
 option(NOAVX OFF)
 option(NOSSE3 OFF)
+option(NONEON OFF)
 
 #-------------------------------------------------------------------------------
 # SSE MACROS
@@ -43,6 +42,34 @@ macro(PCL_CHECK_FOR_SSE3)
       }"
       HAVE_SSE3_EXTENSIONS)
 endmacro(PCL_CHECK_FOR_SSE3)
+
+#-------------------------------------------------------------------------------
+# NEON MACROS
+#-------------------------------------------------------------------------------
+
+macro(PCL_CHECK_FOR_NEON)
+	  include(CheckCXXSourceRuns)
+	  set(CMAKE_REQUIRED_FLAGS)
+
+	  #if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+		  set(CMAKE_REQUIRED_FLAGS "-msse3")
+	  #endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
+
+	  check_cxx_source_runs("
+		#include <stdio.h>
+		#include <arm_neon.h>
+		int main() {
+			double array[4] = {4.,2.,3.,4};
+			float64x2_t a1 = vld1q_f64 (array),
+						a2 = vld1q_f64 (array+2);
+			a1 = vmulq_f64  (a1,a2);
+			vst1q_lane_f64 (array, a1, 0);
+			printf (\"%g\", array[0]);
+			return 0;
+	   }"
+       HAVE_NEON_EXTENSIONS)
+endmacro(PCL_CHECK_FOR_NEON)
+
 
 #-------------------------------------------------------------------------------
 # SSE MACROS
@@ -219,6 +246,13 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             endif(${HAVE_SSE3_EXTENSIONS})
         endif (${HAVE_AVX_EXTENSIONS})
     endif(NOAVX)
+    
+	if(NOT NONEON)
+		PCL_CHECK_FOR_NEON()
+		if(${HAVE_NEON_EXTENSIONS})
+			add_definitions (-D_SLKP_USE_ARM_NEON)
+		endif(${HAVE_NEON_EXTENSIONS})
+	endif(NOT NONEON)
 
     set_property(
      SOURCE ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_UNIXMAIN}
@@ -503,10 +537,12 @@ set_target_properties(
     HYPHYDEBUG
     PROPERTIES
     if(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -O0 "
         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_LINK_FLAGS}  -g -fsanitize=address -O0 "
     else(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -O0 "
         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fsanitize=address -O0 "
     endif(${OPENMP_FOUND})
 )

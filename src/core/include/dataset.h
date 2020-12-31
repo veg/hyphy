@@ -81,7 +81,6 @@ public:
   void AddSite(char);
 
   void Write2Site(long, char);
-  void CheckMapping(long);
 
   void Finalize(void);
   // remove duplicate data types and compress
@@ -201,7 +200,7 @@ private:
   bool useHorizontalRep;
 };
 
-void ReadNextLine(FILE *fp, _String *s, FileState *fs, bool append = false,
+void ReadNextLine(FILE *fp, _StringBuffer *s, FileState *fs, bool append = false,
                   bool upCase = true);
 
 _DataSet *ReadDataSetFile(FILE *, char = 0, _String * = nil, _String * = nil,
@@ -214,6 +213,6 @@ bool StoreADataSet(_DataSet *, _String *);
 void    ReadNexusFile               (FileState& fState, FILE*f, _DataSet& result);
 
 
-extern _String nexusBFBody;
+extern _StringBuffer nexusBFBody;
 extern _DataSet *lastNexusDataMatrix;
 

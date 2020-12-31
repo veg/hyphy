@@ -1161,7 +1161,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
                 return HandleFormulaParsingError ("Poorly formed matrix/associative array construct ", parsingContext.errMsg(), s, i);
             }
 
-            _String matrixDef   (s,i,j);
+            _StringBuffer matrixDef   (s,i,j);
             bool has_values = false;
 
             if (matrixDef.length() == 2UL || (has_values = matrixDef.FindTerminator(1, ":") >= 0L) || matrixDef.FirstNonSpaceIndex(1,-1) + 1 == matrixDef.length()) {

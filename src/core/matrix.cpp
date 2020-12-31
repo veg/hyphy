@@ -1247,6 +1247,7 @@ HBLObjectRef   _Matrix::LUDecompose (void) const {
 
         if (row_max==0.0) {
             HandleApplicationError (_String("LUDecompose doesn't work on singular matrices (row ") & i & ')');
+            delete [] scalings;
             return    new _MathObject;
         }
         scalings[i]=1.0/row_max;
@@ -1895,7 +1896,7 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     
     long * non_zero_index = (long*)alloca (threshold*sizeof(long));
     
-#ifdef _SLKP_USE_AVX_INTRINSICS
+#if defined _SLKP_USE_AVX_INTRINSICS
     __m256d zeros = _mm256_setzero_pd();
     long lDimMOD4 = lDim >> 2 << 2;
     for (long i = 0; i < lDimMOD4; i+=4) {
@@ -1910,6 +1911,27 @@ bool    _Matrix::AmISparseFast (_Matrix& whereTo) {
     
     if (k < threshold)
         for (long i = lDimMOD4; i < lDim; i++) {
+            if (theData[i] != 0.0) {
+                non_zero_index[k++] = i;
+                if (k == threshold) {
+                    return false;
+                }
+            }
+        }
+#elif _SLKP_USE_ARM_NEON
+    float64x2_t zeros = vdupq_n_f64 (0.);
+    long lDimMOD2 = lDim >> 1 << 1;
+    for (long i = 0; i < lDimMOD2; i+=2) {
+                
+         uint64x2_t res  = vceqq_f64  (vld1q_f64 (theData+i), zeros);
+         if (vaddvq_u64 (res)) { // something is different
+            if (vgetq_lane_u64 (res,0)) { non_zero_index[k++] = i; if (k == threshold) break; };
+            if (vgetq_lane_u64 (res,1)) { non_zero_index[k++] = i+1; if (k == threshold) break; };
+        }
+    }
+    
+    if (k < threshold)
+        for (long i = lDimMOD2; i < lDim; i++) {
             if (theData[i] != 0.0) {
                 non_zero_index[k++] = i;
                 if (k == threshold) {
@@ -2004,19 +2026,23 @@ bool    _Matrix::IsValidTransitionMatrix() const {
         long d = GetHDim();
         hyFloat * sums = (hyFloat*)alloca (sizeof (hyFloat)*d);
         long idx = 0L;
+        const hyFloat tolerance = kMachineEpsilon * 10.;
         for (long r = 0L; r < d; r++) {
             for (long c = 0L; c < d; c++, idx++) {
                 hyFloat term = theData[idx];
                 if (term < 0.0 || term > 1.0) {
-                    if (CheckEqual(term, 0.0)) {
+                    if (CheckEqual(0.0, term, tolerance)) {
                         theData[idx] = 0.;
                         continue;
                     }
-                    if (CheckEqual(term, 1.0)) {
+                    if (CheckEqual(1.0, term, tolerance)) {
                         theData[idx] = 1.;
-                        sums[r] += term;
+                        sums[r] += 1.;
                         continue;
                     }
+                    char buffer [255];
+                    snprintf (buffer, 255, "FAILED IsValidTransitionMatrix at (%d, %d) = %20.15g\n", r, c, term);
+                    ReportWarning(buffer);
                     return false;
                 }
                 sums[r] += term;
@@ -2024,6 +2050,9 @@ bool    _Matrix::IsValidTransitionMatrix() const {
         }
         for (long r = 0L; r < d; r++) {
             if (!CheckEqual(1.0, sums[r])) {
+                char buffer [255];
+                snprintf (buffer, 255, "FAILED ROW SUM at (%d) = %20.15g\n", r, sums[r]);
+                ReportWarning(buffer);
                 return false;
             }
         }
@@ -2111,16 +2140,18 @@ bool    _Matrix::IsReversible(_Matrix* freqs) {
                                     DeleteObject (tr);
                                     DeleteObject (tc);
                                     
-                                    if (!compResult) {
-                                         throw _String ("Unequal cells at (") & r & ',' & c & ")";
-                                    }
+                                    
                                 } else {
                                     throw _String ("Could not convert a matrix cell at (") & r & ',' & c & ") to a polynomial: " & _StringBuffer ((_StringBuffer*)rc->toStr(kFormulaStringConversionNormal));
                                 }
                              } else {
                                 compResult = !(rc || cr);
                             }
+                            if (!compResult) {
+                                 throw _String ("Unequal cells at (") & r & ',' & c & ")";
+                            }
                         }
+                        
                     }
             } else {
                 for (long r = 0; r < hDim; r++)
@@ -2236,15 +2267,11 @@ bool    _Matrix::IncreaseStorage    (void) {
 
     if (!is_numeric()) {
         // pointers or formulas
-        _MathObject** tempData;
-        if (!(tempData = (_MathObject**) MatrixMemAllocate(sizeof( char)* lDim*sizeof(void*)))) {
-            HandleApplicationError ( kErrorStringMemoryFail );
-        } else {
-            theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(void*));
-            for (long i = lDim-allocationBlock; i < lDim; i++) {
-                theData [i] = ZEROPOINTER;
-            }
+        theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(void*));
+        for (long i = lDim-allocationBlock; i < lDim; i++) {
+            ((_Formula**)theData) [i] = ZEROPOINTER;
         }
+        
     } else {
         //objects
         theData = (hyFloat*) MemReallocate(theData, lDim*sizeof(hyFloat));
@@ -3357,8 +3384,8 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                        
             if (subtract) {
 #ifdef  _SLKP_USE_AVX_INTRINSICS
-            #define     CELL_OP1(x,y) __m256d y = _mm256_sub_pd (_mm256_loadu_pd (stData+x), _mm256_loadu_pd (argData+x))
-#define CELL_OP2(x,y) _mm256_storeu_pd (stData+x,y)
+        #define     CELL_OP1(x,y) __m256d y = _mm256_sub_pd (_mm256_loadu_pd (stData+x), _mm256_loadu_pd (argData+x))
+        #define CELL_OP2(x,y) _mm256_storeu_pd (stData+x,y)
                 
         #pragma GCC unroll 4
         #pragma clang loop vectorize(enable)
@@ -3376,6 +3403,26 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                     CELL_OP2 (idx+8,r3);
                     CELL_OP2 (idx+12,r4);
                 }
+#elif defined  _SLKP_USE_ARM_NEON
+        #define     CELL_OP1(x,y) float64x2_t y = vsubq_f64 (vld1q_f64 (stData+x), vld1q_f64 (argData+x))
+        #define CELL_OP2(x,y) vst1q_f64 (stData+x,y)
+        #pragma GCC unroll 4
+        #pragma clang loop vectorize(enable)
+        #pragma clang loop interleave(enable)
+        #pragma clang loop unroll(enable)
+        #pragma GCC ivdep
+        #pragma ivdep
+               for (long idx = 0; idx < upto; idx+=8) {
+                    CELL_OP1 (idx,r1);
+                    CELL_OP1 (idx+2,r2);
+                    CELL_OP1 (idx+4,r3);
+                    CELL_OP1 (idx+6,r4);
+                    CELL_OP2 (idx,r1);
+                    CELL_OP2 (idx+2,r2);
+                    CELL_OP2 (idx+4,r3);
+                    CELL_OP2 (idx+6,r4);
+                }
+                
 #else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]-=argData[idx];
@@ -3400,7 +3447,27 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                      CELL_OP (idx+12);
                  }
         
- #else
+#elif defined  _SLKP_USE_ARM_NEON
+        #define     CELL_OP1(x,y) float64x2_t y = vaddq_f64 (vld1q_f64 (stData+x), vld1q_f64 (argData+x))
+        #define CELL_OP2(x,y) vst1q_f64 (stData+x,y)
+        #pragma GCC unroll 4
+        #pragma clang loop vectorize(enable)
+        #pragma clang loop interleave(enable)
+        #pragma clang loop unroll(enable)
+        #pragma GCC ivdep
+        #pragma ivdep
+               for (long idx = 0; idx < upto; idx+=8) {
+                    CELL_OP1 (idx,r1);
+                    CELL_OP1 (idx+2,r2);
+                    CELL_OP1 (idx+4,r3);
+                    CELL_OP1 (idx+6,r4);
+                    CELL_OP2 (idx,r1);
+                    CELL_OP2 (idx+2,r2);
+                    CELL_OP2 (idx+4,r3);
+                    CELL_OP2 (idx+6,r4);
+                }
+                
+#else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]+=argData[idx];
                     stData[idx+1]+=argData[idx+1];
@@ -3630,6 +3697,21 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
             for (; k < lDim; k++) {
                 destination[k] = source[k]*c;
             }
+  #elif defined _SLKP_USE_ARM_NEON
+            #define                 CELL_OP(k) vst1q_f64 (destination + k, vmulq_f64(value_op, vld1q_f64 (source+k)))
+            long lDimM8 = lDim >> 3 << 3,
+                 k = 0;
+                
+            float64x2_t  value_op = vdupq_n_f64 (c);
+             for (k = 0L; k < lDimM8; k+=8) {
+                 CELL_OP (k);
+                 CELL_OP (k+2);
+                 CELL_OP (k+4);
+                 CELL_OP (k+6);
+            }
+            for (; k < lDim; k++) {
+                destination[k] = source[k]*c;
+            }
   #else
             for (long k = 0L; k < lDim; k++) {
                 destination[k] = source[k]*c;
@@ -3711,7 +3793,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 unsigned long cumulativeIndex = 0UL;
                 const unsigned long dimm4 = (vDim >> 2) << 2;
 
-                const hyFloat * row = theData;
+                //const hyFloat * row = theData;
                 hyFloat  * dest = storage.theData;
                 
 #if defined _SLKP_USE_AVX_INTRINSICS
@@ -3730,11 +3812,14 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
 #elif _SLKP_USE_SSE_INTRINSICS
             #define DO_GROUP_OP1(X,Y,k) X = _mm_loadu_pd(dest + row_offset + k); Y = _mm_loadu_pd(secondArg.theData + col_offset + k); X = _mm_add_pd (X, _mm_mul_pd(A4, Y));
             #define DO_GROUP_OP2(X,k) _mm_storeu_pd (dest + row_offset + k,X);
+                
+#elif _SLKP_USE_ARM_NEON
+            #define DO_GROUP_OP1(X,Y,k) X = vld1q_f64 (dest + row_offset + k); Y = vld1q_f64 (secondArg.theData + col_offset + k); X = vfmaq_f64 (X, A4, Y);
+            #define DO_GROUP_OP2(X,k) vst1q_f64 (dest + row_offset + k,X);
 #endif
 
                 
 #ifndef _SLKP_SSE_VECTORIZATION_
-            
               
               if (dimm4 == vDim) {
                   #if defined  _SLKP_USE_AVX_INTRINSICS
@@ -3818,7 +3903,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           }
                       return;
                   #elif _SLKP_USE_SSE_INTRINSICS
-                    memset (dest, 0, lDim * sizeof (hyFloat));
+                     memset (dest, 0, lDim * sizeof (hyFloat));
                      long ti = 0L,
                            row_offset = 0L;
                   
@@ -3869,6 +3954,58 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                             }
                           }
                       return;
+        #elif _SLKP_USE_ARM_NEON
+               memset (dest, 0, lDim * sizeof (hyFloat));
+               long ti = 0L,
+                     row_offset = 0L;
+
+                if (vDim == 20UL) {
+                    for (long r = 0; r < 20; r++, row_offset += 20) {
+                        long col_offset = 0L;
+                        for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
+                            float64x2_t A4 = vdupq_n_f64(theData[ti]);
+                            //for (long k = 0; k < 20L; k+=4) {
+                                float64x2_t D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
+                                DO_GROUP_OP1 (D4, B4, 0);
+                                DO_GROUP_OP1 (D4_1, B4_1, 2);
+                                DO_GROUP_OP1 (D4_2, B4_2, 4);
+                                DO_GROUP_OP1 (D4_3, B4_3, 6);
+                                DO_GROUP_OP1 (D4_4, B4_4, 8);
+                                DO_GROUP_OP2 (D4, 0);
+                                DO_GROUP_OP2 (D4_1, 2);
+                                DO_GROUP_OP2 (D4_2, 4);
+                                DO_GROUP_OP2 (D4_3, 6);
+                                DO_GROUP_OP2 (D4_4, 8);
+                                DO_GROUP_OP1 (D4, B4, 10);
+                                DO_GROUP_OP1 (D4_1, B4_1, 12);
+                                DO_GROUP_OP1 (D4_2, B4_2, 14);
+                                DO_GROUP_OP1 (D4_3, B4_3, 16);
+                                DO_GROUP_OP1 (D4_4, B4_4, 18);
+                                DO_GROUP_OP2 (D4, 10);
+                                DO_GROUP_OP2 (D4_1, 12);
+                                DO_GROUP_OP2 (D4_2, 14);
+                                DO_GROUP_OP2 (D4_3, 16);
+                                DO_GROUP_OP2 (D4_4, 18);
+                            //}
+                      }
+                    }
+                } else
+                    for (long r = 0; r < vDim; r++, row_offset += vDim) {
+                        long col_offset = 0L;
+                        for (long c = 0; c < vDim; c++, ti++, col_offset += vDim) {
+                            float64x2_t A4 = vdupq_n_f64(theData[ti]);
+                            #pragma GCC unroll 4
+                            #pragma clang loop vectorize(enable)
+                            #pragma clang loop interleave(enable)
+                            #pragma clang loop unroll(enable)
+                            for (long k = 0; k < vDim; k+=2) {
+                                float64x2_t D4, B4;
+                                DO_GROUP_OP1 (D4, B4, k);
+                                DO_GROUP_OP2 (D4, k);
+                            }
+                      }
+                    }
+                return;
                 #endif
                 memset (dest, 0, lDim * sizeof (hyFloat));
 
@@ -3969,7 +4106,6 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                          row_offset = 0L;
 
                   if (dimm4 == 60UL) { // codons
-                      
                       
                       for (long r = 0; r < hDim; r++, row_offset += vDim) {
                           long col_offset = 0L;
@@ -4147,7 +4283,116 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                     }
                                 }
                             }
-                  #else
+            #elif _SLKP_USE_ARM_NEON
+                        long ti = 0L,
+                             row_offset = 0L;
+
+                        if (dimm4 == 60UL) { // codons
+                          
+                          
+                          for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                              long col_offset = 0L;
+                              for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
+                                  float64x2_t A4 = vdupq_n_f64(theData[ti]);
+                                  
+                                  float64x2_t D4_1, D4_2, D4_3, D4_4;
+                                  float64x2_t B4_1, B4_2, B4_3, B4_4;
+                                  
+                                  DO_GROUP_OP1 (D4_1,B4_1,0);
+                                  DO_GROUP_OP1 (D4_2,B4_2,2);
+                                  DO_GROUP_OP1 (D4_3,B4_3,4);
+                                  DO_GROUP_OP1 (D4_4,B4_4,6);
+                                  DO_GROUP_OP2 (D4_1,0);
+                                  DO_GROUP_OP2 (D4_2,2);
+                                  DO_GROUP_OP2 (D4_3,4);
+                                  DO_GROUP_OP2 (D4_4,6);
+
+                                  DO_GROUP_OP1 (D4_1,B4_1,8);
+                                  DO_GROUP_OP1 (D4_2,B4_2,10);
+                                  DO_GROUP_OP1 (D4_3,B4_3,12);
+                                  DO_GROUP_OP1 (D4_4,B4_4,14);
+                                  DO_GROUP_OP2 (D4_1,8);
+                                  DO_GROUP_OP2 (D4_2,10);
+                                  DO_GROUP_OP2 (D4_3,12);
+                                  DO_GROUP_OP2 (D4_4,14);
+
+                                  DO_GROUP_OP1 (D4_1,B4_1,16);
+                                  DO_GROUP_OP1 (D4_2,B4_2,18);
+                                  DO_GROUP_OP1 (D4_3,B4_3,20);
+                                  DO_GROUP_OP1 (D4_4,B4_4,22);
+                                  DO_GROUP_OP2 (D4_1,16);
+                                  DO_GROUP_OP2 (D4_2,18);
+                                  DO_GROUP_OP2 (D4_3,20);
+                                  DO_GROUP_OP2 (D4_4,22);
+
+                                  DO_GROUP_OP1 (D4_1,B4_1,24);
+                                  DO_GROUP_OP1 (D4_2,B4_2,26);
+                                  DO_GROUP_OP1 (D4_3,B4_3,28);
+                                  DO_GROUP_OP1 (D4_4,B4_4,30);
+                                  DO_GROUP_OP2 (D4_1,24);
+                                  DO_GROUP_OP2 (D4_2,26);
+                                  DO_GROUP_OP2 (D4_3,28);
+                                  DO_GROUP_OP2 (D4_4,30);
+
+                                  DO_GROUP_OP1 (D4_1,B4_1,32);
+                                  DO_GROUP_OP1 (D4_2,B4_2,34);
+                                  DO_GROUP_OP1 (D4_3,B4_3,36);
+                                  DO_GROUP_OP1 (D4_4,B4_4,38);
+                                  DO_GROUP_OP2 (D4_1,32);
+                                  DO_GROUP_OP2 (D4_2,34);
+                                  DO_GROUP_OP2 (D4_3,36);
+                                  DO_GROUP_OP2 (D4_4,38);
+
+                                  DO_GROUP_OP1 (D4_1,B4_1,40);
+                                  DO_GROUP_OP1 (D4_2,B4_2,42);
+                                  DO_GROUP_OP1 (D4_3,B4_3,44);
+                                  DO_GROUP_OP1 (D4_4,B4_4,46);
+                                  DO_GROUP_OP2 (D4_1,40);
+                                  DO_GROUP_OP2 (D4_2,42);
+                                  DO_GROUP_OP2 (D4_3,44);
+                                  DO_GROUP_OP2 (D4_4,46);
+
+                                  DO_GROUP_OP1 (D4_1,B4_1,48);
+                                  DO_GROUP_OP1 (D4_2,B4_2,50);
+                                  DO_GROUP_OP1 (D4_3,B4_3,52);
+                                  DO_GROUP_OP1 (D4_4,B4_4,54);
+                                  DO_GROUP_OP2 (D4_1,48);
+                                  DO_GROUP_OP2 (D4_2,50);
+                                  DO_GROUP_OP2 (D4_3,52);
+                                  DO_GROUP_OP2 (D4_4,54);
+                                  
+                                  DO_GROUP_OP1 (D4_1,B4_1,56);
+                                  DO_GROUP_OP1 (D4_2,B4_2,58);
+                                  DO_GROUP_OP2 (D4_1,56);
+                                  DO_GROUP_OP2 (D4_2,58);
+                                  
+                                  for (long k = dimm4; k < vDim; k++) {
+                                      dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
+                                  }
+                              }
+                          }
+                        } else { // something else
+                          for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                              long col_offset = 0L;
+                              for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
+                                  float64x2_t A4 = vdupq_n_f64(theData[ti]);
+                                  #pragma GCC unroll 4
+                                  #pragma clang loop vectorize(enable)
+                                  #pragma clang loop interleave(enable)
+                                  #pragma clang loop unroll(enable)
+                                  for (long k = 0; k < dimm4; k+=2) {
+                                      float64x2_t D4, B4;
+                                      DO_GROUP_OP1 (D4, B4, k);
+                                      DO_GROUP_OP2 (D4, k);
+                                  }
+                                  
+                                  for (long k = dimm4; k < vDim; k++) {
+                                      dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
+                                  }
+                              }
+                          }
+                      }
+                #else
                       const unsigned long
                               column_shift2 = secondArg.vDim << 1,
                               column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
@@ -4185,7 +4430,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                     #endif
               }
               
-#else
+    #else
                 secondArg.Transpose();
                 for (long i=0; i<hDim; i++, row += vDim) {
                     for (long j=0; j<hDim; j++) {
@@ -4340,7 +4585,19 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                 CELL_OP(16);CELL_OP(20);CELL_OP(24);CELL_OP(28);
                                 CELL_OP(32);CELL_OP(36);CELL_OP(40);CELL_OP(44);
                                 CELL_OP(48);CELL_OP(52);CELL_OP(56);
+                            #elif  _SLKP_USE_ARM_NEON
+                                 float64x2_t  value_op = vdupq_n_f64 (value);
+                                 #define                 CELL_OP(x) vst1q_f64 (res+x, vfmaq_f64 (vld1q_f64(res+x), value_op, vld1q_f64 (secArg+x)))
                           
+                        
+                                  CELL_OP(0);CELL_OP(2);CELL_OP(4);CELL_OP(6);
+                                  CELL_OP(8);CELL_OP(10);CELL_OP(12);CELL_OP(14);
+                                  CELL_OP(16);CELL_OP(18);CELL_OP(20);CELL_OP(22);
+                                  CELL_OP(24);CELL_OP(26);CELL_OP(28);
+                                  CELL_OP(30);CELL_OP(32);CELL_OP(34);CELL_OP(36);CELL_OP(38);
+                                  CELL_OP(40);CELL_OP(42);CELL_OP(44);CELL_OP(46);
+                                  CELL_OP(48);CELL_OP(50);CELL_OP(52);CELL_OP(54);
+                                  CELL_OP(56);CELL_OP(58);
                             #else
                                 for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
                                     res[i]   += value * secArg[i];
@@ -4359,6 +4616,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   
                     
                 } else {
+
                      for (unsigned long k=0UL; k<lDim; k++) { // loop over entries in the sparse matrix
                       long m = theIndex[k];
                       if (m >= 0L) {
@@ -4380,13 +4638,26 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           CELL_OP(16);CELL_OP(20);CELL_OP(24);CELL_OP(28);
                           CELL_OP(32);CELL_OP(36);CELL_OP(40);CELL_OP(44);
                           CELL_OP(48);CELL_OP(52);CELL_OP(56);
+                        #elif  _SLKP_USE_ARM_NEON
+                             float64x2_t  value_op = vdupq_n_f64 (value);
+                             #define                 CELL_OP(x) vst1q_f64 (res+x, vfmaq_f64 (vld1q_f64(res+x), value_op, vld1q_f64 (secArg+x)))
+
+
+                              CELL_OP(0);CELL_OP(2);CELL_OP(4);CELL_OP(6);
+                              CELL_OP(8);CELL_OP(10);CELL_OP(12);CELL_OP(14);
+                              CELL_OP(16);CELL_OP(18);CELL_OP(20);CELL_OP(22);
+                              CELL_OP(24);CELL_OP(26);CELL_OP(28);
+                              CELL_OP(30);CELL_OP(32);CELL_OP(34);CELL_OP(36);CELL_OP(38);
+                              CELL_OP(40);CELL_OP(42);CELL_OP(44);CELL_OP(46);
+                              CELL_OP(48);CELL_OP(50);CELL_OP(52);CELL_OP(54);
+                              CELL_OP(56);CELL_OP(58);
                         #else
-                          for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
-                            res[i]   += value * secArg[i];
-                            res[i+1] += value * secArg[i+1];
-                            res[i+2] += value * secArg[i+2];
-                            res[i+3] += value * secArg[i+3];
-                           }
+                            for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
+                                res[i]   += value * secArg[i];
+                                res[i+1] += value * secArg[i+1];
+                                res[i+2] += value * secArg[i+2];
+                                res[i+3] += value * secArg[i+3];
+                               }
                         #endif
                           res[60]   += value * secArg[60];
                       }
@@ -4410,13 +4681,19 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                             #ifdef  _SLKP_USE_AVX_INTRINSICS
                                 __m256d  value_op = _mm256_set1_pd (value);
                             #endif
+                            #ifdef  _SLKP_USE_ARM_NEON
+                                float64x2_t  value_op = vdupq_n_f64 (value);
+                            #endif
                             for (unsigned long i = 0UL; i < loopBound; i+=4) {
                                   #ifdef  _SLKP_USE_AVX_INTRINSICS
-                                  #ifdef _SLKP_USE_FMA3_INTRINSICS
-                                        _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
-                                  #else
-                                        _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
-                                  #endif
+                                      #ifdef _SLKP_USE_FMA3_INTRINSICS
+                                            _mm256_storeu_pd (res+i, _mm256_fmadd_pd (value_op, _mm256_loadu_pd (secArg+i),_mm256_loadu_pd(res+i)));
+                                      #else
+                                            _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
+                                      #endif
+                                  #elif defined _SLKP_USE_ARM_NEON
+                                    vst1q_f64 (res+i, vfmaq_f64 (vld1q_f64(res+i), value_op, vld1q_f64 (secArg+i)));
+                                    vst1q_f64 (res+i+2, vfmaq_f64 (vld1q_f64(res+i+2), value_op, vld1q_f64 (secArg+i+2)));
                                   #else
                                     res[i]   += value * secArg[i];
                                     res[i+1] += value * secArg[i+1];
@@ -4446,6 +4723,9 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                               #ifdef  _SLKP_USE_AVX_INTRINSICS
                                     __m256d  value_op = _mm256_set1_pd (value);
                               #endif
+                              #ifdef  _SLKP_USE_ARM_NEON
+                                    float64x2_t  value_op = vdupq_n_f64 (value);
+                              #endif
                               
                               for (unsigned long i = 0UL; i < loopBound; i+=4) {
                               #ifdef  _SLKP_USE_AVX_INTRINSICS
@@ -4454,12 +4734,16 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                 #else
                                       _mm256_storeu_pd (res+i, _mm256_add_pd (_mm256_loadu_pd(res+i),  _mm256_mul_pd(value_op, _mm256_loadu_pd (secArg+i))));
                                 #endif
+                                #elif defined _SLKP_USE_ARM_NEON
+                                  vst1q_f64 (res+i, vfmaq_f64 (vld1q_f64(res+i), value_op, vld1q_f64 (secArg+i)));
+                                  vst1q_f64 (res+i+2, vfmaq_f64 (vld1q_f64(res+i+2), value_op, vld1q_f64 (secArg+i+2)));
                                 #else
                                   res[i]   += value * secArg[i];
                                   res[i+1] += value * secArg[i+1];
                                   res[i+2] += value * secArg[i+2];
                                   res[i+3] += value * secArg[i+3];
                                 #endif
+                                  
                               }
                                for (unsigned long i = loopBound; i < vDim; i++) {
                                   res[i]   += value * secArg[i];
@@ -6547,9 +6831,8 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
         Swap(temp);
         return DBL_EPSILON * 1.e4;
     } else {
-        if (hDim==4)
+        if (hDim==4) {
             // special case for nucleotides
-        {
             for (unsigned long i=0UL, k = 0UL; i<16; i+=4) {
                 for (unsigned long j=0UL; j<4UL; j++, k++) {
                    hyFloat p1 = theData[i]   * theData [j];
@@ -6563,6 +6846,182 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
             long loopBound = (vDim >> 2) << 2;
             //vDim - vDim % 4;
             // loop interchange rocks!
+            
+#ifdef  _SLKP_USE_ARM_NEON
+    #define DO_GROUP_OP0(X,Y,k) Y = vld1q_f64(theData + col_offset + k); X = vmulq_f64(A4, Y);
+    #define DO_GROUP_OP1(X,Y,k) X = vld1q_f64(dest + row_offset + k); Y = vld1q_f64(theData + col_offset + k); X = vfmaq_f64 (X,A4,Y);
+    #define DO_GROUP_OP2(X,k) vst1q_f64 (dest + row_offset + k,X);
+            
+        if (true) {
+            hyFloat  * _hprestrict_ dest = stash;
+
+            long ti = 0L,
+                 row_offset = 0L;
+
+            if (loopBound == 60UL) {
+                if (hDim == 61) { // special case for universal code
+                    
+                    for (long r = 0; r < 61; r++, row_offset += 61) {
+                        long col_offset = 0L;
+                        { // row 1
+                            float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                            float64x2_t X1, X2, X3, X4,
+                                        Y1, Y2, Y3, Y4;
+                            
+                            DO_GROUP_OP0 (X1, Y1, 0); DO_GROUP_OP0 (X2, Y2, 2); DO_GROUP_OP0 (X3, Y3, 4); DO_GROUP_OP0 (X4, Y4, 6);
+                            DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
+                            DO_GROUP_OP0 (X1, Y1, 8); DO_GROUP_OP0 (X2, Y2, 10); DO_GROUP_OP0 (X3, Y3, 12); DO_GROUP_OP0 (X4, Y4, 14);
+                            DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
+                            DO_GROUP_OP0 (X1, Y1, 16); DO_GROUP_OP0 (X2, Y2, 18); DO_GROUP_OP0 (X3, Y3, 20); DO_GROUP_OP0 (X4, Y4, 22);
+                            DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
+                            DO_GROUP_OP0 (X1, Y1, 24); DO_GROUP_OP0 (X2, Y2, 26); DO_GROUP_OP0 (X3, Y3, 28); DO_GROUP_OP0 (X4, Y4, 30);
+                            DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
+                            DO_GROUP_OP0 (X1, Y1, 32); DO_GROUP_OP0 (X2, Y2, 34); DO_GROUP_OP0 (X3, Y3, 36); DO_GROUP_OP0 (X4, Y4, 38);
+                            DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
+                            DO_GROUP_OP0 (X1, Y1, 40); DO_GROUP_OP0 (X2, Y2, 42); DO_GROUP_OP0 (X3, Y3, 44); DO_GROUP_OP0 (X4, Y4, 46);
+                            DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
+                            DO_GROUP_OP0 (X1, Y1, 48); DO_GROUP_OP0 (X2, Y2, 50); DO_GROUP_OP0 (X3, Y3, 52); DO_GROUP_OP0 (X4, Y4, 54);
+                            DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
+                            DO_GROUP_OP0 (X1, Y1, 56); DO_GROUP_OP0 (X2, Y2, 58);
+                            DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
+
+                            
+                            dest[row_offset + 60] = theData[ti] * theData[60];
+                            col_offset = 61;
+                            ti++;
+                        }
+                        
+                        for (long c = 1; c < 61; c++, ti++, col_offset += 61) {
+                            float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                            float64x2_t X1, X2, X3, X4,
+                                        Y1, Y2, Y3, Y4;
+                            
+                            DO_GROUP_OP1 (X1, Y1, 0); DO_GROUP_OP1 (X2, Y2, 2); DO_GROUP_OP1 (X3, Y3, 4); DO_GROUP_OP1 (X4, Y4, 6);
+                            DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
+                            DO_GROUP_OP1 (X1, Y1, 8); DO_GROUP_OP1 (X2, Y2, 10); DO_GROUP_OP1 (X3, Y3, 12); DO_GROUP_OP1 (X4, Y4, 14);
+                            DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
+                            DO_GROUP_OP1 (X1, Y1, 16); DO_GROUP_OP1 (X2, Y2, 18); DO_GROUP_OP1 (X3, Y3, 20); DO_GROUP_OP1 (X4, Y4, 22);
+                            DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
+                            DO_GROUP_OP1 (X1, Y1, 24); DO_GROUP_OP1 (X2, Y2, 26); DO_GROUP_OP1 (X3, Y3, 28); DO_GROUP_OP1 (X4, Y4, 30);
+                            DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
+                            DO_GROUP_OP1 (X1, Y1, 32); DO_GROUP_OP1 (X2, Y2, 34); DO_GROUP_OP1 (X3, Y3, 36); DO_GROUP_OP1 (X4, Y4, 38);
+                            DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
+                            DO_GROUP_OP1 (X1, Y1, 40); DO_GROUP_OP1 (X2, Y2, 42); DO_GROUP_OP1 (X3, Y3, 44); DO_GROUP_OP1 (X4, Y4, 46);
+                            DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
+                            DO_GROUP_OP1 (X1, Y1, 48); DO_GROUP_OP1 (X2, Y2, 50); DO_GROUP_OP1 (X3, Y3, 52); DO_GROUP_OP1 (X4, Y4, 54);
+                            DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
+                            DO_GROUP_OP1 (X1, Y1, 56); DO_GROUP_OP1 (X2, Y2, 58);
+                            DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
+                            
+                            dest[row_offset + 60] += theData[ti] * theData[col_offset + 60];
+                        }
+                    }
+                } else {
+                    for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                        long col_offset = 0L;
+                        { // row 1
+                            float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                            float64x2_t X1, X2, X3, X4,
+                                        Y1, Y2, Y3, Y4;
+                            
+                            DO_GROUP_OP0 (X1, Y1, 0); DO_GROUP_OP0 (X2, Y2, 2); DO_GROUP_OP0 (X3, Y3, 4); DO_GROUP_OP0 (X4, Y4, 6);
+                            DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
+                            DO_GROUP_OP0 (X1, Y1, 8); DO_GROUP_OP0 (X2, Y2, 10); DO_GROUP_OP0 (X3, Y3, 12); DO_GROUP_OP0 (X4, Y4, 14);
+                            DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
+                            DO_GROUP_OP0 (X1, Y1, 16); DO_GROUP_OP0 (X2, Y2, 18); DO_GROUP_OP0 (X3, Y3, 20); DO_GROUP_OP0 (X4, Y4, 22);
+                            DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
+                            DO_GROUP_OP0 (X1, Y1, 24); DO_GROUP_OP0 (X2, Y2, 26); DO_GROUP_OP0 (X3, Y3, 28); DO_GROUP_OP0 (X4, Y4, 30);
+                            DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
+                            DO_GROUP_OP0 (X1, Y1, 32); DO_GROUP_OP0 (X2, Y2, 34); DO_GROUP_OP0 (X3, Y3, 36); DO_GROUP_OP0 (X4, Y4, 38);
+                            DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
+                            DO_GROUP_OP0 (X1, Y1, 40); DO_GROUP_OP0 (X2, Y2, 42); DO_GROUP_OP0 (X3, Y3, 44); DO_GROUP_OP0 (X4, Y4, 46);
+                            DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
+                            DO_GROUP_OP0 (X1, Y1, 48); DO_GROUP_OP0 (X2, Y2, 50); DO_GROUP_OP0 (X3, Y3, 52); DO_GROUP_OP0 (X4, Y4, 54);
+                            DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
+                            DO_GROUP_OP0 (X1, Y1, 56); DO_GROUP_OP0 (X2, Y2, 58);
+                            DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
+
+                            
+                            for (long k = 60; k < vDim; k++) {
+                                dest[row_offset + k] = theData[ti] * theData[k];
+                            }
+                            col_offset = vDim;
+                            ti++;
+                        }
+                        
+                        for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
+                            float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                            float64x2_t X1, X2, X3, X4,
+                                        Y1, Y2, Y3, Y4;
+                            
+                            DO_GROUP_OP1 (X1, Y1, 0); DO_GROUP_OP1 (X2, Y2, 2); DO_GROUP_OP1 (X3, Y3, 4); DO_GROUP_OP1 (X4, Y4, 6);
+                            DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
+                            DO_GROUP_OP1 (X1, Y1, 8); DO_GROUP_OP1 (X2, Y2, 10); DO_GROUP_OP1 (X3, Y3, 12); DO_GROUP_OP1 (X4, Y4, 14);
+                            DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
+                            DO_GROUP_OP1 (X1, Y1, 16); DO_GROUP_OP1 (X2, Y2, 18); DO_GROUP_OP1 (X3, Y3, 20); DO_GROUP_OP1 (X4, Y4, 22);
+                            DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
+                            DO_GROUP_OP1 (X1, Y1, 24); DO_GROUP_OP1 (X2, Y2, 26); DO_GROUP_OP1 (X3, Y3, 28); DO_GROUP_OP1 (X4, Y4, 30);
+                            DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
+                            DO_GROUP_OP1 (X1, Y1, 32); DO_GROUP_OP1 (X2, Y2, 34); DO_GROUP_OP1 (X3, Y3, 36); DO_GROUP_OP1 (X4, Y4, 38);
+                            DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
+                            DO_GROUP_OP1 (X1, Y1, 40); DO_GROUP_OP1 (X2, Y2, 42); DO_GROUP_OP1 (X3, Y3, 44); DO_GROUP_OP1 (X4, Y4, 46);
+                            DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
+                            DO_GROUP_OP1 (X1, Y1, 48); DO_GROUP_OP1 (X2, Y2, 50); DO_GROUP_OP1 (X3, Y3, 52); DO_GROUP_OP1 (X4, Y4, 54);
+                            DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
+                            DO_GROUP_OP1 (X1, Y1, 56); DO_GROUP_OP1 (X2, Y2, 58);
+                            DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
+                            
+                            for (long k = 60; k < vDim; k++) {
+                                dest[row_offset + k] += theData[ti] * theData[col_offset + k];
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                    long col_offset = 0L;
+                    { // row 1
+                        float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                        #pragma GCC unroll 4
+                        #pragma clang loop vectorize(enable)
+                        #pragma clang loop interleave(enable)
+                        #pragma clang loop unroll(enable)
+                        #pragma GCC ivdep
+                        #pragma ivdep
+                        for (long k = 0; k < loopBound; k+=4) {
+                            float64x2_t D4, B4, X1, X2;
+                            DO_GROUP_OP0 (D4, B4, k);
+                            DO_GROUP_OP0 (X1, X2, k+2);
+                            DO_GROUP_OP2 (D4,k);
+                            DO_GROUP_OP2 (X1,k+2);
+                        }
+                        
+                        for (long k = loopBound; k < vDim; k++) {
+                            dest[row_offset + k] = theData[ti] * theData[k];
+                        }
+                        col_offset = vDim;
+                        ti++;
+                    }
+                    
+                    for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
+                        float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                        for (long k = 0; k < loopBound; k+=4) {
+                            float64x2_t D4, B4, X1, X2;
+                            DO_GROUP_OP1 (D4, B4, k);
+                            DO_GROUP_OP1 (X1, X2, k+2);
+                            DO_GROUP_OP2 (D4,k);
+                            DO_GROUP_OP2 (X1,k+2);
+                        }
+                        
+                        for (long k = loopBound; k < vDim; k++) {
+                            dest[row_offset + k] += theData[ti] * theData[col_offset + k];
+                        }
+                    }
+                }
+            }
+        } else {
+                    
+#endif
             
 #ifdef  _SLKP_USE_AVX_INTRINSICS
             #define DO_GROUP_OP0(X,Y,k) Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_mul_pd(A4, Y);
@@ -6906,7 +7365,9 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
 #endif
            }
         }
-        
+#ifdef  _SLKP_USE_ARM_NEON
+        }
+#endif
         
         long lDimmod4 = (lDim >> 2) << 2;
         hyFloat diffs[4] = {0.0,0.0,0.0,0.0};
@@ -8499,6 +8960,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 buffer[i] = fc = fgetc (theSource);
                 i++;
                 if (feof(theSource)) {
+                    DeleteObject (thisCell);
                     return false;
                 }
             } while ((fc!=',')&&(fc!='}'));
@@ -8506,6 +8968,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
             theCoeffs[j]=atof (buffer);
             j++;
             if (j>m) {
+                DeleteObject (thisCell);
                 return false;
             }
         }
@@ -8522,6 +8985,8 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 buffer[i] = fc = fgetc (theSource);
                 i++;
                 if (feof(theSource)) {
+                    DeleteObject (thisCell);
+                    DeleteObject (pd);
                     return false;
                 }
             } while ((fc!=',')&&(fc!='}'));
@@ -8530,6 +8995,8 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
         }
         fc = fgetc(theSource);
         if (fc != '{') {
+            DeleteObject (thisCell);
+            DeleteObject (pd);
             return false;
         }
         c2.Clear();
@@ -8539,6 +9006,8 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 buffer[i] = fc = fgetc (theSource);
                 i++;
                 if (feof(theSource)) {
+                    DeleteObject (thisCell);
+                    DeleteObject (pd);
                     return false;
                 }
             } while ((fc!=',')&&(fc!='}'));

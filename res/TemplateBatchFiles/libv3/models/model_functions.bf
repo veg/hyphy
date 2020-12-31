@@ -673,3 +673,27 @@ lfunction model.BranchLengthExpressionFromMatrix (q,freqs,is_canonical) {
     expr = Join ("+", expr);
     return Simplify(expr,{});
 }
+
+/**
+ * Constrain the set of global model parameters defined by the regexp to own values
+ * @name parameters.ConstrainParameterSet
+ * @param {String} re  - match this regular expression
+ * @param {Dict} model_spec  - model definition
+ * @returns {Dict} the list of constrained parameters
+ */ 
+ 
+lfunction models.FixParameterSetRegExp (re, model_spec) {
+    constraints = {};
+    for (tag, id; in; (model_spec[^"terms.parameters"])[^"terms.global"]) {
+ 
+        if (None != regexp.Find (tag, re)) {
+            if (parameters.IsIndependent (id)) {
+                parameters.SetConstraint (id, Eval (id), "");
+                constraints + id;
+            }
+        }
+    }
+        
+    return constraints;
+}
+

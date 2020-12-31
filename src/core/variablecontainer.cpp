@@ -550,7 +550,7 @@ bool    _VariableContainer::HasDepVariable  (long var_ref) const {
 //__________________________________________________________________________________
 
 void    _VariableContainer:: RemoveLocalVariable (_SimpleList*& array, long array_index) {
-    if (array->countitems() > 2UL) {
+    if (array && array->countitems() > 2UL) {
         array->Delete(array_index);
         array->Delete(array_index);
         array->TrimMemory();
