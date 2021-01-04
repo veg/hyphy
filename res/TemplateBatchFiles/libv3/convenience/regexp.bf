@@ -92,20 +92,29 @@ lfunction regexp.FindSubexpressions(string, re) {
  */
 lfunction regexp.PartitionByRegularExpressions(strings, rex) {
     result = {};
+    
+    for (_value_; in; rex) {
+        result[_value_] = {};
+    }
 
-    utility.ForEach (rex, "_value_", '`&result`[_value_] = {}');
     result[""] = {};
     matched_regexp = None;
-
-    utility.ForEach (strings, "_value_",
-    '
-        `&matched_regexp` = utility.First (`&rex`, "_regex_", "None!=regexp.Find (_value_, _regex_)");
-         if (None == `&matched_regexp`) {
-            `&result`[""] + _value_;
-        } else {
-             `&result`[`&matched_regexp`] + _value_;
+    
+    for (_value_; in; strings) {
+        matched_regexp = None;
+        for (re; in; rex) {
+            matched_regexp = regexp.Find (_value_, re);
+            if (matched_regexp != None) {
+                break;
+            }
         }
-    ');
+        if (None == matched_regexp) {
+            result[""] + _value_;
+        } else {
+            result[re] + _value_;
+        }
+    }
+
 
     return result;
 }

@@ -1601,7 +1601,7 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
     hyFloat          precision_factor =  hy_env::EnvVariableGetNumber(hy_env::integration_precision_factor);
     long             max_iterations  =  hy_env::EnvVariableGetNumber(hy_env::integration_maximum_iterations);
 
-    hyFloat ss,
+    hyFloat    ss = 0.,
                dss,
                *s = new hyFloat [max_iterations],
                *h = new hyFloat [max_iterations+1L];

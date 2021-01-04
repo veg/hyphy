@@ -2972,6 +2972,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
             // a matrix to store simulated category values
             _String  matrixName (chain.AddNameSpaceToID(*(_String*)parameters(4)));
             if (!(catNameVar = CheckReceptacle(&matrixName,blSimulateDataSet,true))) {
+                DeleteObject (catValues);DeleteObject (catNames); DeleteObject (ds);
                 return;
             } else {
                 catNames = new _Matrix (1,1,false,true);

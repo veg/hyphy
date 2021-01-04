@@ -589,7 +589,7 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
         printf ("Infinity at __ll_loop_handle_scaling: site = %ld, branch = %ld\n", siteID, parentCode);
     }*/
     
-    if (__builtin_expect(sum < _lfScalingFactorThreshold && sum > 0.0,0)) {
+    if (sum < _lfScalingFactorThreshold && sum > 0.0) {
         
         hyFloat scaler = _computeBoostScaler(scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards, sum, didScale);
         
@@ -621,7 +621,7 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
         }
         
     } else {
-        if (__builtin_expect(sum > _lfScalerUpwards,0)) {
+        if (sum > _lfScalerUpwards) {
             if (sum < HUGE_VAL) { // no point scaling an infinity
                 
                 hyFloat scaler = _computeReductionScaler (scalingAdjustments [parentCode*siteCount + siteID] * _lfScalingFactorThreshold, sum, didScale);

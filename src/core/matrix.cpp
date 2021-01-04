@@ -8974,6 +8974,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
         }
         fc = fgetc(theSource);
         if (fc != '{') {
+            DeleteObject (thisCell);
             return false;
         }
         _PolynomialData *pd = new _PolynomialData (varList.countitems(),j,theCoeffs);
