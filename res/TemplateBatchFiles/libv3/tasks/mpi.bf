@@ -1,5 +1,6 @@
 LoadFunctionLibrary ("../all-terms.bf");
 LoadFunctionLibrary ("../models/parameters.bf");
+LoadFunctionLibrary ("../IOFunctions.bf");
 
 /** @module mpi
         Functions for creating, populating, and manipulating
@@ -309,13 +310,17 @@ namespace mpi {
         queue  = mpi.CreateQueue ({^"terms.mpi.LikelihoodFunctions": {{lf_id}},
                                    ^"terms.mpi.Headers" : utility.GetListOfLoadedModules ("libv3/")});
 
+        
+        io.ReportProgressBar("", "Computing LF on a grid");
         for (i = 1; i < Abs (jobs); i += 1) {
-            mpi.QueueJob (queue, handler, {"0" : lf_id,
+           io.ReportProgressBar("", "Computing LF on a grid "  + i + "/" + Abs (jobs));
+           mpi.QueueJob (queue, handler, {"0" : lf_id,
                                            "1" : jobs [i],
                                            "2" : &scores}, callback);
         }
         
 
+        io.ClearProgressBar();
         Call (callback, -1, Call (handler, lf_id, jobs[0], &scores), {"0" : lf_id, "1" : jobs [0], "2" : &scores});
 
         mpi.QueueComplete (queue);
