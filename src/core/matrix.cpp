@@ -4397,6 +4397,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                               column_shift2 = secondArg.vDim << 1,
                               column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
                               column_shift4 = secondArg.vDim << 2;
+                              
+                      hyFloat * row = theData;
 
                       for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
                           for (unsigned long j=0UL; j<secondArg.vDim; j++) {
