@@ -441,10 +441,15 @@ fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                "Variables" : {{"terms.fel.test_keys","fel.permutations","fel.ignorable","fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations"}}
                              });
 
+fel.pattern_count_all = utility.Array1D (fel.site_patterns);
+fel.pattern_count_this = 0;
 
 /* run the main loop over all unique site pattern combinations */
 utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
     '
+        fel.pattern_count_this += 1;
+        io.ReportProgressBar("", "Working on site pattern " + (fel.pattern_count_this) + "/" +  fel.pattern_count_all + " in partition " + (1+fel.partition_index));
+
         if (_pattern_info_[terms.data.is_constant]) {
             fel.store_results (-1,None,{"0" : "fel.site_likelihood",
                                                             "1" : None,
@@ -471,6 +476,9 @@ utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
         }
     '
 );
+
+io.ClearProgressBar();
+
 
 mpi.QueueComplete (fel.queue);
 fel.partition_matrix = {Abs (fel.site_results[fel.partition_index]), Rows (fel.table_headers)};
@@ -931,6 +939,8 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
         }
 
         if (None != fel.print_row) {
+            io.ClearProgressBar();
+
             if (!fel.report.header_done) {
                 io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.p_value + "\n");
                 fprintf (stdout,

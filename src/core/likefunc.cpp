@@ -2382,8 +2382,8 @@ bool        _LikelihoodFunction::HasBlockChanged(long index) const {
 
 //_______________________________________________________________________________________
 
-void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependance, long highestIndex, hyFloat weight, _Matrix& cache)
-{
+void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependance, long highestIndex, hyFloat weight, _Matrix& cache) {
+    // SLKP 20210102: TODO this needs to be reviewed and confirmed as working.
     _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.list_data[index]);
 
     if (index<highestIndex) {
@@ -5858,10 +5858,9 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 
     _AssociativeList * mapMethod = nil;
 
-    hyFloat      uim = 0.0;
-    checkParameter  (useIntervalMapping, uim, 0.0);
+    bool      uim = hy_env::EnvVariableTrue(useIntervalMapping);
 
-    if (uim > 0.5) {
+    if (uim) {
         iMap = new _Matrix (parameter_count,3,false,true);
         mapMethod = new _AssociativeList;
 
@@ -5918,7 +5917,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
             SetIthIndependent (dIndex,thisVar->GetLowerBound()+2.0*locH);
         }
 
-        if (uim > 0.5) {
+        if (uim) {
             hyFloat      lb  = thisVar->GetLowerBound(),
                             ub  = thisVar->GetUpperBound(),
                             y ,
@@ -5990,7 +5989,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         t1  = ((t1-functionValue)+(t2-functionValue))/(locH*locH);
         // Standard central second derivative
 
-        if (uim < 0.5) {
+        if (uim == false) {
             hessian.Store (parameter_count,parameter_count,-t1);
         } else {
             hessian.Store (parameter_count,parameter_count,-(t1*(*iMap)(parameter_count,1)*(*iMap)(parameter_count,1)+(*iMap)(parameter_count,2)*d1));
@@ -6038,7 +6037,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 
                 t2 = (a-b-d+c)/(4*locHi*locHj);
 
-                if (uim > 0.5) {
+                if (uim) {
                     t2 *= (*iMap)(parameter_count,1)*(*iMap)(j,1);
                 }
 
