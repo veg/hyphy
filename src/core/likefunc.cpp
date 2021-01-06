@@ -5361,7 +5361,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     if (go2Bound) {
                         middle = lowerBound;
                         
-                        if (left == lowerBound) {
+                        if (left == lowerBound && !isnan (leftValue)) {
                             middleValue = leftValue;
                             SetParametersAndCompute(index, middle, &currentValues, gradient, true);
                         } else {
@@ -6891,12 +6891,12 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 //_______________________________________________________________________________________
 
 void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFloat& maxSoFar, hyFloat& bestVal, bool go2Bound, hyFloat bracketSetting) {
-    hyFloat left,
-               right,
+    hyFloat    left = -INFINITY,
+               right = -INFINITY,
                middle           = bestVal,
-               leftValue,
+               leftValue        = NAN,
                middleValue       = maxSoFar,
-               rightValue,
+               rightValue      = NAN,
                bp               = 2.*gPrecision,
                brentPrec        = bracketSetting>0.?bracketSetting:gPrecision,
                originalValue         = index >= 0 ? GetIthIndependent(index) : 0.;
