@@ -3455,11 +3455,11 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 
           if (expression) {
             //printf ("Return interpreted\n");
-            ret_val = expression->Compute();
+            ret_val = expression->Compute(0,nil,nil,nil,HY_ANY_OBJECT,false);
           }
           else{
             //printf ("Return compiled %d\n", ((_Formula*)simpleParameters(1))->GetList().lLength);
-            ret_val = ((_Formula*)simpleParameters(1))->Compute();
+            ret_val = ((_Formula*)simpleParameters(1))->Compute(0,nil,nil,nil,HY_ANY_OBJECT,false);
           }
 
           DeleteObject (chain.result);

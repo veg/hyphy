@@ -108,6 +108,7 @@ public:
     }
     
     
+    
     virtual HBLObjectRef Compute           (void) {
         return this;
     }
@@ -149,6 +150,7 @@ protected:
 template <class T> HBLObjectRef _returnStringOrUseCache (T source, HBLObjectRef cache) {
     if (cache && cache->ObjectClass() == STRING) {
         ((_FString*)cache)->SetData(source);
+        return cache;
     }
     return new _FString (source);
 }

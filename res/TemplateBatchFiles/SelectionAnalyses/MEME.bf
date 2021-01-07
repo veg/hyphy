@@ -285,6 +285,7 @@ meme.beta1  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCatego
 meme.beta2  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.parameters.nonsynonymous_rate,2));
 meme.branch_mixture = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.mixture.mixture_aux_weight,1));
 
+
 io.CheckAssertion ("None!=meme.beta2&&None!=meme.beta1&&None!=meme.branch_mixture", "Could not find expected local rate and mixture parameters for the BS-REL model");
 
 meme.site_model_mapping = {

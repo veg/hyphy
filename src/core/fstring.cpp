@@ -172,8 +172,8 @@ HBLObjectRef _FString::Add (HBLObjectRef p, HBLObjectRef cache) {
         if (b->overlfow() >= 256L) {
             b->TrimSpace();
         }
-        return storage;
         
+        return storage;
     }
     
     _StringBuffer  * res;

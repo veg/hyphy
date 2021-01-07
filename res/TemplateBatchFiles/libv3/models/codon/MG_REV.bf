@@ -61,7 +61,7 @@ lfunction models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace
 
     _GenerateRate.p = {};
     _GenerateRate.diff = models.codon.diff(fromChar, toChar);
-
+    
     if (None != _GenerateRate.diff) {
         _GenerateRate.p[model_type] = {};
         _GenerateRate.p[utility.getGlobalValue("terms.global")] = {};
@@ -93,7 +93,6 @@ lfunction models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace
             }
         }
     }
-
 
     return _GenerateRate.p;
 }

@@ -2041,7 +2041,7 @@ bool    _Matrix::IsValidTransitionMatrix() const {
                         continue;
                     }
                     char buffer [255];
-                    snprintf (buffer, 255, "FAILED IsValidTransitionMatrix at (%d, %d) = %20.15g\n", r, c, term);
+                    snprintf (buffer, 255, "FAILED IsValidTransitionMatrix at (%ld, %ld) = %20.15g\n", r, c, term);
                     ReportWarning(buffer);
                     return false;
                 }
@@ -2051,7 +2051,7 @@ bool    _Matrix::IsValidTransitionMatrix() const {
         for (long r = 0L; r < d; r++) {
             if (!CheckEqual(1.0, sums[r])) {
                 char buffer [255];
-                snprintf (buffer, 255, "FAILED ROW SUM at (%d) = %20.15g\n", r, sums[r]);
+                snprintf (buffer, 255, "FAILED ROW SUM at (%ld) = %20.15g\n", r, sums[r]);
                 ReportWarning(buffer);
                 return false;
             }

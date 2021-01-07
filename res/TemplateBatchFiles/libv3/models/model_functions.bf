@@ -296,6 +296,7 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
  */
 function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filter, estimator_type) {
 
+
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
 	if (None != estimator_type) {
 	    models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
