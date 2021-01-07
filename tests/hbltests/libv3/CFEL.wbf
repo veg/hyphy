@@ -69,7 +69,7 @@ subs       = (((fel.json["MLE"])["content"])["0"])[-1][3];
 
 test.subs_sum = 0;
 
-test.expected_positives = utility.MatrixToDict({{29,54,145,147,160,174}});
+test.expected_positives = utility.MatrixToDict({{7, 14, 26, 28, 29, 54, 61, 67, 85, 89, 100, 102, 111, 122, 137, 145, 147, 154, 160, 174, 177, 179, 180, 182, 187}});
 
 function confirm_site (site, p, dict) {
     if (pv[site] <= 0.1) {
@@ -89,7 +89,7 @@ function confirm_site (site, p, dict) {
     return FALSE;
 }
 
-utility.ForEachPair (qv,"_index_", "_p_",
+utility.ForEachPair (pv,"_index_", "_p_",
                  "  
                    confirm_site (_index_[0], _p_, test.expected_positives);
                 ");
