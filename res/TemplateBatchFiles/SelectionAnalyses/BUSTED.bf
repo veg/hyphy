@@ -212,7 +212,7 @@ if (busted.run_full_mg94) {
     }
 }
 
-
+busted.save_intermediate_fits = None;
 
 
 io.ReportProgressMessageMD("BUSTED", "codon-refit", "* " + selection.io.report_fit (busted.final_partitioned_mg_results, 0, busted.codon_data_info[terms.data.sample_size]));
@@ -380,9 +380,27 @@ if (busted.do_srv)  {
     
 }
 
+if (busted.do_srv_hmm) {
+    busted.hmm_lambda = model.generic.GetGlobalParameter (busted.test.bsrel_model, terms.rate_variation.hmm_lambda);
+    //parameters.SetConstraint (((busted.test.bsrel_model[terms.parameters])[terms.global])[terms.rate_variation.hmm_lambda],"1e-6", "");
+    busted.initial_ranges [busted.hmm_lambda] = {
+                terms.lower_bound : 0.05,
+                terms.upper_bound : 0.95
+            };
+}
+
+parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 3, 0, 1000);
+
+busted.initial_ranges      ["busted.bl.scaler"] = {
+                terms.lower_bound : 2.5,
+                terms.upper_bound : 3.5
+            };
+            
+            
 
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
 busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
+
 
 //estimators.CreateInitialGrid (busted.initial_grid, busted.initial_grid.N, busted.initial_grid_presets);
 
@@ -424,15 +442,15 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
   
 busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
 
-if (busted.do_srv_hmm) {
-    busted.hmm_lambda = selection.io.extract_global_MLE (busted.full_model, terms.rate_variation.hmm_lambda);
-    //parameters.SetConstraint (((busted.test.bsrel_model[terms.parameters])[terms.global])[terms.rate_variation.hmm_lambda],"1e-6", "");
-}
+
                                     
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
        
 if (Type (debug.checkpoint) != "String") {
-    parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 1, 0, 1000);
+
+    // constrain nucleotide rate parameters
+    busted.tmp_fixed = models.FixParameterSetRegExp (terms.nucleotideRatePrefix,busted.test.bsrel_model);
+
     busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
         "retain-lf-object": TRUE,
         terms.run_options.proportional_branch_length_scaler : 
@@ -448,6 +466,8 @@ if (Type (debug.checkpoint) != "String") {
         terms.search_grid     : busted.initial_grid,
         terms.search_restarts : busted.N.initial_guesses
     });
+    
+    parameters.RemoveConstraint (busted.tmp_fixed );
 
                                                 
     busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {

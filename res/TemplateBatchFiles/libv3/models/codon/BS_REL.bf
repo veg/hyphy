@@ -20,7 +20,6 @@ LoadFunctionLibrary("../../convenience/math.bf");
  */
 lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
 
-    components = math.Int (components);
     io.CheckAssertion ("`&components` >= 1 && `&components` <= 10", "must have between 1 and 10 components in call to models.codon.BS_REL.ModelDescription");
     codons = models.codon.MapCode(code);
 
@@ -59,6 +58,7 @@ lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
  * @param {Number} components (>=2)
  */
 lfunction models.codon.BS_REL_Per_Branch_Mixing.ModelDescription(type, code, components) {
+
 	template = models.codon.BS_REL.ModelDescription(type, code, components);
 	template [utility.getGlobalValue("terms.model.defineQ")] = "models.codon.BS_REL_Per_Branch_Mixing._DefineQ";
 	return template;
@@ -95,6 +95,7 @@ lfunction models.codon.BS_REL_SRV.ModelDescription(type, code, components) {
 lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
     rate_matrices = {};
 
+
     bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
     bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")] = {};
 
@@ -106,6 +107,7 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
 
     for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
        key = "component_" + component;
+              
        ExecuteCommands ("
         function rate_generator (fromChar, toChar, namespace, model_type, model) {
             return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
@@ -218,6 +220,7 @@ lfunction models.codon.BS_REL.ExtractSynMixtureDistributionFromFit (bs_rel, fit)
  */
 
 lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
+
 
     rate_matrices = {};
 

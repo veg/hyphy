@@ -4,6 +4,9 @@ RequireVersion("2.4.0");
     Load library files
 */
 
+
+
+
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/stats.bf");
@@ -150,6 +153,7 @@ namespace meme {
 }
 
 
+
 estimators.fixSubsetOfEstimates(meme.gtr_results, meme.gtr_results[terms.global]);
 
 // Step 1 - Fit to MG94xREV
@@ -188,8 +192,11 @@ if (Type (meme.save_intermediate_fits) == "AssociativeList") {
         if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
             meme.final_partitioned_mg_results = (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
             if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
+                //_PROFILE_NEXUS_LOADS_ = TRUE;
                 ExecuteCommands ((meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
+                //utility.FinishAndPrintProfile (_NEXUS_PROFILE_DATA_);
                 meme.run_full_mg94 = FALSE;
+                
             }
         }        
     }
@@ -211,9 +218,12 @@ if (meme.run_full_mg94) {
         (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = meme.final_partitioned_mg_results;        
         Export (lfe, ^meme.final_partitioned_mg_results[^"terms.likelihood_function"]);
         (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
-        io.SpoolJSON (meme.save_intermediate_fits[^"terms.data.value"],meme.save_intermediate_fits[^"terms.data.file"]);      
+        io.SpoolJSON (meme.save_intermediate_fits[^"terms.data.value"],meme.save_intermediate_fits[^"terms.data.file"]);  
+            
     }
 }
+
+meme.save_intermediate_fits = None;  // clear out memory if used
 
 //meme.final_partitioned_mg_results = meme.partitioned_mg_results;
 
@@ -224,6 +234,8 @@ utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME
 
 
 estimators.fixSubsetOfEstimates(meme.final_partitioned_mg_results, meme.final_partitioned_mg_results[terms.global]);
+
+
 
 //Store MG94 to JSON
 selection.io.json_store_lf_withEFV (meme.json,
@@ -272,6 +284,7 @@ meme.site.bsrel =  model.generic.DefineMixtureModel("models.codon.BS_REL_Per_Bra
 meme.beta1  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.parameters.nonsynonymous_rate,1));
 meme.beta2  = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.parameters.nonsynonymous_rate,2));
 meme.branch_mixture = model.generic.GetLocalParameter (meme.site.bsrel , terms.AddCategory (terms.mixture.mixture_aux_weight,1));
+
 
 io.CheckAssertion ("None!=meme.beta2&&None!=meme.beta1&&None!=meme.branch_mixture", "Could not find expected local rate and mixture parameters for the BS-REL model");
 
@@ -341,7 +354,25 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
 
     meme.site_patterns = alignments.Extract_site_patterns ((meme.filter_specification[meme.partition_index])[utility.getGlobalValue("terms.data.name")]);
 
-    utility.ForEach (meme.site_tree_fel, "_node_",
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+    
+    for (_node_; in; meme.site_tree_fel) {
+        _node_class_ = (meme.selected_branches[meme.partition_index])[_node_];
+        if (_node_class_ != terms.tree_attributes.test) {
+            _beta_scaler = "meme.site_beta_nuisance";
+            meme.apply_proportional_site_constraint.fel ("meme.site_tree_bsrel", _node_,
+                meme.alpha, meme.beta, "meme.site_alpha", _beta_scaler, (( meme.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[meme.partition_index])[_node_]);
+        } else {
+            _beta_scaler = "meme.site_beta_plus";
+            meme.apply_proportional_site_constraint.bsrel ("meme.site_tree_bsrel", _node_,
+                meme.alpha,  meme.beta1, meme.beta2, meme.branch_mixture, "meme.site_alpha", "meme.site_omega_minus",
+                _beta_scaler, "meme.site_mixture_weight", (( meme.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[meme.partition_index])[_node_]);
+        }
+        meme.apply_proportional_site_constraint.fel ("meme.site_tree_fel", _node_,
+                meme.alpha, meme.beta, "meme.site_alpha", _beta_scaler, (( meme.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[meme.partition_index])[_node_]);    
+    }
+    
+   /* utility.ForEach (meme.site_tree_fel, "_node_",
             '_node_class_ = (meme.selected_branches[meme.partition_index])[_node_];
              if (_node_class_ != terms.tree_attributes.test) {
                 _beta_scaler = "meme.site_beta_nuisance";
@@ -356,7 +387,9 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
              meme.apply_proportional_site_constraint.fel ("meme.site_tree_fel", _node_,
                  meme.alpha, meme.beta, "meme.site_alpha", _beta_scaler, (( meme.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[meme.partition_index])[_node_]);
         ');
+    */
 
+     SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
 
 
 
@@ -392,9 +425,14 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                                  });
 
 
+    meme.pattern_count_all  = utility.Array1D (meme.site_patterns);
+    meme.pattern_count_this = 0;
+
     /* run the main loop over all unique site pattern combinations */
     utility.ForEachPair (meme.site_patterns, "_pattern_", "_pattern_info_",
         '
+            meme.pattern_count_this += 1;
+            io.ReportProgressBar("", "Working on site pattern " + (meme.pattern_count_this) + "/" +  meme.pattern_count_all + " in partition " + (1+meme.partition_index));
             if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")]) {
                 meme.store_results (-1,None,{"0" : "meme.site_likelihood",
                                              "1" : "meme.site_likelihood_bsrel",
@@ -415,8 +453,11 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                                                                     },
                                                                     "meme.store_results");
             }
+            pattern_count_all
         '
     );
+    
+    io.ClearProgressBar();
 
     mpi.QueueComplete (meme.queue);
     meme.partition_matrix = {Abs (meme.site_results[meme.partition_index]), Rows (meme.table_headers)};
@@ -514,6 +555,8 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
 //----------------------------------------------------------------------------------------
 lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pattern_info, model_mapping) {
 
+    //console.log (pattern_info);
+    //#profile START;
     GetString   (lfInfo, ^lf_fel,-1);   
 
     //utility.SetEnvVariable ("VERBOSITY_LEVEL", 100);
@@ -540,7 +583,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-4}
     );
 
-    fel = estimators.ExtractMLEs (lf_fel, model_mapping);
+    fel = estimators.ExtractMLEsOptions (lf_fel, model_mapping, {^"terms.globals_only" : TRUE});
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
 
@@ -644,7 +687,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                 };*/
         
     
-    alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
+    //alternative = estimators.ExtractMLEs (lf_bsrel, model_mapping);
+    alternative = estimators.ExtractMLEsOptions (lf_bsrel, model_mapping, {^"terms.globals_only" : TRUE});
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
     /*init_grid_best = ^"LF_INITIAL_GRID_MAXIMUM";
@@ -680,7 +724,17 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         LFCompute (^lf_bsrel,LF_START_COMPUTE);
         LFCompute (^lf_bsrel,baseline);
 
-        utility.ForEach (^bsrel_tree_id, "_node_name_",
+
+
+        for (_node_name_; in; ^bsrel_tree_id) {
+            if (((^"meme.selected_branches") [partition_index])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
+                _node_name_res_ = meme.compute_branch_EBF (lf_bsrel, bsrel_tree_id, _node_name_, baseline);
+                branch_ebf[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.empirical_bayes_factor")];
+                branch_posterior[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.posterior")];
+            }
+        }
+        
+        /*utility.ForEach (^bsrel_tree_id, "_node_name_",
         '
             if ((meme.selected_branches [^"`&partition_index`"])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
                 _node_name_res_ = meme.compute_branch_EBF (^"`&lf_bsrel`", ^"`&bsrel_tree_id`", _node_name_, ^"`&baseline`");
@@ -688,7 +742,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                 (^"`&branch_posterior`")[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.posterior")];
             }
         '
-        );
+        );*/
 
         LFCompute (^lf_bsrel,LF_DONE_COMPUTE);
 
@@ -696,13 +750,24 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         Optimize (results, ^lf_bsrel, {"OPTIMIZATION_METHOD" : "nedler-mead"});
         //io.SpoolLF (lf_bsrel, "/tmp/meme.debug", "MEME-null");
 
-        Null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
+        //Null = estimators.ExtractMLEs (lf_bsrel, model_mapping);
+        Null = estimators.ExtractMLEsOptions (lf_bsrel, model_mapping, {^"terms.globals_only" : TRUE});
+
         Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
 
 
     } else {
         Null = alternative;
+        
+        for (_node_name_; in; ^bsrel_tree_id) {
+            if (((^"meme.selected_branches") [partition_index])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
+                branch_ebf[_node_name_] = 1.0;
+                branch_posterior[_node_name_] = 0.0;
+            }
+        }
+        
+        /*
         utility.ForEach (^bsrel_tree_id, "_node_name_",
         '
             if ((meme.selected_branches [^"`&partition_index`"])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
@@ -711,8 +776,11 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
             }
         '
         );
+        */
     }
 
+    //#profile collect;
+    //utility.FinishAndPrintProfile (collect);
 
     return {"fel" : fel,
             utility.getGlobalValue("terms.alternative") : alternative,
@@ -734,6 +802,7 @@ function meme.report.echo (meme.report.site, meme.report.partition, meme.report.
     }
 
      if (None != meme.print_row) {
+            io.ClearProgressBar();
             if (!meme.report.header_done) {
                 io.ReportProgressMessageMD("MEME", "" + meme.report.partition, "For partition " + (meme.report.partition+1) + " these sites are significant at p <=" + meme.pvalue + "\n");
                 fprintf (stdout,
@@ -851,14 +920,15 @@ lfunction meme.store_results (node, result, arguments) {
         }
 
         sum = 0;
+        /*
         alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
-
-        utility.ForEach (^"meme.site_tree_fel", "_node_",
-                '_node_class_ = ((^"meme.selected_branches")[`&partition_index`])[_node_];
-                 if (_node_class_ == utility.getGlobalValue("terms.tree_attributes.test")) {
-                    `&sum` += ((`&alternative_lengths`)[_node_])[utility.getGlobalValue("terms.json.MLE")];
-                 }
-            ');
+        for (_node_; in; ^"meme.site_tree_fel") {
+             _node_class_ = ((^"meme.selected_branches")[partition_index])[_node_];
+             if (_node_class_ == utility.getGlobalValue("terms.tree_attributes.test")) {
+                sum += ((`&alternative_lengths`)[_node_])[utility.getGlobalValue("terms.json.MLE")];
+             }
+        }
+        */
 
         result_row [8] = sum;
     } else {

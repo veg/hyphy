@@ -128,7 +128,7 @@ void echoNodeList (_SimpleList& theNodes, _SimpleList& leaves, _SimpleList& iNod
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-hyFloat _computeReductionScaler (hyFloat currentScaler, hyFloat sum, long& didScale) {
+__attribute__((__always_inline__)) hyFloat _computeReductionScaler (hyFloat currentScaler, hyFloat sum, long& didScale) {
     if (currentScaler > _lfMinScaler) {
        didScale   = -1;
        sum       *= _lfScalingFactorThreshold;
@@ -138,7 +138,6 @@ hyFloat _computeReductionScaler (hyFloat currentScaler, hyFloat sum, long& didSc
        
        while (sum > _lfScalerUpwards && tryScale2 > _lfMinScaler) {
            sum     *= _lfScalingFactorThreshold;
-           currentScaler  = tryScale2;
            tryScale2 *= _lfScalingFactorThreshold;
            scaler *= _lfScalingFactorThreshold;
            didScale --;
@@ -149,7 +148,7 @@ hyFloat _computeReductionScaler (hyFloat currentScaler, hyFloat sum, long& didSc
     return NAN;
 }
 
-hyFloat _computeBoostScaler (hyFloat currentScaler, hyFloat sum, long& didScale) {
+__attribute__((__always_inline__)) hyFloat _computeBoostScaler (hyFloat currentScaler, hyFloat sum, long& didScale) {
     if (currentScaler < _lfMaxScaler) {
        didScale                                            = 1;
        sum                                                *= _lfScalerUpwards;
@@ -159,7 +158,6 @@ hyFloat _computeBoostScaler (hyFloat currentScaler, hyFloat sum, long& didScale)
         
        while (sum < _lfScalingFactorThreshold && tryScale2 < _lfMaxScaler) {
            sum     *= _lfScalerUpwards;
-           currentScaler  = tryScale2;
            tryScale2 *= _lfScalerUpwards;
            scaler *= _lfScalerUpwards;
            didScale ++;
@@ -2452,7 +2450,7 @@ void     _TheTree::RecoverNodeSupportStates2 (node<long>* thisNode, hyFloat * re
                     vecPointer[cc] *= _lfScalerUpwards;
                 }
             }
-            vecPointer += cBase;
+            
         } else {
             for (long cc = 0; cc < cBase; cc++,vecPointer++) {
                 hyFloat tmp = 1.0;
@@ -2537,9 +2535,10 @@ long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firs
          theCost = child_count->list_data[rootIndex],
          offset = flatLeaves.countitems();
 
-    bool * marked_nodes = (bool*) alloca (sizeof(bool) * flatTree.lLength);
-    InitializeArray(marked_nodes, flatTree.lLength, false);
-     
+    bool * marked_nodes = (bool*) calloc ( flatTree.lLength, sizeof(bool));
+    //InitializeArray(marked_nodes, flatTree.lLength, false);
+    //memset (marked_nodes, 0, sizeof(bool) * flatTree.lLength);
+    
     for (long node_index = 0L; node_index < flatLeaves.lLength; node_index++) {
          long seq_index = dsf->theNodeMap.list_data[node_index];
          if (thisState[seq_index] != pastState[seq_index]) {
@@ -2560,6 +2559,7 @@ long    _TheTree::ComputeReleafingCostChar (_DataSetFilter const* dsf, long firs
             theCost += child_count->list_data [i];
         }
     }
+    free (marked_nodes);
 
     return theCost;
 
@@ -2583,8 +2583,8 @@ long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstInd
 
     
     
-    bool * marked_nodes = (bool*) alloca (sizeof(bool) * flatTree.lLength);
-    memset (marked_nodes, 0, sizeof(bool) * flatTree.lLength);
+    bool * marked_nodes = (bool*) calloc (flatTree.lLength, sizeof(bool));
+    //memset (marked_nodes, 0, sizeof(bool) * flatTree.lLength);
     //InitializeArray(marked_nodes, flatTree.lLength, false);
 
     
@@ -2629,6 +2629,8 @@ long    _TheTree::ComputeReleafingCost (_DataSetFilter const* dsf, long firstInd
     }
 
     theCost += ((node <long>*)(flatNodes.list_data[rootIndex]))->get_num_nodes();
+    
+    free (marked_nodes);
     
     return theCost;
 
@@ -3653,6 +3655,7 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
             _Matrix* comp_exp = tree_node_object->GetCompExp();
             if (!comp_exp) {
                 hy_global::HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__ & ". Transition matrix not computed for " & *tree_node_object->GetName());
+                delete [] stateCache; delete [] leafBuffer; delete [] buffer;
                 return nil;
             }
             transition_matrix = comp_exp->theData;

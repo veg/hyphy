@@ -131,9 +131,9 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
 
  
               _SimpleList     multipliers (ComputeParentMultipliers(d_parents));
-              if (multipliers.nonempty()) {
+              /*if (multipliers.nonempty()) {
                 num_parent_combos = multipliers.GetElement (-1L);
-              }
+              }*/
               
               _SimpleList     n_ij,
                               pa_indexing;

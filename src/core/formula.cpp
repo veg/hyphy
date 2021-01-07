@@ -1601,7 +1601,7 @@ hyFloat   _Formula::Integral(_Variable* dx, hyFloat left, hyFloat right, bool in
     hyFloat          precision_factor =  hy_env::EnvVariableGetNumber(hy_env::integration_precision_factor);
     long             max_iterations  =  hy_env::EnvVariableGetNumber(hy_env::integration_maximum_iterations);
 
-    hyFloat ss,
+    hyFloat    ss = 0.,
                dss,
                *s = new hyFloat [max_iterations],
                *h = new hyFloat [max_iterations+1L];
@@ -1911,10 +1911,9 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
   //unsigned long ticker = 0UL;
 
 //__________________________________________________________________________________
-HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type)
+HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type, bool can_cache) {
 // compute the value of the formula
 // TODO SLKP 20170925 Needs code review
-{
     _Stack * scrap_here;
     current_formula_being_computed = this;
     if (theFormula.empty()) {
@@ -1992,7 +1991,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                        continue;
                     }
                 }
-                if (!thisOp->Execute(*scrap_here,nameSpace, errMsg)) { // does this always get executed?
+                if (!thisOp->Execute(*scrap_here,nameSpace, errMsg, can_cache && call_count == 1)) { // does this always get executed?
                     wellDone = false;
                     break;
                 }
@@ -2004,7 +2003,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
         } else {
 
             for (unsigned long i=startAt; i< term_count; i++) {
-                  if (!ItemAt (i)->Execute(*scrap_here, nameSpace, errMsg, call_count == 1)) {
+                  if (!ItemAt (i)->Execute(*scrap_here, nameSpace, errMsg, can_cache && call_count == 1)) {
                       wellDone = false;
                       break;
                   }
@@ -2046,7 +2045,9 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
          if (--call_count) {
           recursion_calls = return_value;
           return_value->AddAReference();
-          delete scrap_here;
+          if (scrap_here != &theStack) {
+              delete scrap_here;
+          }
 
         } else {
           recursion_calls = nil;

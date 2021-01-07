@@ -589,7 +589,7 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
         printf ("Infinity at __ll_loop_handle_scaling: site = %ld, branch = %ld\n", siteID, parentCode);
     }*/
     
-    if (__builtin_expect(sum < _lfScalingFactorThreshold && sum > 0.0,0)) {
+    if (sum < _lfScalingFactorThreshold && sum > 0.0) {
         
         hyFloat scaler = _computeBoostScaler(scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards, sum, didScale);
         
@@ -621,7 +621,7 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
         }
         
     } else {
-        if (__builtin_expect(sum > _lfScalerUpwards,0)) {
+        if (sum > _lfScalerUpwards) {
             if (sum < HUGE_VAL) { // no point scaling an infinity
                 
                 hyFloat scaler = _computeReductionScaler (scalingAdjustments [parentCode*siteCount + siteID] * _lfScalingFactorThreshold, sum, didScale);
@@ -1799,7 +1799,7 @@ void            _TheTree::ComputeBranchCache    (
     long        myParent               = brID       -flatLeaves.lLength;
     
     const long  alphabetDimension     =            theFilter->GetDimension(),
-    alphabetDimensionmod4  =         alphabetDimension - alphabetDimension % 4,
+    //alphabetDimensionmod4  =         alphabetDimension - alphabetDimension % 4,
     siteCount               =            theFilter->GetPatternCount();
 
     if (siteTo  > siteCount)    {
@@ -2197,7 +2197,6 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_product_sum_loop<61L> (tMatrix, childVector, parentConditionals, sum);
                 #endif
                 if (canScale) {
-                    bool canScale = !notPassedRoot;
                     #if defined _SLKP_USE_AVX_INTRINSICS
                         sum = _avx_sum_4(grandTotal) + s60;
                     #elif defined _SLKP_USE_SSE_INTRINSICS

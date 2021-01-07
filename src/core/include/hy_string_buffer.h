@@ -63,6 +63,12 @@ private:
    */
   unsigned long sa_length;
 
+  /**
+    if s_data was adjusted by a trim operation, this will keep track of the original pointer
+   */
+    
+  char * allocated_ptr;
+
    /** Allocate buffer to hold a specified number of characters
    
       @param character_count: the number of characters in the buffer
@@ -143,6 +149,18 @@ public:
    */
   _StringBuffer(const _String& buffer);
 
+
+    /**
+     * A constructor that copies a part from another buffer
+     * @param buffer Create buffer from provided HyPhy _String
+     * @param from from range
+     * @param to to range
+
+     *  Revision history
+     - SLKP 20201230 reviewed while porting from v3 branch
+     */
+   _StringBuffer(const _StringBuffer& buffer, long from, long to);
+
     /**
      * A constructor that moves from a standard string.
      * @param buffer Create buffer from provided HyPhy _String
@@ -220,6 +238,15 @@ public:
    - SLKP 20190507 initial implementations
   */
   _StringBuffer& operator = (_StringBuffer&&rhs);
+
+    /**
+     * Copy  semantics for buffer assignment
+     * @param rhs A pointer to the _StringBuffer to be moved from
+     *  Revision history
+      - SLKP 20201230 initial implementations
+     */
+    
+   _StringBuffer& operator = (const _StringBuffer&rhs);
 
   /**
   * Append all characters in the argument string to the buffer
@@ -347,6 +374,8 @@ public:
      -  SLKP 20170923 initial implementation
      */
     virtual void TrimSpace (void);
+    
+    long overlfow (void) const {return sa_length - s_length;}
     
     
     /// memory buffering

@@ -166,10 +166,7 @@ void _AssociativeList::Duplicate (BaseRefConst br) {
 
 HBLObjectRef _AssociativeList::MCoord (HBLObjectRef p, HBLObjectRef cache) {
     if (cache && cache->ObjectClass() == STRING) {
-        _StringBuffer * content = new _StringBuffer ((_String*)p->toStr());
-        //content->AddAReference();
-        ((_FString*)cache)->SetStringContent (content);
-        return cache;
+        return ((_FString*)cache)->UpdatePayload ((_String*)p->toStr());
     }
     return new _FString ((_String*)p->toStr());
 }

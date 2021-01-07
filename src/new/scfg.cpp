@@ -1688,8 +1688,9 @@ _StringBuffer *   Scfg::BestParseTree(void) {
                     }
                 }
             }
+            
         }
-
+        DeleteObject (theMatrix);
         // apply stack to reconstructing best parse
         CykTraceback (0,stringL-1,0,stringIndex,theAVL,&argMaxYZK,theMatrix,*parseTreeString);
 

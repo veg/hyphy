@@ -193,7 +193,7 @@ if (fel.run_full_mg94) {
 }
 
 
-
+fel.save_intermediate_fits = None;
 
 
 io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
@@ -359,7 +359,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     //assert (0);
     //Optimize (results, ^lf);
 
-    alternative = estimators.ExtractMLEs (lf, model_mapping);
+    //alternative = estimators.ExtractMLEs (lf, model_mapping);
+    alternative = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
     alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
@@ -368,8 +369,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     //Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});
     Optimize (results, ^lf);
 
-    Null = estimators.ExtractMLEs (lf, model_mapping);
-
+    //Null = estimators.ExtractMLEs (lf, model_mapping);
+    Null = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
 
     Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
 
@@ -407,14 +408,17 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
     if (fel.report.row [4] < fel.pvalue) {
         if (fel.report.row[0] < fel.report.row[1]) {
             fel.print_row = fel.report.positive_site;
+            fel.color = "\033[0;31m";
             fel.report.counts[0] += 1;
         } else {
             fel.print_row = fel.report.negative_site;
             fel.report.counts [1] += 1;
+            fel.color = "\033[0;32m";
         }
     }
 
      if (None != fel.print_row) {
+            io.ClearProgressBar();
             if (!fel.report.header_done) {
                 io.ReportProgressMessageMD("FEL", "" + fel.report.partition, "For partition " + (fel.report.partition+1) + " these sites are significant at p <=" + fel.pvalue + "\n");
                 fprintf (stdout,
@@ -423,8 +427,9 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
                 fel.table_output_options[terms.table_options.header] = FALSE;
             }
 
-            fprintf (stdout,
-                io.FormatTableRow (fel.print_row,fel.table_output_options));
+            fprintf (stdout, fel.color, 
+                io.FormatTableRow (fel.print_row,fel.table_output_options),"\033[0m"
+                );
 
         }
 
@@ -459,14 +464,14 @@ lfunction fel.store_results (node, result, arguments) {
 
 
         sum = 0;
-        alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
+        /*alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
 
         utility.ForEach (^"fel.case_respecting_node_names", "_node_",
                 '_node_class_ = ((^"fel.selected_branches")[`&partition_index`])[_node_];
                  if (_node_class_ == utility.getGlobalValue("terms.tree_attributes.test")) {
                     `&sum` += ((`&alternative_lengths`)[_node_])[utility.getGlobalValue("terms.fit.MLE")];
                  }
-            ');
+            ');*/
 
         result_row [5] = sum;
     }
@@ -501,6 +506,19 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     // alpha = alpha_scaler * branch_length
     // beta  = beta_scaler_test * branch_length or beta_nuisance_test * branch_length
 
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+
+    for (_node_; in; fel.case_respecting_node_names) {
+        _node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
+         if (_node_class_ == terms.tree_attributes.test) {
+            _beta_scaler = fel.scalers[1];
+         } else {
+            _beta_scaler = fel.scalers[2];
+         }
+         fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
+    }
+
+    /*
     utility.ForEach (fel.case_respecting_node_names, "_node_",
             '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
              if (_node_class_ == terms.tree_attributes.test) {
@@ -510,6 +528,9 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
              }
              fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
         ');
+    */
+
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
 
 
     // create the likelihood function for this site
@@ -536,9 +557,16 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
 
 
     /* run the main loop over all unique site pattern combinations */
+    
+    fel.pattern_count_all = utility.Array1D (fel.site_patterns);
+    fel.pattern_count_this = 0;
+    
     utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
         '
-            if (_pattern_info_[terms.data.is_constant]) {
+           fel.pattern_count_this += 1;
+           io.ReportProgressBar("", "Working on site pattern " + (fel.pattern_count_this) + "/" +  fel.pattern_count_all + " in partition " + (1+fel.partition_index));
+
+           if (_pattern_info_[terms.data.is_constant]) {
                 fel.store_results (-1,None,{"0" : "fel.site_likelihood",
                                                                 "1" : None,
                                                                 "2" : fel.partition_index,
@@ -558,6 +586,8 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
             }
         '
     );
+    
+    io.ClearProgressBar();
 
     mpi.QueueComplete (fel.queue);
     fel.partition_matrix = {Abs (fel.site_results[fel.partition_index]), Rows (fel.table_headers)};

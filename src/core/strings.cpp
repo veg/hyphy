@@ -320,7 +320,7 @@ void    _String::Duplicate (BaseRefConst ref) {
 
 //=============================================================
 void _String::operator = (_String const& s) {
-    Duplicate (&s);
+    if (&s != this) Duplicate (&s);
 }
 
 //=============================================================
@@ -689,11 +689,11 @@ _String _String::operator & (const _String& rhs) const {
     
     _String res(combined_length);
     
-    if (s_length) {
+    if (s_length && s_data) {
         memcpy(res.s_data, s_data, s_length);
     }
     
-    if (rhs.s_length) {
+    if (rhs.s_length && rhs.s_data) {
         memcpy(res.s_data + s_length, rhs.s_data, rhs.s_length);
     }
     
@@ -784,9 +784,11 @@ void _String::Insert(char c, long where) {
 //=============================================================
 
 void _String::Trim(long start, long end) {
-    
     long resulting_length = NormalizeRange(start, end);
-    
+    /*if (s_length >= 5000 && start > 0) {
+        printf ("\nLong trim %d %d %d\n", s_length, start, end);
+    }*/
+
     if (resulting_length > 0L) {
         if (start > 0L) {
             memmove(s_data, s_data + start, resulting_length);
@@ -1327,6 +1329,8 @@ bool    _String::IsALiteralArgument (bool strip_quotes) {
 
 
 hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_object, _String const * context) const {
+ const static _String kDot (".");
+    
   if (nonempty()) {
             
       char first_char    = char_at(0);
@@ -1383,8 +1387,14 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
       else {
         if (IsValidIdentifier(fIDAllowCompound | fIDAllowFirstNumeric)) {
           if (context) {
-            _String cdot = *context & '.';
-            referenced_object = BeginsWith(cdot) ? *this : (cdot & *this);
+            if (BeginsWith (*context) && BeginsWith(kDot, true, context->length())) {
+                referenced_object = *this;
+            } else {
+                referenced_object = (_StringBuffer (context->length() + length() + 1) << *context << '.' << *this);
+            }
+              
+            //_String cdot = *context & '.';
+            //referenced_object = BeginsWith(cdot) ? *this : (cdot & *this);
           } else {
             referenced_object = *this;
           }

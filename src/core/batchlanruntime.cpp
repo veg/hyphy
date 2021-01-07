@@ -1022,7 +1022,7 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
             if (do_linear) {
                 unsigned long   size_allocation = sequence2->length()+1UL;
 
-                _Matrix         *buffers[6];
+                _Matrix         *buffers[6] = {nil};
 
                 ArrayForEach(buffers, 6, [=] (_Matrix* m, unsigned long) -> _Matrix* {
                     return new _Matrix (size_allocation,1,false,true);
@@ -2757,7 +2757,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
 
 bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current_program, bool do_load_from_file, bool do_load_library) {
     current_program.advance ();
-    _String * source_code = nil;
+    _StringBuffer * source_code = nil;
     bool    pop_path = false;
     
     auto cleanup = [&] () -> void {
@@ -2837,7 +2837,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                 loadedLibraryPaths.Insert (new _String (file_path),0,false,true);
             }
             
-            source_code = new _String (source_file);
+            source_code = new _StringBuffer (source_file);
             
             if (fclose       (source_file) ) { // failed to fclose
                 DeleteObject (source_code);
@@ -2846,7 +2846,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             pop_path = true;
             PushFilePath (file_path);
         } else { // commands are not loaded from a file
-            source_code = new _String (_ProcessALiteralArgument(*GetIthParameter(0UL), current_program));
+            source_code = new _StringBuffer (_ProcessALiteralArgument(*GetIthParameter(0UL), current_program));
         }
         
         
@@ -3108,7 +3108,7 @@ bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
         sqlite3_close ((sqlite3*)sql_databases.get(db_index));
         sql_databases [db_index] = 0L;
       } else {
-          _String callback_code = _ProcessALiteralArgument(*GetIthParameter(2UL), current_program);
+          _StringBuffer callback_code = _ProcessALiteralArgument(*GetIthParameter(2UL), current_program);
 
           _ExecutionList callback_script (callback_code,current_program.nameSpacePrefix?(current_program.nameSpacePrefix->GetName()):nil);
 
@@ -4263,7 +4263,7 @@ void      _ElementaryCommand::ExecuteCase31 (_ExecutionList& chain) {
     
     
     if (doExpressionBased) {
-      _String matrixExpression (ProcessLiteralArgument((_String*)parameters.list_data[1],chain.nameSpacePrefix)),
+      _StringBuffer matrixExpression (ProcessLiteralArgument((_String*)parameters.list_data[1],chain.nameSpacePrefix)),
       defErrMsg = _String ("The expression for the explicit matrix exponential passed to Model must be a valid matrix-valued HyPhy formula that is not an assignment") & ':' & matrixExpression;
         // try to parse the expression, confirm that it is a square  matrix,
         // and that it is a valid transition matrix

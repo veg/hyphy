@@ -919,7 +919,7 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
         
                           _List*      list_of_matrices = new _List;;
                           long        maxp = max_parents.get(node_id);
-                          hyFloat     score;
+                          hyFloat     score = 0.;
         
                             // compute single parent scores
                           for (long par = 0L; par < num_nodes; par++) {
@@ -933,6 +933,9 @@ void    _BayesianGraphicalModel::CacheNodeScores (void) {
                                 // discrete-valued child node cannot have continuous parent
                               if (is_node_discrete (par)) {
                                 score = ComputeDiscreteScore (node_id, parents);
+                              } else {
+                                  HandleApplicationError("A discrete-valued child node cannot have a continuous-valued parent");
+                                  return list_of_matrices;
                               }
                             } else {
                                 // continuous child can have discrete or continuous parents
@@ -1758,7 +1761,7 @@ _Matrix*    _BayesianGraphicalModel::GraphMetropolis (bool fixed_order, long mcm
     current_graph = (*proposed_graph);
     best_graph    = (*proposed_graph);
 
-    best_score = proposed_score = current_score = Compute((_Matrix &) *proposed_graph);
+    best_score = current_score = Compute((_Matrix &) *proposed_graph);
 
 
     // main loop

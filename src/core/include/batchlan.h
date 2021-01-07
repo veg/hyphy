@@ -87,7 +87,7 @@ class   _ExecutionList: public _List // a sequence of commands to be executed
     
 public:
     _ExecutionList (); // doesn't do much
-    _ExecutionList (_String&, _String* = nil, bool = false, bool* = nil);
+    _ExecutionList (_StringBuffer&, _String* = nil, bool = false, bool* = nil);
     void Init (_String* = nil);
 
     virtual     ~_ExecutionList (void);
@@ -95,7 +95,7 @@ public:
     virtual     BaseRef     makeDynamic (void) const;
     virtual     BaseRef     toStr (unsigned long = 0UL);
     virtual     void        Duplicate       (BaseRefConst);
-    bool        BuildList                   (_String&, _SimpleList* = nil, bool = false, bool = false);
+    bool        BuildList                   (_StringBuffer&, _SimpleList* = nil, bool = false, bool = false);
     
     void        SetKWArgs   (_AssociativeList*);
 
@@ -174,6 +174,8 @@ public:
     bool      is_compiled (long idx = -1) const {if (cli) {if (idx < 0L) return true; else return cli->is_compiled[idx];} return false;}
     
     void      CopyCLIToVariables (void);
+    void      StartProfile (void);
+    _AssociativeList*   CollectProfile (void);
   
     // data fields
     // _____________________________________________________________
@@ -292,14 +294,14 @@ public:
     long      get_code                              (void) const { return code; };
     unsigned  long parameter_count                  (void) const { return parameters.countitems();}
     
-    static    void      FindNextCommand       (_String&, _StringBuffer&);
+    static    void      FindNextCommand       (_StringBuffer&, _StringBuffer&);
     // finds & stores the next command from _String into _StringBuffer
     // chops the input to remove the newly found line
 
-    static  long      ExtractConditions     (_String const& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
+    static  long      ExtractConditions     (_StringBuffer const& , long , _List&, char delimeter = ';', bool includeEmptyConditions = true);
     // used to extract the loop, if-then conditions
 
-    static  bool      ExtractValidateAddHBLCommand (_String& current_stream, const long command_code, _List* pieces, _HBLCommandExtras* command_spec, _ExecutionList& command_list);
+    static  bool      ExtractValidateAddHBLCommand (_StringBuffer& current_stream, const long command_code, _List* pieces, _HBLCommandExtras* command_spec, _ExecutionList& command_list);
     /**
      * Take a command from the current command stream, extract it, make an _ElementaryCommand and add it to the execution list
      * @param current_stream -- the current command text stream
@@ -311,76 +313,76 @@ public:
      */
    
 
-    static  bool      BuildFor              (_String&, _ExecutionList&, _List*);
+    static  bool      BuildFor              (_StringBuffer&, _ExecutionList&, _List*);
     // builds the for loop starting from
     // the beginning of input
     // this will process the loop header
     // and the entire scope afterwards
 
-    static  bool      BuildIfThenElse       (_String&, _ExecutionList&, _SimpleList*);
+    static  bool      BuildIfThenElse       (_StringBuffer&, _ExecutionList&, _SimpleList*);
     // builds the if-then-else construct starting from
     // the beginning of input
     // this will process the loop header
     // and the entire scope afterwards
 
-    static  bool      BuildWhile            (_String&, _ExecutionList&, _List*);
+    static  bool      BuildWhile            (_StringBuffer&, _ExecutionList&, _List*);
     // builds the while(..) construct starting from
     // the beginning of input
     // this will process the loop header
     // and the entire scope afterwards
 
-    static  bool      BuildDoWhile          (_String&, _ExecutionList&);
+    static  bool      BuildDoWhile          (_StringBuffer&, _ExecutionList&);
     // builds the do {} while(..); construct starting from
     // the beginning of input
     // this will process the loop header
     // and the entire scope afterwards
 
-    static  bool      ProcessInclude        (_String&, _ExecutionList&);
+    static  bool      ProcessInclude        (_StringBuffer&, _ExecutionList&);
     // processes the include command
 
 
-    static  bool      ConstructDataSet      (_String&, _ExecutionList&);
+    static  bool      ConstructDataSet      (_StringBuffer&, _ExecutionList&);
     // construct a dataset from the string
 
 
-    static  bool      ConstructDataSetFilter(_String&, _ExecutionList&);
+    static  bool      ConstructDataSetFilter(_StringBuffer&, _ExecutionList&);
     // construct a dataset filter from the string
 
-    static  bool      ConstructTree         (_String&, _ExecutionList&);
+    static  bool      ConstructTree         (_StringBuffer&, _ExecutionList&);
     // construct a tree
 
 
  
-    static  bool      ConstructLF           (_String&, _ExecutionList&);
+    static  bool      ConstructLF           (_StringBuffer&, _ExecutionList&);
     // construct a likelihood function
 
 
-    static  bool      ConstructFunction     (_String&, _ExecutionList&);
+    static  bool      ConstructFunction     (_StringBuffer&, _ExecutionList&);
     // construct a fprintf command
 
-    static  bool      ConstructReturn       (_String&, _ExecutionList&);
+    static  bool      ConstructReturn       (_StringBuffer&, _ExecutionList&);
     // construct a fprintf command
 
-    static  bool      ConstructCategory     (_String&, _ExecutionList&);
+    static  bool      ConstructCategory     (_StringBuffer&, _ExecutionList&);
     // construct a category variable
 
-    static  bool      ConstructChoiceList   (_String&, _ExecutionList&);
+    static  bool      ConstructChoiceList   (_StringBuffer&, _ExecutionList&);
     // construct a category variable
 
-    static  bool      ConstructModel        (_String&, _ExecutionList&);
+    static  bool      ConstructModel        (_StringBuffer&, _ExecutionList&);
 
    
     static  bool      ConstructProfileStatement
-    (_String&, _ExecutionList&);
+    (_StringBuffer&, _ExecutionList&);
 
  
-    static  bool      ConstructSCFG         (_String&, _ExecutionList&);
+    static  bool      ConstructSCFG         (_StringBuffer&, _ExecutionList&);
 
-    static  bool      ConstructBGM          (_String&, _ExecutionList&);
+    static  bool      ConstructBGM          (_StringBuffer&, _ExecutionList&);
 
   
  
-    static  bool      MakeGeneralizedLoop      (_String*, _String*, _String* , bool , _String&, _ExecutionList&);
+    static  bool      MakeGeneralizedLoop      (_String*, _String*, _String* , bool , _StringBuffer&, _ExecutionList&);
   
     bool              DecompileFormulae        (void);
   
@@ -409,6 +411,7 @@ protected:
         BaseRef p = parameters.GetItemRangeCheck(i);
         if (!p && range_check) {
             hy_global::HandleApplicationError("Internal error in ElemenaryCommand::GetIthParameter", true);
+            return new _String;
         }
         return (_String *)p;
     }
@@ -672,7 +675,6 @@ _AssociativeList*
 ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionList* = nil);
 
 const _String GetStringFromFormula         (_String const*,_VariableContainer*);
-void    ExecuteBLString              (_String&,_VariableContainer*);
 
 void    SerializeModel               (_StringBuffer &,long,_AVLList* = nil, bool = false);
 bool    Get_a_URL                    (_String&,_String* = nil);

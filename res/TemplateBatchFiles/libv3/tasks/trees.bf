@@ -95,17 +95,12 @@ lfunction trees.GetTreeString._sanitize(string) {
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", "intNode");
     }
-    /* this strips bootstrap values; not necessary for 2.4 */
-    /* string = string ^ {
-        {
-            "\\)[0-9]+(\\.[0-9]*)?\:",
-            "):"
-        }
-    }; */
-
+    
     if (utility.GetEnvVariable("_KEEP_I_LABELS_")) {
         utility.ToggleEnvVariable("INTERNAL_NODE_PREFIX", None);
     }
+
+
 
     return string;
 }
@@ -118,6 +113,7 @@ lfunction trees.GetTreeString._sanitize(string) {
  * @returns {String} a newick tree string
  */
 lfunction trees.GetTreeString(look_for_newick_tree) {
+
 
 
     UseModel(USE_NO_MODEL);
@@ -211,6 +207,8 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
         }
     }
 
+
+
     return
     {
         utility.getGlobalValue("terms.data.file"): look_for_newick_tree,
@@ -270,6 +268,7 @@ lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
     result = trees.ExtractTreeInfo(trees.GetTreeString(look_for_newick_tree));
     utility.ToggleEnvVariable("TREE_NODE_NAME_MAPPING", None);
 
+
     return result;
 }
 
@@ -306,6 +305,7 @@ lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
  */
 lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) {
 
+
     partition_count = Rows(partitions);
     partrees = {};
 
@@ -332,6 +332,8 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
             };
         }
     }
+
+
 
     return partrees;
 

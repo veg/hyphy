@@ -1185,7 +1185,7 @@ void _SimpleList::Offset (long shift) {
 
 _SimpleList* _SimpleList::Subset (unsigned long size, bool replacement) {
     _SimpleList* result = new _SimpleList;
-    if (size > 0) {
+    if (size > 0UL && lLength > 0UL) {
         size = MIN(size, lLength);
         if (replacement) {
             for (long k = 0; k < size; k++) {
