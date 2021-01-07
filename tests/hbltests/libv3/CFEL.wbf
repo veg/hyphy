@@ -75,7 +75,7 @@ function confirm_site (site, p, dict) {
     if (pv[site] <= 0.1) {
         test.subs_sum += subs[site]
     }
-    if (p <= 0.2) {
+    if (p <= 0.05) {
         if (dict/(site+1)) {
             dict - (site+1);
             return TRUE;
