@@ -1329,6 +1329,8 @@ bool    _String::IsALiteralArgument (bool strip_quotes) {
 
 
 hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_object, _String const * context) const {
+ const static _String kDot (".");
+    
   if (nonempty()) {
             
       char first_char    = char_at(0);
@@ -1385,8 +1387,14 @@ hy_reference_type _String::ProcessVariableReferenceCases (_String& referenced_ob
       else {
         if (IsValidIdentifier(fIDAllowCompound | fIDAllowFirstNumeric)) {
           if (context) {
-            _String cdot = *context & '.';
-            referenced_object = BeginsWith(cdot) ? *this : (cdot & *this);
+            if (BeginsWith (*context) && BeginsWith(kDot, true, context->length())) {
+                referenced_object = *this;
+            } else {
+                referenced_object = (_StringBuffer (context->length() + length() + 1) << *context << '.' << *this);
+            }
+              
+            //_String cdot = *context & '.';
+            //referenced_object = BeginsWith(cdot) ? *this : (cdot & *this);
           } else {
             referenced_object = *this;
           }

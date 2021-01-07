@@ -160,6 +160,22 @@ void _FString::SetStringContent (_StringBuffer * arg){
 
 //__________________________________________________________________________________
 HBLObjectRef _FString::Add (HBLObjectRef p, HBLObjectRef cache) {
+    
+    if (cache && cache->ObjectClass() == STRING) {
+        _FString* storage = (_FString*)cache;
+        _StringBuffer* b = storage->SetData(get_str());
+        if (p->ObjectClass()==STRING) {
+          (*b) << ((_FString*)p)->get_str();
+        } else {
+          b->AppendNewInstance((_String*)p->toStr());
+        }
+        if (b->overlfow() >= 256L) {
+            b->TrimSpace();
+        }
+        return storage;
+        
+    }
+    
     _StringBuffer  * res;
   
     if (p->ObjectClass()==STRING) {
@@ -313,6 +329,22 @@ HBLObjectRef _FString::ReplaceReqExp (HBLObjectRef p, HBLObjectRef cache) {
     }
     return _returnStringOrUseCache(kEmptyString,cache);
 }
+
+//__________________________________________________________________________________
+
+_FString*               _FString::UpdatePayload     (_String* payload) {
+    if (the_string && the_string->SingleReference()) {
+        the_string->Reset();
+        the_string->AppendNewInstance (payload);
+        if (the_string->overlfow() >= 64L) {
+            the_string->TrimSpace();
+        }
+    } else {
+        SetStringContent (new _StringBuffer (payload));
+    }
+    return this;
+}
+
 
 //__________________________________________________________________________________
 
