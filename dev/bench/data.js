@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1610000899321,
+  "lastUpdate": 1610028867609,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -8345,6 +8345,100 @@ window.BENCHMARK_DATA = {
             "range": "±0.995509%",
             "unit": "secs/op",
             "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "spond@temple.edu",
+            "name": "Sergei Pond",
+            "username": "spond"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4781997fb4106b4fee7f3f85c2844a40f5d40e89",
+          "message": "Merge pull request #1268 from veg/develop\n\nRC 2.5.25",
+          "timestamp": "2021-01-07T08:09:07-05:00",
+          "tree_id": "dea477509ddef08583f85d3285e8d734ab0397b5",
+          "url": "https://github.com/veg/hyphy/commit/4781997fb4106b4fee7f3f85c2844a40f5d40e89"
+        },
+        "date": 1610028858951,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.9068939938559875,
+            "range": "±21.878121%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 9.240094618568895,
+            "range": "±1.994690%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 38.48225967828831,
+            "range": "±4.287108%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 4.276629502756288,
+            "range": "±0.996172%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 15.941335883947076,
+            "range": "±0.336387%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 113.28877308258753,
+            "range": "±2.987157%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 64.279745452208,
+            "range": "±33.909242%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 63.86919588682378,
+            "range": "±54.637781%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 73.28154770628755,
+            "range": "±6.476104%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 0.5235821395660551,
+            "range": "±1.358574%",
+            "unit": "secs/op",
+            "extra": "9 samples"
           }
         ]
       }
