@@ -185,7 +185,7 @@ function estimators.SetGlobals2(key2, value) {
     if (Type(__init_value) != "AssociativeList") {
         __init_value = (initial_values[terms.global])[key2];
     }
-        
+
     
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {

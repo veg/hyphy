@@ -367,10 +367,19 @@ if (relax.model_set == "All") { // run all the models
         relax.weight_multipliers    = parameters.helper.stick_breaking (utility.SwapKeysAndValues(utility.MatrixToDict(relax.distribution["weights"])),None);
         relax.constrain_parameters   = parameters.ConstrainMeanOfSet(relax.distribution["rates"],relax.weight_multipliers,1,"relax");
         
+        
+        relax.i = 0;
         for (key, value; in; relax.constrain_parameters[terms.global]){
             model.generic.AddGlobal (relax.ge.bsrel_model, value, key);
-            parameters.SetRange (value, terms.range_almost_01);
+            relax.i += 1;
+            if (relax.i < relax.rate_classes) {
+                parameters.SetRange (value, terms.range_almost_01);
+            } else {
+                parameters.SetRange (value, terms.range_gte1);
+            }
+            
         }
+        
         
         relax.distribution["rates"] = Transpose (utility.Values (relax.constrain_parameters[terms.global]));
         
@@ -397,7 +406,8 @@ if (relax.model_set == "All") { // run all the models
             math.Mean ( 
                 utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+"), "_v_", "_v_[terms.fit.MLE]"));
                 
-            relax.init_grid_setup        (relax.distribution);
+                
+            relax.init_grid_setup       (relax.distribution);
             relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
             relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
                 'relax._renormalize (_v_, "relax.distribution", relax.initial.test_mean)'
@@ -406,8 +416,11 @@ if (relax.model_set == "All") { // run all the models
             
             
             parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
+            for (i, v; in; relax.initial_grid) {
+                v["relax.bl.scaler"] = {terms.id : "relax.bl.scaler", terms.fit.MLE : Random (2,4)};
+            }
             
-                         
+                          
             relax.grid_search.results =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : {"DEFAULT" : "relax.ge"}},
                                         relax.final_partitioned_mg_results,
                                         relax.model_object_map, 
@@ -429,7 +442,359 @@ if (relax.model_set == "All") { // run all the models
                                         }
             );
             
+ 
+/*relax.grid_search.results  = {
+ "EFV":{
+   "relax.ge":    {
+{0.04881810356648711} 
+    {0.03987090682724777} 
+    {0.04952731390964531} 
+    {0.04155619114937172} 
+    {0.01811127842789196} 
+    {0.01479191205650485} 
+    {0.01837439200770125} 
+    {0.01541714432400942} 
+    {0.01894057781278376} 
+    {0.01546922059762592} 
+    {0.0192157391301816} 
+    {0.01612308169643694} 
+    {0.02832012582609264} 
+    {0.0231297206498455} 
+    {0.0287315495539327} 
+    {0.02410737976743678} 
+    {0.01664713636441668} 
+    {0.01359611239347263} 
+    {0.01688897946013485} 
+    {0.0141707999760208} 
+    {0.006176006434015015} 
+    {0.005044091414975357} 
+    {0.006265729043506587} 
+    {0.005257297706416126} 
+    {0.006458800294051354} 
+    {0.005275055889649603} 
+    {0.006552631222299025} 
+    {0.005498024708183688} 
+    {0.00965725749346899} 
+    {0.007887311992864245} 
+    {0.009797554358782127} 
+    {0.008220697017259783} 
+    {0.03328033861025202} 
+    {0.02718084446073247} 
+    {0.03376382237225545} 
+    {0.02832973859625429} 
+    {0.01234684337796718} 
+    {0.01008396078440649} 
+    {0.01252621349661759} 
+    {0.01051019490766097} 
+    {0.01291219439167226} 
+    {0.01054569641003205} 
+    {0.0130997777090572} 
+    {0.01099144741596503} 
+    {0.0193064315924046} 
+    {0.01576802208506577} 
+    {0.01958690789063199} 
+    {0.01643451308127018} 
+    {0.01964953777584797} 
+    {0.02048009470534294} 
+    {0.008925762616328468} 
+    {0.00728988272051741} 
+    {0.009055432609745021} 
+    {0.00759801529227558} 
+    {0.007623679988342976} 
+    {0.009470072841967696} 
+    {0.007945921677425003} 
+    {0.01395697832125249} 
+    {0.01139899630633314} 
+    {0.01415973985153574} 
+    {0.01188081503812791} 
+    }
+  },
+ "Filters":  {
+{"relax.filter.default"} 
+  },
+ "LF":"iybtBVgK.likelihoodFunction",
+ "LogL":-3468.628021062044,
+ "Trees":  {
+{"((((Pig:0.2002207612790759,Cow:0.2652088954749879)Node3:0.1024483387468423,Horse:0.2271179872916863,Cat:0.2941609243556507)Node2:0.06486663246806917,((RhMonkey:0.003909730323873505,Baboon:0.001860925679316316)Node9:0.02712267964568085,(Human:0,Chimp:0.001921935125106313)Node12:0.01893367713404082)Node8:0.1148290059087238)Node1:0.3005238585248704,Rat:0.07055784179244226,Mouse:0.1259924875975693)"} 
+  },
+ "branch length":{
+   "0":{
+     "Baboon":{
+       "MLE":0.001860925679316316,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.00454994471726663,
+         "constraint":"relax.bl.scaler*0.00421525617283435"
+        }
+      },
+     "Cat":{
+       "MLE":0.2941609243556507,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.7192205248572749,
+         "constraint":"relax.bl.scaler*0.6663155148959867"
+        }
+      },
+     "Chimp":{
+       "MLE":0.001921935125106313,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.004699112203459599,
+         "constraint":"relax.bl.scaler*0.004353451075417437"
+        }
+      },
+     "Cow":{
+       "MLE":0.2652088954749879,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.6484331031327714,
+         "constraint":"relax.bl.scaler*0.6007351320726768"
+        }
+      },
+     "Horse":{
+       "MLE":0.2271179872916863,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.5553012127027491,
+         "constraint":"relax.bl.scaler*0.5144539131969622"
+        }
+      },
+     "Human":{
+       "MLE":0,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0,
+         "constraint":"0"
+        }
+      },
+     "Mouse":{
+       "MLE":0.1259924875975693,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.3080503749996349,
+         "constraint":"relax.bl.scaler*0.2853905542705638"
+        }
+      },
+     "Node1":{
+       "MLE":0.3005238585248704,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.7347778354104789,
+         "constraint":"relax.bl.scaler*0.6807284481110281"
+        }
+      },
+     "Node12":{
+       "MLE":0.01893367713404082,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.04629265166898581,
+         "constraint":"relax.bl.scaler*0.04288741904138782"
+        }
+      },
+     "Node2":{
+       "MLE":0.06486663246806917,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.1585982691331329,
+         "constraint":"relax.bl.scaler*0.146931968300024"
+        }
+      },
+     "Node3":{
+       "MLE":0.1024483387468423,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.2504851659874938,
+         "constraint":"relax.bl.scaler*0.2320597738529283"
+        }
+      },
+     "Node8":{
+       "MLE":0.1148290059087238,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.2807557736616996,
+         "constraint":"relax.bl.scaler*0.2601037114792293"
+        }
+      },
+     "Node9":{
+       "MLE":0.02712267964568085,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.06631468109855898,
+         "constraint":"relax.bl.scaler*0.0614366517002807"
+        }
+      },
+     "Pig":{
+       "MLE":0.2002207612790759,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.4895377634874294,
+         "constraint":"relax.bl.scaler*0.4535279454154706"
+        }
+      },
+     "Rat":{
+       "MLE":0.07055784179244226,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.1725132191432825,
+         "constraint":"relax.bl.scaler*0.1598233510683406"
+        }
+      },
+     "RhMonkey":{
+       "MLE":0.003909730323873505,
+       "relaxation or intensification parameter":{
+         "ID":"k",
+         "MLE":0.5835896398205112,
+         "constraint":"relax.K"
+        },
+       "synonymous rate":{
+         "ID":"t",
+         "MLE":0.009559251629856012,
+         "constraint":"relax.bl.scaler*0.008856084401973642"
+        }
+      }
+    }
+  },
+ "global":{
+   "Mean scaler variable for relax.ge.omega1":{
+     "ID":"relax.ge.omega1_scaler_variable",
+     "MLE":1
+    },
+   "Mean scaler variable for relax.ge.omega2":{
+     "ID":"relax.ge.omega2_scaler_variable",
+     "MLE":1
+    },
+   "Mean scaler variable for relax.ge.omega3":{
+     "ID":"relax.ge.omega3_scaler_variable",
+     "MLE":0.6984561656354166
+    },
+   "Mixture auxiliary weight for category 1":{
+     "ID":"relax.ge.bsrel_mixture_aux_0",
+     "MLE":1
+    },
+   "Mixture auxiliary weight for category 2":{
+     "ID":"relax.ge.bsrel_mixture_aux_1",
+     "MLE":0.7992410131933376
+    },
+   "Substitution rate from nucleotide A to nucleotide C":{
+     "ID":"relax.ge.theta_AC",
+     "MLE":0.5896537813380907
+    },
+   "Substitution rate from nucleotide A to nucleotide G":{
+     "ID":"relax.ge.theta_AG",
+     "MLE":1,
+     "constraint":"1"
+    },
+   "Substitution rate from nucleotide A to nucleotide T":{
+     "ID":"relax.ge.theta_AT",
+     "MLE":0.2531352820308571
+    },
+   "Substitution rate from nucleotide C to nucleotide G":{
+     "ID":"relax.ge.theta_CG",
+     "MLE":0.3871445458988698
+    },
+   "Substitution rate from nucleotide C to nucleotide T":{
+     "ID":"relax.ge.theta_CT",
+     "MLE":0.9447643279336558
+    },
+   "Substitution rate from nucleotide G to nucleotide T":{
+     "ID":"relax.ge.theta_GT",
+     "MLE":0.3135181640741386
+    },
+   "non-synonymous/synonymous rate ratio for category 1":{
+     "ID":"relax.ge.omega1",
+     "MLE":1,
+     "constraint":"relax.ge.omega1_scaler_variable/relax.scaler_variable"
+    },
+   "non-synonymous/synonymous rate ratio for category 2":{
+     "ID":"relax.ge.omega2",
+     "MLE":1,
+     "constraint":"relax.ge.omega2_scaler_variable/relax.scaler_variable"
+    },
+   "non-synonymous/synonymous rate ratio for category 3":{
+     "ID":"relax.ge.omega3",
+     "MLE":0.6984561656354166,
+     "constraint":"relax.ge.omega3_scaler_variable/relax.scaler_variable"
+    }
+  },
+ "parameters":27
+};*/
 
+ 
             relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
                                         relax.trees,
                                         { "0" : {"DEFAULT" : "relax.ge"}},
@@ -1445,6 +1810,31 @@ function relax.init_grid_setup (omega_distro) {
                     terms.upper_bound : 10
                 };
             }
+        '
+    );
+
+
+    utility.ForEachPair (omega_distro[terms.parameters.weights], "_index_", "_name_", 
+        '
+             relax.initial_ranges [_name_] = {
+                terms.lower_bound : 0,
+                terms.upper_bound : 1
+            };
+        '
+    );
+
+}
+
+//------------------------------------------------------------------------------
+
+function relax.init_grid_setup_scaled (omega_distro) {
+    utility.ForEachPair (omega_distro[terms.parameters.rates], "_index_", "_name_", 
+        '
+              relax.initial_ranges [_name_] = {
+                terms.lower_bound : 0,
+                terms.upper_bound : 1
+             };
+            
         '
     );
 

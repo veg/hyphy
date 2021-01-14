@@ -2675,7 +2675,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         lowerBounds.theData[index]      =   cornholio->GetLowerBound();
         upperBounds.theData[index]      =   cornholio->GetUpperBound();
         
-        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g\n", cornholio->theName->sData, index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index]);
+        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g\n", cornholio->theName->get_str(), index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index]);
         
         bool badApple = currentValues.theData[index]<lowerBounds.theData[index] || currentValues.theData[index]>upperBounds.theData[index];
         if (badApple) {
@@ -2734,7 +2734,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             SetIthIndependent (index,temp);
         }
         
-        //fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).sData);
+        //fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).get_str());
         
         // now we can go through the dependant variables which are out of bounds one at a time
         // and attempt to move them back in.
@@ -2863,16 +2863,16 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         
         tagged.ReorderList();
         
-        // fprintf (stderr, "Tagged the following variables %s\n", _String((_String*)_aux.toStr()).sData);
+        //fprintf (stderr, "Tagged the following variables %s\n", _String((_String*)_aux.toStr()).get_str());
         
         
         for (index = 0; index<indexInd.lLength; index++) {
             dependancies.Store (0,index,GetIthIndependentBound (index,true));
-            dependancies.Store (1,index,(GetIthIndependentBound (index,false)>10?10:GetIthIndependentBound (index,true))-dependancies(0,index));
+            dependancies.Store (1,index,(GetIthIndependentBound (index,false)>10?10:GetIthIndependentBound (index,false))-dependancies(0,index));
             dependancies.Store (2,index,GetIthIndependent (index));
         }
         
-        // fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).sData);
+        //fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).get_str());
         
         
         for (i = 0L; i < 10000L; i++) {
@@ -2880,14 +2880,14 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             for (long v = 0L; v < _aux.lLength; v++) {
                 index = _aux.get(v);
                 SetIthIndependent   (index,dependancies(0,index)+genrand_real2()*dependancies(1,index));
-                //fprintf (stderr, "[%d] %s => %g\n", index, GetIthIndependentName(index)->sData, GetIthIndependent(index));
+                //fprintf (stderr, "[%d] %s => %g (%g - %g)\n", index, GetIthIndependentName(index)->get_str(), GetIthIndependent(index), dependancies(0,index), dependancies(1,index));
             }
             for (j = 0; j < nonConstantDep->lLength; j++) {
                 // check whether any of the dependent variables are out of bounds
                 long j_corrected = nonConstantIndices.get(j);
                 currentValues.theData[j_corrected]    =   LocateVar(nonConstantDep->list_data[j])->Compute()->Value();
-                //fprintf (stderr, "[%d] %g (%g, %g)\n", j, j_corrected, currentValues.theData[j_corrected], lowerBounds.theData[j_corrected], upperBounds[j_corrected]);
                 if (currentValues.theData[j_corrected]<lowerBounds.theData[j_corrected] || currentValues.theData[j_corrected]>upperBounds.theData[j_corrected]) {
+                    //fprintf (stderr, "[%d] %s => %g (%g, %g)\n", j, LocateVar(nonConstantDep->list_data[j])->GetName()->get_str(), j_corrected, currentValues.theData[j_corrected], lowerBounds.theData[j_corrected], upperBounds[j_corrected]);
                     //fprintf (stderr, "===| CHECK FAILED\n");
                     badConstraint = nonConstantDep->list_data[j];
                     break;
