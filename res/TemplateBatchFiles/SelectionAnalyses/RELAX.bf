@@ -367,10 +367,19 @@ if (relax.model_set == "All") { // run all the models
         relax.weight_multipliers    = parameters.helper.stick_breaking (utility.SwapKeysAndValues(utility.MatrixToDict(relax.distribution["weights"])),None);
         relax.constrain_parameters   = parameters.ConstrainMeanOfSet(relax.distribution["rates"],relax.weight_multipliers,1,"relax");
         
+        
+        relax.i = 0;
         for (key, value; in; relax.constrain_parameters[terms.global]){
             model.generic.AddGlobal (relax.ge.bsrel_model, value, key);
-            parameters.SetRange (value, terms.range_almost_01);
+            relax.i += 1;
+            if (relax.i < relax.rate_classes) {
+                parameters.SetRange (value, terms.range_almost_01);
+            } else {
+                parameters.SetRange (value, terms.range_gte1);
+            }
+            
         }
+        
         
         relax.distribution["rates"] = Transpose (utility.Values (relax.constrain_parameters[terms.global]));
         
@@ -397,7 +406,8 @@ if (relax.model_set == "All") { // run all the models
             math.Mean ( 
                 utility.Map (selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+"), "_v_", "_v_[terms.fit.MLE]"));
                 
-            relax.init_grid_setup        (relax.distribution);
+                
+            relax.init_grid_setup       (relax.distribution);
             relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
             relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
                 'relax._renormalize (_v_, "relax.distribution", relax.initial.test_mean)'
@@ -406,8 +416,11 @@ if (relax.model_set == "All") { // run all the models
             
             
             parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
+            for (i, v; in; relax.initial_grid) {
+                v["relax.bl.scaler"] = {terms.id : "relax.bl.scaler", terms.fit.MLE : Random (2,4)};
+            }
             
-                         
+                          
             relax.grid_search.results =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : {"DEFAULT" : "relax.ge"}},
                                         relax.final_partitioned_mg_results,
                                         relax.model_object_map, 
@@ -429,7 +442,8 @@ if (relax.model_set == "All") { // run all the models
                                         }
             );
             
-
+ 
+ 
             relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names,
                                         relax.trees,
                                         { "0" : {"DEFAULT" : "relax.ge"}},
@@ -1445,6 +1459,31 @@ function relax.init_grid_setup (omega_distro) {
                     terms.upper_bound : 10
                 };
             }
+        '
+    );
+
+
+    utility.ForEachPair (omega_distro[terms.parameters.weights], "_index_", "_name_", 
+        '
+             relax.initial_ranges [_name_] = {
+                terms.lower_bound : 0,
+                terms.upper_bound : 1
+            };
+        '
+    );
+
+}
+
+//------------------------------------------------------------------------------
+
+function relax.init_grid_setup_scaled (omega_distro) {
+    utility.ForEachPair (omega_distro[terms.parameters.rates], "_index_", "_name_", 
+        '
+              relax.initial_ranges [_name_] = {
+                terms.lower_bound : 0,
+                terms.upper_bound : 1
+             };
+            
         '
     );
 
