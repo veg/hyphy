@@ -2382,8 +2382,8 @@ bool        _LikelihoodFunction::HasBlockChanged(long index) const {
 
 //_______________________________________________________________________________________
 
-void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependance, long highestIndex, hyFloat weight, _Matrix& cache)
-{
+void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependance, long highestIndex, hyFloat weight, _Matrix& cache) {
+    // SLKP 20210102: TODO this needs to be reviewed and confirmed as working.
     _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.list_data[index]);
 
     if (index<highestIndex) {
@@ -2675,7 +2675,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         lowerBounds.theData[index]      =   cornholio->GetLowerBound();
         upperBounds.theData[index]      =   cornholio->GetUpperBound();
         
-        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g\n", cornholio->theName->sData, index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index]);
+        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g\n", cornholio->theName->get_str(), index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index]);
         
         bool badApple = currentValues.theData[index]<lowerBounds.theData[index] || currentValues.theData[index]>upperBounds.theData[index];
         if (badApple) {
@@ -2734,7 +2734,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             SetIthIndependent (index,temp);
         }
         
-        //fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).sData);
+        //fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).get_str());
         
         // now we can go through the dependant variables which are out of bounds one at a time
         // and attempt to move them back in.
@@ -2863,16 +2863,16 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         
         tagged.ReorderList();
         
-        // fprintf (stderr, "Tagged the following variables %s\n", _String((_String*)_aux.toStr()).sData);
+        //fprintf (stderr, "Tagged the following variables %s\n", _String((_String*)_aux.toStr()).get_str());
         
         
         for (index = 0; index<indexInd.lLength; index++) {
             dependancies.Store (0,index,GetIthIndependentBound (index,true));
-            dependancies.Store (1,index,(GetIthIndependentBound (index,false)>10?10:GetIthIndependentBound (index,true))-dependancies(0,index));
+            dependancies.Store (1,index,(GetIthIndependentBound (index,false)>10?10:GetIthIndependentBound (index,false))-dependancies(0,index));
             dependancies.Store (2,index,GetIthIndependent (index));
         }
         
-        // fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).sData);
+        //fprintf (stderr, "\n%s\n", _String((_String*)dependancies.toStr()).get_str());
         
         
         for (i = 0L; i < 10000L; i++) {
@@ -2880,14 +2880,14 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
             for (long v = 0L; v < _aux.lLength; v++) {
                 index = _aux.get(v);
                 SetIthIndependent   (index,dependancies(0,index)+genrand_real2()*dependancies(1,index));
-                //fprintf (stderr, "[%d] %s => %g\n", index, GetIthIndependentName(index)->sData, GetIthIndependent(index));
+                //fprintf (stderr, "[%d] %s => %g (%g - %g)\n", index, GetIthIndependentName(index)->get_str(), GetIthIndependent(index), dependancies(0,index), dependancies(1,index));
             }
             for (j = 0; j < nonConstantDep->lLength; j++) {
                 // check whether any of the dependent variables are out of bounds
                 long j_corrected = nonConstantIndices.get(j);
                 currentValues.theData[j_corrected]    =   LocateVar(nonConstantDep->list_data[j])->Compute()->Value();
-                //fprintf (stderr, "[%d] %g (%g, %g)\n", j, j_corrected, currentValues.theData[j_corrected], lowerBounds.theData[j_corrected], upperBounds[j_corrected]);
                 if (currentValues.theData[j_corrected]<lowerBounds.theData[j_corrected] || currentValues.theData[j_corrected]>upperBounds.theData[j_corrected]) {
+                    //fprintf (stderr, "[%d] %s => %g (%g, %g)\n", j, LocateVar(nonConstantDep->list_data[j])->GetName()->get_str(), j_corrected, currentValues.theData[j_corrected], lowerBounds.theData[j_corrected], upperBounds[j_corrected]);
                     //fprintf (stderr, "===| CHECK FAILED\n");
                     badConstraint = nonConstantDep->list_data[j];
                     break;
@@ -5361,7 +5361,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     if (go2Bound) {
                         middle = lowerBound;
                         
-                        if (left == lowerBound) {
+                        if (left == lowerBound && !isnan (leftValue)) {
                             middleValue = leftValue;
                             SetParametersAndCompute(index, middle, &currentValues, gradient, true);
                         } else {
@@ -5858,10 +5858,9 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 
     _AssociativeList * mapMethod = nil;
 
-    hyFloat      uim = 0.0;
-    checkParameter  (useIntervalMapping, uim, 0.0);
+    bool      uim = hy_env::EnvVariableTrue(useIntervalMapping);
 
-    if (uim > 0.5) {
+    if (uim) {
         iMap = new _Matrix (parameter_count,3,false,true);
         mapMethod = new _AssociativeList;
 
@@ -5918,7 +5917,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
             SetIthIndependent (dIndex,thisVar->GetLowerBound()+2.0*locH);
         }
 
-        if (uim > 0.5) {
+        if (uim) {
             hyFloat      lb  = thisVar->GetLowerBound(),
                             ub  = thisVar->GetUpperBound(),
                             y ,
@@ -5990,7 +5989,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
         t1  = ((t1-functionValue)+(t2-functionValue))/(locH*locH);
         // Standard central second derivative
 
-        if (uim < 0.5) {
+        if (uim == false) {
             hessian.Store (parameter_count,parameter_count,-t1);
         } else {
             hessian.Store (parameter_count,parameter_count,-(t1*(*iMap)(parameter_count,1)*(*iMap)(parameter_count,1)+(*iMap)(parameter_count,2)*d1));
@@ -6038,7 +6037,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 
                 t2 = (a-b-d+c)/(4*locHi*locHj);
 
-                if (uim > 0.5) {
+                if (uim) {
                     t2 *= (*iMap)(parameter_count,1)*(*iMap)(j,1);
                 }
 
@@ -6892,12 +6891,12 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 //_______________________________________________________________________________________
 
 void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFloat& maxSoFar, hyFloat& bestVal, bool go2Bound, hyFloat bracketSetting) {
-    hyFloat left,
-               right,
+    hyFloat    left = -INFINITY,
+               right = -INFINITY,
                middle           = bestVal,
-               leftValue,
+               leftValue        = NAN,
                middleValue       = maxSoFar,
-               rightValue,
+               rightValue      = NAN,
                bp               = 2.*gPrecision,
                brentPrec        = bracketSetting>0.?bracketSetting:gPrecision,
                originalValue         = index >= 0 ? GetIthIndependent(index) : 0.;

@@ -1,10 +1,10 @@
+LoadFunctionLibrary("libv3/all-terms.bf");
 LoadFunctionLibrary("../models/model_functions.bf");
 LoadFunctionLibrary("../models/DNA/GTR.bf");
 LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("mpi.bf");
 LoadFunctionLibrary("libv3/convenience/math.bf");
-LoadFunctionLibrary("libv3/all-terms.bf");
-
+LoadFunctionLibrary("libv3/IOFunctions.bf");
 
 /**
  * @name estimators.TakeLFStateSnapshot
@@ -185,7 +185,7 @@ function estimators.SetGlobals2(key2, value) {
     if (Type(__init_value) != "AssociativeList") {
         __init_value = (initial_values[terms.global])[key2];
     }
-        
+
     
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {
@@ -775,7 +775,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     
     
     if (Type (can_do_restarts) == "AssociativeList") {
-        //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+        io.ReportProgressBar("", "Working on crude initial optimizations");
         bestlog    = -1e100;
         for (i = 0; i < Abs (can_do_restarts); i += 1) {
             parameters.SetValues (can_do_restarts[i]);
@@ -791,7 +791,10 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
                 results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
                 results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
             }
+            io.ReportProgressBar("", "Starting point " + (i+1) + "/" + Abs (can_do_restarts) + ". Best LogL = " + bestlog);
+            
         }
+        io.ClearProgressBar();
     } else {
         if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
             Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);

@@ -375,6 +375,8 @@ public:
      */
     virtual void TrimSpace (void);
     
+    long overlfow (void) const {return sa_length - s_length;}
+    
     
     /// memory buffering
     void * operator new       (size_t size);

@@ -128,7 +128,7 @@ void echoNodeList (_SimpleList& theNodes, _SimpleList& leaves, _SimpleList& iNod
 
 /*----------------------------------------------------------------------------------------------------------*/
 
-hyFloat _computeReductionScaler (hyFloat currentScaler, hyFloat sum, long& didScale) {
+__attribute__((__always_inline__)) hyFloat _computeReductionScaler (hyFloat currentScaler, hyFloat sum, long& didScale) {
     if (currentScaler > _lfMinScaler) {
        didScale   = -1;
        sum       *= _lfScalingFactorThreshold;
@@ -148,7 +148,7 @@ hyFloat _computeReductionScaler (hyFloat currentScaler, hyFloat sum, long& didSc
     return NAN;
 }
 
-hyFloat _computeBoostScaler (hyFloat currentScaler, hyFloat sum, long& didScale) {
+__attribute__((__always_inline__)) hyFloat _computeBoostScaler (hyFloat currentScaler, hyFloat sum, long& didScale) {
     if (currentScaler < _lfMaxScaler) {
        didScale                                            = 1;
        sum                                                *= _lfScalerUpwards;

@@ -481,7 +481,7 @@ _StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const char c) {
 _StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const _String& s) {
   unsigned long sl = s.length ();
   for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForHTMLAndAppend(s.char_at(i));
+    this->SanitizeForRegExAndAppend(s.char_at(i));
   }
   return *this;
 }

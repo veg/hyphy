@@ -341,7 +341,7 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
             nodeStack.Pop();
             nodeNumbers.Pop();
             //nodeName = kEmptyString;
-            nodeName.Clear();
+            nodeName.Reset();
         };
         
         for (i=0; i<parms.length(); i++) {
@@ -407,7 +407,7 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                         _SimpleList numerical_match (nodeName.RegExpMatch(hy_float_regex, 0));
                         if (numerical_match.nonempty() && numerical_match(0) == 0) {
                             nodeBootstrap = nodeName.Cut (0, numerical_match(1));
-                            nodeName.Clear();
+                            nodeName.Reset();
                         }
                     }
                     
@@ -427,7 +427,7 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                                 // SLKP 20190507: this is not thread safe
                             }
                         }
-                        _String * dict_key = new _String (&nodeName, false);
+                        _String * dict_key = new _String (nodeName);
                         if (!node_comments->MStore (dict_key, node_info, false)) {
                             delete dict_key;
                         }

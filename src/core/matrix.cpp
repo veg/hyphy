@@ -2041,7 +2041,7 @@ bool    _Matrix::IsValidTransitionMatrix() const {
                         continue;
                     }
                     char buffer [255];
-                    snprintf (buffer, 255, "FAILED IsValidTransitionMatrix at (%d, %d) = %20.15g\n", r, c, term);
+                    snprintf (buffer, 255, "FAILED IsValidTransitionMatrix at (%ld, %ld) = %20.15g\n", r, c, term);
                     ReportWarning(buffer);
                     return false;
                 }
@@ -2051,7 +2051,7 @@ bool    _Matrix::IsValidTransitionMatrix() const {
         for (long r = 0L; r < d; r++) {
             if (!CheckEqual(1.0, sums[r])) {
                 char buffer [255];
-                snprintf (buffer, 255, "FAILED ROW SUM at (%d) = %20.15g\n", r, sums[r]);
+                snprintf (buffer, 255, "FAILED ROW SUM at (%ld) = %20.15g\n", r, sums[r]);
                 ReportWarning(buffer);
                 return false;
             }
@@ -4397,6 +4397,8 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                               column_shift2 = secondArg.vDim << 1,
                               column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
                               column_shift4 = secondArg.vDim << 2;
+                              
+                      hyFloat * row = theData;
 
                       for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
                           for (unsigned long j=0UL; j<secondArg.vDim; j++) {
@@ -8974,6 +8976,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
         }
         fc = fgetc(theSource);
         if (fc != '{') {
+            DeleteObject (thisCell);
             return false;
         }
         _PolynomialData *pd = new _PolynomialData (varList.countitems(),j,theCoeffs);

@@ -97,14 +97,16 @@ public:
      */
     
     void  SetStringContent (_StringBuffer * );
-    template <class T> void  SetData          (T src) {
-        if (the_string) {
+    template <class T> _StringBuffer*  SetData          (T src) {
+        if (the_string && the_string->SingleReference()) {
             the_string->Clear();
             (*the_string) << src;
         } else {
             SetStringContent (new _StringBuffer (src));
         }
+        return the_string;
     }
+    
     
     
     virtual HBLObjectRef Compute           (void) {
@@ -132,6 +134,8 @@ public:
     inline _StringBuffer const&    get_str           (void) const {return *the_string;}
     _StringBuffer *    get_str_ref        (void)  {the_string->AddAReference(); return the_string;}
 
+    _FString*               UpdatePayload     (_String* payload);
+    
     virtual bool      empty           (void) const {
         return !the_string || the_string->empty();
     }
@@ -146,6 +150,7 @@ protected:
 template <class T> HBLObjectRef _returnStringOrUseCache (T source, HBLObjectRef cache) {
     if (cache && cache->ObjectClass() == STRING) {
         ((_FString*)cache)->SetData(source);
+        return cache;
     }
     return new _FString (source);
 }
