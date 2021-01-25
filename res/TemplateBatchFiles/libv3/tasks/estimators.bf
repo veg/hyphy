@@ -234,6 +234,36 @@ function estimators.SetCategory2(key, value) {
 	^key = 1;
 }
 
+/**
+ * @name estimators.RemoveBranchLengthConstraints
+ * @param {Dict} estimates
+ */
+lfunction estimators.RemoveBranchLengthConstraints (estimates) {
+     for (part; in; estimates[^"terms.branch_length"]) {
+        for (b; in; part) {
+            for (p; in; b) {
+                if (Type (p) == "AssociativeList") {
+                    p - ^"terms.constraint";
+                }
+            }
+            
+        }
+    }
+    return estimates;
+}
+
+/**
+ * @name estimators.RemoveGlobalConstraints
+ * @param {Dict} estimates
+ */
+lfunction estimators.RemoveGlobalConstraints (estimates) {
+     for (pp; in; estimates[^"terms.global"]) {
+        if (Type (pp) == "AssociativeList") {
+            pp - ^"terms.constraint";
+        }
+    }
+    return estimates;
+}
 
 /**
  * @name estimators.ExtractBranchInformation.copy_local

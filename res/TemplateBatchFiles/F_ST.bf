@@ -239,8 +239,7 @@ if (distanceChoice == 1)
 	fprintf (stdout,"\nHYPHY is computing pairwise maximum likelihood distance estimates. A total of ", Format(ds.species*(ds.species-1)/2,0,0),
 				    " estimations will be performed.\n");
 
-	MESSAGE_LOGGING = 0;
-
+	
 	for (i = 0; i<ds.species-1; i=i+1)
 	{
 		for (j = 0; j<=i; j = j+1)
