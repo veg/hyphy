@@ -2592,10 +2592,9 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
               HBLObjectRef result;
               if (expression) {
                   //printf ("\n*** Interpreted condition\n");
-                result = expression->Compute();
+                result = expression->Compute(0, nil, nil, nil, HY_ANY_OBJECT, false);
               } else {
-                  //printf ("\n*** Compiled condition\n");
-                result = ((_Formula*)simpleParameters(2))->Compute();
+                result = ((_Formula*)simpleParameters(2))->Compute(0, nil, nil, nil, HY_ANY_OBJECT, false);
               }
 
               // printf ("\n*** %s\n", ((_String*)result->toStr())->sData);
