@@ -447,8 +447,9 @@ lfunction trees.ExtractTreeInfoFromTopology(topology_object) {
 
     branch_lengths = BranchLength(^topology_object, -1);
     branch_names   = BranchName(^topology_object, -1);
-    branch_count   = utility.Array1D (branch_names) - 1;
-
+    branch_count   = Max (2,utility.Array1D (branch_names) - 1);
+    
+    
     bls = {};
 
     for (k = 0; k < branch_count; k+=1) {
@@ -456,6 +457,7 @@ lfunction trees.ExtractTreeInfoFromTopology(topology_object) {
             bls [branch_names[k]] = branch_lengths[k];
         }
     }
+     
 
     GetInformation(modelMap, ^topology_object);
 

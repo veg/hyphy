@@ -435,7 +435,10 @@ function estimators.ExtractMLEsOptions(likelihood_function_id, model_description
 
 
         GetInformation (estimators.ExtractMLEs.map, *_tree_name);
+                
         estimators.ExtractMLEs.branch_names = Rows(estimators.ExtractMLEs.map);
+        
+        
         (estimators.ExtractMLEs.results[terms.branch_length])[estimators.ExtractMLEs.i] = {};
 
         for (estimators.ExtractMLEs.b = 0; estimators.ExtractMLEs.b < Abs(estimators.ExtractMLEs.map); estimators.ExtractMLEs.b += 1) {

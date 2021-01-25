@@ -239,7 +239,7 @@ namespace terms{
         NTP               = "NTP";
         SS                = "SS";
         NS                = "NS";
-    }
+   }
 
     /* Terms used in I/O */
     namespace io {
@@ -314,6 +314,8 @@ namespace terms{
         version               = "version";
         convergence_failures  = "convergence failures";
         omega_ratio           = "omega";
+        dS                    = "dS";
+        dN                    = "dN";
         rate                  = "rate";
         proportion            = "proportion";
         positive              = "positive test results";

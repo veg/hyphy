@@ -46,7 +46,7 @@ function ComputeDistanceFormula (s1,s2)
 	_SITE_OS_COUNT = {stateCharCount,stateCharCount};
 	_SITE_ON_COUNT = {stateCharCount,stateCharCount};
 	
-	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);
+	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, RESOLVE_AMBIGUITIES);
 	
 	_SITE_OS_COUNT = matrixTrick2*(_OBSERVED_S_$siteDifferenceCount)*Transpose(matrixTrick2);
 	_SITE_ON_COUNT = matrixTrick2*(_OBSERVED_NS_$siteDifferenceCount)*Transpose(matrixTrick2);

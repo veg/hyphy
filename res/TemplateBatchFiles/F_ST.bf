@@ -1,33 +1,28 @@
-RequireVersion ("2.2");
+RequireVersion ("2.5.25");
 
 LoadFunctionLibrary ("GrabBag");
+LoadFunctionLibrary("libv3/UtilityFunctions.bf");
+LoadFunctionLibrary("libv3/IOFunctions.bf");
+LoadFunctionLibrary("libv3/all-terms.bf");
+
 
 /*------------------------------------------------------------------------------*/
-function doSNN (vpart1, vpart2, vsize1, vsize2)
-{
-	for (k=0; k<vsize1;k=k+1)
-	{
+function doSNN (vpart1, vpart2, vsize1, vsize2) {
+	for (k=0; k<vsize1; k+=1 ) {
 		idx1 = vpart1[k];
 		minD = 1e100;
 		X_j	 = 0;
 		W_j  = 0;
 
-		for (k2=0; k2<vsize1; k2=k2+1)
-		{
-			if (k!=k2)
-			{
-				idx2 = vpart1[k2];
-				cd   = distanceMatrix[idx1][idx2];
-				if (cd < minD)
-				{
+		for (k2=0; k2<vsize1; k2 += 1) {
+			if (k!=k2) {
+				cd   = distanceMatrix[idx1][vpart1[k2]];
+				if (cd < minD) {
 					W_j  = 1;
 					X_j  = 1;
 					minD = cd;
-				}
-				else
-				{
-					if (cd == minD)
-					{
+				} else {
+					if (cd == minD) {
 						W_j = W_j+1;
 						X_j = X_j+1;
 					}
@@ -35,22 +30,16 @@ function doSNN (vpart1, vpart2, vsize1, vsize2)
 			}
 		}
 
-		for (k2=0; k2<vsize2; k2=k2+1)
-		{
-			if (k!=k2)
-			{
-				idx2 = vpart2[k2];
-				cd   = distanceMatrix[idx1][idx2];
-				if (cd < minD)
-				{
+		for (k2=0; k2<vsize2; k2 += 1) {
+			if (k!=k2) {
+				cd   = distanceMatrix[idx1][vpart2[k2]];
+				if (cd < minD) {
 					W_j  = 1;
 					X_j  = 0;
 					minD = cd;
 				}
-				else
-				{
-					if (cd == minD)
-					{
+				else {
+					if (cd == minD) {
 						W_j = W_j+1;
 					}
 				}
@@ -58,8 +47,8 @@ function doSNN (vpart1, vpart2, vsize1, vsize2)
 		}
 		s_nn = s_nn + X_j/W_j;
 	}
-	return 0;
 }
+
 /*------------------------------------------------------------------------------*/
 
 function computeCompartmentValues (part1, part2) {
@@ -76,8 +65,7 @@ function computeCompartmentValues (part1, part2) {
 		}
 	}
 
-	for (k=0; k<clBSize;k += 1)
-	{
+	for (k=0; k<clBSize;k += 1) {
 		idx1 = part2[k];
 		for (k2=k+1; k2<clBSize;k2=k2+1) {
 			idx2 = part2[k2];
@@ -117,8 +105,7 @@ function computeCompartmentValues (part1, part2) {
 
 /*------------------------------------------------------------------------------*/
 
-function reportBSTRP (_ds, obs)
-{
+function reportBSTRP (_ds, obs) {
 	fprintf (stdout, "Observed value  : ", Format(obs,8,3), "\n",
 					 "Bootst. mean    : ", Format(_ds["Mean"],8,3), "\n",
 					 "Bootst. median  : ", Format(_ds["Median"],8,3), "\n",
@@ -129,53 +116,61 @@ function reportBSTRP (_ds, obs)
 
 /*------------------------------------------------------------------------------*/
 
-ChoiceList (distanceChoice, "Distance Computation",1,SKIP_NONE,
-			"Distance formulae","Use one of the predefined distance measures based on data comparisons. Fast.",
-			"Full likelihood","Estimate distances using pairwise MLE. More choices but slow.",
-			"Load Matrix","Re-load a previously computed matrix in HyPhy format");
+KeywordArgument ("distances",  "Distance Computation", "Distance formulae");
 
-if (distanceChoice < 0) {
-	return 0;
-}
+distanceChoice = io.SelectAnOption( {
+    {"Distance formulae","Use one of the predefined distance measures based on data comparisons. Fast."}
+	{"Full likelihood","Estimate distances using pairwise MLE. More choices but slow."}
+	{"Load Matrix","Re-load a previously computed matrix in HyPhy format"}
+	}, "Distance Computation");
 
 
-if (distanceChoice == 2) {
-    ChoiceList (useSeqData,"Sequence names",1,SKIP_NONE,"Included","Sequence names are in the matrix file preceding the distance matrix.",
-                           "Read from an alignment","Gather sequence names from a separate alignment file");
 
-    if (useSeqData < 0) {
-        return 0;
-    }
+
+if (distanceChoice == "Load Matrix") {
+    KeywordArgument ("names",  "Sequence names", "Included");
+    useSeqData = io.SelectAnOption( {
+                {"Included","Sequence names are in the matrix file preceding the distance matrix."}
+                {"Read from an alignment","Gather sequence names from a separate alignment file"}
+            },
+    "Sequence names");
+
 } else {
-    useSeqData = 1;
+    useSeqData = "Read from an alignment";
 }
 
 
-if (useSeqData)
-{
-    ChoiceList (dataType,"Data type",1,SKIP_NONE,"Nucleotide/Protein","Nucleotide or amino-acid (protein).",
-                         "Codon","Codon (several available genetic codes).");
+if (useSeqData != "Included") {
 
-    if (dataType<0) {
-        return;
-    }
+    KeywordArgument ("type",  "Data type", "Nucleotide/Protein");
+    dataType = io.SelectAnOption( {
+                {"Nucleotide/Protein","Nucleotide or amino-acid (protein)."},
+                {"Codon","Codon (several available genetic codes)."}
+            },
+    "Data type");
 
-    if (dataType) {
+    if (dataType == "Codon") {
         SetDialogPrompt ("Please choose a codon data file:");
+        KeywordArgument ("code",  "Genetic Code", "Universal");
         ExecuteAFile ("TemplateModels/chooseGeneticCode.def");
     }
     else {
         SetDialogPrompt ("Please choose a nucleotide or amino-acid data file:");
     }
 
+    KeywordArgument ("alignment",  "Sequence alignment");
     DataSet ds = ReadDataFile (PROMPT_FOR_FILE);
-
     fprintf (stdout, "\nRead the following data:", ds,"\n\n");
+    
 } else {
+
+    KeywordArgument ("matrix",  "Load the names/distance matrix");
 	SetDialogPrompt ("Load the names/distance matrix");
 	fscanf          (PROMPT_FOR_FILE, "Matrix,NMatrix", namesMatrix,distanceMatrix);
+
 	dim_names = Rows(namesMatrix)*Columns(namesMatrix);
 	assert (dim_names == Columns (distanceMatrix), "Dimension mismatch between the names vector and the distance matrix");
+
 	fakeDS = ""; fakeDS * 128;
 	for (_i = 0; _i < dim_names; _i+=1) {
 	    fakeDS * (">" + namesMatrix [_i] + "\nA\n");
@@ -185,7 +180,11 @@ if (useSeqData)
 }
 
 promptFor2ndRegExp = 1;
+KeywordArgument ("regexp1",  "Regular expression for the first sequence partition");
+KeywordArgument ("regexp2",  "Regular expression for the second sequence partition");
+skipConfirm = 1;
 ExecuteAFile ("partitionSequences.ibf");
+skipConfirm = 0;
 promptFor2ndRegExp = 0;
 
 bothCladesSize = clASize + clBSize;
@@ -221,19 +220,18 @@ for (specIndex = 0; specIndex < ds.species; specIndex += 1) {
 	}
 }
 
-if (dataType) {
+if (dataType == "Codon") {
 	DataSetFilter filteredData = CreateFilter (ds,3,"","",GeneticCodeExclusions);
 }
 else {
 	DataSetFilter filteredData = CreateFilter (ds,1,"","");
 }
 
-if (useSeqData) {
+if (useSeqData != "Included") {
     distanceMatrix = {ds.species, ds.species};
 }
 
-if (distanceChoice == 1)
-{
+if (distanceChoice == "Full likelihood") {
 	SelectTemplateModel(filteredData);
 
 	fprintf (stdout,"\nHYPHY is computing pairwise maximum likelihood distance estimates. A total of ", Format(ds.species*(ds.species-1)/2,0,0),
@@ -296,9 +294,9 @@ if (distanceChoice == 1)
 }
 else
 {
-	if (distanceChoice == 2)
+	if (distanceChoice == "Load Matrix")
 	{
-        if (useSeqData) {
+        if (useSeqData != "Included") {
             SetDialogPrompt ("Load the distance matrix");
             fscanf (PROMPT_FOR_FILE,"NMatrix",distanceMatrix);
         }
@@ -308,9 +306,11 @@ else
 			return  0;
 		}
 	}
-	else
-	{
+	else {
 		DISTANCE_PROMPTS = 1;
+		KeywordArgument ("formula",  "Distance Formula", "JC69");
+
+		
 	    ExecuteAFile (HYPHY_LIB_DIRECTORY + "TemplateBatchFiles" + DIRECTORY_SEPARATOR  +
 										 "chooseDistanceFormula.def");
 		InitializeDistances (0);
@@ -325,8 +325,7 @@ else
 
 		for (i = 0; i<ds.species-1; i=i+1)
 		{
-			for (j = 0; j<=i; j = j+1)
-			{
+			for (j = 0; j<=i; j = j+1) {
 				k = ComputeDistanceFormula (i+1,j);
 				distanceMatrix[j][i+1] = k;
 				distanceMatrix[i+1][j] = k;
@@ -386,18 +385,20 @@ resultAVL ["Slatkin"] = F_ST_OBS[1];
 resultAVL ["Hudson, Boos and Kaplan"] = F_ST_OBS[2];
 resultAVL ["Hudson (S_nn)"] = F_ST_OBS[3];
 
+KeywordArgument ("bootstrap",  "Bootstrap Estimators", "Sure");
 
 ChoiceList (resample,"Bootstrap Estimators",1,SKIP_NONE,
 					 "Skip","Do not perform a permutation test.",
 				     "Sure","Resample with replacement within populations to estimate sampling properties of the estimators.");
 
 
-if (resample < 0)
-{
+if (resample < 0) {
 	return 0;
 }
 
 if (resample) {
+    KeywordArgument ("bootstrap-samples",  "The number of bootstrap replicates to draw", 100);
+
 	sampleCount = prompt_for_a_value ("The number of bootstrap replicates to draw", 100, 1, 100000, 1);
 
 	F_ST_1 = {sampleCount,1};
@@ -530,12 +531,14 @@ if (resample) {
 	distanceMatrix = saveDM;
 }
 
+KeywordArgument ("permutation",  "Permutation Test", "But of course");
+
 ChoiceList (resample,"Permutation Test",1,SKIP_NONE,
 					 "Skip","Do not perform a permutation test.",
 				     "But of course","Randomly allocate sequences into subpopulations and tabulate the distribution of various F_ST statistics.");
 
-if (resample > 0)
-{
+if (resample > 0) {
+    KeywordArgument ("permutation-samples", "The number of permutations to perform", 100);
 
 	sampleCount = prompt_for_a_value ("The number of permutations to perform", 100, 1, 100000, 1);
 
