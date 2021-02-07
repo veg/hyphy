@@ -250,6 +250,8 @@ _StringBuffer& _StringBuffer::operator = (_StringBuffer && rhs) {
     return *this;
 }
 
+
+
 //=============================================================
 
 

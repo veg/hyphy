@@ -1614,7 +1614,7 @@ void    FilterRawString (_String& s, FileState* fs, _DataSet & ds) {
 
 //_________________________________________________________________________________________________
 
-void    ProcessTree (FileState *fState, FILE* f, _String& CurrentLine) {
+void    ProcessTree (FileState *fState, FILE* f, _StringBuffer& CurrentLine) {
     
     // TODO SLKP 20180921 this does extra work to read in the tree string multiple times;
     // the solution is to have a proper buffer wrapper, and to

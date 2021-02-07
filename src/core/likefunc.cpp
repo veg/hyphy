@@ -7061,7 +7061,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                 }
                 if (CheckEqual(GetIthIndependent(index), bestVal) && fabs (middleValue-maxSoFar) > 1e-12*errorTolerance) {
                     char buf[256];
-                    snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::LocateTheBump (index %ld) current value %20.16g (parameter = %20.16g), best value %20.16g (parameter = %20.16g)); delta = %20.16g, tolerance = %20.16]\n\n", index, middleValue, GetIthIndependent(index), maxSoFar, bestVal, maxSoFar - middleValue, 1e-12*errorTolerance);
+                    snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::LocateTheBump (index %ld) current value %20.16g (parameter = %20.16g), best value %20.16g (parameter = %20.16g)); delta = %20.16g, tolerance = %20.16g]\n\n", index, middleValue, GetIthIndependent(index), maxSoFar, bestVal, maxSoFar - middleValue, 1e-12*errorTolerance);
                     _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));
                 }
                 SetIthIndependent(index,bestVal);
