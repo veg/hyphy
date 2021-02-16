@@ -59,6 +59,7 @@ while (goOn) {
 	fprintf (stdout, "\n\nClade 2 includes ", clBSize," sequences:\n");
 	cladeB ["__echo_clades"][""];
 
+    if (skipConfirm) {break;}
 	fprintf (stdout, "\nIs this partitioning correct (y/n)");
 	fscanf (stdin, "String", goOn);
 	goOn = (goOn[0] == "n" || goOn[0] == "N");

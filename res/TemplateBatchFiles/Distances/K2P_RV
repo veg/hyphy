@@ -15,7 +15,7 @@ function InitializeDistances (dummy)
 
 function ComputeDistanceFormula (s1,s2)
 {
-	GetDataInfo 		 (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);
+	GetDataInfo 		 (siteDifferenceCount, filteredData, s1, s2, RESOLVE_AMBIGUITIES);
 	totalSitesCompared = (Transpose(summingVector)*(siteDifferenceCount*summingVector))[0];
 
 	if (totalSitesCompared)

@@ -1875,7 +1875,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
               }
            }
           
-           if (row >= source_object->GetHDim()) {
+           if (row >= source_object->GetHDim() || source_object->GetVDim() == 0) {
                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _FString (kEndIteration), false, false, NULL); // end loop
            } else {
                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (source_object->GetMatrixCell(row, column), false, false, NULL);

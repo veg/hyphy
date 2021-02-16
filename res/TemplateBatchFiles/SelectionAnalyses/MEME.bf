@@ -184,45 +184,58 @@ utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME
 
 io.ReportProgressMessageMD ("MEME", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
+KeywordArgument ("full-model", "Perform branch length re-optimization under the full codon model", "Yes");
 
-meme.run_full_mg94 = TRUE;
+meme.run_full_mg94 = "Yes" == io.SelectAnOption( {{"Yes", "[Default] Perform branch length re-optimization under the full codon model"}, 
+                                         {"No", "Skip branch length re-optimization under the full codon model (faster but less precise)"}},
+                                         "Perform branch length re-optimization under the full codon model");
+
+
+if (meme.run_full_mg94) {
+
+    meme.run_full_mg94 = TRUE;
     
-if (Type (meme.save_intermediate_fits) == "AssociativeList") {
-    if (None != meme.save_intermediate_fits[^"terms.data.value"]) {
-        if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
-            meme.final_partitioned_mg_results = (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
-            if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
-                //_PROFILE_NEXUS_LOADS_ = TRUE;
-                ExecuteCommands ((meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
-                //utility.FinishAndPrintProfile (_NEXUS_PROFILE_DATA_);
-                meme.run_full_mg94 = FALSE;
-                
-            }
-        }        
-    }
-}
-
-
-if (meme.run_full_mg94) {    
-    meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
-        terms.run_options.model_type: terms.local,
-        terms.run_options.partitioned_omega: meme.selected_branches,
-        terms.run_options.retain_lf_object: TRUE,
-        terms.run_options.apply_user_constraints: meme.zero_branch_length_constrain,
-        terms.run_options.optimization_settings: {
-            "OPTIMIZATION_METHOD" : "coordinate-wise"
-        }
-    }, meme.partitioned_mg_results);
-
     if (Type (meme.save_intermediate_fits) == "AssociativeList") {
-        (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = meme.final_partitioned_mg_results;        
-        Export (lfe, ^meme.final_partitioned_mg_results[^"terms.likelihood_function"]);
-        (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
-        io.SpoolJSON (meme.save_intermediate_fits[^"terms.data.value"],meme.save_intermediate_fits[^"terms.data.file"]);  
-            
+        if (None != meme.save_intermediate_fits[^"terms.data.value"]) {
+            if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
+                meme.final_partitioned_mg_results = (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
+                if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
+                    //_PROFILE_NEXUS_LOADS_ = TRUE;
+                    ExecuteCommands ((meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
+                    //utility.FinishAndPrintProfile (_NEXUS_PROFILE_DATA_);
+                    meme.run_full_mg94 = FALSE;
+                
+                }
+            }        
+        }
     }
-}
 
+
+    if (meme.run_full_mg94) {    
+        meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
+            terms.run_options.model_type: terms.local,
+            terms.run_options.partitioned_omega: meme.selected_branches,
+            terms.run_options.retain_lf_object: TRUE,
+            terms.run_options.apply_user_constraints: meme.zero_branch_length_constrain,
+            terms.run_options.optimization_settings: {
+                "OPTIMIZATION_METHOD" : "coordinate-wise"
+            }
+        }, meme.partitioned_mg_results);
+
+        if (Type (meme.save_intermediate_fits) == "AssociativeList") {
+            (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = meme.final_partitioned_mg_results;        
+            Export (lfe, ^meme.final_partitioned_mg_results[^"terms.likelihood_function"]);
+            (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
+            io.SpoolJSON (meme.save_intermediate_fits[^"terms.data.value"],meme.save_intermediate_fits[^"terms.data.file"]);  
+            
+        }
+    }
+} else {
+    meme.final_partitioned_mg_results = meme.partitioned_mg_results;
+    estimators.RemoveBranchLengthConstraints (meme.final_partitioned_mg_results);
+    estimators.RemoveGlobalConstraints (meme.final_partitioned_mg_results);
+
+}
 meme.save_intermediate_fits = None;  // clear out memory if used
 
 //meme.final_partitioned_mg_results = meme.partitioned_mg_results;

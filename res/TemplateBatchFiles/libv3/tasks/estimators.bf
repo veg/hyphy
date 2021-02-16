@@ -234,6 +234,36 @@ function estimators.SetCategory2(key, value) {
 	^key = 1;
 }
 
+/**
+ * @name estimators.RemoveBranchLengthConstraints
+ * @param {Dict} estimates
+ */
+lfunction estimators.RemoveBranchLengthConstraints (estimates) {
+     for (part; in; estimates[^"terms.branch_length"]) {
+        for (b; in; part) {
+            for (p; in; b) {
+                if (Type (p) == "AssociativeList") {
+                    p - ^"terms.constraint";
+                }
+            }
+            
+        }
+    }
+    return estimates;
+}
+
+/**
+ * @name estimators.RemoveGlobalConstraints
+ * @param {Dict} estimates
+ */
+lfunction estimators.RemoveGlobalConstraints (estimates) {
+     for (pp; in; estimates[^"terms.global"]) {
+        if (Type (pp) == "AssociativeList") {
+            pp - ^"terms.constraint";
+        }
+    }
+    return estimates;
+}
 
 /**
  * @name estimators.ExtractBranchInformation.copy_local
@@ -405,7 +435,10 @@ function estimators.ExtractMLEsOptions(likelihood_function_id, model_description
 
 
         GetInformation (estimators.ExtractMLEs.map, *_tree_name);
+                
         estimators.ExtractMLEs.branch_names = Rows(estimators.ExtractMLEs.map);
+        
+        
         (estimators.ExtractMLEs.results[terms.branch_length])[estimators.ExtractMLEs.i] = {};
 
         for (estimators.ExtractMLEs.b = 0; estimators.ExtractMLEs.b < Abs(estimators.ExtractMLEs.map); estimators.ExtractMLEs.b += 1) {

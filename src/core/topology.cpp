@@ -2366,8 +2366,10 @@ HBLObjectRef _TreeTopology::BranchLength (HBLObjectRef p, HBLObjectRef cache) {
           // get ALL branch lengths
         _Vector * branch_lengths = new _Vector;
 
+        bool two = IsDegenerate();
+          
         while (node<long>* iterator = ni.Next()) {
-          if (!iterator->is_root()){
+          if (!iterator->is_root() || two){
             branch_lengths->Store(GetBranchLength (iterator));
           }
         }
