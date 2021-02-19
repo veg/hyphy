@@ -930,6 +930,7 @@ function relax.FitMainTestPair () {
 																   );
 
 
+            
 
 			if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit[terms.fit.log_likelihood]) {
 
@@ -950,6 +951,7 @@ function relax.FitMainTestPair () {
 				relax.alternative_model.fit = relax.alternative_model.fit.take2;
 			}
 
+            DeleteObject (relax.alternative_model.fit.take2);
 
 			parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map ["relax.test"] , terms.relax.k), terms.relax.k_range);
 
@@ -998,8 +1000,7 @@ function relax.FitMainTestPair () {
 
 	io.ReportProgressMessageMD ("RELAX", "null", "Fitting the null (K := 1) model");
     
-
-
+    
 	for (relax.k = 1; relax.k < relax.numbers_of_tested_groups; relax.k += 1) {
 		relax.model_nmsp = relax.model_namespaces[relax.k ];
 		if (relax.k > 1) {
@@ -1008,7 +1009,6 @@ function relax.FitMainTestPair () {
 			parameters.SetConstraint (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , terms.relax.k), terms.parameters.one, terms.global);
 		}
 	}
-
 
 	relax.null_model.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
 	io.ReportProgressMessageMD ("RELAX", "null", "* " + selection.io.report_fit (relax.null_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));

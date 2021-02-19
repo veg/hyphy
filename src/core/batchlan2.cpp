@@ -795,7 +795,7 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
 {
     chain.currentCommand++;
 
-    const _String kStart ("START"),
+   static  const _String kStart ("START"),
                   kPause ("PAUSE"),
                   kResume ("RESUME");
     
