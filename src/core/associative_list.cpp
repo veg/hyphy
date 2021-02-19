@@ -88,6 +88,9 @@ BaseRef _AssociativeList::makeDynamic (void) const {
     return newAL;
 }
 
+
+//bool _debug_memory_leak = false;
+
 //_____________________________________________________________________________________________
 
 bool _AssociativeList::ParseStringRepresentation (_String& serialized_form, _FormulaParsingContext& fpc ) {
@@ -104,8 +107,10 @@ bool _AssociativeList::ParseStringRepresentation (_String& serialized_form, _For
             _ElementaryCommand::ExtractConditions (*(_String*)splitKeys(k), 0, key_value_pair, ':' , false);
             if (key_value_pair.countitems() == 2UL) {
                 
+                //_debug_memory_leak = true;
                 _String  key        (compute_keys_values ? ProcessLiteralArgument((_String*)key_value_pair(0),theP) : *(_String*)key_value_pair(0));
-              
+                //_debug_memory_leak = false;
+                
                 if (key.empty()) {
                   key = *(_String*)key_value_pair(0);
                 }

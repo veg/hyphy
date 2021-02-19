@@ -53,6 +53,7 @@
 
 #include      "function_templates.h"
 
+#include      <signal.h>
 
 #ifndef __HYPHY_NO_SQLITE__
   #include "sqlite3.h"
@@ -2079,9 +2080,16 @@ bool      _ElementaryCommand::HandleGetURL(_ExecutionList& current_program){
 
 bool      _ElementaryCommand::HandleAssert (_ExecutionList& current_program) {
   current_program.advance();
+  static const _String kBreakpointTrap = ("__SIGTRAP__");
 
   try {
     _Formula parsed_expression;
+      
+    if (kBreakpointTrap == * GetIthParameter(0) ) {
+      raise(SIGTRAP);
+      return true;
+    }
+      
     _CheckExpressionForCorrectness (parsed_expression, *GetIthParameter(0UL), current_program, NUMBER);
     if (CheckEqual (parsed_expression.Compute()->Value (), 0.0)) { // assertion failed
       bool soft_assertions = hy_env::EnvVariableTrue(hy_env::assertion_behavior);

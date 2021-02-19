@@ -81,6 +81,8 @@ gard.json = {   terms.json.analysis: gard.analysisDescription,
                 terms.json.input: {},
             };
 
+utility.SetEnvVariable ("OPTIMIZE_SUMMATION_ORDER_PARTITION", 250); 
+// don't spend too much time optimizing column ordering.
 
 /* 1b. User Input
 ------------------------------------------------------------------------------*/
@@ -197,15 +199,6 @@ for (_pattern_; in; alignments.Extract_site_patterns ("gard.filter")) {
     }
 }
 
-/*
-utility.ForEach (alignments.Extract_site_patterns ("gard.filter"), "_pattern_", "
-    if (_pattern_[terms.data.is_constant]==FALSE) {
-        utility.ForEachPair (_pattern_[terms.data.sites], '_key_', '_value_',
-        '
-            gard.variableSiteMap + (gard.siteMultiplier*_value_ + gard.siteShift);
-        ');
-    }
-");*/
 
 gard.variableSiteMap = Transpose (utility.DictToArray (gard.variableSiteMap)) % 0; // sort by 1st column
 gard.variableSites = Rows (gard.variableSiteMap);
@@ -263,7 +256,7 @@ gard.queue = mpi.CreateQueue (
                             {
                             "LikelihoodFunctions" : {{"gard.exportedModel"}},
                             "Headers" : {{"libv3/all-terms.bf"}},
-                            "Variables" : {{"gard.globalParameterCount", "gard.numSites", "gard.alignment", "gard.variableSiteMap", "gard.dataType", "terms.gard.codon"}}
+                            "Variables" : {{"gard.globalParameterCount", "gard.numSites", "gard.alignment", "gard.variableSiteMap", "gard.dataType", "terms.gard.codon","OPTIMIZE_SUMMATION_ORDER_PARTITION"}}
                             }
                         );
 

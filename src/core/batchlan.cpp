@@ -3269,7 +3269,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 }
 
 
-
+//extern bool _debug_memory_leak;
 
 //____________________________________________________________________________________
 
@@ -3458,6 +3458,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
           }
           else{
             //printf ("Return compiled %d\n", ((_Formula*)simpleParameters(1))->GetList().lLength);
+              //if (_debug_memory_leak) {
+              //    BufferToConsole("In return while parsing AssociateList string repr\n");
+              //}
+
             ret_val = ((_Formula*)simpleParameters(1))->Compute(0,nil,nil,nil,HY_ANY_OBJECT,false);
           }
 
