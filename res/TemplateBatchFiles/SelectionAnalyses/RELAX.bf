@@ -921,7 +921,7 @@ function relax.FitMainTestPair () {
 				parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map ["relax.test"] , terms.relax.k), terms.relax.k_range1);
 			}
 			
-			assert (__SIGTRAP__);
+			//assert (__SIGTRAP__);
 						
 			relax.alternative_model.fit.take2 =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map},
 																   relax.alternative_model.fit ,
