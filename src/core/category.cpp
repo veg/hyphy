@@ -177,7 +177,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                     !CheckEqual (iSplitter->GetMaxX(),1.0) ||
                     *theName == splitterName ||
                     (intervals = iSplitter->GetNumberOfIntervals()+1) < 2) {
-                HandleApplicationError (errorMsg & _String("Category variables which specify interval splitting options must be supported on [0,1], and not result in circular dependance"));
+                HandleApplicationError (errorMsg & _String("Category variables which specify interval splitting options must be supported on [0,1], and not result in circular dependence"));
                 return;
             }
 
@@ -475,7 +475,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
         }
     }
 
-    // disallow category -> category dependance
+    // disallow category -> category dependence
     for (long i=0; i<scannedVarsList.lLength; i++) {
         _Variable * curVar = (_Variable*)variablePtrs (scannedVarsList.list_data[i]);
         if (curVar->IsCategory()) {
@@ -489,7 +489,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
     hiddenMarkovModel = HY_NO_MODEL;
 
     parameterList.Duplicate  (&scannedVarsList);
-    // finally go thru all the variables and put them where they belong in dependance containers
+    // finally go thru all the variables and put them where they belong in dependence containers
 
     _SimpleList     exclude;
 

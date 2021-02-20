@@ -108,4 +108,4 @@
 
 "","Perform relative ratio tests.","!Relative Ratio";
 "RRT","Use relative ratio test on 2 datasets and a variety of standard models","RelativeRatio.bf";
-"PRRTI","Given a list of files (and optinally genetic code tables), perform relative ratio tests on all possible pair of the data files.","PairwiseRelativeRatio.bf";
+"PRRTI","Given a list of files (and optionally genetic code tables), perform relative ratio tests on all possible pair of the data files.","PairwiseRelativeRatio.bf";
