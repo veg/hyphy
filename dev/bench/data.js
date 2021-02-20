@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1613445278670,
+  "lastUpdate": 1613841883244,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -9063,6 +9063,72 @@ window.BENCHMARK_DATA = {
             "name": "ABSREL-MH.wbf",
             "value": 209.99580008399832,
             "range": "±4.867763%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "spond@temple.edu",
+            "name": "Sergei Pond",
+            "username": "spond"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bf69de3df2eae805e21ccd2d52de88f0b6e0fd0a",
+          "message": "Merge pull request #1289 from mr-c/typos\n\nfix typos",
+          "timestamp": "2021-02-20T11:55:34-05:00",
+          "tree_id": "df8992baecef27f7be97b168a03fce15174061fc",
+          "url": "https://github.com/veg/hyphy/commit/bf69de3df2eae805e21ccd2d52de88f0b6e0fd0a"
+        },
+        "date": 1613841875521,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 1.487106047019319,
+            "range": "±20.161248%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 6.927510529816005,
+            "range": "±2.369529%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 28.87669650591972,
+            "range": "±2.540590%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 3.6531014831592024,
+            "range": "±2.833117%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 14.038831407673625,
+            "range": "±4.984142%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 88.8572951839346,
+            "range": "±1.879819%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
