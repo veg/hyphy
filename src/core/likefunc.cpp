@@ -2382,20 +2382,20 @@ bool        _LikelihoodFunction::HasBlockChanged(long index) const {
 
 //_______________________________________________________________________________________
 
-void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependance, long highestIndex, hyFloat weight, _Matrix& cache) {
+void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long index, long dependence, long highestIndex, hyFloat weight, _Matrix& cache) {
     // SLKP 20210102: TODO this needs to be reviewed and confirmed as working.
     _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.list_data[index]);
 
     if (index<highestIndex) {
-        if ((!CheckNthBit(dependance,index))||thisC->is_hidden_markov()) {
-            RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight);
+        if ((!CheckNthBit(dependence,index))||thisC->is_hidden_markov()) {
+            RecurseCategory (blockIndex, index+1, dependence,highestIndex,weight);
         } else {
             thisC->Refresh();
             long nI = thisC->GetNumberOfIntervals ();
             offsetCounter *= nI;
             for (long k = 0; k<nI; k++) {
                 thisC->SetIntervalValue(k);
-                RecurseConstantOnPartition(blockIndex,index+1,dependance, highestIndex,weight*thisC->GetIntervalWeight(k),cache);
+                RecurseConstantOnPartition(blockIndex,index+1,dependence, highestIndex,weight*thisC->GetIntervalWeight(k),cache);
                 categID+=offsetCounter/nI;
             }
             offsetCounter/=nI;
@@ -2450,7 +2450,7 @@ void      _LikelihoodFunction::RecurseConstantOnPartition (long blockIndex, long
 
 //_______________________________________________________________________________________
 
-void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependance, long highestIndex, hyFloat weight
+void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long dependence, long highestIndex, hyFloat weight
 #ifdef _SLKP_LFENGINE_REWRITE_
         ,_SimpleList* siteMultipliers, char runMode, hyFloat *runStorage,
         long branchIndex,              _SimpleList* branchValues
@@ -2459,8 +2459,8 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
 {
     _CategoryVariable* thisC = (_CategoryVariable*)LocateVar(indexCat.list_data[index]);
     if (index<highestIndex) {
-        if ((!CheckNthBit(dependance,index))||thisC->is_hidden_markov())
-            RecurseCategory (blockIndex, index+1, dependance,highestIndex,weight
+        if ((!CheckNthBit(dependence,index))||thisC->is_hidden_markov())
+            RecurseCategory (blockIndex, index+1, dependence,highestIndex,weight
 #ifdef _SLKP_LFENGINE_REWRITE_
                              ,siteMultipliers,runMode,runStorage
 #endif
@@ -2471,7 +2471,7 @@ void      _LikelihoodFunction::RecurseCategory(long blockIndex, long index, long
             offsetCounter *= nI;
             for (long k = 0; k<nI; k++) {
                 thisC->SetIntervalValue(k);
-                RecurseCategory(blockIndex,index+1,dependance, highestIndex,weight*thisC->GetIntervalWeight(k)
+                RecurseCategory(blockIndex,index+1,dependence, highestIndex,weight*thisC->GetIntervalWeight(k)
 #ifdef _SLKP_LFENGINE_REWRITE_
                                 ,siteMultipliers,runMode,runStorage,branchIndex,branchValues
 #endif
@@ -2698,7 +2698,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
     {
         _Matrix     dependancies (MAX(3,indexDep.lLength),indexInd.lLength,true,true);
         
-        // element (i,j) represents the dependance of i-th dep var on the j-th ind var
+        // element (i,j) represents the dependence of i-th dep var on the j-th ind var
         // 0 - no dep,
         // 1 -> monotone increase,
         // -1 -> monotone decrease
@@ -7678,7 +7678,7 @@ void    _LikelihoodFunction::ScanAllVariables (void) {
 
     avl.ReorderList();
 
-    if (templateKind<0) { // remove dependance of the function from the HMM model specifier
+    if (templateKind<0) { // remove dependence of the function from the HMM model specifier
         allVariables.Delete (allVariables.Find(-templateKind-1));
         rankVariables.Delete ((BaseRef)(-templateKind-1));
     }
