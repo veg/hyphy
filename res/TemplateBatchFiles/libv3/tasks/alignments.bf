@@ -828,26 +828,6 @@ lfunction alignments.Extract_site_patterns (data_filter) {
         
         
     }
-
-    /*utility.ForEachPair (pattern_list, "_site_index_", "_pattern_",
-        '
-        utility.EnsureKey (`&site_info`, _pattern_);
-        utility.EnsureKey (`&site_info`[_pattern_], utility.getGlobalValue("terms.data.sites"));
-
-        (`&site_info`[_pattern_])[utility.getGlobalValue("terms.data.sites")] + _site_index_[1];
-
-        if (Abs ((`&site_info`[_pattern_])[utility.getGlobalValue("terms.data.sites")]) == 1) {
-            // first time we see this site
-            GetDataInfo (`&site_characters`, `data_filter`, -1, _pattern_);
-            `&site_characters` = utility.Filter (`&site_characters`,
-                                                 "_value_",
-                                                 "(+_value_>0)");
-
-            (`&site_info`[_pattern_])[^"terms.data.is_constant"] = Abs (`&site_characters`) <= 1;
-
-        }
-        '
-    );*/
     
     
 

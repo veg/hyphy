@@ -5350,7 +5350,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
         while (middle-leftStep <= lowerBound) {
             if (verbosity_level > 100) {
               char buf [512];
-              snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : LB = %g, current try = %.16g, current evaluated midpoint value = %.16g (%s)", index, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
+              snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : initial = %g, LB = %g, current try = %.16g, current evaluated midpoint value = %.16g (%s)", index, initialStep, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
               BufferToConsole (buf);
             }
 
@@ -5396,6 +5396,9 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     middle=lowerBound+2.*leftStep;
                     first = false;
                 }
+            } else {
+                middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                return -2;
             }
         }
 

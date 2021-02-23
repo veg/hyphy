@@ -1,8 +1,7 @@
 /* defines a sparse transition probabilities matrix 
  now we'll go through the matrix and assign the elements based on syn/non-syn status*/
 
-function PopulateModelMatrix (ModelMatrixName&, EFV)
-{
+function PopulateModelMatrix (ModelMatrixName&, EFV) {
 	ModelMatrixName = {ModelMatrixDimension,ModelMatrixDimension}; 
 
 	hshift = 0;

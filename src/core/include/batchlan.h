@@ -386,7 +386,7 @@ public:
   
     bool              DecompileFormulae        (void);
   
-    void              BuildListOfDependancies  (_AVLListX & collection, bool recursive, _ExecutionList const& chain);
+    void              BuildListOfDependancies  (_AVLListX & collection, bool recursive, _ExecutionList const& chain, bool help_mode = false);
     
     
     
@@ -405,7 +405,7 @@ public:
 
 protected:
   
-    static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList const&, bool, _AVLListX& );
+    static    void ScanStringExpressionForHBLFunctions (_String*, _ExecutionList const&, bool, _AVLListX& , bool help_mode = false);
 
     _String  *   GetIthParameter       (unsigned long i, bool range_check = true) const {
         BaseRef p = parameters.GetItemRangeCheck(i);

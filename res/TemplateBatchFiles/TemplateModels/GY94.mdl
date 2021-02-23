@@ -18,8 +18,7 @@
 
 ModelMatrixDimension = 0;
 
-if (!ModelMatrixDimension)
-{
+if (!ModelMatrixDimension) {
 	ModelMatrixDimension = 64;
 	for (h = 0 ;h<64; h=h+1)
 	{
@@ -30,8 +29,7 @@ if (!ModelMatrixDimension)
 	}
 }
 
-function BuildCodonFrequencies (obsF)
-{
+function BuildCodonFrequencies (obsF) {
 	PIStop = 1.0;
 	result = {ModelMatrixDimension,1};
 	hshift = 0;
@@ -87,14 +85,9 @@ if (modelType>0)
 
 #include "GY94.ibf";
 
-
 GY94 = 0;
-
 vectorOfFrequencies = BuildCodonFrequencies (observedFreq);
-
 MULTIPLY_BY_FREQS = PopulateModelMatrix ("GY94", observedFreq);
-
 FREQUENCY_SENSITIVE = 1;
-
 Model GY94model = (GY94,vectorOfFrequencies,1);
 

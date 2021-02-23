@@ -42,7 +42,7 @@
 
 /* 1a. Initial Setup
 ------------------------------------------------------------------------------*/
-RequireVersion ("2.4.0");
+RequireVersion ("2.5.29");
 
 LoadFunctionLibrary ("libv3/all-terms.bf");
 LoadFunctionLibrary ("libv3/convenience/regexp.bf");
@@ -75,12 +75,15 @@ namespace terms.gard {
     nucleotide = "nucleotide";
     protein    = "amino-acid";
     codon      = "codon";
+    masterList = "masterList";
 };
 
 gard.json = {   terms.json.analysis: gard.analysisDescription,
                 terms.json.input: {},
             };
 
+utility.SetEnvVariable ("OPTIMIZE_SUMMATION_ORDER_PARTITION", 100); 
+// don't spend too much time optimizing column ordering.
 
 /* 1b. User Input
 ------------------------------------------------------------------------------*/
@@ -164,7 +167,50 @@ function gard.model.withGDD  (options) {
 // Where to save the json
 gard.defaultJsonFilePath = (gard.alignment[terms.data.file] + '.GARD.json');
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'GARD.json')", gard.defaultJsonFilePath);
-gard.jsonFileLocation = io.PromptUserForFilePath ("Save the resulting JSON file to");
+gard.jsonFileLocation = io.ReadFromOrCreate ("Save the resulting JSON file to", gard.json);
+
+gard.json = gard.jsonFileLocation [^"terms.data.value"];
+gard.jsonFileLocation = gard.jsonFileLocation [^"terms.data.file"];
+
+KeywordArgument ("mode", "Run mode (Normal or Faster)", "Normal");
+
+gard.fastRunMode = io.SelectAnOption  ({"Normal" : "Default optimization and convergence settings",
+                                        "Faster" :  "Reduce individual optimization precision and relax convergence settings"},
+                                        "Run type") == "Faster";
+
+
+// Setup master list of evaluated models.
+gard.masterList = {};
+/** gard.masterList:
+    "model string": "model fitness (cAIC score)"
+    model string is in the format: "{\n{bp1} \n{bp2} ...\n}"
+    model fitness is either infinity (if not evaluated) or the numeric cAIC score
+**/
+
+
+gard.startWithBP = 0;
+
+if (utility.Has (gard.json, terms.gard.masterList, "AssociativeList")) {
+    console.log ("
+
+### Found partial run results in `gard.jsonFileLocation`. 
+Will resume search from the end of the previous run.
+
+    ");
+    
+    gard.startWithBP = utility.Array1D(gard.json["breakpointData"]) - 1;
+    gard.masterList = gard.json[terms.gard.masterList];
+}  else {
+    if (utility.Has (gard.json, "breakpointData", "AssociativeList")) {
+        console.log ("
+
+    ### Found previous run results in `gard.jsonFileLocation`. 
+    Run terminating without overwriting previous results.
+
+        ");
+        return 0;
+    }
+}
 
 gard.defaultFitFilePath = (gard.alignment[terms.data.file] + '.best-gard');
 KeywordArgument ("output-lf", "Write the best fitting HyPhy analysis snapshot to (default is to save to the same path as the alignment file + 'best-gard')", gard.defaultFitFilePath);
@@ -197,15 +243,6 @@ for (_pattern_; in; alignments.Extract_site_patterns ("gard.filter")) {
     }
 }
 
-/*
-utility.ForEach (alignments.Extract_site_patterns ("gard.filter"), "_pattern_", "
-    if (_pattern_[terms.data.is_constant]==FALSE) {
-        utility.ForEachPair (_pattern_[terms.data.sites], '_key_', '_value_',
-        '
-            gard.variableSiteMap + (gard.siteMultiplier*_value_ + gard.siteShift);
-        ');
-    }
-");*/
 
 gard.variableSiteMap = Transpose (utility.DictToArray (gard.variableSiteMap)) % 0; // sort by 1st column
 gard.variableSites = Rows (gard.variableSiteMap);
@@ -259,21 +296,22 @@ io.ReportProgressMessageMD("GARD", "baseline-fit", "* " + selection.io.report_fi
 ------------------------------------------------------------------------------*/
 // Setup mpi variableSiteMap
 gard.createLikelihoodFunctionForExport ("gard.exportedModel", gard.model);
+
+if (fastRunMode) {
+    utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.1); 
+} else {
+    utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.001);     
+}
+
+
 gard.queue = mpi.CreateQueue (
                             {
                             "LikelihoodFunctions" : {{"gard.exportedModel"}},
                             "Headers" : {{"libv3/all-terms.bf"}},
-                            "Variables" : {{"gard.globalParameterCount", "gard.numSites", "gard.alignment", "gard.variableSiteMap", "gard.dataType", "terms.gard.codon"}}
+                            "Variables" : {{"gard.globalParameterCount", "gard.numSites", "gard.alignment", "gard.variableSiteMap", "gard.dataType", "terms.gard.codon","OPTIMIZE_SUMMATION_ORDER_PARTITION", "OPTIMIZATION_PRECISION"}}
                             }
                         );
 
-// Setup master list of evaluated models.
-gard.masterList = {};
-/** gard.masterList:
-    "model string": "model fitness (cAIC score)"
-    model string is in the format: "{\n{bp1} \n{bp2} ...\n}"
-    model fitness is either infinity (if not evaluated) or the numeric cAIC score
-**/
 
 gard.masterList [{{}}] = gard.baseline_cAIC;
 gard.bestOverall_cAIC_soFar = gard.baseline_cAIC;
@@ -298,56 +336,63 @@ gard.json['baselineScore'] = gard.baseline_cAIC;
 ------------------------------------------------------------------------------*/
 io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Performing an exhaustive single breakpoint analysis');
 
-namespace gard {
 
-    // 2a1. Loop over every valid single break point
-    singleBreakPointBest_cAIC = ^"math.Infinity";
+if (gard.startWithBP > 0) {
+    io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Single breakpoint analysis already completed.');
+    gard.improvements = gard.json ["improvements"];
+} else {
+    namespace gard {
 
-    for (breakPointIndex = 0; breakPointIndex <variableSites - 1; breakPointIndex += 1) {
-        siteIndex = variableSiteMap [breakPointIndex];
+        // 2a1. Loop over every valid single break point
+        singleBreakPointBest_cAIC = ^"math.Infinity";
 
-        if (singleBreakPointBest_cAIC < baseline_cAIC) {
-            io.ReportProgressBar ("GARD", "Breakpoint " +  Format (1+breakPointIndex, 10, 0) + " of " + (variableSites-1) + ". Best cAIC = " + Format (singleBreakPointBest_cAIC, 12, 4) + " [delta = " + Format (baseline_cAIC - singleBreakPointBest_cAIC, 12, 4) + "] with breakpoint at site " + Format (singleBreakPointBestLocation, 10, 0));
-        } else {
-            io.ReportProgressBar ("GARD", "Breakpoint " +  Format (1+breakPointIndex, 10, 0) + " of " + (variableSites-1) + ". Best cAIC = " + Format (baseline_cAIC, 12, 4) + " with no breakpoints." );
-        }
+        for (breakPointIndex = 0; breakPointIndex <variableSites - 1; breakPointIndex += 1) {
+            siteIndex = variableSiteMap [breakPointIndex];
+
+            if (singleBreakPointBest_cAIC < baseline_cAIC) {
+                io.ReportProgressBar ("GARD", "Breakpoint " +  Format (1+breakPointIndex, 10, 0) + " of " + (variableSites-1) + ". Best cAIC = " + Format (singleBreakPointBest_cAIC, 12, 4) + " [delta = " + Format (baseline_cAIC - singleBreakPointBest_cAIC, 12, 4) + "] with breakpoint at site " + Format (singleBreakPointBestLocation, 10, 0));
+            } else {
+                io.ReportProgressBar ("GARD", "Breakpoint " +  Format (1+breakPointIndex, 10, 0) + " of " + (variableSites-1) + ". Best cAIC = " + Format (baseline_cAIC, 12, 4) + " with no breakpoints." );
+            }
 
 
-        if (gard.validatePartititon ({{siteIndex}}, minPartitionSize, numSites) == FALSE)  {
-            continue;
-        }
+            if (gard.validatePartititon ({{siteIndex}}, minPartitionSize, numSites) == FALSE)  {
+                continue;
+            }
 
-        mpi.QueueJob (queue, "gard.obtainModel_cAIC", {"0" : {{siteIndex__}},
-                                                     "1" : model,
-                                                     "2" : baseLikelihoodInfo},
-                                                     "gard.storeSingleBreakPointModelResults");
+            mpi.QueueJob (queue, "gard.obtainModel_cAIC", {"0" : {{siteIndex__}},
+                                                         "1" : model,
+                                                         "2" : baseLikelihoodInfo},
+                                                         "gard.storeSingleBreakPointModelResults");
                                                      
 
+        }
+
+        mpi.QueueComplete (queue);
+        io.ClearProgressBar();
+
+        // 2a2. Report the status of the sinlge break point analysis
+        io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Done with single breakpoint analysis.');
+        io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   Best sinlge break point location: " + singleBreakPointBestLocation));
+        io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   c-AIC  = " + singleBreakPointBest_cAIC));
     }
 
-    mpi.QueueComplete (queue);
-    io.ClearProgressBar();
+    // 2a3. Evaluate if the best single breakpoint is the overall best model
+    if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
+        gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
+        gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
+        gard.improvements = {'0': {
+                                    "deltaAICc": gard.baseline_cAIC - gard.bestOverall_cAIC_soFar,
+                                    "breakpoints": gard.bestOverallModelSoFar
+                                  }
+                            };
+    } else {
+        gard.bestOverallModelSoFar = null;
+    }
 
-    // 2a2. Report the status of the sinlge break point analysis
-    io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Done with single breakpoint analysis.');
-    io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   Best sinlge break point location: " + singleBreakPointBestLocation));
-    io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   c-AIC  = " + singleBreakPointBest_cAIC));
+    gard.concludeAnalysis(gard.bestOverallModelSoFar, TRUE);
 }
 
-// 2a3. Evaluate if the best single breakpoint is the overall best model
-if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
-    gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
-    gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
-    gard.improvements = {'0': {
-                                "deltaAICc": gard.baseline_cAIC - gard.bestOverall_cAIC_soFar,
-                                "breakpoints": gard.bestOverallModelSoFar
-                              }
-                        };
-} else {
-    gard.bestOverallModelSoFar = null;
-}
-
-gard.concludeAnalysis(gard.bestOverallModelSoFar);
 
 
 /* 2b. Evaluation of multiple break points with genetic algorithm
@@ -355,6 +400,7 @@ gard.concludeAnalysis(gard.bestOverallModelSoFar);
 io.ReportProgressMessageMD('GARD', 'multi-breakpoint', 'Performing multi breakpoint analysis using a genetic algorithm');
 
 namespace gard {
+
     // GA.1: Setup global parameters
     populationSize = 32; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
     if(populationSize < mpi.NodeCount() -1 ) {
@@ -364,15 +410,35 @@ namespace gard {
     rateOfMutationsTharAreSmallShifts = 0.8; // some mutations are a new random break point; some are small shifts of the break point to an adjacent location.
     maxFailedAttemptsToMakeNewModel = 7;
     cAIC_diversityThreshold   = 0.01;
-    cAIC_improvementThreshold = 0.01; // I think this was basically 0 in the gard paper
-    maxGenerationsAllowedWithNoNewModelsAdded = 2; // TODO: Not in the GARD paper. use 10?
-    maxGenerationsAllowedAtStagnant_cAIC = 100; // TODO: this is set to 100 in the GARD paper
+ 
+    if (fastRunMode) {
+        maxGenerationsAllowedAtStagnant_cAIC = Min (populationSize, 40);
+        cAIC_improvementThreshold = 2;
+    } else {
+        maxGenerationsAllowedAtStagnant_cAIC = 100;
+        cAIC_improvementThreshold = 0.01;
+    }
 
+    maxGenerationsAllowedWithNoNewModelsAdded = maxGenerationsAllowedAtStagnant_cAIC $ 4; // TODO: Not in the GARD paper. use 10?
+    
     // GA.2: Loop over increasing number of break points
     addingBreakPointsImproves_cAIC = TRUE;
-    numberOfBreakPointsBeingEvaluated = 1;
+    if (startWithBP > 0) {
+        numberOfBreakPointsBeingEvaluated = startWithBP;
+
+        bestOverallModelSoFar = {1, startWithBP};
+        for (i, v; in; json["breakpointData"]) {
+            if (i < startWithBP) {
+                bestOverallModelSoFar[+i] = +(v['bps'])[1];
+            }
+        }
+    } else {
+        numberOfBreakPointsBeingEvaluated = 1;
+    }
+    
     while(addingBreakPointsImproves_cAIC) {
-        // GA.2.a Setup for n number of break points
+        //#profile START;
+       // GA.2.a Setup for n number of break points
         numberOfBreakPointsBeingEvaluated+=1;
         generationsAtCurrentBest_cAIC = 0;
         generationsNoNewModelsAdded = 0;
@@ -477,7 +543,9 @@ namespace gard {
         } else {
             addingBreakPointsImproves_cAIC = FALSE;
         }
-        gard.concludeAnalysis(bestOverallModelSoFar);
+        gard.concludeAnalysis(bestOverallModelSoFar, addingBreakPointsImproves_cAIC);
+        //#profile _hyphy_profile_dump;
+        //utility.FinishAndPrintProfile (_hyphy_profile_dump);
     }
 
 }
@@ -508,7 +576,7 @@ namespace gard {
  */
 
 lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFile, constrainToOneTopology) {
-
+    //#profile START;
 
     currentIndex = 0;
     currentStart = 0;
@@ -583,6 +651,9 @@ lfunction gard.fitPartitionedModel (breakPoints, model, initialValues, saveToFil
     DeleteObject (likelihoodFunction, :shallow);
 
     res[^"terms.parameters"] += df + (model[^"terms.parameters"])[^"terms.model.empirical"];
+    
+    //#profile _fit_dump;
+    //utility.FinishAndPrintProfile (_fit_dump); 
     return res;
 
 }
@@ -653,12 +724,19 @@ lfunction gard.modelIsNotInMasterList(masterList, breakPoints) {
     //return utility.KeyExists(masterList, '' + breakPoints) == FALSE;
 }
 
-function gard.concludeAnalysis(bestOverallModel) {
+function gard.concludeAnalysis(bestOverallModel, writeMaster) {
+    
+    
+    if (writeMaster) {
+        (gard.json)[terms.gard.masterList] = gard.masterList;
+    } else {
+        (gard.json) - terms.gard.masterList;
+    }
     (gard.json)['timeElapsed'] = Time(1) - gard.startTime;
     (gard.json)['siteBreakPointSupport'] = gard.getSiteBreakPointSupport(gard.masterList, gard.bestOverall_cAIC_soFar);
     (gard.json)['singleTreeAICc'] = gard.getSingleTree_cAIC(bestOverallModel);
     (gard.json)['totalModelCount'] = Abs(gard.masterList);
-
+    (gard.json)['bestModelAICc'] = gard.bestOverall_cAIC_soFar;
     gard.setBestModelTreeInfoToJson(bestOverallModel);
 
     if(Abs((gard.json)['trees']) > 1) {
@@ -721,38 +799,27 @@ lfunction gard.getSingleTree_cAIC(bestOverallModel) {
 }
 
 lfunction gard.getSiteBreakPointSupport(modelMasterList, best_cAIC_score) {
-    gard.masterListModels = utility.Keys(modelMasterList);
-    gard.masterList_cAIC_values = utility.Values(modelMasterList);
-    gard.numberOfModels = Columns(gard.masterList_cAIC_values);
 
-    gard.siteAkaikeWeights = {};
-    for(modelIndex=0; modelIndex<gard.numberOfModels; modelIndex=modelIndex+1) {
-        gard.cAIC_delta = best_cAIC_score - gard.masterList_cAIC_values[modelIndex];
-        gard.akaikeWeight = Exp(gard.cAIC_delta * 0.5);
-
-        if( Abs(gard.masterListModels[modelIndex]) > 3) {
-            gard.breakPointMatrix = gard.Helper.convertMatrixStringToMatrix(gard.masterListModels[modelIndex]);
-        } else {
-            gard.breakPointMatrix = 0;
-        }
-        gard.numberOfBreakPoints = Columns(gard.breakPointMatrix);
-
-        for(breakPointIndex=0; breakPointIndex<gard.numberOfBreakPoints; breakPointIndex=breakPointIndex+1) {
-            gard.siteAkaikeWeights[gard.breakPointMatrix[breakPointIndex]] += gard.akaikeWeight;
+    bp_support = {};
+    total_weight = 0;
+    for (model, score; in; modelMasterList) {
+        aicw = Exp ((best_cAIC_score-score)*0.5);
+        if (aicw > 0) {
+            total_weight += aicw;
+            bps = Eval (model);
+            for (bp; in; bps) {
+                bp_support[bp] += aicw;
+            }
         }
     }
-
-    gard.akaikeWeightScallingFactor = 1 / (Max(gard.siteAkaikeWeights)['value']);
-    gard.normalizedSiteAkaikeWeights = {};
-
-    gard.potentialBreakPointList = utility.Keys(gard.siteAkaikeWeights);
-    gard.numberOfPotentialBreakPoints = Abs(gard.siteAkaikeWeights);
-    for(breakPointIndex=0; breakPointIndex<gard.numberOfPotentialBreakPoints; breakPointIndex+=1) {
-        siteIndex = gard.potentialBreakPointList[breakPointIndex];
-        gard.normalizedSiteAkaikeWeights[siteIndex] = gard.siteAkaikeWeights[siteIndex]*gard.akaikeWeightScallingFactor;
+    
+    normalized_support = {};
+    for (bp, support; in; bp_support) {
+        normalized_support[bp] = support / total_weight;
     }
-
-    return gard.normalizedSiteAkaikeWeights;
+    DeleteObject (bp_support);
+    return normalized_support;
+    
 }
 
 
@@ -779,7 +846,7 @@ lfunction gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberO
             }
             breakPoints [breakpoint.index] = (^"gard.variableSiteMap") [Random(0, numberOfPotentialBreakPoints)$1];
             breakPoints = gard.Helper.sortedMatrix(breakPoints);
-
+ 
         } while (gard.validatePartititon (breakPoints, ^"gard.minPartitionSize", ^"gard.numSites") == FALSE);
 
         initializedModels[breakPoints] = ^"math.Infinity";

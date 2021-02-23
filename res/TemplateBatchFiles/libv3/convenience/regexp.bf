@@ -115,7 +115,7 @@ lfunction regexp.PartitionByRegularExpressions(strings, rex) {
         }
     }
 
-
+    
     return result;
 }
 

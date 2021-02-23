@@ -1068,9 +1068,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
 
 //____________________________________________________________________________________
 void    _ExecutionList::StartProfile (void) {
-    if (profileCounter) {
-        DeleteObject (profileCounter);
-    }
+    DeleteObject (profileCounter);
     profileCounter= new _Matrix (lLength, 2, false, true);
     doProfile = 1;
 }
@@ -1283,7 +1281,7 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned
             if (this_command->code == HY_HBL_COMMAND_FORMULA) {
                 _List      hbl_functions;
                 _AVLListX other_functions (&hbl_functions);
-                this_command->BuildListOfDependancies(other_functions, true, *this);
+                this_command->BuildListOfDependancies(other_functions, true, *this, true);
                 
                 for (AVLListXIteratorKeyValue function_iterator : AVLListXIterator (&other_functions)) {
                     _String * function_name = (_String *)other_functions.Retrieve (function_iterator.get_index());
@@ -3269,7 +3267,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 }
 
 
-
+//extern bool _debug_memory_leak;
 
 //____________________________________________________________________________________
 
@@ -3362,12 +3360,24 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
                 indepA.ReorderList();
                 depA.ReorderList();
             }
-
+            
+ 
             //indep.Sort();
             //dep.Sort();
 
             holder.Union (indep,dep);
             leftOverVars.Sort ();
+            /*
+            BufferToConsole("\nIndependents+nDependendts\n");
+            ObjectToConsole(&holder); NLToConsole();
+            BufferToConsole("\nLeftover\n");
+            ObjectToConsole(&leftOverVars); NLToConsole();
+            */
+            
+            /*leftOverVars.Each ([](long v, unsigned long) -> void {
+                StringToConsole(*LocateVar(v)->GetName()); NLToConsole();
+            });*/
+            
             indep.Subtract (leftOverVars,holder);
 
             /* the bit with freeSlots is here b/c
@@ -3458,6 +3468,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
           }
           else{
             //printf ("Return compiled %d\n", ((_Formula*)simpleParameters(1))->GetList().lLength);
+              //if (_debug_memory_leak) {
+              //    BufferToConsole("In return while parsing AssociateList string repr\n");
+              //}
+
             ret_val = ((_Formula*)simpleParameters(1))->Compute(0,nil,nil,nil,HY_ANY_OBJECT,false);
           }
 

@@ -724,6 +724,7 @@ HBLObjectRef _Constant::Time (HBLObjectRef cache) {
     //return     result;
 }
 
+
 //__________________________________________________________________________________
 HBLObjectRef _Constant::Less (HBLObjectRef theObj, HBLObjectRef cache) {
    return _check_type_and_compute (theObj, [] (hyFloat a, hyFloat b) -> hyFloat {return a < b;}, cache);
