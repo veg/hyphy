@@ -200,18 +200,17 @@ Will resume search from the end of the previous run.
     
     gard.startWithBP = utility.Array1D(gard.json["breakpointData"]) - 1;
     gard.masterList = gard.json[terms.gard.masterList];
-} 
+}  else {
+    if (utility.Has (gard.json, "breakpointData", "AssociativeList")) {
+        console.log ("
 
-if (utility.Has (gard.json, "breakpointData", "AssociativeList")) {
-    console.log ("
+    ### Found previous run results in `gard.jsonFileLocation`. 
+    Run terminating without overwriting previous results.
 
-### Found previous run results in `gard.jsonFileLocation`. 
-Run terminating without overwriting previous results.
-
-    ");
-    return 0;
+        ");
+        return 0;
+    }
 }
-
 
 gard.defaultFitFilePath = (gard.alignment[terms.data.file] + '.best-gard');
 KeywordArgument ("output-lf", "Write the best fitting HyPhy analysis snapshot to (default is to save to the same path as the alignment file + 'best-gard')", gard.defaultFitFilePath);
@@ -297,6 +296,14 @@ io.ReportProgressMessageMD("GARD", "baseline-fit", "* " + selection.io.report_fi
 ------------------------------------------------------------------------------*/
 // Setup mpi variableSiteMap
 gard.createLikelihoodFunctionForExport ("gard.exportedModel", gard.model);
+
+if (fastRunMode) {
+    utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.1); 
+} else {
+    utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.001);     
+}
+
+
 gard.queue = mpi.CreateQueue (
                             {
                             "LikelihoodFunctions" : {{"gard.exportedModel"}},
@@ -393,7 +400,6 @@ if (gard.startWithBP > 0) {
 io.ReportProgressMessageMD('GARD', 'multi-breakpoint', 'Performing multi breakpoint analysis using a genetic algorithm');
 
 namespace gard {
-    //#profile START;
 
     // GA.1: Setup global parameters
     populationSize = 32; // the GARD paper used: (numberOfMpiNodes*2 - 2) with 17 mpi nodes
@@ -404,20 +410,21 @@ namespace gard {
     rateOfMutationsTharAreSmallShifts = 0.8; // some mutations are a new random break point; some are small shifts of the break point to an adjacent location.
     maxFailedAttemptsToMakeNewModel = 7;
     cAIC_diversityThreshold   = 0.01;
-    cAIC_improvementThreshold = 0.01; // I think this was basically 0 in the gard paper
-    maxGenerationsAllowedWithNoNewModelsAdded = 2; // TODO: Not in the GARD paper. use 10?
-    maxGenerationsAllowedAtStagnant_cAIC = 100; // TODO: this is set to 100 in the GARD paper
-
+ 
     if (fastRunMode) {
-        utility.SetEnvVariable ("OPTIMIZATION_PRECISION", 0.1); 
         maxGenerationsAllowedAtStagnant_cAIC = Min (populationSize, 40);
         cAIC_improvementThreshold = 2;
+    } else {
+        maxGenerationsAllowedAtStagnant_cAIC = 100;
+        cAIC_improvementThreshold = 0.01;
     }
+
+    maxGenerationsAllowedWithNoNewModelsAdded = maxGenerationsAllowedAtStagnant_cAIC $ 4; // TODO: Not in the GARD paper. use 10?
     
     // GA.2: Loop over increasing number of break points
     addingBreakPointsImproves_cAIC = TRUE;
     if (startWithBP > 0) {
-        numberOfBreakPointsBeingEvaluated = startWithBP + 1;
+        numberOfBreakPointsBeingEvaluated = startWithBP;
 
         bestOverallModelSoFar = {1, startWithBP};
         for (i, v; in; json["breakpointData"]) {
@@ -430,7 +437,8 @@ namespace gard {
     }
     
     while(addingBreakPointsImproves_cAIC) {
-        // GA.2.a Setup for n number of break points
+        //#profile START;
+       // GA.2.a Setup for n number of break points
         numberOfBreakPointsBeingEvaluated+=1;
         generationsAtCurrentBest_cAIC = 0;
         generationsNoNewModelsAdded = 0;
@@ -536,9 +544,9 @@ namespace gard {
             addingBreakPointsImproves_cAIC = FALSE;
         }
         gard.concludeAnalysis(bestOverallModelSoFar, addingBreakPointsImproves_cAIC);
+        //#profile _hyphy_profile_dump;
+        //utility.FinishAndPrintProfile (_hyphy_profile_dump);
     }
-    //#profile _hyphy_profile_dump;
-    //utility.FinishAndPrintProfile (_hyphy_profile_dump);
 
 }
 
@@ -838,7 +846,7 @@ lfunction gard.GA.initializeModels (numberOfBreakPoints, populationSize, numberO
             }
             breakPoints [breakpoint.index] = (^"gard.variableSiteMap") [Random(0, numberOfPotentialBreakPoints)$1];
             breakPoints = gard.Helper.sortedMatrix(breakPoints);
-
+ 
         } while (gard.validatePartititon (breakPoints, ^"gard.minPartitionSize", ^"gard.numSites") == FALSE);
 
         initializedModels[breakPoints] = ^"math.Infinity";
