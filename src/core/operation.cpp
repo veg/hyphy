@@ -231,8 +231,10 @@ _Operation::_Operation  (bool isVar, _String& stuff, bool isG, _VariableContaine
         long f;
         _String theS (stuff);
         if (theParent) {
+            // SLKP 20210223 : why is this here
+            // if a global variable aleady exists, ignore the context?
             f = LocateVarByName(theS);
-
+            
             if (f>=0L && !FetchVar(f)->IsGlobal()) {
                 f = -1L;
             }

@@ -1281,7 +1281,7 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned
             if (this_command->code == HY_HBL_COMMAND_FORMULA) {
                 _List      hbl_functions;
                 _AVLListX other_functions (&hbl_functions);
-                this_command->BuildListOfDependancies(other_functions, true, *this);
+                this_command->BuildListOfDependancies(other_functions, true, *this, true);
                 
                 for (AVLListXIteratorKeyValue function_iterator : AVLListXIterator (&other_functions)) {
                     _String * function_name = (_String *)other_functions.Retrieve (function_iterator.get_index());
