@@ -1516,7 +1516,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                     }
                 };
 
-                if (reference_iteratee->HasLocals()) { // stuff to do
+                if (reference_iteratee->HasLocals() && !traversers[reference_argument]->IsAtRoot()) { // stuff to do
                     _List parameter_sets,
                           matched_subexpressions;
                     for (unsigned long i = 0UL; i < template_parameter_count; i++) {

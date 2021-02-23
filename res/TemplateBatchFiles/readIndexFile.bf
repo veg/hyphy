@@ -5,8 +5,7 @@ fscanf 			(PROMPT_FOR_FILE,"Lines",inLines);
 
 counter	= Columns (inLines);
 
-if (skipCodeSelectionStep)
-{
+if (skipCodeSelectionStep) {
 	stringMatrix 	= {counter$2,1};
 	codeTableMatrix = {counter$2,1};
 	counter  = 0;
@@ -17,7 +16,6 @@ if (skipCodeSelectionStep)
 		stringMatrix 	[k$2] = inLines[k];
 	}
 }
-else
-{
+else {
 	stringMatrix = Transpose (inLines);
 }

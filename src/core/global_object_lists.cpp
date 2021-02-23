@@ -121,7 +121,7 @@ namespace hyphy_global_objects {
             //lf->Rebuild();
                /* 20170328 SLKP: this COULD MODIFY the 'listeners' object, hence the buffering */
           } else if (event_type == kNotificationTypeDelete) {
-            hy_global::HandleApplicationError (_String("Attempted to delete a data set filter ") & GetFilterName(index)->Enquote() & " which is still being referenced by a likelihood function ");
+            hy_global::HandleApplicationError (_String("Attempted to delete a data set filter ") & GetFilterName(index)->Enquote() & " which is referenced by the likelihood function " &  GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, FindLikeFuncIndex (lf), false)->Enquote());
           }
         }
       }
@@ -824,6 +824,11 @@ namespace hyphy_global_objects {
         return nil;
     }
     
+    //____________________________________________________________________________________
+    long    FindLikeFuncIndex (void * const lfp) {
+        return likeFuncList._SimpleList::Find ((long)lfp);
+    }
+
     //____________________________________________________________________________________
     long    FindSCFGName (_String const&s)
     {

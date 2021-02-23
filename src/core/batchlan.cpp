@@ -1068,9 +1068,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
 
 //____________________________________________________________________________________
 void    _ExecutionList::StartProfile (void) {
-    if (profileCounter) {
-        DeleteObject (profileCounter);
-    }
+    DeleteObject (profileCounter);
     profileCounter= new _Matrix (lLength, 2, false, true);
     doProfile = 1;
 }
@@ -3362,12 +3360,24 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
                 indepA.ReorderList();
                 depA.ReorderList();
             }
-
+            
+ 
             //indep.Sort();
             //dep.Sort();
 
             holder.Union (indep,dep);
             leftOverVars.Sort ();
+            /*
+            BufferToConsole("\nIndependents+nDependendts\n");
+            ObjectToConsole(&holder); NLToConsole();
+            BufferToConsole("\nLeftover\n");
+            ObjectToConsole(&leftOverVars); NLToConsole();
+            */
+            
+            /*leftOverVars.Each ([](long v, unsigned long) -> void {
+                StringToConsole(*LocateVar(v)->GetName()); NLToConsole();
+            });*/
+            
             indep.Subtract (leftOverVars,holder);
 
             /* the bit with freeSlots is here b/c
