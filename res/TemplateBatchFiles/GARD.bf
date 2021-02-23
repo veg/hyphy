@@ -410,7 +410,6 @@ namespace gard {
     rateOfMutationsTharAreSmallShifts = 0.8; // some mutations are a new random break point; some are small shifts of the break point to an adjacent location.
     maxFailedAttemptsToMakeNewModel = 7;
     cAIC_diversityThreshold   = 0.01;
-    maxGenerationsAllowedWithNoNewModelsAdded = 2; // TODO: Not in the GARD paper. use 10?
  
     if (fastRunMode) {
         maxGenerationsAllowedAtStagnant_cAIC = Min (populationSize, 40);
@@ -419,6 +418,8 @@ namespace gard {
         maxGenerationsAllowedAtStagnant_cAIC = 100;
         cAIC_improvementThreshold = 0.01;
     }
+
+    maxGenerationsAllowedWithNoNewModelsAdded = maxGenerationsAllowedAtStagnant_cAIC $ 4; // TODO: Not in the GARD paper. use 10?
     
     // GA.2: Loop over increasing number of break points
     addingBreakPointsImproves_cAIC = TRUE;
