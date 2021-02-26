@@ -7065,7 +7065,11 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                 if (CheckEqual(GetIthIndependent(index), bestVal) && fabs (middleValue-maxSoFar) > 1e-12*errorTolerance) {
                     char buf[256];
                     snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::LocateTheBump (index %ld) current value %20.16g (parameter = %20.16g), best value %20.16g (parameter = %20.16g)); delta = %20.16g, tolerance = %20.16g]\n\n", index, middleValue, GetIthIndependent(index), maxSoFar, bestVal, maxSoFar - middleValue, 1e-12*errorTolerance);
-                    _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));
+                    if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
+                        ReportWarningConsole(buf);
+                    } else {
+                        _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));
+                    }
                 }
                 SetIthIndependent(index,bestVal);
             } else {
@@ -8762,10 +8766,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                     
                       
                      if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
-                         NLToConsole();
-                         BufferToConsole("***WARNING***\n");
-                         StringToConsole(err_msg);
-                         NLToConsole();
+                         ReportWarningConsole (err_msg);
                      } else {
                          _TerminateAndDump (err_msg);
                          return -INFINITY;

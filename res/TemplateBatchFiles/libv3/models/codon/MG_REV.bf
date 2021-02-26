@@ -142,10 +142,12 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     if ( null != models.codon.MG_REV.set_branch_length.beta &&  null != models.codon.MG_REV.set_branch_length.alpha) {
 
 
+
         models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
         models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
 
         if (Type(value) == "AssociativeList") {
+
             if (value[terms.model.branch_length_scaler] == terms.model.branch_length_constrain) {
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                     if (Abs(model[terms.parameters.synonymous_rate]) == 0) {
@@ -173,11 +175,12 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                 }
             } else {
                 models.codon.MG_REV.set_branch_length.lp = 0;
+
+
                    
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                     Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     models.codon.MG_REV.set_branch_length.lp += 1;
-
                 }
 
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) {

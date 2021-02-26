@@ -173,6 +173,14 @@ namespace hy_global {
    */
   void    ReportWarning (_String const & message);
   
+    //_______________________________________________________________________
+
+    /** Push waring message to console (high impact warnings)
+     
+     @param message the diagnostic message to report
+     */
+  void    ReportWarningConsole (_String const message);
+
   //_______________________________________________________________________
   
   /**

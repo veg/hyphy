@@ -672,9 +672,19 @@ namespace hy_global {
         
         char   str[] = "\n";
         fwrite (str, 1, 1, hy_message_log_file);
-      fwrite (message.get_str(), 1, message.length(), hy_message_log_file);
+        fwrite (message.get_str(), 1, message.length(), hy_message_log_file);
         fflush (hy_message_log_file);
 #endif
+    }
+
+    //____________________________________________________________________________________
+    void    ReportWarningConsole (_String const message) {
+        if (has_terminal_stdout) {
+            NLToConsole();
+            BufferToConsole("***WARNING***\n");
+            StringToConsole(message);
+            NLToConsole();
+        }
     }
     
     //____________________________________________________________________________________
