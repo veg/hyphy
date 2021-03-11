@@ -451,9 +451,17 @@ if (fitter.do_islands) {
 
 if (utility.Array1D (fitter.callout)) {
     // reconstruct ancestors here
-
+    
+    fitter.site2partition = {};
+    fitter.ancestral_caches = {};
+    for (index, partition; in; fitter.filter_specification) {
+        for (site_index, site; in; partition[terms.data.coverage]) {
+            fitter.site2partition [site] = {{index__,site_index__}};
+        }
+        fitter.ancestral_caches [index] = ancestral.build (fitter.three_hit_results[terms.likelihood_function], +index, None);
+    }
     fitter.site_reports = {};
-    fitter.ancestral_cache = ancestral.build (fitter.three_hit_results[terms.likelihood_function], 0, None);
+    
 
     io.ReportProgressMessageMD ("fitter", "sites", "" + utility.Array1D (fitter.callout) + " individual " + io.SingularOrPlural (utility.Array1D (fitter.callout) , "site", "sites") + " which showed sufficiently strong preference for multiple-hit models");
     fitter.table_output_options = {
@@ -489,8 +497,10 @@ if (utility.Array1D (fitter.callout)) {
 
     fitter.table_output_options[utility.getGlobalValue("terms.table_options.header")] = FALSE;
     utility.ForEachPair (fitter.callout, "_site_", "_value_", "
+    
+         _site_map_ = fitter.site2partition [_site_];
 
-         fitter.site_reports [_site_] = (ancestral.ComputeSubstitutionBySite (fitter.ancestral_cache, +_site_, None))[terms.substitutions];
+         fitter.site_reports [_site_] = (ancestral.ComputeSubstitutionBySite ((fitter.ancestral_caches[_site_map_[0]]), +(_site_map_[1]), None))[terms.substitutions];
 
              if (fitter.do_islands) {
                  fprintf(stdout, io.FormatTableRow(
