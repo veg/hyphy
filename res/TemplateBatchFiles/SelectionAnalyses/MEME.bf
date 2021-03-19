@@ -511,6 +511,8 @@ function meme.apply_proportional_site_constraint.fel (tree_name, node_name, alph
     node_name = tree_name + "." + node_name;
 
     ExecuteCommands ("
+        `node_name`.`alpha_parameter` :< 1e10;
+        `node_name`.`beta_parameter` :< 1e10;
         `node_name`.`alpha_parameter` := (`alpha_factor`) * meme.branch_length__;
         `node_name`.`beta_parameter`  := (`beta_factor`)  * meme.branch_length__;
     ");
@@ -524,6 +526,9 @@ function meme.apply_proportional_site_constraint.bsrel (tree_name, node_name, al
     node_name = tree_name + "." + node_name;
 
     ExecuteCommands ("
+        `node_name`.`alpha_parameter` :< 1e10;
+        `node_name`.`beta_parameter2` :< 1e10;
+        `node_name`.`beta_parameter` :< 1e10;
         `node_name`.`alpha_parameter` := (`alpha_factor`) * meme.branch_length__;
         `node_name`.`beta_parameter`  := (`omega_factor`)  * `node_name`.`alpha_parameter`;
         `node_name`.`beta_parameter2`  := (`beta_factor`)  * meme.branch_length__;
@@ -734,10 +739,16 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
  
     if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" < 0.999999) {
 
+        /*
+            if (^"meme.site_tree_bsrel.aipysurusLaevis.alpha" > 10000) {
+                Export (lfe, ^lf_bsrel);
+                console.log (lfe);
+            }
+        */
+
         LFCompute (^lf_bsrel,LF_START_COMPUTE);
         LFCompute (^lf_bsrel,baseline);
-
-
+     
 
         for (_node_name_; in; ^bsrel_tree_id) {
             if (((^"meme.selected_branches") [partition_index])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
@@ -747,16 +758,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
             }
         }
         
-        /*utility.ForEach (^bsrel_tree_id, "_node_name_",
-        '
-            if ((meme.selected_branches [^"`&partition_index`"])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
-                _node_name_res_ = meme.compute_branch_EBF (^"`&lf_bsrel`", ^"`&bsrel_tree_id`", _node_name_, ^"`&baseline`");
-                (^"`&branch_ebf`")[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.empirical_bayes_factor")];
-                (^"`&branch_posterior`")[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.posterior")];
-            }
-        '
-        );*/
-
+ 
         LFCompute (^lf_bsrel,LF_DONE_COMPUTE);
 
         ^"meme.site_beta_plus" := ^"meme.site_alpha";

@@ -1920,6 +1920,7 @@ bool    _LikelihoodFunction::PreCompute         (void)
         hyFloat tp = cornholio->Compute()->Value();
          if (!cornholio->IsValueInBounds(tp)){
             ReportWarning (_String ("Failing bound checks on ") & *cornholio->GetName() & " = " & _String (tp, "%25.16g"));
+            //break;
         }
     }
 
