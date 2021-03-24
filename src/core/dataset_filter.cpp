@@ -870,6 +870,20 @@ _List *  _DataSetFilter::ComputePatternToSiteMap (void) const {
     return result;
 }
 
+//_______________________________________________________________________
+
+_SimpleList const  _DataSetFilter::SitesForPattern (unsigned long pattern_id) const {
+    _SimpleList result;
+    
+    for (unsigned long s = 0UL; s < duplicateMap.lLength; s++) {
+        if (duplicateMap.get(s) == pattern_id) {
+            result << s;
+        }
+    }
+    
+    return result;
+}
+
 
 
 //_______________________________________________________________________

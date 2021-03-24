@@ -772,17 +772,6 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     can_do_restarts = null;
 
 
-    
-
-    //Export (lfe, likelihoodFunction);
-    //console.log (lfe);
-    //GetString (lfe, likelihoodFunction, -1);
-    //console.log (lfe);
-    //fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
-    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
-    
-
-
 
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
         grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
@@ -1176,7 +1165,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);
             branch_map = (option[utility.getGlobalValue("terms.run_options.partitioned_omega")])[i];
-            
+                        
             component_branches = BranchName( * component_tree, -1);
             for (j = 0; j < Columns(component_branches) - 1; j += 1) {
                 /**

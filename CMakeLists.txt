@@ -3,6 +3,7 @@ project(HyPhy)
 cmake_policy(VERSION 3.0.0)
 
 enable_testing()
+#enable_language(Fortran)
 
 set(CMAKE_CONFIGURATION_TYPES Release)
 

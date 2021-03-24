@@ -302,6 +302,12 @@ public:
    * have the same pattern in the original alignment
    */
 
+    _SimpleList const SitesForPattern(unsigned long) const;
+
+    /**
+     * return a list of sites matching a given pattern
+     */
+
   template<typename SOURCE_TYPE, typename TARGET_TYPE> void PatternToSiteMapper(SOURCE_TYPE const* source, TARGET_TYPE  * target,  long padup, TARGET_TYPE filler) const {
     
   

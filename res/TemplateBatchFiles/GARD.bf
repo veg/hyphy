@@ -212,6 +212,8 @@ Will resume search from the end of the previous run.
     }
 }
 
+
+        
 gard.defaultFitFilePath = (gard.alignment[terms.data.file] + '.best-gard');
 KeywordArgument ("output-lf", "Write the best fitting HyPhy analysis snapshot to (default is to save to the same path as the alignment file + 'best-gard')", gard.defaultFitFilePath);
 gard.lfFileLocation = io.PromptUserForFilePath ("Save the HyPhy analysis snapshot to");
@@ -428,7 +430,7 @@ namespace gard {
 
         bestOverallModelSoFar = {1, startWithBP};
         for (i, v; in; json["breakpointData"]) {
-            if (i < startWithBP) {
+            if (+i < startWithBP) {
                 bestOverallModelSoFar[+i] = +(v['bps'])[1];
             }
         }
