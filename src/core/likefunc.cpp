@@ -1572,7 +1572,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
             }
     // all sites
             else {
-                vDim    +=      BlockLength(i);
+                vDim    +=      BlockLength(whichParts.get (i));
             }
     // only unique patterns for now
 
