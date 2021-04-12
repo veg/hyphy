@@ -54,6 +54,7 @@
     #endif
 #endif
 
+
 #include <time.h>
 #include <float.h>
 #include <signal.h>
@@ -121,7 +122,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.30"),
+                     kHyPhyVersion  = _String ("2.5.31"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -987,5 +988,121 @@ namespace hy_global {
     CheckReceptacleAndStore(&hy_env::last_file_path,kEmptyString,false, new _FString (path_name, false), false);
     return true;
   }
+
+    //____________________________________________________________________________________
+    hyFile* hyFile::openFile (const char * file_path, const char * mode , bool error, long buffer) {
+        hyFile* f = new hyFile;
+#ifdef __ZLIB__
+        if (file_path) {
+            f->_fileReference = gzopen (file_path, mode);
+            if (!f->_fileReference && error) {
+                HandleApplicationError (_String("Could not open file '") & *file_path & "' with mode '" & *mode & "'.");
+            }
+        }
+#else
+        f->_fileReference = doFileOpen(file_path, mode, error);
+#endif
+        return f;
+        
+    }
+
+    //____________________________________________________________________________________
+    void hyFile::close (void) {
+        if (valid()) {
+            #ifdef __ZLIB__
+                gzclose (_fileReference);
+            #else
+                fclose (_fileReference);
+            #endif
+            _fileReference = NULL;
+        }
+    }
+
+    //____________________________________________________________________________________
+    void hyFile::lock (void) {
+        if (valid()) {
+        #ifdef __ZLIB__
+            //gzclose (_fileReference);
+        #else
+            flockfile (_fileReference);
+        #endif
+        }
+    }
+
+    //____________________________________________________________________________________
+    void hyFile::unlock (void) {
+        if (valid()) {
+        #ifdef __ZLIB__
+            //gzclose (_fileReference);
+        #else
+            funlockfile (_fileReference);
+        #endif
+        }
+    }
+
+    //____________________________________________________________________________________
+    void hyFile::rewind (void) {
+        if (valid()) {
+        #ifdef __ZLIB__
+            gzrewind (_fileReference);
+        #else
+            ::rewind (_fileReference);
+        #endif
+        }
+    }
+
+    //____________________________________________________________________________________
+    void hyFile::seek (long pos, int whence) {
+        if (valid()) {
+        #ifdef __ZLIB__
+            gzseek (_fileReference, pos, whence);
+        #else
+            fseek (_fileReference, pos, whence);
+        #endif
+        }
+    }
+    
+    //____________________________________________________________________________________
+
+    size_t hyFile::tell (void) {
+        if (valid()) {
+        #ifdef __ZLIB__
+            return gztell (_fileReference);
+        #else
+            return ftell (_fileReference);
+        #endif
+        }
+    }
+    //____________________________________________________________________________________
+    bool hyFile::feof (void) {
+        if (valid()) {
+        #ifdef __ZLIB__
+            return gzeof (_fileReference);
+        #else
+            return feof_unlocked (_fileReference);
+        #endif
+        }
+    }
+    //____________________________________________________________________________________
+    int hyFile::getc (void) {
+        if (valid()) {
+        #ifdef __ZLIB__
+            return gzgetc (_fileReference);
+        #else
+            return getc_unlocked (_fileReference);
+        #endif
+        }
+    }
+
+    //____________________________________________________________________________________
+    unsigned long hyFile::read (void* buffer, unsigned long size, unsigned long items) {
+        if (valid()) {
+        #ifdef __ZLIB__
+            return gzfread (buffer, size, items, _fileReference);
+        #else
+            return ::fread (buffer, size, items, _fileReference);
+        #endif
+        }
+    }
 
 } // namespace close

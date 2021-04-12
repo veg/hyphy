@@ -42,7 +42,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //#pragma once
 
 #include "hy_strings.h"
-
+#include "global_things.h"
+using namespace hy_global;
 
 #define   HY_STRING_BUFFER_ALLOCATION_CHUNK 16UL
 #define kAppendAnAssignmentToBufferPlain        0x00
@@ -178,6 +179,15 @@ public:
    - SLKP 20170920 initial implementation
    */
   _StringBuffer(_String* buffer);
+    
+    /**
+     * A constructor that read a possibly compressed file
+     * @param file the source file
+     
+     *  Revision history
+     - SLKP 20210411 initial implementation
+     */
+   _StringBuffer(hyFile* file);
 
   /**
    *  Default constructor initializer

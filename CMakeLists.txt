@@ -14,6 +14,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 option(NOAVX OFF)
 option(NOSSE3 OFF)
 option(NONEON OFF)
+option(NOZLIB OFF)
 
 #-------------------------------------------------------------------------------
 # SSE MACROS
@@ -307,14 +308,21 @@ endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 find_package(CURL)
 if(${CURL_FOUND} AND NOT APPLE)
     if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        set(DEFAULT_LIBRARIES crypto curl ssl)
+        string(APPEND DEFAULT_LIBRARIES " crypto curl ssl")
     else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        set(DEFAULT_LIBRARIES dl crypto curl ssl)
+        string(APPEND DEFAULT_LIBRARIES "dl crypto curl ssl")
     endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     add_definitions (-D__HYPHYCURL__)
 endif(${CURL_FOUND} AND NOT APPLE)
 
-
+if(NOT NOZLIB)
+	find_package(ZLIB)
+	if(${ZLIB_FOUND})
+		string(APPEND DEFAULT_LIBRARIES " " ${ZLIB_LIBRARIES})
+		include_directories(${ZLIB_INCLUDE_DIRS})
+		add_definitions (-D__ZLIB__)
+	endif(${ZLIB_FOUND})
+endif(NOT NOZLIB)
 
 #-------------------------------------------------------------------------------
 # uninstall target

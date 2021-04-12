@@ -2656,7 +2656,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
 
 void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
     chain.currentCommand++;
-    FILE*    df;
+    hyFile*    df;
     _String  fName (*GetIthParameter(1));
     _DataSet*ds;
 
@@ -2679,7 +2679,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
             }
             SetStatusLine ("Loading Data");
 
-            df = doFileOpen (fName.get_str(),"rb");
+            df = hyFile::openFile (fName.get_str(),"rb");
             if (df==nil) {
                 // try reading this file as a string formula
                 fName = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
@@ -2689,7 +2689,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
                     return;
                 }
 
-                df = doFileOpen (fName.get_str(),"rb");
+                df = hyFile::openFile (fName.get_str(),"rb");
                 if (df==nil) {
                      HandleApplicationError ((_String ("Could not find source dataset file ") & ((_String*)parameters(1))->Enquote('"')
                                 & " (resolved to '" & fName & "')\nPath stack:\n\t" & GetPathStack ("\n\t")));
@@ -2697,7 +2697,10 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
                 }
             }
             ds = ReadDataSetFile (df,0,nil,nil,chain.nameSpacePrefix?chain.nameSpacePrefix->GetName():nil);
-            fclose (df);
+            if (df) {
+                df->close();
+                delete df;
+            }
         }
     }
 
@@ -5099,7 +5102,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
         FetchVar(LocateVarByName (optimizationPrecision))->SetValue(&precvalue);
     #endif*/
 
-    FILE            *f = doFileOpen (fName.get_str (), "rb");
+    hyFile            *f = hyFile::openFile (fName.get_str (), "rb");
     SetStatusLine   ("Parsing File");
     if (!f) {
         HandleApplicationError (_String("Could not read batch file '") & fName & "'.\nPath stack:\n\t" & GetPathStack("\n\t"));
@@ -5112,8 +5115,9 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
             target.BuildList (source_file);
             target.sourceFile = fName;
         }
-        fclose (f);
+        f->close();
     }
+    if (f) delete f;
 }
 
 
