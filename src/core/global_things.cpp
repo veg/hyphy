@@ -1002,6 +1002,10 @@ namespace hy_global {
 #else
         f->_fileReference = doFileOpen(file_path, mode, error);
 #endif
+        if (!f->_fileReference ) {
+            delete f;
+            f = nil;
+        }
         return f;
         
     }
