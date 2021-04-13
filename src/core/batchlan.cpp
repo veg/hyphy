@@ -1068,9 +1068,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
 
 //____________________________________________________________________________________
 void    _ExecutionList::StartProfile (void) {
-    if (profileCounter) {
-        DeleteObject (profileCounter);
-    }
+    DeleteObject (profileCounter);
     profileCounter= new _Matrix (lLength, 2, false, true);
     doProfile = 1;
 }
@@ -1283,7 +1281,7 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned
             if (this_command->code == HY_HBL_COMMAND_FORMULA) {
                 _List      hbl_functions;
                 _AVLListX other_functions (&hbl_functions);
-                this_command->BuildListOfDependancies(other_functions, true, *this);
+                this_command->BuildListOfDependancies(other_functions, true, *this, true);
                 
                 for (AVLListXIteratorKeyValue function_iterator : AVLListXIterator (&other_functions)) {
                     _String * function_name = (_String *)other_functions.Retrieve (function_iterator.get_index());
@@ -2592,10 +2590,9 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
               HBLObjectRef result;
               if (expression) {
                   //printf ("\n*** Interpreted condition\n");
-                result = expression->Compute();
+                result = expression->Compute(0, nil, nil, nil, HY_ANY_OBJECT, false);
               } else {
-                  //printf ("\n*** Compiled condition\n");
-                result = ((_Formula*)simpleParameters(2))->Compute();
+                result = ((_Formula*)simpleParameters(2))->Compute(0, nil, nil, nil, HY_ANY_OBJECT, false);
               }
 
               // printf ("\n*** %s\n", ((_String*)result->toStr())->sData);
@@ -2659,7 +2656,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
 
 void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
     chain.currentCommand++;
-    FILE*    df;
+    hyFile*    df;
     _String  fName (*GetIthParameter(1));
     _DataSet*ds;
 
@@ -2682,7 +2679,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
             }
             SetStatusLine ("Loading Data");
 
-            df = doFileOpen (fName.get_str(),"rb");
+            df = hyFile::openFile (fName.get_str(),"rb");
             if (df==nil) {
                 // try reading this file as a string formula
                 fName = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
@@ -2692,7 +2689,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
                     return;
                 }
 
-                df = doFileOpen (fName.get_str(),"rb");
+                df = hyFile::openFile (fName.get_str(),"rb");
                 if (df==nil) {
                      HandleApplicationError ((_String ("Could not find source dataset file ") & ((_String*)parameters(1))->Enquote('"')
                                 & " (resolved to '" & fName & "')\nPath stack:\n\t" & GetPathStack ("\n\t")));
@@ -2700,7 +2697,10 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
                 }
             }
             ds = ReadDataSetFile (df,0,nil,nil,chain.nameSpacePrefix?chain.nameSpacePrefix->GetName():nil);
-            fclose (df);
+            if (df) {
+                df->close();
+                delete df;
+            }
         }
     }
 
@@ -3270,7 +3270,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 }
 
 
-
+//extern bool _debug_memory_leak;
 
 //____________________________________________________________________________________
 
@@ -3363,12 +3363,24 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
                 indepA.ReorderList();
                 depA.ReorderList();
             }
-
+            
+ 
             //indep.Sort();
             //dep.Sort();
 
             holder.Union (indep,dep);
             leftOverVars.Sort ();
+            /*
+            BufferToConsole("\nIndependents+nDependendts\n");
+            ObjectToConsole(&holder); NLToConsole();
+            BufferToConsole("\nLeftover\n");
+            ObjectToConsole(&leftOverVars); NLToConsole();
+            */
+            
+            /*leftOverVars.Each ([](long v, unsigned long) -> void {
+                StringToConsole(*LocateVar(v)->GetName()); NLToConsole();
+            });*/
+            
             indep.Subtract (leftOverVars,holder);
 
             /* the bit with freeSlots is here b/c
@@ -3459,6 +3471,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
           }
           else{
             //printf ("Return compiled %d\n", ((_Formula*)simpleParameters(1))->GetList().lLength);
+              //if (_debug_memory_leak) {
+              //    BufferToConsole("In return while parsing AssociateList string repr\n");
+              //}
+
             ret_val = ((_Formula*)simpleParameters(1))->Compute(0,nil,nil,nil,HY_ANY_OBJECT,false);
           }
 
@@ -5086,7 +5102,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
         FetchVar(LocateVarByName (optimizationPrecision))->SetValue(&precvalue);
     #endif*/
 
-    FILE            *f = doFileOpen (fName.get_str (), "rb");
+    hyFile            *f = hyFile::openFile (fName.get_str (), "rb");
     SetStatusLine   ("Parsing File");
     if (!f) {
         HandleApplicationError (_String("Could not read batch file '") & fName & "'.\nPath stack:\n\t" & GetPathStack("\n\t"));
@@ -5099,8 +5115,9 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
             target.BuildList (source_file);
             target.sourceFile = fName;
         }
-        fclose (f);
+        f->close();
     }
+    if (f) delete f;
 }
 
 

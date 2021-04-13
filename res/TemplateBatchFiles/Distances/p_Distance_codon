@@ -34,7 +34,7 @@ function ComputeDistanceFormula (s1,s2)
 {	
 	_SITE_ON_COUNT = {stateCharCount,stateCharCount};
 	
-	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);
+	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, RESOLVE_AMBIGUITIES);
 		
 	
 	if (distChoice == 0)

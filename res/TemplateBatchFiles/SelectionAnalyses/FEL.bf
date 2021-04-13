@@ -147,51 +147,89 @@ selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
 
 namespace_tag = "fel";
 
+KeywordArgument ("precision", "Optimization precision settings for preliminary fits", "standard");
+fel.faster = io.SelectAnOption( {{"standard", "[Default] Use standard optimization settings."}, 
+                                 {"reduced", "Cruder optimizations settings for faster fitting of preliminary models"}},
+                                  "Optimization precision settings for preliminary fits") == "reduced";
+
+
 namespace fel {
+    if (faster) {
+        utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", 0.1);
+    }
     doGTR ("fel");
+    if (faster) {
+        utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", None);
+    }
 }
 
 estimators.fixSubsetOfEstimates(fel.gtr_results, fel.gtr_results[terms.global]);
 
+
 namespace fel {
+    if (faster) {
+        utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", Abs(0.0001*gtr_results[^"terms.fit.log_likelihood"]));
+    }
     doPartitionedMG ("fel", FALSE);
-}
-
-io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
-
-fel.run_full_mg94 = TRUE;
-    
-if (Type (fel.save_intermediate_fits) == "AssociativeList") {
-    if (None != fel.save_intermediate_fits[^"terms.data.value"]) {
-        if (utility.Has (fel.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
-            fel.final_partitioned_mg_results = (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
-            if (utility.Has (fel.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
-                ExecuteCommands ((fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
-                fel.run_full_mg94 = FALSE;
-            }
-        }        
+    if (faster) {
+        utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", None);
     }
 }
-    
-if (fel.run_full_mg94) {    
 
-    fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
-        terms.run_options.model_type: terms.local,
-        terms.run_options.partitioned_omega: fel.selected_branches,
-        terms.run_options.retain_lf_object: TRUE,
-        terms.run_options.apply_user_constraints: fel.zero_branch_length_constrain,
-        terms.run_options.optimization_settings: {
-            "OPTIMIZATION_METHOD" : "coordinate-wise"
-        }
-    }, fel.partitioned_mg_results);
+KeywordArgument ("full-model", "Perform branch length re-optimization under the full codon model", "Yes");
+
+fel.run_full_mg94 = "Yes" == io.SelectAnOption( {{"Yes", "[Default] Perform branch length re-optimization under the full codon model"}, 
+                                         {"No", "Skip branch length re-optimization under the full codon model (faster but less precise)"}},
+                                         "Perform branch length re-optimization under the full codon model");
+
+
+if (fel.run_full_mg94) {
+    io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
+
+    
     if (Type (fel.save_intermediate_fits) == "AssociativeList") {
-        (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = fel.final_partitioned_mg_results;        
-        Export (lfe, ^fel.final_partitioned_mg_results[^"terms.likelihood_function"]);
-        (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
-        io.SpoolJSON (fel.save_intermediate_fits[^"terms.data.value"],fel.save_intermediate_fits[^"terms.data.file"]);      
+        if (None != fel.save_intermediate_fits[^"terms.data.value"]) {
+            if (utility.Has (fel.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
+                fel.final_partitioned_mg_results = (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
+                if (utility.Has (fel.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
+                    ExecuteCommands ((fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
+                    fel.run_full_mg94 = FALSE;
+                }
+            }        
+        }
     }
-}
+    
+    if (fel.run_full_mg94) {    
 
+        if (fel.faster) {
+            utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", Abs(0.0001*fel.partitioned_mg_results[^"terms.fit.log_likelihood"]));
+        }
+        fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
+            terms.run_options.model_type: terms.local,
+            terms.run_options.partitioned_omega: fel.selected_branches,
+            terms.run_options.retain_lf_object: TRUE,
+            terms.run_options.apply_user_constraints: fel.zero_branch_length_constrain,
+            terms.run_options.optimization_settings: {
+                "OPTIMIZATION_METHOD" : "coordinate-wise"
+            }
+        }, fel.partitioned_mg_results);
+
+        if (faster) {
+            utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", None);
+        }
+    
+        if (Type (fel.save_intermediate_fits) == "AssociativeList") {
+            (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = fel.final_partitioned_mg_results;        
+            Export (lfe, ^fel.final_partitioned_mg_results[^"terms.likelihood_function"]);
+            (fel.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
+            io.SpoolJSON (fel.save_intermediate_fits[^"terms.data.value"],fel.save_intermediate_fits[^"terms.data.file"]);      
+        }
+    }
+} else {
+     fel.final_partitioned_mg_results = fel.partitioned_mg_results;
+     estimators.RemoveBranchLengthConstraints (fel.final_partitioned_mg_results);
+     estimators.RemoveGlobalConstraints (fel.final_partitioned_mg_results);
+}
 
 fel.save_intermediate_fits = None;
 
@@ -218,7 +256,6 @@ utility.ForEachPair (fel.filter_specification, "_key_", "_value_",
     'selection.io.json_store_branch_attribute(fel.json, terms.json.global_mg94xrev, terms.branch_length, fel.display_orders[terms.json.global_mg94xrev],
                                              _key_,
                                              selection.io.extract_branch_info((fel.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
-
 
 
 
@@ -249,7 +286,7 @@ selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
 
     fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
-
+    
     node_name = tree_name + "." + node_name;
 
     ExecuteCommands ("

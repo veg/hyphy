@@ -92,7 +92,7 @@ public:
     void        SetFormula (_Formula&); // set the variable to a new formula
 
     void   ClearValue (void) {
-        if (varValue) { delete (varValue); varValue = nil;}
+        if (varValue) { DeleteObject (varValue); varValue = nil;}
     }
 
     const     _Formula * get_constraint (void) const {

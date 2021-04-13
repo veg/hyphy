@@ -1572,7 +1572,7 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
             }
     // all sites
             else {
-                vDim    +=      BlockLength(i);
+                vDim    +=      BlockLength(whichParts.get (i));
             }
     // only unique patterns for now
 
@@ -1920,6 +1920,7 @@ bool    _LikelihoodFunction::PreCompute         (void)
         hyFloat tp = cornholio->Compute()->Value();
          if (!cornholio->IsValueInBounds(tp)){
             ReportWarning (_String ("Failing bound checks on ") & *cornholio->GetName() & " = " & _String (tp, "%25.16g"));
+            //break;
         }
     }
 
@@ -3675,8 +3676,14 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
                 if (translation < 0L) {
                     translation = theFilter->Translate2Frequencies (aState, translationCache, true);
                     if (translation < 0L) {
+                        hyFloat total_weight = 0.;
                         for (unsigned long j = 0UL; j < stateSpaceDim; j++) {
                             ambigs->Store(translationCache[j]);
+                            total_weight += translationCache[j];
+                        }
+                        if (CheckEqual(0., total_weight)) {
+                            _SimpleList pattern_sites = theFilter->SitesForPattern(siteID);
+                            HandleApplicationError(aState.Enquote() & " found at sites " & _String ((_String*)pattern_sites.toStr()) & " of sequence " & theFilter->GetSequenceName(leafID)->Enquote() & " maps to a null probability vector; this will result in an uncomputable likelihood function");
                         }
                         translation = -ambig_resolution_count++;
                     }
@@ -5350,7 +5357,7 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
         while (middle-leftStep <= lowerBound) {
             if (verbosity_level > 100) {
               char buf [512];
-              snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : LB = %g, current try = %.16g, current evaluated midpoint value = %.16g (%s)", index, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
+              snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket (index %ld) HANDLING LEFT BOUNDARY CASES] : initial = %g, LB = %g, current try = %.16g, current evaluated midpoint value = %.16g (%s)", index, initialStep, lowerBound, middle-leftStep, middleValue, first ? "first" : "NOT first");
               BufferToConsole (buf);
             }
 
@@ -5396,6 +5403,9 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                     middle=lowerBound+2.*leftStep;
                     first = false;
                 }
+            } else {
+                middleValue = SetParametersAndCompute (index, middle, &currentValues, gradient);
+                return -2;
             }
         }
 
@@ -5608,11 +5618,16 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                   (or involves a paremeter that has very little effect on the LF), recomputation could be within numerical error
          
         **/
-        if (rightValue - middleValue > 1e-12*errorTolerance || leftValue - middleValue > 1e-12*errorTolerance) {
+        if (rightValue - middleValue > 1e-10*errorTolerance || leftValue - middleValue > 1e-10*errorTolerance) {
          char buf[256], buf2[512];
          snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::Bracket (index %ld) recomputed the value to midpoint: L(%g) = %g [@%g -> %g:@%g -> %g]]", index, middle, middleValue, left, leftValue,right, rightValue);
          snprintf (buf2, 512, "\n\t[_LikelihoodFunction::Bracket (index %ld) BRACKET %s: %20.16g <= %20.16g >= %20.16g. steps, L=%g, R=%g, values %15.12g : %15.12g - %15.12g]", index, successful ? "SUCCESSFUL" : "FAILED", left,middle,right, leftStep, rightStep, leftValue - middleValue, middleValue, rightValue - middleValue);
-         _TerminateAndDump (_String (buf) & "\n" & buf2 &  "\nParameter name " & (index >= 0 ? *GetIthIndependentName(index) : "line optimization"));
+        if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
+            ReportWarningConsole (_String (buf) & "\n" & buf2 &  "\nParameter name " & (index >= 0 ? *GetIthIndependentName(index) : "line optimization"));
+        } else {
+            _TerminateAndDump (_String (buf) & "\n" & buf2 &  "\nParameter name " & (index >= 0 ? *GetIthIndependentName(index) : "line optimization"));
+        }
+         
         }
         successful = rightValue<=middleValue && leftValue<=middleValue;
     }
@@ -7059,10 +7074,14 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                   snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) RESETTING THE VALUE (worse log likelihood obtained; current value %20.16g, best value %20.16g) ]\n\n", index, GetIthIndependent(index), bestVal);
                   BufferToConsole (buf);
                 }
-                if (CheckEqual(GetIthIndependent(index), bestVal) && fabs (middleValue-maxSoFar) > 1e-12*errorTolerance) {
+                if (CheckEqual(GetIthIndependent(index), bestVal) && fabs (middleValue-maxSoFar) > 1e-10*errorTolerance) {
                     char buf[256];
-                    snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::LocateTheBump (index %ld) current value %20.16g (parameter = %20.16g), best value %20.16g (parameter = %20.16g)); delta = %20.16g, tolerance = %20.16]\n\n", index, middleValue, GetIthIndependent(index), maxSoFar, bestVal, maxSoFar - middleValue, 1e-12*errorTolerance);
-                    _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));
+                    snprintf (buf, 256, " \n\tERROR: [_LikelihoodFunction::LocateTheBump (index %ld) current value %20.16g (parameter = %20.16g), best value %20.16g (parameter = %20.16g)); delta = %20.16g, tolerance = %20.16g]\n\n", index, middleValue, GetIthIndependent(index), maxSoFar, bestVal, maxSoFar - middleValue, 1e-10*errorTolerance);
+                    if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
+                        ReportWarningConsole(buf);
+                    } else {
+                        _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));
+                    }
                 }
                 SetIthIndependent(index,bestVal);
             } else {
@@ -8759,10 +8778,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                     
                       
                      if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
-                         NLToConsole();
-                         BufferToConsole("***WARNING***\n");
-                         StringToConsole(err_msg);
-                         NLToConsole();
+                         ReportWarningConsole (err_msg);
                      } else {
                          _TerminateAndDump (err_msg);
                          return -INFINITY;

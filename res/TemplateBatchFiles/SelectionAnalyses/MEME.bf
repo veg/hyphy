@@ -184,45 +184,58 @@ utility.ForEach (meme.global_dnds, "_value_", 'io.ReportProgressMessageMD ("MEME
 
 io.ReportProgressMessageMD ("MEME", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
+KeywordArgument ("full-model", "Perform branch length re-optimization under the full codon model", "Yes");
 
-meme.run_full_mg94 = TRUE;
+meme.run_full_mg94 = "Yes" == io.SelectAnOption( {{"Yes", "[Default] Perform branch length re-optimization under the full codon model"}, 
+                                         {"No", "Skip branch length re-optimization under the full codon model (faster but less precise)"}},
+                                         "Perform branch length re-optimization under the full codon model");
+
+
+if (meme.run_full_mg94) {
+
+    meme.run_full_mg94 = TRUE;
     
-if (Type (meme.save_intermediate_fits) == "AssociativeList") {
-    if (None != meme.save_intermediate_fits[^"terms.data.value"]) {
-        if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
-            meme.final_partitioned_mg_results = (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
-            if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
-                //_PROFILE_NEXUS_LOADS_ = TRUE;
-                ExecuteCommands ((meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
-                //utility.FinishAndPrintProfile (_NEXUS_PROFILE_DATA_);
-                meme.run_full_mg94 = FALSE;
-                
-            }
-        }        
-    }
-}
-
-
-if (meme.run_full_mg94) {    
-    meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
-        terms.run_options.model_type: terms.local,
-        terms.run_options.partitioned_omega: meme.selected_branches,
-        terms.run_options.retain_lf_object: TRUE,
-        terms.run_options.apply_user_constraints: meme.zero_branch_length_constrain,
-        terms.run_options.optimization_settings: {
-            "OPTIMIZATION_METHOD" : "coordinate-wise"
-        }
-    }, meme.partitioned_mg_results);
-
     if (Type (meme.save_intermediate_fits) == "AssociativeList") {
-        (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = meme.final_partitioned_mg_results;        
-        Export (lfe, ^meme.final_partitioned_mg_results[^"terms.likelihood_function"]);
-        (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
-        io.SpoolJSON (meme.save_intermediate_fits[^"terms.data.value"],meme.save_intermediate_fits[^"terms.data.file"]);  
-            
+        if (None != meme.save_intermediate_fits[^"terms.data.value"]) {
+            if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94", "AssociativeList")) {
+                meme.final_partitioned_mg_results = (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"];
+                if (utility.Has (meme.save_intermediate_fits[^"terms.data.value"], "Full-MG94-LF", "String")) {
+                    //_PROFILE_NEXUS_LOADS_ = TRUE;
+                    ExecuteCommands ((meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"]);
+                    //utility.FinishAndPrintProfile (_NEXUS_PROFILE_DATA_);
+                    meme.run_full_mg94 = FALSE;
+                
+                }
+            }        
+        }
     }
-}
 
+
+    if (meme.run_full_mg94) {    
+        meme.final_partitioned_mg_results = estimators.FitMGREV (meme.filter_names, meme.trees, meme.codon_data_info [terms.code], {
+            terms.run_options.model_type: terms.local,
+            terms.run_options.partitioned_omega: meme.selected_branches,
+            terms.run_options.retain_lf_object: TRUE,
+            terms.run_options.apply_user_constraints: meme.zero_branch_length_constrain,
+            terms.run_options.optimization_settings: {
+                "OPTIMIZATION_METHOD" : "coordinate-wise"
+            }
+        }, meme.partitioned_mg_results);
+
+        if (Type (meme.save_intermediate_fits) == "AssociativeList") {
+            (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94"] = meme.final_partitioned_mg_results;        
+            Export (lfe, ^meme.final_partitioned_mg_results[^"terms.likelihood_function"]);
+            (meme.save_intermediate_fits[^"terms.data.value"])["Full-MG94-LF"] = lfe;
+            io.SpoolJSON (meme.save_intermediate_fits[^"terms.data.value"],meme.save_intermediate_fits[^"terms.data.file"]);  
+            
+        }
+    }
+} else {
+    meme.final_partitioned_mg_results = meme.partitioned_mg_results;
+    estimators.RemoveBranchLengthConstraints (meme.final_partitioned_mg_results);
+    estimators.RemoveGlobalConstraints (meme.final_partitioned_mg_results);
+
+}
 meme.save_intermediate_fits = None;  // clear out memory if used
 
 //meme.final_partitioned_mg_results = meme.partitioned_mg_results;
@@ -498,6 +511,8 @@ function meme.apply_proportional_site_constraint.fel (tree_name, node_name, alph
     node_name = tree_name + "." + node_name;
 
     ExecuteCommands ("
+        `node_name`.`alpha_parameter` :< 1e10;
+        `node_name`.`beta_parameter` :< 1e10;
         `node_name`.`alpha_parameter` := (`alpha_factor`) * meme.branch_length__;
         `node_name`.`beta_parameter`  := (`beta_factor`)  * meme.branch_length__;
     ");
@@ -511,6 +526,9 @@ function meme.apply_proportional_site_constraint.bsrel (tree_name, node_name, al
     node_name = tree_name + "." + node_name;
 
     ExecuteCommands ("
+        `node_name`.`alpha_parameter` :< 1e10;
+        `node_name`.`beta_parameter2` :< 1e10;
+        `node_name`.`beta_parameter` :< 1e10;
         `node_name`.`alpha_parameter` := (`alpha_factor`) * meme.branch_length__;
         `node_name`.`beta_parameter`  := (`omega_factor`)  * `node_name`.`alpha_parameter`;
         `node_name`.`beta_parameter2`  := (`beta_factor`)  * meme.branch_length__;
@@ -721,10 +739,16 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
  
     if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" < 0.999999) {
 
+        /*
+            if (^"meme.site_tree_bsrel.aipysurusLaevis.alpha" > 10000) {
+                Export (lfe, ^lf_bsrel);
+                console.log (lfe);
+            }
+        */
+
         LFCompute (^lf_bsrel,LF_START_COMPUTE);
         LFCompute (^lf_bsrel,baseline);
-
-
+     
 
         for (_node_name_; in; ^bsrel_tree_id) {
             if (((^"meme.selected_branches") [partition_index])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
@@ -734,16 +758,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
             }
         }
         
-        /*utility.ForEach (^bsrel_tree_id, "_node_name_",
-        '
-            if ((meme.selected_branches [^"`&partition_index`"])[_node_name_]  == utility.getGlobalValue("terms.tree_attributes.test")) {
-                _node_name_res_ = meme.compute_branch_EBF (^"`&lf_bsrel`", ^"`&bsrel_tree_id`", _node_name_, ^"`&baseline`");
-                (^"`&branch_ebf`")[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.empirical_bayes_factor")];
-                (^"`&branch_posterior`")[_node_name_] = _node_name_res_[utility.getGlobalValue("terms.posterior")];
-            }
-        '
-        );*/
-
+ 
         LFCompute (^lf_bsrel,LF_DONE_COMPUTE);
 
         ^"meme.site_beta_plus" := ^"meme.site_alpha";

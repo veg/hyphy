@@ -53,6 +53,7 @@
 
 #include      "function_templates.h"
 
+#include      <signal.h>
 
 #ifndef __HYPHY_NO_SQLITE__
   #include "sqlite3.h"
@@ -1515,7 +1516,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                     }
                 };
 
-                if (reference_iteratee->HasLocals()) { // stuff to do
+                if (reference_iteratee->HasLocals() && !traversers[reference_argument]->IsAtRoot()) { // stuff to do
                     _List parameter_sets,
                           matched_subexpressions;
                     for (unsigned long i = 0UL; i < template_parameter_count; i++) {
@@ -1875,7 +1876,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
               }
            }
           
-           if (row >= source_object->GetHDim()) {
+           if (row >= source_object->GetHDim() || source_object->GetVDim() == 0) {
                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (new _FString (kEndIteration), false, false, NULL); // end loop
            } else {
                ((_Variable*)parameters.GetItem (reciever_count << 1))->SetValue (source_object->GetMatrixCell(row, column), false, false, NULL);
@@ -2079,9 +2080,16 @@ bool      _ElementaryCommand::HandleGetURL(_ExecutionList& current_program){
 
 bool      _ElementaryCommand::HandleAssert (_ExecutionList& current_program) {
   current_program.advance();
+  static const _String kBreakpointTrap = ("__SIGTRAP__");
 
   try {
     _Formula parsed_expression;
+      
+    if (kBreakpointTrap == * GetIthParameter(0) ) {
+      raise(SIGTRAP);
+      return true;
+    }
+      
     _CheckExpressionForCorrectness (parsed_expression, *GetIthParameter(0UL), current_program, NUMBER);
     if (CheckEqual (parsed_expression.Compute()->Value (), 0.0)) { // assertion failed
       bool soft_assertions = hy_env::EnvVariableTrue(hy_env::assertion_behavior);

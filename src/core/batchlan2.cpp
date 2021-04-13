@@ -795,7 +795,7 @@ void      _ElementaryCommand::ExecuteCase58 (_ExecutionList& chain)
 {
     chain.currentCommand++;
 
-    const _String kStart ("START"),
+   static  const _String kStart ("START"),
                   kPause ("PAUSE"),
                   kResume ("RESUME");
     
@@ -1179,7 +1179,7 @@ _String const _HYHBLTypeToText (long type) {
 //____________________________________________________________________________________
 
 
-void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expression, _ExecutionList const& chain, bool recursive, _AVLListX& collection ) {
+void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expression, _ExecutionList const& chain, bool recursive, _AVLListX& collection, bool help_mode) {
   
   _Formula f, f2;
   
@@ -1190,8 +1190,8 @@ void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expressio
   long     parseCode = Parse(&f,*expression,fpc,&f2);
   
   if (parseCode != HY_FORMULA_FAILED ) {
-    f.ScanFormulaForHBLFunctions (collection, recursive);
-    f2.ScanFormulaForHBLFunctions(collection, recursive);
+    f.ScanFormulaForHBLFunctions (collection, recursive, !help_mode);
+    f2.ScanFormulaForHBLFunctions(collection, recursive, !help_mode);
   }
 
   
@@ -1199,7 +1199,7 @@ void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expressio
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection, bool recursive, _ExecutionList const & chain) {
+void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection, bool recursive, _ExecutionList const & chain, bool help_mode) {
   
   switch (code) {
       
@@ -1208,7 +1208,7 @@ void      _ElementaryCommand::BuildListOfDependancies    (_AVLListX & collection
     case 14:
     {
       if (parameters.lLength) {
-        ScanStringExpressionForHBLFunctions((_String*)parameters (0), chain, recursive, collection);
+        ScanStringExpressionForHBLFunctions((_String*)parameters (0), chain, recursive, collection, help_mode);
       }
       break;
     }

@@ -298,6 +298,7 @@ namespace hyphy_global_objects {
     // added by afyp, March 18, 2007
 
     long      FindLikeFuncName                (_String const&, bool = false);
+    long      FindLikeFuncIndex               (void* const p);
     long      FindModelName                   (_String const&);
 
     extern   _AVLListX batchLanguageFunctionNamesIndexed;

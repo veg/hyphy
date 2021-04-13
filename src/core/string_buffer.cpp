@@ -210,6 +210,25 @@ _StringBuffer::~_StringBuffer (void ){
         s_data = allocated_ptr;
     sa_length = 0L;
 }
+
+//=============================================================
+_StringBuffer::_StringBuffer(hyFile* file): _String () {
+    const unsigned long buffer_size = 65535;
+    this->Initialize();
+    char buffer [buffer_size+1L];
+    unsigned long items_read;
+    _String buffer_str (buffer_size, buffer);
+    do {
+        items_read = file->read (buffer, 1, buffer_size);
+        if (items_read < buffer_size) break;
+        (*this) << buffer_str;
+    } while (items_read == buffer_size);
+    if (items_read) {
+        buffer[items_read] = 0;
+        (*this) << buffer;
+    }
+}
+
 /*
 ==============================================================
 Cloners and Copiers
@@ -249,6 +268,8 @@ _StringBuffer& _StringBuffer::operator = (_StringBuffer && rhs) {
     }
     return *this;
 }
+
+
 
 //=============================================================
 

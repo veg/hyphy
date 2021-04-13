@@ -1074,3 +1074,10 @@ function utility.FinishAndPrintProfile (_hyphy_profile_dump) {
     }
 }
 
+function utility.TrapAllErrors (command) {
+
+    LAST_HBL_EXECUTION_ERROR = "";
+    ExecuteCommands ("SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);" + command);
+    return LAST_HBL_EXECUTION_ERROR;
+}
+

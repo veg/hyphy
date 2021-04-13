@@ -103,7 +103,9 @@ function load_file (prefix) {
     utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
                            codon_data_info[utility.getGlobalValue("terms.data.datafilter")]);
 
+
     partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+
 
     utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"), None);
 
@@ -155,7 +157,8 @@ function load_file (prefix) {
     } else {
         selected_branches = selection.io.defineBranchSets(partitions_and_trees);
     }
-
+    
+ 
     // Place in own attribute called `tested`
      selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
 
@@ -216,8 +219,10 @@ function load_file (prefix) {
  }
 
 function store_tree_information () {
-    // Place in own attribute called `tested`
 
+    // Place in own attribute called `tested`
+    
+ 
      selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
 
         /**  this will return a dictionary of selected branches; one set per partition, like in
@@ -255,6 +260,7 @@ function store_tree_information () {
     }
 
 
+
     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.partitions"),
                                                          filter_specification);
      trees = utility.Map (partitions_and_trees, "_partition_", '_partition_[terms.data.tree]');
@@ -263,11 +269,31 @@ function store_tree_information () {
      filter_names = utility.Map (filter_specification, "_partition_", '_partition_[terms.data.name]');
 
      /* Store original name mapping */
-     for (partition_index = 0; partition_index < partition_count; partition_index += 1) {
+     
+     if (None != name_mapping) {
+         name_mapping_upper_case = {};
+         for (i,n; in; name_mapping) {
+             name_mapping_upper_case[i&&1] = n;
+         }
 
-        selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.original_name"), utility.getGlobalValue ("terms.json.node_label"), display_orders[utility.getGlobalValue ("terms.original_name")],
-                                         partition_index,
-                                         name_mapping);
+         for (partition_index = 0; partition_index < partition_count; partition_index += 1) {
+        
+            local_name_mapping = {};
+            for (l, label; in; (trees[partition_index])[utility.getGlobalValue ("terms.trees.partitioned")]) {
+                if (label == ^"terms.tree_attributes.leaf") {
+                    if (name_mapping / l) {
+                        local_name_mapping [l] = name_mapping [l];
+                    } else {
+                        local_name_mapping [l] = name_mapping_upper_case [l];
+                    }
+                }
+            }
+        
+    
+            selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.original_name"), utility.getGlobalValue ("terms.json.node_label"), display_orders[utility.getGlobalValue ("terms.original_name")],
+                                             partition_index,
+                                             local_name_mapping);
+        }
     }
 
 

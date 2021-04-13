@@ -234,6 +234,36 @@ function estimators.SetCategory2(key, value) {
 	^key = 1;
 }
 
+/**
+ * @name estimators.RemoveBranchLengthConstraints
+ * @param {Dict} estimates
+ */
+lfunction estimators.RemoveBranchLengthConstraints (estimates) {
+     for (part; in; estimates[^"terms.branch_length"]) {
+        for (b; in; part) {
+            for (p; in; b) {
+                if (Type (p) == "AssociativeList") {
+                    p - ^"terms.constraint";
+                }
+            }
+            
+        }
+    }
+    return estimates;
+}
+
+/**
+ * @name estimators.RemoveGlobalConstraints
+ * @param {Dict} estimates
+ */
+lfunction estimators.RemoveGlobalConstraints (estimates) {
+     for (pp; in; estimates[^"terms.global"]) {
+        if (Type (pp) == "AssociativeList") {
+            pp - ^"terms.constraint";
+        }
+    }
+    return estimates;
+}
 
 /**
  * @name estimators.ExtractBranchInformation.copy_local
@@ -405,7 +435,10 @@ function estimators.ExtractMLEsOptions(likelihood_function_id, model_description
 
 
         GetInformation (estimators.ExtractMLEs.map, *_tree_name);
+                
         estimators.ExtractMLEs.branch_names = Rows(estimators.ExtractMLEs.map);
+        
+        
         (estimators.ExtractMLEs.results[terms.branch_length])[estimators.ExtractMLEs.i] = {};
 
         for (estimators.ExtractMLEs.b = 0; estimators.ExtractMLEs.b < Abs(estimators.ExtractMLEs.map); estimators.ExtractMLEs.b += 1) {
@@ -737,17 +770,6 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
 
     can_do_restarts = null;
-
-
-    
-
-    //Export (lfe, likelihoodFunction);
-    //console.log (lfe);
-    //GetString (lfe, likelihoodFunction, -1);
-    //console.log (lfe);
-    //fprintf  ("/Users/sergei/Desktop/busted.txt", CLEAR_FILE, lfe);
-    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 10);
-    
 
 
 
@@ -1143,7 +1165,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);
             branch_map = (option[utility.getGlobalValue("terms.run_options.partitioned_omega")])[i];
-            
+                        
             component_branches = BranchName( * component_tree, -1);
             for (j = 0; j < Columns(component_branches) - 1; j += 1) {
                 /**

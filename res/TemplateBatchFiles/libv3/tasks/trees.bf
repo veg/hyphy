@@ -154,6 +154,7 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
 
 
             if (regexp.Find(treeString, "^#NEXUS")) {
+            
                 ExecuteCommands(treeString);
 
                 if (!utility.GetEnvVariable("IS_TREE_PRESENT_IN_DATA")) {
@@ -207,8 +208,6 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
         }
     }
 
-
-
     return
     {
         utility.getGlobalValue("terms.data.file"): look_for_newick_tree,
@@ -254,6 +253,7 @@ lfunction trees.LoadAnnotatedTopology(look_for_newick_tree) {
  * @returns {Dictionary} an annotated tree
  */
 lfunction trees.LoadAnnotatedTopologyAndMap(look_for_newick_tree, mapping) {
+
 
     reverse = {};
 
@@ -383,6 +383,8 @@ lfunction trees.KillZeroBranches (tree, estimates, branch_set, zero_internal) {
                 if ((estimates[branch])[^"terms.fit.MLE"] < 1e-10) {
                     zero_internal + branch;
                 }
+            } else {
+                zero_internal + branch;
             }
         }
     }
@@ -447,8 +449,10 @@ lfunction trees.ExtractTreeInfoFromTopology(topology_object) {
 
     branch_lengths = BranchLength(^topology_object, -1);
     branch_names   = BranchName(^topology_object, -1);
-    branch_count   = utility.Array1D (branch_names) - 1;
-
+        
+    branch_count   = Max (2,utility.Array1D (branch_names) - 1);
+    
+    
     bls = {};
 
     for (k = 0; k < branch_count; k+=1) {
@@ -456,6 +460,7 @@ lfunction trees.ExtractTreeInfoFromTopology(topology_object) {
             bls [branch_names[k]] = branch_lengths[k];
         }
     }
+     
 
     GetInformation(modelMap, ^topology_object);
 

@@ -2494,7 +2494,7 @@ bool _Formula::HasChanged (bool ingoreCats) {
 
 //__________________________________________________________________________________
 
-void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive) {
+void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive, bool simplify) {
 
 
   auto handle_function_id = [&collection, recursive] (const long hbl_id) -> void {
@@ -2514,7 +2514,9 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
 
   if (theTree) {
 
-    InternalSimplify(theTree);
+    if (simplify) {
+        InternalSimplify(theTree);
+    }
     node_iterator<long> ni (theTree, _HY_TREE_TRAVERSAL_PREORDER);
 
     while (node<long>* iterator = ni.Next()) {

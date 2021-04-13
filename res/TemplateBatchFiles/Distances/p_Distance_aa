@@ -12,7 +12,7 @@ function InitializeDistances (dummy)
 
 function ComputeDistanceFormula (s1,s2)
 {
-	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, DISTANCE_AMBIG_OPTION);
+	GetDataInfo (siteDifferenceCount, filteredData, s1, s2, RESOLVE_AMBIGUITIES);
 	totalDifference    = Transpose(summingVector)*(siteDifferenceCount$tracingVector*summingVector);
 	totalSitesCompared = Transpose(summingVector)*(siteDifferenceCount*summingVector);
 	return 1-totalDifference[0]/totalSitesCompared[0];
