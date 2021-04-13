@@ -383,6 +383,8 @@ lfunction trees.KillZeroBranches (tree, estimates, branch_set, zero_internal) {
                 if ((estimates[branch])[^"terms.fit.MLE"] < 1e-10) {
                     zero_internal + branch;
                 }
+            } else {
+                zero_internal + branch;
             }
         }
     }

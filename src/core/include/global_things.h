@@ -53,7 +53,11 @@
 #include <stdio.h>
 
 #ifdef __HYPHYMPI__
-#include <mpi.h>
+    #include <mpi.h>
+#endif
+
+#ifdef __ZLIB__
+    #include <zlib.h>
 #endif
 
 class _Variable; // forward decl
@@ -121,6 +125,30 @@ namespace hy_global {
    */
   char get_platform_directory_char (void);
   
+
+  /* pass-through structure for reading / writing from a file that may or may not be compressed */
+
+  class hyFile {
+  public:
+      hyFile (void) {_fileReference = NULL;}
+      static hyFile* openFile (const char * file_path, const char * mode , bool error = false, long buffer = 1024*128);
+      inline  bool valid (void) const {return _fileReference != NULL;}
+      void lock (void);
+      void unlock (void);
+      void rewind (void);
+      void seek (long, int);
+      void close ();
+      bool feof (void);
+      unsigned long read (void* buffer, unsigned long size, unsigned long items);
+      size_t tell ();
+      int getc ();
+#ifdef __ZLIB__
+      gzFile _fileReference;
+#else
+      FILE* _fileReference;
+#endif
+  };
+
   /**
    Open the file located at file_path using mode 'mode'
    

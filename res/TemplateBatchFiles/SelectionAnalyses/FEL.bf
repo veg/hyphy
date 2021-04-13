@@ -286,7 +286,7 @@ selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
 
     fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
-
+    
     node_name = tree_name + "." + node_name;
 
     ExecuteCommands ("
