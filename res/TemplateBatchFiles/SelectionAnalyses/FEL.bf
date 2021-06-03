@@ -130,6 +130,9 @@ if (fel.srv == "Yes"){
 /* Prompt for p value threshold */
 fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
 
+KeywordArgument ("resample",  "[Advanced setting, will result in MUCH SLOWER run time] Perform parametric bootstrap resampling to derive site-level null LRT distributions up to this many replicates per site. Recommended use for small to medium (<30 sequences) datasets", "0");
+fel.resample  = io.PromptUser ("\n>[Advanced setting, will result in MUCH SLOWER run time] Perform parametric bootstrap resampling to derive site-level null LRT distributions up to this many replicates per site. Recommended use for small to medium (<30 sequences) datasets",50,0,1000,TRUE);
+
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
 fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
@@ -304,16 +307,14 @@ model.generic.AddGlobal (fel.site.mg_rev, "fel.beta_scaler_nuisance", fel.site_b
 parameters.DeclareGlobal (fel.scalers, {});
 
 
-
 //----------------------------------------------------------------------------------------
-lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping) {
-
-
-
+lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, model_mapping, sim_mode) {
+  
     GetString (lfInfo, ^lf,-1);
-    ExecuteCommands (filter_data);
+    ExecuteCommands (filter_data); 
     __make_filter ((lfInfo["Datafilters"])[0]);
 
+ 
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
 
     if (^"fel.srv"){
@@ -382,7 +383,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     ^"fel.beta_scaler_test"  = 1;
     ^"fel.beta_scaler_nuisance"  = 1;
     
-    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
     
 
     Optimize (results, ^lf
@@ -393,29 +393,48 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
            }
     );
     
-    //assert (0);
-    //Optimize (results, ^lf);
 
-    //alternative = estimators.ExtractMLEs (lf, model_mapping);
-    alternative = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
-    alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+    if (sim_mode) {
+        lrt = 2*results[1][0];    
+    } else {
+        alternative = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
+        alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+    }
 
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
     parameters.SetConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
 
-    //Optimize (results, ^lf, {"OPTIMIZATION_METHOD" : "nedler-mead"});
     Optimize (results, ^lf);
 
-    //Null = estimators.ExtractMLEs (lf, model_mapping);
-    Null = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
+    if (sim_mode) {
+        return lrt - 2*results[1][0];
+    } else {
+        Null = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
+        Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+    }    
 
-    Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+    
+    if (!sim_mode) {
+        if (^"fel.resample") {
+            N = ^"fel.resample";
+            sims = {};
+            GetDataInfo (fi, ^((lfInfo["Datafilters"])[0]), "PARAMETERS");
+            //Export (lfe, ^lf);
+            //console.log (lfe);
+            for (i = 0; i < N; i+=1) {        
+                DataSet null_sim = SimulateDataSet (^lf);
+                DataSetFilter null_filter = CreateFilter (null_sim,3,,,fi["EXCLUSIONS"]);
+                sims + alignments.serialize_site_filter (&null_filter, 0);
+            }
+            null_LRT = {N,1};
+            for (i = 0; i < N; i+=1) {   
+               is = fel.handle_a_site (lf, sims[i], partition_index, pattern_info, model_mapping, TRUE);
+               null_LRT[i] = is;
+            }
+            return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null, utility.getGlobalValue("terms.simulated"): null_LRT};
+        }
+    }
 
-    /*
-    Export (lfs, ^lf);
-    fprintf (MESSAGE_LOG, lfs);
-    assert (0);
-    */
     return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null};
 }
 
@@ -483,15 +502,24 @@ lfunction fel.store_results (node, result, arguments) {
                           0, // alpha==beta
                           0, // LRT
                           1, // p-value,
-                          0  // total branch length of tested branches
+                          0,  // total branch length of tested branches
+                          -1,  // parametric bootstrap LRT
                       } };
 
 
+
     if (None != result) { // not a constant site
+    
+        
 
         lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           1);
+                          
+        if (result / ^"terms.simulated") {
+           pv = +((result[^"terms.simulated"])["_MATRIX_ELEMENT_VALUE_>=" + lrt [utility.getGlobalValue("terms.LRT")]]);
+           lrt [utility.getGlobalValue("terms.p_value")] = (pv+1)/(1+^"fel.resample");
+        }                 
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
         result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_beta");
         result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.Null")], ^"fel.site_beta");
@@ -588,8 +616,8 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
 
     fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                    "Models" : {{"fel.site.mg_rev"}},
-                                   "Headers" : {{"libv3/all-terms.bf"}},
-                                   "Variables" : {{"fel.srv"}}
+                                   "Headers" : {{"libv3/all-terms.bf","libv3/tasks/alignments.bf"}},
+                                   "Variables" : {{"fel.srv","fel.resample"}}
                                  });
 
 
@@ -608,7 +636,8 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
                                                                 "1" : None,
                                                                 "2" : fel.partition_index,
                                                                 "3" : _pattern_info_,
-                                                                "4" : fel.site_model_mapping
+                                                                "4" : fel.site_model_mapping,
+                                                                "5" : 0
                                                                 });
             } else {
                 mpi.QueueJob (fel.queue, "fel.handle_a_site", {"0" : "fel.site_likelihood",
@@ -617,7 +646,8 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
                                                                    (_pattern_info_[utility.getGlobalValue("terms.data.sites")])[0]),
                                                                 "2" : fel.partition_index,
                                                                 "3" : _pattern_info_,
-                                                                "4" : fel.site_model_mapping
+                                                                "4" : fel.site_model_mapping,
+                                                                "5" : 0
                                                                 },
                                                                 "fel.store_results");
             }
@@ -651,9 +681,9 @@ io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");
 
-
-
-
+if (fel.resamples) {
+    fel.json [terms.simulated] =  fel.resamples;
+}
 
 
 io.SpoolJSON (fel.json, fel.codon_data_info[terms.json.json]);

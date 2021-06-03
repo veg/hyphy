@@ -58,6 +58,7 @@ namespace terms{
     branch_length  = "branch length";
     alternative    = "alternative";
     Null           = "null";
+    simulated      = "simulated";
     LRT            = "LRT";
     p_value        = "p-value";
 

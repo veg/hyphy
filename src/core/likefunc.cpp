@@ -793,7 +793,7 @@ void     _LikelihoodFunction::Rebuild (bool rescan_parameters) {
     }
   }
   catch (unsigned long code) {
-    ReportWarning (_String ("Likelihood function cleared because partition index '") & (long) code & "' points to invalid components");
+    ReportWarning (_String ("Likelihood function ") & GetMyName().Enquote() & _String(" cleared because partition index '") & (long) code & "' points to invalid components. " & ignored_error);
     Clear();
     return;
   }
@@ -1524,7 +1524,15 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
 }
 
 
-
+//_______________________________________________________________________________________
+const _String   _LikelihoodFunction::GetMyName (void) const {
+    long i = hyphy_global_objects::FindLikeFuncIndex((void*)this);
+    if (i < 0) {
+        return kEmptyString;
+    }
+    return *hyphy_global_objects::GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, i, false);
+}
+    
 //_______________________________________________________________________________________
 _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whichParts, unsigned runMode, bool remap, _String* storageID) {
     long                        hDim = 1,
