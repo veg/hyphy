@@ -306,14 +306,16 @@ endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 # LIBCurl support
 #-------------------------------------------------------------------------------
 find_package(CURL)
-if(${CURL_FOUND} AND NOT APPLE)
+if(${CURL_FOUND})
     #if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     #    set(DEFAULT_LIBRARIES " crypto curl ssl")
     #else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     #    set(DEFAULT_LIBRARIES "dl crypto curl ssl")
     #endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+    message(${CURL_LIBRARIES})
+    string(APPEND DEFAULT_LIBRARIES " " ${CURL_LIBRARIES})
     add_definitions (-D__HYPHYCURL__)
-endif(${CURL_FOUND} AND NOT APPLE)
+endif(${CURL_FOUND})
 
 if(NOT NOZLIB)
 	find_package(ZLIB 1.2.9)

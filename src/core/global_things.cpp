@@ -1076,6 +1076,7 @@ namespace hy_global {
             return ftell (_fileReference);
         #endif
         }
+        return 0;
     }
     //____________________________________________________________________________________
     bool hyFile::feof (void) {
@@ -1086,6 +1087,7 @@ namespace hy_global {
             return feof_unlocked (_fileReference);
         #endif
         }
+        return true;
     }
     //____________________________________________________________________________________
     int hyFile::getc (void) {
@@ -1096,6 +1098,7 @@ namespace hy_global {
             return getc_unlocked (_fileReference);
         #endif
         }
+        return 0;
     }
 
     //____________________________________________________________________________________
@@ -1107,6 +1110,7 @@ namespace hy_global {
             return ::fread (buffer, size, items, _fileReference);
         #endif
         }
+        return 0;
     }
 
 } // namespace close
