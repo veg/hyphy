@@ -47,7 +47,7 @@ function AddABiasREL (ModelMatrixName&, ModelMatrixName2&, biasedBase)
 	
 	t = 1;	/* branch length, local parameter */
 	c = 1;	/* rate variation */
-	_numericRateMatrix = ModelMatrixName;
+	_numericRateMatrix = Eval ("ModelMatrixName");
 	
 	/* the probability that site is undergoing biased substitution rates */
 	global	  P_bias = 0.1;  P_bias :< 0.5;
@@ -55,25 +55,29 @@ function AddABiasREL (ModelMatrixName&, ModelMatrixName2&, biasedBase)
 	
 	category catVar = (2,{{1-P_bias,P_bias}},MEAN,,{{0,1}},0,1);
 	
-	for (ri = 0; ri < 20; ri = ri+1)
-	{
-		for (ci = ri+1; ci < 20; ci = ci+1)
-		{
+	for (ri = 0; ri < 20; ri += 1) {
+	    // make sure the row is not all 0
+	    max_row = Max (_numericRateMatrix[ri][-1], 0);
+	    //fprintf (stdout, "\n", ri, ":", max_row, "\t");
+	    if (max_row < 1e-10) {
+	        for (ci = 0; ci < 20; ci+=1) {
+	            _numericRateMatrix[ci][ri] = 1e-6;
+	            _numericRateMatrix[ri][ci] = 1e-6;
+	        }  
+	    }
+		for (ci = ri+1; ci < 20; ci += 1) {
 			ModelMatrixName2[ri][ci] := _numericRateMatrix__[ri__][ci__] * t * c;
 			ModelMatrixName2[ci][ri] := _numericRateMatrix__[ri__][ci__] * t * c;
-		
 		}
 	}
 
-	if (biasedBase < 20)
-	{
+	if (biasedBase < 20) {
 		global rateBiasTo 	  = 5.0;
 		global rateBiasFrom	 := 1/rateBiasTo;
 			
 		rateBiasTo    :>1;
 		relBias       :>1;	/* UNUSED ?!? */
-		for (ri = 0; ri < 20; ri = ri+1)
-		{
+		for (ri = 0; ri < 20; ri += 1) {
 			if (ri != biasedBase)
 			{
 				ModelMatrixName2[ri][biasedBase] := _numericRateMatrix__[ri__][biasedBase__] * t * c * ((catVar==1)*rateBiasTo+(catVar==0));
@@ -81,7 +85,7 @@ function AddABiasREL (ModelMatrixName&, ModelMatrixName2&, biasedBase)
 			}
 		}
 	}
-
+	
 	return 1;
 }
 

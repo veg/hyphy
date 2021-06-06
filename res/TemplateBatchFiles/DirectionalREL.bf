@@ -63,8 +63,7 @@ ChoiceList						(reloadFlag, "Reload/New", 1, SKIP_NONE, "New analysis","Start a
 
 ACCEPT_ROOTED_TREES 			= 1;
 
-if (reloadFlag == 0)
-{
+if (reloadFlag == 0) {
 	/* new analysis, fit baseline model */
 	
 	/* this should be a protein alignment */
@@ -95,16 +94,14 @@ if (reloadFlag == 0)
 	
 	treeAVL  = givenTree^0;
 	rootNode = treeAVL[(treeAVL[0])["Root"]];
-	if (Abs(rootNode["Children"]) != 2)
-	{
+	if (Abs(rootNode["Children"]) != 2) {
 		fprintf (stdout, "ERROR: please ensure that the tree is rooted");
 		return 0;
 	}
 	root_left  = "givenTree." + (treeAVL[(rootNode["Children"])[0]])["Name"] + ".t";
 	root_right = "givenTree." + (treeAVL[(rootNode["Children"])[1]])["Name"] + ".t";
 	
-	if (fixFB>0)
-	{
+	if (fixFB>0) {
 		/* branch to first sequence is collapsed to length zero;
 			enforcing identifiability with root sequence */
 		ExecuteCommands ("givenTree."+TipName(givenTree,0)+".t:=0");
@@ -128,7 +125,7 @@ if (reloadFlag == 0)
 	
 	VERBOSITY_LEVEL				= 1;
 	AUTO_PARALLELIZE_OPTIMIZE	= 1;
-	Optimize 						(res0,lf);
+	Optimize 					(res0,lf);
 	AUTO_PARALLELIZE_OPTIMIZE	= 0;
 	VERBOSITY_LEVEL				= -1;
 	
@@ -141,8 +138,7 @@ if (reloadFlag == 0)
 	baselineLogL				= res0[1][0];
 	
 }
-else
-{
+else {
 	/* import baseline LF from file */
 	modelNameString = "_customAAModelMatrix";
 	SetDialogPrompt ("Locate an existing fit:");
