@@ -1327,12 +1327,12 @@ void _SimpleList::RecursiveIndexSort (long from, long to, _SimpleList* index) {
          bottommove = 1, topmove = 1, temp,i, imiddleV = (*index)(middle);
 
     if (middle)
-        while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle) != kCompareLess)) {
+        while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle) == kCompareGreater)) {
             bottommove++;
         }
 
     if (from<to)
-        while ((middle+topmove<=to)&&(Compare(middle+topmove,middle) != kCompareGreater)) {
+        while ((middle+topmove<=to)&&(Compare(middle+topmove,middle) == kCompareLess)) {
             topmove++;
         }
 
@@ -1342,7 +1342,7 @@ void _SimpleList::RecursiveIndexSort (long from, long to, _SimpleList* index) {
             Exchange (list_data[middle-bottommove], list_data[i]);
             Exchange (index->list_data[middle-bottommove], index->list_data[i]);
             bottommove++;
-            while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle)!= kCompareLess)) {
+            while ((middle-bottommove>=from)&&(Compare(middle-bottommove,middle)== kCompareGreater)) {
                 bottommove++;
             }
         }
@@ -1353,7 +1353,7 @@ void _SimpleList::RecursiveIndexSort (long from, long to, _SimpleList* index) {
             Exchange (list_data[middle+topmove], list_data[i]);
             Exchange (index->list_data[middle+topmove], index->list_data[i]);
             topmove++;
-            while ((middle+topmove<=to)&&(Compare(middle+topmove,middle)!= kCompareGreater)) {
+            while ((middle+topmove<=to)&&(Compare(middle+topmove,middle) == kCompareLess)) {
                 topmove++;
             }
         }

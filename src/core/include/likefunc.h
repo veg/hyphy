@@ -202,6 +202,8 @@ public:
     virtual
     _Matrix*    Optimize (_AssociativeList const* options = nil);
     _Matrix*    ConstructCategoryMatrix     (const _SimpleList&, unsigned, bool = true, _String* = nil);
+    const  _String
+                GetMyName (void) const;
 
     hyFloat     SimplexMethod               (hyFloat& precision, unsigned long max_iterations = 100000UL, unsigned long max_evals = 0xFFFFFF);
     void        Anneal                      (hyFloat& precision);

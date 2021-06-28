@@ -80,8 +80,6 @@ const char hy_help_message [] =
 "  -c                       calculator mode; causes HyPhy to drop into an expression evaluation until 'exit' is typed\n"
 "  -d                       debug mode; causes HyPhy to drop into an expression evaluation mode upon script error\n"
 "  -i                       interactive mode; causes HyPhy to always prompt the user for analysis options, even when defaults are available\n"
-"  -p                       postprocessor mode; drops HyPhy into an interactive mode where general post-processing scripts can be selected\n"
-"                           upon analysis completion\n\n"
 "  -m                       write diagnostic messages to messages.log\n"
 "optional global arguments:\n"
 "  BASEPATH=directory path  defines the base directory for all path operations (default is pwd)\n"
@@ -179,7 +177,6 @@ void    ReadInTemplateFiles         (void);
 long    DisplayListOfChoices        (void);
 void    ProcessConfigStr            (_String const&);
 void    ProcessKWStr                (_String const& arg, _String const& arg2, _AssociativeList& kwargs);
-void    ReadInPostFiles             (void);
 long    DisplayListOfPostChoices    (void);
 _String getLibraryPath              (void);
 
@@ -187,8 +184,7 @@ _String getLibraryPath              (void);
 
 
 
-bool    usePostProcessors = false,
-        calculatorMode    = false,
+bool    calculatorMode    = false,
         updateMode       = false,
         pipeMode         = false,
         logInputMode   = false,
@@ -344,69 +340,6 @@ void    ReadInTemplateFiles(void) {
     }
 }
 
-//__________________________________________________________________________________
-void    ReadInPostFiles(void) {
-    static _String kSeparator ("SEPARATOR");
-    //if (!likeFuncList.lLength)
-    //  return;
- 
-    _String dir_sep (get_platform_directory_char());
-  
-    _String fileIndex = libArgDir & hy_standard_library_directory & dir_sep & "postprocessors.lst";
-    FILE*  modelList = fopen (fileIndex.get_str(),"r");
-    
-    if (!modelList) {
-        return;
-    }
-
-    _String theData (modelList);
-    fclose (modelList);
-    
-    if (theData.length()) {
-        _ElementaryCommand::ExtractConditions(theData,0,availablePostProcessors);
-      
-        for (unsigned long i = 0; i<availablePostProcessors.countitems(); i++) {
-            _String* thisString = (_String*)availablePostProcessors(i);
-            _List   thisFile;
-            _ElementaryCommand::ExtractConditions(*thisString,thisString->FirstNonSpaceIndex(),thisFile,',');
-            if (thisFile.lLength!=3) {
-                availablePostProcessors.Delete(i);
-                i--;
-                continue;
-            }
-            for (long j = 0; j<3; j++) {
-                ((_String*)thisFile(j))->StripQuotes();
-            }
-            if ( *(_String*)thisFile(0) != kSeparator) {
-                fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & *(_String*)thisFile(1);
-                FILE* dummyFile = fopen (fileIndex,"r");
-                if (!dummyFile) {
-                    fileIndex =libArgDir& hy_standard_library_directory & dir_sep & *(_String*)thisFile(1);
-                    dummyFile = fopen (fileIndex,"r");
-                }
-                if (dummyFile) {
-                    fclose (dummyFile);
-                    _String* condition = (_String*)thisFile(2);
-                    if (condition->nonempty()) {
-                        _Formula condCheck (*condition,nil);
-                        HBLObjectRef condCheckRes = condCheck.Compute();
-                        if ((!condCheckRes)||(condCheckRes->Value()<.5)) {
-                            availablePostProcessors.Delete(i);
-                            i--;
-                            continue;
-                        }
-                    }
-                    *(_String*)thisFile(1) = fileIndex;
-                    availablePostProcessors.Replace(i,&thisFile,true);
-                    continue;
-                }
-            }
-            availablePostProcessors.Delete(i);
-            i--;
-        }
-
-    }
-}
 
 //__________________________________________________________________________________
 long    DisplayListOfChoices (void) {
@@ -579,12 +512,7 @@ void    ProcessConfigStr (_String const & conf) {
             }
             break;
 
-            case 'p':
-          case 'P': {
-              usePostProcessors = true;
-              break;
-          }
-          case 'c':
+           case 'c':
           case 'C': {
               calculatorMode = true;
               break;
@@ -1026,39 +954,7 @@ int main (int argc, char* argv[]) {
          ex.Execute();
 
  
-        if (usePostProcessors && (!updateMode)) {
-            ReadInPostFiles();
-            printf ("\n\n**********Continue with result processing (y/n)?");
-            _String c_str (StringFromConsole());
-
-            if (logInputMode) {
-                loggedUserInputs && & c_str;
-            }
-
-            if (c_str.get_char(0) !='n' && c_str.get_char(0)!='N' ) {
-                long choice = DisplayListOfPostChoices();
-                while (choice != -1) {
-                    _ExecutionList postEx;
-                    argFile = *(_String*)(*(_List*)availablePostProcessors(choice-1))(1);
-                    PushFilePath (argFile);
-                    ReadBatchFile (argFile, postEx);
-                    postEx.Execute();
-                    PopFilePath ();
-                    printf ("\n\n**********Continue with result processing (y/n)?");
-
-                    c_str = StringFromConsole();
-                    if (logInputMode) {
-                        loggedUserInputs && & c_str;
-                    }
-
-                    if (c_str.get_char(0)=='n' || c_str.get_char(0)=='N' ) {
-                        break;
-                    }
-
-                    choice = DisplayListOfPostChoices();
-                }
-            }
-        }
+        
 #ifdef __HYPHYMPI__
     }
     ReportWarning               (_String ("Node ") & (long)rank & " is shutting down\n");

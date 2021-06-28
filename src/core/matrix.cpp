@@ -7628,11 +7628,11 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index) {
     
 
     if (middle)
-        while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0L) {
+        while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) > 0L) {
             bottommove++;
         }
     if (from<to)
-        while (middle+topmove<=to && CompareRows (middle+topmove,middle) <= 0L) {
+        while (middle+topmove<=to && CompareRows (middle+topmove,middle) < 0L) {
             topmove++;
         }
 
@@ -7642,7 +7642,7 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index) {
             index->Swap(middle-bottommove,i);
             bottommove++;
 
-            while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) >= 0L) {
+            while (middle-bottommove>=from && CompareRows (middle-bottommove, middle) > 0L) {
                 bottommove++;
             }
         }
@@ -7654,7 +7654,7 @@ void    _Matrix::RecursiveIndexSort (long from, long to, _SimpleList* index) {
                 index->Swap(i, middle+topmove);
                 
                 topmove++;
-                while (middle+topmove<=to && CompareRows (middle+topmove,middle) <= 0L) {
+                while (middle+topmove<=to && CompareRows (middle+topmove,middle) < 0L) {
                    topmove++;
                 }
             }
@@ -7760,6 +7760,13 @@ HBLObjectRef       _Matrix::SortMatrixOnColumn (HBLObjectRef mp, HBLObjectRef ca
     }
 
     theColumn.RecursiveIndexSort (0, hDim-1, &idx);
+    /*for (long i = 1; i < hDim; i++) {
+        if (theColumn.theData[i-1] > theColumn.theData[i]) {
+            HandleApplicationError("Resulting matrix is not properly sorted");
+        }
+    }*/
+    
+    
     _Matrix                 *result     = (_Matrix*)_returnMatrixOrUseCache(hDim, vDim, _NUMERICAL_TYPE, theIndex, cache);
 
     if (theIndex) {
