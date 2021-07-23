@@ -93,25 +93,12 @@ KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", n
 KeywordArgument ("branches",  "Branches to test", "All");
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
 KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
+KeywordArgument ("ci",  "Compute profile likelihood confidence intervals for each variable site", "No");
 // One additional KeywordArgument ("output") is called below after namespace fel.
 
 
-fel.table_headers = {{"alpha", "Synonymous substitution rate at a site"}
-                     {"beta", "Non-synonymous substitution rate at a site"}
-                     {"alpha=beta", "The rate estimate under the neutral model"}
-                     {"LRT", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
-                     {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
-                     {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
 
 
-/**
-This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
-is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
-the next set of variables.
-*/
-
-fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
-fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
 
 namespace fel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
@@ -130,11 +117,47 @@ if (fel.srv == "Yes"){
 /* Prompt for p value threshold */
 fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
 
+fel.ci = "Yes" == io.SelectAnOption( {
+    {"Yes", "Compute profile likelihood confidence intervals for dN/dS at each site (~2x slower)."}, 
+    {"No", "[Default] Do not compute likelihood confidence intervals"}},
+    "Compute profile likelihood intervals for site-level dN/dS");
+
 KeywordArgument ("resample",  "[Advanced setting, will result in MUCH SLOWER run time] Perform parametric bootstrap resampling to derive site-level null LRT distributions up to this many replicates per site. Recommended use for small to medium (<30 sequences) datasets", "0");
 fel.resample  = io.PromptUser ("\n>[Advanced setting, will result in MUCH SLOWER run time] Perform parametric bootstrap resampling to derive site-level null LRT distributions up to this many replicates per site. Recommended use for small to medium (<30 sequences) datasets",50,0,1000,TRUE);
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
 fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
+
+if (^"fel.ci") {
+    fel.table_headers = {
+                             {"alpha", "Synonymous substitution rate at a site"}
+                             {"beta", "Non-synonymous substitution rate at a site"}
+                             {"alpha=beta", "The rate estimate under the neutral model"}
+                             {"LRT", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
+                             {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                             {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                             {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
+                             {"dN/dS MLE", "Point estimate for site dN/dS"}
+                             {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
+                         };
+    fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?","dN/dS with confidence intervals"}};
+    fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
+
+} else {
+    fel.table_headers = {{"alpha", "Synonymous substitution rate at a site"}
+                         {"beta", "Non-synonymous substitution rate at a site"}
+                         {"alpha=beta", "The rate estimate under the neutral model"}
+                         {"LRT", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
+                         {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                         {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
+    fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
+    fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
+
+}
+
+
+
 
 fel.partition_count = Abs (fel.filter_specification);
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to include in the FEL analysis');
@@ -393,7 +416,27 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
            }
     );
     
-
+    
+    ci = None;
+    if (^"fel.ci") {
+        if (^"fel.srv") {
+            lf_stash = estimators.TakeLFStateSnapshot (lf);
+            global omega_ratio_for_ci;
+            if (^"fel.alpha_scaler" == 0.0) { // has no syn_variation
+                ^"fel.alpha_scaler" = 1e-8;
+            }
+            omega_ratio_for_ci :< 10000;
+            omega_ratio_for_ci :>0;
+            omega_ratio_for_ci = ^"fel.beta_scaler_test" / ^"fel.alpha_scaler";
+            
+            ^"fel.beta_scaler_test" := omega_ratio_for_ci * ^"fel.alpha_scaler";
+            ci = parameters.GetProfileCI (&omega_ratio_for_ci, lf, 0.95);
+            estimators.RestoreLFStateFromSnapshot (lf, lf_stash);
+        } else {
+            ci = parameters.GetProfileCI ("fel.beta_scaler_test", lf, 0.95);
+        }
+    }
+ 
     if (sim_mode) {
         lrt = 2*results[1][0];    
     } else {
@@ -435,7 +478,9 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         }
     }
 
-    return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null};
+    return {utility.getGlobalValue("terms.alternative") : alternative, 
+            utility.getGlobalValue("terms.Null"): Null,
+            utility.getGlobalValue("terms.confidence_interval"): ci};
 }
 
 /* echo to screen calls */
@@ -443,20 +488,38 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 fel.report.counts        = {{0,0}};
 
 
+if (^"fel.ci") {
+    fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                        fel.report.partition + 1,
+                                        Format(fel.report.row[0],10,3),
+                                        Format(fel.report.row[1],10,3),
+                                        Format(fel.report.row[3],10,3),
+                                        "Pos. p = " + Format(fel.report.row[4],6,4),
+                                        Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")"}};
 
-fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
-                                    fel.report.partition + 1,
-                                    Format(fel.report.row[0],10,3),
-                                    Format(fel.report.row[1],10,3),
-                                    Format(fel.report.row[3],10,3),
-                                    "Pos. p = " + Format(fel.report.row[4],6,4)}};
+    fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                        fel.report.partition + 1,
+                                        Format(fel.report.row[0],10,3),
+                                        Format(fel.report.row[1],10,3),
+                                        Format(fel.report.row[3],10,3),
+                                        "Neg. p = " + Format(fel.report.row[4],6,4),
+                                        Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")"}};
 
-fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
-                                    fel.report.partition + 1,
-                                    Format(fel.report.row[0],10,3),
-                                    Format(fel.report.row[1],10,3),
-                                    Format(fel.report.row[3],10,3),
-                                    "Neg. p = " + Format(fel.report.row[4],6,4)}};
+} else {
+    fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                        fel.report.partition + 1,
+                                        Format(fel.report.row[0],10,3),
+                                        Format(fel.report.row[1],10,3),
+                                        Format(fel.report.row[3],10,3),
+                                        "Pos. p = " + Format(fel.report.row[4],6,4)}};
+
+    fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                        fel.report.partition + 1,
+                                        Format(fel.report.row[0],10,3),
+                                        Format(fel.report.row[1],10,3),
+                                        Format(fel.report.row[3],10,3),
+                                        "Neg. p = " + Format(fel.report.row[4],6,4)}};
+}
 
 function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row) {
 
@@ -496,22 +559,32 @@ lfunction fel.store_results (node, result, arguments) {
 
     partition_index = arguments [2];
     pattern_info    = arguments [3];
-
-    result_row          = { { 0, // alpha
-                          0, // beta
-                          0, // alpha==beta
-                          0, // LRT
-                          1, // p-value,
-                          0,  // total branch length of tested branches
-                          -1,  // parametric bootstrap LRT
-                      } };
+    
+    if (^"fel.ci") {
+        result_row          = { { 0, // alpha
+                              0, // beta
+                              0, // alpha==beta
+                              0, // LRT
+                              1, // p-value,
+                              0,  // total branch length of tested branches
+                              0,   // lower bound dN/dS
+                              0,   // dN/dS MLE
+                              0    // upper bound dN/dS
+                          } };    
+    } else {
+        result_row          = { { 0, // alpha
+                              0, // beta
+                              0, // alpha==beta
+                              0, // LRT
+                              1, // p-value,
+                              0,  // total branch length of tested branches
+                          } };
+    }
 
 
 
     if (None != result) { // not a constant site
     
-        
-
         lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           1);
@@ -527,7 +600,6 @@ lfunction fel.store_results (node, result, arguments) {
         result_row [4] = lrt [utility.getGlobalValue("terms.p_value")];
 
 
-
         sum = 0;
         /*alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
 
@@ -539,6 +611,12 @@ lfunction fel.store_results (node, result, arguments) {
             ');*/
 
         result_row [5] = sum;
+        
+        if (None != result [^"terms.confidence_interval"]) {
+            result_row [6] = (result [^"terms.confidence_interval"])[^"terms.lower_bound"];
+            result_row [7] = (result [^"terms.confidence_interval"])[^"terms.fit.MLE"];
+            result_row [8] = (result [^"terms.confidence_interval"])[^"terms.upper_bound"];
+       }
     }
 
 
@@ -617,7 +695,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                    "Models" : {{"fel.site.mg_rev"}},
                                    "Headers" : {{"libv3/all-terms.bf","libv3/tasks/alignments.bf"}},
-                                   "Variables" : {{"fel.srv","fel.resample"}}
+                                   "Variables" : {{"fel.srv","fel.resample","fel.ci"}}
                                  });
 
 

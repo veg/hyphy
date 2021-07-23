@@ -69,6 +69,7 @@ namespace terms{
     global_mg94xrev = "Global MG94xREV";
 
 
+    confidence_interval = "confidence interval";
     lower_bound = "LB";
     upper_bound = "UB";
     range01 = {

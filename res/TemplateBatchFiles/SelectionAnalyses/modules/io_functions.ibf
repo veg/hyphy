@@ -292,6 +292,21 @@ function selection.io.report_fit (fit, xp, ss) {
 
 //------------------------------------------------------------------------------
 
+lfunction selection.io.report_fit_secondary_stats (fit) {
+    p = utility.Array1D (fit[^"terms.branch_length"]);
+    blm = {p,1};
+    for (i,v; in; fit[^"terms.branch_length"]) {
+        BL = 0;
+        for (b,bl; in; v) {
+            BL += bl [^"terms.fit.MLE"];
+        }
+        blm[+i] = Format (BL, 6, 3);
+    }
+    return  "" + p + " " + io.SingularOrPlural (p, "partition", "partitions") + ". Total tree length by partition (subs/site) " + Join (", ", blm);
+}
+
+//------------------------------------------------------------------------------
+
 function selection.io.report_lrt (lrt) {
 
     return "p-value = " +

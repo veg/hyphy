@@ -2028,6 +2028,7 @@ bool    _Matrix::IsValidTransitionMatrix() const {
         long idx = 0L;
         const hyFloat tolerance = kMachineEpsilon * 10.;
         for (long r = 0L; r < d; r++) {
+            sums [r] = 0.;
             for (long c = 0L; c < d; c++, idx++) {
                 hyFloat term = theData[idx];
                 if (term < 0.0 || term > 1.0) {

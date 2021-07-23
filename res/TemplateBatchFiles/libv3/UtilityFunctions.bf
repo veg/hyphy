@@ -198,7 +198,9 @@ lfunction utility.MatrixToDict (matrix) {
  */
 lfunction utility.DictToArray (object) {
     result = {1,Abs (object)};
-    utility.ForEachPair(object, "key", "_value_", "(`&result`)[+key] = _value_");
+    for (key,_value_; in; object) {
+        result[+key] = _value_;
+    }
     return result;
 }
 
