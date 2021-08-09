@@ -651,9 +651,8 @@ io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");
 
-
-
-
+GetString (_hpv,HYPHY_VERSION,0);
+fel.json[terms.json.runtime] = _hpv;
 
 
 io.SpoolJSON (fel.json, fel.codon_data_info[terms.json.json]);

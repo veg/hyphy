@@ -540,6 +540,10 @@ if (utility.Array1D (fitter.callout)) {
 
 io.ReportProgressMessageMD ("fitter", "writing", "Writing detailed analysis report to \`" + fitter.codon_data_info [terms.json.json] + "\'");
 
+GetString (_hpv,HYPHY_VERSION,0);
+fitter.json[terms.json.runtime] = _hpv;
+
+
 io.SpoolJSON (fitter.json, fitter.codon_data_info [terms.json.json]);
 return fitter.json;
 

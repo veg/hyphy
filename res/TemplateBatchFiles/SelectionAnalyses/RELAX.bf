@@ -1160,6 +1160,10 @@ if (relax.model_set == "All") {
 
 selection.io.stopTimer (relax.json [terms.json.timers], "Overall");
 
+GetString (_hpv,HYPHY_VERSION,0);
+relax.json[terms.json.runtime] = _hpv;
+
+
 io.SpoolJSON (relax.json, relax.codon_data_info [terms.json.json]);
 
 return relax.json;

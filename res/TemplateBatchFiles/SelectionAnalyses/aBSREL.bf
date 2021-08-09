@@ -693,6 +693,10 @@ absrel.json [terms.json.test_results] = {
 
 selection.io.stopTimer (absrel.json [terms.json.timers], "Overall");
 utility.ToggleEnvVariable ("USE_LAST_RESULTS", None);
+
+GetString (_hpv,HYPHY_VERSION,0);
+absrel.json[terms.json.runtime] = _hpv;
+
 io.SpoolJSON (absrel.json, absrel.codon_data_info [terms.json.json]);
 
 
