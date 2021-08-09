@@ -162,7 +162,7 @@ public:
   _SimpleList const &DuplicateMap(void) const { return theMap; }
 
   friend class _DataSetFilter;
-  friend _DataSet *ReadDataSetFile(FILE *, char, _String *, _String *,
+  friend _DataSet *ReadDataSetFile(hyFile *, char, _String *, _String *,
                                    _String *, _TranslationTable *,
                                    _ExecutionList *);
   friend long ProcessLine(_String &s, FileState *fs, _DataSet &ds);
@@ -200,17 +200,17 @@ private:
   bool useHorizontalRep;
 };
 
-void ReadNextLine(FILE *fp, _StringBuffer *s, FileState *fs, bool append = false,
+void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool append = false,
                   bool upCase = true);
 
-_DataSet *ReadDataSetFile(FILE *, char = 0, _String * = nil, _String * = nil,
+_DataSet *ReadDataSetFile(hyFile *, char = 0, _String * = nil, _String * = nil,
                           _String * = nil,
                           _TranslationTable * = &hy_default_translation_table,
                           _ExecutionList *target = nil);
 
 
 bool StoreADataSet(_DataSet *, _String *);
-void    ReadNexusFile               (FileState& fState, FILE*f, _DataSet& result);
+void    ReadNexusFile               (FileState& fState, hyFile*f, _DataSet& result);
 
 
 extern _StringBuffer nexusBFBody;

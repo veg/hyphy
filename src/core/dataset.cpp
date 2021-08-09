@@ -1614,7 +1614,7 @@ void    FilterRawString (_String& s, FileState* fs, _DataSet & ds) {
 
 //_________________________________________________________________________________________________
 
-void    ProcessTree (FileState *fState, FILE* f, _StringBuffer& CurrentLine) {
+void    ProcessTree (FileState *fState, hyFile * f, _StringBuffer& CurrentLine) {
     
     // TODO SLKP 20180921 this does extra work to read in the tree string multiple times;
     // the solution is to have a proper buffer wrapper, and to
@@ -1622,7 +1622,7 @@ void    ProcessTree (FileState *fState, FILE* f, _StringBuffer& CurrentLine) {
     class _MultilineBuffer : public _StringBuffer {
         public:
         
-        _MultilineBuffer (_String const& current_line, FileState *fs, FILE* f) : _StringBuffer (current_line) {
+        _MultilineBuffer (_String const& current_line, FileState *fs, hyFile* f) : _StringBuffer (current_line) {
             file_state = fs;
             file = f;
         }
@@ -1642,7 +1642,7 @@ void    ProcessTree (FileState *fState, FILE* f, _StringBuffer& CurrentLine) {
         }
         
         FileState *file_state;
-        FILE * file;
+        hyFile * file;
 
     };
     
@@ -1809,7 +1809,7 @@ bool SkipLine (_StringBuffer& theLine, FileState* fS) {
 
 
 //_________________________________________________________
-void ReadNextLine (FILE* fp, _StringBuffer *s, FileState* fs, bool, bool upCase) {
+void ReadNextLine (hyFile * fp, _StringBuffer *s, FileState* fs, bool, bool upCase) {
     _StringBuffer  tempBuffer (1024L);
   
     fs->currentFileLine ++;
@@ -1817,7 +1817,7 @@ void ReadNextLine (FILE* fp, _StringBuffer *s, FileState* fs, bool, bool upCase)
     char lastc;
     
     if (fp) {
-        lastc = getc_unlocked (fp);
+        lastc = fp->getc();
     } else {
         lastc = fs->pInSrc<fs->theSource->length()?fs->theSource->char_at(fs->pInSrc++):0;
     }
@@ -1825,12 +1825,12 @@ void ReadNextLine (FILE* fp, _StringBuffer *s, FileState* fs, bool, bool upCase)
     
     if (fs->fileType != 3) { // not NEXUS - do not skip [..]
         if (fp)
-            while ( !feof_unlocked(fp) && lastc!=10 && lastc!=13 ) {
+            while ( !fp->feof() && lastc!=10 && lastc!=13 ) {
                 if (lastc) {
                     tempBuffer << lastc;
                 }
                 
-                lastc = getc_unlocked(fp);
+                lastc = fp->getc();
             }
         else
             while (lastc && lastc!=10 && lastc!=13 ) {
@@ -1843,7 +1843,7 @@ void ReadNextLine (FILE* fp, _StringBuffer *s, FileState* fs, bool, bool upCase)
             lastc = toupper(lastc);
         }
         
-        while (((fp&&(!feof_unlocked(fp)))||(fs->theSource&&(fs->pInSrc<=fs->theSource->length ()))) && lastc!='\r' && lastc!='\n') {
+        while (((fp&&!fp->feof())||(fs->theSource&&(fs->pInSrc<=fs->theSource->length ()))) && lastc!='\r' && lastc!='\n') {
             if (lastc=='[') {
                 if (fs->isSkippingInNEXUS) {
                     ReportWarning ("Nested comments in NEXUS really shouldn't be used.");
@@ -1862,9 +1862,9 @@ void ReadNextLine (FILE* fp, _StringBuffer *s, FileState* fs, bool, bool upCase)
             
             if (fp) {
                 if (upCase) {
-                    lastc = toupper(fgetc(fp));
+                    lastc = toupper(fp->getc());
                 } else {
-                    lastc = getc_unlocked(fp);
+                    lastc = fp->getc();
                 }
             } else {
                 if (upCase) {
@@ -1883,7 +1883,7 @@ void ReadNextLine (FILE* fp, _StringBuffer *s, FileState* fs, bool, bool upCase)
     
     tempBuffer.TrimSpace();
     
-    if ( (fp && feof_unlocked (fp)) || (fs->theSource && fs->pInSrc >= fs->theSource->length()) ) {
+    if ( (fp && fp->feof ()) || (fs->theSource && fs->pInSrc >= fs->theSource->length()) ) {
         if (tempBuffer.empty ()) {
             *s = "";
             return;
@@ -1918,7 +1918,7 @@ void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds) {
 
 
 //_________________________________________________________
-_DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, _String* namespaceID, _TranslationTable* dT, _ExecutionList* ex) {
+_DataSet* ReadDataSetFile (hyFile *f, char execBF, _String* theS, _String* bfName, _String* namespaceID, _TranslationTable* dT, _ExecutionList* ex) {
     
     static const _String kNEXUS ("#NEXUS"),
                          kDefSeqNamePrefix ("Species");
@@ -1928,7 +1928,8 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
     
     try {
     
-        if (f) flockfile (f);
+        //if (f) flockfile (f);
+        if (f) f->lock();
         
         hy_env::EnvVariableSet(hy_env::data_file_tree_string, new _Matrix, false);
         
@@ -1971,13 +1972,13 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
         fState.pInSrc            = 0;
         fState.theNamespace      = namespaceID;
         
-        if (!(f||theS)) {
+        if (! f && !theS) {
             throw _String ("ReadDataSetFile received null file AND string references. At least one must be specified");
         }
         // done initializing
         
         if       (f) {
-            rewind  (f);
+            f->rewind  ();
         }
         
         _StringBuffer     CurrentLine;
@@ -2029,7 +2030,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                         if (fState.fileType==1) { // PHYLIP
                             if ((filePosition<0)&&(fState.autoDetect)) {
                                 filePosition = (f?
-                                                ftell (f)
+                                                f->tell ()
     #ifdef __WINDOZE__
                                                 -1
     #endif
@@ -2086,7 +2087,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
                                         fState.autoDetect = true;
                                         
                                         if(f) {
-                                            fseek (f, filePosition, SEEK_SET);
+                                            f->seek (filePosition, SEEK_SET);
                                         } else {
                                             fState.pInSrc = filePosition;
                                         }
@@ -2228,7 +2229,7 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
             {
                 _TranslationTable *trialTable = new _TranslationTable (hy_default_translation_table);
                 trialTable->baseLength = 2;
-                if (f) funlockfile (f);
+                if (f)  f->unlock();
                 _DataSet * res2 = ReadDataSetFile (f, execBF, theS, bfName, namespaceID, trialTable);
                 if (res2->GetNoTypes()) {
                     DeleteObject (result);
@@ -2298,11 +2299,11 @@ _DataSet* ReadDataSetFile (FILE*f, char execBF, _String* theS, _String* bfName, 
         }
     } catch (const _String& err) {
         DeleteObject (result);
-        if (f) funlockfile (f);
+        if (f) f->unlock();
         HandleApplicationError(err);
         result = nil;
     }
-    if (f) funlockfile (f);
+    if (f) f->unlock();
     return result;
 }
 
