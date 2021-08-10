@@ -537,6 +537,10 @@ for (key, value; in;  prime.report.count) {
 selection.io.stopTimer (prime.json [terms.json.timers], "Total time");
 selection.io.stopTimer (prime.json [terms.json.timers], "PRIME analysis");
 
+GetString (_hpv,HYPHY_VERSION,0);
+prime.json[terms.json.runtime] = _hpv;
+
+
 io.SpoolJSON (prime.json, prime.codon_data_info[terms.json.json]);
 
 //----------------------------------------------------------------------------------------

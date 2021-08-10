@@ -811,6 +811,9 @@ utility.ForEachPair (fade.sites_found_summary, "_residue_", "_count_",
 
 selection.io.stopTimer (fade.json [terms.json.timers], "Overall");
 
+GetString (_hpv,HYPHY_VERSION,0);
+fade.json[terms.json.runtime] = _hpv;
+
 io.SpoolJSON (fade.json, fade.alignment_info[terms.json.json]);
 
 // HELPER FUNCTIONS GO HERE
