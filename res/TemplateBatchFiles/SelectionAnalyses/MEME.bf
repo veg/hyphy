@@ -502,6 +502,10 @@ io.ReportProgressMessageMD ("MEME", "results", "** Found _" + meme.report.count[
 selection.io.stopTimer (meme.json [terms.json.timers], "Total time");
 selection.io.stopTimer (meme.json [terms.json.timers], "MEME analysis");
 
+GetString (_hpv,HYPHY_VERSION,0);
+meme.json[terms.json.runtime] = _hpv;
+
+
 io.SpoolJSON (meme.json, meme.codon_data_info[terms.json.json]);
 
 //----------------------------------------------------------------------------------------

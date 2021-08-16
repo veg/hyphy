@@ -636,6 +636,9 @@ namespace fubar {
 fubar.json [terms.fubar.grid]           = fubar.grid_with_weights;
 selection.io.stopTimer (fubar.json [terms.json.timers], "Overall");
 
+GetString (_hpv,HYPHY_VERSION,0);
+fubar.json[terms.json.runtime] = _hpv;
+
 io.SpoolJSON (fubar.json, fubar.codon_data_info[terms.json.json]);
 
 return fubar.json;

@@ -763,6 +763,9 @@ if (fel.resamples) {
     fel.json [terms.simulated] =  fel.resamples;
 }
 
+GetString (_hpv,HYPHY_VERSION,0);
+fel.json[terms.json.runtime] = _hpv;
+
 
 io.SpoolJSON (fel.json, fel.codon_data_info[terms.json.json]);
 
