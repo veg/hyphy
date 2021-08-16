@@ -58,6 +58,7 @@ namespace terms{
     branch_length  = "branch length";
     alternative    = "alternative";
     Null           = "null";
+    simulated      = "simulated";
     LRT            = "LRT";
     p_value        = "p-value";
 
@@ -68,6 +69,7 @@ namespace terms{
     global_mg94xrev = "Global MG94xREV";
 
 
+    confidence_interval = "confidence interval";
     lower_bound = "LB";
     upper_bound = "UB";
     range01 = {
@@ -363,6 +365,7 @@ namespace terms{
         defineQ                 = "defineQ";
         q_ij                    = "q_ij";
         rate_matrix             = "Q";
+        rate_generator          = "rate-generator";
         matrix_id               = "matrix-id";
         rate_entry              = "rate-entry";
         empirical_rates         = "empirical-rates";

@@ -54,6 +54,7 @@
 "RMV","Remove sequences with stop codons from the data.","CleanStopCodons.bf";
 
 "","Miscellaneous items.","!Miscellaneous";
+"DEPS","Analyze Directional Evolution in Protein Sequences (DEPS)","DirectionalREL.bf";
 "FAA","Fit a multiple fitness class model to amino acid data.","FitnessAAModels.bf";
 "KH","Perform a Kishino-Hasegawa test on two competing phylogenies","KHTest.bf";
 "LZ","Compute Lempel-Ziv complexity and entropy of (possibly unaligned) sequences","LZ_Complexity.bf";
