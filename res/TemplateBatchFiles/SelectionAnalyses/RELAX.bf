@@ -41,7 +41,8 @@ relax.analysis_description = {
                                                 Version 3 provides support for >2 branch sets.
                                                 Version 3.1 adds LHC + Nedler-Mead initial fit phase and keyword support.
                                                 Version 3.1.1 adds some bug fixes for better convergence.
-                                                Version 4.0 adds support for synonymous rate variation.",
+                                                Version 4.0 adds support for synonymous rate variation.
+                                                Version 4.1 adds further support for multiple hit models",
                                terms.io.version : "3.1.1",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
@@ -140,8 +141,6 @@ KeywordArgument ("test",  "Branches to use as the test set", null, "Choose the s
 KeywordArgument ("reference",  "Branches to use as the reference set", null, "Choose the set of branches to use as the _reference_ set");
 
 
-
-
 io.DisplayAnalysisBanner ( relax.analysis_description );
 
 selection.io.startTimer (relax.json [terms.json.timers], "Overall", 0);
@@ -162,6 +161,15 @@ KeywordArgument ("starting-points", "The number of initial random guesses to see
 relax.N.initial_guesses = io.PromptUser ("The number of initial random guesses to 'seed' rate values optimization", 1, 1, relax.initial_grid.N$10, TRUE);
 
 io.ReportProgressMessageMD('RELAX',  'selector', 'Branch sets for RELAX analysis');
+
+KeywordArgument ("multiple-hits",  "Include support for multiple nucleotide substitutions", "None");
+
+relax.multi_hit = io.SelectAnOption ({
+                                        {"Double", "Include branch-specific rates for double nucleotide substitutions"}
+                                        {"Double+Triple", "Include branch-specific rates for double and triple nucleotide substitutions"}
+                                        {"None", "[Default] Use standard models which permit only single nucleotide changes to occur instantly"}
+                                  }, "Include support for multiple nucleotide substitutions");
+
 
 
 if (relax.numbers_of_tested_groups == 2) {
@@ -313,32 +321,86 @@ utility.ForEachPair (relax.filter_specification, "_key_", "_value_",
 
 
 
-relax.model_generator = "models.codon.BS_REL.ModelDescription";
+if (relax.multi_hit == "None") {
+    relax.model_generator = "models.codon.BS_REL.ModelDescription";
 
-if (relax.do_srv) {
-    if (relax.do_bs_srv) {
-        relax.model_generator = "relax.model.with.GDD";
-        relax.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
-        relax.rate_class_arguments = {{relax.synonymous_rate_classes__,relax.rate_classes__}};
-    } else {
+    if (relax.do_srv) {
+        if (relax.do_bs_srv) {
+            relax.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
+            relax.rate_class_arguments = {{relax.synonymous_rate_classes__,relax.rate_classes__}};
+        } else {
     
-        lfunction relax.model.with.GDD (type, code, rates) {        
-            def = models.codon.BS_REL.ModelDescription (type, code, rates);
-            options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("relax.synonymous_rate_classes"),
-                       utility.getGlobalValue("terms._namespace") : "relax._shared_srv"};
+            lfunction relax.model.with.GDD (type, code, rates) {        
+                def = models.codon.BS_REL.ModelDescription (type, code, rates);
+                options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("relax.synonymous_rate_classes"),
+                           utility.getGlobalValue("terms._namespace") : "relax._shared_srv"};
 
-            if (utility.getGlobalValue("relax.do_srv_hmm")) {
-                    options [utility.getGlobalValue ("terms.rate_variation.HMM")] = "equal";
+                if (utility.getGlobalValue("relax.do_srv_hmm")) {
+                        options [utility.getGlobalValue ("terms.rate_variation.HMM")] = "equal";
+                }
+                def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory (options);
+                return def;
             }
-            def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory (options);
-            return def;
-        }
         
-        relax.model_generator = "relax.model.with.GDD";
+            relax.model_generator = "relax.model.with.GDD";
+            relax.rate_class_arguments = relax.rate_classes;
+        }
+    } else {
         relax.rate_class_arguments = relax.rate_classes;
     }
 } else {
-    relax.rate_class_arguments = relax.rate_classes;
+
+    lfunction relax.model.BS_REL_MH (type, code, rates) {        
+        def = models.codon.BS_REL.ModelDescription (type, code, rates);
+        def [utility.getGlobalValue("terms.model.defineQ")] = "models.codon.BS_REL._DefineQ.MH";
+        if (^'relax.multi_hit' == "Double") {
+            def [utility.getGlobalValue("terms.model.rate_generator")] = "function rate_generator (fromChar, toChar, namespace, model_type, model) {
+               return models.codon.MG_REV_MH._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                'beta_' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                'omega' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate')
+               );}";
+            }  else {
+                def [utility.getGlobalValue("terms.model.rate_generator")] = "function rate_generator (fromChar, toChar, namespace, model_type, model) {
+                       return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                        'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                        'beta_' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                        'omega' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                        'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate'),
+                        'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate'),
+                        'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate')
+                       );}"                
+        }       
+        return def;
+    }
+    
+    relax.model_generator = "relax.model.BS_REL_MH";
+ 
+    if (relax.do_srv) {
+        if (relax.do_bs_srv) {
+            relax.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
+            relax.rate_class_arguments = {{relax.synonymous_rate_classes__,relax.rate_classes__}};
+        } else {
+    
+            lfunction relax.model.with.GDD (type, code, rates) {        
+                def = relax.model.BS_REL_MH (type, code, rates);
+                options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("relax.synonymous_rate_classes"),
+                           utility.getGlobalValue("terms._namespace") : "relax._shared_srv"};
+
+                if (utility.getGlobalValue("relax.do_srv_hmm")) {
+                        options [utility.getGlobalValue ("terms.rate_variation.HMM")] = "equal";
+                }
+                def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory (options);
+                return def;
+            }
+        
+            relax.model_generator = "relax.model.with.GDD";
+            relax.rate_class_arguments = relax.rate_classes;
+        }
+    } else {
+        relax.rate_class_arguments = relax.rate_classes;
+    }
 }
 
 selection.io.stopTimer (relax.json [terms.json.timers], "Preliminary model fitting");
@@ -366,7 +428,6 @@ if (relax.model_set == "All") { // run all the models
         relax.distribution          = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
         relax.weight_multipliers    = parameters.helper.stick_breaking (utility.SwapKeysAndValues(utility.MatrixToDict(relax.distribution["weights"])),None);
         relax.constrain_parameters   = parameters.ConstrainMeanOfSet(relax.distribution["rates"],relax.weight_multipliers,1,"relax");
-        
         
         relax.i = 0;
         for (key, value; in; relax.constrain_parameters[terms.global]){
@@ -509,6 +570,9 @@ if (relax.model_set == "All") { // run all the models
                                                              "{terms.json.omega_ratio : relax.inferred_ge_distribution [_index_][0],
                                                                terms.json.proportion  : relax.inferred_ge_distribution [_index_][1]}")
                                        };
+                                       
+                                       
+        relax.report_multi_hit (elax.general_descriptive.fit, relax.distribution_for_json, "RELAX", "gd-mh");
         selection.io.json_store_lf (relax.json,
                                     relax.general_descriptive_name,
                                     relax.general_descriptive.fit[terms.fit.log_likelihood],
@@ -571,7 +635,6 @@ if (relax.numbers_of_tested_groups == 2) {
 	relax.model_for_srv      = "relax.test";
 
 } else {
-	
 	relax.model_to_group_name = {};
 	relax.model_namespaces = {};
 	utility.ForEachPair  (relax.branch_sets, "_key_", "_value_", "
@@ -695,9 +758,6 @@ if (relax.do_srv)  {
 }
 
 if (relax.model_set != "All") {
-    /*
-    relax.ge_guess = relax.DistributionGuess(((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE]);
-    */
     relax.do_lhc = TRUE;
     relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.model_object_map[relax.reference_model_namespace]);
     relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE];
@@ -963,17 +1023,17 @@ function relax.FitMainTestPair () {
 														 "{terms.json.omega_ratio : relax.inferred_distribution [_index_][0],
 														   terms.json.proportion  : relax.inferred_distribution [_index_][1]}"),
 
-									relax.reference_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),
+									   relax.reference_branches_name : utility.Map (utility.Range (relax.rate_classes, 0, 1),
 														 "_index_",
 														 "{terms.json.omega_ratio : relax.inferred_distribution_ref [_index_][0],
 														   terms.json.proportion  : relax.inferred_distribution_ref [_index_][1]}")
 								   };
 
 	} else {
-		
 		relax.report_multi_class_rates (relax.alternative_model.fit, TRUE);
 	}
-
+	
+	relax.report_multi_hit  (relax.alternative_model.fit, relax.distribution_for_json, "RELAX", "alt-mh");
     relax._report_srv (relax.alternative_model.fit, FALSE);
         
     KeywordArgument ("save-fit", "Save RELAX alternative model fit to this file (default is not to save)", "/dev/null");
@@ -1029,6 +1089,7 @@ function relax.FitMainTestPair () {
 		relax.report_multi_class_rates (None, FALSE);
 	}
 	
+	relax.report_multi_hit  (relax.null_model.fit, relax.distribution_for_json, "RELAX", "alt-mh-null");
     relax._report_srv (relax.null_model.fit, TRUE);
 
 	selection.io.json_store_lf (relax.json,
@@ -1140,6 +1201,7 @@ if (relax.model_set == "All") {
 	} else {
 		relax.report_multi_class_rates (None, TRUE);
 	}
+	relax.report_multi_hit (relax.pe.fit, relax.distribution_for_json, "RELAX", "pe-mh");
 
     selection.io.json_store_lf (relax.json,
                                 relax.partitioned_descriptive_name,
@@ -1253,6 +1315,103 @@ lfunction relax.DistributionGuess (mean) {
 
 //------------------------------------------------------------------------------
 
+lfunction relax.BS_REL._GenerateRate.MH (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, omega, omega_term, delta, delta_term, psi, psi_term, psi_s, psi_s_term) {
+
+    p = {};
+    _GenerateRate.diff = models.codon.diff.complete(fromChar, toChar);
+    diff_count = utility.Array1D (_GenerateRate.diff);
+
+    if (diff_count 
+    ) {
+
+        p[model_type] = {};
+        p[utility.getGlobalValue("terms.global")] = {};
+
+        nuc_rate = "";
+
+        for (i = 0; i < diff_count; i += 1) {
+            if ((_GenerateRate.diff[i])[utility.getGlobalValue("terms.diff.from")] > (_GenerateRate.diff[i])[utility.getGlobalValue("terms.diff.to")]) {
+                nuc_p = "theta_" + (_GenerateRate.diff[i])[utility.getGlobalValue("terms.diff.to")] + (_GenerateRate.diff[i])[utility.getGlobalValue("terms.diff.from")];
+            } else {
+                nuc_p = "theta_" + (_GenerateRate.diff[i])[utility.getGlobalValue("terms.diff.from")] +(_GenerateRate.diff[i])[utility.getGlobalValue("terms.diff.to")];
+            }
+            nuc_p = parameters.ApplyNameSpace(nuc_p, namespace);
+            (p[utility.getGlobalValue("terms.global")])[terms.nucleotideRateReversible((_GenerateRate.diff[i])[utility.getGlobalValue("terms.diff.from")], (_GenerateRate.diff[i])[utility.getGlobalValue("terms.diff.to")])] = nuc_p;
+
+            nuc_rate = parameters.AppendMultiplicativeTerm (nuc_rate, nuc_p);
+       }
+
+
+        rate_entry = nuc_rate;
+
+        if (_tt[fromChar] != _tt[toChar]) {
+            if (model_type == utility.getGlobalValue("terms.global")) {
+                aa_rate = parameters.ApplyNameSpace(omega, namespace);
+                (p[model_type])[omega_term] = aa_rate;
+                utility.EnsureKey (p, utility.getGlobalValue("terms.local"));
+                 (p[utility.getGlobalValue("terms.local")])[utility.getGlobalValue ("terms.relax.k")] = "k";
+                 aa_rate += "^k";
+            } else {
+                aa_rate = beta;
+                (p[model_type])[beta_term] = aa_rate;
+            }
+            rate_entry += "*" + aa_rate;
+        } else {
+            if (model_type == utility.getGlobalValue("terms.local")) {
+                (p[model_type])[alpha_term] = alpha;
+                rate_entry += "*" + alpha;
+            } else {
+                p[utility.getGlobalValue("terms.model.rate_entry")] = nuc_rate;
+            }
+
+
+        }
+
+        if (diff_count == 2) {
+            if (model_type == utility.getGlobalValue("terms.global")) {
+                delta_rate = parameters.ApplyNameSpace(delta, namespace);
+                (p[model_type])[delta_term] = delta_rate;
+                rate_entry += "*" + delta_rate;
+            } else {
+                (p[model_type])[delta_term] = delta;
+                rate_entry += "*" + delta;
+            }
+        }
+
+        
+        if (diff_count == 3 && ^'relax.multi_hit' == 'Double+Triple') {
+            if (_tt[fromChar] != _tt[toChar]) {
+                if (model_type == utility.getGlobalValue("terms.global")) {
+                    psi_rate = parameters.ApplyNameSpace(psi, namespace);
+                    (p[model_type])[psi_term] = psi_rate;
+                    rate_entry += "*" + psi_rate;
+                } else {
+                    (p[model_type])[psi_term] = psi;
+                    rate_entry += "*" + psi;
+                }
+            } else {
+               //console.log (fromChar + " <-> " + toChar + " (" + _tt[fromChar] + ")");
+               if (model_type == utility.getGlobalValue("terms.global")) {
+                    psi_rate = parameters.ApplyNameSpace(psi_s, namespace);
+                    (p[model_type])[psi_s_term] = psi_rate;
+                    rate_entry += "*" + psi_rate;
+                } else {
+                    (p[model_type])[psi_s_term] = psi_s;
+                    rate_entry += "*" + psi_s;
+                }
+            
+            }
+        }
+
+
+        p[utility.getGlobalValue("terms.model.rate_entry")] = rate_entry;
+    }
+    return p;
+}
+
+//------------------------------------------------------------------------------
+
+
 lfunction relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, omega, omega_term) {
 
 
@@ -1311,15 +1470,30 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
 
     for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
        key = "component_" + component;
-       ExecuteCommands ("
-        function rate_generator (fromChar, toChar, namespace, model_type, model) {
-           return relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
-                'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
-                'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
-                'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
-            }"
-       );
-
+   
+       if (^'relax.multi_hit' == 'None') {
+           ExecuteCommands ("
+            function rate_generator (fromChar, toChar, namespace, model_type, model) {
+               return relax.BS_REL._GenerateRate (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                    'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                    'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                    'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
+                }"
+           );
+        } else {
+            ExecuteCommands ("
+            function rate_generator (fromChar, toChar, namespace, model_type, model) {
+               return relax.BS_REL._GenerateRate.MH (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                    'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                    'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                    'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                    'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate'),
+                    'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate'),
+                    'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate'));
+                }"
+           );
+        }
+       
        if ( component < bs_rel[utility.getGlobalValue("terms.model.components")]) {
             model.generic.AddGlobal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
             parameters.DeclareGlobalWithRanges (_aux[component-1], 0.5, 0, 1);
@@ -1334,6 +1508,7 @@ lfunction relax.BS_REL._DefineQ (bs_rel, namespace) {
 
     bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
     parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
+    
     return bs_rel;
 }
 
@@ -1515,4 +1690,49 @@ lfunction relax._renormalize (v, distro, mean) {
     }
     return v;
     
+}
+
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+
+lfunction relax.report_multi_hit (model_fit, json, l1, l2) {
+    if (^'relax.multi_hit' != "None") {
+        io.ReportProgressMessageMD(l1, l2, 'Partition-level rates for multiple-hit substitutions\n');
+        params = selection.io.extract_global_MLE_re (model_fit, ^'terms.parameters.multiple_hit_rate');
+        
+        double_rates = {};
+        for (mle; in; params) {
+            exp = regexp.FindSubexpressions (mle[^'terms.description'], "\[relax\.(.+)\]");
+            if (None == exp) {
+                exp = 'reference';
+            } else {
+                exp = exp[1];
+            }
+            double_rates [exp] = mle[^'terms.fit.MLE'];
+            io.ReportProgressMessageMD(l1, l2, '* 2H rate for **' + exp + '**: ' + Format (double_rates [exp], 8, 4));
+            
+        }
+        
+        json[^'terms.parameters.multiple_hit_rate'] = double_rates; 
+        
+        if (^'relax.multi_hit' != 'Double') {
+            params = selection.io.extract_global_MLE_re (model_fit, ^'terms.parameters.triple_hit_rate');
+        
+            double_rates = {};
+            for (mle; in; params) {
+                exp = regexp.FindSubexpressions (mle[^'terms.description'], "\[relax\.(.+)\]");
+                if (None == exp) {
+                    exp = 'reference';
+                } else {
+                    exp = exp[1];
+                }
+                double_rates [exp] = mle[^'terms.fit.MLE'];
+                io.ReportProgressMessageMD(l1, l2, '* 3H rate for **' + exp + '**: ' + Format (double_rates [exp], 8, 4));
+    
+            }
+
+            json[^'terms.parameters.triple_hit_rate'] = double_rates;            
+        }       
+    }
 }

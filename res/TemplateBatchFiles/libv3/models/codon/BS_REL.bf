@@ -4,6 +4,8 @@ LoadFunctionLibrary("../parameters.bf");
 LoadFunctionLibrary("../frequencies.bf");
 LoadFunctionLibrary("../../UtilityFunctions.bf");
 LoadFunctionLibrary("MG_REV.bf");
+LoadFunctionLibrary("MG_REV_TRIP.bf");
+LoadFunctionLibrary("MG_REV_MH.bf");
 LoadFunctionLibrary("../../convenience/math.bf");
 
 /** @module models.codon.BS_REL
@@ -414,4 +416,148 @@ function models.codon.BS_REL.get_branch_length(model, tree, node) {
       }
     }
 	return bl;
+}
+
+/**
+ * @name models.codon.BS_REL._DefineQ.MH
+ * @param {Dict} model
+ * @param {String} global namespace
+*/
+
+lfunction models.codon.BS_REL._DefineQ.MH (bs_rel, namespace) {
+
+
+    rate_matrices = {};
+
+    rg = "function rate_generator (fromChar, toChar, namespace, model_type, model) {
+                   return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                    'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                    'beta_' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component__),
+                    'omega' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component__),
+                    'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate'),
+                    'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate'),
+                    'psi_islands', utility.getGlobalValue('terms.parameters.triple_hit_rate_syn')
+                   );
+                }";
+    
+    if (bs_rel[utility.getGlobalValue("terms.model.rate_generator")]) {
+        rg = bs_rel[utility.getGlobalValue("terms.model.rate_generator")];
+    }
+
+    bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
+    bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")] = {};
+
+    _aux = parameters.GenerateSequentialNames (namespace + ".bsrel_mixture_aux", bs_rel[utility.getGlobalValue("terms.model.components")] - 1, "_");
+    _wts = parameters.helper.stick_breaking (_aux, None);
+
+
+    for (component = 1; component <= bs_rel[utility.getGlobalValue("terms.model.components")]; component += 1) {
+       key = "component_" + component;
+       ExecuteCommands (rg);
+
+       if ( component < bs_rel[utility.getGlobalValue("terms.model.components")]) {
+            model.generic.AddGlobal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
+            parameters.DeclareGlobalWithRanges (_aux[component-1], 0.5, 0, 1);
+       }
+       models.codon.generic.DefineQMatrix(bs_rel, namespace);
+       rate_matrices [key] = bs_rel[utility.getGlobalValue("terms.model.rate_matrix")];
+       (bs_rel [^'terms.mixture.mixture_components'])[key] = _wts [component-1];
+    }
+
+    bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
+    parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
+
+    return bs_rel;
+}
+
+/**
+ * @name models.codon.BS_REL_SRV._DefineQ.MH
+ * @param {Dict} model
+ * @param {String} global namespace
+*/
+
+lfunction models.codon.BS_REL_SRV._DefineQ.MH (bs_rel, namespace) {
+
+    rate_matrices = {};
+    
+    rg = "function rate_generator (fromChar, toChar, namespace, model_type, model) {
+                   return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                    'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                    'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                    'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                    'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate'),
+                    'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate'),
+                    'psi_islands', utility.getGlobalValue('terms.parameters.triple_hit_rate_syn')
+                   );
+                }";
+    
+    if (bs_rel[utility.getGlobalValue("terms.model.rate_generator")]) {
+        rg = bs_rel[utility.getGlobalValue("terms.model.rate_generator")];
+    }
+    
+
+    bs_rel [utility.getGlobalValue("terms.model.q_ij")] = &rate_generator;
+    bs_rel [utility.getGlobalValue("terms.model.time")] = &rate_multiplier;
+
+    bs_rel [utility.getGlobalValue("terms.mixture.mixture_components")] = {};
+
+    ns_components  = (bs_rel[(utility.getGlobalValue("terms.model.components"))])[1];
+    syn_components = (bs_rel[(utility.getGlobalValue("terms.model.components"))])[0];
+
+
+    _aux = parameters.GenerateSequentialNames (namespace + ".bsrel_mixture_aux", ns_components - 1, "_");
+    _wts = parameters.helper.stick_breaking (_aux, None);
+
+    _aux_srv = parameters.GenerateSequentialNames (namespace + ".bsrel_mixture_aux_srv", syn_components - 1, "_");
+    _wts_srv = parameters.helper.stick_breaking (_aux_srv, None);
+
+    _alphas = parameters.GenerateSequentialNames (namespace + ".alpha", syn_components, "_");
+
+
+    mixture = {};
+
+
+    for (s_component = 1; s_component <= syn_components; s_component += 1) {
+
+        ExecuteCommands ("
+            function rate_multiplier (option) {
+                return {
+                    ^'terms.global' : {
+                        terms.AddCategory (utility.getGlobalValue('terms.parameters.synonymous_rate'), `s_component`) : '`_alphas[s_component-1]`'
+                    },
+                    ^'terms.local' : {
+                        ^'terms.parameters.synonymous_rate' : models.DNA.generic.Time (null)
+                    },
+                    ^'terms.model.rate_entry' :  '`_alphas[s_component-1]`*' + models.DNA.generic.Time (null)
+                };
+           }
+        ");
+
+        for (component = 1; component <= ns_components; component += 1) {
+           key = "component_" + s_component + "_" + component;
+           ExecuteCommands (rg);
+           if ( component < ns_components) {
+                model.generic.AddGlobal ( bs_rel, _aux[component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), component ));
+                parameters.DeclareGlobalWithRanges (_aux[component-1], 0.5, 0, 1);
+           }
+           if ( s_component < syn_components) {
+                model.generic.AddGlobal ( bs_rel, _aux_srv[s_component-1], terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), "SRV " + s_component ));
+                parameters.DeclareGlobalWithRanges (_aux_srv[s_component-1], 0.5, 0, 1);
+           }
+           models.codon.generic.DefineQMatrix(bs_rel, namespace);
+           rate_matrices [key] = bs_rel[utility.getGlobalValue("terms.model.rate_matrix")];
+           (bs_rel [^'terms.mixture.mixture_components'])[key] = parameters.AppendMultiplicativeTerm (_wts [component-1], _wts_srv[s_component- 1]);
+        }
+    }
+
+    __rp    = parameters.ConstrainMeanOfSet (_alphas, _wts_srv, 1, namespace);
+
+    parameters.DeclareGlobal (__rp[^'terms.global'], null);
+    parameters.helper.copy_definitions (bs_rel[^'terms.parameters'], __rp);
+
+
+    bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
+    parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
+
+    return bs_rel;
 }

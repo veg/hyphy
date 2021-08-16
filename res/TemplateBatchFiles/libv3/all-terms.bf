@@ -365,6 +365,7 @@ namespace terms{
         defineQ                 = "defineQ";
         q_ij                    = "q_ij";
         rate_matrix             = "Q";
+        rate_generator          = "rate-generator";
         matrix_id               = "matrix-id";
         rate_entry              = "rate-entry";
         empirical_rates         = "empirical-rates";
