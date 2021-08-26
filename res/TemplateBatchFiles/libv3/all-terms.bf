@@ -30,6 +30,7 @@ namespace terms{
     data_type               = "datatype";
     devnull                 = "/dev/null";
     _namespace              = "namespace";
+    warning                 = "warning";
 
     category            = "category";
     mixture             = "mixture";
