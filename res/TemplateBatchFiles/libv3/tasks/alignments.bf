@@ -422,7 +422,7 @@ function alignments.LoadCodonDataFileWarnStops(dataset_name, datafilter_name, da
         data_info[^"terms.warning"] = {};
         
         for (alignments.LoadCodonDataFile.i = 0; alignments.LoadCodonDataFile.i < ^"`dataset_name`.species"; alignments.LoadCodonDataFile.i += 1) {
-            DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3,   , "" + alignments.LoadCodonDataFile.i , data_info[terms.stop_codons]);
+            DataSetFilter ^datafilter_name = CreateFilter( ^ dataset_name, 3,   , "" + alignments.LoadCodonDataFile.i , data_info[terms.stop_codons]);
             if (^"`datafilter_name`.sites"*3 != ^"`dataset_name`.sites") {
                 alignments.LoadCodonDataFile.name = alignments.GetIthSequenceOriginalName (dataset_name, alignments.LoadCodonDataFile.i);
 
@@ -441,6 +441,7 @@ function alignments.LoadCodonDataFileWarnStops(dataset_name, datafilter_name, da
                 (data_info[^"terms.warning"])[alignments.LoadCodonDataFile.name[terms.id]] = Join ("",alignments.LoadCodonDataFile.annotation_string);
             }
         }
+        DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3, , , data_info[terms.stop_codons]);
     }
     data_info[terms.data.sites] = ^ "`datafilter_name`.sites";
     data_info[terms.data.dataset] = dataset_name;
