@@ -474,7 +474,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                is = fel.handle_a_site (lf, sims[i], partition_index, pattern_info, model_mapping, TRUE);
                null_LRT[i] = is;
             }
-            return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null, utility.getGlobalValue("terms.simulated"): null_LRT};
+            return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null, utility.getGlobalValue("terms.simulated"): null_LRT, utility.getGlobalValue("terms.confidence_interval"): ci};
         }
     }
 
