@@ -581,18 +581,21 @@ lfunction fel.store_results (node, result, arguments) {
                           } };
     }
 
-
+    has_lrt = FALSE;
 
     if (None != result) { // not a constant site
     
         lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           1);
-                          
-        if (result / ^"terms.simulated") {
+                    
+        has_lrt = result / ^"terms.simulated";
+                  
+        if (has_lrt) {
            pv = +((result[^"terms.simulated"])["_MATRIX_ELEMENT_VALUE_>=" + lrt [utility.getGlobalValue("terms.LRT")]]);
            lrt [utility.getGlobalValue("terms.p_value")] = (pv+1)/(1+^"fel.resample");
         }                 
+        
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
         result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_beta");
         result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.Null")], ^"fel.site_beta");
@@ -621,13 +624,18 @@ lfunction fel.store_results (node, result, arguments) {
 
 
     utility.EnsureKey (^"fel.site_results", partition_index);
+    if (has_lrt) {
+        utility.EnsureKey (^"fel.site_LRT", partition_index);
+    }
+    
+    for (_fel_result_; in; pattern_info[utility.getGlobalValue("terms.data.sites")]) {
+        ((^"fel.site_results")[partition_index])[_fel_result_] = result_row;
+        fel.report.echo (_fel_result_, partition_index, result_row);
+        if (has_lrt) {
+            ((^"fel.site_LRT")[partition_index])[_fel_result_] = result[^"terms.simulated"];
+        }
+    }
 
-    utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_fel_result_",
-        '
-            (fel.site_results[`&partition_index`])[_fel_result_] = `&result_row`;
-            fel.report.echo (_fel_result_, `&partition_index`, `&result_row`);
-        '
-    );
 
 
     //assert (0);
@@ -635,6 +643,7 @@ lfunction fel.store_results (node, result, arguments) {
 //----------------------------------------------------------------------------------------
 
 fel.site_results = {};
+fel.site_LRT = {};
 
 for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.partition_index += 1) {
     fel.report.header_done = FALSE;
@@ -735,24 +744,23 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     io.ClearProgressBar();
 
     mpi.QueueComplete (fel.queue);
+    
     fel.partition_matrix = {Abs (fel.site_results[fel.partition_index]), Rows (fel.table_headers)};
-
-    utility.ForEachPair (fel.site_results[fel.partition_index], "_key_", "_value_",
-    '
+    for (_key_, _value_; in; fel.site_results[fel.partition_index]) {
         for (fel.index = 0; fel.index < Rows (fel.table_headers); fel.index += 1) {
             fel.partition_matrix [0+_key_][fel.index] = _value_[fel.index];
         }
-    '
-    );
-
+    }
     fel.site_results[fel.partition_index] = fel.partition_matrix;
-
 
 }
 
 fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
                                terms.json.content : fel.site_results };
 
+if (fel.resample)  {
+    (fel.json [terms.json.MLE ])[terms.LRT] = fel.site_LRT;
+}
 
 io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites under pervasive positive diversifying and _" + fel.report.counts[1] + "_ sites under negative selection at p <= " + fel.pvalue + "**");
 
