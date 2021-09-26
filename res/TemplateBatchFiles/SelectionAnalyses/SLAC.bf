@@ -316,6 +316,8 @@ for (slac.i = 0; slac.i < Abs (slac.filter_specification); slac.i += 1) {
 slac.json [terms.json.MLE ] = {terms.json.headers   : slac.table_headers,
                                terms.json.content : slac.results };
 
+GetString (_hpv,HYPHY_VERSION,0);
+slac.json[terms.json.runtime] = _hpv;
 
 io.SpoolJSON (slac.json, slac.codon_data_info[terms.json.json]);
 selection.io.stopTimer (slac.json [terms.json.timers], "Primary SLAC analysis");

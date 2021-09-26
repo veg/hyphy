@@ -248,6 +248,7 @@ for (_pattern_; in; alignments.Extract_site_patterns ("gard.filter")) {
 
 gard.variableSiteMap = Transpose (utility.DictToArray (gard.variableSiteMap)) % 0; // sort by 1st column
 gard.variableSites = Rows (gard.variableSiteMap);
+
 gard.inverseVariableSiteMap = {};
 for (index, pattern; in; gard.variableSiteMap) {
     gard.inverseVariableSiteMap[pattern] = index;

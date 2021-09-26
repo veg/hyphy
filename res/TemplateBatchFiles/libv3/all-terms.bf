@@ -30,6 +30,7 @@ namespace terms{
     data_type               = "datatype";
     devnull                 = "/dev/null";
     _namespace              = "namespace";
+    warning                 = "warning";
 
     category            = "category";
     mixture             = "mixture";
@@ -69,6 +70,7 @@ namespace terms{
     global_mg94xrev = "Global MG94xREV";
 
 
+    confidence_interval = "confidence interval";
     lower_bound = "LB";
     upper_bound = "UB";
     range01 = {
@@ -364,6 +366,7 @@ namespace terms{
         defineQ                 = "defineQ";
         q_ij                    = "q_ij";
         rate_matrix             = "Q";
+        rate_generator          = "rate-generator";
         matrix_id               = "matrix-id";
         rate_entry              = "rate-entry";
         empirical_rates         = "empirical-rates";

@@ -754,7 +754,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     lf_id = &likelihoodFunction;
     utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
-
+    
 
     df = 0;
 

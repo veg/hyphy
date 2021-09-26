@@ -1346,7 +1346,7 @@ HBLObjectRef _TreeTopology::MaximumParsimony (HBLObjectRef parameters,HBLObjectR
           
           
             if (!iterator->is_leaf () && label >= 0) { // labeled node
-                long my_label;
+                long my_label = 0L;
                 hyFloat best_score = 1.e100;
                 if (!iterator->parent || has_labels.get (iterator->parent->in_object) < 0) {
                     // either a root or not a part of the labeled tree

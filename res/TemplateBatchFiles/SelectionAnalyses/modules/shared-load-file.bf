@@ -412,6 +412,10 @@ function doGTR (prefix) {
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
         selection.io.report_fit (gtr_results, 0, 3*(^"`prefix`.sample_size")));
 
+    io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
+        selection.io.report_fit_secondary_stats (gtr_results));
+    
+    
 
     /* Store nucleotide fit */
     gtr_rates = utility.Map(
@@ -435,6 +439,7 @@ function doGTR (prefix) {
     /* Store branch lengths */
     
     gtr_bls_over_10 = 0;
+    gtr_bl_sum = 0;
     
     for (partition_index = 0; partition_index < Abs(filter_specification); partition_index += 1) {
         selection.io.json_store_branch_attribute(json, utility.getGlobalValue ("terms.json.nucleotide_gtr"), utility.getGlobalValue ("terms.branch_length"), display_orders[terms.json.nucleotide_gtr],
@@ -523,6 +528,9 @@ function doPartitionedMG (prefix, keep_lf) {
 
 
     io.ReportProgressMessageMD("`prefix`", "codon-fit", "* " + selection.io.report_fit (partitioned_mg_results, 0, (^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
+    io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
+        selection.io.report_fit_secondary_stats (partitioned_mg_results));
+
     global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.parameters.omega_ratio"));
     utility.ForEach (global_dnds, "_value_", 'io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_[utility.getGlobalValue("terms.description")] + " = " + Format (_value_[utility.getGlobalValue("terms.fit.MLE")],8,4));');
 
