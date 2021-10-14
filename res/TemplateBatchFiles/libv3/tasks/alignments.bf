@@ -336,6 +336,17 @@ function alignments.PromptForGeneticCodeAndAlignment(dataset_name, datafilter_na
 }
 
 /**
+ * Prompts user for genetic code and alignment; do not create error condition on stop codons
+ * @name alignments.PromptForGeneticCodeAndAlignmentWarnStops
+ * @param {String} dataset_name - the name  of the dataset you wish to use
+ * @param {String} datafilter_name - the name  of the dataset filter you wish to use
+ * @returns {Dictionary} r - metadata pertaining to the dataset
+ */
+function alignments.PromptForGeneticCodeAndAlignmentWarnStops (dataset_name, datafilter_name) {
+    return alignments.LoadCodonDataFileWarnStops(dataset_name, datafilter_name, alignments.ReadCodonDataSet(dataset_name));
+}
+
+/**
  * Loads genetic code and alignment from file path
  * @name alignments.LoadGeneticCodeAndAlignment
  * @param {String} dataset_name - the name  of the dataset you wish to use
@@ -386,6 +397,51 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
             }
         }
         io.CheckAssertion("`datafilter_name`.sites*3==`dataset_name`.sites", "The input alignment must have the number of sites that is divisible by 3 and must not contain stop codons");
+    }
+    data_info[terms.data.sites] = ^ "`datafilter_name`.sites";
+    data_info[terms.data.dataset] = dataset_name;
+    data_info[terms.data.datafilter] = datafilter_name;
+    return data_info;
+}
+
+/**
+ * Creates codon dataset filter from data set; do not treat stop codons as an error condition
+ * @name alignments.LoadCodonDataFileWarnStops
+ * @param {String} datafilter_name - the name  of the dataset filter you wish to use
+ * @param {String} dataset_name - the name of the existing dataset
+ * @param {Dictionary} data_info - DataSet metadata information
+ * @returns {Dictionary} updated data_info that includes the number of sites, dataset, and datafilter name
+ */
+function alignments.LoadCodonDataFileWarnStops(dataset_name, datafilter_name, data_info) {
+
+
+    DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3, , , data_info[terms.stop_codons]);
+        
+    if (^"`datafilter_name`.sites"*3 != ^"`dataset_name`.sites") {
+        // generate a more diagnostic error here
+        data_info[^"terms.warning"] = {};
+        
+        for (alignments.LoadCodonDataFile.i = 0; alignments.LoadCodonDataFile.i < ^"`dataset_name`.species"; alignments.LoadCodonDataFile.i += 1) {
+            DataSetFilter ^datafilter_name = CreateFilter( ^ dataset_name, 3,   , "" + alignments.LoadCodonDataFile.i , data_info[terms.stop_codons]);
+            if (^"`datafilter_name`.sites"*3 != ^"`dataset_name`.sites") {
+                alignments.LoadCodonDataFile.name = alignments.GetIthSequenceOriginalName (dataset_name, alignments.LoadCodonDataFile.i);
+
+                alignments.LoadCodonDataFile.site_map = ^"`datafilter_name`.site_map";
+
+                alignments.LoadCodonDataFile.annotation_string = utility.PopulateDict (0, ^"`dataset_name`.sites",
+                                                       '(alignments.LoadCodonDataFile.name[terms.data.sequence])[_idx]',
+                                                       '_idx');
+
+
+                utility.ForEach (alignments.LoadCodonDataFile.site_map, "_value_",
+                    '
+                        `&alignments.LoadCodonDataFile.annotation_string`[_value_] = `&alignments.LoadCodonDataFile.annotation_string`[_value_] && 0;
+                    ');
+
+                (data_info[^"terms.warning"])[alignments.LoadCodonDataFile.name[terms.id]] = Join ("",alignments.LoadCodonDataFile.annotation_string);
+            }
+        }
+        DataSetFilter ^ datafilter_name = CreateFilter( ^ dataset_name, 3, , , data_info[terms.stop_codons]);
     }
     data_info[terms.data.sites] = ^ "`datafilter_name`.sites";
     data_info[terms.data.dataset] = dataset_name;

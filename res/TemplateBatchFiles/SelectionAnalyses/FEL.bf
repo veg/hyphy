@@ -134,7 +134,7 @@ if (^"fel.ci") {
                              {"alpha", "Synonymous substitution rate at a site"}
                              {"beta", "Non-synonymous substitution rate at a site"}
                              {"alpha=beta", "The rate estimate under the neutral model"}
-                             {"LRT", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
+                             {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
                              {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
                              {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
                              {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
@@ -148,7 +148,7 @@ if (^"fel.ci") {
     fel.table_headers = {{"alpha", "Synonymous substitution rate at a site"}
                          {"beta", "Non-synonymous substitution rate at a site"}
                          {"alpha=beta", "The rate estimate under the neutral model"}
-                         {"LRT", "Likelihood ration test statistic for beta = alpha, versus beta &neq; alpha"}
+                         {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
                          {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
                          {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}};
     fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
@@ -406,7 +406,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     ^"fel.beta_scaler_test"  = 1;
     ^"fel.beta_scaler_nuisance"  = 1;
     
-    
 
     Optimize (results, ^lf
         , {
@@ -417,24 +416,27 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     );
     
     
-    ci = None;
     if (^"fel.ci") {
-        if (^"fel.srv") {
-            lf_stash = estimators.TakeLFStateSnapshot (lf);
-            global omega_ratio_for_ci;
-            if (^"fel.alpha_scaler" == 0.0) { // has no syn_variation
-                ^"fel.alpha_scaler" = 1e-8;
-            }
-            omega_ratio_for_ci :< 10000;
-            omega_ratio_for_ci :>0;
-            omega_ratio_for_ci = ^"fel.beta_scaler_test" / ^"fel.alpha_scaler";
+        if (!sim_mode) {
+            if (^"fel.srv") {
+                lf_stash = estimators.TakeLFStateSnapshot (lf);
+                global omega_ratio_for_ci;
+                if (^"fel.alpha_scaler" == 0.0) { // has no syn_variation
+                    ^"fel.alpha_scaler" = 1e-8;
+                }
+                omega_ratio_for_ci :< 10000;
+                omega_ratio_for_ci :>0;
+                omega_ratio_for_ci = ^"fel.beta_scaler_test" / ^"fel.alpha_scaler";
             
-            ^"fel.beta_scaler_test" := omega_ratio_for_ci * ^"fel.alpha_scaler";
-            ci = parameters.GetProfileCI (&omega_ratio_for_ci, lf, 0.95);
-            estimators.RestoreLFStateFromSnapshot (lf, lf_stash);
-        } else {
-            ci = parameters.GetProfileCI ("fel.beta_scaler_test", lf, 0.95);
+                ^"fel.beta_scaler_test" := omega_ratio_for_ci * ^"fel.alpha_scaler";
+                ci = parameters.GetProfileCI (&omega_ratio_for_ci, lf, 0.95);
+                estimators.RestoreLFStateFromSnapshot (lf, lf_stash);
+            } else {
+                ci = parameters.GetProfileCI ("fel.beta_scaler_test", lf, 0.95);
+            }
         }
+    } else {
+        ci = None;
     }
  
     if (sim_mode) {
@@ -456,8 +458,10 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         Null [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
     }    
 
-    
+
     if (!sim_mode) {
+        tree_name = (lfInfo["Trees"])[0];
+        sum = (BranchLength (^tree_name, -1)*^"fel.selected_branches_index")[0];
         if (^"fel.resample") {
             N = ^"fel.resample";
             sims = {};
@@ -474,12 +478,14 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                is = fel.handle_a_site (lf, sims[i], partition_index, pattern_info, model_mapping, TRUE);
                null_LRT[i] = is;
             }
-            return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null, utility.getGlobalValue("terms.simulated"): null_LRT};
+            return {utility.getGlobalValue("terms.alternative") : alternative, utility.getGlobalValue("terms.Null"): Null, utility.getGlobalValue("terms.simulated"): null_LRT, utility.getGlobalValue("terms.confidence_interval"): ci};
         }
     }
-
+    
+ 
     return {utility.getGlobalValue("terms.alternative") : alternative, 
             utility.getGlobalValue("terms.Null"): Null,
+            utility.getGlobalValue("terms.math.sum") : sum,
             utility.getGlobalValue("terms.confidence_interval"): ci};
 }
 
@@ -581,18 +587,21 @@ lfunction fel.store_results (node, result, arguments) {
                           } };
     }
 
-
+    has_lrt = FALSE;
 
     if (None != result) { // not a constant site
     
         lrt = math.DoLRT ((result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")],
                           1);
-                          
-        if (result / ^"terms.simulated") {
+                    
+        has_lrt = result / ^"terms.simulated";
+                  
+        if (has_lrt) {
            pv = +((result[^"terms.simulated"])["_MATRIX_ELEMENT_VALUE_>=" + lrt [utility.getGlobalValue("terms.LRT")]]);
            lrt [utility.getGlobalValue("terms.p_value")] = (pv+1)/(1+^"fel.resample");
         }                 
+        
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
         result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_beta");
         result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.Null")], ^"fel.site_beta");
@@ -600,17 +609,19 @@ lfunction fel.store_results (node, result, arguments) {
         result_row [4] = lrt [utility.getGlobalValue("terms.p_value")];
 
 
-        sum = 0;
+        
         /*alternative_lengths = ((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.branch_length")])[0];
+        
+        tname = utility.getGlobalValue("terms.tree_attributes.test");
+        for (_node_; in; ^"fel.case_respecting_node_names") {
+            _node_class_ = ((^"fel.selected_branches")[partition_index])[_node_];
+            if (_node_class_ ==  tname) {
+                sum += ((alternative_lengths)[_node_])[^"terms.fit.MLE"];
+            }
+        }*/
 
-        utility.ForEach (^"fel.case_respecting_node_names", "_node_",
-                '_node_class_ = ((^"fel.selected_branches")[`&partition_index`])[_node_];
-                 if (_node_class_ == utility.getGlobalValue("terms.tree_attributes.test")) {
-                    `&sum` += ((`&alternative_lengths`)[_node_])[utility.getGlobalValue("terms.fit.MLE")];
-                 }
-            ');*/
-
-        result_row [5] = sum;
+    
+        result_row [5] = result[^"terms.math.sum"];
         
         if (None != result [^"terms.confidence_interval"]) {
             result_row [6] = (result [^"terms.confidence_interval"])[^"terms.lower_bound"];
@@ -621,13 +632,18 @@ lfunction fel.store_results (node, result, arguments) {
 
 
     utility.EnsureKey (^"fel.site_results", partition_index);
+    if (has_lrt) {
+        utility.EnsureKey (^"fel.site_LRT", partition_index);
+    }
+    
+    for (_fel_result_; in; pattern_info[utility.getGlobalValue("terms.data.sites")]) {
+        ((^"fel.site_results")[partition_index])[_fel_result_] = result_row;
+        fel.report.echo (_fel_result_, partition_index, result_row);
+        if (has_lrt) {
+            ((^"fel.site_LRT")[partition_index])[_fel_result_] = result[^"terms.simulated"];
+        }
+    }
 
-    utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_fel_result_",
-        '
-            (fel.site_results[`&partition_index`])[_fel_result_] = `&result_row`;
-            fel.report.echo (_fel_result_, `&partition_index`, `&result_row`);
-        '
-    );
 
 
     //assert (0);
@@ -635,6 +651,7 @@ lfunction fel.store_results (node, result, arguments) {
 //----------------------------------------------------------------------------------------
 
 fel.site_results = {};
+fel.site_LRT = {};
 
 for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.partition_index += 1) {
     fel.report.header_done = FALSE;
@@ -650,17 +667,22 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     // beta  = beta_scaler_test * branch_length or beta_nuisance_test * branch_length
 
     SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+    fel.selected_branches_index = {1,utility.Array1D (fel.case_respecting_node_names)+1};
+    fel.i = 0;
 
     for (_node_; in; fel.case_respecting_node_names) {
         _node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
          if (_node_class_ == terms.tree_attributes.test) {
+             fel.selected_branches_index [fel.i] = 1;
             _beta_scaler = fel.scalers[1];
          } else {
             _beta_scaler = fel.scalers[2];
          }
          fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
+         fel.i += 1;
     }
-
+    
+ 
     /*
     utility.ForEach (fel.case_respecting_node_names, "_node_",
             '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
@@ -695,7 +717,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                    "Models" : {{"fel.site.mg_rev"}},
                                    "Headers" : {{"libv3/all-terms.bf","libv3/tasks/alignments.bf"}},
-                                   "Variables" : {{"fel.srv","fel.resample","fel.ci"}}
+                                   "Variables" : {{"fel.srv","fel.resample","fel.ci","fel.selected_branches_index"}}
                                  });
 
 
@@ -735,32 +757,35 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     io.ClearProgressBar();
 
     mpi.QueueComplete (fel.queue);
+    
     fel.partition_matrix = {Abs (fel.site_results[fel.partition_index]), Rows (fel.table_headers)};
-
-    utility.ForEachPair (fel.site_results[fel.partition_index], "_key_", "_value_",
-    '
+    for (_key_, _value_; in; fel.site_results[fel.partition_index]) {
         for (fel.index = 0; fel.index < Rows (fel.table_headers); fel.index += 1) {
             fel.partition_matrix [0+_key_][fel.index] = _value_[fel.index];
         }
-    '
-    );
-
+    }
     fel.site_results[fel.partition_index] = fel.partition_matrix;
-
 
 }
 
 fel.json [terms.json.MLE ] = {terms.json.headers   : fel.table_headers,
                                terms.json.content : fel.site_results };
 
+if (fel.resample)  {
+    (fel.json [terms.json.MLE ])[terms.LRT] = fel.site_LRT;
+}
 
 io.ReportProgressMessageMD ("fel", "results", "** Found _" + fel.report.counts[0] + "_ sites under pervasive positive diversifying and _" + fel.report.counts[1] + "_ sites under negative selection at p <= " + fel.pvalue + "**");
 
 selection.io.stopTimer (fel.json [terms.json.timers], "Total time");
 selection.io.stopTimer (fel.json [terms.json.timers], "FEL analysis");
 
-if (fel.resamples) {
-    fel.json [terms.simulated] =  fel.resamples;
+if (fel.resample) {
+    fel.json [terms.simulated] =  fel.resample;
+}
+
+if (fel.ci) {
+    fel.json [terms.confidence_interval] = TRUE;
 }
 
 GetString (_hpv,HYPHY_VERSION,0);
