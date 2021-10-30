@@ -463,6 +463,9 @@ lfunction mss.GA.fit_model (model, lfid, xp, ss) {
     }
     parameters.SetConstraint (^"mss.scaler_prefix" + 0, "1", "");
     utility.SetEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1.); 
+    Export (lfe, ^lfid);
+    fprintf ("/Users/sergei/Desktop/mss.bf", CLEAR_FILE, lfe);
+    assert (0);
     Optimize (res, ^lfid);
     return_expr = {1,res[1][1] + 2};
     return_expr [0] = selection.io.getIC(res[1][0], xp + res[1][1] ,ss); 

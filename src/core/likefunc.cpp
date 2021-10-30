@@ -3451,7 +3451,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                         _StringBuffer          sLF (8192UL);
                         SerializeLF      (sLF,_hyphyLFSerializeModeVanilla,nil,&subset);
                         sLF.TrimSpace()  ;
-
+                        
                         MPISendString (sLF,i);
                         parallelOptimizerTasks.AppendNewInstance (new _SimpleList);
                     }
@@ -3594,6 +3594,11 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
     // need to decide which data represenation to use,
     // large trees short alignments
     // an acceptable cache size etc
+    
+//#ifdef __HYPHYMPI__
+//    printf ("\n_LikelihoodFunction::SetupLFCaches (%d)\n", hy_mpi_node_rank);
+//#endif
+    
     categID = 0;
     conditionalInternalNodeLikelihoodCaches = new hyFloat*   [theTrees.lLength];
     branchCaches                            = new hyFloat*   [theTrees.lLength];
@@ -3609,6 +3614,8 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 
     evalsSinceLastSetup = 0L;
     unsigned long  maxFilterSize = 1;
+    
+    unsigned long cacheSize = 0UL;
     
     for (unsigned long i=0UL; i<theTrees.lLength; i++) {
         _TheTree * cT = GetIthTree(i);
@@ -3636,10 +3643,12 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 
         maxFilterSize = MAX (maxFilterSize, theFilter->GetSiteCountInUnits());
         if (leafCount > 1UL) {
+            cacheSize += sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount + sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount;
             conditionalInternalNodeLikelihoodCaches[i] = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount, false, 64);
             branchCaches[i]                            = (hyFloat*)MemAllocate (sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount, false, 64);
         }
 
+        cacheSize += sizeof(hyFloat)*patternCount*iNodeCount*cT->categoryCount + sizeof(long)*patternCount*MAX(2,leafCount);
         siteScalingFactors[i]                          = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*iNodeCount*cT->categoryCount, false, 64);
         conditionalTerminalNodeStateFlag[i]            = (long*)MemAllocate (sizeof(long)*patternCount*MAX(2,leafCount), false, 64);
 
@@ -3651,7 +3660,9 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
             siteCorrections < new _SimpleList (cT->categoryCount*patternCount,0,0);
             siteCorrectionsBackup < new _SimpleList (cT->categoryCount*patternCount,0,0);
         }
-
+        
+        cacheSize += cT->categoryCount*patternCount * 2 * sizeof (long);
+        
         InitializeArray(siteScalingFactors[i] , patternCount*iNodeCount*cT->categoryCount, 1.);
 
         // now process filter characters by site / column
@@ -3709,6 +3720,8 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 		OCLEval[i].init(patternCount, theFilter->GetDimension(), conditionalInternalNodeLikelihoodCaches[i]);
 #endif
     }
+    //printf ("\nCache size %ld (%gM)\n", cacheSize, cacheSize / 1024. / 1024.);
+
 }
 
 //extern long marginalLFEvals, marginalLFEvalsAmb;
@@ -5096,14 +5109,17 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_te
 void _LikelihoodFunction::CleanUpOptimize (void) {
     categID = 0;
     CleanupParameterMapping ();
-    //printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrix_exp_count);
-#ifdef __HYPHYMPI__
-    if (hyphyMPIOptimizerMode==_hyphyLFMPIModeNone) {
-#endif
+    auto cleanup = [this] ()->void {
         for (long i=0L; i<theTrees.lLength; i++) {
             GetIthTree (i)->CleanUpMatrices();
         }
         DeleteCaches (false);
+    };
+    //printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrix_exp_count);
+#ifdef __HYPHYMPI__
+    if (hyphyMPIOptimizerMode==_hyphyLFMPIModeNone) {
+#endif
+        cleanup();
 
         if (mstCache) {
             hyFloat      umst = 0.0;
@@ -5143,6 +5159,9 @@ void _LikelihoodFunction::CleanUpOptimize (void) {
 #ifdef __HYPHYMPI__
     } else {
         CleanupMPIOptimizer();
+        if (hy_mpi_node_rank == 0) {
+            cleanup ();
+        }
     }
 
 #endif
@@ -8175,6 +8194,11 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
         bySiteResults = nil;
     }
 
+//#ifdef __HYPHYMPI__
+//    printf ("\n_LikelihoodFunction::DeleteCaches (%d)\n", hy_mpi_node_rank);
+//#endif
+    
+    
     conditionalTerminalNodeLikelihoodCaches.Clear();
     cachedBranches.Clear();
     siteCorrections.Clear();
