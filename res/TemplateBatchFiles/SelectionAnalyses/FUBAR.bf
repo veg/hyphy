@@ -139,7 +139,6 @@ selection.io.startTimer (fubar.json [terms.json.timers], "Overall", 0);
 fubar.path.base = (fubar.json [terms.json.input])[terms.json.file];
 
 KeywordArgument ("cache",   "Save FUBAR cache to [default is alignment+.FUBAR.cache]", fubar.path.base + ".FUBAR.cache");
-KeywordArgument ("output",   "Save FUBAR results (JSON) to [default is alignment+.FUBAR.json]", fubar.codon_data_info[terms.data.file] + ".FUBAR.json");
 
 
 /*------------------------------------------------------------------------------
@@ -148,6 +147,9 @@ KeywordArgument ("output",   "Save FUBAR results (JSON) to [default is alignment
 
 fubar.path.cache = io.PromptUserForString ("Save FUBAR cache to");
 fubar.cache = io.LoadCacheFromFile (fubar.path.cache);
+
+KeywordArgument ("output",   "Save FUBAR results (JSON) to [default is alignment+.FUBAR.json]", fubar.codon_data_info[terms.data.file] + ".FUBAR.json");
+fubar.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
 fubar.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
 
