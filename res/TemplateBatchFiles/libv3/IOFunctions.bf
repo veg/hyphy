@@ -101,6 +101,16 @@ lfunction io.PromptUserForFilePath(prompt) {
 }
 
 /**
+ * @name io.PromptUserForFilePath
+ * @param prompt
+ */
+lfunction io.PromptUserForFilePathRead(prompt) {
+    SetDialogPrompt (prompt);
+    fscanf (PROMPT_FOR_FILE, REWIND, "String", n);
+    return  ^"LAST_FILE_PATH";
+}
+
+/**
  * @name  io.LoadFile
  * @param prompt
  */

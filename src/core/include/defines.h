@@ -92,25 +92,26 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  CATEGORY_VARIABLE 2
 #define  RANDOM_VARIABLE   3
 
-#define  HY_VARIABLE_GLOBAL     0x01
-#define  HY_VARIABLE_CHANGED    0x02
-#define  HY_VARIABLE_CHANGED_CLEAR    0xFFFD
-#define  HY_DEP_V_COMPUTED      0x04
-#define  HY_DEP_V_INSPECTED     0x08
-#define  HY_DEP_V_INSPECTED_CLR 0xFF7
-#define  HY_DEP_V_MODIFIED      0x10
-#define  HY_DEP_V_MODIFIED_CATS 0x20
-#define  HY_VC_NO_CHECK         0x40 // do not check this variable container in 
+#define  HY_VARIABLE_GLOBAL                         0x0001
+#define  HY_VARIABLE_CHANGED                        0x0002
+#define  HY_VARIABLE_CHANGED_CLEAR                  0xFFFD
+#define  HY_DEP_V_COMPUTED                          0x0004
+#define  HY_DEP_V_INSPECTED                         0x0008
+#define  HY_DEP_V_MODIFIED                          0x0010
+#define  HY_DEP_V_MODIFIED_CATS                     0x0020
+#define  HY_VC_NO_CHECK                             0x0040 // do not check this variable container in
 // NeedToExponentiate
-#define  HY_VARIABLE_NOTSET     0x80
-#define  HY_VARIABLE_SET        0x7F
-#define  HY_VARIABLE_COMPUTING  0x100
+#define  HY_VARIABLE_NOTSET                         0x0080
+#define  HY_VARIABLE_COMPUTING                      0x0100
 
-#define  HY_VARIABLE_COMPUTING_CLR 0x0FF
+#define  HY_VARIABLE_SET                            0xFF7F
+#define  HY_DEP_V_INSPECTED_CLR                     0xFFF7
+#define  HY_VARIABLE_COMPUTING_CLR                  0xFEFF
+#define  HY_VC_CLR_NO_CHECK                         0xFFBF
+#define  HY_DEP_CLEAR_MASK                          0xFFC7
+#define  HY_HY_VARIABLE_CHANGED_CLEAR               0xFFFC
 
-#define  HY_VC_CLR_NO_CHECK     0xFBF
-#define  HY_DEP_CLEAR_MASK      0xFC7
-#define  HY_HY_VARIABLE_CHANGED_CLEAR   0xFFC
+#define  HY_VARIABLE_PARTITION                      0x1000
 
 #define  HY_NO_MODEL            (-1)
 

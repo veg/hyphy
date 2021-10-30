@@ -125,6 +125,7 @@ if (!skipCodeSelectionStep) {
         return;
     }
 
+    _Genetic_Code_ID = _geneticCodeOptionMatrix[modelType][0];
     ApplyGeneticCodeTable(modelType);
 }
 

@@ -78,8 +78,6 @@ namespace hyphy_global_objects {
    _AVLListX batchLanguageFunctionNamesIndexed (&_batchLanugageFunctionNamesIndexed);
 
   
-  
-  
   void  _SetDataFilterParameters (_String const& name, _DataSetFilter const& filter) {
     setParameter (WrapInNamespace ("species", &name), filter.NumberSpecies());
     setParameter (WrapInNamespace ("sites", &name), filter.GetSiteCountInUnits());

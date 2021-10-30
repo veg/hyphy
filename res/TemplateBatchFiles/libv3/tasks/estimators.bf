@@ -503,7 +503,7 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
     for (estimators.ApplyExistingEstimatesToTree.b = 0; estimators.ApplyExistingEstimatesToTree.b < Abs(estimators.ApplyExistingEstimatesToTree.map); estimators.ApplyExistingEstimatesToTree.b += 1) {
         _branch_name = estimators.ApplyExistingEstimatesToTree.branch_names[estimators.ApplyExistingEstimatesToTree.b];
 
-        if (initial_values / _branch_name) { // have an entry for this branch name
+         if (initial_values / _branch_name) { // have an entry for this branch name
            _existing_estimate = initial_values[_branch_name];
 
            if (Type(_existing_estimate) == "AssociativeList") {
@@ -661,7 +661,7 @@ lfunction estimators.FitExistingLF (lf_id, model_objects) {
 lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial_values, model_objects, run_options) {
 
      if (Type(data_filter) == "String") {
-            return estimators.FitLF ({
+            return estimators.BuildLFObject ({
                 {
                     data_filter__
                 }
@@ -879,13 +879,30 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
         1
     };
 
+    keep_filters = FALSE;
 
-    for (i = 0; i < components; i += 1) {
-        lf_components[2 * i] = filters[i];
-        DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
-   }
+    if (Type (run_options) == "AssociativeList" ) {
+        if (run_options[^"terms.run_options.keep_filters"]) {
+            keep_filters = TRUE;
+        }
+    }
+    
+    
+    if (keep_filters) {
+        for (i = 0; i < components; i += 1) {
+            filters[i] = data_filter[i];
+            lf_components[2 * i] = data_filter[i];
+        }
+    } else {
+        for (i = 0; i < components; i += 1) {
+            lf_components[2 * i] = filters[i];
+            DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
+        }
+    }
+    
 
-
+    
+    
     user_model_id = context + ".user_model";
     utility.ExecuteInGlobalNamespace ("`user_model_id` = 0");
 

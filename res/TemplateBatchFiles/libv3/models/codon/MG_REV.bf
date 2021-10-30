@@ -41,6 +41,12 @@ lfunction models.codon.MG_REV.ModelDescription(type, code) {
 }
 
 
+//----------------------------------------------------------------------------------------------------------------
+
+lfunction model.codon.MG_REV.prompt_and_define (type, code) {
+    return models.codon.MG_REV.ModelDescription(type, code);
+}
+
 lfunction models.codon.MG_REV._GenerateRate(fromChar, toChar, namespace, model_type, model) {
     return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type,
     model[utility.getGlobalValue("terms.translation_table")],

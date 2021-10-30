@@ -3144,9 +3144,9 @@ bool      _ElementaryCommand::HandleKeywordArgument (_ExecutionList& current_pro
     current_program.advance ();
 #ifdef __HYPHYMPI__
     // ignore keyword options for MPI nodes
-    if (hy_mpi_node_rank > 0L) {
-        return true;
-    }
+    //if (hy_mpi_node_rank > 0L) {
+    //    return true;
+    //}
 #endif
     
     try {
@@ -4127,7 +4127,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                }
              
                if (wrong_selections > maximum_wrong_choices) {
-                throw _String ("Too many invalid imputs");
+                throw _String ("Too many invalid inputs (last one was ") & user_choice.Enquote() & ')';
                }
             }
           

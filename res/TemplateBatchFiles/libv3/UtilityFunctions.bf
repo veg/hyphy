@@ -608,6 +608,7 @@ function utility.Intersect(set, set1, set2) {
  */
 function utility.PopulateDict (from, to, value, lambda) {
     utility.PopulateDict.result = {};
+
     if (Type (lambda) == "String" && Type (value) == "String") {
         Eval ("`lambda` = None");
         ^lambda := utility.PopulateDict.k;
@@ -1081,5 +1082,30 @@ function utility.TrapAllErrors (command) {
     LAST_HBL_EXECUTION_ERROR = "";
     ExecuteCommands ("SetParameter(HBL_EXECUTION_ERROR_HANDLING,1,0);" + command);
     return LAST_HBL_EXECUTION_ERROR;
+}
+
+lfunction utility.HasUserFunction (id, args) {
+    info = utility.GetUserFunctionInfo (id) ;
+    if (None != info) {
+        if (utility.Array1D (info[^"terms.user_function.args"]) == args) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+lfunction utility.GetUserFunctionInfo (id) {
+    res = None;
+    utility.TrapAllErrors ( "GetString (`&res`, ^`&id`, -1)");
+    if (Type (res) == "AssociativeList") {
+        reqs = {{^"terms.user_function.body", ^"terms.user_function.args", ^"terms.id"}};
+        for (i; in; reqs) {
+            if (res / i == FALSE) {
+                return None;
+            }
+        }
+        return res;
+     }
+    return None;
 }
 

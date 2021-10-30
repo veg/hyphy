@@ -47,6 +47,11 @@
 #include "operation.h"
 #include "formula.h"
 
+enum kVariableScope {
+    kVariableScopeLocal = 0,
+    kVariableScopeGlobal = 1,
+    kVariableScopeRegional = 2
+};
 
 class _Variable : public _Constant {
 

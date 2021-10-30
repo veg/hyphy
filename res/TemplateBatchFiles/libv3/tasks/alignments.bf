@@ -31,7 +31,8 @@ lfunction alignments.LoadGeneticCode (code) {
         utility.getGlobalValue("terms.code") : _Genetic_Code,
         utility.getGlobalValue("terms.code.stops") : GeneticCodeExclusions,
         utility.getGlobalValue("terms.code.ordering") : _hyphyAAOrdering,
-        utility.getGlobalValue("terms.code.mapping") : defineCodonToAA ()
+        utility.getGlobalValue("terms.code.mapping") : defineCodonToAA (),
+        utility.getGlobalValue("terms.id") : _Genetic_Code_ID
      };
 }
 /**

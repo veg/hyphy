@@ -396,6 +396,7 @@ namespace terms{
 
         data                    = "data";
         residue_properties      = "residue_properties";
+        argument_collector      = "prompt_and_define";
 
     }
 
@@ -412,6 +413,11 @@ namespace terms{
         Variables           = "Variables";
         Functions           = "Functions";
         DataSetFilters      = "DataSetFilters";
+    }
+    
+    namespace user_function {
+        body = "Body";
+        args = "Arguments";
     }
 
 
@@ -484,6 +490,7 @@ namespace terms{
         partitioned_omega                 = "partitioned-omega";
         apply_user_constraints            = "apply-user-constraints";
         optimization_settings             = "optimization-settings";
+        keep_filters                      = "use-filters";
     }
 
 
