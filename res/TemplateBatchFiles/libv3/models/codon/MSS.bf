@@ -226,7 +226,7 @@ lfunction models.codon.MSS.LoadClasses (file) {
     SetDialogPrompt ("A TSV file with three columns (AA, Codon, Class) which is used to partition synonymous substitutions into groups");
     classes = io.ReadDelimitedFile (file, "\t", TRUE);
     headers = utility.Array1D(classes[^'terms.io.header']);
-    io.CheckAssertion("`&headers`==3", "Expected a TSV file with 3 columns");
+    io.CheckAssertion("`&headers`>=3", "Expected a TSV file with at least 3 columns; 2nd column is the codon, 3rd is the class for this codon");
     codons_by_class = {};
     for (_record_; in; classes [^"terms.io.rows"]) {
         codons_by_class[_record_[1]] = _record_[2];

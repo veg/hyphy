@@ -105,6 +105,7 @@ inline _Variable*  LocateVar       (long index) {
 }
 HBLObjectRef   FetchObjectFromVariableByType       (_String const*, const unsigned long, long = -1, _String* = nil);
 HBLObjectRef   FetchObjectFromVariableByTypeIndex  (long, const unsigned long, long = -1, _String* = nil);
+HBLObjectRef   FetchObjectFromVariableByTypeIndexWithoutCompute  (long, const unsigned long, long = -1, _String* = nil);
 HBLObjectRef   FetchObjectFromFormulaByType         (_Formula&, const unsigned long, long = -1, _String* = nil);
 _String     FetchObjectNameFromType (const unsigned long);
 _String const&    AppendContainerName     (_String const&, _VariableContainer const*);

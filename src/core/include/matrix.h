@@ -567,7 +567,7 @@ public:
                 }
             }
         }
-        return true;
+        return false;
     }
 
     bool              CheckIfSparseEnough (bool = false, bool copy = true);       // check if matrix is sparse enough to justify

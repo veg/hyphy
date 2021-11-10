@@ -1436,3 +1436,41 @@ lfunction estimators.LHC (ranges, samples) {
 
     return result;
 }
+
+/**
+  * @name estimators.ExtractMLEFromObject 
+  * @description extract parameter estimates and branch lengths from a LF object
+  * @param {String} ranges : existing LF object
+
+  * @return {Dict} estimate object
+
+*/
+
+lfunction estimators.ExtractMLEFromObject (lf_id) {
+    res = {};
+    GetString (lf_info, ^lf_id, -1);
+    res [^"terms.global"] = {};
+    for (id; in; lf_info[^"terms.parameters.global_independent"]) {
+        (res [^"terms.global"])[id] = {
+            ^"terms.id" : id,
+            ^"terms.fit.MLE" : ^id
+        };
+    }
+    
+    tree_count = utility.Array1D ( lf_info[^"terms.fit.trees"]);
+    res [^"terms.fit.trees"] = {tree_count,1};
+    res [^"terms.branch_length"] = {};
+    for (i,id; in; lf_info[^"terms.fit.trees"]) {
+        (res [^"terms.fit.trees"])[i] = Format (^id, 1,1);
+        (res [^"terms.branch_length"] )[i] = {};
+        for (b; in; ^id) {
+            ((res [^"terms.branch_length"] )[i])[b] = {^"terms.fit.MLE" : (BranchLength (^id, b))};
+        }
+    }
+    LFCompute (^lf_id, LF_START_COMPUTE);
+    LFCompute (^lf_id, ll);
+    LFCompute (^lf_id, LF_DONE_COMPUTE);
+    res[^"terms.fit.log_likelihood"] = ll;
+    res[^"terms.parameters"] = utility.Array1D (lf_info[^"terms.parameters.global_independent"]) + utility.Array1D (lf_info[^"terms.parameters.local_independent"]);
+    return res;
+}

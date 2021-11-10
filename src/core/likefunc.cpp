@@ -648,7 +648,7 @@ _DataSetFilter * _LikelihoodFunction::GetIthFilterMutable (long f) const {
 //_______________________________________________________________________________________
 
 _Matrix * _LikelihoodFunction::GetIthFrequencies (long f) const {
-    return (_Matrix *)FetchObjectFromVariableByTypeIndex(theProbabilities.Element(f), MATRIX);
+    return (_Matrix *)FetchObjectFromVariableByTypeIndexWithoutCompute(theProbabilities.Element(f), MATRIX);
 }
 
 //_______________________________________________________________________________________
@@ -1961,6 +1961,7 @@ void    _LikelihoodFunction::PostCompute        (void) {
     
     if (variables_changed_during_last_compute) {
         //variables_changed_during_last_compute
+        //printf ("variables_changed_during_last_compute %s\n", _String((_String*)variables_changed_during_last_compute->toStr()).get;
         
         if ((variables_changed_during_last_compute->countitems() << 1) > indexInd.lLength) {
             variables_changed_during_last_compute->Clear(false);
@@ -2386,7 +2387,7 @@ long        _LikelihoodFunction::BlockLength(long index) const {
 //_______________________________________________________________________________________
 
 bool        _LikelihoodFunction::HasBlockChanged(long index) const {
-    return GetIthTree (index)->HasChanged2();
+    return GetIthTree (index)->HasChanged2() || GetIthFrequencies(index)->HasChanged();
 }
 
 //_______________________________________________________________________________________
@@ -8425,8 +8426,12 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
     _DataSetFilter            const *df         = GetIthFilter(index);
     _TheTree                   *t               = GetIthTree(index);
     bool                       canClear         = true,
-                               rootFreqsChange  = forceRecomputation?true:glFreqs->HasChanged();
-
+                               rootFreqsChange  = forceRecomputation;
+    
+    if (!rootFreqsChange)
+        rootFreqsChange = glFreqs->HasChanged();
+    
+    
     if (currentRateClass >=0 && t->HasForcedRecomputeList()) {
         canClear = TotalRateClassesForAPartition(index) == currentRateClass+1;
     }

@@ -799,6 +799,16 @@ function io.ReportAnExecutionError (error_msg) {
 }
 
 /**
+ * @name io.ReportWarning
+ * @param warn_message
+ */
+function io.ReportWarning (warn_message) {
+    fprintf(stdout, "\n-------\n", 
+     io.FormatLongStringToWidth(">[WARNING] " +  warn_message, 72), 
+    "\n-------\n");
+}
+
+/**
  * @name io.SingularOrPlural
  * @param value
  * @param singular

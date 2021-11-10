@@ -464,11 +464,11 @@ lfunction mss.GA.fit_model (model, lfid, xp, ss) {
     parameters.SetConstraint (^"mss.scaler_prefix" + 0, "1", "");
     utility.SetEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1.); 
     Optimize (res, ^lfid);
-    return_expr = {1,res[1][1] + 2};
+    return_expr = {1,res[1][1] + 3};
     return_expr [0] = selection.io.getIC(res[1][0], xp + res[1][1] ,ss); 
     return_expr [1] = res[1][0]; 
     
-    for (i = 0; i < res[1][1]; i+=1) {
+    for (i = 0; i < res[1][1] + 1; i+=1) {
         return_expr[2+i] = Eval (^"mss.scaler_prefix" + i);
     }
     
@@ -520,7 +520,7 @@ function mss.GA.evaluateModels (models) {
     for (modelID, cAIC; in; models)  {
         if (cAIC == math.Infinity) {
             models[modelID] = (mss.GA.fit_model ( Eval (modelID), mss.lf_id, mss.parameters, mss.sample_size))[0];
-            //console.log (models[modelID]);
+            console.log (models[modelID]);
         }
     }
     
