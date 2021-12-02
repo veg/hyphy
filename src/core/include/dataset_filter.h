@@ -142,7 +142,7 @@ public:
    * @return the buffer string
    */
 
-  _String const GenerateConsensusString(_SimpleList * = nil) const;
+  _String const GenerateConsensusString(bool resolved = false, _SimpleList * = nil) const;
 
 
   long site_frequency (unsigned long site) const { return theFrequencies.get (site); }

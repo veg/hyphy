@@ -870,6 +870,7 @@ HBLObjectRef   _FString::CharAccess (HBLObjectRef p,HBLObjectRef p2,HBLObjectRef
 
     if (p2) {
         long index2 = p2->Value();
+        if (index2 < 0) index2 = get_str().length() - (-index2+1);
         return _returnStringOrUseCache(get_str().Cut (index,index2), cache);
         
         //return new _FString (new _String (get_str().Cut (index,index2)));

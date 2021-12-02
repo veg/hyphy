@@ -107,7 +107,11 @@ selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.json.s
 selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.json.sites, bgm.alignment_info [terms.data.sites]);
 selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.data_type, bgm.type);
 
+
+
 bgm.alignment_info[terms.json.json] = bgm.alignment_info[terms.data.file] + ".BGM.json";
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", bgm.alignment_info [terms.json.json]);
+bgm.alignment_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
 bgm.path.base = (bgm.json [terms.json.input])[terms.json.file];
 
@@ -356,6 +360,8 @@ selection.io.stopTimer (bgm.json [terms.json.timers], "Network inference");
 selection.io.stopTimer (bgm.json [terms.json.timers], "Overall");
 
 bgm.json [terms.settings] = bgm.run_settings;
+
+
 
 io.SpoolJSON (bgm.json, bgm.alignment_info[terms.json.json]);
 

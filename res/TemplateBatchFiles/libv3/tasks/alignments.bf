@@ -1074,3 +1074,22 @@ lfunction alignment.ExportPartitionedNEXUS (filter, breakPoints, trees, file, is
     fprintf (file, "END;\n");
     utility.ToggleEnvVariable ("DATA_FILE_PRINT_FORMAT", None);
 }
+
+/**
+ * Return consensus sequence for a data filter
+ * @name alignments.ComputeConsensus
+ * @param {String} filter name - name of the datafilter
+ * @returns {String} the consensus sequence
+ */
+
+lfunction alignments.ComputeConsensus(filter) {
+     GetDataInfo (consensus, ^filter, CONSENSUS);
+     return consensus;
+}
+
+lfunction alignments.ComputeResolvedConsensus(filter) {
+     GetDataInfo (consensus, ^filter, RESOLVED_CONSENSUS);
+     return consensus;
+}
+
+

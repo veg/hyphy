@@ -53,10 +53,6 @@ macro(PCL_CHECK_FOR_NEON)
 	  include(CheckCXXSourceRuns)
 	  set(CMAKE_REQUIRED_FLAGS)
 
-	  #if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-		  set(CMAKE_REQUIRED_FLAGS "-msse3")
-	  #endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-
 	  check_cxx_source_runs("
 		#include <stdio.h>
 		#include <arm_neon.h>
@@ -212,6 +208,13 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
             endif(${HAVE_SSE3_EXTENSIONS})
         endif(${HAVE_AVX_EXTENSIONS})
     endif(NOAVX)
+
+	if(NOT NONEON)
+		PCL_CHECK_FOR_NEON()
+		if(${HAVE_NEON_EXTENSIONS})
+			add_definitions (-D_SLKP_USE_ARM_NEON)
+		endif(${HAVE_NEON_EXTENSIONS})
+	endif(NOT NONEON)
 
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")

@@ -9626,28 +9626,60 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     //write out all the models
     _SimpleList *redirectorT = nil, dH, dV2, dU;
 
+    
     if (partitionList) {
         redirectorT = new _SimpleList;
-        for (long pidx = 0; pidx < partitionList->lLength; pidx = pidx + 1) {
+        for (long pidx = 0; pidx < partitionList->lLength; pidx++) {
             (*redirectorT) << theTrees.list_data[partitionList->list_data[pidx]];
         }
     } else {
         redirectorT = &theTrees;
     }
+    
+    _SimpleList frequencyVectors, vectorTag;
+    // keep track of root frequency vectors that may be directly specified
 
+    
     for (long idx = 0; idx < redirectorT->lLength; idx++) {
         _SimpleList dT;
-        ((_TheTree *)LocateVar(redirectorT->list_data[idx]))
-            ->CompileListOfModels(dT);
+        const long part_index = redirectorT->list_data[idx];
+        ((_TheTree *)LocateVar(part_index))->CompileListOfModels(dT);
 
         if (dT.lLength == 1) {
             dV2 << dT.list_data[0];
         } else {
             dV2 << -1;
         }
+        
+        _SimpleList _modelEFVs;
+        _AVLList modelEFVs (&_modelEFVs);
+        
 
+        dT.Each ([&modelEFVs] (long model_index, unsigned long ) -> void {
+            modelEFVs.InsertNumber(RetrieveModelFreq (model_index));
+        });
+        
+ 
+        
+        long declared_freq = theProbabilities.get(partitionList ? partitionList->get (idx) : idx);
+        if (modelEFVs.FindLong(declared_freq) == kNotFound) {
+            frequencyVectors << declared_freq;
+            
+        }
+        vectorTag << declared_freq;
+        
         dH.Union(dU, dT);
         dU.Duplicate(&dH);
+    }
+    
+    for (long idx = 0L; idx < frequencyVectors.lLength; idx++) {
+        _Variable *mx_var = LocateVar(frequencyVectors.get (idx));
+        if (mx_var->ObjectClass() == MATRIX) {
+            ((_Matrix*)mx_var->GetValue())->Serialize(rec, *mx_var->GetName());
+        } else {
+            HandleApplicationError (_String("Frequency object ") & mx_var->GetName()->Enquote() & " did not evaluate to a MATRIX");
+            return;
+        }
     }
 
     {
@@ -9762,10 +9794,10 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     rec.AppendAnAssignmentToBuffer(&hy_env::assume_reversible, new _String(hy_env::EnvVariableGetNumber(hy_env::assume_reversible, 0.)));
     rec.AppendAnAssignmentToBuffer(&kUseLastResults, new _String(hy_env::EnvVariableGetNumber(kUseLastResults, 0.)));
 
-    rec << "LikelihoodFunction " << *lfName << " = (";
+    if (frequencyVectors.empty()) {
+        rec << "LikelihoodFunction " << *lfName << " = (";
 
-    long dsID = 0;
-    {
+        long dsID = 0;
         for (long idx = 0; idx < redirector->lLength; idx++) {
             if (dsID) {
                 rec << ',';
@@ -9773,11 +9805,22 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
                 dsID = 1;
             }
 
-            rec << *GetFilterName(redirector->get(idx))
-             << ','
-             << *LocateVar(redirectorT->list_data[idx])->GetName();
+            rec << *GetFilterName(redirector->get(idx)) << ',' << *LocateVar(redirectorT->list_data[idx])->GetName();
+        }
+    } else {
+        rec << "LikelihoodFunction3 " << *lfName << " = (";
+
+        long dsID = 0;
+        for (long idx = 0; idx < redirector->lLength; idx++) {
+            if (dsID) {
+                rec << ',';
+            } else {
+                dsID = 1;
+            }
+            rec << *GetFilterName(redirector->get(idx)) << ',' << *LocateVar(redirectorT->list_data[idx])->GetName() << *LocateVar(vectorTag.get(idx))->GetName();
         }
     }
+    
     if (computingTemplate && templateKind == 1) {
         rec << ",\"";
         rec << (_String *)computingTemplate->toStr(kFormulaStringConversionNormal);

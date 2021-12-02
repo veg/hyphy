@@ -261,7 +261,6 @@ function sm.label_with_p_values (node) {
     return node;
 }
 
-sm.json_path = sm.tree[terms.data.file] + ".json";
 
 sm.json = {
     'partitions' : sm.partitions_with_labels,
@@ -289,9 +288,6 @@ sm.json = {
     },
     "events" : sm.mp["substitutions"]
 };
-
-io.SpoolJSON (sm.json, sm.json_path);
-
 
 
 sm.json_file = sm.tree[terms.data.file] + "_SM.json";

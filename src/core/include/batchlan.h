@@ -691,6 +691,7 @@ _String const    GetPathStack        (const _String& spacer = ",");
 
 void    RetrieveModelComponents      (long, _Matrix*&,     _Matrix*&, bool &);
 void    RetrieveModelComponents      (long, _Variable*&, _Variable*&, bool &);
+long    RetrieveModelFreq            (long);
 
 void    ReadModelList                (void);
 _String ProcessStringArgument        (_String* data);

@@ -419,9 +419,11 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                           kPairwiseCountAmbiguitiesSkip                   ("SKIP_AMBIGUITIES"),
                           kCharacters                                     ("CHARACTERS"),
                           kConsensus                                      ("CONSENSUS"),
+                          kResolvedConsensus                              ("RESOLVED_CONSENSUS"),
                           kParameters                                     ("PARAMETERS"),
                           kPattern                                        ("PATTERN"),
-                          kSite                                           ("SITE");
+                          kSite                                           ("SITE"),
+                          kSiteMap                                        ("SITE_MAP");
 
 
     _Variable * receptacle = nil;
@@ -488,15 +490,18 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                         } else {
                             throw (argument.Enquote('\'') & " is only available for DataSetFilter objects");
                         }
-                    } else if (argument == kConsensus) { // argument == _String("PARAMETERS")
+                    } else if (argument == kConsensus || argument == kResolvedConsensus) { // argument == _String("PARAMETERS")
+                        bool resolved = argument == kResolvedConsensus;
                         if (filter_source) {
-                            receptacle->SetValue (new _FString (new _String(filter_source->GenerateConsensusString())), false,true, NULL);
+                            receptacle->SetValue (new _FString (new _String(filter_source->GenerateConsensusString(resolved))), false,true, NULL);
                         } else {
                             _DataSetFilter temp;
                             _SimpleList l1, l2;
                             temp.SetFilter (dataset_source, 1, l1, l2, false);
-                            receptacle->SetValue (new _FString (new _String(temp.GenerateConsensusString())), false,true, NULL);
+                            receptacle->SetValue (new _FString (new _String(temp.GenerateConsensusString(resolved))), false,true, NULL);
                         }
+                    } else if (argument == kSiteMap) {
+                        receptacle->SetValue (new _Matrix (filter_source->theOriginalOrder), false, true, NULL);
                     }
                 } else {
                     long seqID = _ProcessNumericArgumentWithExceptions (*GetIthParameter(2),current_program.nameSpacePrefix);
