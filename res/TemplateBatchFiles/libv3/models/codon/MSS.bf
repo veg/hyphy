@@ -12,8 +12,10 @@ LoadFunctionLibrary("MG_REV.bf");
   
 terms.model.MSS.syn_rate_within  = " within codon class ";
 terms.model.MSS.syn_rate_between = " between codon classes ";
+terms.model.MSS.between = "synonymous rate between codon classes";
 terms.model.MSS.neutral = "neutral reference";
 terms.model.MSS.codon_classes = "codon classes";
+terms.model.MSS.normalize = "normalize rates";
 
 //----------------------------------------------------------------------------------------------------------------
 
@@ -23,9 +25,11 @@ lfunction model.codon.MSS.prompt_and_define (type, code) {
     utility.ExecuteInGlobalNamespace ("fitter.frequency_type = 'CF3x4'");
     partitioning_option = io.SelectAnOption (
     {
-        {"Full", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Leucines == neutral)"}
-        {"AA", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Leucines == neutral)"}
-        {"AAF", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (fully estimated)"}
+        {"Full", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
+        {"SynREV", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
+        {"SynREV2", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (no rate scaling))"}
+        {"SynREV2g", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (Valine == neutral). All between-class synonymous substitutions share a rate."}
+        {"SynREVCodon", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (fully estimated)"}
         {"Random", "Random partition (specify how many classes; largest class = neutral)"}
         {"File", "Load a TSV partition from file (prompted for neutral class)"}
     },
@@ -63,7 +67,7 @@ lfunction model.codon.MSS.prompt_and_define (type, code) {
         );
     }
     
-    if (partitioning_option == "AA" || partitioning_option == "AAF" ) {
+    if (partitioning_option == "SynREV" || partitioning_option == "SynREVCodon" ) {
         bins    = {};
         mapping = {};
         tt = gc [^"terms.translation_table"];
@@ -71,7 +75,7 @@ lfunction model.codon.MSS.prompt_and_define (type, code) {
             mapping[codon] = tt[codon];
             bins[mapping[codon]] += 1;
         }
-        if (partitioning_option == "AA") {
+        if (partitioning_option == "SynREV") {
             return  models.codon.MSS.ModelDescription(type, code,
                {^"terms.model.MSS.codon_classes" : mapping, ^"terms.model.MSS.neutral" : "V"}
             );
@@ -79,6 +83,71 @@ lfunction model.codon.MSS.prompt_and_define (type, code) {
         return  models.codon.MSS.ModelDescription(type, code,
            {^"terms.model.MSS.codon_classes" : mapping, ^"terms.model.MSS.neutral" : ""}
         );
+   }
+   
+   if (partitioning_option == "SynREV2" || partitioning_option == "SynREV2g") {
+        bins    = {};
+        aa_mapping = {};
+        tt = gc [^"terms.translation_table"];
+        
+        for (codon; in; gc [^"terms.sense_codons"]) {
+            AA = tt[codon];
+            if (aa_mapping / AA == FALSE) {
+                aa_mapping[AA] = {};
+            }
+            aa_mapping[AA] + codon;
+        }
+        
+        neutral = "";
+        mapping = {};
+        
+        for (aa, codons; in; aa_mapping) {
+            N = Abs (codons);
+            if (N >=2) {
+                subsets = {};
+                for (c; in; codons) {
+                    matched = FALSE;
+                    for (s; in; subsets) {
+                        if (Abs (s) == 1) {
+                            if ((s[0])[0] == c[0] && (s[0])[1] == c[1]) {
+                                l3 = (s[0])[2];
+                                if (l3 == 'A' && c[2] == 'G' || l3 == 'G' && c[2] == 'A' || l3 == 'C' && c[2] == 'T' || l3 == 'T' && c[2] == 'C') {
+                                    s + c;
+                                    matched = TRUE;
+                                }
+                            }
+                        }   
+                    }
+                    if (!matched) {
+                        subsets + {"0" : c__};
+                    }
+                }
+                for (s; in; subsets) {
+                    tag = aa + "_" + Join ("_", s);
+                    for (c; in; s) {
+                        mapping [c] = tag;
+                    }
+                    if (aa == "V" && Abs (neutral) == 0) {
+                        neutral = tag;
+                    }
+                }
+                
+            } else {
+                mapping[codons[0]] = aa;
+            }
+        }
+        
+        
+        if (partitioning_option == "SynREV2g") {
+            return  models.codon.MSS.ModelDescription(type, code,
+               {^"terms.model.MSS.codon_classes" : mapping,  ^"terms.model.MSS.between" : "BETWEEN_CLASS"}
+            );
+        } else {
+            return  models.codon.MSS.ModelDescription(type, code,
+               {^"terms.model.MSS.codon_classes" : mapping}
+            );
+        }
+        
    }
     
     if (partitioning_option == "Random") {
@@ -120,9 +189,29 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
     m[utility.getGlobalValue("terms.model.q_ij")] = "models.codon.MSS._GenerateRate";
     m[utility.getGlobalValue("terms.model.MSS.codon_classes")] = codon_classes [^"terms.model.MSS.codon_classes"];
     m[utility.getGlobalValue("terms.model.MSS.neutral")] = codon_classes [^"terms.model.MSS.neutral"];
+    if (codon_classes/utility.getGlobalValue("terms.model.MSS.between")) {
+        m[^"terms.model.MSS.between"] = codon_classes [^"terms.model.MSS.between"];
+    }
+    
+    if (codon_classes[utility.getGlobalValue("terms.model.MSS.normalize")]) {
+        m[utility.getGlobalValue("terms.model.post_definition")] = "models.codon.MSS.post_definition";
+    }
+    
     return m;
 }
 
+//----------------------------------------------------------------------------------------------------------------
+
+lfunction models.codon.MSS.post_definition (model) {
+// TBD
+    vars = {};
+    weights = {};
+    for (i; in; model.GetParameters_RegExp (model,"^" + utility.getGlobalValue ("terms.parameters.synonymous_rate"))) {
+        vars + i;
+        weights + 1;
+    } 
+    parameters.ConstrainMeanOfSet (vars, weights, 1, "beavis");
+}
 
 //----------------------------------------------------------------------------------------------------------------
 
@@ -139,6 +228,7 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
     omega      = "omega";
     alpha      = "alpha";
     beta       = "beta";
+    between_rate = model[^"terms.model.MSS.between"];
 
     _tt = model[utility.getGlobalValue("terms.translation_table")];
 
@@ -203,12 +293,22 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
                     class_to = class_from;
                     class_from = codon_rate;
                 }
-                if (model_type == utility.getGlobalValue("terms.local")) {
-                    codon_rate = alpha + "_" + class_from + "_" + class_to;
+                if (Abs (between_rate)) {
+                    if (model_type == utility.getGlobalValue("terms.local")) {
+                        codon_rate = between_rate;
+                    } else {
+                        codon_rate = parameters.ApplyNameSpace(between_rate, namespace);
+                    }
+                    (_GenerateRate.p[model_type])[^"terms.model.MSS.between"] = codon_rate;
+                
                 } else {
-                    codon_rate = parameters.ApplyNameSpace(alpha + "_" + class_from + "_" + class_to, namespace);
+                    if (model_type == utility.getGlobalValue("terms.local")) {
+                        codon_rate = alpha + "_" + class_from + "_" + class_to;
+                    } else {
+                        codon_rate = parameters.ApplyNameSpace(alpha + "_" + class_from + "_" + class_to, namespace);
+                    }
+                    (_GenerateRate.p[model_type])[alpha_term + ^"terms.model.MSS.syn_rate_between" + class_from + " and "  + class_to] = codon_rate;
                 }
-                (_GenerateRate.p[model_type])[alpha_term + ^"terms.model.MSS.syn_rate_between" + class_from + " and "  + class_to] = codon_rate;
                 rate_entry += "*" + codon_rate;
             }
         }

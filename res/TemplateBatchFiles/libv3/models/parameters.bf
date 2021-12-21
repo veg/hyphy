@@ -242,6 +242,7 @@ lfunction parameters.ConstrainMeanOfSet (set, weights, mean, namespace) {
     utility.ForEach (unscaled, "_name_", 'parameters.DeclareGlobal (_name_, null)');
     global_scaler = namespace + ".scaler_variable";
     parameters.SetConstraint (global_scaler, Join ("+", constraint), "global");
+    console.log (constraint);
     utility.ForEach (set, "_name_", '
         `&scaler_variables`["Mean scaler variable for " + _name_] = _name_ + "_scaler_variable";
         parameters.SetValue (_name_ + "_scaler_variable", _name_);
