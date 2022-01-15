@@ -217,7 +217,7 @@ void _DataSet::AddSite(char c) {
 }
 //_______________________________________________________________________
 
-void _DataSet::Write2Site(long index, char c) {
+void _DataSet::Write2Site(long index, char c, char skip_char) {
   if (streamThrough) {
     if (index == 0) {
       if (theMap.list_data[2] == theMap.list_data[1]) {
@@ -252,38 +252,61 @@ void _DataSet::Write2Site(long index, char c) {
     }*/
 
     if (useHorizontalRep) {
-      long currentWritten = ((_String *)list_data[0])->length();
+        long currentWritten = ((_String *)list_data[0])->length();
 
-      if (index >= currentWritten) {
-        HandleApplicationError("Internal Error in 'Write2Site' - index is too "
-                               "high (using compact representation)");
-        return;
-      } else {
-        if (index == 0) {
-          _StringBuffer *newString = new _StringBuffer(currentWritten);
-          (*newString) << c;
-          (*this) < newString;
-        } else {
-          long s = 1;
-          for (; s < lLength; s++) {
-            _StringBuffer *aString = (_StringBuffer *)list_data[s];
-            if (aString->length() == index) {
-              (*aString) << c;
-              break;
+        if (index >= currentWritten) {
+            /** SLKP 20211229
+                When we enter here, this means that the current string is longer that all other strings; they need to be padded
+            */
+            /*HandleApplicationError(_String("Internal Error in 'Write2Site' - index is too "
+                                   "high (using compact representation) ") & index &'/' & (long)currentWritten);
+            return;*/
+            
+            //printf ("\n%ld\n", lLength);
+            
+            for (long s = 0; s < lLength - 1; s++) {
+                _StringBuffer *aString = (_StringBuffer *)list_data[s];
+                (*aString) << skip_char;
+               // printf ("\n%ld:%ld\n", s, aString->length());
             }
-          }
-          if (s == lLength) {
-            HandleApplicationError("Internal Error in 'Write2Site' - no "
-                                   "appropriate  string to write too (compact "
-                                   "representation)");
-            return;
-          }
+            
+            //exit (1);
+            
+            (*(_StringBuffer *)list_data[lLength-1]) << c;
+            
+        } else {
+        
+            if (index == 0) {
+              _StringBuffer *newString = new _StringBuffer(currentWritten);
+              (*newString) << c;
+              (*this) < newString;
+            } else {
+                  // check to see if the last sequence has the right length
+                  if (((_StringBuffer *)list_data[lLength-1])->length () == index) {
+                     *((_StringBuffer *)list_data[lLength-1]) << c;
+                  } else {
+                      long s = 1;
+                      for (; s < lLength; s++) {
+                        _StringBuffer *aString = (_StringBuffer *)list_data[s];
+                        if (aString->length() == index) {
+                          (*aString) << c;
+                          break;
+                        }
+                      }
+                      if (s == lLength) {
+                        HandleApplicationError("Internal Error in 'Write2Site' - no "
+                                               "appropriate  string to write too (compact "
+                                               "representation)");
+                        return;
+                      }
+                  }
+            }
         }
-      }
+      
     } else {
       if (index >= lLength) {
         HandleApplicationError(
-            "Internal Error in 'Write2Site' - index is too high");
+            _String ("Internal Error in 'Write2Site' - index is too high. ") & index &'/' & (long)lLength);
         return;
       }
       _Site *s = (_Site *)list_data[index];
@@ -369,7 +392,9 @@ void _DataSet::Finalize(void) {
   } else {
     if (useHorizontalRep) {
       bool good = true;
-      for (long s = 0; s < lLength; s++) {
+    
+      for (long s = 0; s < lLength && good; s++) {
+        //printf ("\n\n%d %d\n", s, ((_String *)list_data[s])->length());
         good = good &&
                ((_String *)list_data[0])->length() == ((_String *)list_data[s])->length();
       }
@@ -1714,7 +1739,7 @@ long    ProcessLine (_String&s , FileState *fs, _DataSet& ds) {
                         ds < newS;
                         fs->totalSitesRead++;
                     } else {
-                        ds.Write2Site (fs->curSite+sitesAttached, letter);
+                        ds.Write2Site (fs->curSite+sitesAttached, letter, fs->skip);
                     }
                     
                     sitesAttached++;
@@ -1742,10 +1767,12 @@ long    ProcessLine (_String&s , FileState *fs, _DataSet& ds) {
 //_________________________________________________________
 void    PadLine (FileState& fState, _DataSet& result) { // make sure that there is enough data in this line
                                                       // and if not - "pad" it with '?''s
-    if (fState.curSite<fState.totalSitesRead) // pad line if needed
+    if (fState.curSite<fState.totalSitesRead) {// pad line if needed
+        //printf ("\nPADLINE %d %d\n", fState.curSpecies, fState.totalSitesRead-fState.curSite);
         for (long j = fState.curSite; j<fState.totalSitesRead; j++) {
             result.Write2Site (j, fState.skip);
         }
+    }
 }
 
 //_________________________________________________________
@@ -1810,7 +1837,7 @@ bool SkipLine (_StringBuffer& theLine, FileState* fS) {
 
 //_________________________________________________________
 void ReadNextLine (hyFile * fp, _StringBuffer *s, FileState* fs, bool, bool upCase) {
-    _StringBuffer  tempBuffer (1024L);
+    _StringBuffer  tempBuffer (MAX (1024L, fs->totalSitesRead));
   
     fs->currentFileLine ++;
     

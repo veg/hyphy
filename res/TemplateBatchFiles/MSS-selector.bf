@@ -4,7 +4,7 @@
 
 /* 1a. Initial Setup
 ------------------------------------------------------------------------------*/
-RequireVersion ("2.5.34");
+RequireVersion ("2.5.35");
 
 LoadFunctionLibrary ("libv3/all-terms.bf");
 LoadFunctionLibrary ("libv3/convenience/regexp.bf");
@@ -239,10 +239,8 @@ mss.lf_components = {
 
 mss.lf_id = "MSS.COMPOSITE.LF";
 
-
 for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
      mss.prefix = mss.file_prefix  [mss_selector.path];
-    
     
      mss.model_name = "`mss.prefix`.model";
      mss.tree_name = "`mss.prefix`.tree";

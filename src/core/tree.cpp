@@ -505,8 +505,14 @@ _String    _TheTree::FinalizeNode (node<long>* nodie, long number , _String node
         node_parameters = kEmptyString;
         nodeValue       = kEmptyString;
     } else {
-        if (node_parameters.empty() && lastMatrixDeclared !=-1L ) {
-            node_parameters=* hyphy_global_objects::GetObjectNameByType (HY_BL_MODEL, lastMatrixDeclared, false);
+        if (node_parameters.empty() ) {
+            if (lastMatrixDeclared !=-1L ) {
+                node_parameters=* hyphy_global_objects::GetObjectNameByType (HY_BL_MODEL, lastMatrixDeclared, false);
+            }
+        } else {
+            if (settings.parser_namespace.nonempty()) {
+                node_parameters = settings.parser_namespace & "." & node_parameters;
+            }
         }
 
         if (node_parameters.nonempty()) {

@@ -424,10 +424,12 @@ if (relax.model_set == "All") { // run all the models
                 },
                 relax.filter_names,
                 None);
+                
 
         relax.distribution          = models.codon.BS_REL.ExtractMixtureDistribution(relax.ge.bsrel_model);
         relax.weight_multipliers    = parameters.helper.stick_breaking (utility.SwapKeysAndValues(utility.MatrixToDict(relax.distribution["weights"])),None);
         relax.constrain_parameters   = parameters.ConstrainMeanOfSet(relax.distribution["rates"],relax.weight_multipliers,1,"relax");
+
         
         relax.i = 0;
         for (key, value; in; relax.constrain_parameters[terms.global]){

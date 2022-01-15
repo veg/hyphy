@@ -2817,7 +2817,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                         continue;
                     } else {
                         if (!done) {
-                            errMsg = (((_String)("LF: Not a well-defined tree/model combination: ")&*tree));
+                            errMsg = (((_String)("LF: Not a well-defined tree/model combination: ")&*thisTree->GetName()));
                         } else {
                             errMsg = (((_String)("LF: All models in the tree: ")&*tree&_String(" must share the same frequencies vector")));
                         }
@@ -3325,6 +3325,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 
 
         _TheTree * tr = nil;
+        if (chain.nameSpacePrefix) {
+            hy_env::EnvVariableSet(hy_env::tree_parser_namespace, new _FString (*chain.nameSpacePrefix->GetName()), false);
+        }
 
         if (treeString.get_char(0)!='(') {
             _Formula  nameForm (treeString,chain.nameSpacePrefix);
@@ -3345,6 +3348,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             }
         } else {
             tr = new _TheTree (treeIdent,treeString,false);
+        }
+        
+        if (chain.nameSpacePrefix) {
+            hy_env::EnvVariableSet(hy_env::tree_parser_namespace, new _MathObject, false);
         }
 
         if (!tr) {

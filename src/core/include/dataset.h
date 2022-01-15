@@ -80,7 +80,7 @@ public:
 
   void AddSite(char);
 
-  void Write2Site(long, char);
+  void Write2Site(long, char, char skip_char = '?');
 
   void Finalize(void);
   // remove duplicate data types and compress

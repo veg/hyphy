@@ -188,7 +188,11 @@ lfunction utility.ArrayToDict (object) {
 lfunction utility.MatrixToDict (matrix) {
     result = {};
     counter = 0;
-    utility.ForEach(matrix, "_value_", "(`&result`)[_value_] = `&counter`; `&counter` += 1;");
+    for (_value_; in; matrix) {
+        result [_value_] = counter;
+        counter += 1;
+    }   
+    //utility.ForEach(matrix, "_value_", "(`&result`)[_value_] = `&counter`; `&counter` += 1;");
     return result;
 }
 

@@ -9817,7 +9817,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
             } else {
                 dsID = 1;
             }
-            rec << *GetFilterName(redirector->get(idx)) << ',' << *LocateVar(redirectorT->list_data[idx])->GetName() << *LocateVar(vectorTag.get(idx))->GetName();
+            rec << *GetFilterName(redirector->get(idx)) << ',' << *LocateVar(redirectorT->list_data[idx])->GetName() << ',' << *LocateVar(vectorTag.get(idx))->GetName();
         }
     }
     

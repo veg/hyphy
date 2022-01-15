@@ -1061,6 +1061,8 @@ lfunction estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_resul
     fit_results[^"terms.fit.nonsynonymous_trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
 
     utility.SetEnvVariable ("BRANCH_LENGTH_STENCIL", None);
+    
+    fit_results[^"terms.json.trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
 
     return fit_results;
 }
