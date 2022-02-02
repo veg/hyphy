@@ -567,7 +567,7 @@ public:
                 }
             }
         }
-        return true;
+        return false;
     }
 
     bool              CheckIfSparseEnough (bool = false, bool copy = true);       // check if matrix is sparse enough to justify
@@ -735,6 +735,12 @@ HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_s
         _mm256_store_pd (array, x);
         return (array[0]+array[1])+(array[2]+array[3])  ;*/
       
+    }
+#endif
+
+#ifdef _SLKP_USE_ARM_NEON
+    inline double _neon_sum_2 (float64x2_t const & x) {
+        return vgetq_lane_f64 (x,0) + vgetq_lane_f64 (x,1);
     }
 #endif
 

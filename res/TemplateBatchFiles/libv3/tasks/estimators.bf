@@ -503,7 +503,7 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
     for (estimators.ApplyExistingEstimatesToTree.b = 0; estimators.ApplyExistingEstimatesToTree.b < Abs(estimators.ApplyExistingEstimatesToTree.map); estimators.ApplyExistingEstimatesToTree.b += 1) {
         _branch_name = estimators.ApplyExistingEstimatesToTree.branch_names[estimators.ApplyExistingEstimatesToTree.b];
 
-        if (initial_values / _branch_name) { // have an entry for this branch name
+         if (initial_values / _branch_name) { // have an entry for this branch name
            _existing_estimate = initial_values[_branch_name];
 
            if (Type(_existing_estimate) == "AssociativeList") {
@@ -661,7 +661,7 @@ lfunction estimators.FitExistingLF (lf_id, model_objects) {
 lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial_values, model_objects, run_options) {
 
      if (Type(data_filter) == "String") {
-            return estimators.FitLF ({
+            return estimators.BuildLFObject ({
                 {
                     data_filter__
                 }
@@ -879,13 +879,30 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
         1
     };
 
+    keep_filters = FALSE;
 
-    for (i = 0; i < components; i += 1) {
-        lf_components[2 * i] = filters[i];
-        DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
-   }
+    if (Type (run_options) == "AssociativeList" ) {
+        if (run_options[^"terms.run_options.keep_filters"]) {
+            keep_filters = TRUE;
+        }
+    }
+    
+    
+    if (keep_filters) {
+        for (i = 0; i < components; i += 1) {
+            filters[i] = data_filter[i];
+            lf_components[2 * i] = data_filter[i];
+        }
+    } else {
+        for (i = 0; i < components; i += 1) {
+            lf_components[2 * i] = filters[i];
+            DataSetFilter ^ (filters[i]) = CreateFilter( ^ (data_filter[i]), 1);
+        }
+    }
+    
 
-
+    
+    
     user_model_id = context + ".user_model";
     utility.ExecuteInGlobalNamespace ("`user_model_id` = 0");
 
@@ -1044,6 +1061,8 @@ lfunction estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_resul
     fit_results[^"terms.fit.nonsynonymous_trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
 
     utility.SetEnvVariable ("BRANCH_LENGTH_STENCIL", None);
+    
+    fit_results[^"terms.json.trees"] = (estimators.ExtractMLEs(fit_results[^"terms.likelihood_function"], fit_results[^"terms.model"]))[^"terms.fit.trees"];
 
     return fit_results;
 }
@@ -1418,4 +1437,42 @@ lfunction estimators.LHC (ranges, samples) {
     }
 
     return result;
+}
+
+/**
+  * @name estimators.ExtractMLEFromObject 
+  * @description extract parameter estimates and branch lengths from a LF object
+  * @param {String} ranges : existing LF object
+
+  * @return {Dict} estimate object
+
+*/
+
+lfunction estimators.ExtractMLEFromObject (lf_id) {
+    res = {};
+    GetString (lf_info, ^lf_id, -1);
+    res [^"terms.global"] = {};
+    for (id; in; lf_info[^"terms.parameters.global_independent"]) {
+        (res [^"terms.global"])[id] = {
+            ^"terms.id" : id,
+            ^"terms.fit.MLE" : ^id
+        };
+    }
+    
+    tree_count = utility.Array1D ( lf_info[^"terms.fit.trees"]);
+    res [^"terms.fit.trees"] = {tree_count,1};
+    res [^"terms.branch_length"] = {};
+    for (i,id; in; lf_info[^"terms.fit.trees"]) {
+        (res [^"terms.fit.trees"])[i] = Format (^id, 1,1);
+        (res [^"terms.branch_length"] )[i] = {};
+        for (b; in; ^id) {
+            ((res [^"terms.branch_length"] )[i])[b] = {^"terms.fit.MLE" : (BranchLength (^id, b))};
+        }
+    }
+    LFCompute (^lf_id, LF_START_COMPUTE);
+    LFCompute (^lf_id, ll);
+    LFCompute (^lf_id, LF_DONE_COMPUTE);
+    res[^"terms.fit.log_likelihood"] = ll;
+    res[^"terms.parameters"] = utility.Array1D (lf_info[^"terms.parameters.global_independent"]) + utility.Array1D (lf_info[^"terms.parameters.local_independent"]);
+    return res;
 }

@@ -1118,6 +1118,14 @@ void    RetrieveModelComponents (long mid, _Variable*& mm, _Variable*& fv, bool 
     mbf = (fvi>=0);
 }
 
+//____________________________________________________________________________________
+
+long    RetrieveModelFreq (long mid) {
+    long fvi = modelFrequenciesIndices.list_data[mid];
+    return fvi>=0?fvi:(-fvi-1);
+
+}
+
 
 
 //____________________________________________________________________________________

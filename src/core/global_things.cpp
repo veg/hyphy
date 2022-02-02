@@ -122,7 +122,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.32"),
+                     kHyPhyVersion  = _String ("2.5.36"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -619,19 +619,21 @@ namespace hy_global {
                     }
                     (*error_message) << (*(_String*)calls(k)) << '\n';
                     
-                    if (k == 0) {
+                    //if (k == 0) {
                         _String* redir = (_String*)stdins (k);
                         if (redir->nonempty()) {
                             (*error_message) << "\tStandard input redirect:\n\t\t"
                                       << redir->Replace ("\n","\n\t\t",true);
+                            (*error_message) << "\n";
                         }
                         redir = (_String*)kwargs(k);
                         if (redir->nonempty()) {
                             (*error_message) << "\n\tKeyword arguments:\n\t\t"
                             << redir->Replace ("\n","\n\t\t",true);
+                            (*error_message) << "\n";
                         }
-                        (*error_message) << "\n";
-                    }
+                        //(*error_message) << "\n";
+                    //}
                     
                     (*error_message) << "-------\n";
                     

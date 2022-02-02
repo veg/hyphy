@@ -203,7 +203,8 @@ namespace hy_env {
           short_mpi_return,
           kSCFGCorpus,
           verbosity_level_string,
-          tolerate_numerical_errors;
+          tolerate_numerical_errors,
+          tree_parser_namespace;
 
     ;
     

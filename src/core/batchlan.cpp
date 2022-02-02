@@ -269,6 +269,7 @@ void    MPISendString       (_String const& theMessage, long destID, bool isErro
 
     _FString*    sentVal = new _FString ((_String*)theMessage.makeDynamic());
     _Variable *   mpiMsgVar = CheckReceptacle (&hy_env::mpi_last_sent_message, kEmptyString, false);
+    //printf ("\nsetting sent msg %ld (bytes) %d nist\n", sentVal->get_str().length(), sentVal->SingleReference());
     mpiMsgVar->SetValue (sentVal, false, true, NULL);
     //setParameter (mpiLastSentMsg, &sentVal);
 
@@ -2816,7 +2817,7 @@ void      _ElementaryCommand::ExecuteCase11 (_ExecutionList& chain)
                         continue;
                     } else {
                         if (!done) {
-                            errMsg = (((_String)("LF: Not a well-defined tree/model combination: ")&*tree));
+                            errMsg = (((_String)("LF: Not a well-defined tree/model combination: ")&*thisTree->GetName()));
                         } else {
                             errMsg = (((_String)("LF: All models in the tree: ")&*tree&_String(" must share the same frequencies vector")));
                         }
@@ -3324,6 +3325,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
 
 
         _TheTree * tr = nil;
+        if (chain.nameSpacePrefix) {
+            hy_env::EnvVariableSet(hy_env::tree_parser_namespace, new _FString (*chain.nameSpacePrefix->GetName()), false);
+        }
 
         if (treeString.get_char(0)!='(') {
             _Formula  nameForm (treeString,chain.nameSpacePrefix);
@@ -3344,6 +3348,10 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
             }
         } else {
             tr = new _TheTree (treeIdent,treeString,false);
+        }
+        
+        if (chain.nameSpacePrefix) {
+            hy_env::EnvVariableSet(hy_env::tree_parser_namespace, new _MathObject, false);
         }
 
         if (!tr) {

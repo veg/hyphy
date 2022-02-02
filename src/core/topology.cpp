@@ -266,12 +266,15 @@ const _TreeTopologyParseSettings    _TreeTopology::CollectParseSettings (void) {
     parse_settings.auto_convert_lengths = EnvVariableTrue(automatically_convert_branch_lengths);
     parse_settings.accept_user_lengths  = EnvVariableTrue(accept_branch_lengths);
     parse_settings.ingore_user_inode_names  = EnvVariableTrue(kIgnoreUserINames);
-    
+     
     HBLObjectRef user_node_name            = EnvVariableGet(kInternalNodePrefix, STRING);
     if (user_node_name) {
         parse_settings.inode_prefix = ((_FString*)user_node_name)->get_str();
     }
-    
+    user_node_name = EnvVariableGet (tree_parser_namespace, STRING);
+    if (user_node_name) {
+        parse_settings.parser_namespace = ((_FString*)user_node_name)->get_str();
+    }
     return parse_settings;
 
 }

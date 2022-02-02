@@ -26,6 +26,97 @@
 
 utility.SetEnvVariable ("MARKDOWN_OUTPUT", TRUE);
 
+
+function load_nuc_file (prefix) {
+
+    nuc_data_info = alignments.ReadNucleotideDataSet(prefix+".nuc_data", null);
+    sample_size=nuc_data_info[utility.getGlobalValue("terms.data.sites")]*nuc_data_info[utility.getGlobalValue("terms.data.sequences")];
+
+
+    nuc_data_info[utility.getGlobalValue("terms.data.sample_size")] = sample_size;
+    upper_prefix = prefix && 1; //uppercase the prefix for json name
+    nuc_data_info[utility.getGlobalValue("terms.json.json")] = nuc_data_info[utility.getGlobalValue("terms.data.file")] + "."+upper_prefix+".json";
+
+    name_mapping = nuc_data_info[utility.getGlobalValue("terms.data.name_mapping")];
+
+        /**
+            will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
+        */
+
+    if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
+        name_mapping = {};
+        utility.ForEach (alignments.GetSequenceNames (prefix+".nuc_data"), "_value_", "`&name_mapping`[_value_] = _value_");
+    }
+
+    partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (nuc_data_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+
+
+    utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"), None);
+
+        /**  this will return a dictionary of partition strings and trees; one set per partition, as in
+        {
+            "0": {
+                "name:" ... ,
+                "filter-string": "0-587",
+                "tree": {
+                    "string": ...
+                    "string_with_lengths": ...
+                    "branch_lengths": {
+                        "AF_231119": 0.00519475,
+                        ...
+                    },
+                    "annotated_string": ... ,
+                    "model_map": {
+                        "AF_231119": "",
+                        ...
+                    },
+                    "partitioned": {
+                        "AF_231119": "leaf",
+                     },
+                    "model_list": {
+                        {
+                    }
+                }
+            },
+            ...
+        */
+
+
+    partition_count = Abs (partitions_and_trees);
+
+
+    // TODO: DE-HARDCODE "filter-string"
+    utility.ForEachPair (partitions_and_trees,
+                            "_key_",
+                            "_value_",
+                            '(`&partitions_and_trees`[_key_])[utility.getGlobalValue("terms.data.filter_string")] = selection.io.adjust_partition_string (_value_[utility.getGlobalValue("terms.data.filter_string")], 3*`&nuc_data_info`[utility.getGlobalValue("terms.data.sites")])');
+        /**
+            ensure that all partitions fall on codon boundaries if they are contiguous
+        */
+
+    io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + nuc_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + nuc_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + nuc_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
+
+    
+
+    /** Input attribute to JSON **/
+    json[utility.getGlobalValue("terms.json.input")] = {};
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.file")] =  nuc_data_info[utility.getGlobalValue("terms.data.file")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sequences")] = nuc_data_info[utility.getGlobalValue("terms.data.sequences")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.sites")] = nuc_data_info[utility.getGlobalValue("terms.data.sites")];
+    (json[utility.getGlobalValue("terms.json.input")])[utility.getGlobalValue("terms.json.partition_count")] = partition_count;
+
+    // The trees should go into input as well and they should be w/ their branch lengths but ONLY if they have any.
+
+
+
+     filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, "`prefix`.nuc_data" , "`prefix`.filter.", nuc_data_info);
+   
+
+     store_tree_information ();
+ 
+ }
+ 
+
 function load_file (prefix) {
 
     settings = None;
@@ -35,6 +126,7 @@ function load_file (prefix) {
         prefix = prefix [utility.getGlobalValue("terms.prefix")];
     }
 
+    
 
     codon_data_info = alignments.PromptForGeneticCodeAndAlignment(prefix+".codon_data", prefix+".codon_filter");
 

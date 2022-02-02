@@ -648,7 +648,7 @@ _DataSetFilter * _LikelihoodFunction::GetIthFilterMutable (long f) const {
 //_______________________________________________________________________________________
 
 _Matrix * _LikelihoodFunction::GetIthFrequencies (long f) const {
-    return (_Matrix *)FetchObjectFromVariableByTypeIndex(theProbabilities.Element(f), MATRIX);
+    return (_Matrix *)FetchObjectFromVariableByTypeIndexWithoutCompute(theProbabilities.Element(f), MATRIX);
 }
 
 //_______________________________________________________________________________________
@@ -1961,6 +1961,7 @@ void    _LikelihoodFunction::PostCompute        (void) {
     
     if (variables_changed_during_last_compute) {
         //variables_changed_during_last_compute
+        //printf ("variables_changed_during_last_compute %s\n", _String((_String*)variables_changed_during_last_compute->toStr()).get;
         
         if ((variables_changed_during_last_compute->countitems() << 1) > indexInd.lLength) {
             variables_changed_during_last_compute->Clear(false);
@@ -2386,7 +2387,7 @@ long        _LikelihoodFunction::BlockLength(long index) const {
 //_______________________________________________________________________________________
 
 bool        _LikelihoodFunction::HasBlockChanged(long index) const {
-    return GetIthTree (index)->HasChanged2();
+    return GetIthTree (index)->HasChanged2() || GetIthFrequencies(index)->HasChanged();
 }
 
 //_______________________________________________________________________________________
@@ -3451,7 +3452,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                         _StringBuffer          sLF (8192UL);
                         SerializeLF      (sLF,_hyphyLFSerializeModeVanilla,nil,&subset);
                         sLF.TrimSpace()  ;
-
+                        
                         MPISendString (sLF,i);
                         parallelOptimizerTasks.AppendNewInstance (new _SimpleList);
                     }
@@ -3594,6 +3595,11 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
     // need to decide which data represenation to use,
     // large trees short alignments
     // an acceptable cache size etc
+    
+//#ifdef __HYPHYMPI__
+//    printf ("\n_LikelihoodFunction::SetupLFCaches (%d)\n", hy_mpi_node_rank);
+//#endif
+    
     categID = 0;
     conditionalInternalNodeLikelihoodCaches = new hyFloat*   [theTrees.lLength];
     branchCaches                            = new hyFloat*   [theTrees.lLength];
@@ -3609,6 +3615,8 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 
     evalsSinceLastSetup = 0L;
     unsigned long  maxFilterSize = 1;
+    
+    unsigned long cacheSize = 0UL;
     
     for (unsigned long i=0UL; i<theTrees.lLength; i++) {
         _TheTree * cT = GetIthTree(i);
@@ -3636,10 +3644,12 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 
         maxFilterSize = MAX (maxFilterSize, theFilter->GetSiteCountInUnits());
         if (leafCount > 1UL) {
+            cacheSize += sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount + sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount;
             conditionalInternalNodeLikelihoodCaches[i] = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount, false, 64);
             branchCaches[i]                            = (hyFloat*)MemAllocate (sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount, false, 64);
         }
 
+        cacheSize += sizeof(hyFloat)*patternCount*iNodeCount*cT->categoryCount + sizeof(long)*patternCount*MAX(2,leafCount);
         siteScalingFactors[i]                          = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*iNodeCount*cT->categoryCount, false, 64);
         conditionalTerminalNodeStateFlag[i]            = (long*)MemAllocate (sizeof(long)*patternCount*MAX(2,leafCount), false, 64);
 
@@ -3651,7 +3661,9 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
             siteCorrections < new _SimpleList (cT->categoryCount*patternCount,0,0);
             siteCorrectionsBackup < new _SimpleList (cT->categoryCount*patternCount,0,0);
         }
-
+        
+        cacheSize += cT->categoryCount*patternCount * 2 * sizeof (long);
+        
         InitializeArray(siteScalingFactors[i] , patternCount*iNodeCount*cT->categoryCount, 1.);
 
         // now process filter characters by site / column
@@ -3709,6 +3721,8 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 		OCLEval[i].init(patternCount, theFilter->GetDimension(), conditionalInternalNodeLikelihoodCaches[i]);
 #endif
     }
+    //printf ("\nCache size %ld (%gM)\n", cacheSize, cacheSize / 1024. / 1024.);
+
 }
 
 //extern long marginalLFEvals, marginalLFEvalsAmb;
@@ -5096,14 +5110,17 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_te
 void _LikelihoodFunction::CleanUpOptimize (void) {
     categID = 0;
     CleanupParameterMapping ();
-    //printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrix_exp_count);
-#ifdef __HYPHYMPI__
-    if (hyphyMPIOptimizerMode==_hyphyLFMPIModeNone) {
-#endif
+    auto cleanup = [this] ()->void {
         for (long i=0L; i<theTrees.lLength; i++) {
             GetIthTree (i)->CleanUpMatrices();
         }
         DeleteCaches (false);
+    };
+    //printf ("Done OPT LF eval %d MEXP %d\n", likeFuncEvalCallCount, matrix_exp_count);
+#ifdef __HYPHYMPI__
+    if (hyphyMPIOptimizerMode==_hyphyLFMPIModeNone) {
+#endif
+        cleanup();
 
         if (mstCache) {
             hyFloat      umst = 0.0;
@@ -5143,6 +5160,9 @@ void _LikelihoodFunction::CleanUpOptimize (void) {
 #ifdef __HYPHYMPI__
     } else {
         CleanupMPIOptimizer();
+        if (hy_mpi_node_rank == 0) {
+            cleanup ();
+        }
     }
 
 #endif
@@ -8175,6 +8195,11 @@ void    _LikelihoodFunction::DeleteCaches (bool all)
         bySiteResults = nil;
     }
 
+//#ifdef __HYPHYMPI__
+//    printf ("\n_LikelihoodFunction::DeleteCaches (%d)\n", hy_mpi_node_rank);
+//#endif
+    
+    
     conditionalTerminalNodeLikelihoodCaches.Clear();
     cachedBranches.Clear();
     siteCorrections.Clear();
@@ -8401,8 +8426,12 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
     _DataSetFilter            const *df         = GetIthFilter(index);
     _TheTree                   *t               = GetIthTree(index);
     bool                       canClear         = true,
-                               rootFreqsChange  = forceRecomputation?true:glFreqs->HasChanged();
-
+                               rootFreqsChange  = forceRecomputation;
+    
+    if (!rootFreqsChange)
+        rootFreqsChange = glFreqs->HasChanged();
+    
+    
     if (currentRateClass >=0 && t->HasForcedRecomputeList()) {
         canClear = TotalRateClassesForAPartition(index) == currentRateClass+1;
     }
@@ -8768,7 +8797,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                                      inc,
                                                                      conditionalTerminalNodeStateFlag[index],
                                                                      ssf,
-                                                                     (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                                                     (_Vector*)conditionalTerminalNodeLikelihoodCaches(index),
                                                                      overallScalingFactors.list_data[index],
                                                                      0,
                                                                      df->GetPatternCount(),
@@ -9597,28 +9626,60 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     //write out all the models
     _SimpleList *redirectorT = nil, dH, dV2, dU;
 
+    
     if (partitionList) {
         redirectorT = new _SimpleList;
-        for (long pidx = 0; pidx < partitionList->lLength; pidx = pidx + 1) {
+        for (long pidx = 0; pidx < partitionList->lLength; pidx++) {
             (*redirectorT) << theTrees.list_data[partitionList->list_data[pidx]];
         }
     } else {
         redirectorT = &theTrees;
     }
+    
+    _SimpleList frequencyVectors, vectorTag;
+    // keep track of root frequency vectors that may be directly specified
 
+    
     for (long idx = 0; idx < redirectorT->lLength; idx++) {
         _SimpleList dT;
-        ((_TheTree *)LocateVar(redirectorT->list_data[idx]))
-            ->CompileListOfModels(dT);
+        const long part_index = redirectorT->list_data[idx];
+        ((_TheTree *)LocateVar(part_index))->CompileListOfModels(dT);
 
         if (dT.lLength == 1) {
             dV2 << dT.list_data[0];
         } else {
             dV2 << -1;
         }
+        
+        _SimpleList _modelEFVs;
+        _AVLList modelEFVs (&_modelEFVs);
+        
 
+        dT.Each ([&modelEFVs] (long model_index, unsigned long ) -> void {
+            modelEFVs.InsertNumber(RetrieveModelFreq (model_index));
+        });
+        
+ 
+        
+        long declared_freq = theProbabilities.get(partitionList ? partitionList->get (idx) : idx);
+        if (modelEFVs.FindLong(declared_freq) == kNotFound) {
+            frequencyVectors << declared_freq;
+            
+        }
+        vectorTag << declared_freq;
+        
         dH.Union(dU, dT);
         dU.Duplicate(&dH);
+    }
+    
+    for (long idx = 0L; idx < frequencyVectors.lLength; idx++) {
+        _Variable *mx_var = LocateVar(frequencyVectors.get (idx));
+        if (mx_var->ObjectClass() == MATRIX) {
+            ((_Matrix*)mx_var->GetValue())->Serialize(rec, *mx_var->GetName());
+        } else {
+            HandleApplicationError (_String("Frequency object ") & mx_var->GetName()->Enquote() & " did not evaluate to a MATRIX");
+            return;
+        }
     }
 
     {
@@ -9733,10 +9794,10 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     rec.AppendAnAssignmentToBuffer(&hy_env::assume_reversible, new _String(hy_env::EnvVariableGetNumber(hy_env::assume_reversible, 0.)));
     rec.AppendAnAssignmentToBuffer(&kUseLastResults, new _String(hy_env::EnvVariableGetNumber(kUseLastResults, 0.)));
 
-    rec << "LikelihoodFunction " << *lfName << " = (";
+    if (frequencyVectors.empty()) {
+        rec << "LikelihoodFunction " << *lfName << " = (";
 
-    long dsID = 0;
-    {
+        long dsID = 0;
         for (long idx = 0; idx < redirector->lLength; idx++) {
             if (dsID) {
                 rec << ',';
@@ -9744,11 +9805,22 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
                 dsID = 1;
             }
 
-            rec << *GetFilterName(redirector->get(idx))
-             << ','
-             << *LocateVar(redirectorT->list_data[idx])->GetName();
+            rec << *GetFilterName(redirector->get(idx)) << ',' << *LocateVar(redirectorT->list_data[idx])->GetName();
+        }
+    } else {
+        rec << "LikelihoodFunction3 " << *lfName << " = (";
+
+        long dsID = 0;
+        for (long idx = 0; idx < redirector->lLength; idx++) {
+            if (dsID) {
+                rec << ',';
+            } else {
+                dsID = 1;
+            }
+            rec << *GetFilterName(redirector->get(idx)) << ',' << *LocateVar(redirectorT->list_data[idx])->GetName() << ',' << *LocateVar(vectorTag.get(idx))->GetName();
         }
     }
+    
     if (computingTemplate && templateKind == 1) {
         rec << ",\"";
         rec << (_String *)computingTemplate->toStr(kFormulaStringConversionNormal);

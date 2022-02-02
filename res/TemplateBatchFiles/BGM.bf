@@ -107,7 +107,11 @@ selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.json.s
 selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.json.sites, bgm.alignment_info [terms.data.sites]);
 selection.io.json_store_key_value_pair (bgm.json, terms.json.input, terms.data_type, bgm.type);
 
+
+
 bgm.alignment_info[terms.json.json] = bgm.alignment_info[terms.data.file] + ".BGM.json";
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", bgm.alignment_info [terms.json.json]);
+bgm.alignment_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
 bgm.path.base = (bgm.json [terms.json.input])[terms.json.file];
 
@@ -144,14 +148,18 @@ KeywordArgument ("steps", "The number of MCMC steps to sample", 100000);
 KeywordArgument ("burn-in", "The number of MCMC steps to discard as burn-in", 10000);
 KeywordArgument ("samples", "The number of steps to extract from the chain sample", 100);
 KeywordArgument ("max-parents", "The maximum number of parents allowed per node", 1);
-KeywordArgument ("min-subs", "The minium number of substitutions per site to include it in the analysis", 1);
+KeywordArgument ("min-subs", "The minimum number of substitutions per site to include it in the analysis", 1);
 
 
 bgm.run_settings["steps"]      = io.PromptUser("\n>Select the number of MCMC steps to sample", bgm.run_settings["steps"] , 0, 1e9, TRUE);
+
 bgm.run_settings["burn-in"]      = io.PromptUser("\n>Select the number of MCMC steps to discard as burn-in", bgm.run_settings["burn-in"], 0, 1e9, TRUE);
-bgm.run_settings["samples"]    = io.PromptUser("\n>Select the number of steps to extract from the chain sample", 100, 0, bgm.run_settings["samples"], TRUE);
+
+bgm.run_settings["samples"]    = io.PromptUser("\n>Select the number of steps to extract from the chain sample", bgm.run_settings["samples"], 100,  bgm.run_settings["steps"] - bgm.run_settings["burn-in"],  TRUE);
+
 bgm.run_settings["max-parents"] = io.PromptUser ("\n>Select the maximum number of parents allowed per node", bgm.run_settings["max-parents"], 1, 3, TRUE);
-bgm.run_settings["min-subs"]    = io.PromptUser ("\n>Select the minium number of substitutions per site to include it in the analysis", bgm.run_settings["min-subs"], 1, 1e5, TRUE);
+
+bgm.run_settings["min-subs"]    = io.PromptUser ("\n>Select the minimum number of substitutions per site to include it in the analysis", bgm.run_settings["min-subs"], 1, 1e5, TRUE);
 
 
 // FIT THE BASELINE MODEL
@@ -356,6 +364,8 @@ selection.io.stopTimer (bgm.json [terms.json.timers], "Network inference");
 selection.io.stopTimer (bgm.json [terms.json.timers], "Overall");
 
 bgm.json [terms.settings] = bgm.run_settings;
+
+
 
 io.SpoolJSON (bgm.json, bgm.alignment_info[terms.json.json]);
 

@@ -63,6 +63,7 @@ struct _TreeTopologyParseSettings {
         auto_convert_lengths = false;
         accept_user_lengths = true;
         ingore_user_inode_names = false;
+        parser_namespace = kEmptyString;
         parser_cache = nil;
     }
   
@@ -79,7 +80,8 @@ struct _TreeTopologyParseSettings {
       parser_cache = new _AVLListX (new _SimpleList);
     }
   
-    _String inode_prefix;
+    _String inode_prefix,
+            parser_namespace;
     bool    auto_convert_lengths,
             accept_user_lengths,
             ingore_user_inode_names;

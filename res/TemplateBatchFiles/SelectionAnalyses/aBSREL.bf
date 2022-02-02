@@ -10,6 +10,7 @@ LoadFunctionLibrary("libv3/tasks/estimators.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
+LoadFunctionLibrary("libv3/models/rate_variation.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
 LoadFunctionLibrary("modules/selection_lib.ibf");
@@ -38,6 +39,10 @@ absrel.rate_classes         = "Rate classes";
 absrel.per_branch_omega     = "Per-branch omega";
 absrel.per_branch_delta     = "Per-branch delta";
 absrel.per_branch_psi       = "Per-branch psi";
+absrel.synonymous_rate_classes = 3;
+absrel.SRV                         = "Synonymous site-to-site rates";
+absrel.json.srv_posteriors  = "Synonymous site-posteriors";
+
 
 absrel.display_orders = {terms.original_name: -1,
                          terms.json.nucleotide_gtr: 0,
@@ -64,8 +69,8 @@ absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site ran
                             uses an adaptive random effects branch-site model framework
                             to test whether each branch has evolved under positive selection,
                             using a procedure which infers an optimal number of rate categories per branch.",
-                            terms.io.version : "2.2",
-                            terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353. v2.2 adds support for multiple-hit models",
+                            terms.io.version : "2.3",
+                            terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353. v2.2 adds support for multiple-hit models. v2.3 adds support for SRV",
                             terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                             terms.io.contact : "spond@temple.edu",
                             terms.io.requirements : "in-frame codon alignment and a phylogenetic tree"
@@ -112,6 +117,29 @@ absrel.multi_hit = io.SelectAnOption ({
                                         {"Double+Triple", "Include branch-specific rates for double and triple nucleotide substitutions"}
                                         {"None", "[Default] Use standard models which permit only single nucleotide changes to occur instantly"}
                                   }, "Include support for multiple nucleotide substitutions");
+
+
+KeywordArgument ("srv", "Include synonymous rate variation", "No");          
+                          
+absrel.srv = io.SelectAnOption (
+                                {
+                                    "Yes" : "Allow synonymous substitution rates to vary from site to site (but not from branch to branch)", 
+                                    "No"  : "Synonymous substitution rates are constant across sites. This is the 'classic' behavior, i.e. the original published test"
+                                },
+                                "Synonymous rate variation"
+);
+
+absrel.do_srv = FALSE;
+
+if (absrel.srv =="Yes") {
+    absrel.do_srv = TRUE;
+} 
+
+if (absrel.do_srv) {
+    KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", absrel.synonymous_rate_classes);
+    absrel.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", absrel.synonymous_rate_classes, 1, 10, TRUE);
+}  
+
 
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'ABSREL.json')", absrel.codon_data_info [terms.json.json]);
@@ -170,6 +198,23 @@ if (absrel.multi_hit == "Double") {
     }
 }
 
+if (absrel.do_srv) {
+    absrel.model_generator_base = absrel.model_generator ;
+    
+    lfunction absrel.model.with.GDD (type,code) {
+        def = Call (^"absrel.model_generator_base",type,code);
+        options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("absrel.synonymous_rate_classes"),
+                   utility.getGlobalValue("terms._namespace") : "absrel._shared_srv"};
+
+        def [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory (options);
+        return def;        
+    }
+    
+     absrel.model_generator  = "absrel.model.with.GDD";
+}
+
+absrel.distribution_for_json = {};
+
 absrel.base.results = estimators.FitCodonModel (absrel.filter_names, absrel.trees, absrel.model_generator, absrel.codon_data_info [terms.code], {
     terms.run_options.model_type: terms.local,
     terms.run_options.retain_lf_object: TRUE,
@@ -177,8 +222,16 @@ absrel.base.results = estimators.FitCodonModel (absrel.filter_names, absrel.tree
 }, absrel.gtr_results);
 
 
-io.ReportProgressMessageMD("absrel", "base", "* " + selection.io.report_fit (absrel.base.results, 0, absrel.codon_data_info[terms.data.sample_size]));
+absrel.MG94.model =  (absrel.base.results[terms.model])["VALUEINDEXORDER"][0];
+absrel.MG94.id = absrel.MG94.model [terms.id];
 
+absrel.model_object_map = {
+     absrel.MG94.id  : absrel.MG94.model
+};
+
+
+io.ReportProgressMessageMD("absrel", "base", "* " + selection.io.report_fit (absrel.base.results, 0, absrel.codon_data_info[terms.data.sample_size]));
+absrel._report_srv (absrel.base.results, "base", None);
 
 absrel.baseline.branch_lengths = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "selection.io.branch.length");
 absrel.baseline.omegas = selection.io.extract_branch_info((absrel.base.results[terms.branch_length])[0], "absrel.local.omega");
@@ -208,7 +261,6 @@ if (absrel.multi_hit == "Double+Triple") {
 }
 
 
-
 selection.io.stopTimer (absrel.json [terms.json.timers], "Baseline model fitting");
 
 // TODO -- there's gotta be a better way to do this
@@ -227,12 +279,11 @@ for (absrel.i = absrel.branch_count - 1; absrel.i >= 0;  absrel.i = absrel.i - 1
     absrel.names_sorted_by_length [absrel.branch_count - 1 - absrel.i] =  absrel.bnames [absrel.sorted_branch_lengths[absrel.i][1]];
 }
 
-absrel.distribution_for_json = {absrel.per_branch_omega :
+absrel.distribution_for_json[absrel.per_branch_omega] = 
                                     {terms.math.mean : absrel.omega_stats[terms.math.mean],
                                     terms.math.median : absrel.omega_stats[terms.math.median],
                                     terms.math._2.5 : absrel.omega_stats[terms.math._2.5],
-                                    terms.math._97.5 : absrel.omega_stats[terms.math._97.5]}
-                               };
+                                    terms.math._97.5 : absrel.omega_stats[terms.math._97.5]};
 
 
 if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
@@ -282,7 +333,9 @@ selection.io.json_store_branch_attribute(absrel.json, absrel.baseline_omega_rati
 absrel.model_defintions = {};
 
 absrel.likelihood_function_id = absrel.base.results [terms.likelihood_function];
-absrel.constrain_everything (absrel.likelihood_function_id);
+
+absrel.stash = estimators.TakeLFStateSnapshot (absrel.likelihood_function_id);
+
 absrel.tree_id = absrel.get_tree_name (absrel.likelihood_function_id);
 absrel.model_id = absrel.get_model_id (absrel.likelihood_function_id);
 absrel.MG94.model = (absrel.base.results[terms.model])[(utility.Keys (absrel.base.results[terms.model]))[0]];
@@ -291,6 +344,15 @@ absrel.temp = model.GetParameters_RegExp (absrel.MG94.model, terms.nucleotideRat
 absrel.temp - terms.nucleotideRate("A","G");
 absrel.full_model_parameters = {};
 utility.AddToSet (absrel.full_model_parameters, absrel.temp);
+
+if (absrel.do_srv) {
+    absrel.temp = model.GetParameters_RegExp  (absrel.MG94.model, "GDD rate category ");
+    utility.AddToSet (absrel.full_model_parameters, absrel.temp);
+    absrel.temp = model.GetParameters_RegExp  (absrel.MG94.model, terms.mixture.mixture_aux_weight + " for GDD category ");
+    utility.AddToSet (absrel.full_model_parameters, absrel.temp);
+    //console.log (absrel.full_model_parameters);
+}
+
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Complexity analysis", 3);
 
@@ -312,6 +374,9 @@ for (absrel.i = 2; absrel.i <= absrel.max_rate_classes; absrel.i += 1) {
     absrel.model_object_map [(absrel.model_defintions [absrel.i])[terms.id]] = absrel.model_defintions [absrel.i];
     models.BindGlobalParameters ({"1" : absrel.model_defintions [absrel.i], "0" : absrel.MG94.model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 }
+
+estimators.RestoreLFStateFromSnapshot (absrel.likelihood_function_id, absrel.stash);
+absrel.constrain_everything (absrel.likelihood_function_id);
 
 io.ReportProgressMessageMD ("absrel", "complexity", "Determining the optimal number of rate classes per branch using a step up procedure");
 
@@ -393,6 +458,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         //absrel.initial_guess =
         absrel.SetBranchConstraints (absrel.model_defintions [absrel.current_rate_count], absrel.tree_id, absrel.current_branch);
 
+          
         Optimize (absrel.stepup.mles, ^absrel.likelihood_function_id
            , {
                "OPTIMIZATION_METHOD" : "nedler-mead",
@@ -487,6 +553,9 @@ absrel.full_model.mle_set = estimators.TakeLFStateSnapshot (absrel.likelihood_fu
 io.ReportProgressMessageMD("absrel", "Full adaptive model", "* " + selection.io.report_fit (absrel.full_model.fit, 9, absrel.codon_data_info[terms.data.sample_size]));
 
 selection.io.stopTimer (absrel.json [terms.json.timers], "Full adaptive model fitting");
+
+absrel._report_srv (absrel.full_model.fit, "Full adaptive model", absrel.likelihood_function_id);
+
 
 selection.io.json_store_branch_attribute(absrel.json, absrel.full_adaptive_model, terms.branch_length, absrel.display_orders[absrel.full_adaptive_model],
                                              0,
@@ -894,13 +963,16 @@ lfunction absrel.get_model_id (lf_id) {
     return (info["Models"])[0];
 }
 
-function absrel.constrain_everything (lf_id) {
+lfunction absrel.constrain_everything (lf_id) {
     GetString (absrel.constrain_everything.info, ^lf_id, -1);
 
-    utility.ForEach (absrel.constrain_everything.info [utility.getGlobalValue("terms.parameters.global_independent")], "_value_",
-                     "parameters.SetConstraint (_value_, Eval (_value_), terms.global)");
-    utility.ForEach (absrel.constrain_everything.info [utility.getGlobalValue("terms.parameters.local_independent")], "_value_",
-                     "parameters.SetConstraint (_value_, Eval (_value_), '')");
+    for (k; in; absrel.constrain_everything.info [utility.getGlobalValue("terms.parameters.global_independent")]) {
+        //console.log (^k);
+        parameters.SetConstraint (k, ^k, ^"terms.global");
+    }
+    for (k; in; absrel.constrain_everything.info [utility.getGlobalValue("terms.parameters.local_independent")]) {
+        parameters.SetConstraint (k, ^k, "");
+    }
 }
 
 lfunction absrel.local.omega(branch_info) {
@@ -928,9 +1000,16 @@ lfunction absrel.BS_REL.ModelDescription (type, code, components) {
             model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.codon.BS_REL._DefineQ.TH";
         } else {
             model [utility.getGlobalValue("terms.model.defineQ")] = "absrel.BS_REL._DefineQ";
-
         }
     }
+    
+    if (^"absrel.do_srv") {
+        options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("absrel.synonymous_rate_classes"),
+                   utility.getGlobalValue("terms._namespace") : "absrel._shared_srv"};
+
+        model [utility.getGlobalValue("terms.model.rate_variation")] = rate_variation.types.GDD.factory (options);
+    }
+    
     return model;
 }
 
@@ -1105,4 +1184,32 @@ lfunction absrel.BS_REL._DefineQ(bs_rel, namespace) {
     bs_rel[utility.getGlobalValue("terms.model.rate_matrix")] = rate_matrices;
     parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
     return bs_rel;
+}
+
+//------------------------------------
+
+function absrel._report_srv (absrel_model_fit, tag, lf_id) {
+
+
+    if (absrel.do_srv) {
+        if (None == lf_id) {
+            lf_id = absrel_model_fit[terms.likelihood_function];
+        }
+        absrel.srv_info = Transpose((rate_variation.extract_category_information((absrel.model_object_map[ absrel.MG94.model [terms.id]])))["VALUEINDEXORDER"][0])%0;
+        
+        io.ReportProgressMessageMD("absrel", tag, "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
+        selection.io.report_distribution (absrel.srv_info);
+
+        absrel.distribution_for_json [absrel.SRV] = (utility.Map (utility.Range (absrel.synonymous_rate_classes, 0, 1),
+                                                                 "_index_",
+                                                                 "{terms.json.rate :absrel.srv_info [_index_][0],
+                                                                   terms.json.proportion : absrel.srv_info [_index_][1]}"));
+                                   
+        ConstructCategoryMatrix (absrel.cmx, ^lf_id);
+        ConstructCategoryMatrix (absrel.cmx_weights, ^lf_id, WEIGHTS);
+        absrel.cmx_weighted         = (absrel.cmx_weights[-1][0]) $ absrel.cmx; // taking the 1st column fixes a bug with multiple partitions 
+        absrel.column_weights       = {1, Rows (absrel.cmx_weights)}["1"] * absrel.cmx_weighted;
+        absrel.column_weights       = absrel.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
+        (absrel.json [absrel.json.srv_posteriors]) =  absrel.cmx_weighted $ absrel.column_weights;
+    }    
 }

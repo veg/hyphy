@@ -1798,7 +1798,7 @@ void    _DataSetFilter::SetupConversion (void) {
 
   //_________________________________________________________
 
-_String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) const {
+_String const _DataSetFilter::GenerateConsensusString (bool resolved, _SimpleList* majority) const {
   
   if (unitLength > 3) {
     return kEmptyString;
@@ -1808,9 +1808,9 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
   pattern_consensus  ((unsigned long)(unitLength*theFrequencies.lLength));
   
   long        char_states         = GetDimension(false),
-  *translation_buffer = new long [char_states];
+             *translation_buffer  = (long*)alloca (sizeof(long)*char_states);
   
-  hyFloat* count_buffer = new hyFloat [char_states];
+  hyFloat* count_buffer =  (hyFloat*)alloca (sizeof(hyFloat)*char_states);
   
   for (unsigned long site_pattern = 0UL; site_pattern<theFrequencies.lLength; site_pattern ++) {
     long    index_in_dataset = theMap.list_data[site_pattern];
@@ -1822,10 +1822,12 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
       
       
       if (resolution_count>1L) {
-        hyFloat equal_weight = 1./resolution_count;
-        for (long resolution_index = 0L; resolution_index < resolution_count; resolution_index++) {
-          count_buffer [translation_buffer[resolution_index]] += equal_weight;
-        }
+          if (!resolved) {
+            hyFloat equal_weight = 1./resolution_count;
+            for (long resolution_index = 0L; resolution_index < resolution_count; resolution_index++) {
+              count_buffer [translation_buffer[resolution_index]] += equal_weight;
+            }
+          }
       } else {
         if (resolution_count == 1) {
           count_buffer [translation_buffer[0]] += 1.;
@@ -1860,8 +1862,8 @@ _String const _DataSetFilter::GenerateConsensusString (_SimpleList* majority) co
     }
   }
   
-  delete [] count_buffer;
-  delete [] translation_buffer;
+  //delete [] count_buffer;
+  //delete [] translation_buffer;
   
   for (unsigned long m=0UL; m<theOriginalOrder.lLength; m++) {
     result.set_char (m, pattern_consensus.char_at(duplicateMap.get(m)));

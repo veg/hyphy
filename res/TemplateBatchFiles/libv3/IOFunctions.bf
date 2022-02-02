@@ -101,6 +101,16 @@ lfunction io.PromptUserForFilePath(prompt) {
 }
 
 /**
+ * @name io.PromptUserForFilePath
+ * @param prompt
+ */
+lfunction io.PromptUserForFilePathRead(prompt) {
+    SetDialogPrompt (prompt);
+    fscanf (PROMPT_FOR_FILE, REWIND, "String", n);
+    return  ^"LAST_FILE_PATH";
+}
+
+/**
  * @name  io.LoadFile
  * @param prompt
  */
@@ -786,6 +796,16 @@ lfunction io.SelectAnOption  (options, description) {
  */
 function io.ReportAnExecutionError (error_msg) {
     assert (0, "Fatal execution error `error_msg`");
+}
+
+/**
+ * @name io.ReportWarning
+ * @param warn_message
+ */
+function io.ReportWarning (warn_message) {
+    fprintf(stdout, "\n-------\n", 
+     io.FormatLongStringToWidth(">[WARNING] " +  warn_message, 72), 
+    "\n-------\n");
 }
 
 /**

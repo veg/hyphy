@@ -37,8 +37,6 @@
 
  */
 
-#define DATA_SET_SWITCH_THRESHOLD 100000
-
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
@@ -58,13 +56,13 @@
 using namespace hyphy_global_objects;
 using namespace hy_global;
 
+#define DEFAULT_SITE_ALLOCATION 16L
+
+
 
 //_________________________________________________________
 
-
-//_________________________________________________________
-
-_Site::_Site(void) : _StringBuffer (16L) { refNo = -1; }
+_Site::_Site(void) : _StringBuffer (DEFAULT_SITE_ALLOCATION) { refNo = -1; }
 
 //_________________________________________________________
 _Site::_Site(_String const &s) : _StringBuffer (s.length()) {
@@ -73,7 +71,7 @@ _Site::_Site(_String const &s) : _StringBuffer (s.length()) {
 }
 
 //_________________________________________________________
-_Site::_Site(char s) : _StringBuffer (16L) {
+_Site::_Site(char s) : _StringBuffer (DEFAULT_SITE_ALLOCATION) {
   refNo = -1;
   (*this) << s;
 }

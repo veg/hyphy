@@ -114,8 +114,7 @@ lfunction trees.GetTreeString._sanitize(string) {
  */
 lfunction trees.GetTreeString(look_for_newick_tree) {
 
-
-
+    
     UseModel(USE_NO_MODEL);
 
     if (Type(look_for_newick_tree) == "String") {
@@ -137,6 +136,8 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
             fscanf(PROMPT_FOR_FILE, REWIND, "Raw", treeString);
 
             look_for_newick_tree = utility.getGlobalValue ("LAST_FILE_PATH");
+            
+
 
             if (None != utility.GetEnvVariable ("LAST_FILE_IO_EXCEPTION")) {
                 if (utility.getGlobalValue ("LAST_RAW_FILE_PROMPT") ==  utility.getGlobalValue ("terms.trees.neighbor_joining")) {
@@ -207,6 +208,7 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
             }
         }
     }
+    
 
     return
     {
@@ -377,6 +379,7 @@ lfunction trees.branch_names(tree, respect_case) {
 
 lfunction trees.KillZeroBranches (tree, estimates, branch_set, zero_internal) {
 
+
     for (branch, value; in; tree [^"terms.trees.partitioned"]) {
         if (value == ^"terms.tree_attributes.internal") {
             if (estimates / branch) {
@@ -446,6 +449,7 @@ lfunction trees.RootTree(tree_info, root_on) {
  */
 lfunction trees.ExtractTreeInfoFromTopology(topology_object) {
 
+ 
 
     branch_lengths = BranchLength(^topology_object, -1);
     branch_names   = BranchName(^topology_object, -1);
@@ -516,7 +520,9 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     }
 
     Topology T = tree_string;
-    return trees.ExtractTreeInfoFromTopology (&T);
+    res = trees.ExtractTreeInfoFromTopology (&T);
+    res [^"terms.data.file"] = file_name;
+    return res;
 
 }
 
