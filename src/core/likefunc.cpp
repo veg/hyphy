@@ -8797,7 +8797,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                                      inc,
                                                                      conditionalTerminalNodeStateFlag[index],
                                                                      ssf,
-                                                                     (_GrowingVector*)conditionalTerminalNodeLikelihoodCaches(index),
+                                                                     (_Vector*)conditionalTerminalNodeLikelihoodCaches(index),
                                                                      overallScalingFactors.list_data[index],
                                                                      0,
                                                                      df->GetPatternCount(),

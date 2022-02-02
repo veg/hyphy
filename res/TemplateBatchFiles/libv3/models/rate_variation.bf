@@ -249,12 +249,11 @@ lfunction rate_variation_define_gamma_inv (options, namespace) {
 lfunction rate_variation.extract_category_information (model) {
     if (utility.Has (model[^"terms.parameters"], ^"terms.category", "AssociativeList")) {
         info = {};
-        utility.ForEachPair ((model[^"terms.parameters"])[^"terms.category"], "_k_", "_v_", 
-        "
-            GetInformation (`&v_info`, ^_k_);
-            (`&info`)[_k_] = `&v_info`;
+        for (_k_, _v_; in; (model[^"terms.parameters"])[^"terms.category"]) {
+            GetInformation (v_info, ^_k_);
+            info[_k_] = v_info;
             
-        ");
+        }
         return info;
     }
     return None;

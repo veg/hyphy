@@ -738,4 +738,10 @@ HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_s
     }
 #endif
 
+#ifdef _SLKP_USE_ARM_NEON
+    inline double _neon_sum_2 (float64x2_t const & x) {
+        return vgetq_lane_f64 (x,0) + vgetq_lane_f64 (x,1);
+    }
+#endif
+
 #endif

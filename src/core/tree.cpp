@@ -3059,11 +3059,15 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
             storageVec [direct_index] = accumulator;
         } else {
             if (accumulator <= 0.0) {
-                //fprintf (stderr, "ZERO TERM AT SITE %ld (direct %ld) EVAL %ld\n",siteID,direct_index, likeFuncEvalCallCount);
-                /*for (long s = 0; s < theFilter->NumberSpecies(); s++) {
+                
+                
+                /*fprintf (stderr, "ZERO TERM AT SITE %ld (direct %ld) EVAL %ld\n",siteID,direct_index, likeFuncEvalCallCount);
+                for (long s = 0; s < theFilter->NumberSpecies(); s++) {
                     fprintf (stderr, "%s", theFilter->RetrieveState(direct_index, s).get_str());
                 }
                 fprintf (stderr, "\n");*/
+                
+                
                 throw (1L+direct_index);
             }
             
@@ -3075,8 +3079,8 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 term = log(accumulator) - correction;
             }
             
-            /*if (likeFuncEvalCallCount == 15098) {
-                fprintf (stderr, "CACHE, %ld, %ld, %20.15lg, %20.15lg, %20.15lg\n", likeFuncEvalCallCount, siteID, accumulator, correction, term);
+            /*if (likeFuncEvalCallCount == 643) {
+                fprintf (stderr, "CACHE, %ld, %ld, %20.15lg, %20.15lg, %20.15lg,  %20.15lg\n", likeFuncEvalCallCount, siteID, accumulator, correction, term, result);
             }*/
             
             hyFloat temp_sum = result + term;
@@ -3131,6 +3135,15 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 };
 #endif
                 
+#ifdef _SLKP_USE_ARM_NEON
+                float64x2x2_t tmatrix_transpose [4] = {
+                    (float64x2x2_t) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                    (float64x2x2_t) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                    (float64x2x2_t) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                    (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+                };
+#endif
+                
                 for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
                     hyFloat accumulator = 0.;
 #ifdef _SLKP_USE_AVX_INTRINSICS
@@ -3144,6 +3157,45 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                     s23    = _mm256_add_pd ( _mm256_mul_pd (b_cond2, tmatrix_transpose[2]), _mm256_mul_pd (b_cond3, tmatrix_transpose[3]));
                     accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));
                     
+#elif defined _SLKP_USE_ARM_NEON
+                    //float64x2x2_t root_c = vld1q_f64_x2 (rootConditionals),
+                    //              probs  = vld1q_f64_x2 (theProbs);
+                    
+                    //printf ("NEON\n");
+                    
+                    float64x2_t     rp0 = vmulq_f64 (vld1q_f64 (rootConditionals), vld1q_f64 (theProbs)),
+                                    rp1 = vmulq_f64 (vld1q_f64 (rootConditionals+2), vld1q_f64 (theProbs+2));
+                    
+                    float64x2_t b_cond0 = vdupq_n_f64 (branchConditionals[0]),
+                                b_cond1 = vdupq_n_f64 (branchConditionals[1]),
+                                b_cond2 = vdupq_n_f64 (branchConditionals[2]),
+                                b_cond3 = vdupq_n_f64 (branchConditionals[3]);
+                    
+                     
+                    float64x2_t t00   = vmulq_f64 (b_cond0, tmatrix_transpose[0].val[0]),
+                                        // branchConditionals[0] *  transitionMatrix[0] , branchConditionals[0] *  transitionMatrix[4]
+                                t01   = vmulq_f64 (b_cond0, tmatrix_transpose[0].val[1]),
+                                        // branchConditionals[0] *  transitionMatrix[8] , branchConditionals[0] *  transitionMatrix[12]
+                                t10   = vmulq_f64 (b_cond1, tmatrix_transpose[1].val[0]),
+                                        //  branchConditionals[1] *  transitionMatrix[1] , branchConditionals[1] *  transitionMatrix[5]
+                                t11   = vmulq_f64 (b_cond1, tmatrix_transpose[1].val[1]),
+                                t20   = vmulq_f64 (b_cond2, tmatrix_transpose[2].val[0]),
+                                t21   = vmulq_f64 (b_cond2, tmatrix_transpose[2].val[1]),
+                                t30   = vmulq_f64 (b_cond3, tmatrix_transpose[3].val[0]),
+                                t31   = vmulq_f64 (b_cond3, tmatrix_transpose[3].val[1]);
+
+                    
+
+                    t00 = vfmaq_f64 (vmulq_f64 (t00, rp0), t01, rp1);
+                    t10 = vfmaq_f64 (vmulq_f64 (t10, rp0), t11, rp1);
+                    t20 = vfmaq_f64 (vmulq_f64 (t20, rp0), t21, rp1);
+                    t30 = vfmaq_f64 (vmulq_f64 (t30, rp0), t31, rp1);
+                    
+                    t00 = vaddq_f64 (t00,t10);
+                    t20 = vaddq_f64 (t20,t30);
+                    accumulator = _neon_sum_2 (vaddq_f64 (t00,t20));
+                    
+                    
 #else
                     accumulator =    rootConditionals[0] * theProbs[0] *
                     (branchConditionals[0] *  transitionMatrix[0] + branchConditionals[1] *  transitionMatrix[1] + branchConditionals[2] *  transitionMatrix[2] + branchConditionals[3] *  transitionMatrix[3]) +
@@ -3154,10 +3206,10 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                     rootConditionals[3] * theProbs[3] *
                     (branchConditionals[0] *  transitionMatrix[12] + branchConditionals[1] *  transitionMatrix[13] + branchConditionals[2] *  transitionMatrix[14] + branchConditionals[3] *  transitionMatrix[15]);
 #endif
+                    bookkeeping (siteID, accumulator, correction, result);
                     rootConditionals += 4UL;
                     branchConditionals += 4UL;
-                    bookkeeping (siteID, accumulator, correction, result);
-                } // siteID
+                 } // siteID
             }
                 break;
                 /****
@@ -3201,6 +3253,40 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                         
                         accumulator += *rootConditionals * theProbs[p] * _avx_sum_4(_mm256_add_pd (t_matrix[3],t_matrix[4]));
                     }
+                    
+#elif defined _SLKP_USE_ARM_NEON
+                    
+                    float64x2_t bc_vector[10] = {vld1q_f64(branchConditionals),
+                        vld1q_f64(branchConditionals+2UL),
+                        vld1q_f64(branchConditionals+4UL),
+                        vld1q_f64(branchConditionals+6UL),
+                        vld1q_f64(branchConditionals+8UL),
+                        vld1q_f64(branchConditionals+10UL),
+                        vld1q_f64(branchConditionals+12UL),
+                        vld1q_f64(branchConditionals+14UL),
+                        vld1q_f64(branchConditionals+16UL),
+                        vld1q_f64(branchConditionals+18UL)
+                    };
+ 
+                    hyFloat const * tm = transitionMatrix;
+                    
+                    for (unsigned long p = 0UL; p < 20UL; p++, rootConditionals++) {
+                        
+                        float64x2_t S1 = vmulq_f64  ( bc_vector[0], vld1q_f64(tm)),
+                                    S2 = vmulq_f64 ( bc_vector[1], vld1q_f64(tm+2UL));
+                        
+                        S1 = vfmaq_f64 (S1, bc_vector[2], vld1q_f64(tm+4UL));
+                        S2 = vfmaq_f64 (S2, bc_vector[3], vld1q_f64(tm+6UL));
+                        S1 = vfmaq_f64 (S1, bc_vector[4], vld1q_f64(tm+8UL));
+                        S2 = vfmaq_f64 (S2, bc_vector[5], vld1q_f64(tm+10UL));
+                        S1 = vfmaq_f64 (S1, bc_vector[6], vld1q_f64(tm+12UL));
+                        S2 = vfmaq_f64 (S2, bc_vector[7], vld1q_f64(tm+14UL));
+                        S1 = vfmaq_f64 (S1, bc_vector[8], vld1q_f64(tm+16UL));
+                        S2 = vfmaq_f64 (S2, bc_vector[9], vld1q_f64(tm+18UL));
+                        
+                        accumulator += *rootConditionals * theProbs[p] * _neon_sum_2(vaddq_f64 (S1,S2));
+                        tm += 20UL;
+                   }
 #else // _SLKP_USE_AVX_INTRINSICS
                     unsigned long rmx = 0UL;
                     for (unsigned long p = 0UL; p < 20UL; p++,rootConditionals++) {
@@ -3262,6 +3348,23 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                         }
                         
                         r2 = _avx_sum_4(sum256);
+#elif defined _SLKP_USE_ARM_NEON
+                        
+                        float64x2_t sum128 = vdupq_n_f64 (0.);
+                        for (; c < 60UL; c+=6UL, rmx +=6UL) {
+                            
+                            float64x2_t branches0 = vld1q_f64 (branchConditionals+c),
+                                        branches1 = vld1q_f64 (branchConditionals+c+2),
+                                        branches2 = vld1q_f64 (branchConditionals+c+4),
+                                        matrix0   = vld1q_f64 (transitionMatrix+rmx),
+                                        matrix1   = vld1q_f64 (transitionMatrix+rmx+2),
+                                        matrix2   = vld1q_f64 (transitionMatrix+rmx+4);
+                            
+                            branches0 = vfmaq_f64 (vmulq_f64 (branches0, matrix0), branches1, matrix1);
+                            branches1 = vfmaq_f64 (sum128, branches2, matrix2);
+                            sum128 = vaddq_f64 (branches1, branches0);
+                        }
+                        r2 = _neon_sum_2(sum128);
                         
 #else // _SLKP_USE_AVX_INTRINSICS
                         for (; c < 60UL; c+=4UL, rmx +=4UL) {

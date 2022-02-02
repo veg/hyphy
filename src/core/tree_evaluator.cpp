@@ -122,11 +122,7 @@ inline double _sse_sum_2 (__m128d const & x) {
 }
 #endif
 
-#ifdef _SLKP_USE_ARM_NEON
-inline double _neon_sum_2 (float64x2_t const & x) {
-    return vgetq_lane_f64 (x,0) + vgetq_lane_f64 (x,1);
-}
-#endif
+
 
 template<long D> inline void __ll_handle_matrix_transpose (hyFloat const * __restrict transitionMatrix, hyFloat * __restrict tMatrixT) {
     long i = 0L;
@@ -1774,13 +1770,15 @@ void            _TheTree::ComputeBranchCache    (
                     siteRes[siteOrdering.list_data[siteID]] *= _lfScalingFactorThreshold;
                 } else {
                     if (didScale > 0) {
-                        for (long k = 0; k < didScale; k++) {
+                        siteRes[siteOrdering.list_data[siteID]] *= ComputePower (_lfScalerUpwards, didScale);
+                        /*for (long k = 0; k < didScale; k++) {
                             siteRes[siteOrdering.list_data[siteID]] *= _lfScalerUpwards;
-                        }
+                        }*/
                     } else{
-                        for (long k = 0; k < -didScale; k++) {
+                        siteRes[siteOrdering.list_data[siteID]] *= ComputePower (_lfScalingFactorThreshold, -didScale);
+                        /*for (long k = 0; k < -didScale; k++) {
                              siteRes[siteOrdering.list_data[siteID]] *= _lfScalingFactorThreshold;
-                         }
+                         }*/
                     }
                 }
             }
@@ -2036,8 +2034,8 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_loop_handle_scaling<4L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
                 }
-                /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
-                    fprintf (stderr, "NODE = %ld, PARENT = %ld (%ld), P(G) = %lg, P(T) = %lg, scale = %ld\n", nodeCode, parentCode, canScale, parentConditionals[2], parentConditionals[3], didScale);
+                /*if (likeFuncEvalCallCount == 647 && siteID == 158) {
+                    fprintf (stderr, "NODE = %ld, PARENT = %ld (%ld), P(A) = %lg, P(C) = %lg, P(G) = %lg, P(T) = %lg, scale = %ld\n", nodeCode, parentCode, canScale, parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3], didScale);
                 }*/
                 childVector += 4L;
                 __handle_site_corrections(didScale, siteID);
@@ -2498,7 +2496,7 @@ void            _TheTree::ComputeBranchCache    (
     const unsigned long site_bound = alphabetDimension*siteTo;
     for (unsigned long ii = siteFrom * alphabetDimension; ii < site_bound; ii++) {
         state[ii] = rootConditionals[ii];
-        /*if (likeFuncEvalCallCount == 15098 && ii / alphabetDimension == 91) {
+        /*if (likeFuncEvalCallCount == 647 && ii / alphabetDimension == 158) {
             printf ("Site %ld, Root conditional [%ld] = %g, node state [%ld] = %g\n", ii/alphabetDimension, ii, state[ii], ii, cache[ii]);
         }*/
     }
