@@ -142,6 +142,12 @@ prime.property_set = io.SelectAnOption (
             }, 
             "The set of properties to use in the model");
             
+if (prime.property_set == "Custom") {
+    KeywordArgument ("property-file", "JSON file which defines amino-acid properties");
+    prime.property_set = io.ParseJSON(io.PromptUserForFilePathRead ("JSON file which defines amino-acid properties"));
+    console.log (">Loaded a set of `Abs(prime.property_set)` properties");
+}
+            
 KeywordArgument ("impute-states", "Use site-level model fits to impute likely character states for each sequence", "No");
 
 prime.impute_states = io.SelectAnOption (
