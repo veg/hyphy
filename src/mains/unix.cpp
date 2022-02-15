@@ -981,6 +981,8 @@ int main (int argc, char* argv[]) {
     ex.ClearExecutionList();
     
 
+    //printf ("\nTAYLOR SERIES TERMS %ld\n", taylor_terms_count);
+    
     GlobalShutdown              ();
     
 

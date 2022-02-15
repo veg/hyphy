@@ -3303,6 +3303,20 @@ hyFloat _Matrix::AbsValue (void) const{
 }
 
 //_____________________________________________________________________________________________
+hyFloat _Matrix::L11Norm (void) const{
+    if (is_numeric()) {
+        hyFloat norm = 0.;
+
+        this->ForEach ([&] (hyFloat&& value, unsigned long, long) -> void {norm += fabs(value);},
+                 [&] (unsigned long index) -> hyFloat {return theData[index];});
+
+        return norm;
+    }
+
+    return 0.;
+}
+
+//_____________________________________________________________________________________________
 HBLObjectRef _Matrix::Abs (HBLObjectRef cache)
 {
     if (storageType == 1 && (hDim==1 || vDim == 1)) {
@@ -5624,6 +5638,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 *stash2 = 0;
         //  = new hyFloat[hDim*(1+vDim)];
         
+ 
         if (!is_polynomial()) {
             stash = (hyFloat*)alloca(sizeof (hyFloat) * hDim*(1+vDim));
             if (theIndex) {
@@ -5730,6 +5745,8 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
             
             i=2;
             
+            //hyFloat const errorBound      = truncPrecision * 10.;
+            
             
             if (is_dense()) { // avoid matrix allocation
                 _Matrix temp ;
@@ -5752,12 +5769,14 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     temp      *= 1.0/i;
                     (*result) += temp;
                     i         ++;
-/*#ifndef _OPENMP
+/*
+#ifndef _OPENMP
                     taylor_terms_count++;
 #else
             #pragma omp atomic
                 taylor_terms_count++;
-#endif*/
+#endif
+*/
                 } while (temp.IsMaxElement(tMax*truncPrecision*i));
                 
                 
@@ -5770,19 +5789,35 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 
             } else  {
                 _Matrix temp    (*this);
+                
+                /*hyFloat matrixNorm     =  L11Norm();
+
+                hyFloat errorEstimate1 = matrixNorm * matrixNorm / 2.,
+                errorEstimate  ;
+                */
                 _Matrix tempS (hDim, vDim, false, temp.storageType);
                 do {
                     temp.MultbyS        (*this,theIndex!=nil, &tempS, stash);
                     temp      *= 1.0/i;
                     (*result) += temp;
                     i         ++;
-    /*#ifndef _OPENMP
+/*
+    #ifndef _OPENMP
                         taylor_terms_count++;
     #else
                 #pragma omp atomic
                     taylor_terms_count++;
-    #endif*/
+    #endif
+*/
+                    /*errorEstimate1 *= matrixNorm / (i+1.);
+                    errorEstimate = errorEstimate1  * (1./ ( 1. - matrixNorm/(i + 1.)));
+                    if (errorEstimate > 0. && errorEstimate < errorBound) {
+                        break;
+                    }*/
+                  
                 } while (temp.IsMaxElement(tMax*truncPrecision*i));
+                //printf ("%ld %g %20.16g %ld\n",i,matrixNorm, errorEstimate,temp.IsMaxElement(tMax*truncPrecision*i));
+
             }
             
             // use Pade (4,4) here

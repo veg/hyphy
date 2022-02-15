@@ -342,7 +342,8 @@ public:
     // otherwise returns the largest element
 
     hyFloat  AbsValue                        (void) const;
-    
+    hyFloat  L11Norm                         (void) const;
+ 
     template <typename CALLBACK>  HBLObjectRef ApplyScalarOperation (CALLBACK && functor, HBLObjectRef cache) const;
     
     // return the matrix of logs of every matrix element
