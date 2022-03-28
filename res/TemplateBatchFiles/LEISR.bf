@@ -1,4 +1,4 @@
-RequireVersion("2.3.5");
+RequireVersion("2.5.25");
 
 
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
@@ -31,7 +31,7 @@ utility.ToggleEnvVariable ("NORMALIZE_SEQUENCE_NAMES", 1);
 leisr.analysis_description = {
     terms.io.info: "LEISR (Likelihood Estimation of Individual Site Rates) infer relative amino-acid or nucleotide rates from a fixed nucleotide or amino-acid alignment and tree, with possibility for partitions. Relative site-specific substitution rates are
     inferred by first optimizing alignment-wide branch lengths, and then inferring a site-specific uniform tree scaler.",
-    terms.io.version: "0.4",
+    terms.io.version: "0.5",
     terms.io.reference: "Spielman, S.J. and Kosakovsky Pond, S.L. (2018). Relative evolutionary rate inference in HyPhy with PeerJ 6:e4339. DOI 10.7717/peerj.4339 ; Pupko, T., Bell, R. E., Mayrose, I., Glaser, F. & Ben-Tal, N. Rate4Site: an algorithmic tool for the identification of functional regions in proteins by surface mapping of evolutionary determinants within their homologues. Bioinformatics 18, S71–S77 (2002).",
     terms.io.authors: "Sergei L Kosakovsky Pond and Stephanie J Spielman",
     terms.io.contact: "{spond,stephanie.spielman}@temple.edu"
@@ -42,7 +42,11 @@ io.DisplayAnalysisBanner(leisr.analysis_description);
 
 
 /***************************************** LOAD DATASET **********************************************************/
-SetDialogPrompt ("Specify a multiple sequence alignment file");
+
+KeywordArgument ("alignment", "A multiple sequence alignment file in one of the formats supported by HyPhy");
+KeywordArgument ("tree",      "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
+
+SetDialogPrompt ("A multiple sequence alignment file");
 leisr.alignment_info  = alignments.ReadNucleotideDataSet ("leisr.dataset", None);
 
 leisr.name_mapping = leisr.alignment_info[utility.getGlobalValue("terms.data.name_mapping")];
@@ -55,7 +59,6 @@ if (None == leisr.name_mapping) {
 leisr.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (leisr.alignment_info[utility.getGlobalValue("terms.data.partitions")], leisr.name_mapping);
 leisr.partition_count = Abs (leisr.partitions_and_trees);
 leisr.filter_specification = alignments.DefineFiltersForPartitions (leisr.partitions_and_trees, "leisr.dataset" , "leisr.filter.", leisr.alignment_info);
-
 
 
 io.ReportProgressMessageMD ("relative_rates", "Data", "Input alignment description");
@@ -71,11 +74,15 @@ io.ReportProgressMessageMD ("relative_rates", "Data", "Loaded **" +
 
 leisr.protein_type    = "Protein";
 leisr.nucleotide_type = "Nucleotide";
+
+KeywordArgument ("type",     "Data type (`leisr.protein_type` or `leisr.nucleotide_type`)", leisr.nucleotide_type);
+
 leisr.analysis_type  = io.SelectAnOption ({{leisr.protein_type , "Infer relative rates from a protein (amino-acid) alignment"}, {leisr.nucleotide_type, "Infer relative rates from a nucleotide alignment"}},
                                                     "Select your analysis type:");
 
+KeywordArgument ("model",     "Substitution model");
 
-if (leisr.analysis_type ==  leisr.protein_type) {
+if (leisr.analysis_type ==  leisr.protein_type) {    
     leisr.baseline_model  = io.SelectAnOption (models.protein.empirical_models, "Select a protein model:");
     leisr.generators = models.protein.empirical.plusF_generators;
 }
@@ -85,6 +92,9 @@ else {
     leisr.generators = models.DNA.generators;
 }
 
+KeywordArgument ("rate-variation",     "Optimize branch lengths with rate variation?", "No");
+
+
 leisr.use_rate_variation = io.SelectAnOption( {{"Gamma", "Use a four-category discrete gamma distribution when optimizing branch lengths."},
                                                     {"GDD", "Use a four-category general discrete distribution when optimizing branch lengths."},
                                                     {"No", "Do not consider rate variation when optimizing branch lengths."}
@@ -92,8 +102,7 @@ leisr.use_rate_variation = io.SelectAnOption( {{"Gamma", "Use a four-category di
                                                     "Optimize branch lengths with rate variation?");
 
 function leisr.Baseline.ModelDescription(type){
-    def = Call( leisr.generators[leisr.baseline_model], type);
-    return def;
+    return Call( leisr.generators[leisr.baseline_model], type);
 }
 
 function leisr.Baseline.ModelDescription.withGamma(type){
@@ -365,8 +374,11 @@ selection.io.json_store_key_value_pair (leisr.json_content, None, utility.getGlo
                                                          leisr.filter_specification);
                         
                         
-                        
-io.SpoolJSON (leisr.json_content, leisr.alignment_info[terms.data.file] + ".LEISR.json");
+KeywordArgument ("output", "Write the analysis report file to", leisr.alignment_info[terms.data.file] + ".LEISR.json");
+leisr.json_content [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+ 
+                    
+io.SpoolJSON (leisr.json_content, leisr.json_content [terms.json.json]);
 
 
 //----------------------------------------------------------------------------------------
@@ -388,12 +400,12 @@ lfunction leisr.handle_a_site (lf, filter_data, partition_index, pattern_info, m
     
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
     parameters.SetValue (^"leisr.site_model_scaler_name", 1);
-    /*
+        /*
     
-     SLKP 20171210
-     RESET the global rate value to a default avoid weird optimization issues because of bad starting conditions
-     (e.g. if the previous site was saturated)
-    */
+         SLKP 20171210
+         RESET the global rate value to a default avoid weird optimization issues because of bad starting conditions
+         (e.g. if the previous site was saturated)
+        */
 
     
     if (pattern_info [utility.getGlobalValue("terms.data.is_constant")]) {
@@ -404,13 +416,37 @@ lfunction leisr.handle_a_site (lf, filter_data, partition_index, pattern_info, m
 		results[1][0] =  estimators.ComputeLF (lf);
 
     } else {
-
-		^(utility.getGlobalValue("leisr.site_model_scaler_name")) = 1;
-		Optimize (results, ^lf);
+         scaler = utility.getGlobalValue("leisr.site_model_scaler_name");
+         start.grid = {
+            "0" : {
+                scaler : 0.01
+            },
+            "1" : {
+                scaler : 0.1
+            },
+            "2" : {
+                scaler : 0.5
+            },
+            "3" : {
+                scaler : 1
+            },
+            "4" : {
+                scaler : 2
+            },
+            "5" : {
+                scaler : 10
+            },
+        };
+            
+		Optimize (results, ^lf, {
+            "OPTIMIZATION_PRECISION" :  1e-5,
+            "OPTIMIZATION_START_GRID" : start.grid             
+        });
+        
+        
 	}
 	
-	
-    profile = parameters.GetProfileCI (utility.getGlobalValue("leisr.site_model_scaler_name"), lf, 0.95);
+    profile = parameters.GetProfileCI (utility.getGlobalValue("leisr.site_model_scaler_name"), lf, 0.95);		
     profile[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
     
     return profile;

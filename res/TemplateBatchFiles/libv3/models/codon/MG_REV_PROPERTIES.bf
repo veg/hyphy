@@ -544,7 +544,7 @@ lfunction  models.codon.MG_REV_PROP.post_definition (model) {
 }
 
 lfunction models.codon.MG_REV_PROP.set_branch_length(model, value, parameter) {
-
+    
     if (utility.Has (model, ^"terms.model.MG_REV_PROP.mean_prop", "Number")) {
       properties = model.GetLocalParameters_RegExp(model, terms.propertyImportance (""));
       for (tag, id; in; properties) {

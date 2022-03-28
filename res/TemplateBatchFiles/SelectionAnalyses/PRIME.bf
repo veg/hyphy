@@ -592,7 +592,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     //console.log (pattern_info);
     GetString   (lfInfo, ^lf_fel,-1);   
 
-    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10);
+    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 1);
 
     //TODO Datafilters hardcode, Trees hardcode.
     ExecuteCommands (filter_data);
@@ -634,10 +634,27 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
      parameters.SetConstraint ("prime.site_beta", Eval(^"prime.site_beta"),"");
    
      
+     
      start_grid = {};
      propN = utility.Array1D (^"prime.lambdas");
      
-     for (sp = 0; sp < 100; sp += 1) {
+     point = {};
+     point ["prime.site_alpha"] = ^"prime.site_alpha";
+     point ["prime.site_beta"] = ^"prime.site_beta";
+     point ["prime.site_beta_nuisance"] = ^"prime.site_beta_nuisance";
+     for (l; in; ^"prime.lambdas") {
+        point [l] = 0;
+     }
+     start_grid + point;
+     
+     for (sp = 0; sp < 50; sp += 1) {
+        for (l; in; ^"prime.lambdas") {
+          point [l] = Random (-0.5,0.5);
+        }
+        start_grid + point;
+     }
+     
+     for (sp = 0; sp < 50; sp += 1) {
         point = {};
         point ["prime.site_alpha"] = Random (0.75, 1.25);
         point ["prime.site_beta"] = Random (0.5, 1.5);
@@ -648,22 +665,21 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         start_grid + point;
      }
      
+     // console.log (start_grid);
      
-     //console.log (start_grid);
      
-     
-     //Export (lfe, ^lf_prop);
-     //fprintf ("/Users/sergei/Desktop/prime." + ^"MPI_NODE_ID" + ".bf",CLEAR_FILE,lfe);
+    // Export (lfe, ^lf_prop);
+    // fprintf ("/Users/sergei/Desktop/PRIME/site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
      
      
      Optimize (results, ^lf_prop, {
-            "OPTIMIZATION_METHOD" : "nedler-mead",
-            //"OPTIMIZATION_METHOD" : "gradient-descent",
+            //"OPTIMIZATION_METHOD" : "nedler-mead",
+            "OPTIMIZATION_METHOD" : "gradient-descent",
             "OPTIMIZATION_START_GRID" : start_grid
         });
         
         
-    //console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM" + " : " + results[1][0] + "\n");
+    //console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM_VALUE" + "\n"+  ^"LF_INITIAL_GRID_MAXIMUM" + " : " + results[1][0] + "\n");
         
     character_map = None;    
     if (^"prime.impute_states") {

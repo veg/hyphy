@@ -630,7 +630,7 @@ selection.io.startTimer (relax.json [terms.json.timers], "RELAX alternative mode
 relax.model_object_map = {};
 relax.model_to_relax_parameter = {};
 
-if (relax.analysis_run_mode == relax.kGroupMode) {
+if (relax.analysis_run_mode != relax.kGroupMode) {
 	relax.model_object_map  		["relax.reference"] = None;
 	relax.reference_model_namespace 		= "relax.reference";
 	relax.model_object_map  		["relax.test"] = None;

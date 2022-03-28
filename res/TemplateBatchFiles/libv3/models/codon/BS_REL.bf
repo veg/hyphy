@@ -14,6 +14,8 @@ LoadFunctionLibrary("../../convenience/math.bf");
 
 */
 
+models.codon.BS_REL.rate_term = "alpha";
+
 /**
  * @name models.codon.BS_REL.ModelDescription
  * @param {String} type
@@ -45,7 +47,7 @@ lfunction models.codon.BS_REL.ModelDescription(type, code, components) {
         utility.getGlobalValue("terms.model.constrain_branch_length"): "models.codon.BS_REL.constrain_branch_length",
         utility.getGlobalValue("terms.model.frequency_estimator"): "frequencies.empirical.corrected.CF3x4",
         utility.getGlobalValue("terms.model.q_ij"): "", // set for individual components in models.codon.BS_REL._DefineQ
-        utility.getGlobalValue("terms.model.time"): "models.DNA.generic.Time",
+        utility.getGlobalValue("terms.model.time"): "models.BS_REL.Time",
         utility.getGlobalValue("terms.model.defineQ"): "models.codon.BS_REL._DefineQ",
         utility.getGlobalValue("terms.model.post_definition"): "models.codon.BS_REL.post_definition"
     };
@@ -113,7 +115,7 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
        ExecuteCommands ("
         function rate_generator (fromChar, toChar, namespace, model_type, model) {
             return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
-                'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                ^'models.codon.BS_REL.rate_term', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                 'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                 'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
         }"
@@ -140,6 +142,8 @@ lfunction models.codon.BS_REL_Per_Branch_Mixing._DefineQ(bs_rel, namespace) {
  */
 
 lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
+
+
     count = bs_rel [utility.getGlobalValue ("terms.model.components")];
 
     if (Type (count) == "Matrix") {
@@ -149,13 +153,22 @@ lfunction models.codon.BS_REL.ExtractMixtureDistribution (bs_rel) {
     rates = {count, 1};
     weights = {count-1, 1};
 
-    for (i = 1; i <= count; i+=1) {
-        rates [i-1] = ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.global")])[terms.AddCategory (utility.getGlobalValue ("terms.parameters.omega_ratio"), i)];
-        if (i < count ) {
-            weights [i-1] = ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.global")])[terms.AddCategory (utility.getGlobalValue ("terms.mixture.mixture_aux_weight"), i )];
+    if (bs_rel[^"terms.model.type"] == ^"terms.local") {
+         for (i = 1; i <= count; i+=1) {
+            rates [i-1] = ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")])[terms.AddCategory (utility.getGlobalValue ("terms.parameters.nonsynonymous_rate"), i)];
+            if (i < count ) {
+                weights [i-1] = ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")])[terms.AddCategory (utility.getGlobalValue ("terms.mixture.mixture_aux_weight"), i )];
+            }
+        }
+        return {"rates" : rates, "weights" : weights, ^"terms.parameters.synonymous_rate" : ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.synonymous_rate")]};
+    } else {
+        for (i = 1; i <= count; i+=1) {
+            rates [i-1] = ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.global")])[terms.AddCategory (utility.getGlobalValue ("terms.parameters.omega_ratio"), i)];
+            if (i < count ) {
+                weights [i-1] = ((bs_rel[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.global")])[terms.AddCategory (utility.getGlobalValue ("terms.mixture.mixture_aux_weight"), i )];
+            }
         }
     }
-
 
     return {"rates" : rates, "weights" : weights };
 }
@@ -239,7 +252,7 @@ lfunction models.codon.BS_REL._DefineQ(bs_rel, namespace) {
        ExecuteCommands ("
         function rate_generator (fromChar, toChar, namespace, model_type, model) {
                return models.codon.MG_REV._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
-                'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                ^'models.codon.BS_REL.rate_term', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                 'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                 'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
             }"
@@ -397,7 +410,7 @@ function models.codon.BS_REL.post_definition(model) {
  */
 
 function models.codon.BS_REL.get_branch_length(model, tree, node) {
-
+ 
 	parameters.SetLocalModelParameters (model, tree, node);
 	parameters.SetCategoryVariables   (model);
     bl = utility.GetEnvVariable ("BRANCH_LENGTH_STENCIL");
@@ -431,7 +444,7 @@ lfunction models.codon.BS_REL._DefineQ.MH (bs_rel, namespace) {
 
     rg = "function rate_generator (fromChar, toChar, namespace, model_type, model) {
                    return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
-                    'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                    ^'models.codon.BS_REL.rate_term', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                     'beta_' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component__),
                     'omega' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component__),
                     'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate'),
@@ -482,7 +495,7 @@ lfunction models.codon.BS_REL_SRV._DefineQ.MH (bs_rel, namespace) {
     
     rg = "function rate_generator (fromChar, toChar, namespace, model_type, model) {
                    return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
-                    'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                    ^'models.codon.BS_REL.rate_term', utility.getGlobalValue('terms.parameters.synonymous_rate'),
                     'beta_`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
                     'omega`component`', terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
                     'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate'),
@@ -560,4 +573,11 @@ lfunction models.codon.BS_REL_SRV._DefineQ.MH (bs_rel, namespace) {
     parameters.SetConstraint(((bs_rel[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")])[terms.nucleotideRate("A", "G")], "1", "");
 
     return bs_rel;
+}
+
+function models.BS_REL.Time (options) {
+    if (options == terms.global) {
+        return  models.DNA.generic.Time (options);
+    }
+    return models.codon.BS_REL.rate_term;
 }

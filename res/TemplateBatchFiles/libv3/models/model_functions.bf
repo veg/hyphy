@@ -402,11 +402,15 @@ function models.generic.SetBranchLength (model, value, parameter) {
 
 
      if (Abs((model[terms.parameters])[terms.local]) >= 1) {
+        
         if (Type (model [terms.model.branch_length_string]) == "String") {
             models.generic.SetBranchLength.expression = model [terms.model.branch_length_string];
 
             if (Abs((model[terms.parameters])[terms.local]) > 1) {
+ 
                 models.generic.SetBranchLength.bl = Call (model [terms.model.time], model[terms.model.type]);
+                
+                 
                 models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
                 if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) == FALSE) {
                      models.generic.SetBranchLength.bl = utility.First (utility.UniqueValues ((model[terms.parameters])[terms.local]), "_name_",
@@ -418,14 +422,27 @@ function models.generic.SetBranchLength (model, value, parameter) {
                      }
                      models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
                 }
-
+                
+ 
                 models.generic.SetBranchLength.substitution = {};
-                utility.ForEach (utility.UniqueValues ((model[terms.parameters])[terms.local]), "_name_",
-                            'if (_name_ != models.generic.SetBranchLength.bl) {
-                                models.generic.SetBranchLength.substitution [_name_] = Eval (parameter + "." + _name_);
-                             }');
-
+                
+                
+                for (_name_; in; utility.UniqueValues ((model[terms.parameters])[terms.local])) {
+                    
+                    if (_name_ != models.generic.SetBranchLength.bl) {
+                        if (parameters.IsIndependent (parameter + "." + _name_)) {
+                            models.generic.SetBranchLength.substitution [_name_] = Eval (parameter + "." + _name_);
+                        } else {
+                            models.generic.SetBranchLength.substitution [_name_] = parameter + "." + _name_;
+                        }
+                    } else {
+                        models.generic.SetBranchLength.substitution [_name_] = parameter + "." + _name_;
+                    }
+                }
+                
+                models.generic.SetBranchLength.bl = parameter + "." + models.generic.SetBranchLength.bl;              
                 models.generic.SetBranchLength.expression = Simplify (models.generic.SetBranchLength.expression, models.generic.SetBranchLength.substitution);
+               
             } else {
                 models.generic.SetBranchLength.bl = (Columns ((model[terms.parameters])[terms.local]))[0];
                 models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
@@ -440,7 +457,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
 					    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 
 					} else {
-                    	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
+                   	    Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     	messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					}
 
