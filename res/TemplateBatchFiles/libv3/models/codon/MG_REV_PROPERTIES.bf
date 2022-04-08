@@ -379,7 +379,6 @@ lfunction models.codon.MG_REV_PROP.ModelDescription(type, code, properties) {
     mg_base[utility.getGlobalValue("terms.model.residue_name_map")] = parameters.ValidateIDs (utility.Keys (mg_base[utility.getGlobalValue("terms.model.residue_properties")]));
     mg_base[utility.getGlobalValue("terms.model.post_definition")] = "models.codon.MG_REV_PROP.post_definition";
     mg_base[utility.getGlobalValue("terms.model.set_branch_length")] = "models.codon.MG_REV_PROP.set_branch_length";
-
     return mg_base;
 }
 
@@ -388,6 +387,7 @@ lfunction models.codon.MG_REV_PROP.ModelDescription(type, code, properties) {
  * @param {String or AssociativeList} properties
  * @return {AssociativeList}
  * Convert a set of amino-acid properties into the expected format
+ * This will also recenter the properties (mean 0, variance of 1)
  */
 
 
@@ -428,7 +428,25 @@ lfunction models.codon.MG_REV_PROP._munge_properties (properties) {
             }
         }
     }
-
+        
+        
+    for (key, value; in; properties) {
+        sum  = 0;
+        sum2 = 0;
+        
+        for (aa, prop; in; value) {
+            sum += prop;
+            sum2 += prop*prop;
+        }
+        
+        sum = sum / 20;
+        norm = Sqrt (sum2 / 20 - sum*sum);
+        
+        for (aa, prop; in; value) {
+            value [aa] = (prop-sum) / norm;
+        }       
+    }
+        
     assert (utility.Array1D(properties) > 0, "At least one valid property set must be defined");
     return properties;
 }
@@ -480,7 +498,6 @@ lfunction models.codon.MG_REV_PROP._GenerateRate_generic (fromChar, toChar, name
             nuc_rate = parameters.AppendMultiplicativeTerm (nuc_rate, nuc_p);
        }
 
-
         rate_entry = nuc_rate;
 
         if (_tt[fromChar] != _tt[toChar]) {
@@ -514,6 +531,7 @@ lfunction models.codon.MG_REV_PROP._GenerateRate_generic (fromChar, toChar, name
                 rate_entry += "*Exp(-(" + Join("+",aa_rate) + "))";
                 (_GenerateRate.p[model_type])[alpha_term] = alpha;
                 rate_entry = "Min(10000," + rate_entry  + "*" + beta + ")";
+ 
              }
         } else {
             if (model_type == utility.getGlobalValue("terms.local")) {

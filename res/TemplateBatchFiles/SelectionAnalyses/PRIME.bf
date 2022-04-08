@@ -1,4 +1,4 @@
-RequireVersion("2.5.7");
+RequireVersion("2.5.37");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -22,8 +22,6 @@ LoadFunctionLibrary("modules/selection_lib.ibf");
 
 
 
-
-
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
 /*------------------------------------------------------------------------------ 
     Display analysis information
@@ -40,7 +38,7 @@ prime.analysis_description = {
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis.
     ",
-    terms.io.version: "0.0.1",
+    terms.io.version: "0.1.0",
     terms.io.reference: "TBD",
     terms.io.authors: "Sergei L. Kosakovsky Pond",
     terms.io.contact: "spond@temple.edu",
@@ -74,7 +72,7 @@ prime.pvalue = 0.1;
 prime.json = {
     terms.json.analysis: prime.analysis_description,
     terms.json.fits: {},
-    terms.json.timers: {},
+    terms.json.timers: {}
 };
 
 prime.display_orders =   {  
@@ -110,19 +108,21 @@ the next set of variables.
 prime.site.composition.string = "";
 
 
-prime.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "Property Description", "Importance", "p-value","Most common codon substitutions at this site"}};
+prime.table_screen_output  = {{"Codon", "Partition", "#subs", "#AA", "alpha", "beta", "Property Description", "Importance", "p-value","Most common codon substitutions at this site"}};
 prime.table_output_options = {  terms.table_options.header : TRUE, 
                                 terms.table_options.minimum_column_width: 12, 
                                 terms.table_options.align : "center",
                                 terms.table_options.column_widths: {
                                     "0" : 12,
                                     "1" : 12,
-                                    "2" : 12,
-                                    "3" : 12,
-                                    "4" : 40,
+                                    "2" : 8,
+                                    "3" : 8,
+                                    "4" : 12,
                                     "5" : 12,
-                                    "6" : 12,
-                                    "7" : 70}
+                                    "6" : 40,
+                                    "7" : 12,
+                                    "8" : 12,
+                                    "9" : 70}
                              };
 
 
@@ -300,6 +300,10 @@ prime.site.property_model =  model.generic.DefineModel("models.codon.MG_REV_PROP
         },
         prime.filter_names,
         None);
+        
+        
+prime.json [terms.model.residue_properties] = prime.site.property_model [terms.model.residue_properties];         
+prime.json [terms.translation_table] = prime.site.property_model [terms.translation_table];
 
 
 prime.properties               = prime.site.property_model [terms.model.residue_properties];
@@ -315,14 +319,18 @@ prime.lambda_range = {
     
 
     
-prime.table_headers = { 6 + 3*prime.properties.N, 2};
+prime.table_headers = { 10 + 3*prime.properties.N, 2};
     
-prime.table_headers[0][0] = "alpha;"; prime.table_headers[0][1] = "Synonymous substitution rate at a site";
-prime.table_headers[1][0] = "&beta;"; prime.table_headers[1][1] = "Log of property independent non-synonymous rate a site";
-prime.table_headers[2][0] = "Total branch length"; prime.table_headers[2][1] = "The total length of branches contributing to inference at this site, and used to scale dN-dS";
-prime.table_headers[3][0] = "PRIME LogL"; prime.table_headers[3][1] = "Site Log-likelihood under the PRIME model";
-prime.table_headers[4][0] = "FEL LogL"; prime.table_headers[4][1] = "Site Log-likelihood under the FEL model";
-prime.table_headers[5][0] = "p-value"; prime.table_headers[5][1] = "Omnibus p-value (any property is important)";
+prime.table_headers[0][0] = "&alpha;"; prime.table_headers[0][1] = "Synonymous substitution rate at a site";
+prime.table_headers[1][0] = "&beta;"; prime.table_headers[1][1] = "Property independent non-synonymous rate a site";
+prime.table_headers[2][0] = "FEL &alpha;"; prime.table_headers[2][1] = "Synonymous substitution rate at a site (FEL model)";
+prime.table_headers[3][0] = "FEL &beta;"; prime.table_headers[3][1] = "Log of property independent non-synonymous rate a site";
+prime.table_headers[4][0] = "Total branch length"; prime.table_headers[4][1] = "The total length of branches contributing to inference at this site, and used to scale dN-dS";
+prime.table_headers[5][0] = "# subs"; prime.table_headers[5][1] = "The number of amino-acid substitutions that occurred at this site";
+prime.table_headers[6][0] = "# aa"; prime.table_headers[6][1] = "The number of unique amino-acids occurring at that site";
+prime.table_headers[7][0] = "PRIME LogL"; prime.table_headers[7][1] = "Site Log-likelihood under the PRIME model";
+prime.table_headers[8][0] = "FEL LogL"; prime.table_headers[8][1] = "Site Log-likelihood under the FEL model";
+prime.table_headers[9][0] = "p-value"; prime.table_headers[9][1] = "Omnibus p-value (any property is important)";
 
                          
 prime.lambdas = {};                                                                      
@@ -331,7 +339,7 @@ io.ReportProgressMessageMD ("PRIME", "property-description", "Using the followin
 
 prime.i = 1;
 prime.local_to_property_name = {};
-prime.p_value_indices = {"Overall" : 5};
+prime.p_value_indices = {"Overall" : 9};
 prime.report.count = {"Overall" : 0};
 
 
@@ -339,9 +347,9 @@ for (key, value; in; prime.properties ) {
     io.ReportProgressMessageMD ("PRIME", "property-description", "* " + key);
     
     prime.p = prime.property_variable_prefix + (prime.site.property_model[terms.model.residue_name_map])[key];
-    prime.table_headers [3+prime.i*3][0] = "&lambda;" + prime.i; prime.table_headers [3 + prime.i*3][1] = "Importance for " + key;
-    prime.table_headers [4+prime.i*3][0] = "p" + prime.i; prime.table_headers [4 + prime.i*3][1] = "p-value for non-zero effect of " + key;
-    prime.table_headers [5+prime.i*3][0] = "LogL" + prime.i; prime.table_headers [5 + prime.i*3][1] = "Log likelihood when there is no effect of " + key;
+    prime.table_headers [7+prime.i*3][0] = "&lambda;" + prime.i; prime.table_headers [7 + prime.i*3][1] = "Importance for " + key;
+    prime.table_headers [8+prime.i*3][0] = "p" + prime.i; prime.table_headers [8 + prime.i*3][1] = "p-value for non-zero effect of " + key;
+    prime.table_headers [9+prime.i*3][0] = "LogL" + prime.i; prime.table_headers [9 + prime.i*3][1] = "Log likelihood when there is no effect of " + key;
     
     model.generic.AddGlobal (prime.site.property_model,  prime.p , key);
     parameters.DeclareGlobal ( prime.p, {});
@@ -352,11 +360,12 @@ for (key, value; in; prime.properties ) {
     prime.lambdas [parameter.local_lambda] = prime.p;
     prime.local_to_property_name [parameter.local_lambda] = key;
     prime.property_to_index [key] = prime.i-1;
-    prime.p_value_indices[key] = 4+prime.i*3;
+    prime.p_value_indices[key] = 8+prime.i*3;
     prime.report.count[key] = 0;
     prime.i += 1;
 
 }
+
 
 model.generic.AddGlobal (prime.site.property_model,  prime.baseline_non_syn_rate , prime.parameter_site_beta);
 parameters.DeclareGlobal ( prime.baseline_non_syn_rate, {});
@@ -390,6 +399,8 @@ function prime.rate_to_screen (name, value) {
 
 prime.report.significant_site = {{"" + (1+((prime.filter_specification[prime.report.partition])[terms.data.coverage])[prime.report.site]),
                                     prime.report.partition + 1,
+                                    Format(prime.report.row[5],6,0),  // #subs
+                                    Format(prime.report.row[6],6,0),  // #AA
                                     Format(prime.report.row[0],7,3),  // alpha
                                     Format(prime.report.row[1],7,3),  // beta
                                     prime.property_report_name,  // property name
@@ -401,6 +412,7 @@ prime.report.significant_site = {{"" + (1+((prime.filter_specification[prime.rep
 
 prime.site_results        = {};
 prime.imputed_leaf_states = {};
+prime.sub_mapping   = {};
 
 for (prime.partition_index = 0; prime.partition_index < prime.partition_count; prime.partition_index += 1) {
 
@@ -485,9 +497,8 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
     /* run the main loop over all unique site pattern combinations */
     
     prime.pattern_count = 1;
-    utility.ForEachPair (prime.site_patterns, "_pattern_", "_pattern_info_",
-        '
-           io.ReportProgressBar("", "Working on site pattern " + (prime.pattern_count) + "/" + Abs (prime.site_patterns));
+    for (_pattern_, _pattern_info_; in; prime.site_patterns) {
+          io.ReportProgressBar("", "Working on site pattern " + (prime.pattern_count) + "/" + Abs (prime.site_patterns));
            if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")]) {
                 prime.store_results (-1,None,{"0" : "prime.site_likelihood",
                                              "1" : "prime.site_likelihood_property",
@@ -509,19 +520,16 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
                                                                     "prime.store_results");
             }
             prime.pattern_count  += 1;
-        '
-    );
+    }  
 
     mpi.QueueComplete (prime.queue);
     prime.partition_matrix = {Abs (prime.site_results[prime.partition_index]), Rows (prime.table_headers)};
-
-    utility.ForEachPair (prime.site_results[prime.partition_index], "_key_", "_value_",
-    '
+    
+    for (_key_, _value_; in; prime.site_results[prime.partition_index]) {
         for (prime.index = 0; prime.index < Rows (prime.table_headers); prime.index += 1) {
             prime.partition_matrix [0+_key_][prime.index] = _value_[prime.index];
         }
-    '
-    );
+    }
 
     prime.site_results[prime.partition_index] = prime.partition_matrix;
 
@@ -535,6 +543,9 @@ prime.json [terms.json.MLE ] = {terms.json.headers   : prime.table_headers,
 if (prime.impute_states) {
     (prime.json [terms.json.MLE])[terms.prime_imputed_states] = prime.imputed_leaf_states;
 }
+
+(prime.json [terms.json.MLE])[terms.substitutions] = prime.sub_mapping;
+
 
 for (key, value; in;  prime.report.count) {
     io.ReportProgressMessageMD ("PRIME", "results", "** Found _" + value + "_ sites where " + key + " property was important at p <= " + prime.pvalue + "**");
@@ -613,7 +624,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     ^"prime.site_beta" :> 0;
 
     Optimize (results, ^lf_fel
-                , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-4}
+                , {"OPTIMIZATION_METHOD" : "nedler-mead", "OPTIMIZATION_PRECISION": 1e-4}
     );
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
@@ -641,46 +652,112 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
      point = {};
      point ["prime.site_alpha"] = ^"prime.site_alpha";
      point ["prime.site_beta"] = ^"prime.site_beta";
+     save_beta = ^"prime.site_beta";
      point ["prime.site_beta_nuisance"] = ^"prime.site_beta_nuisance";
+     
      for (l; in; ^"prime.lambdas") {
         point [l] = 0;
      }
      start_grid + point;
+     propNames = utility.Values (^"prime.lambdas");
+     ranges = {};
+     r_unit = {
+        ^"terms.lower_bound" : -1,
+        ^"terms.upper_bound" : 1,
+     };
      
-     for (sp = 0; sp < 50; sp += 1) {
+     for (k,l; in; ^"prime.lambdas") {
+        ranges[l] = r_unit;
+     }
+          
+          
+     for (sp = 0; sp < 20; sp += 1) {
         for (l; in; ^"prime.lambdas") {
-          point [l] = Random (-0.5,0.5);
+          point [l] = 0.0;
         }
+        point [propNames [Random (0, propN) $ 1]] = Random (-1,1);
         start_grid + point;
      }
      
-     for (sp = 0; sp < 50; sp += 1) {
+
+     for (sp; in; estimators.LHC (ranges, 40)) {
         point = {};
-        point ["prime.site_alpha"] = Random (0.75, 1.25);
-        point ["prime.site_beta"] = Random (0.5, 1.5);
-        point ["prime.site_beta_nuisance"] = Random (0.5, 1.5);
-        for (l; in; ^"prime.lambdas") {
-          point [l] = Random (-0.5,0.5);
+        
+        point ["prime.site_alpha"] = Random (^"prime.site_alpha" * 0.5, ^"prime.site_alpha" * 2.0);
+        point ["prime.site_beta"] = Random (^"prime.site_beta" * 0.5, ^"prime.site_beta" * 2.0);
+        
+        for (l,v; in; sp) {
+          point [l] = v [^"terms.fit.MLE"];
         }
         start_grid + point;
+        
+        point ["prime.site_alpha"] = ^"prime.site_alpha";
+        point ["prime.site_beta"] = ^"prime.site_beta";
+        
+        start_grid + point;
+        
      }
      
-     // console.log (start_grid);
+     //console.log (start_grid);
      
      
     // Export (lfe, ^lf_prop);
     // fprintf ("/Users/sergei/Desktop/PRIME/site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
      
-     
+            
      Optimize (results, ^lf_prop, {
-            //"OPTIMIZATION_METHOD" : "nedler-mead",
-            "OPTIMIZATION_METHOD" : "gradient-descent",
-            "OPTIMIZATION_START_GRID" : start_grid
+            "OPTIMIZATION_METHOD" : "nedler-mead",
+            //"OPTIMIZATION_METHOD" : "gradient-descent",
+            "OPTIMIZATION_START_GRID" : start_grid,
+            "OPTIMIZATION_PRECISION": 1e-4
         });
         
-        
+    
     //console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM_VALUE" + "\n"+  ^"LF_INITIAL_GRID_MAXIMUM" + " : " + results[1][0] + "\n");
+    Optimize (results, ^lf_prop);
         
+    //console.log ("\n" +  results[1][0] + "\n");
+        
+    altL = results[1][0];
+     
+    // fit all of the nulls
+    
+    constrained_models = {};
+
+    alternative = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {});
+    
+    while (TRUE) {
+        done = TRUE;
+        for (k,l; in; ^"prime.lambdas") {
+            ^l = 0;
+            // FORCE UPDATE DEPENDENT VARIABLES
+            LFCompute (^lf_prop,LF_START_COMPUTE);
+            LFCompute (^lf_prop,results);
+            LFCompute (^lf_prop,LF_DONE_COMPUTE);
+            ^l := 0;  
+            Optimize (results, ^lf_prop);
+            //console.log (k + " => " + (- results[1][0] + altL));
+            if (results[1][0] - altL > 1e-2) {
+                done = FALSE;
+                break;
+            }
+            constrained_models[k] = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {^"terms.globals_only" : TRUE});
+            (constrained_models[k])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+            ^l = 0;        
+            estimators.ApplyExistingEstimates (lf_prop, model_mapping, alternative, ^"terms.globals_only");
+        }
+        
+        if (done) {
+            break;
+        } else {
+              ^l = 0;      
+              Optimize (results, ^lf_prop);
+              altL = results[1][0]; 
+              //console.log ("REOPTIMIZED : " + altL);
+              alternative = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {});
+             
+        }
+    }
     character_map = None;    
     if (^"prime.impute_states") {
         DataSet anc = ReconstructAncestors ( ^lf_prop, {{0}}, MARGINAL, DOLEAVES);
@@ -701,32 +778,12 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         
     ancestral_info = ancestral.build (lf_prop,0,FALSE);
     branch_substitution_information = (ancestral.ComputeSubstitutionBySite (ancestral_info,0,None))[^"terms.substitutions"];
+    branch_mapping = ancestral.ComputeCompressedSubstitutionsBySite (ancestral_info,0);
     DeleteObject (ancestral_info);
     
-    alternative = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {});
-    alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-    //console.log (results[1][0]);
-
-     
-    // fit all of the nulls
+    //console.log (branch_substitution_information);
     
-    constrained_models = {};
-    
-     for (k,l; in; ^"prime.lambdas") {
-        ^l = 0;
-        // FORCE UPDATE DEPENDENT VARIABLES
-        LFCompute (^lf_prop,LF_START_COMPUTE);
-        LFCompute (^lf_prop,results);
-        LFCompute (^lf_prop,LF_DONE_COMPUTE);
-        ^l := 0;  
-        Optimize (results, ^lf_prop);
-        //console.log (results[1][0]);
-        constrained_models[k] = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {^"terms.globals_only" : TRUE});
-        (constrained_models[k])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-        ^l = 0;        
-        estimators.ApplyExistingEstimates (lf_prop, model_mapping, alternative, ^"terms.globals_only");
-     }
-
+    alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = altL;
  
 
     return {
@@ -734,6 +791,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
             utility.getGlobalValue("terms.alternative") : alternative,
             utility.getGlobalValue("terms.Null"): Null,
             utility.getGlobalValue("terms.model.residue_properties") : constrained_models,
+            utility.getGlobalValue("terms.substitutions") : branch_mapping,
             utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information,
             utility.getGlobalValue("terms.prime_imputed_states") : character_map
     };
@@ -783,27 +841,45 @@ function prime.report.echo (prime.report.site, prime.report.partition, prime.rep
 lfunction prime.store_results (node, result, arguments) {
 
     sub_profile = result[utility.getGlobalValue("terms.branch_selection_attributes")];
-    
+    sub_map = result[utility.getGlobalValue("terms.substitutions")];
+    pattern_info    = arguments [4];
 
 
-    if (None != sub_profile) {
-    
-       total_sub_count = 0;
-
-
-    
+    if (None != sub_profile) {   
+        total_sub_count = 0;
         sub_by_count = {"Overall" : {}};
 
         for (p,v; in; ^"prime.properties") {
             sub_by_count[p] = {};     
         }
+        
+        sub_counts = 0;
+        aa_counts = {};
+        
+        partition_index = arguments [3];
 
+        
         for (i, v; in; sub_profile) {
             for (j, b; in; v) {
                 c = Abs (b);
                 total_sub_count += c;
                 ai = (^"prime.codon_table")[i];
                 aj = (^"prime.codon_table")[j];
+                
+ 
+                
+                if (Abs (ai) && Abs (aj)) {
+                    if (ai != aj) {
+                        for (idx, br; in; b) {
+                            if (((^"prime.selected_branches")[partition_index])[br] == ^"terms.tree_attributes.test") {
+                                sub_counts += 1;
+                            }
+                        }
+                    }
+                    aa_counts [ai] = 1;
+                    aa_counts [aj] = 1;
+                }
+                
                 if (Abs (ai) == 0) {ai = "?";}
                 if (Abs (aj) == 0) {aj = "?";}
 
@@ -826,7 +902,7 @@ lfunction prime.store_results (node, result, arguments) {
                 }
             }
         }
-
+        
         sub_profile = {};
         for (p,count; in; sub_by_count) {
 
@@ -847,17 +923,15 @@ lfunction prime.store_results (node, result, arguments) {
     }
 
 
-    partition_index = arguments [3];
-    pattern_info    = arguments [4];
 
-    nrows = 6 + 3*^"prime.properties.N";
+    nrows = 10 + 3*^"prime.properties.N";
     result_row          = { nrows, 1 };
     
     for (i; in; ^"prime.p_value_indices") {
         result_row  [i] = 1.;
     }
     
- 
+  
     if (None != result) { // not a constant site
         omninbus_ll = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
         lrt = {utility.getGlobalValue("terms.LRT") : 2*(omninbus_ll-(result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")])};
@@ -865,8 +939,12 @@ lfunction prime.store_results (node, result, arguments) {
 
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("prime.parameter_site_alpha"));
         result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("prime.parameter_site_beta"));
-        result_row [3] = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
-        result_row [4] = (result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")];
+        result_row [2] = estimators.GetGlobalMLE (result["fel"], utility.getGlobalValue("prime.parameter_site_alpha"));
+        result_row [3] = estimators.GetGlobalMLE (result["fel"], utility.getGlobalValue("prime.parameter_site_beta"));
+        result_row [5] = sub_counts;
+        result_row [6] = utility.Array1D (aa_counts);
+        result_row [7] = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
+        result_row [8] = (result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")];
         p_values       = {"Overall" : lrt [utility.getGlobalValue("terms.p_value")]};
         //result_row [5] = lrt [utility.getGlobalValue("terms.p_value")];
 
@@ -879,38 +957,44 @@ lfunction prime.store_results (node, result, arguments) {
                     sum += (alternative_lengths[_node_])[utility.getGlobalValue("terms.json.MLE")];
             }
         }
-        result_row [2] = sum;
+        result_row [4] = sum;
+        
         
         for (key, prop; in; result[utility.getGlobalValue ("terms.model.residue_properties")]) {
-            property_index = ((^"prime.property_to_index")[(^"prime.local_to_property_name")[key]])*3+6;
+            property_index = ((^"prime.property_to_index")[(^"prime.local_to_property_name")[key]])*3+10;
             ll             = prop[utility.getGlobalValue("terms.fit.log_likelihood")];
             pv             = 1-CChi2 (2*(omninbus_ll-ll),1);
             rate           = (^"prime.local_to_property_name")[key];
             rate           = ((((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.global")])[rate])[utility.getGlobalValue("terms.fit.MLE")]);
+            //console.log (omninbus_ll);
             result_row [property_index][0] = rate;
             p_values [(^"prime.local_to_property_name")[key]] = pv;
             result_row [property_index+2][0] = ll;
         }
         
+       
         p_values = math.HolmBonferroniCorrection(p_values);
-        result_row[5] = p_values["Overall"];
+        result_row[(^"prime.p_value_indices")["Overall"]] = p_values["Overall"];
         for (key, prop; in; result[utility.getGlobalValue ("terms.model.residue_properties")]) {
-            property_index = ((^"prime.property_to_index")[(^"prime.local_to_property_name")[key]])*3+6;
-            result_row [property_index+1] = p_values[(^"prime.local_to_property_name")[key]];
+            property_index = ((^"prime.p_value_indices")[(^"prime.local_to_property_name")[key]]);
+            result_row [property_index] = p_values[(^"prime.local_to_property_name")[key]];
         }
         
     }   
+    
+    //console.log (result_row);
 
     utility.EnsureKey (^"prime.site_results", partition_index);
     utility.EnsureKey (^"prime.imputed_leaf_states", partition_index);
-    
+    utility.EnsureKey (^"prime.sub_mapping", partition_index);
 
     sites_mapping_to_pattern = pattern_info[utility.getGlobalValue("terms.data.sites")];
     sites_mapping_to_pattern.count = utility.Array1D (sites_mapping_to_pattern);
-
+    
     for (i = 0; i < sites_mapping_to_pattern.count; i+=1) {
         site_index = sites_mapping_to_pattern[i];
         ((^"prime.site_results")[partition_index])[site_index] = result_row;
+        ((^"prime.sub_mapping")[partition_index])[site_index] = sub_map;
         ((^"prime.imputed_leaf_states")[partition_index])[site_index] = result[^"terms.prime_imputed_states"];
         prime.report.echo (site_index, partition_index, result_row);
     }

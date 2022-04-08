@@ -271,6 +271,14 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
 
             class_from = (model[^"terms.model.MSS.codon_classes"])[fromChar];
             class_to   = (model[^"terms.model.MSS.codon_classes"])[toChar];
+            
+            
+            if ((Abs (class_from) && Abs (class_to)) == FALSE) {
+                class_from = (model[^"terms.model.MSS.codon_classes"])[fromChar+toChar];
+                class_to = class_from;
+            }
+            
+            assert (Abs (class_from) && Abs (class_to), "The neutral class for `fromChar` to `toChar` is not specified in the model definition");
 
             if (class_from == class_to) {
                 if (class_from == nr) {
@@ -303,7 +311,7 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
                         codon_rate = parameters.ApplyNameSpace(between_rate, namespace);
                     }
                     (_GenerateRate.p[model_type])[^"terms.model.MSS.between"] = codon_rate;
-                
+            
                 } else {
                     if (class_from + class_to == nr) {
                         //console.log ("NEUTRAL");

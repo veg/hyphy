@@ -397,6 +397,8 @@ namespace terms{
         data                    = "data";
         residue_properties      = "residue_properties";
         argument_collector      = "prompt_and_define";
+        
+        nonsyn_multipliers      = "non-synonymous multipliers";
 
     }
 

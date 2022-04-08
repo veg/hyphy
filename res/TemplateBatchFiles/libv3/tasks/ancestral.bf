@@ -539,7 +539,6 @@ lfunction ancestral.ComputeSubstitutionBySite (ancestral_data, site, branch_filt
         own_state    = (ancestral_data["MATRIX"])[self][site];
         parent_state = (ancestral_data["MATRIX"])[parent][site];
         
-        
         if  ((own_state != parent_state) && (own_state != -1) && (parent_state != -1)) {
             own_state = (ancestral_data["MAPPING"])[own_state];
             parent_state = (ancestral_data["MAPPING"])[parent_state];
@@ -554,6 +553,57 @@ lfunction ancestral.ComputeSubstitutionBySite (ancestral_data, site, branch_filt
              ^"terms.trees.branches"  : selected_branch_names,
              ^"terms.substitutions"   : result
             };
+
+}
+
+/*******************************************
+ **
+ * @name ancestral.ComputeCompressedSubstitutionsBySite
+ * computes the minimal representation of character states needed to recover the substitution 
+ * history
+
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Number} site - the 0-based index of a site
+
+
+ * @returns
+        {
+           "root"   : "state",
+           "branch1" : "state",
+           "branch2" : "state"
+           ....
+        }
+
+        character state at the root and at every branch that is different from 
+        its parent
+        
+ */
+
+/*******************************************/
+
+
+lfunction ancestral.ComputeCompressedSubstitutionsBySite (ancestral_data, site) {
+
+    result   = {};
+    branches = (ancestral_data["DIMENSIONS"])["BRANCHES"];
+
+    for (b = 1; b <= branches; b += 1) {
+        self   = b;
+        parent = ((ancestral_data["TREE_AVL"])[b])["Parent"];
+        own_state    = (ancestral_data["MATRIX"])[self-1][site];
+        if (parent > 0) {
+            parent_state = (ancestral_data["MATRIX"])[parent-1][site];
+        
+            if  ((own_state != parent_state)) {
+                result [(((ancestral_data["TREE_AVL"])[b]))["Name"]] = (ancestral_data["MAPPING"])[own_state];
+            }
+        } else {
+            result ["root"] = (ancestral_data["MAPPING"])[own_state];
+        }
+    }
+
+
+    return  result;
 
 }
 
