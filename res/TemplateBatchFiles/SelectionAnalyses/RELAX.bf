@@ -944,7 +944,10 @@ function relax.FitMainTestPair () {
 	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
 	io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 
-
+    KeywordArgument ("save-fit", "Save RELAX alternative model fit to this file (default is not to save)", "/dev/null");
+    relax.save_fit_path = io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]");
+    io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], relax.save_fit_path);
+ 
 	if (relax.numbers_of_tested_groups == 2) {
 
 		relax.fitted.K = estimators.GetGlobalMLE (relax.alternative_model.fit,terms.relax.k);
@@ -1014,6 +1017,7 @@ function relax.FitMainTestPair () {
 				selection.io.report_dnds (relax.inferred_distribution_ref);
 
 				relax.alternative_model.fit = relax.alternative_model.fit.take2;
+                io.SpoolLFToPath(relax.alternative_model.fit.take2[terms.likelihood_function], relax.save_fit_path);
 			}
 
             DeleteObject (relax.alternative_model.fit.take2);
@@ -1041,9 +1045,7 @@ function relax.FitMainTestPair () {
 	relax.report_multi_hit  (relax.alternative_model.fit, relax.distribution_for_json, "RELAX", "alt-mh");
     relax._report_srv (relax.alternative_model.fit, FALSE);
         
-    KeywordArgument ("save-fit", "Save RELAX alternative model fit to this file (default is not to save)", "/dev/null");
-    io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]"));
-        
+       
 	selection.io.json_store_lf (relax.json,
 								relax.alternative_name,
 								relax.alternative_model.fit[terms.fit.log_likelihood],
