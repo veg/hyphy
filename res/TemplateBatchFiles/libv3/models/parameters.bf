@@ -634,6 +634,40 @@ function parameters.helper.copy_definitions(target, source) {
 }
 
 /**
+ * @name pparameters.SetStickBreakingDistributionPrefix
+ * @param {AssociativeList} parameters
+ * @param {Matrix} values
+ * #param {String|} prefix to use for variable names
+ * @returns nothing
+ */
+
+lfunction parameters.SetStickBreakingDistributionPrefix (parameters, values, prefix) {
+    rate_count = Rows (values);
+    left_over  = 1;
+    
+    if (utility.Has (parameters, ^"terms.parameters.synonymous_rate", "String")) {
+        alpha = parameters [^"terms.parameters.synonymous_rate"];
+        for (i = 0; i < rate_count; i += 1) {
+            parameters.SetConstraint (prefix + (parameters["rates"])[i], parameters.AppendMultiplicativeTerm (prefix + alpha, values[i][0]), "");
+            if (i < rate_count - 1) {
+                break_here = values[i][1] / left_over;
+                parameters.SetValue (prefix + (parameters["weights"])[i], break_here);
+                left_over = left_over * (1-break_here);
+           }
+        }    
+    } else {
+        for (i = 0; i < rate_count; i += 1) {
+            parameters.SetValue (prefix + (parameters["rates"])[i], values[i][0]);
+            if (i < rate_count - 1) {
+                break_here = values[i][1] / left_over;
+                parameters.SetValue (prefix + (parameters["weights"])[i], break_here);
+                left_over = left_over * (1-break_here);
+           }
+        }
+    }
+}
+
+/**
  * @name pparameters.SetStickBreakingDistribution
  * @param {AssociativeList} parameters
  * @param {Matrix} values
@@ -641,17 +675,7 @@ function parameters.helper.copy_definitions(target, source) {
  */
 
 lfunction parameters.SetStickBreakingDistribution (parameters, values) {
-    rate_count = Rows (values);
-    left_over  = 1;
-
-    for (i = 0; i < rate_count; i += 1) {
-        parameters.SetValue ((parameters["rates"])[i], values[i][0]);
-        if (i < rate_count - 1) {
-            break_here = values[i][1] / left_over;
-            parameters.SetValue ((parameters["weights"])[i], break_here);
-            left_over = left_over * (1-break_here);
-       }
-    }
+     parameters.SetStickBreakingDistributionPrefix (parameters, values, "");
 }
 
 /**

@@ -127,7 +127,7 @@ inline double _sse_sum_2 (__m128d const & x) {
 template<long D> inline void __ll_handle_matrix_transpose (hyFloat const * __restrict transitionMatrix, hyFloat * __restrict tMatrixT) {
     long i = 0L;
     for (long r = 0L; r < D; r++) {
-        #pragma unroll(4)
+        //#pragma unroll(4)
         #pragma GCC unroll 4
         for (long c = 0L; c < D; c++, i++) {
             tMatrixT[c*D+r] = transitionMatrix[i];
@@ -154,7 +154,7 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
                 }
             }*/
             
-            #pragma unroll(4)
+            //#pragma unroll(4)
             #pragma GCC unroll 4
             for (long k = 0L; k < D; k++) {
                 parentConditionals[k] *= tMatrix[siteState+D*k];
@@ -172,7 +172,7 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
     } else {
         if (tcc) {
             if (__builtin_expect((tcc->list_data[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom,0)) {
-                #pragma unroll(4)
+                //#pragma unroll(4)
                 #pragma GCC unroll 4
                 for (long k = 0L; k < D; k++) {
                     childVector[k] = lastUpdatedSite[k];
@@ -200,7 +200,7 @@ inline bool __ll_handle_conditional_array_initialization_generic ( long * __rest
         }
         if (__builtin_expect(siteState >= 0L,1)) {
             // a single character state; sweep down the appropriate column
-            #pragma unroll(4)
+            //#pragma unroll(4)
             #pragma GCC unroll 4
             for (long k = 0L; k < D; k++) {
                 parentConditionals[k] *= tMatrix[siteState+D*k];
@@ -212,7 +212,7 @@ inline bool __ll_handle_conditional_array_initialization_generic ( long * __rest
     } else {
         if (tcc) {
             if (__builtin_expect((tcc->list_data[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom,0)) {
-                #pragma unroll(4)
+                //#pragma unroll(4)
                 #pragma GCC unroll 4
                 for (long k = 0L; k < D; k++) {
                     childVector[k] = lastUpdatedSite[k];
@@ -542,7 +542,7 @@ template<long D> inline void __ll_product_sum_loop (hyFloat const* _hprestrict_ 
         #pragma GCC unroll 8
         #pragma clang loop vectorize(enable)
         #pragma clang loop interleave(enable)
-        #pragma clang loop unroll(enable)
+        //#pragma clang loop unroll(enable)
         for (long c = 0; c < D; c++)
             accumulator +=  tMatrix[c]   * childVector[c];
         
@@ -558,7 +558,7 @@ inline void __ll_product_sum_loop_generic (hyFloat const* _hprestrict_ tMatrix, 
         #pragma GCC unroll 8
         #pragma clang loop vectorize(enable)
         #pragma clang loop interleave(enable)
-        #pragma clang loop unroll(enable)
+        //#pragma clang loop unroll(enable)
         for (long c = 0; c < D; c++)
             accumulator +=  tMatrix[c]   * childVector[c];
         
@@ -595,7 +595,7 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
             fprintf (stderr, "UP %ld (%ld) %lg\n", didScale, parentCode, scaler);
         }*/
         if (didScale) {
-            #pragma unroll(4)
+           // #pragma unroll(4)
             #pragma GCC unroll 4
             for (long c = 0; c < D; c++) {
                 parentConditionals [c] *= scaler;
@@ -626,7 +626,7 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
                 }*/
                 
                 if (didScale) {
-                    #pragma unroll(4)
+                    //#pragma unroll(4)
                     #pragma GCC unroll 4
                     for (long c = 0; c < D; c++) {
                         parentConditionals [c] *= scaler;
@@ -657,7 +657,7 @@ template<bool ADJUST> inline void __ll_loop_handle_scaling_generic (hyFloat& sum
         hyFloat scaler = _computeBoostScaler(scalingAdjustments [parentCode*siteCount + siteID] * _lfScalerUpwards, sum, didScale);
         
         if (didScale) {
-            #pragma unroll(8)
+            //#pragma unroll(8)
             #pragma GCC unroll 8
             for (long c = 0; c < D; c++) {
                 parentConditionals [c] *= scaler;
@@ -679,7 +679,7 @@ template<bool ADJUST> inline void __ll_loop_handle_scaling_generic (hyFloat& sum
                 hyFloat scaler = _computeReductionScaler (scalingAdjustments [parentCode*siteCount + siteID] * _lfScalingFactorThreshold, sum, didScale);
                 
                 if (didScale) {
-                    #pragma unroll(8)
+                    //#pragma unroll(8)
                     #pragma GCC unroll 8
                     for (long c = 0; c < D; c++) {
                          parentConditionals [c] *= scaler;
@@ -707,7 +707,7 @@ template<long D> inline void __ll_loop_handle_leaf_case (hyFloat* _hprestrict_ p
     } else {
         for (long k = siteFrom; k < siteTo; k++, pp += D) {
             hyFloat lsf = localScalingFactor[k];
-#pragma unroll(4)
+//#pragma unroll(4)
 #pragma GCC unroll 4
             for (long s = 0; s < D; s++) {
                 pp[s] = lsf;
@@ -1585,7 +1585,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             accumulator         = rootConditionals[rootIndex + rootState] * theProbs[rootState];
             rootIndex           += alphabetDimension;
         } else {
-            #pragma unroll(4)
+            //#pragma unroll(4)
             #pragma GCC unroll 4
             for (long p = 0; p < alphabetDimension; p++,rootIndex++) {
                 accumulator += rootConditionals[rootIndex] * theProbs[p];
@@ -1644,7 +1644,7 @@ template<long D> inline bool __lcache_loop_preface (bool isLeaf, long* __restric
         long siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.list_data[siteID]] ;
         if (siteState >= 0L) {
             unsigned long target_index = siteState;
-            #pragma unroll(4)
+            //#pragma unroll(4)
             #pragma GCC unroll 4
             for (long k = 0L; k < D; k++, target_index+=D) {
                 parentConditionals[k]   *= tMatrix[target_index];
@@ -1659,7 +1659,7 @@ template<long D> inline bool __lcache_loop_preface (bool isLeaf, long* __restric
             if ((tcc->list_data[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom)
                 // the value of this conditional vector needs to be copied from a previously stored site
                 // subtree duplication
-                #pragma unroll(4)
+                //#pragma unroll(4)
                 #pragma GCC unroll 4
                 for (long k = 0UL; k < D; k++) {
                     childVector[k] = lastUpdatedSite[k];
@@ -1688,7 +1688,7 @@ inline bool __lcache_loop_preface_generic (bool isLeaf, long* __restrict lNodeFl
         long siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.list_data[siteID]] ;
         if (siteState >= 0L) {
             unsigned long target_index = siteState;
-            #pragma unroll(4)
+            //#pragma unroll(4)
             #pragma GCC unroll 4
             for (long k = 0L; k < D; k++, target_index+=D) {
                 parentConditionals[k]   *= tMatrix[target_index];
@@ -1704,7 +1704,7 @@ inline bool __lcache_loop_preface_generic (bool isLeaf, long* __restrict lNodeFl
             if ((tcc->list_data[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom)
                 // the value of this conditional vector needs to be copied from a previously stored site
                 // subtree duplication
-                #pragma unroll(4)
+                //#pragma unroll(4)
                 #pragma GCC unroll 4
                 for (long k = 0UL; k < D; k++) {
                     childVector[k] = lastUpdatedSite[k];
@@ -1966,7 +1966,7 @@ void            _TheTree::ComputeBranchCache    (
                 unsigned long k3     = 0UL;
                 for (unsigned long k = siteFrom; k < siteTo; k++) {
                     hyFloat scaler = localScalingFactor[k];
-                    #pragma unroll(4)
+                    //#pragma unroll(4)
                     #pragma GCC unroll 4
                     for (unsigned long k2 = 0UL; k2 < alphabetDimension; k2++, k3++) {
                         parentConditionals [k3] = scaler;
@@ -2474,7 +2474,7 @@ void            _TheTree::ComputeBranchCache    (
                     #pragma GCC unroll 8
                     #pragma clang loop vectorize(enable)
                     #pragma clang loop interleave(enable)
-                    #pragma clang loop unroll(enable)
+                    //#pragma clang loop unroll(enable)
                     for (long k = 0; k < alphabetDimension; k++) {
                         sum += parentConditionals[k];
                     }

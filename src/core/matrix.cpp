@@ -3303,6 +3303,20 @@ hyFloat _Matrix::AbsValue (void) const{
 }
 
 //_____________________________________________________________________________________________
+hyFloat _Matrix::L11Norm (void) const{
+    if (is_numeric()) {
+        hyFloat norm = 0.;
+
+        this->ForEach ([&] (hyFloat&& value, unsigned long, long) -> void {norm += fabs(value);},
+                 [&] (unsigned long index) -> hyFloat {return theData[index];});
+
+        return norm;
+    }
+
+    return 0.;
+}
+
+//_____________________________________________________________________________________________
 HBLObjectRef _Matrix::Abs (HBLObjectRef cache)
 {
     if (storageType == 1 && (hDim==1 || vDim == 1)) {
@@ -3410,7 +3424,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
         #pragma GCC unroll 4
         #pragma clang loop vectorize(enable)
         #pragma clang loop interleave(enable)
-        #pragma clang loop unroll(enable)
+        //#pragma clang loop unroll(enable)
         #pragma GCC ivdep
         #pragma ivdep
                for (long idx = 0; idx < upto; idx+=8) {
@@ -3454,7 +3468,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
         #pragma GCC unroll 4
         #pragma clang loop vectorize(enable)
         #pragma clang loop interleave(enable)
-        #pragma clang loop unroll(enable)
+        //#pragma clang loop unroll(enable)
         #pragma GCC ivdep
         #pragma ivdep
                for (long idx = 0; idx < upto; idx+=8) {
@@ -3998,7 +4012,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                             #pragma GCC unroll 4
                             #pragma clang loop vectorize(enable)
                             #pragma clang loop interleave(enable)
-                            #pragma clang loop unroll(enable)
+                            //#pragma clang loop unroll(enable)
                             for (long k = 0; k < vDim; k+=2) {
                                 float64x2_t D4, B4;
                                 DO_GROUP_OP1 (D4, B4, k);
@@ -4380,7 +4394,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                   #pragma GCC unroll 4
                                   #pragma clang loop vectorize(enable)
                                   #pragma clang loop interleave(enable)
-                                  #pragma clang loop unroll(enable)
+                                  //#pragma clang loop unroll(enable)
                                   for (long k = 0; k < dimm4; k+=2) {
                                       float64x2_t D4, B4;
                                       DO_GROUP_OP1 (D4, B4, k);
@@ -5624,6 +5638,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 *stash2 = 0;
         //  = new hyFloat[hDim*(1+vDim)];
         
+ 
         if (!is_polynomial()) {
             stash = (hyFloat*)alloca(sizeof (hyFloat) * hDim*(1+vDim));
             if (theIndex) {
@@ -5663,6 +5678,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
             } else {
                 power2 = 0;
             }
+            //fprintf (stderr, "MAX %18.12g SCALE %d\n", max, power2);
             
             
         } else {
@@ -5730,6 +5746,8 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
             
             i=2;
             
+            //hyFloat const errorBound      = truncPrecision * 10.;
+            
             
             if (is_dense()) { // avoid matrix allocation
                 _Matrix temp ;
@@ -5752,12 +5770,14 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     temp      *= 1.0/i;
                     (*result) += temp;
                     i         ++;
-/*#ifndef _OPENMP
+/*
+#ifndef _OPENMP
                     taylor_terms_count++;
 #else
             #pragma omp atomic
                 taylor_terms_count++;
-#endif*/
+#endif
+*/
                 } while (temp.IsMaxElement(tMax*truncPrecision*i));
                 
                 
@@ -5770,19 +5790,35 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 
             } else  {
                 _Matrix temp    (*this);
+                
+                /*hyFloat matrixNorm     =  L11Norm();
+
+                hyFloat errorEstimate1 = matrixNorm * matrixNorm / 2.,
+                errorEstimate  ;
+                */
                 _Matrix tempS (hDim, vDim, false, temp.storageType);
                 do {
                     temp.MultbyS        (*this,theIndex!=nil, &tempS, stash);
                     temp      *= 1.0/i;
                     (*result) += temp;
                     i         ++;
-    /*#ifndef _OPENMP
+/*
+    #ifndef _OPENMP
                         taylor_terms_count++;
     #else
                 #pragma omp atomic
                     taylor_terms_count++;
-    #endif*/
+    #endif
+*/
+                    /*errorEstimate1 *= matrixNorm / (i+1.);
+                    errorEstimate = errorEstimate1  * (1./ ( 1. - matrixNorm/(i + 1.)));
+                    if (errorEstimate > 0. && errorEstimate < errorBound) {
+                        break;
+                    }*/
+                  
                 } while (temp.IsMaxElement(tMax*truncPrecision*i));
+                //printf ("%ld %g %20.16g %ld\n",i,matrixNorm, errorEstimate,temp.IsMaxElement(tMax*truncPrecision*i));
+
             }
             
             // use Pade (4,4) here
@@ -5822,7 +5858,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     #pragma GCC unroll 4
                     #pragma clang loop vectorize(enable)
                     #pragma clang loop interleave(enable)
-                    #pragma clang loop unroll(enable)
+                    //#pragma clang loop unroll(enable)
                     for (long c = from; c < compressedIndex[r]; c++, i++) {
                         theIndex[i] = compressedIndex[c+hDim] * vDim + r;
                     }
@@ -5884,6 +5920,18 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         
         
         if (check_transition) {
+            /*printf ("SCALE %lg : \n", scale_to);
+            
+            for (unsigned long r = 0L; r < hDim; r ++) {
+                hyFloat sum = 0.;
+                //printf ("%ld %18.16lg %18.16lg\n", r, (*result)(r,r), (*result)(r,r) - 1.);
+                for (unsigned long c = 0L; c < vDim; c++) {
+                    sum += (*result)(r,c);
+                }
+                if (sum != 1.)
+                    printf ("%ld %18.16g\n", r, sum);
+            }*/
+
             bool pass = true;
             if (result->is_dense()) {
                 for (unsigned long r = 0L; r < result->lDim; r += result->vDim) {
@@ -5906,22 +5954,22 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     return this->Exponentiate(scale_to * 100, true);
                 }
                 
-                /*printf ("SCALE %lg : \n", scale_to);
-                
-                for (unsigned long r = 0L; r < hDim; r ++) {
-                    hyFloat sum = 0.;
-                    printf ("%ld %18.16lg %18.16lg\n", r, (*result)(r,r), (*result)(r,r) - 1.);
-                    for (unsigned long c = 0L; c < vDim; c++) {
-                        sum += (*this)(r,c);
-                    }
-                    printf ("%ld %g\n", r, sum);
-                }
 
                 
-                ObjectToConsole(this);
-                ObjectToConsole(result);*/
+                //ObjectToConsole(this);
+                //ObjectToConsole(result);
                 
                 throw _String ("Failed to compute a valid transition matrix; this is usually caused by ill-conditioned rate matrices (e.g. very large rate values)");
+            } else { // set diag to 1 - rest of row
+                if (result->is_dense()) {
+                    for (unsigned long r = 0L; r < result->hDim; r ++) {
+                        hyFloat sum = 0.;
+                        for (unsigned long c = result->hDim * r; c < result->hDim * r + result->hDim; c ++) {
+                            sum += result->theData[c];
+                        }
+                        result->theData [r*result->vDim + r] += 1. - sum;
+                    }
+                }
             }
         }
         
@@ -6988,7 +7036,7 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                         #pragma GCC unroll 4
                         #pragma clang loop vectorize(enable)
                         #pragma clang loop interleave(enable)
-                        #pragma clang loop unroll(enable)
+                        //#pragma clang loop unroll(enable)
                         #pragma GCC ivdep
                         #pragma ivdep
                         for (long k = 0; k < loopBound; k+=4) {

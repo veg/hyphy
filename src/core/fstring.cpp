@@ -575,14 +575,29 @@ HBLObjectRef _FString::SubstituteAndSimplify(HBLObjectRef arguments, HBLObjectRe
           if (variable_reference) {
             HBLObjectRef replacement = argument_substitution_map->GetByKey (*variable_reference->GetName());
             if (replacement) {
+              if (replacement->ObjectClass () == STRING) {
+                  long sub_idx = LocateVarByName (((_FString*)replacement->Compute())->get_str());
+                  if (sub_idx >= 0L) {
+                      current_term->SetAVariable(sub_idx);
+                      continue;
+                  }
+              }
               current_term->SetAVariable(-1);
               current_term->SetNumber ((HBLObjectRef)replacement->makeDynamic());
             }
           }
         }
+        evaluator.SimplifyConstants();
+        _Polynomial*    is_poly = (_Polynomial*)evaluator.ConstructPolynomial();
+        if (is_poly) {
+            //StringToConsole("Secondary simplify\n");
+            _Formula pf (is_poly);
+            evaluator.Duplicate(&pf);
+        } 
+      } else {
+          evaluator.SimplifyConstants();
       }
       
-      evaluator.SimplifyConstants();
       return _returnStringOrUseCache(((_String*)evaluator.toStr(kFormulaStringConversionNormal)), cache);
     }
   }
