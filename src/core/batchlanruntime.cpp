@@ -1700,8 +1700,8 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_p
     _LikelihoodFunction*    source_object = (_LikelihoodFunction*)_GetHBLObjectByType(AppendContainerName (*GetIthParameter(0UL), current_program.nameSpacePrefix),object_type, nil,&current_program);
 
     if (op_kind == kLFStartCompute) {
-      source_object->PrepareToCompute(false);
-     } else if (op_kind == kLFDoneCompute) {
+      source_object->PrepareToCompute(true);
+    } else if (op_kind == kLFDoneCompute) {
       source_object->FlushLocalUpdatePolicy();
       source_object->DoneComputing (true);
     } else {
