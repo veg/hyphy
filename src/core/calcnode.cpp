@@ -585,6 +585,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
                 fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting category %ld/%ld for node %s\n", categID, totalCategs, GetName()->get_str());
             #endif
+            BufferToConsole("RECOMPUTE\n");
             SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate(1., true)), totalCategs>1?categID:-1);
 
         } else {
