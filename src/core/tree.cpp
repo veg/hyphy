@@ -2754,7 +2754,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
                 (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
             } else {
                 (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID));
-                (*computedExponentials) [matrixID] ->AddAReference();
+                //(*computedExponentials) [matrixID] ->AddAReference();
             }
         }
     }
