@@ -2004,7 +2004,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                         } else {
                             cacheUpdated = true;
                             resultCache->Replace(cacheID++,scrap_here->Pop(false),false);
-                            //scrap_here->Pop(false)->AddAReference();
+                            scrap_here->Pop(false)->AddAReference();
                             //printf ("Updated formula cache @%d %s\n", cacheID, _String((_String*)thisOp->toStr()).get_str());
                        }
                        //if (likeFuncEvalCallCount == 1) {
@@ -2019,7 +2019,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                 }
                 if (cacheUpdated) {
                     resultCache->Replace(cacheID++,scrap_here->Pop(false),false);
-                    //scrap_here->Pop(false)->AddAReference();
+                    scrap_here->Pop(false)->AddAReference();
                     cacheUpdated = false;
                     //printf ("_Formula::Compute Updated Cache %ld\n", cacheID);
                 }
