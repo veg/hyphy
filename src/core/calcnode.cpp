@@ -770,7 +770,7 @@ void _CalcNode::ConvertToSimpleMatrix (void) {
             templateFormulaClone->ConvertMatrixArgumentsToSimpleOrComplexForm (false);
         }
         
-        //mf->ConvertMatrixArgumentsToSimpleOrComplexForm(false);
+        mf->ConvertMatrixArgumentsToSimpleOrComplexForm(false);
     } else {
         _Matrix * mm [2] = {GetModelMatrix(), GetFreqMatrix()};
         for (_Matrix * m : mm) {
@@ -790,7 +790,7 @@ void _CalcNode::ConvertFromSimpleMatrix (void) {
             delete templateFormulaClone;
             templateFormulaClone = nil;
         }
-       // mf->ConvertMatrixArgumentsToSimpleOrComplexForm(true);
+        mf->ConvertMatrixArgumentsToSimpleOrComplexForm(true);
     } else {
         _Matrix * mm [2] = {GetModelMatrix(), GetFreqMatrix()};
         for (_Matrix * m : mm) {
