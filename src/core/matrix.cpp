@@ -2655,7 +2655,7 @@ _String*        _Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf) {
 
 //_____________________________________________________________________________________________
 void        _Matrix::MakeMeSimple (void) {
-    if (is_expression_based()) {
+    if (storageType != _SIMPLE_FORMULA_TYPE && is_expression_based()) {
         long            stackLength = 0L;
 
         _SimpleList     newFormulas,
