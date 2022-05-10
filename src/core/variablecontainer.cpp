@@ -58,7 +58,7 @@ using namespace hyphy_global_objects;
 
 //__________________________________________________________________________________
 
-_VariableContainer::_VariableContainer (void) : theParent(nil), theModel (-1L), iVariables(nil), dVariables(nil), gVariables(nil){
+_VariableContainer::_VariableContainer (void) : theParent(nil), theModel (-1L), iVariables(nil), dVariables(nil), gVariables(nil), templateFormulaClone (nil){
  }
 
 //__________________________________________________________________________________
@@ -107,6 +107,7 @@ void    _VariableContainer::Duplicate (BaseRefConst theO) {
             gVariables = nil;
         }
     }
+    templateFormulaClone = nil;
 }
 
 
@@ -173,7 +174,7 @@ bool _VariableContainer::HasExplicitFormModel (void) const {
     if (theModel == -1L) {
         return false;
     }
-    return (modelTypeList.list_data[theModel]);
+    return IsModelOfExplicitForm(theModel);
 }
 
 //__________________________________________________________________________________
@@ -182,7 +183,10 @@ _Formula* _VariableContainer::GetExplicitFormModel (void) const {
     if (theModel < 0L) {
         return nil;
     }
-    if (modelTypeList.list_data[theModel]) { // an explicit formula based matrix
+    if (IsModelOfExplicitForm(theModel)) { // an explicit formula based matrix
+        if (templateFormulaClone) {
+            return templateFormulaClone;
+        }
         return (_Formula*)modelMatrixIndices.list_data[theModel];
     }
     return nil;
@@ -198,6 +202,8 @@ _String const* _VariableContainer::GetModelName (void)  const{
     return &kEmptyString;
 }
 
+extern long likeFuncEvalCallCount;
+
 //__________________________________________________________________________________
 
 _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) const {
@@ -205,16 +211,18 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) co
         return nil;
     }
 
-    if (modelTypeList.list_data[theModel]) { // an explicit formula based matrix
+    if (IsModelOfExplicitForm(theModel)) { // an explicit formula based matrix
         if (queue && tags) {
-            long currentQueueLength = ((_Formula*)modelMatrixIndices.list_data[theModel])->ExtractMatrixExpArguments (queue);
+            long currentQueueLength = (templateFormulaClone ? templateFormulaClone : ((_Formula*)modelMatrixIndices.list_data[theModel]))->ExtractMatrixExpArguments (queue);
+            //printf ("LF eval = %d, node = %s, matrix count = %d, formula pointer = %x/%x\n", likeFuncEvalCallCount, theName->get_str(), currentQueueLength, ((_Formula*)GetExplicitFormModel()),  ((_Formula*)modelMatrixIndices.list_data[theModel]));
             if (currentQueueLength) {
                 for (unsigned long k = 0; k < currentQueueLength; k++)
                   (*tags) << currentQueueLength;
                 return nil;
-            }
-        }
-        _Matrix* result = (_Matrix *)((_Formula *)modelMatrixIndices.list_data[theModel])->Compute();
+             }
+            
+       }
+        _Matrix* result = (_Matrix *)((templateFormulaClone ? templateFormulaClone : ((_Formula*)modelMatrixIndices.list_data[theModel])))->Compute();
         result->CheckIfSparseEnough(true);
         return result;
     }
@@ -254,31 +262,29 @@ void    _VariableContainer::ScanModelBasedVariables (_String const & fullName, _
     if (theModel!= HY_NO_MODEL) { // build the matrix variables
         _SimpleList       mVars;
         
-        {
-            
-            long cachedID = -1;
-            bool doScan   = !varCache || (cachedID = varCache->Find ((BaseRef) theModel)) < 0L ;
+        long cachedID = -1;
+        bool doScan   = !varCache || (cachedID = varCache->Find ((BaseRef) theModel)) < 0L ;
 
-            if (doScan) {
+        if (doScan) {
 
-                _AVLList                ma (&mVars);
-                ScanModelForVariables   (GetModelIndex(), ma,true,theModel,false);
+            _AVLList                ma (&mVars);
+            ScanModelForVariables   (GetModelIndex(), ma,true,theModel,false);
 
-                long freqID     = modelFrequenciesIndices.list_data[theModel];
-                if (freqID>=0) {
-                    ((_Matrix*) (LocateVar(freqID)->GetValue()))->ScanForVariables2(ma,true,-1,false);
-                }
-
-                ma.ReorderList();
-
-                if (varCache) {
-                    varCache->Insert ((BaseRef)theModel, (long)mVars.makeDynamic(),false);
-                }
-            } else if (varCache) {
-                mVars.Duplicate (varCache->GetXtra (cachedID));
+            long freqID     = modelFrequenciesIndices.get(theModel);
+            if (freqID>=0) {
+                ((_Matrix*) (LocateVar(freqID)->GetValue()))->ScanForVariables2(ma,true,-1,false);
             }
 
+            ma.ReorderList();
+
+            if (varCache) {
+                varCache->Insert ((BaseRef)theModel, (long)mVars.makeDynamic(),false);
+            }
+        } else if (varCache) {
+            mVars.Duplicate (varCache->GetXtra (cachedID));
         }
+
+        
 
         for (long i=0L; i<mVars.lLength; i++) {
             _Variable * aVar = (_Variable*)variablePtrs (mVars.list_data[i]);
@@ -338,6 +344,7 @@ void    _VariableContainer::InitializeVarCont (_String const& aName, _String& th
 
         InsertVar (this);
     }
+    templateFormulaClone = nil;
     SetModel (FindModelName(theTmplt), varCache);
 }
 
@@ -387,6 +394,9 @@ _VariableContainer::~_VariableContainer(void) {
     }
     if (gVariables) {
         delete gVariables;
+    }
+    if (templateFormulaClone) {
+        delete templateFormulaClone;
     }
 }
 
@@ -810,6 +820,10 @@ void      _VariableContainer::Clear(void) {
     if (gVariables) {
         delete gVariables;
         gVariables = nil;
+    }
+    if (templateFormulaClone) {
+        delete templateFormulaClone;
+        templateFormulaClone = nil;
     }
 }
 

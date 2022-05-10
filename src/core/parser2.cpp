@@ -1708,27 +1708,49 @@ void  setParameter (_String const& name, HBLObjectRef def, _String* namespc, boo
 
 //__________________________________________________________________________________
 
-void ExportIndVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleList* indepVarList)
+void ExportIndVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleList* indepVarList, _AssociativeList* global_remap, _AssociativeList * subs)
 {
     _StringBuffer * stIn;
     _String str;
+    
+    auto get_name = [&] (_String* name) -> _String const& {
+        _String const * res = nil;
+        if (subs) {
+            _FString * m = (_FString*)subs->GetByKey(*name, STRING);
+            if (m) {
+                res = &m->get_str();
+            }
+        }
+        if (!res) res = name;
+        return *res;
+    };
+    
+    auto get_global_tag = [&] (_String* name) -> _String const {
+        if (global_remap) {
+            hyFloat toLocal = global_remap->GetNumberByKeyDefault(*name, 0.);
+            if (!CheckEqual(toLocal, 0.0)) {
+                return "\n";
+            }
+        }
+        return "\nglobal ";
+    };
 
     for (unsigned long   i=0; i<indepVarList->lLength; i++) {
         _Variable *thisVar = LocateVar(indepVarList->list_data[i]);
         if (thisVar->IsGlobal()) {
-            str = _String ("\nglobal ") & *thisVar->GetName() & '=' & _String((_String*)parameterToString(thisVar->Compute()->Value())) & ';';
+            str = get_global_tag (thisVar->GetName()) & get_name(thisVar->GetName()) & '=' & _String((_String*)parameterToString(thisVar->Compute()->Value())) & ';';
             stIn = &glVars;
         } else {
-            str = _String ("\n") & *thisVar->GetName() & '=' & _String((_String*)parameterToString(thisVar->Compute()->Value())) & ';';
+            str = _String ("\n") & get_name(thisVar->GetName()) & '=' & _String((_String*)parameterToString(thisVar->Compute()->Value())) & ';';
             stIn = &locVars;
         }
         *stIn << str;
         if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
-            str = _String ("\n") & *thisVar->GetName() & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
+            str = _String ("\n") & get_name(thisVar->GetName()) & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
             *stIn << str;
         }
         if (!CheckEqual(thisVar->GetUpperBound(),DEFAULTPARAMETERUBOUND)) {
-            str = _String ("\n") & *thisVar->GetName() & ":<" & _String((_String*)parameterToString(thisVar->GetUpperBound())) & ';';
+            str = _String ("\n") & get_name(thisVar->GetName()) & ":<" & _String((_String*)parameterToString(thisVar->GetUpperBound())) & ';';
             *stIn << str;
         }
     }
@@ -1736,8 +1758,35 @@ void ExportIndVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
 
 //__________________________________________________________________________________
 
-void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleList* depVarList)
-{
+void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleList* depVarList,  _AssociativeList* global_remap, _AssociativeList * subs) {
+    auto get_name = [&] (_String* name) -> _String const& {
+        _String const * res = nil;
+        if (subs) {
+            _FString * m = (_FString*)subs->GetByKey(*name, STRING);
+            if (m) {
+                res = &m->get_str();
+            }
+        }
+        if (!res) res = name;
+        return *res;
+    };
+    
+    auto get_global_tag = [&] (_String* name) -> _String const {
+        if (global_remap) {
+            hyFloat toLocal = global_remap->GetNumberByKeyDefault(*name, 0.);
+            if (!CheckEqual(toLocal, 0.0)) {
+                return "\n";
+            }
+        }
+        return "\nglobal ";
+    };
+    
+    _List * subs_list = nil;
+    if (subs) {
+        subs_list = new _List;
+        subs->KeysValuesAsLists(*subs_list);
+    }
+    
     if (depVarList->lLength) {
         _StringBuffer * stIn;
         _String str;
@@ -1752,12 +1801,11 @@ void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
                         tl1;
 
         _List           dependancyLists;
-        {
-            for (unsigned long i=0; i<depVarList->lLength; i++)
-                if (LocateVar(depVarList->list_data[i])->IsGlobal()) {
-                    lfDepGlobs << depVarList->list_data[i];
-                }
-        }
+        for (unsigned long i=0; i<depVarList->lLength; i++)
+            if (LocateVar(depVarList->list_data[i])->IsGlobal()) {
+                lfDepGlobs << depVarList->list_data[i];
+            }
+        
         lfDepGlobs.Sort();
 
         for (unsigned long i=0; i<depVarList->lLength; i++) {
@@ -1779,22 +1827,22 @@ void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
                     dependancyLists && & prunedList;
                     continue;
                 }
-                str = _String("\nglobal ") & *thisVar->GetName();
+                str = get_global_tag (thisVar->GetName()) & get_name (thisVar->GetName());
                 stIn = &glVars;
             } else {
-                str = _String("\n") & *thisVar->GetName();
+                str = _String("\n") & get_name (thisVar->GetName());
                  stIn = &locVars;
             }
             (*stIn)<<str;
             (*stIn)<<":=";
-            stIn->AppendNewInstance(thisVar->GetFormulaString(kFormulaStringConversionNormal));
+            stIn->AppendNewInstance(thisVar->GetFormulaString(kFormulaStringConversionNormal, subs_list));
             (*stIn)<<';';
             if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
-                str = _String ("\n") & *thisVar->GetName() & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
+                str = _String ("\n") & get_name (thisVar->GetName()) & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
                 (*stIn)<<str;
             }
             if (!CheckEqual(thisVar->GetUpperBound(),DEFAULTPARAMETERUBOUND)) {
-                str = _String ("\n") & *thisVar->GetName() & ":<" & _String((_String*)parameterToString(thisVar->GetUpperBound())) & ';';
+                str = _String ("\n") & get_name (thisVar->GetName()) & ":<" & _String((_String*)parameterToString(thisVar->GetUpperBound())) & ';';
                 (*stIn)<<str;
             }
         }
@@ -1822,10 +1870,10 @@ void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
 
             for (unsigned long i=0; i<_globalVariablesList.lLength; i++) {
                 _Variable * thisVar = LocateVar(depVarList->list_data[_globalVariablesList.list_data[indexList.list_data[i]]]);
-                str = _String("\nglobal ") & *thisVar->GetName();
+                str = get_global_tag (thisVar->GetName()) & get_name (thisVar->GetName());
                 glVars<<str;
                 glVars<<":=";
-                glVars<< thisVar->GetFormulaString(kFormulaStringConversionNormal);
+                glVars<< thisVar->GetFormulaString(kFormulaStringConversionNormal, subs_list);
                 glVars<<';';
                 if (!CheckEqual(thisVar->GetLowerBound(),DEFAULTPARAMETERLBOUND)) {
                     str = _String ("\n") & *thisVar->GetName() & ":>" & _String((_String*)parameterToString(thisVar->GetLowerBound())) & ';';
@@ -1838,6 +1886,7 @@ void ExportDepVariables (_StringBuffer& glVars, _StringBuffer& locVars, _SimpleL
             }
         }
     }
+    DeleteObject (subs_list);
 }
 
 //__________________________________________________________________________________

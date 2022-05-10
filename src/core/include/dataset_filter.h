@@ -339,8 +339,50 @@ public:
      SITE_LIKELIHOOD constructs
    */
 
-  _SimpleList theFrequencies, theNodeMap, theMap, theOriginalOrder,
-      theExclusions, duplicateMap;
+    
+   /**
+            For the lists below, some notation
+                        N -- the lentgh of the filter in atomic units (e.g. nucleotides, amino-acids)
+                        M -- the length of the filter in evolutionary units (N / unit size), e.g codons, M == N if unit size = 1
+                        P --  the number of unique evotionary unit patterns (e.g. codons)
+                        S -- the number of sequences
+                        D -- the number of unique character states (e.g. 4 for nucleotides, 64 codons)
+                        U -- evolutionary unit size, i.e. how many atomic units comprise an evolutionary unit (e.g. U = 3 for codon filter)
+    
+    
+            For example:
+                DataSetFilter dsf = CreateFilter (ds, 3, "30-59", "3,2", "TAA,TAG,TGA");
+                ...
+                GGA GCG CTG GGT CAG GAC ATC GAC TTG GAC
+                GGA GCG CTG GGT CAG GAC ATC GAC TTG GAC
+    
+            theMap (24)
+                {30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,54,55,56}
+            theFrequencies (8)
+                {1,1,1,1,1,3,1,1}
+            duplicateMap (10)
+                {0,1,2,3,4,5,6,5,7,5}
+            originalOrder (30)
+                {30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59}
+            theNodeMap (2)
+                {3,2}
+            theExclusions (3)
+                {48,50,56}
+
+    */
+    
+  _SimpleList   theFrequencies,
+                        // [length P]; entry -- how many times does pattern P appear in this filter; >= 1, values sum up to M
+                theNodeMap,
+                        // [length S]; entry i -- sequence i in this filter maps to theNodeMap[i] in the underlyign dataset
+                theMap,
+                        // [length P*U]; entry [U*i..U*i + (U-1)] maps the U components of the i-th pattern (e.g. as in theFrequencies) to the atomic sites in the underlying dataset
+                theOriginalOrder,
+                        // [length N = M*U]; entry [U*i..U*i + (U-1)] maps the i-th site (in the same ordering as used to create the filter) to the to the atomic sites in the underlying dataset
+                theExclusions,
+                        // [length 0 to D-2]; each entry is the index of an excluded character (e.g. TAA stop codon is index 48 in standard encoding); empty if all charater states are valod
+                duplicateMap;
+                        // [length M]; entry i maps M sites to P patterns, so is in [0,P-1]; "which pattern does the site map to"?
 
   char const *GetColumn(long index) const {
     return (const char *)(*(_Site *)((

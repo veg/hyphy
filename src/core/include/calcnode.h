@@ -134,7 +134,7 @@ public:
     
     node<long>*         LocateMeInTree  (void) const;
     // return the tree structure node corresponing to this one...
-    void                ConvertToSimpleMatrix (void) const;
+    void                ConvertToSimpleMatrix (void) ;
     void                ConvertFromSimpleMatrix (void);
     _Matrix*            ComputeModelMatrix(bool expMe=false);
     long                GetTheModelID   (void) {
@@ -142,7 +142,7 @@ public:
     }
     bool                MatchSubtree    (_CalcNode*);
     virtual void        RemoveModel     (void);
-    virtual void        ReplaceModel    (_String & modelName, _VariableContainer* parentTree);
+    virtual void        ReplaceModel    (_String & modelName, _VariableContainer* parentTree, _AVLListXL* aCache = nil, bool clean_locals = true);
     
     virtual void        ClearCategoryMap(void) {
         remapMyCategories.Clear();

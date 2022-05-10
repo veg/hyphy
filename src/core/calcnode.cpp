@@ -315,7 +315,7 @@ _String*            _CalcNode::GetBranchSpec (void) {
 
 //__________________________________________________________________________________
 
-void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* parent_tree) {
+void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* parent_tree, _AVLListXL* aCache, bool clean_locals) {
     // TODO: SLKP 20171203 this is FUGLY
   RemoveModel    ();
 
@@ -337,8 +337,10 @@ void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* parent_tre
 
   long my_var_index = theIndex;
 
-  DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
-  InitializeCN   (modelName, 0 , parent_tree);
+  if (clean_locals) {
+      DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
+  }
+  InitializeCN   (modelName, 0 , parent_tree, aCache);
 
   if (container_object) {
     _Variable * new_node = LocateVar(my_var_index);
@@ -482,6 +484,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
         ForEachLocalVariable(iterable,CopyModelParameterValue);
     }
   
+    /*
     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
      // if (1|| likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
         for (unsigned long i=0; i<gVariables->lLength; i++) {
@@ -490,6 +493,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
         }
       //}
     #endif
+    */
 
     /*
     for (unsigned long i=0; i<categoryVariables.lLength; i++) {
@@ -503,11 +507,11 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
     if (!storeRateMatrix) {
       if (totalCategs>1) {
-  #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-        fprintf (stderr, "[_CalcNode::RecomputeMatrix] Deleting category %ld for node %s at %p\n", categID, GetName()->get_str(), GetCompExp(categID));
-  #endif
-        if (clear_exponentials()) {
-            DeleteObject(GetCompExp(categID, true));
+         if (clear_exponentials()) {
+            #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+                  fprintf (stderr, "[_CalcNode::RecomputeMatrix] Deleting category %ld for node %s at %p\n", categID, GetName()->get_str(), GetCompExp(categID));
+            #endif
+           DeleteObject(GetCompExp(categID, true));
         }
       } else {
         if (compExp) {
@@ -541,7 +545,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
         }
     } else {
 
-        if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {
+        if (!myModelMatrix->is_polynomial()) {
             _Matrix *temp = nil;
             if (isExplicitForm) {
                 temp = (_Matrix*)myModelMatrix->makeDynamic();
@@ -570,9 +574,10 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
 
             if (queue) {
+                
                 (*queue) << temp;
                 if (tags) {
-                    (*tags) << (isExplicitForm);
+                    (*tags) << (isExplicitForm ? (queue->countitems() == 1 ? -1 : 1) : 0);
                 }
                 return isExplicitForm;
             }
@@ -756,10 +761,16 @@ node<long>* _CalcNode::LocateMeInTree (void) const {
 
 //_______________________________________________________________________________________________
 
-void _CalcNode::ConvertToSimpleMatrix (void) const {
+void _CalcNode::ConvertToSimpleMatrix (void) {
     _Formula * mf = GetExplicitFormModel();
     if (mf) {
-        mf->ConvertMatrixArgumentsToSimpleOrComplexForm (false);
+        
+         if (!templateFormulaClone) {
+            templateFormulaClone = new _Formula (*mf);
+            templateFormulaClone->ConvertMatrixArgumentsToSimpleOrComplexForm (false);
+        }
+        
+        mf->ConvertMatrixArgumentsToSimpleOrComplexForm(false);
     } else {
         _Matrix * mm [2] = {GetModelMatrix(), GetFreqMatrix()};
         for (_Matrix * m : mm) {
@@ -774,8 +785,12 @@ void _CalcNode::ConvertToSimpleMatrix (void) const {
 
 void _CalcNode::ConvertFromSimpleMatrix (void) {
     _Formula * mf = GetExplicitFormModel();
-    if (mf) {
-        mf->ConvertMatrixArgumentsToSimpleOrComplexForm (true);
+    if (templateFormulaClone || mf) {
+        if (templateFormulaClone) {
+            delete templateFormulaClone;
+            templateFormulaClone = nil;
+        }
+        mf->ConvertMatrixArgumentsToSimpleOrComplexForm(true);
     } else {
         _Matrix * mm [2] = {GetModelMatrix(), GetFreqMatrix()};
         for (_Matrix * m : mm) {

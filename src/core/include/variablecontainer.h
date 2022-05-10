@@ -197,6 +197,12 @@ protected: // data members
 
     long                theModel;   // model template for the container
     _VariableContainer  *theParent; // a higher level container, if there is one.
+    
+    /**
+                20220509 : SLKP
+                  Added this per variable (per tree node) formula to hold copies of BS-REL type models, so that partial results can be cached.
+     */
+    _Formula            *templateFormulaClone;
 
 };
 

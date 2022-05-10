@@ -2705,7 +2705,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     
     _SimpleList     isExplicitForm ((unsigned long)expNodes.countitems());
     bool            hasExpForm = false;
-    
+
     for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
@@ -2721,6 +2721,8 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
                 nodesToDo << thisNode;
             }
         }
+        
+
     }
     
     //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
@@ -2743,11 +2745,17 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
   #endif
 #endif
 #endif
+    
     for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
         if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp ((_Matrix*)matrixQueue(matrixID), catID, true);
         } else {
-            (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
+            if (isExplicitForm.list_data[matrixID] > 0) {
+                (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
+            } else {
+                (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID));
+                (*computedExponentials) [matrixID] ->AddAReference();
+            }
         }
     }
  

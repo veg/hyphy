@@ -1961,7 +1961,7 @@ void    _LikelihoodFunction::PostCompute        (void) {
     
     if (variables_changed_during_last_compute) {
         //variables_changed_during_last_compute
-        //printf ("variables_changed_during_last_compute %s\n", _String((_String*)variables_changed_during_last_compute->toStr()).get;
+        //printf ("variables_changed_during_last_compute %s\n", _String((_String*)variables_changed_during_last_compute->toStr()).get_str());
         
         if ((variables_changed_during_last_compute->countitems() << 1) > indexInd.lLength) {
             variables_changed_during_last_compute->Clear(false);
@@ -1978,6 +1978,7 @@ void    _LikelihoodFunction::PostCompute        (void) {
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         _Variable *ith_var = GetIthIndependentVar(i);
         ith_var->varFlags &= HY_VARIABLE_CHANGED_CLEAR;
+        //printf ("%s %d\n", ith_var->GetName()->get_str(), ith_var->HasChanged());
     }
 }
 
@@ -4126,8 +4127,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
             variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
-            if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
-                printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
+            //if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
+            //    printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
         }
     }
 
@@ -10832,6 +10833,14 @@ void    _LikelihoodFunction::PrepareToCompute (bool disableClear) {
         siteArrayPopulated = false;
         _variables_changed_during_last_compute = new _SimpleList ();
         variables_changed_during_last_compute = new _AVLList (_variables_changed_during_last_compute);
+        
+        for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+            if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
+                variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
+                //if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
+                //    printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
+            }
+        }
 
     } else {
         hasBeenSetUp++;

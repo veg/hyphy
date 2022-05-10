@@ -47,6 +47,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "hy_string_buffer.h"
 #include "stdio.h"
 #include "classes.h"
+#include "associative_list.h"
 
 //Parser specific includes
 #include "constant.h"
@@ -165,9 +166,9 @@ void        FinishDeferredSF(void);
 
 void        SetupOperationLists (void);
 void        ExportIndVariables
-(_StringBuffer&, _StringBuffer&, _SimpleList*);
+(_StringBuffer&, _StringBuffer&, _SimpleList*, _AssociativeList* global_remap = nil, _AssociativeList * subs = nil);
 void        ExportDepVariables
-(_StringBuffer&, _StringBuffer&, _SimpleList*);
+(_StringBuffer&, _StringBuffer&, _SimpleList*, _AssociativeList* global_remap = nil, _AssociativeList * subs = nil);
 void        ExportCatVariables
 (_StringBuffer&, _SimpleList*);
 
