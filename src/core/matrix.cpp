@@ -6835,6 +6835,7 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
         _Polynomial*    is_poly = (_Polynomial*)f->ConstructPolynomial();
         if (is_poly) {
             _Formula pf (is_poly);
+            f->Clear();
             f->Duplicate(&pf);
         }
         f->SimplifyConstants();
