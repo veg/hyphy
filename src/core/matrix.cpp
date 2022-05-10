@@ -6854,7 +6854,7 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
             theIndex[-lIndex-2] = i*vDim+j;
             ((_Formula**)theData)[-lIndex-2] = copyF?(_Formula*)f.makeDynamic():&f;
             if (simplify) {
-                do_simplify (((_Formula**)theData)[-lIndex-2]);
+                //do_simplify (((_Formula**)theData)[-lIndex-2]);
                 //((_Formula**)theData)[-lIndex-2]->SimplifyConstants();
             }
         } else {
