@@ -548,7 +548,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
         if (!myModelMatrix->is_polynomial()) {
             _Matrix *temp = nil;
             if (isExplicitForm) {
-                temp = (_Matrix*)myModelMatrix->makeDynamic();
+                temp = (_Matrix*)myModelMatrix;
             } else {
                 temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel, true);
             }
