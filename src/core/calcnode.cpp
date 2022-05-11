@@ -769,7 +769,6 @@ node<long>* _CalcNode::LocateMeInTree (void) const {
 void _CalcNode::ConvertToSimpleMatrix (void) {
     _Formula * mf = GetExplicitFormModel();
     if (mf) {
-        
          if (!templateFormulaClone) {
             templateFormulaClone = new _Formula (*mf);
             templateFormulaClone->ConvertMatrixArgumentsToSimpleOrComplexForm (false);

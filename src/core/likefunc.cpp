@@ -250,7 +250,11 @@ void         BenchmarkThreads (_LikelihoodFunction* lf) {
             }
     }
 
-    hyFloat cached_value = lf->GetIthIndependent(alterIndex);
+    hyFloat cached_value = lf->GetIthIndependent(alterIndex),
+            lb = lf->GetIthIndependentBound (alterIndex,true),
+            range = (lf->GetIthIndependentBound(alterIndex,false) - lb)*0.001;
+    
+    //printf ("%g %g %g\n", lb, range, cached_value);
 
 #ifdef  _OPENMP
     lf->SetThreadCount (1);
@@ -261,7 +265,7 @@ void         BenchmarkThreads (_LikelihoodFunction* lf) {
 #endif
 
     {
-        lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
+        lf->SetIthIndependent (alterIndex, cached_value);
         lf->Compute           ();
     }
 
@@ -281,7 +285,7 @@ hyFloat            tdiff = timer.TimeSinceStart();
         for (long k = 2; k <= hy_global::system_CPU_count; k++) {
             lf->SetThreadCount              (k);
             TimeDifference timer;
-            lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex));
+            lf->SetIthIndependent           (alterIndex,cached_value);
             
             lf->Compute                     ();
             tdiff = timer.TimeSinceStart();
@@ -293,10 +297,11 @@ hyFloat            tdiff = timer.TimeSinceStart();
             }
         }
         lf->SetThreadCount (bestTC);
-        lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex)); // reset the value of variable 0
         ReportWarning       (_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
-    } 
+    }
+   
 #endif
+    lf->SetIthIndependent (alterIndex,cached_value);
 }
 
 
