@@ -2014,7 +2014,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                                 //printf ("Cached results\n");
                             } else {
                                 HBLObjectRef updated_mx = scrap_here->Pop();
-                                resultCache->Replace(cacheID,updated_mx->makeDynamic(),false);
+                                resultCache->Replace(cacheID,updated_mx,false);
                                 scrap_here->Push ((HBLObjectRef)additionalCacheArguments->GetItem (0));
                                 resultCache->Replace(cacheID+1,(HBLObjectRef)additionalCacheArguments->GetItem (0),false);
                                 additionalCacheArguments->Delete (0, true);
