@@ -222,7 +222,12 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) co
              }
             
        }
-        _Matrix* result = (_Matrix *)((templateFormulaClone ? templateFormulaClone : ((_Formula*)modelMatrixIndices.list_data[theModel])))->Compute();
+        
+        _Formula * explicit_exp = (templateFormulaClone ? templateFormulaClone : ((_Formula*)modelMatrixIndices.list_data[theModel]));
+        _Matrix* result = (_Matrix *)explicit_exp->Compute();
+        
+        //printf ("_VariableContainer::GetModelMatrix %x (%x) => %x, %d\n", explicit_exp, explicit_exp->GetIthTerm(0), result, result->GetReferenceCounter());
+        
         result->CheckIfSparseEnough(true);
         return result;
     }

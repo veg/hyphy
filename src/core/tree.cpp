@@ -2726,6 +2726,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     }
     
     //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
+    //ObjectToConsole(&isExplicitForm);
     
     unsigned long matrixID;
     
@@ -2753,8 +2754,11 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
             if (isExplicitForm.list_data[matrixID] > 0) {
                 (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
             } else {
-                (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID));
-                //(*computedExponentials) [matrixID] ->AddAReference();
+                _Matrix *already_computed = ((_Matrix*)matrixQueue(matrixID));
+                (*computedExponentials) [matrixID] = already_computed;
+                //printf ("\tNO MATRIX UPDATE %d\n", matrixID);
+                //ObjectToConsole(  (*computedExponentials) [matrixID] );
+                already_computed ->AddAReference();
             }
         }
     }
@@ -2764,23 +2768,32 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         _List       buffered_exponentials;
         
         for (unsigned long mx_index = 0; mx_index < nodesToDo.lLength; mx_index++) {
-            if (isExplicitForm.list_data[mx_index]) {
+            if (isExplicitForm.list_data[mx_index] > 0) {
                 _CalcNode *next_node = (_CalcNode*) nodesToDo (mx_index);
-                //printf ("%x %x\n", current_node, next_node);
-                if (next_node != current_node) {
+                 if (next_node != current_node) {
                     if (current_node) {
                         current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
                     }
                     current_node = next_node;
-                    buffered_exponentials.Clear(true);
-                    buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
+                    buffered_exponentials.Clear();
+                    buffered_exponentials << (*computedExponentials)(mx_index);
                 }
                 else {
-                    buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
+                    buffered_exponentials << (*computedExponentials)(mx_index);
                 }
             } else {
-                if (current_node) {
-                    current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                if (isExplicitForm.list_data[mx_index] < 0) {
+                    if (current_node && buffered_exponentials.countitems()) {
+                        current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                    }
+                    buffered_exponentials.Clear();
+                    buffered_exponentials << (*computedExponentials)(mx_index);
+                    ((_CalcNode*) nodesToDo (mx_index))->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials, true);
+                    buffered_exponentials.Clear();
+                } else {
+                    if (current_node) {
+                        current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                    }
                 }
                 current_node = nil;
             }

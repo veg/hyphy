@@ -92,7 +92,8 @@ _Operation::_Operation (_Operation const& rhs) {
         theNumber->AddAReference();
     }
     if (cachedResult) {
-        cachedResult->AddAReference();
+        //cachedResult->AddAReference();
+        cachedResult = (HBLObjectRef)cachedResult->makeDynamic();
     }
 }
 
@@ -110,7 +111,8 @@ void    _Operation::Duplicate(BaseRefConst r) {
         theNumber->AddAReference();
     }
     if (cachedResult) {
-        cachedResult->AddAReference();
+        //cachedResult->AddAReference();
+        cachedResult = (HBLObjectRef)cachedResult->makeDynamic();
     }
 }
 

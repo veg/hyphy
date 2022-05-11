@@ -100,7 +100,7 @@ public:
     
     virtual     void        Clear                       (void);
 
-    bool                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil, _List* = nil);
+    bool                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil, _List* = nil, bool direct_copy = false);
     // reexponentiate the transition matrix and
     // store it in compExp.
     // return TRUE if the matrix is an explicit exponential form

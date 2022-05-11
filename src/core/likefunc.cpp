@@ -250,7 +250,7 @@ void         BenchmarkThreads (_LikelihoodFunction* lf) {
             }
     }
 
-
+    hyFloat cached_value = lf->GetIthIndependent(alterIndex);
 
 #ifdef  _OPENMP
     lf->SetThreadCount (1);

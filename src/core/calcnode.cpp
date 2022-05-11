@@ -473,11 +473,17 @@ bool        _CalcNode::NeedNewCategoryExponential(long catID) const {
 }
 
 //_______________________________________________________________________________________________
-bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags, _List* bufferedOps)
+bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags, _List* bufferedOps, bool direct_copy)
 {
     // assumed that NeedToExponentiate was called prior to this function
 
     //_Variable* curVar, *locVar;
+    bool    isExplicitForm  = HasExplicitFormModel ();
+
+    if (direct_copy && bufferedOps && bufferedOps->countitems() == 1 && isExplicitForm) {
+        SetCompExp ((_Matrix*)bufferedOps->GetItem(0)->makeDynamic(), totalCategs>1?categID:-1);
+        return false;
+    }
     
     _SimpleList * var_lists [2] = {iVariables, dVariables};
     for (_SimpleList* iterable : var_lists) {
@@ -522,8 +528,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
       }
     }
 
-    bool    isExplicitForm  = HasExplicitFormModel ();
-
+ 
     if (isExplicitForm && bufferedOps) {
         _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel()->Compute (0,nil, bufferedOps);
         #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
@@ -577,7 +582,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                 
                 (*queue) << temp;
                 if (tags) {
-                    (*tags) << (isExplicitForm ? (queue->countitems() == 1 ? -1 : 1) : 0);
+                    (*tags) << (isExplicitForm ? (queue->countitems() - previous_length == 1 ? -1 : 1) : 0);
                 }
                 return isExplicitForm;
             }
@@ -585,7 +590,6 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
             #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
                 fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting category %ld/%ld for node %s\n", categID, totalCategs, GetName()->get_str());
             #endif
-            BufferToConsole("RECOMPUTE\n");
             SetCompExp ((_Matrix*)(isExplicitForm?temp:temp->Exponentiate(1., true)), totalCategs>1?categID:-1);
 
         } else {

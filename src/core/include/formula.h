@@ -146,7 +146,7 @@ public:
     _MathObject*ConstructPolynomial (void);
 
     virtual void        Initialize          (void);
-    virtual void        Duplicate           (_Formula const *);
+    virtual void        Duplicate           (_Formula const *, bool deep_copy = false);
     void        DuplicateReference          (const _Formula*);
     virtual BaseRef     makeDynamic         (void) const;
     virtual BaseRef     toStr               (_hyFormulaStringConversionMode mode, _List* matchNames = nil, bool = false);

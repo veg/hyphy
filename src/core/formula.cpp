@@ -152,16 +152,25 @@ _Formula::_Formula (_Formula const& rhs) {
 const _Formula& _Formula::operator =  (_Formula const& rhs) {
     if (this != &rhs) {
         Initialize();
-        Duplicate (&rhs);
+        Duplicate (&rhs, true);
     }
     return *this;
 }
 
 //__________________________________________________________________________________
-void _Formula::Duplicate  (_Formula const * f_cast) {
+void _Formula::Duplicate  (_Formula const * f_cast, bool deep_copy) {
 
-    theFormula.Duplicate       (& f_cast->theFormula);
-    theStack.theStack.Duplicate(& f_cast->theStack.theStack);
+    if (deep_copy) {
+        theFormula.Clear();
+        for (long i = 0; i < f_cast->theFormula.lLength; i++) {
+            theFormula.AppendNewInstance(f_cast->GetIthTerm(i)->makeDynamic());
+        }
+        theStack.Reset();
+    } else {
+        theFormula.Duplicate       (& f_cast->theFormula);
+        theStack.theStack.Duplicate(& f_cast->theStack.theStack);
+    }
+    
     call_count = f_cast->call_count;
     if (f_cast->recursion_calls) {
       recursion_calls = (HBLObjectRef)f_cast->recursion_calls->makeDynamic();
@@ -1951,13 +1960,25 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
         const unsigned long term_count = NumberOperations();
 
         if (startAt == 0L && resultCache && !resultCache->empty()) {
+            
             long cacheID     = 0L;
                 // where in the cache are we currently looking
             bool cacheUpdated = false;
                 // whether or not a cached result was used
-
+            //if (can_cache) {
+            //    printf ("\n\n===\n_Formula::Compute (%x)\n", this);
+            //}
+                
             for (unsigned long i=0; i< term_count ; i++) {
                 _Operation* thisOp = ItemAt (i);
+                /*
+                if (can_cache) {
+                    printf ("Step %i %s\n", i, _String ((_String*)thisOp->toStr()).get_str());
+                    for (long i = 0; i < scrap_here->theStack.lLength; i++) {
+                        printf ("\t %d : %x (%d)\n", i, scrap_here->theStack.GetItem(i), scrap_here->theStack.GetItem(i)->GetReferenceCounter());
+                    }
+                }
+                */
                 if ( i + 1UL < term_count ) {
                     _Operation* nextOp  = ItemAt (i+1UL);
 
@@ -1992,10 +2013,11 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                                 scrap_here->Push ((HBLObjectRef)(*resultCache)(cacheID+1));
                                 //printf ("Cached results\n");
                             } else {
-                                resultCache->Replace(cacheID,scrap_here->Pop(),false);
+                                HBLObjectRef updated_mx = scrap_here->Pop();
+                                resultCache->Replace(cacheID,updated_mx->makeDynamic(),false);
                                 scrap_here->Push ((HBLObjectRef)additionalCacheArguments->GetItem (0));
                                 resultCache->Replace(cacheID+1,(HBLObjectRef)additionalCacheArguments->GetItem (0),false);
-                                additionalCacheArguments->Delete (0, false);
+                                additionalCacheArguments->Delete (0, true);
                                 //printf ("_Formula::Compute additional arguments %ld (%s), %f\n", cacheID, _String((_String*)thisOp->toStr()).get_str(), (*(_Matrix*)resultCache->GetItem(cacheID))(0,0));
                            }
                             cacheID += 2;
@@ -2003,8 +2025,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                             //printf ("Used formula cache %s\n", _String((_String*)nextOp->toStr()).get_str());
                         } else {
                             cacheUpdated = true;
-                            resultCache->Replace(cacheID++,scrap_here->Pop(false),false);
-                            scrap_here->Pop(false)->AddAReference();
+                            resultCache->Replace(cacheID++,scrap_here->Pop(false)->makeDynamic(),false);;
                             //printf ("Updated formula cache @%d %s\n", cacheID, _String((_String*)thisOp->toStr()).get_str());
                        }
                        //if (likeFuncEvalCallCount == 1) {
@@ -2019,7 +2040,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                 }
                 if (cacheUpdated) {
                     resultCache->Replace(cacheID++,scrap_here->Pop(false),false);
-                    scrap_here->Pop(false)->AddAReference();
+                    //scrap_here->Pop(false)->AddAReference();
                     cacheUpdated = false;
                     //printf ("_Formula::Compute Updated Cache %ld\n", cacheID);
                 }
@@ -2031,9 +2052,11 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                       wellDone = false;
                       break;
                   }
-
             }
         }
+        
+        
+        
         if (scrap_here->StackDepth() != 1L || !wellDone) {
             _String errorText = _String ("'") & _String((_String*)toStr(kFormulaStringConversionNormal)) & _String("' evaluated with errors ");
             if (errMsg && errMsg->nonempty()) {
