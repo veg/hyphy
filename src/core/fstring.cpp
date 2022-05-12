@@ -727,7 +727,7 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
           
           switch (conversion_type) {
             case 1L:
-              t = new _String( get_str().ChangeCase(kStringUpperCase));
+              t = new _StringBuffer ( get_str().ChangeCase(kStringUpperCase));
               break;
             case 2L: {
               t = &(new _StringBuffer)->SanitizeAndAppend(get_str());
@@ -757,7 +757,7 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
             }
               
             default:
-              t = new _String( get_str().ChangeCase(kStringLowerCase));
+              t = new _StringBuffer ( get_str().ChangeCase(kStringLowerCase));
               break;
           }
           

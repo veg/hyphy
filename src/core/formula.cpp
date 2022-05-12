@@ -2039,7 +2039,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                     break;
                 }
                 if (cacheUpdated) {
-                    resultCache->Replace(cacheID++,scrap_here->Pop(false),false);
+                    resultCache->Replace(cacheID++,scrap_here->Pop(false),true);
                     //scrap_here->Pop(false)->AddAReference();
                     cacheUpdated = false;
                     //printf ("_Formula::Compute Updated Cache %ld\n", cacheID);
