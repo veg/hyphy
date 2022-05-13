@@ -2756,9 +2756,9 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
             } else {
                 _Matrix *already_computed = ((_Matrix*)matrixQueue(matrixID));
                 (*computedExponentials) [matrixID] = already_computed;
-                //printf ("\tNO MATRIX UPDATE %d\n", matrixID);
+                //printf ("\tNO MATRIX UPDATE %d (%d)\n", matrixID, already_computed->GetReferenceCounter());
                 //ObjectToConsole(  (*computedExponentials) [matrixID] );
-                already_computed ->AddAReference();
+                //already_computed ->AddAReference();
             }
         }
     }
