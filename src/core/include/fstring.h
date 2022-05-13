@@ -120,7 +120,7 @@ public:
     _StringBuffer*  SetData          (_String * src) {
         if (the_string && the_string->SingleReference()) {
             the_string->Clear();
-            (*the_string) << src;
+            the_string->AppendNewInstance (src);
         } else {
             SetStringContent (new _StringBuffer (src));
         }
