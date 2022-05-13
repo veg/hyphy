@@ -422,7 +422,7 @@ HBLObjectRef _FString::Differentiate (HBLObjectRef p, HBLObjectRef cache) {
     }
 
     if (DFDX)
-        return _returnStringOrUseCache(DFDX, cache);
+        return _returnStringOrUseCache(_String(DFDX), cache);
     
     return _returnStringOrUseCache (kEmptyString, cache);
     

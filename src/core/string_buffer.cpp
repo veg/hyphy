@@ -199,11 +199,14 @@ _StringBuffer::_StringBuffer(const _StringBuffer &s): _String () {
   this->Duplicate (&s);
 }
 
-  //=============================================================
+//=============================================================
+
 _StringBuffer::_StringBuffer(_String* buffer): _String (buffer) {
   sa_length = s_length;
   allocated_ptr = s_data;
 }
+
+//=============================================================
 
 _StringBuffer::~_StringBuffer (void ){
     if (s_data && allocated_ptr)

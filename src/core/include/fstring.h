@@ -127,6 +127,16 @@ public:
         return the_string;
     }
     
+    _StringBuffer*  SetData          (_String const & src) {
+        if (the_string && the_string->SingleReference()) {
+            the_string->Clear();
+            (*the_string) << src;
+        } else {
+            SetStringContent (new _StringBuffer (src));
+        }
+        return the_string;
+    }
+    
     _StringBuffer*  SetData          (char const* src) {
         if (the_string && the_string->SingleReference()) {
             the_string->Clear();

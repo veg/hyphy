@@ -476,7 +476,7 @@ void  _Variable::SetValue (HBLObjectRef theP, bool dup, bool do_checks, _AVLList
                                  *new_string = ((_FString*)theP);
                         
                         if (new_string->empty()) {
-                            existing->SetData (&kEmptyString);
+                            existing->SetData (kEmptyString);
                         } else {
                             existing->SetData (((_FString*)theP)->get_str());
                         }
