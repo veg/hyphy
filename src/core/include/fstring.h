@@ -117,7 +117,7 @@ public:
         return the_string;
     }
     
-    _StringBuffer*  SetData          (_String const& src) {
+    _StringBuffer*  SetData          (_String * src) {
         if (the_string && the_string->SingleReference()) {
             the_string->Clear();
             (*the_string) << src;
