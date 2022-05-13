@@ -2011,14 +2011,14 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                             if (no_difference) {
                                 DeleteObject  (scrap_here->Pop ());
                                 scrap_here->Push ((HBLObjectRef)(*resultCache)(cacheID+1));
-                                //printf ("Cached results\n");
+                                printf ("Cached results\n");
                             } else {
                                 HBLObjectRef updated_mx = scrap_here->Pop();
                                 resultCache->Replace(cacheID,updated_mx,false);
                                 scrap_here->Push ((HBLObjectRef)additionalCacheArguments->GetItem (0));
                                 resultCache->Replace(cacheID+1,(HBLObjectRef)additionalCacheArguments->GetItem (0),false);
                                 additionalCacheArguments->Delete (0, true);
-                                //printf ("_Formula::Compute additional arguments %ld (%s), %f\n", cacheID, _String((_String*)thisOp->toStr()).get_str(), (*(_Matrix*)resultCache->GetItem(cacheID))(0,0));
+                                printf ("_Formula::Compute additional arguments %ld (%s), %f\n", cacheID, _String((_String*)thisOp->toStr()).get_str(), (*(_Matrix*)resultCache->GetItem(cacheID))(0,0));
                            }
                             cacheID += 2;
                             i ++;
@@ -2026,7 +2026,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                         } else {
                             cacheUpdated = true;
                             resultCache->Replace(cacheID++,scrap_here->Pop(false)->makeDynamic(),false);;
-                            //printf ("Updated formula cache @%d %s\n", cacheID, _String((_String*)thisOp->toStr()).get_str());
+                            printf ("Updated formula cache @%d %s\n", cacheID, _String((_String*)thisOp->toStr()).get_str());
                        }
                        //if (likeFuncEvalCallCount == 1) {
                        //   exit (0);
@@ -2042,7 +2042,7 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                     resultCache->Replace(cacheID++,scrap_here->Pop(false),true);
                     //scrap_here->Pop(false)->AddAReference();
                     cacheUpdated = false;
-                    //printf ("_Formula::Compute Updated Cache %ld\n", cacheID);
+                    printf ("_Formula::Compute Updated Cache %ld\n", cacheID);
                 }
             }
         } else {
