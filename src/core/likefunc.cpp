@@ -265,7 +265,7 @@ void         BenchmarkThreads (_LikelihoodFunction* lf) {
 #endif
 
     {
-        lf->SetIthIndependent (alterIndex, cached_value);
+        lf->SetIthIndependent (alterIndex, lb + range * genrand_real1());
         lf->Compute           ();
     }
 
@@ -285,7 +285,7 @@ hyFloat            tdiff = timer.TimeSinceStart();
         for (long k = 2; k <= hy_global::system_CPU_count; k++) {
             lf->SetThreadCount              (k);
             TimeDifference timer;
-            lf->SetIthIndependent           (alterIndex,cached_value);
+            lf->SetIthIndependent           (alterIndex, lb + range * genrand_real1());
             
             lf->Compute                     ();
             tdiff = timer.TimeSinceStart();
@@ -296,6 +296,7 @@ hyFloat            tdiff = timer.TimeSinceStart();
                 break;
             }
         }
+        //bestTC = hy_global::system_CPU_count;
         lf->SetThreadCount (bestTC);
         ReportWarning       (_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
     }
