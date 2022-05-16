@@ -436,17 +436,6 @@ function selection.io.json_store_branch_attribute(json, attribute_name, attribut
       (((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = selection.io.json_store_branch_attribute.branch_tag;
     }
 
-
-    /*
-    utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
-                             "utility.EnsureKey ((json[terms.json.branch_attributes])[partition], selection.io.json_store_branch_attribute.branch_name)");
-
-    utility.ForEach (utility.Keys (values), "selection.io.json_store_branch_attribute.branch_name",
-                             "  if (values / selection.io.json_store_branch_attribute.branch_name) {
-                                    (((json[terms.json.branch_attributes])[partition])[selection.io.json_store_branch_attribute.branch_name])[attribute_name] = values[selection.io.json_store_branch_attribute.branch_name];
-                                }
-                              ");
-    */
  }
 
 

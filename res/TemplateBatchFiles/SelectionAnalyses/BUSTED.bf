@@ -1,10 +1,11 @@
-RequireVersion ("2.5.21");
+RequireVersion ("2.5.38");
 
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 LoadFunctionLibrary("libv3/UtilityFunctions.bf");
 LoadFunctionLibrary("libv3/IOFunctions.bf");
 LoadFunctionLibrary("libv3/tasks/estimators.bf");
+LoadFunctionLibrary("libv3/tasks/ancestral.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/models/codon.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
@@ -17,7 +18,7 @@ LoadFunctionLibrary("libv3/models/rate_variation.bf");
 
 
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
-utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
+//utility.SetEnvVariable ("LF_SMOOTHING_SCALER", 0.1);
 
 
 busted.analysis_description = {
@@ -28,9 +29,10 @@ Assuming there is evidence of positive selection (i.e. there is an omega > 1),  
 style analysis to explore which individual sites may have been subject to selection. v2.0 adds support for synonymous rate variation, 
 and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point.
 Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead. Version 3.0 implements the option
-for branch-site variation in synonymous substitution rates. Version 3.1 adds HMM auto-correlation option for SRV, and binds SRV distributions for multiple branch sets
+for branch-site variation in synonymous substitution rates. Version 3.1 adds HMM auto-correlation option for SRV, and binds SRV distributions for multiple branch sets.
+Version 4.0 adds support for multiple hits, ancestral state reconstruction saved to JSON.
 ",
-                               terms.io.version : "3.1",
+                               terms.io.version : "4.0",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
@@ -44,8 +46,10 @@ busted.BG = "Background";
 busted.SRV = "Synonymous site-to-site rates";
 busted.background = "background";
 busted.unconstrained = "unconstrained";
-busted.constrained = "constrained";
+busted.constrained   = "constrained";
 busted.optimized_null = "optimized null";
+busted.ER = "Posterior prob omega class";
+busted.bsER = "Posterior prob omega class by site";
 busted.MG94 = terms.json.mg94xrev_sep_rates;
 
 busted.json.background = busted.background;
@@ -56,6 +60,7 @@ busted.json.srv_viterbi = "Viterbi synonymous rate path";
 busted.rate_classes = 3;
 busted.synonymous_rate_classes = 3;
 busted.initial_grid.N = 250;
+busted.site_BF_reporting = 100;
 
 
 busted.json    = { terms.json.analysis: busted.analysis_description,
@@ -73,7 +78,8 @@ busted.display_orders = {terms.original_name: -1,
                          terms.json.nucleotide_gtr: 0,
                          busted.MG94: 1,
                          busted.unconstrained: 2,
-                         busted.constrained: 3                        
+                         busted.constrained: 3 ,
+                         busted.ER : 4                    
                         };
 
 
@@ -135,7 +141,16 @@ if (busted.do_srv == "Branch-site") {
 }                       
                                     
 
+
 busted.rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.rate_classes, 1, 10, TRUE);
+
+KeywordArgument ("multiple-hits",  "Include support for multiple nucleotide substitutions", "None");
+
+busted.multi_hit = io.SelectAnOption ({
+                                        {"Double", "Include branch-specific rates for double nucleotide substitutions"}
+                                        {"Double+Triple", "Include branch-specific rates for double and triple nucleotide substitutions"}
+                                        {"None", "[Default] Use standard models which permit only single nucleotide changes to occur instantly"}
+                                  }, "Include support for multiple nucleotide substitutions");
 
 if (busted.do_srv) {
     KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes);
@@ -238,17 +253,48 @@ utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
                                              selection.io.extract_branch_info((busted.final_partitioned_mg_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 
 
-busted.model_generator = "models.codon.BS_REL.ModelDescription";
 
+if (busted.multi_hit == "None") {
+    busted.model_generator = "models.codon.BS_REL.ModelDescription";
+   
+} else {
+   lfunction busted.model.BS_REL_MH (type, code, rates) {        
+        def = models.codon.BS_REL.ModelDescription (type, code, rates);
+        def [utility.getGlobalValue("terms.model.defineQ")] = "models.codon.BS_REL._DefineQ.MH";
+        if (^'busted.multi_hit' == "Double") {
+            def [utility.getGlobalValue("terms.model.rate_generator")] = "function rate_generator (fromChar, toChar, namespace, model_type, model) {
+               return models.codon.MG_REV_MH._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                'beta_' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                'omega' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate')
+               );}";
+            }  else {
+                def [utility.getGlobalValue("terms.model.rate_generator")] = "function rate_generator (fromChar, toChar, namespace, model_type, model) {
+                       return models.codon.MG_REV_TRIP._GenerateRate_generic (fromChar, toChar, namespace, model_type, model[utility.getGlobalValue('terms.translation_table')],
+                        'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                        'beta_' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                        'omega' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component),
+                        'delta', utility.getGlobalValue('terms.parameters.multiple_hit_rate'),
+                        'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate'),
+                        'psi', utility.getGlobalValue('terms.parameters.triple_hit_rate')
+                       );}"                
+        }       
+        return def;
+    }
+    busted.model_generator = "busted.model.BS_REL_MH";
+}
 
+busted.baseline_model_generator = busted.model_generator;
 if (busted.do_srv) {
     if (busted.do_bs_srv) {
         busted.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
         busted.rate_class_arguments = {{busted.synonymous_rate_classes__,busted.rate_classes__}};
+        assert (busted.multi_hit == "None", "Multiple hit and branch site SRV combination is currently not supported");
     } else {
     
         lfunction busted.model.with.GDD (type, code, rates) {        
-            def = models.codon.BS_REL.ModelDescription (type, code, rates);
+            def = Call (^"busted.baseline_model_generator", type, code, rates);
             options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("busted.synonymous_rate_classes"),
                        utility.getGlobalValue("terms._namespace") : "busted._shared_srv"};
 
@@ -275,6 +321,32 @@ busted.test.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generat
         busted.filter_names,
         None);
         
+
+busted.mixture_weights_parameters = {};
+busted.branch_weight_prefix = "branch_level_weight_";
+busted.g2l = {};
+
+for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
+    busted.global_parameter = model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), busted.i));
+    busted.mixture_weights_parameters [busted.global_parameter] = busted.branch_weight_prefix  + busted.i;
+    busted.g2l [busted.global_parameter] = 1;
+}
+
+        
+function busted.export_er_model () {        
+    Export (busted.er_omegaN, busted.test, {"RETURN_MODEL_NAME" : TRUE, 
+                                            "UNIQUE_COMPONENT_NAMES" : TRUE, 
+                                            "VARIABLE_SUBSTITUTIONS" : busted.mixture_weights_parameters,
+                                            "GLOBAL_TO_LOCAL" :  busted.g2l
+                                            });
+    ExecuteCommands (busted.er_omegaN);  
+    //console.log (busted.er_omegaN);
+    branch_level_er_calculator = 1;
+}
+
+busted.er_model = busted.export_er_model();
+
+
 busted.background.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generator,
         "busted.background", {
             "0": parameters.Quote(terms.global),
@@ -286,7 +358,6 @@ busted.background.bsrel_model =  model.generic.DefineMixtureModel(busted.model_g
 
 
 models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
-
 
 if (busted.do_srv) {
     if (busted.do_bs_srv) {
@@ -304,6 +375,7 @@ if (busted.do_srv) {
 }
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
+
 
 // set up parameter constraints
 
@@ -389,6 +461,7 @@ if (busted.do_srv_hmm) {
             };
 }
 
+
 parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 3, 0, 1000);
 
 busted.initial_ranges      ["busted.bl.scaler"] = {
@@ -442,8 +515,6 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
   
 busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
 
-
-                                    
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
        
 if (Type (debug.checkpoint) != "String") {
@@ -484,11 +555,27 @@ if (Type (debug.checkpoint) != "String") {
     GetString (lf, LikelihoodFunction, 0);
     busted.full_model = estimators.ExtractMLEs (lf, busted.model_object_map);
     busted.full_model[terms.likelihood_function] = lf;
+    busted.full_model [terms.fit.log_likelihood] = estimators.ComputeLF(lf);
+    
 }
+
+// recover ancestral states
+
+
+
+busted.json [^"terms.substitutions"] = {};
+
+for (_partition_, _selection_; in; busted.selected_branches) {
+    busted.ancestral_info = ancestral.build (busted.full_model[terms.likelihood_function],0+_partition_,FALSE);
+    (busted.json [^"terms.substitutions"] )[_partition_] = ancestral.ComputeCompressedSubstitutions (busted.ancestral_info);
+    DeleteObject (busted.ancestral_info);
+}
+
 
 
 KeywordArgument ("save-fit", "Save BUSTED model fit to this file (default is not to save)", "/dev/null");
 io.SpoolLFToPath(busted.full_model[terms.likelihood_function], io.PromptUserForFilePath ("Save BUSTED model fit to this file ['/dev/null' to skip]"));
+
 
 io.ReportProgressMessageMD("BUSTED", "main", "* " + selection.io.report_fit (busted.full_model, 9, busted.codon_data_info[terms.data.sample_size]));
 
@@ -500,17 +587,177 @@ io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the followi
 selection.io.stopTimer (busted.json [terms.json.timers], "Unconstrained BUSTED model fitting");
 
 busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (busted.distribution) % 0;
-selection.io.report_dnds (busted.inferred_test_distribution);
 
-
+busted.has_selection_support = busted.inferred_test_distribution[Rows(busted.inferred_test_distribution)-1][-1];
+busted.has_selection_support = busted.has_selection_support[0] * busted.has_selection_support[1] > 1e-8;
 
 busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                          "_index_",
                                                          "{terms.json.omega_ratio : busted.inferred_test_distribution [_index_][0],
                                                            terms.json.proportion : busted.inferred_test_distribution [_index_][1]}")
                                 };
+                                
 
 
+
+busted.tree_ids = estimators.LFObjectGetTrees (busted.full_model[terms.likelihood_function]);
+busted.EFV_ids = estimators.LFObjectGetEFV (busted.full_model[terms.likelihood_function]);
+
+(busted.json [busted.json.site_logl])[busted.unconstrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
+
+if (busted.has_selection_support) {
+
+
+    utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
+    
+    busted.er_report.tagged_branches = {};
+    busted.er_report.tagged_sites    = {};
+    
+    for (_partition_, _selection_; in; busted.selected_branches) {
+        busted.branch_level_ER = {};
+        busted.branch_site_level_ER = {};
+        busted.current_weights = {};
+        
+        for (_key_, _value_; in; busted.mixture_weights_parameters) {
+            busted.current_weights  [_value_] = Eval (_key_);
+        }
+        
+        busted.tested_branches = {};
+        busted.full_to_short = {};
+        for (_b_,_class_; in; _selection_) {
+            if (_class_ == terms.tree_attributes.test) {
+                 busted.node_name = busted.tree_ids[+_partition_] + '.' + _b_;
+                 busted.tested_branches [busted.node_name] = 1;
+                 busted.full_to_short  [busted.node_name] = _b_;
+            } else {
+                busted.branch_level_ER  [_b_] = None;
+            }
+        }
+               
+
+        
+        busted.tested_branches = Rows (busted.tested_branches);
+        utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
+        SetParameter ( busted.tested_branches , MODEL, ^busted.er_model);
+        utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", None);
+        
+       
+        for (_b_; in;  busted.tested_branches) {
+            for (_key_, _value_; in; busted.mixture_weights_parameters) {
+                ^(_b_ + "." + _value_ ) =  busted.current_weights [_value_];
+            }
+        }
+        
+        busted.weight_matrix = {1,busted.rate_classes-1};
+        
+        for (_key_, _value_; in; busted.mixture_weights_parameters) {
+            ^_value_ =^_key_;
+        }
+        
+        for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1)  {
+            busted.weight_matrix[busted.i-1] = Eval (busted.branch_weight_prefix + (busted.i));
+        }
+        
+        busted.weight_matrix = parameters.GetStickBreakingDistributionWeigths (busted.weight_matrix);
+        
+        io.ReportProgressBar("", "Computing branch and site level posterior probabilities");
+        LFCompute (^(busted.full_model[terms.likelihood_function]),LF_START_COMPUTE);
+        
+        GetString (exp_counter, MATRIX_EXPONENTIALS_COMPUTED,0);
+        //console.log ("\n\n" + exp_counter + "\n\n");
+        
+        for (_b_; in;  busted.tested_branches) {
+
+            io.ReportProgressBar("", "Evaluation partition " + (+_partition_ + 1) + "/branch " + busted.full_to_short [_b_]);
+            
+            // set all weight parameters to 0; this will yield the weight for the N-1 class
+            
+            busted.branchPP = {busted.rate_classes,1};
+            for (_key_, _value_; in; busted.mixture_weights_parameters) {
+                ^(_b_ + "." + _value_ ) =  0;
+            }
+            
+            
+            LFCompute (^(busted.full_model[terms.likelihood_function]),logl);
+            ConstructCategoryMatrix (busted.siteLL, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
+            busted.all_siteLL = {busted.rate_classes, Columns (busted.siteLL)};
+            busted.all_siteLL [busted.rate_classes-1][0] = busted.siteLL;
+            busted.branchPP [busted.rate_classes-1] = logl;
+            
+            for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
+                if (busted.i > 1) {
+                    ^(_b_ + "." + busted.branch_weight_prefix + (busted.i-1)) = 0;
+                }
+                ^(_b_ + "." + busted.branch_weight_prefix + (busted.i)) = 1;
+                LFCompute (^(busted.full_model[terms.likelihood_function]),logl);
+                ConstructCategoryMatrix (busted.siteLL, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
+                busted.all_siteLL [busted.i-1][0] = busted.siteLL;
+                busted.branchPP [busted.i-1] = logl;
+            }
+            
+            for (_key_, _value_; in; busted.mixture_weights_parameters) {
+                ^(_b_ + "." + _value_ ) =  busted.current_weights [_value_];
+            }
+            
+            busted.branch_level_ER  [busted.full_to_short [_b_]]      = busted.mixture_site_logl (busted.branchPP,busted.weight_matrix );
+            busted.branch_site_level_ER  [busted.full_to_short [_b_]] = busted.mixture_site_logl (busted.all_siteLL,busted.weight_matrix );
+            
+            busted.branch_site_level_BF = (busted.mixture_site_BF (busted.branch_site_level_ER  [busted.full_to_short [_b_]], busted.weight_matrix))[busted.rate_classes - 1][-1];
+            busted.tagged_sites         = busted.branch_site_level_BF ["_MATRIX_ELEMENT_VALUE_>busted.site_BF_reporting"];
+            busted.tagged_site_count    = +busted.tagged_sites;
+            
+            if (busted.tagged_site_count ) {
+                busted.er_report.tagged_branches [_partition_ + ":" + _b_] = busted.tagged_site_count;
+                for (_site_;in;(busted.tagged_sites["(1+_MATRIX_ELEMENT_COLUMN_)*_MATRIX_ELEMENT_VALUE_"])[busted.tagged_sites]) {
+                    _site_tag_ = _partition_ + ":" + _site_;
+                    if ( busted.er_report.tagged_sites / _site_tag_ == FALSE) {
+                         busted.er_report.tagged_sites [_site_tag_] = {};
+                    }
+                    busted.er_report.tagged_sites [_site_tag_] + _b_;
+                }
+            }
+            
+        
+        }	   
+	    
+	    
+	    SetParameter ( busted.tested_branches , MODEL, busted.test);
+        selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, busted.display_orders[busted.ER],
+                                             _partition_,
+                                             busted.branch_level_ER);
+                                             
+        selection.io.json_store_branch_attribute(busted.json, busted.bsER, terms.json.branch_annotations, busted.display_orders[busted.bsER],
+                                             _partition_,
+                                             busted.branch_site_level_ER);
+                                             
+        //console.log (busted.er_report.tagged_branches);
+        //console.log (busted.er_report.tagged_sites);
+   }
+   io.ClearProgressBar();
+   utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", None);
+    
+} else {
+    for (_partition_, _selection_; in; busted.selected_branches) {
+        busted.branch_level_ER = {};
+        for (_b_,_class_; in; _selection_) {
+            if (_class_ == terms.tree_attributes.test) {
+                busted.branch_level_ER  [_b_] = 1;
+            } else {
+                busted.branch_level_ER  [_b_] = None;
+            }
+        }
+        selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, 0,
+                                             _partition_,
+                                             busted.branch_level_ER);
+    }
+
+}
+
+
+                                
+busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "alt-mh");
+
+selection.io.report_dnds (busted.inferred_test_distribution);
 
 if (busted.has_background) {
     io.ReportProgressMessageMD("BUSTED", "main", "* For *background* branches, the following rate distribution for branch-site combinations was inferred");
@@ -581,13 +828,13 @@ selection.io.json_store_lf (busted.json,
 
 busted.run_test = busted.inferred_test_distribution [busted.rate_classes-1][0] > 1 && busted.inferred_test_distribution [busted.rate_classes-1][1] > 0;
 
-utility.ForEachPair (busted.filter_specification, "_key_", "_value_",
-    'selection.io.json_store_branch_attribute(busted.json, busted.unconstrained, terms.branch_length, 0,
+for (_key_, _value_; in; busted.filter_specification) {
+    selection.io.json_store_branch_attribute(busted.json, busted.unconstrained, terms.branch_length, 0,
                                              _key_,
-                                             selection.io.extract_branch_info((busted.full_model[terms.branch_length])[_key_], "selection.io.branch.length"));');
+                                             selection.io.extract_branch_info((busted.full_model[terms.branch_length])[_key_], "selection.io.branch.length"));
+}
 
 
-(busted.json [busted.json.site_logl])[busted.unconstrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
 
 if (!busted.run_test) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for episodic diversifying positive selection under the unconstrained model, skipping constrained model fitting");
@@ -615,12 +862,14 @@ if (!busted.run_test) {
 
     io.ReportProgressMessageMD("BUSTED", "test", "* For *test* branches under the null (no dN/dS > 1 model), the following rate distribution for branch-site combinations was inferred");
     busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (busted.distribution) % 0;
-    selection.io.report_dnds (parameters.GetStickBreakingDistribution (busted.distribution) % 0);
 
     busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                          "_index_",
                                                          "{terms.json.omega_ratio : busted.inferred_test_distribution [_index_][0],
                                                            terms.json.proportion : busted.inferred_test_distribution [_index_][1]}")};
+
+    busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "null-mh");
+    selection.io.report_dnds (parameters.GetStickBreakingDistribution (busted.distribution) % 0);
 
     if (busted.has_background) {
         busted.inferred_background_distribution = parameters.GetStickBreakingDistribution (busted.background_distribution) % 0;
@@ -646,7 +895,7 @@ if (!busted.run_test) {
         io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
         selection.io.report_distribution (busted.srv_info);
 
-         busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
+        busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
                                                                  "_index_",
                                                                  "{terms.json.rate :busted.srv_info [_index_][0],
                                                                    terms.json.proportion : busted.srv_info [_index_][1]}"));
@@ -674,7 +923,6 @@ selection.io.stopTimer (busted.json [terms.json.timers], "Overall");
 GetString (_hpv,HYPHY_VERSION,0);
 busted.json[terms.json.runtime] = _hpv;
 
-
 io.SpoolJSON (busted.json, busted.codon_data_info [terms.json.json]);
 
 return busted.json;
@@ -697,6 +945,21 @@ function busted.ComputeLRT (ha, h0) {
 lfunction busted.EvidenceRatios (ha, h0) {
     return ha["Exp(_MATRIX_ELEMENT_VALUE_-h0[_MATRIX_ELEMENT_COLUMN_])"];
 }
+
+//------------------------------------------------------------------------------
+lfunction busted.FilteredEvidenceRatios (ha, h0, level) {
+    h0 = ha["Exp(_MATRIX_ELEMENT_VALUE_-h0[_MATRIX_ELEMENT_COLUMN_])"];
+    selected_indices = h0["_MATRIX_ELEMENT_VALUE_>level"];
+    if (+selected_indices) {
+        m1 = (h0["_MATRIX_ELEMENT_COLUMN_*selected_indices[_MATRIX_ELEMENT_COLUMN_]"])[selected_indices];
+        m2 = h0[selected_indices];
+        return ({
+            Columns (m1), 2
+        }["m1[_MATRIX_ELEMENT_ROW_]*(_MATRIX_ELEMENT_COLUMN_==0)+m2[_MATRIX_ELEMENT_ROW_]*(_MATRIX_ELEMENT_COLUMN_==1)"]);
+    }
+    return {{}};
+}
+
 //------------------------------------------------------------------------------
 
 lfunction busted.DistributionGuess (mean) {
@@ -727,6 +990,53 @@ lfunction busted._renormalize (v, distro, mean) {
     }
     return v;
     
+}
+
+//------------------------------------------------------------------------------
+
+lfunction busted.get_multi_hit (model_fit) {
+    params = selection.io.extract_global_MLE_re (model_fit, ^'terms.parameters.multiple_hit_rate');
+    for (k,v; in; selection.io.extract_global_MLE_re (model_fit, ^'terms.parameters.triple_hit_rate')) {
+        params + v;
+    }
+    return params;
+}
+
+//------------------------------------------------------------------------------
+
+lfunction busted.report_multi_hit (model_fit, json, l1, l2) {
+
+    if (^'busted.multi_hit' != "None") {
+        io.ReportProgressMessageMD(l1, l2, 'Partition-level rates for multiple-hit substitutions');
+        params = busted.get_multi_hit (model_fit);
+                
+        for (mle; in; params) {
+            io.ReportProgressMessageMD(l1, l2, '* ' + mle[^'terms.description'] + ' : ' + Format (mle[^'terms.fit.MLE'], 8, 4));
+            json[mle[^'terms.description']] = mle[^'terms.fit.MLE']; 
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+lfunction busted.mixture_site_logl (ll, p) {
+    res = ll["0"];
+    S = Columns (ll);
+    norm      = {1,S}["Max(ll[-1][_MATRIX_ELEMENT_COLUMN_],0)"];
+    scaled_ll = ll["Exp(_MATRIX_ELEMENT_VALUE_-norm[_MATRIX_ELEMENT_COLUMN_])*p[_MATRIX_ELEMENT_ROW_]"];
+    
+    norm      = p["1"]*scaled_ll;
+    ll = scaled_ll["_MATRIX_ELEMENT_VALUE_/norm[_MATRIX_ELEMENT_COLUMN_]"];
+    return ll;
+}
+
+//------------------------------------------------------------------------------
+
+
+lfunction busted.mixture_site_BF (ll, p) {
+    prior_odds = p["_MATRIX_ELEMENT_VALUE_/(1-_MATRIX_ELEMENT_VALUE_)"];
+    ll = ll["(_MATRIX_ELEMENT_VALUE_/(1-_MATRIX_ELEMENT_VALUE_))/prior_odds[_MATRIX_ELEMENT_ROW_]"];
+    return ll;
 }
 
 //------------------------------------------------------------------------------
