@@ -530,7 +530,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
  
     if (isExplicitForm && bufferedOps) {
-        _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel()->Compute (0,nil, bufferedOps);
+        _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel(map_global_to_local_category (categID))->Compute (0,nil, bufferedOps);
         #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
             fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting (buffered) category %ld/%ld for node %s\n", categID, totalCategs, GetName()->get_str());
          #endif
@@ -539,7 +539,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     }
 
     unsigned long      previous_length = queue && tags ? queue->lLength: 0;
-    _Matrix * myModelMatrix = GetModelMatrix(queue,tags);
+    _Matrix * myModelMatrix = GetModelMatrix(queue,tags,map_global_to_local_category(categID));
 
     if (isExplicitForm && !myModelMatrix) { // matrix exponentiations got cached
         if (queue && queue->lLength > previous_length) {
@@ -597,6 +597,12 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
         }
     }
     return false;
+}
+//_______________________________________________________________________________________________
+
+long        _CalcNode::map_global_to_local_category (long cat) const {
+    if (remapMyCategories.lLength) return remapMyCategories.list_data[cat*(categoryVariables.lLength+1)];
+    return cat;
 }
 
 //_______________________________________________________________________________________________
@@ -748,7 +754,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
         }
     }
     
-    //printf ("Node remap at %s yielded %s\n", GetName()->sData, _String((_String*)remapMyCategories.toStr()).sData);
+    //printf ("Node remap at %s yielded %s (%s)\n", GetName()->get_str(), _String((_String*)remapMyCategories.toStr()).get_str(),  _String((_String*)classCounter.toStr()).get_str());
     
 }
 
@@ -766,12 +772,15 @@ node<long>* _CalcNode::LocateMeInTree (void) const {
 
 //_______________________________________________________________________________________________
 
-void _CalcNode::ConvertToSimpleMatrix (void) {
+void _CalcNode::ConvertToSimpleMatrix (unsigned long category_count) {
     _Formula * mf = GetExplicitFormModel();
     if (mf) {
          if (!templateFormulaClone) {
-            templateFormulaClone = new _Formula (*mf);
-            templateFormulaClone->ConvertMatrixArgumentsToSimpleOrComplexForm (false);
+            templateFormulaClone = new _Formula* [category_count];
+            for (long i = 0; i < category_count; i++) {
+                templateFormulaClone[i] = new _Formula (*mf);
+                templateFormulaClone[i]->ConvertMatrixArgumentsToSimpleOrComplexForm (false);
+            }
         }
         
     } else {
@@ -786,10 +795,14 @@ void _CalcNode::ConvertToSimpleMatrix (void) {
 
 //_______________________________________________________________________________________________
 
-void _CalcNode::ConvertFromSimpleMatrix (void) {
+void _CalcNode::ConvertFromSimpleMatrix (unsigned long category_count) {
     _Formula * mf = GetExplicitFormModel();
     if (templateFormulaClone || mf) {
         if (templateFormulaClone) {
+            //printf ("_CalcNode::ConvertFromSimpleMatrix %s => %d\n", GetName()->get_str(), category_count);
+            for (long i = 0; i < category_count; i++) {
+                delete templateFormulaClone[i];
+            }
             delete templateFormulaClone;
             templateFormulaClone = nil;
             GetExplicitFormModel()->ConvertMatrixArgumentsToSimpleOrComplexForm(true);

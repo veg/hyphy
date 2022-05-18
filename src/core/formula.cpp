@@ -2633,9 +2633,10 @@ bool _Formula::HasChangedSimple (_SimpleList& variableIndex) {
 }
 
 //__________________________________________________________________________________
-void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight) const {
+void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight, long weight2) const {
     unsigned long const upper_bound = NumberOperations();
   
+    
     for (unsigned long i=0UL; i<upper_bound; i++) {
         _Operation * this_op = ItemAt (i);
         if (this_op->IsAVariable()) {
@@ -2660,7 +2661,10 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
                 if(includeAll || v->ObjectClass()==NUMBER) {
                     l.Insert ((BaseRef)f);
                     if (tagger) {
-                        tagger -> UpdateValue((BaseRef)f, weight, 0);
+                        /*if (weight2) {
+                            printf ("\n\n\nWEIGHT2\n%d: %s\n", weight2, v->GetName()->get_str());
+                        }*/
+                        tagger -> UpdateValue((BaseRef)f, weight2 > 0 ? weight2 : weight, weight2 > 0);
                     }
                 }
 

@@ -134,8 +134,8 @@ public:
     
     node<long>*         LocateMeInTree  (void) const;
     // return the tree structure node corresponing to this one...
-    void                ConvertToSimpleMatrix (void) ;
-    void                ConvertFromSimpleMatrix (void);
+    void                ConvertToSimpleMatrix (unsigned long category_count) ;
+    void                ConvertFromSimpleMatrix (unsigned long category_count);
     _Matrix*            ComputeModelMatrix(bool expMe=false);
     long                GetTheModelID   (void) {
         return theModel;
@@ -153,6 +153,8 @@ public:
     _CategoryVariable*  get_ith_category (long i) const {
       return (_CategoryVariable*)LocateVar(categoryVariables.get (i));
     }
+    
+    long                map_global_to_local_category (long) const;
     
     _VariableContainer*           ParentTree      (void);
     

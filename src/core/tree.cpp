@@ -2064,7 +2064,7 @@ void _TheTree::SetUpMatrices (long categCount) {
         if (iterator->IsConstant()) {
             iterator->varFlags |= HY_VC_NO_CHECK;
         }
-        iterator->ConvertToSimpleMatrix();
+        iterator->ConvertToSimpleMatrix(categoryCount);
 
         if (categoryCount==1L) {
             iterator->matrixCache = nil;
@@ -2078,7 +2078,7 @@ void _TheTree::SetUpMatrices (long categCount) {
 
 //__________________________________________________________________________________
 
-void _TheTree::CleanUpMatrices (void) {
+void _TheTree::CleanUpMatrices (long category_count) {
     _TreeIterator ti (this, _HY_TREE_TRAVERSAL_POSTORDER);
 
     if (categoryCount == 1L) {
@@ -2088,7 +2088,7 @@ void _TheTree::CleanUpMatrices (void) {
             // this breaks after ReplicateConstraint or MolecularClock is called
             // WTF?
 
-            iterator->ConvertFromSimpleMatrix();
+            iterator->ConvertFromSimpleMatrix(categoryCount);
 
             if (iterator->compExp) {
                 DeleteObject (iterator->compExp);
@@ -2099,7 +2099,7 @@ void _TheTree::CleanUpMatrices (void) {
         }
     } else {
         while   (_CalcNode* iterator = ti.Next()) {
-            iterator->ConvertFromSimpleMatrix();
+            iterator->ConvertFromSimpleMatrix(category_count);
 
             for (long i=0; i<categoryCount; i++) {
                 DeleteAndZeroObject(iterator->matrixCache[i]);
@@ -2178,6 +2178,7 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
     _AVLList    cLL (&cL);
     _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot );
     
+     
     while   (_CalcNode* iterator = ti.Next()) {
 
         _Formula *explicitFormMExp = iterator->GetExplicitFormModel ();
@@ -2185,29 +2186,29 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
 
         if ((explicitFormMExp && cLL.Find ((BaseRef)explicitFormMExp) < 0) || (modelM && cLL.Find(modelM) < 0)) {
             _SimpleList temp;
-            {
-                _AVLList tempA (&temp);
-                if (modelM) {
-                    modelM->ScanForVariables(tempA, true);
-                } else {
-                    explicitFormMExp->ScanFForVariables(tempA, true, false, true, true);
-                }
+            _AVLList tempA (&temp);
+            if (modelM) {
+                modelM->ScanForVariables(tempA, true);
                 tempA.ReorderList();
-            }
-            for (unsigned long i=0; i<temp.lLength; i++) {
-                long p = temp.list_data[i];
-                _Variable* v = LocateVar (p);
-                if (v&&v->IsGlobal()) {
-                    if(v->IsIndependent()) {
-                        li.Insert ((BaseRef)p);
-                        if (tagger) {
-                            tagger->UpdateValue((BaseRef)p, weight, 0);
+                
+                for (unsigned long i=0; i<temp.lLength; i++) {
+                    long p = temp.list_data[i];
+                    _Variable* v = LocateVar (p);
+                    if (v&&v->IsGlobal()) {
+                        if(v->IsIndependent()) {
+                            li.Insert ((BaseRef)p);
+                            if (tagger) {
+                                tagger->UpdateValue((BaseRef)p, weight, 1);
+                            }
+                        } else {
+                            ld.Insert ((BaseRef)p);
                         }
-                    } else {
-                        ld.Insert ((BaseRef)p);
                     }
                 }
+            } else {
+                explicitFormMExp->ScanFForVariables(tempA, true, false, true, true, tagger, weight, weight >> 2);
             }
+            
             cLL.Insert (modelM?(BaseRef)modelM:(BaseRef)explicitFormMExp);
         }
         iterator -> ScanForGVariables(li,ld);
@@ -2741,7 +2742,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     unsigned long nt = cBase<20?1:(MIN(tc, parallel.lLength / 3 + 1));
     unsigned long cs = cBase<20 ? 10 : (cBase < 60 ? 5 : 2);
 
-    //printf ("_TheTree::ExponentiateMatrices %d total, %d no update, %d\n", parallel.lLength, serial.lLength, nt);
+    //printf ("_TheTree::ExponentiateMatrices %d total, %d no update, (block update %d)\n", parallel.lLength, serial.lLength, nt);
 #endif
 
     if (parallel.lLength) {

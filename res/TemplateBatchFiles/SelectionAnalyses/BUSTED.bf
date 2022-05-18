@@ -540,6 +540,7 @@ if (Type (debug.checkpoint) != "String") {
     
     parameters.RemoveConstraint (busted.tmp_fixed );
 
+    //PRODUCE_OPTIMIZATION_LOG        = 1;
                                                 
     busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
             "retain-lf-object": TRUE,
@@ -550,6 +551,9 @@ if (Type (debug.checkpoint) != "String") {
                 } 
                                     
         });
+        
+   //io.SpoolJSON (^(busted.full_model[terms.likelihood_function] + ".trace"),"/Users/sergei/Desktop/optimization_log.json");
+ 
 } else {
     ExecuteAFile (debug.checkpoint);
     GetString (lf, LikelihoodFunction, 0);
@@ -605,8 +609,70 @@ busted.EFV_ids = estimators.LFObjectGetEFV (busted.full_model[terms.likelihood_f
 
 (busted.json [busted.json.site_logl])[busted.unconstrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
 
-if (busted.has_selection_support) {
 
+                                
+busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "alt-mh");
+
+selection.io.report_dnds (busted.inferred_test_distribution);
+
+if (busted.has_background) {
+    io.ReportProgressMessageMD("BUSTED", "main", "* For *background* branches, the following rate distribution for branch-site combinations was inferred");
+    busted.inferred_background_distribution = parameters.GetStickBreakingDistribution (busted.background_distribution) % 0;
+    selection.io.report_dnds (busted.inferred_background_distribution);
+    busted.distribution_for_json [busted.BG] = utility.Map (utility.Range (busted.rate_classes, 0, 1),
+                                                         "_index_",
+                                                         "{terms.json.omega_ratio : busted.inferred_background_distribution [_index_][0],
+                                                           terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
+}
+
+if (busted.do_srv) {
+    
+    if (busted.do_srv_hmm) {
+        busted.hmm_lambda = selection.io.extract_global_MLE (busted.full_model, terms.rate_variation.hmm_lambda);
+        busted.hmm_lambda.CI = parameters.GetProfileCI(((busted.full_model[terms.global])[terms.rate_variation.hmm_lambda])[terms.id],
+                                    busted.full_model[terms.likelihood_function], 0.95);
+        io.ReportProgressMessageMD("BUSTED", "main", "* HMM switching rate = " +  Format (busted.hmm_lambda, 8, 3));
+
+        io.ReportProgressMessageMD ("BUSTED", "main", "* HMM switching rate = " + Format (busted.hmm_lambda,8,4) + 
+                        " (95% profile CI " + Format ((busted.hmm_lambda.CI )[terms.lower_bound],8,4) + "-" + Format ((busted.hmm_lambda.CI )[terms.upper_bound],8,4) + ")");
+                    
+        busted.distribution_for_json [terms.rate_variation.hmm_lambda] = busted.hmm_lambda.CI;
+    }
+
+
+    if (busted.do_bs_srv) {
+        busted.srv_info = parameters.GetStickBreakingDistribution ( busted.srv_rate_reporting) % 0
+    } else {
+        busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
+    }
+    io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
+    selection.io.report_distribution (busted.srv_info);
+
+    busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
+                                                             "_index_",
+                                                             "{terms.json.rate :busted.srv_info [_index_][0],
+                                                               terms.json.proportion : busted.srv_info [_index_][1]}"));
+                                                               
+    ConstructCategoryMatrix (busted.cmx, ^(busted.full_model[terms.likelihood_function]));
+    ConstructCategoryMatrix (busted.cmx_weights, ^(busted.full_model[terms.likelihood_function]), WEIGHTS);
+    
+    busted.cmx_weighted         = (busted.cmx_weights[-1][0]) $ busted.cmx; // taking the 1st column fixes a bug with multiple partitions 
+    busted.column_weights       = {1, Rows (busted.cmx_weights)}["1"] * busted.cmx_weighted;
+    busted.column_weights       = busted.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
+    (busted.json [busted.json.srv_posteriors]) =  busted.cmx_weighted $ busted.column_weights;
+    
+    
+    if (busted.do_srv_hmm ) {
+        ConstructCategoryMatrix (busted.cmx_viterbi, ^(busted.full_model[terms.likelihood_function]), SHORT);
+        (busted.json [busted.json.srv_viterbi]) = busted.cmx_viterbi;
+        io.ReportProgressMessageMD("BUSTED", "main", "* The following switch points for synonymous rates were inferred");
+        selection.io.report_viterbi_path (busted.cmx_viterbi);
+        
+    }
+
+}
+
+if (busted.has_selection_support) {
 
     utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
     
@@ -663,7 +729,7 @@ if (busted.has_selection_support) {
         io.ReportProgressBar("", "Computing branch and site level posterior probabilities");
         LFCompute (^(busted.full_model[terms.likelihood_function]),LF_START_COMPUTE);
         
-        GetString (exp_counter, MATRIX_EXPONENTIALS_COMPUTED,0);
+        //GetString (exp_counter, MATRIX_EXPONENTIALS_COMPUTED,0);
         //console.log ("\n\n" + exp_counter + "\n\n");
         
         for (_b_; in;  busted.tested_branches) {
@@ -716,13 +782,19 @@ if (busted.has_selection_support) {
                     busted.er_report.tagged_sites [_site_tag_] + _b_;
                 }
             }
-            
+            //GetString (exp_counter2, MATRIX_EXPONENTIALS_COMPUTED,0);
+            //console.log ("\n\n" + (exp_counter2-exp_counter) + "\n\n");
+            exp_counter = exp_counter2;
         
         }	   
 	    
+        //GetString (exp_counter2, MATRIX_EXPONENTIALS_COMPUTED,0);
+        //console.log ("\n\n" + (exp_counter2-exp_counter) + "\n\n");
 	    
+        LFCompute (^(busted.full_model[terms.likelihood_function]),LF_DONE_COMPUTE);
+
 	    SetParameter ( busted.tested_branches , MODEL, busted.test);
-        selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, busted.display_orders[busted.ER],
+         selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, busted.display_orders[busted.ER],
                                              _partition_,
                                              busted.branch_level_ER);
                                              
@@ -749,68 +821,6 @@ if (busted.has_selection_support) {
         selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, 0,
                                              _partition_,
                                              busted.branch_level_ER);
-    }
-
-}
-
-
-                                
-busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "alt-mh");
-
-selection.io.report_dnds (busted.inferred_test_distribution);
-
-if (busted.has_background) {
-    io.ReportProgressMessageMD("BUSTED", "main", "* For *background* branches, the following rate distribution for branch-site combinations was inferred");
-    busted.inferred_background_distribution = parameters.GetStickBreakingDistribution (busted.background_distribution) % 0;
-    selection.io.report_dnds (busted.inferred_background_distribution);
-    busted.distribution_for_json [busted.BG] = utility.Map (utility.Range (busted.rate_classes, 0, 1),
-                                                         "_index_",
-                                                         "{terms.json.omega_ratio : busted.inferred_background_distribution [_index_][0],
-                                                           terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
-}
-
-if (busted.do_srv) {
-    
-    if (busted.do_srv_hmm) {
-        busted.hmm_lambda = selection.io.extract_global_MLE (busted.full_model, terms.rate_variation.hmm_lambda);
-        busted.hmm_lambda.CI = parameters.GetProfileCI(((busted.full_model[terms.global])[terms.rate_variation.hmm_lambda])[terms.id],
-                                    busted.full_model[terms.likelihood_function], 0.95);
-        io.ReportProgressMessageMD("BUSTED", "main", "* HMM switching rate = " +  Format (busted.hmm_lambda, 8, 3));
-
-        io.ReportProgressMessageMD ("BUSTED", "main", "* HMM switching rate = " + Format (busted.hmm_lambda,8,4) + 
-                        " (95% profile CI " + Format ((busted.hmm_lambda.CI )[terms.lower_bound],8,4) + "-" + Format ((busted.hmm_lambda.CI )[terms.upper_bound],8,4) + ")");
-                    
-        busted.distribution_for_json [terms.rate_variation.hmm_lambda] = busted.hmm_lambda.CI;
-    }
-
-
-    if (busted.do_bs_srv) {
-        busted.srv_info = parameters.GetStickBreakingDistribution ( busted.srv_rate_reporting) % 0
-    } else {
-        busted.srv_info = Transpose((rate_variation.extract_category_information(busted.test.bsrel_model))["VALUEINDEXORDER"][0])%0;
-    }
-    io.ReportProgressMessageMD("BUSTED", "main", "* The following rate distribution for site-to-site **synonymous** rate variation was inferred");
-    selection.io.report_distribution (busted.srv_info);
-
-    busted.distribution_for_json [busted.SRV] = (utility.Map (utility.Range (busted.synonymous_rate_classes, 0, 1),
-                                                             "_index_",
-                                                             "{terms.json.rate :busted.srv_info [_index_][0],
-                                                               terms.json.proportion : busted.srv_info [_index_][1]}"));
-                                                               
-    ConstructCategoryMatrix (busted.cmx, ^(busted.full_model[terms.likelihood_function]));
-    ConstructCategoryMatrix (busted.cmx_weights, ^(busted.full_model[terms.likelihood_function]), WEIGHTS);
-    busted.cmx_weighted         = (busted.cmx_weights[-1][0]) $ busted.cmx; // taking the 1st column fixes a bug with multiple partitions 
-    busted.column_weights       = {1, Rows (busted.cmx_weights)}["1"] * busted.cmx_weighted;
-    busted.column_weights       = busted.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
-    (busted.json [busted.json.srv_posteriors]) =  busted.cmx_weighted $ busted.column_weights;
-    
-    
-    if (busted.do_srv_hmm ) {
-        ConstructCategoryMatrix (busted.cmx_viterbi, ^(busted.full_model[terms.likelihood_function]), SHORT);
-        (busted.json [busted.json.srv_viterbi]) = busted.cmx_viterbi;
-        io.ReportProgressMessageMD("BUSTED", "main", "* The following switch points for synonymous rates were inferred");
-        selection.io.report_viterbi_path (busted.cmx_viterbi);
-        
     }
 
 }

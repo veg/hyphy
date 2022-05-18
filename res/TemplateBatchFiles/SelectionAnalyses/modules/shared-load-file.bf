@@ -48,7 +48,13 @@ function load_nuc_file (prefix) {
         utility.ForEach (alignments.GetSequenceNames (prefix+".nuc_data"), "_value_", "`&name_mapping`[_value_] = _value_");
     }
 
+    utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
+                           nuc_data_info[utility.getGlobalValue("terms.data.datafilter")]);
+
     partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (nuc_data_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+
+    utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
+                           None);
 
 
     utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"), None);

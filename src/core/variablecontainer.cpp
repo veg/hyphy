@@ -179,13 +179,13 @@ bool _VariableContainer::HasExplicitFormModel (void) const {
 
 //__________________________________________________________________________________
 
-_Formula* _VariableContainer::GetExplicitFormModel (void) const {
+_Formula* _VariableContainer::GetExplicitFormModel (long categ_id) const {
     if (theModel < 0L) {
         return nil;
     }
     if (IsModelOfExplicitForm(theModel)) { // an explicit formula based matrix
         if (templateFormulaClone) {
-            return templateFormulaClone;
+            return templateFormulaClone[categ_id_mapper(categ_id)];
         }
         return (_Formula*)modelMatrixIndices.list_data[theModel];
     }
@@ -206,14 +206,14 @@ extern long likeFuncEvalCallCount;
 
 //__________________________________________________________________________________
 
-_Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) const {
+_Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags, long cat_id) const {
     if (theModel < 0L) {
         return nil;
     }
 
     if (IsModelOfExplicitForm(theModel)) { // an explicit formula based matrix
         if (queue && tags) {
-            long currentQueueLength = (templateFormulaClone ? templateFormulaClone : ((_Formula*)modelMatrixIndices.list_data[theModel]))->ExtractMatrixExpArguments (queue);
+            long currentQueueLength = (templateFormulaClone ? templateFormulaClone[categ_id_mapper(cat_id)] : ((_Formula*)modelMatrixIndices.list_data[theModel]))->ExtractMatrixExpArguments (queue);
             //printf ("LF eval = %d, node = %s, matrix count = %d, formula pointer = %x/%x\n", likeFuncEvalCallCount, theName->get_str(), currentQueueLength, ((_Formula*)GetExplicitFormModel()),  ((_Formula*)modelMatrixIndices.list_data[theModel]));
             if (currentQueueLength) {
                 for (unsigned long k = 0; k < currentQueueLength; k++)
@@ -223,7 +223,7 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags) co
             
        }
         
-        _Formula * explicit_exp = (templateFormulaClone ? templateFormulaClone : ((_Formula*)modelMatrixIndices.list_data[theModel]));
+        _Formula * explicit_exp = (templateFormulaClone ?  templateFormulaClone[categ_id_mapper(cat_id)] : ((_Formula*)modelMatrixIndices.list_data[theModel]));
         _Matrix* result = (_Matrix *)explicit_exp->Compute();
         
         //printf ("_VariableContainer::GetModelMatrix %x (%x) => %x, %d\n", explicit_exp, explicit_exp->GetIthTerm(0), result, result->GetReferenceCounter());
