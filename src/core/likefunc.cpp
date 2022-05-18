@@ -10977,6 +10977,9 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger) {
                 }
             }
         }
+        
+        ObjectToConsole(&gradientBlocks);
+        
         if (re_sort) {
             _SimpleList new_ranks;
 

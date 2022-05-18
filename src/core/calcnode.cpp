@@ -803,7 +803,7 @@ void _CalcNode::ConvertFromSimpleMatrix (unsigned long category_count) {
             for (long i = 0; i < category_count; i++) {
                 delete templateFormulaClone[i];
             }
-            delete templateFormulaClone;
+            delete [] templateFormulaClone;
             templateFormulaClone = nil;
             GetExplicitFormModel()->ConvertMatrixArgumentsToSimpleOrComplexForm(true);
         } else {
