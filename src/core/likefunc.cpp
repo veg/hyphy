@@ -4365,7 +4365,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
                     _SimpleList * this_block = (_SimpleList*)gradientBlocks(b);
                     if (this_block->countitems() > 1 && this_block->countitems() <= maxGradientBlockDimension) {
-                        //printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
+                        /*printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
+                        this_block->Each([this, b] (long item, unsigned long) -> void {
+                            printf ("Block %d, variable %s\n", b, GetIthIndependentName(item)->get_str());
+                        });*/
                         maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,this_block,maxSoFar);
                     } else {
                         //printf ("\n...Skipping a large gradient (or a trivial) block with %ld variables\n", this_block->countitems());
@@ -6431,6 +6434,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
     if (gradL > 0.0) {
         
         current_direction   = gradient * (1./gradL);
+        gradient = current_direction;
         
         for (long index = 0; index< MAX (dim, 10) && index < iterationLimit; index++, currentPrecision*=0.25) {
             hyFloat current_maximum = maxSoFar;
@@ -6499,9 +6503,9 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
             previous_gradient = previous_direction;
             previous_gradient *= beta;
             current_direction  = gradient;
-            if ((index + 1) % 5) {
+            /*if ((index + 1) % 5) {
                 current_direction += previous_gradient;
-            }
+            }*/
             
         }
     }
@@ -10978,8 +10982,17 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger) {
             }
         }
         
-        ObjectToConsole(&gradientBlocks);
-        
+        /*
+        NLToConsole();
+        gradientBlocks.ForEach ([&] (BaseRef item, unsigned long i) -> void {
+            _SimpleList * block = (_SimpleList*)item;
+            block->Each([i] (long item, unsigned long) -> void {
+                printf ("Block %d, variable %s\n", i, LocateVar(item)->GetName()->get_str());
+            });
+        });
+        NLToConsole();
+        */
+
         if (re_sort) {
             _SimpleList new_ranks;
 

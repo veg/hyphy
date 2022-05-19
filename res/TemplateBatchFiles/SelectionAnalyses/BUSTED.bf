@@ -215,7 +215,7 @@ if (busted.run_full_mg94) {
             terms.run_options.partitioned_omega: busted.selected_branches,
             terms.run_options.apply_user_constraints: busted.zero_branch_length_constrain,
             terms.run_options.optimization_settings: {
-                "OPTIMIZATION_METHOD" : "coordinate-wise"
+                "OPTIMIZATION_METHOD" : "hyrbid"
             }
         }, busted.partitioned_mg_results);
 
@@ -399,9 +399,10 @@ busted.init_grid_setup (busted.distribution);
 /** setup parameter optimization groups */
 
 PARAMETER_GROUPING = {};
-PARAMETER_GROUPING + busted.distribution["rates"];
-PARAMETER_GROUPING + busted.distribution["weights"];
+//PARAMETER_GROUPING + busted.distribution["rates"];
+//PARAMETER_GROUPING + busted.distribution["weights"];
 
+PARAMETER_GROUPING + utility.Concat (busted.distribution["rates"], busted.distribution["weights"]);
 
 if (busted.has_background) {
     busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
@@ -409,9 +410,9 @@ if (busted.has_background) {
     busted.background_distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.background.bsrel_model);
     busted.init_grid_setup (busted.background_distribution);
 
-    PARAMETER_GROUPING = {};
-    PARAMETER_GROUPING + busted.background_distribution["rates"];
-    PARAMETER_GROUPING + busted.background_distribution["weights"];
+    //PARAMETER_GROUPING + busted.background_distribution["rates"];
+    //PARAMETER_GROUPING + busted.background_distribution["weights"];
+    PARAMETER_GROUPING + utility.Concat (busted.background_distribution["rates"], busted.background_distribution["weights"]);
     
 } else {
     busted.model_object_map = { "busted.test" :       busted.test.bsrel_model };
@@ -445,8 +446,9 @@ if (busted.do_srv)  {
     };
     
  
-    PARAMETER_GROUPING + busted.srv_distribution["rates"];
-    PARAMETER_GROUPING + busted.srv_distribution["weights"];
+    //PARAMETER_GROUPING + busted.srv_distribution["rates"];
+    //PARAMETER_GROUPING + busted.srv_distribution["weights"];
+    PARAMETER_GROUPING + utility.Concat (busted.srv_distribution["rates"],busted.srv_distribution["weights"]);
 
     busted.init_grid_setup (busted.srv_distribution);
     
@@ -546,7 +548,7 @@ if (Type (debug.checkpoint) != "String") {
             "retain-lf-object": TRUE,
             terms.run_options.optimization_settings : 
                 {
-                    "OPTIMIZATION_METHOD" : "hybrid",
+                    "OPTIMIZATION_METHOD" : "coordinate-wise",
                     //"OPTIMIZATION_PRECISION" : 1.
                 } 
                                     

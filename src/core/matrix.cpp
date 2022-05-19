@@ -8491,6 +8491,29 @@ bool       _Matrix::CompareMatrices(const _Matrix *m, hyFloat tolerance) const {
     if (m->storageType == storageType && m->hDim == hDim && m->vDim == vDim) {
         if (is_numeric()) {
             if (theIndex || m->theIndex) {
+                if (theIndex && m->theIndex) {
+                    if (lDim == m->lDim) {
+                        bool shortcut = true;
+                        for (long r = 0L; r < lDim; r++) {
+                            long k   =  theIndex[r];
+                            long k2  =  m->theIndex[r];
+                            if (k == k2) {
+                                if (k >= 0) {
+                                    if (!CheckEqual(theData[r], m->theData[r], tolerance)) {
+                                        return false;
+                                    }
+                                }
+                            } else {
+                                shortcut = false;
+                                break;
+                            }
+                        }
+                        if (shortcut) {
+                            return true;
+                        }
+                    }
+                }
+                
                 for (long r = 0L; r < hDim; r ++) {
                     for (long c = 0L; c < vDim; c++) {
                         if (!CheckEqual((*this)(r,c), (*m)(r,c), tolerance)) {
@@ -8498,7 +8521,6 @@ bool       _Matrix::CompareMatrices(const _Matrix *m, hyFloat tolerance) const {
                         }
                     }
                 }
-                
             } else {
                 for (long elementID = 0; elementID < lDim; elementID ++) {
                     if (!CheckEqual(theData[elementID], m->theData[elementID], tolerance)) {
