@@ -1777,12 +1777,12 @@ HBLObjectRef _Matrix::ExecuteSingleOp (long opCode, _List* arguments, _hyExecuti
         if (arg0->ObjectClass()==NUMBER) {
           if (CheckEqual (arg0->Value(), 1)) {
             long index = 0L;
-            hyFloat v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (0,&index):MinElement(0,&index),0.0};
+            hyFloat v[2] = {opCode == HY_OP_CODE_MAX?MaxElement (3,&index):MinElement(0,&index),0.0};
             v[1] = index;
             return new _Matrix (v,1,2);
           }
         }
-        return _returnConstantOrUseCache (opCode == HY_OP_CODE_MAX?MaxElement (0):MinElement (0), cache);
+        return _returnConstantOrUseCache (opCode == HY_OP_CODE_MAX?MaxElement (3):MinElement (0), cache);
    }
     _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
     
@@ -3978,29 +3978,32 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                     for (long r = 0; r < 20; r++, row_offset += 20) {
                         long col_offset = 0L;
                         for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
-                            float64x2_t A4 = vdupq_n_f64(theData[ti]);
+                                float64x2_t A4 = vdupq_n_f64(theData[ti]);
                             //for (long k = 0; k < 20L; k+=4) {
-                                float64x2_t D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
-                                DO_GROUP_OP1 (D4, B4, 0);
-                                DO_GROUP_OP1 (D4_1, B4_1, 2);
-                                DO_GROUP_OP1 (D4_2, B4_2, 4);
-                                DO_GROUP_OP1 (D4_3, B4_3, 6);
-                                DO_GROUP_OP1 (D4_4, B4_4, 8);
-                                DO_GROUP_OP2 (D4, 0);
-                                DO_GROUP_OP2 (D4_1, 2);
-                                DO_GROUP_OP2 (D4_2, 4);
-                                DO_GROUP_OP2 (D4_3, 6);
-                                DO_GROUP_OP2 (D4_4, 8);
-                                DO_GROUP_OP1 (D4, B4, 10);
-                                DO_GROUP_OP1 (D4_1, B4_1, 12);
-                                DO_GROUP_OP1 (D4_2, B4_2, 14);
-                                DO_GROUP_OP1 (D4_3, B4_3, 16);
-                                DO_GROUP_OP1 (D4_4, B4_4, 18);
-                                DO_GROUP_OP2 (D4, 10);
-                                DO_GROUP_OP2 (D4_1, 12);
-                                DO_GROUP_OP2 (D4_2, 14);
-                                DO_GROUP_OP2 (D4_3, 16);
-                                DO_GROUP_OP2 (D4_4, 18);
+                                float64x2_t D4_1, D4_2, D4_3, D4_4, D4_5, D4_6, D4_7, D4_8, D4_9, D4_10;
+                                float64x2_t B4_1, B4_2, B4_3, B4_4, B4_5, B4_6, B4_7, B4_8, B4_9, B4_10;
+                                
+                                DO_GROUP_OP1 (D4_1,B4_1,0);
+                                DO_GROUP_OP1 (D4_2,B4_2,2);
+                                DO_GROUP_OP1 (D4_3,B4_3,4);
+                                DO_GROUP_OP1 (D4_4,B4_4,6);
+                                DO_GROUP_OP1 (D4_5,B4_5,8);
+                                DO_GROUP_OP1 (D4_6,B4_6,10);
+                                DO_GROUP_OP1 (D4_7,B4_7,12);
+                                DO_GROUP_OP1 (D4_8,B4_8,14);
+                                DO_GROUP_OP1 (D4_9,B4_9,16);
+                                DO_GROUP_OP1 (D4_10,B4_10,18);
+                                DO_GROUP_OP2 (D4_1,0);
+                                DO_GROUP_OP2 (D4_2,2);
+                                DO_GROUP_OP2 (D4_3,4);
+                                DO_GROUP_OP2 (D4_4,6);
+                                DO_GROUP_OP2 (D4_5,8);
+                                DO_GROUP_OP2 (D4_6,10);
+                                DO_GROUP_OP2 (D4_7,12);
+                                DO_GROUP_OP2 (D4_8,14);
+                                DO_GROUP_OP2 (D4_9,16);
+                                DO_GROUP_OP2 (D4_10,18);
+
                             //}
                       }
                     }
@@ -4310,76 +4313,73 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                               for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
                                   float64x2_t A4 = vdupq_n_f64(theData[ti]);
                                   
-                                  float64x2_t D4_1, D4_2, D4_3, D4_4;
-                                  float64x2_t B4_1, B4_2, B4_3, B4_4;
+                                  float64x2_t D4_1, D4_2, D4_3, D4_4, D4_5, D4_6, D4_7, D4_8;
+                                  float64x2_t B4_1, B4_2, B4_3, B4_4, B4_5, B4_6, B4_7, B4_8;
                                   
                                   DO_GROUP_OP1 (D4_1,B4_1,0);
                                   DO_GROUP_OP1 (D4_2,B4_2,2);
                                   DO_GROUP_OP1 (D4_3,B4_3,4);
                                   DO_GROUP_OP1 (D4_4,B4_4,6);
+                                  DO_GROUP_OP1 (D4_5,B4_5,8);
+                                  DO_GROUP_OP1 (D4_6,B4_6,10);
+                                  DO_GROUP_OP1 (D4_7,B4_7,12);
+                                  DO_GROUP_OP1 (D4_8,B4_8,14);
                                   DO_GROUP_OP2 (D4_1,0);
                                   DO_GROUP_OP2 (D4_2,2);
                                   DO_GROUP_OP2 (D4_3,4);
                                   DO_GROUP_OP2 (D4_4,6);
-
-                                  DO_GROUP_OP1 (D4_1,B4_1,8);
-                                  DO_GROUP_OP1 (D4_2,B4_2,10);
-                                  DO_GROUP_OP1 (D4_3,B4_3,12);
-                                  DO_GROUP_OP1 (D4_4,B4_4,14);
-                                  DO_GROUP_OP2 (D4_1,8);
-                                  DO_GROUP_OP2 (D4_2,10);
-                                  DO_GROUP_OP2 (D4_3,12);
-                                  DO_GROUP_OP2 (D4_4,14);
+                                  DO_GROUP_OP2 (D4_5,8);
+                                  DO_GROUP_OP2 (D4_6,10);
+                                  DO_GROUP_OP2 (D4_7,12);
+                                  DO_GROUP_OP2 (D4_8,14);
 
                                   DO_GROUP_OP1 (D4_1,B4_1,16);
                                   DO_GROUP_OP1 (D4_2,B4_2,18);
                                   DO_GROUP_OP1 (D4_3,B4_3,20);
                                   DO_GROUP_OP1 (D4_4,B4_4,22);
+                                  DO_GROUP_OP1 (D4_5,B4_5,24);
+                                  DO_GROUP_OP1 (D4_6,B4_6,26);
+                                  DO_GROUP_OP1 (D4_7,B4_7,28);
+                                  DO_GROUP_OP1 (D4_8,B4_8,30);
                                   DO_GROUP_OP2 (D4_1,16);
                                   DO_GROUP_OP2 (D4_2,18);
                                   DO_GROUP_OP2 (D4_3,20);
                                   DO_GROUP_OP2 (D4_4,22);
-
-                                  DO_GROUP_OP1 (D4_1,B4_1,24);
-                                  DO_GROUP_OP1 (D4_2,B4_2,26);
-                                  DO_GROUP_OP1 (D4_3,B4_3,28);
-                                  DO_GROUP_OP1 (D4_4,B4_4,30);
-                                  DO_GROUP_OP2 (D4_1,24);
-                                  DO_GROUP_OP2 (D4_2,26);
-                                  DO_GROUP_OP2 (D4_3,28);
-                                  DO_GROUP_OP2 (D4_4,30);
+                                  DO_GROUP_OP2 (D4_5,24);
+                                  DO_GROUP_OP2 (D4_6,26);
+                                  DO_GROUP_OP2 (D4_7,28);
+                                  DO_GROUP_OP2 (D4_8,30);
 
                                   DO_GROUP_OP1 (D4_1,B4_1,32);
                                   DO_GROUP_OP1 (D4_2,B4_2,34);
                                   DO_GROUP_OP1 (D4_3,B4_3,36);
                                   DO_GROUP_OP1 (D4_4,B4_4,38);
+                                  DO_GROUP_OP1 (D4_5,B4_5,40);
+                                  DO_GROUP_OP1 (D4_6,B4_6,42);
+                                  DO_GROUP_OP1 (D4_7,B4_7,44);
+                                  DO_GROUP_OP1 (D4_8,B4_8,46);
                                   DO_GROUP_OP2 (D4_1,32);
                                   DO_GROUP_OP2 (D4_2,34);
                                   DO_GROUP_OP2 (D4_3,36);
                                   DO_GROUP_OP2 (D4_4,38);
+                                  DO_GROUP_OP2 (D4_5,40);
+                                  DO_GROUP_OP2 (D4_6,42);
+                                  DO_GROUP_OP2 (D4_7,44);
+                                  DO_GROUP_OP2 (D4_8,46);
 
-                                  DO_GROUP_OP1 (D4_1,B4_1,40);
-                                  DO_GROUP_OP1 (D4_2,B4_2,42);
-                                  DO_GROUP_OP1 (D4_3,B4_3,44);
-                                  DO_GROUP_OP1 (D4_4,B4_4,46);
-                                  DO_GROUP_OP2 (D4_1,40);
-                                  DO_GROUP_OP2 (D4_2,42);
-                                  DO_GROUP_OP2 (D4_3,44);
-                                  DO_GROUP_OP2 (D4_4,46);
 
                                   DO_GROUP_OP1 (D4_1,B4_1,48);
                                   DO_GROUP_OP1 (D4_2,B4_2,50);
                                   DO_GROUP_OP1 (D4_3,B4_3,52);
                                   DO_GROUP_OP1 (D4_4,B4_4,54);
+                                  DO_GROUP_OP1 (D4_5,B4_5,56);
+                                  DO_GROUP_OP1 (D4_6,B4_6,58);
                                   DO_GROUP_OP2 (D4_1,48);
                                   DO_GROUP_OP2 (D4_2,50);
                                   DO_GROUP_OP2 (D4_3,52);
                                   DO_GROUP_OP2 (D4_4,54);
-                                  
-                                  DO_GROUP_OP1 (D4_1,B4_1,56);
-                                  DO_GROUP_OP1 (D4_2,B4_2,58);
-                                  DO_GROUP_OP2 (D4_1,56);
-                                  DO_GROUP_OP2 (D4_2,58);
+                                  DO_GROUP_OP2 (D4_5,56);
+                                  DO_GROUP_OP2 (D4_6,58);
                                   
                                   for (long k = dimm4; k < vDim; k++) {
                                       dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
@@ -5002,7 +5002,7 @@ long    _Matrix::HashBack  (long logicalIndex) const {
 
 hyFloat  _Matrix::MaxElement  (char runMode, long* indexStore) const {
 // returns matrix's largest abs value element
-    if (storageType == _NUMERICAL_TYPE) {
+    if (is_numeric()) {
         hyFloat max  = 0.0,
                    temp;
 
@@ -5244,7 +5244,7 @@ hyFloat  _Matrix::MaxRelError  (_Matrix& compMx)
 hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
 // returns matrix's smalles non-zero abs value element
 {
-    if (storageType == 1) {
+    if (is_numeric()) {
         hyFloat min = DBL_MAX;
 
         if (theIndex)
@@ -6560,29 +6560,28 @@ bool _Matrix::MResolve (HBLObjectRef p, HBLObjectRef p2, long& ind1, long& ind2)
 
 //_____________________________________________________________________________________________
 
-bool _Matrix::CheckCoordinates (long& ind1, long& ind2)
-{
-    if (hDim == 1) {
-        if (ind2<0) {
+bool _Matrix::CheckCoordinates (long& ind1, long& ind2) {
+    if (hDim == 1L) {
+        if (ind2<0L) {
             ind2 = ind1;
         }
-        ind1=0;
+        ind1=0L;
     }
 
-    if (vDim == 1) {
-        ind2 = 0;
+    if (vDim == 1L) {
+        ind2 = 0L;
     }
 
     if (ind2<0) { // allow direct vectorlike indexing, i.e m[21] = m[3][3] (if the dim is *x6)
-        if (vDim > 1) {
+        if (vDim > 1L) {
             ind2 = ind1%vDim;
             ind1/= vDim;
         } else {
-            ind2 = 0;
+            ind2 = 0L;
         }
     }
 
-    if (ind1<0 || ind1>=hDim || ind2>=vDim) {
+    if (ind1<0L || ind1>=hDim || ind2>=vDim) {
         MatrixIndexError (ind1,ind2, hDim, vDim);
         return false;
     }
@@ -6634,10 +6633,46 @@ void _Matrix::MStore (long ind1, long ind2, HBLObjectRef value, long opCode) {
             StoreFormula (ind1,ind2,*f,false);
         } else {
             if (value->ObjectClass() != NUMBER) {
-                Convert2Formulas();
-                value->AddAReference();
-                _Formula * f = new _Formula (value);
-                StoreFormula (ind1,ind2,*f,false);
+                if (value->ObjectClass () == MATRIX) {
+                    _Matrix * objectToAdd = (_Matrix*)value;
+                    if (!objectToAdd->is_numeric()) {
+                        HandleApplicationError ("Cannot inject non-numeric matrices into other matrices");
+                        return;
+                    }
+                    objectToAdd = (_Matrix *)objectToAdd->Compute();
+                    long c = ind2;
+                    long source_row = 0L, source_column = 0L;
+                    
+                    const long srows = objectToAdd->GetHDim(),
+                               scols = objectToAdd->GetVDim();
+                    
+                    for (long i = ind1; i < hDim; i++) {
+                        for (long j = c; j < vDim; j++) {
+                            if (source_column >= scols) {
+                                source_column = 0;
+                                source_row ++;
+                            }
+                            if (source_row >= srows) {
+                                return;
+                            }
+                            
+                            hyFloat toStore = (*objectToAdd)(source_row,source_column);
+                            if (opCode == HY_OP_CODE_ADD) {
+                                toStore += (*this)(i,j);
+                            }
+                            Store(i,j,toStore);
+                            source_column++;
+                            
+                        }
+                        c = 0L;
+                    }
+                    
+                } else {
+                    Convert2Formulas();
+                    value->AddAReference();
+                    _Formula * f = new _Formula (value);
+                    StoreFormula (ind1,ind2,*f,false);
+                }
             } else {
                 hyFloat toStore = value->Value();
                 if (opCode == HY_OP_CODE_ADD) {
@@ -6800,6 +6835,7 @@ void        _Matrix::StoreFormula (long i, long j, _Formula& f, bool copyF, bool
         _Polynomial*    is_poly = (_Polynomial*)f->ConstructPolynomial();
         if (is_poly) {
             _Formula pf (is_poly);
+            f->Clear();
             f->Duplicate(&pf);
         }
         f->SimplifyConstants();
@@ -8450,28 +8486,44 @@ void       _Matrix::NonZeroEntries (_SimpleList& target) {
 }
 
 //_____________________________________________________________________________________________
-bool       _Matrix::Equal(HBLObjectRef mp)
-{
-    if (mp->ObjectClass()!=ObjectClass()) {
-        return false;
-    }
-
-    _Matrix * m = (_Matrix*)mp;
+bool       _Matrix::CompareMatrices(const _Matrix *m, hyFloat tolerance) const {
     
     if (m->storageType == storageType && m->hDim == hDim && m->vDim == vDim) {
         if (is_numeric()) {
             if (theIndex || m->theIndex) {
-                for (long r = 0L; r < hDim; r ++) {
-                    for (long c = 0L; c < vDim; c++) {
-                        if (!CheckEqual((*this)(r,c), (*m)(r,c))) {
-                            return false;
+                if (theIndex && m->theIndex) {
+                    if (lDim == m->lDim) {
+                        bool shortcut = true;
+                        for (long r = 0L; r < lDim; r++) {
+                            long k   =  theIndex[r];
+                            long k2  =  m->theIndex[r];
+                            if (k == k2) {
+                                if (k >= 0) {
+                                    if (!CheckEqual(theData[r], m->theData[r], tolerance)) {
+                                        return false;
+                                    }
+                                }
+                            } else {
+                                shortcut = false;
+                                break;
+                            }
+                        }
+                        if (shortcut) {
+                            return true;
                         }
                     }
                 }
                 
+                for (long r = 0L; r < hDim; r ++) {
+                    for (long c = 0L; c < vDim; c++) {
+                        if (!CheckEqual((*this)(r,c), (*m)(r,c), tolerance)) {
+                            return false;
+                        }
+                    }
+                }
             } else {
                 for (long elementID = 0; elementID < lDim; elementID ++) {
-                    if (!CheckEqual(theData[elementID], m->theData[elementID])) {
+                    if (!CheckEqual(theData[elementID], m->theData[elementID], tolerance)) {
                         return false;
                     }
                 }
@@ -8502,6 +8554,17 @@ bool       _Matrix::Equal(HBLObjectRef mp)
     }
     
     return false;
+}
+
+//_____________________________________________________________________________________________
+bool       _Matrix::Equal(HBLObjectRef mp) {
+    
+    if (mp->ObjectClass() != ObjectClass()) {
+        return false;
+    }
+
+    return CompareMatrices ((_Matrix*)mp);
+
 }
 
 
@@ -8913,8 +8976,8 @@ BaseRef _Matrix::toStr(unsigned long padding) {
 
 //_____________________________________________________________________________________________
 
-void     _Matrix::Serialize (_StringBuffer& res, _String& myID) {
-    if (storageType != _POLYNOMIAL_TYPE) {
+void     _Matrix::Serialize (_StringBuffer& res, _String const& myID, _List * matched_names) {
+    if (!is_polynomial()) {
         res << '\n';
         res <<  myID;
         if (is_numeric()) {
@@ -8928,7 +8991,7 @@ void     _Matrix::Serialize (_StringBuffer& res, _String& myID) {
                     _Formula *theCell = GetFormula (h,v);
                     if (theCell&& !theCell->IsEmpty()) {
                         res << myID << '[' << _String(h) << "][" << _String(v) << "]:=";
-                        res.AppendNewInstance((_String*)theCell->toStr(kFormulaStringConversionNormal));
+                        res.AppendNewInstance((_String*)theCell->toStr(kFormulaStringConversionNormal,matched_names));
                         res << ";\n";
                     }
                 }

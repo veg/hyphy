@@ -609,6 +609,63 @@ lfunction ancestral.ComputeCompressedSubstitutionsBySite (ancestral_data, site) 
 
 /*******************************************
  **
+ * @name ancestral.ComputeCompressedSubstitutions
+ * computes the minimal representation of character states needed to recover the substitution 
+ * history
+
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+
+
+ * @returns
+        {
+          "0" : {
+               "root"   : "state",
+               "branch1" : "state",
+               "branch2" : "state"
+               ....
+            },
+           "1" : 
+        }
+
+        character state at the root and at every branch that is different from 
+        its parent
+        
+ */
+
+/*******************************************/
+
+
+lfunction ancestral.ComputeCompressedSubstitutions (ancestral_data) {
+
+    result   = {};
+    branches = (ancestral_data["DIMENSIONS"])["BRANCHES"];
+    sites = Columns (ancestral_data["MATRIX"]);
+
+    for (site = 0; site < sites; site += 1) {
+        result[site] = {};
+        for (b = 1; b <= branches; b += 1) {
+            self   = b;
+            parent = ((ancestral_data["TREE_AVL"])[b])["Parent"];
+            own_state    = (ancestral_data["MATRIX"])[self-1][site];
+            if (parent > 0) {
+                parent_state = (ancestral_data["MATRIX"])[parent-1][site];
+        
+                if  ((own_state != parent_state)) {
+                    (result[site]) [(((ancestral_data["TREE_AVL"])[b]))["Name"]] = (ancestral_data["MAPPING"])[own_state];
+                }
+            } else {
+                (result[site]) ["root"] = (ancestral_data["MAPPING"])[own_state];
+            }
+        }
+    }
+
+
+    return  result;
+
+}
+
+/*******************************************
+ **
  * @name ancestral.ComputeSiteComposition
  * computes the counts of individual characters (including ancestral states)
  * at a specific site, possibly filtered to a subset of branches

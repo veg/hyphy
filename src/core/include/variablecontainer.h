@@ -116,10 +116,10 @@ public:
     virtual     void        CompileListOfDependents     (_SimpleList&);
 
     void        MatchParametersToList       (_List&, bool doAll = false, bool indOnly = false);
-    _Matrix*    GetModelMatrix              (_List* = nil, _SimpleList* = nil) const;
+    _Matrix*    GetModelMatrix              (_List* = nil, _SimpleList* = nil, long cat_id = -1L) const;
     _Matrix*    GetFreqMatrix               (void) const;
     bool        HasExplicitFormModel        (void) const;
-    _Formula*   GetExplicitFormModel        (void) const;
+    _Formula*   GetExplicitFormModel        (long categ_id = -1) const;
 
     long        GetModelIndex               (void) const {
         return theModel;
@@ -157,6 +157,7 @@ protected: // data members
     void                RemoveLocalVariable  (_SimpleList* & array, long array_index);
     void                RemoveGlobalVariable (long array_index);
     long                InsertVariableInSortedList (_SimpleList * & list, _String const&  var_name, long var_idx, long ref_idx);
+    static long         categ_id_mapper (long i) {return i>=0 ? i : 0;}
 
     static              void                CopyModelParameterValue (long var_idx, long ref_index, unsigned long);
     
@@ -172,7 +173,7 @@ protected: // data members
     template <typename LAMBDA> long FindLocalVariable (_SimpleList const * array, LAMBDA && cb) const {
         if (array) {
             unsigned long array_l = array->countitems();
-            for (long index = 0UL; index < array_l; index += 2UL) {
+            for (unsigned long index = 0UL; index < array_l; index += 2UL) {
                 if (cb (array->get (index), array->get (index+1), index)) {
                     return index >> 1;
                 }
@@ -197,6 +198,12 @@ protected: // data members
 
     long                theModel;   // model template for the container
     _VariableContainer  *theParent; // a higher level container, if there is one.
+    
+    /**
+                20220509 : SLKP
+                  Added this per variable (per tree node) formula to hold copies of BS-REL type models, so that partial results can be cached.
+     */
+    _Formula            **templateFormulaClone;
 
 };
 

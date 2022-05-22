@@ -103,6 +103,8 @@ public:
     inline bool CanFreeMe (void)  const { return reference_counter <= 1L; }
     
     inline bool SingleReference (void)  const { return reference_counter == 1L; }
+    
+    inline long GetReferenceCounter (void) const {return reference_counter;}
     // comparison functions
     
     

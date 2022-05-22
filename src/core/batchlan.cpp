@@ -160,13 +160,8 @@ blDataSetFilter            ("DataSetFilter "),
 blTree                     ("Tree "),
 blLF                       ("LikelihoodFunction "),
 blLF3                  ("LikelihoodFunction3 "),
-blGetString                ("GetString("),
-blExport                   ("Export("),
-blReplicate                ("ReplicateConstraint("),
 blImport                   ("Import"),
 blCategory             ("category "),
-blClearConstraints         ("ClearConstraints("),
-blSetDialogPrompt      ("SetDialogPrompt("),
 blModel                    ("Model "),
 blChoiceList               ("ChoiceList("),
 blTopology                 ("Topology "),
@@ -5131,8 +5126,13 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
 
 
 //____________________________________________________________________________________
-void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDone, bool completeExport)
-{
+void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDone, bool completeExport, _AssociativeList* options) {
+    
+    static const _String kGlobalRemap               ("GLOBAL_TO_LOCAL"),
+                         kSubstitutions             ("VARIABLE_SUBSTITUTIONS"),
+                         kUniqueComponentNames      ("UNIQUE_COMPONENT_NAMES"),
+                         kReturnModelName           ("RETURN_MODEL_NAME");
+    
     bool        mByF = true,
                 do2  = false;
 
@@ -5141,6 +5141,8 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
 
     _Formula    * theExp  = nil;
     _SimpleList   matrices;
+    
+    _List         reference_manager;
 
     if (modelTypeList.list_data[theModel]) {
         theExp = (_Formula*)modelMatrixIndices.list_data[theModel];
@@ -5178,6 +5180,24 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
         do2 = true;
     }
 
+    _List * substitutions = nil;
+    _AssociativeList * subs = nil,
+                     * global_status = nil;
+    bool  unique_component_names = options && !CheckEqual(0.0, options->GetNumberByKeyDefault(kUniqueComponentNames));
+    
+    if (options) {
+        subs = (_AssociativeList*)options->GetByKey(kSubstitutions, ASSOCIATIVE_LIST);
+        if (subs) {
+            substitutions  = new _List;
+            subs->KeysValuesAsLists (*substitutions);
+            reference_manager < substitutions;
+            //ObjectToConsole(subs);
+        }
+        global_status = (_AssociativeList*)options->GetByKey(kGlobalRemap, ASSOCIATIVE_LIST);
+        
+    }
+    
+    
     if (completeExport && (matrices.lLength || do2 || theExp)) {
         _SimpleList    vl,
                        ind,
@@ -5203,38 +5223,96 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
         _StringBuffer glVars (128L),
                 locVars(128L);
         
-
-        ExportIndVariables (glVars,locVars, &ind);
-        ExportDepVariables (glVars,locVars, &dep);
+        ExportIndVariables (glVars,locVars, &ind, global_status, subs);
+        ExportDepVariables (glVars,locVars, &dep, global_status, subs);
+        
         rec << "SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);\n" << glVars <<locVars << "SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);\n" ;
         ExportCatVariables (rec,&cat);
     }
 
+ 
+    _AVLListXL * component_subs = nil;
+    _String * namespace_wrapper = nil;
+    _List   *object_subs = nil;
+    if (unique_component_names) {
+        _List * keys = new _List;
+        object_subs = new _List;
+        (*object_subs) < new _List;
+        (*object_subs) < new _List;
+        namespace_wrapper = new _String (_HYGenerateANameSpace());
+        component_subs = new _AVLListXL (keys);
+        reference_manager < keys < component_subs < namespace_wrapper < object_subs;
+    } else {
+        object_subs = substitutions;
+        if (substitutions) {
+            substitutions->AddAReference();
+        }
+    }
+
+    auto get_name = [&] (_String* name) -> _String const& {
+        _String const * res = nil;
+        if (component_subs) {
+            _String * m = (_String*)component_subs->GetDataByKey (name);
+            if (m) {
+                res = m;
+            } else {
+                _String * new_id = new _String (AppendContainerName(*name,namespace_wrapper));
+                component_subs->Insert(new _String (*name), (long)new_id, false);
+                res = new_id;
+                *((_List*)(object_subs->GetItem(0))) << name;
+                *((_List*)(object_subs->GetItem(1))) << new_id;
+            }
+        }
+        if (!res) return *name;
+        return *res;
+    };
+    
+    
     if (matrices.lLength) {
         for (long k = 0; k < matrices.lLength; k++) {
             _Variable *tV = LocateVar (matrices.list_data[k]);
-            ((_Matrix*)   tV->GetValue())->Serialize (rec,*tV->GetName());
+            ((_Matrix*)   tV->GetValue())->Serialize (rec,get_name(tV->GetName()), substitutions);
             rec << '\n';
         }
     }
 
     if (do2) {
-        ((_Matrix*)   tV2->GetValue())->Serialize (rec,*tV2->GetName());
+        ((_Matrix*)   tV2->GetValue())->Serialize (rec,get_name(tV2->GetName()));
     }
+    
 
     rec << "\nModel "
-     << *((_String*)modelNames (theModel))
-     << "=(";
-    if (theExp) {
-        rec << _String((_String*)(theExp->toStr(kFormulaStringConversionNormal))).Enquote();
-     } else {
-        rec << *tV->GetName();
+        << get_name ((_String*)modelNames (theModel))
+        << "=(";
+    
+
+    if (object_subs != substitutions) {
+        _List *ids = (_List*) substitutions->GetItem(0),
+              *id_from = (_List*) object_subs->GetItem(0),
+              *id_to = (_List*) object_subs->GetItem(1);
+        for (long i = 0; i < ids -> countitems(); i ++) {
+
+            (*id_from) << ids->GetItem(i);
+            (*id_to) << substitutions->GetItem(1,i);
+        }
     }
-    rec << ',' << *tV2->GetName();
+    
+    
+    if (theExp) {
+        rec << _String((_String*)(theExp->toStr(kFormulaStringConversionNormal, object_subs))).Enquote();
+    } else {
+        rec << get_name (tV->GetName());
+    }
+    rec << ',' << get_name (tV2->GetName());
     if (theExp) {
         rec << ',' << explicitFormMExp;
     } else if (!mByF) {
         rec << ",0";
     }
     rec << ");\n";
+    
+    if (options && !CheckEqual(0.0, options->GetNumberByKeyDefault(kReturnModelName))) {
+        rec << "return " << get_name ((_String*)modelNames (theModel)).Enquote() << ";\n";
+    }
+    
 }

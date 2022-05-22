@@ -1245,7 +1245,7 @@ long  _SimpleList::Choice () const {
   return kNotFound;
 }
 
-// Create a permutation of the list's elements
+// Sample with replacement
 _SimpleList const  _SimpleList::Sample (unsigned long size) const {
     // TODO SLKP 20171026: this is new, need to check correctness
     if (size >= lLength) {

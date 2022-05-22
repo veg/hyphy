@@ -702,6 +702,27 @@ lfunction parameters.GetStickBreakingDistribution (parameters) {
     return distribution;
 }
 
+/**
+ * @name parameters.GetStickBreakingDistributionWeigths
+ * @param   {Matrix} 1xN matrix of weight parameters
+ * @returns {Matrix} 1x(N+1) matrix of weights
+ */
+
+lfunction parameters.GetStickBreakingDistributionWeigths (weights) {
+    rate_count = utility.Array1D (weights);
+    w = {1, rate_count+1};
+
+    current_weight = 1;
+
+    for (i = 0; i < rate_count; i += 1) {
+        w [i] = current_weight * weights[i];
+        current_weight = current_weight * (1-weights[i]);
+        
+    }
+    w[i] = current_weight;
+    return w;
+}
+
 
 /**
  * @name parameters.helper.stick_breaking

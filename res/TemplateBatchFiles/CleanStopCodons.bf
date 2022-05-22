@@ -64,7 +64,7 @@ for (k=0; k<all64.species; k+= 1) {
 		newName = "Unnamed";
 	} else {
 	    if (DO_NOT_RENAME_SEQUENCES != TRUE) {
-            for (k3 = 0; k3 < k2; k3 += 1) {
+           for (k3 = 0; k3 < k2; k3 += 1) {
                 aChar = seqName[k3];
                 if ((aChar$validID)[0] < 0) {
                     newName = newName+"_";
@@ -180,18 +180,19 @@ if (filteringOption%2) {
 	doSomething = doSomething || (Abs(haveInfoAtSites)<all64.unique_sites);
 }
 
-if (doSomething) {
-	SetDialogPrompt ("Save cleaned data to:");
-	fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN);
-	for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
-		if (notDuplicate[sequenceIndex]) {
-		    fprintf (LAST_FILE_PATH, ">", sequenceNames[sequenceIndex], "\n", sequenceData[sequenceIndex], "\n\n");
-		}
-	}
-    fprintf (LAST_FILE_PATH, CLOSE_FILE);
+
+if (!doSomething) {
+    fprintf (stdout, "\n\nNo stop codons found\n\n");
 }
-else {
-	fprintf (stdout, "\n\nNo stop codons found\n\n");
+
+SetDialogPrompt ("Save cleaned data to:");
+fprintf (PROMPT_FOR_FILE, CLEAR_FILE, KEEP_OPEN);
+for (sequenceIndex = 0; sequenceIndex < all64.species; sequenceIndex += 1) {
+    if (notDuplicate[sequenceIndex]) {
+        fprintf (LAST_FILE_PATH, ">", sequenceNames[sequenceIndex], "\n", sequenceData[sequenceIndex], "\n\n");
+    }
 }
+fprintf (LAST_FILE_PATH, CLOSE_FILE);
+
 
 sequenceData = 0;

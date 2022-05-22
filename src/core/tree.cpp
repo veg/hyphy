@@ -2064,7 +2064,7 @@ void _TheTree::SetUpMatrices (long categCount) {
         if (iterator->IsConstant()) {
             iterator->varFlags |= HY_VC_NO_CHECK;
         }
-        iterator->ConvertToSimpleMatrix();
+        iterator->ConvertToSimpleMatrix(categoryCount);
 
         if (categoryCount==1L) {
             iterator->matrixCache = nil;
@@ -2078,7 +2078,7 @@ void _TheTree::SetUpMatrices (long categCount) {
 
 //__________________________________________________________________________________
 
-void _TheTree::CleanUpMatrices (void) {
+void _TheTree::CleanUpMatrices (long category_count) {
     _TreeIterator ti (this, _HY_TREE_TRAVERSAL_POSTORDER);
 
     if (categoryCount == 1L) {
@@ -2088,7 +2088,7 @@ void _TheTree::CleanUpMatrices (void) {
             // this breaks after ReplicateConstraint or MolecularClock is called
             // WTF?
 
-            iterator->ConvertFromSimpleMatrix();
+            iterator->ConvertFromSimpleMatrix(categoryCount);
 
             if (iterator->compExp) {
                 DeleteObject (iterator->compExp);
@@ -2099,7 +2099,7 @@ void _TheTree::CleanUpMatrices (void) {
         }
     } else {
         while   (_CalcNode* iterator = ti.Next()) {
-            iterator->ConvertFromSimpleMatrix();
+            iterator->ConvertFromSimpleMatrix(category_count);
 
             for (long i=0; i<categoryCount; i++) {
                 DeleteAndZeroObject(iterator->matrixCache[i]);
@@ -2178,6 +2178,7 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
     _AVLList    cLL (&cL);
     _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot );
     
+     
     while   (_CalcNode* iterator = ti.Next()) {
 
         _Formula *explicitFormMExp = iterator->GetExplicitFormModel ();
@@ -2185,29 +2186,29 @@ void _TheTree::ScanForGVariables (_AVLList& li, _AVLList& ld, _AVLListX * tagger
 
         if ((explicitFormMExp && cLL.Find ((BaseRef)explicitFormMExp) < 0) || (modelM && cLL.Find(modelM) < 0)) {
             _SimpleList temp;
-            {
-                _AVLList tempA (&temp);
-                if (modelM) {
-                    modelM->ScanForVariables(tempA, true);
-                } else {
-                    explicitFormMExp->ScanFForVariables(tempA, true, false, true, true);
-                }
+            _AVLList tempA (&temp);
+            if (modelM) {
+                modelM->ScanForVariables(tempA, true);
                 tempA.ReorderList();
-            }
-            for (unsigned long i=0; i<temp.lLength; i++) {
-                long p = temp.list_data[i];
-                _Variable* v = LocateVar (p);
-                if (v&&v->IsGlobal()) {
-                    if(v->IsIndependent()) {
-                        li.Insert ((BaseRef)p);
-                        if (tagger) {
-                            tagger->UpdateValue((BaseRef)p, weight, 0);
+                
+                for (unsigned long i=0; i<temp.lLength; i++) {
+                    long p = temp.list_data[i];
+                    _Variable* v = LocateVar (p);
+                    if (v&&v->IsGlobal()) {
+                        if(v->IsIndependent()) {
+                            li.Insert ((BaseRef)p);
+                            if (tagger) {
+                                tagger->UpdateValue((BaseRef)p, weight, 1);
+                            }
+                        } else {
+                            ld.Insert ((BaseRef)p);
                         }
-                    } else {
-                        ld.Insert ((BaseRef)p);
                     }
                 }
+            } else {
+                explicitFormMExp->ScanFForVariables(tempA, true, false, true, true, tagger, weight, weight >> 2);
             }
+            
             cLL.Insert (modelM?(BaseRef)modelM:(BaseRef)explicitFormMExp);
         }
         iterator -> ScanForGVariables(li,ld);
@@ -2705,7 +2706,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     
     _SimpleList     isExplicitForm ((unsigned long)expNodes.countitems());
     bool            hasExpForm = false;
-    
+
     for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
@@ -2721,58 +2722,102 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
                 nodesToDo << thisNode;
             }
         }
+        
+
     }
     
     //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
+    //ObjectToConsole(&isExplicitForm);
     
-    unsigned long matrixID;
+    unsigned long id;
     
     _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
     
 #ifdef _OPENMP
-    unsigned long nt = cBase<20?1:(MIN(tc, matrixQueue.lLength / 3 + 1));
-    hy_global::matrix_exp_count += matrixQueue.lLength;
+    _SimpleList parallel, serial;
+    isExplicitForm.Each ([&parallel,&serial](long mx_count, unsigned long id) -> void {
+        if (mx_count < 0) serial << id; else parallel << id;
+    });
+    hy_global::matrix_exp_count += matrixQueue.lLength - serial.countitems();
+    unsigned long nt = cBase<20?1:(MIN(tc, parallel.lLength / 3 + 1));
+    unsigned long cs = cBase<20 ? 10 : (cBase < 60 ? 5 : 2);
+
+    //printf ("_TheTree::ExponentiateMatrices %d total, %d no update, (block update %d)\n", parallel.lLength, serial.lLength, nt);
 #endif
 
+    if (parallel.lLength) {
 #ifdef _OPENMP
   #if _OPENMP>=201511
-    #pragma omp parallel for default(shared) private (matrixID) schedule(monotonic:guided) proc_bind(spread) if (nt>1)  num_threads (nt)
+    #pragma omp parallel for default(shared) private (id) schedule(monotonic:guided, cs) proc_bind(spread) if (nt>1)  num_threads (nt)
   #else
   #if _OPENMP>=200803
-    #pragma omp parallel for default(shared) private (matrixID) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt) 
+    #pragma omp parallel for default(shared) private (id) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt)
   #endif
 #endif
 #endif
-    for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
+        for  (id = 0; id < parallel.lLength; id++) {
+            long matrixID = parallel.get (id);
+            if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
+                ((_CalcNode*) nodesToDo(matrixID))->SetCompExp ((_Matrix*)matrixQueue(matrixID), catID, true);
+            } else {
+                (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
+            }
+        }
+    }
+    
+    for ( id = 0; id < serial.lLength; id++) {
+        long matrixID = serial.get (id);
+        _Matrix *already_computed = ((_Matrix*)matrixQueue(matrixID));
+        (*computedExponentials) [matrixID] = already_computed;
+    }
+    
+    /*for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
         if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
             ((_CalcNode*) nodesToDo(matrixID))->SetCompExp ((_Matrix*)matrixQueue(matrixID), catID, true);
         } else {
-            (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
+            if (isExplicitForm.list_data[matrixID] > 0) {
+                (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
+            } else {
+                _Matrix *already_computed = ((_Matrix*)matrixQueue(matrixID));
+                (*computedExponentials) [matrixID] = already_computed;
+                //printf ("\tNO MATRIX UPDATE %d (%d)\n", matrixID, already_computed->GetReferenceCounter());
+                //ObjectToConsole(  (*computedExponentials) [matrixID] );
+                //already_computed ->AddAReference();
+            }
         }
-    }
+    }*/
  
     if (computedExponentials) {
         _CalcNode * current_node         = nil;
         _List       buffered_exponentials;
         
         for (unsigned long mx_index = 0; mx_index < nodesToDo.lLength; mx_index++) {
-            if (isExplicitForm.list_data[mx_index]) {
+            if (isExplicitForm.list_data[mx_index] > 0) {
                 _CalcNode *next_node = (_CalcNode*) nodesToDo (mx_index);
-                //printf ("%x %x\n", current_node, next_node);
-                if (next_node != current_node) {
+                 if (next_node != current_node) {
                     if (current_node) {
                         current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
                     }
                     current_node = next_node;
-                    buffered_exponentials.Clear(true);
-                    buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
+                    buffered_exponentials.Clear();
+                    buffered_exponentials << (*computedExponentials)(mx_index);
                 }
                 else {
-                    buffered_exponentials.AppendNewInstance((*computedExponentials)(mx_index));
+                    buffered_exponentials << (*computedExponentials)(mx_index);
                 }
             } else {
-                if (current_node) {
-                    current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                if (isExplicitForm.list_data[mx_index] < 0) {
+                    if (current_node && buffered_exponentials.countitems()) {
+                        current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                    }
+                    buffered_exponentials.Clear();
+                    buffered_exponentials << (*computedExponentials)(mx_index);
+                    ((_CalcNode*) nodesToDo (mx_index))->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials, true);
+                    buffered_exponentials.Clear();
+                } else {
+                    if (current_node) {
+                        current_node->RecomputeMatrix (catID, categoryCount, nil, nil, nil, &buffered_exponentials);
+                    }
                 }
                 current_node = nil;
             }

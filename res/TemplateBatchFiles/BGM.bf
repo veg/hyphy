@@ -121,11 +121,19 @@ alignments.EnsureMapping ("bgm.dataset", bgm.alignment_info);
 
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
 KeywordArgument ("branches",  "Branches to test", "All");
+
+utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
+                           bgm.alignment_info[utility.getGlobalValue("terms.data.datafilter")]);
+
+
 bgm.partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (
                                                                              bgm.alignment_info[utility.getGlobalValue("terms.data.partitions")],
                                                                              bgm.alignment_info[utility.getGlobalValue("terms.data.name_mapping")]
                                                                              );
 
+
+utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
+                           None);
 
 io.CheckAssertion ("Abs (bgm.partitions_and_trees) == 1", "BGM cannot be run on data with multiple site partitions (and trees)");
 bgm.filter_specification = alignments.DefineFiltersForPartitions (bgm.partitions_and_trees, "bgm.dataset" , "bgm.filter.", bgm.alignment_info);

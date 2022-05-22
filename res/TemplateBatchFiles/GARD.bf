@@ -359,14 +359,13 @@ if (gard.startWithBP > 0) {
             }
 
 
-            if (gard.validatePartititon ({{siteIndex}}, minPartitionSize, numSites) == FALSE)  {
-                continue;
-            }
+            if (gard.validatePartititon ({{siteIndex}}, minPartitionSize, numSites))  {
 
-            mpi.QueueJob (queue, "gard.obtainModel_cAIC", {"0" : {{siteIndex__}},
-                                                         "1" : model,
-                                                         "2" : baseLikelihoodInfo},
-                                                         "gard.storeSingleBreakPointModelResults");
+                mpi.QueueJob (queue, "gard.obtainModel_cAIC", {"0" : {{siteIndex__}},
+                                                             "1" : model,
+                                                             "2" : baseLikelihoodInfo},
+                                                             "gard.storeSingleBreakPointModelResults");
+            }
                                                      
 
         }
@@ -381,19 +380,22 @@ if (gard.startWithBP > 0) {
     }
 
     // 2a3. Evaluate if the best single breakpoint is the overall best model
-    if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
+    //if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
         gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
         gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
-        gard.improvements = {'0': {
-                                    "deltaAICc": gard.baseline_cAIC - gard.bestOverall_cAIC_soFar,
-                                    "breakpoints": gard.bestOverallModelSoFar
-                                  }
-                            };
-    } else {
-        gard.bestOverallModelSoFar = null;
-    }
+     //} else {
+     //   gard.bestOverallModelSoFar = null;
+    //}
+    
+    gard.improvements = {'0': {
+                            "deltaAICc": gard.baseline_cAIC - gard.bestOverall_cAIC_soFar,
+                            "breakpoints": gard.bestOverallModelSoFar
+                          }
+                    };
 
+    (gard.json)['improvements'] = gard.improvements;
     gard.concludeAnalysis(gard.bestOverallModelSoFar, TRUE);
+    //assert (0);
 }
 
 
@@ -430,6 +432,8 @@ namespace gard {
         numberOfBreakPointsBeingEvaluated = startWithBP;
 
         bestOverallModelSoFar = {1, startWithBP};
+        
+        
         for (i, v; in; json["breakpointData"]) {
             if (+i < startWithBP) {
                 bestOverallModelSoFar[+i] = +(v['bps'])[1];
@@ -754,9 +758,9 @@ function gard.setBestModelTreeInfoToJson(bestModel) {
     gard.bestModelNumberBreakPoints = utility.Array1D(bestModel);
 
     if(gard.bestModelNumberBreakPoints == 0) {
-        gard.json['breakpointData'] = { 'tree': (gard.baseLikelihoodInfo["Trees"])[0],
+        gard.json['breakpointData'] = {'0' : { 'tree': (gard.baseLikelihoodInfo["Trees"])[0],
                                         'bps': {{1,gard.numSites}}
-                                      };
+                                      }};
         gard.json['trees'] = {"newickString": (gard.baseLikelihoodInfo["Trees"])[0] };
     }
 

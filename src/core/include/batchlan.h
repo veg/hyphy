@@ -629,8 +629,6 @@ extern  _AVLListX                   _HY_HBLCommandHelper,
 extern  _Trie                       _HY_ValidHBLExpressions,
                                     _HY_HBL_Namespaces,
                                     _HY_HBL_KeywordsPreserveSpaces;
-
-extern  long                        matrixExpCount;
  
 
 
@@ -676,7 +674,7 @@ ProcessDictionaryArgument (_String* data, _VariableContainer* theP, _ExecutionLi
 
 const _String GetStringFromFormula         (_String const*,_VariableContainer*);
 
-void    SerializeModel               (_StringBuffer &,long,_AVLList* = nil, bool = false);
+void    SerializeModel               (_StringBuffer &,long,_AVLList* = nil, bool = false, _AssociativeList* options = nil);
 bool    Get_a_URL                    (_String&,_String* = nil);
 
 long    AddDataSetToList             (_String&,_DataSet*);

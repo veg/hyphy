@@ -201,7 +201,7 @@ public:
 
     void    Initialize (bool = true);                  // zeros all matrix structures
 
-    virtual void        Serialize (_StringBuffer&,_String&);
+    virtual void        Serialize (_StringBuffer&,_String const&, _List * = nil);
     // write the matrix definition in HBL
 
     //_____________________________________________________________________________________________
@@ -424,6 +424,8 @@ public:
     
     virtual     bool        Equal       (HBLObjectRef);
 
+    bool        CompareMatrices         (_Matrix const* rhs, hyFloat tolerance = kMachineEpsilon) const;
+    
     void        ExportMatrixExp         (_Matrix*, FILE*);
     bool        ImportMatrixExp         (FILE*);
 

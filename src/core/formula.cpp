@@ -59,6 +59,8 @@ hyFloat const sqrtPi = 1.77245385090551603,
 
 _Formula * current_formula_being_computed = nil;
 
+extern long likeFuncEvalCallCount;
+
 //__________________________________________________________________________________
 
 
@@ -150,16 +152,25 @@ _Formula::_Formula (_Formula const& rhs) {
 const _Formula& _Formula::operator =  (_Formula const& rhs) {
     if (this != &rhs) {
         Initialize();
-        Duplicate (&rhs);
+        Duplicate (&rhs, true);
     }
     return *this;
 }
 
 //__________________________________________________________________________________
-void _Formula::Duplicate  (_Formula const * f_cast) {
+void _Formula::Duplicate  (_Formula const * f_cast, bool deep_copy) {
 
-    theFormula.Duplicate       (& f_cast->theFormula);
-    theStack.theStack.Duplicate(& f_cast->theStack.theStack);
+    if (deep_copy) {
+        theFormula.Clear();
+        for (long i = 0; i < f_cast->theFormula.lLength; i++) {
+            theFormula.AppendNewInstance(f_cast->GetIthTerm(i)->makeDynamic());
+        }
+        theStack.Reset();
+    } else {
+        theFormula.Duplicate       (& f_cast->theFormula);
+        theStack.theStack.Duplicate(& f_cast->theStack.theStack);
+    }
+    
     call_count = f_cast->call_count;
     if (f_cast->recursion_calls) {
       recursion_calls = (HBLObjectRef)f_cast->recursion_calls->makeDynamic();
@@ -1861,28 +1872,36 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
                   this_op->Execute (temp);
                   
 
-                  _Matrix *currentArg  = (_Matrix*)temp.Pop(true),
-                          *cachedArg   = (_Matrix*)((HBLObjectRef)(*resultCache)(cacheID)),
-                          *diff        = nil;
+                  _Matrix *currentArg  = (_Matrix*)temp.Pop(false),
+                          *cachedArg   = (_Matrix*)((HBLObjectRef)(*resultCache)(cacheID));
+                  
+                  bool    equal = false;
 
                   if (cachedArg->ObjectClass() == MATRIX) {
-                      diff =  (_Matrix*)cachedArg->SubObj(currentArg, nil);
+                      equal = currentArg->CompareMatrices (cachedArg, DBL_EPSILON*100.);
+                      //printf  ("Operation index = %d, cache ID = %d, equal = %d, (0,0) vs (0,0) = %g/%g\n", i, cacheID, equal, (*currentArg)(0,0), (*cachedArg)(0,0));
                   }
 
-                  if (diff && diff->MaxElement() <= 1e-12) {
+                  if (equal) {
                       cacheID += 2;
                       i ++;
+                      //DeleteObject(currentArg);
                   } else {
                       cacheUpdated = true;
                       cacheID++;
                       if (next_op->CanResultsBeCached(this_op, true)) {
+                          currentArg->AddAReference();
                           storage->AppendNewInstance(currentArg);
+                          //printf  ("Operation index = %d, cache ID = %d, equal = %d\n", i, cacheID, equal);
+
                           count ++;
+                      } else {
+                          //DeleteObject(currentArg);
                       }
                   }
-                  DeleteObject (diff);
                   continue;
               }
+            
               if (cacheUpdated) {
                   cacheID++;
                   cacheUpdated = false;
@@ -1941,13 +1960,25 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
         const unsigned long term_count = NumberOperations();
 
         if (startAt == 0L && resultCache && !resultCache->empty()) {
+            
             long cacheID     = 0L;
                 // where in the cache are we currently looking
             bool cacheUpdated = false;
                 // whether or not a cached result was used
-
+            //if (can_cache) {
+            //    printf ("\n\n===\n_Formula::Compute (%x)\n", this);
+            //}
+                
             for (unsigned long i=0; i< term_count ; i++) {
                 _Operation* thisOp = ItemAt (i);
+                /*
+                if (can_cache) {
+                    printf ("Step %i %s\n", i, _String ((_String*)thisOp->toStr()).get_str());
+                    for (long i = 0; i < scrap_here->theStack.lLength; i++) {
+                        printf ("\t %d : %x (%d)\n", i, scrap_here->theStack.GetItem(i), scrap_here->theStack.GetItem(i)->GetReferenceCounter());
+                    }
+                }
+                */
                 if ( i + 1UL < term_count ) {
                     _Operation* nextOp  = ItemAt (i+1UL);
 
@@ -1958,36 +1989,50 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                         }
 
                         _Matrix *currentArg  = (_Matrix*)scrap_here->Pop(false),
-                                *cachedArg   = (_Matrix*)((HBLObjectRef)(*resultCache)(cacheID)),
-                                *diff        = nil;
+                                *cachedArg   = (_Matrix*)((HBLObjectRef)resultCache->GetItem(cacheID));
+                        
+                        bool    no_difference = false;
 
                         if (cachedArg->ObjectClass() == MATRIX) {
-                            diff =  (_Matrix*)cachedArg->SubObj(currentArg, nil);
+                            no_difference =  currentArg->CompareMatrices(cachedArg, DBL_EPSILON * 100.);
                         }
-
-                        bool    no_difference = diff && diff->MaxElement() <= 1e-12;
+                       
+                        //if (no_difference)
+                        //    printf ("\n%s|%s|%s|%x|%d|%d|%d|%d\n", no_difference ? "Same" : "Different", _String((_String*)thisOp->toStr()).get_str(), _String((_String*)nextOp->toStr()).get_str(), additionalCacheArguments,  nextOp->CanResultsBeCached(thisOp,true), likeFuncEvalCallCount, cacheID, matrix_exp_count);
+                        
+                        /*
+                        if (likeFuncEvalCallCount == 1) {
+                            ObjectToConsole(currentArg); NLToConsole();  NLToConsole();
+                            ObjectToConsole(cachedArg); NLToConsole();  NLToConsole();
+                        }
+                        */
 
                         if (no_difference || (additionalCacheArguments && !additionalCacheArguments->empty() && nextOp->CanResultsBeCached(thisOp,true))) {
-                            DeleteObject  (scrap_here->Pop  ());
                             if (no_difference) {
+                                DeleteObject  (scrap_here->Pop ());
                                 scrap_here->Push ((HBLObjectRef)(*resultCache)(cacheID+1));
+                                //printf ("Cached results\n");
                             } else {
-
+                                HBLObjectRef updated_mx = scrap_here->Pop();
+                                resultCache->Replace(cacheID,updated_mx,false);
                                 scrap_here->Push ((HBLObjectRef)additionalCacheArguments->GetItem (0));
-                                resultCache->Replace(cacheID,scrap_here->Pop(false),true);
                                 resultCache->Replace(cacheID+1,(HBLObjectRef)additionalCacheArguments->GetItem (0),false);
-                                additionalCacheArguments->Delete (0, false);
-                                //printf ("_Formula::Compute additional arguments %ld\n", additionalCacheArguments->lLength);
+                                additionalCacheArguments->Delete (0, true);
+                                //printf ("_Formula::Compute additional arguments %ld (%s), %f\n", cacheID, _String((_String*)thisOp->toStr()).get_str(), (*(_Matrix*)resultCache->GetItem(cacheID))(0,0));
                            }
                             cacheID += 2;
                             i ++;
-                            //printf ("Used formula cache %s\n", _String((_String*)nextOp->toStr()).sData);
+                            //printf ("Used formula cache %s\n", _String((_String*)nextOp->toStr()).get_str());
                         } else {
                             cacheUpdated = true;
-                            resultCache->Replace(cacheID++,scrap_here->Pop(false),true);
-                            //printf ("Updated formula cache %s\n", _String((_String*)nextOp->toStr()).sData);
+                            HBLObjectRef updated_mx = scrap_here->Pop(false);
+                            resultCache->Replace(cacheID++,updated_mx,true);
+                            //updated_mx->AddAReference();
+                            //printf ("Updated formula cache @%d %s\n", cacheID, _String((_String*)thisOp->toStr()).get_str());
                        }
-                       DeleteObject (diff);
+                       //if (likeFuncEvalCallCount == 1) {
+                       //   exit (0);
+                       //}
                        continue;
                     }
                 }
@@ -1996,8 +2041,11 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                     break;
                 }
                 if (cacheUpdated) {
-                    resultCache->Replace(cacheID++,scrap_here->Pop(false),true);
+                    HBLObjectRef updated_mx = scrap_here->Pop(false);
+                    resultCache->Replace(cacheID++,updated_mx,false);
+                    updated_mx->AddAReference();
                     cacheUpdated = false;
+                    //printf ("_Formula::Compute Updated Cache %ld\n", cacheID);
                 }
             }
         } else {
@@ -2007,9 +2055,11 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                       wellDone = false;
                       break;
                   }
-
             }
         }
+        
+        
+        
         if (scrap_here->StackDepth() != 1L || !wellDone) {
             _String errorText = _String ("'") & _String((_String*)toStr(kFormulaStringConversionNormal)) & _String("' evaluated with errors ");
             if (errMsg && errMsg->nonempty()) {
@@ -2125,8 +2175,7 @@ void _Formula::ConvertMatrixArgumentsToSimpleOrComplexForm (bool make_complex) {
   
   if (make_complex) {
     if (resultCache) {
-      DeleteObject (resultCache);
-      resultCache = nil;
+      DeleteAndZeroObject(resultCache);
     }
   } else {
     if (!resultCache) {
@@ -2282,6 +2331,7 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
                         case HY_OP_CODE_SUB:
                         case HY_OP_CODE_MUL:
                         case HY_OP_CODE_DIV:
+                        case HY_OP_CODE_POWER:
                             simpleExpressionStatus[i] = -10000L - this_op->opCode;
                     }
                 }
@@ -2361,6 +2411,20 @@ hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum
                             case HY_OP_CODE_DIV:
                                 stack[stackTop-1].value = stack[stackTop-1].value / stack[stackTop].value;
                                 break;
+                            case HY_OP_CODE_POWER: {
+                                //stack[stackTop-1].value = pow (stack[stackTop-1].value, stack[stackTop].value);
+                                
+                                if (stack[stackTop-1].value==0.0) {
+                                  if (stack[stackTop].value > 0.0) {
+                                    return 0.0;
+                                  } else {
+                                    return 1.0;
+                                  }
+                                }
+                                stack[stackTop-1].value =  pow (stack[stackTop-1].value, stack[stackTop].value);
+                                
+                                break;
+                            }
                             default:
                                 HandleApplicationError ("Internal error in _Formula::ComputeSimple - unsupported shortcut operation.)", true);
                                 return 0.0;
@@ -2584,9 +2648,10 @@ bool _Formula::HasChangedSimple (_SimpleList& variableIndex) {
 }
 
 //__________________________________________________________________________________
-void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight) const {
+void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeAll, bool includeCategs, bool skipMatrixAssignments, _AVLListX* tagger, long weight, long weight2) const {
     unsigned long const upper_bound = NumberOperations();
   
+    
     for (unsigned long i=0UL; i<upper_bound; i++) {
         _Operation * this_op = ItemAt (i);
         if (this_op->IsAVariable()) {
@@ -2607,11 +2672,14 @@ void _Formula::ScanFForVariables (_AVLList&l, bool includeGlobals, bool includeA
                 if (v->IsCategory()&&includeCategs) {
                     v->ScanForVariables (l,includeGlobals,tagger, weight);
                 }
-
+                
                 if(includeAll || v->ObjectClass()==NUMBER) {
                     l.Insert ((BaseRef)f);
                     if (tagger) {
-                        tagger -> UpdateValue((BaseRef)f, weight, 0);
+                        /*if (weight2) {
+                            printf ("\n\n\nWEIGHT2\n%d: %s\n", weight2, v->GetName()->get_str());
+                        }*/
+                        tagger -> UpdateValue((BaseRef)f, weight2 > 0 ? weight2 : weight, weight2 > 0);
                     }
                 }
 

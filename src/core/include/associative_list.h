@@ -141,7 +141,15 @@ public:
     unsigned   long     countitems      (void) const {
         return avl.countitems();
     }
+
+    /**
+     * Traverse the dictionary, and store keys and corresponding values  as two lists : key [x], and value [x], where x is 0 : |Dict| -1
+     * @param the list to contain key and value lists (as 0 and 1 indices)
+     * @return None
+     */
     
+    void                KeysValuesAsLists      (_List&);
+
     /* obtain an iterator over list elements */
     AVLListXLIterator         ListIterator (void) {
         return AVLListXLIterator (&avl);
@@ -167,6 +175,8 @@ public:
      */
     
     hyFloat GetNumberByKey (const _String& key) const;
+
+    hyFloat GetNumberByKeyDefault (const _String& key, hyFloat = 0.) const;
 
     
 private:

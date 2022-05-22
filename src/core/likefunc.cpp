@@ -241,6 +241,8 @@ hyFloat  myLog (hyFloat);
 
 void         BenchmarkThreads (_LikelihoodFunction* lf) {
     long         alterIndex = 0;
+    
+    if (lf->GetThreadCount() != 1) return;
 
     if      (lf->HasComputingTemplate()) {
         for (unsigned long k=0; k<lf->GetIndependentVars().lLength; k++)
@@ -250,7 +252,11 @@ void         BenchmarkThreads (_LikelihoodFunction* lf) {
             }
     }
 
-
+    hyFloat cached_value = lf->GetIthIndependent(alterIndex),
+            lb = lf->GetIthIndependentBound (alterIndex,true),
+            range = (lf->GetIthIndependentBound(alterIndex,false) - lb)*0.001;
+    
+    //printf ("%g %g %g\n", lb, range, cached_value);
 
 #ifdef  _OPENMP
     lf->SetThreadCount (1);
@@ -261,7 +267,7 @@ void         BenchmarkThreads (_LikelihoodFunction* lf) {
 #endif
 
     {
-        lf->SetIthIndependent (alterIndex,lf->GetIthIndependent(alterIndex));
+        lf->SetIthIndependent (alterIndex, lb + range * genrand_real1());
         lf->Compute           ();
     }
 
@@ -277,14 +283,16 @@ hyFloat            tdiff = timer.TimeSinceStart();
 
         hyFloat          minDiff = tdiff;
         long                bestTC  = 1;
+        
+        ReportWarning       (_String("Benchmark for one thread (using ") & lf->GetIthIndependentName(alterIndex)->Enquote() & ")" & tdiff);
 
         for (long k = 2; k <= hy_global::system_CPU_count; k++) {
             lf->SetThreadCount              (k);
             TimeDifference timer;
-            lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex));
-            
+            lf->SetIthIndependent           (alterIndex, lb + range * genrand_real1());
             lf->Compute                     ();
             tdiff = timer.TimeSinceStart();
+            ReportWarning       (_String("Benchmark for ") & k & " threads: " & tdiff);
             if (tdiff < minDiff) {
                 minDiff = tdiff;
                 bestTC  = k;
@@ -292,11 +300,13 @@ hyFloat            tdiff = timer.TimeSinceStart();
                 break;
             }
         }
+        //bestTC = hy_global::system_CPU_count;
         lf->SetThreadCount (bestTC);
-        lf->SetIthIndependent           (alterIndex,lf->GetIthIndependent(alterIndex)); // reset the value of variable 0
         ReportWarning       (_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
-    } 
+    }
+   
 #endif
+    lf->SetIthIndependent (alterIndex,cached_value);
 }
 
 
@@ -1961,7 +1971,7 @@ void    _LikelihoodFunction::PostCompute        (void) {
     
     if (variables_changed_during_last_compute) {
         //variables_changed_during_last_compute
-        //printf ("variables_changed_during_last_compute %s\n", _String((_String*)variables_changed_during_last_compute->toStr()).get;
+        //printf ("variables_changed_during_last_compute %s\n", _String((_String*)variables_changed_during_last_compute->toStr()).get_str());
         
         if ((variables_changed_during_last_compute->countitems() << 1) > indexInd.lLength) {
             variables_changed_during_last_compute->Clear(false);
@@ -1978,6 +1988,7 @@ void    _LikelihoodFunction::PostCompute        (void) {
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         _Variable *ith_var = GetIthIndependentVar(i);
         ith_var->varFlags &= HY_VARIABLE_CHANGED_CLEAR;
+        //printf ("%s %d\n", ith_var->GetName()->get_str(), ith_var->HasChanged());
     }
 }
 
@@ -3818,7 +3829,7 @@ void        _LikelihoodFunction::LoggerAllVariables (void) {
 
 //_______________________________________________________________________________________
 
-void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, hyFloat movement, unsigned long bracket_evals, unsigned long brent_evals) {
+void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, hyFloat movement, unsigned long bracket_evals, unsigned long brent_evals, unsigned long exp_count) {
 
   if (optimizatonHistory) {
     _AssociativeList* new_phase = new _AssociativeList;
@@ -3828,6 +3839,7 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
                 < (_associative_list_key_value){"bracket width", new _Constant (bracket_width)}
                 < (_associative_list_key_value){"bracket evals", new _Constant (bracket_evals)}
                 < (_associative_list_key_value){"brent evals", new _Constant (brent_evals)}
+                < (_associative_list_key_value){"matrix exponents/eval", new _Constant (exp_count/ (bracket_evals + brent_evals))}
                 < (_associative_list_key_value){"movement", new _Constant (movement)};
 
     *((_AssociativeList*) this->optimizatonHistory->GetByKey("Phases")) < (_associative_list_key_value){nil, new_phase};
@@ -4126,8 +4138,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
             variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
-            if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
-                printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
+            //if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
+            //    printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
         }
     }
 
@@ -4353,7 +4365,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
                     _SimpleList * this_block = (_SimpleList*)gradientBlocks(b);
                     if (this_block->countitems() > 1 && this_block->countitems() <= maxGradientBlockDimension) {
-                        //printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
+                        /*printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
+                        this_block->Each([this, b] (long item, unsigned long) -> void {
+                            printf ("Block %d, variable %s\n", b, GetIthIndependentName(item)->get_str());
+                        });*/
                         maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,10,this_block,maxSoFar);
                     } else {
                         //printf ("\n...Skipping a large gradient (or a trivial) block with %ld variables\n", this_block->countitems());
@@ -4409,7 +4424,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         long        inCount       = 0,
                     termFactor,
                     lfCount         = likeFuncEvalCallCount,
-                    nan_counter     = 0L;
+                    nan_counter     = 0L,
+                    meCount         = matrix_exp_count;
         
         bool        do_large_change_only = false;
 
@@ -4594,7 +4610,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
 
             if (verbosity_level>1) {
-                snprintf (buffer, sizeof(buffer),"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount);
+                snprintf (buffer, sizeof(buffer),"\n\nOptimization Pass %ld (%ld). LF evalutations : %ld, matrix exp count : %ld\n", (long)loopCounter, inCount,likeFuncEvalCallCount-lfCount, matrix_exp_count - meCount);
                 BufferToConsole (buffer);
                 if (use_adaptive_step && logLHistory.get_used() > 2) {
                     snprintf (buffer, sizeof(buffer), "\nLast cycle logL change = %g\n", diffs[0]);
@@ -4606,6 +4622,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 UpdateOptimizationStatus (maxSoFar,-1,1,true,progressFileString);
             }
 #endif
+            
+            lfCount = likeFuncEvalCallCount;
+            meCount = matrix_exp_count;
+            
             if (smoothingTerm > 0.) {
               smoothingTerm *= smoothingReduction;
             }
@@ -4978,7 +4998,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 BufferToConsole (buffer);
                 snprintf (buffer, sizeof(buffer),"\nSmoothing term: %g", smoothingTerm);
                 BufferToConsole (buffer);
-
+                snprintf (buffer, sizeof(buffer),"\nExponential count: %d", smoothingTerm);
+                BufferToConsole (buffer);
             }
 
             currentPrecision = averageChange/shrink_factor;
@@ -5112,7 +5133,8 @@ void _LikelihoodFunction::CleanUpOptimize (void) {
     CleanupParameterMapping ();
     auto cleanup = [this] ()->void {
         for (long i=0L; i<theTrees.lLength; i++) {
-            GetIthTree (i)->CleanUpMatrices();
+            _TheTree *ith_tree = GetIthTree (i);
+            ith_tree->CleanUpMatrices(ith_tree->categoryCount);
         }
         DeleteCaches (false);
     };
@@ -5996,20 +6018,6 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 
 
 
-#if defined __MAC__ || defined __WINDOZE__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
-    hyFloat totalCount    = 2*parameterList->lLength;
-
-    long       finishedCount = 0;
-
-    if (cm>1.1) {
-        totalCount += 2*parameterList->lLength*(parameterList->lLength-1);
-    } else {
-        totalCount += (parameterList->lLength*(parameterList->lLength-1)/2);
-    }
-
-    BenchmarkThreads(this);
-#endif
-
     // fill in funcValues with L(...,x_i\pm h,...) and 1st derivatives and get 2nd derivatives
     for (parameter_count=0; parameter_count<parameterList->lLength; parameter_count++) {
         long              pIdx = useIndirectIndexing?parameterList->list_data[parameter_count]:parameter_count;
@@ -6038,13 +6046,6 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
             hessian.Store (parameter_count,parameter_count,-(t1*(*iMap)(parameter_count,1)*(*iMap)(parameter_count,1)+(*iMap)(parameter_count,2)*d1));
         }
 
-#ifndef __UNIX__
-        finishedCount += 2;
-        if (TimerDifferenceFunction(true)>1.) {
-            SetStatusBarValue (finishedCount/totalCount*100.,1,0);
-            TimerDifferenceFunction (false);
-        }
-#endif
     }
 
 
@@ -6088,13 +6089,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                 hessian.Store (j,parameter_count,-t2);
                 SetIthIndependent (iidx,ival);
                 SetIthIndependent (jidx,jval);
-#ifndef __UNIX__
-                finishedCount += 4;
-                if (TimerDifferenceFunction(true)>1.) {
-                    SetStatusBarValue (finishedCount/totalCount*100.,1,0);
-                    TimerDifferenceFunction (false);
-                }
-#endif
+
             }
         }
 
@@ -6117,13 +6112,7 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
                     hessian.Store (parameter_count,j,-t2);
                     hessian.Store (j,parameter_count,-t2);
                     SetIthIndependent (useIndirectIndexing?parameterList->list_data[j]:j,t4);
-#ifndef __UNIX__
-                    finishedCount ++;
-                    if (TimerDifferenceFunction(true)>1.) {
-                        SetStatusBarValue (finishedCount/totalCount*100.,1,0);
-                        TimerDifferenceFunction (false);
-                    }
-#endif
+
                 }
                 SetIthIndependent (useIndirectIndexing?parameterList->list_data[parameter_count]:parameter_count,t3);
             }
@@ -6445,6 +6434,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
     if (gradL > 0.0) {
         
         current_direction   = gradient * (1./gradL);
+        gradient = current_direction;
         
         for (long index = 0; index< MAX (dim, 10) && index < iterationLimit; index++, currentPrecision*=0.25) {
             hyFloat current_maximum = maxSoFar;
@@ -6513,9 +6503,9 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
             previous_gradient = previous_direction;
             previous_gradient *= beta;
             current_direction  = gradient;
-            if ((index + 1) % 5) {
+            /*if ((index + 1) % 5) {
                 current_direction += previous_gradient;
-            }
+            }*/
             
         }
     }
@@ -6952,7 +6942,8 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
         verbosity_level = 1;
     }*/
 
-    unsigned long        inCount = likeFuncEvalCallCount;
+    unsigned long        inCount  = likeFuncEvalCallCount,
+                         inECount = matrix_exp_count;
     int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp, go2Bound);
     unsigned long        bracket_step_count = likeFuncEvalCallCount - inCount;
 
@@ -7133,7 +7124,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
     }
 
     if (index >= 0) {
-      LoggerSingleVariable (index, maxSoFar, bp, brentPrec, outcome != -1 ? right-left : -1., GetIthIndependent(index)-originalValue, bracket_step_count, likeFuncEvalCallCount-inCount-bracket_step_count);
+      LoggerSingleVariable (index, maxSoFar, bp, brentPrec, outcome != -1 ? right-left : -1., GetIthIndependent(index)-originalValue, bracket_step_count, likeFuncEvalCallCount-inCount-bracket_step_count, matrix_exp_count - inECount);
     }
 
     oneDFCount += likeFuncEvalCallCount-inCount-bracket_step_count;
@@ -7715,12 +7706,12 @@ void    _LikelihoodFunction::ScanAllVariables (void) {
         long iNodeCount, lNodeCount;
         GetIthTree (index)->EdgeCount(iNodeCount, lNodeCount);
         treeSizes << (iNodeCount + lNodeCount);
-        LocateVar (var_index)->ScanForVariables (avl,true,&rankVariables,treeSizes.GetElement(-1) << 16);
+        LocateVar (var_index)->ScanForVariables (avl,true,&rankVariables,treeSizes.GetElement(-1) << 4);
     });
     
 
     if (computingTemplate) {
-        computingTemplate->ScanFForVariables (avl,true,false,true, false, &rankVariables, treeSizes.Sum() << 16);
+        computingTemplate->ScanFForVariables (avl,true,false,true, false, &rankVariables, treeSizes.Sum() << 2);
     }
 
     avl.ReorderList();
@@ -7758,24 +7749,12 @@ void    _LikelihoodFunction::ScanAllVariables (void) {
     theTrees.Each ([this, &iia, &iid, &rankVariables, &treeSizes] (long tree_index, unsigned long index) -> void {
         _TheTree * tree_var = (_TheTree*)LocateVar(tree_index);
         tree_var->ScanAndAttachVariables ();
-        tree_var->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (index) << 16);
+        tree_var->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (index) << 4);
         tree_var->ScanContainerForVariables  (iia, iid, &rankVariables, 1L + treeSizes.GetElement (index));
         tree_var->ScanForDVariables (iid, iia);
         tree_var->SetUp();
     });
     
-
-    /*for (unsigned long i=0; i<theTrees.lLength; i++) {
-        ((_TheTree*)(LocateVar(theTrees(i))))->ScanAndAttachVariables ();
-        ((_TheTree*)(LocateVar(theTrees(i))))->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (i) << 16);
-    }
-
-    for (unsigned long i=0; i<theTrees.lLength; i++) {
-        _TheTree * cT = ((_TheTree*)(LocateVar(theTrees(i))));
-        cT->ScanContainerForVariables  (iia, iid, &rankVariables, 1 + treeSizes.GetElement (i));
-        cT->ScanForDVariables (iid, iia);
-        cT->SetUp();
-    }*/
 
     iia.ReorderList ();
     iid.ReorderList ();
@@ -8259,7 +8238,7 @@ void    _LikelihoodFunction::Setup (bool check_reversibility)
     if (theTrees.lLength==optimalOrders.lLength) {
         //check to see if we need to recompute the
         // optimal summation order
-        if (hy_env::EnvVariableTrue(keepOptimalOrder)) {
+        if (!hy_env::EnvVariableTrue(keepOptimalOrder)) {
             for (unsigned long i=0; i<theTrees.lLength; i++) {
                 
                 _SimpleList     *   s = (_SimpleList*)optimalOrders(i),
@@ -10455,7 +10434,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
               LocateVar (var_idx)->MarkDone();
           });
         }
-        this_tree->CleanUpMatrices();
+        this_tree->CleanUpMatrices(this_tree->categoryCount);
 
       } else {// end simulate column by column
 
@@ -10832,6 +10811,14 @@ void    _LikelihoodFunction::PrepareToCompute (bool disableClear) {
         siteArrayPopulated = false;
         _variables_changed_during_last_compute = new _SimpleList ();
         variables_changed_during_last_compute = new _AVLList (_variables_changed_during_last_compute);
+        
+        for (unsigned long i=0UL; i<indexInd.lLength; i++) {
+            if (GetIthIndependentVar(i)->varFlags & HY_VARIABLE_CHANGED) {
+                variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index());
+                //if (variables_changed_during_last_compute->InsertNumber (GetIthIndependentVar(i)->get_index()) >= 0)
+                //    printf ("Insert [before] %s\n",GetIthIndependentName(i)->get_str());
+            }
+        }
 
     } else {
         hasBeenSetUp++;
@@ -10844,7 +10831,8 @@ void    _LikelihoodFunction::DoneComputing (bool force)
 {
     if (hasBeenSetUp == 1 || (hasBeenSetUp > 0 && force)) {
         for (unsigned long i=0UL; i<theTrees.lLength; i++) {
-            GetIthTree(i)->CleanUpMatrices();
+            _TheTree * ithtree = GetIthTree(i);
+            ithtree->CleanUpMatrices(ithtree->categoryCount);
         }
         if (mstCache) {
             mstCache->resultCache.Clear();
@@ -10892,8 +10880,16 @@ void    _LikelihoodFunction::FillInConditionals(long partIndex) {
     }
 }
 //_______________________________________________________________________________________
-void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
-{
+void    _LikelihoodFunction::RankVariables(_AVLListX* tagger) {
+       
+    /*
+    if (tagger) {
+        for (AVLListXIteratorKeyValue list_iterator : AVLListXIterator (tagger)) {
+            printf ("%s (%d) => %d\n", LocateVar((long)tagger->Retrieve(list_iterator.get_index()))->GetName()->get_str(), list_iterator.get_index(), list_iterator.get_value());
+        }
+    }
+    */
+    
     _SimpleList varRank (indexInd.lLength,0,0),
                 holder;
 
@@ -10938,6 +10934,12 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
     SortLists (&varRank,&indexInd);
     gradientBlocks.Clear();
 
+    /*
+    for (long i = 0; i < indexInd.countitems(); i++) {
+        printf ("%s\n", LocateVar(indexInd.get (i))->GetName()->get_str());
+    }
+    */
+    
     // enforce user provided rankings
 
     _AssociativeList * variableGrouping = (_AssociativeList*)FetchObjectFromVariableByType(&userSuppliedVariableGrouping, ASSOCIATIVE_LIST);
@@ -10966,7 +10968,7 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
                         _String variableID ((_String*)variableGroup->GetFormula (variable_id,-1)->Compute()->toStr());
                         long variableIndex = LocateVarByName(variableID);
                         if (variableIndex >= 0) {
-                            existingRanking.UpdateValue((BaseRef)variableIndex, -offset - dimension + variable_id, 1);
+                            existingRanking.UpdateValue((BaseRef)variableIndex, -offset - dimension + variable_id, 0);
                             thisBlock << variableIndex;
                             //printf ("%s<%ld>\n",variableID.sData, variableIndex );
                             re_sort = true;
@@ -10979,6 +10981,18 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger)
                 }
             }
         }
+        
+        /*
+        NLToConsole();
+        gradientBlocks.ForEach ([&] (BaseRef item, unsigned long i) -> void {
+            _SimpleList * block = (_SimpleList*)item;
+            block->Each([i] (long item, unsigned long) -> void {
+                printf ("Block %d, variable %s\n", i, LocateVar(item)->GetName()->get_str());
+            });
+        });
+        NLToConsole();
+        */
+
         if (re_sort) {
             _SimpleList new_ranks;
 

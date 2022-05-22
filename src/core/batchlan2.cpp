@@ -270,15 +270,6 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 false,
                                                                 &lengthOptions));
 
-  _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ConstructCategoryMatrix(", HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,false),
-                                                                -1,
-                                                                "ConstructCategoryMatrix(<receptacle>, <Likelihood Function|Tree>, [optional <COMPLETE|SHORT|WEIGHTS|CLASSES (default = COMPLETE)> , matrix argument with partitions to include (default = all)>])",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_OPTIMIZE,
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Optimize(", HY_HBL_COMMAND_OPTIMIZE,false),
@@ -346,7 +337,7 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 "SetParameter(<object>, <parameter index>, <value>)",','));
 
 
-    lengthOptions.Clear();lengthOptions.Populate (2,1,1);
+    lengthOptions.Clear();lengthOptions.Populate (2,1,1); // 1,2
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_ASSERT, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("assert(", HY_HBL_COMMAND_ASSERT,false),
                                     -1, 
@@ -356,6 +347,17 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                         false,
                                         false,
                                         &lengthOptions));
+
+    lengthOptions.Clear();lengthOptions.Populate (3,2,1); // 2,3,4
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,
+                                      (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ConstructCategoryMatrix(", HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX,false),
+                                                                  -1,
+                                                                  "ConstructCategoryMatrix(<receptacle>, <Likelihood Function|Tree>, [optional <COMPLETE|SHORT|WEIGHTS|CLASSES (default = COMPLETE)> , matrix argument with partitions to include (default = all)>])",
+                                                                  ',',
+                                                                  true,
+                                                                  false,
+                                                                  false,
+                                                                  &lengthOptions));
 
 
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_REQUIRE_VERSION, 
@@ -401,11 +403,11 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                                                 "fprintf(stdout|MESSAGE_LOG|TEMP_FILE_NAME|PROMPT_FOR_FILE|file path, object 1 [optional ,<object 2>, ..., <object N>])",','));
 
     
-    lengthOptions.Clear();lengthOptions.Populate (1,2,1); // 2
+    lengthOptions.Clear();lengthOptions.Populate (2,2,1); // 2 or 3
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_EXPORT, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("Export(", HY_HBL_COMMAND_EXPORT,false),
                                                                 -1, 
-                                                                "Export (<string variable ID>, <object ID>)",
+                                                                "Export (<string variable ID>, <object ID>, [export options as a dict])",
                                                                 ',',
                                                                 true,
                                                                 false,
@@ -561,6 +563,9 @@ int  _HYSQLBusyCallBack (void* data, int callCount)
 
 void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
   
+    static const _String kBLBSize ("BLB_size");
+    static const _String kBLBSampler ("BLB_sampler");
+    
     using namespace hyphy_global_objects;
   
     chain.currentCommand++;
@@ -672,14 +677,51 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
 
     // build the formula from the 2nd parameter (unit size)
 
-    unsigned char                unit = ProcessNumericArgument((_String*)parameters(2),chain.nameSpacePrefix);
+    unsigned char                unit = 1;
+    HBLObjectRef                 blb = nil;
+    
+    try {
+        unit = _ProcessNumericArgumentWithExceptions (*(_String*)parameters(2),chain.nameSpacePrefix);
+    } catch (_String const& err) {
+        if (code == 28) {
+            blb = ProcessAnArgumentByType ((_String*)parameters(2), chain.nameSpacePrefix,ASSOCIATIVE_LIST,&chain);
+            if (!blb) {
+                HandleApplicationError (_String("Not a valid filter unit argument (number or BLB argument dictionary expected): ") & *(_String*)parameters(2));
+                return;
+            } else {
+                if (!isFilter) {
+                    HandleApplicationError (_String("When using BLB upsamplers, the first argument to Bootstrap (") & *(_String*)parameters(1) & ") must be an existing filter");
+                    return;
+                }
+            }
+        } else {
+            HandleApplicationError (err);
+            return;
+        }
+    }
     // here's our unit
 
     _String             dataFilterID (chain.AddNameSpaceToID(*(_String*)parameters(0))),
                         site_partition,
                         sequence_partition;
 
+    _DataSetFilter * thedf = new _DataSetFilter;
+    long blb_sample_size = 0L;
 
+    if (blb) {
+        try {
+             _AssociativeList *blb_data = (_AssociativeList*)blb;
+             HBLObjectRef  blb_size     = blb_data->GetByKeyException(kBLBSize, NUMBER);
+             HBLObjectRef  blb_sampler  = blb_data->GetByKeyException(kBLBSampler, STRING);
+            
+             const _DataSetFilter * source_filter = GetDataFilter (dsID);
+             blb_sample_size  = (long) round (blb_size->Compute()->Value()) ;
+             blb_sample_size = MIN (MAX (0, blb_sample_size), source_filter->GetSiteCountInUnits());
+            
+        } catch (_String const& err) {
+            HandleApplicationError(err);
+        }
+    }
 
     if (parameters.countitems()>3) {
         sequence_partition = *(_String*)parameters(3);
@@ -727,12 +769,54 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
         if (code == 27) {
             sequence_list.Permute (unit);
         } else {
-            sequence_list.PermuteWithReplacement(unit);
-        }
+            if (blb) {
+              const _DataSetFilter * source_filter = GetDataFilter (dsID);
+              // Step 1; subsample (without replacement) K unique pattern indices
+              const long S = source_filter->GetSiteCountInUnits();
+              _SimpleList linear_indices (S,0L,1L),
+                          subsample = linear_indices.Sample (blb_sample_size);
+                
+              // Step 2; do the multinomial sample now
+                
+              long*       sample_count = (long*)calloc(blb_sample_size, sizeof (long));
+              for (long i = 0; i < S; i++) {
+                  sample_count [genrand_int32() % blb_sample_size] ++;
+              }
+                
+              sequence_list.Clear();
+              sequence_list.RequestSpace(source_filter->GetSiteCount());
+                
+              const long unit_size = source_filter->GetUnitLength();
+                
+              if (unit_size > 1L) {
+                  _SimpleList this_unit (source_filter->GetUnitLength(),0,0);
+            
+                  for (long i = 0L; i < blb_sample_size; i++) {
+                      long pattern = subsample.get (i) * unit_size;
+                      for (long u = 0L; u < unit_size; u++) {
+                          this_unit.list_data[u] = pattern + u;
+                      }
+                      //ObjectToConsole(&this_unit); NLToConsole();
+                      for (long c = 0L; c < sample_count[i]; c++) {
+                          sequence_list << this_unit;
+                      }
+                  }
+              } else {
+                  for (long i = 0L; i < blb_sample_size; i++) {
+                      long pattern =  source_filter->theMap.get (subsample.get (i));
 
+                      for (long c = 0L; c < sample_count[i]; c++) {
+                          sequence_list << pattern;
+                      }
+                  }
+              }
+              free (sample_count);
+            } else {
+                sequence_list.PermuteWithReplacement(unit);
+            }
+        }
     }
 
-    _DataSetFilter * thedf = new _DataSetFilter;
     thedf->SetFilter (dataset, unit, site_list, sequence_list, isFilter);
 
     if (parameters.lLength>5) {
@@ -744,6 +828,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
             thedf->SetDimensions();
         }
     }
+     
 
     thedf->SetDimensions();
     thedf->SetupConversion();
@@ -1134,7 +1219,7 @@ void    ScanModelForVariables        (long modelID, _AVLList& theReceptacle, boo
 {
     if (modelID != HY_NO_MODEL) {
         // standard rate matrix
-        if (modelTypeList.list_data[modelID] == 0) {
+        if (! IsModelOfExplicitForm(modelID) ) {
             ((_Matrix*) (LocateVar(modelMatrixIndices.list_data[modelID])->GetValue()))->ScanForVariables2(theReceptacle,inclG,modelID2,inclCat);
         } else {
         // formula based

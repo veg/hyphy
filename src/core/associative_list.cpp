@@ -396,6 +396,16 @@ hyFloat _AssociativeList::GetNumberByKey (_String const& key) const {
 }
 
 //_____________________________________________________________________________________________
+
+hyFloat _AssociativeList::GetNumberByKeyDefault (_String const& key, hyFloat defv) const {
+    _Constant * c = (_Constant*)GetByKey(key, NUMBER);
+    if (c) {
+        return c->Value();
+    }
+    return defv;
+}
+
+//_____________________________________________________________________________________________
 HBLObjectRef _AssociativeList::GetByKey (_String const& key) const {
     return (HBLObjectRef)avl.GetDataByKey(&key);
 }
@@ -618,6 +628,26 @@ void        _AssociativeList::FillInList (_List& fill_me) {
             }
         }
     }
+}
+
+//_____________________________________________________________________________________________
+void        _AssociativeList::KeysValuesAsLists (_List& fill_me) {
+  
+    unsigned long ll = fill_me.countitems();
+    // checkpoint the length of the list
+    
+    _List   * keys = new _List (ll),
+            * values = new _List (ll);
+    
+    for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
+        _String* aKey = (_String*)avl.Retrieve(key_value.get_index());
+        if (aKey) {
+            (*keys)   << aKey;
+            (*values) < (_String*)key_value.get_object()->toStr();
+        }
+    }
+     
+    fill_me < keys < values;
 }
 
 

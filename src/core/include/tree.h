@@ -161,7 +161,7 @@ public:
 
     void        SetUp                           (void);
     void        SetUpMatrices                   (long);
-    void        CleanUpMatrices                 (void);
+    void        CleanUpMatrices                 (long);
     //void        BuildTopLevelCache              (void);
     void        SetCompMatrices                 (long) const;
 

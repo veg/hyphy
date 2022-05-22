@@ -158,8 +158,8 @@ public:
     _String*    GetName                         (void) const{
         return theName;
     }
-    _String*    GetFormulaString        (_hyFormulaStringConversionMode mode) {
-        return varFormula?(_String*)varFormula->toStr(mode):new _String;
+    _String*    GetFormulaString        (_hyFormulaStringConversionMode mode, _List * match_names = nil) {
+        return varFormula?(_String*)varFormula->toStr(mode, match_names):new _String;
     }
 
     virtual     void        CompileListOfDependents (_SimpleList&);
