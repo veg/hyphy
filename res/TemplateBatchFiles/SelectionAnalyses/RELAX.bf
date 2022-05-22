@@ -577,7 +577,7 @@ if (relax.model_set == "All") { // run all the models
                                        };
                                        
                                        
-        relax.report_multi_hit (elax.general_descriptive.fit, relax.distribution_for_json, "RELAX", "gd-mh");
+        relax.report_multi_hit (relax.general_descriptive.fit, relax.distribution_for_json, "RELAX", "gd-mh");
         selection.io.json_store_lf (relax.json,
                                     relax.general_descriptive_name,
                                     relax.general_descriptive.fit[terms.fit.log_likelihood],

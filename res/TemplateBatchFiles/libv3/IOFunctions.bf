@@ -539,8 +539,10 @@ lfunction io.SpoolLF(lf_id, trunk_path, tag) {
  * @returns nothing
  */
 lfunction io.SpoolLFToPath(lf_id, path) {
-    Export(__lf_spool, ^ lf_id);
-    fprintf(path, CLEAR_FILE, __lf_spool);
+    if (path != "/dev/null") {
+        Export(__lf_spool, ^ lf_id);
+        fprintf(path, CLEAR_FILE, __lf_spool);
+    }
 }
 
 /**

@@ -87,12 +87,9 @@ _Operation::_Operation (_Operation const& rhs) {
     theData        = rhs.theData;
     theNumber      = rhs.theNumber;
     opCode         = rhs.opCode;
-    cachedResult   = rhs.cachedResult;
+    cachedResult   = nil;
     if (theNumber) {
         theNumber->AddAReference();
-    }
-    if (cachedResult) {
-        cachedResult->AddAReference();
     }
 }
 
@@ -105,12 +102,9 @@ void    _Operation::Duplicate(BaseRefConst r) {
     theData        = o->theData;
     theNumber      = o->theNumber;
     opCode         = o->opCode;
-    cachedResult   = o->cachedResult;
+    cachedResult   = nil;
     if (theNumber) {
         theNumber->AddAReference();
-    }
-    if (cachedResult) {
-        cachedResult->AddAReference();
     }
 }
 

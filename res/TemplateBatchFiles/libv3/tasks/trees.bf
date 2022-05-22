@@ -135,9 +135,10 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
             utility.ToggleEnvVariable ("SOFT_FILE_IO_EXCEPTIONS",TRUE);
             fscanf(PROMPT_FOR_FILE, REWIND, "Raw", treeString);
 
-            look_for_newick_tree = utility.getGlobalValue ("LAST_FILE_PATH");
-            
 
+            look_for_newick_tree = utility.getGlobalValue ("LAST_FILE_PATH");
+            console.log (look_for_newick_tree);
+            console.log (utility.getGlobalValue ("LAST_RAW_FILE_PROMPT"));
 
             if (None != utility.GetEnvVariable ("LAST_FILE_IO_EXCEPTION")) {
                 if (utility.getGlobalValue ("LAST_RAW_FILE_PROMPT") ==  utility.getGlobalValue ("terms.trees.neighbor_joining")) {

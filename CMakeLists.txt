@@ -546,11 +546,11 @@ set_target_properties(
     HYPHYDEBUG
     PROPERTIES
     if(${OPENMP_FOUND})
-        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -O0 "
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -O0 "
         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_LINK_FLAGS}  -g -fsanitize=address -O0 "
     else(${OPENMP_FOUND})
-        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -fsanitize=leak -O0 "
+        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -O0 "
         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -O0 "
         LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fsanitize=address -O0 "
     endif(${OPENMP_FOUND})

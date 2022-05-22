@@ -315,7 +315,7 @@ _String*            _CalcNode::GetBranchSpec (void) {
 
 //__________________________________________________________________________________
 
-void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* parent_tree) {
+void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* parent_tree, _AVLListXL* aCache, bool clean_locals) {
     // TODO: SLKP 20171203 this is FUGLY
   RemoveModel    ();
 
@@ -337,8 +337,10 @@ void _CalcNode::ReplaceModel (_String& modelName, _VariableContainer* parent_tre
 
   long my_var_index = theIndex;
 
-  DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
-  InitializeCN   (modelName, 0 , parent_tree);
+  if (clean_locals) {
+      DeleteVariable (theIndex, false); // this will clean up all the node.xx variables
+  }
+  InitializeCN   (modelName, 0 , parent_tree, aCache);
 
   if (container_object) {
     _Variable * new_node = LocateVar(my_var_index);
@@ -471,17 +473,24 @@ bool        _CalcNode::NeedNewCategoryExponential(long catID) const {
 }
 
 //_______________________________________________________________________________________________
-bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags, _List* bufferedOps)
+bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix* storeRateMatrix, _List* queue, _SimpleList* tags, _List* bufferedOps, bool direct_copy)
 {
     // assumed that NeedToExponentiate was called prior to this function
 
     //_Variable* curVar, *locVar;
+    bool    isExplicitForm  = HasExplicitFormModel ();
+
+    if (direct_copy && bufferedOps && bufferedOps->countitems() == 1 && isExplicitForm) {
+        SetCompExp ((_Matrix*)bufferedOps->GetItem(0)->makeDynamic(), totalCategs>1?categID:-1);
+        return false;
+    }
     
     _SimpleList * var_lists [2] = {iVariables, dVariables};
     for (_SimpleList* iterable : var_lists) {
         ForEachLocalVariable(iterable,CopyModelParameterValue);
     }
   
+    /*
     #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
      // if (1|| likeFuncEvalCallCount == _UBER_VERBOSE_MX_UPDATE_DUMP_LF_EVAL && gVariables) {
         for (unsigned long i=0; i<gVariables->lLength; i++) {
@@ -490,6 +499,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
         }
       //}
     #endif
+    */
 
     /*
     for (unsigned long i=0; i<categoryVariables.lLength; i++) {
@@ -503,11 +513,11 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
     if (!storeRateMatrix) {
       if (totalCategs>1) {
-  #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
-        fprintf (stderr, "[_CalcNode::RecomputeMatrix] Deleting category %ld for node %s at %p\n", categID, GetName()->get_str(), GetCompExp(categID));
-  #endif
-        if (clear_exponentials()) {
-            DeleteObject(GetCompExp(categID, true));
+         if (clear_exponentials()) {
+            #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+                  fprintf (stderr, "[_CalcNode::RecomputeMatrix] Deleting category %ld for node %s at %p\n", categID, GetName()->get_str(), GetCompExp(categID));
+            #endif
+           DeleteObject(GetCompExp(categID, true));
         }
       } else {
         if (compExp) {
@@ -518,10 +528,9 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
       }
     }
 
-    bool    isExplicitForm  = HasExplicitFormModel ();
-
+ 
     if (isExplicitForm && bufferedOps) {
-        _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel()->Compute (0,nil, bufferedOps);
+        _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel(map_global_to_local_category (categID))->Compute (0,nil, bufferedOps);
         #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
             fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting (buffered) category %ld/%ld for node %s\n", categID, totalCategs, GetName()->get_str());
          #endif
@@ -530,7 +539,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
     }
 
     unsigned long      previous_length = queue && tags ? queue->lLength: 0;
-    _Matrix * myModelMatrix = GetModelMatrix(queue,tags);
+    _Matrix * myModelMatrix = GetModelMatrix(queue,tags,map_global_to_local_category(categID));
 
     if (isExplicitForm && !myModelMatrix) { // matrix exponentiations got cached
         if (queue && queue->lLength > previous_length) {
@@ -541,10 +550,10 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
         }
     } else {
 
-        if (myModelMatrix->MatrixType()!=_POLYNOMIAL_TYPE) {
+        if (!myModelMatrix->is_polynomial()) {
             _Matrix *temp = nil;
             if (isExplicitForm) {
-                temp = (_Matrix*)myModelMatrix->makeDynamic();
+                temp = (_Matrix*)myModelMatrix;
             } else {
                 temp = (_Matrix*)myModelMatrix->MultByFreqs(theModel, true);
             }
@@ -570,9 +579,10 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
 
             if (queue) {
+                
                 (*queue) << temp;
                 if (tags) {
-                    (*tags) << (isExplicitForm);
+                    (*tags) << (isExplicitForm ? (queue->countitems() - previous_length == 1 ? -1 : 1) : 0);
                 }
                 return isExplicitForm;
             }
@@ -587,6 +597,12 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
         }
     }
     return false;
+}
+//_______________________________________________________________________________________________
+
+long        _CalcNode::map_global_to_local_category (long cat) const {
+    if (remapMyCategories.lLength) return remapMyCategories.list_data[cat*(categoryVariables.lLength+1)];
+    return cat;
 }
 
 //_______________________________________________________________________________________________
@@ -738,7 +754,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
         }
     }
     
-    //printf ("Node remap at %s yielded %s\n", GetName()->sData, _String((_String*)remapMyCategories.toStr()).sData);
+    //printf ("Node remap at %s yielded %s (%s)\n", GetName()->get_str(), _String((_String*)remapMyCategories.toStr()).get_str(),  _String((_String*)classCounter.toStr()).get_str());
     
 }
 
@@ -756,10 +772,17 @@ node<long>* _CalcNode::LocateMeInTree (void) const {
 
 //_______________________________________________________________________________________________
 
-void _CalcNode::ConvertToSimpleMatrix (void) const {
+void _CalcNode::ConvertToSimpleMatrix (unsigned long category_count) {
     _Formula * mf = GetExplicitFormModel();
     if (mf) {
-        mf->ConvertMatrixArgumentsToSimpleOrComplexForm (false);
+         if (!templateFormulaClone) {
+            templateFormulaClone = new _Formula* [category_count];
+            for (long i = 0; i < category_count; i++) {
+                templateFormulaClone[i] = new _Formula (*mf);
+                templateFormulaClone[i]->ConvertMatrixArgumentsToSimpleOrComplexForm (false);
+            }
+        }
+        
     } else {
         _Matrix * mm [2] = {GetModelMatrix(), GetFreqMatrix()};
         for (_Matrix * m : mm) {
@@ -772,10 +795,20 @@ void _CalcNode::ConvertToSimpleMatrix (void) const {
 
 //_______________________________________________________________________________________________
 
-void _CalcNode::ConvertFromSimpleMatrix (void) {
+void _CalcNode::ConvertFromSimpleMatrix (unsigned long category_count) {
     _Formula * mf = GetExplicitFormModel();
-    if (mf) {
-        mf->ConvertMatrixArgumentsToSimpleOrComplexForm (true);
+    if (templateFormulaClone || mf) {
+        if (templateFormulaClone) {
+            //printf ("_CalcNode::ConvertFromSimpleMatrix %s => %d\n", GetName()->get_str(), category_count);
+            for (long i = 0; i < category_count; i++) {
+                delete templateFormulaClone[i];
+            }
+            delete [] templateFormulaClone;
+            templateFormulaClone = nil;
+            GetExplicitFormModel()->ConvertMatrixArgumentsToSimpleOrComplexForm(true);
+        } else {
+            mf->ConvertMatrixArgumentsToSimpleOrComplexForm(true);
+        }
     } else {
         _Matrix * mm [2] = {GetModelMatrix(), GetFreqMatrix()};
         for (_Matrix * m : mm) {

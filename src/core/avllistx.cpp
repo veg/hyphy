@@ -146,8 +146,12 @@ long  _AVLListX::UpdateValue(BaseRef b, long d, long op) {
     long exists = Find (b);
     if (exists >= 0) {
         if (op == 0) {
+            //printf ("==> %d, %d\n", GetXtra(exists), d);
             SetXtra (exists, GetXtra(exists) + d);
         } else {
+            /*if (d == 272) {
+                printf ("==> %d, %d\n", GetXtra(exists), d);
+            }*/
             SetXtra (exists, d);       
         }
     } else {

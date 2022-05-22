@@ -100,7 +100,7 @@ public:
     
     virtual     void        Clear                       (void);
 
-    bool                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil, _List* = nil);
+    bool                RecomputeMatrix  (long = 0, long = 1,_Matrix* = nil, _List* = nil, _SimpleList* = nil, _List* = nil, bool direct_copy = false);
     // reexponentiate the transition matrix and
     // store it in compExp.
     // return TRUE if the matrix is an explicit exponential form
@@ -134,15 +134,15 @@ public:
     
     node<long>*         LocateMeInTree  (void) const;
     // return the tree structure node corresponing to this one...
-    void                ConvertToSimpleMatrix (void) const;
-    void                ConvertFromSimpleMatrix (void);
+    void                ConvertToSimpleMatrix (unsigned long category_count) ;
+    void                ConvertFromSimpleMatrix (unsigned long category_count);
     _Matrix*            ComputeModelMatrix(bool expMe=false);
     long                GetTheModelID   (void) {
         return theModel;
     }
     bool                MatchSubtree    (_CalcNode*);
     virtual void        RemoveModel     (void);
-    virtual void        ReplaceModel    (_String & modelName, _VariableContainer* parentTree);
+    virtual void        ReplaceModel    (_String & modelName, _VariableContainer* parentTree, _AVLListXL* aCache = nil, bool clean_locals = true);
     
     virtual void        ClearCategoryMap(void) {
         remapMyCategories.Clear();
@@ -153,6 +153,8 @@ public:
     _CategoryVariable*  get_ith_category (long i) const {
       return (_CategoryVariable*)LocateVar(categoryVariables.get (i));
     }
+    
+    long                map_global_to_local_category (long) const;
     
     _VariableContainer*           ParentTree      (void);
     

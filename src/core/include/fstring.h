@@ -97,7 +97,17 @@ public:
      */
     
     void  SetStringContent (_StringBuffer * );
-    template <class T> _StringBuffer*  SetData          (T src) {
+    /*template <class T> _StringBuffer*  SetData          (T src) {
+        if (the_string && the_string->SingleReference()) {
+            the_string->Clear();
+            (*the_string) << src;
+        } else {
+            SetStringContent (new _StringBuffer (src));
+        }
+        return the_string;
+    }*/
+    
+    _StringBuffer*  SetData          (_StringBuffer const& src) {
         if (the_string && the_string->SingleReference()) {
             the_string->Clear();
             (*the_string) << src;
@@ -107,6 +117,35 @@ public:
         return the_string;
     }
     
+    _StringBuffer*  SetData          (_String * src) {
+        if (the_string && the_string->SingleReference()) {
+            the_string->Clear();
+            the_string->AppendNewInstance (src);
+        } else {
+            SetStringContent (new _StringBuffer (src));
+        }
+        return the_string;
+    }
+    
+    _StringBuffer*  SetData          (_String const & src) {
+        if (the_string && the_string->SingleReference()) {
+            the_string->Clear();
+            (*the_string) << src;
+        } else {
+            SetStringContent (new _StringBuffer (src));
+        }
+        return the_string;
+    }
+    
+    _StringBuffer*  SetData          (char const* src) {
+        if (the_string && the_string->SingleReference()) {
+            the_string->Clear();
+            (*the_string) << src;
+        } else {
+            SetStringContent (new _StringBuffer (src));
+        }
+        return the_string;
+    }
     
     
     virtual HBLObjectRef Compute           (void) {

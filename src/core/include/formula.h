@@ -146,7 +146,7 @@ public:
     _MathObject*ConstructPolynomial (void);
 
     virtual void        Initialize          (void);
-    virtual void        Duplicate           (_Formula const *);
+    virtual void        Duplicate           (_Formula const *, bool deep_copy = false);
     void        DuplicateReference          (const _Formula*);
     virtual BaseRef     makeDynamic         (void) const;
     virtual BaseRef     toStr               (_hyFormulaStringConversionMode mode, _List* matchNames = nil, bool = false);
@@ -155,7 +155,7 @@ public:
     virtual long        ObjectClass         (void);
 
 
-    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0) const;
+    virtual void        ScanFForVariables   (_AVLList&l, bool includeGlobals = false, bool includeAll = false, bool includeCateg = true, bool skipMatrixAssignments = false, _AVLListX* tagger = nil, long weight = 0, long weight2 = 0) const;
     virtual void        ScanFForType        (_SimpleList&,  int);
     /* SLKP 20100716:
             A simple utility function to retrieve all variables of a given type

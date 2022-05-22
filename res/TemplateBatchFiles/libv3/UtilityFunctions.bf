@@ -234,6 +234,28 @@ lfunction utility.Range (elements, from, step) {
 }
 
 /**
+ * @name utility.Concat
+ * @param matrix1
+ * @param matrix2
+ * @returns matrix1 catted with matrix2
+ */
+lfunction utility.Concat (matrix1, matrix2) {
+    N1 = utility.Array1D (matrix1);
+    N2 = utility.Array1D (matrix2);
+    result = {1,N1+N2};
+    i = 0;
+    for (e; in; matrix1) {
+        result[i] = e;
+        i+=1;
+    }
+    for (e; in; matrix2) {
+        result[i] = e;
+        i+=1;
+    }
+    return result;
+}
+
+/**
  * @name utility.Map
  * @param {AssociativeList|Matrix} object - object to iterate over
  * @param {String} lambda_name - variable name for transform

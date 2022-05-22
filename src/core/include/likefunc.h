@@ -496,7 +496,7 @@ protected:
     void LoggerAddGradientPhase   (hyFloat precision, hyFloat beta, hyFloat scalar_product);
     void LoggerAddCoordinatewisePhase (hyFloat shrinkage, char convergence_mode);
     void LoggerAllVariables          ();
-    void LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, hyFloat movement, unsigned long bracket_evals, unsigned long brent_evals);
+    void LoggerSingleVariable        (unsigned long index, hyFloat logL, hyFloat bracket_precision, hyFloat brent_precision, hyFloat bracket_width, hyFloat movement, unsigned long bracket_evals, unsigned long brent_evals, unsigned long exp_count);
 
 
     void            UpdateBlockResult           (long, hyFloat);

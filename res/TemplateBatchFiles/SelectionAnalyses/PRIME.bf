@@ -94,11 +94,8 @@ KeywordArgument ("branches",  "Branches to test", "All");
 KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
 KeywordArgument ("properties", "Which set of properties to use", "Atchley");
 
-
 prime.scaler_prefix = "prime.scaler";
-
  
-
 /**
 This table is meant for HTML rendering in the results web-app; can use HTML characters, the second column
 is 'pop-over' explanation of terms. This is ONLY saved to the JSON file. For Markdown screen output see
@@ -141,13 +138,17 @@ prime.property_set = io.SelectAnOption (
                 "Custom":"Load the set of properties from a file"
             }, 
             "The set of properties to use in the model");
+           
+(prime.json [terms.json.analysis])[terms.models.residue_properties] = prime.property_set;
             
 if (prime.property_set == "Custom") {
     KeywordArgument ("property-file", "JSON file which defines amino-acid properties");
-    prime.property_set = io.ParseJSON(io.PromptUserForFilePathRead ("JSON file which defines amino-acid properties"));
+    prime.property_set = io.PromptUserForFilePathRead ("JSON file which defines amino-acid properties");
+    prime.property_set = io.ParseJSON(prime.property_set);
     console.log (">Loaded a set of `Abs(prime.property_set)` properties");
 }
-            
+     
+
 KeywordArgument ("impute-states", "Use site-level model fits to impute likely character states for each sequence", "No");
 
 prime.impute_states = io.SelectAnOption (

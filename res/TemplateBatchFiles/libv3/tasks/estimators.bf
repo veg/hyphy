@@ -1476,3 +1476,33 @@ lfunction estimators.ExtractMLEFromObject (lf_id) {
     res[^"terms.parameters"] = utility.Array1D (lf_info[^"terms.parameters.global_independent"]) + utility.Array1D (lf_info[^"terms.parameters.local_independent"]);
     return res;
 }
+
+
+/**
+  * @name estimators.LFObjectGetTrees
+  * @description extract an array of tree object IDs (one per partition) from the likelihood function object
+  * @param {String} lf_id : existing LF object
+
+  * @return {Matrix} an Nx1 vector of tree IDs
+
+*/
+
+lfunction estimators.LFObjectGetTrees (lf_id) {
+    GetString (lf_info, ^lf_id, -1);
+    return lf_info["Trees"];
+}
+
+/**
+  * @name estimators.LFObjectGetEFV
+  * @description extract an array of character frequency objects (one per partition) from the likelihood function object
+  * @param {String} lf_id : existing LF object
+
+  * @return {Matrix} an Nx1 vector of tree IDs
+
+*/
+
+lfunction estimators.LFObjectGetEFV (lf_id) {
+    GetString (lf_info, ^lf_id, -1);
+    return lf_info["Base frequencies"];
+}
+

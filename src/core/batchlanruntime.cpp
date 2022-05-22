@@ -380,6 +380,12 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& current_program){
       receptacle->SetValue(new _MathObject, false, true, NULL);
     }
 
+    _List dynamic_variable_cleanup;
+    _AssociativeList* options = nil;
+
+    if (parameters.countitems() > 2) {
+        options = (_AssociativeList   *)_ProcessAnArgumentByType(*GetIthParameter(2), ASSOCIATIVE_LIST, current_program, &dynamic_variable_cleanup);
+    }
 
     switch (object_type) {
       case HY_BL_LIKELIHOOD_FUNCTION: {
@@ -395,7 +401,7 @@ bool      _ElementaryCommand::HandleExport(_ExecutionList& current_program){
       }
       case HY_BL_MODEL: {
         _StringBuffer * serialized_object = new _StringBuffer (8192L);
-        SerializeModel (*serialized_object,object_index,nil,true);
+        SerializeModel (*serialized_object,object_index,nil,true,options);
         receptacle->SetValue(new _FString (serialized_object), false, true, NULL);
         break;
       }
@@ -1695,7 +1701,7 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_p
 
     if (op_kind == kLFStartCompute) {
       source_object->PrepareToCompute(true);
-     } else if (op_kind == kLFDoneCompute) {
+    } else if (op_kind == kLFDoneCompute) {
       source_object->FlushLocalUpdatePolicy();
       source_object->DoneComputing (true);
     } else {
@@ -2389,11 +2395,13 @@ bool      _ElementaryCommand::HandleMPISend (_ExecutionList& current_program){
 
 bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_program) {
 
-  static const _String kBGMNodeOrder ("BGM_NODE_ORDER"),
-                       kBGMGraph     ("BGM_GRAPH_MATRIX"),
-                       kBGMScores    ("BGM_SCORE_CACHE"),
-                       kBGMConstraintMx ("BGM_CONSTRAINT_MATRIX"),
-                       kBGMParameters   ("BGM_NETWORK_PARAMETERS");
+  static const _String kBGMNodeOrder            ("BGM_NODE_ORDER"),
+                       kBGMGraph                ("BGM_GRAPH_MATRIX"),
+                       kBGMScores               ("BGM_SCORE_CACHE"),
+                       kBGMConstraintMx         ("BGM_CONSTRAINT_MATRIX"),
+                       kBGMParameters           ("BGM_NETWORK_PARAMETERS"),
+                       kSetModelKeepLocals      ("SET_MODEL_KEEP_LOCALS"),
+                       kModel                   ("MODEL");
 
   current_program.advance();
   
@@ -2430,7 +2438,6 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
       return true;
     }
       
-
     const _String source_name   = AppendContainerName (*GetIthParameter(0), current_program.nameSpacePrefix);
 
     long          object_type = HY_BL_ANY,
@@ -2443,39 +2450,69 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
         source_object = _GetHBLObjectByTypeMutable (source_name, object_type, &object_index);
     } catch (const _String& error) { // handle cases when the source is not an HBL object
         
-        _CalcNode* tree_node = nil;
+        /* 20220504
+            SLKP; add an option to provide a LIST of tree nodes (as a string matrix) to apply the model to
+        */
         
-
-        if (source_name.IsValidIdentifier(fIDAllowFirstNumeric|fIDAllowCompound)) {
-             tree_node = (_CalcNode*)FetchObjectFromVariableByType(&source_name, TREE_NODE);
-        } else{
-            _String converted = source_name.ConvertToAnIdent(fIDAllowFirstNumeric|fIDAllowCompound);
-            tree_node = (_CalcNode*)FetchObjectFromVariableByType(&converted, TREE_NODE);
-        }
-        
-      if (tree_node) {
-        if (set_this_attribute == _String("MODEL")) {
-          _String model_name = AppendContainerName(*GetIthParameter(2UL),current_program.nameSpacePrefix);
-          long model_type = HY_BL_MODEL, model_index;
-          _Matrix* model_object            = (_Matrix*)_GetHBLObjectByTypeMutable(model_name, model_type, &model_index);
-          _TheTree * parent_tree = (_TheTree * )tree_node->ParentTree();
-          if (!parent_tree) {
-            throw (GetIthParameter(0UL)->Enquote() & " is an orphaned tree node (the parent tree has been deleted)");
-          }
-          tree_node->ReplaceModel (model_name, parent_tree);
-          long partition_id, likelihood_function_id = ((_TheTree*)parent_tree->Compute())->IsLinkedToALF(partition_id);
-          if (likelihood_function_id>=0){
-            //throw(parent_tree->GetName()->Enquote() & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, likelihood_function_id) &") and cannot be modified ");
-            //return false;
-            ((_LikelihoodFunction*)likeFuncList (likelihood_function_id))->Rebuild(true);
-          }
+        _List node_names;
+        _Matrix * list_of_nodes = (_Matrix*)FetchObjectFromVariableByType(&source_name, MATRIX);
+        if (list_of_nodes && list_of_nodes->IsAStringMatrix()) {
+            list_of_nodes->FillInList (node_names);
         } else {
-          throw  (set_this_attribute.Enquote() & " is not a supported parameter type for a tree node argument");
+            node_names < new _String (source_name);
         }
-      } else {
-        throw (GetIthParameter(0UL)->Enquote() & " is not a supported object type");
-      }
-      return true;
+        
+        //ObjectToConsole(&node_names);
+        
+        _SimpleList _touchedLF;
+        _AVLList touchedLF (&_touchedLF);
+        _SimpleList _modelCache;
+        _AVLListXL  modelCache (&_modelCache);
+        
+        for (long i = 0; i < node_names.countitems(); i++) {
+            const _String object_name = *(_String*)node_names.GetItem(i);
+            _CalcNode* tree_node = nil;
+
+            if (object_name.IsValidIdentifier(fIDAllowFirstNumeric|fIDAllowCompound)) {
+                 tree_node = (_CalcNode*)FetchObjectFromVariableByType(&object_name, TREE_NODE);
+            } else{
+                _String converted = object_name.ConvertToAnIdent(fIDAllowFirstNumeric|fIDAllowCompound);
+                tree_node = (_CalcNode*)FetchObjectFromVariableByType(&converted, TREE_NODE);
+            }
+            
+            
+            if (tree_node) {
+                if (set_this_attribute == _String("MODEL")) {
+                  _String model_name = AppendContainerName(*GetIthParameter(2UL),current_program.nameSpacePrefix);
+                  long model_type = HY_BL_MODEL, model_index;
+                  _Matrix* model_object            = (_Matrix*)_GetHBLObjectByTypeMutable(model_name, model_type, &model_index);
+                  _TheTree * parent_tree = (_TheTree * )tree_node->ParentTree();
+                  if (!parent_tree) {
+                    throw (GetIthParameter(0UL)->Enquote() & " is an orphaned tree node (the parent tree has been deleted)");
+                  }
+                  tree_node->ReplaceModel (model_name, parent_tree, &modelCache, !hy_env::EnvVariableTrue(kSetModelKeepLocals));
+                  long partition_id, likelihood_function_id = ((_TheTree*)parent_tree->Compute())->IsLinkedToALF(partition_id);
+                  if (likelihood_function_id>=0){
+                    //throw(parent_tree->GetName()->Enquote() & " is linked to a likelihood function (" & *GetObjectNameByType (HY_BL_LIKELIHOOD_FUNCTION, likelihood_function_id) &") and cannot be modified ");
+                    //return false
+                    touchedLF.InsertNumber(likelihood_function_id);
+                    //((_LikelihoodFunction*)likeFuncList (likelihood_function_id))->Rebuild(true);
+                  }
+                } else {
+                  throw  (set_this_attribute.Enquote() & " is not a supported parameter type for a tree node argument");
+                }
+            }
+            else {
+                throw (GetIthParameter(0UL)->Enquote() & " is not a supported object type");
+            }
+        }
+        
+        touchedLF.ReorderList();
+        _touchedLF.Each ([] (long value, unsigned long) -> void {
+            ((_LikelihoodFunction*)likeFuncList (value))->Rebuild(true);
+        });
+        
+        return true;
     }
 
 
@@ -3223,7 +3260,8 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
 
     static const _String kVersionString                   ("HYPHY_VERSION"),
                          kTimeStamp                       ("TIME_STAMP"),
-                         kListLoadedLibraries             ("LIST_OF_LOADED_LIBRARIES");
+                         kListLoadedLibraries             ("LIST_OF_LOADED_LIBRARIES"),
+                         kGetNumberOfMatrixExp            ("MATRIX_EXPONENTIALS_COMPUTED");
 
 
     _Variable * receptacle = nil;
@@ -3255,7 +3293,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
         return_value = make_fstring (GetTimeStamp (index1 < 0.5));
       }  else if (*GetIthParameter(1UL) == kListLoadedLibraries) {
         return_value = new _Matrix (loadedLibraryPaths.Keys());
-      }
+      } else if (*GetIthParameter(1UL) == kGetNumberOfMatrixExp) {
+          return_value = new _Constant (matrix_exp_count);
+        }
 
       if (!return_value) {
 
