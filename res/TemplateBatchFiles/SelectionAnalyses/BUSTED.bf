@@ -30,7 +30,7 @@ style analysis to explore which individual sites may have been subject to select
 and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point.
 Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead. Version 3.0 implements the option
 for branch-site variation in synonymous substitution rates. Version 3.1 adds HMM auto-correlation option for SRV, and binds SRV distributions for multiple branch sets.
-Version 4.0 adds support for multiple hits, ancestral state reconstruction saved to JSON.
+Version 4.0 adds support for multiple hits, ancestral state reconstruction saved to JSON, and profiling of branch-site level support for selection / multiple hits.
 ",
                                terms.io.version : "4.0",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
@@ -50,6 +50,9 @@ busted.constrained   = "constrained";
 busted.optimized_null = "optimized null";
 busted.ER = "Posterior prob omega class";
 busted.bsER = "Posterior prob omega class by site";
+busted.ER2H = "Evidence ratio for 2H";
+busted.ER3H = "Evidence ratio for 3H";
+busted.ER23H = "Evidence ratio for 2H+3H";
 busted.MG94 = terms.json.mg94xrev_sep_rates;
 
 busted.json.background = busted.background;
@@ -79,7 +82,11 @@ busted.display_orders = {terms.original_name: -1,
                          busted.MG94: 1,
                          busted.unconstrained: 2,
                          busted.constrained: 3 ,
-                         busted.ER : 4                    
+                         busted.ER : 4,
+                         busted.bsER : 5,
+                         busted.ER2H : 6,
+                         busted.ER3H : 7,
+                         busted.ER23H : 8                    
                         };
 
 
@@ -340,11 +347,42 @@ function busted.export_er_model () {
                                             "GLOBAL_TO_LOCAL" :  busted.g2l
                                             });
     ExecuteCommands (busted.er_omegaN);  
-    //console.log (busted.er_omegaN);
-    branch_level_er_calculator = 1;
+    //console.log (busted.er_omegaN);    branch_level_er_calculator = 1;
 }
 
 busted.er_model = busted.export_er_model();
+
+busted._mh_parameters = {};
+
+if (busted.multi_hit != "None") {
+    busted.double_hit_parameter = model.generic.GetGlobalParameter (busted.test.bsrel_model , ^'terms.parameters.multiple_hit_rate');
+    busted.triple_hit_parameter = model.generic.GetGlobalParameter (busted.test.bsrel_model , ^'terms.parameters.triple_hit_rate');
+    busted._mh_to_local   = {};
+    busted._mh_parameter_map = {};
+    if (None != busted.double_hit_parameter) {
+        busted._mh_parameters [busted.double_hit_parameter] = "branch_level_dh";
+        busted._mh_to_local [busted.double_hit_parameter] = 1;
+        busted._mh_parameter_map [^'terms.parameters.multiple_hit_rate'] = busted._mh_parameters [busted.double_hit_parameter];
+        
+    }
+    if (None != busted.triple_hit_parameter) {
+        busted._mh_parameters [busted.triple_hit_parameter] = "branch_level_th";
+        busted._mh_to_local [busted.triple_hit_parameter] = 1;
+        busted._mh_parameter_map [^'terms.parameters.triple_hit_rate'] = busted._mh_parameters [busted.triple_hit_rate];
+    }
+    
+    function busted.export_mh_er_model () {        
+        Export (busted.er_mh, busted.test, {"RETURN_MODEL_NAME" : TRUE, 
+                                                "UNIQUE_COMPONENT_NAMES" : TRUE, 
+                                                "VARIABLE_SUBSTITUTIONS" : busted._mh_parameters,
+                                                "GLOBAL_TO_LOCAL" : busted._mh_to_local 
+                                                });
+                                                
+        ExecuteCommands (busted.er_mh);  
+    }    
+    
+    busted.mh_er_model = busted.export_mh_er_model();
+}
 
 
 busted.background.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generator,
@@ -701,9 +739,7 @@ if (busted.has_selection_support) {
                 busted.branch_level_ER  [_b_] = None;
             }
         }
-               
-
-        
+         
         busted.tested_branches = Rows (busted.tested_branches);
         utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
         SetParameter ( busted.tested_branches , MODEL, ^busted.er_model);
@@ -736,7 +772,7 @@ if (busted.has_selection_support) {
         
         for (_b_; in;  busted.tested_branches) {
 
-            io.ReportProgressBar("", "Evaluation partition " + (+_partition_ + 1) + "/branch " + busted.full_to_short [_b_]);
+            io.ReportProgressBar("", "Profiling partition " + (+_partition_ + 1) + "/branch " + busted.full_to_short [_b_]);
             
             // set all weight parameters to 0; this will yield the weight for the N-1 class
             
@@ -794,9 +830,12 @@ if (busted.has_selection_support) {
         //console.log ("\n\n" + (exp_counter2-exp_counter) + "\n\n");
 	    
         LFCompute (^(busted.full_model[terms.likelihood_function]),LF_DONE_COMPUTE);
-
+        utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
 	    SetParameter ( busted.tested_branches , MODEL, busted.test);
-         selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, busted.display_orders[busted.ER],
+        utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", None);
+        
+	    
+        selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, busted.display_orders[busted.ER],
                                              _partition_,
                                              busted.branch_level_ER);
                                              
@@ -810,22 +849,128 @@ if (busted.has_selection_support) {
    io.ClearProgressBar();
    utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", None);
     
-} else {
-    for (_partition_, _selection_; in; busted.selected_branches) {
-        busted.branch_level_ER = {};
-        for (_b_,_class_; in; _selection_) {
-            if (_class_ == terms.tree_attributes.test) {
-                busted.branch_level_ER  [_b_] = 1;
-            } else {
-                busted.branch_level_ER  [_b_] = None;
-            }
-        }
-        selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, 0,
-                                             _partition_,
-                                             busted.branch_level_ER);
-    }
+} 
 
-}
+
+if (utility.Array1D (busted._mh_parameters)) {
+
+    utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
+    
+    busted.do2H = (^busted.double_hit_parameter) > 0;
+    busted.do3H = FALSE;
+    
+    if (busted._mh_parameter_map / ^'terms.parameters.triple_hit_rate') {
+        busted.do3H = (^busted.triple_hit_parameter) > 0;
+    }
+    
+    if (busted.do2H || busted.do3H ) {
+    
+        for (_partition_, _selection_; in; busted.selected_branches) {
+            busted.branch_site_level_ER = {};
+        
+            for (_key_, _value_; in; busted.mixture_weights_parameters) {
+                busted.current_weights  [_value_] = Eval (_key_);
+            }
+        
+            busted.tested_branches = {};
+            busted.full_to_short = {};
+            for (_b_,_class_; in; _selection_) {
+                if (_class_ == terms.tree_attributes.test) {
+                     busted.node_name = busted.tree_ids[+_partition_] + '.' + _b_;
+                     busted.tested_branches [busted.node_name] = 1;
+                     busted.full_to_short  [busted.node_name] = _b_;
+                } 
+            }
+         
+            busted.tested_branches = Rows (busted.tested_branches);
+            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
+            SetParameter ( busted.tested_branches , MODEL, ^busted.mh_er_model);
+            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", None);
+        
+       
+            for (_b_; in;  busted.tested_branches) {
+                for (_key_, _value_; in; busted._mh_parameters) {
+                    ^(_b_ + "." + _value_ ) = ^_key_;
+                }
+            }
+        
+        
+            io.ReportProgressBar("", "Computing ER for multiple-hits at branch/site level");
+
+
+            LFCompute (^(busted.full_model[terms.likelihood_function]),LF_START_COMPUTE);
+            
+            busted.branch2H = {};
+            busted.branch3H = {};
+            busted.branch23H = {};
+            
+        
+            for (_b_; in;  busted.tested_branches) {
+
+                io.ReportProgressBar("", "Profiling partition " + (+_partition_ + 1) + "/branch " + busted.full_to_short [_b_]);
+            
+                // set all weight parameters to 0; this will yield the weight for the N-1 class
+            
+            
+                LFCompute (^(busted.full_model[terms.likelihood_function]),logl);
+                ConstructCategoryMatrix (busted.siteLL, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
+            
+            
+                if (busted.do2H) {
+                    busted.er_parameter =  (_b_ + "." + busted._mh_parameter_map[^'terms.parameters.multiple_hit_rate']);
+                    ^busted.er_parameter  = 0;
+                    ConstructCategoryMatrix (busted.siteLLConstrained, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
+                    ^busted.er_parameter  = ^busted.double_hit_parameter;
+                    busted.branch2H [busted.full_to_short [_b_]] = busted.FilteredEvidenceRatios (busted.siteLL, busted.siteLLConstrained, 1);
+                }
+                if (busted.do3H) {
+                    busted.er_parameter =  (_b_ + "." + busted._mh_parameter_map[^'terms.parameters.triple_hit_rate']);
+                    ^busted.er_parameter  = 0;
+                    ConstructCategoryMatrix (busted.siteLLConstrained, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
+                    busted.branch3H [busted.full_to_short [_b_]] = busted.FilteredEvidenceRatios (busted.siteLL, busted.siteLLConstrained, 1);
+                    if (busted.do2H) {
+                        busted.er_parameter =  (_b_ + "." + busted._mh_parameter_map[^'terms.parameters.multiple_hit_rate']);
+                        ^busted.er_parameter  = 0;
+                        ConstructCategoryMatrix (busted.siteLLConstrained, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
+                        ^busted.er_parameter  = ^busted.double_hit_parameter;
+                        busted.branch23H [busted.full_to_short [_b_]] = busted.FilteredEvidenceRatios (busted.siteLL, busted.siteLLConstrained, 1);
+                    }
+                
+                    ^busted.er_parameter  = ^busted.triple_hit_parameter;
+                }
+            }	   
+        
+        
+            LFCompute (^(busted.full_model[terms.likelihood_function]),LF_DONE_COMPUTE);
+
+            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
+            SetParameter ( busted.tested_branches , MODEL, busted.test);
+            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", None);
+            
+            if (busted.do2H) {
+                selection.io.json_store_branch_attribute(busted.json, busted.ER2H, terms.json.branch_annotations, busted.display_orders[busted.ER],
+                                                     _partition_,
+                                                     busted.branch2H);
+            }
+            if (busted.do3H) {
+                selection.io.json_store_branch_attribute(busted.json, busted.ER3H, terms.json.branch_annotations, busted.display_orders[busted.ER],
+                                                     _partition_,
+                                                     busted.branch3H);
+            }
+            if (busted.do2H && busted.do3H) {
+                selection.io.json_store_branch_attribute(busted.json, busted.ER23H, terms.json.branch_annotations, busted.display_orders[busted.ER],
+                                                     _partition_,
+                                                     busted.branch23H);
+            }
+                                             
+            //console.log (busted.er_report.tagged_branches);
+            //console.log (busted.er_report.tagged_sites);
+        }
+   }
+   io.ClearProgressBar();
+   utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", None);
+    
+} 
 
 
 

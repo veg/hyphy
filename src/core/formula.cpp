@@ -2331,6 +2331,7 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
                         case HY_OP_CODE_SUB:
                         case HY_OP_CODE_MUL:
                         case HY_OP_CODE_DIV:
+                        case HY_OP_CODE_POWER:
                             simpleExpressionStatus[i] = -10000L - this_op->opCode;
                     }
                 }
@@ -2410,6 +2411,20 @@ hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum
                             case HY_OP_CODE_DIV:
                                 stack[stackTop-1].value = stack[stackTop-1].value / stack[stackTop].value;
                                 break;
+                            case HY_OP_CODE_POWER: {
+                                //stack[stackTop-1].value = pow (stack[stackTop-1].value, stack[stackTop].value);
+                                
+                                if (stack[stackTop-1].value==0.0) {
+                                  if (stack[stackTop].value > 0.0) {
+                                    return 0.0;
+                                  } else {
+                                    return 1.0;
+                                  }
+                                }
+                                stack[stackTop-1].value =  pow (stack[stackTop-1].value, stack[stackTop].value);
+                                
+                                break;
+                            }
                             default:
                                 HandleApplicationError ("Internal error in _Formula::ComputeSimple - unsupported shortcut operation.)", true);
                                 return 0.0;
