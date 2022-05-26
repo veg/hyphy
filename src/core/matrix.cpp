@@ -3979,10 +3979,48 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                         long col_offset = 0L;
                         for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
                                 float64x2_t A4 = vdupq_n_f64(theData[ti]);
-                            //for (long k = 0; k < 20L; k+=4) {
+
+  
+                                /*float64x2x4_t B, D, B_2, D_2;
+                            
+                                D = vld1q_f64_x4(dest + row_offset);
+                                B = vld1q_f64_x4(secondArg.theData + col_offset);
+                                D_2 = vld1q_f64_x4(dest + row_offset + 8);
+                                B_2 = vld1q_f64_x4(secondArg.theData + col_offset + 8);
+                            
+                                float64x2x2_t B2, D2;
+                                D2 = vld1q_f64_x2(dest + row_offset + 16);
+                                B2 = vld1q_f64_x2(secondArg.theData + col_offset + 16);
+                        
+                            
+                            
+
+                            
+
+                                D.val[0] = vfmaq_f64 (D.val[0], A4, B.val[0]);
+                                D.val[1] = vfmaq_f64 (D.val[1], A4, B.val[1]);
+                                D.val[2] = vfmaq_f64 (D.val[2], A4, B.val[2]);
+                                D.val[3] = vfmaq_f64 (D.val[3], A4, B.val[3]);
+
+                            
+                                D_2.val[0] = vfmaq_f64 (D_2.val[0], A4, B_2.val[0]);
+                                D_2.val[1] = vfmaq_f64 (D_2.val[1], A4, B_2.val[1]);
+                                D_2.val[2] = vfmaq_f64 (D_2.val[2], A4, B_2.val[2]);
+                                D_2.val[3] = vfmaq_f64 (D_2.val[3], A4, B_2.val[3]);
+                            
+                                D2.val[0] = vfmaq_f64 (D2.val[0], A4, B2.val[0]);
+                                D2.val[1] = vfmaq_f64 (D2.val[1], A4, B2.val[1]);
+
+                                vst1q_f64_x4 (dest + row_offset, D);
+                                vst1q_f64_x4 (dest + row_offset + 8, D_2);
+                                vst1q_f64_x2 (dest + row_offset + 16, D2);*/
+  
+                             
+                                
                                 float64x2_t D4_1, D4_2, D4_3, D4_4, D4_5, D4_6, D4_7, D4_8, D4_9, D4_10;
                                 float64x2_t B4_1, B4_2, B4_3, B4_4, B4_5, B4_6, B4_7, B4_8, B4_9, B4_10;
                                 
+                                 
                                 DO_GROUP_OP1 (D4_1,B4_1,0);
                                 DO_GROUP_OP1 (D4_2,B4_2,2);
                                 DO_GROUP_OP1 (D4_3,B4_3,4);
