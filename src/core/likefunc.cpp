@@ -4998,7 +4998,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 BufferToConsole (buffer);
                 snprintf (buffer, sizeof(buffer),"\nSmoothing term: %g", smoothingTerm);
                 BufferToConsole (buffer);
-                snprintf (buffer, sizeof(buffer),"\nExponential count: %d", smoothingTerm);
+                snprintf (buffer, sizeof(buffer),"\nExponential count: %d", matrix_exp_count);
                 BufferToConsole (buffer);
             }
 
@@ -5940,9 +5940,9 @@ HBLObjectRef   _LikelihoodFunction::CovarianceMatrix (_SimpleList* parameterList
 
         hyFloat locH = 1./131072.; //*(t1>10.?exp(log(10.)*((long)log(t1)/log(10.))):1.);
 
-        if (locH<1e-7) {
+        /*if (locH<1e-7) {
             locH = 1e-7;
-        }
+        }*/
 
         /*hyFloat locH = 1./1024.,
                    tryH = locH * 0.25,

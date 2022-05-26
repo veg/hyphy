@@ -401,7 +401,7 @@ _VariableContainer::~_VariableContainer(void) {
         delete gVariables;
     }
     if (templateFormulaClone) {
-        delete templateFormulaClone;
+        delete [] templateFormulaClone;
     }
 }
 
@@ -827,7 +827,7 @@ void      _VariableContainer::Clear(void) {
         gVariables = nil;
     }
     if (templateFormulaClone) {
-        delete templateFormulaClone;
+        delete [] templateFormulaClone;
         templateFormulaClone = nil;
     }
 }

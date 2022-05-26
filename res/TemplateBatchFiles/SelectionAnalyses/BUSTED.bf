@@ -33,7 +33,7 @@ for branch-site variation in synonymous substitution rates. Version 3.1 adds HMM
 Version 4.0 adds support for multiple hits, ancestral state reconstruction saved to JSON, and profiling of branch-site level support for selection / multiple hits.
 ",
                                terms.io.version : "4.0",
-                               terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71",
+                               terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71, *Synonymous Site-to-Site Substitution Rate Variation Dramatically Inflates False Positive Rates of Selection Analyses: Ignore at Your Own Peril*, Mol Biol Evol. 37(8):2430-2439",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
                                terms.io.requirements : "in-frame codon alignment and a phylogenetic tree (optionally annotated with {})"
@@ -368,7 +368,7 @@ if (busted.multi_hit != "None") {
     if (None != busted.triple_hit_parameter) {
         busted._mh_parameters [busted.triple_hit_parameter] = "branch_level_th";
         busted._mh_to_local [busted.triple_hit_parameter] = 1;
-        busted._mh_parameter_map [^'terms.parameters.triple_hit_rate'] = busted._mh_parameters [busted.triple_hit_rate];
+        busted._mh_parameter_map [^'terms.parameters.triple_hit_rate'] = busted._mh_parameters [busted.triple_hit_parameter];
     }
     
     function busted.export_mh_er_model () {        
@@ -410,6 +410,11 @@ if (busted.do_srv) {
 
         models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), "SRV [0-9]+"));
     } 
+}
+
+if (busted.multi_hit != "None" && busted.has_background) {
+     models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, ^'terms.parameters.multiple_hit_rate');
+     models.BindGlobalParameters ({"0" : busted.test.bsrel_model, "1" : busted.background.bsrel_model}, ^'terms.parameters.triple_hit_rate');
 }
 
 busted.distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.test.bsrel_model);
@@ -712,6 +717,8 @@ if (busted.do_srv) {
 
 }
 
+busted.stashLF = estimators.TakeLFStateSnapshot (busted.full_model[terms.likelihood_function]);
+
 if (busted.has_selection_support) {
 
     utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
@@ -740,7 +747,8 @@ if (busted.has_selection_support) {
             }
         }
          
-        busted.tested_branches = Rows (busted.tested_branches);
+        busted.tested_branches = Rows (busted.tested_branches);    
+        
         utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
         SetParameter ( busted.tested_branches , MODEL, ^busted.er_model);
         utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", None);
@@ -830,10 +838,10 @@ if (busted.has_selection_support) {
         //console.log ("\n\n" + (exp_counter2-exp_counter) + "\n\n");
 	    
         LFCompute (^(busted.full_model[terms.likelihood_function]),LF_DONE_COMPUTE);
-        utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
 	    SetParameter ( busted.tested_branches , MODEL, busted.test);
-        utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", None);
-        
+
+        estimators.RestoreLFStateFromSnapshot (busted.full_model[terms.likelihood_function], busted.stashLF);
+         
 	    
         selection.io.json_store_branch_attribute(busted.json, busted.ER, terms.json.branch_annotations, busted.display_orders[busted.ER],
                                              _partition_,
@@ -868,9 +876,6 @@ if (utility.Array1D (busted._mh_parameters)) {
         for (_partition_, _selection_; in; busted.selected_branches) {
             busted.branch_site_level_ER = {};
         
-            for (_key_, _value_; in; busted.mixture_weights_parameters) {
-                busted.current_weights  [_value_] = Eval (_key_);
-            }
         
             busted.tested_branches = {};
             busted.full_to_short = {};
@@ -929,10 +934,10 @@ if (utility.Array1D (busted._mh_parameters)) {
                     ConstructCategoryMatrix (busted.siteLLConstrained, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
                     busted.branch3H [busted.full_to_short [_b_]] = busted.FilteredEvidenceRatios (busted.siteLL, busted.siteLLConstrained, 1);
                     if (busted.do2H) {
-                        busted.er_parameter =  (_b_ + "." + busted._mh_parameter_map[^'terms.parameters.multiple_hit_rate']);
-                        ^busted.er_parameter  = 0;
+                        busted.er2_parameter =  (_b_ + "." + busted._mh_parameter_map[^'terms.parameters.multiple_hit_rate']);
+                        ^busted.er2_parameter  = 0;
                         ConstructCategoryMatrix (busted.siteLLConstrained, ^(busted.full_model[terms.likelihood_function]) , SITE_LOG_LIKELIHOODS, {{+_partition_}});
-                        ^busted.er_parameter  = ^busted.double_hit_parameter;
+                        ^busted.er2_parameter  = ^busted.double_hit_parameter;
                         busted.branch23H [busted.full_to_short [_b_]] = busted.FilteredEvidenceRatios (busted.siteLL, busted.siteLLConstrained, 1);
                     }
                 
@@ -943,9 +948,8 @@ if (utility.Array1D (busted._mh_parameters)) {
         
             LFCompute (^(busted.full_model[terms.likelihood_function]),LF_DONE_COMPUTE);
 
-            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", TRUE);
             SetParameter ( busted.tested_branches , MODEL, busted.test);
-            utility.ToggleEnvVariable ("SET_MODEL_KEEP_LOCALS", None);
+            estimators.RestoreLFStateFromSnapshot (busted.full_model[terms.likelihood_function], busted.stashLF);
             
             if (busted.do2H) {
                 selection.io.json_store_branch_attribute(busted.json, busted.ER2H, terms.json.branch_annotations, busted.display_orders[busted.ER],
@@ -1152,8 +1156,8 @@ lfunction busted._renormalize (v, distro, mean) {
 //------------------------------------------------------------------------------
 
 lfunction busted.get_multi_hit (model_fit) {
-    params = selection.io.extract_global_MLE_re (model_fit, ^'terms.parameters.multiple_hit_rate');
-    for (k,v; in; selection.io.extract_global_MLE_re (model_fit, ^'terms.parameters.triple_hit_rate')) {
+    params = selection.io.extract_global_MLE_re (model_fit, '^' + ^'terms.parameters.multiple_hit_rate');
+    for (k,v; in; selection.io.extract_global_MLE_re (model_fit, '^' + ^'terms.parameters.triple_hit_rate')) {
         params + v;
     }
     return params;
