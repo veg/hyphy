@@ -96,6 +96,7 @@ public:
     virtual   void          Duplicate           (BaseRefConst);
     void      operator = (_Operation const&);
 
+    bool            PushValue             (_Stack&, _VariableContainer const* = nil, _String* errMsg = nil); 
     bool            Execute             (_Stack&, _VariableContainer const* = nil, _String* errMsg = nil, bool canCache = false); //execute this operation
     // see the commend for _Formula::ExecuteFormula for the second argument
     virtual   void          StackDepth          (long&);

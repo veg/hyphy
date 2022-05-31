@@ -372,7 +372,19 @@ long        _Operation::StackDepth (void) const {
   return (1-numberOfTerms);
 }
 
-
+//__________________________________________________________________________________
+bool        _Operation::PushValue (_Stack& theScrap, _VariableContainer const* nameSpace, _String* errMsg) {
+    if (theData >= 0L) { // variable reference
+      if (numberOfTerms <= 0L) { // compute and push value
+        _Variable * src = ((_Variable*)((BaseRef*)variablePtrs.list_data)[theData]);
+        if (src->ObjectClass() == MATRIX) {
+            theScrap.Push(((_Matrix*)src->GetValue())->get_value());
+        }
+      }
+      return true;
+    }
+    return false;
+}
 //__________________________________________________________________________________
 bool        _Operation::Execute (_Stack& theScrap, _VariableContainer const* nameSpace, _String* errMsg, bool canCache) {
   if (theNumber) { // push value

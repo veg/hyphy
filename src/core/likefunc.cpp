@@ -10176,7 +10176,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
     unsigned long    internal_node_count = 0UL;
 
-    if (storeIntermediates && storeIntermediates->nonempty() == 0) {
+    if (storeIntermediates && storeIntermediates->empty()) {
       GetIthTree (0L)->AddNodeNamesToDS (&target,false,true,0); // only add internal node names
       internal_node_count = target.GetNames().lLength - species_count;
     }
@@ -10415,17 +10415,20 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
               target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
             }
 
-            if (storeIntermediates && storeIntermediates->nonempty() == 0UL) {
-              for (unsigned long internal_node_index = 0UL; internal_node_index < internal_node_count; internal_node_index++) {
-                simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(ancestral_values(internal_node_index)), sites_per_unit);
-                for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
-                  target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
-                }
-                target.ResetIHelper();
-                for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
-                  target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
-                }
-
+            if (storeIntermediates ) {
+              if (storeIntermediates->empty()) {
+                  for (unsigned long internal_node_index = 0UL; internal_node_index < internal_node_count; internal_node_index++) {
+                    simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(ancestral_values(internal_node_index)), sites_per_unit);
+                    for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                      target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
+                    }
+                    target.ResetIHelper();
+                    for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                      target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
+                    }
+                  }
+              } else {
+                  
               }
             }
           }
@@ -10443,7 +10446,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
           // generate a random "spawning vector"
 
-        if (spawnValues) { // use supplied starting values
+    if (spawnValues) { // use supplied starting values
           for (unsigned long site_index = 0UL;  site_index < this_site_count; site_index++) {
             simulated_sequence[site_index] = spawnValues->theData[site_index+site_offset];
           }

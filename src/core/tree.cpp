@@ -2700,19 +2700,29 @@ void     _TheTree::AddNodeNamesToDS (_DataSet* ds, bool doTips, bool doInternals
 // LF COMPUTE FUNCTIONS
 // TODO SLKP 20180803 these all could use a review
 
+//extern long mes_counter;
+
 /*----------------------------------------------------------------------------------------------------------*/
 void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catID) {
     _List           matrixQueue, nodesToDo;
     
     _SimpleList     isExplicitForm ((unsigned long)expNodes.countitems());
     bool            hasExpForm = false;
+    
+    //long b4 = mes_counter;
 
     for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
+        //if (hasExpForm) {
+        //    b4 = mes_counter;
+        //}
         if (thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm)) {
             hasExpForm = true;
         }
+        //if (hasExpForm && mes_counter - b4 > 3) {
+        //    printf ("%d/%d %s\n", mes_counter - b4, likeFuncEvalCallCount , thisNode->GetName()->get_str());
+        //}
 #ifdef _UBER_VERBOSE_DUMP
         if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP)
             printf ("NodeID %ld (%s). Old length %ld, new length %ld (%ld)\n", nodeID, thisNode->GetName()->sData, didIncrease,matrixQueue.lLength, isExplicitForm.lLength);
@@ -2726,6 +2736,8 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
     }
     
+    //if (hasExpForm && (3*(flatTree.countitems() + flatLeaves.countitems()) < (mes_counter-b4)))
+    //    printf ("%d/%d (%d)\n\n", mes_counter-b4, expNodes.lLength, flatTree.countitems() + flatLeaves.countitems());
     //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
     //ObjectToConsole(&isExplicitForm);
     

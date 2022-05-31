@@ -249,7 +249,8 @@ public:
 
         e.g. passing HY_OP_CODE_ADD implements +=
      */
-
+    
+    HBLObjectRef    get_value () {return theValue;}
     void        MStore (long, long, HBLObjectRef);
     void        MStore (HBLObjectRef, HBLObjectRef, HBLObjectRef);
     // implements the M[i][j]= operation for objects
@@ -323,6 +324,7 @@ public:
     _Matrix*    ExtractElementsByEnumeration    (_SimpleList*,_SimpleList*,bool=false);
     _Matrix*    SimplexSolve                    (hyFloat = 1.e-6);
 
+    
 
 //  void        SqrStrassen (void);
 // square the matrix by Strassen's Multiplication
