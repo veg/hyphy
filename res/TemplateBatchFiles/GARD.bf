@@ -380,12 +380,12 @@ if (gard.startWithBP > 0) {
     }
 
     // 2a3. Evaluate if the best single breakpoint is the overall best model
-    //if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
+    if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
         gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
         gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
-     //} else {
-     //   gard.bestOverallModelSoFar = null;
-    //}
+    } else {
+        gard.bestOverallModelSoFar = null;
+    }
     
     gard.improvements = {'0': {
                             "deltaAICc": gard.baseline_cAIC - gard.bestOverall_cAIC_soFar,

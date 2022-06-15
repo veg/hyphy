@@ -506,13 +506,17 @@ if (busted.do_srv_hmm) {
             };
 }
 
+busted.global_scaler_list = {};
 
-parameters.DeclareGlobalWithRanges ("busted.bl.scaler", 3, 0, 1000);
-
-busted.initial_ranges      ["busted.bl.scaler"] = {
+for (busted.partition_index = 0; busted.partition_index < busted.partition_count; busted.partition_index += 1) {
+    busted.global_scaler_list [busted.partition_index] = "busted.bl.scaler_" + busted.partition_index;
+    parameters.DeclareGlobalWithRanges (busted.global_scaler_list [busted.partition_index], 3, 0, 1000);
+    busted.initial_ranges      [busted.global_scaler_list [busted.partition_index]] = {
                 terms.lower_bound : 2.5,
                 terms.upper_bound : 3.5
             };
+}
+
             
             
 
@@ -570,7 +574,7 @@ if (Type (debug.checkpoint) != "String") {
     busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
         "retain-lf-object": TRUE,
         terms.run_options.proportional_branch_length_scaler : 
-                                                {"0" : "busted.bl.scaler"},
+                                                busted.global_scaler_list,
                                             
         terms.run_options.optimization_settings : 
             {
@@ -1092,7 +1096,7 @@ return busted.json;
 
 //------------------------------------------------------------------------------
 lfunction busted.ComputeSiteLikelihoods (id) {
-    ConstructCategoryMatrix (sl, ^id, SITE_LOG_LIKELIHOODS);
+   ConstructCategoryMatrix (sl, ^id, SITE_LOG_LIKELIHOODS);
    return sl;
 }
 //------------------------------------------------------------------------------

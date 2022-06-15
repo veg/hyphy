@@ -1679,6 +1679,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
     return true;
 }
 
+//extern long mes_counter;
   //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_program) {
@@ -1714,7 +1715,10 @@ bool      _ElementaryCommand::HandleComputeLFFunction (_ExecutionList& current_p
           source_object->FlushLocalUpdatePolicy();
         } else {
           receptacle = _ValidateStorageVariable (current_program, 1UL);
+          //printf ("LFCompute in %d\n", mes_counter);
+          //long in_mes = mes_counter;
           receptacle->SetValue (new _Constant (source_object->Compute()), false,true, NULL);
+          //printf ("MSE count = %d\n\n", mes_counter - in_mes);
         }
       }
     }

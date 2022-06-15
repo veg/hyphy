@@ -463,7 +463,9 @@ function doGTR (prefix) {
     if (kill0 == "Yes") {
         for (index, tree; in; trees) {
             deleted = {};
+            
             if (^(prefix + ".selected_branches") / index) {
+                deleted_test = utility.Array1D ((^(prefix + ".selected_branches"))[index]);
                 trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], (^(prefix + ".selected_branches"))[index], deleted);
             } else {
                 trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], null, deleted);
@@ -486,10 +488,8 @@ function doGTR (prefix) {
             deleted_by_tree = {};
             for (index, tree; in; trees) {
                 deleted = {};
-                //console.log (((^"meme.selected_branches")[0])["Node166"]);
                 trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], null, deleted);
-                //console.log (((^"meme.selected_branches")[0])["Node166"]);
-
+ 
                 if (utility.Array1D (deleted)) {
                     io.ReportProgressMessageMD(prefix,  'selector', 'Marked ' + Abs(deleted) + ' zero-length internal branches to be constrained: \`' + Join (', ',utility.Values(deleted)) + '\`');
                 }

@@ -2688,6 +2688,14 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
     nonConstantDep = new _SimpleList;
     _SimpleList nonConstantIndices; // for error reporting
     
+    /*
+    for (index = 0; index < indexInd.countitems(); index++) {
+        fprintf (stderr, "%d %s\n", index, GetIthIndependentName(index)->get_str());
+    }
+    */
+    
+    bool constant_fail = false;
+    
     for (index = 0; index< dep_var_count && !ohWell; index++) {
         // check whether any of the dependent variables are out of bounds
         cornholio                       =   GetIthDependentVar(index);
@@ -2696,7 +2704,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         lowerBounds.theData[index]      =   cornholio->GetLowerBound();
         upperBounds.theData[index]      =   cornholio->GetUpperBound();
         
-        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g\n", cornholio->theName->get_str(), index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index]);
+        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g (%s)\n", cornholio->theName->get_str(), index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index], cornholio->GetFormulaString(kFormulaStringConversionReportRanges)->get_str());
         
         bool badApple = currentValues.theData[index]<lowerBounds.theData[index] || currentValues.theData[index]>upperBounds.theData[index];
         if (badApple) {
@@ -2707,10 +2715,13 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         if (cornholio->IsConstant()) {
             badConstraint = indexDep.list_data[index];
             ohWell = badApple;
+            constant_fail = true;
             j      = index; // for error reporting at the bottom
+            //fprintf (stderr, "---> Is constant\n");
         } else {
             (*nonConstantDep) << indexDep.list_data[index];
             nonConstantIndices << index;
+            //fprintf (stderr, "---> Is non-constant\n");
         }
     }
     
@@ -2927,7 +2938,9 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
       
         //fprintf (stderr, "%d\n", j);
         
-        j = nonConstantIndices.get(j);
+        if (!constant_fail) {
+            j = nonConstantIndices.get(j);
+        }
         
         _StringBuffer err_report ("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:");
         
@@ -2942,9 +2955,11 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         err_report << _String(currentValues[j]);
         err_report << ".";
         
-        _TerminateAndDump(err_report);
-        
-        
+        if (hy_env::EnvVariableTrue(hy_env::tolerate_constraint_violation)) {
+            ReportWarning(err_report);
+        } else {
+            _TerminateAndDump(err_report);
+        }
     }
 }
 //_______________________________________________________________________________________
