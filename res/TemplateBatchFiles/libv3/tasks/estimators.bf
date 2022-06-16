@@ -12,7 +12,7 @@ LoadFunctionLibrary("libv3/IOFunctions.bf");
  * @returns {Dict} parameter -> {"MLE" : value, "constraint" : string (if present)}
  */
 
-lfunction estiFmators.TakeLFStateSnapshot(lf_id) {
+lfunction estimators.TakeLFStateSnapshot(lf_id) {
     snapshot = {};
     GetString (info, ^lf_id,-1);
 
