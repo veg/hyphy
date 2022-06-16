@@ -466,6 +466,8 @@ if (relax.model_set == "All") { // run all the models
         
 
         if (Type (relax.ge_guess) != "Matrix") {
+        
+        
             // first time in 
             relax.initial.test_mean    =
             
@@ -485,6 +487,7 @@ if (relax.model_set == "All") { // run all the models
             for (i, v; in; relax.initial_grid) {
                 v["relax.bl.scaler"] = {terms.id : "relax.bl.scaler", terms.fit.MLE : Random (2,4)};
             }
+            
             
                           
             relax.grid_search.results =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : {"DEFAULT" : "relax.ge"}},

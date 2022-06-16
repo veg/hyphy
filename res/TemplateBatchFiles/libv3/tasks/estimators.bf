@@ -12,7 +12,7 @@ LoadFunctionLibrary("libv3/IOFunctions.bf");
  * @returns {Dict} parameter -> {"MLE" : value, "constraint" : string (if present)}
  */
 
-lfunction estimators.TakeLFStateSnapshot(lf_id) {
+lfunction estiFmators.TakeLFStateSnapshot(lf_id) {
     snapshot = {};
     GetString (info, ^lf_id,-1);
 
@@ -770,7 +770,6 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
 
     can_do_restarts = null;
-
 
 
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
