@@ -1894,7 +1894,7 @@ bool      _LikelihoodFunction::SendOffToMPI       (long index) {
 /* 20170404 SLKP Need to check if the decision to recompute a partition is made correctly.
  In particular, need to confirm that changes to category variables are handled correctly (e.g. HaveParametersChanged, vs has changed */
 
-    bool                sendToSlave = (computationalResults.GetSize() < parallelOptimizerTasks.lLength);
+    bool                sendToSlave = (computationalResults.get_used() < parallelOptimizerTasks.lLength);
     _SimpleList     *   slaveParams = (_SimpleList*)parallelOptimizerTasks(index);
 
     for (unsigned long varID = 0UL; varID < slaveParams->lLength; varID++) {
@@ -2306,7 +2306,9 @@ hyFloat  _LikelihoodFunction::Compute        (void)
             if (hy_mpi_node_rank == 0) {
                 long    totalSent = 0;
                 for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++) {
+                    //printf ("Master sending block %d off...\n", blockID);
                     bool sendToSlave = SendOffToMPI (blockID);
+                    //printf ("Send result (result size %d): %d\n", computationalResults.GetSize(), sendToSlave);
                     if (sendToSlave) {
                         totalSent++;
                     } else {
@@ -4088,7 +4090,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
     SetupLFCaches       ();
     SetupCategoryCaches ();
-    computationalResults.Clear();
     
     
 

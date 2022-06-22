@@ -1,4 +1,4 @@
-RequireVersion("2.4.0");
+RequireVersion("2.5.40");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -40,9 +40,9 @@ meme.analysis_description = {
     the proportion of the tree affected. A subset of branches can be selected
     for testing as well, in which case an additional (nuisance) parameter will be
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
-    for recombination - aware analysis.
+    for recombination - aware analysis. Version 3.0 adds a different format for ancestral state reconstruction, branch-site posterior storage, and site-level heterogeneity testing. 
     ",
-    terms.io.version: "2.1.2",
+    terms.io.version: "3.0",
     terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
     terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
     terms.io.contact: "spond@temple.edu",
@@ -725,16 +725,10 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         //TODO
         branch_substitution_information = (ancestral.ComputeSubstitutionBySite (ancestral_info,0,None))[^"terms.substitutions"];
         DeleteObject (ancestral_info);
-
         branch_ebf       = {};
         branch_posterior = {};
     }
 
-      
-
-
-
-    
  
     if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" < 0.999999) {
         if (!sim_mode) { 
@@ -921,7 +915,6 @@ lfunction meme.store_results (node, result, arguments) {
       //console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.parameter_site_mixture_weight"));
 
     if (None != result) { // not a constant site
-
 
         lrt = {utility.getGlobalValue("terms.LRT") : 2*((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")]-(result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")])};
         lrt [utility.getGlobalValue("terms.p_value")] = 2/3-2/3*(0.45*CChi2(lrt[utility.getGlobalValue("terms.LRT")],1)+0.55*CChi2(lrt[utility.getGlobalValue("terms.LRT")],2));

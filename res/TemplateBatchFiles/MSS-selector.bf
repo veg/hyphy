@@ -172,7 +172,7 @@ mss_selector.header = {
     
     
 ExecuteCommands ( "mss.codon_classes = model.codon.MSS.prompt_and_define (terms.global, mss.genetic_code[terms.code])", 
-                                       {"--mss-type" : "AAF"}
+                                       {"--mss-type" : "SynREVFull"}
                                     );
 
     
