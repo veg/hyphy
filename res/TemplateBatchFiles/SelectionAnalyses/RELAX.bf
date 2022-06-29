@@ -951,7 +951,7 @@ function relax.FitMainTestPair () {
     relax.save_fit_path = io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]");
     io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], relax.save_fit_path);
  
-	if (relax.numbers_of_tested_groups == 2) {
+	if (relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 
 		relax.fitted.K = estimators.GetGlobalMLE (relax.alternative_model.fit,terms.relax.k);
 		io.ReportProgressMessageMD("RELAX", "alt", "* Relaxation/intensification parameter (K) = " + Format(relax.fitted.K,8,2));

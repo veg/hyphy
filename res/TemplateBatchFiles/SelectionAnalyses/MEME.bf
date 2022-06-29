@@ -106,7 +106,7 @@ KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selec
 
 meme.scaler_prefix = "MEME.scaler";
 
-meme.table_headers = {{"alpha;", "Synonymous substitution rate at a site"}
+meme.table_headers = {{"&alpha;", "Synonymous substitution rate at a site"}
                      {"&beta;<sup>-</sup>", "Non-synonymous substitution rate at a site for the negative/neutral evolution component"}
                      {"p<sup>-</sup>", "Mixture distribution weight allocated to &beta;<sup>-</sup>; loosely -- the proportion of the tree evolving neutrally or under negative selection"}
                      {"&beta;<sup>+</sup>", "Non-synonymous substitution rate at a site for the positive/neutral evolution component"}
@@ -1010,7 +1010,7 @@ lfunction meme.store_results (node, result, arguments) {
     for (i = 0; i < sites_mapping_to_pattern.count; i+=1) {
         site_index = sites_mapping_to_pattern[i];
         ((^"meme.site_results")[partition_index])[site_index] = result_row;
-        ((^"meme.json")[^"terms.substitutions"])[site_index] = compressed_subs;
+        (((^"meme.json")[^"terms.substitutions"])[partition_index])[site_index] = compressed_subs;
         if (has_lrt) {
             ((^"meme.site_LRT")[partition_index])[site_index] = result[^"terms.simulated"];
         }
