@@ -1084,7 +1084,7 @@ function relax.FitMainTestPair () {
 	io.ReportProgressMessageMD ("RELAX", "null", "* " + selection.io.report_fit (relax.null_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 	relax.LRT = math.DoLRT (relax.null_model.fit[terms.fit.log_likelihood], relax.alternative_model.fit[terms.fit.log_likelihood],  relax.numbers_of_tested_groups-1);
 
-	if (relax.numbers_of_tested_groups == 2) {
+	if (relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 		io.ReportProgressMessageMD("RELAX", "null", "* The following rate distribution for test/reference branches was inferred");
 		relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.model_object_map ["relax.test"], relax.null_model.fit)) % 0;
 		selection.io.report_dnds (relax.inferred_distribution);
