@@ -10477,7 +10477,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
         _DataSet * ancestral_sequences = nil;
 
-        if (storeIntermediates) {
+        if (storeIntermediates && !this_tree->IsDegenerate()) {
           if (storeIntermediates->nonempty()) {
             FILE * file_for_ancestral_sequences = doFileOpen (storeIntermediates->get_str(),"w");
             if (!file_for_ancestral_sequences) {

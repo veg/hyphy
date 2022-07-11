@@ -172,7 +172,7 @@ mss_selector.header = {
     
     
 ExecuteCommands ( "mss.codon_classes = model.codon.MSS.prompt_and_define (terms.global, mss.genetic_code[terms.code])", 
-                                       {"--mss-type" : "SynREV2"}
+                                       {"--mss-type" : "SynREVCodon"}
                                     );
                                     
     
@@ -293,10 +293,11 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
         for (mss.i2 = 0; mss.i2 < mss.model_dimension; mss.i2 += 1) {
             parameters.DeclareGlobal (mss.scaler_prefix + mss.i2, None);
         }
+ 
         mss.json [terms.mss_selector.mapping] = mss.scaler_index;
     } else {
         //utility.getGlobalValue ("terms.parameters.synonymous_rate");
-        models.BindGlobalParameters ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_within);
+        models.BindGlobalParameters ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_between);
     }
 }
 
@@ -453,6 +454,8 @@ lfunction mss.GA.initializeModels (numberOfClasses, populationSize, dimension, s
 //-------------------------------------------------------------------------------------------
 lfunction mss.GA.fit_model (model, lfid, xp, ss) {
     
+    //console.log (model);
+    
     if (^"mss.masterRateList" / model) {
         //console.log ("\n**CACHED**\n");
         return (^"mss.masterRateList")[model];
@@ -462,6 +465,7 @@ lfunction mss.GA.fit_model (model, lfid, xp, ss) {
        parameters.SetConstraint ((^"mss.scaler_index")[i], ^"mss.scaler_prefix" + v, "");
     }
     // parameters.SetConstraint (^"mss.scaler_prefix" + 0, "1", "");
+    //utility.SetEnvVariable ("VERBOSITY_LEVEL", 10); 
     utility.SetEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1.); 
     Optimize (res, ^lfid);
     return_expr = {1,res[1][1] + 3};
