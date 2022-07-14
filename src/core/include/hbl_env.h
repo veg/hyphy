@@ -204,6 +204,7 @@ namespace hy_env {
           kSCFGCorpus,
           verbosity_level_string,
           tolerate_numerical_errors,
+          tolerate_constraint_violation,
           tree_parser_namespace;
 
     ;

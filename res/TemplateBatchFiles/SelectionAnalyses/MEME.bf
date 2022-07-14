@@ -1,4 +1,4 @@
-RequireVersion("2.4.0");
+RequireVersion("2.5.40");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -40,9 +40,9 @@ meme.analysis_description = {
     the proportion of the tree affected. A subset of branches can be selected
     for testing as well, in which case an additional (nuisance) parameter will be
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
-    for recombination - aware analysis.
+    for recombination - aware analysis. Version 3.0 adds a different format for ancestral state reconstruction, branch-site posterior storage, and site-level heterogeneity testing. 
     ",
-    terms.io.version: "2.1.2",
+    terms.io.version: "3.0",
     terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
     terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
     terms.io.contact: "spond@temple.edu",
@@ -70,6 +70,8 @@ meme.parameter_site_beta_minus = "Site relative non-synonymous rate (tested bran
 meme.parameter_site_beta_plus = "Site relative non-synonymous rate (tested branches); unconstrained";
 meme.parameter_site_mixture_weight = "Beta- category weight";
 meme.parameter_site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
+meme.bsER = "Posterior prob omega class by site";
+
 
 // default cutoff for printing to screen
 meme.pvalue = 0.1;
@@ -79,6 +81,7 @@ meme.json = {
     terms.json.analysis: meme.analysis_description,
     terms.json.fits: {},
     terms.json.timers: {},
+    terms.substitutions : {}
 };
 
 meme.display_orders =   {terms.original_name: -1,
@@ -103,7 +106,7 @@ KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selec
 
 meme.scaler_prefix = "MEME.scaler";
 
-meme.table_headers = {{"alpha;", "Synonymous substitution rate at a site"}
+meme.table_headers = {{"&alpha;", "Synonymous substitution rate at a site"}
                      {"&beta;<sup>-</sup>", "Non-synonymous substitution rate at a site for the negative/neutral evolution component"}
                      {"p<sup>-</sup>", "Mixture distribution weight allocated to &beta;<sup>-</sup>; loosely -- the proportion of the tree evolving neutrally or under negative selection"}
                      {"&beta;<sup>+</sup>", "Non-synonymous substitution rate at a site for the positive/neutral evolution component"}
@@ -113,7 +116,8 @@ meme.table_headers = {{"alpha;", "Synonymous substitution rate at a site"}
                      {"# branches under selection", "The (very approximate and rough) estimate of how many branches may have been under selection at this site, i.e., had an empirical Bayes factor of 100 or more for the &beta;<sup>+</sup> rate"}
                      {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
                      {"MEME LogL", "Site Log-likelihood under the MEME model"}
-                     {"FEL LogL", "Site Log-likelihood under the FEL model"}};
+                     {"FEL LogL", "Site Log-likelihood under the FEL model"},
+                     {"Variation p", "Asymptotic p-value for whether or not there is evidence of dN/dS variation across branches"}};
 
 
 /**
@@ -357,8 +361,10 @@ meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.pa
 }};
 
 meme.site_results = {};
+meme.site_LRT = {};
 
 for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme.partition_index += 1) {
+    meme.branch_ebf = {}; 
     meme.report.header_done = FALSE;
     meme.table_output_options[utility.getGlobalValue("terms.table_options.header")] = TRUE;
 
@@ -370,7 +376,8 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
     model.ApplyModelToTree( "meme.site_tree_bsrel", meme.trees[meme.partition_index], None, meme.model_to_branch_bsrel);
 
     meme.site_patterns = alignments.Extract_site_patterns ((meme.filter_specification[meme.partition_index])[utility.getGlobalValue("terms.data.name")]);
-
+    meme.site_count = utility.Array1D ((meme.filter_specification[meme.partition_index])[terms.data.coverage]);
+ 
     SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
     
     for (_node_; in; meme.site_tree_fel) {
@@ -389,22 +396,6 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                 meme.alpha, meme.beta, "meme.site_alpha", _beta_scaler, (( meme.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[meme.partition_index])[_node_]);    
     }
     
-   /* utility.ForEach (meme.site_tree_fel, "_node_",
-            '_node_class_ = (meme.selected_branches[meme.partition_index])[_node_];
-             if (_node_class_ != terms.tree_attributes.test) {
-                _beta_scaler = "meme.site_beta_nuisance";
-                meme.apply_proportional_site_constraint.fel ("meme.site_tree_bsrel", _node_,
-                    meme.alpha, meme.beta, "meme.site_alpha", _beta_scaler, (( meme.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[meme.partition_index])[_node_]);
-            } else {
-                _beta_scaler = "meme.site_beta_plus";
-                meme.apply_proportional_site_constraint.bsrel ("meme.site_tree_bsrel", _node_,
-                    meme.alpha,  meme.beta1, meme.beta2, meme.branch_mixture, "meme.site_alpha", "meme.site_omega_minus",
-                    _beta_scaler, "meme.site_mixture_weight", (( meme.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[meme.partition_index])[_node_]);
-             }
-             meme.apply_proportional_site_constraint.fel ("meme.site_tree_fel", _node_,
-                 meme.alpha, meme.beta, "meme.site_alpha", _beta_scaler, (( meme.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[meme.partition_index])[_node_]);
-        ');
-    */
 
      SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
 
@@ -480,16 +471,30 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
 
     mpi.QueueComplete (meme.queue);
     meme.partition_matrix = {Abs (meme.site_results[meme.partition_index]), Rows (meme.table_headers)};
-
-    utility.ForEachPair (meme.site_results[meme.partition_index], "_key_", "_value_",
-    '
+    
+    for (_key_,_value_; in; meme.site_results[meme.partition_index]) {
         for (meme.index = 0; meme.index < Rows (meme.table_headers); meme.index += 1) {
             meme.partition_matrix [0+_key_][meme.index] = _value_[meme.index];
         }
-    '
-    );
+    }
 
     meme.site_results[meme.partition_index] = meme.partition_matrix;
+    meme.branch_ebf_matrix = {};
+    for (meme.branch,meme.post; in; meme.branch_ebf) {
+        meme.post_matrix = {2, meme.site_count};
+        for (meme.r,meme.v; in; meme.post) {
+            if (Type (meme.v) == "Matrix") {
+                meme.post_matrix[0][+meme.r] = meme.v[0];
+                meme.post_matrix[1][+meme.r] = meme.v[1];
+            }
+        }
+        meme.branch_ebf_matrix [meme.branch] = meme.post_matrix;
+    }
+    selection.io.json_store_branch_attribute(meme.json, meme.bsER, terms.json.branch_annotations, -1,
+                                     meme.partition_index,
+                                     meme.branch_ebf_matrix);
+
+    
 
 }
 
@@ -501,6 +506,10 @@ io.ReportProgressMessageMD ("MEME", "results", "** Found _" + meme.report.count[
 
 selection.io.stopTimer (meme.json [terms.json.timers], "Total time");
 selection.io.stopTimer (meme.json [terms.json.timers], "MEME analysis");
+
+if (meme.resample)  {
+    (meme.json [terms.json.MLE ])[terms.LRT] = meme.site_LRT;
+}
 
 GetString (_hpv,HYPHY_VERSION,0);
 meme.json[terms.json.runtime] = _hpv;
@@ -577,7 +586,8 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline) {
     } else {
         eBF = 1;
     }
-    return {utility.getGlobalValue("terms.empirical_bayes_factor") : eBF__, utility.getGlobalValue("terms.posterior") : _posteriorProb__[1]};
+    return {utility.getGlobalValue("terms.empirical_bayes_factor") : eBF__, 
+            utility.getGlobalValue("terms.posterior") : _posteriorProb__};
 }
 
 //----------------------------------------------------------------------------------------
@@ -724,17 +734,12 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         ancestral_info = ancestral.build (lf_bsrel,0,FALSE);
         //TODO
         branch_substitution_information = (ancestral.ComputeSubstitutionBySite (ancestral_info,0,None))[^"terms.substitutions"];
+        compressed_substitution_info = (ancestral.ComputeCompressedSubstitutions (ancestral_info))[0];
         DeleteObject (ancestral_info);
-
         branch_ebf       = {};
         branch_posterior = {};
     }
 
-      
-
-
-
-    
  
     if (^"meme.site_beta_plus" > ^"meme.site_alpha" && ^"meme.site_mixture_weight" < 0.999999) {
         if (!sim_mode) { 
@@ -814,6 +819,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
             utility.getGlobalValue("terms.posterior") : branch_posterior,
             utility.getGlobalValue("terms.empirical_bayes_factor") : branch_ebf,
             utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information, //TODO: keep this attr?
+            utility.getGlobalValue("terms.substitutions") : compressed_substitution_info,
             utility.getGlobalValue("terms.Null"): Null};
 }
 
@@ -849,6 +855,7 @@ function meme.report.echo (meme.report.site, meme.report.partition, meme.report.
 lfunction meme.store_results (node, result, arguments) {
 
     sub_profile = result[utility.getGlobalValue("terms.branch_selection_attributes")];
+    compressed_subs = result[utility.getGlobalValue("terms.substitutions")];
     
 /**
 
@@ -874,6 +881,9 @@ lfunction meme.store_results (node, result, arguments) {
 
 **/
 
+    all_posterior = None;
+    has_lrt = FALSE;
+    
     if (None != sub_profile) {
         total_sub_count = 0;
     
@@ -885,7 +895,21 @@ lfunction meme.store_results (node, result, arguments) {
                 if ((sub_by_count/c)==0) {
                     sub_by_count [c] = {};
                 }
-                sub_by_count[c] + (i + ">" + j);
+                
+                pair_key = {{'','','','>','','',''}};
+                for (i2 = 0; i2 < 3; i2+=1) {
+                    if (i[i2] != j[i2]) {
+                        pair_key[i2] = i[i2];
+                        pair_key[i2+4] = j[i2];
+                    } else {
+                        pair_key[i2] = i[i2] && 0;
+                        pair_key[i2+4] = j[i2] && 0;
+                   
+                    }
+                }     
+                pair_key = Join ("", pair_key);  
+                
+                sub_by_count[c] + pair_key;
             }
         }
         
@@ -915,22 +939,24 @@ lfunction meme.store_results (node, result, arguments) {
                           0, // branch count 7
                           0,  // total branch length of tested branches 8
                           0, // Log L | FEL 9 
-                          0  // Log L | MEME 10
+                          0, // Log L | MEME 10
+                          1  // LRT MEME vs FEL
                           } };
 
       //console.log ( estimators.GetGlobalMLE (result["alternative"], ^"meme.parameter_site_mixture_weight"));
 
     if (None != result) { // not a constant site
 
-
         lrt = {utility.getGlobalValue("terms.LRT") : 2*((result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")]-(result[utility.getGlobalValue("terms.Null")])[utility.getGlobalValue("terms.fit.log_likelihood")])};
         lrt [utility.getGlobalValue("terms.p_value")] = 2/3-2/3*(0.45*CChi2(lrt[utility.getGlobalValue("terms.LRT")],1)+0.55*CChi2(lrt[utility.getGlobalValue("terms.LRT")],2));
         
-        if (result / ^"terms.simulated") {
-           
+        has_lrt = result / ^"terms.simulated";
+        
+        if (has_lrt) {
            pv = +((result[^"terms.simulated"])["_MATRIX_ELEMENT_VALUE_>=" + lrt [utility.getGlobalValue("terms.LRT")]]);
            lrt [utility.getGlobalValue("terms.p_value")] = (pv+1)/(1+^"meme.resample");
         }     
+
 
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.parameter_site_alpha"));
         result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], utility.getGlobalValue("meme.parameter_site_omega_minus")) * result_row[0];
@@ -941,8 +967,10 @@ lfunction meme.store_results (node, result, arguments) {
         result_row [6] = lrt [utility.getGlobalValue("terms.p_value")];
         result_row [9] = (result["fel"])[utility.getGlobalValue("terms.fit.log_likelihood")];
         result_row [10] = (result[utility.getGlobalValue("terms.alternative")])[utility.getGlobalValue("terms.fit.log_likelihood")];
+        result_row [11] = 1-CChi2 (2*(result_row [10]-result_row [9]),2);
 
         all_ebf = result[utility.getGlobalValue("terms.empirical_bayes_factor")];
+        all_posterior = result[utility.getGlobalValue("terms.posterior")];
 
         filtered_ebf = utility.Filter (utility.Filter (all_ebf, "_value_", "None!=_value_"), "_value_", "_value_>=100");
 
@@ -969,29 +997,32 @@ lfunction meme.store_results (node, result, arguments) {
     }
 
     utility.EnsureKey (^"meme.site_results", partition_index);
-
+    utility.EnsureKey (((^"meme.json")[^"terms.substitutions"]), partition_index);
+    if (has_lrt) {
+        utility.EnsureKey (^"meme.site_LRT", partition_index);
+    }
+    
+  
     sites_mapping_to_pattern = pattern_info[utility.getGlobalValue("terms.data.sites")];
     sites_mapping_to_pattern.count = utility.Array1D (sites_mapping_to_pattern);
-
+    
 
     for (i = 0; i < sites_mapping_to_pattern.count; i+=1) {
         site_index = sites_mapping_to_pattern[i];
         ((^"meme.site_results")[partition_index])[site_index] = result_row;
-        meme.report.echo (site_index, partition_index, result_row);
-        if (None != all_ebf) {
-            direct_index = 1+(((^"meme.filter_specification")[partition_index])[utility.getGlobalValue ("terms.data.coverage")])[site_index];
-            selection.io.json_store_branch_attribute(^"meme.json", "EBF site " + direct_index + " (partition " + (1+partition_index) + ")", utility.getGlobalValue ("terms.json.branch_label"), site_index + utility.Array1D (^"meme.display_orders"),
-                                                 partition_index,all_ebf);
+        (((^"meme.json")[^"terms.substitutions"])[partition_index])[site_index] = compressed_subs;
+        if (has_lrt) {
+            ((^"meme.site_LRT")[partition_index])[site_index] = result[^"terms.simulated"];
         }
-    }
+        if (None != all_posterior) {
+            for (branch, posterior; in; all_posterior) {
+                utility.EnsureKey (^"meme.branch_ebf", branch);
+                ((^"meme.branch_ebf")[branch])[site_index] = posterior;
+            }
+        } 
+        meme.report.echo (site_index, partition_index, result_row);
+   }
 
-    /*
-    utility.ForEach (pattern_info[utility.getGlobalValue("terms.data.sites")], "_value_",
-        '
-            (meme.site_results[`&partition_index`])[_value_] = `&result_row`;
-            meme.report.echo (_value_, `&partition_index`, `&result_row`);
-        '
-    );*/
 
 
     //assert (0);

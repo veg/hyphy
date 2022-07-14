@@ -400,7 +400,6 @@ function models.generic.ConstrainBranchLength (model, value, parameter) {
  */
 function models.generic.SetBranchLength (model, value, parameter) {
 
-
      if (Abs((model[terms.parameters])[terms.local]) >= 1) {
         
         if (Type (model [terms.model.branch_length_string]) == "String") {
@@ -440,7 +439,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
                     }
                 }
                 
-                models.generic.SetBranchLength.bl = parameter + "." + models.generic.SetBranchLength.bl;              
+                models.generic.SetBranchLength.bl = models.generic.SetBranchLength.bl.p;              
                 models.generic.SetBranchLength.expression = Simplify (models.generic.SetBranchLength.expression, models.generic.SetBranchLength.substitution);
                
             } else {
@@ -448,25 +447,26 @@ function models.generic.SetBranchLength (model, value, parameter) {
                 models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
             }
 
+ 
              if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p)) {
 
                 if (Type (value) == "AssociativeList") {
                   	if (Abs (models.generic.SetBranchLength.expression)) {
                     	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
-                    	Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
-					    messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+                    	Eval (models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+					    messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 
 					} else {
-                   	    Eval (parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
-                    	messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+                   	    Eval (models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
+                    	messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					}
 
                     return 1;
 
                 } else {
                      ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
-                     Eval (parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
-                     messages.log ("models.generic.SetBranchLength: " + parameter + "." + models.generic.SetBranchLength.bl + "=" + models.generic.SetBranchLength.t);
+                     Eval (models.generic.SetBranchLength.bl.p + "=" + models.generic.SetBranchLength.t);
+                     messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + "=" + models.generic.SetBranchLength.t);
               }
             } else {
                 messages.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");

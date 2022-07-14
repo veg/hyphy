@@ -2898,7 +2898,7 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
          s2 = FindSCFGName     (likefID);
 
     if (f==-1 && s2==-1) {
-        HandleApplicationError (_String("Likelihood Function (or SCFG)")&likefID& " has not been initialized" );
+        HandleApplicationError (_String("Likelihood Function (or SCFG) ")&likefID.Enquote ()& " has not been initialized" );
         return ;
     }
 
@@ -2974,17 +2974,24 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
                 catNames = new _Matrix (1,1,false,true);
             }
         }
+        
+        _String * ancestral_states = nil;
+        if (parameters.lLength>5) {
+            ancestral_states = new _String (ProcessLiteralArgument((_String*)parameters(2),chain.nameSpacePrefix));
+            // a matrix to store simulated category values
+            
+        }
 
         _String * resultingDSName = new _String (chain.AddNameSpaceToID(*(_String*)parameters(0)));
 
         if (!resultingDSName->IsValidIdentifier(fIDAllowCompound)) {
-            errMsg = *resultingDSName & " is not a valid receptacle identifier in call to " & blSimulateDataSet;
-            DeleteObject (resultingDSName);DeleteObject (catValues);DeleteObject (catNames); DeleteObject (ds);
+            errMsg = resultingDSName->Enquote() & " is not a valid receptacle identifier in call to " & blSimulateDataSet;
+            DeleteObject (resultingDSName);DeleteObject (catValues);DeleteObject (catNames); DeleteObject (ds);DeleteObject (ancestral_states);
             HandleApplicationError (errMsg);
             return;
         }
 
-        ((_LikelihoodFunction*)likeFuncList(f))->Simulate(*ds,theExclusions,catValues,catNames);
+        ((_LikelihoodFunction*)likeFuncList(f))->Simulate(*ds,theExclusions,catValues,catNames,nil,ancestral_states ? &kEmptyString : nil);
 
         if (catValues) {
             catValVar->SetValue(catValues,false,true,NULL);
@@ -2995,6 +3002,8 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
 
         StoreADataSet (ds, resultingDSName);
         DeleteObject  (resultingDSName);
+        DeleteObject  (ancestral_states);
+        
     } else {
         _String newCorpus = chain.AddNameSpaceToID(*(_String*)parameters(0));
         CheckReceptacleAndStore (&newCorpus," SimulateDataSet (SCFG)", true, new _FString(((Scfg*)scfgList (s2))->SpawnRandomString()), false);
@@ -4520,8 +4529,8 @@ bool    _ElementaryCommand::ConstructDataSet (_StringBuffer&source, _ExecutionLi
             }
             dsc->addAndClean (target, &arguments, 0L);
         } else if (operation_type == blSimulateDataSet) {
-            if ( arguments.countitems()>5UL || arguments.countitems()==1UL ) {
-                throw blSimulateDataSet.Enquote() & "expects 1-4 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in (last 3 - optional).";
+            if ( arguments.countitems()> 6UL || arguments.countitems()==1UL ) {
+                throw blSimulateDataSet.Enquote() & " expects 1-5 parameters: likelihood function ident (needed), a list of excluded states, a matrix to store random rates in, and a matrix to store the order of random rates in, and a file name to store ancestral sequences in [if empty, will add ancestral sequences to the simulated alignment (last 4 - optional).";
             }
 
             _ElementaryCommand * dsc = new _ElementaryCommand (12);

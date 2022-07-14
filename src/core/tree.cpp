@@ -2700,19 +2700,29 @@ void     _TheTree::AddNodeNamesToDS (_DataSet* ds, bool doTips, bool doInternals
 // LF COMPUTE FUNCTIONS
 // TODO SLKP 20180803 these all could use a review
 
+//extern long mes_counter;
+
 /*----------------------------------------------------------------------------------------------------------*/
 void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catID) {
     _List           matrixQueue, nodesToDo;
     
     _SimpleList     isExplicitForm ((unsigned long)expNodes.countitems());
     bool            hasExpForm = false;
+    
+    //long b4 = mes_counter;
 
     for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
+        //if (hasExpForm) {
+        //    b4 = mes_counter;
+        //}
         if (thisNode->RecomputeMatrix (catID, categoryCount, nil, &matrixQueue,&isExplicitForm)) {
             hasExpForm = true;
         }
+        //if (hasExpForm && mes_counter - b4 > 3) {
+        //    printf ("%d/%d %s\n", mes_counter - b4, likeFuncEvalCallCount , thisNode->GetName()->get_str());
+        //}
 #ifdef _UBER_VERBOSE_DUMP
         if (likeFuncEvalCallCount == _UBER_VERBOSE_DUMP)
             printf ("NodeID %ld (%s). Old length %ld, new length %ld (%ld)\n", nodeID, thisNode->GetName()->sData, didIncrease,matrixQueue.lLength, isExplicitForm.lLength);
@@ -2726,6 +2736,8 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
 
     }
     
+    //if (hasExpForm && (3*(flatTree.countitems() + flatLeaves.countitems()) < (mes_counter-b4)))
+    //    printf ("%d/%d (%d)\n\n", mes_counter-b4, expNodes.lLength, flatTree.countitems() + flatLeaves.countitems());
     //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
     //ObjectToConsole(&isExplicitForm);
     
@@ -3782,210 +3794,218 @@ _List*   _TheTree::RecoverAncestralSequences (_DataSetFilter const* dsf,
     
     allNodeCount = iNodeCount + leafCount - 1;
     
-    for  (long nodeID = 0; nodeID < allNodeCount; nodeID++) {
-        long    parent_index = flatParents.get (nodeID),
-                node_index   = nodeID;
-        
-        bool    is_leaf     = nodeID < flatLeaves.countitems();
-        
-        
-        if (!is_leaf) {
-            node_index -=  flatLeaves.countitems();
-            AddBranchToForcedRecomputeList (node_index);
-        }
-        
-        hyFloat * parentConditionals = iNodeCache + parent_index * alphabetDimension * patternCount;
-        
-        if (taggedInternals.get(parent_index) == 0L) {
-            // mark the parent for update and clear its conditionals if needed
-            taggedInternals[parent_index]     = 1L;
-            InitializeArray(parentConditionals, patternCount*alphabetDimension, 1.);
-        }
-        
-        _CalcNode *          tree_node_object = is_leaf? ((_CalcNode*) flatCLeaves (node_index)):((_CalcNode*) flatTree    (node_index));
-        hyFloat  const*      transition_matrix = nil;
-        
-        if (!catAssignments) {
-            _Matrix* comp_exp = tree_node_object->GetCompExp();
-            if (!comp_exp) {
-                hy_global::HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__ & ". Transition matrix not computed for " & *tree_node_object->GetName());
-                delete [] stateCache; delete [] leafBuffer; delete [] buffer;
-                return nil;
-            }
-            transition_matrix = comp_exp->theData;
-        }
-        
-        // this will need to be toggled on a per site basis
-        hyFloat  *       childVector;
-        
-        if (!is_leaf) {
-            childVector = iNodeCache + (node_index * patternCount) * alphabetDimension;
-        }
-        
-        for (long siteID = 0; siteID < patternCount; siteID++, parentConditionals += alphabetDimension) {
-            if (catAssignments) {
-                transition_matrix = tree_node_object->GetCompExp(catAssignments[siteOrdering.list_data[siteID]])->theData;
+    if (iNodeCache) {
+        for  (long nodeID = 0; nodeID < allNodeCount; nodeID++) {
+            long    parent_index = flatParents.get (nodeID),
+                    node_index   = nodeID;
+            
+            bool    is_leaf     = nodeID < flatLeaves.countitems();
+            
+            
+            if (!is_leaf) {
+                node_index -=  flatLeaves.countitems();
+                AddBranchToForcedRecomputeList (node_index);
             }
             
-            hyFloat  const *tMatrix = transition_matrix;
-            if (is_leaf) {
-                long siteState = lNodeFlags[node_index*patternCount + siteOrdering.list_data[siteID]] ;
-                if (siteState >= 0L) { // a fully resolved leaf
-                    tMatrix  +=  siteState;
-                    for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension) {
-                        parentConditionals[k] *= *tMatrix;
-                    }
-                    if (alsoDoLeaves) {
-                        InitializeArray (leafBuffer, alphabetDimension, (const long)siteState);
-                        leafBuffer += alphabetDimension;
-                    }
-                    
-                    continue;
-                } else {// an ambiguous leaf
-                    childVector = lNodeResolutions->theData + (-siteState-1L) * alphabetDimension;
+            hyFloat * parentConditionals = iNodeCache + parent_index * alphabetDimension * patternCount;
+            
+            if (taggedInternals.get(parent_index) == 0L) {
+                // mark the parent for update and clear its conditionals if needed
+                taggedInternals[parent_index]     = 1L;
+                InitializeArray(parentConditionals, patternCount*alphabetDimension, 1.);
+            }
+            
+            _CalcNode *          tree_node_object = is_leaf? ((_CalcNode*) flatCLeaves (node_index)):((_CalcNode*) flatTree    (node_index));
+            hyFloat  const*      transition_matrix = nil;
+            
+            if (!catAssignments) {
+                _Matrix* comp_exp = tree_node_object->GetCompExp();
+                if (!comp_exp) {
+                    hy_global::HandleApplicationError(_String ("Internal error in ") & __PRETTY_FUNCTION__ & ". Transition matrix not computed for " & *tree_node_object->GetName());
+                    delete [] stateCache; delete [] leafBuffer; delete [] buffer;
+                    return nil;
+                }
+                transition_matrix = comp_exp->theData;
+            }
+            
+            // this will need to be toggled on a per site basis
+            hyFloat  *       childVector;
+            
+            if (!is_leaf) {
+                childVector = iNodeCache + (node_index * patternCount) * alphabetDimension;
+            }
+            
+            for (long siteID = 0; siteID < patternCount; siteID++, parentConditionals += alphabetDimension) {
+                if (catAssignments) {
+                    transition_matrix = tree_node_object->GetCompExp(catAssignments[siteOrdering.list_data[siteID]])->theData;
                 }
                 
-            }
-            
-            // now repopulate this vector as necessary -- if we are here this means
-            // that the subtree below has been completely processed,
-            // the i-th cell of childVector contains the likelihood of the _optimal_
-            // assignment in the subtree below given that the character at the current
-            // node is i.
-            
-            // hence, given parent state 'p', we optimize
-            // max_i pr (p->i) childVector [i] and store it in the p cell of vector childVector
-            
-            hyFloat overallMax                     = 0.0;
-            
-            long       *stateBuffer                   = is_leaf?leafBuffer:stateCache;
-            
-            // check for degeneracy
-            
-            bool completely_unresolved = ArrayAll (childVector, alphabetDimension, [] (hyFloat x, unsigned long) {return x == 1.;});
-            
-            if (completely_unresolved) {
-                InitializeArray(stateBuffer, alphabetDimension, -1L);
-            } else {
-                for (long p = 0L; p < alphabetDimension; p++) {
-                    hyFloat max_lik = 0.;
-                    long       max_idx = 0L;
+                hyFloat  const *tMatrix = transition_matrix;
+                if (is_leaf) {
+                    long siteState = lNodeFlags[node_index*patternCount + siteOrdering.list_data[siteID]] ;
+                    if (siteState >= 0L) { // a fully resolved leaf
+                        tMatrix  +=  siteState;
+                        for (long k = 0; k < alphabetDimension; k++, tMatrix += alphabetDimension) {
+                            parentConditionals[k] *= *tMatrix;
+                        }
+                        if (alsoDoLeaves) {
+                            InitializeArray (leafBuffer, alphabetDimension, (const long)siteState);
+                            leafBuffer += alphabetDimension;
+                        }
+                        
+                        continue;
+                    } else {// an ambiguous leaf
+                        childVector = lNodeResolutions->theData + (-siteState-1L) * alphabetDimension;
+                    }
                     
-                    for (long c = 0L; c < alphabetDimension; c++) {
-                        hyFloat thisV = tMatrix[c] * childVector[c];
-                        if (thisV > max_lik) {
-                            max_lik = thisV;
-                            max_idx = c;
+                }
+                
+                // now repopulate this vector as necessary -- if we are here this means
+                // that the subtree below has been completely processed,
+                // the i-th cell of childVector contains the likelihood of the _optimal_
+                // assignment in the subtree below given that the character at the current
+                // node is i.
+                
+                // hence, given parent state 'p', we optimize
+                // max_i pr (p->i) childVector [i] and store it in the p cell of vector childVector
+                
+                hyFloat overallMax                     = 0.0;
+                
+                long       *stateBuffer                   = is_leaf?leafBuffer:stateCache;
+                
+                // check for degeneracy
+                
+                bool completely_unresolved = ArrayAll (childVector, alphabetDimension, [] (hyFloat x, unsigned long) {return x == 1.;});
+                
+                if (completely_unresolved) {
+                    InitializeArray(stateBuffer, alphabetDimension, -1L);
+                } else {
+                    for (long p = 0L; p < alphabetDimension; p++) {
+                        hyFloat max_lik = 0.;
+                        long       max_idx = 0L;
+                        
+                        for (long c = 0L; c < alphabetDimension; c++) {
+                            hyFloat thisV = tMatrix[c] * childVector[c];
+                            if (thisV > max_lik) {
+                                max_lik = thisV;
+                                max_idx = c;
+                            }
+                        }
+                        
+                        stateBuffer [p] = max_idx;
+                        buffer [p]      = max_lik;
+                        
+                        if (max_lik > overallMax) {
+                            overallMax = max_lik;
+                        }
+                        
+                        tMatrix += alphabetDimension;
+                    }
+                    
+                    if (overallMax > 0.0 && overallMax < _lfScalingFactorThreshold) {
+                        for (long k = 0L; k < alphabetDimension; k++) {
+                            buffer[k] *= _lfScalerUpwards;
                         }
                     }
                     
-                    stateBuffer [p] = max_idx;
-                    buffer [p]      = max_lik;
+                    // buffer[p] now contains the maximum likelihood of the tree
+                    // from this point forward given that parent state is p
+                    // and stateBuffer[p] stores the maximizing assignment
+                    // for this node
                     
-                    if (max_lik > overallMax) {
-                        overallMax = max_lik;
-                    }
-                    
-                    tMatrix += alphabetDimension;
-                }
-                
-                if (overallMax > 0.0 && overallMax < _lfScalingFactorThreshold) {
-                    for (long k = 0L; k < alphabetDimension; k++) {
-                        buffer[k] *= _lfScalerUpwards;
+                    for (long k = 0; k < alphabetDimension; k++) {
+                        if (stateBuffer[k] >= 0L) {
+                            parentConditionals[k] *= buffer[k];
+                        }
                     }
                 }
                 
-                // buffer[p] now contains the maximum likelihood of the tree
-                // from this point forward given that parent state is p
-                // and stateBuffer[p] stores the maximizing assignment
-                // for this node
-                
-                for (long k = 0; k < alphabetDimension; k++) {
-                    if (stateBuffer[k] >= 0L) {
-                        parentConditionals[k] *= buffer[k];
+                if (is_leaf) {
+                    if (alsoDoLeaves) {
+                        leafBuffer += alphabetDimension;
                     }
+                } else {
+                    stateCache += alphabetDimension;
                 }
+                
+                childVector += alphabetDimension;
             }
-            
-            if (is_leaf) {
-                if (alsoDoLeaves) {
-                    leafBuffer += alphabetDimension;
-                }
-            } else {
-                stateCache += alphabetDimension;
-            }
-            
-            childVector += alphabetDimension;
         }
     }
     
     _List      *result = new _List;
-    for (long k = 0; k < stateCacheDim; k++) {
-        result->AppendNewInstance (new _String((unsigned long)siteCount*unitLength));
-    }
     
-    hyFloat * _hprestrict_ rootConditionals = iNodeCache + alphabetDimension * ((iNodeCount-1)  * patternCount);
-    _SimpleList  parentStates (stateCacheDim,0,0),
-    conversion;
-    
-    stateCache -= patternCount*(iNodeCount-1)*alphabetDimension;
-    if (alsoDoLeaves) {
-        leafBuffer -= patternCount*leafCount*alphabetDimension;
-    }
-    
-    _AVLListXL    conversionAVL (&conversion);
-    _String       codeBuffer    ((unsigned long)unitLength);
-    
-    for (long siteID = 0; siteID < patternCount; siteID++, rootConditionals += alphabetDimension) {
-        hyFloat max_lik = 0.;
-        long       max_idx = 0;
+    if (!iNodeCache) { // special case for 2 sequence data; root state is actually the 1st of the two sequences
+        //result->AppendNewInstance
+        result->AppendNewInstance (dsf->GetSequenceCharacters(0L));
+    } else {
+        for (long k = 0; k < stateCacheDim; k++) {
+            result->AppendNewInstance (new _String((unsigned long)siteCount*unitLength));
+        }
+     
+        hyFloat * _hprestrict_ rootConditionals = iNodeCache + alphabetDimension * ((iNodeCount-1)  * patternCount);
+        _SimpleList  parentStates (stateCacheDim,0,0),
+        conversion;
         
-        long howManyOnes = 0;
-        for (long k = 0; k < alphabetDimension; k++) {
-            howManyOnes += rootConditionals[k]==1.;
+        stateCache -= patternCount*(iNodeCount-1)*alphabetDimension;
+        if (alsoDoLeaves) {
+            leafBuffer -= patternCount*leafCount*alphabetDimension;
         }
         
-        _SimpleList const*    patternMap = (_SimpleList const*) expandedSiteMap.GetItem(siteOrdering.list_data[siteID]);
+        _AVLListXL    conversionAVL (&conversion);
+        _String       codeBuffer    ((unsigned long)unitLength);
         
-        if (howManyOnes != alphabetDimension) {
-            for (long c = 0; c < alphabetDimension; c++) {
-                hyFloat thisV = theProbs[c] * rootConditionals[c];
-                if (thisV > max_lik) {
-                    max_lik = thisV;
-                    max_idx = c;
-                }
+        for (long siteID = 0; siteID < patternCount; siteID++, rootConditionals += alphabetDimension) {
+            hyFloat max_lik = 0.;
+            long       max_idx = 0;
+            
+            long howManyOnes = 0;
+            for (long k = 0; k < alphabetDimension; k++) {
+                howManyOnes += rootConditionals[k]==1.;
             }
             
-            parentStates.list_data[iNodeCount-1] = max_idx;
-            for  (long nodeID = iNodeCount-2; nodeID >=0 ; nodeID--) {
-                long parentState = parentStates.list_data[flatParents.list_data [nodeID+flatLeaves.lLength]];
-                if (parentState == -1) {
-                    parentStates.list_data[nodeID] = -1;
-                } else {
-                    parentStates.list_data[nodeID] = stateCache[(patternCount*nodeID+siteID)*alphabetDimension + parentState];
-                }
-            }
-            if (alsoDoLeaves)
-                for  (long nodeID = 0; nodeID <leafCount ; nodeID++) {
-                    long parentState = parentStates.list_data[flatParents.list_data [nodeID]];
-                    if (parentState == -1) {
-                        parentStates.list_data[nodeID+iNodeCount] = -1;
-                    } else {
-                        parentStates.list_data[nodeID+iNodeCount] = leafBuffer[(patternCount*nodeID+siteID)*alphabetDimension + parentState];
+            _SimpleList const*    patternMap = (_SimpleList const*) expandedSiteMap.GetItem(siteOrdering.list_data[siteID]);
+            
+            if (howManyOnes != alphabetDimension) {
+                for (long c = 0; c < alphabetDimension; c++) {
+                    hyFloat thisV = theProbs[c] * rootConditionals[c];
+                    if (thisV > max_lik) {
+                        max_lik = thisV;
+                        max_idx = c;
                     }
                 }
-        } else {
-            parentStates.Populate(stateCacheDim,-1,0);
-        }
-        
-        for  (long nodeID = 0; nodeID < stateCacheDim ; nodeID++) {
-            dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.list_data[nodeID]), unitLength, codeBuffer, &conversionAVL);
-            _String  *sequence   = (_String*) (*result)(nodeID<iNodeCount?postToIn.list_data[nodeID]:nodeID);
+                
+                parentStates.list_data[iNodeCount-1] = max_idx;
+                for  (long nodeID = iNodeCount-2; nodeID >=0 ; nodeID--) {
+                    long parentState = parentStates.list_data[flatParents.list_data [nodeID+flatLeaves.lLength]];
+                    if (parentState == -1) {
+                        parentStates.list_data[nodeID] = -1;
+                    } else {
+                        parentStates.list_data[nodeID] = stateCache[(patternCount*nodeID+siteID)*alphabetDimension + parentState];
+                    }
+                }
+                if (alsoDoLeaves)
+                    for  (long nodeID = 0; nodeID <leafCount ; nodeID++) {
+                        long parentState = parentStates.list_data[flatParents.list_data [nodeID]];
+                        if (parentState == -1) {
+                            parentStates.list_data[nodeID+iNodeCount] = -1;
+                        } else {
+                            parentStates.list_data[nodeID+iNodeCount] = leafBuffer[(patternCount*nodeID+siteID)*alphabetDimension + parentState];
+                        }
+                    }
+            } else {
+                parentStates.Populate(stateCacheDim,-1,0);
+            }
             
-            for (long site = 0; site < patternMap->lLength; site++) {
-                unsigned long offset = patternMap->list_data[site]*unitLength;
-                for (long charS = 0; charS < unitLength; charS ++) {
-                    sequence->set_char (offset + charS, codeBuffer.char_at(charS));
+            for  (long nodeID = 0; nodeID < stateCacheDim ; nodeID++) {
+                dsf->ConvertCodeToLettersBuffered (dsf->CorrectCode(parentStates.list_data[nodeID]), unitLength, codeBuffer, &conversionAVL);
+                _String  *sequence   = (_String*) (*result)(nodeID<iNodeCount?postToIn.list_data[nodeID]:nodeID);
+                
+                for (long site = 0; site < patternMap->lLength; site++) {
+                    unsigned long offset = patternMap->list_data[site]*unitLength;
+                    for (long charS = 0; charS < unitLength; charS ++) {
+                        sequence->set_char (offset + charS, codeBuffer.char_at(charS));
+                    }
                 }
             }
         }

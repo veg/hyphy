@@ -162,13 +162,7 @@ prime.impute_states = io.SelectAnOption (
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'prime.json')", prime.codon_data_info [terms.json.json]);
 prime.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
-io.ReportProgressMessageMD('PRIME',  'selector', 'Branches to include in the PRIME analysis');
 
-
-for (_partition_, _selection_; in; prime.selected_branches) {
-    _selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
-    io.ReportProgressMessageMD('PRIME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the PRIME analysis: \`' + Join (', ',utility.Keys(_selection_)) + '\`');
-}
 
 prime.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(prime.codon_data_info[terms.code], None);
 prime.codon_table = genetic_code.DefineCodonToAAMapping (prime.codon_data_info[terms.code]);
@@ -181,6 +175,13 @@ if (Type (debug.checkpoint) != "String") {
         doGTR ("prime");
     }
 
+    io.ReportProgressMessageMD('PRIME',  'selector', 'Branches to include in the PRIME analysis');
+
+
+    for (_partition_, _selection_; in; prime.selected_branches) {
+        _selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
+        io.ReportProgressMessageMD('PRIME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the PRIME analysis: \`' + Join (', ',utility.Keys(_selection_)) + '\`');
+    }
 
     estimators.fixSubsetOfEstimates(prime.gtr_results, prime.gtr_results[terms.global]);
 
@@ -245,7 +246,15 @@ if (Type (debug.checkpoint) != "String") {
         io.SpoolJSON (prime.final_partitioned_mg_results, debug.spool);
     }
 } else {
+
     prime.final_partitioned_mg_results = io.ParseJSON (debug.checkpoint);
+    io.ReportProgressMessageMD('PRIME',  'selector', 'Branches to include in the PRIME analysis');
+
+
+    for (_partition_, _selection_; in; prime.selected_branches) {
+        _selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
+        io.ReportProgressMessageMD('PRIME',  'selector', 'Selected ' + Abs(_selection_) + ' branches to include in the PRIME analysis: \`' + Join (', ',utility.Keys(_selection_)) + '\`');
+    }   
 }
 
 io.ReportProgressMessageMD("PRIME", "codon-refit", "* Log(L) = " + Format(prime.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
@@ -436,9 +445,11 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
          if (_node_class_ != terms.tree_attributes.test) {
             _beta_scaler = "prime.site_beta_nuisance";
                 prime.apply_proportional_site_constraint.fel ("prime.site_tree_property", _node_,
-                    prime.alpha, prime.beta, "prime.site_alpha", _beta_scaler, (( prime.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[prime.partition_index])[_node_]);            
+                    prime.alpha, prime.beta, "prime.site_alpha", _beta_scaler, (( prime.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[prime.partition_index])[_node_]);  
+                              
                 prime.apply_proportional_site_constraint.fel ("prime.site_tree_fel", _node_,
                  prime.alpha, prime.beta, "prime.site_alpha", _beta_scaler, (( prime.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[prime.partition_index])[_node_]);
+                 
          } else {
                 prime.apply_proportional_site_constraint.property ("prime.site_tree_property", _node_,
                     prime.alpha, "prime.site_alpha", prime.beta, prime.baseline_non_syn_rate,
@@ -446,6 +457,7 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
        
                 prime.apply_proportional_site_constraint.fel ("prime.site_tree_fel", _node_,
                     prime.alpha, prime.beta, "prime.site_alpha", "prime.site_beta", (( prime.final_partitioned_mg_results[utility.getGlobalValue("terms.branch_length")])[prime.partition_index])[_node_]);
+                    
          }
     }
     
@@ -600,7 +612,6 @@ function prime.apply_proportional_site_constraint.property (tree_name, node_name
 //----------------------------------------------------------------------------------------
 lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pattern_info, model_mapping) {
 
-
     //console.log (pattern_info);
     GetString   (lfInfo, ^lf_fel,-1);   
 
@@ -631,6 +642,8 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
     //console.log ("\n" + results[1][0]);
   
+    // Export (lfe, ^lf_prop);
+    // fprintf ("/Users/sergei/Desktop/PRIME/site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
     
     /*if (^"prime.site_beta" > 0) {
         // only matters for sites with non-syn changes
@@ -638,12 +651,9 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     }*/
   
         // fit the universal alternative
+     //console.log (fel);
      ^"prime.site_beta" = Eval (^"prime.site_beta");   
-     /*LFCompute (^lf_prop,LF_START_COMPUTE);
-     LFCompute (^lf_prop,results);
-     LFCompute (^lf_prop,LF_DONE_COMPUTE);*/
-     
-     parameters.SetConstraint ("prime.site_beta", Eval(^"prime.site_beta"),"");
+     //parameters.SetConstraint ("prime.site_beta", Eval(^"prime.site_beta"),"");
    
      
      
@@ -699,26 +709,28 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         
      }
      
-     //console.log (start_grid);
+    //console.log (start_grid);
      
      
     // Export (lfe, ^lf_prop);
     // fprintf ("/Users/sergei/Desktop/PRIME/site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
      
+    utility.ToggleEnvVariable ("TOLERATE_CONSTRAINT_VIOLATION", TRUE);       
+    //utility.ToggleEnvVariable ("VERBOSITY_LEVEL", 10);       
             
      Optimize (results, ^lf_prop, {
             "OPTIMIZATION_METHOD" : "nedler-mead",
             //"OPTIMIZATION_METHOD" : "gradient-descent",
             "OPTIMIZATION_START_GRID" : start_grid,
+            "MAXIMUM_OPTIMIZATION_ITERATIONS" : 1000,
             "OPTIMIZATION_PRECISION": 1e-4
         });
         
     
     //console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM_VALUE" + "\n"+  ^"LF_INITIAL_GRID_MAXIMUM" + " : " + results[1][0] + "\n");
-    Optimize (results, ^lf_prop);
-        
+    //Optimize (results, ^lf_prop,);
     //console.log ("\n" +  results[1][0] + "\n");
-        
+    //fprintf (stdout, ^lf_prop);  
     altL = results[1][0];
      
     // fit all of the nulls
@@ -736,7 +748,11 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
             LFCompute (^lf_prop,results);
             LFCompute (^lf_prop,LF_DONE_COMPUTE);
             ^l := 0;  
-            Optimize (results, ^lf_prop);
+            Optimize (results, ^lf_prop,{
+                "OPTIMIZATION_METHOD" : "nedler-mead",
+                "MAXIMUM_OPTIMIZATION_ITERATIONS" : 1000,
+                "OPTIMIZATION_PRECISION": 1e-4
+            });
             //console.log (k + " => " + (- results[1][0] + altL));
             if (results[1][0] - altL > 1e-2) {
                 done = FALSE;
@@ -752,7 +768,11 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
             break;
         } else {
               ^l = 0;      
-              Optimize (results, ^lf_prop);
+              Optimize (results, ^lf_prop,{
+                "OPTIMIZATION_METHOD" : "nedler-mead",
+                "MAXIMUM_OPTIMIZATION_ITERATIONS" : 1000,
+                "OPTIMIZATION_PRECISION": 1e-4
+              });
               altL = results[1][0]; 
               //console.log ("REOPTIMIZED : " + altL);
               alternative = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {});
@@ -777,6 +797,8 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         
     }
         
+    utility.ToggleEnvVariable ("TOLERATE_CONSTRAINT_VIOLATION", None);       
+
     ancestral_info = ancestral.build (lf_prop,0,FALSE);
     branch_substitution_information = (ancestral.ComputeSubstitutionBySite (ancestral_info,0,None))[^"terms.substitutions"];
     branch_mapping = ancestral.ComputeCompressedSubstitutionsBySite (ancestral_info,0);

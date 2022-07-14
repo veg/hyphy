@@ -1930,7 +1930,7 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
   //unsigned long ticker = 0UL;
 
 //__________________________________________________________________________________
-HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type, bool can_cache) {
+HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type, bool can_cache, bool skip_comparison) {
 // compute the value of the formula
 // TODO SLKP 20170925 Needs code review
     _Stack * scrap_here;
@@ -1983,17 +1983,24 @@ HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpa
                     _Operation* nextOp  = ItemAt (i+1UL);
 
                     if (! cacheUpdated && nextOp->CanResultsBeCached(thisOp)) {
-                        if (!thisOp->Execute(*scrap_here,nameSpace, errMsg)) {
-                            wellDone = false;
-                            break;
+                        if (skip_comparison) {
+                            if (!thisOp->PushValue(*scrap_here,nameSpace, errMsg)) {
+                                wellDone = false;
+                                break;
+                            }
+                        } else {
+                            if (!thisOp->Execute(*scrap_here,nameSpace, errMsg)) {
+                                wellDone = false;
+                                break;
+                            }
                         }
 
                         _Matrix *currentArg  = (_Matrix*)scrap_here->Pop(false),
                                 *cachedArg   = (_Matrix*)((HBLObjectRef)resultCache->GetItem(cacheID));
                         
-                        bool    no_difference = false;
+                        bool    no_difference = skip_comparison;
 
-                        if (cachedArg->ObjectClass() == MATRIX) {
+                        if (!no_difference && cachedArg->ObjectClass() == MATRIX) {
                             no_difference =  currentArg->CompareMatrices(cachedArg, DBL_EPSILON * 100.);
                         }
                        

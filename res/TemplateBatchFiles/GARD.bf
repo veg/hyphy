@@ -136,6 +136,9 @@ gard.rateVariation = io.SelectAnOption  ({"None"  : "Constant rates",
                                           "GDD"   : "General discrete distribution on N rates"},
                                           "Site to site rate variation option");
 
+KeywordArgument ("max-breakpoints",   "Maximum number of breakpoints to consider", "10000");
+gard.max_breakpoints = io.PromptUser(">Maximum number of breakpoints to consider", 10000, 1, 100000, TRUE);
+
 if (gard.rateVariation != "None") {
     KeywordArgument ("rate-classes",   "How many site rate classes to use", "4");
     gard.rateClasses = io.PromptUser(">How many site rate classes to use", 4, 2, 10, TRUE);
@@ -380,12 +383,12 @@ if (gard.startWithBP > 0) {
     }
 
     // 2a3. Evaluate if the best single breakpoint is the overall best model
-    //if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
+    if (gard.singleBreakPointBest_cAIC < gard.bestOverall_cAIC_soFar) {
         gard.bestOverall_cAIC_soFar = gard.singleBreakPointBest_cAIC;
         gard.bestOverallModelSoFar = {{gard.singleBreakPointBestLocation}};
-     //} else {
-     //   gard.bestOverallModelSoFar = null;
-    //}
+    } else {
+        gard.bestOverallModelSoFar = null;
+    }
     
     gard.improvements = {'0': {
                             "deltaAICc": gard.baseline_cAIC - gard.bestOverall_cAIC_soFar,
@@ -443,7 +446,8 @@ namespace gard {
         numberOfBreakPointsBeingEvaluated = 1;
     }
     
-    while(addingBreakPointsImproves_cAIC) {
+    
+   while(addingBreakPointsImproves_cAIC && numberOfBreakPointsBeingEvaluated < max_breakpoints) {
         //#profile START;
        // GA.2.a Setup for n number of break points
         numberOfBreakPointsBeingEvaluated+=1;

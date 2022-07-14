@@ -2945,10 +2945,14 @@ bool   _Matrix::_validateCompressedStorage (void) const {
     return false;
 }
 
+//long mes_counter = 0L;
+
 //_____________________________________________________________________________________________
 HBLObjectRef   _Matrix::EvaluateSimple (_Matrix* existing_storage) {
 // evaluate the matrix  overwriting the old one
     _Matrix * result;
+    
+    //mes_counter ++;
     
     if (existing_storage && existing_storage->hDim == hDim && existing_storage->vDim == vDim && existing_storage->is_numeric() && ((bool)existing_storage->theIndex == (bool)theIndex)) {
         existing_storage->ZeroNumericMatrix();
@@ -2961,18 +2965,16 @@ HBLObjectRef   _Matrix::EvaluateSimple (_Matrix* existing_storage) {
     }
 
 
-    if (cmd->varIndex.lLength) {
-        for (long i=0; i<cmd->varIndex.lLength; i++) {
-            _Variable* curVar = LocateVar(cmd->varIndex.list_data[i]);
-            if (curVar->ObjectClass () != MATRIX) {
-                if (curVar->IsIndependent()) {
-                    cmd->varValues[i].value = LocateVar (cmd->varIndex.list_data[i])->Value();
-                } else {
-                    cmd->varValues[i].value = LocateVar (cmd->varIndex.list_data[i])->Compute()->Value();
-                }
+    for (long i=0L; i<cmd->varIndex.lLength; i++) {
+        _Variable* curVar = LocateVar(cmd->varIndex.list_data[i]);
+        if (curVar->ObjectClass () != MATRIX) {
+            if (curVar->IsIndependent()) {
+                cmd->varValues[i].value = LocateVar (cmd->varIndex.list_data[i])->Value();
             } else {
-                cmd->varValues[i].reference = (hyPointer)((_Matrix*)LocateVar (cmd->varIndex.list_data[i])->Compute())->theData;
+                cmd->varValues[i].value = LocateVar (cmd->varIndex.list_data[i])->Compute()->Value();
             }
+        } else {
+            cmd->varValues[i].reference = (hyPointer)((_Matrix*)LocateVar (cmd->varIndex.list_data[i])->Compute())->theData;
         }
     }
 

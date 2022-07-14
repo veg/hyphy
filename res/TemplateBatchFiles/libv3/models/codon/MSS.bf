@@ -27,6 +27,7 @@ lfunction model.codon.MSS.prompt_and_define (type, code) {
     {
         {"Full", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
         {"SynREV", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
+        {"SynREVFull", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (no reference)"}
         {"SynREV2", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (no rate scaling))"}
         {"SynREV2g", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (Valine == neutral). All between-class synonymous substitutions share a rate."}
         {"SynREVCodon", "Each codon pair that is exchangeable gets its own substitution rate (fully estimated)"}
@@ -67,7 +68,7 @@ lfunction model.codon.MSS.prompt_and_define (type, code) {
         );
     }
     
-    if (partitioning_option == "SynREV" || partitioning_option == "SynREVCodon" ) {
+    if (partitioning_option == "SynREV" || partitioning_option == "SynREVFull" || partitioning_option == "SynREVCodon" ) {
         bins          = {};
         mapping       = {};
         mapping_codon = {};
@@ -80,6 +81,11 @@ lfunction model.codon.MSS.prompt_and_define (type, code) {
         if (partitioning_option == "SynREV") {
             return  models.codon.MSS.ModelDescription(type, code,
                {^"terms.model.MSS.codon_classes" : mapping, ^"terms.model.MSS.neutral" : "V"}
+            );
+        }
+        if (partitioning_option == "SynREVFull") {
+            return  models.codon.MSS.ModelDescription(type, code,
+               {^"terms.model.MSS.codon_classes" : mapping}
             );
         }
         return  models.codon.MSS.ModelDescription(type, code,

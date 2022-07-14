@@ -202,7 +202,6 @@ _String const* _VariableContainer::GetModelName (void)  const{
     return &kEmptyString;
 }
 
-extern long likeFuncEvalCallCount;
 
 //__________________________________________________________________________________
 
@@ -211,6 +210,8 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags, lo
         return nil;
     }
 
+    //printf ("\nGetModelMatrix %s/%d (%x %x)\n", GetName()->get_str(), queue, tags, cat_id);
+    
     if (IsModelOfExplicitForm(theModel)) { // an explicit formula based matrix
         if (queue && tags) {
             long currentQueueLength = (templateFormulaClone ? templateFormulaClone[categ_id_mapper(cat_id)] : ((_Formula*)modelMatrixIndices.list_data[theModel]))->ExtractMatrixExpArguments (queue);
@@ -220,14 +221,11 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags, lo
                   (*tags) << currentQueueLength;
                 return nil;
              }
-            
-       }
+        }
         
         _Formula * explicit_exp = (templateFormulaClone ?  templateFormulaClone[categ_id_mapper(cat_id)] : ((_Formula*)modelMatrixIndices.list_data[theModel]));
-        _Matrix* result = (_Matrix *)explicit_exp->Compute();
-        
-        //printf ("_VariableContainer::GetModelMatrix %x (%x) => %x, %d\n", explicit_exp, explicit_exp->GetIthTerm(0), result, result->GetReferenceCounter());
-        
+        _Matrix* result = (_Matrix *)explicit_exp->Compute(0,nil,nil,nil,HY_ANY_OBJECT, true, queue && tags);
+        //_Matrix* result = (_Matrix *)explicit_exp->Compute();
         result->CheckIfSparseEnough(true);
         return result;
     }

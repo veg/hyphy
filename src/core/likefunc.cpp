@@ -1894,7 +1894,7 @@ bool      _LikelihoodFunction::SendOffToMPI       (long index) {
 /* 20170404 SLKP Need to check if the decision to recompute a partition is made correctly.
  In particular, need to confirm that changes to category variables are handled correctly (e.g. HaveParametersChanged, vs has changed */
 
-    bool                sendToSlave = (computationalResults.GetSize() < parallelOptimizerTasks.lLength);
+    bool                sendToSlave = (computationalResults.get_used() < parallelOptimizerTasks.lLength);
     _SimpleList     *   slaveParams = (_SimpleList*)parallelOptimizerTasks(index);
 
     for (unsigned long varID = 0UL; varID < slaveParams->lLength; varID++) {
@@ -2306,7 +2306,9 @@ hyFloat  _LikelihoodFunction::Compute        (void)
             if (hy_mpi_node_rank == 0) {
                 long    totalSent = 0;
                 for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++) {
+                    //printf ("Master sending block %d off...\n", blockID);
                     bool sendToSlave = SendOffToMPI (blockID);
+                    //printf ("Send result (result size %d): %d\n", computationalResults.GetSize(), sendToSlave);
                     if (sendToSlave) {
                         totalSent++;
                     } else {
@@ -2688,6 +2690,14 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
     nonConstantDep = new _SimpleList;
     _SimpleList nonConstantIndices; // for error reporting
     
+    /*
+    for (index = 0; index < indexInd.countitems(); index++) {
+        fprintf (stderr, "%d %s\n", index, GetIthIndependentName(index)->get_str());
+    }
+    */
+    
+    bool constant_fail = false;
+    
     for (index = 0; index< dep_var_count && !ohWell; index++) {
         // check whether any of the dependent variables are out of bounds
         cornholio                       =   GetIthDependentVar(index);
@@ -2696,7 +2706,7 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         lowerBounds.theData[index]      =   cornholio->GetLowerBound();
         upperBounds.theData[index]      =   cornholio->GetUpperBound();
         
-        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g\n", cornholio->theName->get_str(), index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index]);
+        //fprintf (stderr, "_LikelihoodFunction::CheckDependentBounds variable %s (%d), current value %g, range %g to %g (%s)\n", cornholio->theName->get_str(), index, currentValues.theData[index], lowerBounds.theData[index], upperBounds.theData[index], cornholio->GetFormulaString(kFormulaStringConversionReportRanges)->get_str());
         
         bool badApple = currentValues.theData[index]<lowerBounds.theData[index] || currentValues.theData[index]>upperBounds.theData[index];
         if (badApple) {
@@ -2707,10 +2717,13 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         if (cornholio->IsConstant()) {
             badConstraint = indexDep.list_data[index];
             ohWell = badApple;
+            constant_fail = true;
             j      = index; // for error reporting at the bottom
+            //fprintf (stderr, "---> Is constant\n");
         } else {
             (*nonConstantDep) << indexDep.list_data[index];
             nonConstantIndices << index;
+            //fprintf (stderr, "---> Is non-constant\n");
         }
     }
     
@@ -2927,7 +2940,9 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
       
         //fprintf (stderr, "%d\n", j);
         
-        j = nonConstantIndices.get(j);
+        if (!constant_fail) {
+            j = nonConstantIndices.get(j);
+        }
         
         _StringBuffer err_report ("Constrained optimization failed, since a starting point within the domain specified for the variables couldn't be found.\nSet it by hand, or check your constraints for compatibility.\nFailed constraint:");
         
@@ -2942,9 +2957,11 @@ void    _LikelihoodFunction::CheckDependentBounds (void) {
         err_report << _String(currentValues[j]);
         err_report << ".";
         
-        _TerminateAndDump(err_report);
-        
-        
+        if (hy_env::EnvVariableTrue(hy_env::tolerate_constraint_violation)) {
+            ReportWarning(err_report);
+        } else {
+            _TerminateAndDump(err_report);
+        }
     }
 }
 //_______________________________________________________________________________________
@@ -4073,7 +4090,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
     SetupLFCaches       ();
     SetupCategoryCaches ();
-    computationalResults.Clear();
     
     
 
@@ -10176,7 +10192,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
     unsigned long    internal_node_count = 0UL;
 
-    if (storeIntermediates && storeIntermediates->nonempty() == 0) {
+    if (storeIntermediates && storeIntermediates->empty()) {
       GetIthTree (0L)->AddNodeNamesToDS (&target,false,true,0); // only add internal node names
       internal_node_count = target.GetNames().lLength - species_count;
     }
@@ -10415,17 +10431,20 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
               target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
             }
 
-            if (storeIntermediates && storeIntermediates->nonempty() == 0UL) {
-              for (unsigned long internal_node_index = 0UL; internal_node_index < internal_node_count; internal_node_index++) {
-                simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(ancestral_values(internal_node_index)), sites_per_unit);
-                for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
-                  target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
-                }
-                target.ResetIHelper();
-                for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
-                  target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
-                }
-
+            if (storeIntermediates ) {
+              if (storeIntermediates->empty()) {
+                  for (unsigned long internal_node_index = 0UL; internal_node_index < internal_node_count; internal_node_index++) {
+                    simulated_unit = this_filter->ConvertCodeToLetters(this_filter->CorrectCode(ancestral_values(internal_node_index)), sites_per_unit);
+                    for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                      target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
+                    }
+                    target.ResetIHelper();
+                    for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                      target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
+                    }
+                  }
+              } else {
+                  
               }
             }
           }
@@ -10443,7 +10462,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
           // generate a random "spawning vector"
 
-        if (spawnValues) { // use supplied starting values
+    if (spawnValues) { // use supplied starting values
           for (unsigned long site_index = 0UL;  site_index < this_site_count; site_index++) {
             simulated_sequence[site_index] = spawnValues->theData[site_index+site_offset];
           }
@@ -10458,7 +10477,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
         _DataSet * ancestral_sequences = nil;
 
-        if (storeIntermediates) {
+        if (storeIntermediates && !this_tree->IsDegenerate()) {
           if (storeIntermediates->nonempty()) {
             FILE * file_for_ancestral_sequences = doFileOpen (storeIntermediates->get_str(),"w");
             if (!file_for_ancestral_sequences) {

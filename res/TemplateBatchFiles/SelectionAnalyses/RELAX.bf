@@ -466,6 +466,8 @@ if (relax.model_set == "All") { // run all the models
         
 
         if (Type (relax.ge_guess) != "Matrix") {
+        
+        
             // first time in 
             relax.initial.test_mean    =
             
@@ -485,6 +487,7 @@ if (relax.model_set == "All") { // run all the models
             for (i, v; in; relax.initial_grid) {
                 v["relax.bl.scaler"] = {terms.id : "relax.bl.scaler", terms.fit.MLE : Random (2,4)};
             }
+            
             
                           
             relax.grid_search.results =  estimators.FitLF (relax.filter_names, relax.trees,{ "0" : {"DEFAULT" : "relax.ge"}},
@@ -948,7 +951,7 @@ function relax.FitMainTestPair () {
     relax.save_fit_path = io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]");
     io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], relax.save_fit_path);
  
-	if (relax.numbers_of_tested_groups == 2) {
+	if (relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 
 		relax.fitted.K = estimators.GetGlobalMLE (relax.alternative_model.fit,terms.relax.k);
 		io.ReportProgressMessageMD("RELAX", "alt", "* Relaxation/intensification parameter (K) = " + Format(relax.fitted.K,8,2));
@@ -1081,7 +1084,7 @@ function relax.FitMainTestPair () {
 	io.ReportProgressMessageMD ("RELAX", "null", "* " + selection.io.report_fit (relax.null_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 	relax.LRT = math.DoLRT (relax.null_model.fit[terms.fit.log_likelihood], relax.alternative_model.fit[terms.fit.log_likelihood],  relax.numbers_of_tested_groups-1);
 
-	if (relax.numbers_of_tested_groups == 2) {
+	if (relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 		io.ReportProgressMessageMD("RELAX", "null", "* The following rate distribution for test/reference branches was inferred");
 		relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistributionFromFit (relax.model_object_map ["relax.test"], relax.null_model.fit)) % 0;
 		selection.io.report_dnds (relax.inferred_distribution);
@@ -1187,7 +1190,7 @@ if (relax.model_set == "All") {
     }
     relax.pe.fit = estimators.FitExistingLF (relax.alternative_model.fit[terms.likelihood_function], relax.model_object_map);
     io.ReportProgressMessageMD ("RELAX", "pe", "* " + selection.io.report_fit (relax.pe.fit, 9, relax.codon_data_info[terms.data.sample_size]));
-    if (relax.numbers_of_tested_groups == 2) {
+    if (relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 		io.ReportProgressMessageMD ("RELAX", "pe", "* The following rate distribution was inferred for *test* branches ");
 		relax.test.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution(relax.model_object_map ["relax.test"])) % 0;
 		selection.io.report_dnds (relax.test.inferred_distribution);
