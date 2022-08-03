@@ -172,8 +172,6 @@ function estimators.SetGlobals2(key2, value) {
     }
 
     
- 
-    
 
     estimators.ApplyExistingEstimates.set_globals[key3] = {
         terms.id: key3,
@@ -182,11 +180,11 @@ function estimators.SetGlobals2(key2, value) {
 
     __init_value = (initial_values[terms.global])[key3];
     
+    
     if (Type(__init_value) != "AssociativeList") {
         __init_value = (initial_values[terms.global])[key2];
     }
 
-    
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
@@ -493,7 +491,6 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
 
     SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
 
-
     estimators.ApplyExistingEstimatesToTree.constraint_count = 0;
 
 
@@ -795,6 +792,11 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     
     
+    optimization_log = utility.Has (run_options, utility.getGlobalValue("terms.run_options.optimization_log"),"String");
+    if (optimization_log) {
+        utility.ToggleEnvVariable("PRODUCE_OPTIMIZATION_LOG", 1);
+    }
+    
     if (Type (can_do_restarts) == "AssociativeList") {
         io.ReportProgressBar("", "Working on crude initial optimizations");
         bestlog    = -1e100;
@@ -826,6 +828,14 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
     }
 
+
+    if (optimization_log) {
+        utility.ToggleEnvVariable("PRODUCE_OPTIMIZATION_LOG", None);
+        utility.ToggleEnvVariable("USE_JSON_FOR_MATRIX", TRUE);
+
+        fprintf (run_options[utility.getGlobalValue("terms.run_options.optimization_log")], CLEAR_FILE, ^((&likelihoodFunction) + ".trace"));
+        utility.ToggleEnvVariable("USE_JSON_FOR_MATRIX", None);
+     }
 
 
     if (Type(initial_values) == "AssociativeList") {

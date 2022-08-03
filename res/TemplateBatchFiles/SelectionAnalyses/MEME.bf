@@ -791,6 +791,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                     utility.getGlobalValue("terms.empirical_bayes_factor") : branch_ebf,
                     utility.getGlobalValue("terms.branch_selection_attributes") : branch_substitution_information, //TODO: keep this attr?
                     utility.getGlobalValue("terms.Null"): Null,
+                    utility.getGlobalValue("terms.substitutions") : compressed_substitution_info,
                     utility.getGlobalValue("terms.simulated"): null_LRT
                 };
             } 
