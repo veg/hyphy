@@ -1130,7 +1130,7 @@ function relax.FitMainTestPair () {
 
 
 	if (relax.LRT[terms.p_value] <= relax.p_threshold) {
-		if ( relax.numbers_of_tested_groups == 2) {
+		if ( relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 			if (relax.fitted.K > 1) {
 				console.log (">Evidence for *intensification of selection* among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
 			} else {
@@ -1141,7 +1141,7 @@ function relax.FitMainTestPair () {
 	
 		}
 	} else {
-		if ( relax.numbers_of_tested_groups == 2) {
+		if ( relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 			console.log (">No significant evidence for relaxation (or intensification) of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
 		} else {
 			console.log (">>No significant evidence for differences of selective pressures among the test groups at P<="+ relax.p_threshold);
