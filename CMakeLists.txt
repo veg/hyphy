@@ -289,6 +289,11 @@ endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 #-------------------------------------------------------------------------------
 find_package(OpenMP)
 
+# emulate missing OpenMP for testing
+
+#set (OPENMP_FOUND FALSE)
+#set (OpenMP_CXX_FLAGS "")
+
 #-------------------------------------------------------------------------------
 # default installation prefix
 #-------------------------------------------------------------------------------

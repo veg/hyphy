@@ -2745,7 +2745,6 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     
     _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
     
-#ifdef _OPENMP
     _SimpleList parallel, serial;
     isExplicitForm.Each ([&parallel,&serial](long mx_count, unsigned long id) -> void {
         if (mx_count < 0) serial << id; else parallel << id;
@@ -2755,7 +2754,6 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     unsigned long cs = cBase<20 ? 10 : (cBase < 60 ? 5 : 2);
 
     //printf ("_TheTree::ExponentiateMatrices %d total, %d no update, (block update %d)\n", parallel.lLength, serial.lLength, nt);
-#endif
 
     if (parallel.lLength) {
 #ifdef _OPENMP
