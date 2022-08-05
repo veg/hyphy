@@ -5464,6 +5464,13 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                           BufferToConsole (buf);
                         }
                     }
+                    if (isnan (left)) {
+                        left = lowerBound;
+                    }
+                    if (isnan (right)) {
+                        right = middle + rightStep;
+                    }
+
                     return -2;
                 } else {
                     middle=lowerBound+2.*leftStep;
@@ -5510,6 +5517,12 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
                           snprintf (buf, sizeof(buf), "\n\t[_LikelihoodFunction::Bracket RIGHT BOUNDARY (index %ld) UPDATED middle to %20.16g, LogL = %20.16g]", index, middle, middleValue);
                           BufferToConsole (buf);
                         }
+                    }
+                    if (isnan (left)) {
+                        left = middle - leftStep;
+                    }
+                    if (isnan (right)) {
+                        right = upperBound;
                     }
                     return -2;
                 } else {
@@ -6944,13 +6957,14 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
                right = -INFINITY,
                middle           = bestVal,
                leftValue        = NAN,
-               middleValue       = maxSoFar,
-               rightValue      = NAN,
+               middleValue      = maxSoFar,
+               rightValue       = NAN,
                bp               = 2.*gPrecision,
                brentPrec        = bracketSetting>0.?bracketSetting:gPrecision,
                originalValue         = index >= 0 ? GetIthIndependent(index) : 0.;
 
     DetermineLocalUpdatePolicy           ();
+    
 
     /*if (optimizatonHistory && ((_AssociativeList*)this->optimizatonHistory->GetByKey("Phases"))->Length() == 2171) {
         verbosity_level = 1000;
@@ -7140,7 +7154,21 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
     }
 
     if (index >= 0) {
-      LoggerSingleVariable (index, maxSoFar, bp, brentPrec, outcome != -1 ? right-left : -1., GetIthIndependent(index)-originalValue, bracket_step_count, likeFuncEvalCallCount-inCount-bracket_step_count, matrix_exp_count - inECount);
+        if (isnan (left) || isnan (right)) {
+            char buf [256];
+            snprintf (buf, 256, "\n\t[_LikelihoodFunction::LocateTheBump (index %ld) NAN left or right]", index);
+            _TerminateAndDump (_String (buf) & "\n" &  "\nParameter name " & *GetIthIndependentName(index));
+        }
+        
+        LoggerSingleVariable (index,
+                            maxSoFar,
+                            bp,
+                            brentPrec,
+                            outcome != -1 ? right-left : -1.,
+                            GetIthIndependent(index)-originalValue,
+                            bracket_step_count,
+                            likeFuncEvalCallCount-inCount-bracket_step_count,
+                            matrix_exp_count - inECount);
     }
 
     oneDFCount += likeFuncEvalCallCount-inCount-bracket_step_count;

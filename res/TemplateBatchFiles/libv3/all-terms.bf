@@ -493,6 +493,8 @@ namespace terms{
         apply_user_constraints            = "apply-user-constraints";
         optimization_settings             = "optimization-settings";
         keep_filters                      = "use-filters";
+        optimization_log                  = "optimization_log";
+
     }
 
 

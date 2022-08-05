@@ -31,7 +31,8 @@ LoadFunctionLibrary("libv3/models/rate_variation.bf");
 utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
 utility.SetEnvVariable ("USE_MEMORY_SAVING_DATA_STRUCTURES", 1e8);
-u
+
+//relax.OPTIMIZATION_LOGS = 1;
 
 /*------------------------------------------------------------------------------*/
 
@@ -386,7 +387,7 @@ if (relax.multi_hit == "None") {
             relax.rate_class_arguments = {{relax.synonymous_rate_classes__,relax.rate_classes__}};
         } else {
     
-            lfunction relax.model.with.GDD (type, code, rates) {        
+            lfunction relax.model.MH.with.GDD (type, code, rates) {        
                 def = relax.model.BS_REL_MH (type, code, rates);
                 options = {utility.getGlobalValue("terms.rate_variation.bins") : utility.getGlobalValue("relax.synonymous_rate_classes"),
                            utility.getGlobalValue("terms._namespace") : "relax._shared_srv"};
@@ -398,7 +399,7 @@ if (relax.multi_hit == "None") {
                 return def;
             }
         
-            relax.model_generator = "relax.model.with.GDD";
+            relax.model_generator = "relax.model.MH.with.GDD";
             relax.rate_class_arguments = relax.rate_classes;
         }
     } else {
@@ -463,7 +464,6 @@ if (relax.model_set == "All") { // run all the models
         selection.io.startTimer (relax.json [terms.json.timers], "General descriptive model fitting", 2);
 
         
-        
 
         if (Type (relax.ge_guess) != "Matrix") {
         
@@ -507,7 +507,8 @@ if (relax.model_set == "All") { // run all the models
                                                 } ,
                                      
                                             terms.search_grid : relax.initial_grid,
-                                            terms.search_restarts : relax.N.initial_guesses
+                                            terms.search_restarts : relax.N.initial_guesses,
+                                            terms.run_options.optimization_log : relax.optimization_log_file (".GE-1-log.json")
                                         }
             );
             
@@ -520,7 +521,8 @@ if (relax.model_set == "All") { // run all the models
                                         relax.model_object_map,
                                         {
                                             terms.run_options.apply_user_constraints: "relax.init.k",
-                                            terms.run_options.retain_lf_object : TRUE
+                                            terms.run_options.retain_lf_object : TRUE,
+                                            terms.run_options.optimization_log :  relax.optimization_log_file(".GE-2-log.json")
 
                                         });
                                         
@@ -534,7 +536,8 @@ if (relax.model_set == "All") { // run all the models
                                             relax.model_object_map,
                                             {
                                                 terms.run_options.apply_user_constraints: "relax.init.k",
-                                                terms.run_options.retain_lf_object : TRUE
+                                                terms.run_options.retain_lf_object : TRUE,
+                                                terms.run_options.run_options.optimization_log :  relax.optimization_log_file(".GE-log.json")
 
                                             });
        }
@@ -621,7 +624,7 @@ if (relax.model_set == "All") { // run all the models
 
 /* now fit the two main models for RELAX */
 
-if (relax.analysis_run_mode == relax.kGroupMode) {
+if (relax.analysis_run_mode != relax.kGroupMode) {
 	io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model to test K != 1");
 } else {
 	io.ReportProgressMessageMD ("RELAX", "alt", "Fitting the alternative model with individual K parameters for " + relax.numbers_of_tested_groups + " branch groups");
@@ -938,13 +941,17 @@ function relax.FitMainTestPair () {
                                  
                                         terms.search_grid : relax.initial_grid,
                                         terms.search_restarts : relax.N.initial_guesses
+                        
                                     }
         );
         
     }
     
+    //fprintf ("/Users/sergei/Desktop/gd.json", CLEAR_FILE, relax.general_descriptive.fit); 
+    //fscanf ("/Users/sergei/Desktop/gd.json", "Raw", relax.general_descriptive.fit);
+    relax.general_descriptive.fit = Eval (relax.general_descriptive.fit);
 
-	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE});
+	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE, terms.run_options.optimization_log :  relax.optimization_log_file ( "MainALT-log.json")});
 	io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 
     KeywordArgument ("save-fit", "Save RELAX alternative model fit to this file (default is not to save)", "/dev/null");
@@ -997,7 +1004,9 @@ function relax.FitMainTestPair () {
 			relax.alternative_model.fit.take2 =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map},
 																   relax.alternative_model.fit ,
 																   relax.model_object_map,
-																   {terms.run_options.retain_lf_object: TRUE}
+																   {
+																    terms.run_options.retain_lf_object: TRUE,
+																    terms.run_options.optimization_log :  relax.optimization_log_file("MainALT-redo-log.json")}
 																   );
 
 
@@ -1121,7 +1130,7 @@ function relax.FitMainTestPair () {
 
 
 	if (relax.LRT[terms.p_value] <= relax.p_threshold) {
-		if ( relax.numbers_of_tested_groups == 2) {
+		if ( relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 			if (relax.fitted.K > 1) {
 				console.log (">Evidence for *intensification of selection* among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
 			} else {
@@ -1132,7 +1141,7 @@ function relax.FitMainTestPair () {
 	
 		}
 	} else {
-		if ( relax.numbers_of_tested_groups == 2) {
+		if ( relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 			console.log (">No significant evidence for relaxation (or intensification) of selection among **test** branches _relative_ to the **reference** branches at P<="+ relax.p_threshold);
 		} else {
 			console.log (">>No significant evidence for differences of selective pressures among the test groups at P<="+ relax.p_threshold);
@@ -1710,6 +1719,14 @@ lfunction relax._renormalize (v, distro, mean) {
     }
     return v;
     
+}
+
+//------------------------------------------------------------------------------
+function relax.optimization_log_file (extension) {
+    if (relax.OPTIMIZATION_LOGS) {
+        return relax.codon_data_info [terms.json.json] + extension;
+    }   
+    return None;
 }
 
 //------------------------------------------------------------------------------
