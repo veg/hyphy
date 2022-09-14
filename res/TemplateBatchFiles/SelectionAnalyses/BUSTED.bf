@@ -161,7 +161,7 @@ busted.multi_hit = io.SelectAnOption ({
 
 if (busted.do_srv) {
     KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes);
-    busted.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", busted.synonymous_rate_classes, 1, 10, TRUE);
+    busted.synonymous_rate_classes = io.PromptUser ("The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes, 1, 10, TRUE);
 }
 
 KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);

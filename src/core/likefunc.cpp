@@ -4401,6 +4401,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             }
             ConjugateGradientDescent(precision, bestSoFar, true);
         }
+        //_TerminateAndDump("CHECK ME");
 #if !defined __UNIX__ || defined __HEADLESS__
 #ifdef __HYPHYMPI__
         if (hy_mpi_node_rank == 0) {
@@ -4934,6 +4935,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     BufferToConsole (buffer);
                     StringToConsole (*GetIthIndependentVar(current_index)->GetName());
                     BufferToConsole (CheckEqual(GetIthIndependentBound (current_index, true), cj)? ("[Lower bound]") : (CheckEqual(GetIthIndependentBound (current_index, false),cj) ? "[Upper bound]" : ""));
+                    
                 }
 #if defined __UNIX__ && ! defined __HEADLESS__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
                 else if (verbosity_level==1) {
@@ -8424,7 +8426,12 @@ bool    _LikelihoodFunction::HasPartitionChanged (long index) {
                         //return LocateVar(value)->HasChanged();
                         return (LocateVar(value)->varFlags & HY_VARIABLE_CHANGED);
                        }
-                    );
+                    ) || ListAny (*(_SimpleList*)depVarsByPartition(index),
+                                  [] (const long value, const unsigned long index) -> bool {
+                                      //return LocateVar(value)->HasChanged();
+                                      return (LocateVar(value)->HasChanged());
+                                     }
+                                  );
 
 }
 

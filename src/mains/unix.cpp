@@ -104,20 +104,7 @@ const char hy_help_message [] =
 "Run a custom analysis and pass it some arguments \n\thyphy path/to/hyphy.script argument1 'argument 2' \n"
 ;
 
-const char hy_available_cli_analyses [] =
-"Available standard analyses and their [standard analysis name] are listed below:\n\n"
-"        [meme] Test for episodic site-level selection using MEME (Mixed Effects Model of Evolution).\n"
-"        [contrast-fel] Use a FEL method to test which sites in a gene may be associated with adaptation to a different environment.\n"
-"        [fel] Test for pervasive site-level selection using FEL (Fixed Effects Likelihood).\n"
-"        [fubar] Test for pervasive site-level selection using FUBAR (Fast Unconstrained Bayesian AppRoximation for inferring selection).\n"
-"        [fade] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).\n"
-"        [slac] Test for pervasive site-level selection using SLAC (Single Likelihood Ancestor Counting).\n"
-"        [busted] Test for episodic gene-wide selection using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).\n"
-"        [bgm] Apply Bayesian Graphical Model inference to substitution histories at individual sites.\n"
-"        [absrel] Test for lineage-specific evolution using the branch-site method aBS-REL (Adaptive Branch-Site Random Effects Likelihood).\n"
-"        [relax] Test for relaxation of selection pressure along a specified set of test branches using RELAX (a random effects test of selection relaxation).\n"
-"        [gard] Screen an alignment for recombination using GARD (Genetic Algorithm for Recombination Detection).\n\n"
-;
+
 
 
 #ifdef _MINGW32_MEGA_
@@ -567,7 +554,7 @@ void    ProcessKWStr (_String const & conf, _String const & conf2, _AssociativeL
                 (*(_AssociativeList*)existing_value) < _associative_list_key_value {nil, new _FString (conf2)};
             } else {
                 _AssociativeList * replacement_list = new _AssociativeList;
-                (*replacement_list) << _associative_list_key_value {nil, existing_value} < _associative_list_key_value {nil, new _FString (conf2)};
+                ((*replacement_list) << _associative_list_key_value {nil, existing_value}) < _associative_list_key_value {nil, new _FString (conf2)};
                 kwargs.MStore(key, replacement_list, false);
             }
         } else {

@@ -56,7 +56,7 @@ public:
     virtual     BaseRef     makeDynamic (void) const; // duplicate this object into a dynamic copy
     virtual     void        Duplicate   (BaseRefConst); // duplicate an object from reference
 
-    virtual     void        Clear (void);
+    virtual     void        Clear (bool complete = true);
 
     virtual     unsigned long        GetHDim                     (void) const {
         if (is_column) {

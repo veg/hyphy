@@ -205,7 +205,7 @@ template <class node_data> node<node_data>* node<node_data>::duplicate_tree(void
 
   //-------------------------------------------------------------
 
-template <class node_data> void node_count_descendants (node<node_data>* source, node<node_data>* n) {
+template <class node_data> void node_count_descendants (node<node_data>* , node<node_data>* n) {
     if (n->get_num_nodes() == 0) {
         n->in_object = 1L;
     } else {
@@ -314,7 +314,6 @@ template <class node_data> int node<node_data>::tree_depth(void)
 template <class node_data>
 node<node_data>* NodeTraverser  (node<node_data>* root)
 {
-  static int  going_up;
   static node<node_data>* laststep;
   node<node_data>* curstep, *crashdummy;
 		
@@ -322,7 +321,6 @@ node<node_data>* NodeTraverser  (node<node_data>* root)
   {
     laststep = root;
     while ((crashdummy = laststep->go_down(1))) laststep = crashdummy;
-    going_up = false;
     return laststep;
   }
   
@@ -332,11 +330,9 @@ node<node_data>* NodeTraverser  (node<node_data>* root)
   {
     curstep=crashdummy;
     while ((crashdummy = curstep->go_down(1))) curstep = crashdummy;
-    going_up = false;
     return laststep = curstep;
   }
   curstep=curstep->get_parent();
-  going_up = true;
   laststep = curstep;
   return curstep;
 }
@@ -363,7 +359,6 @@ template <class node_data> void node<node_data>::replace_node(node<node_data>* e
 
   //-----------------------------------Set Number 1----------------
 template <class node_data> int node<node_data>::get_child_num() {
-    int num_siblings;
     if (parent) {
         if (this == parent->one) return 1;
         if (this == parent->two) return 2;
