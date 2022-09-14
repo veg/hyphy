@@ -701,7 +701,7 @@ public:
     _CustomFunction         (const _String& , _VariableContainer const * context = nil);
 
     virtual     hyFloat     Compute                 (void);
-    virtual     void        RescanAllVariables      (bool obtain_variable_mapping = false) {}
+    virtual     void        RescanAllVariables      (bool = false) {}
     virtual void            SerializeLF             (_StringBuffer& res, char=0, _SimpleList* = nil, _SimpleList* = nil) {
                res.AppendNewInstance ((_String*)myBody.toStr(kFormulaStringConversionNormal));
     }
@@ -774,7 +774,7 @@ FindLikeFuncByName           (_String&);
 
 template <typename ACTION>
 void DoForEachLikelihoodFunction (ACTION cb) {
-    for (long i = 0; i < likeFuncNamesList.lLength; i++) {
+    for (unsigned long i = 0UL; i < likeFuncNamesList.lLength; i++) {
         if (((_String*)likeFuncNamesList.GetItem(i))->nonempty()) {
             cb ((_LikelihoodFunction*)likeFuncList.GetItem (i), i);
         }

@@ -141,10 +141,10 @@ class _List:public _SimpleList {
             _List result;
             if (endAt < 0) {
                 endAt = lLength;
-            } else if (endAt > lLength) {
+            } else if (endAt > (long)lLength) {
                 endAt = lLength;
             }
-            for (unsigned long i = startAt; i<endAt; i++) {
+            for (long i = startAt; i<endAt; i++) {
                 result < mapper ( ((BaseRef*)(list_data))[i], i );
             }
             return result;

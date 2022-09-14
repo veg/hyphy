@@ -441,7 +441,7 @@ public:
         return hDim;
     }
     
-    bool     check_dimension                         (unsigned long rows, unsigned long columns) const {
+    bool     check_dimension                         (long rows, long columns) const {
         return hDim == rows && vDim == columns;
     }
     

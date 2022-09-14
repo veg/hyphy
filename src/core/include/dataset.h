@@ -145,7 +145,7 @@ public:
   _String *GetSequenceCharacters(long seqID) const;
 
   bool SetSequenceName(long index, _String *new_name) {
-    if (index >= 0L && index < theNames.lLength) {
+    if (index >= 0L && index < (long)theNames.lLength) {
       theNames.Replace(index, new_name, false);
       return true;
     }

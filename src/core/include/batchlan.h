@@ -125,8 +125,8 @@ public:
     _String*    FetchFromStdinRedirect     (_String const * dialog_tag = nil, bool handle_multi_choice = false, bool do_echo = false);
     
     _ElementaryCommand* FetchLastCommand (void) {
-        if (currentCommand - 1 < lLength && currentCommand > 0) {
-            return (_ElementaryCommand*)(*this)(currentCommand - 1);
+        if (currentCommand - 1L < (long)lLength && currentCommand > 0L) {
+            return (_ElementaryCommand*)(*this)(currentCommand - 1L);
         }
         return nil;
     }
@@ -135,7 +135,7 @@ public:
     }
 
     void        GoToLastInstruction         (void) {
-        currentCommand = MAX(currentCommand,lLength-1);
+        currentCommand = MAX(currentCommand,(long)lLength-1L);
     }
     
     _StringBuffer const GenerateHelpMessage         (_AVLList * scanned_functions = nil) const;

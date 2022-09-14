@@ -362,7 +362,7 @@ public:
    - SLKP 20170517 reviewed while porting from v3 branch
    */
   virtual char get_char(long index) const {
-    if (index >= 0L && index < s_length) {
+    if (index >= 0L && index < (long)s_length) {
       return s_data[index];
     }
     return _String::default_return;
@@ -1130,7 +1130,7 @@ public:
     bool   do_escape = false;
     char   quote_state = '\0';
       
-    while (current_position < s_length) {
+    while (current_position < (long)s_length) {
       char this_char = s_data[current_position];
       if (do_escape) {
         do_escape = false;

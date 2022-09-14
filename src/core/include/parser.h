@@ -122,7 +122,7 @@ void        DeleteTreeVariable (long, _SimpleList&, _String * prefix = nil, bool
 
 template <typename ACTION>
 void DoForEachVariable(ACTION do_this) {
-    for (long i = 0; i < variablePtrs.lLength; i++) {
+    for (unsigned long i = 0; i < variablePtrs.lLength; i++) {
         _Variable * ith_var = (_Variable *)variablePtrs.GetItem (i);
         if (ith_var) {
             do_this (ith_var, i);

@@ -121,8 +121,8 @@ void        _Vector::operator << (const _SimpleList& list) {
 
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
-void        _Vector::Clear (void) {
-    _Matrix::Clear();
+void        _Vector::Clear (bool complete_clear) {
+    _Matrix::Clear(complete_clear);
     ZeroUsed();
     vDim = 1UL;
 }
