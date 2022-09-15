@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1659734839195,
+  "lastUpdate": 1663203024286,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -12397,6 +12397,142 @@ window.BENCHMARK_DATA = {
             "name": "ABSREL-MH.wbf",
             "value": 128.91581797086502,
             "range": "±3.175362%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "spond@temple.edu",
+            "name": "Sergei Pond",
+            "username": "spond"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "04b391ae6800049876ea78e4f3e0900c5d327840",
+          "message": "Merge pull request #1519 from veg/develop\n\n2.5.42rc",
+          "timestamp": "2022-09-14T19:49:42-04:00",
+          "tree_id": "5f04e71b336c76d63ccd4bbc20790f414c8a9448",
+          "url": "https://github.com/veg/hyphy/commit/04b391ae6800049876ea78e4f3e0900c5d327840"
+        },
+        "date": 1663203017118,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 0.7704866624906289,
+            "range": "±16.898357%",
+            "unit": "secs/op",
+            "extra": "8 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 4.111047618264562,
+            "range": "±0.580103%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 18.708723877944287,
+            "range": "±0.181872%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 3.188094380346036,
+            "range": "±0.327014%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 11.452523563567231,
+            "range": "±0.422636%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 51.43239212055753,
+            "range": "±0.805007%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 14.475131723698684,
+            "range": "±13.420579%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 26.71867902850883,
+            "range": "±57.913979%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 34.48751551938198,
+            "range": "±10.326106%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 0.42555599955231505,
+            "range": "±0.414187%",
+            "unit": "secs/op",
+            "extra": "10 samples"
+          },
+          {
+            "name": "BGM.wbf",
+            "value": 2.612999148162278,
+            "range": "±0.709054%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "CFEL.wbf",
+            "value": 48.23461315840247,
+            "range": "±12.186723%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FADE.wbf",
+            "value": 3.5937999762809203,
+            "range": "±0.543900%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "GARD.wbf",
+            "value": null,
+            "range": "±0.000000%",
+            "unit": "secs/op",
+            "extra": "0 samples"
+          },
+          {
+            "name": "ABSREL.wbf",
+            "value": 22.32093033637642,
+            "range": "±0.303754%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "ABSREL-MH.wbf",
+            "value": 105.77533319229956,
+            "range": "±0.130972%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
