@@ -62,6 +62,14 @@ io.ReportProgressMessageMD("mss", "data" , "* Loaded a list with **" + mss_selec
 KeywordArgument ("code",        "Which genetic code should be used", "Universal");  
 mss.genetic_code = alignments.LoadGeneticCode (None);
 
+
+KeywordArgument ("ic",        "Which IC should be used for scoring", "AIC-c");  
+mss.ic_score = io.SelectAnOption  ({"AIC-c" : "Small Sample AIC score", 
+                                   "BIC" : "Bayesian Information Criterion (more conservative)"}, "Which IC should be used for scoring");
+
+mss.is_bic = mss.ic_score == "BIC";
+
+
 mss.file_records = {};
 mss.file_info = {};
 mss.tree_info = {};
@@ -132,7 +140,7 @@ lfunction mss.store_initial_fit (node, result, arguments) {
     
     ^"mss.parameters" += (result["init"])[^"terms.parameters"];
     ^"mss.baselineLL" += (result["init"])[^"terms.fit.log_likelihood"];
-    ^"mss.sample_size" += (result["init"])[^"terms.data.sample_size"];
+    //^"mss.sample_size" += (result["init"])[^"terms.data.sample_size"];
     mss_selector.print_row [0] = result["path"];
     info = (^"mss.file_records")[result["path"]];
     mss_selector.print_row [1] = info [^"terms.data.sequences"];
@@ -195,6 +203,8 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
      mss.namespace = "mss_" + mss.counter;
      mss.handle_initial_fit (mss_selector.path, mss.namespace, mss.genetic_code[terms.id], FALSE); 
      mss.file_records [mss_selector.path] = ^"`mss.namespace`.codon_data_info";
+     mss.sample_size += (^"`mss.namespace`.codon_data_info")[terms.data.sample_size];
+
    
      mpi.QueueJob (mss_selector.queue, "mss.handle_initial_fit", {"0" : mss_selector.path,
                                                      "1" : mss.namespace,
@@ -219,7 +229,7 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
 //io.ClearProgressBar();
 mpi.QueueComplete (mss_selector.queue);
 
-mss.baseline_AIC = selection.io.getIC(mss.baselineLL, mss.parameters, mss.sample_size);
+mss.baseline_AIC = mss.getIC (mss.baselineLL, mss.parameters, mss.sample_size, mss.is_bic);
 
 io.ReportProgressMessageMD("mss", "fit0done" , "Baseline model fit");
 io.ReportProgressMessageMD("mss", "fit0done", "**LogL = " + mss.baselineLL + "**"  + ", **AIC-c = " + mss.baseline_AIC + "** \n");
@@ -469,7 +479,7 @@ lfunction mss.GA.fit_model (model, lfid, xp, ss) {
     utility.SetEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1.); 
     Optimize (res, ^lfid);
     return_expr = {1,res[1][1] + 3};
-    return_expr [0] = selection.io.getIC(res[1][0], xp + res[1][1] ,ss); 
+    return_expr [0] = mss.getIC (res[1][0], xp + res[1][1] ,ss, ^"mss.is_bic"); 
     return_expr [1] = res[1][0]; 
     
     for (i = 0; i < res[1][1] + 1; i+=1) {
@@ -523,8 +533,8 @@ function mss.GA.evaluateModels (models) {
     
     for (modelID, cAIC; in; models)  {
         if (cAIC == math.Infinity) {
-            models[modelID] = (mss.GA.fit_model ( Eval (modelID), mss.lf_id, mss.parameters, mss.sample_size))[0];
-            console.log (models[modelID]);
+             models[modelID] = (mss.GA.fit_model ( Eval (modelID), mss.lf_id, mss.parameters, mss.sample_size))[0];
+             console.log ("\t" + Join("", Eval (modelID)) + " IC = " + Format (models[modelID], 15, 4) + ", delta = " + Format ((-(models[modelID]) + mss.bestOverall_cAIC_soFar), 8, 2));
         }
     }
     
@@ -676,6 +686,16 @@ lfunction mss.GA.generateNewGenerationOfModelsByMutatingModelSet(parentModels, n
     //console.log (nextGenOfModels[selectedModelId]);
     return nextGenOfModels;
 }
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction mss.getIC(logl, params, samples, is_bic) {
+    if (is_bic) {
+        return -2 * logl + Log (samples) * params;
+    }
+    return -2 * logl + 2 * samples / (samples - params - 1) * params;
+}
+
 
 
 
