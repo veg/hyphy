@@ -142,11 +142,10 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
     }
 
 
-    models.codon.MG_REV.set_branch_length.beta = model.generic.GetLocalParameter(model, terms.parameters.nonsynonymous_rate);
+    models.codon.MG_REV.set_branch_length.beta  = model.generic.GetLocalParameter(model, terms.parameters.nonsynonymous_rate);
     models.codon.MG_REV.set_branch_length.alpha = model.generic.GetLocalParameter(model, terms.parameters.synonymous_rate);
 
     if ( null != models.codon.MG_REV.set_branch_length.beta &&  null != models.codon.MG_REV.set_branch_length.alpha) {
-
 
         models.codon.MG_REV.set_branch_length.alpha.p = parameter + "." + models.codon.MG_REV.set_branch_length.alpha;
         models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.beta;
@@ -229,6 +228,26 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                     messages.log ("models.codon.MG_REV.set_branch_length: " + models.codon.MG_REV.set_branch_length.alpha.p + "=" + models.codon.MG_REV.set_branch_length.lp);
                     model["models.codon.MG_REV.set_branch_length"] = {models.codon.MG_REV.set_branch_length.alpha.p : models.codon.MG_REV.set_branch_length.lp};
                 }
+            }
+        }
+    } else {
+        // if there is only one local _unconstrained_ parameter, and the value being set is a number, we can do this
+        if (Type(value) == "Number") {
+            models.codon.MG_REV.set_branch_length.params = {}; 
+            models.codon.MG_REV.set_branch_length.params.subs = {};
+            for (models.codon.MG_REV.set_branch_length.i,models.codon.MG_REV.set_branch_length.p; in; ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.local")])) {
+                 models.codon.MG_REV.set_branch_length.beta.p = parameter + "." + models.codon.MG_REV.set_branch_length.p;
+                 if (parameters.IsIndependent (models.codon.MG_REV.set_branch_length.beta.p)) {
+                    models.codon.MG_REV.set_branch_length.params + models.codon.MG_REV.set_branch_length.beta.p;
+                 }
+                 models.codon.MG_REV.set_branch_length.params.subs[models.codon.MG_REV.set_branch_length.p] = models.codon.MG_REV.set_branch_length.beta.p;
+            }
+            if (utility.Array1D (models.codon.MG_REV.set_branch_length.params)) {
+                bl_string = Simplify (model[terms.model.branch_length_string],models.codon.MG_REV.set_branch_length.params.subs);
+                
+                ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + bl_string + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.params[0] + ",0,10000)");
+                
+                Eval (models.codon.MG_REV.set_branch_length.params[0] + "=" + models.codon.MG_REV.set_branch_length.lp);                
             }
         }
     }

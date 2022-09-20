@@ -19,10 +19,11 @@ terms.model.MSS.normalize = "normalize rates";
 
 //----------------------------------------------------------------------------------------------------------------
 
-lfunction model.codon.MSS.prompt_and_define (type, code) {
+
+lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
     KeywordArgument ("mss-type", "How to partition synonymous codons into classes", "File");
 
-    utility.ExecuteInGlobalNamespace ("fitter.frequency_type = 'CF3x4'");
+    utility.ExecuteInGlobalNamespace ("fitter.frequency_type = '`freq`'");
     partitioning_option = io.SelectAnOption (
     {
         {"Full", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
@@ -182,8 +183,15 @@ lfunction model.codon.MSS.prompt_and_define (type, code) {
 }
 
 //----------------------------------------------------------------------------------------------------------------
+
+lfunction model.codon.MSS.prompt_and_define (type, code) {
+    return model.codon.MSS.prompt_and_define_freq (type, code, 'CF3x4');
+}
+
+//----------------------------------------------------------------------------------------------------------------
   
 lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
+
 
     m = Call ("models.codon.MG_REV.ModelDescription", type, code);
     

@@ -532,6 +532,7 @@ lfunction parameters.GetConstraint(parameter) {
 function parameters.SetConstraint(id, value, global_tag) {
     if (Type(id) == "String") {
         if (Abs(id)) {
+            //console.log ("`global_tag` `id` := " + value);
             ExecuteCommands("`global_tag` `id` := " + value);
         }
     } else {
