@@ -2750,15 +2750,15 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         if (mx_count < 0) serial << id; else parallel << id;
     });
     hy_global::matrix_exp_count += matrixQueue.lLength - serial.countitems();
-    unsigned long nt = cBase<20?1:(MIN(tc, parallel.lLength / 3 + 1));
-    unsigned long cs = cBase<20 ? 10 : (cBase < 60 ? 5 : 2);
+    unsigned long nt = cBase<20 ? 1:(MIN(tc, (cBase < 60 ? parallel.lLength >> 1 : parallel.lLength) + 1));
+    unsigned long cs = cBase<20 ? 10 : (cBase < 60 ? 2 : 1);
 
     //printf ("_TheTree::ExponentiateMatrices %d total, %d no update, (block update %d)\n", parallel.lLength, serial.lLength, nt);
 
     if (parallel.lLength) {
 #ifdef _OPENMP
   #if _OPENMP>=201511
-    #pragma omp parallel for default(shared) private (id) schedule(monotonic:guided, cs) proc_bind(spread) if (nt>1)  num_threads (nt)
+    #pragma omp parallel for default(shared) private (id) schedule(dynamic, cs) proc_bind(spread) if (nt>1)  num_threads (nt)
   #else
   #if _OPENMP>=200803
     #pragma omp parallel for default(shared) private (id) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt)

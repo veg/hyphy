@@ -32,7 +32,7 @@ Version 2.2 changes the grid search to LHC, and adds an initial search phase to 
 for branch-site variation in synonymous substitution rates. Version 3.1 adds HMM auto-correlation option for SRV, and binds SRV distributions for multiple branch sets.
 Version 4.0 adds support for multiple hits, ancestral state reconstruction saved to JSON, and profiling of branch-site level support for selection / multiple hits.
 ",
-                               terms.io.version : "4.0",
+                               terms.io.version : "4.1",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71, *Synonymous Site-to-Site Substitution Rate Variation Dramatically Inflates False Positive Rates of Selection Analyses: Ignore at Your Own Peril*, Mol Biol Evol. 37(8):2430-2439",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
@@ -174,18 +174,21 @@ busted.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the r
     
 io.ReportProgressMessageMD('BUSTED',  'selector', 'Branches to test for selection in the BUSTED analysis');
 
-utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
-    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
-     io.ReportProgressMessageMD('BUSTED',  'selector', '* Selected ' + Abs(_selection_) + ' branches to test in the BUSTED analysis: \\\`' + Join (', ',utility.Keys(_selection_)) + '\\\`')");
+for (_partition_, _selection_; in; busted.selected_branches) {
+    _selection_ = utility.Filter (_selection_, '_value_', '_value_ == terms.tree_attributes.test');
+    io.ReportProgressMessageMD('BUSTED',  'selector', '* Selected ' + Abs(_selection_) + ' branches to test in the BUSTED analysis: \`' + Join (', ',utility.Keys(_selection_)) + '\`');
+}
+
 
 // check to see if there are any background branches
 busted.has_background = FALSE;
 
-utility.ForEachPair (busted.selected_branches, "_partition_", "_selection_",
-    "_selection_ = utility.Filter (_selection_, '_value_', '_value_ != terms.tree_attributes.test');
-     if (utility.Array1D (_selection_)) { busted.has_background = TRUE;} ");
-busted.json[busted.json.background] =  busted.has_background;
+for (_partition_, _selection_; in; busted.selected_branches) {
+     _selection_ = utility.Filter (_selection_, '_value_', '_value_ != terms.tree_attributes.test');
+     if (utility.Array1D (_selection_)) { busted.has_background = TRUE; break;}
+}
 
+busted.json[busted.json.background] =  busted.has_background;
 selection.io.startTimer (busted.json [terms.json.timers], "Preliminary model fitting", 1);
 
 namespace_tag = "busted";
@@ -1151,7 +1154,7 @@ lfunction busted._renormalize (v, distro, mean) {
     d = Rows (m);
     m = +(m[-1][0] $ m[-1][1]); // current mean
     for (i = 0; i < d; i+=1) {
-        (v[((^"busted.distribution")["rates"])[i]])[^"terms.fit.MLE"] = (v[((^"busted.distribution")["rates"])[i]])[^"terms.fit.MLE"] / m * mean;
+        (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] / m * mean;
     }
     return v;
     
