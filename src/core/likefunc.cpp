@@ -10573,7 +10573,6 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
         // first "mutate" the parent vector
 
         if (ccurNode->NeedNewCategoryExponential(-1)) {
-            StringToConsole(*ccurNode->GetName());
             ccurNode->RecomputeMatrix(0,1);
         }
 
