@@ -3251,7 +3251,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
             lf.GetGlobalVars(gl);
             gl.Each ([] (long vi, unsigned long) -> void { StringToConsole(*LocateVar(vi)->GetName()); NLToConsole();});
             */
-            
+                        
             lf.Simulate (*sim_dataset, exclusions, category_values, category_names, root_states, do_internals?(main_file?&spool_file:&kEmptyString):nil);
             SetStatusLine ("Idle");
         }

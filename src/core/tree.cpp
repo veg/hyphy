@@ -3118,10 +3118,9 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 
                 /*fprintf (stderr, "ZERO TERM AT SITE %ld (direct %ld) EVAL %ld\n",siteID,direct_index, likeFuncEvalCallCount);
                 for (long s = 0; s < theFilter->NumberSpecies(); s++) {
-                    fprintf (stderr, "%s", theFilter->RetrieveState(direct_index, s).get_str());
+                    fprintf (stderr, "%s:%s\n", theFilter->GetSequenceName(s)->get_str(), theFilter->RetrieveState(direct_index, s).get_str());
                 }
                 fprintf (stderr, "\n");*/
-                
                 
                 throw (1L+direct_index);
             }
@@ -3134,9 +3133,11 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 term = log(accumulator) - correction;
             }
             
-            /*if (likeFuncEvalCallCount == 643) {
+            /*
+            if (likeFuncEvalCallCount == 3013) {
                 fprintf (stderr, "CACHE, %ld, %ld, %20.15lg, %20.15lg, %20.15lg,  %20.15lg\n", likeFuncEvalCallCount, siteID, accumulator, correction, term, result);
-            }*/
+            }
+            */
             
             hyFloat temp_sum = result + term;
             correction = (temp_sum - result) - term;

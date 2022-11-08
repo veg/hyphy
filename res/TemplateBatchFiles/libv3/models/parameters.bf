@@ -190,6 +190,8 @@ function parameters.SetValue(id, value) {
  */
 function parameters.SetLocalValue(tree, branch, id, value) {
     Eval("`tree`.`branch`.`id` = " + value);
+    //console.log ("`tree`.`branch`.`id` = " + value);
+    //console.log ("SLV=>" + Eval("`tree`.`branch`.`id`"));
 }
 
 /**

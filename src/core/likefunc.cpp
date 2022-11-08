@@ -10573,6 +10573,7 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
         // first "mutate" the parent vector
 
         if (ccurNode->NeedNewCategoryExponential(-1)) {
+            StringToConsole(*ccurNode->GetName());
             ccurNode->RecomputeMatrix(0,1);
         }
 
@@ -10662,7 +10663,7 @@ bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long par
     if (!isRoot) {
 
       _CalcNode* ccurNode = (_CalcNode*)LocateVar (curNode.get_data());
-
+        
       if (ccurNode->NeedNewCategoryExponential(-1)) {
         ccurNode->RecomputeMatrix(0,1);
         ccurNode->MarkDone();

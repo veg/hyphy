@@ -540,7 +540,7 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
 
     unsigned long      previous_length = queue && tags ? queue->lLength: 0;
     _Matrix * myModelMatrix = GetModelMatrix(queue,tags,map_global_to_local_category(categID));
-
+    
     if (isExplicitForm && !myModelMatrix) { // matrix exponentiations got cached
         if (queue && queue->lLength > previous_length) {
             return true;
@@ -570,6 +570,23 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     }
                 }
             });
+            
+            /*
+            _String check ("simulator.substitution_model_Q_component_1");
+            _Variable * check_me = FetchVar (LocateVarByName (check), MATRIX);
+            
+            if (check_me) {
+                StringToConsole("\n\n");
+                _Matrix * m = (_Matrix*)((_Matrix*)((_Matrix*)check_me->GetValue())->ComputeNumeric(true));
+                char nucs[] = {'A','C','G','T'};
+                for (long k = 0; k < 48; k ++) {
+                    for (long k2 = k+1; k2 < 48; k2++) {
+                         if ((*m)(k,k2) != 0.0) {
+                            printf ("%ld %ld (%d) %g\n", k, k2, (nucs[k/16]!=nucs[k2/16]) + (nucs[k%16/4] != nucs[k2%16/4]) + (nucs[k2%4]!=nucs[k%4]), (*m)(k,k2));
+                        }
+                    }
+                }
+            }*/
             
 
             if (storeRateMatrix) {
