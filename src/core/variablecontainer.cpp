@@ -215,7 +215,7 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags, lo
     if (IsModelOfExplicitForm(theModel)) { // an explicit formula based matrix
         if (queue && tags) {
             long currentQueueLength = (templateFormulaClone ? templateFormulaClone[categ_id_mapper(cat_id)] : ((_Formula*)modelMatrixIndices.list_data[theModel]))->ExtractMatrixExpArguments (queue);
-            //printf ("LF eval = %d, node = %s, matrix count = %d, formula pointer = %x/%x\n", likeFuncEvalCallCount, theName->get_str(), currentQueueLength, ((_Formula*)GetExplicitFormModel()),  ((_Formula*)modelMatrixIndices.list_data[theModel]));
+            //printf ("node = %s, matrix count = %d, formula pointer = %x/%x\n", theName->get_str(), currentQueueLength, ((_Formula*)GetExplicitFormModel()),  ((_Formula*)modelMatrixIndices.list_data[theModel]));
             if (currentQueueLength) {
                 for (unsigned long k = 0; k < currentQueueLength; k++)
                   (*tags) << currentQueueLength;
@@ -227,6 +227,7 @@ _Matrix* _VariableContainer::GetModelMatrix (_List* queue, _SimpleList* tags, lo
         _Matrix* result = (_Matrix *)explicit_exp->Compute(0,nil,nil,nil,HY_ANY_OBJECT, true, queue && tags);
         //_Matrix* result = (_Matrix *)explicit_exp->Compute();
         result->CheckIfSparseEnough(true);
+        //fprintf (stderr, "\n%ld:%ld\n", templateFormulaClone, categ_id_mapper(cat_id));
         return result;
     }
 

@@ -1915,8 +1915,8 @@ void            _TheTree::ComputeBranchCache    (
     
     taggedNodes.Populate (flatTree.lLength, 0, 0);
     rootPath.Flip ();
-    
-    /*if (likeFuncEvalCallCount == 15098) {
+    /*
+    if (likeFuncEvalCallCount == 3013) {
         fprintf (stderr, "\nCaching branch %ld\n", brID);
         rootPath.Each ([&](long n, unsigned long i) -> void {
             _CalcNode * current_node = (_CalcNode*) (n < flatLeaves.lLength ?  flatCLeaves (n):
@@ -1924,7 +1924,8 @@ void            _TheTree::ComputeBranchCache    (
             fprintf (stderr, "[%d: %d] %s\n", i, n,current_node->GetName()->get_str());
         });
         ObjectToConsole(&nodesToProcess);NLToConsole();
-    }*/
+    }
+    */
     
     long const node_count = nodesToProcess.lLength + rootPath.lLength - 2L;
     
@@ -1978,9 +1979,9 @@ void            _TheTree::ComputeBranchCache    (
         _CalcNode    * currentTreeNode = (_CalcNode*) (isLeaf?  flatCLeaves (nodeCode):
                                                        flatTree    (notPassedRoot?nodeCode:parentCode));
         
-        /*if (likeFuncEvalCallCount == 15098) {
-            fprintf (stderr, "%ld/%ld (%ld/%ld) => %s\n", nodeID, nodeCode, isLeaf, notPassedRoot, currentTreeNode->GetName()->get_str());
-        }*/
+        //if (likeFuncEvalCallCount == 3013) {
+        //    fprintf (stderr, "%ld/%ld (%ld/%ld) => %s\n", nodeID, nodeCode, isLeaf, notPassedRoot, currentTreeNode->GetName()->get_str());
+        //}
         
         hyFloat  const *  transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
         hyFloat  *       childVector,*     lastUpdatedSite;
@@ -2017,8 +2018,8 @@ void            _TheTree::ComputeBranchCache    (
                 hyFloat  const *tMatrix = transitionMatrix;
                 if (__lcache_loop_preface<4>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions)) {
-                    /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
-                        fprintf (stderr, "__lcache_loop_preface (%ld) %g %g %g %g\n", nodeCode, parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3]);
+                    /*if (likeFuncEvalCallCount == 3013 && siteID == 232) {
+                        fprintf (stderr, "__lcache_loop_preface (%ld isleaf = %d canscale = %d, %s) %g %g %g %g\n", nodeCode, isLeaf, canScale, currentTreeNode->GetName()->get_str(), parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3]);
                     }*/
                     continue;
                 }
@@ -2034,7 +2035,7 @@ void            _TheTree::ComputeBranchCache    (
                     __ll_loop_handle_scaling<4L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
                 }
-                /*if (likeFuncEvalCallCount == 647 && siteID == 158) {
+                /*if (likeFuncEvalCallCount == 3013 && siteID == 232) {
                     fprintf (stderr, "NODE = %ld, PARENT = %ld (%ld), P(A) = %lg, P(C) = %lg, P(G) = %lg, P(T) = %lg, scale = %ld\n", nodeCode, parentCode, canScale, parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3], didScale);
                 }*/
                 childVector += 4L;
@@ -2496,7 +2497,7 @@ void            _TheTree::ComputeBranchCache    (
     const unsigned long site_bound = alphabetDimension*siteTo;
     for (unsigned long ii = siteFrom * alphabetDimension; ii < site_bound; ii++) {
         state[ii] = rootConditionals[ii];
-        /*if (likeFuncEvalCallCount == 647 && ii / alphabetDimension == 158) {
+        /*if (likeFuncEvalCallCount == 3013 && ii / alphabetDimension == 232) {
             printf ("Site %ld, Root conditional [%ld] = %g, node state [%ld] = %g\n", ii/alphabetDimension, ii, state[ii], ii, cache[ii]);
         }*/
     }

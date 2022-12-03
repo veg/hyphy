@@ -10662,7 +10662,7 @@ bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long par
     if (!isRoot) {
 
       _CalcNode* ccurNode = (_CalcNode*)LocateVar (curNode.get_data());
-
+        
       if (ccurNode->NeedNewCategoryExponential(-1)) {
         ccurNode->RecomputeMatrix(0,1);
         ccurNode->MarkDone();

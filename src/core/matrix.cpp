@@ -2773,18 +2773,16 @@ HBLObjectRef   _Matrix::Evaluate (bool replace)
 
             if ((hDim==vDim)&&(!replace))
                 for (long i = 0; i<lDim; i+=vDim+1) {
-                    if (theFormulas[i]!=(_Formula*)ZEROPOINTER) {
-                        if (theFormulas[i]->IsEmpty()) {
-                            hyFloat st = 0;
-                            long k = i/vDim,j;
-                            for (j = k*vDim; j<k*vDim+k; j++) {
-                                st-=result.theData[j];
-                            }
-                            for (j = k*vDim+k+1; j<(k+1)*vDim; j++) {
-                                st-=result.theData[j];
-                            }
-                            result.theData[i] = st;
+                    if (theFormulas[i] == (_Formula*)ZEROPOINTER || theFormulas[i]->IsEmpty()) {
+                        hyFloat st = 0;
+                        long k = i/vDim,j;
+                        for (j = k*vDim; j<k*vDim+k; j++) {
+                            st-=result.theData[j];
                         }
+                        for (j = k*vDim+k+1; j<(k+1)*vDim; j++) {
+                            st-=result.theData[j];
+                        }
+                        result.theData[i] = st;
                     }
                 }
         }
@@ -5659,8 +5657,7 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
 
 _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Matrix * existing_storage) {
     // find the maximal elements of the matrix
-    
-    
+        
     try {
         if (!is_square()) {
             throw _String ("Exponentiate is not defined for non-square matrices");

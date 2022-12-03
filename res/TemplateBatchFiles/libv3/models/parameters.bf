@@ -190,6 +190,8 @@ function parameters.SetValue(id, value) {
  */
 function parameters.SetLocalValue(tree, branch, id, value) {
     Eval("`tree`.`branch`.`id` = " + value);
+    //console.log ("`tree`.`branch`.`id` = " + value);
+    //console.log ("SLV=>" + Eval("`tree`.`branch`.`id`"));
 }
 
 /**
@@ -532,6 +534,7 @@ lfunction parameters.GetConstraint(parameter) {
 function parameters.SetConstraint(id, value, global_tag) {
     if (Type(id) == "String") {
         if (Abs(id)) {
+            //console.log ("`global_tag` `id` := " + value);
             ExecuteCommands("`global_tag` `id` := " + value);
         }
     } else {

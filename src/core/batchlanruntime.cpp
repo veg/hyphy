@@ -571,24 +571,58 @@ bool      _ElementaryCommand::HandleGetDataInfo (_ExecutionList& current_program
                             }
                         } else {
                             bool count_gaps = hy_env::EnvVariableTrue(hy_env::harvest_frequencies_gap_options);
-                            long filter_dimension = filter_source->GetDimension (true);
+                            const long species_count = filter_source->NumberSpecies();
+                            if (seq == -1L) {
+                                long filter_dimension = filter_source->GetDimension (true);
+                                
+                                _Matrix * accumulator = new _Matrix (filter_dimension, 1, false, true),
+                                * storage     = new _Matrix (filter_dimension, 1, false, true);
+                                
+                                _String *buffer = filter_source->MakeSiteBuffer();
+                                
+                                for (long species_index = 0; species_index < species_count; species_index ++) {
+                                    filter_source->RetrieveState(site,species_index,*buffer, false);
+                                    filter_source->Translate2Frequencies (*buffer, storage->theData,  count_gaps);
+                                    *accumulator += *storage;
+                                }
+                                receptacle -> SetValue (accumulator, false,true, NULL);
+                                BatchDelete(storage, buffer);
+                            } else {
+                                
+                                _String *buffer = filter_source->MakeSiteBuffer();
+                                _Matrix * accumulator = new _Matrix (species_count, 1, false, true);
+                                
+                                for (long species_index = 0; species_index < species_count; species_index ++) {
+                                    filter_source->RetrieveState(site,species_index,*buffer, false);
+                                    accumulator->set(species_index, 0) = filter_source->MapStringToCharIndex (*buffer);
+                                }
+                                receptacle -> SetValue (accumulator, false,true, NULL);
+                                BatchDelete(buffer);
+                            }
 
+                        }
+                    } else {
+                        
+                        if (site == -1L && seq>=0 && seq<filter_source->NumberSpecies()) {
+                            bool count_gaps = hy_env::EnvVariableTrue(hy_env::harvest_frequencies_gap_options);
+                            long filter_dimension = filter_source->GetDimension (true);
+                            
                             _Matrix * accumulator = new _Matrix (filter_dimension, 1, false, true),
                                     * storage     = new _Matrix (filter_dimension, 1, false, true);
-
+                            
                             _String *buffer = filter_source->MakeSiteBuffer();
-
-                            for (long species_index = filter_source->NumberSpecies()-1; species_index >= 0; species_index --) {
-                                filter_source->RetrieveState(site,species_index,*buffer, false);
+                            const long patterns = filter_source->GetPatternCount();
+                            for (long pat_count = 0; pat_count < patterns; pat_count ++) {
+                                filter_source->RetrieveState(pat_count,seq,*buffer, false);
                                 filter_source->Translate2Frequencies (*buffer, storage->theData,  count_gaps);
+                                *storage *= (hyFloat) filter_source->GetFrequency(pat_count);
                                 *accumulator += *storage;
                             }
                             receptacle -> SetValue (accumulator, false,true, NULL);
                             BatchDelete(storage, buffer);
-
+                        } else {
+                            throw (_String ("Site index ") & site & " is invalid: must be in range " & "[0, " & (long)filter_source->GetPatternCount() & "]");
                         }
-                    } else {
-                        throw (_String ("Site index ") & site & " is invalid: must be in range " & "[0, " & (long)filter_source->GetPatternCount() & "]");
                     }
                 } else {
                     throw _String("This set of arguments is only supported for DataSetFilter objects");

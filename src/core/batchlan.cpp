@@ -292,7 +292,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
     int message_received = 0;
     while (! message_received) {
       MPI_Iprobe (senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &message_received, MPI_STATUS_IGNORE);
-      usleep (100);
+      usleep (10);
     }
 
     //ReportWarning ("Step 2");
@@ -3251,7 +3251,7 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
             lf.GetGlobalVars(gl);
             gl.Each ([] (long vi, unsigned long) -> void { StringToConsole(*LocateVar(vi)->GetName()); NLToConsole();});
             */
-            
+                        
             lf.Simulate (*sim_dataset, exclusions, category_values, category_names, root_states, do_internals?(main_file?&spool_file:&kEmptyString):nil);
             SetStatusLine ("Idle");
         }

@@ -876,7 +876,6 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
                     HandleApplicationError(input.Enquote() & _String(" is not a valid callback function: must have two arguments (name, sequence for sites; string, frequencies for sites)"));
                     return;
                 }
-                
             }
         }
         
@@ -898,7 +897,6 @@ void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & targe
             // using only the sites that are specced in the additionalFilter
             
             if (!isVertical) { // partitioning sequences
-                
                _FString * string_object = nil,
                         * string_name = nil;
                if (!is_regexp) {
