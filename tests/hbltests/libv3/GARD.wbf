@@ -11,5 +11,5 @@ LoadFunctionLibrary ("libv3/IOFunctions.bf");
 //fscanf ("data/HRVI.nex.GARD.json","Raw",json);
 //gard.json = Eval (json);
 
-assert (Abs ((gard.json["breakpointData"])["bps"] - {{1,428}})==0, "Incorrect breakpoints");
+assert (Abs (((gard.json["breakpointData"])["0"])["bps"] - {{1,428}})==0, "Incorrect breakpoints");
 assert (Max ((gard.json["siteBreakPointSupport"]),1)["key"] == "176", "Incorrect best breakpoint support");

@@ -1,78 +1,66 @@
-function 	  setUpCodonToAA (dataSetID)
-{
+function 	  setUpCodonToAA (dataSetID) {
 	codonToAAMap = {};
 	codeToAA 	 = "FLIMVSPTAYXHQNKDECWRG";
 	
 	nucChars = "ACGT";
 	
-	for (p1=0; p1<64; p1=p1+1)
-	{
-		codon = nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4];
-		ccode = _Genetic_Code[p1];
-		codonToAAMap[codon] = codeToAA[ccode];
+	for (p1=0; p1<64; p1 += 1) {
+		codonToAAMap[nucChars[p1$16]+nucChars[p1%16$4]+nucChars[p1%4]] = codeToAA[_Genetic_Code[p1]];
 	}
 	
-	codonToAAMap["---"] = "-";
+	codonToAAMap ["---"] = "-";
 	
-	ExecuteCommands ("DataSetFilter _converterfilteredData 	= CreateFilter	("+dataSetID+",1);");
+	DataSetFilter _converterfilteredData 	= CreateFilter	(^dataSetID,1);
 	GetInformation (theSequences,_converterfilteredData);
-	ExecuteCommands ("DataSetFilter _converterfilteredDataC 	= CreateFilter	("+dataSetID+",3);");
+	DataSetFilter _converterfilteredDataC 	= CreateFilter	(^dataSetID,3);
 	GetDataInfo    (siteToPatternMap,_converterfilteredDataC);
-	return 0;
 }
 
 /*--------------------------------------------------------------------------------------------*/
 
-function 	  doTheMapping (dummy)
-{
+function 	  doTheMapping () {
 	outSequences = "";
 	outSequences *  (bigDataSet.sites* bigDataSet.species);
 	
 	freqCount = {};
 	
-	for (seqCounter = 0; seqCounter < bigDataSet.species; seqCounter = seqCounter+1)
-	{
-		
+	for (seqCounter = 0; seqCounter < bigDataSet.species; seqCounter += 1) {
 		aSeq = theSequences[seqCounter];
 		seqLen = Abs(aSeq)-2;
 		GetString (seqName, _converterfilteredData, seqCounter);
 		translString = "";
 		translString * (seqLen/3+1);
-		for (seqPos = 0; seqPos < seqLen; seqPos = seqPos+3)
+		for (seqPos = 0; seqPos < seqLen; seqPos +=3)
 		{
 			codon = aSeq[seqPos][seqPos+2];
-			
 			gap_count = codon$"[N-]";
-			if (gap_count[0] >= 0)
-			{	
+			if (gap_count[0] >= 0) {	
 				/* handle cases where codon contains one or two gap characters - this was yielding 'F' in original script */
-				prot = "?";
+				prot = codonToAAMap[codon];
+				if (Abs (prot) == 0) {
+				    prot = "?";
+				}
 			}
 			else
 			{
 				prot = codonToAAMap[codon];
-				if (Abs(prot) == 0)
-				{
+				if (Abs(prot) == 0) {
 					/* 
 						see if we can map this presumed ambiguitiy to a single 
 						amino-acid
 					*/
 					GetDataInfo 			(mappedToCodon, _converterfilteredDataC, seqCounter, siteToPatternMap[seqPos$3]);
 					resolutionMapping 	  = {21,1};
-					for (resID = 0; resID < 64; resID = resID + 1)
-					{
-						if (mappedToCodon[resID])
-						{
+					for (resID = 0; resID < 64; resID += 1) {
+						if (mappedToCodon[resID]) {
 							resolutionMapping[_Genetic_Code[resID]] = 1;
 						}
 					}
-					
-					if ((+resolutionMapping) == 1)
-					{
+										
+					if ((+resolutionMapping) == 1) {
 						prot = codeToAA[((Transpose(resolutionMapping))["_MATRIX_ELEMENT_COLUMN_"])[0]];
 					}
-					else
-					{
+					else {
 						prot = "?";
 					}
 					
@@ -132,7 +120,7 @@ if (_runAsFunctionLibrary != 1)
 	fprintf (stdout, "Read ", bigDataSet.species, " sequences with ", bigDataSet.sites, " sites.");
 	fprintf (stdout, "\nRead:\n", bigDataSet);
 	
-	outSequences = doTheMapping (0);
+	outSequences = doTheMapping ();
 	 
 	sht 		 = IS_TREE_PRESENT_IN_DATA;
 	sdt 		 = DATAFILE_TREE;

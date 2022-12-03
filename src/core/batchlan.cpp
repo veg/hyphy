@@ -292,7 +292,7 @@ _String*    MPIRecvString       (long senderT, long& senderID) {
     int message_received = 0;
     while (! message_received) {
       MPI_Iprobe (senderT, HYPHY_MPI_SIZE_TAG, MPI_COMM_WORLD, &message_received, MPI_STATUS_IGNORE);
-      usleep (100);
+      usleep (10);
     }
 
     //ReportWarning ("Step 2");
