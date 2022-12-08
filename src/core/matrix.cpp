@@ -3401,7 +3401,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
         #pragma GCC unroll 4
         #pragma clang loop vectorize(enable)
         #pragma clang loop interleave(enable)
-        #pragma clang loop unroll(enable)
+        //#pragma clang loop unroll(enable)
         #pragma GCC ivdep
         #pragma ivdep
                for (long idx = 0; idx < upto; idx+=16) {
@@ -3450,7 +3450,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             #pragma GCC unroll 4
             #pragma clang loop vectorize(enable)
             #pragma clang loop interleave(enable)
-            #pragma clang loop unroll(enable)
+            //#pragma clang loop unroll(enable)
                  for (long idx = 0; idx < upto; idx+=16) {
                      CELL_OP (idx);
                      CELL_OP (idx+4);
@@ -3905,7 +3905,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                  #pragma GCC unroll 4
                                  #pragma clang loop vectorize(enable)
                                  #pragma clang loop interleave(enable)
-                                 #pragma clang loop unroll(enable)
+                                 //#pragma clang loop unroll(enable)
                                  for (long k = 0; k < vDim; k+=4) {
                                       __m256d D4, B4;
                                       DO_GROUP_OP (D4, B4, k);
@@ -4214,7 +4214,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                             #pragma GCC unroll 4
                             #pragma clang loop vectorize(enable)
                             #pragma clang loop interleave(enable)
-                            #pragma clang loop unroll(enable)
+                            //#pragma clang loop unroll(enable)
                               for (long k = 0; k < dimm4; k+=4) {
                                   __m256d D4, B4;
                                   DO_GROUP_OP (D4, B4, k);
