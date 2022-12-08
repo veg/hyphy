@@ -2287,8 +2287,7 @@ bool    _Matrix::IncreaseStorage    (void) {
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::Convert2Formulas (void)
-{
+void    _Matrix::Convert2Formulas (void) {
     if (is_numeric()) {
         storageType = _FORMULA_TYPE;
         _Formula** tempData = (_Formula**)MatrixMemAllocate (sizeof(void*)*lDim);
@@ -2299,9 +2298,6 @@ void    _Matrix::Convert2Formulas (void)
         } else
             for (long i = 0; i<lDim; i++) {
                 if (IsNonEmpty(i)) {
-                    //_Constant c (((hyFloat*)theData)[i]);
-                    //_Formula f((_PMathObj)c.makeDynamic());
-                    //tempData[i] = (_Formula*)f.makeDynamic();
                     tempData[i] = new _Formula (new _Constant (((hyFloat*)theData)[i]));
                 } else {
                     tempData[i]=nil;
@@ -2853,14 +2849,14 @@ bool        _Matrix::IsAStringMatrix (void) const
     if (is_expression_based()) {
         try {
             return Any ([&] (_Formula * f, unsigned long) -> bool {
-                            if (f) {
-                                if (f->ObjectClass() == STRING)
-                                    return true;
-                                throw (0);
-                            }
-                            return false;
-                        },
-                        [&] (unsigned long i) -> _Formula * {return ((_Formula**)theData)[i];});
+                if (f) {
+                    if (f->ObjectClass() == STRING)
+                        return true;
+                    throw (0);
+                }
+                return false;
+            },
+            [&] (unsigned long i) -> _Formula * {return ((_Formula**)theData)[i];});
             
         } catch (int ) {
             return false;
@@ -6111,15 +6107,18 @@ _Matrix*        _Matrix::ExtractElementsByEnumeration (_SimpleList*h, _SimpleLis
 {
     if (storageType && h->lLength == v->lLength && h->lLength > 0) {
         _Matrix * result = new _Matrix (column?h->lLength:1,column?1:h->lLength,false,true);
-
-        if (storageType == 2) // formulae
+        
+        if (is_expression_based()) { // formulae
+            result->Convert2Formulas();
             for (long k=0; k<h->lLength; k++) {
                 result->StoreFormula(column?k:0,column?0:k,*GetFormula(h->list_data[k],v->list_data[k]));
             }
-        else
+        }
+        else {
             for (long k=0; k<h->lLength; k++) {
                 result->theData[k] = (*this)(h->list_data[k],v->list_data[k]);
             }
+        }
 
         return result;
     }
@@ -6142,7 +6141,7 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cac
   if (p->ObjectClass() == MATRIX) {
     if (p2 == nil) {
       _Matrix * nn = (_Matrix*)p;
-      if (nn->storageType == 1) {
+      if (nn->is_numeric()) {
         if (nn->hDim == hDim && nn->vDim == vDim) {
           _SimpleList hL,
           vL;
@@ -6209,7 +6208,7 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cac
         _Matrix * nn =  (_Matrix*)((_Matrix*)p)->ComputeNumeric();
         _Matrix * nn2 = (_Matrix*)((_Matrix*)p2)->ComputeNumeric();
         
-        if (nn->hDim == 1 && nn->vDim == 2 && nn->storageType == 1 && nn2->hDim == 1 && nn2->vDim == 2 && nn2->storageType == 1) {
+        if (nn->hDim == 1 && nn->vDim == 2 && nn->is_numeric() && nn2->hDim == 1 && nn2->vDim == 2 && nn2->is_numeric()) {
           long left   = (*nn)(0,0),
           top    = (*nn)(0,1),
           bottom = (*nn2)(0,1),
@@ -6247,9 +6246,9 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cac
         /* check formula validity */
         
         
-          _Variable * cv = CheckReceptacle(&hy_env::matrix_element_value, kEmptyString, false),
-                    * cr = CheckReceptacle(&hy_env::matrix_element_row, kEmptyString, false),
-                    * cc = CheckReceptacle(&hy_env::matrix_element_column, kEmptyString, false);
+      _Variable * cv = CheckReceptacle(&hy_env::matrix_element_value, kEmptyString, false),
+                * cr = CheckReceptacle(&hy_env::matrix_element_row, kEmptyString, false),
+                * cc = CheckReceptacle(&hy_env::matrix_element_column, kEmptyString, false);
         
         cv->CheckAndSet (0.0, false, NULL);
         cr->CheckAndSet (0.0, false, NULL);
@@ -6281,6 +6280,7 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cac
           long          stackDepth = 0;
           _SimpleList   vIndexAux;
           _AVLList      vIndex (&vIndexAux);
+            
           
           if (f.AmISimple (stackDepth,vIndex) && (!conditionalCheck || conditionalCheck->AmISimple(stackDepth,vIndex))) {
             _SimpleFormulaDatum * stack     = new _SimpleFormulaDatum [stackDepth+1],
@@ -6359,28 +6359,83 @@ HBLObjectRef _Matrix::MAccess (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cac
             delete  [] stack;
             delete  [] varValues;
           } else {
-            for (long r=0; r<hDim; r++) {
-              cr->CheckAndSet (r,false, NULL);
-              for (long c=0; c<vDim; c++) {
-                cc->CheckAndSet (c,false, NULL);
-                  cv->CheckAndSet ((*this)(r,c),false, NULL);
-                HBLObjectRef fv;
-                
-                if (conditionalCheck) {
-                  fv = conditionalCheck->Compute();
-                  if (fv->ObjectClass() == NUMBER)
-                    if (CheckEqual (fv->Value(), 0.0)) {
-                      retMatrix->Store (r,c,cv->Value());
-                      continue;
-                    }
-                }
-                
-                fv = f.Compute();
-                if (fv->ObjectClass()==NUMBER) {
-                  retMatrix->Store (r,c,fv->Value());
-                }
+              
+              
+              bool          result_is_numeric = true;
+              
+              auto          store_value_in_result = [&result_is_numeric,&retMatrix] (long row, long col, HBLObjectRef v) -> void {
+                  const unsigned long v_class = v->ObjectClass();
+                  if (v_class == NUMBER) {
+                      if (result_is_numeric) {
+                          retMatrix->Store (row,col,v->Value());
+                      } else {
+                          retMatrix->StoreFormula (row,col,*(new _Formula (new _Constant (v->Value()),false)),false);
+                      }
+                  } else {
+                      if (v_class == STRING) {
+                          if (result_is_numeric) {
+                              retMatrix->Convert2Formulas();
+                              result_is_numeric = false;
+                          }
+                          retMatrix->StoreFormula (row,col,*(new _Formula ((HBLObjectRef)v->makeDynamic(),false)),false);
+                      }
+                  }
+              };
+              
+              if (is_numeric()) {
+                  for (long r=0; r<hDim; r++) {
+                      cr->CheckAndSet (r,false, NULL);
+                      for (long c=0; c<vDim; c++) {
+                          cc->CheckAndSet (c,false, NULL);
+                          cv->CheckAndSet ((*this)(r,c),false, NULL);
+                          HBLObjectRef fv;
+                          
+                          if (conditionalCheck) {
+                              fv = conditionalCheck->Compute();
+                              if (fv->ObjectClass() == NUMBER) {
+                                  if (CheckEqual (fv->Value(), 0.0)) {
+                                      store_value_in_result (r,c,cv);
+                                      //retMatrix->Store (r,c,cv->Value());
+                                      continue;
+                                  }
+                              }
+                          }
+                          
+                          fv = f.Compute();
+                          store_value_in_result (r,c,fv);
+                      }
+                  }
+              } else {
+                  if (is_expression_based()) {
+                      for (long r=0; r<hDim; r++) {
+                          cr->CheckAndSet (r,false, NULL);
+                          for (long c=0; c<vDim; c++) {
+                              cc->CheckAndSet (c,false, NULL);
+                              _Formula *expr = GetFormula (r,c);
+                              if (expr) {
+                                  HBLObjectRef fv;
+                                  cv->SetValue (expr->Compute(), true, false, nil);
+                                  if (conditionalCheck) {
+                                      fv = conditionalCheck->Compute();
+                                      if (fv->ObjectClass() == NUMBER) {
+                                          if (CheckEqual (fv->Value(), 0.0)) {
+                                              store_value_in_result (r,c,cv);
+                                              //retMatrix->Store (r,c,cv->Value());
+                                              continue;
+                                          }
+                                      }
+                                  }
+                                  
+                                  fv = f.Compute();
+                                  store_value_in_result (r,c,fv);
+                              }
+                          }
+                      }
+                  } else {
+                      ReportWarning (_String("Invalid matrix type for element-wise matrix operations"));
+                      return new _Matrix;
+                  }
               }
-            }
           }
           retMatrix->AmISparse();
           if (conditionalCheck) {
@@ -6860,8 +6915,7 @@ void        _Matrix::UpdateDiag  (long i,long j, _MathObject* value)
     }
 }
 //_____________________________________________________________________________________________
-void        _Matrix::StoreObject (long k, _MathObject* value, bool dup)
-{
+void        _Matrix::StoreObject (long k, _MathObject* value, bool dup) {
     StoreObject (k/vDim, k%vDim, value, dup);
 }
 
@@ -8905,7 +8959,7 @@ void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned l
     static const _String kUseJSONForMatrix ("USE_JSON_FOR_MATRIX");
     
     bool is_numeric_mx = is_numeric ();
-    bool directly_printable  = is_numeric_mx || IsAStringMatrix ();
+    bool directly_printable  = is_numeric_mx || is_expression_based ();
     
     if (directly_printable) {
         

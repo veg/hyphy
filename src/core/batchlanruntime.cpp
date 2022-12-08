@@ -2794,7 +2794,6 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
           // first check if the argument is a existing HBL object
           // TODO: this will go away in v3 when everything is in the same namespace
 
-
           if (!managed_object_to_print) { // not an existing variable
               long object_type = HY_BL_ANY, object_index;
               managed_object_to_print = //_GetHBLObjectByTypeMutable (namespaced_id, object_type, &object_index, false);
