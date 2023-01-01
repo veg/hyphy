@@ -3405,7 +3405,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
         #pragma GCC unroll 4
         #pragma clang loop vectorize(enable)
         #pragma clang loop interleave(enable)
-        #pragma clang loop unroll(enable)
+        //#pragma clang loop unroll(enable)
         #pragma GCC ivdep
         #pragma ivdep
                for (long idx = 0; idx < upto; idx+=16) {
@@ -3454,7 +3454,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
             #pragma GCC unroll 4
             #pragma clang loop vectorize(enable)
             #pragma clang loop interleave(enable)
-            #pragma clang loop unroll(enable)
+            //#pragma clang loop unroll(enable)
                  for (long idx = 0; idx < upto; idx+=16) {
                      CELL_OP (idx);
                      CELL_OP (idx+4);
@@ -3806,6 +3806,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 /* two square dense matrices */
             {
                 _hy_matrix_multiply_NxN_blocked4 (storage.theData, theData, secondArg.theData, hDim);
+
             } else
                 /* rectangular matrices */
             {   
