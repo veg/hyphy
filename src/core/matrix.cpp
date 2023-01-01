@@ -94,6 +94,10 @@ _Trie       _HY_MatrixRandomValidPDFs;
 
 
 
+//-----------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------
+
 //__________________________________________________________________________________
 
 int         fexact_                 (long , long , double *, double , double , double , double *, double *);
@@ -3801,704 +3805,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
             if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
                 /* two square dense matrices */
             {
-                unsigned long cumulativeIndex = 0UL;
-                const unsigned long dimm4 = (vDim >> 2) << 2;
-
-                //const hyFloat * row = theData;
-                hyFloat  * dest = storage.theData;
-                
-#if defined _SLKP_USE_AVX_INTRINSICS
-                #define DO_GROUP_OP0(X,Y,k) Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_mul_pd (A4,Y);
-                #ifdef _SLKP_USE_FMA3_INTRINSICS
-                    #define DO_GROUP_OP(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); _mm256_storeu_pd (dest + row_offset + k, _mm256_fmadd_pd (A4,Y,X));
-                    #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_fmadd_pd (A4,Y,X);
-                    #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
-                #else
-                    #define DO_GROUP_OP(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k);  Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); _mm256_storeu_pd (dest + row_offset + k, _mm256_add_pd (X, _mm256_mul_pd(A4, Y)));
-
-                    #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(secondArg.theData + col_offset + k); X = _mm256_add_pd (X, _mm256_mul_pd(A4, Y));
-                    #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
-               #endif
-                
-#elif _SLKP_USE_SSE_INTRINSICS
-            #define DO_GROUP_OP1(X,Y,k) X = _mm_loadu_pd(dest + row_offset + k); Y = _mm_loadu_pd(secondArg.theData + col_offset + k); X = _mm_add_pd (X, _mm_mul_pd(A4, Y));
-            #define DO_GROUP_OP2(X,k) _mm_storeu_pd (dest + row_offset + k,X);
-                
-#elif _SLKP_USE_ARM_NEON
-            #define DO_GROUP_OP1(X,Y,k) X = vld1q_f64 (dest + row_offset + k); Y = vld1q_f64 (secondArg.theData + col_offset + k); X = vfmaq_f64 (X, A4, Y);
-            #define DO_GROUP_OP2(X,k) vst1q_f64 (dest + row_offset + k,X);
-#endif
-
-                
-#ifndef _SLKP_SSE_VECTORIZATION_
-              
-              if (dimm4 == vDim) {
-                  #if defined  _SLKP_USE_AVX_INTRINSICS
-                      long ti = 0L,
-                           row_offset = 0L;
-                  
-                      if (vDim == 20UL) {
-                          for (long r = 0; r < 20; r++, row_offset += 20) {
-                              long col_offset = 0L;
-                              __m256d A4 = _mm256_set1_pd(theData[ti]);
-                              __m256d D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
-                              DO_GROUP_OP0 (D4, B4, 0);
-                              DO_GROUP_OP0 (D4_1, B4_1, 4);
-                              DO_GROUP_OP0 (D4_2, B4_2, 8);
-                              DO_GROUP_OP0 (D4_3, B4_3, 12);
-                              DO_GROUP_OP0 (D4_4, B4_4, 16);
-                              DO_GROUP_OP2 (D4, 0);
-                              DO_GROUP_OP2 (D4_1, 4);
-                              DO_GROUP_OP2 (D4_2, 8);
-                              DO_GROUP_OP2 (D4_3, 12);
-                              DO_GROUP_OP2 (D4_4, 16);
-                              ti++;
-                              col_offset = 20L;
-                              for (long c = 1; c < 20L; c++, ti++, col_offset += 20L) {
-                                  A4 = _mm256_set1_pd(theData[ti]);
-                                  //for (long k = 0; k < 20L; k+=4) {
-                                      DO_GROUP_OP1 (D4, B4, 0);
-                                      DO_GROUP_OP1 (D4_1, B4_1, 4);
-                                      DO_GROUP_OP1 (D4_2, B4_2, 8);
-                                      DO_GROUP_OP1 (D4_3, B4_3, 12);
-                                      DO_GROUP_OP1 (D4_4, B4_4, 16);
-                                      DO_GROUP_OP2 (D4, 0);
-                                      DO_GROUP_OP2 (D4_1, 4);
-                                      DO_GROUP_OP2 (D4_2, 8);
-                                      DO_GROUP_OP2 (D4_3, 12);
-                                      DO_GROUP_OP2 (D4_4, 16);
-                                  //}
-                            }
-                          }
-                      } else if (vDim == 60UL) {
-                          for (long r = 0; r < 60; r++, row_offset += 60) {
-                              long col_offset = 0L;
-                              __m256d A4 = _mm256_set1_pd(theData[ti]);
-                              for (long k = 0; k < 60L; k+=4) {
-                                  __m256d D4, B4;
-                                  DO_GROUP_OP0 (D4, B4, k);
-                                  DO_GROUP_OP2 (D4, k);
-                              }
-                              col_offset = 60L;
-                              ti++;
-                              for (long c = 1; c < 60L; c++, ti++, col_offset += 60L) {
-                                  A4 = _mm256_set1_pd(theData[ti]);
-                                  for (long k = 0; k < 60L; k+=4) {
-                                      __m256d D4, B4;
-                                      DO_GROUP_OP (D4, B4, k);
-                                  }
-                            }
-                          }
-                      } else
-                          for (long r = 0; r < vDim; r++, row_offset += vDim) {
-                              long col_offset = 0L;
-                              __m256d A4 = _mm256_set1_pd(theData[ti]);
-                              for (long k = 0; k < vDim; k+=4) {
-                                  __m256d D4, B4;
-                                  DO_GROUP_OP0 (D4, B4, k);
-                                  DO_GROUP_OP2 (D4, k);
-                              }
-                              col_offset = vDim;
-                              ti++;
-                              for (long c = 1; c < vDim; c++, ti++, col_offset += vDim) {
-                                 A4 = _mm256_set1_pd(theData[ti]);
-                                 #pragma GCC unroll 4
-                                 #pragma clang loop vectorize(enable)
-                                 #pragma clang loop interleave(enable)
-                                 #pragma clang loop unroll(enable)
-                                 for (long k = 0; k < vDim; k+=4) {
-                                      __m256d D4, B4;
-                                      DO_GROUP_OP (D4, B4, k);
-                                  }
-                            }
-                          }
-                      return;
-                  #elif _SLKP_USE_SSE_INTRINSICS
-                     memset (dest, 0, lDim * sizeof (hyFloat));
-                     long ti = 0L,
-                           row_offset = 0L;
-                  
-                      if (vDim == 20UL) {
-                          for (long r = 0; r < 20; r++, row_offset += 20) {
-                              long col_offset = 0L;
-                              for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
-                                  __m128d A4 = _mm_set1_pd(theData[ti]);
-                                  //for (long k = 0; k < 20L; k+=4) {
-                                      __m128d D4, B4, D4_1, B4_1, D4_2, B4_2, D4_3, B4_3, D4_4, B4_4;
-                                      DO_GROUP_OP1 (D4, B4, 0);
-                                      DO_GROUP_OP1 (D4_1, B4_1, 2);
-                                      DO_GROUP_OP1 (D4_2, B4_2, 4);
-                                      DO_GROUP_OP1 (D4_3, B4_3, 6);
-                                      DO_GROUP_OP1 (D4_4, B4_4, 8);
-                                      DO_GROUP_OP2 (D4, 0);
-                                      DO_GROUP_OP2 (D4_1, 2);
-                                      DO_GROUP_OP2 (D4_2, 4);
-                                      DO_GROUP_OP2 (D4_3, 6);
-                                      DO_GROUP_OP2 (D4_4, 8);
-                                      DO_GROUP_OP1 (D4, B4, 10);
-                                      DO_GROUP_OP1 (D4_1, B4_1, 12);
-                                      DO_GROUP_OP1 (D4_2, B4_2, 14);
-                                      DO_GROUP_OP1 (D4_3, B4_3, 16);
-                                      DO_GROUP_OP1 (D4_4, B4_4, 18);
-                                      DO_GROUP_OP2 (D4, 10);
-                                      DO_GROUP_OP2 (D4_1, 12);
-                                      DO_GROUP_OP2 (D4_2, 14);
-                                      DO_GROUP_OP2 (D4_3, 16);
-                                      DO_GROUP_OP2 (D4_4, 18);
-                                  //}
-                            }
-                          }
-                      } else
-                          for (long r = 0; r < vDim; r++, row_offset += vDim) {
-                              long col_offset = 0L;
-                              for (long c = 0; c < vDim; c++, ti++, col_offset += vDim) {
-                                  __m128d A4 = _mm_set1_pd(theData[ti]);
-                                  #pragma GCC unroll 4
-                                  #pragma clang loop vectorize(enable)
-                                  #pragma clang loop interleave(enable)
-                                  #pragma clang loop unroll(enable)
-                                  for (long k = 0; k < vDim; k+=2) {
-                                      __m128d D4, B4;
-                                      DO_GROUP_OP1 (D4, B4, k);
-                                      DO_GROUP_OP2 (D4, k);
-                                  }
-                            }
-                          }
-                      return;
-        #elif _SLKP_USE_ARM_NEON
-               memset (dest, 0, lDim * sizeof (hyFloat));
-               long ti = 0L,
-                     row_offset = 0L;
-
-                if (vDim == 20UL) {
-                    for (long r = 0; r < 20; r++, row_offset += 20) {
-                        long col_offset = 0L;
-                        for (long c = 0; c < 20L; c++, ti++, col_offset += 20L) {
-                                float64x2_t A4 = vdupq_n_f64(theData[ti]);
-
-  
-                                /*float64x2x4_t B, D, B_2, D_2;
-                            
-                                D = vld1q_f64_x4(dest + row_offset);
-                                B = vld1q_f64_x4(secondArg.theData + col_offset);
-                                D_2 = vld1q_f64_x4(dest + row_offset + 8);
-                                B_2 = vld1q_f64_x4(secondArg.theData + col_offset + 8);
-                            
-                                float64x2x2_t B2, D2;
-                                D2 = vld1q_f64_x2(dest + row_offset + 16);
-                                B2 = vld1q_f64_x2(secondArg.theData + col_offset + 16);
-                        
-                            
-                            
-
-                            
-
-                                D.val[0] = vfmaq_f64 (D.val[0], A4, B.val[0]);
-                                D.val[1] = vfmaq_f64 (D.val[1], A4, B.val[1]);
-                                D.val[2] = vfmaq_f64 (D.val[2], A4, B.val[2]);
-                                D.val[3] = vfmaq_f64 (D.val[3], A4, B.val[3]);
-
-                            
-                                D_2.val[0] = vfmaq_f64 (D_2.val[0], A4, B_2.val[0]);
-                                D_2.val[1] = vfmaq_f64 (D_2.val[1], A4, B_2.val[1]);
-                                D_2.val[2] = vfmaq_f64 (D_2.val[2], A4, B_2.val[2]);
-                                D_2.val[3] = vfmaq_f64 (D_2.val[3], A4, B_2.val[3]);
-                            
-                                D2.val[0] = vfmaq_f64 (D2.val[0], A4, B2.val[0]);
-                                D2.val[1] = vfmaq_f64 (D2.val[1], A4, B2.val[1]);
-
-                                vst1q_f64_x4 (dest + row_offset, D);
-                                vst1q_f64_x4 (dest + row_offset + 8, D_2);
-                                vst1q_f64_x2 (dest + row_offset + 16, D2);*/
-  
-                             
-                                
-                                float64x2_t D4_1, D4_2, D4_3, D4_4, D4_5, D4_6, D4_7, D4_8, D4_9, D4_10;
-                                float64x2_t B4_1, B4_2, B4_3, B4_4, B4_5, B4_6, B4_7, B4_8, B4_9, B4_10;
-                                
-                                 
-                                DO_GROUP_OP1 (D4_1,B4_1,0);
-                                DO_GROUP_OP1 (D4_2,B4_2,2);
-                                DO_GROUP_OP1 (D4_3,B4_3,4);
-                                DO_GROUP_OP1 (D4_4,B4_4,6);
-                                DO_GROUP_OP1 (D4_5,B4_5,8);
-                                DO_GROUP_OP1 (D4_6,B4_6,10);
-                                DO_GROUP_OP1 (D4_7,B4_7,12);
-                                DO_GROUP_OP1 (D4_8,B4_8,14);
-                                DO_GROUP_OP1 (D4_9,B4_9,16);
-                                DO_GROUP_OP1 (D4_10,B4_10,18);
-                                DO_GROUP_OP2 (D4_1,0);
-                                DO_GROUP_OP2 (D4_2,2);
-                                DO_GROUP_OP2 (D4_3,4);
-                                DO_GROUP_OP2 (D4_4,6);
-                                DO_GROUP_OP2 (D4_5,8);
-                                DO_GROUP_OP2 (D4_6,10);
-                                DO_GROUP_OP2 (D4_7,12);
-                                DO_GROUP_OP2 (D4_8,14);
-                                DO_GROUP_OP2 (D4_9,16);
-                                DO_GROUP_OP2 (D4_10,18);
-
-                            //}
-                      }
-                    }
-                } else
-                    for (long r = 0; r < vDim; r++, row_offset += vDim) {
-                        long col_offset = 0L;
-                        for (long c = 0; c < vDim; c++, ti++, col_offset += vDim) {
-                            float64x2_t A4 = vdupq_n_f64(theData[ti]);
-                            #pragma GCC unroll 4
-                            #pragma clang loop vectorize(enable)
-                            #pragma clang loop interleave(enable)
-                            //#pragma clang loop unroll(enable)
-                            for (long k = 0; k < vDim; k+=2) {
-                                float64x2_t D4, B4;
-                                DO_GROUP_OP1 (D4, B4, k);
-                                DO_GROUP_OP2 (D4, k);
-                            }
-                      }
-                    }
-                return;
-                #endif
-                memset (dest, 0, lDim * sizeof (hyFloat));
-
-                for (unsigned long c = 0UL; c < secondArg.vDim; c ++) {
-
-                  /*
-                   load a series of 4 consecutive elements from a column in the second matrix,
-                   say c [] = [i,i+1,i+2,i+3: c]
-                   
-                   next, iterate over all rows in the first matrix, looking for matched consecutive
-                   elements, e.g.
-                   
-                   r [] = [r: i,i+1,i+2,i+3]
-                   
-                   compute sum_{t=0..3} c[t] * r[t]
-                   
-                   add to the element (r,c) in the destination matrix
-                   
-                   */
-                  
-                    const unsigned long
-                                            column_shift2 = secondArg.vDim << 1,
-                                            column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
-                                            column_shift4 = secondArg.vDim << 2;
-                    
-                    for (unsigned long i = 0UL, vector_index = c; i < secondArg.hDim; i += 4UL, vector_index += column_shift4) {
-                      hyFloat c0 = secondArg.theData[vector_index],
-                                 c1 = secondArg.theData[vector_index+secondArg.vDim],
-                                 c2 = secondArg.theData[vector_index+column_shift2],
-                                 c3 = secondArg.theData[vector_index+column_shift3];
-                
-                      for (unsigned long r = 0UL; r < hDim; r ++) {
-                        
-                        unsigned long element = r*vDim + i;
-                        
-                        hyFloat r0 = theData[element]   * c0,
-                                   r1 = theData[element+1] * c1,
-                                   r2 = theData[element+2] * c2,
-                                   r3 = theData[element+3] * c3;
-                        
-                        r0 += r1;
-                        r2 += r3;
-                        dest[r*vDim + c] += r0 + r2;
-                  
-                      }
-                   }
-                }
-              } else {
-                  #if defined  _SLKP_USE_AVX_INTRINSICS
-                    /*
-                     
-                        dest [i,j] = sum_k A[i,k] * B[k,j]
-                     
-                        # data from B[k,j], B[k,j+1], B[k,j+2], B[k,j+3] goes into dest[i,j] ... dest [i,j+3]
-                        # dest [i,x] will take data from dest A[i,x]
-                     
-                        9x9 matrix
-                     
-                        dest [0,0] = A[0,0] * B[0,0] + A[0,1] * B[1,0] + A[0,2] * B[2,0] + A[0,3] * B[3,0] + ...;
-                        dest [0,1] = A[0,0] * B[0,1] + A[0,1] * B[1,1] + A[0,2] * B[2,1] + A[0,3] * B[3,1] + ...;
-                        dest [0,2] = A[0,0] * B[0,2] + A[0,1] * B[1,2] + A[0,2] * B[2,2] + A[0,3] * B[3,2] + ...;
-                        dest [0,3] = A[0,0] * B[0,3] + A[0,1] * B[1,3] + A[0,2] * B[2,3] + A[0,3] * B[3,3] + ...;
-                        dest [0,4] = A[0,0] * B[0,4] + A[0,1] * B[1,4] + A[0,2] * B[2,4] + A[0,3] * B[3,4] + ...;
-                        dest [0,5] = A[0,0] * B[0,5] + A[0,1] * B[1,5] + A[0,2] * B[2,5] + A[0,3] * B[3,5] + ...;
-                        dest [0,6] = A[0,0] * B[0,6] + A[0,1] * B[1,6] + A[0,2] * B[2,6] + A[0,3] * B[3,6] + ...;
-                        dest [0,7] = A[0,0] * B[0,7] + A[0,1] * B[1,7] + A[0,2] * B[2,7] + A[0,3] * B[3,7] + ...;
-                        dest [0,8] = A[0,0] * B[0,8] + A[0,1] * B[1,8] + A[0,2] * B[2,8] + A[0,3] * B[3,8] + ...;
-
-                        ...
-
-                        dest [3,0] = A[3,0] * B[0,0] + A[3,1] * B[1,0] + A[3,2] * B[2,0] + A[3,3] * B[3,0] + ...;
-                        dest [3,1] = A[3,0] * B[0,1] + A[3,1] * B[1,1] + A[3,2] * B[2,1] + A[3,3] * B[3,1] + ...;
-                        dest [3,2] = A[3,0] * B[0,2] + A[3,1] * B[1,2] + A[3,2] * B[2,2] + A[3,3] * B[3,2] + ...;
-                        dest [3,3] = A[3,0] * B[0,3] + A[3,1] * B[1,3] + A[3,2] * B[2,3] + A[3,3] * B[3,3] + ...;
-                        ....
-                        dest [3,8] = A[3,0] * B[0,8] + A[3,1] * B[1,8] + A[3,2] * B[2,8] + A[3,3] * B[3,8] + ...;
-                     
-                        ...
-
-                        iterate by row  (R)
-                            iterate by column (C)
-                                A4 = load element A[R,C] into a 4 element vector
-                     
-                                iterate by summing index (K), stride 4
-                                    D4 = destination [R:K, R:K+4] // linear access
-                                    B4 = B [C:K, C:K+4] // linear access
-                                    D4 += A4*B4
-                                    write D4 back to memory
-                                    
-                        
-                                if something is left over
-                     
-                                iterate by summing index (K)
-                                    desination [R,K] += A[R,C] * B[C,K],
-
-                     */
-                    long ti = 0L,
-                         row_offset = 0L;
-
-                  if (dimm4 == 60UL) { // codons
-                      
-                      for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                          long col_offset = 0L;
-                          for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
-                              __m256d A4 = _mm256_set1_pd(theData[ti]);
-                              
-                              __m256d D4_1, D4_2, D4_3, D4_4;
-                              __m256d B4_1, B4_2, B4_3, B4_4;
-                              
-                              DO_GROUP_OP1 (D4_1,B4_1,0);
-                              DO_GROUP_OP1 (D4_2,B4_2,4);
-                              DO_GROUP_OP1 (D4_3,B4_3,8);
-                              DO_GROUP_OP1 (D4_4,B4_4,12);
-                              DO_GROUP_OP2 (D4_1,0);
-                              DO_GROUP_OP2 (D4_2,4);
-                              DO_GROUP_OP2 (D4_3,8);
-                              DO_GROUP_OP2 (D4_4,12);
-
-                              DO_GROUP_OP1 (D4_1,B4_1,16);
-                              DO_GROUP_OP1 (D4_2,B4_2,20);
-                              DO_GROUP_OP1 (D4_3,B4_3,24);
-                              DO_GROUP_OP1 (D4_4,B4_4,28);
-                              DO_GROUP_OP2 (D4_1,16);
-                              DO_GROUP_OP2 (D4_2,20);
-                              DO_GROUP_OP2 (D4_3,24);
-                              DO_GROUP_OP2 (D4_4,28);
-
-                              DO_GROUP_OP1 (D4_1,B4_1,32);
-                              DO_GROUP_OP1 (D4_2,B4_2,36);
-                              DO_GROUP_OP1 (D4_3,B4_3,40);
-                              DO_GROUP_OP1 (D4_4,B4_4,44);
-                              DO_GROUP_OP2 (D4_1,32);
-                              DO_GROUP_OP2 (D4_2,36);
-                              DO_GROUP_OP2 (D4_3,40);
-                              DO_GROUP_OP2 (D4_4,44);
-
-                              DO_GROUP_OP1 (D4_1,B4_1,48);
-                              DO_GROUP_OP1 (D4_2,B4_2,52);
-                              DO_GROUP_OP1 (D4_3,B4_3,56);
-                              DO_GROUP_OP2 (D4_1,48);
-                              DO_GROUP_OP2 (D4_2,52);
-                              DO_GROUP_OP2 (D4_3,56);
-
-                              for (long k = dimm4; k < vDim; k++) {
-                                  dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
-                              }
-                          }
-                      }
-                  } else { // something else
-                      for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                          long col_offset = 0L;
-                          for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
-                              __m256d A4 = _mm256_set1_pd(theData[ti]);
-                            #pragma GCC unroll 4
-                            #pragma clang loop vectorize(enable)
-                            #pragma clang loop interleave(enable)
-                            #pragma clang loop unroll(enable)
-                              for (long k = 0; k < dimm4; k+=4) {
-                                  __m256d D4, B4;
-                                  DO_GROUP_OP (D4, B4, k);
-                              }
-                              
-                              for (long k = dimm4; k < vDim; k++) {
-                                  dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
-                              }
-                          }
-                      }
-                  }
-                  #elif _SLKP_USE_SSE_INTRINSICS
-                              long ti = 0L,
-                                   row_offset = 0L;
-
-                              if (dimm4 == 60UL) { // codons
-                                
-                                
-                                for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                                    long col_offset = 0L;
-                                    for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
-                                        __m128d A4 = _mm_set1_pd(theData[ti]);
-                                        
-                                        __m128d D4_1, D4_2, D4_3, D4_4;
-                                        __m128d B4_1, B4_2, B4_3, B4_4;
-                                        
-                                        DO_GROUP_OP1 (D4_1,B4_1,0);
-                                        DO_GROUP_OP1 (D4_2,B4_2,2);
-                                        DO_GROUP_OP1 (D4_3,B4_3,4);
-                                        DO_GROUP_OP1 (D4_4,B4_4,6);
-                                        DO_GROUP_OP2 (D4_1,0);
-                                        DO_GROUP_OP2 (D4_2,2);
-                                        DO_GROUP_OP2 (D4_3,4);
-                                        DO_GROUP_OP2 (D4_4,6);
-
-                                        DO_GROUP_OP1 (D4_1,B4_1,8);
-                                        DO_GROUP_OP1 (D4_2,B4_2,10);
-                                        DO_GROUP_OP1 (D4_3,B4_3,12);
-                                        DO_GROUP_OP1 (D4_4,B4_4,14);
-                                        DO_GROUP_OP2 (D4_1,8);
-                                        DO_GROUP_OP2 (D4_2,10);
-                                        DO_GROUP_OP2 (D4_3,12);
-                                        DO_GROUP_OP2 (D4_4,14);
-
-                                        DO_GROUP_OP1 (D4_1,B4_1,16);
-                                        DO_GROUP_OP1 (D4_2,B4_2,18);
-                                        DO_GROUP_OP1 (D4_3,B4_3,20);
-                                        DO_GROUP_OP1 (D4_4,B4_4,22);
-                                        DO_GROUP_OP2 (D4_1,16);
-                                        DO_GROUP_OP2 (D4_2,18);
-                                        DO_GROUP_OP2 (D4_3,20);
-                                        DO_GROUP_OP2 (D4_4,22);
-
-                                        DO_GROUP_OP1 (D4_1,B4_1,24);
-                                        DO_GROUP_OP1 (D4_2,B4_2,26);
-                                        DO_GROUP_OP1 (D4_3,B4_3,28);
-                                        DO_GROUP_OP1 (D4_4,B4_4,30);
-                                        DO_GROUP_OP2 (D4_1,24);
-                                        DO_GROUP_OP2 (D4_2,26);
-                                        DO_GROUP_OP2 (D4_3,28);
-                                        DO_GROUP_OP2 (D4_4,30);
-
-                                        DO_GROUP_OP1 (D4_1,B4_1,32);
-                                        DO_GROUP_OP1 (D4_2,B4_2,34);
-                                        DO_GROUP_OP1 (D4_3,B4_3,36);
-                                        DO_GROUP_OP1 (D4_4,B4_4,38);
-                                        DO_GROUP_OP2 (D4_1,32);
-                                        DO_GROUP_OP2 (D4_2,34);
-                                        DO_GROUP_OP2 (D4_3,36);
-                                        DO_GROUP_OP2 (D4_4,38);
-
-                                        DO_GROUP_OP1 (D4_1,B4_1,40);
-                                        DO_GROUP_OP1 (D4_2,B4_2,42);
-                                        DO_GROUP_OP1 (D4_3,B4_3,44);
-                                        DO_GROUP_OP1 (D4_4,B4_4,46);
-                                        DO_GROUP_OP2 (D4_1,40);
-                                        DO_GROUP_OP2 (D4_2,42);
-                                        DO_GROUP_OP2 (D4_3,44);
-                                        DO_GROUP_OP2 (D4_4,46);
-
-                                        DO_GROUP_OP1 (D4_1,B4_1,48);
-                                        DO_GROUP_OP1 (D4_2,B4_2,50);
-                                        DO_GROUP_OP1 (D4_3,B4_3,52);
-                                        DO_GROUP_OP1 (D4_4,B4_4,54);
-                                        DO_GROUP_OP2 (D4_1,48);
-                                        DO_GROUP_OP2 (D4_2,50);
-                                        DO_GROUP_OP2 (D4_3,52);
-                                        DO_GROUP_OP2 (D4_4,54);
-                                        
-                                        DO_GROUP_OP1 (D4_1,B4_1,56);
-                                        DO_GROUP_OP1 (D4_2,B4_2,58);
-                                        DO_GROUP_OP2 (D4_1,56);
-                                        DO_GROUP_OP2 (D4_2,58);
-                                        
-                                        for (long k = dimm4; k < vDim; k++) {
-                                            dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
-                                        }
-                                    }
-                                }
-                              } else { // something else
-                                for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                                    long col_offset = 0L;
-                                    for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
-                                        __m128d A4 = _mm_set1_pd(theData[ti]);
-                                        #pragma GCC unroll 4
-                                        #pragma clang loop vectorize(enable)
-                                        #pragma clang loop interleave(enable)
-                                        #pragma clang loop unroll(enable)
-                                        for (long k = 0; k < dimm4; k+=2) {
-                                            __m128d D4, B4;
-                                            DO_GROUP_OP1 (D4, B4, k);
-                                            DO_GROUP_OP2 (D4, k);
-                                        }
-                                        
-                                        for (long k = dimm4; k < vDim; k++) {
-                                            dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
-                                        }
-                                    }
-                                }
-                            }
-            #elif _SLKP_USE_ARM_NEON
-                        long ti = 0L,
-                             row_offset = 0L;
-
-                        if (dimm4 == 60UL) { // codons
-                          
-                          
-                          for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                              long col_offset = 0L;
-                              for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
-                                  float64x2_t A4 = vdupq_n_f64(theData[ti]);
-                                  
-                                  float64x2_t D4_1, D4_2, D4_3, D4_4, D4_5, D4_6, D4_7, D4_8;
-                                  float64x2_t B4_1, B4_2, B4_3, B4_4, B4_5, B4_6, B4_7, B4_8;
-                                  
-                                  DO_GROUP_OP1 (D4_1,B4_1,0);
-                                  DO_GROUP_OP1 (D4_2,B4_2,2);
-                                  DO_GROUP_OP1 (D4_3,B4_3,4);
-                                  DO_GROUP_OP1 (D4_4,B4_4,6);
-                                  DO_GROUP_OP1 (D4_5,B4_5,8);
-                                  DO_GROUP_OP1 (D4_6,B4_6,10);
-                                  DO_GROUP_OP1 (D4_7,B4_7,12);
-                                  DO_GROUP_OP1 (D4_8,B4_8,14);
-                                  DO_GROUP_OP2 (D4_1,0);
-                                  DO_GROUP_OP2 (D4_2,2);
-                                  DO_GROUP_OP2 (D4_3,4);
-                                  DO_GROUP_OP2 (D4_4,6);
-                                  DO_GROUP_OP2 (D4_5,8);
-                                  DO_GROUP_OP2 (D4_6,10);
-                                  DO_GROUP_OP2 (D4_7,12);
-                                  DO_GROUP_OP2 (D4_8,14);
-
-                                  DO_GROUP_OP1 (D4_1,B4_1,16);
-                                  DO_GROUP_OP1 (D4_2,B4_2,18);
-                                  DO_GROUP_OP1 (D4_3,B4_3,20);
-                                  DO_GROUP_OP1 (D4_4,B4_4,22);
-                                  DO_GROUP_OP1 (D4_5,B4_5,24);
-                                  DO_GROUP_OP1 (D4_6,B4_6,26);
-                                  DO_GROUP_OP1 (D4_7,B4_7,28);
-                                  DO_GROUP_OP1 (D4_8,B4_8,30);
-                                  DO_GROUP_OP2 (D4_1,16);
-                                  DO_GROUP_OP2 (D4_2,18);
-                                  DO_GROUP_OP2 (D4_3,20);
-                                  DO_GROUP_OP2 (D4_4,22);
-                                  DO_GROUP_OP2 (D4_5,24);
-                                  DO_GROUP_OP2 (D4_6,26);
-                                  DO_GROUP_OP2 (D4_7,28);
-                                  DO_GROUP_OP2 (D4_8,30);
-
-                                  DO_GROUP_OP1 (D4_1,B4_1,32);
-                                  DO_GROUP_OP1 (D4_2,B4_2,34);
-                                  DO_GROUP_OP1 (D4_3,B4_3,36);
-                                  DO_GROUP_OP1 (D4_4,B4_4,38);
-                                  DO_GROUP_OP1 (D4_5,B4_5,40);
-                                  DO_GROUP_OP1 (D4_6,B4_6,42);
-                                  DO_GROUP_OP1 (D4_7,B4_7,44);
-                                  DO_GROUP_OP1 (D4_8,B4_8,46);
-                                  DO_GROUP_OP2 (D4_1,32);
-                                  DO_GROUP_OP2 (D4_2,34);
-                                  DO_GROUP_OP2 (D4_3,36);
-                                  DO_GROUP_OP2 (D4_4,38);
-                                  DO_GROUP_OP2 (D4_5,40);
-                                  DO_GROUP_OP2 (D4_6,42);
-                                  DO_GROUP_OP2 (D4_7,44);
-                                  DO_GROUP_OP2 (D4_8,46);
-
-
-                                  DO_GROUP_OP1 (D4_1,B4_1,48);
-                                  DO_GROUP_OP1 (D4_2,B4_2,50);
-                                  DO_GROUP_OP1 (D4_3,B4_3,52);
-                                  DO_GROUP_OP1 (D4_4,B4_4,54);
-                                  DO_GROUP_OP1 (D4_5,B4_5,56);
-                                  DO_GROUP_OP1 (D4_6,B4_6,58);
-                                  DO_GROUP_OP2 (D4_1,48);
-                                  DO_GROUP_OP2 (D4_2,50);
-                                  DO_GROUP_OP2 (D4_3,52);
-                                  DO_GROUP_OP2 (D4_4,54);
-                                  DO_GROUP_OP2 (D4_5,56);
-                                  DO_GROUP_OP2 (D4_6,58);
-                                  
-                                  for (long k = dimm4; k < vDim; k++) {
-                                      dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
-                                  }
-                              }
-                          }
-                        } else { // something else
-                          for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                              long col_offset = 0L;
-                              for (long c = 0; c < hDim; c++, ti++, col_offset += vDim) {
-                                  float64x2_t A4 = vdupq_n_f64(theData[ti]);
-                                  #pragma GCC unroll 4
-                                  #pragma clang loop vectorize(enable)
-                                  #pragma clang loop interleave(enable)
-                                  //#pragma clang loop unroll(enable)
-                                  for (long k = 0; k < dimm4; k+=2) {
-                                      float64x2_t D4, B4;
-                                      DO_GROUP_OP1 (D4, B4, k);
-                                      DO_GROUP_OP2 (D4, k);
-                                  }
-                                  
-                                  for (long k = dimm4; k < vDim; k++) {
-                                      dest[row_offset + k] += theData[ti] * secondArg.theData[col_offset + k];
-                                  }
-                              }
-                          }
-                      }
-                #else
-                      const unsigned long
-                              column_shift2 = secondArg.vDim << 1,
-                              column_shift3 = (secondArg.vDim << 1) + secondArg.vDim,
-                              column_shift4 = secondArg.vDim << 2;
-                              
-                      hyFloat * row = theData;
-
-                      for (unsigned long i=0UL; i<hDim; i++, row += vDim) {
-                          for (unsigned long j=0UL; j<secondArg.vDim; j++) {
-                              hyFloat resCell  = 0.0;
-
-                              unsigned long k = 0UL,
-                                           column = j;
-                            
-                              
-                              for (; k < dimm4; k+=4, column += column_shift4) {
-                                  hyFloat pr1 = row[k]   * secondArg.theData [column],
-                                             pr2 = row[k+1] * secondArg.theData [column + secondArg.vDim ],
-                                             pr3 = row[k+2] * secondArg.theData [column + column_shift2],
-                                             pr4 = row[k+3] * secondArg.theData [column + column_shift3];
-                                
-                                  pr1 += pr2;
-                                  pr3 += pr4;
-                                
-                                  resCell += pr1 + pr3;
-                              }
-                              
-                              for (; k < vDim; k++, column += secondArg.vDim) {
-                                  resCell += row[k] * secondArg.theData[column];
-                              }
-                            
-                              dest[cumulativeIndex++] = resCell;
-                         }
-                      }
-                  
-                    
-                    #endif
-              }
-              
-    #else
-                secondArg.Transpose();
-                for (long i=0; i<hDim; i++, row += vDim) {
-                    for (long j=0; j<hDim; j++) {
-                        hyFloat resCell  = 0.0;
-                        #pragma GCC unroll 8
-                        #pragma clang loop vectorize(enable)
-                        #pragma clang loop interleave(enable)
-                        #pragma clang loop unroll(enable)
-                        for (long k = 0, column = j*hDim; k < vDim; k++, column ++) {
-                            resCell += row[k] * secondArg.theData [column];
-                        }
-
-                        storage.theData[cumulativeIndex++] = resCell;
-                    }
-                }
-                secondArg.Transpose();
-#endif
+                _hy_matrix_multiply_NxN_blocked4 (storage.theData, theData, secondArg.theData, hDim);
             } else
                 /* rectangular matrices */
             {   
@@ -7009,89 +6316,178 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
         Swap(temp);
         return DBL_EPSILON * 1.e4;
     } else {
-        if (hDim==4) {
+        if (hDim==4L) {
             // special case for nucleotides
-            for (unsigned long i=0UL, k = 0UL; i<16; i+=4) {
-                for (unsigned long j=0UL; j<4UL; j++, k++) {
-                   hyFloat p1 = theData[i]   * theData [j];
-                   hyFloat p2 = theData[i+1] * theData [j+4];
-                   p1 += theData[i+2] * theData [j+8];
-                   p2 += theData[i+3] * theData [j+12];
-                   stash[k] = p1+p2;
-                }
-            }
+            _hy_matrix_multiply_4x4(stash, theData, theData, 4, false);
+            /*for (unsigned long i=0UL, k = 0UL; i<16; i+=4) {
+                 #pragma unroll 4
+                 for (unsigned long j=0UL; j<4UL; j++, k++) {
+                 hyFloat p1 = theData[i]   * theData [j];
+                 hyFloat p2 = theData[i+1] * theData [j+4];
+                 p1 += theData[i+2] * theData [j+8];
+                 p2 += theData[i+3] * theData [j+12];
+                 stash[k] = p1+p2;
+                 }
+             }*/
         } else {
             long loopBound = (vDim >> 2) << 2;
             //vDim - vDim % 4;
             // loop interchange rocks!
             
-#ifdef  _SLKP_USE_ARM_NEON
-    #define DO_GROUP_OP0(X,Y,k) Y = vld1q_f64(theData + col_offset + k); X = vmulq_f64(A4, Y);
-    #define DO_GROUP_OP1(X,Y,k) X = vld1q_f64(dest + row_offset + k); Y = vld1q_f64(theData + col_offset + k); X = vfmaq_f64 (X,A4,Y);
-    #define DO_GROUP_OP2(X,k) vst1q_f64 (dest + row_offset + k,X);
+#ifdef __BEAVIS
             
-        if (true) {
-            hyFloat  * _hprestrict_ dest = stash;
-
-            long ti = 0L,
-                 row_offset = 0L;
-
-            if (loopBound == 60UL) {
-                if (hDim == 61) { // special case for universal code
-                    
-                    for (long r = 0; r < 61; r++, row_offset += 61) {
-                        long col_offset = 0L;
-                        { // row 1
-                            float64x2_t A4 = vdupq_n_f64 (theData[ti]);
-                            float64x2_t X1, X2, X3, X4,
-                                        Y1, Y2, Y3, Y4;
-                            
-                            DO_GROUP_OP0 (X1, Y1, 0); DO_GROUP_OP0 (X2, Y2, 2); DO_GROUP_OP0 (X3, Y3, 4); DO_GROUP_OP0 (X4, Y4, 6);
-                            DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
-                            DO_GROUP_OP0 (X1, Y1, 8); DO_GROUP_OP0 (X2, Y2, 10); DO_GROUP_OP0 (X3, Y3, 12); DO_GROUP_OP0 (X4, Y4, 14);
-                            DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
-                            DO_GROUP_OP0 (X1, Y1, 16); DO_GROUP_OP0 (X2, Y2, 18); DO_GROUP_OP0 (X3, Y3, 20); DO_GROUP_OP0 (X4, Y4, 22);
-                            DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
-                            DO_GROUP_OP0 (X1, Y1, 24); DO_GROUP_OP0 (X2, Y2, 26); DO_GROUP_OP0 (X3, Y3, 28); DO_GROUP_OP0 (X4, Y4, 30);
-                            DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
-                            DO_GROUP_OP0 (X1, Y1, 32); DO_GROUP_OP0 (X2, Y2, 34); DO_GROUP_OP0 (X3, Y3, 36); DO_GROUP_OP0 (X4, Y4, 38);
-                            DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
-                            DO_GROUP_OP0 (X1, Y1, 40); DO_GROUP_OP0 (X2, Y2, 42); DO_GROUP_OP0 (X3, Y3, 44); DO_GROUP_OP0 (X4, Y4, 46);
-                            DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
-                            DO_GROUP_OP0 (X1, Y1, 48); DO_GROUP_OP0 (X2, Y2, 50); DO_GROUP_OP0 (X3, Y3, 52); DO_GROUP_OP0 (X4, Y4, 54);
-                            DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
-                            DO_GROUP_OP0 (X1, Y1, 56); DO_GROUP_OP0 (X2, Y2, 58);
-                            DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
-
-                            
-                            dest[row_offset + 60] = theData[ti] * theData[60];
-                            col_offset = 61;
-                            ti++;
-                        }
+#ifdef  _SLKP_USE_ARM_NEON
+#define DO_GROUP_OP0(X,Y,k) Y = vld1q_f64(theData + col_offset + k); X = vmulq_f64(A4, Y);
+#define DO_GROUP_OP1(X,Y,k) X = vld1q_f64(dest + row_offset + k); Y = vld1q_f64(theData + col_offset + k); X = vfmaq_f64 (X,A4,Y);
+#define DO_GROUP_OP2(X,k) vst1q_f64 (dest + row_offset + k,X);
+            
+            if (true) {
+                hyFloat  * _hprestrict_ dest = stash;
+                
+                long ti = 0L,
+                row_offset = 0L;
+                
+                if (loopBound == 60UL) {
+                    if (hDim == 61) { // special case for universal code
                         
-                        for (long c = 1; c < 61; c++, ti++, col_offset += 61) {
-                            float64x2_t A4 = vdupq_n_f64 (theData[ti]);
-                            float64x2_t X1, X2, X3, X4,
-                                        Y1, Y2, Y3, Y4;
+                        for (long r = 0; r < 61; r++, row_offset += 61) {
+                            long col_offset = 0L;
+                            { // row 1
+                                float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                                float64x2_t X1, X2, X3, X4,
+                                Y1, Y2, Y3, Y4;
+                                
+                                DO_GROUP_OP0 (X1, Y1, 0); DO_GROUP_OP0 (X2, Y2, 2); DO_GROUP_OP0 (X3, Y3, 4); DO_GROUP_OP0 (X4, Y4, 6);
+                                DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
+                                DO_GROUP_OP0 (X1, Y1, 8); DO_GROUP_OP0 (X2, Y2, 10); DO_GROUP_OP0 (X3, Y3, 12); DO_GROUP_OP0 (X4, Y4, 14);
+                                DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
+                                DO_GROUP_OP0 (X1, Y1, 16); DO_GROUP_OP0 (X2, Y2, 18); DO_GROUP_OP0 (X3, Y3, 20); DO_GROUP_OP0 (X4, Y4, 22);
+                                DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
+                                DO_GROUP_OP0 (X1, Y1, 24); DO_GROUP_OP0 (X2, Y2, 26); DO_GROUP_OP0 (X3, Y3, 28); DO_GROUP_OP0 (X4, Y4, 30);
+                                DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
+                                DO_GROUP_OP0 (X1, Y1, 32); DO_GROUP_OP0 (X2, Y2, 34); DO_GROUP_OP0 (X3, Y3, 36); DO_GROUP_OP0 (X4, Y4, 38);
+                                DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
+                                DO_GROUP_OP0 (X1, Y1, 40); DO_GROUP_OP0 (X2, Y2, 42); DO_GROUP_OP0 (X3, Y3, 44); DO_GROUP_OP0 (X4, Y4, 46);
+                                DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
+                                DO_GROUP_OP0 (X1, Y1, 48); DO_GROUP_OP0 (X2, Y2, 50); DO_GROUP_OP0 (X3, Y3, 52); DO_GROUP_OP0 (X4, Y4, 54);
+                                DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
+                                DO_GROUP_OP0 (X1, Y1, 56); DO_GROUP_OP0 (X2, Y2, 58);
+                                DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
+                                
+                                
+                                dest[row_offset + 60] = theData[ti] * theData[60];
+                                col_offset = 61;
+                                ti++;
+                            }
                             
-                            DO_GROUP_OP1 (X1, Y1, 0); DO_GROUP_OP1 (X2, Y2, 2); DO_GROUP_OP1 (X3, Y3, 4); DO_GROUP_OP1 (X4, Y4, 6);
-                            DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
-                            DO_GROUP_OP1 (X1, Y1, 8); DO_GROUP_OP1 (X2, Y2, 10); DO_GROUP_OP1 (X3, Y3, 12); DO_GROUP_OP1 (X4, Y4, 14);
-                            DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
-                            DO_GROUP_OP1 (X1, Y1, 16); DO_GROUP_OP1 (X2, Y2, 18); DO_GROUP_OP1 (X3, Y3, 20); DO_GROUP_OP1 (X4, Y4, 22);
-                            DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
-                            DO_GROUP_OP1 (X1, Y1, 24); DO_GROUP_OP1 (X2, Y2, 26); DO_GROUP_OP1 (X3, Y3, 28); DO_GROUP_OP1 (X4, Y4, 30);
-                            DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
-                            DO_GROUP_OP1 (X1, Y1, 32); DO_GROUP_OP1 (X2, Y2, 34); DO_GROUP_OP1 (X3, Y3, 36); DO_GROUP_OP1 (X4, Y4, 38);
-                            DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
-                            DO_GROUP_OP1 (X1, Y1, 40); DO_GROUP_OP1 (X2, Y2, 42); DO_GROUP_OP1 (X3, Y3, 44); DO_GROUP_OP1 (X4, Y4, 46);
-                            DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
-                            DO_GROUP_OP1 (X1, Y1, 48); DO_GROUP_OP1 (X2, Y2, 50); DO_GROUP_OP1 (X3, Y3, 52); DO_GROUP_OP1 (X4, Y4, 54);
-                            DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
-                            DO_GROUP_OP1 (X1, Y1, 56); DO_GROUP_OP1 (X2, Y2, 58);
-                            DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
                             
-                            dest[row_offset + 60] += theData[ti] * theData[col_offset + 60];
+#define DO_GROUP_OP_4_1(X,Y,k) X = vld1q_f64_x4 (dest + row_offset + k); \
+Y = vld1q_f64_x4 (theData + col_offset + k); \
+X.val[0] = vfmaq_f64 (X.val[0],A4,Y.val[0]); \
+X.val[1] = vfmaq_f64 (X.val[1],A4,Y.val[1]); \
+X.val[2] = vfmaq_f64 (X.val[2],A4,Y.val[2]); \
+X.val[3] = vfmaq_f64 (X.val[3],A4,Y.val[3]);
+                            
+#define DO_GROUP_OP_4_2(X,k) vst1q_f64_x4 (dest + row_offset + k,X);
+                            
+                            
+                            for (long c = 1; c < 61; c++, ti++, col_offset += 61) {
+                                float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                                /*float64x2x4_t X,Y;
+                                 
+                                 DO_GROUP_OP_4_1 (X,Y,0); DO_GROUP_OP_4_2 (X,0);
+                                 DO_GROUP_OP_4_1 (X,Y,8); DO_GROUP_OP_4_2 (X,8);
+                                 DO_GROUP_OP_4_1 (X,Y,16); DO_GROUP_OP_4_2 (X,16);
+                                 DO_GROUP_OP_4_1 (X,Y,24); DO_GROUP_OP_4_2 (X,24);
+                                 DO_GROUP_OP_4_1 (X,Y,32); DO_GROUP_OP_4_2 (X,32);
+                                 DO_GROUP_OP_4_1 (X,Y,40); DO_GROUP_OP_4_2 (X,40);
+                                 DO_GROUP_OP_4_1 (X,Y,48); DO_GROUP_OP_4_2 (X,48);
+                                 DO_GROUP_OP1 (X.val[0], Y.val[0], 56); DO_GROUP_OP1 (X.val[1], Y.val[1], 58);
+                                 DO_GROUP_OP2 (X.val[0],56); DO_GROUP_OP2 (X.val[1],58);*/
+                                
+                                float64x2_t X1, X2, X3, X4,
+                                Y1, Y2, Y3, Y4;
+                                
+                                DO_GROUP_OP1 (X1, Y1, 0); DO_GROUP_OP1 (X2, Y2, 2); DO_GROUP_OP1 (X3, Y3, 4); DO_GROUP_OP1 (X4, Y4, 6);
+                                DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
+                                DO_GROUP_OP1 (X1, Y1, 8); DO_GROUP_OP1 (X2, Y2, 10); DO_GROUP_OP1 (X3, Y3, 12); DO_GROUP_OP1 (X4, Y4, 14);
+                                DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
+                                DO_GROUP_OP1 (X1, Y1, 16); DO_GROUP_OP1 (X2, Y2, 18); DO_GROUP_OP1 (X3, Y3, 20); DO_GROUP_OP1 (X4, Y4, 22);
+                                DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
+                                DO_GROUP_OP1 (X1, Y1, 24); DO_GROUP_OP1 (X2, Y2, 26); DO_GROUP_OP1 (X3, Y3, 28); DO_GROUP_OP1 (X4, Y4, 30);
+                                DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
+                                DO_GROUP_OP1 (X1, Y1, 32); DO_GROUP_OP1 (X2, Y2, 34); DO_GROUP_OP1 (X3, Y3, 36); DO_GROUP_OP1 (X4, Y4, 38);
+                                DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
+                                DO_GROUP_OP1 (X1, Y1, 40); DO_GROUP_OP1 (X2, Y2, 42); DO_GROUP_OP1 (X3, Y3, 44); DO_GROUP_OP1 (X4, Y4, 46);
+                                DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
+                                DO_GROUP_OP1 (X1, Y1, 48); DO_GROUP_OP1 (X2, Y2, 50); DO_GROUP_OP1 (X3, Y3, 52); DO_GROUP_OP1 (X4, Y4, 54);
+                                DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
+                                DO_GROUP_OP1 (X1, Y1, 56); DO_GROUP_OP1 (X2, Y2, 58);
+                                DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
+                                
+                                
+                                dest[row_offset + 60] += theData[ti] * theData[col_offset + 60];
+                            }
+                        }
+                    } else {
+                        for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                            long col_offset = 0L;
+                            { // row 1
+                                float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                                float64x2_t X1, X2, X3, X4,
+                                Y1, Y2, Y3, Y4;
+                                
+                                DO_GROUP_OP0 (X1, Y1, 0); DO_GROUP_OP0 (X2, Y2, 2); DO_GROUP_OP0 (X3, Y3, 4); DO_GROUP_OP0 (X4, Y4, 6);
+                                DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
+                                DO_GROUP_OP0 (X1, Y1, 8); DO_GROUP_OP0 (X2, Y2, 10); DO_GROUP_OP0 (X3, Y3, 12); DO_GROUP_OP0 (X4, Y4, 14);
+                                DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
+                                DO_GROUP_OP0 (X1, Y1, 16); DO_GROUP_OP0 (X2, Y2, 18); DO_GROUP_OP0 (X3, Y3, 20); DO_GROUP_OP0 (X4, Y4, 22);
+                                DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
+                                DO_GROUP_OP0 (X1, Y1, 24); DO_GROUP_OP0 (X2, Y2, 26); DO_GROUP_OP0 (X3, Y3, 28); DO_GROUP_OP0 (X4, Y4, 30);
+                                DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
+                                DO_GROUP_OP0 (X1, Y1, 32); DO_GROUP_OP0 (X2, Y2, 34); DO_GROUP_OP0 (X3, Y3, 36); DO_GROUP_OP0 (X4, Y4, 38);
+                                DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
+                                DO_GROUP_OP0 (X1, Y1, 40); DO_GROUP_OP0 (X2, Y2, 42); DO_GROUP_OP0 (X3, Y3, 44); DO_GROUP_OP0 (X4, Y4, 46);
+                                DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
+                                DO_GROUP_OP0 (X1, Y1, 48); DO_GROUP_OP0 (X2, Y2, 50); DO_GROUP_OP0 (X3, Y3, 52); DO_GROUP_OP0 (X4, Y4, 54);
+                                DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
+                                DO_GROUP_OP0 (X1, Y1, 56); DO_GROUP_OP0 (X2, Y2, 58);
+                                DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
+                                
+                                
+                                for (long k = 60; k < vDim; k++) {
+                                    dest[row_offset + k] = theData[ti] * theData[k];
+                                }
+                                col_offset = vDim;
+                                ti++;
+                            }
+                            
+                            for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
+                                float64x2_t A4 = vdupq_n_f64 (theData[ti]);
+                                float64x2_t X1, X2, X3, X4,
+                                Y1, Y2, Y3, Y4;
+                                
+                                DO_GROUP_OP1 (X1, Y1, 0); DO_GROUP_OP1 (X2, Y2, 2); DO_GROUP_OP1 (X3, Y3, 4); DO_GROUP_OP1 (X4, Y4, 6);
+                                DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
+                                DO_GROUP_OP1 (X1, Y1, 8); DO_GROUP_OP1 (X2, Y2, 10); DO_GROUP_OP1 (X3, Y3, 12); DO_GROUP_OP1 (X4, Y4, 14);
+                                DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
+                                DO_GROUP_OP1 (X1, Y1, 16); DO_GROUP_OP1 (X2, Y2, 18); DO_GROUP_OP1 (X3, Y3, 20); DO_GROUP_OP1 (X4, Y4, 22);
+                                DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
+                                DO_GROUP_OP1 (X1, Y1, 24); DO_GROUP_OP1 (X2, Y2, 26); DO_GROUP_OP1 (X3, Y3, 28); DO_GROUP_OP1 (X4, Y4, 30);
+                                DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
+                                DO_GROUP_OP1 (X1, Y1, 32); DO_GROUP_OP1 (X2, Y2, 34); DO_GROUP_OP1 (X3, Y3, 36); DO_GROUP_OP1 (X4, Y4, 38);
+                                DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
+                                DO_GROUP_OP1 (X1, Y1, 40); DO_GROUP_OP1 (X2, Y2, 42); DO_GROUP_OP1 (X3, Y3, 44); DO_GROUP_OP1 (X4, Y4, 46);
+                                DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
+                                DO_GROUP_OP1 (X1, Y1, 48); DO_GROUP_OP1 (X2, Y2, 50); DO_GROUP_OP1 (X3, Y3, 52); DO_GROUP_OP1 (X4, Y4, 54);
+                                DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
+                                DO_GROUP_OP1 (X1, Y1, 56); DO_GROUP_OP1 (X2, Y2, 58);
+                                DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
+                                
+                                for (long k = 60; k < vDim; k++) {
+                                    dest[row_offset + k] += theData[ti] * theData[col_offset + k];
+                                }
+                            }
                         }
                     }
                 } else {
@@ -7099,28 +6495,21 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                         long col_offset = 0L;
                         { // row 1
                             float64x2_t A4 = vdupq_n_f64 (theData[ti]);
-                            float64x2_t X1, X2, X3, X4,
-                                        Y1, Y2, Y3, Y4;
+#pragma GCC unroll 4
+#pragma clang loop vectorize(enable)
+#pragma clang loop interleave(enable)
+                            //#pragma clang loop unroll(enable)
+#pragma GCC ivdep
+#pragma ivdep
+                            for (long k = 0; k < loopBound; k+=4) {
+                                float64x2_t D4, B4, X1, X2;
+                                DO_GROUP_OP0 (D4, B4, k);
+                                DO_GROUP_OP0 (X1, X2, k+2);
+                                DO_GROUP_OP2 (D4,k);
+                                DO_GROUP_OP2 (X1,k+2);
+                            }
                             
-                            DO_GROUP_OP0 (X1, Y1, 0); DO_GROUP_OP0 (X2, Y2, 2); DO_GROUP_OP0 (X3, Y3, 4); DO_GROUP_OP0 (X4, Y4, 6);
-                            DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
-                            DO_GROUP_OP0 (X1, Y1, 8); DO_GROUP_OP0 (X2, Y2, 10); DO_GROUP_OP0 (X3, Y3, 12); DO_GROUP_OP0 (X4, Y4, 14);
-                            DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
-                            DO_GROUP_OP0 (X1, Y1, 16); DO_GROUP_OP0 (X2, Y2, 18); DO_GROUP_OP0 (X3, Y3, 20); DO_GROUP_OP0 (X4, Y4, 22);
-                            DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
-                            DO_GROUP_OP0 (X1, Y1, 24); DO_GROUP_OP0 (X2, Y2, 26); DO_GROUP_OP0 (X3, Y3, 28); DO_GROUP_OP0 (X4, Y4, 30);
-                            DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
-                            DO_GROUP_OP0 (X1, Y1, 32); DO_GROUP_OP0 (X2, Y2, 34); DO_GROUP_OP0 (X3, Y3, 36); DO_GROUP_OP0 (X4, Y4, 38);
-                            DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
-                            DO_GROUP_OP0 (X1, Y1, 40); DO_GROUP_OP0 (X2, Y2, 42); DO_GROUP_OP0 (X3, Y3, 44); DO_GROUP_OP0 (X4, Y4, 46);
-                            DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
-                            DO_GROUP_OP0 (X1, Y1, 48); DO_GROUP_OP0 (X2, Y2, 50); DO_GROUP_OP0 (X3, Y3, 52); DO_GROUP_OP0 (X4, Y4, 54);
-                            DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
-                            DO_GROUP_OP0 (X1, Y1, 56); DO_GROUP_OP0 (X2, Y2, 58);
-                            DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
-
-                            
-                            for (long k = 60; k < vDim; k++) {
+                            for (long k = loopBound; k < vDim; k++) {
                                 dest[row_offset + k] = theData[ti] * theData[k];
                             }
                             col_offset = vDim;
@@ -7129,422 +6518,372 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
                         
                         for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
                             float64x2_t A4 = vdupq_n_f64 (theData[ti]);
-                            float64x2_t X1, X2, X3, X4,
-                                        Y1, Y2, Y3, Y4;
+                            for (long k = 0; k < loopBound; k+=4) {
+                                float64x2_t D4, B4, X1, X2;
+                                DO_GROUP_OP1 (D4, B4, k);
+                                DO_GROUP_OP1 (X1, X2, k+2);
+                                DO_GROUP_OP2 (D4,k);
+                                DO_GROUP_OP2 (X1,k+2);
+                            }
                             
-                            DO_GROUP_OP1 (X1, Y1, 0); DO_GROUP_OP1 (X2, Y2, 2); DO_GROUP_OP1 (X3, Y3, 4); DO_GROUP_OP1 (X4, Y4, 6);
-                            DO_GROUP_OP2 (X1,0); DO_GROUP_OP2 (X2,2); DO_GROUP_OP2 (X3,4); DO_GROUP_OP2 (X4,6);
-                            DO_GROUP_OP1 (X1, Y1, 8); DO_GROUP_OP1 (X2, Y2, 10); DO_GROUP_OP1 (X3, Y3, 12); DO_GROUP_OP1 (X4, Y4, 14);
-                            DO_GROUP_OP2 (X1,8); DO_GROUP_OP2 (X2,10); DO_GROUP_OP2 (X3,12); DO_GROUP_OP2 (X4,14);
-                            DO_GROUP_OP1 (X1, Y1, 16); DO_GROUP_OP1 (X2, Y2, 18); DO_GROUP_OP1 (X3, Y3, 20); DO_GROUP_OP1 (X4, Y4, 22);
-                            DO_GROUP_OP2 (X1,16); DO_GROUP_OP2 (X2,18); DO_GROUP_OP2 (X3,20); DO_GROUP_OP2 (X4,22);
-                            DO_GROUP_OP1 (X1, Y1, 24); DO_GROUP_OP1 (X2, Y2, 26); DO_GROUP_OP1 (X3, Y3, 28); DO_GROUP_OP1 (X4, Y4, 30);
-                            DO_GROUP_OP2 (X1,24); DO_GROUP_OP2 (X2,26); DO_GROUP_OP2 (X3,28); DO_GROUP_OP2 (X4,30);
-                            DO_GROUP_OP1 (X1, Y1, 32); DO_GROUP_OP1 (X2, Y2, 34); DO_GROUP_OP1 (X3, Y3, 36); DO_GROUP_OP1 (X4, Y4, 38);
-                            DO_GROUP_OP2 (X1,32); DO_GROUP_OP2 (X2,34); DO_GROUP_OP2 (X3,36); DO_GROUP_OP2 (X4,38);
-                            DO_GROUP_OP1 (X1, Y1, 40); DO_GROUP_OP1 (X2, Y2, 42); DO_GROUP_OP1 (X3, Y3, 44); DO_GROUP_OP1 (X4, Y4, 46);
-                            DO_GROUP_OP2 (X1,40); DO_GROUP_OP2 (X2,42); DO_GROUP_OP2 (X3,44); DO_GROUP_OP2 (X4,46);
-                            DO_GROUP_OP1 (X1, Y1, 48); DO_GROUP_OP1 (X2, Y2, 50); DO_GROUP_OP1 (X3, Y3, 52); DO_GROUP_OP1 (X4, Y4, 54);
-                            DO_GROUP_OP2 (X1,48); DO_GROUP_OP2 (X2,50); DO_GROUP_OP2 (X3,52); DO_GROUP_OP2 (X4,54);
-                            DO_GROUP_OP1 (X1, Y1, 56); DO_GROUP_OP1 (X2, Y2, 58);
-                            DO_GROUP_OP2 (X1,56); DO_GROUP_OP2 (X2,58);
-                            
-                            for (long k = 60; k < vDim; k++) {
+                            for (long k = loopBound; k < vDim; k++) {
                                 dest[row_offset + k] += theData[ti] * theData[col_offset + k];
                             }
                         }
                     }
                 }
             } else {
-                for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                    long col_offset = 0L;
-                    { // row 1
-                        float64x2_t A4 = vdupq_n_f64 (theData[ti]);
-                        #pragma GCC unroll 4
-                        #pragma clang loop vectorize(enable)
-                        #pragma clang loop interleave(enable)
-                        //#pragma clang loop unroll(enable)
-                        #pragma GCC ivdep
-                        #pragma ivdep
-                        for (long k = 0; k < loopBound; k+=4) {
-                            float64x2_t D4, B4, X1, X2;
-                            DO_GROUP_OP0 (D4, B4, k);
-                            DO_GROUP_OP0 (X1, X2, k+2);
-                            DO_GROUP_OP2 (D4,k);
-                            DO_GROUP_OP2 (X1,k+2);
-                        }
-                        
-                        for (long k = loopBound; k < vDim; k++) {
-                            dest[row_offset + k] = theData[ti] * theData[k];
-                        }
-                        col_offset = vDim;
-                        ti++;
-                    }
-                    
-                    for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
-                        float64x2_t A4 = vdupq_n_f64 (theData[ti]);
-                        for (long k = 0; k < loopBound; k+=4) {
-                            float64x2_t D4, B4, X1, X2;
-                            DO_GROUP_OP1 (D4, B4, k);
-                            DO_GROUP_OP1 (X1, X2, k+2);
-                            DO_GROUP_OP2 (D4,k);
-                            DO_GROUP_OP2 (X1,k+2);
-                        }
-                        
-                        for (long k = loopBound; k < vDim; k++) {
-                            dest[row_offset + k] += theData[ti] * theData[col_offset + k];
-                        }
-                    }
-                }
-            }
-        } else {
-                    
+                
 #endif
-            
+                
 #ifdef  _SLKP_USE_AVX_INTRINSICS
-            #define DO_GROUP_OP0(X,Y,k) Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_mul_pd(A4, Y);
-            #ifdef _SLKP_USE_FMA3_INTRINSICS
-                #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_fmadd_pd (A4,Y,X);
-                #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
-            #else
-                #define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_add_pd (X, _mm256_mul_pd(A4, Y));
-                #define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
-           #endif
-           if (true) {
-               hyFloat  * _hprestrict_ dest = stash;
-
-               long ti = 0L,
+#define DO_GROUP_OP0(X,Y,k) Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_mul_pd(A4, Y);
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+#define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_fmadd_pd (A4,Y,X);
+#define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
+#else
+#define DO_GROUP_OP1(X,Y,k) X = _mm256_loadu_pd(dest + row_offset + k); Y = _mm256_loadu_pd(theData + col_offset + k); X = _mm256_add_pd (X, _mm256_mul_pd(A4, Y));
+#define DO_GROUP_OP2(X,k) _mm256_storeu_pd (dest + row_offset + k,X);
+#endif
+                if (true) {
+                    hyFloat  * _hprestrict_ dest = stash;
+                    
+                    long ti = 0L,
                     row_offset = 0L;
-               
-               if (loopBound == 60UL) { // codons
-                   if (hDim == 61) { // special case universal genetic code
-                       for (long r = 0; r < 61; r++, row_offset += 61) {
-                           long col_offset = 0L;
-                           
-                           {  // handle first row separately to zero out the dest entries
-                               __m256d A4 = _mm256_set1_pd(theData[ti]);
-                               __m256d D4_1, D4_2, D4_3, D4_4;
-                               __m256d B4_1, B4_2, B4_3, B4_4;
-                               
-                               DO_GROUP_OP0 (D4_1,B4_1,0);
-                               DO_GROUP_OP0 (D4_2,B4_2,4);
-                               DO_GROUP_OP0 (D4_3,B4_3,8);
-                               DO_GROUP_OP0 (D4_4,B4_4,12);
-                               DO_GROUP_OP2 (D4_1,0);
-                               DO_GROUP_OP2 (D4_2,4);
-                               DO_GROUP_OP2 (D4_3,8);
-                               DO_GROUP_OP2 (D4_4,12);
-
-                               DO_GROUP_OP0 (D4_1,B4_1,16);
-                               DO_GROUP_OP0 (D4_2,B4_2,20);
-                               DO_GROUP_OP0 (D4_3,B4_3,24);
-                               DO_GROUP_OP0 (D4_4,B4_4,28);
-                               DO_GROUP_OP2 (D4_1,16);
-                               DO_GROUP_OP2 (D4_2,20);
-                               DO_GROUP_OP2 (D4_3,24);
-                               DO_GROUP_OP2 (D4_4,28);
-
-                               DO_GROUP_OP0 (D4_1,B4_1,32);
-                               DO_GROUP_OP0 (D4_2,B4_2,36);
-                               DO_GROUP_OP0 (D4_3,B4_3,40);
-                               DO_GROUP_OP0 (D4_4,B4_4,44);
-                               DO_GROUP_OP2 (D4_1,32);
-                               DO_GROUP_OP2 (D4_2,36);
-                               DO_GROUP_OP2 (D4_3,40);
-                               DO_GROUP_OP2 (D4_4,44);
-
-                               DO_GROUP_OP0 (D4_1,B4_1,48);
-                               DO_GROUP_OP0 (D4_2,B4_2,52);
-                               DO_GROUP_OP0 (D4_3,B4_3,56);
-                               DO_GROUP_OP2 (D4_1,48);
-                               DO_GROUP_OP2 (D4_2,52);
-                               DO_GROUP_OP2 (D4_3,56);
-
-                               dest[row_offset + 60] = theData[ti] * theData[60];
-                               ti++;
-                               col_offset = vDim;
-                           }
-                           for (long c = 1; c < 61; c++, ti++, col_offset += 61) {
-                               __m256d A4 = _mm256_set1_pd(theData[ti]);
-                               
-                               __m256d D4_1, D4_2, D4_3, D4_4;
-                               __m256d B4_1, B4_2, B4_3, B4_4;
-                               
-                               DO_GROUP_OP1 (D4_1,B4_1,0);
-                               DO_GROUP_OP1 (D4_2,B4_2,4);
-                               DO_GROUP_OP1 (D4_3,B4_3,8);
-                               DO_GROUP_OP1 (D4_4,B4_4,12);
-                               DO_GROUP_OP2 (D4_1,0);
-                               DO_GROUP_OP2 (D4_2,4);
-                               DO_GROUP_OP2 (D4_3,8);
-                               DO_GROUP_OP2 (D4_4,12);
-
-                               DO_GROUP_OP1 (D4_1,B4_1,16);
-                               DO_GROUP_OP1 (D4_2,B4_2,20);
-                               DO_GROUP_OP1 (D4_3,B4_3,24);
-                               DO_GROUP_OP1 (D4_4,B4_4,28);
-                               DO_GROUP_OP2 (D4_1,16);
-                               DO_GROUP_OP2 (D4_2,20);
-                               DO_GROUP_OP2 (D4_3,24);
-                               DO_GROUP_OP2 (D4_4,28);
-
-                               DO_GROUP_OP1 (D4_1,B4_1,32);
-                               DO_GROUP_OP1 (D4_2,B4_2,36);
-                               DO_GROUP_OP1 (D4_3,B4_3,40);
-                               DO_GROUP_OP1 (D4_4,B4_4,44);
-                               DO_GROUP_OP2 (D4_1,32);
-                               DO_GROUP_OP2 (D4_2,36);
-                               DO_GROUP_OP2 (D4_3,40);
-                               DO_GROUP_OP2 (D4_4,44);
-
-                               DO_GROUP_OP1 (D4_1,B4_1,48);
-                               DO_GROUP_OP1 (D4_2,B4_2,52);
-                               DO_GROUP_OP1 (D4_3,B4_3,56);
-                               DO_GROUP_OP2 (D4_1,48);
-                               DO_GROUP_OP2 (D4_2,52);
-                               DO_GROUP_OP2 (D4_3,56);
-
-                               dest[row_offset + 60] += theData[ti] * theData[col_offset + 60];
-                               
-                           }
-                       }
-                       
-                   } else {
-                       for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                           long col_offset = 0L;
-                           
-                           {  // handle first row separately to zero out the dest entries
-                               __m256d A4 = _mm256_set1_pd(theData[ti]);
-                               __m256d D4_1, D4_2, D4_3, D4_4;
-                               __m256d B4_1, B4_2, B4_3, B4_4;
-                               
-                               DO_GROUP_OP0 (D4_1,B4_1,0);
-                               DO_GROUP_OP0 (D4_2,B4_2,4);
-                               DO_GROUP_OP0 (D4_3,B4_3,8);
-                               DO_GROUP_OP0 (D4_4,B4_4,12);
-                               DO_GROUP_OP2 (D4_1,0);
-                               DO_GROUP_OP2 (D4_2,4);
-                               DO_GROUP_OP2 (D4_3,8);
-                               DO_GROUP_OP2 (D4_4,12);
-
-                               DO_GROUP_OP0 (D4_1,B4_1,16);
-                               DO_GROUP_OP0 (D4_2,B4_2,20);
-                               DO_GROUP_OP0 (D4_3,B4_3,24);
-                               DO_GROUP_OP0 (D4_4,B4_4,28);
-                               DO_GROUP_OP2 (D4_1,16);
-                               DO_GROUP_OP2 (D4_2,20);
-                               DO_GROUP_OP2 (D4_3,24);
-                               DO_GROUP_OP2 (D4_4,28);
-
-                               DO_GROUP_OP0 (D4_1,B4_1,32);
-                               DO_GROUP_OP0 (D4_2,B4_2,36);
-                               DO_GROUP_OP0 (D4_3,B4_3,40);
-                               DO_GROUP_OP0 (D4_4,B4_4,44);
-                               DO_GROUP_OP2 (D4_1,32);
-                               DO_GROUP_OP2 (D4_2,36);
-                               DO_GROUP_OP2 (D4_3,40);
-                               DO_GROUP_OP2 (D4_4,44);
-
-                               DO_GROUP_OP0 (D4_1,B4_1,48);
-                               DO_GROUP_OP0 (D4_2,B4_2,52);
-                               DO_GROUP_OP0 (D4_3,B4_3,56);
-                               DO_GROUP_OP2 (D4_1,48);
-                               DO_GROUP_OP2 (D4_2,52);
-                               DO_GROUP_OP2 (D4_3,56);
-
-                               for (long k = loopBound; k < vDim; k++) {
-                                   dest[row_offset + k] = theData[ti] * theData[k];
-                               }
-                               ti++;
-                               col_offset = vDim;
-                           }
-                           for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
-                               __m256d A4 = _mm256_set1_pd(theData[ti]);
-                               
-                               __m256d D4_1, D4_2, D4_3, D4_4;
-                               __m256d B4_1, B4_2, B4_3, B4_4;
-                               
-                               DO_GROUP_OP1 (D4_1,B4_1,0);
-                               DO_GROUP_OP1 (D4_2,B4_2,4);
-                               DO_GROUP_OP1 (D4_3,B4_3,8);
-                               DO_GROUP_OP1 (D4_4,B4_4,12);
-                               DO_GROUP_OP2 (D4_1,0);
-                               DO_GROUP_OP2 (D4_2,4);
-                               DO_GROUP_OP2 (D4_3,8);
-                               DO_GROUP_OP2 (D4_4,12);
-
-                               DO_GROUP_OP1 (D4_1,B4_1,16);
-                               DO_GROUP_OP1 (D4_2,B4_2,20);
-                               DO_GROUP_OP1 (D4_3,B4_3,24);
-                               DO_GROUP_OP1 (D4_4,B4_4,28);
-                               DO_GROUP_OP2 (D4_1,16);
-                               DO_GROUP_OP2 (D4_2,20);
-                               DO_GROUP_OP2 (D4_3,24);
-                               DO_GROUP_OP2 (D4_4,28);
-
-                               DO_GROUP_OP1 (D4_1,B4_1,32);
-                               DO_GROUP_OP1 (D4_2,B4_2,36);
-                               DO_GROUP_OP1 (D4_3,B4_3,40);
-                               DO_GROUP_OP1 (D4_4,B4_4,44);
-                               DO_GROUP_OP2 (D4_1,32);
-                               DO_GROUP_OP2 (D4_2,36);
-                               DO_GROUP_OP2 (D4_3,40);
-                               DO_GROUP_OP2 (D4_4,44);
-
-                               DO_GROUP_OP1 (D4_1,B4_1,48);
-                               DO_GROUP_OP1 (D4_2,B4_2,52);
-                               DO_GROUP_OP1 (D4_3,B4_3,56);
-                               DO_GROUP_OP2 (D4_1,48);
-                               DO_GROUP_OP2 (D4_2,52);
-                               DO_GROUP_OP2 (D4_3,56);
-
-                               for (long k = loopBound; k < vDim; k++) {
-                                   dest[row_offset + k] += theData[ti] * theData[col_offset + k];
-                               }
-                           }
-                       }
-                   }
-               } else { // something else
-                   for (long r = 0; r < hDim; r++, row_offset += vDim) {
-                       long col_offset = 0L;
-                       
-                       {
-                           __m256d A4 = _mm256_set1_pd(theData[ti]);
-                           for (long k = 0; k < loopBound; k+=4) {
-                               __m256d D4, B4;
-                               DO_GROUP_OP0 (D4, B4, k);
-                               DO_GROUP_OP2 (D4,k);
-                           }
-                           
-                           for (long k = loopBound; k < vDim; k++) {
-                               dest[row_offset + k] = theData[ti] * theData[k];
-                           }
-                           col_offset = vDim;
-                           ti++;
-                       }
-                       
-                       for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
-                           __m256d A4 = _mm256_set1_pd(theData[ti]);
-                           for (long k = 0; k < loopBound; k+=4) {
-                               __m256d D4, B4;
-                               DO_GROUP_OP1 (D4, B4, k);
-                               DO_GROUP_OP2 (D4,k);
-                           }
-                           
-                           for (long k = loopBound; k < vDim; k++) {
-                               dest[row_offset + k] += theData[ti] * theData[col_offset + k];
-                           }
-                       }
-                   }
-               }
-           } else {
-
-#endif
-
-          
-            hyFloat  * _hprestrict_ column = stash+lDim;
-            hyFloat const  * source = theData;
-
-            for (long j = 0; j < vDim; j++) {
-                for (long c = 0; c < vDim; c++) {
-                    column[c] = source[j + c * vDim];
-                }
-
-#ifdef _SLKP_USE_AVX_INTRINSICS
-                if (vDim == 61UL) {
-                  for (unsigned long i = 0; i < lDim; i += 61) {
-                    hyFloat * _hprestrict_ row = theData + i;
                     
-                    
-                     __m256d   sum256;
-                    
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-                      
-                    
-                        sum256 = _mm256_fmadd_pd (_mm256_loadu_pd (row), _mm256_loadu_pd (column),
-                                                 _mm256_fmadd_pd (_mm256_loadu_pd (row+4), _mm256_loadu_pd (column+4),
-                                         _mm256_mul_pd (_mm256_loadu_pd (row+8), _mm256_loadu_pd (column+8))));
-                      
-                        for (unsigned long k = 12UL; k < 60UL; k += 12UL) {
-                            sum256 =  _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k),
-                                                        _mm256_fmadd_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4),
-                                                        _mm256_fmadd_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8), sum256))
-                                                       );
+                    if (loopBound == 60UL) { // codons
+                        if (hDim == 61) { // special case universal genetic code
+                            for (long r = 0; r < 61; r++, row_offset += 61) {
+                                long col_offset = 0L;
+                                
+                                {  // handle first row separately to zero out the dest entries
+                                    __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                    __m256d D4_1, D4_2, D4_3, D4_4;
+                                    __m256d B4_1, B4_2, B4_3, B4_4;
+                                    
+                                    DO_GROUP_OP0 (D4_1,B4_1,0);
+                                    DO_GROUP_OP0 (D4_2,B4_2,4);
+                                    DO_GROUP_OP0 (D4_3,B4_3,8);
+                                    DO_GROUP_OP0 (D4_4,B4_4,12);
+                                    DO_GROUP_OP2 (D4_1,0);
+                                    DO_GROUP_OP2 (D4_2,4);
+                                    DO_GROUP_OP2 (D4_3,8);
+                                    DO_GROUP_OP2 (D4_4,12);
+                                    
+                                    DO_GROUP_OP0 (D4_1,B4_1,16);
+                                    DO_GROUP_OP0 (D4_2,B4_2,20);
+                                    DO_GROUP_OP0 (D4_3,B4_3,24);
+                                    DO_GROUP_OP0 (D4_4,B4_4,28);
+                                    DO_GROUP_OP2 (D4_1,16);
+                                    DO_GROUP_OP2 (D4_2,20);
+                                    DO_GROUP_OP2 (D4_3,24);
+                                    DO_GROUP_OP2 (D4_4,28);
+                                    
+                                    DO_GROUP_OP0 (D4_1,B4_1,32);
+                                    DO_GROUP_OP0 (D4_2,B4_2,36);
+                                    DO_GROUP_OP0 (D4_3,B4_3,40);
+                                    DO_GROUP_OP0 (D4_4,B4_4,44);
+                                    DO_GROUP_OP2 (D4_1,32);
+                                    DO_GROUP_OP2 (D4_2,36);
+                                    DO_GROUP_OP2 (D4_3,40);
+                                    DO_GROUP_OP2 (D4_4,44);
+                                    
+                                    DO_GROUP_OP0 (D4_1,B4_1,48);
+                                    DO_GROUP_OP0 (D4_2,B4_2,52);
+                                    DO_GROUP_OP0 (D4_3,B4_3,56);
+                                    DO_GROUP_OP2 (D4_1,48);
+                                    DO_GROUP_OP2 (D4_2,52);
+                                    DO_GROUP_OP2 (D4_3,56);
+                                    
+                                    dest[row_offset + 60] = theData[ti] * theData[60];
+                                    ti++;
+                                    col_offset = vDim;
+                                }
+                                for (long c = 1; c < 61; c++, ti++, col_offset += 61) {
+                                    __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                    
+                                    __m256d D4_1, D4_2, D4_3, D4_4;
+                                    __m256d B4_1, B4_2, B4_3, B4_4;
+                                    
+                                    DO_GROUP_OP1 (D4_1,B4_1,0);
+                                    DO_GROUP_OP1 (D4_2,B4_2,4);
+                                    DO_GROUP_OP1 (D4_3,B4_3,8);
+                                    DO_GROUP_OP1 (D4_4,B4_4,12);
+                                    DO_GROUP_OP2 (D4_1,0);
+                                    DO_GROUP_OP2 (D4_2,4);
+                                    DO_GROUP_OP2 (D4_3,8);
+                                    DO_GROUP_OP2 (D4_4,12);
+                                    
+                                    DO_GROUP_OP1 (D4_1,B4_1,16);
+                                    DO_GROUP_OP1 (D4_2,B4_2,20);
+                                    DO_GROUP_OP1 (D4_3,B4_3,24);
+                                    DO_GROUP_OP1 (D4_4,B4_4,28);
+                                    DO_GROUP_OP2 (D4_1,16);
+                                    DO_GROUP_OP2 (D4_2,20);
+                                    DO_GROUP_OP2 (D4_3,24);
+                                    DO_GROUP_OP2 (D4_4,28);
+                                    
+                                    DO_GROUP_OP1 (D4_1,B4_1,32);
+                                    DO_GROUP_OP1 (D4_2,B4_2,36);
+                                    DO_GROUP_OP1 (D4_3,B4_3,40);
+                                    DO_GROUP_OP1 (D4_4,B4_4,44);
+                                    DO_GROUP_OP2 (D4_1,32);
+                                    DO_GROUP_OP2 (D4_2,36);
+                                    DO_GROUP_OP2 (D4_3,40);
+                                    DO_GROUP_OP2 (D4_4,44);
+                                    
+                                    DO_GROUP_OP1 (D4_1,B4_1,48);
+                                    DO_GROUP_OP1 (D4_2,B4_2,52);
+                                    DO_GROUP_OP1 (D4_3,B4_3,56);
+                                    DO_GROUP_OP2 (D4_1,48);
+                                    DO_GROUP_OP2 (D4_2,52);
+                                    DO_GROUP_OP2 (D4_3,56);
+                                    
+                                    dest[row_offset + 60] += theData[ti] * theData[col_offset + 60];
+                                    
+                                }
+                            }
+                            
+                        } else {
+                            for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                                long col_offset = 0L;
+                                
+                                {  // handle first row separately to zero out the dest entries
+                                    __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                    __m256d D4_1, D4_2, D4_3, D4_4;
+                                    __m256d B4_1, B4_2, B4_3, B4_4;
+                                    
+                                    DO_GROUP_OP0 (D4_1,B4_1,0);
+                                    DO_GROUP_OP0 (D4_2,B4_2,4);
+                                    DO_GROUP_OP0 (D4_3,B4_3,8);
+                                    DO_GROUP_OP0 (D4_4,B4_4,12);
+                                    DO_GROUP_OP2 (D4_1,0);
+                                    DO_GROUP_OP2 (D4_2,4);
+                                    DO_GROUP_OP2 (D4_3,8);
+                                    DO_GROUP_OP2 (D4_4,12);
+                                    
+                                    DO_GROUP_OP0 (D4_1,B4_1,16);
+                                    DO_GROUP_OP0 (D4_2,B4_2,20);
+                                    DO_GROUP_OP0 (D4_3,B4_3,24);
+                                    DO_GROUP_OP0 (D4_4,B4_4,28);
+                                    DO_GROUP_OP2 (D4_1,16);
+                                    DO_GROUP_OP2 (D4_2,20);
+                                    DO_GROUP_OP2 (D4_3,24);
+                                    DO_GROUP_OP2 (D4_4,28);
+                                    
+                                    DO_GROUP_OP0 (D4_1,B4_1,32);
+                                    DO_GROUP_OP0 (D4_2,B4_2,36);
+                                    DO_GROUP_OP0 (D4_3,B4_3,40);
+                                    DO_GROUP_OP0 (D4_4,B4_4,44);
+                                    DO_GROUP_OP2 (D4_1,32);
+                                    DO_GROUP_OP2 (D4_2,36);
+                                    DO_GROUP_OP2 (D4_3,40);
+                                    DO_GROUP_OP2 (D4_4,44);
+                                    
+                                    DO_GROUP_OP0 (D4_1,B4_1,48);
+                                    DO_GROUP_OP0 (D4_2,B4_2,52);
+                                    DO_GROUP_OP0 (D4_3,B4_3,56);
+                                    DO_GROUP_OP2 (D4_1,48);
+                                    DO_GROUP_OP2 (D4_2,52);
+                                    DO_GROUP_OP2 (D4_3,56);
+                                    
+                                    for (long k = loopBound; k < vDim; k++) {
+                                        dest[row_offset + k] = theData[ti] * theData[k];
+                                    }
+                                    ti++;
+                                    col_offset = vDim;
+                                }
+                                for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
+                                    __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                    
+                                    __m256d D4_1, D4_2, D4_3, D4_4;
+                                    __m256d B4_1, B4_2, B4_3, B4_4;
+                                    
+                                    DO_GROUP_OP1 (D4_1,B4_1,0);
+                                    DO_GROUP_OP1 (D4_2,B4_2,4);
+                                    DO_GROUP_OP1 (D4_3,B4_3,8);
+                                    DO_GROUP_OP1 (D4_4,B4_4,12);
+                                    DO_GROUP_OP2 (D4_1,0);
+                                    DO_GROUP_OP2 (D4_2,4);
+                                    DO_GROUP_OP2 (D4_3,8);
+                                    DO_GROUP_OP2 (D4_4,12);
+                                    
+                                    DO_GROUP_OP1 (D4_1,B4_1,16);
+                                    DO_GROUP_OP1 (D4_2,B4_2,20);
+                                    DO_GROUP_OP1 (D4_3,B4_3,24);
+                                    DO_GROUP_OP1 (D4_4,B4_4,28);
+                                    DO_GROUP_OP2 (D4_1,16);
+                                    DO_GROUP_OP2 (D4_2,20);
+                                    DO_GROUP_OP2 (D4_3,24);
+                                    DO_GROUP_OP2 (D4_4,28);
+                                    
+                                    DO_GROUP_OP1 (D4_1,B4_1,32);
+                                    DO_GROUP_OP1 (D4_2,B4_2,36);
+                                    DO_GROUP_OP1 (D4_3,B4_3,40);
+                                    DO_GROUP_OP1 (D4_4,B4_4,44);
+                                    DO_GROUP_OP2 (D4_1,32);
+                                    DO_GROUP_OP2 (D4_2,36);
+                                    DO_GROUP_OP2 (D4_3,40);
+                                    DO_GROUP_OP2 (D4_4,44);
+                                    
+                                    DO_GROUP_OP1 (D4_1,B4_1,48);
+                                    DO_GROUP_OP1 (D4_2,B4_2,52);
+                                    DO_GROUP_OP1 (D4_3,B4_3,56);
+                                    DO_GROUP_OP2 (D4_1,48);
+                                    DO_GROUP_OP2 (D4_2,52);
+                                    DO_GROUP_OP2 (D4_3,56);
+                                    
+                                    for (long k = loopBound; k < vDim; k++) {
+                                        dest[row_offset + k] += theData[ti] * theData[col_offset + k];
+                                    }
+                                }
+                            }
                         }
-#else
-                      
-                    sum256 = _mm256_setzero_pd();
-                    for (unsigned long k = 0UL; k < 60UL; k += 12UL) {
-                      __m256d term0 = _mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k));
-                      __m256d term1 = _mm256_mul_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4));
-                      __m256d term2 = _mm256_mul_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8));
-                      
-                      __m256d sum01 = _mm256_add_pd(term0,term1);
-                      __m256d plus2 = _mm256_add_pd(term2, sum256);
-                      
-                      sum256 = _mm256_add_pd (sum01, plus2);
+                    } else { // something else
+                        for (long r = 0; r < hDim; r++, row_offset += vDim) {
+                            long col_offset = 0L;
+                            
+                            {
+                                __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                for (long k = 0; k < loopBound; k+=4) {
+                                    __m256d D4, B4;
+                                    DO_GROUP_OP0 (D4, B4, k);
+                                    DO_GROUP_OP2 (D4,k);
+                                }
+                                
+                                for (long k = loopBound; k < vDim; k++) {
+                                    dest[row_offset + k] = theData[ti] * theData[k];
+                                }
+                                col_offset = vDim;
+                                ti++;
+                            }
+                            
+                            for (long c = 1; c < hDim; c++, ti++, col_offset += vDim) {
+                                __m256d A4 = _mm256_set1_pd(theData[ti]);
+                                for (long k = 0; k < loopBound; k+=4) {
+                                    __m256d D4, B4;
+                                    DO_GROUP_OP1 (D4, B4, k);
+                                    DO_GROUP_OP2 (D4,k);
+                                }
+                                
+                                for (long k = loopBound; k < vDim; k++) {
+                                    dest[row_offset + k] += theData[ti] * theData[col_offset + k];
+                                }
+                            }
+                        }
                     }
-#endif
-                    
-                    stash[i+j] = _avx_sum_4(sum256) + row[60] * column [60];
-                    
-                  }
-                  
                 } else {
-                  for (unsigned long i = 0; i < lDim; i += vDim) {
-                      hyFloat * row = theData + i;
-                      
-                      __m256d   sum256 = _mm256_setzero_pd();
                     
-                      long k;
-                      
-                      for (k = 0; k < loopBound; k += 4) {
+#endif
+                    
+                    
+                    hyFloat  * _hprestrict_ column = stash+lDim;
+                    hyFloat const  * source = theData;
+                    
+                    for (long j = 0; j < vDim; j++) {
+                        for (long c = 0; c < vDim; c++) {
+                            column[c] = source[j + c * vDim];
+                        }
+                        
+#ifdef _SLKP_USE_AVX_INTRINSICS
+                        if (vDim == 61UL) {
+                            for (unsigned long i = 0; i < lDim; i += 61) {
+                                hyFloat * _hprestrict_ row = theData + i;
+                                
+                                
+                                __m256d   sum256;
+                                
 #ifdef _SLKP_USE_FMA3_INTRINSICS
-                          sum256 = _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k), sum256);
+                                
+                                
+                                sum256 = _mm256_fmadd_pd (_mm256_loadu_pd (row), _mm256_loadu_pd (column),
+                                                          _mm256_fmadd_pd (_mm256_loadu_pd (row+4), _mm256_loadu_pd (column+4),
+                                                                           _mm256_mul_pd (_mm256_loadu_pd (row+8), _mm256_loadu_pd (column+8))));
+                                
+                                for (unsigned long k = 12UL; k < 60UL; k += 12UL) {
+                                    sum256 =  _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k),
+                                                               _mm256_fmadd_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4),
+                                                                                _mm256_fmadd_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8), sum256))
+                                                               );
+                                }
 #else
-                          sum256 = _mm256_add_pd (_mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k)), sum256);
+                                
+                                sum256 = _mm256_setzero_pd();
+                                for (unsigned long k = 0UL; k < 60UL; k += 12UL) {
+                                    __m256d term0 = _mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k));
+                                    __m256d term1 = _mm256_mul_pd (_mm256_loadu_pd (row+k+4), _mm256_loadu_pd (column+k+4));
+                                    __m256d term2 = _mm256_mul_pd (_mm256_loadu_pd (row+k+8), _mm256_loadu_pd (column+k+8));
+                                    
+                                    __m256d sum01 = _mm256_add_pd(term0,term1);
+                                    __m256d plus2 = _mm256_add_pd(term2, sum256);
+                                    
+                                    sum256 = _mm256_add_pd (sum01, plus2);
+                                }
 #endif
-                      }
-                    
-                      hyFloat result = _avx_sum_4(sum256);
-                    
-                      for (; k < vDim; k++) {
-                          result += row[k] * column [k];
-                      }
-                      
-                      stash[i+j] = result;
-                      
-                  }
-                }
+                                
+                                stash[i+j] = _avx_sum_4(sum256) + row[60] * column [60];
+                                
+                            }
+                            
+                        } else {
+                            for (unsigned long i = 0; i < lDim; i += vDim) {
+                                hyFloat * row = theData + i;
+                                
+                                __m256d   sum256 = _mm256_setzero_pd();
+                                
+                                long k;
+                                
+                                for (k = 0; k < loopBound; k += 4) {
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+                                    sum256 = _mm256_fmadd_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k), sum256);
+#else
+                                    sum256 = _mm256_add_pd (_mm256_mul_pd (_mm256_loadu_pd (row+k), _mm256_loadu_pd (column+k)), sum256);
+#endif
+                                }
+                                
+                                hyFloat result = _avx_sum_4(sum256);
+                                
+                                for (; k < vDim; k++) {
+                                    result += row[k] * column [k];
+                                }
+                                
+                                stash[i+j] = result;
+                                
+                            }
+                        }
 #ifdef  _SLKP_USE_AVX_INTRINSICS
-            }
+                    }
 #endif
 #else
-                for (long i = 0; i < lDim; i += vDim) {
-                    hyFloat * row    = theData + i,
-                                 buffer [4] = {0.,0.,0.,0.};
-
-
-                    unsigned long        k;
-
-                    for (k = 0UL; k < loopBound; k += 4UL) {
-                        buffer [0] += row[k] * column [k];
-                        buffer [1] += row[k+1] * column [k+1];
-                        buffer [2] += row[k+2] * column [k+2];
-                        buffer [3] += row[k+3] * column [k+3];
+                    for (long i = 0; i < lDim; i += vDim) {
+                        hyFloat * row    = theData + i,
+                        buffer [4] = {0.,0.,0.,0.};
+                        
+                        
+                        unsigned long        k;
+                        
+                        for (k = 0UL; k < loopBound; k += 4UL) {
+                            buffer [0] += row[k] * column [k];
+                            buffer [1] += row[k+1] * column [k+1];
+                            buffer [2] += row[k+2] * column [k+2];
+                            buffer [3] += row[k+3] * column [k+3];
+                        }
+                        
+                        for (; k < vDim; k++) {
+                            buffer[0] += row[k] * column [k];
+                        }
+                        
+                        stash[i+j] = (buffer[0] + buffer[1]) + (buffer[2] + buffer[3]);
                     }
-
-                    for (; k < vDim; k++) {
-                        buffer[0] += row[k] * column [k];
-                    }
-
-                    stash[i+j] = (buffer[0] + buffer[1]) + (buffer[2] + buffer[3]);
-                }
 #endif
-           }
-        }
+                }
+            }
 #ifdef  _SLKP_USE_ARM_NEON
         }
+#endif
+#else
+        _hy_matrix_multiply_NxN_blocked4 (stash, theData, theData, hDim);
+    }
 #endif
         
         long lDimmod4 = (lDim >> 2) << 2;
@@ -10489,4 +9828,5 @@ HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_s
     }
     return new _Matrix (nrow, ncol, is_sparse, type == _NUMERICAL_TYPE ? true : false);
 }
+
 

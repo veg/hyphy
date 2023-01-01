@@ -12,7 +12,7 @@ set(CMAKE_CONFIGURATION_TYPES Release)
 #-------------------------------------------------------------------------------
 
 option(NOAVX OFF)
-option(NOSSE3 OFF)
+option(NOSSE4 OFF)
 option(NONEON OFF)
 option(NOZLIB OFF)
 
@@ -20,16 +20,16 @@ option(NOZLIB OFF)
 # SSE MACROS
 #-------------------------------------------------------------------------------
 
-macro(PCL_CHECK_FOR_SSE3)
+macro(PCL_CHECK_FOR_SSE4)
   include(CheckCXXSourceRuns)
   set(CMAKE_REQUIRED_FLAGS)
 
   #if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-      set(CMAKE_REQUIRED_FLAGS "-msse3")
+      set(CMAKE_REQUIRED_FLAGS "-msse4")
   #endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
 
   check_cxx_source_runs("
-      #include <pmmintrin.h>
+      #include <smmintrin.h>
       #include <stdio.h>
 
       int main ()
@@ -38,12 +38,12 @@ macro(PCL_CHECK_FOR_SSE3)
           double vals[2] = {0};
           a = _mm_loadu_pd (vals);
           b = _mm_hadd_pd (a,a);
-          _mm_storeu_pd (vals, b);
+          _mm_storeu_pd (vals, _mm_blend_pd (a,b,2));
           printf (\"%g\", vals[0]);
           return (0);
       }"
-      HAVE_SSE3_EXTENSIONS)
-endmacro(PCL_CHECK_FOR_SSE3)
+      HAVE_SSE4_EXTENSIONS)
+endmacro(PCL_CHECK_FOR_SSE4)
 
 #-------------------------------------------------------------------------------
 # NEON MACROS
@@ -78,7 +78,7 @@ macro(PCL_CHECK_FOR_AVX)
   set(CMAKE_REQUIRED_FLAGS)
 
   #if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-      set(CMAKE_REQUIRED_FLAGS "-mavx")
+      set(CMAKE_REQUIRED_FLAGS "-mavx2")
   #endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
 
   check_cxx_source_runs("
@@ -90,7 +90,7 @@ macro(PCL_CHECK_FOR_AVX)
           __m256d a, b;
           double vals[4] = {0.};
           a = _mm256_loadu_pd (vals);
-          b = _mm256_hadd_pd (a,a);
+          b = _mm256_permute4x64_pd (_mm256_hadd_pd (a,a), 2);
           _mm256_storeu_pd (vals, b);
           printf (\"%g\", vals[0]);
           return (0);
@@ -152,6 +152,7 @@ set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_CONTRIB})
 set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPILE_FLAGS "-Weffc++ -Wextra -Wall")
 
+
 #-------------------------------------------------------------------------------
 # make it fast, scotty
 #-------------------------------------------------------------------------------
@@ -174,22 +175,22 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     if(${GCC_VERSION} VERSION_LESS 6.0)
       set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=gnu++14 ")
     else(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=c++14")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -std=c++14 -g")
     endif(${GCC_VERSION} VERSION_LESS 6.0)
 
     #set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info")
 
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
-        if(NOSSE3)
+        if(NOSSE4)
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
-        else(NOSSE3)
-            PCL_CHECK_FOR_SSE3()
-            if(${HAVE_SSE3_EXTENSIONS})
+        else(NOSSE4)
+            PCL_CHECK_FOR_SSE4()
+            if(${HAVE_SSE4_EXTENSIONS})
                 add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
                 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
-            endif(${HAVE_SSE3_EXTENSIONS})
-        endif(NOSSE3)
+            endif(${HAVE_SSE4_EXTENSIONS})
+        endif(NOSSE4)
     else(NOAVX)
        PCL_CHECK_FOR_AVX()
        if(${HAVE_AVX_EXTENSIONS})
@@ -201,21 +202,20 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
                 add_definitions (-D_SLKP_USE_FMA3_INTRINSICS)
             endif (${HAVE_FMA3})
         else(${HAVE_AVX_EXTENSIONS})
-            PCL_CHECK_FOR_SSE3()
-            if(${HAVE_SSE3_EXTENSIONS})
+            PCL_CHECK_FOR_SSE4()
+            if(${HAVE_SSE4_EXTENSIONS})
                 add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
                 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
-            endif(${HAVE_SSE3_EXTENSIONS})
+            endif(${HAVE_SSE4_EXTENSIONS})
         endif(${HAVE_AVX_EXTENSIONS})
     endif(NOAVX)
-
+    	
 	if(NOT NONEON)
 		PCL_CHECK_FOR_NEON()
 		if(${HAVE_NEON_EXTENSIONS})
 			add_definitions (-D_SLKP_USE_ARM_NEON)
 		endif(${HAVE_NEON_EXTENSIONS})
 	endif(NOT NONEON)
-
 
     set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
 endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -224,15 +224,15 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     #set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3  -fsave-optimization-record=yaml ")
     set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 ")
     if(NOAVX)
-        if(NOSSE3)
+        if(NOSSE4)
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
-        else(NOSSE3)
-            PCL_CHECK_FOR_SSE3()
-            if(${HAVE_SSE3_EXTENSIONS})
+        else(NOSSE4)
+            PCL_CHECK_FOR_SSE4()
+            if(${HAVE_SSE4_EXTENSIONS})
                 add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
                 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
-            endif(${HAVE_SSE3_EXTENSIONS})
-        endif(NOSSE3)
+            endif(${HAVE_SSE4_EXTENSIONS})
+        endif(NOSSE4)
     else(NOAVX)
         PCL_CHECK_FOR_AVX()
         if(${HAVE_AVX_EXTENSIONS})
@@ -244,11 +244,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
                 add_definitions (-D_SLKP_USE_FMA3_INTRINSICS)
             endif (${HAVE_FMA3})
         else(${HAVE_AVX_EXTENSIONS})
-            PCL_CHECK_FOR_SSE3()
-            if(${HAVE_SSE3_EXTENSIONS})
+            PCL_CHECK_FOR_SSE4()
+            if(${HAVE_SSE4_EXTENSIONS})
                 add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
                 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse3 ")
-            endif(${HAVE_SSE3_EXTENSIONS})
+            endif(${HAVE_SSE4_EXTENSIONS})
         endif (${HAVE_AVX_EXTENSIONS})
     endif(NOAVX)
     
@@ -328,6 +328,8 @@ if(NOT NOZLIB)
 		add_definitions (-D__ZLIB__)
 	endif(${ZLIB_FOUND})
 endif(NOT NOZLIB)
+
+
 
 #-------------------------------------------------------------------------------
 # uninstall target
