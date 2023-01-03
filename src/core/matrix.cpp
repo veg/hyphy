@@ -4148,89 +4148,56 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                 
           
 #elif defined _SLKP_USE_AVX_INTRINSICS
-                    hyFloat  * _hprestrict_ res               = storage.theData;
-                    long currentXIndex = 0L;
-                    for (long i = 0; i < 61; i++) {
-                        long up = compressedIndex[i];
-                        
-                            auto handle_chunk4 = [&](int o1, int o2) -> void {
-                                __m256d       R1 =  _mm256_loadu_pd (res + o1),
-                                              R2 =  _mm256_loadu_pd (res + o1 + 4),
-                                              R3 =  _mm256_loadu_pd (res + o2),
-                                              R4 =  _mm256_loadu_pd (res + o2 + 4);
-                            
-                            
-                                for (long cxi = currentXIndex; cxi < up; cxi++) {
-                                    long currentXColumn = compressedIndex[cxi + 61];
-                                    hyFloat  *   secArg            = secondArg.theData  + currentXColumn*61;
-                                    __m256d      value_op = _mm256_broadcast_sd (theData + cxi);
-                                
-                                   __m256d        C1 =  _mm256_loadu_pd (secArg + o1),
-                                                  C2 =  _mm256_loadu_pd (secArg + o1 + 4),
-                                                  C3 =  _mm256_loadu_pd (secArg + o2),
-                                                  C4 =  _mm256_loadu_pd (secArg + o2 + 4);
-                                                           
-                                    R1 = _hy_matrix_handle_axv_mfma (R1, value_op,C1);                
-                                    R2 = _hy_matrix_handle_axv_mfma (R2, value_op,C2);                
-                                    R3 = _hy_matrix_handle_axv_mfma (R3, value_op,C3);                
-                                    R4 = _hy_matrix_handle_axv_mfma (R4, value_op,C4);                
-
-                                }
-                                _mm256_storeu_pd (res + o1, R1);
-                                _mm256_storeu_pd (res + o1 + 4, R2);
-                                _mm256_storeu_pd (res + o2, R3);
-                                _mm256_storeu_pd (res + o2 + 4, R4);
-                            };
-                            auto handle_chunk3 = [&](int o1) -> void {
-                                __m256d       R1 =  _mm256_loadu_pd (res + o1),
-                                              R2 =  _mm256_loadu_pd (res + o1 + 4),
-                                              R3 =  _mm256_loadu_pd (res + o1 + 8);
-                            
-                            
-                                for (long cxi = currentXIndex; cxi < up; cxi++) {
-                                    long currentXColumn = compressedIndex[cxi + 61];
-                                    hyFloat  *   secArg            = secondArg.theData  + currentXColumn*61;
-                                    __m256d      value_op = _mm256_broadcast_sd (theData + cxi);
-                                
-                                   __m256d        C1 =  _mm256_loadu_pd (secArg + o1),
-                                                  C2 =  _mm256_loadu_pd (secArg + o1 + 4),
-                                                  C3 =  _mm256_loadu_pd (secArg + o1 + 8);
-                                                           
-                                    R1 = _hy_matrix_handle_axv_mfma (R1, value_op,C1);                
-                                    R2 = _hy_matrix_handle_axv_mfma (R2, value_op,C2);                
-                                    R3 = _hy_matrix_handle_axv_mfma (R3, value_op,C3);                
-
-                                }
-                                _mm256_storeu_pd (res + o1, R1);
-                                _mm256_storeu_pd (res + o1 + 4, R2);
-                                _mm256_storeu_pd (res + o1 + 8, R3);
-                            };
-                        
-                        if (currentXIndex < up) {
-                            //printf ("%d %d %d\n", i, currentXIndex, up);
-                            
-                            handle_chunk4 (0,8);
-                            handle_chunk4 (16,24);
-                            handle_chunk4 (32,40);
-                            handle_chunk3 (48);
-                            
-                            double        r60 = res[60];
-                            
-                            for (long cxi = currentXIndex; cxi < up; cxi++) {
-                                long currentXColumn = compressedIndex[cxi + 61];
-                                // go into the second matrix and look up all the non-zero entries in the currentXColumn row
-                                
-                                hyFloat  * secArg  = secondArg.theData  + currentXColumn*61;
-                                
-                                 r60 += theData[cxi] * secArg[60];
-                            }
-                            
-                            res[60]   = r60;
-                        }
-                       
-                        res += 61;
-                        currentXIndex = up;
-                    }
+        hyFloat  * _hprestrict_ res               = storage.theData;
+        long currentXIndex = 0L;
+        for (long i = 0; i < 61; i++) {
+              long up = compressedIndex[i];
+              
+              if (currentXIndex < up) {
+                  __m256d R[15]; // store  60 elements of this row
+                  
+#pragma unroll 3
+                  for (int k = 0; k < 15; k++) {
+                      R[k] =  _mm256_loadu_pd (res + (k<<2));
+                  }
+                  
+                  hyFloat       r60 = res[60]; // and the 61st element
+                  
+                  for (long cxi = currentXIndex; cxi < up; cxi++) {
+                      long currentXColumn = compressedIndex[cxi + 61];
+                      hyFloat  *   secArg            = secondArg.theData  + currentXColumn*61;
+                      
+                      hyFloat value = theData[cxi];
+                      __m256d  value_op = _mm256_set1_pd (value);
+                      
+                      for (int k = 0; k < 3; k++) {
+                          int k12 = k*20,
+                          k3 = k*5;
+                          
+                          
+                          R[k3] = _hy_matrix_handle_axv_mfma (R[k3], value_op, _mm256_loadu_pd (secArg + k12));       
+                          R[k3+1] = _hy_matrix_handle_axv_mfma (R[k3+1], value_op, _mm256_loadu_pd (secArg + k12 + 4));       
+                          R[k3+2] = _hy_matrix_handle_axv_mfma (R[k3+2], value_op, _mm256_loadu_pd (secArg + k12 + 8));       
+                          R[k3+3] = _hy_matrix_handle_axv_mfma (R[k3+3], value_op, _mm256_loadu_pd (secArg + k12 + 12));       
+                          R[k3+4] = _hy_matrix_handle_axv_mfma (R[k3+4], value_op, _mm256_loadu_pd (secArg + k12 + 16));       
+                          
+                      }
+                      r60 += value * secArg[60];
+                      
+                      
+                      
+                  }
+                  
+#pragma unroll 3
+                  for (int k = 0; k < 15; k++) {
+                      _mm256_storeu_pd (res + (k<<2), R[k]);
+                  }
+                  
+                  res[60]   = r60;
+              }
+              res += 61;
+              currentXIndex = up;
+          }
 #else
                     long currentXIndex = 0L;
                     hyFloat  * _hprestrict_ res               = storage.theData;
