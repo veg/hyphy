@@ -527,6 +527,29 @@ lfunction trees.ExtractTreeInfo(tree_string) {
 
 }
 
+
+/**
+ * @name trees.ParentMap
+ * @param {String} topology_object object name
+ * @returns a {Dictionary} where keys are node names and valued are names of parents for each node
+ */
+lfunction trees.ParentMap (topology_object) {
+    parent_nodes = Abs (^topology_object);
+    node_names = trees.branch_names (^topology_object, TRUE);
+    res = {};
+    for (i,k; in; parent_nodes) {
+        if (node_names / i) {
+            if (k >= 0) {
+                res[node_names[i]] =  node_names[k]; 
+            } else {
+                res[node_names[i]] = None;
+            }
+        }
+    }
+    return res;
+}
+
+
 /**
  * @name trees.HasBranchLengths
  * @param {Dictionary} tree information object (e.g. as returned by LoadAnnotatedTopology)

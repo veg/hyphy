@@ -1,6 +1,8 @@
 GetString (version, HYPHY_VERSION, 0);
 
 if (+version >= 2.4) {
+    // overwrite the result file if its there
+    fprintf (PATH_TO_CURRENT_BF + "data/HRVI.nex.GARD.json", CLEAR_FILE);
     LoadFunctionLibrary ("GARD.bf", {"--alignment" : PATH_TO_CURRENT_BF + "data/HRVI.nex"});
 } else {
     return 0;
