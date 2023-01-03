@@ -3515,6 +3515,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
 
                         }
 #endif
+
                         for (; i<secondArg.lDim; i++) {
                             //printf ("%d\n",i);
                             storage.theData[secondArg.theIndex[i]]+=secondArg.theData[i];
