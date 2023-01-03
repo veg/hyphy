@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1672783734865,
+  "lastUpdate": 1672784658906,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -13495,6 +13495,128 @@ window.BENCHMARK_DATA = {
             "range": "±0.401506%",
             "unit": "secs/op",
             "extra": "6 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "spond@temple.edu",
+            "name": "Sergei Pond",
+            "username": "spond"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d3bda6cb04cf02a3f636b7e062278f86a909c4c6",
+          "message": "Merge pull request #1553 from veg/develop\n\nCMake fixes and a few more speed tweaks.",
+          "timestamp": "2023-01-03T16:39:57-05:00",
+          "tree_id": "4887c090a68a44d55192221772251369cdc7601a",
+          "url": "https://github.com/veg/hyphy/commit/d3bda6cb04cf02a3f636b7e062278f86a909c4c6"
+        },
+        "date": 1672784651806,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 0.6375257879181213,
+            "range": "±0.589404%",
+            "unit": "secs/op",
+            "extra": "8 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 4.512187418216603,
+            "range": "±4.310410%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 18.603612821609957,
+            "range": "±0.110824%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 3.0003360376362154,
+            "range": "±0.657603%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 10.488556984330096,
+            "range": "±0.421613%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 53.42451116572284,
+            "range": "±0.436225%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 17.258935814017708,
+            "range": "±14.820695%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 17.008827581514808,
+            "range": "±25.929629%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 35.40449637103912,
+            "range": "±10.114452%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 2.4573284907579875,
+            "range": "±0.196767%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "BGM.wbf",
+            "value": 2.577299660054175,
+            "range": "±2.126041%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "CFEL.wbf",
+            "value": 51.10384300899428,
+            "range": "±10.422909%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FADE.wbf",
+            "value": 22.98480704254488,
+            "range": "±1.474898%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "GARD.wbf",
+            "value": 6.446705089028997,
+            "range": "±3.303977%",
+            "unit": "secs/op",
+            "extra": "5 samples"
           }
         ]
       }
