@@ -2717,25 +2717,54 @@ HBLObjectRef   _Matrix::Evaluate (bool replace)
 {
     _Matrix result (hDim, vDim, bool (theIndex), true);
 
-    if (storageType == 2) {
+    if (is_expression_based()) {
         HBLObjectRef formValue = nil;
         _Formula ** theFormulas = (_Formula**)theData;
         if (theIndex) {
+            bool * diag_skip  = (bool *)alloca (sizeof (bool) * hDim);
+            memset (diag_skip, 0, sizeof (bool) * hDim);
+            
             for (long i = 0; i<lDim; i++) {
-                //long k =
-                if (theIndex[i]!=-1) {
+                long k = theIndex[i];
+                if (k != -1L) {
                     formValue = theFormulas[i]->Compute();
                     if (formValue) {
                         result[HashBack(i)] = formValue->Value();
-                        //DeleteObject (formValue);
-                    } else {
-                        result[HashBack(i)] = 0;
-                    }
+                        long ri = k / hDim,
+                             ci = k - ri * hDim;
+                        
+                        if (ci == ri) diag_skip[ci] = true;
+                   } else {
+                         result[HashBack(i)] = 0;
+                   }
                 }
             }
             // check for probablilty matrices * fillers
-            if ((hDim==vDim)&&(!replace))
-                for (long i = 0; i<hDim; i++) {
+            if (hDim==vDim && !replace) {
+                
+                 hyFloat * diag_storage  = (hyFloat *)alloca (sizeof (hyFloat) * hDim);
+                 memset (diag_storage, 0, sizeof (hyFloat) * hDim);
+                 
+                 for (long nz = 0; nz < result.lDim; nz++) {
+                    long k = result.theIndex[nz];
+                    if (k != -1) {
+                        long ri = k / hDim;
+                        if (diag_skip[k] == false) {
+                            long ci = k - ri * hDim;
+                            if (ci != ri) {
+                                diag_storage[ri] -= result.theData[k];
+                            }
+                        }
+                    }
+                 }
+                         
+                 for (long i = 0; i < hDim; i++) {
+                    if (diag_skip[i] == false) {
+                        result[i*hDim + i] = diag_storage[i];
+                    }
+                 }
+
+                /*for (long i = 0; i<hDim; i++) {
                     long k = Hash(i,i);
                     if ((k>=0)&&theFormulas[k]->IsEmpty()) {
                         hyFloat *st = &result[k];
@@ -2756,7 +2785,8 @@ HBLObjectRef   _Matrix::Evaluate (bool replace)
                             *st-=result(i,j);
                         }
                     }
-                }
+                }*/
+            }
         } else {
             for (long i = 0; i<lDim; i++) {
                 if (theFormulas[i]!=(_Formula*)ZEROPOINTER) {
@@ -3427,17 +3457,25 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
         //#pragma clang loop unroll(enable)
         #pragma GCC ivdep
         #pragma ivdep
-               for (long idx = 0; idx < upto; idx+=8) {
-                    CELL_OP1 (idx,r1);
-                    CELL_OP1 (idx+2,r2);
-                    CELL_OP1 (idx+4,r3);
-                    CELL_OP1 (idx+6,r4);
-                    CELL_OP2 (idx,r1);
-                    CELL_OP2 (idx+2,r2);
-                    CELL_OP2 (idx+4,r3);
-                    CELL_OP2 (idx+6,r4);
+                for (long idx = 0; idx < upto; idx+=16) {
+                     CELL_OP1 (idx,r1);
+                     CELL_OP1 (idx+2,r2);
+                     CELL_OP1 (idx+4,r3);
+                     CELL_OP1 (idx+6,r4);
+                     CELL_OP1 (idx+8,r5);
+                     CELL_OP1 (idx+10,r6);
+                     CELL_OP1 (idx+12,r7);
+                     CELL_OP1 (idx+14,r8);
+                     CELL_OP2 (idx,r1);
+                     CELL_OP2 (idx+2,r2);
+                     CELL_OP2 (idx+4,r3);
+                     CELL_OP2 (idx+6,r4);
+                     CELL_OP2 (idx+8,r5);
+                     CELL_OP2 (idx+10,r6);
+                     CELL_OP2 (idx+12,r7);
+                     CELL_OP2 (idx+14,r8);
                 }
-                
+
 #else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]-=argData[idx];
@@ -3471,16 +3509,25 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
         //#pragma clang loop unroll(enable)
         #pragma GCC ivdep
         #pragma ivdep
-               for (long idx = 0; idx < upto; idx+=8) {
+              
+               for (long idx = 0; idx < upto; idx+=16) {
                     CELL_OP1 (idx,r1);
                     CELL_OP1 (idx+2,r2);
                     CELL_OP1 (idx+4,r3);
                     CELL_OP1 (idx+6,r4);
+                    CELL_OP1 (idx+8,r5);
+                    CELL_OP1 (idx+10,r6);
+                    CELL_OP1 (idx+12,r7);
+                    CELL_OP1 (idx+14,r8);
                     CELL_OP2 (idx,r1);
                     CELL_OP2 (idx+2,r2);
                     CELL_OP2 (idx+4,r3);
                     CELL_OP2 (idx+6,r4);
-                }
+                    CELL_OP2 (idx+8,r5);
+                    CELL_OP2 (idx+10,r6);
+                    CELL_OP2 (idx+12,r7);
+                    CELL_OP2 (idx+14,r8);
+               }
                 
 #else
                 for (long idx = 0; idx < upto; idx+=4) {
@@ -3714,16 +3761,26 @@ void    _Matrix::Multiply  (_Matrix& storage, hyFloat c)
             }
   #elif defined _SLKP_USE_ARM_NEON
             #define                 CELL_OP(k) vst1q_f64 (destination + k, vmulq_f64(value_op, vld1q_f64 (source+k)))
-            long lDimM8 = lDim >> 3 << 3,
+            long lDimM16 = lDim >> 4 << 4,
+                 lDimM2  = lDim >> 1 << 1,
                  k = 0;
                 
             float64x2_t  value_op = vdupq_n_f64 (c);
-             for (k = 0L; k < lDimM8; k+=8) {
+             for (k = 0L; k < lDimM16; k+=16) {
                  CELL_OP (k);
                  CELL_OP (k+2);
                  CELL_OP (k+4);
                  CELL_OP (k+6);
+                 CELL_OP (k+8);
+                 CELL_OP (k+10);
+                 CELL_OP (k+12);
+                 CELL_OP (k+14);
             }
+            
+            for (; k < lDimM2; k+=2) {
+                CELL_OP (k);
+            }
+            
             for (; k < lDim; k++) {
                 destination[k] = source[k]*c;
             }
@@ -3919,13 +3976,98 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   break out a special case for universal code
                 */
               
-              if (vDim == 61) {
-                
+              if (vDim == 61L) {
                 if (compressedIndex) {
+#ifdef _SLKP_USE_ARM_NEON
+                    hyFloat  * _hprestrict_ res               = storage.theData;
+                    long currentXIndex = 0L;
+                    for (long i = 0; i < 61; i++) {
+                        long up = compressedIndex[i];
+                        
+                        auto handle_chunk3 = [&](int o1, int o2, int o3) -> void {
+                            float64x2x4_t R1 = vld4q_f64 (res + o1),
+                                          R2 = vld4q_f64 (res + o2),
+                                          R3 = vld4q_f64 (res + o3);
+                            
+                            for (long cxi = currentXIndex; cxi < up; cxi++) {
+                                long currentXColumn = compressedIndex[cxi + 61];
+                                hyFloat  *   secArg            = secondArg.theData  + currentXColumn*61;
+                                float64x2_t  value_op = vdupq_n_f64 (theData[cxi]);
+                                
+                                float64x2x4_t  C1 = vld4q_f64 (secArg + o1),
+                                               C2 = vld4q_f64 (secArg + o2),
+                                               C3 = vld4q_f64 (secArg + o3);
+                                
+                                R1.val[0] = vfmaq_f64 (R1.val[0], value_op, C1.val[0]);
+                                R1.val[1] = vfmaq_f64 (R1.val[1], value_op, C1.val[1]);
+                                R1.val[2] = vfmaq_f64 (R1.val[2], value_op, C1.val[2]);
+                                R1.val[3] = vfmaq_f64 (R1.val[3], value_op, C1.val[3]);
+                                
+                                R2.val[0] = vfmaq_f64 (R2.val[0], value_op, C2.val[0]);
+                                R2.val[1] = vfmaq_f64 (R2.val[1], value_op, C2.val[1]);
+                                R2.val[2] = vfmaq_f64 (R2.val[2], value_op, C2.val[2]);
+                                R2.val[3] = vfmaq_f64 (R2.val[3], value_op, C2.val[3]);
+
+                                R3.val[0] = vfmaq_f64 (R3.val[0], value_op, C3.val[0]);
+                                R3.val[1] = vfmaq_f64 (R3.val[1], value_op, C3.val[1]);
+                                R3.val[2] = vfmaq_f64 (R3.val[2], value_op, C3.val[2]);
+                                R3.val[3] = vfmaq_f64 (R3.val[3], value_op, C3.val[3]);
+
+                            }
+                            vst4q_f64 (res + o1, R1);
+                            vst4q_f64 (res + o2, R2);
+                            vst4q_f64 (res + o3, R3);
+                        };
+ 
+                        
+                        if (currentXIndex < up) {
+                            //printf ("%d %d %d\n", i, currentXIndex, up);
+                            
+                            handle_chunk3 (0,8,16);
+                            handle_chunk3 (24,32,40);
+ 
+                            float64x2x4_t R1 = vld4q_f64 (res + 48);
+                            float64x2x2_t R2 = vld2q_f64 (res + 56);
+                            double        r60 = res[60];
+                            
+                            for (long cxi = currentXIndex; cxi < up; cxi++) {
+                                long currentXColumn = compressedIndex[cxi + 61];
+                                // go into the second matrix and look up all the non-zero entries in the currentXColumn row
+                                
+                                hyFloat value = theData[cxi];
+                                hyFloat  * secArg  = secondArg.theData  + currentXColumn*61;
+                                
+                                // go into the second matrix and look up all the non-zero entries in the currentXColumn row
+                                float64x2_t  value_op = vdupq_n_f64 (value);
+                                
+                                float64x2x4_t  C1 = vld4q_f64 (secArg+48);
+                                float64x2x2_t  C2 = vld2q_f64 (secArg+56);
+                                
+                                R1.val[0] = vfmaq_f64 (R1.val[0], value_op, C1.val[0]);
+                                R1.val[1] = vfmaq_f64 (R1.val[1], value_op, C1.val[1]);
+                                R1.val[2] = vfmaq_f64 (R1.val[2], value_op, C1.val[2]);
+                                R1.val[3] = vfmaq_f64 (R1.val[3], value_op, C1.val[3]);
+                                R2.val[0] = vfmaq_f64 (R2.val[0], value_op, C2.val[0]);
+                                R2.val[1] = vfmaq_f64 (R2.val[1], value_op, C2.val[1]);
+
+                                r60 += value * secArg[60];
+                            }
+                            
+                            vst4q_f64 (res + 48, R1);
+                            vst2q_f64 (res + 56, R2);
+                            res[60]   = r60;
+                        }
+                       
+                        res += 61;
+                        currentXIndex = up;
+                    }
+#else
                     long currentXIndex = 0L;
                     hyFloat  * _hprestrict_ res               = storage.theData;
                     
                     for (long i = 0; i < hDim; i++) { // row in source
+                        
+                      double r60 = res[60];
                       while (currentXIndex < compressedIndex[i]) {
                             long currentXColumn = compressedIndex[currentXIndex + hDim];
                             // go into the second matrix and look up all the non-zero entries in the currentXColumn row
@@ -3944,19 +4086,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                 CELL_OP(16);CELL_OP(20);CELL_OP(24);CELL_OP(28);
                                 CELL_OP(32);CELL_OP(36);CELL_OP(40);CELL_OP(44);
                                 CELL_OP(48);CELL_OP(52);CELL_OP(56);
-                            #elif  _SLKP_USE_ARM_NEON
-                                 float64x2_t  value_op = vdupq_n_f64 (value);
-                                 #define                 CELL_OP(x) vst1q_f64 (res+x, vfmaq_f64 (vld1q_f64(res+x), value_op, vld1q_f64 (secArg+x)))
-                          
-                        
-                                  CELL_OP(0);CELL_OP(2);CELL_OP(4);CELL_OP(6);
-                                  CELL_OP(8);CELL_OP(10);CELL_OP(12);CELL_OP(14);
-                                  CELL_OP(16);CELL_OP(18);CELL_OP(20);CELL_OP(22);
-                                  CELL_OP(24);CELL_OP(26);CELL_OP(28);
-                                  CELL_OP(30);CELL_OP(32);CELL_OP(34);CELL_OP(36);CELL_OP(38);
-                                  CELL_OP(40);CELL_OP(42);CELL_OP(44);CELL_OP(46);
-                                  CELL_OP(48);CELL_OP(50);CELL_OP(52);CELL_OP(54);
-                                  CELL_OP(56);CELL_OP(58);
+                                  
                             #else
                                 for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
                                     res[i]   += value * secArg[i];
@@ -3965,13 +4095,14 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                                     res[i+3] += value * secArg[i+3];
                                 }
                             #endif
-                            res[60]   += value * secArg[60];
+                            r60   += value * secArg[60];
                             currentXIndex ++;
                       }
-                      res += vDim;
+                      res[60] = r60;
+                      res += 61;
 
                   }
-                    
+#endif
                   
                     
                 } else {
@@ -4219,9 +4350,11 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
         //sparse by sparse
         
         /**
-             X Y where both X and Y are sparse can be multipled more efficiently than O (N^3)
-             if cell (i,j) is non-zero in X, it will contribute to cells (i,k) in the result matrix,
-             it will contribute to the cells of the result matrix (i,k) where k is such that there are non-zero entries in thh k-th row of matrix Y
+             X * Y where both X and Y are sparse can be multipled more efficiently than O (N^3)
+             if cell (i,j) is non-zero in X, it could contribute to cells (i,k) in the result matrix,
+             it will contribute to the cells of the result matrix (i,k) where k is such that there are non-zero entries in the j-th row of matrix Y
+              e.g. if element (1,2) is non-zero in X and elements (2,1),(2,7) and (2,20) are non-zero in Y then
+              products (1,2)*(2,1) , (1,2)*(2,7) and (1,2)*(2,20) will contribue to (1,1), (1,7) and (1,20) in the result
         */
         
         if (compressedIndex && secondArg.compressedIndex) {
@@ -4229,22 +4362,60 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                  storageIndex  = 0;
             
             for (long i = 0; i < hDim; i++) { // row in source
-                
                 while (currentXIndex < compressedIndex[i]) {
                     long currentXColumn = compressedIndex[currentXIndex + hDim];
                     // go into the second matrix and look up all the non-zero entries in the currentXColumn row
                     hyFloat c = theData[currentXIndex];
                     long from = currentXColumn ? secondArg.compressedIndex[currentXColumn-1] : 0,
-                          to   = secondArg.compressedIndex[currentXColumn];
-                    for (long secondIndex = from; secondIndex < to; secondIndex ++) {
+                         to   = secondArg.compressedIndex[currentXColumn];
+                    long secondIndex = from;
+
+                    //printf ("%d %d\n", from, to-from);
+#ifdef _SLKP_USE_ARM_NEON
+                    float64x2_t c_value = vdupq_n_f64 (c);
+                    for (; secondIndex < to-4; secondIndex +=4) {
+                        
+                        float64x2_t R1,R2,R3,R4,
+                                    C1,C2,C3,C4;
+                        
+                        C1 = vld1q_lane_f64 (secondArg.theData+secondIndex + 1, vld1q_lane_f64 (secondArg.theData+secondIndex  , C1, 0), 1);
+                        C2 = vld1q_lane_f64 (secondArg.theData+secondIndex + 3, vld1q_lane_f64 (secondArg.theData+secondIndex+2, C2, 0), 1);
+                        //C3 = vld1q_lane_f64 (secondArg.theData+secondIndex + 5, vld1q_lane_f64 (secondArg.theData+secondIndex+4, C3, 0), 1);
+                        //C4 = vld1q_lane_f64 (secondArg.theData+secondIndex + 7, vld1q_lane_f64 (secondArg.theData+secondIndex+6, C4, 0), 1);
+
+                        R1 = vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 1],
+                             vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim    ], R1, 0), 1);
+                        R2 = vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 3],
+                             vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 2], R2, 0), 1);
+                        /*R3 = vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 5],
+                             vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 4], R3, 0), 1);
+                        R4 = vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 7],
+                             vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 6], R4, 0), 1);*/
+                        storage.theData[storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim]] += c*secondArg.theData[secondIndex];
+                        R1 = vfmaq_f64 (R1,C1,c_value);
+                        R2 = vfmaq_f64 (R2,C2,c_value);
+                        //R3 = vfmaq_f64 (R3,C3,c_value);
+                        //R4 = vfmaq_f64 (R4,C4,c_value);
+                        vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim],     R1, 0);
+                        vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 1], R1, 1);
+                        vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 2], R2, 0);
+                        vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 3], R2, 1);
+                        //vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 4], R3, 0);
+                        //vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 5], R3, 1);
+                        //vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 6], R4, 0);
+                        //vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 7], R4, 1);
+                    }
+                    
+#endif
+                    //printf ("%d %d\n", secondIndex, to);
+                    for (; secondIndex < to; secondIndex ++) {
                         storage.theData[storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim]] += c*secondArg.theData[secondIndex];
                     }
                     currentXIndex ++;
                 }
-                
                 storageIndex += secondArg.vDim;
-
             }
+            //exit (0);
         } else {
         
             long * indexVector = (long*)alloca ( sizeof(long)*secondArg.hDim);
@@ -4529,12 +4700,29 @@ bool    _Matrix::IsMaxElement  (hyFloat bench) {
         
         hyFloat mBench = -bench;
         if (!theIndex || compressedIndex) {
+#ifdef _SLKP_USE_ARM_NEON
+            long i = 0;
+            for (i = 0; i<((lDim>>1)<<1); i+=2) {
+                hyFloat t = vmaxvq_f64 (vld1q_f64(theData + i));
+                if ( t>bench || t<mBench ) {
+                    return true;
+                }
+            }
+            if (i < lDim) {
+                hyFloat t = theData[i];
+                if ( t>bench || t<mBench ) {
+                    return true;
+                }
+            }
+            
+#else
             for (long i = 0; i<lDim; i++) {
                 hyFloat t = theData[i];
                 if ( t>bench || t<mBench ) {
                     return true;
                 }
             }
+#endif
         } else {
             for (long i = 0; i<lDim; i++) {
                 if (theIndex [i] >= 0) {
