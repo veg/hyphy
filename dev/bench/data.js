@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1670116096277,
+  "lastUpdate": 1672769829434,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -13027,6 +13027,128 @@ window.BENCHMARK_DATA = {
             "name": "ABSREL-MH.wbf",
             "value": 143.41029685931449,
             "range": "±1.162252%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "spond@temple.edu",
+            "name": "Sergei Pond",
+            "username": "spond"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "642f3eddcd07db3b45a8762741ef5834a490fc9a",
+          "message": "Merge pull request #1552 from veg/develop\n\n2.5.45 speed improvements",
+          "timestamp": "2023-01-03T12:32:58-05:00",
+          "tree_id": "cda2f406753e59a70f2c48c4f3260fd43eb302ce",
+          "url": "https://github.com/veg/hyphy/commit/642f3eddcd07db3b45a8762741ef5834a490fc9a"
+        },
+        "date": 1672769821472,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 0.7217892288836952,
+            "range": "±18.742829%",
+            "unit": "secs/op",
+            "extra": "8 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 4.111385660309094,
+            "range": "±1.274840%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 18.770530267480055,
+            "range": "±0.729928%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 2.947478873945171,
+            "range": "±0.571613%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 10.17076718096846,
+            "range": "±0.998371%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 52.97732570459843,
+            "range": "±0.616314%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 14.910018041121829,
+            "range": "±21.411589%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 21.560552812574116,
+            "range": "±48.661856%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 34.160005465600875,
+            "range": "±10.092442%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 2.4699347196253605,
+            "range": "±0.304810%",
+            "unit": "secs/op",
+            "extra": "6 samples"
+          },
+          {
+            "name": "BGM.wbf",
+            "value": null,
+            "range": "±0.000000%",
+            "unit": "secs/op",
+            "extra": "0 samples"
+          },
+          {
+            "name": "CFEL.wbf",
+            "value": 50.43881771411278,
+            "range": "±9.903998%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FADE.wbf",
+            "value": 22.370864186483526,
+            "range": "±1.065032%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "GARD.wbf",
+            "value": 6.35905784199013,
+            "range": "±4.132269%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
