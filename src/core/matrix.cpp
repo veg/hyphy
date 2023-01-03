@@ -2736,13 +2736,18 @@ HBLObjectRef   _Matrix::Evaluate (bool replace)
                 if (k != -1L) {
                     formValue = theFormulas[i]->Compute();
                     if (formValue) {
-                        result[HashBack(i)] = formValue->Value();
-                        long ri = k / hDim,
-                             ci = k - ri * hDim;
+                        long ri = k / vDim,
+                             ci = k - ri * vDim;
                         
-                        if (ci == ri) diag_skip[ci] = true;
+                        result.Store (ri,ci,formValue->Value());
+                        //result[HashBack(i)] = formValue->Value();
+                        //if (ri < 0 || ri >= hDim) {
+                        //    abort();
+                        //}
+                        if (ci == ri) diag_skip[ri] = true;
                    } else {
-                         result[HashBack(i)] = 0;
+                       result[k] = 0;
+                       //result[HashBack(i)] = 0.;
                    }
                 }
             }
@@ -2755,9 +2760,9 @@ HBLObjectRef   _Matrix::Evaluate (bool replace)
                  for (long nz = 0; nz < result.lDim; nz++) {
                     long k = result.theIndex[nz];
                     if (k != -1) {
-                        long ri = k / hDim;
+                        long ri = k / vDim;
                         if (diag_skip[k] == false) {
-                            long ci = k - ri * hDim;
+                            long ci = k - ri * vDim;
                             if (ci != ri) {
                                 diag_storage[ri] -= result.theData[k];
                             }
@@ -2767,11 +2772,11 @@ HBLObjectRef   _Matrix::Evaluate (bool replace)
                          
                  for (long i = 0; i < hDim; i++) {
                     if (diag_skip[i] == false) {
-                        result[i*hDim + i] = diag_storage[i];
+                        result.Store (i,i,diag_storage[i]);
                     }
                  }
 
-                /*for (long i = 0; i<hDim; i++) {
+                 /*for (long i = 0; i<hDim; i++) {
                     long k = Hash(i,i);
                     if ((k>=0)&&theFormulas[k]->IsEmpty()) {
                         hyFloat *st = &result[k];
@@ -6555,30 +6560,27 @@ hyFloat&     _Matrix::operator [] (long i) {
 
 //_____________________________________________________________________________________________
 void        _Matrix::Store (long i, long j, hyFloat value) {
-    if (storageType!=1) {
-        return;
-    }
-
-    long lIndex;
-
-    if (theIndex) {
-        lIndex = Hash (i, j);
-
-        if (lIndex == -1) {
-            IncreaseStorage();
+    if (is_numeric()) {
+        long lIndex;
+        
+        if (theIndex) {
             lIndex = Hash (i, j);
+            
+            if (lIndex == -1) {
+                IncreaseStorage();
+                lIndex = Hash (i, j);
+            }
+        } else {
+            lIndex = i*vDim + j;
         }
-    } else {
-        lIndex = i*vDim + j;
+        
+        if (lIndex<0) {
+            theIndex[-lIndex-2] = i*vDim+j;
+            ((hyFloat*)theData)[-lIndex-2] = value;
+        } else {
+            ((hyFloat*)theData)[lIndex] = value;
+        }
     }
-
-    if (lIndex<0) {
-        theIndex[-lIndex-2] = i*vDim+j;
-        ((hyFloat*)theData)[-lIndex-2] = value;
-    } else {
-        ((hyFloat*)theData)[lIndex] = value;
-    }
-
 }
 
 //_____________________________________________________________________________________________
