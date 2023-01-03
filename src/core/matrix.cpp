@@ -108,11 +108,18 @@ void        MatrixIndexError        (long, long, long, long);
 
 
 #ifdef _SLKP_USE_AVX_INTRINSICS
-  void echo_avx_sum_4 (__m256d const x) {
-    double a[4];
-    _mm256_storeu_pd(a, x);
-    printf ("%g|%g|%g|%g\n", a[0], a[1], a[2], a[3]);
-  }
+    void echo_avx_sum_4 (__m256d const x) {
+        double a[4];
+        _mm256_storeu_pd(a, x);
+        printf ("%g|%g|%g|%g\n", a[0], a[1], a[2], a[3]);
+    }
+    inline __m256d _hy_matrix_handle_axv_mfma (__m256d c, __m256d a, __m256d b) {
+        #if defined _SLKP_USE_FMA3_INTRINSICS
+            return _mm256_fmadd_pd (a,b,c);
+        #else
+            return _mm256_add_pd (c, _mm256_mul_pd (a,b));
+        #endif
+    }
 #endif
 
 
@@ -4061,6 +4068,90 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                         res += 61;
                         currentXIndex = up;
                     }
+#elif defined _SLKP_USE_AVX_INTRINSICS
+                    hyFloat  * _hprestrict_ res               = storage.theData;
+                    long currentXIndex = 0L;
+                    for (long i = 0; i < 61; i++) {
+                        long up = compressedIndex[i];
+                        
+                            auto handle_chunk4 = [&](int o1, int o2) -> void {
+                                __m256d       R1 =  _mm256_loadu_pd (res + o1),
+                                              R2 =  _mm256_loadu_pd (res + o1 + 4),
+                                              R3 =  _mm256_loadu_pd (res + o2),
+                                              R4 =  _mm256_loadu_pd (res + o2 + 4);
+                            
+                            
+                                for (long cxi = currentXIndex; cxi < up; cxi++) {
+                                    long currentXColumn = compressedIndex[cxi + 61];
+                                    hyFloat  *   secArg            = secondArg.theData  + currentXColumn*61;
+                                    __m256d      value_op = _mm256_broadcast_sd (theData + cxi);
+                                
+                                   __m256d        C1 =  _mm256_loadu_pd (secArg + o1),
+                                                  C2 =  _mm256_loadu_pd (secArg + o1 + 4),
+                                                  C3 =  _mm256_loadu_pd (secArg + o2),
+                                                  C4 =  _mm256_loadu_pd (secArg + o2 + 4);
+                                                           
+                                    R1 = _hy_matrix_handle_axv_mfma (R1, value_op,C1);                
+                                    R2 = _hy_matrix_handle_axv_mfma (R2, value_op,C2);                
+                                    R3 = _hy_matrix_handle_axv_mfma (R3, value_op,C3);                
+                                    R4 = _hy_matrix_handle_axv_mfma (R4, value_op,C4);                
+
+                                }
+                                _mm256_storeu_pd (res + o1, R1);
+                                _mm256_storeu_pd (res + o1 + 4, R2);
+                                _mm256_storeu_pd (res + o2, R3);
+                                _mm256_storeu_pd (res + o2 + 4, R4);
+                            };
+                            auto handle_chunk3 = [&](int o1) -> void {
+                                __m256d       R1 =  _mm256_loadu_pd (res + o1),
+                                              R2 =  _mm256_loadu_pd (res + o1 + 4),
+                                              R3 =  _mm256_loadu_pd (res + o1 + 8);
+                            
+                            
+                                for (long cxi = currentXIndex; cxi < up; cxi++) {
+                                    long currentXColumn = compressedIndex[cxi + 61];
+                                    hyFloat  *   secArg            = secondArg.theData  + currentXColumn*61;
+                                    __m256d      value_op = _mm256_broadcast_sd (theData + cxi);
+                                
+                                   __m256d        C1 =  _mm256_loadu_pd (secArg + o1),
+                                                  C2 =  _mm256_loadu_pd (secArg + o1 + 4),
+                                                  C3 =  _mm256_loadu_pd (secArg + o1 + 8);
+                                                           
+                                    R1 = _hy_matrix_handle_axv_mfma (R1, value_op,C1);                
+                                    R2 = _hy_matrix_handle_axv_mfma (R2, value_op,C2);                
+                                    R3 = _hy_matrix_handle_axv_mfma (R3, value_op,C3);                
+
+                                }
+                                _mm256_storeu_pd (res + o1, R1);
+                                _mm256_storeu_pd (res + o1 + 4, R2);
+                                _mm256_storeu_pd (res + o1 + 8, R3);
+                            };
+                        
+                        if (currentXIndex < up) {
+                            //printf ("%d %d %d\n", i, currentXIndex, up);
+                            
+                            handle_chunk4 (0,8);
+                            handle_chunk4 (16,24);
+                            handle_chunk4 (32,40);
+                            handle_chunk3 (48);
+                            
+                            double        r60 = res[60];
+                            
+                            for (long cxi = currentXIndex; cxi < up; cxi++) {
+                                long currentXColumn = compressedIndex[cxi + 61];
+                                // go into the second matrix and look up all the non-zero entries in the currentXColumn row
+                                
+                                hyFloat  * secArg  = secondArg.theData  + currentXColumn*61;
+                                
+                                 r60 += theData[cxi] * secArg[60];
+                            }
+                            
+                            res[60]   = r60;
+                        }
+                       
+                        res += 61;
+                        currentXIndex = up;
+                    }
 #else
                     long currentXIndex = 0L;
                     hyFloat  * _hprestrict_ res               = storage.theData;
@@ -4404,6 +4495,34 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                         //vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 5], R3, 1);
                         //vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 6], R4, 0);
                         //vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 7], R4, 1);
+                    }
+                    
+#endif
+
+#ifdef _SLKP_USE_AVX_INTRINSICS
+
+                    __m256d c_value = _mm256_set1_pd (c);
+                    for (; secondIndex < to-4; secondIndex +=4) {
+                        
+                        long a0 = storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim],
+                             a1 = storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 1],
+                             a2 = storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 2],
+                             a3 = storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 3];
+                        
+                        __m256i       LOAD_IDX = _mm256_set_epi64x (a3,a2,a1,a0);
+                        
+                        __m256d       R1 = _mm256_i64gather_pd (storage.theData,LOAD_IDX,8), 
+                                      C1 = _mm256_loadu_pd     (secondArg.theData+secondIndex);
+                         
+                         R1 = _hy_matrix_handle_axv_mfma (R1,C1,c_value);
+                         
+                         __m128d R1L = _mm256_extractf128_pd (R1,0),
+                                 R1H = _mm256_extractf128_pd (R1,1);
+                        
+                        _mm_storel_pd (storage.theData+a0, R1L);
+                        _mm_storeh_pd (storage.theData+a1, R1L);
+                        _mm_storel_pd (storage.theData+a2, R1H);
+                        _mm_storeh_pd (storage.theData+a3, R1H);
                     }
                     
 #endif
