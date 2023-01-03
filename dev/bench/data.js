@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1672770272577,
+  "lastUpdate": 1672782692472,
   "repoUrl": "https://github.com/veg/hyphy",
   "entries": {
     "Benchmark.js Benchmark": [
@@ -13281,6 +13281,128 @@ window.BENCHMARK_DATA = {
             "name": "ABSREL-MH.wbf",
             "value": 62.758880381573995,
             "range": "±0.539737%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sweaver@temple.edu",
+            "name": "Steven Weaver",
+            "username": "stevenweaver"
+          },
+          "committer": {
+            "email": "sweaver@temple.edu",
+            "name": "Steven Weaver",
+            "username": "stevenweaver"
+          },
+          "distinct": true,
+          "id": "5658b3f0b253cdf354186a2860b341567145393a",
+          "message": "fix cmake sse3 bug",
+          "timestamp": "2023-01-03T14:58:35-06:00",
+          "tree_id": "5570380fef4e9faf1492639c83698405de765f81",
+          "url": "https://github.com/veg/hyphy/commit/5658b3f0b253cdf354186a2860b341567145393a"
+        },
+        "date": 1672782683836,
+        "tool": "benchmarkjsInverse",
+        "benches": [
+          {
+            "name": "SmallCodon.bf",
+            "value": 0.7899324686732532,
+            "range": "±1.697125%",
+            "unit": "secs/op",
+            "extra": "8 samples"
+          },
+          {
+            "name": "IntermediateProtein.bf",
+            "value": 5.2554130754677315,
+            "range": "±0.926272%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FEL.wbf",
+            "value": 22.803457004081817,
+            "range": "±0.639011%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC.wbf",
+            "value": 3.6176701480712397,
+            "range": "±1.934588%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "SLAC-partitioned.wbf",
+            "value": 12.6579073947495,
+            "range": "±0.396302%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "MEME.wbf",
+            "value": 64.56194718832721,
+            "range": "±0.117300%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED.wbf",
+            "value": 21.11308166539988,
+            "range": "±37.232824%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BUSTED-SRV.wbf",
+            "value": 21.21205693316081,
+            "range": "±23.737880%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "RELAX.wbf",
+            "value": 40.83466045979828,
+            "range": "±8.830808%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FUBAR.wbf",
+            "value": 2.963419549086081,
+            "range": "±0.037907%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "BGM.wbf",
+            "value": null,
+            "range": "±0.000000%",
+            "unit": "secs/op",
+            "extra": "0 samples"
+          },
+          {
+            "name": "CFEL.wbf",
+            "value": 59.64096141229796,
+            "range": "±13.006632%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "FADE.wbf",
+            "value": 27.00658960786432,
+            "range": "±0.207825%",
+            "unit": "secs/op",
+            "extra": "5 samples"
+          },
+          {
+            "name": "GARD.wbf",
+            "value": 7.714680265076415,
+            "range": "±2.610666%",
             "unit": "secs/op",
             "extra": "5 samples"
           }
