@@ -3421,9 +3421,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                     } else {
                         long i = 0L;
 #ifdef  _SLKP_USE_ARM_NEON
-                        //printf ("%d\n",secondArg.lDim);
                         const long up2 = (secondArg.lDim>>3<<3);
-                        //printf ("%d/%d\n",secondArg.lDim, up2);
                         for (; i<up2; i+=8) {
                            
                             float64x2_t     S1 = vld1q_f64 (secondArg.theData + i),
@@ -3454,13 +3452,6 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                             R4 = vld1q_lane_f64 (storage.theData + s7,
                                                  vld1q_lane_f64 (storage.theData + s6, R3, 0), 1);
 
-                            /*printf ("\n\n%g/%g %g/%g\n\n", vdupd_laneq_f64 (SA.val[0],0), secondArg.theData[i], vdupd_laneq_f64 (SA.val[0],1), secondArg.theData[i+1]);
-                            printf ("\n\n%g/%g %g/%g\n\n", vdupd_laneq_f64 (SA.val[1],0), secondArg.theData[i+2], vdupd_laneq_f64 (SA.val[1],1), secondArg.theData[i+3]);
-
-                            exit(0);*/
-                            
-                            //printf ("%d:%d, %d:%d, %d:%d)
-
                             R1 = vaddq_f64(R1,S1);
                             R2 = vaddq_f64(R2,S2);
                             R3 = vaddq_f64(R3,S3);
@@ -3478,10 +3469,50 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                             vst1q_lane_f64 (storage.theData + s6,     R4, 0);
                             vst1q_lane_f64 (storage.theData + s7,     R4, 1);
 
-                            //storage.theData[secondArg.theIndex[i]]+=secondArg.theData[i];
-                            //storage.theData[secondArg.theIndex[i+1]]+=secondArg.theData[i+1];
-                            //storage.theData[secondArg.theIndex[i+2]]+=secondArg.theData[i+2];
-                            //storage.theData[secondArg.theIndex[i+3]]+=secondArg.theData[i+3];
+                        }
+#endif
+                        
+                        
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+                        const long up2 = (secondArg.lDim>>3<<3);
+                        for (; i<up2; i+=8) {
+                           
+                            __m256d
+                                S1 = _mm256_loadu_pd (secondArg.theData + i),
+                                S2 = _mm256_loadu_pd (secondArg.theData + i + 4);
+
+                            
+                            long s0 = secondArg.theIndex[i],
+                                 s1 = secondArg.theIndex[i+1],
+                                 s2 = secondArg.theIndex[i+2],
+                                 s3 = secondArg.theIndex[i+3],
+                                 s4 = secondArg.theIndex[i+4],
+                                 s5 = secondArg.theIndex[i+5],
+                                 s6 = secondArg.theIndex[i+6],
+                                 s7 = secondArg.theIndex[i+7];
+                            
+                            __m256d       R1 = _mm256_i64gather_pd (storage.theData,_mm256_set_epi64x (s3,s2,s1,s0),8);
+                            __m256d       R2 = _mm256_i64gather_pd (storage.theData,_mm256_set_epi64x (s7,s6,s5,s4),8);
+                            
+                            R1 = _mm256_add_pd (R1, S1);
+                            R2 = _mm256_add_pd (R2, S2);
+                            
+                            __m128d R1L = _mm256_extractf128_pd (R1,0),
+                                    R1H = _mm256_extractf128_pd (R1,1);
+                           
+                           _mm_storel_pd (storage.theData+s0, R1L);
+                           _mm_storeh_pd (storage.theData+s1, R1L);
+                           _mm_storel_pd (storage.theData+s2, R1H);
+                           _mm_storeh_pd (storage.theData+s3, R1H);
+
+                            __m128d R2L = _mm256_extractf128_pd (R2,0),
+                                    R2H = _mm256_extractf128_pd (R2,1);
+                           
+                           _mm_storel_pd (storage.theData+s4, R2L);
+                           _mm_storeh_pd (storage.theData+s5, R2L);
+                           _mm_storel_pd (storage.theData+s6, R2H);
+                           _mm_storeh_pd (storage.theData+s7, R2H);
+
                         }
 #endif
                         for (; i<secondArg.lDim; i++) {
