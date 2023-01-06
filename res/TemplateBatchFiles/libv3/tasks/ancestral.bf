@@ -139,13 +139,14 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
                     _lfComponentID
                 }
             }, MARGINAL);
+            //(_bac_ancDS.marginal_support_matrix);
         } else {
             DataSet _bac_ancDS = ReconstructAncestors( ^ _lfID, {
                 {
                     _lfComponentID
                 }
             });
-        }
+       }
     }
 
     _bac_tree_avl = ( ^ _bac_treeID) ^ 0;
@@ -224,17 +225,8 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     for (_bacCounter = 0; _bacCounter < Columns(_bacAncestralNames); _bacCounter += 1) {
         _bacMapTreeNodeToDF[_bacTreeAVLOrder[_bacAncestralNames[_bacCounter]] - 1] = _bacCounter + _bacFilterSequenceCount;
     }
+    
 
-    /* make some auxiliary variables */
-
-    _bacUnitRow = {
-        1,
-        Columns(_bacCharHandles)
-    }["1"];
-    _bacSequenceRow = {
-        1,
-        Columns(_bacCharHandles)
-    }["_MATRIX_ELEMENT_COLUMN_"];
 
 
     /* loop over branches (rows) */
@@ -285,22 +277,43 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         }
     }
 
+    if (doMarginal) {
+        return {
+            "DIMENSIONS": {
+                "SITES": _bacAF.sites,
+                "SEQUENCES": _bacFilterSequenceCount,
+                "BRANCHES": _bacBranchCount,
+                "CHARS": _bacFilterDimension
+            },
+            "CHARS": _bacCharHandles,
+            "MATRIX": _bacMatrixOfResolutions,
+            "TREE_AVL": _bac_tree_avl,
+            "AMBIGS": _bacHandledResolutionsAmbig,
+            "MAPPING": reverse_mapping,
+            "SUPPORT" : _bac_ancDS.marginal_support_matrix,
+            "SITE_TO_PATTERN" : _bacFilterPatternMap
+                //"AMBIGS_REV": utility.SwapKeysAndValues (_bacHandledResolutionsAmbig)
+        };    
+    } else {
+         return {
+            "DIMENSIONS": {
+                "SITES": _bacAF.sites,
+                "SEQUENCES": _bacFilterSequenceCount,
+                "BRANCHES": _bacBranchCount,
+                "CHARS": _bacFilterDimension
+            },
+            "CHARS": _bacCharHandles,
+            "MATRIX": _bacMatrixOfResolutions,
+            "TREE_AVL": _bac_tree_avl,
+            "AMBIGS": _bacHandledResolutionsAmbig,
+            "MAPPING": reverse_mapping
+                //"AMBIGS_REV": utility.SwapKeysAndValues (_bacHandledResolutionsAmbig)
+        };    
+   
+    }
     
 
-    return {
-        "DIMENSIONS": {
-            "SITES": _bacAF.sites,
-            "SEQUENCES": _bacFilterSequenceCount,
-            "BRANCHES": _bacBranchCount,
-            "CHARS": _bacFilterDimension
-        },
-        "CHARS": _bacCharHandles,
-        "MATRIX": _bacMatrixOfResolutions,
-        "TREE_AVL": _bac_tree_avl,
-        "AMBIGS": _bacHandledResolutionsAmbig,
-        "MAPPING": reverse_mapping
-            //"AMBIGS_REV": utility.SwapKeysAndValues (_bacHandledResolutionsAmbig)
-    };
+    
 }
 
 /*******************************************/
@@ -379,6 +392,57 @@ lfunction ancestral.Sequences (ancestral_data) {
     }
     
     return result;
+}
+
+/*******************************************/
+/**
+ * @name ancestral.Support
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Number} min_support - only report states which have at least this much conditional prob ([0-1])
+ 
+ * @returns
+        {
+         "Node Name" :  {Dict} => site : {Dict} => character: support
+        
+        None, if no support values have been computed
+
+ */
+
+lfunction ancestral.Support (ancestral_data, min_support) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+    
+    if (Type (ancestral_data["SUPPORT"]) == "Matrix") {
+        branches =  ancestral._branch_filter_helper (ancestral_data, "ancestral._select_internal", selected_branches, selected_branch_names) + 1;    
+        
+        sites  = (ancestral_data["DIMENSIONS"])["SITES"];
+        alphabet =  (ancestral_data["DIMENSIONS"])["CHARS"];
+        
+        result = {};
+        selected_branches + {{(Abs(ancestral_data["TREE_AVL"])-2),0}};
+        selected_branch_names + "root";
+        
+
+        for (b = 0; b < branches; b += 1) {
+             seq_support = {}; 
+         
+            for (s = 0; s < sites; s += 1) {
+                seq_support [s] = {};
+                p = (ancestral_data["SITE_TO_PATTERN"])[s];
+                for (c = 0; c < alphabet; c+=1) {
+                    own_state    = (ancestral_data["SUPPORT"])[b][p*alphabet + c];
+                    if (own_state >= min_support) {
+                        (seq_support [s])[(ancestral_data["CHARS"])[c]] = own_state;
+                    }
+                    
+                }
+            
+            }   
+ 
+            result[selected_branch_names[b]] = seq_support;
+        }
+        return result;
+    }
 }
 
 

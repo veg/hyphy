@@ -824,35 +824,36 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 // doLeaves     :   compute support values leaves instead of internal nodes
 
 {
-
+    
     _DataSetFilter const* dsf       = GetIthFilter(index);
-  
+    
     _TheTree        *blockTree      = (_TheTree*)LocateVar(theTrees.list_data[index]);
-
-    long            patternCount                    = dsf->GetPatternCount  (),
-                    alphabetDimension                = dsf->GetDimension         (),
-                    unitLength                        = dsf->GetUnitLength        (),
-                    iNodeCount                        = blockTree->GetINodeCount  (),
-                    leafCount                     = blockTree->GetLeafCount   (),
-                    matrixSize                       = doLeaves?leafCount:iNodeCount,
-                    siteCount                        = dsf->GetSiteCount         (),
-                    shiftForTheNode                 = patternCount * alphabetDimension;
-
+    
+    long            patternCount               = dsf->GetPatternCount  (),
+                    alphabetDimension          = dsf->GetDimension         (),
+                    unitLength                 = dsf->GetUnitLength        (),
+                    iNodeCount                 = blockTree->GetINodeCount  (),
+                    leafCount                  = blockTree->GetLeafCount   (),
+                    matrixSize                 = doLeaves?leafCount:iNodeCount,
+                    siteCount                  = dsf->GetSiteCountInUnits         (),
+                    shiftForTheNode            = patternCount * alphabetDimension;
+    
+    
     hyFloat      *siteLikelihoods                = new hyFloat [2*patternCount],
-    *siteLikelihoodsSpecState       = new hyFloat [2*patternCount];
-
+                 *siteLikelihoodsSpecState       = new hyFloat [2*patternCount];
+    
     _SimpleList     scalersBaseline,
-                    scalersSpecState,
-                    branchValues,
-                    postToIn;
-
+    scalersSpecState,
+    branchValues,
+    postToIn;
+    
     blockTree->MapPostOrderToInOrderTraversal (postToIn, doLeaves == false);
     supportValues.Clear                      ();
     _Matrix::CreateMatrix                             (&supportValues,matrixSize,shiftForTheNode,false,true,false);
-
+    
     ComputeSiteLikelihoodsForABlock          (index, siteLikelihoods, scalersBaseline);
     // establish a baseline likelihood for each site
-
+    
     if (doLeaves) {
         for                             (long currentChar = 0; currentChar < alphabetDimension; currentChar++) {
             branchValues.Populate           (patternCount,currentChar,0);
@@ -864,7 +865,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                 for (long siteID = 0; siteID < patternCount; siteID++) {
                     long scaleDiff = (scalersSpecState.list_data[siteID]-scalersBaseline.list_data[siteID]);
                     hyFloat ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
-
+                    
                     if (scaleDiff > 0) {
                         ratio *= acquireScalerMultiplier(scaleDiff);
                     }
@@ -874,14 +875,16 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
             }
         }
     }
-
-    else
-        for                             (long currentChar = 0; currentChar < alphabetDimension-1; currentChar++)
+    
+    else {
+        for                             (long currentChar = 0; currentChar < alphabetDimension-1; currentChar++) {
             // the prob for the last char is  (1 - sum (probs other chars))
-        {
             branchValues.Populate           (patternCount,currentChar,0);
+            
             for (long branchID = 0; branchID < iNodeCount; branchID ++) {
+                //printf ("ANC: %s\n", ((_CalcNode*) blockTree->flatTree    (branchID))->GetName()->get_str());
                 long mappedBranchID = postToIn.list_data[branchID];
+                blockTree->AddBranchToForcedRecomputeList (branchID + leafCount);
                 ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID, &branchValues);
                 for (long siteID = 0; siteID < patternCount; siteID++) {
                     long scaleDiff = (scalersSpecState.list_data[siteID]-scalersBaseline.list_data[siteID]);
@@ -889,12 +892,18 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                     if (scaleDiff > 0) {
                         ratio *= acquireScalerMultiplier(scaleDiff);
                     }
-                    //printf ("%g\n", ratio);
                     supportValues.theData[mappedBranchID*shiftForTheNode + siteID*alphabetDimension + currentChar] = ratio;
+                    //if (branchID == 0 && siteID == 0) {
+                    //printf ("%d\t%s\t%d\t%g\n", currentChar, ((_CalcNode*)blockTree->flatTree.GetItem(branchID))->GetName()->get_str(), siteID, ratio);
+                    //}
+                    
                 }
-                blockTree->AddBranchToForcedRecomputeList (branchID+leafCount);
+                blockTree->AddBranchToForcedRecomputeList (branchID + leafCount);
+                //exit (0);
             }
         }
+       
+    }
 
     _SimpleList  conversion;
     _AVLListXL   conversionAVL (&conversion);
@@ -910,19 +919,22 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
         for  (long nodeID = 0; nodeID < matrixSize ; nodeID++) {
             long            mappedNodeID = postToIn.list_data[nodeID];
-            hyFloat      max_lik     = 0.,
+            hyFloat         max_lik     = 0.,
                             sum         = 0.,
                             *scores       = supportValues.theData + shiftForTheNode*mappedNodeID +  siteID*alphabetDimension;
             long            max_idx     = 0;
 
-            for (long charID = 0; charID < alphabetDimension-(!doLeaves); charID ++) {
+            long            up2 = alphabetDimension-(!doLeaves);
+            
+            for (long charID = 0; charID < up2 ; charID ++) {
                 sum+=scores[charID];
                 if (scores[charID] > max_lik) {
                     max_idx = charID;
                     max_lik = scores[charID];
-
                 }
             }
+            
+            //printf ("%d %d %g\n", siteID, nodeID, sum);
 
             //if (fabs(scores[alphabetDimension-1]+sum-1.) > 0.1)
             //  WarnError (_String("Bad monkey!") & scores[alphabetDimension-1] & ":" & (1.-sum) );

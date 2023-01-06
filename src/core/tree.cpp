@@ -2992,8 +2992,9 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
       }
   }
     
-    
-   if (!already_done) {
+    //bool frc = forceRecalculationOnTheseBranches.nonempty();
+
+    if (!already_done) {
        nodesToUpdate.Populate (flatLeaves.lLength + flatTree.lLength, 0, 0);
        
        if (addOne >= 0) {
@@ -3012,10 +3013,12 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
          }
        }
 
+       //if (frc) {        ObjectToConsole(&nodesToUpdate); NLToConsole();}
        for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++) {
             _handle_node (nodeID, true);
        }
-       
+       //if (frc) {        ObjectToConsole(&nodesToUpdate); NLToConsole();}
+
       
         // one more pass to pick up all DIRECT descendants of changed internal nodes
       
@@ -3025,17 +3028,29 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
           tagged_node_count++;
         }
        
- 
+       //if (frc) {        ObjectToConsole(&nodesToUpdate); NLToConsole();}
+
         // write out all changed nodes
       updateNodes.RequestSpace(tagged_node_count);
       // 20200610: for larger trees, this helps with reducing memory allocations
       for (unsigned long nodeID = 0UL; nodeID < nodesToUpdate.lLength - 1UL; nodeID++) {
         if (nodesToUpdate.list_data[nodeID]) {
           updateNodes << nodeID;
+            /*if (frc) {
+                _CalcNode       *currentTreeNode;
+                if (nodeID < flatLeaves.lLength) {
+                    currentTreeNode = ((_CalcNode*) flatCLeaves (nodeID));
+                } else {
+                    currentTreeNode = ((_CalcNode*) flatTree    (nodeID-flatLeaves.lLength));
+                }
+                printf ("%d %s\n", nodeID, currentTreeNode->GetName()->get_str());
+            }*/
         }
       }
    }
+
     
+
    /*printf ("%ld ", likeFuncEvalCallCount);
    ObjectToConsole(&updateNodes);
    printf ("\n");*/

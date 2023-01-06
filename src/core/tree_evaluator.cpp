@@ -147,24 +147,10 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
         }
         if (__builtin_expect(siteState >= 0L,1)) {
             // a single character state; sweep down the appropriate column
-            /*if (likeFuncEvalCallCount == 15098 && nodeCode == 3706 && siteID == 91) {
-                fprintf (stderr, "\nSITE CHECK: ID %ld, STATE %ld\n", nodeCode, siteState);
-                for (long e = 0; e < 4; e++) {
-                    fprintf (stderr, "%ld => %lg\n", e, parentConditionals[e]);
-                }
-            }*/
-            
-            //#pragma unroll(4)
             #pragma GCC unroll 4
             for (long k = 0L; k < D; k++) {
                 parentConditionals[k] *= tMatrix[siteState+D*k];
             }
-            /*if (likeFuncEvalCallCount == 15098 && nodeCode == 3706 && siteID == 91) {
-                fprintf (stderr, "\nSITE CHECK: ID %ld, STATE %ld\n", nodeCode, siteState);
-                for (long e = 0; e < 4; e++) {
-                    fprintf (stderr, "%ld => %lg\n", e, parentConditionals[e]);
-                }
-            }*/
             return true;
         } else {
             childVector = lNodeResolutions->theData + (-siteState-1) * D;
@@ -742,9 +728,9 @@ template<bool ADJUST> inline void __ll_loop_handle_scaling_generic (hyFloat& sum
 
 template<long D> inline void __ll_loop_handle_leaf_case (hyFloat* _hprestrict_ pp, hyFloat *  _hprestrict_ localScalingFactor , long siteFrom, long siteTo, _SimpleList&        siteOrdering, bool matchSet, long * _hprestrict_ setBranchTo) {
     if (matchSet) {
-        memset (pp, 0, (siteTo-siteFrom) * sizeof (hyFloat));
+        memset (pp, 0, (siteTo-siteFrom) * D * sizeof (hyFloat));
         for (long k = siteFrom; k < siteTo; k++, pp += D) {
-             pp[setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
+            pp[setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
         }
     } else {
         for (long k = siteFrom; k < siteTo; k++, pp += D) {
@@ -762,7 +748,7 @@ template<long D> inline void __ll_loop_handle_leaf_case (hyFloat* _hprestrict_ p
 inline void __ll_loop_handle_leaf_generic (hyFloat* _hprestrict_ pp, hyFloat *  _hprestrict_ localScalingFactor , long siteFrom, long siteTo, _SimpleList&        siteOrdering, bool matchSet, long * _hprestrict_ setBranchTo, long D) {
     
     if (matchSet) {
-        memset (pp, 0, (siteTo-siteFrom) * sizeof (hyFloat));
+        memset (pp, 0, (siteTo-siteFrom) * D * sizeof (hyFloat));
         for (long k = siteFrom; k < siteTo; k++, pp += D) {
              pp[setBranchTo[siteOrdering.list_data[k]]] = localScalingFactor[k];
         }
@@ -994,6 +980,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         siteTo = siteCount;
     }
     
+    
     #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
         hyFloat * tMatrixT = nil;
         switch (alphabetDimension) {
@@ -1015,6 +1002,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         }
     #endif
     
+    //if (setBranch >=0 )
+       // printf ("\nSet to %d (%s)\n", setBranch, ((_CalcNode*) flatTree    (setBranch))->GetName()->get_str());
+    
     for  (unsigned long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
         long    nodeCode   = updateNodes.list_data [nodeID],
         parentCode = flatParents.list_data [nodeCode];
@@ -1032,13 +1022,19 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             currentTreeNode = ((_CalcNode*) flatTree    (nodeCode));
         }
         
+        //printf ("Node %d = %s\n", nodeID, //currentTreeNode->GetName()->get_str());
+        
         hyFloat  *  _hprestrict_ parentConditionals = iNodeCache +            (siteFrom + parentCode  * siteCount) * alphabetDimension;
         if (taggedInternals.list_data[parentCode] == 0) {
             // mark the parent for update and clear its conditionals if needed
             taggedInternals.list_data[parentCode]     = 1;
             hyFloat    *  _hprestrict_ localScalingFactor      = scalingAdjustments + parentCode*siteCount;
             
+      
+            
             bool    matchSet   = (parentCode == setBranch);
+            
+            //printf ("At %s, set to %d (%d)\n", currentTreeNode->GetName()->get_str(), parentCode, matchSet);
             
             switch (alphabetDimension) {
                 case 4L:
@@ -1062,9 +1058,14 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 default:
                     __ll_loop_handle_leaf_generic (parentConditionals, localScalingFactor , siteFrom, siteTo, siteOrdering, matchSet, setBranchTo, alphabetDimension);
             }
+            
+            /*if (matchSet) {
+                for (long i = 0; i < alphabetDimension; i++) {
+                    printf ("%g\t", parentConditionals[i]);
+                }
+                printf ("\n");
+            }*/
         }
-        
-        
         
         hyFloat  const * _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
         
@@ -1670,7 +1671,20 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
         }
     }
-    
+     
+    /*if (setBranch >= 0) {
+        
+        for (long nn = 0; nn < flatTree.lLength ; nn++) {
+            hyFloat * _hprestrict_ nc = iNodeCache + alphabetDimension * (siteFrom + (nn)  * siteCount);
+            printf ("\nNode %s\n", ((_CalcNode*)flatTree.GetItem(nn))->GetName()->get_str());
+            for (long p = 0; p < alphabetDimension; p++) {
+                printf ("%10.6g\t", nc[p]);
+            }
+            printf ("\n\n");
+        }
+        
+        //exit (0);
+    }*/
     if (!storageVec && localScalerChange) {
 #pragma omp atomic
         overallScaler += localScalerChange;
