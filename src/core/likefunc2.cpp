@@ -882,8 +882,9 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
             branchValues.Populate           (patternCount,currentChar,0);
             
             for (long branchID = 0; branchID < iNodeCount; branchID ++) {
-                //printf ("ANC: %s\n", ((_CalcNode*) blockTree->flatTree    (branchID))->GetName()->get_str());
-                long mappedBranchID = postToIn.list_data[branchID];
+                long mappedBranchID = postToIn.get(branchID);
+                //if (currentChar == 0)
+                //    printf ("ANC: %s (%d)\n", ((_CalcNode*) blockTree->flatTree    (branchID))->GetName()->get_str(), mappedBranchID);
                 blockTree->AddBranchToForcedRecomputeList (branchID + leafCount);
                 ComputeSiteLikelihoodsForABlock (index, siteLikelihoodsSpecState, scalersSpecState, branchID, &branchValues);
                 for (long siteID = 0; siteID < patternCount; siteID++) {
@@ -918,7 +919,7 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
         _SimpleList const*    patternMap = (_SimpleList*) expandedSiteMap.GetItem (siteID);
 
         for  (long nodeID = 0; nodeID < matrixSize ; nodeID++) {
-            long            mappedNodeID = postToIn.list_data[nodeID];
+            long            mappedNodeID = postToIn.get(nodeID);
             hyFloat         max_lik     = 0.,
                             sum         = 0.,
                             *scores       = supportValues.theData + shiftForTheNode*mappedNodeID +  siteID*alphabetDimension;

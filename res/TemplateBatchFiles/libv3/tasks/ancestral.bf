@@ -139,7 +139,6 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
                     _lfComponentID
                 }
             }, MARGINAL);
-            //(_bac_ancDS.marginal_support_matrix);
         } else {
             DataSet _bac_ancDS = ReconstructAncestors( ^ _lfID, {
                 {
@@ -396,6 +395,42 @@ lfunction ancestral.Sequences (ancestral_data) {
 
 /*******************************************/
 /**
+ * @name ancestral.SequenceStates
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ 
+ * @returns
+        {
+         "Node Name" :  {Array} list of characters in this sequence
+        }
+
+ */
+
+lfunction ancestral.SequenceStates (ancestral_data) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+    
+    branches =  ancestral._branch_filter_helper (ancestral_data, "ancestral._select_internal", selected_branches, selected_branch_names) + 1;    
+    sites  = (ancestral_data["DIMENSIONS"])["SITES"];
+    result = {};
+    selected_branches + {{(Abs(ancestral_data["TREE_AVL"])-2),0}};
+    selected_branch_names + "root";
+
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];    
+        seq_string = {1,sites};
+        
+        for (s = 0; s < sites; s += 1) {
+            seq_string[s] = (ancestral_data["CHARS"])[(ancestral_data["MATRIX"])[self][s]];
+            
+        }   
+        result[selected_branch_names[b]] = seq_string;
+    }
+    
+    return result;
+}
+
+/*******************************************/
+/**
  * @name ancestral.Support
  * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
  * @param {Number} min_support - only report states which have at least this much conditional prob ([0-1])
@@ -422,15 +457,15 @@ lfunction ancestral.Support (ancestral_data, min_support) {
         selected_branches + {{(Abs(ancestral_data["TREE_AVL"])-2),0}};
         selected_branch_names + "root";
         
-
+        console.log (selected_branch_names);
+        
         for (b = 0; b < branches; b += 1) {
-             seq_support = {}; 
-         
+            seq_support = {}; 
             for (s = 0; s < sites; s += 1) {
                 seq_support [s] = {};
                 p = (ancestral_data["SITE_TO_PATTERN"])[s];
                 for (c = 0; c < alphabet; c+=1) {
-                    own_state    = (ancestral_data["SUPPORT"])[b][p*alphabet + c];
+                    own_state    = (ancestral_data["SUPPORT"])[self][p*alphabet + c];
                     if (own_state >= min_support) {
                         (seq_support [s])[(ancestral_data["CHARS"])[c]] = own_state;
                     }
@@ -534,6 +569,131 @@ lfunction ancestral.ComputeSubstitutionCounts (ancestral_data, branch_filter, su
              "Branches"  : selected_branch_names,
              "Sites"     : retained_sites,
              "Counts"    : retained_counts
+            };
+
+}
+
+/*******************************************/
+/**
+ * @name ancestral.ComputeDetailedSubstitutionCounts
+ * @param {Dictionary} ancestral_data - the dictionary returned by ancestral.build
+ * @param {Dictionary/Function/None} branch_filter - now to determine the subset of branches to count on
+          None -- all branches
+          Dictionary -- all branches that appear as keys in this dict
+          Function -- all branches on which the function (called with branch name) returns 1
+
+ * @param {Function/None} substitution_filter - how to decide if the substitution should count
+          None -- different characters (except anything vs a gap) yields a 1
+          Function -- callback (state1, state2, ancestral_data) will return the value
+
+ * @param {Function/None} site_filter - how to decide which sites will be kept
+          None     -- at least one substitution
+          Function -- callback (substitution vector) will T/F
+
+ * @returns
+        {
+         "Branches"         :  {Matrix Nx1} names of selected branches,
+         "Sites"            :  {Matrix Sx1} indices of sites passing filter,
+         "Types"            :  {Matrix 2xK} string matrix of the type of substitutions; row 1: from, row 2: to
+         "Substitutions"    :  {Matrix NxS} substitution maps, (0) if no substitution, >0 a substitution has been mapped, look up via (Types)
+        }
+
+        N = number of selected branches
+        S = number of sites passing filter
+        K = number of unique substitution types
+
+ */
+
+
+
+
+lfunction ancestral.ComputeDetailedSubstitutionCounts (ancestral_data, branch_filter, substitution_filter, site_filter) {
+    selected_branches       = {};
+    selected_branch_names   = {};
+
+    branches =  ancestral._branch_filter_helper (ancestral_data, branch_filter, selected_branches, selected_branch_names);
+
+    sites  = (ancestral_data["DIMENSIONS"])["SITES"];
+    counts = {branches,sites};
+    retained_sites = {};
+    
+    substitution_types = {};
+    
+    for (b = 0; b < branches; b += 1) {
+        self   = (selected_branches[b])[0];
+        parent = (selected_branches[b])[1];
+        for (s = 0; s < sites; s += 1) {
+        
+            own_state    = (ancestral_data["MATRIX"])[self][s];
+            parent_state = (ancestral_data["MATRIX"])[parent][s];
+        
+            this_sub = 0;
+        
+            if (None == substitution_filter) {
+                this_sub = ((own_state != parent_state) && (own_state != -1) && (parent_state != -1));
+            } else {
+                this_sub = Call (substitution_filter, own_state, parent_state, ancestral_data);
+            }
+            
+             
+            if (this_sub) {
+                this_sub = {{parent_state__, own_state__}};
+                sub_index = substitution_types [this_sub];
+                if (!sub_index) {
+                    sub_index = Abs (substitution_types);
+                    substitution_types[this_sub] = sub_index;
+                }
+                counts[b][s] = sub_index;
+            } else {
+                counts[b][s] = 0;
+            }
+        }
+    }
+
+    for (s = 0; s < sites; s += 1) {
+        site_counts = counts [-1][s];
+        if (None == site_filter) {
+            if (+site_counts == 0) {
+                continue;
+            }
+        } else {
+            if (Call(site_filter, site_counts) == FALSE) {
+                continue;
+            }
+        }
+        retained_sites + s;
+    }
+
+    retained_site_count = Abs (retained_sites);
+    retained_counts = {branches, retained_site_count};
+
+    for (s = 0; s < retained_site_count; s+=1) {
+        full_index = retained_sites [s];
+        for (b = 0; b < branches; b += 1) {
+            retained_counts[b][s] = counts[b][full_index];
+        }
+    }
+
+    counts = None;
+    
+    types = {2, Abs (substitution_types)};
+    
+    for (s,i;in;substitution_types) {
+        sm = Eval (s);
+        s1 = (ancestral_data["CHARS"])[sm[0]];
+        s2 = (ancestral_data["CHARS"])[sm[1]];
+        types[0][i] = s1;
+        types[1][i] = s2;
+    }
+    
+    substitution_types = None;
+
+
+    return  {
+             "Branches"  : selected_branch_names,
+             "Sites"     : retained_sites,
+             "Substitutions"    : retained_counts,
+             "Types" : types
             };
 
 }
