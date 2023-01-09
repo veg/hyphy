@@ -244,8 +244,8 @@ template<long D> inline bool __ll_handle_conditional_array_initialization_transp
 #ifdef _SLKP_USE_SSE_INTRINSICS
             for (long k = 0; k < (D>>2<<2); k+=4) {
                 
-                _mm_storeu_pd (parentConditionals+k, _mm_mul_pd (_mm_loadu_pd (parentConditionals+k),_mm_loadu_pd (tMatrix+siteState*D+k));
-                _mm_storeu_pd (parentConditionals+k + 2, _mm_mul_pd (_mm_loadu_pd (parentConditionals+k+2),_mm_loadu_pd (tMatrix+siteState*D+k+2));
+                _mm_storeu_pd (parentConditionals+k, _mm_mul_pd (_mm_loadu_pd (parentConditionals+k),_mm_loadu_pd (tMatrix+siteState*D+k)));
+                _mm_storeu_pd (parentConditionals+k + 2, _mm_mul_pd (_mm_loadu_pd (parentConditionals+k+2),_mm_loadu_pd (tMatrix+siteState*D+k+2)));
                 
             }
             for (long k = (D>>2<<2); k < D; k++) {
