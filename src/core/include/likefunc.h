@@ -276,7 +276,7 @@ public:
     }
 #else
     long        GetThreadCount            (void) {
-        return 1;
+        return 1L;
     }
 #endif
 #endif
