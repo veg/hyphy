@@ -4973,12 +4973,18 @@ hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
         return 1.0;
     }
 }
+
+void    _Matrix::TransposeIntoStorage(hyFloat *storage, bool check) const {
+    if (!check || is_square_numeric()) {
+        _hy_matrix_transpose_blocked(storage, theData, hDim, vDim);
+    }
+}
+
 //_____________________________________________________________________________________________
-void    _Matrix::Transpose (void)
+void    _Matrix::Transpose (void) {
 // transpose a matrix
-{
-    if (storageType == 1) {
-        if (hDim == vDim) { // do an in place swap
+    if (is_numeric()) {
+        if (is_square()) { // do an in place swap
             if (!theIndex) { // non-sparse
                 for (long i = 0; i<hDim; i++)
                     for (long j = i+1; j<vDim; j++) {

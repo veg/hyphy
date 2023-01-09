@@ -3790,6 +3790,129 @@ void _hy_matrix_multiply_NxN_blocked4 (double * C, double *A, double *B, int D) 
     }
 }
 
+template<long B1, long B2> inline void mx_transpose_blocked (double __restrict * C, double const __restrict *A, int nrow, int ncol) {
+    /* nrow and ncol is for matrix A
+        "A" points to (r,c) in A (nrow X ncol dimension)
+        "C" points to (c,r) in C (ncol x nrol dimension)
+        
+        A[r][c], A[r][c+1], A[r][c+2], A[r][c+3]
+        ...
+        A[r+3][c], .... A[r+3][c+3]
+        
+        This will get written to
+        
+        C[c][r], C[c][r+1], C[c][r+2], C[c][r+3]
+        ...
+        C[c+3][r], ... C[c+3][r+3]
+    */
+    
+    
+    for (int j = 0; j < B2; j++) {
+        #pragma unroll
+        for (int i = 0; i < B1; i++) {
+            C[j*nrow+i] = A[i*ncol+j];
+        }
+    }
+}
+
+
+void _hy_matrix_transpose_blocked (double __restrict * C, double __restrict *A, int nrow, int ncol) {
+    
+    auto offset_A = [ncol](int i, int j) -> int {
+        return (i<<2)*ncol + (j << 2);
+    };
+    
+    auto offset_C = [nrow](int i, int j) -> int {
+        return (i<<2)*nrow + (j << 2);
+    };
+    
+    int row_blocks = nrow>>2;
+    int col_blocks = ncol>>2;
+    
+    int remainder_rows    = nrow - (row_blocks<<2);
+    int remainder_columns = ncol - (col_blocks<<2);
+    
+    for (int r = 0; r < row_blocks; r++) {
+        for (int c = 0; c < col_blocks; c++) {
+            mx_transpose_blocked<4,4> (C+ offset_C (c,r), A + offset_A(r,c), nrow, ncol);
+        }
+    }
+    
+    if (remainder_rows || remainder_columns) {
+        switch (remainder_rows) {
+            case 1:
+                for (int c = 0; c < col_blocks; c++) {
+                    mx_transpose_blocked<1,4> (C + offset_C (c,row_blocks), A + offset_A(row_blocks,c), nrow, ncol);
+                }
+                break;
+            case 2:
+                for (int c = 0; c < col_blocks; c++) {
+                    mx_transpose_blocked<2,4> (C + offset_C (c,row_blocks), A + offset_A(row_blocks,c), nrow, ncol);
+                }
+                break;
+            case 3:
+                for (int c = 0; c < col_blocks; c++) {
+                    mx_transpose_blocked<3,4> (C + offset_C (c,row_blocks), A + offset_A(row_blocks,c), nrow, ncol);
+                }
+                break;
+        }
+
+        switch (remainder_columns) {
+            case 1:
+                for (int r = 0; r < row_blocks; r++) {
+                    mx_transpose_blocked<4,1> (C + offset_C (col_blocks,r), A + offset_A(r,col_blocks), nrow, ncol);
+                }
+                switch (remainder_rows) {
+                    case 1:
+                        mx_transpose_blocked<1,1> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                    case 2:
+                        mx_transpose_blocked<2,1> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                    case 3:
+                        mx_transpose_blocked<3,1> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                }
+                break;
+            case 2:
+                for (int r = 0; r < row_blocks; r++) {
+                    mx_transpose_blocked<4,2> (C + offset_C (col_blocks,r), A + offset_A(r,col_blocks), nrow, ncol);
+                }
+                switch (remainder_rows) {
+                    case 1:
+                        mx_transpose_blocked<1,2> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                    case 2:
+                        mx_transpose_blocked<2,2> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                    case 3:
+                        mx_transpose_blocked<3,2> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                }
+                break;
+            case 3:
+                for (int r = 0; r < row_blocks; r++) {
+                    mx_transpose_blocked<4,3> (C + offset_C (col_blocks,r), A + offset_A(r,col_blocks), nrow, ncol);
+                }
+                switch (remainder_rows) {
+                    case 1:
+                        mx_transpose_blocked<1,3> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                    case 2:
+                        mx_transpose_blocked<2,3> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                    case 3:
+                        mx_transpose_blocked<3,3> (C + offset_C (col_blocks,row_blocks), A + offset_A(row_blocks,col_blocks), nrow, ncol);
+                        break;
+                }
+                break;
+        }
+    }
+    
+        
+    
+    // fill in the first blocks in C
+}
 
 
 

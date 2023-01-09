@@ -165,7 +165,12 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
     
     GetString(_bacAncestralNames, _bacAF, -1);
     GetDataInfo(_bacAncestralPatternMap, _bacAF);
-
+    
+    _bacAncestralNamesMap = {};
+    for (s; in; _bacAncestralNames) {
+        _bacAncestralNamesMap[s&&1] = Abs(_bacAncestralNamesMap);
+    }
+    
 
     /* now start building a matrix of mapped states;
 
@@ -205,16 +210,21 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
 
     _bacMapTreeNodeToDF = {};
     _bacTreeAVLOrder = {};
+    _bacTreeAVLToSequenceFilter = {};
 
     for (_bacCounter = 1; _bacCounter <= _bacBranchCount; _bacCounter += 1) {
         _bacNodeName = (_bac_tree_avl[_bacCounter])["Name"];
+        
+        if (_bacAncestralNamesMap / (_bacNodeName&&1)) {
+            _bacTreeAVLToSequenceFilter[_bacCounter-1] = _bacAncestralNamesMap[(_bacNodeName&&1)];
+        }
         
          if (Abs ((_bac_tree_avl[_bacCounter])["Children"]) == 0) {
             _bacNodeName = _bacNodeName && 1;
          }
         _bacTreeAVLOrder[_bacNodeName] = _bacCounter;
     }
-
+    
 
     _bacFilterSequenceCount = Columns(_bacSequenceNames);
     for (_bacCounter = 0; _bacCounter < _bacFilterSequenceCount; _bacCounter += 1) {
@@ -225,9 +235,6 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
         _bacMapTreeNodeToDF[_bacTreeAVLOrder[_bacAncestralNames[_bacCounter]] - 1] = _bacCounter + _bacFilterSequenceCount;
     }
     
-
-
-
     /* loop over branches (rows) */
     for (_bacBranchCounter = 1; _bacBranchCounter <= _bacBranchCount; _bacBranchCounter += 1) {
         _bacRowIndex = _bacMapTreeNodeToDF[_bacBranchCounter - 1];
@@ -290,8 +297,8 @@ lfunction ancestral._buildAncestralCacheInternal(_lfID, _lfComponentID, doSample
             "AMBIGS": _bacHandledResolutionsAmbig,
             "MAPPING": reverse_mapping,
             "SUPPORT" : _bac_ancDS.marginal_support_matrix,
-            "SITE_TO_PATTERN" : _bacFilterPatternMap
-                //"AMBIGS_REV": utility.SwapKeysAndValues (_bacHandledResolutionsAmbig)
+            "SITE_TO_PATTERN" : _bacFilterPatternMap,
+            "ORDER_MAP" : _bacTreeAVLToSequenceFilter
         };    
     } else {
          return {
@@ -457,9 +464,9 @@ lfunction ancestral.Support (ancestral_data, min_support) {
         selected_branches + {{(Abs(ancestral_data["TREE_AVL"])-2),0}};
         selected_branch_names + "root";
         
-        console.log (selected_branch_names);
         
         for (b = 0; b < branches; b += 1) {
+            self   = (ancestral_data["ORDER_MAP"])[(selected_branches[b])[0]]; 
             seq_support = {}; 
             for (s = 0; s < sites; s += 1) {
                 seq_support [s] = {};
@@ -471,9 +478,7 @@ lfunction ancestral.Support (ancestral_data, min_support) {
                     }
                     
                 }
-            
             }   
- 
             result[selected_branch_names[b]] = seq_support;
         }
         return result;

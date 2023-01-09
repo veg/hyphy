@@ -123,7 +123,7 @@ inline double _sse_sum_2 (__m128d const & x) {
 #endif
 
 
-
+/*
 template<long D> inline void __ll_handle_matrix_transpose (hyFloat const * __restrict transitionMatrix, hyFloat * __restrict tMatrixT) {
     long i = 0L;
     for (long r = 0L; r < D; r++) {
@@ -134,6 +134,7 @@ template<long D> inline void __ll_handle_matrix_transpose (hyFloat const * __res
         }
     }
 }
+*/
 
 template<long D> inline bool __ll_handle_conditional_array_initialization ( long * __restrict lNodeFlags, bool isLeaf, long nodeCode, long setBranch, long iNodes, long siteID, long siteFrom, long siteCount, _SimpleList&            siteOrdering, hyFloat * __restrict parentConditionals, hyFloat const * __restrict tMatrix, _Vector const*     lNodeResolutions, hyFloat *& childVector, _SimpleList const* tcc, long &currentTCCBit, long& currentTCCIndex, hyFloat * & lastUpdatedSite, long* __restrict  setBranchTo) {
     
@@ -147,10 +148,33 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
         }
         if (__builtin_expect(siteState >= 0L,1)) {
             // a single character state; sweep down the appropriate column
+#ifdef _SLKP_USE_ARM_NEON
+            for (long k = 0; k < (D>>2<<2); k+=4) {
+                float64x2x2_t PC = vld1q_f64_x2 (parentConditionals+k),
+                              CC;
+                
+                CC.val[0] = vld1q_lane_f64 (tMatrix + siteState + D*k,      CC.val[0],0);
+                CC.val[1] = vld1q_lane_f64 (tMatrix + siteState + D*(k+2),  CC.val[1],0);
+                
+                CC.val[0] = vld1q_lane_f64 (tMatrix + siteState + D*(k+1),  CC.val[0],1);
+                CC.val[1] = vld1q_lane_f64 (tMatrix + siteState + D*(k+3),  CC.val[1],1);
+
+                PC.val[0] = vmulq_f64(PC.val[0], CC.val[0]);
+                PC.val[1] = vmulq_f64(PC.val[1], CC.val[1]);
+
+                vst1q_f64_x2 (parentConditionals+k, PC);
+                
+                
+            }
+            for (long k = (D>>2<<2); k < D; k++) {
+                parentConditionals[k] *= tMatrix[siteState+D*k];
+            }
+#else
             #pragma GCC unroll 4
             for (long k = 0L; k < D; k++) {
                 parentConditionals[k] *= tMatrix[siteState+D*k];
             }
+#endif
             return true;
         } else {
             childVector = lNodeResolutions->theData + (-siteState-1) * D;
@@ -158,11 +182,95 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
     } else {
         if (tcc) {
             if (__builtin_expect((tcc->list_data[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom,0)) {
-                //#pragma unroll(4)
                 #pragma GCC unroll 4
                 for (long k = 0L; k < D; k++) {
                     childVector[k] = lastUpdatedSite[k];
                 }
+                //memcpy (childVector, lastUpdatedSite, sizeof (hyFloat)*D);
+            }
+            if (__builtin_expect(++currentTCCBit == _HY_BITMASK_WIDTH_,0)) {
+                currentTCCBit   = 0;
+                currentTCCIndex ++;
+            }
+            lastUpdatedSite = childVector;
+        }
+    }
+    return false;
+}
+
+template<long D> inline bool __ll_handle_conditional_array_initialization_transposed ( long * __restrict lNodeFlags, bool isLeaf, long nodeCode, long setBranch, long iNodes, long siteID, long siteFrom, long siteCount, _SimpleList&            siteOrdering, hyFloat * __restrict parentConditionals, hyFloat const * __restrict tMatrix, _Vector const*     lNodeResolutions, hyFloat *& childVector, _SimpleList const* tcc, long &currentTCCBit, long& currentTCCIndex, hyFloat * & lastUpdatedSite, long* __restrict  setBranchTo) {
+    
+
+    if (isLeaf) {
+        long siteState;
+        if (setBranch != nodeCode + iNodes) {
+            siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.list_data[siteID]] ;
+        } else {
+            siteState = setBranchTo[siteOrdering.list_data[siteID]] ;
+        }
+        if (__builtin_expect(siteState >= 0L,1)) {
+            // a single character state; sweep down the appropriate column
+#ifdef _SLKP_USE_ARM_NEON
+            for (long k = 0; k < (D>>2<<2); k+=4) {
+                float64x2x2_t PC = vld1q_f64_x2 (parentConditionals+k),
+                              CC = vld1q_f64_x2 (tMatrix+siteState*D+k);
+                
+  
+                PC.val[0] = vmulq_f64(PC.val[0], CC.val[0]);
+                PC.val[1] = vmulq_f64(PC.val[1], CC.val[1]);
+
+                vst1q_f64_x2 (parentConditionals+k, PC);
+                
+                
+            }
+            for (long k = (D>>2<<2); k < D; k++) {
+                parentConditionals[k] *= tMatrix[siteState*D+k];
+            }
+#endif
+            
+#ifdef _SLKP_USE_AVX_INTRINSICS
+            for (long k = 0; k < (D>>2<<2); k+=4) {
+                __m256d PC = _mm256_loadu_pd (parentConditionals+k),
+                        CC = _mm256_loadu_pd (tMatrix+siteState*D+k);
+                
+                _mm256_storeu_pd (parentConditionals+k, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals+k),_mm256_loadu_pd (tMatrix+siteState*D+k)));
+  
+            }
+            for (long k = (D>>2<<2); k < D; k++) {
+                parentConditionals[k] *= tMatrix[siteState*D+k];
+            }
+#endif
+            
+#ifdef _SLKP_USE_SSE_INTRINSICS
+            for (long k = 0; k < (D>>2<<2); k+=4) {
+                
+                _mm_storeu_pd (parentConditionals+k, _mm_mul_pd (_mm_loadu_pd (parentConditionals+k),_mm_loadu_pd (tMatrix+siteState*D+k));
+                _mm_storeu_pd (parentConditionals+k + 2, _mm_mul_pd (_mm_loadu_pd (parentConditionals+k+2),_mm_loadu_pd (tMatrix+siteState*D+k+2));
+                
+            }
+            for (long k = (D>>2<<2); k < D; k++) {
+                parentConditionals[k] *= tMatrix[siteState*D+k];
+            }
+#endif
+            
+#if not defined _SLKP_USE_AVX_INTRINSICS && not defined _SLKP_USE_SSE_INTRINSICS && not defined _SLKP_USE_ARM_NEON
+            #pragma GCC unroll 4
+            for (long k = 0L; k < D; k++) {
+                parentConditionals[k] *= tMatrix[siteState*D+k];
+            }
+#endif
+            return true;
+        } else {
+            childVector = lNodeResolutions->theData + (-siteState-1) * D;
+        }
+    } else {
+        if (tcc) {
+            if (__builtin_expect((tcc->list_data[currentTCCIndex] & bitMaskArray.masks[currentTCCBit]) > 0 && siteID > siteFrom,0)) {
+                #pragma GCC unroll 4
+                for (long k = 0L; k < D; k++) {
+                    childVector[k] = lastUpdatedSite[k];
+                }
+                //memcpy (childVector, lastUpdatedSite, sizeof (hyFloat)*D);
             }
             if (__builtin_expect(++currentTCCBit == _HY_BITMASK_WIDTH_,0)) {
                 currentTCCBit   = 0;
@@ -1067,7 +1175,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             }*/
         }
         
-        hyFloat  const * _hprestrict_ transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+        _Matrix  const * transitionMatrixObj           = currentTreeNode->GetCompExp(catID);
+        hyFloat  const * _hprestrict_ transitionMatrix = transitionMatrixObj->theData;
         
         /*
          if (likeFuncEvalCallCount == 15098 && parentCode == 3688) {
@@ -1138,16 +1247,25 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 // START AMINO-ACID CASE
         else if (alphabetDimension == 20UL) {
             #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                __ll_handle_matrix_transpose<20> (transitionMatrix, tMatrixT);
+                //__ll_handle_matrix_transpose<20> (transitionMatrix, tMatrixT);
+                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
             #endif
             
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 20L) {
                 __ll_loop_preamble
-                if (__ll_handle_conditional_array_initialization<20> (
-                    lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                    continue;
-                }
-                #if defined _SLKP_USE_AVX_INTRINSICS
+#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
+            if (__ll_handle_conditional_array_initialization_transposed<20> (
+                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                continue;
+            }
+
+#else
+            if (__ll_handle_conditional_array_initialization<20> (
+                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                continue;
+            }
+#endif
+#if defined _SLKP_USE_AVX_INTRINSICS
                     sum = _avx_sum_4(__ll_handle_block20_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil));
                 #elif defined _SLKP_USE_SSE_INTRINSICS
                     __m128d grandTotal = _mm_set1_pd(0.);
@@ -1174,15 +1292,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     // START UNIVERSAL CODE
     else if (alphabetDimension == 60UL) {
             #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                __ll_handle_matrix_transpose<60> (transitionMatrix, tMatrixT);
+                //__ll_handle_matrix_transpose<60> (transitionMatrix, tMatrixT);
+                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 60L) {
                 __ll_loop_preamble
-                if (__ll_handle_conditional_array_initialization<60> (
-                                                                      lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                    continue;
-                }
-                        
+#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
+            if (__ll_handle_conditional_array_initialization_transposed<60> (
+                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                continue;
+            }
+
+#else
+            if (__ll_handle_conditional_array_initialization<60> (
+                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                continue;
+            }
+#endif
                 
                 #ifdef _SLKP_USE_AVX_INTRINSICS
                     __m256d grandTotal;
@@ -1220,15 +1346,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     }
     else if (alphabetDimension == 61UL) {
         #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            __ll_handle_matrix_transpose<61> (transitionMatrix, tMatrixT);
+            //__ll_handle_matrix_transpose<61> (transitionMatrix, tMatrixT);
+            transitionMatrixObj->TransposeIntoStorage (tMatrixT);
         #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 61L) {
             __ll_loop_preamble
+#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
+            if (__ll_handle_conditional_array_initialization_transposed<61> (
+                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                continue;
+            }
+
+#else
             if (__ll_handle_conditional_array_initialization<61> (
                                                                   lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
                 continue;
             }
-                    
+#endif
             
             #ifdef _SLKP_USE_AVX_INTRINSICS
             //Site 297 evaluated to a NaN probability in ComputeTreeBlockByBranch at branch 9698; this is not a recoverable error and indicates some serious COVFEFE taking place.
@@ -1342,15 +1476,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         }
     } else if (alphabetDimension == 62UL) {
         #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            __ll_handle_matrix_transpose<62> (transitionMatrix, tMatrixT);
+            //__ll_handle_matrix_transpose<62> (transitionMatrix, tMatrixT);
+            transitionMatrixObj->TransposeIntoStorage (tMatrixT);
         #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 62L) {
             __ll_loop_preamble
-            if (__ll_handle_conditional_array_initialization<62> (
-                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                continue;
-            }
-                    
+                #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
+                            if (__ll_handle_conditional_array_initialization_transposed<62> (
+                                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                                continue;
+                            }
+
+                #else
+                            if (__ll_handle_conditional_array_initialization<62> (
+                                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                                continue;
+                            }
+                #endif
             
             #if defined _SLKP_USE_AVX_INTRINSICS
                 __m256d grandTotal = _mm256_set1_pd(0.);
@@ -1454,15 +1596,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         }
     } else if (alphabetDimension == 63UL) {
         #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            __ll_handle_matrix_transpose<63> (transitionMatrix, tMatrixT);
+            //__ll_handle_matrix_transpose<63> (transitionMatrix, tMatrixT);
+            transitionMatrixObj->TransposeIntoStorage (tMatrixT);
         #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 63L) {
             __ll_loop_preamble
+#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
+            if (__ll_handle_conditional_array_initialization_transposed<63> (
+                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                continue;
+            }
+
+#else
             if (__ll_handle_conditional_array_initialization<63> (
                                                                   lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
                 continue;
             }
-                    
+#endif
             
             #if defined _SLKP_USE_AVX_INTRINSICS
                 __m256d grandTotal = _mm256_set1_pd(0.);
@@ -2039,7 +2189,8 @@ void            _TheTree::ComputeBranchCache    (
         //    fprintf (stderr, "%ld/%ld (%ld/%ld) => %s\n", nodeID, nodeCode, isLeaf, notPassedRoot, currentTreeNode->GetName()->get_str());
         //}
         
-        hyFloat  const *  transitionMatrix = currentTreeNode->GetCompExp(catID)->theData;
+        _Matrix  const * transitionMatrixObj           = currentTreeNode->GetCompExp(catID);
+        hyFloat  const *  transitionMatrix = transitionMatrixObj->theData;
         hyFloat  *       childVector,*     lastUpdatedSite;
         
         if (!isLeaf) {
@@ -2099,7 +2250,8 @@ void            _TheTree::ComputeBranchCache    (
             }
         } else if (alphabetDimension == 20L) {
                 #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || _SLKP_USE_ARM_NEON
-                    __ll_handle_matrix_transpose<20>(transitionMatrix, tMatrixT);
+                    //__ll_handle_matrix_transpose<20>(transitionMatrix, tMatrixT);
+                    transitionMatrixObj->TransposeIntoStorage (tMatrixT);
                 #endif
                 for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 20L) {
                     bool canScale = !notPassedRoot;
@@ -2137,7 +2289,8 @@ void            _TheTree::ComputeBranchCache    (
                 }
         } else if (alphabetDimension == 60L) {
             #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || _SLKP_USE_ARM_NEON
-                __ll_handle_matrix_transpose<60L>(transitionMatrix, tMatrixT);
+                //__ll_handle_matrix_transpose<60L>(transitionMatrix, tMatrixT);
+                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 60L) {
                 bool canScale = !notPassedRoot;
@@ -2185,7 +2338,8 @@ void            _TheTree::ComputeBranchCache    (
             }
         } else if (alphabetDimension == 61L) {
             #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                __ll_handle_matrix_transpose<61L>(transitionMatrix, tMatrixT);
+                //__ll_handle_matrix_transpose<61L>(transitionMatrix, tMatrixT);
+                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 61L) {
                 bool canScale = !notPassedRoot;
@@ -2264,8 +2418,9 @@ void            _TheTree::ComputeBranchCache    (
             }
         }  else if (alphabetDimension == 62L) {
             #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                __ll_handle_matrix_transpose<62L>(transitionMatrix, tMatrixT);
-            #endif
+                //__ll_handle_matrix_transpose<62L>(transitionMatrix, tMatrixT);
+                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
+           #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 62L) {
                 bool canScale = !notPassedRoot;
                 hyFloat  const *tMatrix = transitionMatrix;
@@ -2374,7 +2529,8 @@ void            _TheTree::ComputeBranchCache    (
             }
         } else if (alphabetDimension == 63L) {
             #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                __ll_handle_matrix_transpose<63L>(transitionMatrix, tMatrixT);
+                //__ll_handle_matrix_transpose<63L>(transitionMatrix, tMatrixT);
+                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 63L) {
                 bool canScale = !notPassedRoot;
