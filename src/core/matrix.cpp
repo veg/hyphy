@@ -2243,7 +2243,6 @@ bool    _Matrix::CheckIfSparseEnough(bool force, bool copy) {
        } else {
             //objects
             hyFloat* tempData = (hyFloat*) MemAllocate (square_dimension*sizeof(hyFloat), true, 64);
-           // InitializeArray(tempData, square_dimension, 0.0);
 
             if (copy) {
                 for (unsigned long i = 0UL; i<lDim; i++) {
@@ -2892,9 +2891,13 @@ void        _Matrix::FillInList (_List& fillMe, bool convert_numbers) const {
               for (unsigned long c=0UL; c<vDim; c++) {
                   _Formula * entryFla = GetFormula(r,c);
                   if (entryFla) {
-                      HBLObjectRef computedValue = FetchObjectFromFormulaByType (*entryFla, STRING);
-                      if (computedValue) {
-                          fillMe < new _StringBuffer (((_FString*)computedValue)->get_str());
+                      HBLObjectRef computedValue = FetchObjectFromFormulaByType (*entryFla, HY_ANY_OBJECT);
+                      if (computedValue ) {
+                          if (computedValue->ObjectClass() == STRING) {
+                              fillMe < new _StringBuffer (((_FString*)computedValue)->get_str());
+                          } else {
+                              fillMe < new _StringBuffer ((_String*)computedValue->toStr());
+                          }
                       } else {
                         fillMe.Clear();
                         return;
@@ -4970,12 +4973,18 @@ hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
         return 1.0;
     }
 }
+
+void    _Matrix::TransposeIntoStorage(hyFloat *storage, bool check) const {
+    if (!check || is_square_numeric()) {
+        _hy_matrix_transpose_blocked(storage, theData, hDim, vDim);
+    }
+}
+
 //_____________________________________________________________________________________________
-void    _Matrix::Transpose (void)
+void    _Matrix::Transpose (void) {
 // transpose a matrix
-{
-    if (storageType == 1) {
-        if (hDim == vDim) { // do an in place swap
+    if (is_numeric()) {
+        if (is_square()) { // do an in place swap
             if (!theIndex) { // non-sparse
                 for (long i = 0; i<hDim; i++)
                     for (long j = i+1; j<vDim; j++) {
@@ -5315,8 +5324,9 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
 #endif
         
         hyFloat max     = 1.0,
+                mmax    = 1.0,
                 *stash,
-                *stash2 = 0;
+                *stash2 = nil;
         //  = new hyFloat[hDim*(1+vDim)];
         
  
@@ -5328,22 +5338,15 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
             }
 
             hyFloat t;
-            //bool    censor = false;
             RowAndColumnMax (max, t, stash);
-            /*if (t > 10000. || max > 10000.) {
-                censor = true;
-                t   = MIN (t,10000.);
-                max = MIN (max, 10000.);
-            }*/
             max *= t;
-            //max = MaxElement();
-            //max = max * max;
-            if (max > .1) {
+             if (max > .1) {
                 max             = scale_to*sqrt (10.*max);
                 power2          = (long)((log (max)/_log2))+1L;
                 max             = exp (power2 * _log2);
-                stash2 = (hyFloat*)alloca(sizeof (hyFloat) * lDim);
-                memcpy   (stash2, theData, sizeof (hyFloat) * lDim);
+                mmax           = max;
+                //stash2 = (hyFloat*)alloca(sizeof (hyFloat) * lDim);
+                //memcpy   (stash2, theData, sizeof (hyFloat) * lDim);
                 /*if (censor) {
                     for (long i = 0; i < lDim; i++) {
                         if (theData[i] < -10000.) {
@@ -5355,12 +5358,13 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                         }
                     }
                 }*/
-                (*this)         *= 1.0/max;
+                //(*this)         *= 1.0/max;
+                 
             } else {
                 power2 = 0;
+                mmax = 1.;
             }
             //fprintf (stderr, "MAX %18.12g SCALE %d\n", max, power2);
-            
             
         } else {
             max = 1.;
@@ -5370,7 +5374,8 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         
         if (!is_polynomial() && existing_storage && existing_storage->hDim == hDim && existing_storage->vDim == vDim && existing_storage->is_numeric() && existing_storage->is_dense()) {
             result = existing_storage;
-            InitializeArray(result->theData, result->lDim, 0.0);
+            //InitializeArray(result->theData, result->lDim, 0.0);
+            memset (result->theData, 0, result->lDim * sizeof (hyFloat));
         } else {
             result = new _Matrix(hDim, vDim , is_polynomial(), !is_polynomial());
         }
@@ -5378,22 +5383,33 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         
         // put ones on the diagonal
         
-        if (!is_polynomial()) {
+        if (power2 > 0 && max > 0.0) {
+            (*result) += (*this);
+            (*result) *= 1.0/max;
             long step = vDim + 1;
             for (long diag = 0; diag < result->lDim; diag += step) {
-                result->theData[diag] = 1.;
+                result->theData[diag] += 1.;
             }
         } else {
-            for (i=0; i<(*result).hDim*(*result).vDim; i+=vDim+1) {
-                (*result).StoreObject(i,new _Polynomial (1.),false);
+            if (!is_polynomial()) {
+                long step = vDim + 1;
+                for (long diag = 0; diag < result->lDim; diag += step) {
+                    result->theData[diag] = 1.;
+                }
+            } else {
+                for (i=0; i<(*result).hDim*(*result).vDim; i+=vDim+1) {
+                    (*result).StoreObject(i,new _Polynomial (1.),false);
+                }
             }
+            
+            if (max == 0.0) {
+                return result;
+            }
+            
+            (*result) += (*this);
         }
         
-        if (max == 0.0) {
-            return result;
-        }
         
-        (*result) += (*this);
         
         i = 2;
         
@@ -5444,11 +5460,15 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 tempS.lDim = lDim;
                 tempS.theData = stash;
                 // zero out the stash TODO: 20200929 : is this necessary?
-                memset (stash, 0, sizeof (hyFloat)*lDim);
+                //memset (stash, 0, sizeof (hyFloat)*lDim);
                 do {
                     temp.MultbyS        (*this,false, &tempS, nil);
                     // after this call, temp and tempS are gonna swap pointers to theData
-                    temp      *= 1.0/i;
+                    if (i > 2) {
+                        temp      *= 1.0/(mmax*i);
+                    } else {
+                        temp      *= 1.0/(mmax*mmax*i);
+                    }
                     (*result) += temp;
                     i         ++;
 /*
@@ -5480,7 +5500,11 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                 _Matrix tempS (hDim, vDim, false, temp.storageType);
                 do {
                     temp.MultbyS        (*this,theIndex!=nil, &tempS, stash);
-                    temp      *= 1.0/i;
+                    if (i > 2) {
+                        temp      *= 1.0/(mmax*i);
+                    } else {
+                        temp      *= 1.0/(mmax*mmax*i);
+                    }
                     (*result) += temp;
                     i         ++;
 /*
@@ -5525,11 +5549,11 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
              result = top;*/
         }
         
-        if (power2) {
+        //if (power2) {
             //(*this)*=max;
-            memcpy(theData, stash2, sizeof (hyFloat) * lDim);
+            //memcpy(theData, stash2, sizeof (hyFloat) * lDim);
             
-        }
+       // }
         
         if (theIndex) {
             // transpose back

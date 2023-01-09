@@ -622,7 +622,7 @@ public:
     static void    CreateMatrix    (_Matrix* theMatrix, long theHDim, long theVDim,  bool sparse = false, bool allocateStorage = false, bool isFla = false);
 
     void        RecursiveIndexSort      (long, long, _SimpleList*);
-
+    void        TransposeIntoStorage    (hyFloat* storage, bool check = true) const;
 
 
 private:
@@ -714,7 +714,7 @@ private:
 
 void _hy_matrix_multiply_4x4 (double * C, double *A, double *B, int stride, bool add);
 void _hy_matrix_multiply_NxN_blocked4 (double * C, double *A, double *B, int D);
-
+void _hy_matrix_transpose_blocked (double * __restrict C, double * __restrict A, int nrow, int ncol);
 /*__________________________________________________________________________________________________________________________________________ */
 
 extern  _Matrix *GlobalFrequenciesMatrix;

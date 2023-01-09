@@ -242,7 +242,9 @@ hyFloat  myLog (hyFloat);
 void         BenchmarkThreads (_LikelihoodFunction* lf) {
     long         alterIndex = 0;
     
-    if (lf->GetThreadCount() != 1) return;
+    //printf ("\nBenchmarkThreads %d\n", lf->GetThreadCount());
+    
+    if (lf->GetThreadCount() != 0) return;
 
     if      (lf->HasComputingTemplate()) {
         for (unsigned long k=0; k<lf->GetIndependentVars().lLength; k++)
@@ -284,7 +286,7 @@ hyFloat            tdiff = timer.TimeSinceStart();
         hyFloat          minDiff = tdiff;
         long                bestTC  = 1;
         
-        ReportWarning       (_String("Benchmark for one thread (using ") & lf->GetIthIndependentName(alterIndex)->Enquote() & ")" & tdiff);
+        ReportWarning       (_String("Benchmark for one thread (using ") & lf->GetIthIndependentName(alterIndex)->Enquote() & "): " & tdiff);
 
         for (long k = 2; k <= hy_global::system_CPU_count; k++) {
             lf->SetThreadCount              (k);
@@ -597,15 +599,16 @@ void _LikelihoodFunction::Init (void) {
     variable_to_node_map                    = nil;
 
 #ifdef  _OPENMP
-    lfThreadCount       = 1L;
+    lfThreadCount       = 0L;
 #ifdef  __HYPHYMPI__
     if (hy_mpi_node_rank > 0)
-        SetThreadCount      (1L);
+        SetThreadCount      (0L);
     else
+        SetThreadCount      (system_CPU_count);
 #endif
 
     //printf ("THREAD COUNT = %ld\n", system_CPU_count);
-    SetThreadCount      (system_CPU_count);
+    //SetThreadCount      (system_CPU_count);
 #endif
 
 }
@@ -861,11 +864,14 @@ void     _LikelihoodFunction::Clear (void)
 #ifdef  _OPENMP
 #ifdef  __HYPHYMPI__
     if (hy_mpi_node_rank > 0)
-        SetThreadCount      (1L);
+        SetThreadCount      (0L);
     else
-#endif
+        SetThreadCount      (system_CPU_count);
 
-    SetThreadCount      (system_CPU_count);
+#else
+
+    SetThreadCount      (0);
+#endif
 
 #endif
 }
@@ -8590,7 +8596,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
             }
 #endif
             if (matrices->lLength) {
-                t->ExponentiateMatrices(*matrices, GetThreadCount(),catID);
+                t->ExponentiateMatrices(*matrices, MAX (1,GetThreadCount()),catID);
             }
 
 
@@ -8616,7 +8622,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
             long np = 1;
             long sitesPerP    = df->GetPatternCount();
 #ifdef _OPENMP
-            np           = MIN(GetThreadCount(),omp_get_max_threads());
+            np           = MIN(MAX(GetThreadCount(),1),omp_get_max_threads());
             if (np > sitesPerP) {
                 np = sitesPerP;
                 sitesPerP = 1;
@@ -8866,7 +8872,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
             _List       mc;
             t->DetermineNodesForUpdate         (bc, &mc);
             if (mc.lLength) {
-                t->ExponentiateMatrices(mc, GetThreadCount(),catID);
+                t->ExponentiateMatrices(mc, MAX(1,GetThreadCount()),catID);
             }
 
             //branchedGlobalCache.Clear(false);
