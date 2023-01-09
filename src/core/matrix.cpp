@@ -2755,10 +2755,10 @@ HBLObjectRef   _Matrix::Evaluate (bool replace)
                     long k = result.theIndex[nz];
                     if (k != -1) {
                         long ri = k / vDim;
-                        if (diag_skip[k] == false) {
+                        if (diag_skip[ri] == false) {
                             long ci = k - ri * vDim;
                             if (ci != ri) {
-                                diag_storage[ri] -= result.theData[k];
+                                diag_storage[ri] -= result.theData[nz];
                             }
                         }
                     }
