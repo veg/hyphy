@@ -604,6 +604,7 @@ void _LikelihoodFunction::Init (void) {
     if (hy_mpi_node_rank > 0)
         SetThreadCount      (0L);
     else
+        SetThreadCount      (system_CPU_count);
 #endif
 
     //printf ("THREAD COUNT = %ld\n", system_CPU_count);
@@ -863,11 +864,14 @@ void     _LikelihoodFunction::Clear (void)
 #ifdef  _OPENMP
 #ifdef  __HYPHYMPI__
     if (hy_mpi_node_rank > 0)
-        SetThreadCount      (1L);
+        SetThreadCount      (0L);
     else
-#endif
+        SetThreadCount      (system_CPU_count);
+
+#else
 
     SetThreadCount      (0);
+#endif
 
 #endif
 }
