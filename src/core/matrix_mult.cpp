@@ -3790,7 +3790,7 @@ void _hy_matrix_multiply_NxN_blocked4 (double * C, double *A, double *B, int D) 
     }
 }
 
-template<long B1, long B2> inline void mx_transpose_blocked (double __restrict * C, double const __restrict *A, int nrow, int ncol) {
+template<long B1, long B2> inline void mx_transpose_blocked (double  * __restrict C, double const  * __restrict A, int nrow, int ncol) {
     /* nrow and ncol is for matrix A
         "A" points to (r,c) in A (nrow X ncol dimension)
         "C" points to (c,r) in C (ncol x nrol dimension)
@@ -3816,7 +3816,7 @@ template<long B1, long B2> inline void mx_transpose_blocked (double __restrict *
 }
 
 
-void _hy_matrix_transpose_blocked (double __restrict * C, double __restrict *A, int nrow, int ncol) {
+void _hy_matrix_transpose_blocked (double * __restrict C, double * __restrict A, int nrow, int ncol) {
     
     auto offset_A = [ncol](int i, int j) -> int {
         return (i<<2)*ncol + (j << 2);
