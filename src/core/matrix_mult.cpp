@@ -2621,7 +2621,7 @@ void _hy_matrix_multiply_4x4x2 (double *C, double* A, double *B, int stride, boo
     
     A1 = _mm256_set_m128d  (_mm_loaddup_pd (A+S1), _mm_loaddup_pd (A));       // 00,00,10,10
     A2 = _mm256_set_m128d  (_mm_loaddup_pd (A+S3), _mm_loaddup_pd (A+S2));
-    B1 = _mm256_loadu2_m128d  (B,B);      // 00,01 x 2
+    B1 = _mm256_broadcast_pd  ((__m128d const*)B);      // 00,01 x 2
      
     auto handle_block_madd = [&] () -> void {
         C12 = _hy_matrix_handle_axv_mfma (C12,A1,B1); // 00*00, 00*01
@@ -2642,17 +2642,17 @@ void _hy_matrix_multiply_4x4x2 (double *C, double* A, double *B, int stride, boo
     
     A1 = _mm256_set_m128d  (_mm_loaddup_pd (A+S1+1), _mm_loaddup_pd (A+1));       // 00,00,10,10
     A2 = _mm256_set_m128d  (_mm_loaddup_pd (A+S3+1), _mm_loaddup_pd (A+S2+1));
-    B1 = _mm256_loadu2_m128d  (B+S1,B+S1);      // 00,01 x 2
+    B1 = _mm256_broadcast_pd  ((__m128d const*)(B+S1));      // 00,01 x 2
     handle_block_madd ();
 
     A1 = _mm256_set_m128d  (_mm_loaddup_pd (A+S1+2), _mm_loaddup_pd (A+2));       // 00,00,10,10
     A2 = _mm256_set_m128d  (_mm_loaddup_pd (A+S3+2), _mm_loaddup_pd (A+S2+2));
-    B1 = _mm256_loadu2_m128d  (B+S2,B+S2);      // 00,01 x 2
+    B1 = _mm256_broadcast_pd  ((__m128d const*)(B+S2));      // 00,01 x 2
     handle_block_madd ();
 
     A1 = _mm256_set_m128d  (_mm_loaddup_pd (A+S1+3), _mm_loaddup_pd (A+3));       // 00,00,10,10
     A2 = _mm256_set_m128d  (_mm_loaddup_pd (A+S3+3), _mm_loaddup_pd (A+S2+3));
-    B1 = _mm256_loadu2_m128d  (B+S3,B+S3);      // 00,01 x 2
+    B1 = _mm256_broadcast_pd  ((__m128d const*)(B+S3));      // 00,01 x 2
     handle_block_madd ();
 
     _mm_store_pd     (C, _mm256_extractf128_pd (C12,0));
