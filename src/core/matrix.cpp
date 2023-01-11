@@ -4114,13 +4114,15 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                       hyFloat value = theData[cxi];
                       float64x2_t  value_op = vdupq_n_f64 (value);
                       
-                      for (int k = 0; k < 5; k++) {
-                          int k12 = k*12,
-                          k3 = k*3;
+                      for (int k = 0; k < 3; k++) {
+                          int k12 = k*20,
+                          k3 = k*5;
                           
                           float64x2x2_t  C1 = vld2q_f64 (secArg + k12),
                           C2 = vld2q_f64 (secArg + k12 + 4),
-                          C3 = vld2q_f64 (secArg + k12 + 8);
+                          C3 = vld2q_f64 (secArg + k12 + 8),
+                          C4 = vld2q_f64 (secArg + k12 + 12),
+                          C5 = vld2q_f64 (secArg + k12 + 16);
                           
                           R[k3].val[0] = vfmaq_f64 (R[k3].val[0], value_op, C1.val[0]);
                           R[k3].val[1] = vfmaq_f64 (R[k3].val[1], value_op, C1.val[1]);
@@ -4130,7 +4132,13 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           
                           R[k3+2].val[0] = vfmaq_f64 (R[k3+2].val[0], value_op, C3.val[0]);
                           R[k3+2].val[1] = vfmaq_f64 (R[k3+2].val[1], value_op, C3.val[1]);
-                          
+
+                          R[k3+3].val[0] = vfmaq_f64 (R[k3+3].val[0], value_op, C4.val[0]);
+                          R[k3+3].val[1] = vfmaq_f64 (R[k3+3].val[1], value_op, C4.val[1]);
+
+                          R[k3+4].val[0] = vfmaq_f64 (R[k3+4].val[0], value_op, C5.val[0]);
+                          R[k3+4].val[1] = vfmaq_f64 (R[k3+4].val[1], value_op, C5.val[1]);
+
                       }
                       r60 += value * secArg[60];
                       
