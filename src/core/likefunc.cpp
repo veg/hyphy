@@ -1488,9 +1488,9 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
         //ReportWarning (_String("In at step  ") & loopie);
         bool    doSomething = false;
         for (long i = 0; i<indexInd.lLength; i++) {
-            _Variable *anInd = LocateVar(indexInd.list_data[i]);
+            _Variable *anInd = GetIthIndependentVar (i);
             //ReportWarning (*anInd->GetName() & " = " & variableStash.theData[i]);
-            if (anInd->HasChanged() || !CheckEqual(anInd->Value(), variableStash.theData[i])) {
+            if (!CheckEqual(anInd->Value(), variableStash.theData[i]) || anInd->HasChanged()) {
                 doSomething = true;
                 SetIthIndependent (i,variableStash.theData[i]);
             }
@@ -1498,11 +1498,7 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
         if (doSomething) {
             if (partMode) {
                 siteLL = Compute();
-                /*if (hy_mpi_node_rank == 1) {
-                    printf ("\033\015 Node %ld, value %g", siteLL);
-                }*/
             } else {
-
                 if (PreCompute()) {
                     //ReportWarning ("Computing...");
                     ComputeSiteLikelihoodsForABlock (0,siteResults->theData, siteScalerBuffer);
@@ -1528,14 +1524,12 @@ void        _LikelihoodFunction::MPI_LF_Compute (long, bool)
 
         if (partMode) {
             ReportMPIError(MPI_Send(&siteLL, 1, MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD),true);
-        } else
+        } else {
             // need to send both
-        {
             ReportMPIError(MPI_Send(siteResults->theData, siteResults->GetSize(), MPI_DOUBLE, senderID, HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD),true);
         }
         ReportMPIError(MPI_Recv(variableStash.theData, indexInd.lLength, MPI_DOUBLE, senderID, HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD,&status),false);
     }
-    //ReportWarning (_String("Exiting slave loop after step  ") & loopie);
 #endif
 }
 
