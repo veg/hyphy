@@ -334,8 +334,9 @@ namespace mss {
     cAIC_improvementThreshold = 0.01;
     parentModels = mss.GA.initializeModels(numberOfClassesBeingEvaluated, populationSize, model_dimension, None);
     null_model = Eval((Rows (parentModels))[0])*0;   
-    masterList[null_model] = {{baseline_AIC__,baselineLL__,1}};
-
+    masterList[null_model] = baseline_AIC;
+    masterRateList[null_model] = {{baseline_AIC__,baselineLL__,1}};
+ 
     terminationCondition = FALSE;
     generation = 0;
     bestOverall_cAIC_soFar = baseline_AIC;

@@ -330,7 +330,8 @@ namespace mss {
     parentModels = mss.GA.initializeModels(numberOfClassesBeingEvaluated, populationSize, model_dimension, None);
     
     null_model = Eval((Rows (parentModels))[0])*0;   
-    masterList[null_model] = {{baseline_AIC__,baselineLL__,1}};
+    masterList[null_model] = baseline_AIC;
+    masterRateList[null_model] = {{baseline_AIC__,baselineLL__,1}};
     
     terminationCondition = FALSE;
     generation = 0;
