@@ -479,6 +479,7 @@ namespace terms{
         before        = "before";
         after         = "after";
         HMM           = "HMM";
+        unscaled      = "unscaled";
     }
 
 

@@ -504,7 +504,7 @@ void _CategoryVariable::Construct (_List& parameters, _VariableContainer *theP) 
                 f = FindModelName(hmmModelName);
                 if (f==-1) {
                     if (constantOnPartition == *(_String*)parameters (8)) {
-                        flags = CONSTANT_ON_PARTITION;
+                         flags = CONSTANT_ON_PARTITION;
                     } else {
                         HandleApplicationError (errorMsg & (*(_String*)parameters(8))& " is not an existing model identifier in call to 'category'");
                         return;

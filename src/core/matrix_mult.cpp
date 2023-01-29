@@ -28,7 +28,7 @@ extern "C" void cblas_dgemm(const enum CBLAS_ORDER __Order,
 void _hy_matrix_multiply_4x4 (double * C, double *A, double *B, int stride, bool add) {
     
     float64x2x2_t A1, A2, A3, A4, A5, A6, A7, A8;
-    float64x2x2_t B1, B2;
+    float64x2x2_t B1;
     float64x2x2_t C1, C2, C3, C4;
     
     auto handle_block = [&] ()-> void {
@@ -519,7 +519,7 @@ void _hy_matrix_multiply_2x4x4 (double *C, double* A, double *B, int stride, boo
 
 void _hy_matrix_multiply_2x2x4 (double *C, double* A, double *B, int stride) {
     
-    int S1 = stride, S2 = stride << 1, S3 = stride + S2;
+    int S1 = stride;
 
     float64x2x2_t       A1 = vld2q_dup_f64 (A),      // A00x2 A01x2
                         A2 = vld2q_dup_f64 (A+S1);   // A10x2 A11x2
@@ -1026,7 +1026,7 @@ void _hy_matrix_multiply_3x4x4 (double *C, double* A, double *B, int stride, boo
 
 void _hy_matrix_multiply_3x3x3 (double *C, double* A, double *B, int stride, bool add) {
     
-    int S1 = stride, S2 = stride << 1, S3 = stride + S2;
+    int S1 = stride, S2 = stride << 1;
 
     float64x2x2_t A1,
                   A2,
@@ -3908,11 +3908,8 @@ void _hy_matrix_transpose_blocked (double * __restrict C, double * __restrict A,
                 break;
         }
     }
-    
-        
-    
-    // fill in the first blocks in C
 }
 
+// Matrix-Vector blocked
 
 

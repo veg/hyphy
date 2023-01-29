@@ -133,6 +133,8 @@ namespace hy_env {
                               .PushPairCopyKey (data_file_default_width, new _Constant (50.0))
                               .PushPairCopyKey (data_file_gap_width, new _Constant (10.0))
                               .PushPairCopyKey (accept_branch_lengths, new _Constant (HY_CONSTANT_TRUE))
+                              .PushPairCopyKey (number_threads, new _Constant (0.))
+;
       ;
     }
 
@@ -278,6 +280,8 @@ _String const
         // if set, will trigger automatic renaming of sequence names from files to valid
         // HyPhy IDs, e.g. "awesome monkey!" -> "awesome_monkey_"
         // the mapping will go into dataset_id.mapping
+    number_threads                                  ("NUMBER_THREADS"),
+    // if set and >0, and OpenMP is available, bypass auto-benchmarking and use this many threads
     path_to_current_bf                              ("PATH_TO_CURRENT_BF"),
         // is set to the absolute path for the currently executed batch file (assuming it has one)
     print_float_digits                              ("PRINT_DIGITS"),

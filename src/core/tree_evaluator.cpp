@@ -52,6 +52,9 @@ using namespace hy_global;
 using namespace hy_env;
 
 
+#ifndef _SLKP_USE_ARM_NEON
+    #define _HY_NO_INTRINSICS_MARKER
+#endif
 
 #define __ll_loop_preamble if (tcc) { \
     if (__builtin_expect (parentTCCIBit==_HY_BITMASK_WIDTH_,0)) {\
@@ -149,7 +152,10 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
         if (__builtin_expect(siteState >= 0L,1)) {
             // a single character state; sweep down the appropriate column
 #ifdef _SLKP_USE_ARM_NEON
-            for (long k = 0; k < (D>>2<<2); k+=4) {
+            
+            const long ub = (D>>2<<2);
+            
+            for (long k = 0; k < ub; k+=4) {
                 float64x2x2_t PC = vld1q_f64_x2 (parentConditionals+k),
                               CC;
                 
@@ -162,11 +168,12 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
                 PC.val[0] = vmulq_f64(PC.val[0], CC.val[0]);
                 PC.val[1] = vmulq_f64(PC.val[1], CC.val[1]);
 
-                vst1q_f64_x2 (parentConditionals+k, PC);
-                
+                vst1q_f64 (parentConditionals+k, PC.val[0]);
+                vst1q_f64 (parentConditionals+k+2, PC.val[1]);
+
                 
             }
-            for (long k = (D>>2<<2); k < D; k++) {
+            for (long k = ub; k < D; k++) {
                 parentConditionals[k] *= tMatrix[siteState+D*k];
             }
 #else
@@ -322,386 +329,6 @@ inline bool __ll_handle_conditional_array_initialization_generic ( long * __rest
     return false;
 }
 
-#ifdef _SLKP_USE_SSE_INTRINSICS
-template<long D, long S> inline void __ll_handle_block10_product_sum_linear (hyFloat const* _hprestrict_ tT, hyFloat * _hprestrict_ childVector, __m128d * lastTotal) {
-        
-    __m128d T [5] = {_mm_loadu_pd (tT+S),
-                     _mm_loadu_pd (tT+S+2),
-                     _mm_loadu_pd (tT+S+4),
-                     _mm_loadu_pd (tT+S+6),
-                     _mm_loadu_pd (tT+S+8)};
-    
-    __m128d C [5] =  {  _mm_loadu_pd (childVector+S),
-                        _mm_loadu_pd (childVector+S+2),
-                        _mm_loadu_pd (childVector+S+4),
-                        _mm_loadu_pd (childVector+S+6),
-                        _mm_loadu_pd (childVector+S+8)
-                     };
-
-     if (S) {
-        T[0] = _mm_mul_pd (T[0], C[0]);
-        T[1] = _mm_mul_pd (T[1], C[1]);
-        T[2] = _mm_mul_pd (T[2], C[2]);
-        T[3] = _mm_mul_pd (T[3], C[3]);
-        T[4] = _mm_mul_pd (T[4], C[4]);
-        T[0] = _mm_add_pd (T[0],T[1]);
-        T[2] = _mm_add_pd (T[2],T[3]);
-        *lastTotal = _mm_add_pd (*lastTotal, T[4]);
-        T[0] = _mm_add_pd (T[0],T[2]);
-        *lastTotal = _mm_add_pd (T[0], *lastTotal);
-    } else {
-        *lastTotal = _mm_mul_pd (T[0], C[0]);
-        T[1] = _mm_mul_pd (T[1], C[1]);
-        T[2] = _mm_mul_pd (T[2], C[2]);
-        T[3] = _mm_mul_pd (T[3], C[3]);
-        T[4] = _mm_mul_pd (T[4], C[4]);
-        T[0] = _mm_add_pd (T[1],T[3]);
-        T[2] = _mm_add_pd (T[2],T[4]);
-        T[0] = _mm_add_pd (T[0],T[2]);
-        *lastTotal = _mm_add_pd (T[0], *lastTotal);
-    }
-}
-#endif
-
-#ifdef _SLKP_USE_ARM_NEON
-template<long D, long S> inline void __ll_handle_block10_product_sum_linear (hyFloat const* _hprestrict_ tT, hyFloat * _hprestrict_ childVector, float64x2_t * lastTotal) {
-        
-    float64x2_t T [5] = {
-                            vld1q_f64 (tT+S),
-                            vld1q_f64 (tT+S+2),
-                            vld1q_f64 (tT+S+4),
-                            vld1q_f64 (tT+S+6),
-                            vld1q_f64 (tT+S+8)
-                         };
-    
-    float64x2_t C [5] =  {
-                            vld1q_f64 (childVector+S),
-                            vld1q_f64 (childVector+S+2),
-                            vld1q_f64 (childVector+S+4),
-                            vld1q_f64 (childVector+S+6),
-                            vld1q_f64 (childVector+S+8)
-                        };
-
-     if (S) {
-        T[0] = vfmaq_f64 (vmulq_f64 (T[1], C[1]), T[0], C[0]); //0+1
-        T[2] = vfmaq_f64 (vmulq_f64 (T[3], C[3]), T[2], C[2]); //2+3
-        T[3] = vfmaq_f64 (T[0], T[4], C[4]); //0+1+4
-        T[0] = vaddq_f64 (T[3], T[2]); // 0+1+2+3+4
-        *lastTotal = vaddq_f64 (*lastTotal, T[0]);
-    } else {
-        T[0] = vfmaq_f64 (vmulq_f64 (T[1], C[1]), T[0], C[0]); //0+1
-        T[2] = vfmaq_f64 (vmulq_f64 (T[3], C[3]), T[2], C[2]); //2+3
-        T[3] = vfmaq_f64 (T[0], T[4], C[4]); //0+1+4
-        *lastTotal  = vaddq_f64 (T[3], T[2]); // 0+1+2+3+4
-    }
-}
-#endif
-
-#ifdef _SLKP_USE_AVX_INTRINSICS
-template<long D, long S> inline void __ll_handle_block20_product_sum_linear (hyFloat const* _hprestrict_ tT, hyFloat * _hprestrict_ childVector, __m256d * lastTotal) {
-        
-    __m256d T [5] = {_mm256_loadu_pd (tT+S),
-                     _mm256_loadu_pd (tT+S+4),
-                     _mm256_loadu_pd (tT+S+8),
-                     _mm256_loadu_pd (tT+S+12),
-                     _mm256_loadu_pd (tT+S+16)};
-    __m256d C [5] =  {  _mm256_loadu_pd (childVector+S),
-                        _mm256_loadu_pd (childVector+S+4),
-                        _mm256_loadu_pd (childVector+S+8),
-                        _mm256_loadu_pd (childVector+S+12),
-                        _mm256_loadu_pd (childVector+S+16)
-                     };
-
-    #ifdef _SLKP_USE_FMA3_INTRINSICS
-        if (S) {
-            T[0] = _mm256_mul_pd (T[0], C[0]);
-            T[1] = _mm256_mul_pd (T[1], C[1]);
-            T[2] = _mm256_fmadd_pd (T[2], C[2], T[0]); // 0+2
-            T[3] = _mm256_fmadd_pd (T[3], C[3], T[1]); // 1+3
-            T[4] = _mm256_fmadd_pd (T[4], C[4], *lastTotal); // 4 + last
-            T[2] = _mm256_add_pd (T[2],T[3]); // 0+1+2+3
-            *lastTotal = _mm256_add_pd(T[4], T[2]);
-        } else {
-            T[0] = _mm256_mul_pd (T[0], C[0]);
-            T[1] = _mm256_mul_pd (T[1], C[1]);
-            T[2] = _mm256_fmadd_pd (T[2], C[2], T[0]); // 0+2
-            *lastTotal = _mm256_fmadd_pd (T[3], C[3], T[1]); // 1+3
-            T[0] = _mm256_fmadd_pd(T[4], C[4],T[2]); // 0+2+4
-            *lastTotal = _mm256_add_pd(T[0], *lastTotal);
-        }
-    #else
-        if (S) {
-            T[0] = _mm256_mul_pd (T[0], C[0]);
-            T[1] = _mm256_mul_pd (T[1], C[1]);
-            T[2] = _mm256_mul_pd (T[2], C[2]);
-            T[3] = _mm256_mul_pd (T[3], C[3]);
-            T[4] = _mm256_mul_pd (T[4], C[4]);
-            T[0] = _mm256_add_pd (T[0],T[1]);
-            T[2] = _mm256_add_pd (T[2],T[3]);
-            *lastTotal = _mm256_add_pd (*lastTotal, T[4]);
-            T[0] = _mm256_add_pd (T[0],T[2]);
-            *lastTotal = _mm256_add_pd (T[0], *lastTotal);
-        } else {
-            *lastTotal = _mm256_mul_pd (T[0], C[0]);
-            T[1] = _mm256_mul_pd (T[1], C[1]);
-            T[2] = _mm256_mul_pd (T[2], C[2]);
-            T[3] = _mm256_mul_pd (T[3], C[3]);
-            T[4] = _mm256_mul_pd (T[4], C[4]);
-            T[0] = _mm256_add_pd (T[1],T[3]);
-            T[2] = _mm256_add_pd (T[2],T[4]);
-            T[0] = _mm256_add_pd (T[0],T[2]);
-            *lastTotal = _mm256_add_pd (T[0], *lastTotal);
-        }
-    #endif
-
-}
-
-#endif
-
-#ifdef _SLKP_USE_SSE_INTRINSICS
-template<long D, long S> inline __m128d __ll_handle_block10_product_sum (hyFloat const* _hprestrict_ transposedMatrix, hyFloat * _hprestrict_ childVector, hyFloat * _hprestrict_ parentConditionals, __m128d * grandTotal) {
-    
-        __m128d P [5] = {
-                    _mm_set1_pd(0.),
-                    _mm_set1_pd(0.),
-                    _mm_set1_pd(0.),
-                    _mm_set1_pd(0.),
-                    _mm_set1_pd(0.)
-                    };
-                                    
-    hyFloat const * __restrict tT = transposedMatrix;
-
-    for (long col_idx = 0; col_idx < D; col_idx++, tT+=D) {
-        if (childVector[col_idx] > 0.) {
-            __m128d C = _mm_set1_pd(childVector[col_idx]);
-                                        
-            __m128d T [5] = {_mm_loadu_pd (tT+S),
-                             _mm_loadu_pd (tT+S+2),
-                             _mm_loadu_pd (tT+S+4),
-                             _mm_loadu_pd (tT+S+6),
-                             _mm_loadu_pd (tT+S+8)};
-            
-            P[0] = _mm_add_pd (_mm_mul_pd (T[0], C), P[0]);
-            P[1] = _mm_add_pd (_mm_mul_pd (T[1], C), P[1]);
-            P[2] = _mm_add_pd (_mm_mul_pd (T[2], C), P[2]);
-            P[3] = _mm_add_pd (_mm_mul_pd (T[3], C), P[3]);
-            P[4] = _mm_add_pd (_mm_mul_pd (T[4], C), P[4]);
-        }
-    }
-
-    
-    P[0] = _mm_mul_pd(_mm_loadu_pd(parentConditionals+S),     P[0]);
-    P[1] = _mm_mul_pd(_mm_loadu_pd(parentConditionals+S+2),   P[1]);
-    P[2] = _mm_mul_pd(_mm_loadu_pd(parentConditionals+S+4),   P[2]);
-    P[3] = _mm_mul_pd(_mm_loadu_pd(parentConditionals+S+6),   P[3]);
-    P[4] = _mm_mul_pd(_mm_loadu_pd(parentConditionals+S+8),   P[4]);
-    
-    _mm_storeu_pd(parentConditionals+S, P[0]);
-    _mm_storeu_pd(parentConditionals+S+2, P[1]);
-    _mm_storeu_pd(parentConditionals+S+4, P[2]);
-    _mm_storeu_pd(parentConditionals+S+6, P[3]);
-    _mm_storeu_pd(parentConditionals+S+8, P[4]);
-
-    P[0] =_mm_add_pd (P[0],P[1]);
-    P[2] =_mm_add_pd (P[2],P[3]);
-    P[0] =_mm_add_pd (P[0],P[4]);
-    P[2] =_mm_add_pd (P[0],P[2]);
-    if (grandTotal) {
-        *grandTotal = _mm_add_pd (P[2],*grandTotal);
-        return *grandTotal;
-    }
-    return P[2];
-    
-}
-#endif
-
-#ifdef _SLKP_USE_ARM_NEON
-template<long D, long S> inline float64x2_t __ll_handle_block10_product_sum (hyFloat const* _hprestrict_ transposedMatrix, hyFloat * _hprestrict_ childVector, hyFloat * _hprestrict_ parentConditionals, float64x2_t * grandTotal) {
-    
-    /*float64x2_t P [5] = {
-                vdupq_n_f64(0.),
-                vdupq_n_f64(0.),
-                vdupq_n_f64(0.),
-                vdupq_n_f64(0.),
-                vdupq_n_f64(0.)
-                };
-                                    
-    hyFloat const * __restrict tT = transposedMatrix;
-
-    #pragma unroll 2
-    for (long col_idx = 0; col_idx < D; col_idx++, tT+=D) {
-        if (childVector[col_idx] > 0.) {
-            float64x2_t C     = vdupq_n_f64(childVector[col_idx]);
-            
-            P[0] = vfmaq_f64 (P[0], vld1q_f64 (tT+S),   C);
-            P[1] = vfmaq_f64 (P[1], vld1q_f64 (tT+S+2), C);
-            P[2] = vfmaq_f64 (P[2], vld1q_f64 (tT+S+4), C);
-            P[3] = vfmaq_f64 (P[3], vld1q_f64 (tT+S+6), C);
-            P[4] = vfmaq_f64 (P[4], vld1q_f64 (tT+S+8), C);
-        }
-    }
-
-    
-    P[0] = vmulq_f64(vld1q_f64(parentConditionals+S),     P[0]);
-    P[1] = vmulq_f64(vld1q_f64(parentConditionals+S+2),   P[1]);
-    P[2] = vmulq_f64(vld1q_f64(parentConditionals+S+4),   P[2]);
-    P[3] = vmulq_f64(vld1q_f64(parentConditionals+S+6),   P[3]);
-    P[4] = vmulq_f64(vld1q_f64(parentConditionals+S+8),   P[4]);
-    
-    float64x2x4_t P4 = {P[0],P[1],P[2],P[3]};
-    vst1q_f64_x4 (parentConditionals+S,   P4);
-    vst1q_f64    (parentConditionals+S+8, P[4]);
-    
-    P[0] = vaddq_f64 (P[0],P[1]);
-    P[2] = vaddq_f64 (P[2],P[3]);
-    P[0] = vaddq_f64 (P[0],P[4]);
-    P[2] = vaddq_f64 (P[0],P[2]);
-    if (grandTotal) {
-        *grandTotal = vaddq_f64 (P[2],*grandTotal);
-        return *grandTotal;
-    }
-    return P[2];*/
-    
-    float64x2x4_t P4;
-    float64x2_t   P5;
-                                    
-    hyFloat const * __restrict tT = transposedMatrix;
-    
-    float64x2_t C     = vdupq_n_f64(childVector[0]);
-    P4.val[0] = vmulq_f64 (vld1q_f64 (tT+S),C);
-    P4.val[1] = vmulq_f64 (vld1q_f64 (tT+S+2),C);
-    P4.val[2] = vmulq_f64 (vld1q_f64 (tT+S+4),C);
-    P4.val[3] = vmulq_f64 (vld1q_f64 (tT+S+6),C);
-    P5 = vmulq_f64 (vld1q_f64 (tT+S+8),C);
-
-    tT += D;
-
-    for (long col_idx = 1; col_idx < D; col_idx++, tT+=D) {
-        float64x2_t C     = vdupq_n_f64(childVector[col_idx]);        
-        P4.val[0] = vfmaq_f64 (P4.val[0], vld1q_f64 (tT+S),C);
-        P4.val[1] = vfmaq_f64 (P4.val[1], vld1q_f64 (tT+S+2),C);
-        P4.val[2] = vfmaq_f64 (P4.val[2], vld1q_f64 (tT+S+4),C);
-        P4.val[3] = vfmaq_f64 (P4.val[3], vld1q_f64 (tT+S+6),C);
-        P5 = vfmaq_f64 (P5, vld1q_f64 (tT+S+8),C);
-    }
-
-    
-    P4.val[0] = vmulq_f64(vld1q_f64(parentConditionals+S),     P4.val[0]);
-    P4.val[1] = vmulq_f64(vld1q_f64(parentConditionals+S+2),   P4.val[1]);
-    P4.val[2] = vmulq_f64(vld1q_f64(parentConditionals+S+4),   P4.val[2]);
-    P4.val[3] = vmulq_f64(vld1q_f64(parentConditionals+S+6),   P4.val[3]);
-    P5 = vmulq_f64(vld1q_f64(parentConditionals+S+8),   P5);
-    
-    vst1q_f64_x4 (parentConditionals+S,   P4);
-    vst1q_f64    (parentConditionals+S+8, P5);
-    
-    P4.val[0] = vaddq_f64 (P4.val[0],P4.val[1]);
-    P4.val[2] = vaddq_f64 (P4.val[2],P4.val[3]);
-    P5 = vaddq_f64 (P4.val[0],P5);
-    P5 = vaddq_f64 (P4.val[2],P5);
-    if (grandTotal) {
-        *grandTotal = vaddq_f64 (P5,*grandTotal);
-        return *grandTotal;
-    }
-    return P5;
-    
-}
-#endif
-
-#ifdef _SLKP_USE_AVX_INTRINSICS
-template<long D, long S> inline __m256d __ll_handle_block20_product_sum (hyFloat const* _hprestrict_ transposedMatrix, hyFloat * _hprestrict_ childVector, hyFloat * _hprestrict_ parentConditionals, __m256d * grandTotal) {
-    __m256d P [5] = {
-                      _mm256_set1_pd(0.),
-                      _mm256_set1_pd(0.),
-                      _mm256_set1_pd(0.),
-                      _mm256_set1_pd(0.),
-                      _mm256_set1_pd(0.)
-                    };
-                                    
-    hyFloat const * __restrict tT = transposedMatrix;
-
-    for (long col_idx = 0; col_idx < D; col_idx++, tT+=D) {
-        if (childVector[col_idx] > 0.) {
-            __m256d C = _mm256_set1_pd(childVector[col_idx]);
-                                        
-            __m256d T [5] = {_mm256_loadu_pd (tT+S),
-                             _mm256_loadu_pd (tT+S+4),
-                             _mm256_loadu_pd (tT+S+8),
-                             _mm256_loadu_pd (tT+S+12),
-                             _mm256_loadu_pd (tT+S+16)};
-            
-            #ifdef _SLKP_USE_FMA3_INTRINSICS
-                P[0] = _mm256_fmadd_pd (T[0], C, P[0]);
-                P[1] = _mm256_fmadd_pd (T[1], C, P[1]);
-                P[2] = _mm256_fmadd_pd (T[2], C, P[2]);
-                P[3] = _mm256_fmadd_pd (T[3], C, P[3]);
-                P[4] = _mm256_fmadd_pd (T[4], C, P[4]);
-            #else
-                P[0] = _mm256_add_pd (_mm256_mul_pd (T[0], C), P[0]);
-                P[1] = _mm256_add_pd (_mm256_mul_pd (T[1], C), P[1]);
-                P[2] = _mm256_add_pd (_mm256_mul_pd (T[2], C), P[2]);
-                P[3] = _mm256_add_pd (_mm256_mul_pd (T[3], C), P[3]);
-                P[4] = _mm256_add_pd (_mm256_mul_pd (T[4], C), P[4]);
-            #endif
-        }
-    }
-
-    
-    P[0] = _mm256_mul_pd(_mm256_loadu_pd(parentConditionals+S),      P[0]);
-    P[1] = _mm256_mul_pd(_mm256_loadu_pd(parentConditionals+S+4),    P[1]);
-    P[2] = _mm256_mul_pd(_mm256_loadu_pd(parentConditionals+S+8),    P[2]);
-    P[3] = _mm256_mul_pd(_mm256_loadu_pd(parentConditionals+S+12),   P[3]);
-    P[4] = _mm256_mul_pd(_mm256_loadu_pd(parentConditionals+S+16),   P[4]);
-    _mm256_storeu_pd(parentConditionals+S, P[0]);
-    _mm256_storeu_pd(parentConditionals+S+4, P[1]);
-    _mm256_storeu_pd(parentConditionals+S+8, P[2]);
-    _mm256_storeu_pd(parentConditionals+S+12, P[3]);
-    _mm256_storeu_pd(parentConditionals+S+16, P[4]);
-
-    P[0] =_mm256_add_pd (P[0],P[1]);
-    P[1] =_mm256_add_pd (P[2],P[3]);
-    P[0] =_mm256_add_pd (P[0],P[4]);
-    P[2] = _mm256_add_pd (P[0],P[1]);
-    if (grandTotal) {
-        *grandTotal = _mm256_add_pd (P[2],*grandTotal);
-        return *grandTotal;
-    }
-    return P[2];
-    
-}
-#endif
-
-template<long D> inline void __ll_product_sum_loop (hyFloat const* _hprestrict_ tMatrix, hyFloat* _hprestrict_ childVector, hyFloat* _hprestrict_ parentConditionals, hyFloat& sum) {
-    for (long p = 0; p < D; p++) {
-        hyFloat      accumulator = 0.0;
-        
-        #pragma GCC unroll 8
-        #pragma clang loop vectorize(enable)
-        #pragma clang loop interleave(enable)
-        //#pragma clang loop unroll(enable)
-        for (long c = 0; c < D; c++)
-            accumulator +=  tMatrix[c]   * childVector[c];
-        
-        tMatrix               += D;
-        sum += (parentConditionals[p] *= accumulator);
-    }
-}
-
-inline void __ll_product_sum_loop_generic (hyFloat const* _hprestrict_ tMatrix, hyFloat* _hprestrict_ childVector, hyFloat* _hprestrict_ parentConditionals, hyFloat& sum, long const D) {
-    for (long p = 0; p < D; p++) {
-        hyFloat      accumulator = 0.0;
-        
-        #pragma GCC unroll 8
-        #pragma clang loop vectorize(enable)
-        #pragma clang loop interleave(enable)
-        //#pragma clang loop unroll(enable)
-        for (long c = 0; c < D; c++)
-            accumulator +=  tMatrix[c]   * childVector[c];
-        
-        tMatrix               += D;
-        sum += (parentConditionals[p] *= accumulator);
-    }
-}
 
 template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum, hyFloat* _hprestrict_ parentConditionals, hyFloat* _hprestrict_ scalingAdjustments, long& didScale, long parentCode, long siteCount, long siteID, long& localScalerChange, long siteFrequency) {
     
@@ -851,6 +478,1186 @@ template<long D> inline void __ll_loop_handle_leaf_case (hyFloat* _hprestrict_ p
         }
     }
 }
+
+#ifdef _HY_NO_INTRINSICS_MARKER
+
+    void _mx_vect_4x4 (double *cv, double const *M, double const *V, int stride) {
+        
+        int O2 = stride << 1,
+            O3 = O2 + stride;
+        
+        cv[0] = M[0]*V[0] + M[1]*V[1] + M[2]*V[2] + M[3]*V[3];
+        
+        cv[1] = M[stride]*V[0] + M[stride+1]*V[1] + M[stride+2]*V[2] + M[stride+3]*V[3];
+        
+        cv[2] = M[O2]*V[0] + M[O2+1]*V[1] + M[O2+2]*V[2] + M[O2+3]*V[3];
+        
+        cv[3] = M[O3]*V[0] + M[O3+1]*V[1] + M[O3+2]*V[2] + M[O3+3]*V[3];
+    }
+    
+    void _mx_vect_4x4_add (double *cv, double const *M, double const *V, int stride) {
+        int O2 = stride << 1,
+            O3 = O2 + stride;
+        
+        cv[0] += M[0]*V[0] + M[1]*V[1] + M[2]*V[2] + M[3]*V[3];
+        
+        cv[1] += M[stride]*V[0] + M[stride+1]*V[1] + M[stride+2]*V[2] + M[stride+3]*V[3];
+        
+        cv[2] += M[O2]*V[0] + M[O2+1]*V[1] + M[O2+2]*V[2] + M[O2+3]*V[3];
+        
+        cv[3] += M[O3]*V[0] + M[O3+1]*V[1] + M[O3+2]*V[2] + M[O3+3]*V[3];
+    }
+
+    void _hy_matrix_vector_product_blocked_4x4 (double * C, double const *M, double const *V, int D) {
+        auto offset = [D](int i, int j) -> int {
+            return (i<<2)*D + (j << 2);
+        };
+        
+        
+        int blocks = D>>2;
+        int remainder = D - (blocks<<2);
+ 
+
+        switch (remainder) {
+                
+            case 0: {
+                for (int i = 0; i < blocks; i++) {
+                    double accumulator[4];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    C[off]   = accumulator[0];
+                    C[off+1] = accumulator[1];
+                    C[off+2] = accumulator[2];
+                    C[off+3] = accumulator[3];
+
+                }
+                break;
+            }
+                
+            case 1: {
+                for (int i = 0; i < blocks; i++) {
+                    
+                    double accumulator[4];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    double last_v = V [offset (0,blocks)];
+
+                    C[off]     = accumulator [0] + M[moffset]     * last_v;
+                    C[off + 1] = accumulator [1] + M[moffset+D]   * last_v;
+                    C[off + 2] = accumulator [2] + M[moffset+2*D] * last_v;
+                    C[off + 3] = accumulator [3] + M[moffset+3*D] * last_v;
+                }
+                
+                M += offset (blocks,0);
+                
+                double accumulator[4];
+
+                accumulator[0] = M[0]*V[0];
+                accumulator[1] = M[1]*V[1];
+                accumulator[2] = M[2]*V[2];
+                accumulator[3] = M[3]*V[3];
+
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    accumulator[0] += M[off]*V[off];
+                    accumulator[1] += M[off+1]*V[off+1];
+                    accumulator[2] += M[off+2]*V[off+2];
+                    accumulator[3] += M[off+3]*V[off+3];
+                }
+                
+                C[D-1] = M[D-1] * V[D-1] + (accumulator[0] + accumulator[1]) + (accumulator[2] + accumulator[3]);
+                break;
+            }
+                
+            case 2: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    
+                    double accumulator[4];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    double  last_v_m1 = V [offset (0,blocks)],
+                            last_v    = V [offset (0,blocks) + 1];
+
+                    C[off]     = accumulator [0] + M[moffset]     * last_v_m1 + M[moffset + 1] * last_v;
+                    C[off + 1] = accumulator [1] + M[moffset+D]   * last_v_m1 + M[moffset + 1 + D] * last_v;
+                    C[off + 2] = accumulator [2] + M[moffset+2*D] * last_v_m1 + M[moffset + 1 + 2*D] * last_v;
+                    C[off + 3] = accumulator [3] + M[moffset+3*D] * last_v_m1 + M[moffset + 1 + 3*D] * last_v;
+                }
+                
+                
+                M += offset (blocks,0);
+                
+                double accumulator  [4],
+                       accumulator2 [4];
+
+                accumulator[0] = M[0]*V[0];
+                accumulator[1] = M[1]*V[1];
+                accumulator[2] = M[2]*V[2];
+                accumulator[3] = M[3]*V[3];
+                
+                accumulator2[0] = M[D]*V[0];
+                accumulator2[1] = M[D+1]*V[1];
+                accumulator2[2] = M[D+2]*V[2];
+                accumulator2[3] = M[D+3]*V[3];
+
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    accumulator[0] += M[off]*V[off];
+                    accumulator[1] += M[off+1]*V[off+1];
+                    accumulator[2] += M[off+2]*V[off+2];
+                    accumulator[3] += M[off+3]*V[off+3];
+                    accumulator2[0] += M[D+off]*V[off];
+                    accumulator2[1] += M[D+off+1]*V[off+1];
+                    accumulator2[2] += M[D+off+2]*V[off+2];
+                    accumulator2[3] += M[D+off+3]*V[off+3];
+                }
+                
+                C[D-2] = M[D-2] * V[D-2] + M[D-1] * V[D-1] + (accumulator[0] + accumulator[1]) + (accumulator[2] + accumulator[3]);
+                C[D-1] = M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + (accumulator2[0] + accumulator2[1]) + (accumulator2[2] + accumulator2[3]);
+     
+                break;
+            }
+                
+            case 3: {
+                for (int i = 0; i < blocks; i++) {
+                    
+                    double accumulator[4];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    double  last_v_m2 = V [offset (0,blocks)],
+                    last_v_m1 = V [offset (0,blocks) + 1],
+                    last_v    = V [offset (0,blocks) + 2];
+                    
+                    C[off]     = accumulator [0] + M[moffset]     * last_v_m2 + M[moffset + 1] * last_v_m1 + M[moffset + 2] * last_v;
+                    C[off + 1] = accumulator [1] + M[moffset+D]   * last_v_m2 + M[moffset + 1 + D] * last_v_m1 + M[moffset + 2 + D] * last_v;
+                    C[off + 2] = accumulator [2] + M[moffset+2*D] * last_v_m2 + M[moffset + 1 + 2*D] * last_v_m1 + M[moffset + 2 + 2*D] * last_v;
+                    C[off + 3] = accumulator [3] + M[moffset+3*D] * last_v_m2 + M[moffset + 1 + 3*D] * last_v_m1 + M[moffset + 2 + 3*D] * last_v;
+                }
+                
+                
+                M += offset (blocks,0);
+                
+                double accumulator  [4],
+                       accumulator2 [4],
+                       accumulator3 [4];
+                
+                accumulator[0] = M[0]*V[0];
+                accumulator[1] = M[1]*V[1];
+                accumulator[2] = M[2]*V[2];
+                accumulator[3] = M[3]*V[3];
+                
+                accumulator2[0] = M[D]*V[0];
+                accumulator2[1] = M[D+1]*V[1];
+                accumulator2[2] = M[D+2]*V[2];
+                accumulator2[3] = M[D+3]*V[3];
+                
+                accumulator2[0] = M[2*D]*V[0];
+                accumulator2[1] = M[2*D+1]*V[1];
+                accumulator2[2] = M[2*D+2]*V[2];
+                accumulator2[3] = M[2*D+3]*V[3];
+                
+
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    accumulator[0] += M[off]*V[off];
+                    accumulator[1] += M[off+1]*V[off+1];
+                    accumulator[2] += M[off+2]*V[off+2];
+                    accumulator[3] += M[off+3]*V[off+3];
+                    
+                    accumulator2[0] += M[D+off]*V[off];
+                    accumulator2[1] += M[D+off+1]*V[off+1];
+                    accumulator2[2] += M[D+off+2]*V[off+2];
+                    accumulator2[3] += M[D+off+3]*V[off+3];
+
+                    accumulator3[0] += M[2*D+off]*V[off];
+                    accumulator3[1] += M[2*D+off+1]*V[off+1];
+                    accumulator3[2] += M[2*D+off+2]*V[off+2];
+                    accumulator3[3] += M[2*D+off+3]*V[off+3];
+                }
+                C[D-3] = M[D-3] * V[D-3]  + M[D-2] * V[D-2] + M[D-1] * V[D-1] + (accumulator[0] + accumulator[1]) + (accumulator[2] + accumulator[3]);
+                C[D-2] = M[2*D-3] * V[D-3] + M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + (accumulator2[0] + accumulator2[1]) + (accumulator2[2] + accumulator2[3]);
+                C[D-1] = M[3*D-3] * V[D-3] + M[3*D-2] * V[D-2] + M[3*D-1] * V[D-1] + (accumulator3[0] + accumulator3[1]) + (accumulator3[2] + accumulator3[3]);
+            }
+
+        }
+    }
+
+    template<int D> void _hy_mvp_blocked_4x4 (double * C, double const *M, double const *V) {
+        _hy_matrix_vector_product_blocked_4x4 (C,M,V,D);
+    }
+
+    inline double _handle4x4_pruning_case_direct (double const* childVector, void* T, double* parentConditionals) {
+        
+        hyFloat * tMatrix = (hyFloat*)T;
+        
+        hyFloat t1 = childVector[0] - childVector[3],
+        t2 = childVector[1] - childVector[3],
+        t3 = childVector[2] - childVector[3],
+        t4 = childVector[3];
+        
+        parentConditionals [0] *= (tMatrix[0]  * t1 + tMatrix[1] * t2) + (tMatrix[2] * t3 + t4);
+        parentConditionals [1] *= (tMatrix[4]  * t1 + tMatrix[5] * t2) + (tMatrix[6] * t3 + t4);
+        parentConditionals [2] *= (tMatrix[8]  * t1 + tMatrix[9] * t2) + (tMatrix[10] * t3 + t4);
+        parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);
+        
+        return (parentConditionals[0] + parentConditionals[1]) + (parentConditionals[2] + parentConditionals[3]);
+    }
+
+
+
+
+    double _hy_vvmult_sum_generic (double * C, double const *M, int D) {
+
+        double sum = 0.;
+        
+        int blocks = D>>3;
+        int remainder = D - (blocks<<3);
+        
+        if (blocks) {
+            double accumulator[8];
+            
+            accumulator [0] = (C[0] *= M[0]);
+            accumulator [1] = (C[1] *= M[1]);
+            accumulator [2] = (C[2] *= M[2]);
+            accumulator [3] = (C[3] *= M[3]);
+            accumulator [4] = (C[4] *= M[4]);
+            accumulator [5] = (C[5] *= M[5]);
+            accumulator [6] = (C[6] *= M[6]);
+            accumulator [7] = (C[7] *= M[7]);
+
+            for (int i = 1; i < blocks; i++) {
+                
+                int off = i<<3;
+                
+                accumulator [0] += (C[off    ] *= M[off    ]);
+                accumulator [1] += (C[off + 1] *= M[off + 1]);
+                accumulator [2] += (C[off + 2] *= M[off + 2]);
+                accumulator [3] += (C[off + 3] *= M[off + 3]);
+                accumulator [4] += (C[off + 4] *= M[off + 4]);
+                accumulator [5] += (C[off + 5] *= M[off + 5]);
+                accumulator [6] += (C[off + 6] *= M[off + 6]);
+                accumulator [7] += (C[off + 7] *= M[off + 7]);
+
+            }
+            
+            //accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
+            sum = (accumulator[0] + accumulator[1]) + (accumulator[2] + accumulator[3]) +
+                  (accumulator[4] + accumulator[5]) + (accumulator[6] + accumulator[7]);
+        }
+        
+        if (remainder) {
+            switch (remainder) {
+                case 1:
+                    sum += (C[D-1] *= M[D-1]);
+                    break;
+                case 2:
+                    sum += (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 3:
+                    sum += (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 4:
+                    sum += (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 5:
+                    sum += (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 6:
+                    sum += (C[D-6] *= M[D-6]) +
+                           (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 7:
+                    sum += (C[D-7] *= M[D-7])
+                         + (C[D-6] *= M[D-6])
+                         + (C[D-5] *= M[D-5])
+                         + (C[D-4] *= M[D-4])
+                         + (C[D-3] *= M[D-3])
+                         + (C[D-2] *= M[D-2])
+                         + (C[D-1] *= M[D-1]);
+                    break;
+            }
+        }
+        
+        return sum;
+    }
+
+    template<int D> double _hy_vvmult_sum (double * C, double const *M) {
+        return _hy_vvmult_sum_generic(C,M,D);
+    }
+
+#else
+
+#ifdef _SLKP_USE_ARM_NEON
+
+    void _mx_vect_4x4 (float64x2x2_t& cv, double const *M, double const *V, int stride) {
+        float64x2x2_t col,
+                      accumulator,
+                      accumulator2,
+                      accumulator3,
+                      accumulator4,
+                      row,
+                      row2,
+                      row3,
+                      row4;
+
+        col  = vld1q_f64_x2 (V);
+        row  = vld1q_f64_x2 (M);
+
+        accumulator.val[0] = vmulq_f64 (col.val[0], row.val[0]);
+        accumulator.val[1] = vmulq_f64 (col.val[1], row.val[1]);
+                             
+        row2 = vld1q_f64_x2 (M+stride);
+        accumulator2.val[0] = vmulq_f64 (col.val[0], row2.val[0]);
+        accumulator2.val[1] = vmulq_f64 (col.val[1], row2.val[1]);
+        
+        row3 = vld1q_f64_x2 (M+2*stride);
+        accumulator3.val[0] = vmulq_f64 (col.val[0], row3.val[0]);
+        accumulator3.val[1] = vmulq_f64 (col.val[1], row3.val[1]);
+                             
+        row4 = vld1q_f64_x2 (M+3*stride);
+        accumulator4.val[0] = vmulq_f64 (col.val[0], row4.val[0]);
+        accumulator4.val[1] = vmulq_f64 (col.val[1], row4.val[1]);
+        
+        //float64x2x2_t cv = vld1q_f64_x2 (C);
+        accumulator.val[0]  = vaddq_f64 (accumulator.val[0],accumulator.val[1]);
+        accumulator2.val[0] = vaddq_f64 (accumulator2.val[0],accumulator2.val[1]);
+        accumulator3.val[0] = vaddq_f64 (accumulator3.val[0],accumulator3.val[1]);
+        accumulator4.val[0] = vaddq_f64 (accumulator4.val[0],accumulator4.val[1]);
+
+        cv.val[0] = vaddq_f64(vzip1q_f64 (accumulator.val[0],accumulator2.val[0]),vzip2q_f64 (accumulator.val[0],accumulator2.val[0]));
+        cv.val[1] = vaddq_f64(vzip1q_f64 (accumulator3.val[0],accumulator4.val[0]),vzip2q_f64 (accumulator3.val[0],accumulator4.val[0]));
+    }
+
+
+    void _mx_vect_4x4_add (float64x2x2_t &cv, double const *M, double const *V, int stride) {
+        
+        /*float64x2x2_t col;
+        float64x2x2_t
+                      row,
+                      row2,
+                      row3,
+                      row4;
+        
+        float64x2_t accumulator,
+                    accumulator2,
+                    accumulator3,
+                    accumulator4;
+        
+                      
+        col   = vld1q_f64_x2 (V);
+        row   = vld1q_f64_x2 (M);
+        row2  = vld1q_f64_x2 (M+stride);
+
+        accumulator  = vfmaq_f64 (vmulq_f64 (col.val[0], row.val[0]),  col.val[1], row.val[1]);
+        accumulator2 = vfmaq_f64 (vmulq_f64 (col.val[0], row2.val[0]), col.val[1], row2.val[1]);
+
+        row   = vld1q_f64_x2 (M+stride*2);
+        row2  = vld1q_f64_x2 (M+stride*3);
+        accumulator3 = vfmaq_f64 (vmulq_f64 (col.val[0], row.val[0]), col.val[1], row.val[1]);
+        accumulator4 = vfmaq_f64 (vmulq_f64 (col.val[0], row2.val[0]), col.val[1], row2.val[1]);
+
+        cv.val[0] = vaddq_f64(cv.val[0],vaddq_f64(vzip1q_f64 (accumulator,accumulator2),vzip2q_f64 (accumulator,accumulator2)));
+        cv.val[1] = vaddq_f64(cv.val[1],vaddq_f64(vzip1q_f64 (accumulator3,accumulator4),vzip2q_f64 (accumulator3,accumulator4)));*/
+        
+        float64x2x2_t col,
+                      accumulator,
+                      accumulator2,
+                      accumulator3,
+                      accumulator4,
+                      row,
+                      row2,
+                      row3,
+                      row4;
+
+        col  = vld1q_f64_x2 (V);
+
+        row  = vld1q_f64_x2 (M);
+        accumulator.val[0] = vmulq_f64 (col.val[0], row.val[0]);
+        accumulator.val[1] = vmulq_f64 (col.val[1], row.val[1]);
+
+        row2 = vld1q_f64_x2 (M+stride);
+
+        accumulator2.val[0] = vmulq_f64 (col.val[0], row2.val[0]);
+        accumulator2.val[1] = vmulq_f64 (col.val[1], row2.val[1]);
+        
+        row3 = vld1q_f64_x2 (M+2*stride);
+        accumulator3.val[0] = vmulq_f64 (col.val[0], row3.val[0]);
+        accumulator3.val[1] = vmulq_f64 (col.val[1], row3.val[1]);
+                             
+        row4 = vld1q_f64_x2 (M+3*stride);
+        accumulator4.val[0] = vmulq_f64 (col.val[0], row4.val[0]);
+        accumulator4.val[1] = vmulq_f64 (col.val[1], row4.val[1]);
+        
+        accumulator.val[0]  = vaddq_f64 (accumulator.val[0],accumulator.val[1]);
+        accumulator2.val[0] = vaddq_f64 (accumulator2.val[0],accumulator2.val[1]);
+        accumulator3.val[0] = vaddq_f64 (accumulator3.val[0],accumulator3.val[1]);
+        accumulator4.val[0] = vaddq_f64 (accumulator4.val[0],accumulator4.val[1]);
+
+
+        cv.val[0] = vaddq_f64(cv.val[0], vaddq_f64(vzip1q_f64 (accumulator.val[0],accumulator2.val[0]),vzip2q_f64 (accumulator.val[0],accumulator2.val[0])));
+        cv.val[1] = vaddq_f64(cv.val[1], vaddq_f64(vzip1q_f64 (accumulator3.val[0],accumulator4.val[0]),vzip2q_f64 (accumulator3.val[0],accumulator4.val[0])));
+        
+    }
+
+    inline double _handle4x4_pruning_case_direct (double const* childVector, void* tMatrix, double* parentConditionals) {
+        
+        /*float64x2x2_t col;
+        float64x2x4_t
+                      row,
+                      row2;
+        
+        float64x2_t accumulator,
+                    accumulator2,
+                    accumulator3,
+                    accumulator4;
+        
+                      
+        col  = vld1q_f64_x2 (childVector);
+        row   = vld1q_f64_x4 (tMatrix);
+        row2  = vld1q_f64_x4 (tMatrix+8);
+        float64x2x2_t pv = vld1q_f64_x2 (parentConditionals);
+
+        accumulator  = vfmaq_f64 (vmulq_f64 (col.val[0], row.val[0]), col.val[1], row.val[1]);
+        accumulator2 = vfmaq_f64 (vmulq_f64 (col.val[0], row.val[2]), col.val[1], row.val[3]);
+        accumulator3 = vfmaq_f64 (vmulq_f64 (col.val[0], row2.val[0]), col.val[1], row2.val[1]);
+        accumulator4 = vfmaq_f64 (vmulq_f64 (col.val[0], row2.val[2]), col.val[1], row2.val[3]);
+
+ 
+        pv.val[0] = vmulq_f64(pv.val[0],vaddq_f64(vzip1q_f64 (accumulator,accumulator2),vzip2q_f64 (accumulator,accumulator2)));
+        pv.val[1] = vmulq_f64(pv.val[1],vaddq_f64(vzip1q_f64 (accumulator3,accumulator4),vzip2q_f64 (accumulator3,accumulator4)));
+        vst1q_f64 (parentConditionals, pv.val[0]);
+        vst1q_f64 (parentConditionals+2, pv.val[1]);
+ 
+        return vaddvq_f64(vaddq_f64(pv.val[0],pv.val[1]));*/
+        
+        /*hyFloat t1 = childVector[0] - childVector[3],
+        t2 = childVector[1] - childVector[3],
+        t3 = childVector[2] - childVector[3],
+        t4 = childVector[3];
+        
+        parentConditionals [0] *= (tMatrix[0]  * t1 + tMatrix[1] * t2) + (tMatrix[2] * t3 + t4);
+        parentConditionals [1] *= (tMatrix[4]  * t1 + tMatrix[5] * t2) + (tMatrix[6] * t3 + t4);
+        parentConditionals [2] *= (tMatrix[8]  * t1 + tMatrix[9] * t2) + (tMatrix[10] * t3 + t4);
+        parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);*/
+        
+        
+        float64x2x2_t * TM = (float64x2x2_t*)tMatrix;
+        
+        float64x2_t c0     = vdupq_n_f64(childVector[0]-childVector[3]),
+                    c1     = vdupq_n_f64(childVector[1]-childVector[3]),
+                    c2     = vdupq_n_f64(childVector[2]-childVector[3]),
+                    c3     = vdupq_n_f64(childVector[3]);
+        
+        float64x2_t t[4];
+      
+        t[0] = vfmaq_f64 (vmulq_f64  (c1,TM[1].val[0]),c0,TM[0].val[0]);
+        t[1] = vfmaq_f64 (vmulq_f64  (c1,TM[1].val[1]),c0,TM[0].val[1]);
+        t[2] = vaddq_f64 (vmulq_f64  (c2,TM[2].val[0]),c3);
+        t[3] = vaddq_f64 (vmulq_f64  (c2,TM[2].val[1]),c3);
+        
+        t[0] = vmulq_f64  (vld1q_f64 (parentConditionals), vaddq_f64 (t[0], t[2]));
+        vst1q_f64 (parentConditionals,t[0]);
+        t[1] = vmulq_f64  (vld1q_f64 (parentConditionals+2), vaddq_f64 (t[1],t[3]));
+        vst1q_f64 (parentConditionals+2,t[1]);
+        return vaddvq_f64(vaddq_f64(t[0],t[1]));
+        //return (parentConditionals[0] + parentConditionals[1]) + (parentConditionals[2] + parentConditionals[3]);
+    }
+
+
+
+    void _hy_matrix_vector_product_blocked_4x4 (double * C, double const *M, double const *V, int D) {
+        auto offset = [D](int i, int j) -> int {
+            return (i<<2)*D + (j << 2);
+        };
+        
+        int blocks = D>>2;
+        int remainder = D - (blocks<<2);
+        
+        switch (remainder) {
+                
+            case 0: {
+                for (int i = 0; i < blocks; i++) {
+                    float64x2x2_t accumulator;
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    vst1q_f64 (C + offset (0,i), accumulator.val[0]);
+                    vst1q_f64 (C + offset (0,i) + 2, accumulator.val[1]);
+                    //handle_small_product_add <4,1> (C + offset (0,i), M + offset (i,blocks), V + offset (0,blocks), D);
+                }
+                break;
+            }
+                
+            case 1: {
+                for (int i = 0; i < blocks; i++) {
+                    float64x2x2_t accumulator;
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int moffset = offset (i,blocks);
+                    float64x2_t mv1,
+                                mv2;
+                    mv1 = vsetq_lane_f64 ( M[moffset],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D],mv2,1);
+                    
+                    float64x2_t v = vdupq_n_f64 (V [offset (0,blocks)]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    vst1q_f64 (C + offset (0,i), accumulator.val[0]);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    vst1q_f64 (C + offset (0,i) + 2, accumulator.val[1]);
+                    //handle_small_product_add <4,1> (C + offset (0,i), M + offset (i,blocks), V + offset (0,blocks), D);
+                }
+                M += offset (blocks,0);
+                float64x2x2_t accumulator,
+                              row = vld1q_f64_x2 (M),
+                              col = vld1q_f64_x2 (V);
+
+                accumulator.val[0] =  vmulq_f64 (row.val[0], col.val[0]);
+                accumulator.val[1] =  vmulq_f64 (row.val[1], col.val[1]);
+                
+                for (int j = 1; j < blocks; j++) {
+                    row = vld1q_f64_x2 (M + (j<<2));
+                    col = vld1q_f64_x2 (V + (j<<2));
+                    
+                    accumulator.val[0] =  vfmaq_f64 (accumulator.val[0] ,row.val[0], col.val[0]);
+                    accumulator.val[1] =  vfmaq_f64 (accumulator.val[1] ,row.val[1], col.val[1]);
+                }
+                
+                C[D-1] = M[D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                break;
+            }
+                
+            case 2: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    float64x2x2_t accumulator;
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    
+                    int moffset = offset (i,blocks);
+                    float64x2_t mv1,
+                                mv2;
+                    
+                    mv1 = vsetq_lane_f64 ( M[moffset],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D],mv2,1);
+                    
+                    float64x2_t v = vdupq_n_f64 (V [offset (0,blocks)]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    
+                    mv1 = vsetq_lane_f64 ( M[moffset+1],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D+1],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D+1],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D+1],mv2,1);
+                    
+                    v = vdupq_n_f64 (V [offset (0,blocks)+1]);
+                    
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    vst1q_f64 (C + offset (0,i), accumulator.val[0]);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    vst1q_f64 (C + offset (0,i) + 2, accumulator.val[1]);
+                    //handle_small_product_add <4,1> (C + offset (0,i), M + offset (i,blocks), V + offset (0,blocks), D);
+                }
+                
+                M += offset (blocks,0);
+                float64x2x2_t accumulator,
+                              accumulator2,
+                              row  = vld1q_f64_x2 (M),
+                              row2 = vld1q_f64_x2 (M+D),
+                              col = vld1q_f64_x2 (V);
+
+                accumulator.val[0] =  vmulq_f64 (row.val[0], col.val[0]);
+                accumulator.val[1] =  vmulq_f64 (row.val[1], col.val[1]);
+                accumulator2.val[0] =  vmulq_f64 (row2.val[0], col.val[0]);
+                accumulator2.val[1] =  vmulq_f64 (row2.val[1], col.val[1]);
+
+                for (int j = 1; j < blocks; j++) {
+                    row = vld1q_f64_x2 (M + (j<<2));
+                    row2 = vld1q_f64_x2 (M + D+ (j<<2));
+                    col = vld1q_f64_x2 (V + (j<<2));
+                    
+                    accumulator.val[0] =  vfmaq_f64 (accumulator.val[0] ,row.val[0], col.val[0]);
+                    accumulator.val[1] =  vfmaq_f64 (accumulator.val[1] ,row.val[1], col.val[1]);
+                    accumulator2.val[0] =  vfmaq_f64 (accumulator2.val[0] ,row2.val[0], col.val[0]);
+                    accumulator2.val[1] =  vfmaq_f64 (accumulator2.val[1] ,row2.val[1], col.val[1]);
+                }
+                C[D-2] = M[D-2] * V[D-2] + M[D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                C[D-1] = M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator2.val[0],accumulator2.val[1]));
+     
+                break;
+            }
+                
+            case 3: {
+                for (int i = 0; i < blocks; i++) {
+                    float64x2x2_t accumulator;
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    
+                    int moffset = offset (i,blocks);
+                    float64x2_t mv1,
+                                mv2;
+                    
+                    mv1 = vsetq_lane_f64 ( M[moffset],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D],mv2,1);
+                    
+                    float64x2_t v = vdupq_n_f64 (V [offset (0,blocks)]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    
+                    mv1 = vsetq_lane_f64 ( M[moffset+1],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D+1],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D+1],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D+1],mv2,1);
+                    
+                    v = vdupq_n_f64 (V [offset (0,blocks)+1]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+
+                    mv1 = vsetq_lane_f64 ( M[moffset+2],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D+2],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D+2],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D+2],mv2,1);
+                    
+                    v = vdupq_n_f64 (V [offset (0,blocks)+2]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    vst1q_f64 (C + offset (0,i), accumulator.val[0]);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    vst1q_f64 (C + offset (0,i) + 2, accumulator.val[1]);
+                    //handle_small_product_add <4,1> (C + offset (0,i), M + offset (i,blocks), V + offset (0,blocks), D);
+                }
+                
+                M += offset (blocks,0);
+                float64x2x2_t accumulator,
+                              accumulator2,
+                              accumulator3,
+                              row  = vld1q_f64_x2 (M),
+                              row2 = vld1q_f64_x2 (M+D),
+                              row3 = vld1q_f64_x2 (M+2*D),
+                              col = vld1q_f64_x2 (V);
+
+                accumulator.val[0] =  vmulq_f64 (row.val[0], col.val[0]);
+                accumulator.val[1] =  vmulq_f64 (row.val[1], col.val[1]);
+                accumulator2.val[0] =  vmulq_f64 (row2.val[0], col.val[0]);
+                accumulator2.val[1] =  vmulq_f64 (row2.val[1], col.val[1]);
+                accumulator3.val[0] =  vmulq_f64 (row3.val[0], col.val[0]);
+                accumulator3.val[1] =  vmulq_f64 (row3.val[1], col.val[1]);
+
+                for (int j = 1; j < blocks; j++) {
+                    row = vld1q_f64_x2 (M + (j<<2));
+                    row2 = vld1q_f64_x2 (M + D+ (j<<2));
+                    row3 = vld1q_f64_x2 (M + 2*D+ (j<<2));
+                    col = vld1q_f64_x2 (V + (j<<2));
+                    
+                    accumulator.val[0] =  vfmaq_f64 (accumulator.val[0] ,row.val[0], col.val[0]);
+                    accumulator.val[1] =  vfmaq_f64 (accumulator.val[1] ,row.val[1], col.val[1]);
+                    accumulator2.val[0] =  vfmaq_f64 (accumulator2.val[0] ,row2.val[0], col.val[0]);
+                    accumulator2.val[1] =  vfmaq_f64 (accumulator2.val[1] ,row2.val[1], col.val[1]);
+                    accumulator3.val[0] =  vfmaq_f64 (accumulator3.val[0] ,row3.val[0], col.val[0]);
+                    accumulator3.val[1] =  vfmaq_f64 (accumulator3.val[1] ,row3.val[1], col.val[1]);
+                }
+                C[D-3] = M[D-3] * V[D-3]  + M[D-2] * V[D-2] + M[D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));;
+                C[D-2] = M[2*D-3] * V[D-3] + M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator2.val[0],accumulator2.val[1]));
+                C[D-1] = M[3*D-3] * V[D-3] + M[3*D-2] * V[D-2] + M[3*D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator3.val[0],accumulator3.val[1]));
+
+                break;
+            }
+
+        }
+    }
+
+    template<int D> void _hy_mvp_blocked_4x4 (double * C, double const *M, double const *V) {
+        auto offset = [](int i, int j) -> int {
+            return (i<<2)*D + (j << 2);
+        };
+        
+        int blocks = D>>2;
+        int remainder = D - (blocks<<2);
+        
+        switch (remainder) {
+                
+            case 0: {
+                for (int i = 0; i < blocks; i++) {
+                    float64x2x2_t accumulator;
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    vst1q_f64 (C + offset (0,i), accumulator.val[0]);
+                    vst1q_f64 (C + offset (0,i) + 2, accumulator.val[1]);
+                    //handle_small_product_add <4,1> (C + offset (0,i), M + offset (i,blocks), V + offset (0,blocks), D);
+                }
+                break;
+            }
+                
+            case 1: {
+                for (int i = 0; i < blocks; i++) {
+                    float64x2x2_t accumulator;
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int moffset = offset (i,blocks);
+                    float64x2_t mv1,
+                                mv2;
+                    mv1 = vsetq_lane_f64 ( M[moffset],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D],mv2,1);
+                    
+                    float64x2_t v = vdupq_n_f64 (V [offset (0,blocks)]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    vst1q_f64 (C + offset (0,i), accumulator.val[0]);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    vst1q_f64 (C + offset (0,i) + 2, accumulator.val[1]);
+                    //handle_small_product_add <4,1> (C + offset (0,i), M + offset (i,blocks), V + offset (0,blocks), D);
+                }
+                M += offset (blocks,0);
+                float64x2x2_t accumulator,
+                              row = vld1q_f64_x2 (M),
+                              col = vld1q_f64_x2 (V);
+
+                accumulator.val[0] =  vmulq_f64 (row.val[0], col.val[0]);
+                accumulator.val[1] =  vmulq_f64 (row.val[1], col.val[1]);
+                
+                for (int j = 1; j < blocks; j++) {
+                    row = vld1q_f64_x2 (M + (j<<2));
+                    col = vld1q_f64_x2 (V + (j<<2));
+                    
+                    accumulator.val[0] =  vfmaq_f64 (accumulator.val[0] ,row.val[0], col.val[0]);
+                    accumulator.val[1] =  vfmaq_f64 (accumulator.val[1] ,row.val[1], col.val[1]);
+                }
+                
+                C[D-1] = M[D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                break;
+            }
+                
+            case 2: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    float64x2x2_t accumulator;
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    
+                    int moffset = offset (i,blocks);
+                    float64x2_t mv1,
+                                mv2;
+                    
+                    mv1 = vsetq_lane_f64 ( M[moffset],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D],mv2,1);
+                    
+                    float64x2_t v = vdupq_n_f64 (V [offset (0,blocks)]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    
+                    mv1 = vsetq_lane_f64 ( M[moffset+1],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D+1],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D+1],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D+1],mv2,1);
+                    
+                    v = vdupq_n_f64 (V [offset (0,blocks)+1]);
+                    
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    vst1q_f64 (C + offset (0,i), accumulator.val[0]);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    vst1q_f64 (C + offset (0,i) + 2, accumulator.val[1]);
+                    //handle_small_product_add <4,1> (C + offset (0,i), M + offset (i,blocks), V + offset (0,blocks), D);
+                }
+                
+                M += offset (blocks,0);
+                float64x2x2_t accumulator,
+                              accumulator2,
+                              row  = vld1q_f64_x2 (M),
+                              row2 = vld1q_f64_x2 (M+D),
+                              col = vld1q_f64_x2 (V);
+
+                accumulator.val[0] =  vmulq_f64 (row.val[0], col.val[0]);
+                accumulator.val[1] =  vmulq_f64 (row.val[1], col.val[1]);
+                accumulator2.val[0] =  vmulq_f64 (row2.val[0], col.val[0]);
+                accumulator2.val[1] =  vmulq_f64 (row2.val[1], col.val[1]);
+
+                for (int j = 1; j < blocks; j++) {
+                    row = vld1q_f64_x2 (M + (j<<2));
+                    row2 = vld1q_f64_x2 (M + D+ (j<<2));
+                    col = vld1q_f64_x2 (V + (j<<2));
+                    
+                    accumulator.val[0] =  vfmaq_f64 (accumulator.val[0] ,row.val[0], col.val[0]);
+                    accumulator.val[1] =  vfmaq_f64 (accumulator.val[1] ,row.val[1], col.val[1]);
+                    accumulator2.val[0] =  vfmaq_f64 (accumulator2.val[0] ,row2.val[0], col.val[0]);
+                    accumulator2.val[1] =  vfmaq_f64 (accumulator2.val[1] ,row2.val[1], col.val[1]);
+                }
+                C[D-2] = M[D-2] * V[D-2] + M[D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                C[D-1] = M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator2.val[0],accumulator2.val[1]));
+     
+                break;
+            }
+                
+            case 3: {
+                for (int i = 0; i < blocks; i++) {
+                    float64x2x2_t accumulator;
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    
+                    int moffset = offset (i,blocks);
+                    float64x2_t mv1,
+                                mv2;
+                    
+                    mv1 = vsetq_lane_f64 ( M[moffset],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D],mv2,1);
+                    
+                    float64x2_t v = vdupq_n_f64 (V [offset (0,blocks)]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    
+                    mv1 = vsetq_lane_f64 ( M[moffset+1],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D+1],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D+1],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D+1],mv2,1);
+                    
+                    v = vdupq_n_f64 (V [offset (0,blocks)+1]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+
+                    mv1 = vsetq_lane_f64 ( M[moffset+2],mv1,0);
+                    mv1 = vsetq_lane_f64 ( M[moffset+D+2],mv1,1);
+                    mv2 = vsetq_lane_f64 ( M[moffset+2*D+2],mv2,0);
+                    mv2 = vsetq_lane_f64 ( M[moffset+3*D+2],mv2,1);
+                    
+                    v = vdupq_n_f64 (V [offset (0,blocks)+2]);
+                    accumulator.val[0] = vfmaq_f64 (accumulator.val[0], mv1, v);
+                    vst1q_f64 (C + offset (0,i), accumulator.val[0]);
+                    accumulator.val[1] = vfmaq_f64 (accumulator.val[1], mv2, v);
+                    vst1q_f64 (C + offset (0,i) + 2, accumulator.val[1]);
+                    //handle_small_product_add <4,1> (C + offset (0,i), M + offset (i,blocks), V + offset (0,blocks), D);
+                }
+                
+                M += offset (blocks,0);
+                float64x2x2_t accumulator,
+                              accumulator2,
+                              accumulator3,
+                              row  = vld1q_f64_x2 (M),
+                              row2 = vld1q_f64_x2 (M+D),
+                              row3 = vld1q_f64_x2 (M+2*D),
+                              col = vld1q_f64_x2 (V);
+
+                accumulator.val[0] =  vmulq_f64 (row.val[0], col.val[0]);
+                accumulator.val[1] =  vmulq_f64 (row.val[1], col.val[1]);
+                accumulator2.val[0] =  vmulq_f64 (row2.val[0], col.val[0]);
+                accumulator2.val[1] =  vmulq_f64 (row2.val[1], col.val[1]);
+                accumulator3.val[0] =  vmulq_f64 (row3.val[0], col.val[0]);
+                accumulator3.val[1] =  vmulq_f64 (row3.val[1], col.val[1]);
+
+                for (int j = 1; j < blocks; j++) {
+                    row = vld1q_f64_x2 (M + (j<<2));
+                    row2 = vld1q_f64_x2 (M + D+ (j<<2));
+                    row3 = vld1q_f64_x2 (M + 2*D+ (j<<2));
+                    col = vld1q_f64_x2 (V + (j<<2));
+                    
+                    accumulator.val[0] =  vfmaq_f64 (accumulator.val[0] ,row.val[0], col.val[0]);
+                    accumulator.val[1] =  vfmaq_f64 (accumulator.val[1] ,row.val[1], col.val[1]);
+                    accumulator2.val[0] =  vfmaq_f64 (accumulator2.val[0] ,row2.val[0], col.val[0]);
+                    accumulator2.val[1] =  vfmaq_f64 (accumulator2.val[1] ,row2.val[1], col.val[1]);
+                    accumulator3.val[0] =  vfmaq_f64 (accumulator3.val[0] ,row3.val[0], col.val[0]);
+                    accumulator3.val[1] =  vfmaq_f64 (accumulator3.val[1] ,row3.val[1], col.val[1]);
+                }
+                C[D-3] = M[D-3] * V[D-3]  + M[D-2] * V[D-2] + M[D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));;
+                C[D-2] = M[2*D-3] * V[D-3] + M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator2.val[0],accumulator2.val[1]));
+                C[D-1] = M[3*D-3] * V[D-3] + M[3*D-2] * V[D-2] + M[3*D-1] * V[D-1] + vaddvq_f64(vpaddq_f64(accumulator3.val[0],accumulator3.val[1]));
+
+                break;
+            }
+
+        }
+    }
+
+// ddot multiply in and accumulate
+
+
+    template<int D> double _hy_vvmult_sum (double * C, double const *M) {
+        double sum = 0.;
+        float64x2x2_t accumulator;
+        
+        int blocks = D>>3;
+        int remainder = D - (blocks<<3);
+        
+        if (blocks) {
+            float64x2x4_t CA = vld1q_f64_x4 (C),
+            MA = vld1q_f64_x4 (M),
+            accumulator;
+            
+            accumulator.val[0] = vmulq_f64 (CA.val[0], MA.val[0]);
+            accumulator.val[1] = vmulq_f64 (CA.val[1], MA.val[1]);
+            accumulator.val[2] = vmulq_f64 (CA.val[2], MA.val[2]);
+            accumulator.val[3] = vmulq_f64 (CA.val[3], MA.val[3]);
+
+            vst1q_f64_x4 (C, accumulator);
+            
+            for (int i = 1; i < blocks; i++) {
+                CA = vld1q_f64_x4 (C+(i<<3));
+                MA = vld1q_f64_x4 (M+(i<<3));
+                
+                CA.val[0] = vmulq_f64 (CA.val[0], MA.val[0]);
+                CA.val[1] = vmulq_f64 (CA.val[1], MA.val[1]);
+                CA.val[2] = vmulq_f64 (CA.val[2], MA.val[2]);
+                CA.val[3] = vmulq_f64 (CA.val[3], MA.val[3]);
+
+                vst1q_f64_x4 (C+(i<<3), CA);
+                
+                accumulator.val[0] = vaddq_f64 (CA.val[0], accumulator.val[0]);
+                accumulator.val[1] = vaddq_f64 (CA.val[1], accumulator.val[1]);
+                accumulator.val[2] = vaddq_f64 (CA.val[2], accumulator.val[2]);
+                accumulator.val[3] = vaddq_f64 (CA.val[3], accumulator.val[3]);
+            }
+            
+            //accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
+            sum = vaddvq_f64(vpaddq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]),vpaddq_f64(accumulator.val[2],accumulator.val[3])));
+        }
+        
+        if (remainder) {
+            switch (remainder) {
+                case 1:
+                    sum += (C[D-1] *= M[D-1]);
+                    break;
+                case 2:
+                    sum += (C[D-2] *= M[D-2]) + (C[D-1] *= M[D-1]);
+                    break;
+                case 3:
+                    sum += (C[D-3] *= M[D-3]) + (C[D-2] *= M[D-2]) + (C[D-1] *= M[D-1]);
+                    break;
+                case 4: {
+                    float64x2x2_t CA = vld1q_f64_x2 (C+D-4),
+                    MA = vld1q_f64_x2 (M+D-4);
+                    
+                    CA.val[0] = vmulq_f64 (CA.val[0],MA.val[0]);
+                    CA.val[1] = vmulq_f64 (CA.val[1],MA.val[1]);
+                    
+                    vst1q_f64_x2 (C+D-4,CA);
+                    
+                    sum += vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                    break;
+                }
+                case 5: {
+                    
+                    float64x2x2_t CA = vld1q_f64_x2 (C+D-5),
+                    MA = vld1q_f64_x2 (M+D-5);
+                    
+                    CA.val[0] = vmulq_f64 (CA.val[0],MA.val[0]);
+                    CA.val[1] = vmulq_f64 (CA.val[1],MA.val[1]);
+                    
+                    vst1q_f64_x2 (C+D-5,CA);
+                    
+                    sum += (C[D-1] *= M[D-1]) + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                    break;
+                }
+                case 6: {
+                    float64x2x2_t CA  = vld1q_f64_x2 (C+D-6),
+                    MA  = vld1q_f64_x2 (M+D-6);
+                    
+                    float64x2_t  CA2 = vld1q_f64 (C+D-2),
+                    MA2 = vld1q_f64 (M+D-2);
+                    
+                    CA.val[0] = vmulq_f64 (CA.val[0],MA.val[0]);
+                    CA.val[1] = vmulq_f64 (CA.val[1],MA.val[1]);
+                    CA2 = vmulq_f64 (CA2,MA2);
+                    
+                    vst1q_f64_x2 (C+D-6,CA);
+                    vst1q_f64 (C+D-2,CA2);
+                    
+                    sum += vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1])) + vaddvq_f64 (CA2);
+                    break;
+                }
+                case 7:
+                    sum += (C[D-7] *= M[D-7])
+                    + (C[D-6] *= M[D-6])
+                    + (C[D-5] *= M[D-5])
+                    + (C[D-4] *= M[D-4])
+                    + (C[D-3] *= M[D-3])
+                    + (C[D-2] *= M[D-2])
+                    + (C[D-1] *= M[D-1]);
+                    break;
+            }
+        }
+        
+        return sum;
+    }
+
+    double _hy_vvmult_sum_generic (double * C, double const *M, int D) {
+        double sum = 0.;
+        float64x2x2_t accumulator;
+        
+        int blocks = D>>3;
+        int remainder = D - (blocks<<3);
+        
+        if (blocks) {
+            float64x2x4_t CA = vld1q_f64_x4 (C),
+            MA = vld1q_f64_x4 (M),
+            accumulator;
+            
+            accumulator.val[0] = vmulq_f64 (CA.val[0], MA.val[0]);
+            accumulator.val[1] = vmulq_f64 (CA.val[1], MA.val[1]);
+            accumulator.val[2] = vmulq_f64 (CA.val[2], MA.val[2]);
+            accumulator.val[3] = vmulq_f64 (CA.val[3], MA.val[3]);
+
+            vst1q_f64_x4 (C, accumulator);
+            
+            for (int i = 1; i < blocks; i++) {
+                CA = vld1q_f64_x4 (C+(i<<3));
+                MA = vld1q_f64_x4 (M+(i<<3));
+                
+                CA.val[0] = vmulq_f64 (CA.val[0], MA.val[0]);
+                CA.val[1] = vmulq_f64 (CA.val[1], MA.val[1]);
+                CA.val[2] = vmulq_f64 (CA.val[2], MA.val[2]);
+                CA.val[3] = vmulq_f64 (CA.val[3], MA.val[3]);
+
+                vst1q_f64_x4 (C+(i<<3), CA);
+                
+                accumulator.val[0] = vaddq_f64 (CA.val[0], accumulator.val[0]);
+                accumulator.val[1] = vaddq_f64 (CA.val[1], accumulator.val[1]);
+                accumulator.val[2] = vaddq_f64 (CA.val[2], accumulator.val[2]);
+                accumulator.val[3] = vaddq_f64 (CA.val[3], accumulator.val[3]);
+            }
+            
+            //accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
+            sum = vaddvq_f64(vpaddq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]),vpaddq_f64(accumulator.val[2],accumulator.val[3])));
+        }
+        
+        if (remainder) {
+            switch (remainder) {
+                case 1:
+                    sum += (C[D-1] *= M[D-1]);
+                    break;
+                case 2:
+                    sum += (C[D-2] *= M[D-2]) + (C[D-1] *= M[D-1]);
+                    break;
+                case 3:
+                    sum += (C[D-3] *= M[D-3]) + (C[D-2] *= M[D-2]) + (C[D-1] *= M[D-1]);
+                    break;
+                case 4: {
+                    float64x2x2_t CA = vld1q_f64_x2 (C+D-4),
+                    MA = vld1q_f64_x2 (M+D-4);
+                    
+                    CA.val[0] = vmulq_f64 (CA.val[0],MA.val[0]);
+                    CA.val[1] = vmulq_f64 (CA.val[1],MA.val[1]);
+                    
+                    vst1q_f64_x2 (C+D-4,CA);
+                    
+                    sum += vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                    break;
+                }
+                case 5: {
+                    
+                    float64x2x2_t CA = vld1q_f64_x2 (C+D-5),
+                    MA = vld1q_f64_x2 (M+D-5);
+                    
+                    CA.val[0] = vmulq_f64 (CA.val[0],MA.val[0]);
+                    CA.val[1] = vmulq_f64 (CA.val[1],MA.val[1]);
+                    
+                    vst1q_f64_x2 (C+D-5,CA);
+                    
+                    sum += (C[D-1] *= M[D-1]) + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                    break;
+                }
+                case 6: {
+                    float64x2x2_t CA  = vld1q_f64_x2 (C+D-6),
+                    MA  = vld1q_f64_x2 (M+D-6);
+                    
+                    float64x2_t  CA2 = vld1q_f64 (C+D-2),
+                    MA2 = vld1q_f64 (M+D-2);
+                    
+                    CA.val[0] = vmulq_f64 (CA.val[0],MA.val[0]);
+                    CA.val[1] = vmulq_f64 (CA.val[1],MA.val[1]);
+                    CA2 = vmulq_f64 (CA2,MA2);
+                    
+                    vst1q_f64_x2 (C+D-6,CA);
+                    vst1q_f64 (C+D-2,CA2);
+                    
+                    sum += vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1])) + vaddvq_f64 (CA2);
+                    break;
+                }
+                case 7:
+                    sum += (C[D-7] *= M[D-7])
+                    + (C[D-6] *= M[D-6])
+                    + (C[D-5] *= M[D-5])
+                    + (C[D-4] *= M[D-4])
+                    + (C[D-3] *= M[D-3])
+                    + (C[D-2] *= M[D-2])
+                    + (C[D-1] *= M[D-1]);
+                    break;
+            }
+        }
+        
+        return sum;
+    }
+
+    
+#endif
+
+#endif
+
+
 
 
 inline void __ll_loop_handle_leaf_generic (hyFloat* _hprestrict_ pp, hyFloat *  _hprestrict_ localScalingFactor , long siteFrom, long siteTo, _SimpleList&        siteOrdering, bool matchSet, long * _hprestrict_ setBranchTo, long D) {
@@ -1088,28 +1895,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         siteTo = siteCount;
     }
     
-    
-    #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-        hyFloat * tMatrixT = nil;
-        switch (alphabetDimension) {
-            case 20:
-                tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 20*20);
-                break;
-            case 60:
-                tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 60*60);
-                break;
-            case 61:
-                tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 61*61);
-                break;
-            case 62:
-                tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 62*62);
-                break;
-            case 63:
-                tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 63*63);
-                break;
-        }
-    #endif
-    
+    hyFloat * mvs = (hyFloat*)alloca (sizeof (hyFloat) * alphabetDimension);
+        
     //if (setBranch >=0 )
        // printf ("\nSet to %d (%s)\n", setBranch, ((_CalcNode*) flatTree    (setBranch))->GetName()->get_str());
     
@@ -1200,23 +1987,30 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         
 // BEGIN NUCLEOTIDE CASE
         if (alphabetDimension == 4UL) {
-            #ifdef _SLKP_USE_AVX_INTRINSICS
-            __m256d tmatrix_transpose [4] = {
-                (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
-                (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
-                (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
-                (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
-            };
-            #endif
             
-            #ifdef _SLKP_USE_ARM_NEON
-                float64x2x2_t tmatrix_transpose [4] = {
-                    (float64x2x2_t) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
-                    (float64x2x2_t) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
-                    (float64x2x2_t) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
-                    (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
-                };
-            #endif
+            #ifdef _HY_NO_INTRINSICS_MARKER
+                hyFloat * tmatrix_transpose = (hyFloat *)transitionMatrix;
+            #else
+            
+                #ifdef _SLKP_USE_AVX_INTRINSICS
+                    __m256d tmatrix_transpose [4] = {
+                        (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                        (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                        (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                        (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+                    };
+                #endif
+                
+                #ifdef _SLKP_USE_ARM_NEON
+                    float64x2x2_t tmatrix_transpose [4] = {
+                        (float64x2x2_t) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                        (float64x2x2_t) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                        (float64x2x2_t) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                        (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+                    };
+                #endif
+        #endif
+            
             
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 4UL) {
                 __ll_loop_preamble
@@ -1227,6 +2021,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 
                 
                      
+                
+                /*
                 #if defined _SLKP_USE_AVX_INTRINSICS or defined _SLKP_USE_ARM_NEON
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
                 #else
@@ -1234,7 +2030,10 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 #endif
                  
                 sum     = (parentConditionals [0] + parentConditionals [1]) + (parentConditionals [2] + parentConditionals [3]);
-                    
+                */
+                
+                sum = _handle4x4_pruning_case_direct (childVector, tmatrix_transpose, parentConditionals);
+                
                 __ll_loop_handle_scaling<4L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
                 
                 childVector += 4L;
@@ -1246,40 +2045,16 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         
 // START AMINO-ACID CASE
         else if (alphabetDimension == 20UL) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                //__ll_handle_matrix_transpose<20> (transitionMatrix, tMatrixT);
-                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
-            #endif
             
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 20L) {
                 __ll_loop_preamble
-#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            if (__ll_handle_conditional_array_initialization_transposed<20> (
-                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                continue;
-            }
+                if (__ll_handle_conditional_array_initialization<20> (
+                                                                      lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                    continue;
+                }
 
-#else
-            if (__ll_handle_conditional_array_initialization<20> (
-                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                continue;
-            }
-#endif
-#if defined _SLKP_USE_AVX_INTRINSICS
-                    sum = _avx_sum_4(__ll_handle_block20_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil));
-                #elif defined _SLKP_USE_SSE_INTRINSICS
-                    __m128d grandTotal = _mm_set1_pd(0.);
-                    grandTotal = __ll_handle_block10_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<20,10> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal;
-                    sum = _sse_sum_2 (grandTotal);
-                #elif defined _SLKP_USE_ARM_NEON
-                    float64x2_t grandTotal
-                               = __ll_handle_block10_product_sum<20,0>  (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<20,10> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal;
-                    sum = _neon_sum_2 (grandTotal);
-                #else
-                    __ll_product_sum_loop<20L> (tMatrix, childVector, parentConditionals, sum);
-                #endif
+                _hy_mvp_blocked_4x4<20> (mvs, tMatrix, childVector);
+                sum += _hy_vvmult_sum<20> (parentConditionals, mvs);
 
                 __ll_loop_handle_scaling<20L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
                 
@@ -1291,53 +2066,17 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     // END AMINO-ACID CASE
     // START UNIVERSAL CODE
     else if (alphabetDimension == 60UL) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                //__ll_handle_matrix_transpose<60> (transitionMatrix, tMatrixT);
-                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
-            #endif
-            for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 60L) {
+             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 60L) {
                 __ll_loop_preamble
-#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            if (__ll_handle_conditional_array_initialization_transposed<60> (
-                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                continue;
-            }
+                if (__ll_handle_conditional_array_initialization<60> (
+                                                                      lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                    continue;
+                }
 
-#else
-            if (__ll_handle_conditional_array_initialization<60> (
-                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                continue;
-            }
-#endif
                 
-                #ifdef _SLKP_USE_AVX_INTRINSICS
-                    __m256d grandTotal;
-                    grandTotal = __ll_handle_block20_product_sum<60,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block20_product_sum<60,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block20_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    sum += _avx_sum_4(grandTotal);
-                #elif defined _SLKP_USE_SSE_INTRINSICS
-                    __m128d grandTotal = _mm_set1_pd(0.);
-                    grandTotal = __ll_handle_block10_product_sum<60,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<60,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    sum += _sse_sum_2(grandTotal);
-                #elif defined _SLKP_USE_ARM_NEON
-                    float64x2_t grandTotal
-                               = __ll_handle_block10_product_sum<60,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<60,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    sum += _neon_sum_2(grandTotal);
-                #else
-                    __ll_product_sum_loop<60L> (tMatrix, childVector, parentConditionals, sum);
-                #endif
-
+                _hy_mvp_blocked_4x4<60> (mvs, tMatrix, childVector);
+                sum += _hy_vvmult_sum<60> (parentConditionals, mvs);
+            
                 __ll_loop_handle_scaling<60L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
                 childVector += 60;
@@ -1345,131 +2084,18 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             }
     }
     else if (alphabetDimension == 61UL) {
-        #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            //__ll_handle_matrix_transpose<61> (transitionMatrix, tMatrixT);
-            transitionMatrixObj->TransposeIntoStorage (tMatrixT);
-        #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 61L) {
             __ll_loop_preamble
-#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            if (__ll_handle_conditional_array_initialization_transposed<61> (
-                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                continue;
-            }
-
-#else
             if (__ll_handle_conditional_array_initialization<61> (
                                                                   lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
                 continue;
             }
-#endif
             
-            #ifdef _SLKP_USE_AVX_INTRINSICS
-            //Site 297 evaluated to a NaN probability in ComputeTreeBlockByBranch at branch 9698; this is not a recoverable error and indicates some serious COVFEFE taking place.
-            
-                /*if (siteID == 297 && parentCode == 9507) {
-                    printf ("\nCONDITIONAL DUMP @ %s %ld (%ld parent)\n", currentTreeNode->GetName()->get_str(), nodeCode, parentCode);
-                    for (int i = 0; i < 61; i++) {
-                        printf ("%d %lg %lg\n", i, childVector[i], parentConditionals[i]);
-                    }
-                }*/
 
-                __m256d grandTotal = __ll_handle_block20_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil);
-                /*if (siteID ==  297 && parentCode == 9698) {
-                    double checkGT [4];
-                    _mm256_storeu_pd (checkGT, grandTotal);
-                    printf ("\n%g %g %g %g", checkGT [0], checkGT [1], checkGT [2], checkGT [3]);
-                }*/
-                grandTotal = __ll_handle_block20_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                /*if (siteID ==  297 && parentCode == 9698) {
-                    double checkGT [4];
-                    _mm256_storeu_pd (checkGT, grandTotal);
-                    printf ("\n%g %g %g %g", checkGT [0], checkGT [1], checkGT [2], checkGT [3]);
-                }*/
-                grandTotal = __ll_handle_block20_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                /*if (siteID ==  297 && parentCode == 9698) {
-                    double checkGT [4];
-                    _mm256_storeu_pd (checkGT, grandTotal);
-                    printf ("\n%g %g %g %g", checkGT [0], checkGT [1], checkGT [2], checkGT [3]);
-                }*/
-                
-                hyFloat const * __restrict tT = tMatrix + 61*60;
-                __m256d lastTotal;
-                __ll_handle_block20_product_sum_linear<61,0> (tT, childVector, &lastTotal);
-                __ll_handle_block20_product_sum_linear<61,20> (tT, childVector, &lastTotal);
-                __ll_handle_block20_product_sum_linear<61,40> (tT, childVector, &lastTotal);
-
-                hyFloat s60 = _avx_sum_4(lastTotal) + childVector[60] * tT[60];
-                parentConditionals[60] *= s60;
-                sum += _avx_sum_4(grandTotal) + s60;
-                /*if (siteID ==  297 && parentCode == 9698) {
-                    printf ("\n%g => %g\n", s60, sum);
-                }*/
-            
-                /*if (siteID == 297 && parentCode == 9507) {
-                printf ("\nPRE-SCALE @ %s %ld\n", currentTreeNode->GetName()->get_str(), nodeCode);
-                    for (int i = 0; i < 61; i++) {
-                        printf ("%d %lg %lg\n", i, childVector[i], parentConditionals[i]);
-                    }
-                }
-                for (int i = 0; i < 61; i++) {
-                    if (isnan (parentConditionals[i])) {
-                        HandleApplicationError(_String("Site ") & siteID & " evaluated to a NaN probability in ComputeTreeBlockByBranch; this is not a recoverable error and indicates some serious COVFEFE taking place, node " & long(nodeCode) & "\n\n");
-                    }
-                }*/
-                
-            
-            #elif defined _SLKP_USE_SSE_INTRINSICS
-                    __m128d grandTotal;
-                    grandTotal = __ll_handle_block10_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<61,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 61*60;
-                    __m128d lastTotal;
-                    __ll_handle_block10_product_sum_linear<61,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _sse_sum_2(lastTotal) + childVector[60] * tT[60];
-                    parentConditionals[60] *= s60;
-                    sum += _sse_sum_2(grandTotal) + s60;
-            #elif defined _SLKP_USE_ARM_NEON
-                    float64x2_t grandTotal;
-                    grandTotal = __ll_handle_block10_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<61,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 61*60;
-                    float64x2_t lastTotal;
-                    __ll_handle_block10_product_sum_linear<61,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60];
-                    parentConditionals[60] *= s60;
-                    sum += _neon_sum_2(grandTotal) + s60;
-            #else
-                __ll_product_sum_loop<61L> (tMatrix, childVector, parentConditionals, sum);
-            #endif
+            _hy_mvp_blocked_4x4<61> (mvs, tMatrix, childVector);
+            sum += _hy_vvmult_sum<61> (parentConditionals, mvs);
             
             __ll_loop_handle_scaling<61L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
-            /*if (siteID == 297 && parentCode == 9507) {
-                printf ("\nPOST-SCALE @ %s %ld\n", currentTreeNode->GetName()->get_str(), nodeCode);
-                for (int i = 0; i < 61; i++) {
-                    printf ("%d %lg %lg\n", i, childVector[i], parentConditionals[i]);
-                }
-            }*/
 
             childVector += 61;
             __ll_loop_epilogue
@@ -1477,269 +2103,35 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     } else if (alphabetDimension == 62UL) {
         #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
             //__ll_handle_matrix_transpose<62> (transitionMatrix, tMatrixT);
-            transitionMatrixObj->TransposeIntoStorage (tMatrixT);
+            //transitionMatrixObj->TransposeIntoStorage (tMatrixT);
         #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 62L) {
             __ll_loop_preamble
-                #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                            if (__ll_handle_conditional_array_initialization_transposed<62> (
-                                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                                continue;
-                            }
+            if (__ll_handle_conditional_array_initialization<62> (
+                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                continue;
+            }
 
-                #else
-                            if (__ll_handle_conditional_array_initialization<62> (
-                                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                                continue;
-                            }
-                #endif
             
-            #if defined _SLKP_USE_AVX_INTRINSICS
-                __m256d grandTotal = _mm256_set1_pd(0.);
-                grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<62,0> (tMatrixT, childVector, parentConditionals, nil),grandTotal);
-                grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<62,20> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<62,40> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                    
-                
-                hyFloat const * __restrict tT = tMatrix + 62*60;
-                __m256d lastTotal;
-                __ll_handle_block20_product_sum_linear<62,0> (tT, childVector, &lastTotal);
-                __ll_handle_block20_product_sum_linear<62,20> (tT, childVector, &lastTotal);
-                __ll_handle_block20_product_sum_linear<62,40> (tT, childVector, &lastTotal);
-                hyFloat s60 = _avx_sum_4(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                parentConditionals[60] *= s60;
 
-                tT +=62;
-                __m256d lastTotal2;
-                __ll_handle_block20_product_sum_linear<62,0> (tT, childVector, &lastTotal2);
-                __ll_handle_block20_product_sum_linear<62,20> (tT, childVector, &lastTotal2);
-                __ll_handle_block20_product_sum_linear<62,40> (tT, childVector, &lastTotal2);
-
-                hyFloat s61 = _avx_sum_4(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                parentConditionals[61] *= s61;
-                sum += _avx_sum_4(grandTotal) + s60 + s61;
-            #elif defined _SLKP_USE_SSE_INTRINSICS
-                    __m128d grandTotal;
-                    grandTotal = __ll_handle_block10_product_sum<62,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<62,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 62*60;
-                    __m128d lastTotal;
-                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _sse_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[60] *= s60;
-
-                    tT += 62;
-                    __m128d lastTotal2;
-                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal2);
-            
-                    hyFloat s61 = _sse_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[61] *= s61;
-
-                    sum += _sse_sum_2(grandTotal) + s60 + s61;
-            #elif defined _SLKP_USE_ARM_NEON
-                    float64x2_t grandTotal
-                               = __ll_handle_block10_product_sum<62,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<62,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 62*60;
-            
-                    float64x2_t lastTotal;
-                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[60] *= s60;
-
-                    tT += 62;
-                    float64x2_t lastTotal2;
-                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal2);
-
-                    hyFloat s61 = _neon_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[61] *= s61;
-
-                    sum += _neon_sum_2(grandTotal) + s60 + s61;
-            #else
-                __ll_product_sum_loop<62L> (tMatrix, childVector, parentConditionals, sum);
-            #endif
-
+            _hy_mvp_blocked_4x4<62> (mvs, tMatrix, childVector);
+            sum += _hy_vvmult_sum<62> (parentConditionals, mvs);
             __ll_loop_handle_scaling<62L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
             childVector += 62;
             __ll_loop_epilogue
         }
     } else if (alphabetDimension == 63UL) {
-        #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            //__ll_handle_matrix_transpose<63> (transitionMatrix, tMatrixT);
-            transitionMatrixObj->TransposeIntoStorage (tMatrixT);
-        #endif
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 63L) {
             __ll_loop_preamble
-#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-            if (__ll_handle_conditional_array_initialization_transposed<63> (
-                                                                  lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrixT, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
-                continue;
-            }
-
-#else
             if (__ll_handle_conditional_array_initialization<63> (
                                                                   lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
                 continue;
             }
-#endif
             
-            #if defined _SLKP_USE_AVX_INTRINSICS
-                __m256d grandTotal = _mm256_set1_pd(0.);
-                grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<63,0> (tMatrixT, childVector, parentConditionals, nil),grandTotal);
-                grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<63,20> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<63,40> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                    
-                
-                hyFloat const * __restrict tT = tMatrix + 63*60;
-                __m256d lastTotal;
-                __ll_handle_block20_product_sum_linear<63,0> (tT, childVector, &lastTotal);
-                __ll_handle_block20_product_sum_linear<63,20> (tT, childVector, &lastTotal);
-                __ll_handle_block20_product_sum_linear<63,40> (tT, childVector, &lastTotal);
-                hyFloat s60 = _avx_sum_4(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                parentConditionals[60] *= s60;
-
-                tT += 63;
-                __m256d lastTotal2;
-                __ll_handle_block20_product_sum_linear<63,0> (tT, childVector, &lastTotal2);
-                __ll_handle_block20_product_sum_linear<63,20> (tT, childVector, &lastTotal2);
-                __ll_handle_block20_product_sum_linear<63,40> (tT, childVector, &lastTotal2);
-
-                hyFloat s61 = _avx_sum_4(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                parentConditionals[61] *= s61;
- 
-                tT += 63;
-                __m256d lastTotal3;
-                __ll_handle_block20_product_sum_linear<63,0> (tT, childVector, &lastTotal3);
-                __ll_handle_block20_product_sum_linear<63,20> (tT, childVector, &lastTotal3);
-                __ll_handle_block20_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
-
-                hyFloat s62 = _avx_sum_4(lastTotal3) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                parentConditionals[62] *= s62;
-                sum += _avx_sum_4(grandTotal) + s60 + s61 + s62;
-            #elif defined _SLKP_USE_SSE_INTRINSICS
-                __m128d grandTotal;
-                grandTotal = __ll_handle_block10_product_sum<63,0> (tMatrixT, childVector, parentConditionals, nil);
-                grandTotal = __ll_handle_block10_product_sum<63,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                grandTotal = __ll_handle_block10_product_sum<63,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                grandTotal = __ll_handle_block10_product_sum<63,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                grandTotal = __ll_handle_block10_product_sum<63,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                grandTotal = __ll_handle_block10_product_sum<63,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                hyFloat const * __restrict tT = tMatrix + 63*60;
-                __m128d lastTotal;
-                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal);
-                hyFloat s60 = _sse_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                parentConditionals[60] *= s60;
-
-                tT += 63;
-                __m128d lastTotal2;
-                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal2);
-        
-                hyFloat s61 = _sse_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];;
-                parentConditionals[61] *= s61;
-
-                tT += 63;
-                __m128d lastTotal3;
-                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal3);
-        
-                hyFloat s62 = _sse_sum_2(lastTotal3) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];;
-                parentConditionals[62] *= s62;
-
-                sum += _sse_sum_2(grandTotal) + s60 + s61 + s62;
-            #elif defined _SLKP_USE_ARM_NEON
-                float64x2_t grandTotal
-                           = __ll_handle_block10_product_sum<63,0> (tMatrixT, childVector, parentConditionals, nil);
-                grandTotal = __ll_handle_block10_product_sum<63,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                grandTotal = __ll_handle_block10_product_sum<63,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                grandTotal = __ll_handle_block10_product_sum<63,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                grandTotal = __ll_handle_block10_product_sum<63,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                grandTotal = __ll_handle_block10_product_sum<63,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                hyFloat const * __restrict tT = tMatrix + 63*60;
-                float64x2_t lastTotal;
-                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal);
-                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal);
-                hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                parentConditionals[60] *= s60;
-
-                tT += 63;
-                float64x2_t lastTotal2;
-                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal2);
-                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal2);
-
-                hyFloat s61 = _neon_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];;
-                parentConditionals[61] *= s61;
-
-                tT += 63;
-                float64x2_t lastTotal3;
-                __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
-                __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal3);
-
-                hyFloat s62 = _neon_sum_2(lastTotal3) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];;
-                parentConditionals[62] *= s62;
-
-                sum += _neon_sum_2(grandTotal) + s60 + s61 + s62;
-            #else
-                __ll_product_sum_loop<63L> (tMatrix, childVector, parentConditionals, sum);
-            #endif
+           
+            _hy_mvp_blocked_4x4<63> (mvs, tMatrix, childVector);
+            sum += _hy_vvmult_sum<63> (parentConditionals, mvs);
 
             __ll_loop_handle_scaling<63L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
@@ -1754,8 +2146,12 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo, alphabetDimension)) {
                 continue;
             }
-            __ll_product_sum_loop_generic (tMatrix, childVector, parentConditionals, sum, alphabetDimension);
 
+             _hy_matrix_vector_product_blocked_4x4 (mvs, tMatrix, childVector, alphabetDimension);
+             //_hy_mvp_blocked_4x4<16> (mvs, tMatrix, childVector);
+             sum += _hy_vvmult_sum_generic (parentConditionals, mvs, alphabetDimension);
+             //sum += _hy_vvmult_sum<16> (parentConditionals, mvs);
+             
             __ll_loop_handle_scaling_generic <true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]),alphabetDimension);
 
             childVector += alphabetDimension;
@@ -2014,27 +2410,8 @@ void            _TheTree::ComputeBranchCache    (
         taggedNodes.list_data[myParent+flatLeaves.lLength] = 1;
         myParent = flatParents.list_data[myParent+flatLeaves.lLength];
     } while (myParent >= 0);
-
-#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-    hyFloat * tMatrixT = nil;
-    switch (alphabetDimension) {
-        case 20:
-            tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 20*20);
-            break;
-        case 60:
-            tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 60*60);
-            break;
-        case 61:
-            tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 61*61);
-            break;
-        case 62:
-            tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 62*62);
-            break;
-        case 63:
-            tMatrixT = (hyFloat*)alloca (sizeof (hyFloat) * 63*63);
-            break;
-    }
-#endif
+    
+    hyFloat * mvs = (hyFloat*)alloca (sizeof (hyFloat) * alphabetDimension);
 
     
     for (unsigned long k = 0UL; k <  flatLeaves.lLength+flatNodes.lLength; k++) {
@@ -2203,22 +2580,27 @@ void            _TheTree::ComputeBranchCache    (
 
  
         if (alphabetDimension == 4L) {
-            #ifdef _SLKP_USE_AVX_INTRINSICS
-            __m256d tmatrix_transpose [4] = {
-                (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
-                (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
-                (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
-                (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
-            };
-            #endif
+            #ifdef _HY_NO_INTRINSICS_MARKER
+                hyFloat * tmatrix_transpose = (hyFloat *)transitionMatrix;
+            #else
 
-            #ifdef _SLKP_USE_ARM_NEON
-                float64x2x2_t tmatrix_transpose [4] = {
-                    (float64x2x2_t) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
-                    (float64x2x2_t) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
-                    (float64x2x2_t) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
-                    (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
-                };
+                #ifdef _SLKP_USE_AVX_INTRINSICS
+                    __m256d tmatrix_transpose [4] = {
+                        (__m256d) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                        (__m256d) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                        (__m256d) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                        (__m256d) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+                    };
+                #endif
+                
+                #ifdef _SLKP_USE_ARM_NEON
+                    float64x2x2_t tmatrix_transpose [4] = {
+                        (float64x2x2_t) {transitionMatrix[0],transitionMatrix[4],transitionMatrix[8],transitionMatrix[12]},
+                        (float64x2x2_t) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
+                        (float64x2x2_t) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
+                        (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+                    };
+                #endif
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 4L) {
                 bool canScale = !notPassedRoot;
@@ -2231,7 +2613,8 @@ void            _TheTree::ComputeBranchCache    (
                     continue;
                 }
                 long     didScale =  0;
-                #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_ARM_NEON
+
+                /*#if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_ARM_NEON
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
                 #else
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, nil);
@@ -2241,7 +2624,16 @@ void            _TheTree::ComputeBranchCache    (
                     
                     __ll_loop_handle_scaling<4L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
+                }*/
+                
+                hyFloat sum     = _handle4x4_pruning_case_direct (childVector, tmatrix_transpose, parentConditionals);
+
+                if (canScale) {
+                    
+                    __ll_loop_handle_scaling<4L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
+
                 }
+                
                 /*if (likeFuncEvalCallCount == 3013 && siteID == 232) {
                     fprintf (stderr, "NODE = %ld, PARENT = %ld (%ld), P(A) = %lg, P(C) = %lg, P(G) = %lg, P(T) = %lg, scale = %ld\n", nodeCode, parentCode, canScale, parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3], didScale);
                 }*/
@@ -2249,10 +2641,6 @@ void            _TheTree::ComputeBranchCache    (
                 __handle_site_corrections(didScale, siteID);
             }
         } else if (alphabetDimension == 20L) {
-                #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || _SLKP_USE_ARM_NEON
-                    //__ll_handle_matrix_transpose<20>(transitionMatrix, tMatrixT);
-                    transitionMatrixObj->TransposeIntoStorage (tMatrixT);
-                #endif
                 for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 20L) {
                     bool canScale = !notPassedRoot;
                     hyFloat  const *tMatrix = transitionMatrix;
@@ -2262,36 +2650,15 @@ void            _TheTree::ComputeBranchCache    (
                     }
                     long     didScale =  0;
                     hyFloat sum     = 0.;
-                    #if defined _SLKP_USE_AVX_INTRINSICS
-                        __m256d s256 = __ll_handle_block20_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil);
-                    #elif  defined _SLKP_USE_SSE_INTRINSICS
-                        __m128d s128;
-                        s128 =  __ll_handle_block10_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil);
-                        s128 =  __ll_handle_block10_product_sum<20,10> (tMatrixT, childVector, parentConditionals, &s128);
-                    #elif defined _SLKP_USE_ARM_NEON
-                        float64x2_t grandTotal = vdupq_n_f64(0.);
-                        grandTotal = __ll_handle_block10_product_sum<20,0> (tMatrixT, childVector, parentConditionals, nil);
-                        grandTotal = __ll_handle_block10_product_sum<20,10> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal;
-                        sum = _neon_sum_2 (grandTotal);
-                    #else
-                        __ll_product_sum_loop<20L> (tMatrix, childVector, parentConditionals, sum);
-                    #endif
+                    _hy_mvp_blocked_4x4<20> (mvs, tMatrix, childVector);
+                    sum = _hy_vvmult_sum<20> (parentConditionals, mvs);
                     if (canScale) {
-                        #if defined _SLKP_USE_AVX_INTRINSICS
-                            sum = _avx_sum_4(s256);
-                        #elif defined _SLKP_USE_SSE_INTRINSICS
-                            sum = _sse_sum_2(s128);
-                        #endif
                         __ll_loop_handle_scaling<20L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
                     }
                     childVector += 20L;
                     __handle_site_corrections(didScale, siteID);
                 }
         } else if (alphabetDimension == 60L) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || _SLKP_USE_ARM_NEON
-                //__ll_handle_matrix_transpose<60L>(transitionMatrix, tMatrixT);
-                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
-            #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 60L) {
                 bool canScale = !notPassedRoot;
                 hyFloat  const *tMatrix = transitionMatrix;
@@ -2301,46 +2668,16 @@ void            _TheTree::ComputeBranchCache    (
                 }
                 long     didScale =  0;
                 hyFloat sum     = 0.;
-                #if defined _SLKP_USE_AVX_INTRINSICS
-                    __m256d grandTotal = _mm256_set1_pd(0.);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<60,0> (tMatrixT, childVector, parentConditionals, nil),grandTotal);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<60,20> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                #elif defined _SLKP_USE_SSE_INTRINSICS
-                    __m128d grandTotal;
-                    grandTotal = __ll_handle_block10_product_sum<60,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<60,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                #elif defined _SLKP_USE_ARM_NEON
-                    float64x2_t
-                    grandTotal = __ll_handle_block10_product_sum<60,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<60,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<60,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                #else
-                    __ll_product_sum_loop<60L> (tMatrix, childVector, parentConditionals, sum);
-                #endif
+                _hy_mvp_blocked_4x4<60> (mvs, tMatrix, childVector);
+                sum = _hy_vvmult_sum<60> (parentConditionals, mvs);
                 if (canScale) {
-                    #if defined _SLKP_USE_AVX_INTRINSICS
-                        sum = _avx_sum_4(grandTotal);
-                    #elif defined _SLKP_USE_SSE_INTRINSICS
-                        sum = _sse_sum_2(grandTotal);
-                    #endif
                     __ll_loop_handle_scaling<60L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
                 }
                 childVector += 60L;
                 __handle_site_corrections(didScale, siteID);
             }
         } else if (alphabetDimension == 61L) {
-            #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
-                //__ll_handle_matrix_transpose<61L>(transitionMatrix, tMatrixT);
-                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
-            #endif
+
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 61L) {
                 bool canScale = !notPassedRoot;
                 hyFloat  const *tMatrix = transitionMatrix;
@@ -2349,68 +2686,11 @@ void            _TheTree::ComputeBranchCache    (
                     continue;
                 }
                 long     didScale =  0;
-                hyFloat sum     = 0.;
-                #if defined _SLKP_USE_AVX_INTRINSICS
-                    __m256d grandTotal = _mm256_set1_pd(0.);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil),grandTotal);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                        
-                    hyFloat const * __restrict tT = tMatrix + 61*60;
-                    __m256d lastTotal;
-                    __ll_handle_block20_product_sum_linear<61,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block20_product_sum_linear<61,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block20_product_sum_linear<61,40> (tT, childVector, &lastTotal);
-
-                    hyFloat s60 = _avx_sum_4(lastTotal) + childVector[60] * tT[60];
-                    parentConditionals[60] *= s60;
-                #elif defined _SLKP_USE_SSE_INTRINSICS
-                    __m128d grandTotal;
-                    grandTotal = __ll_handle_block10_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<61,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 61*60;
-                    __m128d lastTotal;
-                    __ll_handle_block10_product_sum_linear<61,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _sse_sum_2(lastTotal) + childVector[60] * tT[60];
-                    parentConditionals[60] *= s60;
-                #elif defined _SLKP_USE_ARM_NEON
-                    float64x2_t grandTotal;
-                    grandTotal = __ll_handle_block10_product_sum<61,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<61,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<61,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 61*60;
-                    float64x2_t lastTotal;
-                    __ll_handle_block10_product_sum_linear<61,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<61,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60];
-                    parentConditionals[60] *= s60;
-                #else
-                    __ll_product_sum_loop<61L> (tMatrix, childVector, parentConditionals, sum);
-                #endif
+  
+                _hy_mvp_blocked_4x4<61> (mvs, tMatrix, childVector);
+                hyFloat sum = _hy_vvmult_sum<61> (parentConditionals, mvs);
+                
                 if (canScale) {
-                    #if defined _SLKP_USE_AVX_INTRINSICS
-                        sum = _avx_sum_4(grandTotal) + s60;
-                    #elif defined _SLKP_USE_SSE_INTRINSICS
-                        sum = _sse_sum_2(grandTotal) + s60;
-                    #endif
                     __ll_loop_handle_scaling<61L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
                 }
                 childVector += 61L;
@@ -2419,7 +2699,7 @@ void            _TheTree::ComputeBranchCache    (
         }  else if (alphabetDimension == 62L) {
             #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
                 //__ll_handle_matrix_transpose<62L>(transitionMatrix, tMatrixT);
-                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
+                //transitionMatrixObj->TransposeIntoStorage (tMatrixT);
            #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 62L) {
                 bool canScale = !notPassedRoot;
@@ -2430,98 +2710,11 @@ void            _TheTree::ComputeBranchCache    (
                 }
                 long     didScale =  0;
                 hyFloat sum     = 0.;
-                #if defined _SLKP_USE_AVX_INTRINSICS
-                    __m256d grandTotal = _mm256_set1_pd(0.);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<62,0> (tMatrixT, childVector, parentConditionals, nil),grandTotal);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<62,20> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<62,40> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                        
-                    hyFloat const * __restrict tT = tMatrix + 62*60;
-                    __m256d lastTotal;
-                    __ll_handle_block20_product_sum_linear<62,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block20_product_sum_linear<62,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block20_product_sum_linear<62,40> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _avx_sum_4(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[60] *= s60;
 
-                    tT += 62;
-                    __m256d lastTotal2;
-                    __ll_handle_block20_product_sum_linear<62,0> (tT, childVector, &lastTotal2);
-                    __ll_handle_block20_product_sum_linear<62,20> (tT, childVector, &lastTotal2);
-                    __ll_handle_block20_product_sum_linear<62,40> (tT, childVector, &lastTotal2);
+                _hy_mvp_blocked_4x4<62> (mvs, tMatrix, childVector);
+                sum = _hy_vvmult_sum<62> (parentConditionals, mvs);
 
-                    hyFloat s61 = _avx_sum_4(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[61] *= s61;
-                
-                #elif defined _SLKP_USE_SSE_INTRINSICS
-                    __m128d grandTotal;
-                    grandTotal = __ll_handle_block10_product_sum<62,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<62,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 62*60;
-                    __m128d lastTotal;
-                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _sse_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[60] *= s60;
-                
-                    tT += 62;
-                    __m128d lastTotal2;
-                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal2);
-                    hyFloat s61 = _sse_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[61] *= s61;
-                #elif defined _SLKP_USE_ARM_NEON
-                    float64x2_t grandTotal
-                               = __ll_handle_block10_product_sum<62,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<62,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<62,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 62*60;
-                    float64x2_t lastTotal;
-                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[60] *= s60;
-
-                    tT += 62;
-                    float64x2_t lastTotal2;
-                    __ll_handle_block10_product_sum_linear<62,0> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,10> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,20> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,30> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,40> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<62,50> (tT, childVector, &lastTotal2);
-                    hyFloat s61 = _neon_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61];
-                    parentConditionals[61] *= s61;
-                #else
-                    __ll_product_sum_loop<62L> (tMatrix, childVector, parentConditionals, sum);
-                #endif
                 if (canScale) {
-                    #if defined _SLKP_USE_AVX_INTRINSICS
-                        sum = _avx_sum_4(grandTotal) + s60 + s61;
-                    #elif defined _SLKP_USE_SSE_INTRINSICS
-                        sum = _sse_sum_2(grandTotal) + s60 + s61;
-                    #endif
                     __ll_loop_handle_scaling<62L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
                 }
                 childVector += 62L;
@@ -2530,7 +2723,7 @@ void            _TheTree::ComputeBranchCache    (
         } else if (alphabetDimension == 63L) {
             #if defined _SLKP_USE_AVX_INTRINSICS || defined _SLKP_USE_SSE_INTRINSICS || defined _SLKP_USE_ARM_NEON
                 //__ll_handle_matrix_transpose<63L>(transitionMatrix, tMatrixT);
-                transitionMatrixObj->TransposeIntoStorage (tMatrixT);
+                //transitionMatrixObj->TransposeIntoStorage (tMatrixT);
             #endif
             for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 63L) {
                 bool canScale = !notPassedRoot;
@@ -2541,130 +2734,10 @@ void            _TheTree::ComputeBranchCache    (
                 }
                 long     didScale =  0;
                 hyFloat sum     = 0.;
-                #if defined _SLKP_USE_AVX_INTRINSICS
-                    __m256d grandTotal = _mm256_set1_pd(0.);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<63,0> (tMatrixT, childVector, parentConditionals, nil),grandTotal);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<63,20> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                    grandTotal = _mm256_add_pd (__ll_handle_block20_product_sum<63,40> (tMatrixT, childVector, parentConditionals, &grandTotal),grandTotal);
-                        
-                    hyFloat const * __restrict tT = tMatrix + 63*60;
-                    __m256d lastTotal;
-                    __ll_handle_block20_product_sum_linear<63,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block20_product_sum_linear<63,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block20_product_sum_linear<63,40> (tT, childVector, &lastTotal);
-                    hyFloat s60 = childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62] + _avx_sum_4(lastTotal);
-                    parentConditionals[60] *= s60;
-
-                    tT += 63;
-                    __m256d lastTotal2;
-                    __ll_handle_block20_product_sum_linear<63,0> (tT, childVector, &lastTotal2);
-                    __ll_handle_block20_product_sum_linear<63,20> (tT, childVector, &lastTotal2);
-                    __ll_handle_block20_product_sum_linear<63,40> (tT, childVector, &lastTotal2);
-
-                    hyFloat s61 = childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62] + _avx_sum_4(lastTotal2);
-                    parentConditionals[61] *= s61;
-     
-                    tT += 63;
-                    __m256d lastTotal3;
-                    __ll_handle_block20_product_sum_linear<63,0> (tT, childVector, &lastTotal3);
-                    __ll_handle_block20_product_sum_linear<63,20> (tT, childVector, &lastTotal3);
-                    __ll_handle_block20_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
-
-                    hyFloat s62 = childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62] + _avx_sum_4(lastTotal3);
-                    parentConditionals[62] *= s62;
-                #elif defined _SLKP_USE_SSE_INTRINSICS
-                    __m128d grandTotal;
-                    grandTotal = __ll_handle_block10_product_sum<63,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<63,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<63,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<63,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<63,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<63,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 63*60;
-                    __m128d lastTotal;
-                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _sse_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                    parentConditionals[60] *= s60;
-                
-                    tT += 63;
-                    __m128d lastTotal2;
-                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal2);
-                    hyFloat s61 = _sse_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                    parentConditionals[61] *= s61;
-
-                    tT += 63;
-                    __m128d lastTotal3;
-                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal3);
-                    hyFloat s62 = _sse_sum_2(lastTotal3) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                    parentConditionals[62] *= s62;
-                
-                #elif defined _SLKP_USE_ARM_NEON
-                    float64x2_t
-                    grandTotal = __ll_handle_block10_product_sum<63,0> (tMatrixT, childVector, parentConditionals, nil);
-                    grandTotal = __ll_handle_block10_product_sum<63,10> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<63,20> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<63,30> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<63,40> (tMatrixT, childVector, parentConditionals, &grandTotal);
-                    grandTotal = __ll_handle_block10_product_sum<63,50> (tMatrixT, childVector, parentConditionals, &grandTotal);
-
-                    hyFloat const * __restrict tT = tMatrix + 63*60;
-                    float64x2_t lastTotal;
-                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal);
-                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal);
-                    hyFloat s60 = _neon_sum_2(lastTotal) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                    parentConditionals[60] *= s60;
-
-                    tT += 63;
-                    float64x2_t lastTotal2;
-                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal2);
-                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal2);
-                    hyFloat s61 = _neon_sum_2(lastTotal2) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                    parentConditionals[61] *= s61;
-
-                    tT += 63;
-                    float64x2_t lastTotal3;
-                    __ll_handle_block10_product_sum_linear<63,0> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,10> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,20> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,30> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,40> (tT, childVector, &lastTotal3);
-                    __ll_handle_block10_product_sum_linear<63,50> (tT, childVector, &lastTotal3);
-                    hyFloat s62 = _neon_sum_2(lastTotal3) + childVector[60] * tT[60] + childVector[61] * tT[61] + childVector[62] * tT[62];
-                    parentConditionals[62] *= s62;
-                #else
-                    __ll_product_sum_loop<63L> (tMatrix, childVector, parentConditionals, sum);
-                #endif
+                _hy_mvp_blocked_4x4<63> (mvs, tMatrix, childVector);
+                sum = _hy_vvmult_sum<63> (parentConditionals, mvs);
                 if (canScale) {
-                    #if defined _SLKP_USE_AVX_INTRINSICS
-                        sum = _avx_sum_4(grandTotal) + s60 + s61 + s62;
-                    #elif defined _SLKP_USE_SSE_INTRINSICS
-                        sum = _sse_sum_2(grandTotal) + s60 + s61 + s62;
-                    #endif
-                    __ll_loop_handle_scaling<63L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
+                     __ll_loop_handle_scaling<63L, false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
                 }
                 childVector += 63L;
                 __handle_site_corrections(didScale, siteID);
@@ -2681,17 +2754,11 @@ void            _TheTree::ComputeBranchCache    (
                 }
                 long     didScale =  0;
                 hyFloat sum     = 0.;
-                __ll_product_sum_loop_generic (tMatrix, childVector, parentConditionals, sum, alphabetDimension);
+                _hy_matrix_vector_product_blocked_4x4 (mvs, tMatrix, childVector, alphabetDimension);
+                sum = _hy_vvmult_sum_generic (parentConditionals, mvs, alphabetDimension);
+   
                 if (canScale) {
-                    //printf ("scale generic\n");
-                    #pragma GCC unroll 8
-                    #pragma clang loop vectorize(enable)
-                    #pragma clang loop interleave(enable)
-                    //#pragma clang loop unroll(enable)
-                    for (long k = 0; k < alphabetDimension; k++) {
-                        sum += parentConditionals[k];
-                    }
-                    __ll_loop_handle_scaling_generic<false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]), alphabetDimension);
+                   __ll_loop_handle_scaling_generic<false> (sum, parentConditionals, scalingAdjustments, didScale, nodeCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]), alphabetDimension);
                 }
                 childVector += alphabetDimension;
                 __handle_site_corrections(didScale, siteID);

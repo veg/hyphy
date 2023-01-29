@@ -1502,12 +1502,12 @@ VERBOSITY_LEVEL			  		= 1;
 USE_ADAPTIVE_VARIABLE_STEP		= 1;
 OPTIMIZATION_METHOD        		= 4;
 
-//PRODUCE_OPTIMIZATION_LOG        = 1;
+PRODUCE_OPTIMIZATION_LOG        = 1;
 
 Optimize(res_IntermediateCodon_AA_LF,IntermediateCodon_AA_LF);
 
 
-USE_JSON_FOR_MATRIX = 1;
+//USE_JSON_FOR_MATRIX = 1;
 //fprintf ("optimization_log.json", CLEAR_FILE,  IntermediateCodon_AA_LF.trace);
 
 fprintf (stdout, res_IntermediateCodon_AA_LF[1][0], "\n");
