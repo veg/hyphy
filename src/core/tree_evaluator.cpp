@@ -52,7 +52,7 @@ using namespace hy_global;
 using namespace hy_env;
 
 
-#ifndef _SLKP_USE_ARM_NEON
+#if not defined _SLKP_USE_ARM_NEON && not defined _SLKP_USE_SSE_INTRINSICS && not defined _SLKP_USE_AVX_INTRINSICS
     #define _HY_NO_INTRINSICS_MARKER
 #endif
 
@@ -119,7 +119,7 @@ if (tcc) {\
 }\
 }\
 
-#ifdef _SLKP_USE_SSE_INTRINSICS
+#if defined _SLKP_USE_SSE_INTRINSICS  or defined _SLKP_USE_AVX_INTRINSICS
 inline double _sse_sum_2 (__m128d const & x) {
     return _mm_cvtsd_f64(_mm_hadd_pd(x, x));
 }
@@ -673,10 +673,10 @@ template<long D> inline void __ll_loop_handle_leaf_case (hyFloat* _hprestrict_ p
                 accumulator2[2] = M[D+2]*V[2];
                 accumulator2[3] = M[D+3]*V[3];
                 
-                accumulator2[0] = M[2*D]*V[0];
-                accumulator2[1] = M[2*D+1]*V[1];
-                accumulator2[2] = M[2*D+2]*V[2];
-                accumulator2[3] = M[2*D+3]*V[3];
+                accumulator3[0] = M[2*D]*V[0];
+                accumulator3[1] = M[2*D+1]*V[1];
+                accumulator3[2] = M[2*D+2]*V[2];
+                accumulator3[3] = M[2*D+3]*V[3];
                 
 
                 for (int j = 1; j < blocks; j++) {
@@ -696,6 +696,7 @@ template<long D> inline void __ll_loop_handle_leaf_case (hyFloat* _hprestrict_ p
                     accumulator3[2] += M[2*D+off+2]*V[off+2];
                     accumulator3[3] += M[2*D+off+3]*V[off+3];
                 }
+                
                 C[D-3] = M[D-3] * V[D-3]  + M[D-2] * V[D-2] + M[D-1] * V[D-1] + (accumulator[0] + accumulator[1]) + (accumulator[2] + accumulator[3]);
                 C[D-2] = M[2*D-3] * V[D-3] + M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + (accumulator2[0] + accumulator2[1]) + (accumulator2[2] + accumulator2[3]);
                 C[D-1] = M[3*D-3] * V[D-3] + M[3*D-2] * V[D-2] + M[3*D-1] * V[D-1] + (accumulator3[0] + accumulator3[1]) + (accumulator3[2] + accumulator3[3]);
@@ -822,6 +823,1319 @@ template<long D> inline void __ll_loop_handle_leaf_case (hyFloat* _hprestrict_ p
     }
 
 #else
+
+#if defined  _SLKP_USE_SSE_INTRINSICS
+
+void _mx_vect_4x4 (__m128d *cv, double const *M, double const *V, int stride) {
+        
+        __m128d       col[2],
+                      accumulator[2],
+                      accumulator2[2],
+                      accumulator3[2],
+                      accumulator4[2];
+                      
+        col[0] = _mm_loadu_pd  (V);
+        col[1] = _mm_loadu_pd  (V+2);
+
+ 
+        accumulator[0] =  _mm_mul_pd(col[0],_mm_loadu_pd(M));
+        accumulator[1] =  _mm_mul_pd(col[1],_mm_loadu_pd(M+2));
+
+        accumulator2[0] =  _mm_mul_pd(col[0],_mm_loadu_pd(M+stride));
+        accumulator2[1] =  _mm_mul_pd(col[1],_mm_loadu_pd(M+stride+2));
+
+        accumulator3[0] =  _mm_mul_pd(col[0],_mm_loadu_pd(M+stride*2));
+        accumulator3[1] =  _mm_mul_pd(col[1],_mm_loadu_pd(M+stride*2+2));
+
+        accumulator4[0] =  _mm_mul_pd(col[0],_mm_loadu_pd(M+stride*3));
+        accumulator4[1] =  _mm_mul_pd(col[1],_mm_loadu_pd(M+stride*3+2));
+
+        accumulator[0]  = _mm_add_pd (accumulator[0],accumulator[1]);
+        accumulator2[0] = _mm_add_pd (accumulator2[0],accumulator2[1]);
+        accumulator3[0] = _mm_add_pd (accumulator3[0],accumulator3[1]);
+        accumulator4[0] = _mm_add_pd (accumulator4[0],accumulator4[1]);
+        
+        cv[0] = _mm_add_pd (_mm_shuffle_pd(accumulator[0],accumulator2[0],0),_mm_shuffle_pd(accumulator[0],accumulator2[0],3));
+        cv[1] = _mm_add_pd (_mm_shuffle_pd(accumulator3[0],accumulator4[0],0),_mm_shuffle_pd(accumulator3[0],accumulator4[0],3));
+  
+         
+    }
+    
+    void _mx_vect_4x4_add (__m128d *cv, double const *M, double const *V, int stride) {
+         __m128d       col[2],
+                      accumulator[2],
+                      accumulator2[2],
+                      accumulator3[2],
+                      accumulator4[2];
+                      
+        col[0] = _mm_loadu_pd  (V);
+        col[1] = _mm_loadu_pd  (V+2);
+
+ 
+        accumulator[0] =  _mm_mul_pd(col[0],_mm_loadu_pd(M));
+        accumulator[1] =  _mm_mul_pd(col[1],_mm_loadu_pd(M+2));
+
+        accumulator2[0] =  _mm_mul_pd(col[0],_mm_loadu_pd(M+stride));
+        accumulator2[1] =  _mm_mul_pd(col[1],_mm_loadu_pd(M+stride+2));
+
+        accumulator3[0] =  _mm_mul_pd(col[0],_mm_loadu_pd(M+stride*2));
+        accumulator3[1] =  _mm_mul_pd(col[1],_mm_loadu_pd(M+stride*2+2));
+
+        accumulator4[0] =  _mm_mul_pd(col[0],_mm_loadu_pd(M+stride*3));
+        accumulator4[1] =  _mm_mul_pd(col[1],_mm_loadu_pd(M+stride*3+2));
+
+        accumulator[0]  = _mm_add_pd (accumulator[0],accumulator[1]);
+        accumulator2[0] = _mm_add_pd (accumulator2[0],accumulator2[1]);
+        accumulator3[0] = _mm_add_pd (accumulator3[0],accumulator3[1]);
+        accumulator4[0] = _mm_add_pd (accumulator4[0],accumulator4[1]);
+        
+        cv[0] = _mm_add_pd(cv[0],_mm_add_pd (_mm_shuffle_pd(accumulator[0],accumulator2[0],0),_mm_shuffle_pd(accumulator[0],accumulator2[0],3)));
+        cv[1] = _mm_add_pd(cv[1],_mm_add_pd (_mm_shuffle_pd(accumulator3[0],accumulator4[0],0),_mm_shuffle_pd(accumulator3[0],accumulator4[0],3)));
+        
+    }
+
+    void _hy_matrix_vector_product_blocked_4x4 (double * C, double const *M, double const *V, int D) {
+        auto offset = [D](int i, int j) -> int {
+            return (i<<2)*D + (j << 2);
+        };
+        
+        
+        int blocks = D>>2;
+        int remainder = D - (blocks<<2);
+ 
+        switch (remainder) {
+                
+            case 0: {
+                for (int i = 0; i < blocks; i++) {
+                    __m128d accumulator[2];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    _mm_storeu_pd (C+off, accumulator[0]);
+                    _mm_storeu_pd (C+off+2, accumulator[1]);
+
+                }
+                break;
+            }
+                
+            case 1: {
+                for (int i = 0; i < blocks; i++) {
+                    
+                    __m128d accumulator[2];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    __m128d last_v = _mm_loaddup_pd (V + offset (0,blocks));
+                    
+                    accumulator [0] = _mm_add_pd (accumulator [0], _mm_mul_pd (last_v, _mm_setr_pd (M[moffset],M[moffset+D])));
+                    accumulator [1] = _mm_add_pd (accumulator [1], _mm_mul_pd (last_v, _mm_setr_pd (M[moffset+2*D],M[moffset+3*D])));
+
+                    _mm_storeu_pd (C+off, accumulator[0]);
+                    _mm_storeu_pd (C+off+2, accumulator[1]);
+                }
+                
+                M += offset (blocks,0);
+                
+                __m128d accumulator[2];
+                accumulator[0] = _mm_mul_pd (_mm_loadu_pd(M), _mm_loadu_pd(V));
+                accumulator[1] = _mm_mul_pd (_mm_loadu_pd(M+2), _mm_loadu_pd(V+2));
+                
+  
+ 
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+  
+                    accumulator[0] = _mm_add_pd (accumulator[0], _mm_mul_pd (_mm_loadu_pd(M+off), _mm_loadu_pd(V+off)));
+                    accumulator[1] = _mm_add_pd (accumulator[1], _mm_mul_pd (_mm_loadu_pd(M+off+2), _mm_loadu_pd(V+off+2)));
+               }
+                
+                C[D-1] = M[D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator[0],accumulator[1]));
+                break;
+            }
+                
+            case 2: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    
+                    __m128d accumulator[2];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    __m128d last_vm1 = _mm_loaddup_pd (V + offset (0,blocks)),
+                            last_v  =  _mm_loaddup_pd (V + offset (0,blocks) + 1);
+                    
+                    accumulator [0] = _mm_add_pd (accumulator [0], 
+                        _mm_add_pd(
+                            _mm_mul_pd (last_v, _mm_setr_pd (M[moffset+1],M[moffset+D+1])), 
+                            _mm_mul_pd (last_vm1, _mm_setr_pd (M[moffset],M[moffset+D]))));
+                            
+                    accumulator [1] = _mm_add_pd (accumulator [1], _mm_add_pd(_mm_mul_pd (last_v, _mm_setr_pd (M[moffset+2*D+1],M[moffset+3*D+1])), _mm_mul_pd (last_vm1, _mm_setr_pd (M[moffset+2*D],M[moffset+3*D]))));
+
+  
+                    _mm_storeu_pd (C+off, accumulator[0]);
+                    _mm_storeu_pd (C+off+2, accumulator[1]);
+                }
+                
+                M += offset (blocks,0);
+                
+                __m128d accumulator  [2],
+                        accumulator2 [2], 
+                        v1 = _mm_loadu_pd(V),
+                        v2 = _mm_loadu_pd(V+2);
+                        
+                        
+                accumulator[0] = _mm_mul_pd (_mm_loadu_pd(M), v1);
+                accumulator[1] = _mm_mul_pd (_mm_loadu_pd(M+2), v2);
+                accumulator2[0] = _mm_mul_pd (_mm_loadu_pd(M+D), v1);
+                accumulator2[1] = _mm_mul_pd (_mm_loadu_pd(M+D+2), v2);
+                
+  
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    v1 = _mm_loadu_pd(V+off);
+                    v2 = _mm_loadu_pd(V+2+off);
+                    accumulator[0] = _mm_add_pd (accumulator[0], _mm_mul_pd (_mm_loadu_pd(M+off), v1));
+                    accumulator[1] = _mm_add_pd (accumulator[1], _mm_mul_pd (_mm_loadu_pd(M+off+2), v2));
+                    accumulator2[0] = _mm_add_pd (accumulator2[0], _mm_mul_pd (_mm_loadu_pd(M+off+D), v1));
+                    accumulator2[1] = _mm_add_pd (accumulator2[1], _mm_mul_pd (_mm_loadu_pd(M+off+D+2), v2));
+               }
+                
+               C[D-2] = M[D-2] * V[D-2] + M[D-1] * V[D-1]+ _sse_sum_2 (_mm_add_pd (accumulator[0],accumulator[1]));
+               C[D-1] = M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator2[0],accumulator2[1]));
+
+                break;
+            }
+                
+            case 3: {
+            
+              for (int i = 0; i < blocks; i++) {
+                    
+                    __m128d accumulator[2];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    __m128d last_vm2 = _mm_loaddup_pd (V + offset (0,blocks)),
+                            last_vm1 = _mm_loaddup_pd (V + offset (0,blocks) + 1),
+                            last_v  =  _mm_loaddup_pd (V + offset (0,blocks) + 2);
+                    
+                    accumulator [0] = _mm_add_pd (
+                        _mm_add_pd(
+                            accumulator [0], 
+                            _mm_mul_pd (last_v, _mm_setr_pd (M[moffset+2],M[moffset+D+2]))
+                        ), 
+                        _mm_add_pd(
+                            _mm_mul_pd (last_vm1, _mm_setr_pd (M[moffset+1],M[moffset+D+1])), 
+                            _mm_mul_pd (last_vm2, _mm_setr_pd (M[moffset],M[moffset+D]))
+                        )
+                    );
+
+                    accumulator [1] = _mm_add_pd (
+                        _mm_add_pd(
+                            accumulator [1], 
+                            _mm_mul_pd (last_v, _mm_setr_pd (M[moffset+2*D+2],M[moffset+3*D+2]))
+                        ), 
+                        _mm_add_pd(
+                            _mm_mul_pd (last_vm1, _mm_setr_pd (M[moffset+2*D+1],M[moffset+3*D+1])), 
+                            _mm_mul_pd (last_vm2, _mm_setr_pd (M[moffset+2*D],M[moffset+3*D]))
+                        )
+                    );
+
+                    _mm_storeu_pd (C+off, accumulator[0]);
+                    _mm_storeu_pd (C+off+2, accumulator[1]);
+                }
+                
+                
+                M += offset (blocks,0);
+                
+                __m128d accumulator   [2],
+                        accumulator2 [2], 
+                        accumulator3 [2],
+                        v1 = _mm_loadu_pd(V),
+                        v2 = _mm_loadu_pd(V+2);
+                        
+                        
+                accumulator[0] = _mm_mul_pd (_mm_loadu_pd(M), v1);
+                accumulator[1] = _mm_mul_pd (_mm_loadu_pd(M+2), v2);
+                accumulator2[0] = _mm_mul_pd (_mm_loadu_pd(M+D), v1);
+                accumulator2[1] = _mm_mul_pd (_mm_loadu_pd(M+D+2), v2);
+                accumulator3[0] = _mm_mul_pd (_mm_loadu_pd(M+2*D), v1);
+                accumulator3[1] = _mm_mul_pd (_mm_loadu_pd(M+2*D+2), v2);
+                
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    v1 = _mm_loadu_pd(V+off);
+                    v2 = _mm_loadu_pd(V+2+off);
+                    
+                    accumulator[0]  = _mm_add_pd (accumulator[0], _mm_mul_pd (_mm_loadu_pd(M+off), v1));
+                    accumulator[1]  = _mm_add_pd (accumulator[1], _mm_mul_pd (_mm_loadu_pd(M+off+2), v2));
+                    accumulator2[0] = _mm_add_pd (accumulator2[0], _mm_mul_pd (_mm_loadu_pd(M+off+D), v1));
+                    accumulator2[1] = _mm_add_pd (accumulator2[1], _mm_mul_pd (_mm_loadu_pd(M+off+D+2), v2));
+                    accumulator3[0] = _mm_add_pd (accumulator3[0], _mm_mul_pd (_mm_loadu_pd(M+off+2*D), v1));
+                    accumulator3[1] = _mm_add_pd (accumulator3[1], _mm_mul_pd (_mm_loadu_pd(M+off+2*D+2), v2));
+               }
+                
+                C[D-3] = M[D-3] * V[D-3]  + M[D-2] * V[D-2] + M[D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator[0],accumulator[1]));
+                C[D-2] = M[2*D-3] * V[D-3] + M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator2[0],accumulator2[1]));
+                C[D-1] = M[3*D-3] * V[D-3] + M[3*D-2] * V[D-2] + M[3*D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator3[0],accumulator3[1]));
+
+
+            }
+
+        }
+    }
+
+    template<int D> void _hy_mvp_blocked_4x4 (double * C, double const *M, double const *V) {
+        auto offset = [](int i, int j) -> int {
+            return (i<<2)*D + (j << 2);
+        };
+        
+        
+        int blocks = D>>2;
+        int remainder = D - (blocks<<2);
+ 
+        switch (remainder) {
+                
+            case 0: {
+                for (int i = 0; i < blocks; i++) {
+                    __m128d accumulator[2];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    _mm_storeu_pd (C+off, accumulator[0]);
+                    _mm_storeu_pd (C+off+2, accumulator[1]);
+
+                }
+                break;
+            }
+                
+            case 1: {
+                for (int i = 0; i < blocks; i++) {
+                    
+                    __m128d accumulator[2];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    __m128d last_v = _mm_loaddup_pd (V + offset (0,blocks));
+                    
+                    accumulator [0] = _mm_add_pd (accumulator [0], _mm_mul_pd (last_v, _mm_setr_pd (M[moffset],M[moffset+D])));
+                    accumulator [1] = _mm_add_pd (accumulator [1], _mm_mul_pd (last_v, _mm_setr_pd (M[moffset+2*D],M[moffset+3*D])));
+
+                    _mm_storeu_pd (C+off, accumulator[0]);
+                    _mm_storeu_pd (C+off+2, accumulator[1]);
+                }
+                
+                M += offset (blocks,0);
+                
+                __m128d accumulator[2];
+                accumulator[0] = _mm_mul_pd (_mm_loadu_pd(M), _mm_loadu_pd(V));
+                accumulator[1] = _mm_mul_pd (_mm_loadu_pd(M+2), _mm_loadu_pd(V+2));
+                
+  
+ 
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+  
+                    accumulator[0] = _mm_add_pd (accumulator[0], _mm_mul_pd (_mm_loadu_pd(M+off), _mm_loadu_pd(V+off)));
+                    accumulator[1] = _mm_add_pd (accumulator[1], _mm_mul_pd (_mm_loadu_pd(M+off+2), _mm_loadu_pd(V+off+2)));
+               }
+                
+                C[D-1] = M[D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator[0],accumulator[1]));
+                break;
+            }
+                
+            case 2: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    
+                    __m128d accumulator[2];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    __m128d last_vm1 = _mm_loaddup_pd (V + offset (0,blocks)),
+                            last_v  =  _mm_loaddup_pd (V + offset (0,blocks) + 1);
+                    
+                    accumulator [0] = _mm_add_pd (accumulator [0], 
+                        _mm_add_pd(
+                            _mm_mul_pd (last_v, _mm_setr_pd (M[moffset+1],M[moffset+D+1])), 
+                            _mm_mul_pd (last_vm1, _mm_setr_pd (M[moffset],M[moffset+D]))));
+                            
+                    accumulator [1] = _mm_add_pd (accumulator [1], _mm_add_pd(_mm_mul_pd (last_v, _mm_setr_pd (M[moffset+2*D+1],M[moffset+3*D+1])), _mm_mul_pd (last_vm1, _mm_setr_pd (M[moffset+2*D],M[moffset+3*D]))));
+
+  
+                    _mm_storeu_pd (C+off, accumulator[0]);
+                    _mm_storeu_pd (C+off+2, accumulator[1]);
+                }
+                
+                M += offset (blocks,0);
+                
+                __m128d accumulator  [2],
+                        accumulator2 [2], 
+                        v1 = _mm_loadu_pd(V),
+                        v2 = _mm_loadu_pd(V+2);
+                        
+                        
+                accumulator[0] = _mm_mul_pd (_mm_loadu_pd(M), v1);
+                accumulator[1] = _mm_mul_pd (_mm_loadu_pd(M+2), v2);
+                accumulator2[0] = _mm_mul_pd (_mm_loadu_pd(M+D), v1);
+                accumulator2[1] = _mm_mul_pd (_mm_loadu_pd(M+D+2), v2);
+                
+  
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    v1 = _mm_loadu_pd(V+off);
+                    v2 = _mm_loadu_pd(V+2+off);
+                    accumulator[0] = _mm_add_pd (accumulator[0], _mm_mul_pd (_mm_loadu_pd(M+off), v1));
+                    accumulator[1] = _mm_add_pd (accumulator[1], _mm_mul_pd (_mm_loadu_pd(M+off+2), v2));
+                    accumulator2[0] = _mm_add_pd (accumulator2[0], _mm_mul_pd (_mm_loadu_pd(M+off+D), v1));
+                    accumulator2[1] = _mm_add_pd (accumulator2[1], _mm_mul_pd (_mm_loadu_pd(M+off+D+2), v2));
+               }
+                
+               C[D-2] = M[D-2] * V[D-2] + M[D-1] * V[D-1]+ _sse_sum_2 (_mm_add_pd (accumulator[0],accumulator[1]));
+               C[D-1] = M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator2[0],accumulator2[1]));
+
+                break;
+            }
+                
+            case 3: {
+            
+              for (int i = 0; i < blocks; i++) {
+                    
+                    __m128d accumulator[2];
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                    
+                    __m128d last_vm2 = _mm_loaddup_pd (V + offset (0,blocks)),
+                            last_vm1 = _mm_loaddup_pd (V + offset (0,blocks) + 1),
+                            last_v  =  _mm_loaddup_pd (V + offset (0,blocks) + 2);
+                    
+                    accumulator [0] = _mm_add_pd (
+                        _mm_add_pd(
+                            accumulator [0], 
+                            _mm_mul_pd (last_v, _mm_setr_pd (M[moffset+2],M[moffset+D+2]))
+                        ), 
+                        _mm_add_pd(
+                            _mm_mul_pd (last_vm1, _mm_setr_pd (M[moffset+1],M[moffset+D+1])), 
+                            _mm_mul_pd (last_vm2, _mm_setr_pd (M[moffset],M[moffset+D]))
+                        )
+                    );
+
+                    accumulator [1] = _mm_add_pd (
+                        _mm_add_pd(
+                            accumulator [1], 
+                            _mm_mul_pd (last_v, _mm_setr_pd (M[moffset+2*D+2],M[moffset+3*D+2]))
+                        ), 
+                        _mm_add_pd(
+                            _mm_mul_pd (last_vm1, _mm_setr_pd (M[moffset+2*D+1],M[moffset+3*D+1])), 
+                            _mm_mul_pd (last_vm2, _mm_setr_pd (M[moffset+2*D],M[moffset+3*D]))
+                        )
+                    );
+
+                    _mm_storeu_pd (C+off, accumulator[0]);
+                    _mm_storeu_pd (C+off+2, accumulator[1]);
+                }
+                
+                
+                M += offset (blocks,0);
+                
+                __m128d accumulator   [2],
+                        accumulator2 [2], 
+                        accumulator3 [2],
+                        v1 = _mm_loadu_pd(V),
+                        v2 = _mm_loadu_pd(V+2);
+                        
+                        
+                accumulator[0] = _mm_mul_pd (_mm_loadu_pd(M), v1);
+                accumulator[1] = _mm_mul_pd (_mm_loadu_pd(M+2), v2);
+                accumulator2[0] = _mm_mul_pd (_mm_loadu_pd(M+D), v1);
+                accumulator2[1] = _mm_mul_pd (_mm_loadu_pd(M+D+2), v2);
+                accumulator3[0] = _mm_mul_pd (_mm_loadu_pd(M+2*D), v1);
+                accumulator3[1] = _mm_mul_pd (_mm_loadu_pd(M+2*D+2), v2);
+                
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    v1 = _mm_loadu_pd(V+off);
+                    v2 = _mm_loadu_pd(V+2+off);
+                    
+                    accumulator[0]  = _mm_add_pd (accumulator[0], _mm_mul_pd (_mm_loadu_pd(M+off), v1));
+                    accumulator[1]  = _mm_add_pd (accumulator[1], _mm_mul_pd (_mm_loadu_pd(M+off+2), v2));
+                    accumulator2[0] = _mm_add_pd (accumulator2[0], _mm_mul_pd (_mm_loadu_pd(M+off+D), v1));
+                    accumulator2[1] = _mm_add_pd (accumulator2[1], _mm_mul_pd (_mm_loadu_pd(M+off+D+2), v2));
+                    accumulator3[0] = _mm_add_pd (accumulator3[0], _mm_mul_pd (_mm_loadu_pd(M+off+2*D), v1));
+                    accumulator3[1] = _mm_add_pd (accumulator3[1], _mm_mul_pd (_mm_loadu_pd(M+off+2*D+2), v2));
+               }
+                
+                C[D-3] = M[D-3] * V[D-3]  + M[D-2] * V[D-2] + M[D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator[0],accumulator[1]));
+                C[D-2] = M[2*D-3] * V[D-3] + M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator2[0],accumulator2[1]));
+                C[D-1] = M[3*D-3] * V[D-3] + M[3*D-2] * V[D-2] + M[3*D-1] * V[D-1] + _sse_sum_2 (_mm_add_pd (accumulator3[0],accumulator3[1]));
+
+
+            }
+
+        }
+    }
+
+    inline double _handle4x4_pruning_case_direct (double const* childVector, void* T, double* parentConditionals) {
+    
+        __m128d  *  TM = (__m128d*)T;
+        
+        __m128d     c0     = _mm_set1_pd (childVector[0]-childVector[3]),
+                    c1     = _mm_set1_pd (childVector[1]-childVector[3]),
+                    c2     = _mm_set1_pd (childVector[2]-childVector[3]),
+                    c3     = _mm_set1_pd (childVector[3]);
+        
+        __m128d     t[4];
+      
+        
+        t[0] = _mm_add_pd (_mm_mul_pd (c1, TM[2]), _mm_mul_pd (c0, TM[0]));
+        t[1] = _mm_add_pd (_mm_mul_pd (c1, TM[3]), _mm_mul_pd (c0, TM[1]));
+        t[2] = _mm_add_pd (_mm_mul_pd (c2, TM[4]), c3);
+        t[3] = _mm_add_pd (_mm_mul_pd (c2, TM[5]), c3);
+       
+        
+        t[0] = _mm_mul_pd  (_mm_loadu_pd (parentConditionals), _mm_add_pd (t[0], t[2]));
+        _mm_storeu_pd (parentConditionals,t[0]);
+        t[1] = _mm_mul_pd  (_mm_loadu_pd (parentConditionals+2), _mm_add_pd (t[1], t[3]));
+        _mm_storeu_pd (parentConditionals+2,t[1]);
+        
+        return _sse_sum_2 (_mm_add_pd (t[0],t[1]));
+        
+    }
+
+
+
+    double _hy_vvmult_sum_generic (double * C, double const *M, int D) {
+
+        double sum = 0.;
+        
+        int blocks = D>>3;
+        int remainder = D - (blocks<<3);
+        
+        if (blocks) {
+            __m128d  accumulator [4];
+            
+            accumulator[0] = _mm_mul_pd (_mm_loadu_pd (M), _mm_loadu_pd (C));
+            accumulator[1] = _mm_mul_pd (_mm_loadu_pd (M+2), _mm_loadu_pd (C+2));
+            accumulator[2] = _mm_mul_pd (_mm_loadu_pd (M+4), _mm_loadu_pd (C+4));
+            accumulator[3] = _mm_mul_pd (_mm_loadu_pd (M+6), _mm_loadu_pd (C+6));
+            
+            _mm_storeu_pd (C, accumulator[0]);
+            _mm_storeu_pd (C+2, accumulator[1]);
+            _mm_storeu_pd (C+4, accumulator[2]);
+            _mm_storeu_pd (C+6, accumulator[3]);
+
+            for (int i = 1; i < blocks; i++) {
+                
+                int off = i<<3;
+                
+                __m128d CA[4];
+                
+                CA[0] =  _mm_mul_pd (_mm_loadu_pd (M+off), _mm_loadu_pd (C+off));
+                CA[1] =  _mm_mul_pd (_mm_loadu_pd (M+off+2), _mm_loadu_pd (C+off+2));
+                CA[2] =  _mm_mul_pd (_mm_loadu_pd (M+off+4), _mm_loadu_pd (C+off+4));
+                CA[3] =  _mm_mul_pd (_mm_loadu_pd (M+off+6), _mm_loadu_pd (C+off+6));
+                
+                
+                accumulator[0] = _mm_add_pd (accumulator[0], CA[0]);
+                accumulator[1] = _mm_add_pd (accumulator[1], CA[1]);
+                accumulator[2] = _mm_add_pd (accumulator[2], CA[2]);
+                accumulator[3] = _mm_add_pd (accumulator[3], CA[3]);
+
+                _mm_storeu_pd (C+off, CA[0]);
+                _mm_storeu_pd (C+off+2, CA[1]);
+                _mm_storeu_pd (C+off+4, CA[2]);
+                _mm_storeu_pd (C+off+6, CA[3]);
+
+            }
+            
+            //accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
+            sum = _sse_sum_2(_mm_add_pd (_mm_add_pd (accumulator[0], accumulator[1]), _mm_add_pd (accumulator[2], accumulator[3])));
+        }
+        
+        if (remainder) {
+            switch (remainder) {
+                case 1:
+                    sum += (C[D-1] *= M[D-1]);
+                    break;
+                case 2:
+                    sum += (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 3:
+                    sum += (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 4:
+                    sum += (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 5:
+                    sum += (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 6:
+                    sum += (C[D-6] *= M[D-6]) +
+                           (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 7:
+                    sum += (C[D-7] *= M[D-7])
+                         + (C[D-6] *= M[D-6])
+                         + (C[D-5] *= M[D-5])
+                         + (C[D-4] *= M[D-4])
+                         + (C[D-3] *= M[D-3])
+                         + (C[D-2] *= M[D-2])
+                         + (C[D-1] *= M[D-1]);
+                    break;
+            }
+        }
+        
+        return sum;
+    }
+
+    template<int D> double _hy_vvmult_sum (double * C, double const *M) {
+    
+        double sum = 0.;
+        
+        int blocks = D>>3;
+        int remainder = D - (blocks<<3);
+        
+        if (blocks) {
+            __m128d  accumulator [4];
+            
+            accumulator[0] = _mm_mul_pd (_mm_loadu_pd (M), _mm_loadu_pd (C));
+            accumulator[1] = _mm_mul_pd (_mm_loadu_pd (M+2), _mm_loadu_pd (C+2));
+            accumulator[2] = _mm_mul_pd (_mm_loadu_pd (M+4), _mm_loadu_pd (C+4));
+            accumulator[3] = _mm_mul_pd (_mm_loadu_pd (M+6), _mm_loadu_pd (C+6));
+            
+            _mm_storeu_pd (C, accumulator[0]);
+            _mm_storeu_pd (C+2, accumulator[1]);
+            _mm_storeu_pd (C+4, accumulator[2]);
+            _mm_storeu_pd (C+6, accumulator[3]);
+
+            for (int i = 1; i < blocks; i++) {
+                
+                int off = i<<3;
+                
+                __m128d CA[4];
+                
+                CA[0] =  _mm_mul_pd (_mm_loadu_pd (M+off), _mm_loadu_pd (C+off));
+                CA[1] =  _mm_mul_pd (_mm_loadu_pd (M+off+2), _mm_loadu_pd (C+off+2));
+                CA[2] =  _mm_mul_pd (_mm_loadu_pd (M+off+4), _mm_loadu_pd (C+off+4));
+                CA[3] =  _mm_mul_pd (_mm_loadu_pd (M+off+6), _mm_loadu_pd (C+off+6));
+                
+                
+                accumulator[0] = _mm_add_pd (accumulator[0], CA[0]);
+                accumulator[1] = _mm_add_pd (accumulator[1], CA[1]);
+                accumulator[2] = _mm_add_pd (accumulator[2], CA[2]);
+                accumulator[3] = _mm_add_pd (accumulator[3], CA[3]);
+
+                _mm_storeu_pd (C+off, CA[0]);
+                _mm_storeu_pd (C+off+2, CA[1]);
+                _mm_storeu_pd (C+off+4, CA[2]);
+                _mm_storeu_pd (C+off+6, CA[3]);
+
+            }
+            
+            //accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
+            sum = _sse_sum_2(_mm_add_pd (_mm_add_pd (accumulator[0], accumulator[1]), _mm_add_pd (accumulator[2], accumulator[3])));
+        }
+        
+        if (remainder) {
+            switch (remainder) {
+                case 1:
+                    sum += (C[D-1] *= M[D-1]);
+                    break;
+                case 2:
+                    sum += (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 3:
+                    sum += (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 4:
+                    sum += (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 5:
+                    sum += (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 6:
+                    sum += (C[D-6] *= M[D-6]) +
+                           (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 7:
+                    sum += (C[D-7] *= M[D-7])
+                         + (C[D-6] *= M[D-6])
+                         + (C[D-5] *= M[D-5])
+                         + (C[D-4] *= M[D-4])
+                         + (C[D-3] *= M[D-3])
+                         + (C[D-2] *= M[D-2])
+                         + (C[D-1] *= M[D-1]);
+                    break;
+            }
+        }
+        
+        return sum;
+    }
+
+#endif  // SSE
+
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+
+inline __m256d _hy_matrix_handle_axv_mfma (__m256d c, __m256d a, __m256d b) {
+    #if defined _SLKP_USE_FMA3_INTRINSICS
+        return _mm256_fmadd_pd (a,b,c);
+    #else
+        return _mm256_add_pd (c, _mm256_mul_pd (a,b));
+    #endif
+}
+
+
+
+/*
+bool echo_avx_sum_4_non_zero (__m256d const x) {
+    double a[4];
+    _mm256_storeu_pd(a, x);
+    if (a[0] > 0 && a[1] > 0 && a[2] > 0 && a[3] > 0) {
+        printf ("%g|%g|%g|%g\n", a[0], a[1], a[2], a[3]);
+        return true;
+    }
+    return false;
+}
+*/
+    
+void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
+        
+        __m256d       col,
+                      accumulator,
+                      accumulator2,
+                      accumulator3,
+                      accumulator4;
+                      
+        col = _mm256_loadu_pd  (V);
+        
+        accumulator  = _mm256_mul_pd (col, _mm256_loadu_pd (M));            // 0,1,2,3
+        accumulator2 = _mm256_mul_pd (col, _mm256_loadu_pd (M+stride));     // 4,5,6,7
+        accumulator3 = _mm256_mul_pd (col, _mm256_loadu_pd (M+2*stride));   // 8,9,10,11
+        accumulator4 = _mm256_mul_pd (col, _mm256_loadu_pd (M+3*stride));   // 12,13,14,15
+        
+        //  Need to transpose the 4x4 then add them to storage
+        
+        __m256d    t0 = _mm256_unpacklo_pd (accumulator, accumulator2),  // 0,4,2,6
+                   t1 = _mm256_unpackhi_pd (accumulator, accumulator2),  // 1,5,3,7
+                   t2 = _mm256_unpacklo_pd (accumulator3, accumulator4), // 8,12,10,14
+                   t3 = _mm256_unpackhi_pd (accumulator3, accumulator4); // 9,13,11,15
+                 
+         
+        accumulator  = _mm256_permute2f128_pd (t0,t2, 2*16); // 0,4,8,12
+        accumulator2 = _mm256_permute2f128_pd (t1,t3, 2*16); // 1,5,9,13
+        accumulator3 = _mm256_permute2f128_pd (t0,t2 ,1+3*16);   // 2,6,19,14
+        accumulator4 = _mm256_permute2f128_pd (t1,t3, 1+3*16);    // 3,7,11,15
+        
+       
+        cv = _mm256_add_pd (_mm256_add_pd (accumulator,accumulator2), _mm256_add_pd (accumulator3, accumulator4));
+        
+         
+    }
+    
+    void _mx_vect_4x4_add (__m256d & cv, double const *M, double const *V, int stride) {
+         __m256d       col,
+                      accumulator,
+                      accumulator2,
+                      accumulator3,
+                      accumulator4;
+                      
+        col = _mm256_loadu_pd  (V);
+        
+        accumulator  = _mm256_mul_pd (col, _mm256_loadu_pd (M));
+        accumulator2 = _mm256_mul_pd (col, _mm256_loadu_pd (M+stride));
+        accumulator3 = _mm256_mul_pd (col, _mm256_loadu_pd (M+2*stride));
+        accumulator4 = _mm256_mul_pd (col, _mm256_loadu_pd (M+3*stride));
+ 
+         __m256d    t0 = _mm256_unpacklo_pd (accumulator, accumulator2),  // 0,4,2,6
+                   t1 = _mm256_unpackhi_pd (accumulator, accumulator2),  // 1,5,3,7
+                   t2 = _mm256_unpacklo_pd (accumulator3, accumulator4), // 8,12,10,14
+                   t3 = _mm256_unpackhi_pd (accumulator3, accumulator4); // 9,13,11,15
+        
+        accumulator  = _mm256_permute2f128_pd (t0,t2, 2*16); // 0,4,8,12
+        accumulator2 = _mm256_permute2f128_pd (t1,t3, 2*16); // 1,5,9,13
+        accumulator3 = _mm256_permute2f128_pd (t0,t2 ,1+3*16);   // 2,6,19,14
+        accumulator4 = _mm256_permute2f128_pd (t1,t3, 1+3*16);    // 3,7,11,15
+
+        cv = _mm256_add_pd (cv, _mm256_add_pd (_mm256_add_pd (accumulator,accumulator2), _mm256_add_pd (accumulator3, accumulator4)));
+        
+    }
+
+    void _hy_matrix_vector_product_blocked_4x4 (double * C, double const *M, double const *V, int D) {
+        auto offset = [D](int i, int j) -> int {
+            return (i<<2)*D + (j << 2);
+        };
+        
+        
+        int blocks = D>>2;
+        int remainder = D - (blocks<<2);
+ 
+        switch (remainder) {
+                
+            case 0: {
+                for (int i = 0; i < blocks; i++) {
+                    __m256d accumulator;
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                        
+                                        
+                    _mm256_storeu_pd (C+off, accumulator);
+
+                }
+                break;
+            }
+                
+            case 1: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    __m256d accumulator;
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                     
+                    __m256d last_v = _mm256_broadcast_sd (V + offset (0,blocks));
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_v, _mm256_setr_pd (M[moffset], M[moffset + D], M[moffset + 2*D], M[moffset + 3*D]));
+                    _mm256_storeu_pd (C+off, accumulator);
+
+                }
+                
+                
+                M += offset (blocks,0);
+                
+                __m256d accumulator;
+                accumulator = _mm256_mul_pd (_mm256_loadu_pd(M), _mm256_loadu_pd(V));
+                
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;                   
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, _mm256_loadu_pd (M+off), _mm256_loadu_pd(V+off));
+               }
+                
+                C[D-1] = M[D-1] * V[D-1] + _avx_sum_4 (accumulator);
+                break;
+            }
+                
+            case 2: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    __m256d accumulator;
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                     
+                    __m256d last_vm1 = _mm256_broadcast_sd (V + offset (0,blocks)),
+                            last_vm  = _mm256_broadcast_sd (V + offset (0,blocks)+1);
+                            
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm1, _mm256_setr_pd (M[moffset], M[moffset + D], M[moffset + 2*D], M[moffset + 3*D]));
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm, _mm256_setr_pd (M[moffset + 1], M[moffset + D + 1], M[moffset + 2*D + 1], M[moffset + 3*D + 1]));
+                    _mm256_storeu_pd (C+off, accumulator);
+
+                }
+                
+                
+                M += offset (blocks,0);
+                
+                 __m256d accumulator[2], 
+                         v =  _mm256_loadu_pd(V);
+                         
+                 accumulator[0] = _mm256_mul_pd (_mm256_loadu_pd(M), v);
+                 accumulator[1] = _mm256_mul_pd (_mm256_loadu_pd(M+D), v);
+ 
+   
+                 for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    v =  _mm256_loadu_pd(V + off);
+                    accumulator[0] = _hy_matrix_handle_axv_mfma (accumulator[0], _mm256_loadu_pd(M+off), v); 
+                    accumulator[1] = _hy_matrix_handle_axv_mfma (accumulator[1], _mm256_loadu_pd(M+D+off), v); 
+               }
+                
+                C[D-2] = M[D-2] * V[D-2] + M[D-1] * V[D-1]+ _avx_sum_4 (accumulator[0]);
+                C[D-1] = M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + _avx_sum_4 (accumulator[1]);
+
+                break;
+            }
+                
+            case 3: {
+            
+              for (int i = 0; i < blocks; i++) {
+                    __m256d accumulator;
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                     
+                    __m256d last_vm2 = _mm256_broadcast_sd (V + offset (0,blocks)),
+                            last_vm1 = _mm256_broadcast_sd (V + offset (0,blocks)+1),
+                            last_vm  = _mm256_broadcast_sd (V + offset (0,blocks)+2);
+                            
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm2, _mm256_setr_pd (M[moffset], M[moffset + D], M[moffset + 2*D], M[moffset + 3*D]));
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm1, _mm256_setr_pd (M[moffset + 1], M[moffset + D + 1], M[moffset + 2*D + 1], M[moffset + 3*D + 1]));
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm,  _mm256_setr_pd (M[moffset + 2], M[moffset + D + 2], M[moffset + 2*D + 2], M[moffset + 3*D + 2]));
+                    _mm256_storeu_pd (C+off, accumulator);
+
+                }
+                 
+                 M += offset (blocks,0);
+                
+                 __m256d accumulator[3], 
+                         v =  _mm256_loadu_pd(V);
+                         
+                 accumulator[0] = _mm256_mul_pd (_mm256_loadu_pd(M), v);
+                 accumulator[1] = _mm256_mul_pd (_mm256_loadu_pd(M+D), v);
+                 accumulator[2] = _mm256_mul_pd (_mm256_loadu_pd(M+2*D), v);
+ 
+   
+                 for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    v =  _mm256_loadu_pd(V + off);
+                    accumulator[0] = _hy_matrix_handle_axv_mfma (accumulator[0], _mm256_loadu_pd(M+off), v); 
+                    accumulator[1] = _hy_matrix_handle_axv_mfma (accumulator[1], _mm256_loadu_pd(M+D+off), v); 
+                    accumulator[2] = _hy_matrix_handle_axv_mfma (accumulator[2], _mm256_loadu_pd(M+2*D+off), v); 
+                }
+                 
+                C[D-3] = M[D-3] * V[D-3]  + M[D-2] * V[D-2] + M[D-1] * V[D-1] + _avx_sum_4 (accumulator[0]);
+                C[D-2] = M[2*D-3] * V[D-3] + M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + _avx_sum_4 (accumulator[1]);
+                C[D-1] = M[3*D-3] * V[D-3] + M[3*D-2] * V[D-2] + M[3*D-1] * V[D-1] + _avx_sum_4 (accumulator[2]);
+
+ 
+                break;
+
+            }
+
+        }
+    }
+
+    template<int D> void _hy_mvp_blocked_4x4 (double * C, double const *M, double const *V) {
+        auto offset = [](int i, int j) -> int {
+            return (i<<2)*D + (j << 2);
+        };
+        
+        
+        int blocks = D>>2;
+        int remainder = D - (blocks<<2);
+ 
+        switch (remainder) {
+                
+            case 0: {
+                for (int i = 0; i < blocks; i++) {
+                    __m256d accumulator;
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                        
+                                        
+                    _mm256_storeu_pd (C+off, accumulator);
+
+                }
+                break;
+            }
+                
+            case 1: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    __m256d accumulator;
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                     
+                    __m256d last_v = _mm256_broadcast_sd (V + offset (0,blocks));
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_v, _mm256_setr_pd (M[moffset], M[moffset + D], M[moffset + 2*D], M[moffset + 3*D]));
+                    _mm256_storeu_pd (C+off, accumulator);
+
+                }
+                
+                
+                M += offset (blocks,0);
+                
+                __m256d accumulator;
+                accumulator = _mm256_mul_pd (_mm256_loadu_pd(M), _mm256_loadu_pd(V));
+                
+                for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;                   
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, _mm256_loadu_pd (M+off), _mm256_loadu_pd(V+off));
+               }
+                
+                C[D-1] = M[D-1] * V[D-1] + _avx_sum_4 (accumulator);
+                break;
+            }
+                
+            case 2: {
+                
+                for (int i = 0; i < blocks; i++) {
+                    __m256d accumulator;
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                     
+                    __m256d last_vm1 = _mm256_broadcast_sd (V + offset (0,blocks)),
+                            last_vm  = _mm256_broadcast_sd (V + offset (0,blocks)+1);
+                            
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm1, _mm256_setr_pd (M[moffset], M[moffset + D], M[moffset + 2*D], M[moffset + 3*D]));
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm, _mm256_setr_pd (M[moffset + 1], M[moffset + D + 1], M[moffset + 2*D + 1], M[moffset + 3*D + 1]));
+                    _mm256_storeu_pd (C+off, accumulator);
+
+                }
+                
+                
+                M += offset (blocks,0);
+                
+                 __m256d accumulator[2], 
+                         v =  _mm256_loadu_pd(V);
+                         
+                 accumulator[0] = _mm256_mul_pd (_mm256_loadu_pd(M), v);
+                 accumulator[1] = _mm256_mul_pd (_mm256_loadu_pd(M+D), v);
+ 
+   
+                 for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    v =  _mm256_loadu_pd(V + off);
+                    accumulator[0] = _hy_matrix_handle_axv_mfma (accumulator[0], _mm256_loadu_pd(M+off), v); 
+                    accumulator[1] = _hy_matrix_handle_axv_mfma (accumulator[1], _mm256_loadu_pd(M+D+off), v); 
+               }
+                
+                C[D-2] = M[D-2] * V[D-2] + M[D-1] * V[D-1]+ _avx_sum_4 (accumulator[0]);
+                C[D-1] = M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + _avx_sum_4 (accumulator[1]);
+
+                break;
+            }
+                
+            case 3: {
+            
+              for (int i = 0; i < blocks; i++) {
+                    __m256d accumulator;
+                    int    off = offset (0,i);
+                    _mx_vect_4x4 (accumulator, M + offset (i,0), V, D);
+                    for (int j=1; j < blocks; j++) {
+                        _mx_vect_4x4_add (accumulator, M + offset (i,j), V + offset (0,j), D);
+                    }
+                    
+                    int    moffset = offset (i,blocks);
+                     
+                    __m256d last_vm2 = _mm256_broadcast_sd (V + offset (0,blocks)),
+                            last_vm1 = _mm256_broadcast_sd (V + offset (0,blocks)+1),
+                            last_vm  = _mm256_broadcast_sd (V + offset (0,blocks)+2);
+                            
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm2, _mm256_setr_pd (M[moffset], M[moffset + D], M[moffset + 2*D], M[moffset + 3*D]));
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm1, _mm256_setr_pd (M[moffset + 1], M[moffset + D + 1], M[moffset + 2*D + 1], M[moffset + 3*D + 1]));
+                    accumulator = _hy_matrix_handle_axv_mfma (accumulator, last_vm,  _mm256_setr_pd (M[moffset + 2], M[moffset + D + 2], M[moffset + 2*D + 2], M[moffset + 3*D + 2]));
+                    _mm256_storeu_pd (C+off, accumulator);
+
+                }
+                 
+                 M += offset (blocks,0);
+                
+                 __m256d accumulator[3], 
+                         v =  _mm256_loadu_pd(V);
+                         
+                 accumulator[0] = _mm256_mul_pd (_mm256_loadu_pd(M), v);
+                 accumulator[1] = _mm256_mul_pd (_mm256_loadu_pd(M+D), v);
+                 accumulator[2] = _mm256_mul_pd (_mm256_loadu_pd(M+2*D), v);
+ 
+   
+                 for (int j = 1; j < blocks; j++) {
+                    int off = j << 2;
+                    v =  _mm256_loadu_pd(V + off);
+                    accumulator[0] = _hy_matrix_handle_axv_mfma (accumulator[0], _mm256_loadu_pd(M+off), v); 
+                    accumulator[1] = _hy_matrix_handle_axv_mfma (accumulator[1], _mm256_loadu_pd(M+D+off), v); 
+                    accumulator[2] = _hy_matrix_handle_axv_mfma (accumulator[2], _mm256_loadu_pd(M+2*D+off), v); 
+                }
+                 
+                C[D-3] = M[D-3] * V[D-3]  + M[D-2] * V[D-2] + M[D-1] * V[D-1] + _avx_sum_4 (accumulator[0]);
+                C[D-2] = M[2*D-3] * V[D-3] + M[2*D-2] * V[D-2] + M[2*D-1] * V[D-1] + _avx_sum_4 (accumulator[1]);
+                C[D-1] = M[3*D-3] * V[D-3] + M[3*D-2] * V[D-2] + M[3*D-1] * V[D-1] + _avx_sum_4 (accumulator[2]);
+
+ 
+                break;
+
+            }
+        }
+
+    }
+
+    inline double _handle4x4_pruning_case_direct (double const* childVector, void* T, double* parentConditionals) {
+    
+    
+        __m256d  *  TM = (__m256d*)T;
+        
+        __m256d     c0     = _mm256_set1_pd  (childVector[0]-childVector[3]),
+                    c1     = _mm256_set1_pd  (childVector[1]-childVector[3]),
+                    c2     = _mm256_set1_pd  (childVector[2]-childVector[3]),
+                    c3     = _mm256_set1_pd  (childVector[3]);
+        
+        __m256d     t[2];
+      
+        
+        t[0] = _hy_matrix_handle_axv_mfma (_mm256_mul_pd (c0, TM[0]), c1, TM[1]);
+        t[1] = _hy_matrix_handle_axv_mfma (c3,c2, TM[2]);
+        
+        t[0] = _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (t[0], t[1]));
+        
+        _mm256_storeu_pd (parentConditionals, t[0]);        
+        return _avx_sum_4 (t[0]);
+        
+    }
+
+
+
+    double _hy_vvmult_sum_generic (double * C, double const *M, int D) {
+
+        double sum = 0.;
+        
+        int blocks = D>>3;
+        int remainder = D - (blocks<<3);
+        
+        if (blocks) {
+            __m256d  accumulator [2];
+            
+            accumulator[0] = _mm256_mul_pd (_mm256_loadu_pd (M), _mm256_loadu_pd (C));
+            accumulator[1] = _mm256_mul_pd (_mm256_loadu_pd (M+4), _mm256_loadu_pd (C+4));
+            
+            _mm256_storeu_pd (C, accumulator[0]);
+            _mm256_storeu_pd (C+4, accumulator[1]);
+
+            for (int i = 1; i < blocks; i++) {
+                
+                int off = i<<3;
+                
+                __m256d CA[2];
+                
+                CA[0] =  _mm256_mul_pd (_mm256_loadu_pd (M+off), _mm256_loadu_pd (C+off));
+                CA[1] =  _mm256_mul_pd (_mm256_loadu_pd (M+off+4), _mm256_loadu_pd (C+off+4));
+                
+                
+                accumulator[0] = _mm256_add_pd (accumulator[0], CA[0]);
+                accumulator[1] = _mm256_add_pd (accumulator[1], CA[1]);
+
+                _mm256_storeu_pd (C+off, CA[0]);
+                _mm256_storeu_pd (C+off+4, CA[1]);
+  
+            }
+            
+            //accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
+            sum = _avx_sum_4(_mm256_add_pd (accumulator[0], accumulator[1]));
+        }
+        
+        if (remainder) {
+            switch (remainder) {
+                case 1:
+                    sum += (C[D-1] *= M[D-1]);
+                    break;
+                case 2:
+                    sum += (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 3:
+                    sum += (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 4:
+                    sum += (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 5:
+                    sum += (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 6:
+                    sum += (C[D-6] *= M[D-6]) +
+                           (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 7:
+                    sum += (C[D-7] *= M[D-7])
+                         + (C[D-6] *= M[D-6])
+                         + (C[D-5] *= M[D-5])
+                         + (C[D-4] *= M[D-4])
+                         + (C[D-3] *= M[D-3])
+                         + (C[D-2] *= M[D-2])
+                         + (C[D-1] *= M[D-1]);
+                    break;
+            }
+        }
+        
+        return sum;
+    }
+
+    template<int D> double _hy_vvmult_sum (double * C, double const *M) {
+       double sum = 0.;
+        
+        int blocks = D>>3;
+        int remainder = D - (blocks<<3);
+        
+        if (blocks) {
+            __m256d  accumulator [2];
+            
+            accumulator[0] = _mm256_mul_pd (_mm256_loadu_pd (M), _mm256_loadu_pd (C));
+            accumulator[1] = _mm256_mul_pd (_mm256_loadu_pd (M+4), _mm256_loadu_pd (C+4));
+            
+            _mm256_storeu_pd (C, accumulator[0]);
+            _mm256_storeu_pd (C+4, accumulator[1]);
+
+            for (int i = 1; i < blocks; i++) {
+                
+                int off = i<<3;
+                
+                __m256d CA[2];
+                
+                CA[0] =  _mm256_mul_pd (_mm256_loadu_pd (M+off), _mm256_loadu_pd (C+off));
+                CA[1] =  _mm256_mul_pd (_mm256_loadu_pd (M+off+4), _mm256_loadu_pd (C+off+4));
+                
+                
+                accumulator[0] = _mm256_add_pd (accumulator[0], CA[0]);
+                accumulator[1] = _mm256_add_pd (accumulator[1], CA[1]);
+
+                _mm256_storeu_pd (C+off, CA[0]);
+                _mm256_storeu_pd (C+off+4, CA[1]);
+  
+            }
+            
+            //accumulator.val[0] = vaddq_f64 (accumulator.val[0], accumulator.val[1]);
+            sum = _avx_sum_4(_mm256_add_pd (accumulator[0], accumulator[1]));
+        }
+        
+        if (remainder) {
+            switch (remainder) {
+                case 1:
+                    sum += (C[D-1] *= M[D-1]);
+                    break;
+                case 2:
+                    sum += (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 3:
+                    sum += (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 4:
+                    sum += (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 5:
+                    sum += (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 6:
+                    sum += (C[D-6] *= M[D-6]) +
+                           (C[D-5] *= M[D-5]) +
+                           (C[D-4] *= M[D-4]) +
+                           (C[D-3] *= M[D-3]) +
+                           (C[D-2] *= M[D-2]) +
+                           (C[D-1] *= M[D-1]);
+                    break;
+                case 7:
+                    sum += (C[D-7] *= M[D-7])
+                         + (C[D-6] *= M[D-6])
+                         + (C[D-5] *= M[D-5])
+                         + (C[D-4] *= M[D-4])
+                         + (C[D-3] *= M[D-3])
+                         + (C[D-2] *= M[D-2])
+                         + (C[D-1] *= M[D-1]);
+                    break;
+            }
+        }
+        
+        return sum;
+    }
+
+#endif // AVX
 
 #ifdef _SLKP_USE_ARM_NEON
 
@@ -2009,6 +3323,14 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
                     };
                 #endif
+                
+                #ifdef _SLKP_USE_SSE_INTRINSICS
+                    __m128d tmatrix_transpose [8] = {(__m128d) {transitionMatrix[0],transitionMatrix[4]}, (__m128d) {transitionMatrix[8],transitionMatrix[12]},
+                    (__m128d) {transitionMatrix[1],transitionMatrix[5]}, (__m128d) {transitionMatrix[9],transitionMatrix[13]},
+                    (__m128d) {transitionMatrix[2],transitionMatrix[6]}, (__m128d) {transitionMatrix[10],transitionMatrix[14]},
+                    (__m128d) {transitionMatrix[3],transitionMatrix[7]}, (__m128d) {transitionMatrix[11],transitionMatrix[15]}
+                    };
+                #endif
         #endif
             
             
@@ -2599,6 +3921,14 @@ void            _TheTree::ComputeBranchCache    (
                         (float64x2x2_t) {transitionMatrix[1],transitionMatrix[5],transitionMatrix[9],transitionMatrix[13]},
                         (float64x2x2_t) {transitionMatrix[2],transitionMatrix[6],transitionMatrix[10],transitionMatrix[14]},
                         (float64x2x2_t) {transitionMatrix[3],transitionMatrix[7],transitionMatrix[11],transitionMatrix[15]}
+                    };
+                #endif
+                
+                #ifdef _SLKP_USE_SSE_INTRINSICS
+                    __m128d tmatrix_transpose [8] = {(__m128d) {transitionMatrix[0],transitionMatrix[4]}, (__m128d) {transitionMatrix[8],transitionMatrix[12]},
+                    (__m128d) {transitionMatrix[1],transitionMatrix[5]}, (__m128d) {transitionMatrix[9],transitionMatrix[13]},
+                    (__m128d) {transitionMatrix[2],transitionMatrix[6]}, (__m128d) {transitionMatrix[10],transitionMatrix[14]},
+                    (__m128d) {transitionMatrix[3],transitionMatrix[7]}, (__m128d) {transitionMatrix[11],transitionMatrix[15]}
                     };
                 #endif
             #endif
