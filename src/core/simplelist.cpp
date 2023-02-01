@@ -1307,8 +1307,13 @@ long _SimpleList::Pop (unsigned long discard) {
 //Length constructor and populator
 void _SimpleList::Populate (long l, long start, long step) {
     RequestSpace (l);
-    for (long k = 0L; k < l; k++, start+=step) {
-        list_data[k] = start;
+    
+    if (start == 0 && step == 0 && l >= 128) {
+        memset (list_data, 0, sizeof (long)*l);
+    } else {
+        for (long k = 0L; k < l; k++, start+=step) {
+            list_data[k] = start;
+        }
     }
     lLength = l;
 }
