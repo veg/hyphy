@@ -758,7 +758,7 @@ void  _Variable::PostMarkChanged (void) {
 
 
 //__________________________________________________________________________________
-bool  _Variable::HasChanged (bool ignoreCats) {
+bool  _Variable::HasChanged (bool ignoreCats, _AVLListX *) {
     // does this variable need recomputing 
     if (varFormula) {
         if (useGlobalUpdateFlag && (varFlags&HY_DEP_V_COMPUTED)) {

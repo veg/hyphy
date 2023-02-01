@@ -433,7 +433,7 @@ public:
 
     hyFloat  FisherExact             (hyFloat, hyFloat, hyFloat);
 
-    virtual     bool        HasChanged  (bool = false);
+    virtual     bool        HasChanged  (bool = false, _AVLListX * cache = nil);
     // have any variables which are referenced by the elements changed?
 
     virtual     unsigned long

@@ -916,11 +916,12 @@ _Matrix*    _CategoryVariable::GetHiddenMarkovFreqs (void) const {
 //___________________________________________________________________________________________
 bool    _CategoryVariable::HaveParametersChanged (long catID) {
     for (unsigned long i=0UL; i < parameterList.lLength; i++) {
-        _Variable * p = LocateVar(parameterList.list_data[i]);
-        if (p->HasChanged())
-            if (catID == -1 || ((_SimpleList**)affectedClasses.list_data)[i]->list_data[catID]) {
+        if (catID == -1 || ((_SimpleList**)affectedClasses.list_data)[i]->list_data[catID]) {
+            _Variable * p = LocateVar(parameterList.list_data[i]);
+            if (p->HasChanged()) {
                 return true;
             }
+        }
     }
 
     if (catID == -1 && is_hidden_markov()) {

@@ -148,7 +148,7 @@ public:
     virtual _MathObject* ExecuteSingleOp (long opCode, _List* arguments = nil, _hyExecutionContext* context = _hyDefaultExecutionContext, _MathObject* cache = nil);
     // execute this operation with the list of Args
 
-    virtual bool         HasChanged (bool = false) {
+    virtual bool         HasChanged (bool = false, _AVLListX * cache = nil) {
         return false;
     }
 

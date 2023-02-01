@@ -89,7 +89,7 @@ macro(PCL_CHECK_FOR_AVX)
       {
           __m256d a, b;
           double vals[4] = {0.};
-          a = _mm256_loadu_pd (vals);
+          a = _mm256_loadu2_m128d (vals, vals+2);
           b = _mm256_permute4x64_pd (_mm256_hadd_pd (a,a), 2);
           _mm256_storeu_pd (vals, b);
           printf (\"%g\", vals[0]);
@@ -173,9 +173,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif()
 
     if(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2 -Wall -std=gnu++14 -g ")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2 -flto  -Wall -std=gnu++14 -g ")
     else(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2 -Wall -std=c++14 -g")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2 -flto  -Wall -std=c++14 -g")
     endif(${GCC_VERSION} VERSION_LESS 6.0)
 
     #set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info")
@@ -222,7 +222,7 @@ endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     #set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3  -fsave-optimization-record=yaml ")
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2 -Wall")
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2 -flto  -Wall")
     if(NOAVX)
         if(NOSSE4)
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")

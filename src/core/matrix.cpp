@@ -675,7 +675,7 @@ inline  bool    _Matrix::IsNonEmpty  (long logicalIndex) const {
 
 //__________________________________________________________________________________
 
-bool        _Matrix::HasChanged(bool) {
+bool        _Matrix::HasChanged(bool, _AVLListX*) {
     
     switch (storageType) {
         case _POLYNOMIAL_TYPE: {

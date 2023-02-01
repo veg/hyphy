@@ -190,6 +190,17 @@ long _AVLListX::GetDataByKey(BaseRefConst key) const {
 
 //______________________________________________________________
 
+long _AVLListX::GetDataByKey(long key) const {
+    long f = FindLong (key);
+    if (f < 0L) {
+        return -1L;
+    }
+    return GetXtra(f);
+}
+
+
+//______________________________________________________________
+
 long _AVLListX::FindAndGetXtra(BaseRefConst key, long default_value) const {
   long f = Find (key);
   if (f >= 0) {

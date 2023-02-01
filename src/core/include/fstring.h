@@ -162,7 +162,7 @@ public:
         return true;
     }
 
-    virtual bool      HasChanged        (bool = false) {
+    virtual bool      HasChanged        (bool = false, _AVLListX* = nil) {
         return true;
     }
   

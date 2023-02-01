@@ -93,7 +93,7 @@ public:
 
 
     virtual                 ~_TheTree                   (void);
-    virtual bool            HasChanged                  (bool = false);
+    virtual bool            HasChanged                  (bool = false, _AVLListX * cache = nil);
     virtual void            MarkDone                    (void);
     bool            HasChanged2                 (void);
 

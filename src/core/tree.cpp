@@ -2228,7 +2228,7 @@ void _TheTree::ScanForCVariables (_AVLList& lcat) const {
 
 //__________________________________________________________________________________
 
-bool _TheTree::HasChanged (bool) {
+bool _TheTree::HasChanged (bool, _AVLListX*) {
     _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
     while   (_CalcNode* iterator = ti.Next()) {
         if (iterator->HasChanged()) {
@@ -2248,9 +2248,12 @@ bool _TheTree::HasChanged2 (void) {
     }
   }
 
+  _SimpleList _c;
+  _AVLListX cache (&_c);
+    
   _TreeIterator ti (this,  _HY_TREE_TRAVERSAL_POSTORDER | fTreeIteratorTraversalSkipRoot);
   while   (_CalcNode* iterator = ti.Next()) {
-    if (iterator->_VariableContainer::HasChanged()) {
+    if (iterator->_VariableContainer::HasChanged(false, &cache)) {
       return true;
     }
   }
@@ -2865,6 +2868,9 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
   _CalcNode       *currentTreeNode;
   long            lastNodeID = -1;
   unsigned long   tagged_node_count = 0UL;
+    
+    _SimpleList     _ctSupp;
+    _AVLListX       ctCache (&_ctSupp);
 
     // look for nodes with model changes and mark the path up to the root as needing an update
     
@@ -2879,7 +2885,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
         currentTreeNode = (((_CalcNode**) flatTree.list_data)  [node_id - flatLeaves.lLength]);
       }
       
-      if (currentTreeNode->NeedNewCategoryExponential (catID)) {
+      if (currentTreeNode->NeedNewCategoryExponential (catID, &ctCache)) {
         if (expNodes) {
           (*expNodes) << currentTreeNode;
           lastNodeID = node_id;
