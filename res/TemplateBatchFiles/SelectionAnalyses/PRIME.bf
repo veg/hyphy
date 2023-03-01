@@ -645,8 +645,8 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     console.log ("alpha = " + ^"prime.site_alpha");
     console.log ("beta = " + ^"prime.site_beta");
   
-    //Export (lfe, ^lf_prop);
-    //fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
+    Export (lfe, ^lf_prop);
+    fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
     
     /*if (^"prime.site_beta" > 0) {
         // only matters for sites with non-syn changes

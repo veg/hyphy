@@ -683,12 +683,10 @@ lfunction estimators.BuildLFObject (lf_id, data_filter, tree, model_map, initial
         for (i = 0; i < components; i += 1) {
             lf_components[2 * i] = data_filter[i];
             lf_components[2 * i + 1] = &tree_id + "_" + i;
-             model.ApplyModelToTree(lf_components[2*i + 1], tree[i], None, model_map[i]);
+            model.ApplyModelToTree(lf_components[2*i + 1], tree[i], None, model_map[i]);
         }
 
-
         utility.ExecuteInGlobalNamespace ("LikelihoodFunction `lf_id` = (`&lf_components`)");
-
 
 
         df = 0;
@@ -943,6 +941,11 @@ lfunction estimators.CreateLFObject (context, data_filter, tree, model_template,
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
             df = estimators.ApplyExistingEstimates(lfid, model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
     }
+    
+    if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.apply_user_constraints"),"String")) {
+        df += Call (run_options[utility.getGlobalValue("terms.run_options.apply_user_constraints")], lfid, lf_components, data_filter, tree, model_map, initial_values, model_objects);
+    }
+
 
     return df;
 }
@@ -961,6 +964,7 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
 
     this_namespace = (&_);
     this_namespace = this_namespace[0][Abs (this_namespace)-3];
+
 
     df = estimators.CreateLFObject (this_namespace, data_filter, tree, model_template, initial_values, run_options, None);
     
@@ -1002,11 +1006,12 @@ lfunction estimators.FitSingleModel_Ext (data_filter, tree, model_template, init
     results[utility.getGlobalValue("terms.parameters")] = mles[1][1] + (user_model [utility.getGlobalValue("terms.parameters")]) [utility.getGlobalValue("terms.model.empirical")] + df;
 
 
-    if (option[utility.getGlobalValue("terms.run_options.retain_model_object")]) {
+
+    if (run_options[utility.getGlobalValue("terms.run_options.retain_model_object")]) {
         results[utility.getGlobalValue("terms.model")] = model_id_to_object;
     }
 
-   if (run_options[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
+    if (run_options[utility.getGlobalValue("terms.run_options.retain_lf_object")]) {
         results[utility.getGlobalValue("terms.likelihood_function")] = & likelihoodFunction;
     } else {
         DeleteObject(likelihoodFunction);

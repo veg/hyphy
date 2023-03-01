@@ -1222,7 +1222,7 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& current_
         receptacle = _ValidateStorageVariable (current_program);
 
         long       object_type = HY_BL_DATASET|HY_BL_DATASET_FILTER;
-        BaseRefConst    source_object = _GetHBLObjectByType(*GetIthParameter(1), object_type, nil, &current_program);
+        BaseRefConst    source_object = _GetHBLObjectByType(AppendContainerName(*GetIthParameter(1),current_program.nameSpacePrefix), object_type, nil, &current_program);
 
         long      unit      = _ProcessNumericArgumentWithExceptions(*GetIthParameter(2),current_program.nameSpacePrefix),
                   atom      = _ProcessNumericArgumentWithExceptions(*GetIthParameter(3),current_program.nameSpacePrefix);
@@ -1810,6 +1810,7 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
         [2] -> if dict, then this stores the pointer to AVLListXLIterator
             -> if tree, then this stores the pointer to a tree iterator
 */
+  _String const kTreeIteratorPreOrder ("LOOP_TREE_ITERATOR_PREORDER");
   current_program.advance();
   try {
       // clean up previous iterator states
@@ -1824,7 +1825,7 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
           }
        }
       
-      if (simpleParameters.countitems() > 2) {
+      while (simpleParameters.countitems() > 2) {
           simpleParameters.Delete (2);
       }
       
@@ -1849,7 +1850,9 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
           } else {
               simpleParameters[1] = iterator_substrate->ObjectClass();
               _TreeTopology * source_tree = (_TreeTopology*)iterator_substrate;
-              simpleParameters << (long) new node_iterator<long> (&source_tree->GetRoot(), _HY_TREE_TRAVERSAL_POSTORDER);
+              long traversal_type = hy_env::EnvVariableTrue(kTreeIteratorPreOrder) ? _HY_TREE_TRAVERSAL_PREORDER : _HY_TREE_TRAVERSAL_POSTORDER;
+              simpleParameters << (long) new node_iterator<long> (&source_tree->GetRoot(), traversal_type);
+              simpleParameters << traversal_type;
           }
       }
   } catch (const _String& error) {
@@ -1971,9 +1974,13 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
                   } else {
                       simpleParameters[2] = 0;
                   }
+                  simpleParameters << init_command->simpleParameters[3];
               }
               node<long>*topTraverser = tree_iterator->Next();
-              if (topTraverser && !topTraverser->is_root()) {
+              
+              bool do_preorder = simpleParameters[3] == _HY_TREE_TRAVERSAL_PREORDER;
+              
+              if (topTraverser && (!do_preorder && !topTraverser->is_root() || topTraverser)) {
                   _FString *node_name;
                   if (source_object_class == TREE)
                       node_name = new _FString (map_node_to_calcnode (topTraverser)->ContextFreeName());
@@ -1982,7 +1989,21 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
                         
                   if (reciever_count > 1) {
                       ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue (node_name, false, false,NULL);
-                      ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _Constant (simpleParameters.get(2)), false, false,NULL);
+                      if (do_preorder) {
+                          _FString *parent_name;
+                          node<long>*parent_node = topTraverser->get_parent();
+                          if (parent_node) {
+                              if (source_object_class == TREE)
+                                  parent_name = new _FString (map_node_to_calcnode (parent_node)->ContextFreeName());
+                              else
+                                  parent_name = new _FString (((_TreeTopology*)parameters.GetItem (1))->GetNodeName(parent_node));
+                              ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (parent_name, false, false,NULL);
+                          } else {
+                              ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _MathObject, false, false,NULL);
+                          }
+                      } else {
+                          ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _Constant (simpleParameters.get(2)), false, false,NULL);
+                      }
                   } else {
                       ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (node_name, false, false,NULL);
                   }

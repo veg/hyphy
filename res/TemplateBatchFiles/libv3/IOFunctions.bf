@@ -793,6 +793,44 @@ lfunction io.SelectAnOption  (options, description) {
 }
 
 /**
+ * Present a selection dialog and return one or more options (specified via "count")
+ * @param {Dict/Matrix} options key : value or {{key, value}...}, using the matrix version ensures ordering
+ * @param {String} description dialog caption
+ * @returns {Matrix/None} selected key or None if selection canceled
+ */
+
+lfunction io.MultiSelectOptions  (options, description, count) {
+    option_set = {utility.Array1D (options),2};
+    selection = None;
+    if (Rows (option_set) > 0) {
+        if (Type (options) == "Matrix") {
+            option_set = options;
+        } else {
+            keys = utility.Keys (options);
+            for (k = 0; k < Rows (option_set); k+=1) {
+                option_set [k][0] = keys[k];
+                option_set [k][1] = options[keys[k]];
+            }
+        }
+
+        ChoiceList  (selection,description,count,NO_SKIP,option_set);
+        
+        N = utility.Array1D (selection);
+        if (N > 0) {
+            result = {N,1};
+            for (i,k; in; selection) {
+                result [i] = option_set[k][0];
+            }
+            return result;
+        } else {
+            selection = None;
+        }
+   }
+   assert (None != selection, "Selection canceled");
+   return None;
+}
+
+/**
  * @name io.ReportExecutionError
  * @param error_msg
  */

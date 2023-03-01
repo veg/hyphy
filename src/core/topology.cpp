@@ -618,13 +618,20 @@ void    _TreeTopology::_RemoveNodeList (_SimpleList const& clean_indices) {
     flatTree.DeleteList(clean_indices);
     flatCLeaves.DeleteList(clean_indices);
     
-    
     node_iterator<long> ni (theRoot, _HY_TREE_TRAVERSAL_POSTORDER);
     
+    
     while (node<long>* iterator = ni.Next()) {
+        long old_id = iterator->in_object;
         if ((iterator->in_object = clean_indices.CorrectForExclusions(iterator->in_object, -1)) < 0L) {
             throw _String ("Internal error: index remap failed");
         }
+        if (compExp) {
+            compExp->Store(0, iterator->in_object, compExp->get(0, old_id));
+        }
+    }
+    if (compExp) {
+        compExp->Resize(compExp->GetSize() - clean_indices.countitems());
     }
 }
 
@@ -664,15 +671,18 @@ void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
                 
                 // SLKP 20171213: only delete nodes up the chain if they have a single child
                 if (remove_this_node->get_num_nodes() == 1) {
+                    // add the branch length from this node to its remaining child node
+                    if (compExp) {
+                        node<long>* survivor = remove_this_node->go_down(1);
+                        compExp->Store (survivor->in_object,0,GetBranchLength(remove_this_node)+GetBranchLength(survivor));
+                        
+                    }
                     if (parent_of_removed_node == nil) {
                         /* we are promoting the single remaining child of the current root to be the root */
                         theRoot = remove_this_node->go_down (1);
                         theRoot->detach_parent();
                         clean_indices << remove_this_node->in_object;
                         delete remove_this_node;
-
-                        
-                        //parent_of_removed_node = remove_this_node->get_parent();
                         break;
                     }
                 } else {

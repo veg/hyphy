@@ -336,8 +336,6 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
         }
     }
 
-
-
     return partrees;
 
 }
@@ -607,13 +605,27 @@ lfunction trees.SortedBranchLengths(tree_string) {
  * Return branch names
  * @name trees.BranchNames
  * @param {String} tree_string
- * @returns {Matrix} 1xN sorted branch names
+ * @returns {Matrix} 1xN branch names
  */
 
 lfunction trees.BranchNames(tree) {
     tree_string = tree[^"terms.trees.newick"];
     Topology T = tree_string;
     branch_names = BranchName(T, -1);
+    return branch_names;
+}
+
+/**
+ * Return branch names for leaves only
+ * @name trees.LeafNames
+ * @param {String} tree_string
+ * @returns {Matrix} 1xN leaf names
+ */
+
+lfunction trees.LeafNames(tree) {
+    tree_string = tree[^"terms.trees.newick"];
+    Topology T = tree_string;
+    branch_names = TipName(T, -1);
     return branch_names;
 }
 
@@ -1332,4 +1344,56 @@ lfunction tree._matrix2string (matrix_form, N, names, do_lengths) {
 
 	newick *0;
 	return newick;
+}
+
+/* ____________________________________________*/
+
+/**
+ * Store tree information in a standardized format into a dict
+ * @name     trees.store_tree_information
+ * @param 	{Dict} json : the object to store the info into
+ * @param 	{Dict} t    : the information dict of the tree
+ * @param 	{Dict} selected_branches    : branch -> class dict
+
+ * @return  {Dict} the dict object (json with the new data added to it)
+ */
+
+lfunction trees.store_tree_information (json,t, selected_branches) {
+
+     utility.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
+
+        /**  this will return a dictionary of selected branches; one set per partition, like in
+        {
+            "0": {
+                "NODE3": "test",
+                "NODE6": "background",
+        ...
+                "NODE15": "test"
+            },
+
+            ...
+            "4": {
+                "NODE4": "test",
+         ...
+                 "NODE2": "background"
+            }
+        }
+        */
+
+
+    abs_branch_lengths = Abs((t[0])[utility.getGlobalValue("terms.branch_length")]);
+
+    if (abs_branch_lengths == 0){
+        utility.json_store_key_value_pair (json,
+                                             utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
+                                             utility.Map (t, "_pt_", '(_pt_)[terms.trees.newick]')
+                                             );
+    } else {
+        utility.json_store_key_value_pair(json,
+                                             utility.getGlobalValue("terms.json.input"), utility.getGlobalValue("terms.json.trees"),
+                                             utility.Map (t, "_pt_", '(_pt_)[terms.trees.newick_with_lengths]')
+                                             );
+    }
+
+    return json;
 }

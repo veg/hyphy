@@ -6455,7 +6455,11 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
                 if (optimizatonHistory) {
                     ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
                 }
-                _TerminateAndDump (errorStr);
+                if (hy_env::EnvVariableTrue(hy_env::tolerate_numerical_errors)) {
+                    ReportWarningConsole(errorStr);
+                } else {
+                    _TerminateAndDump (errorStr);
+                }
                 return check_value;
             }
             //return;

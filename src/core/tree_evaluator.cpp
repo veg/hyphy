@@ -3534,7 +3534,11 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 correction = (temp_sum - result) - term;
                 result = temp_sum;
             } else {
-                HandleApplicationError(_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a NaN probability in ComputeTreeBlockByBranch; this is not a recoverable error and indicates some serious COVFEFE taking place.");
+                
+                long lfID = -1;
+                IsLinkedToALF (lfID);
+                ((_LikelihoodFunction*)likeFuncList (lfID))->
+                _TerminateAndDump(_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a NaN probability in ComputeTreeBlockByBranch; this is not a recoverable error and indicates some serious COVFEFE taking place.");
             }
 
         }

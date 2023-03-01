@@ -1135,3 +1135,24 @@ lfunction utility.GetUserFunctionInfo (id) {
     return None;
 }
 
+lfunction utility.GetFirstDictElement (dict) {
+    if (Abs (dict) > 0) {
+        return dict ["VALUEINDEXORDER"][0];
+    }
+    return None;
+}
+
+lfunction utility.GetVersion (long) {
+    GetString (_hpv,HYPHY_VERSION,long != 0);
+    return _hpv;
+}
+
+
+function utility.json_store_key_value_pair(json, dict_key, key, value) {
+    if (None == dict_key) {
+        json[key] = value;
+    } else {
+        utility.EnsureKey(json, dict_key);
+        (json[dict_key])[key] = value;
+    }
+}

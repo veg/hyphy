@@ -197,6 +197,25 @@ lfunction alignments.GetAllSequences (dataset_name) {
 }
 
 /**
+ * Store datafile attributes in a JSON object
+ * @name alignments.ReadNucleotideDataSet
+ * @param dataset_name - the name of the dataset you wish to use
+ * @param file_name - path to file
+ * @returns {Dictionary} r - metadata pertaining to the dataset
+ */
+lfunction alignments.StoreInJSON (json, dataset_info, key) {
+    if (None == key) {
+        key = utility.getGlobalValue("terms.json.input");
+    }
+    json[key] = {};
+    (json[key])[utility.getGlobalValue("terms.json.file")] =  dataset_info[utility.getGlobalValue("terms.data.file")];
+    (json[key])[utility.getGlobalValue("terms.json.sequences")] = dataset_info[utility.getGlobalValue("terms.data.sequences")];
+    (json[key])[utility.getGlobalValue("terms.json.sites")] = dataset_info[utility.getGlobalValue("terms.data.sites")];
+    (json[key])[utility.getGlobalValue("terms.json.partition_count")] = partition_count;
+    return json;
+}
+
+/**
  * Read Nucleotide dataset from file_name
  * @name alignments.ReadNucleotideDataSet
  * @param dataset_name - the name of the dataset you wish to use
@@ -892,6 +911,36 @@ lfunction alignments.Extract_site_patterns (data_filter) {
     utility.ToggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
 
     return site_info;
+
+}
+
+/**
+ * @name alignments.Sequence_Frequencies (data_filter)
+ * @param {DataFilter} data_filter
+ * @returns for a each sequence returns the base composition, as a vector of 0-1 frequencies, and the 
+ *    "characers" : {"A,"C",...
+ *    "frequencies" : {"seq_id" : {frequency matrix} (Nx1), .... }
+ */
+lfunction alignments.Sequence_Frequencies (data_filter) {
+    utility.ToggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", FALSE);
+
+    sequence_info = {};
+     
+    GetDataInfo (filter_characters, ^data_filter, "CHARACTERS");
+    
+    for (k = 0; k < ^"`data_filter`.species"; k+=1) {
+        GetString (seq_name, ^data_filter, k);
+        DataSetFilter seq_filter = CreateFilter (^data_filter,1,"",""+k);
+        HarvestFrequencies (seq_freqs, seq_filter, 1, 1, 1);
+        sequence_info[seq_name] = Transpose(seq_freqs);
+        
+    }
+    
+
+    utility.ToggleEnvVariable ("COUNT_GAPS_IN_FREQUENCIES", None);
+
+    return {"characters" : filter_characters,
+            "frequencies" : sequence_info};
 
 }
 

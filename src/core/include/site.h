@@ -76,6 +76,9 @@ public:
   // does nothing
   _Site(void);
 
+  // length allocation
+  _Site(unsigned long length, long ref_no);
+
   // data constructor
   _Site(_String const &);
 

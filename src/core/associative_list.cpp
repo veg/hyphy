@@ -836,22 +836,22 @@ HBLObjectRef _AssociativeList::ExecuteSingleOp (long opCode, _List* arguments, _
         DeleteByKey (arg0);
          return _returnConstantOrUseCache (avl.countitems(), cache);
 
-        case HY_OP_CODE_RANDOM:
+      case HY_OP_CODE_RANDOM:
             return Random (arg0, cache);
 
-        case HY_OP_CODE_DIV:
+       case HY_OP_CODE_DIV:
         
-        if (arg0->ObjectClass () == STRING) {
-          if (avl.Find (&((_FString*)arg0)->get_str()) >= 0L) {
-            return _returnConstantOrUseCache (1., cache);
-          }
-        } else {
-          _String serialized ((_String*)arg0->toStr());
-          if (avl.Find (&serialized) >= 0L) {
-            return _returnConstantOrUseCache (1., cache);
-          }
-        }
-        return _returnConstantOrUseCache (0., cache);
+            if (arg0->ObjectClass () == STRING) {
+              if (avl.Find (&((_FString*)arg0)->get_str()) >= 0L) {
+                return _returnConstantOrUseCache (1., cache);
+              }
+            } else {
+              _String serialized ((_String*)arg0->toStr());
+              if (avl.Find (&serialized) >= 0L) {
+                return _returnConstantOrUseCache (1., cache);
+              }
+            }
+            return _returnConstantOrUseCache (0., cache);
 
     }
     _MathObject * arg1 = _extract_argument (arguments, 1UL, false);
