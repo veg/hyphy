@@ -68,6 +68,9 @@ mss.ic_score = io.SelectAnOption  ({"AIC-c" : "Small Sample AIC score",
 
 mss.is_bic = mss.ic_score == "BIC";
 
+KeywordArgument ("classes",        "How many rate classes should be considered", "2");  
+mss.rate_classes = io.PromptUser ("How many rate classes should be considered?", 2, 2, 5, TRUE);
+
 
 mss.file_records = {};
 mss.file_info = {};
@@ -325,9 +328,14 @@ namespace mss {
     maxFailedAttemptsToMakeNewModel = 7;
     cAIC_diversityThreshold   = 1e-6;
     bestOverallModelSoFar = {model_dimension, 1};
-    numberOfClassesBeingEvaluated = 2;
+    numberOfClassesBeingEvaluated = rate_classes;
     cAIC_improvementThreshold = 0.01;
     parentModels = mss.GA.initializeModels(numberOfClassesBeingEvaluated, populationSize, model_dimension, None);
+    
+    null_model = Eval((Rows (parentModels))[0])*0;   
+    masterList[null_model] = baseline_AIC;
+    masterRateList[null_model] = {{baseline_AIC__,baselineLL__,1}};
+    
     terminationCondition = FALSE;
     generation = 0;
     bestOverall_cAIC_soFar = baseline_AIC;

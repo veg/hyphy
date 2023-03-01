@@ -444,9 +444,9 @@ void    _CalcNode::Duplicate (BaseRefConst theO) {
 
 //_______________________________________________________________________________________________
 
-bool        _CalcNode::HasChanged(bool) {
+bool        _CalcNode::HasChanged(bool, _AVLListX * cache) {
     
-    return _VariableContainer::HasChanged() || categoryVariables.Any([&] (long cat_idx, unsigned long) -> bool {
+    return _VariableContainer::HasChanged(false, cache) || categoryVariables.Any([&] (long cat_idx, unsigned long) -> bool {
         return LocateVar (cat_idx)->HasChanged();
     });
  }
@@ -454,19 +454,43 @@ bool        _CalcNode::HasChanged(bool) {
 
 //_______________________________________________________________________________________________
 
-bool        _CalcNode::NeedNewCategoryExponential(long catID) const {
+bool        _CalcNode::NeedNewCategoryExponential(long catID, _AVLListX * cache) const {
+    
 
-    if (_VariableContainer::NeedToExponentiate(catID>=0)) {
+    auto handle_cache = [&](long cat_idx, long idx, auto checker) -> bool {
+        if (cache) {
+            long pre_comp = cache->GetDataByKey(cat_idx);
+            if (pre_comp >= 0) {
+                return pre_comp;
+            }
+        }
+        bool has_changed = checker (cat_idx, idx);
+        if (cache) {
+            long ins_idx = cache->InsertNumber(cat_idx);
+            cache->SetXtra(ins_idx, has_changed);
+        }
+        return has_changed;
+    };
+    
+    auto cat_overall = [](long cat_idx, long) -> bool {
+        return LocateVar (cat_idx)->HasChanged();
+    };
+    
+    auto cat_class = [&](long cat_idx, long i) -> bool {
+        return ((_CategoryVariable*)LocateVar (cat_idx))->HaveParametersChanged(remapMyCategories.list_data[catID*(categoryVariables.countitems()+1)+i+1]);
+    };
+    
+    if (_VariableContainer::NeedToExponentiate(catID>=0, cache)) {
         return true;
     }
 
     if (catID==-1) {
         return !compExp || categoryVariables.Any([&] (long cat_idx, unsigned long) -> bool {
-            return LocateVar (cat_idx)->HasChanged();
+            return handle_cache (cat_idx, 0, cat_overall);
         });
     } else {
         return !GetCompExp(catID) || categoryVariables.Any([&] (long cat_idx, unsigned long i) -> bool {
-            return ((_CategoryVariable*)LocateVar (cat_idx))->HaveParametersChanged(remapMyCategories.list_data[catID*(categoryVariables.countitems()+1)+i+1]);
+            return handle_cache (cat_idx, i, cat_class);
         });
     }
     return false;

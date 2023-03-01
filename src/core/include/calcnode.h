@@ -105,8 +105,8 @@ public:
     // store it in compExp.
     // return TRUE if the matrix is an explicit exponential form
     
-    virtual bool        HasChanged       (bool = false);
-    virtual bool        NeedNewCategoryExponential (long = -1L) const;
+    virtual bool        HasChanged       (bool = false, _AVLListX * cache = nil);
+    virtual bool        NeedNewCategoryExponential (long = -1L, _AVLListX * cache = nil) const;
     virtual void        SetModel         (long, _AVLListXL*);
     
     hyFloat          GetProbs        (long k) {

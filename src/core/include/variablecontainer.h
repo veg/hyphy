@@ -78,8 +78,8 @@ public:
         return true;
     }
 
-    virtual     bool        HasChanged                  (bool = false);
-    virtual     bool        NeedToExponentiate          (bool = false) const;
+    virtual     bool        HasChanged                  (bool = false, _AVLListX * cache = nil);
+    virtual     bool        NeedToExponentiate          (bool = false, _AVLListX * cache = nil) const;
 
     void        ScanAndAttachVariables      (void);
 

@@ -370,7 +370,7 @@ protected:
     hyFloat         GradientLocateTheBump (hyFloat, hyFloat&, _Matrix&, _Matrix&);
     void            GradientDescent       (hyFloat& , _Matrix& );
     hyFloat            ConjugateGradientDescent
-    (hyFloat , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hyFloat check_lf = -INFINITY);
+    (hyFloat , _Matrix& , bool localOnly = false, long = 0x7fffffff,_SimpleList* only_these_parameters = nil, hyFloat check_lf = -INFINITY, hyFloat min_improvement_to_continue = 0.);
 
     hyFloat      SetParametersAndCompute
     (long, hyFloat, _Matrix* = nil, _Matrix* = nil,  bool skip_compute = false);
@@ -472,6 +472,18 @@ protected:
         partition length                                (6)
 
         compute the log likelihood of the partition using the forward HMM algorithm with scaling
+     */
+
+    hyFloat          SumUpConstantOnPartition (const hyFloat *, _Matrix const &,  _SimpleList const&,   _SimpleList const&) const;
+    /*
+        SLKP 20230113
+     
+        given conditional probs for each pattern        (1)
+        the matrix of category weights                  (2)
+        the vector of pattern frequencies               (3)
+        the vector of by-site scaling factors as        (4)
+
+        compute the log likelihood of the partition which is : log (sum [cat] (partition likelihood | cat) * Prob (cat))
      */
 
     void                    RunViterbi (_Matrix & , const hyFloat * , _Matrix& , _Matrix& , _SimpleList const * ,  const _SimpleList* , long );

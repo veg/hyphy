@@ -2148,7 +2148,7 @@ _ElementaryCommand::_ElementaryCommand (_String& s) {
 //____________________________________________________________________________________
 _ElementaryCommand::~_ElementaryCommand (void) {
     if (CanFreeMe()) {
-        if (code==4) {
+        if (code==4 || code == 14) { // IF or RETURN
             if (simpleParameters.lLength>2) {
                 _Formula* f = (_Formula*)simpleParameters(2);
                 delete (f);

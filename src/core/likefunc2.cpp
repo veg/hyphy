@@ -121,8 +121,7 @@ void            _LikelihoodFunction::PartitionCatVars     (_SimpleList& storage,
 }
 
 //_______________________________________________________________________________________
-long            _LikelihoodFunction::TotalRateClassesForAPartition    (long partIndex, char mode)
-{
+long            _LikelihoodFunction::TotalRateClassesForAPartition    (long partIndex, char mode) {
   if (partIndex >= 0 && partIndex < categoryTraversalTemplate.lLength) {
     _List* myList = (_List*)categoryTraversalTemplate(partIndex);
     if (myList->lLength) {
@@ -151,11 +150,19 @@ long            _LikelihoodFunction::TotalRateClassesForAPartition    (long part
       for (long k = 0; k < indexCat.lLength; k++) {
         catCount *= ((_CategoryVariable*)LocateVar (indexCat.list_data[k]))->GetNumberOfIntervals();
       }
-    else if (mode == 1) {
-      for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
-        long partHMMCount = TotalRateClassesForAPartition(k,1);
-        catCount = MAX(partHMMCount,catCount);
-      }
+    else {
+        if (mode & 1) {
+            for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
+                long partHMMCount = TotalRateClassesForAPartition(k,1);
+                catCount = MAX(partHMMCount,catCount);
+            }
+        }
+        if (mode & 2) {
+            for (long k = 0; k < categoryTraversalTemplate.lLength; k++) {
+                long partHMMCount = TotalRateClassesForAPartition(k,2);
+                catCount = MAX(partHMMCount,catCount);
+            }
+        }
     }
     return catCount;
   }
@@ -223,8 +230,7 @@ void            _LikelihoodFunction::SetupCategoryCaches      (void)
                 }
 
                 if (varIndex <  myCats.lLength) {
-                    throw _String("Currently, HyPhy can support at most one HMM or Constant on Partition variable per partition");
-                    
+                    throw _String("Currently HyPhy can support at most one HMM or Constant on Partition variable per partition");
                 }
 
                 (*catVarCounts) << totalCatCount;
@@ -488,20 +494,20 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
 //   : run mode effectively the same as _hyphyLFConditionProbsWeightedSum
 {
     _List               *traversalPattern       = (_List*)categoryTraversalTemplate(index),
-                         *variables                = (_List*)((*traversalPattern)(0)),
+                         *variables                = (_List*)traversalPattern->GetItem(0),
                           *catWeigths               = nil;
 
-    _SimpleList         *categoryCounts         = (_SimpleList*)((*traversalPattern)(1)),
-                         *categoryOffsets     = (_SimpleList*)((*traversalPattern)(2)),
-                          *hmmAndCOP                = (_SimpleList*)((*traversalPattern)(3)),
-                           categoryValues         (categoryCounts->lLength,0,0);
+    _SimpleList         *categoryCounts           = (_SimpleList*)traversalPattern->GetItem(1),
+                        *categoryOffsets          = (_SimpleList*)traversalPattern->GetItem(2),
+                        *hmmAndCOP                = (_SimpleList*)traversalPattern->GetItem(3),
+                        categoryValues            (categoryCounts->lLength,0,0);
 
     long                totalSteps              = categoryOffsets->list_data[0] * categoryCounts->list_data[0],
-                        catCount              = variables->lLength-1,
-                        blockLength               = BlockLength(index),
-                        hmmCatSize               = hmmAndCOP->Element(-1),
-                        hmmCatCount                = hmmAndCOP->lLength?(totalSteps/hmmCatSize):0,
-                        currentHMMCat         = 1,
+                        catCount                = variables->lLength-1,
+                        blockLength             = BlockLength(index),
+                        hmmCatSize              = hmmAndCOP->Element(-1),
+                        hmmCatCount             = hmmAndCOP->lLength?(totalSteps/hmmCatSize):0,
+                        currentHMMCat           = 1,
                         arrayDim              ;
 
     bool                isTrivial               = variables->lLength == 0;
@@ -524,9 +530,10 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
     if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate || runMode == _hyphyLFConditionProbsClassWeights) {
         if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate) {
             long upperBound = hmmCatCount?hmmAndCOP->Element(-1)*blockLength:blockLength;
-            for (long r = 0; r < upperBound; r++) {
+            memset (buffer, 0, sizeof (hyFloat) * upperBound);
+            /*for (long r = 0; r < upperBound; r++) {
                 buffer[r] = 0.;
-            }
+            }*/
         }
         catWeigths = new _List;
     } else if (runMode == _hyphyLFConditionProbsMaxProbClass)
@@ -977,6 +984,45 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
 //__________________________________________________________________________________
 
+hyFloat          _LikelihoodFunction::SumUpConstantOnPartition (const hyFloat * patternLikelihoods, _Matrix const & categoryWeights, const _SimpleList& patternFreqs, const _SimpleList& scalers ) const {
+    long               category_count = categoryWeights.GetVDim(),
+                       bl             = patternFreqs.countitems(),
+                       mi             = bl-1,
+                       siteScaler     = scalers.get(mi);
+    
+    _Matrix            temp  (category_count,1L,false,true);
+    
+    hyFloat            maxLL = -__DBL_MAX__;
+
+    for (long m=0; m<category_count; m++,patternLikelihoods += bl) {
+        hyFloat logL = 0.;
+        long   cumulativeScaler = 0;
+        for (unsigned long patternID = 0UL; patternID < bl; patternID++) {
+            long patternFrequency = patternFreqs.get (patternID);
+            if (patternFrequency == 1) {
+                logL             += myLog(patternLikelihoods[patternID]);
+                cumulativeScaler += addScaler (patternLikelihoods[patternID], scalers.get (patternID), 1);
+            } else {
+                // all this to avoid a double*long multiplication
+                logL             += myLog(patternLikelihoods[patternID])*patternFrequency;
+                cumulativeScaler += addScaler (patternLikelihoods[patternID], scalers.get (patternID),patternFrequency);
+            }
+        }
+        logL -= _logLFScaler*cumulativeScaler;
+        temp.Store (m,0,logL);
+        StoreIfGreater(maxLL, logL);
+    }
+    
+    hyFloat          weighted_sum = 0.;
+    for (long m=0; m<category_count; m ++) {
+        weighted_sum += exp (temp.get (m,0) - maxLL) * categoryWeights.get (0,m);
+    }
+    return myLog (weighted_sum) + maxLL;
+    
+}
+
+//__________________________________________________________________________________
+
 hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * patternLikelihoods, _Matrix& hmm, _Matrix& hmf, _SimpleList const * duplicateMap, const _SimpleList* scalers, long bl) {
     long               ni           = hmm.GetHDim(),
                        mi           = duplicateMap?duplicateMap->list_data[duplicateMap->lLength-1]:bl-1,
@@ -985,7 +1031,7 @@ hyFloat          _LikelihoodFunction::SumUpHiddenMarkov (const hyFloat * pattern
     _Matrix            temp  (ni,1,false,true),
                        temp2 (ni,1,false,true);
 
-    hyFloat         correctionFactor = 0; // correction factor
+    hyFloat         correctionFactor = 0.; // correction factor
 
     for (long m=0, mi2 = mi; m<ni; m++,mi2 += bl) {
         long currentScaler = duplicateMap?scalers->list_data[mi2]:((_SimpleList*)((_List*)scalers)->list_data[m])->list_data[mi];
@@ -1262,22 +1308,20 @@ hyFloat _LikelihoodFunction::SumUpSiteLikelihoods (long index, const hyFloat * p
                                            );
     } else {
         if (categoryType & _hyphyCategoryCOP) {
-            HandleApplicationError ("Constant-on-partition categories are currently not supported by the evaluation engine");
+            _CategoryVariable *copVar = (_CategoryVariable*)categoryTraversalTemplate.GetItem(index,0,0);
+            return SumUpConstantOnPartition (patternLikelihoods,*copVar->GetWeights(),index_filter->theFrequencies, patternScalers);
+            //HandleApplicationError ("Constant-on-partition categories are currently not supported by the evaluation engine");
         } else {
             for (unsigned long patternID = 0UL; patternID < pattern_count; patternID++) {
                 long patternFrequency = index_filter->GetFrequency(patternID);
-                if (patternFrequency > 1) {
-                    logL             += myLog(patternLikelihoods[patternID])*patternFrequency;
-                    cumulativeScaler += addScaler (patternLikelihoods[patternID],patternScalers.list_data[patternID],patternFrequency);
-                } else {
-                    // all this to avoid a double*long multiplication
+                if (patternFrequency == 1) {
                     logL             += myLog(patternLikelihoods[patternID]);
                     cumulativeScaler += addScaler (patternLikelihoods[patternID], patternScalers.list_data[patternID], 1);
+                } else {
+                    // all this to avoid a double*long multiplication
+                    logL             += myLog(patternLikelihoods[patternID])*patternFrequency;
+                    cumulativeScaler += addScaler (patternLikelihoods[patternID],patternScalers.list_data[patternID],patternFrequency);
                 }
-                
-                /*if (likeFuncEvalCallCount == 531 || likeFuncEvalCallCount == 702) {
-                    printf ("%lu %d %g\n", patternID, cumulativeScaler, logL);
-                }*/
             }
         }
     }

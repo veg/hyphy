@@ -65,6 +65,11 @@ using namespace hy_global;
 _Site::_Site(void) : _StringBuffer (DEFAULT_SITE_ALLOCATION) { refNo = -1; }
 
 //_________________________________________________________
+
+_Site::_Site(unsigned long space, long ref_no) : _StringBuffer (space) { refNo = ref_no; }
+
+
+//_________________________________________________________
 _Site::_Site(_String const &s) : _StringBuffer (s.length()) {
   refNo = -1;
   (*this) << &s;

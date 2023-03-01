@@ -28,7 +28,7 @@ extern "C" void cblas_dgemm(const enum CBLAS_ORDER __Order,
 void _hy_matrix_multiply_4x4 (double * C, double *A, double *B, int stride, bool add) {
     
     float64x2x2_t A1, A2, A3, A4, A5, A6, A7, A8;
-    float64x2x2_t B1, B2;
+    float64x2x2_t B1;
     float64x2x2_t C1, C2, C3, C4;
     
     auto handle_block = [&] ()-> void {
@@ -519,7 +519,7 @@ void _hy_matrix_multiply_2x4x4 (double *C, double* A, double *B, int stride, boo
 
 void _hy_matrix_multiply_2x2x4 (double *C, double* A, double *B, int stride) {
     
-    int S1 = stride, S2 = stride << 1, S3 = stride + S2;
+    int S1 = stride;
 
     float64x2x2_t       A1 = vld2q_dup_f64 (A),      // A00x2 A01x2
                         A2 = vld2q_dup_f64 (A+S1);   // A10x2 A11x2
@@ -1026,7 +1026,7 @@ void _hy_matrix_multiply_3x4x4 (double *C, double* A, double *B, int stride, boo
 
 void _hy_matrix_multiply_3x3x3 (double *C, double* A, double *B, int stride, bool add) {
     
-    int S1 = stride, S2 = stride << 1, S3 = stride + S2;
+    int S1 = stride, S2 = stride << 1;
 
     float64x2x2_t A1,
                   A2,
@@ -2621,7 +2621,7 @@ void _hy_matrix_multiply_4x4x2 (double *C, double* A, double *B, int stride, boo
     
     A1 = _mm256_set_m128d  (_mm_loaddup_pd (A+S1), _mm_loaddup_pd (A));       // 00,00,10,10
     A2 = _mm256_set_m128d  (_mm_loaddup_pd (A+S3), _mm_loaddup_pd (A+S2));
-    B1 = _mm256_loadu2_m128d  (B,B);      // 00,01 x 2
+    B1 = _mm256_broadcast_pd  ((__m128d const*)B);      // 00,01 x 2
      
     auto handle_block_madd = [&] () -> void {
         C12 = _hy_matrix_handle_axv_mfma (C12,A1,B1); // 00*00, 00*01
@@ -2642,17 +2642,17 @@ void _hy_matrix_multiply_4x4x2 (double *C, double* A, double *B, int stride, boo
     
     A1 = _mm256_set_m128d  (_mm_loaddup_pd (A+S1+1), _mm_loaddup_pd (A+1));       // 00,00,10,10
     A2 = _mm256_set_m128d  (_mm_loaddup_pd (A+S3+1), _mm_loaddup_pd (A+S2+1));
-    B1 = _mm256_loadu2_m128d  (B+S1,B+S1);      // 00,01 x 2
+    B1 = _mm256_broadcast_pd  ((__m128d const*)(B+S1));      // 00,01 x 2
     handle_block_madd ();
 
     A1 = _mm256_set_m128d  (_mm_loaddup_pd (A+S1+2), _mm_loaddup_pd (A+2));       // 00,00,10,10
     A2 = _mm256_set_m128d  (_mm_loaddup_pd (A+S3+2), _mm_loaddup_pd (A+S2+2));
-    B1 = _mm256_loadu2_m128d  (B+S2,B+S2);      // 00,01 x 2
+    B1 = _mm256_broadcast_pd  ((__m128d const*)(B+S2));      // 00,01 x 2
     handle_block_madd ();
 
     A1 = _mm256_set_m128d  (_mm_loaddup_pd (A+S1+3), _mm_loaddup_pd (A+3));       // 00,00,10,10
     A2 = _mm256_set_m128d  (_mm_loaddup_pd (A+S3+3), _mm_loaddup_pd (A+S2+3));
-    B1 = _mm256_loadu2_m128d  (B+S3,B+S3);      // 00,01 x 2
+    B1 = _mm256_broadcast_pd  ((__m128d const*)(B+S3));      // 00,01 x 2
     handle_block_madd ();
 
     _mm_store_pd     (C, _mm256_extractf128_pd (C12,0));
@@ -3908,11 +3908,8 @@ void _hy_matrix_transpose_blocked (double * __restrict C, double * __restrict A,
                 break;
         }
     }
-    
-        
-    
-    // fill in the first blocks in C
 }
 
+// Matrix-Vector blocked
 
 

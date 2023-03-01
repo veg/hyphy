@@ -68,7 +68,8 @@ class _AVLListX: public _AVLList {
         virtual void DeleteXtra(long);
         virtual void PopulateFromList(_List&);
         long         GetDataByKey (BaseRefConst) const;
-        long        FindAndGetXtra (BaseRefConst, long not_found_value = kNotFound) const;
+        long         GetDataByKey (long) const;
+        long         FindAndGetXtra (BaseRefConst, long not_found_value = kNotFound) const;
   
         virtual long InsertData(BaseRef, long, bool);
         virtual long UpdateValue (BaseRef, long, long);

@@ -413,13 +413,16 @@ void _DataSet::Finalize(void) {
 
       long siteCounter = ((_String *)list_data[0])->length();
 
+      _String site_holder (lLength, nil);
+      
       for (long i1 = 0L; i1 < siteCounter; i1++) {
-        _Site *tC = new _Site();
+        _Site *tC = new _Site(lLength, -1);
 
         for (long i2 = 0L; i2 < lLength; i2++) {
-          (*tC) << ((_String *)list_data[i2])->get_char(i1);
+          site_holder.set_char(i2,((_String *)list_data[i2])->get_char(i1));
+          //(*tC) << ;
         }
-
+        (*tC) << site_holder;
         long ff = dupsAVL.Find(tC);
         if (ff < 0) {
           uniquePats << tC;

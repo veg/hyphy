@@ -108,7 +108,7 @@ public:
     void *      operator new       (size_t size);
     void        operator delete    (void * p);
 
-    virtual     bool        HasChanged      (bool = false);
+    virtual     bool        HasChanged      (bool = false, _AVLListX * cache = nil);
     virtual     void        PreMarkChanged  ();
     virtual     void        PostMarkChanged ();
     virtual     bool        IsGlobal (void) {

@@ -92,15 +92,8 @@ function load_nuc_file (prefix) {
 
 
     // TODO: DE-HARDCODE "filter-string"
-    utility.ForEachPair (partitions_and_trees,
-                            "_key_",
-                            "_value_",
-                            '(`&partitions_and_trees`[_key_])[utility.getGlobalValue("terms.data.filter_string")] = selection.io.adjust_partition_string (_value_[utility.getGlobalValue("terms.data.filter_string")], 3*`&nuc_data_info`[utility.getGlobalValue("terms.data.sites")])');
-        /**
-            ensure that all partitions fall on codon boundaries if they are contiguous
-        */
 
-    io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + nuc_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + nuc_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + nuc_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
+    io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + nuc_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + nuc_data_info[utility.getGlobalValue("terms.data.sites")] + "** sites, and **" + partition_count + "** partitions from \`" + nuc_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
 
     
 

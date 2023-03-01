@@ -133,6 +133,7 @@ function parameters.DeclareCategory.helper (dict, key, default) {
  * @param {Dict} def category definition components
  */
 function parameters.DeclareCategory (def) {
+
 	 ExecuteCommands ("category " + def[terms.id] + "= (" +
 	 			  Join (",",
 	 			  			utility.Map ({"0": terms.category.bins, 

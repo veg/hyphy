@@ -406,13 +406,28 @@ _VariableContainer::~_VariableContainer(void) {
 
 //__________________________________________________________________________________
 
-bool _VariableContainer::HasChanged (bool) {
+bool _VariableContainer::HasChanged (bool ignore_cats, _AVLListX * cache) {
  
+    auto handle_cache = [&](long idx) -> bool {
+        if (cache) {
+            long pre_comp = cache->GetDataByKey(idx);
+            if (pre_comp >= 0) {
+                return pre_comp;
+            }
+        }
+        bool has_changed = LocateVar (idx) -> HasChanged ();
+        if (cache) {
+            long ins_idx = cache->InsertNumber(idx);
+            cache->SetXtra(ins_idx, has_changed);
+        }
+        return has_changed;
+    };
+    
     auto has_changed = [] (long var_index, long, unsigned long) -> bool {
         return LocateVar (var_index) -> HasChanged ();
     };
     auto has_changed_global = [=] (long var_index, unsigned long) -> bool {
-        return LocateVar (var_index) -> HasChanged ();
+        return handle_cache (var_index);
     };
 
     return AnyLocalVariable (iVariables, has_changed) ||
@@ -465,8 +480,25 @@ _Variable* _VariableContainer::GetIthParameter (long index) const {
 
 //__________________________________________________________________________________
 
-bool _VariableContainer::NeedToExponentiate (bool ignoreCats) const {
+bool _VariableContainer::NeedToExponentiate (bool ignoreCats, _AVLListX* cache) const {
     if ((HY_VC_NO_CHECK&varFlags) == 0) {
+        
+        auto handle_cache = [&](long idx) -> bool {
+            if (cache) {
+                long pre_comp = cache->GetDataByKey(idx);
+                if (pre_comp >= 0) {
+                    return pre_comp;
+                }
+            }
+            bool has_changed = LocateVar (idx) -> HasChanged (ignoreCats);
+            if (cache) {
+                long ins_idx = cache->InsertNumber(idx);
+                cache->SetXtra(ins_idx, has_changed);
+            }
+            return has_changed;
+        };
+        
+         
         auto has_changed = [=] (long var_index, long ref_index, unsigned long) -> bool {
             if (ref_index >= 0L) {
                 return LocateVar (var_index) -> HasChanged (ignoreCats);
@@ -480,7 +512,7 @@ bool _VariableContainer::NeedToExponentiate (bool ignoreCats) const {
             return false;
         };
         auto has_changed_global = [=] (long var_index, unsigned long) -> bool {
-            return LocateVar (var_index) -> HasChanged (ignoreCats);
+            return handle_cache (var_index);
         };
 
         

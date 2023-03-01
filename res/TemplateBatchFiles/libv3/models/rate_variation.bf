@@ -123,6 +123,13 @@ lfunction rate_variation_define_gdd(options, namespace) {
  	if (utility.Has (options, utility.getGlobalValue("terms._namespace"), "String")) {
  	    namespace = options [utility.getGlobalValue("terms._namespace")];
  	}
+ 	
+ 	scaling = TRUE;
+ 	
+ 	if (utility.Has (options, utility.getGlobalValue("terms.rate_variation.unscaled"), "String")) {
+ 	    scaling = options [utility.getGlobalValue("terms.rate_variation.unscaled")] != "Yes";
+ 	}
+ 	
 
 	if (utility.Has (options, utility.getGlobalValue("terms.rate_variation.bins"), "Number")) {
 		categories = options[utility.getGlobalValue("terms.rate_variation.bins")] $ 1;
@@ -149,11 +156,15 @@ lfunction rate_variation_define_gdd(options, namespace) {
 	
 	}
 	
-	weight_vector = parameters.helper.stick_breaking(weights, {categories,1}["1/categories"]);
-	mean = Join ("+", utility.Map ({1,categories}["_MATRIX_ELEMENT_COLUMN_"], "_index_", "'('+`&rates`[_index_]+')*('+`&weight_vector`[_index_]+')'"));
+    weight_vector = parameters.helper.stick_breaking(weights, {categories,1}["1/categories"]);
+    if (scaling) {
+        mean = Join ("+", utility.Map ({1,categories}["_MATRIX_ELEMENT_COLUMN_"], "_index_", "'('+`&rates`[_index_]+')*('+`&weight_vector`[_index_]+')'"));
 
-	normalizer = parameters.ApplyNameSpace("rv_gdd_norm", namespace);
-	parameters.SetConstraint (normalizer, mean, utility.getGlobalValue("terms.global"));
+        normalizer = parameters.ApplyNameSpace("rv_gdd_norm", namespace);
+        parameters.SetConstraint (normalizer, mean, utility.getGlobalValue("terms.global"));
+    } else {
+        normalizer = "1";
+    }
 	
 	definition = {utility.getGlobalValue("terms.id"): parameters.ApplyNameSpace("rv_gdd", namespace),
 				  utility.getGlobalValue("terms.description") : "General discrete unit mean variable on " + categories + " categories", 

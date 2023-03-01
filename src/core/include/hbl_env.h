@@ -205,6 +205,7 @@ namespace hy_env {
           verbosity_level_string,
           tolerate_numerical_errors,
           tolerate_constraint_violation,
+          number_threads,
           tree_parser_namespace;
 
     ;
