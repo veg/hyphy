@@ -343,9 +343,11 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
     
     /*if (sum == 0.) {
         printf ("Exactly 0 in __ll_loop_handle_scaling: site = %ld, branch = %ld\n", siteID, parentCode);
-    }
-    if (isinf(sum)) {
-        printf ("Infinity at __ll_loop_handle_scaling: site = %ld, branch = %ld\n", siteID, parentCode);
+    }*/
+    /*if (isinf(sum)) {
+        printf ("Infinity at __ll_loop_handle_scaling: site = %ld, branch = %ld @ eval %ld %g\n", siteID, parentCode,  likeFuncEvalCallCount, scalingAdjustments [parentCode*siteCount + siteID]);
+        for (int k = 0; k < D; k++)
+            printf ("\t %d %g\n", k, parentConditionals[k]);
     }*/
     
     if (sum < _lfScalingFactorThreshold && sum > 0.0) {
@@ -362,11 +364,17 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
             #pragma GCC unroll 4
             for (long c = 0; c < D; c++) {
                 parentConditionals [c] *= scaler;
+                //if (!isfinite (parentConditionals [c])) {
+                //    HandleApplicationError(_String("Site ") & siteID & " evaluated to a NaN probability in ComputeTreeBlockByBranch at branch " & parentCode & "; this is not a recoverable error and indicates some serious COVFEFE taking place.");
+                //}
                 //if (likeFuncEvalCallCount == 15098 && siteID == 91) {
                 //fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
                 // }
                 //if (isnan (parentConditionals [c])) {
                 //    HandleApplicationError(_String("Site ") & siteID & " evaluated to a NaN probability in ComputeTreeBlockByBranch at branch " & parentCode & "; this is not a recoverable error and indicates some serious COVFEFE taking place.");
+                //}
+                //if (likeFuncEvalCallCount > 1261 && siteID == 1 && parentCode == 117) {
+                //   fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
                 //}
             }
             
@@ -393,12 +401,12 @@ template<long D, bool ADJUST> inline void __ll_loop_handle_scaling (hyFloat& sum
                     #pragma GCC unroll 4
                     for (long c = 0; c < D; c++) {
                         parentConditionals [c] *= scaler;
-                        //if (isnan (parentConditionals [c])) {
+                        //if (!isfinite (parentConditionals [c])) {
                         //    HandleApplicationError(_String("Site ") & siteID & " evaluated to a NaN probability in ComputeTreeBlockByBranch at branch " & parentCode & "; this is not a recoverable error and indicates some serious COVFEFE taking place.");
                         //}
-                        //if (likeFuncEvalCallCount == 15098 && siteID == 91) {
+                        //if (likeFuncEvalCallCount > 1261 && siteID == 1 && parentCode == 117) {
                         //   fprintf (stderr, "%ld=>%g\n", c, parentConditionals [c]);
-                        // }
+                        //}
                     }
                     
                     if (siteFrequency == 1L) {
@@ -2810,7 +2818,7 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
                     
                     vst1q_f64_x2 (C+D-4,CA);
                     
-                    sum += vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                    sum += vaddvq_f64(vpaddq_f64(CA.val[0],CA.val[1]));
                     break;
                 }
                 case 5: {
@@ -2823,7 +2831,7 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
                     
                     vst1q_f64_x2 (C+D-5,CA);
                     
-                    sum += (C[D-1] *= M[D-1]) + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                    sum += (C[D-1] *= M[D-1]) + vaddvq_f64(vpaddq_f64(CA.val[0],CA.val[1]));
                     break;
                 }
                 case 6: {
@@ -2840,7 +2848,7 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
                     vst1q_f64_x2 (C+D-6,CA);
                     vst1q_f64 (C+D-2,CA2);
                     
-                    sum += vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1])) + vaddvq_f64 (CA2);
+                    sum += vaddvq_f64(vpaddq_f64(CA.val[0],CA.val[1])) + vaddvq_f64 (CA2);
                     break;
                 }
                 case 7:
@@ -2918,7 +2926,7 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
                     
                     vst1q_f64_x2 (C+D-4,CA);
                     
-                    sum += vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                    sum += vaddvq_f64(vpaddq_f64(CA.val[0],CA.val[1]));
                     break;
                 }
                 case 5: {
@@ -2931,7 +2939,7 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
                     
                     vst1q_f64_x2 (C+D-5,CA);
                     
-                    sum += (C[D-1] *= M[D-1]) + vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1]));
+                    sum += (C[D-1] *= M[D-1]) + vaddvq_f64(vpaddq_f64(CA.val[0],CA.val[1]));
                     break;
                 }
                 case 6: {
@@ -2948,7 +2956,7 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
                     vst1q_f64_x2 (C+D-6,CA);
                     vst1q_f64 (C+D-2,CA2);
                     
-                    sum += vaddvq_f64(vpaddq_f64(accumulator.val[0],accumulator.val[1])) + vaddvq_f64 (CA2);
+                    sum += vaddvq_f64(vpaddq_f64(CA.val[0],CA.val[1])) + vaddvq_f64 (CA2);
                     break;
                 }
                 case 7:
@@ -3375,11 +3383,18 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     continue;
                 }
 
+                
+                /*if (siteID == 1 && likeFuncEvalCallCount >= 1263 && parentCode == 105) {
+                    printf ("\n@%ld (%d : %d)\n", likeFuncEvalCallCount, parentCode, nodeCode);
+                    for (int k = 0; k < 20; k++)
+                        printf ("\t %d %g %g\n", k, parentConditionals[k], childVector[k]);
+                }*/
+                
                 _hy_mvp_blocked_4x4<20> (mvs, tMatrix, childVector);
                 sum += _hy_vvmult_sum<20> (parentConditionals, mvs);
 
                 __ll_loop_handle_scaling<20L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
-                
+
                 childVector += 20;
                 __ll_loop_epilogue
             }
@@ -3502,8 +3517,11 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 accumulator += rootConditionals[rootIndex] * theProbs[p];
             }
         }
-        /*if (likeFuncEvalCallCount == 15098 && siteID == 91) {
-            fprintf (stderr, "\nREGULAR COMPUTE %lg (%ld) (%lg %lg %lg %lg)\n", accumulator, setBranch, rootConditionals[rootIndex-4],rootConditionals[rootIndex-3],rootConditionals[rootIndex-2],rootConditionals[rootIndex-1]);
+        /*if (likeFuncEvalCallCount == 1264) {
+            fprintf (stderr, "\nREGULAR COMPUTE @%d %lg (%ld)\n", siteID, accumulator, setBranch);
+            for (long k = 0; k < alphabetDimension; k++) {
+                fprintf (stderr, "\t %d = %g %g\n", k, rootConditionals[rootIndex-alphabetDimension+k], theProbs[k]);
+            }
         }*/
         if (storageVec) {
             storageVec [siteOrdering.list_data[siteID]] = accumulator;

@@ -2357,7 +2357,9 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         
         
         if (isnan (result)) {
-            _TerminateAndDump("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
+            char buffer [2048];
+            snprintf (buffer, 2047, "Likelihood function evaluation encountered a NaN at calculation #%ld (probably due to a parameterization error or a bug).", likeFuncEvalCallCount);
+            _TerminateAndDump(buffer, true);
             //ReportWarning ("Likelihood function evaluation encountered a NaN (probably due to a parameterization error or a bug).");
             return -INFINITY;
         }
@@ -8836,7 +8838,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                                                      siteRes)
                   - _logLFScaler * overallScalingFactors.list_data[index];
                     
-                    /*if (likeFuncEvalCallCount == 68700) {
+                    /*if (likeFuncEvalCallCount == 668) {
                         blockID = 0;
                         long bl = BlockLength (0);
                         hyFloat * site_results = new hyFloat [bl];
