@@ -275,6 +275,10 @@ public:
         return lfThreadCount;
     }
 #else
+    void        SetThreadCount            (long tc) {
+      return;
+    }
+
     long        GetThreadCount            (void) {
         return 1L;
     }
