@@ -7977,6 +7977,10 @@ void    _LikelihoodFunction::ScanAllVariables (void) {
         ScanAllVariablesOnPartition (pidx, *iv, *dv, cv, true);
         indVarsByPartition < iv;
         depVarsByPartition < dv;
+        
+        /*dv->Each ([=](long v, unsigned long) {
+            StringToConsole(LocateVar(v)->GetName()->get_str()); NLToConsole();
+        });*/
     }
 
     RankVariables(&rankVariables);
@@ -9133,12 +9137,12 @@ void        _LikelihoodFunction::OptimalOrder    (long index, _SimpleList& sl, _
 
         partition = hy_env::EnvVariableGetNumber(optimizePartitionSize, 0.0);
         
-         if (partition) { //  partition the sequence into smaller subseqs. for optimization
+        if (partition) { //  partition the sequence into smaller subseqs. for optimization
             if ( partition <= 0L || partition > totalSites ) {
                 partition = totalSites;
             }
         } else { // revert to default partitioning
-            partition = MIN (totalSites, 1500);
+            partition = MIN (totalSites, 500);
         }
 
 

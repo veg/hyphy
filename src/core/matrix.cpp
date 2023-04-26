@@ -324,8 +324,12 @@ _Matrix::_Matrix (_String const& s, bool isNumeric, _FormulaParsingContext & fpc
           term = s.Cut(j,i-1);
           vDim = handle_numeric_parameter (term);
         } else { // only one dim specified, matrix assumed to be square
-          term = s.Cut(1,i-1);
-          hDim = handle_numeric_parameter (term);
+          term = s.Cut(1,i-1).KillSpaces();
+          if (term.nonempty()) {
+              hDim = handle_numeric_parameter (term);
+          } else {
+              hDim = 0;
+          }
           vDim = hDim;
         }
         

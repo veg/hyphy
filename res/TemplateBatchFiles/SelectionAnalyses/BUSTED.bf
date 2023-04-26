@@ -30,9 +30,10 @@ style analysis to explore which individual sites may have been subject to select
 and relaxes the test statistic to 0.5 (chi^2_0 + chi^2_2). Version 2.1 adds a grid search for the initial starting point.
 Version 2.2 changes the grid search to LHC, and adds an initial search phase to use adaptive Nedler-Mead. Version 3.0 implements the option
 for branch-site variation in synonymous substitution rates. Version 3.1 adds HMM auto-correlation option for SRV, and binds SRV distributions for multiple branch sets.
-Version 4.0 adds support for multiple hits, ancestral state reconstruction saved to JSON, and profiling of branch-site level support for selection / multiple hits.
+Version 4.0 adds support for multiple hits (MH), ancestral state reconstruction saved to JSON, and profiling of branch-site level support for selection / multiple hits.
+Version 4.2 adds calculation of MH-attributable fractions of substitutions.
 ",
-                               terms.io.version : "4.1",
+                               terms.io.version : "4.2",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71, *Synonymous Site-to-Site Substitution Rate Variation Dramatically Inflates False Positive Rates of Selection Analyses: Ignore at Your Own Peril*, Mol Biol Evol. 37(8):2430-2439",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
@@ -331,6 +332,7 @@ busted.test.bsrel_model =  model.generic.DefineMixtureModel(busted.model_generat
         busted.filter_names,
         None);
         
+        
 
 busted.mixture_weights_parameters = {};
 busted.branch_weight_prefix = "branch_level_weight_";
@@ -432,6 +434,10 @@ for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
 
 
 parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)), terms.range_gte1);
+
+busted.branch_length_string = busted.test.bsrel_model [terms.model.branch_length_string];
+busted.model_parameters = busted.test.bsrel_model[terms.parameters];
+
 
 /* create an initial grid to initialize the optimization */
 busted.initial_grid = {};
@@ -618,7 +624,6 @@ if (Type (debug.checkpoint) != "String") {
 // recover ancestral states
 
 
-
 busted.json [^"terms.substitutions"] = {};
 
 for (_partition_, _selection_; in; busted.selected_branches) {
@@ -663,7 +668,7 @@ busted.EFV_ids = estimators.LFObjectGetEFV (busted.full_model[terms.likelihood_f
 
 
                                 
-busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "alt-mh");
+busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "alt-mh", busted.branch_length_string, busted.model_parameters);
 
 selection.io.report_dnds (busted.inferred_test_distribution);
 
@@ -1036,7 +1041,7 @@ if (!busted.run_test) {
                                                          "{terms.json.omega_ratio : busted.inferred_test_distribution [_index_][0],
                                                            terms.json.proportion : busted.inferred_test_distribution [_index_][1]}")};
 
-    busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "null-mh");
+    busted.report_multi_hit  (busted.null_results, busted.distribution_for_json, "MultiHit", "null-mh",busted.branch_length_string, busted.model_parameters);
     selection.io.report_dnds (parameters.GetStickBreakingDistribution (busted.distribution) % 0);
 
     if (busted.has_background) {
@@ -1172,15 +1177,19 @@ lfunction busted.get_multi_hit (model_fit) {
 
 //------------------------------------------------------------------------------
 
-lfunction busted.report_multi_hit (model_fit, json, l1, l2) {
+lfunction busted.report_multi_hit (model_fit, json, l1, l2, bl, mdl) {
 
     if (^'busted.multi_hit' != "None") {
         io.ReportProgressMessageMD(l1, l2, 'Partition-level rates for multiple-hit substitutions');
         params = busted.get_multi_hit (model_fit);
+        
+        fracs = busted.compute_mh_fractions (bl, mdl, model_fit[^"terms.global"]);
                 
         for (mle; in; params) {
             io.ReportProgressMessageMD(l1, l2, '* ' + mle[^'terms.description'] + ' : ' + Format (mle[^'terms.fit.MLE'], 8, 4));
+            io.ReportProgressMessageMD(l1, l2, '* Corresponding fraction of substitutions : ' + Format (fracs[mle[^'terms.description']]*100, 6, 3) + "%");
             json[mle[^'terms.description']] = mle[^'terms.fit.MLE']; 
+            json["Fraction of subs " + mle[^'terms.description']] = fracs[mle[^'terms.description']]; 
         }
     }
 }
@@ -1257,3 +1266,40 @@ function busted.init_grid_setup (omega_distro) {
 }
 //------------------------------------------------------------------------------
 
+lfunction busted.compute_mh_fractions (bl, mdl, mles) {
+    busted.parameter_substitutions = {};
+    for (k, v; in; mdl[^"terms.category"]) {
+         busted.parameter_substitutions [k] = 1;
+    }
+
+    for (k, v; in; mdl[^"terms.local"]) {
+        busted.parameter_substitutions [v] = 1;
+    }
+
+    busted.mh_param_mapping = {};
+
+    for (k, v; in; mles) {
+        if (k != ^"terms.parameters.multiple_hit_rate" && k != ^"terms.parameters.triple_hit_rate") {
+            busted.parameter_substitutions [v[^"terms.id"]] = v[^"terms.fit.MLE"];
+        } else {
+            busted.mh_param_mapping [k] = v;
+        }
+    }
+
+    for (k,v; in; busted.mh_param_mapping) {
+         busted.parameter_substitutions [v[^"terms.id"]] = v[^"terms.fit.MLE"];
+    }
+
+
+    total_bl = +Simplify (bl, busted.parameter_substitutions);
+    bls = {};
+
+    for (k,v; in; busted.mh_param_mapping) {
+         busted.parameter_substitutions [v[^"terms.id"]] = 0;
+         blr = +Simplify (bl, busted.parameter_substitutions);
+         busted.parameter_substitutions [v[^"terms.id"]] = v[^"terms.fit.MLE"];
+         bls[k] = (total_bl-blr)/total_bl;
+    }
+    return bls;
+    
+}

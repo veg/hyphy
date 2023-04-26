@@ -410,6 +410,11 @@ void _String::set_char (unsigned long index, char const data) {
 
 //=============================================================
 
+void _String::set_char_no_check (unsigned long index, char const data) {
+    s_data[index] = data;
+}
+//=============================================================
+
 const char *_String::get_str(void) const { return s_data; }
 
 /*

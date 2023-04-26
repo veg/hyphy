@@ -63,7 +63,8 @@ struct FileState {
   char repeat, skip;
 
   _String *theSource, *theNamespace;
-
+    
+  _StringBuffer lineBuffer;
   _SimpleList rawLinesFormat;
 
 };

@@ -423,7 +423,13 @@ public:
    */
   void set_char(unsigned long index, char const data);
 
-  /** Retrieve the read-only char * for the string contents
+    /** Store the supplied character in a given index; do NOT check that the index is value
+     *  Revision history
+     - SLKP 20230423 created to accelerate large data set reads
+     */
+   void set_char_no_check(unsigned long index, char const data);
+
+    /** Retrieve the read-only char * for the string contents
    A convenience function to avoid writing (const char*) (*this)
 
    @return string data (could be null!, no checks performed)
