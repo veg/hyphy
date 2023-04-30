@@ -1268,8 +1268,12 @@ function busted.init_grid_setup (omega_distro) {
 
 lfunction busted.compute_mh_fractions (bl, mdl, mles) {
     busted.parameter_substitutions = {};
-    for (k, v; in; mdl[^"terms.category"]) {
-         busted.parameter_substitutions [k] = 1;
+    
+    if (utility.Has (mdl, ^"terms.category", "AssociativeList")) {
+        for (k, v; in; mdl[^"terms.category"]) {
+             busted.parameter_substitutions [k] = 1;
+    
+        }
     }
 
     for (k, v; in; mdl[^"terms.local"]) {
