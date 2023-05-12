@@ -1007,7 +1007,7 @@ for (_key_, _value_; in; busted.filter_specification) {
                                              selection.io.extract_branch_info((busted.full_model[terms.branch_length])[_key_], "selection.io.branch.length"));
 }
 
-
+busted.max_site = None;
 
 if (!busted.run_test) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for episodic diversifying positive selection under the unconstrained model, skipping constrained model fitting");
@@ -1021,6 +1021,20 @@ if (!busted.run_test) {
     (busted.json [busted.json.site_logl])[busted.constrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
     busted.null_results = estimators.FitExistingLF (busted.full_model[terms.likelihood_function], busted.model_object_map);
     (busted.json [busted.json.site_logl])[busted.optimized_null] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
+    
+    busted.site_ll_diff = Transpose (((busted.json [busted.json.site_logl])[busted.unconstrained] - (busted.json [busted.json.site_logl])[busted.optimized_null])*2);
+    busted.site_ll_sum = +busted.site_ll_diff;
+    
+    busted.site_ll_diff = ({Rows (busted.site_ll_diff), 2})["(_MATRIX_ELEMENT_COLUMN_==0)*busted.site_ll_diff[_MATRIX_ELEMENT_ROW_]+(_MATRIX_ELEMENT_COLUMN_==1)_MATRIX_ELEMENT_ROW_"] % 0;
+    
+    busted.max_site = busted.site_ll_diff [Rows (busted.site_ll_diff)-1][-1];
+    
+    if (busted.max_site[0] >= 0.8 * busted.site_ll_sum ) {
+        busted.max_site = busted.max_site [1] + 1;
+    } else {
+        busted.max_site = None;
+    }
+    
     io.ReportProgressMessageMD ("BUSTED", "test", "* " + selection.io.report_fit (busted.null_results, 9, busted.codon_data_info[terms.data.sample_size]));
     busted.LRT = busted.ComputeLRT (busted.full_model[terms.fit.log_likelihood], busted.null_results[terms.fit.log_likelihood]);
     busted.json [terms.json.test_results] = busted.LRT;
@@ -1090,6 +1104,16 @@ if (!busted.run_test) {
 
 console.log ("----\n## Branch-site unrestricted statistical test of episodic diversification [BUSTED]");
 console.log ( "Likelihood ratio test for episodic diversifying positive selection, **p = " + Format ((busted.json [terms.json.test_results])[terms.p_value], 8, 4) + "**.");
+
+if ((busted.json [terms.json.test_results])[terms.p_value] < 0.1) {
+    if (busted.max_site) {
+          fprintf(stdout, "\n-------\n", io.FormatLongStringToWidth(
+                  ">[WARNING] Most of the statistical signal for episodic diversifying selection in this alignment is derived from a single codon site (** " + busted.max_site  + "**).
+                  This could be a sign of possible data quality issues, or outsized influence of a few substitutions, especially if they involve replacing multiple nucleotides along a short branch.
+                  You may want to examine the alignment at this site using BUSTED visualization tools, performing model-averaged inference, or rerunning the alignment with data at that site masked to confirm robustness of the result.", 72), "\n");
+
+    }
+}
 
 selection.io.stopTimer (busted.json [terms.json.timers], "Overall");
 
