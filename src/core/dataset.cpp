@@ -256,12 +256,6 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     theMap.list_data[1]++;
     fputc(c, streamThrough);
   } else {
-    /*if (!dsh)
-    {
-        WarnError ("Internal Error in 'Write2Site' - called Write2Site before
-    any AddSite calls"); return;
-    }*/
-
     if (useHorizontalRep) {
         long currentWritten = ((_String *)list_data[0])->length();
 
@@ -337,11 +331,6 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
           rN = dsh->incompletePatterns->Find(s);
           if (rN >= 0) {
             rN = dsh->incompletePatterns->GetXtra(rN);
-            /*_Site* s2 = (_Site*)list_data[rN];
-            if (s2->GetRefNo() != -1 || !s->Equal(s2))
-            {
-                WarnError ("Mapping Error");
-            }*/
             theFrequencies[rN]++;
             s->Clear();
             s->SetRefNo(rN);

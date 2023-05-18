@@ -2810,10 +2810,9 @@ bool    _Polynomial::IsObjectEmpty (void)
     return true;
 }
 //__________________________________________________________________________________
-bool    _Polynomial::HasChanged (bool)
-{
+bool    _Polynomial::HasChanged (bool gl, _AVLListX * cache){
     for (long k=variableIndex.countitems()-1; k>=0; k--) {
-        if (LocateVar(variableIndex(k))->HasChanged()) {
+        if (LocateVar(variableIndex(k))->HasChanged(gl, cache)) {
             return true;
         }
     }

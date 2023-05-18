@@ -320,7 +320,6 @@ hyFloat            tdiff = timer.TimeSinceStart();
 }
 
 
-#if defined  __UNIX__ && !defined __HYPHYQT__ && !defined __HYPHY_GTK__
 
 void        UpdateOptimizationStatus    (hyFloat, long, char, bool, _String * fileName = nil);
     
@@ -349,6 +348,7 @@ _CustomFunction::_CustomFunction (_String const & arg, _VariableContainer const 
 }
     
 //__________________________________________________________________________________
+
 
 class  _OptimiztionProgress {
 private:
@@ -548,10 +548,6 @@ void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool o
     }
 }
 
-#else
-
-
-#endif
 
 //__________________________________________________________________________________
 
@@ -4498,9 +4494,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
         noChange << -1;
 
-#if !defined __UNIX__ || defined __HEADLESS__
-        SetStatusBarValue (percentDone,maxSoFar,(likeFuncEvalCallCount-evalsIn)*TimerDifferenceFunction(true));
-#endif
+
 
         if (indexInd.lLength<8) {
             stdFactor = 8.0;
@@ -5128,9 +5122,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
 
 
-  #if !defined __UNIX__ || defined __HEADLESS__
-    SetStatusBarValue (-1,maxSoFar,(likeFuncEvalCallCount-evalsIn)/TimerDifferenceFunction(true));
-  #endif
 
     CleanUpOptimize();
 

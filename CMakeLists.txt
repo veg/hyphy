@@ -157,7 +157,7 @@ set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPIL
 # make it fast, scotty
 #-------------------------------------------------------------------------------
 
-set(DEFAULT_WARNING_FLAGS " -w  ")
+set(DEFAULT_WARNING_FLAGS " -w -Weffc++ -Wextra -Wall ")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
 
 
@@ -222,7 +222,7 @@ endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     #set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3  -fsave-optimization-record=yaml ")
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2   -Wall")
+    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2  -std=c++14 -Wall")
     if(NOAVX)
         if(NOSSE4)
             set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
@@ -541,12 +541,9 @@ else(${OPENMP_FOUND})
     target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 endif(${OPENMP_FOUND})
 
-    target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
-
+target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
-
-
 
 
 set_target_properties(
@@ -563,6 +560,32 @@ set_target_properties(
     endif(${OPENMP_FOUND})
 )
 
+#-------------------------------------------------------------------------------
+# SWIG BINDINGS
+#-------------------------------------------------------------------------------
+FIND_PACKAGE(SWIG)
+
+if(${SWIG_FOUND})
+	cmake_policy(SET CMP0086 NEW)
+	cmake_policy(SET CMP0078 NEW)
+	set (UseSWIG_TARGET_NAME_PREFERENCE STANDARD)
+	INCLUDE(${SWIG_USE_FILE})
+	find_package (Python COMPONENTS Interpreter Development)
+	add_definitions (-D__HEADLESS__ -DSWIGRUNTIME_DEBUG)
+	INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
+	#SET_SOURCE_FILES_PROPERTIES(src/lib/link/THyPhy.i PROPERTIES CPLUSPLUS ON)
+	SET_SOURCE_FILES_PROPERTIES(src/lib/link/example.i PROPERTIES CPLUSPLUS ON)
+
+	#set_property(SOURCE src/lib/link/THyPhy.i  PROPERTY SWIG_MODULE_NAME hyphy)
+	#swig_add_library(HYPHY_LIB LANGUAGE python SOURCES src/lib/link/THyPhy.i src/lib/link/THyPhy.cpp ${SRC_COMMON})
+	set_property(SOURCE src/lib/link/example.i  PROPERTY SWIG_MODULE_NAME example)
+	swig_add_library(HYPHY_LIB LANGUAGE python SOURCES src/lib/link/example.i src/lib/link/example.cpp)
+	TARGET_LINK_LIBRARIES(HYPHY_LIB ${Python_LIBRARIES} ${DEFAULT_LIBRARIES})
+	
+SET(CMAKE_SWIG_FLAGS "")
+else(${SWIG_FOUND})
+    MESSAGE("SWIG NOT FOUND (LIBRARY target is not available)")
+endif(${SWIG_FOUND})
 
 
 
@@ -575,6 +598,12 @@ if(UNIX)
         TARGET hyphy HYPHYDEBUG HYPHYPROFILE HYPHYGPERF
         APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
     )
+    if(${SWIG_FOUND})
+    set_property(
+        TARGET HYPHY_LIB
+        APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
+    )
+    endif(${SWIG_FOUND})
 endif(UNIX)
 
 set_property(
@@ -596,6 +625,18 @@ set_property(
 set_property(
     TARGET HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYDEBUG__
+)
+
+set_target_properties(
+    HYPHY_LIB
+    PROPERTIES
+    if(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} -g -O0 -fsanitize=address -fno-omit-frame-pointer -fvisibility=hidden "
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS} -g -O0 -fsanitize=address -fno-omit-frame-pointer -fvisibility=hidden "
+    else(${OPENMP_FOUND})
+        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} -g -O0  -fsanitize=address -fno-omit-frame-pointer -fvisibility=hidden "
+        LINK_FLAGS "${DEFAULT_LINK_FLAGS} -g -O0 -fsanitize=address -fno-omit-frame-pointer -fvisibility=hidden "
+    endif(${OPENMP_FOUND})
 )
 
 set_target_properties(
@@ -623,7 +664,7 @@ makeLink(HYPHYMP hyphy hyphy)
 
 add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
 add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)
-add_test (PROTEIN HYPHYMP tests/hbltests/SimpleOptimizations/IntermediateProtein.bf)
+add_test (PROTEIN HYPHYMP CPU=1 tests/hbltests/SimpleOptimizations/IntermediateProtein.bf)
 add_test (MTCODON HYPHYMP tests/hbltests/libv3/mtDNA-code.wbf)
 add_test (ALGAE HYPHYMP tests/hbltests/libv3/algae-mtDNA.wbf)
 add_test (CILIATES HYPHYMP tests/hbltests/libv3/ciliate-code.wbf)

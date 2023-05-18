@@ -265,7 +265,7 @@ lfunction selection.io.report_dnds (distribution) {
 lfunction selection.io.extract_global_MLE_re (fit, regexp) {
      matches = utility.Filter (utility.Keys(fit[utility.getGlobalValue("terms.global")]), "_tag_", "regexp.Find (_tag_, `&regexp`)");
     //TODO: a single 'MLE' in the return line cannot be replaced by terms.
-     return utility.Map (matches, "_tag_", "{utility.getGlobalValue('terms.description'): _tag_, 'MLE' : ((`&fit`[utility.getGlobalValue('terms.global')])[_tag_])[utility.getGlobalValue('terms.fit.MLE')]}");
+     return utility.Map (matches, "_tag_", "{utility.getGlobalValue('terms.id'): ((`&fit`[utility.getGlobalValue('terms.global')])[_tag_])[utility.getGlobalValue('terms.id')], utility.getGlobalValue('terms.description'): _tag_, 'MLE' : ((`&fit`[utility.getGlobalValue('terms.global')])[_tag_])[utility.getGlobalValue('terms.fit.MLE')]}");
 }
 
 //------------------------------------------------------------------------------

@@ -9,6 +9,8 @@ Written by SL Kosakovsky Pond; June 2007
 Dedicated to Comet (http://www.hyphy.org/comet.jpg)
 ?/?/1999-06/05/2007
 
+Revised by SLKP 05/17/2023 to work with 2.5 codebase
+ 
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
@@ -245,9 +247,9 @@ public:
 
     // these functions are for internal use only...
 
-    void        PushWarning   (void*);
-    void        PushError     (void*);
-    void        PushOutString (void*);
+    void        PushWarning   (const void*);
+    void        PushError     (const void*);
+    void        PushOutString (const void*);
 
 private:
 

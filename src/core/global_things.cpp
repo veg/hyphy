@@ -732,7 +732,7 @@ namespace hy_global {
             
     #ifdef  __HEADLESS__
         if (globalInterfaceInstance) {
-            globalInterfaceInstance->PushError (&st);
+            globalInterfaceInstance->PushError (&message);
         }
         terminate_execution = true;
     #else

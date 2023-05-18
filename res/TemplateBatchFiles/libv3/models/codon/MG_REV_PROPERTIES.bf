@@ -8,10 +8,10 @@ LoadFunctionLibrary("../../UtilityFunctions.bf");
 LoadFunctionLibrary("MG_REV.bf");
 LoadFunctionLibrary("../protein.bf");
 
-/** @module models.codon.MG_REV_PROP */
+/** @module models.codon.MG_REV_PROPERTIES */
 
 /**
- * @name models.codon.MG_REV_PROP.ModelDescription
+ * @name models.codon.MG_REV_PROPERTIES.ModelDescription
  * @param {String} type
  * @param {String} code
  * @param {Dict}   properties
@@ -23,10 +23,10 @@ LoadFunctionLibrary("../protein.bf");
 
 
 terms.model.residue_name_map = "residue_to_id_map";
-terms.model.MG_REV_PROP.mean_prop = "mean_property_value";
+terms.model.MG_REV_PROPERTIES.mean_prop = "mean_property_value";
 
 
-terms.model.MG_REV_PROP.predefined = {
+terms.model.MG_REV_PROPERTIES.predefined = {
     "Atchley" : {
              "Factor I bipolar":{
                "A":-0.591,
@@ -366,24 +366,53 @@ terms.model.MG_REV_PROP.predefined = {
      }
 };
 
+//----------------------------------------------------------------------------------------------------------------
 
-lfunction models.codon.MG_REV_PROP.ModelDescription(type, code, properties) {
+
+lfunction model.codon.MG_REV_PROPERTIES.prompt_and_define (type, code) {
+    KeywordArgument ("property-set", "How to partition synonymous codons into classes", "Atchley");
+    
+    property_set = io.SelectAnOption (
+            {
+                "Atchley":"Use the five properties derived from a factor analysis of 500 amino-acid properties [Table 2 in PNAS (2005) 102(18) 6395-6400 doi: 10.1073/pnas.0408677102]",
+                "LCAP":"Use the five properties defined in the Conant and Stadler LCAP model [Mol Biol Evol (2009) 26 (5): 1155-1161. doi: 10.1093/molbev/msp031]",
+                "Random" : "Random properties (for null hypothesis testing)",
+                "Custom":"Load the set of properties from a file"
+            }, 
+            "The set of properties to use in the model");
+
+    
+    
+    if (property_set == "Custom") {
+        KeywordArgument ("property-file", "JSON file which defines amino-acid properties");
+        property_set = io.PromptUserForFilePathRead ("JSON file which defines amino-acid properties");
+        property_set = io.ParseJSON(property_set);
+        console.log (">Loaded a set of `Abs(property_set)` properties");
+     }
+    
+     
+    
+     return models.codon.MG_REV_PROPERTIES.ModelDescription(type, code, property_set);
+}
+
+
+lfunction models.codon.MG_REV_PROPERTIES.ModelDescription(type, code, properties) {
 
 
     // piggyback on the standard MG_REV model for most of the code
 
     mg_base = models.codon.MG_REV.ModelDescription (type, code);
     mg_base[utility.getGlobalValue("terms.description")] = "The Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution, which allows incorporates amino-acid residue properties into the non-synonymous rates";
-    mg_base[utility.getGlobalValue("terms.model.q_ij")] = "models.codon.MG_REV_PROP._GenerateRate";
-    mg_base[utility.getGlobalValue("terms.model.residue_properties")] = models.codon.MG_REV_PROP._munge_properties(properties);
+    mg_base[utility.getGlobalValue("terms.model.q_ij")] = "models.codon.MG_REV_PROPERTIES._GenerateRate";
+    mg_base[utility.getGlobalValue("terms.model.residue_properties")] = models.codon.MG_REV_PROPERTIES._munge_properties(properties);
     mg_base[utility.getGlobalValue("terms.model.residue_name_map")] = parameters.ValidateIDs (utility.Keys (mg_base[utility.getGlobalValue("terms.model.residue_properties")]));
-    mg_base[utility.getGlobalValue("terms.model.post_definition")] = "models.codon.MG_REV_PROP.post_definition";
-    mg_base[utility.getGlobalValue("terms.model.set_branch_length")] = "models.codon.MG_REV_PROP.set_branch_length";
+    mg_base[utility.getGlobalValue("terms.model.post_definition")] = "models.codon.MG_REV_PROPERTIES.post_definition";
+    mg_base[utility.getGlobalValue("terms.model.set_branch_length")] = "models.codon.MG_REV_PROPERTIES.set_branch_length";
     return mg_base;
 }
 
 /**
- * @name models.codon.MG_REV_PROP._munge_properties
+ * @name models.codon.MG_REV_PROPERTIES._munge_properties
  * @param {String or AssociativeList} properties
  * @return {AssociativeList}
  * Convert a set of amino-acid properties into the expected format
@@ -391,11 +420,11 @@ lfunction models.codon.MG_REV_PROP.ModelDescription(type, code, properties) {
  */
 
 
-lfunction models.codon.MG_REV_PROP._munge_properties (properties) {
+lfunction models.codon.MG_REV_PROPERTIES._munge_properties (properties) {
 
     if (Type (properties) == "String") {
-        assert (^"terms.model.MG_REV_PROP.predefined" / properties, properties + " is not a valid predefined property set");
-        return models.codon.MG_REV_PROP._munge_properties ((^"terms.model.MG_REV_PROP.predefined")[properties]);
+        assert (^"terms.model.MG_REV_PROPERTIES.predefined" / properties, properties + " is not a valid predefined property set");
+        return models.codon.MG_REV_PROPERTIES._munge_properties ((^"terms.model.MG_REV_PROPERTIES.predefined")[properties]);
     }
 
     assert (Type (properties) == "AssociativeList", "Properties definition must be an AssociativeArray or a String for predefined properties");
@@ -451,8 +480,8 @@ lfunction models.codon.MG_REV_PROP._munge_properties (properties) {
     return properties;
 }
 
-lfunction models.codon.MG_REV_PROP._GenerateRate(fromChar, toChar, namespace, model_type, model) {
-    return models.codon.MG_REV_PROP._GenerateRate_generic (fromChar, toChar, namespace, model_type,
+lfunction models.codon.MG_REV_PROPERTIES._GenerateRate(fromChar, toChar, namespace, model_type, model) {
+    return models.codon.MG_REV_PROPERTIES._GenerateRate_generic (fromChar, toChar, namespace, model_type,
         model[utility.getGlobalValue("terms.translation_table")],
         "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"),
         "beta",  utility.getGlobalValue("terms.parameters.nonsynonymous_rate"),
@@ -464,7 +493,7 @@ lfunction models.codon.MG_REV_PROP._GenerateRate(fromChar, toChar, namespace, mo
 }
 
 /**
- * @name models.codon.MG_REV_PROP._GenerateRate
+ * @name models.codon.MG_REV_PROPERTIES._GenerateRate
  * @param {Number} fromChar
  * @param {Number} toChar
  * @param {String} namespace
@@ -473,7 +502,7 @@ lfunction models.codon.MG_REV_PROP._GenerateRate(fromChar, toChar, namespace, mo
  */
 
 
-lfunction models.codon.MG_REV_PROP._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, lambda, omega, properties, property_id_map) {
+lfunction models.codon.MG_REV_PROPERTIES._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, lambda, omega, properties, property_id_map) {
 
     _GenerateRate.p = {};
     _GenerateRate.diff = models.codon.diff.complete(fromChar, toChar);
@@ -547,7 +576,7 @@ lfunction models.codon.MG_REV_PROP._GenerateRate_generic (fromChar, toChar, name
     return _GenerateRate.p;
 }
 
-lfunction  models.codon.MG_REV_PROP.post_definition (model) {
+lfunction  models.codon.MG_REV_PROPERTIES.post_definition (model) {
     prop_range = {
         ^"terms.lower_bound": "-10",
         ^"terms.upper_bound": "10"
@@ -561,12 +590,12 @@ lfunction  models.codon.MG_REV_PROP.post_definition (model) {
     models.generic.post.definition (model);
 }
 
-lfunction models.codon.MG_REV_PROP.set_branch_length(model, value, parameter) {
+lfunction models.codon.MG_REV_PROPERTIES.set_branch_length(model, value, parameter) {
     
-    if (utility.Has (model, ^"terms.model.MG_REV_PROP.mean_prop", "Number")) {
+    if (utility.Has (model, ^"terms.model.MG_REV_PROPERTIES.mean_prop", "Number")) {
       properties = model.GetLocalParameters_RegExp(model, terms.propertyImportance (""));
       for (tag, id; in; properties) {
-        parameters.SetValue (id, model[^"terms.model.MG_REV_PROP.mean_prop"]);
+        parameters.SetValue (id, model[^"terms.model.MG_REV_PROPERTIES.mean_prop"]);
       }
       if (utility.Has (model, "fraction_same", "Number")) {
         fs = model["fraction_same"];

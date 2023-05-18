@@ -278,6 +278,9 @@ public:
     long        GetThreadCount            (void) {
         return 1L;
     }
+    void        SetThreadCount            (long) {
+        
+    }
 #endif
 #endif
 
