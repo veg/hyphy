@@ -60,6 +60,18 @@ using namespace hyphy_global_objects;
 #define     TREE_V_SHIFT            8.0
 #define     TREE_H_SHIFT            10.0
 
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+
+inline __m256d _hy_matrix_handle_axv_mfma (__m256d c, __m256d a, __m256d b) {
+    #if defined _SLKP_USE_FMA3_INTRINSICS
+        return _mm256_fmadd_pd (a,b,c);
+    #else
+        return _mm256_add_pd (c, _mm256_mul_pd (a,b));
+    #endif
+}
+
+#endif
+
 
 hyFloat  _TheTree::_timesCharWidths[256]= { // Hardcoded relative widths of all 255 characters in the Times font, for the use of PSTreeString
     0,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0,0.25098,0.721569,0.721569,0.721569,0,0.721569,0.721569,
@@ -3224,7 +3236,26 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
                     hyFloat accumulator = 0.;
 #ifdef _SLKP_USE_AVX_INTRINSICS
-                    __m256d root_c = _mm256_loadu_pd (rootConditionals),
+
+
+        
+                    __m256d     c0     = _mm256_set1_pd  (branchConditionals[0]-branchConditionals[3]),
+                                c1     = _mm256_set1_pd  (branchConditionals[1]-branchConditionals[3]),
+                                c2     = _mm256_set1_pd  (branchConditionals[2]-branchConditionals[3]),
+                                c3     = _mm256_set1_pd  (branchConditionals[3]);
+    
+                    __m256d     t[2];
+  
+    
+                    t[0] = _hy_matrix_handle_axv_mfma (_mm256_mul_pd (c0, tmatrix_transpose[0]), c1, tmatrix_transpose[1]);
+                    t[1] = _hy_matrix_handle_axv_mfma (c3,c2, tmatrix_transpose[2]);
+    
+                    t[0] = _mm256_mul_pd (_mm256_loadu_pd (rootConditionals), _mm256_add_pd (t[0], t[1]));
+    
+                    accumulator = _avx_sum_4 (_mm256_mul_pd (t[0], _mm256_loadu_pd (theProbs)));
+        
+
+                    /*__m256d root_c = _mm256_loadu_pd (rootConditionals),
                     probs  = _mm256_loadu_pd (theProbs),
                     b_cond0 = _mm256_set1_pd(branchConditionals[0]),
                     b_cond1 = _mm256_set1_pd(branchConditionals[1]),
@@ -3232,7 +3263,7 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                     b_cond3 = _mm256_set1_pd(branchConditionals[3]),
                     s01    = _mm256_add_pd ( _mm256_mul_pd (b_cond0, tmatrix_transpose[0]), _mm256_mul_pd (b_cond1, tmatrix_transpose[1])),
                     s23    = _mm256_add_pd ( _mm256_mul_pd (b_cond2, tmatrix_transpose[2]), _mm256_mul_pd (b_cond3, tmatrix_transpose[3]));
-                    accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));
+                    accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));*/
                     
 #elif defined _SLKP_USE_ARM_NEON
                 
