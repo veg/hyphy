@@ -123,7 +123,7 @@ void        MatrixIndexError        (long, long, long, long);
 #endif
 
 
-
+extern long likeFuncEvalCallCount;
 
 //__________________________________________________________________________________
 
@@ -5688,6 +5688,12 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     }
                 }
             }
+            /*
+            if (likeFuncEvalCallCount == 52) {
+                ObjectToConsole(this);
+                ObjectToConsole(result);
+            }
+            */
         }
         
         return result;

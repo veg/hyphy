@@ -1,7 +1,7 @@
 # import the HyPhy library
 # and standard OS utilities
 
-import os, HyPhy
+import os, HyPhy, sys, json
 
 # first, create a HyPhy interface instance (class _THyPhy)
 # the first argument defines the root directory for HyPhy
@@ -19,8 +19,8 @@ hyphyInstance = HyPhy._THyPhy (os.getcwd(),2)
 # HyPhy will take care of disposing of the memory needed 
 # to store the result
 
-hyphyResult = hyphyInstance.ExecuteBF ("return 2+2;");
-print ("Testing a trivial HyPhy command. 2+2 = ", hyphyResult.sData)
+hyphyResult = hyphyInstance.ExecuteBF ("return Exp(2+2);");
+print ("Testing a trivial HyPhy command. Exp(2+2) = ", hyphyResult.sData)
 
 # an optional second argument to ExecuteBF
 # can be used to "flush" the current state of the system
@@ -32,7 +32,11 @@ print ("Testing a trivial HyPhy command. 2+2 = ", hyphyResult.sData)
 print ("Consecutive command exection")
 hyphyInstance.ExecuteBF ("z:=x+y;",False);
 hyphyInstance.ExecuteBF ("x=3;",False);
+hyphyResult = hyphyInstance.ExecuteBF ("return x;", False);
+print ("The value of x is ", hyphyResult.sData)
 hyphyInstance.ExecuteBF ("y=5;",False);
+hyphyResult = hyphyInstance.ExecuteBF ("return y;", False);
+print ("The value of y is ", hyphyResult.sData)
 hyphyResult = hyphyInstance.ExecuteBF ("return z;",False);
 print ("The value of z is ", hyphyResult.sData)
 
@@ -44,7 +48,7 @@ print ("The value of z is ", hyphyResult.sData)
 # to execute prewritten analyses from HBL files
 
 print ("Executing the example F81.bf file")
-hyphyInstance.ExecuteBF ("ExecuteAFile(\"../HBL/F81.bf\")");
+hyphyInstance.ExecuteBF ("ExecuteAFile(\"HBL/F81.bf\")");
 
 # retrive the standard output, error and runtime warnings
 
@@ -55,7 +59,7 @@ hyphyWarnings	= hyphyInstance.GetWarnings()
 
 print ("Standard out: \n", hyphyOut.sData)
 print ("Errors: \n", hyphyErrors.sData)
-print ("Warnings/Log messages: \n", hyphyWarnings.sData)
+#print ("Warnings/Log messages: \n", hyphyWarnings.sData)
 
 # these variables can be explicitly deleted when they are no longer needed
 # python garbage collection should take care of disposing of disused variables
@@ -86,13 +90,19 @@ def retrieveValueByKey (key, returnType,hyphyInstance):
    				return theResult.castToString()
    			if (returnType == HyPhy.THYPHY_TYPE_MATRIX):
    				return theResult.castToMatrix()
-	return null   		
+   			if (returnType == HyPhy.THYPHY_TYPE_JSON):
+   				js = theResult.castToString()
+   				if js:
+   				    return json.loads (js.sData)
+   				
+	return None   		
    		
 
-hyphyResult = hyphyInstance.ExecuteBF ("ExecuteAFile(\"../HBL/HKY85.bf\")");
+hyphyResult = hyphyInstance.ExecuteBF ("ExecuteAFile(\"HBL/HKY85.bf\")");
 
 
 print ("Log-L = ", retrieveValueByKey ("LogL", HyPhy.THYPHY_TYPE_NUMBER, hyphyInstance).nValue)
+print ("LFInfo = ", retrieveValueByKey ("LF Info", HyPhy.THYPHY_TYPE_JSON, hyphyInstance))
 print ("kappa = ", retrieveValueByKey ("kappa", HyPhy.THYPHY_TYPE_NUMBER, hyphyInstance).nValue)
 print ("tree string = ", retrieveValueByKey ("Tree", HyPhy.THYPHY_TYPE_STRING, hyphyInstance).sData)
 bl = retrieveValueByKey ("Branch lengths", HyPhy.THYPHY_TYPE_MATRIX, hyphyInstance)

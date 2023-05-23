@@ -9,42 +9,40 @@ import sys
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
 
-
 #build the list of Source files
 
 scriptPath = path.realpath(path.dirname(sys.argv[0]))
 srcPath, libDir = path.split(scriptPath)
 hyphyPath, srcDir = path.split(srcPath)
+
+
 # with open('batchfiles.list') as fh:
 #     resFiles = [(f, path.join(*(['..'] * 5 + f.split('/')))) for f in fh.read().split('\n') if f != '']
 
 contribPath = path.join(hyphyPath, 'contrib')
-sqlitePath = path.join(contribPath, 'SQLite-3.8.2')
 
-linkPath = path.join(scriptPath, 'Link')
-coreSrcPath = path.join(srcPath, 'core')
-newSrcPath = path.join(srcPath, 'new')
-guiSrcPath = path.join(srcPath, 'gui')
-prefFile = [path.join(guiSrcPath, 'preferences.cpp')]
+linkPath        = path.join(scriptPath, 'Link')
+coreSrcPath     = path.join(srcPath, 'core')
+newSrcPath      = path.join(srcPath, 'new')
+contribSrcPath  = path.join(srcPath, 'contrib')
+sqlitePath      = path.join(hyphyPath, 'contrib', 'SQLite-3.8.2')
 
-if sys.version_info >= (3,0,0):
-    swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_py3.cpp')]
-else:
-    swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_python.cpp')]
+swigFile = [path.join(scriptPath, 'Link', 'THyPhy_wrap.cxx')]
 
 coreSrcFiles = glob(path.join(coreSrcPath, '*.cpp'))
 newSrcFiles = glob(path.join(newSrcPath, '*.cpp'))
-sqliteFiles = glob(path.join(sqlitePath, '*.c'))
+sqliteFiles = [] # glob(path.join(sqlitePath, 'sqlite3.c'))
 linkFiles = glob(path.join(linkPath, '*.cpp')) # + glob(path.join(linkPath, '*.cxx'))
 utilFiles = glob(path.join(srcPath, 'utils', '*.cpp'))
+contribFiles = glob(path.join(contribSrcPath, '*.cpp'))
 
-sourceFiles = coreSrcFiles + newSrcFiles +  sqliteFiles + prefFile + linkFiles + swigFile + utilFiles
+sourceFiles = coreSrcFiles + newSrcFiles +  sqliteFiles  + linkFiles + swigFile + utilFiles
 
-includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath, guiSrcPath]]
-includePaths += [linkPath, contribPath, sqlitePath]
+includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath]]
+includePaths += [linkPath, contribSrcPath, sqlitePath]
 
 # check for 64bit and define as such
-define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
+#define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
 
 # openmp on Mac OS X Lion is broken
 #major, minor = mac_ver()[0].split('.')
@@ -55,7 +53,7 @@ openmp = []
 setup(
     name = 'HyPhy',
     version = '0.1.1',
-    description = 'HyPhy package interface library',
+    description = 'HyPhy package interface library for Python',
     author = 'Sergei L Kosakovsky Pond',
     author_email = 'spond@temple.edu',
     url = 'http://www.hyphy.org/',
@@ -73,8 +71,8 @@ setup(
                              ('_SLKP_LFENGINE_REWRITE_', None),
                              ('__AFYP_REWRITE_BGM__', None),
                              ('__HEADLESS__', None),
-                             ('_HYPHY_LIBDIRECTORY_', '"/usr/local/lib/hyphy"')] + define_macros,
-            libraries = ['pthread', 'ssl', 'crypto', 'curl'],
+                             ('_HYPHY_LIBDIRECTORY_', '"/usr/local/lib/hyphy"')] ,
+            #libraries = ['ssl', 'crypto', 'curl'],
             extra_compile_args = [
                     '-Wno-int-to-pointer-cast',
                     # '-Wno-pointer-to-int-cast',
@@ -90,6 +88,7 @@ setup(
                     '-O3',
                     '-fpermissive',
                     '-fPIC',
+                    '-std=c++14'
             ] + openmp,
             extra_link_args = [
             ] + openmp

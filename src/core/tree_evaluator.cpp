@@ -146,6 +146,9 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
         long siteState;
         if (setBranch != nodeCode + iNodes) {
             siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.list_data[siteID]] ;
+            /*if (likeFuncEvalCallCount == 52 && siteID == 7) {
+                fprintf (stderr, "Site-state @ %ld: %d\n", nodeCode, siteState);
+            }*/
         } else {
             siteState = setBranchTo[siteOrdering.list_data[siteID]] ;
         }
@@ -3222,6 +3225,10 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     //if (setBranch >=0 )
        // printf ("\nSet to %d (%s)\n", setBranch, ((_CalcNode*) flatTree    (setBranch))->GetName()->get_str());
     
+    //if (likeFuncEvalCallCount == 52) {
+    //    fprintf (stderr, "\nSite ID: %ld\n%s\n", siteOrdering.get(7), theFilter->GetColumn(siteOrdering.get(7)));;
+    //}
+    
     for  (unsigned long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
         long    nodeCode   = updateNodes.list_data [nodeID],
         parentCode = flatParents.list_data [nodeCode];
@@ -3287,16 +3294,19 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         _Matrix  const * transitionMatrixObj           = currentTreeNode->GetCompExp(catID);
         hyFloat  const * _hprestrict_ transitionMatrix = transitionMatrixObj->theData;
         
-        /*
-         if (likeFuncEvalCallCount == 15098 && parentCode == 3688) {
+        
+         /*if (likeFuncEvalCallCount == 52) {
             //if (currentTreeNode->GetName()->EndsWith("mt811400_SARS2_orf1ab_usa__4")) {
             fprintf (stderr, "\nBRANCH ID %ld (%ld = parent ID, parent name = %s) (%s)\n", nodeCode, parentCode, ((_CalcNode*)flatTree (parentCode))->GetName()->get_str(), currentTreeNode->GetName()->get_str());
-                for (long e = 0; e < 16; e++) {
-                    fprintf (stderr, "%ld => %lg\n", transitionMatrix[e]);
+                for (long e = 0; e < 4; e++) {
+                    fprintf (stderr, "\n");
+                    for (long e2 = 0; e2 < 4; e2++) {
+                    fprintf (stderr, "%18.12g\t", transitionMatrix[e*4+e2]);
                 }
-            //}
-        }
-         */
+            }
+            fprintf (stderr, "\n");
+        }*/
+         
         
         long currentTCCIndex,currentTCCBit,parentTCCIIndex,parentTCCIBit;
         __ll_handle_tcc_init (tcc, isLeaf, siteCount, siteFrom, nodeCode, parentCode, parentTCCIBit, parentTCCIIndex, currentTCCBit, currentTCCIndex);
@@ -3362,9 +3372,30 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 sum     = (parentConditionals [0] + parentConditionals [1]) + (parentConditionals [2] + parentConditionals [3]);
                 */
                 
+                /*if (likeFuncEvalCallCount == 52 && siteID == 7) {
+                   //if (currentTreeNode->GetName()->EndsWith("mt811400_SARS2_orf1ab_usa__4")) {
+                   fprintf (stderr, "\nBEFORE Parent conditionals (%ld = parent ID, parent name = %s) (%s)\n", parentCode, ((_CalcNode*)flatTree (parentCode))->GetName()->get_str(), currentTreeNode->GetName()->get_str());
+                   for (long e = 0; e < 4; e++) {
+                        fprintf (stderr, "%18.12g\t", parentConditionals[e]);
+                   }
+                   fprintf (stderr, "\n");
+               }*/
+
+                
                 sum = _handle4x4_pruning_case_direct (childVector, tmatrix_transpose, parentConditionals);
                 
                 __ll_loop_handle_scaling<4L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
+                
+                
+                /*if (likeFuncEvalCallCount == 52 && siteID == 7) {
+                   //if (currentTreeNode->GetName()->EndsWith("mt811400_SARS2_orf1ab_usa__4")) {
+                   fprintf (stderr, "\nAFTER Parent conditionals (%ld = parent ID, parent name = %s) (%s), sum = %g\n", parentCode, ((_CalcNode*)flatTree (parentCode))->GetName()->get_str(), currentTreeNode->GetName()->get_str(), sum);
+                   for (long e = 0; e < 4; e++) {
+                        fprintf (stderr, "%18.12g/%18.12g\t", childVector[e], parentConditionals[e]);
+                   }
+                   fprintf (stderr, "\n");
+               }*/
+
                 
                 childVector += 4L;
                 __ll_loop_epilogue
@@ -3517,10 +3548,10 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 accumulator += rootConditionals[rootIndex] * theProbs[p];
             }
         }
-        /*if (likeFuncEvalCallCount == 1264) {
-            fprintf (stderr, "\nREGULAR COMPUTE @%d %lg (%ld)\n", siteID, accumulator, setBranch);
+        /*if (likeFuncEvalCallCount == 52 && siteID == 7) {
+            fprintf (stderr, "\nREGULAR COMPUTE @%d %lg (%18.14lg / %ld)\n", siteID, accumulator, result,  theFilter->theFrequencies (siteOrdering.list_data[siteID])   );
             for (long k = 0; k < alphabetDimension; k++) {
-                fprintf (stderr, "\t %d = %g %g\n", k, rootConditionals[rootIndex-alphabetDimension+k], theProbs[k]);
+                fprintf (stderr, "\t %d = %16.12g %16.12g\n", k, rootConditionals[rootIndex-alphabetDimension+k], theProbs[k]);
             }
         }*/
         if (storageVec) {
@@ -3707,8 +3738,7 @@ void            _TheTree::ComputeBranchCache    (
     
     auto __handle_site_corrections = [&] (long didScale, long siteID)->void {
         if (didScale&&siteCorrectionCounts) {
-            //
-            siteCorrectionCounts [siteOrdering.list_data[siteID]] += didScale;
+             siteCorrectionCounts [siteOrdering.list_data[siteID]] += didScale;
             if (didScale == 1L) {
                 siteRes[siteOrdering.list_data[siteID]] *= _lfScalerUpwards;
             } else {
@@ -3824,6 +3854,7 @@ void            _TheTree::ComputeBranchCache    (
                     lastUpdated = iNodeCache + (nodeCode * siteCount + siteID) * alphabetDimension;
                 }
             }
+            
             
             for (long s = 0; s < alphabetDimension; s++) {
                 state[s] = lastUpdated[s];
@@ -4128,7 +4159,7 @@ void            _TheTree::ComputeBranchCache    (
     const unsigned long site_bound = alphabetDimension*siteTo;
     for (unsigned long ii = siteFrom * alphabetDimension; ii < site_bound; ii++) {
         state[ii] = rootConditionals[ii];
-        /*if (likeFuncEvalCallCount == 3013 && ii / alphabetDimension == 232) {
+        /*if (likeFuncEvalCallCount == 52) {
             printf ("Site %ld, Root conditional [%ld] = %g, node state [%ld] = %g\n", ii/alphabetDimension, ii, state[ii], ii, cache[ii]);
         }*/
     }

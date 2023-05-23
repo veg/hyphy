@@ -664,7 +664,7 @@ namespace hy_global {
         bool do_logging = EnvVariableTrue(message_logging);
             
 #ifdef  __HEADLESS__
-        if (globalInterfaceInstance && do_logging >= 0.1) {
+        if (globalInterfaceInstance && do_logging) {
             globalInterfaceInstance->PushWarning (&message);
         }
 #else
@@ -735,6 +735,7 @@ namespace hy_global {
             globalInterfaceInstance->PushError (&message);
         }
         terminate_execution = true;
+        return;
     #else
         char  str[] = "\nError:";
         

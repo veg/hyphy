@@ -201,7 +201,7 @@ _THyPhy::~_THyPhy           (void) {
         globalInterfaceInstance = nil;
     }
 
-    PurgeAll(true);
+    //PurgeAll(true);
     GlobalShutdown();
 }
 
@@ -213,6 +213,7 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
     SetCallbackHandler (mHandler);
     currentResultHolder = new _THyPhyString;
     askFID = -1;
+    system_CPU_count = MAX (cpuCount, 1);
     if (baseDirPath) {
         // set base directory
         hy_base_directory = baseDirPath;
@@ -226,7 +227,7 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
 
 #ifdef _HYPHY_LIBDIRECTORY_    
     hy_lib_directory = _HYPHY_LIBDIRECTORY_;
-    if (hy_lib_directory.getChar(hy_lib_directory.sLength-1) != dirSlash) {
+    if (hy_lib_directory.get_char(hy_lib_directory.length()-1) != dirSlash) {
         hy_lib_directory = hy_lib_directory & dirSlash;
     }
 #else
@@ -245,8 +246,8 @@ void _THyPhy::InitTHyPhy (_ProgressCancelHandler* mHandler, const char* baseDirP
 
 //_________________________________________________________
 
-_THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge)
-{
+_THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge) {
+        
     if (doPurge) {
         PurgeAll            (true);    // cleanup results of previous analysis
     }
@@ -277,15 +278,17 @@ _THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge)
 
     _ExecutionList      compiledCode  (commandString);
 
-
     BatchDelete        ((_StringBuffer*)errors, (_StringBuffer*)warnings, (_StringBuffer*)textout);
     
     errors              = new _StringBuffer (128);
     warnings            = new _StringBuffer (128L);
     textout             = new _StringBuffer (128L);
 
-    compiledCode.ExecuteAndClean (0x7ffffff);
+    compiledCode.Execute ();
     askFID = FindBFFunctionName (_tHYPHYAskFor, NULL);
+    
+    //printf ("\n_THyPhy::ExecuteBF %d\n", askFID);
+    
     HBLObjectRef bfReturn  = compiledCode.GetResult ();
 
     ((_StringBuffer*)errors)->TrimSpace();
@@ -301,7 +304,7 @@ _THyPhyString * _THyPhy::ExecuteBF (const char * buffer, bool doPurge)
         currentResultHolder->sData   = (char*)serializedReturn->get_str();
         //serializedReturn->sData      = nil;
         currentResultHolder->sLength = serializedReturn->length();
-        bfReturn->Initialize();
+        serializedReturn->Initialize();
     }
     return currentResultHolder;
 }
@@ -321,12 +324,13 @@ void* _THyPhy::AskFor (const char* resultID) {
          <<  _tHYPHYAskFor
          << "(\"";
         theCommand.SanitizeAndAppend (resultID) << "\");";
+        //printf ("\n_THyPhy::AskFor %s\n", theCommand.get_str());
         _ExecutionList      compiledCode  (theCommand);
-        compiledCode.ExecuteAndClean (0x7ffffff);
+        compiledCode.Execute();
         HBLObjectRef retResult = compiledCode.GetResult ();
         if (retResult && retResult->ObjectClass() == STRING) {
             _FString * checkHandled = (_FString*)retResult;
-            if (checkHandled->get_str().Equal (&_tHYPHYNotHandled)) {
+            if (checkHandled->get_str() == _tHYPHYNotHandled) {
                 return nil;
             }
         }
@@ -391,11 +395,12 @@ bool _THyPhy::CanCast (const void* theObject, const int requestedType) {
     if (theObject) {
         switch (((HBLObjectRef)theObject)->ObjectClass()) {
         case NUMBER:
-            return true;
+            return requestedType!=THYPHY_TYPE_JSON;;
             // can cast a number to everything
         case STRING:
-            return requestedType!=THYPHY_TYPE_MATRIX;
+            return requestedType==THYPHY_TYPE_NUMBER || requestedType==THYPHY_TYPE_STRING;
             // can cast anything to a string
+                
         case MATRIX:
             return requestedType!=THYPHY_TYPE_NUMBER;
             // can not cast matrix to number
@@ -403,6 +408,9 @@ bool _THyPhy::CanCast (const void* theObject, const int requestedType) {
         case TREE:
         case TOPOLOGY:
             return requestedType==THYPHY_TYPE_STRING;
+
+        case ASSOCIATIVE_LIST:
+            return requestedType==THYPHY_TYPE_JSON;
 
         }
     }
@@ -412,36 +420,60 @@ bool _THyPhy::CanCast (const void* theObject, const int requestedType) {
 //_________________________________________________________
 
 _THyPhyReturnObject* _THyPhy::CastResult (const void* theObject, const int requestedType) {
+    static const _String kUseJSONForMatrix ("USE_JSON_FOR_MATRIX");
+    
     _THyPhyReturnObject * convertedObject = nil;
     if (CanCast(theObject,requestedType)) {
         int hyphyObjClass = ((HBLObjectRef)theObject)->ObjectClass();
-        switch (hyphyObjClass) {
-        case NUMBER: {
-            if (hyphyObjClass == NUMBER) {
-                return new _THyPhyNumber (((HBLObjectRef)theObject)->Compute()->Value());
+        switch (requestedType) {
+            case THYPHY_TYPE_NUMBER: {
+                if (hyphyObjClass == NUMBER) {
+                    return new _THyPhyNumber (((HBLObjectRef)theObject)->Compute()->Value());
+                }
+                if (hyphyObjClass == STRING) {
+                    _String sV ((_String*)((_FString*)theObject)->toStr());
+                    return new _THyPhyNumber (sV.to_float());
+                }
             }
-            if (hyphyObjClass == STRING) {
-                _String sV ((_String*)((_FString*)theObject)->toStr());
-                return new _THyPhyNumber (sV.to_float());
+            case THYPHY_TYPE_STRING: {
+                _String sV ((_String*)((HBLObjectRef)theObject)->toStr());
+                return new _THyPhyString (sV.get_str(),sV.length());
             }
-        }
-        case STRING: {
-            _String sV ((_String*)((HBLObjectRef)theObject)->toStr());
-            return new _THyPhyString (sV.get_str(),sV.length());
-        }
-        case MATRIX: {
-            if (hyphyObjClass == NUMBER) {
-                double evaluate = ((HBLObjectRef)theObject)->Compute()->Value();
-                return new _THyPhyMatrix (1,1,&evaluate);
-            }
+            case THYPHY_TYPE_MATRIX: {
+                if (hyphyObjClass == NUMBER) {
+                    double evaluate = ((HBLObjectRef)theObject)->Compute()->Value();
+                    return new _THyPhyMatrix (1,1,&evaluate);
+                }
 
-            if (hyphyObjClass == MATRIX) {
-                _Matrix * evalutedNumeric =  (_Matrix*)((_Matrix*)(((HBLObjectRef)theObject)->Compute()))
-                                             ->ComputeNumeric();
+                if (hyphyObjClass == MATRIX) {
+                    _Matrix * evalutedNumeric =  (_Matrix*)((_Matrix*)(((HBLObjectRef)theObject)->Compute()))
+                                                 ->ComputeNumeric();
 
-                return new _THyPhyMatrix (evalutedNumeric->GetHDim(),evalutedNumeric->GetVDim(),evalutedNumeric->theData);
+                    return new _THyPhyMatrix (evalutedNumeric->GetHDim(),evalutedNumeric->GetVDim(),evalutedNumeric->theData);
+                }
             }
-        }
+            case THYPHY_TYPE_JSON: {
+                HBLObjectRef stash = hy_env :: EnvVariableGet (kUseJSONForMatrix, HY_BL_ANY);
+                if (stash) {
+                    stash->AddAReference();
+                } else {
+                    stash = new _MathObject;
+                }
+                hy_env :: EnvVariableSet (kUseJSONForMatrix, new _Constant (1.),false);
+                if (hyphyObjClass == ASSOCIATIVE_LIST) {
+                    _String sV ((_String*)((_AssociativeList*)(((HBLObjectRef)theObject)))->toStr());
+                    hy_env :: EnvVariableSet (kUseJSONForMatrix, stash , false);
+                    return new _THyPhyString (sV.get_str(),sV.length());
+                }
+
+                if (hyphyObjClass == MATRIX) {
+                    _String sV ((_String*)((_Matrix*)(((HBLObjectRef)theObject)))->toStr());
+                    hy_env :: EnvVariableSet (kUseJSONForMatrix, stash , false);
+                    return new _THyPhyString (sV.get_str(),sV.length());
+                }
+                hy_env :: EnvVariableSet (kUseJSONForMatrix, stash , false);
+
+            }
         }
     }
 

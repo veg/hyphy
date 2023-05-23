@@ -988,7 +988,7 @@ void _ExecutionList::ClearExecutionList (void) {
     DeleteAndZeroObject (nameSpacePrefix);
     DeleteAndZeroObject (kwargs);
     DeleteAndZeroObject (kwarg_tags);
-    
+
     ResetFormulae();
     DeleteAndZeroObject (result);
 }

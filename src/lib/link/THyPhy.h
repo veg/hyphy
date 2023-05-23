@@ -69,11 +69,12 @@ typedef  bool _ProgressCancelHandler (const char*,int,double);
 
 */
 
-#define     THYPHY_TYPE_COUNT  3 // how many types are there?
+#define     THYPHY_TYPE_COUNT  4 // how many types are there?
 
 #define     THYPHY_TYPE_STRING 0
 #define     THYPHY_TYPE_NUMBER 1
 #define     THYPHY_TYPE_MATRIX 2
+#define     THYPHY_TYPE_JSON   3
 
 /* Basic return types supported by the interface object */
 
