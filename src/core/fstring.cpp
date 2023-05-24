@@ -933,9 +933,9 @@ HBLObjectRef   _FString::Call (_List* arguments, _hyExecutionContext* context, H
         }
       }
       
-      if (get_str() == _String("models.BS_REL.Time")) {
+      /*if (get_str() == _String("models.BS_REL.Time")) {
           BufferToConsole ("models.BS_REL.Time"); NLToConsole();
-      }
+      }*/
       
       _Operation * function_call_term = new _Operation (function_id, -1L-(arguments?arguments->countitems():0L));
       the_call.PushTerm(function_call_term);
