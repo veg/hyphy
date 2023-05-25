@@ -920,6 +920,9 @@ HBLObjectRef   _FString::FileExists (HBLObjectRef cache) {
 //__________________________________________________________________________________
 HBLObjectRef   _FString::Call (_List* arguments, _hyExecutionContext* context, HBLObjectRef cache) {
   long function_id = FindBFFunctionName (get_str(), NULL);
+    
+  //BufferToConsole ("Calling ... "); ObjectToConsole(this); NLToConsole();
+    
   if (function_id >= 0) {
        _Formula the_call;
     
@@ -932,19 +935,18 @@ HBLObjectRef   _FString::Call (_List* arguments, _hyExecutionContext* context, H
           arg_k->RemoveAReference();
         }
       }
-      
-      /*if (get_str() == _String("models.BS_REL.Time")) {
-          BufferToConsole ("models.BS_REL.Time"); NLToConsole();
-      }*/
-      
+            
       _Operation * function_call_term = new _Operation (function_id, -1L-(arguments?arguments->countitems():0L));
       the_call.PushTerm(function_call_term);
       DeleteObject (function_call_term);
       
       HBLObjectRef result = the_call.Compute();
-      result->AddAReference();
+      if (!cache || cache != result) {
+          result->AddAReference();
+      }
+      //result->AddAReference();
       return result;
-      
+       
   } else {
     HandleApplicationError (_String ("The first argument ('") & get_str() & "') to 'Call' was not an HBL function name");
   }

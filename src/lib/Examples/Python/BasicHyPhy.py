@@ -48,7 +48,7 @@ print ("The value of z is ", hyphyResult.sData)
 # to execute prewritten analyses from HBL files
 
 print ("Executing the example F81.bf file")
-hyphyInstance.ExecuteBF ("ExecuteAFile(\"HBL/F81.bf\")");
+hyphyInstance.ExecuteBF ("ExecuteAFile('%s')" % os.path.join (os.path.dirname(os.path.abspath(__file__)), "HBL", "F81.bf"))
 
 # retrive the standard output, error and runtime warnings
 
@@ -98,7 +98,7 @@ def retrieveValueByKey (key, returnType,hyphyInstance):
 	return None   		
    		
 
-hyphyResult = hyphyInstance.ExecuteBF ("ExecuteAFile(\"HBL/HKY85.bf\")");
+hyphyInstance.ExecuteBF ("ExecuteAFile('%s')" % os.path.join (os.path.dirname(os.path.abspath(__file__)), "HBL", "HKY85.bf"))
 
 
 print ("Log-L = ", retrieveValueByKey ("LogL", HyPhy.THYPHY_TYPE_NUMBER, hyphyInstance).nValue)

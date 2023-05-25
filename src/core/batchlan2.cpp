@@ -1060,9 +1060,15 @@ bool    _ElementaryCommand::DecompileFormulae (void) {
         _Formula* f = (_Formula*)simpleParameters.list_data[1],
                 *f2 = (_Formula*)simpleParameters.list_data[2] ;
         if (f) {
+          //_String* expr = (_String*)f->toStr(kFormulaStringConversionNormal);
+          //BufferToConsole ("\nDecompiling Case 0: "); ObjectToConsole (expr); NLToConsole();
+          //DeleteObject (expr);
           delete f;
         }
         if (f2) {
+          //_String* expr = (_String*)f2->toStr(kFormulaStringConversionNormal);
+          //BufferToConsole ("\nDecompiling Case 0/f2: "); ObjectToConsole (expr); NLToConsole();
+          //DeleteObject (expr);
           delete f2;
         }
         simpleParameters.Clear();
@@ -1084,6 +1090,9 @@ bool    _ElementaryCommand::DecompileFormulae (void) {
     case 14: {
       if (parameters.lLength && simpleParameters.lLength == 2) {
         _Formula* f = (_Formula*)simpleParameters.list_data[1];
+        //_String* expr = (_String*)f->toStr(kFormulaStringConversionNormal);
+        //BufferToConsole ("\nDecompiling Case 14: "); ObjectToConsole (expr); NLToConsole();
+        //DeleteObject (expr);
         if (f) {
           delete f;
         }

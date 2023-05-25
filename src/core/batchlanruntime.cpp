@@ -1625,7 +1625,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                         }
                         // now for each reference parameter, see if it is matched by the corresponding template paramters
                         
-                        reference_parameters->ForEach([&substitution_variables, &pattern, &lhs, &matched_subexpressions, reference_argument, &parameter_sets, add_a_constraint, &current_program, &substitution_variable_by_index] (BaseRef  ref, unsigned long i) -> void {
+                        reference_parameters->ForEach([&substitution_variables, &pattern, &lhs, &matched_subexpressions, reference_argument, &parameter_sets, add_a_constraint, &substitution_variable_by_index] (BaseRef  ref, unsigned long i) -> void {
                             _Variable * ref_var = (_Variable *)ref;
                             _List * reference_subexpressions    = (_List*)matched_subexpressions.GetItem(reference_argument,i);
                             _List   local_substitution_variables;
@@ -2284,35 +2284,34 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       if (need_to_prompt_user) {
         #ifdef __HEADLESS__
           throw _String("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
+        #else
+            for (int i = 0; i < kMaxDialogPrompts; i++) {
+              printf ("\n\n               +--------------------------+\n");
+              printf (    "               | %s. |\n", kPromptText.get_str());
+              printf (    "               +--------------------------+\n\n\n");
+
+              for (model_id = 0; model_id<matching_models.lLength; model_id++) {
+                printf ("\n\t(%s):%s",((_String*)templateModelList.GetItem(matching_models(model_id),0))->get_str(),
+                                      ((_String*)templateModelList.GetItem(matching_models(model_id),1))->get_str());
+              }
+              printf ("\n\n Please type in the abbreviation for the model you want to use:");
+              _String const user_choice = StringFromConsole();
+
+              model_id = matching_models.FindOnCondition( [&] (long index, unsigned long) -> bool {
+                return user_choice.EqualIgnoringCase(*(_String*) templateModelList.GetItem (index,0));
+              });
+
+              if (model_id != kNotFound) {
+                break;
+              }
+            }
+
+            if (model_id == kNotFound) {
+              throw _String("Dialog did not return a valid choice after maximum allowed number of tries");
+              return false;
+            }
+        
         #endif
-
-
-
-        for (int i = 0; i < kMaxDialogPrompts; i++) {
-          printf ("\n\n               +--------------------------+\n");
-          printf (    "               | %s. |\n", kPromptText.get_str());
-          printf (    "               +--------------------------+\n\n\n");
-
-          for (model_id = 0; model_id<matching_models.lLength; model_id++) {
-            printf ("\n\t(%s):%s",((_String*)templateModelList.GetItem(matching_models(model_id),0))->get_str(),
-                                  ((_String*)templateModelList.GetItem(matching_models(model_id),1))->get_str());
-          }
-          printf ("\n\n Please type in the abbreviation for the model you want to use:");
-          _String const user_choice = StringFromConsole();
-
-          model_id = matching_models.FindOnCondition( [&] (long index, unsigned long) -> bool {
-            return user_choice.EqualIgnoringCase(*(_String*) templateModelList.GetItem (index,0));
-          });
-
-          if (model_id != kNotFound) {
-            break;
-          }
-        }
-
-        if (model_id == kNotFound) {
-          throw _String("Dialog did not return a valid choice after maximum allowed number of tries");
-          return false;
-        }
 
       }
 
@@ -2324,6 +2323,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       PopFilePath         ();
       last_model_used    = model_file;
       std_model.Execute (&current_program);
+        
 
     }
   } catch (const _String& error) {
