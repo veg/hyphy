@@ -560,35 +560,6 @@ set_target_properties(
     endif(${OPENMP_FOUND})
 )
 
-#-------------------------------------------------------------------------------
-# SWIG BINDINGS
-#-------------------------------------------------------------------------------
-FIND_PACKAGE(SWIG)
-
-if(${SWIG_FOUND})
-	cmake_policy(SET CMP0086 NEW)
-    cmake_policy(SET CMP0078 NEW)
-	cmake_policy(SET CMP0094 NEW)
-	set (UseSWIG_TARGET_NAME_PREFERENCE STANDARD)
-	SET(Python3_USE_STATIC_LIBS FALSE)
-	INCLUDE(${SWIG_USE_FILE})
-	set(Python3_FIND_UNVERSIONED_NAMES NEVER)
-	find_package (Python3 COMPONENTS Interpreter Development)
-	#add_definitions (-D__HEADLESS__)
-	INCLUDE_DIRECTORIES(${Python3_INCLUDE_DIRS})
-	SET_SOURCE_FILES_PROPERTIES(src/lib/link/THyPhy.i PROPERTIES CPLUSPLUS ON)
-	#SET_SOURCE_FILES_PROPERTIES(src/lib/link/example.i PROPERTIES CPLUSPLUS ON)
-
-	set_property(SOURCE src/lib/link/THyPhy.i  PROPERTY SWIG_MODULE_NAME HyPhy)
-	swig_add_library(LIBRARY LANGUAGE python SOURCES src/lib/link/THyPhy.i src/lib/link/THyPhy.cpp ${SRC_COMMON})
-	TARGET_LINK_LIBRARIES(LIBRARY ${Python3_LIBRARIES} ${DEFAULT_LIBRARIES})
-
-	
-SET(CMAKE_SWIG_FLAGS "")
-else(${SWIG_FOUND})
-    MESSAGE("SWIG NOT FOUND (LIBRARY target is not available)")
-endif(${SWIG_FOUND})
-
 
 
 #-------------------------------------------------------------------------------
@@ -627,18 +598,6 @@ set_property(
 set_property(
     TARGET HYPHYDEBUG
     APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYDEBUG__
-)
-
-set_target_properties(
-    LIBRARY
-    PROPERTIES
-    if(${OPENMP_FOUND})
-        #OMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} "
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS} "
-    else(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} "
-    endif(${OPENMP_FOUND})
 )
 
 set_target_properties(
