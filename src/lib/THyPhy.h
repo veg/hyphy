@@ -9,6 +9,8 @@ Written by SL Kosakovsky Pond; June 2007
 Dedicated to Comet (http://www.hyphy.org/comet.jpg)
 ?/?/1999-06/05/2007
 
+Revised by SLKP 05/17/2023 to work with 2.5 codebase
+ 
 Copyright (C) 1997-now
 Core Developers:
   Sergei L Kosakovsky Pond (spond@ucsd.edu)
@@ -67,11 +69,12 @@ typedef  bool _ProgressCancelHandler (const char*,int,double);
 
 */
 
-#define     THYPHY_TYPE_COUNT  3 // how many types are there?
+#define     THYPHY_TYPE_COUNT  4 // how many types are there?
 
 #define     THYPHY_TYPE_STRING 0
 #define     THYPHY_TYPE_NUMBER 1
 #define     THYPHY_TYPE_MATRIX 2
+#define     THYPHY_TYPE_JSON   3
 
 /* Basic return types supported by the interface object */
 
@@ -245,9 +248,9 @@ public:
 
     // these functions are for internal use only...
 
-    void        PushWarning   (void*);
-    void        PushError     (void*);
-    void        PushOutString (void*);
+    void        PushWarning   (const void*);
+    void        PushError     (const void*);
+    void        PushOutString (const void*);
 
 private:
 

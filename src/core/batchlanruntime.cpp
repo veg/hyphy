@@ -15,6 +15,9 @@
  Significant contributions from:
  Spencer V Muse (muse@stat.ncsu.edu)
  Simon DW Frost (sdf22@cam.ac.uk)
+ 
+ Revised by SLKP 05/17/2023 to work with 2.5 codebase
+
 
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the
@@ -1473,7 +1476,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                 _Variable const * operation_var = ((_Operation*) op)->RetrieveVar();
                 if (operation_var) {
                     _SimpleList pattern_match (operation_var->GetName()->RegExpMatch(hy_replicate_constraint_regexp, 0));
-                    if (pattern_match.nonempty()) {
+                    if (!pattern_match.empty()) {
                         unsigned long var_index = operation_var->GetName()->Cut (pattern_match (2), pattern_match (3)).to_long() - 1UL;
                         if (var_index >= templated_operations.countitems()) {
                             throw (operation_var->GetName()->Enquote() & " does not have a matched positional argument");
@@ -1622,7 +1625,7 @@ bool      _ElementaryCommand::HandleReplicateConstraint (_ExecutionList& current
                         }
                         // now for each reference parameter, see if it is matched by the corresponding template paramters
                         
-                        reference_parameters->ForEach([&substitution_variables, &pattern, &lhs, &matched_subexpressions, reference_argument, &parameter_sets, add_a_constraint, &current_program, &substitution_variable_by_index] (BaseRef  ref, unsigned long i) -> void {
+                        reference_parameters->ForEach([&substitution_variables, &pattern, &lhs, &matched_subexpressions, reference_argument, &parameter_sets, add_a_constraint, &substitution_variable_by_index] (BaseRef  ref, unsigned long i) -> void {
                             _Variable * ref_var = (_Variable *)ref;
                             _List * reference_subexpressions    = (_List*)matched_subexpressions.GetItem(reference_argument,i);
                             _List   local_substitution_variables;
@@ -2281,35 +2284,34 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       if (need_to_prompt_user) {
         #ifdef __HEADLESS__
           throw _String("Unhandled standard input interaction in SelectTemplateModel for headless HyPhy");
+        #else
+            for (int i = 0; i < kMaxDialogPrompts; i++) {
+              printf ("\n\n               +--------------------------+\n");
+              printf (    "               | %s. |\n", kPromptText.get_str());
+              printf (    "               +--------------------------+\n\n\n");
+
+              for (model_id = 0; model_id<matching_models.lLength; model_id++) {
+                printf ("\n\t(%s):%s",((_String*)templateModelList.GetItem(matching_models(model_id),0))->get_str(),
+                                      ((_String*)templateModelList.GetItem(matching_models(model_id),1))->get_str());
+              }
+              printf ("\n\n Please type in the abbreviation for the model you want to use:");
+              _String const user_choice = StringFromConsole();
+
+              model_id = matching_models.FindOnCondition( [&] (long index, unsigned long) -> bool {
+                return user_choice.EqualIgnoringCase(*(_String*) templateModelList.GetItem (index,0));
+              });
+
+              if (model_id != kNotFound) {
+                break;
+              }
+            }
+
+            if (model_id == kNotFound) {
+              throw _String("Dialog did not return a valid choice after maximum allowed number of tries");
+              return false;
+            }
+        
         #endif
-
-
-
-        for (int i = 0; i < kMaxDialogPrompts; i++) {
-          printf ("\n\n               +--------------------------+\n");
-          printf (    "               | %s. |\n", kPromptText.get_str());
-          printf (    "               +--------------------------+\n\n\n");
-
-          for (model_id = 0; model_id<matching_models.lLength; model_id++) {
-            printf ("\n\t(%s):%s",((_String*)templateModelList.GetItem(matching_models(model_id),0))->get_str(),
-                                  ((_String*)templateModelList.GetItem(matching_models(model_id),1))->get_str());
-          }
-          printf ("\n\n Please type in the abbreviation for the model you want to use:");
-          _String const user_choice = StringFromConsole();
-
-          model_id = matching_models.FindOnCondition( [&] (long index, unsigned long) -> bool {
-            return user_choice.EqualIgnoringCase(*(_String*) templateModelList.GetItem (index,0));
-          });
-
-          if (model_id != kNotFound) {
-            break;
-          }
-        }
-
-        if (model_id == kNotFound) {
-          throw _String("Dialog did not return a valid choice after maximum allowed number of tries");
-          return false;
-        }
 
       }
 
@@ -2321,6 +2323,7 @@ bool      _ElementaryCommand::HandleSelectTemplateModel (_ExecutionList& current
       PopFilePath         ();
       last_model_used    = model_file;
       std_model.Execute (&current_program);
+        
 
     }
   } catch (const _String& error) {
@@ -2492,10 +2495,12 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
       return true;
     }
 
+#ifndef  __HEADLESS__
     if (object_to_change == hy_env::status_bar_update_string) {
       SetStatusLineUser (_ProcessALiteralArgument (*GetIthParameter(1), current_program));
       return true;
     }
+#endif
       
     const _String source_name   = AppendContainerName (*GetIthParameter(0), current_program.nameSpacePrefix);
 

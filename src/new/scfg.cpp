@@ -230,14 +230,14 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
         bool         continueLoops = true;
       
           // prepopulate the list of rules stratified by the LHS non-terminal by empty lists
-        for (long ntC = 0L; ntC < foundNT.lLength; ntC ++) {
+        for (unsigned long ntC = 0UL; ntC < foundNT.lLength; ntC ++) {
           byNT2 < new _SimpleList;
           byNT3 < new _SimpleList;
           byRightNT1 < new _SimpleList;
           byRightNT2 < new _SimpleList;
         }
         
-        for (long ruleIdx = 0L; ruleIdx < rules.lLength; ruleIdx ++) {
+        for (unsigned long ruleIdx = 0UL; ruleIdx < rules.lLength; ruleIdx ++) {
           _SimpleList *aList = (_SimpleList*)rules(ruleIdx);      // retrieve two- or three-integer list
           
           if (aList->countitems() == 3UL) { // NT->NT NT
@@ -255,7 +255,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
         
         while (continueLoops) { // set status flags for all NT symbols based on production rules
           continueLoops = false;
-          for (long ruleIdx = 0L; ruleIdx < rules.lLength; ruleIdx ++) {
+          for (unsigned long ruleIdx = 0UL; ruleIdx < rules.lLength; ruleIdx ++) {
             _SimpleList *aList = (_SimpleList*)rules(ruleIdx);
             if (aList->countitems() == 3UL) { // NT->NT NT
               continueLoops = continueLoops || CheckANT (aList->get(0),aList->get(1), aList->get(2), tempNT, startSymbol);
@@ -265,7 +265,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
         
         
           // now iterate over the list of declared NT and verify that they all comply to the three conditions above
-        for (long ntC = 0L; ntC < foundNT.lLength; ntC ++) {
+        for (unsigned long ntC = 0UL; ntC < foundNT.lLength; ntC ++) {
           long ntFlag = tempNT.GetXtra (ntC);
           if ((ntFlag & _HYSCFG_NT_LHS_) == 0L) {
             throw _String ("Non-terminal symbol ") & foundNT.list_data[ntC] & " does not appear on the left-hand side of any production rules.";
@@ -299,7 +299,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
           
           for (long i = 0L; i < countNT; i++) {
             _SimpleList * myRules = (_SimpleList*)byNT2.GetItem (i);
-            for (long i2 = 0L; i2 < myRules->lLength; i2++) {    // for all i->m productions
+            for (unsigned long i2 = 0UL; i2 < myRules->lLength; i2++) {    // for all i->m productions
               long flatIndex = indexNT_T (i, get_rule_idx (myRules->get (i2), 1));
               firstArray  [flatIndex]  = 1L;
               lastArray   [flatIndex]  = 1L;
@@ -311,7 +311,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
             continueLoops = false;
             for (long i = 0L; i < countNT; i++) {
               _SimpleList * myRules = (_SimpleList*)byNT3.GetItem(i);
-              for (long i2 = 0L; i2 < myRules->lLength; i2++) {
+              for (unsigned long i2 = 0UL; i2 < myRules->lLength; i2++) {
                 
                 long rhs1 = get_rule_idx (myRules->get (i2), 1),
                      rhs2 = get_rule_idx (myRules->get (i2), 2);
@@ -338,7 +338,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
       
           for (long i = 0L; i < countNT; i++) { // initialize Precursor and Follow
             _SimpleList * myRules = (_SimpleList*)byNT3.GetItem(i);
-            for (long i2 = 0L; i2 < myRules->lLength; i2++) {
+            for (unsigned long i2 = 0UL; i2 < myRules->lLength; i2++) {
               long rhs1 = get_rule_idx (myRules->get (i2), 1),
                    rhs2 = get_rule_idx (myRules->get (i2), 2);
               
@@ -362,7 +362,7 @@ Scfg::Scfg  (_AssociativeList* T_Rules,  _AssociativeList* NT_Rules, long ss) {
             continueLoops = false;
             for (long i = 0L; i < countNT; i++) {
               _SimpleList * myRules = (_SimpleList*)byNT3.GetItem(i);
-              for (long i2 = 0L; i2 < myRules->lLength; i2++) {
+              for (unsigned long i2 = 0L; i2 < myRules->lLength; i2++) {
                 long rhs1 = get_rule_idx (myRules->get (i2), 1),
                      rhs2 = get_rule_idx (myRules->get (i2), 2);
                 
@@ -476,7 +476,7 @@ void    Scfg::ScanAllVariables  (void) {
     _SimpleList allVariables;
     _AVLList    scannerList(&allVariables);
 
-    for (long formCount = 0; formCount < probabilities.GetHDim(); formCount++) {
+    for (unsigned long formCount = 0; formCount < probabilities.GetHDim(); formCount++) {
         probabilities.GetFormula (formCount,0)->ScanFForVariables(scannerList,true,false,true,true);
     }
 
@@ -511,7 +511,7 @@ void    Scfg::VerifyValues  (void) {
   
     byNT2.ForEach([this, sampled_values] (BaseRef object, unsigned long index) -> void {
       hyFloat checksum = 0.;
-      auto compute_sum = [&checksum,sampled_values] (long value, unsigned long idx) -> void {
+      auto compute_sum = [&checksum,sampled_values] (long value, unsigned long ) -> void {
         checksum += sampled_values->directIndex (value);
       };
       ((_SimpleList*)object)->Each (compute_sum);
@@ -573,8 +573,8 @@ void    Scfg::SetStringCorpus  (_Matrix* stringMatrix) {
     corpusInt.Clear();
     DumpComputeStructures ();
   
-    for (long stringRow = 0L; stringRow < stringMatrix->GetHDim(); stringRow++) {
-        for (long stringColumn = 0L; stringColumn < stringMatrix->GetVDim(); stringColumn++) {
+    for (unsigned long stringRow = 0L; stringRow < stringMatrix->GetHDim(); stringRow++) {
+        for (unsigned long stringColumn = 0L; stringColumn < stringMatrix->GetVDim(); stringColumn++) {
             _FString    * aString   = (_FString *)stringMatrix->GetFormula (stringRow,stringColumn)->Compute();
             _SimpleList * tokenized = new _SimpleList;
             TokenizeString (aString->get_str(), *tokenized);
@@ -623,7 +623,7 @@ Scfg::~Scfg  (void) {
 /*--------------------------------------------------------------------------------------------------------------------------------*/
 
 _StringBuffer *   Scfg::GetRuleString (long rule_index) const {
-    if (rule_index < 0 || rule_index >= rules.countitems()) {
+    if (rule_index < 0 || (unsigned long)rule_index >= rules.countitems()) {
         return new _StringBuffer;
     }
 
@@ -648,7 +648,7 @@ BaseRef     Scfg::toStr  (unsigned long)
 {
     _StringBuffer * result = new _StringBuffer (128UL); // allocate a buffer with the initial length of 128 characters
   
-    for (long i = 0UL; i < rules.countitems(); i++) {
+    for (unsigned long i = 0UL; i < rules.countitems(); i++) {
         result->AppendNewInstance (new _String (GetRuleString(i))) << '\n';
     }
 
@@ -682,12 +682,12 @@ hyFloat      Scfg::Compute (void) {
     probabilities.Compute ();
 
 
-    for (long stringID = 0L; stringID < corpusChar.countitems(); stringID++) {
+    for (unsigned long stringID = 0UL; stringID < corpusChar.countitems(); stringID++) {
         // assuming that production probabilities have changed since last Compute(),
         // retain 0 and 1's but clear buffer of stored 0<Pr<1 values.
         _Matrix * cachedProbs = (_Matrix*)(storedInsideP(stringID));
       
-        for (long cid = 0L; cid < cachedProbs->GetHDim(); cid++) { // reset 0,1 values to -1
+        for (unsigned long cid = 0UL; cid < cachedProbs->GetHDim(); cid++) { // reset 0,1 values to -1
             cachedProbs->Store (cid,0,-1.);
         }
 
@@ -882,7 +882,7 @@ hyFloat   Scfg::ComputeInsideProb(long from, long to, long stringIndex, long ntI
     }
 
     ((_SimpleList*)byNT3.GetItem (ntIndex))->Each (
-         [this,from, to, &insideProbValue,stringIndex,firstPass] (long rule_index, unsigned long array_index) -> void {
+         [this,from, to, &insideProbValue,stringIndex,firstPass] (long rule_index, unsigned long ) -> void {
            hyFloat    rule_prob = LookUpRuleProbability(rule_index);
            if (rule_prob > 0.0) {
              _SimpleList * currentRule = (_SimpleList *)rules.GetItem(rule_index);
@@ -965,7 +965,7 @@ void        Scfg::AddSCFGInfo (_AssociativeList* theList) {
     InsertStringListIntoAVL (theList, hy_env::kSCFGCorpus, indexer, corpusChar);
   
     _List       ruleStrings;
-    for (long i=0; i<rules.countitems(); i++) {
+    for (unsigned long i=0; i<rules.countitems(); i++) {
         ruleStrings.AppendNewInstance(GetRuleString (i));
     }
 
@@ -976,7 +976,7 @@ void        Scfg::AddSCFGInfo (_AssociativeList* theList) {
 
     _Matrix * stats = new _Matrix (corpusChar.lLength,3,false,true);
 
-    for (long k=0L; k<corpusChar.countitems(); k++) {
+    for (unsigned long k=0L; k<corpusChar.countitems(); k++) {
         long       strL    = ((_String*)corpusChar.GetItem (k))->length(),
                    pNot0   = ((_AVLListX*)insideProbs.GetItem(k))->countitems(),
                    p01     = ((_Vector*)storedInsideP.GetItem(k))->get_used();
@@ -1239,7 +1239,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
 
 
         // loop over strings in corpus
-        for (long stringID = 0; stringID < corpusChar.countitems(); stringID++) {
+        for (unsigned long stringID = 0; stringID < corpusChar.countitems(); stringID++) {
             long    stringL     = ((_String*)corpusInt.GetItem(stringID))->length(),
                     countNT      = byNT2.countitems();
 
@@ -1418,7 +1418,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
           
           _Matrix * reset[2] = {(_Matrix*)(storedInsideP.GetItem(stringID)), (_Matrix*)(storedOutsideP.GetItem(stringID))};
           for (_Matrix * mp : reset) {
-              for (long cid = 0L; cid < mp->GetHDim(); cid++) {
+              for (unsigned long cid = 0L; cid < mp->GetHDim(); cid++) {
                 mp->Store(cid,0,-1.);
               }
           }
@@ -1428,7 +1428,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
 
         // search through rules and sum linked probabilities
 
-        for (long linkIndex = 0; linkIndex < links.lLength; linkIndex++) {
+        for (unsigned long linkIndex = 0; linkIndex < links.lLength; linkIndex++) {
             _SimpleList *   thisLink    = (_SimpleList*)links.list_data[linkIndex];
             hyFloat      linkNumer   = 0.,
                             linkDenom = 0.;
@@ -1437,7 +1437,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
             BufferToConsole (buf);
              */
             {
-                for (long lcount = 0; lcount < thisLink->lLength; lcount++) {
+                for (unsigned long lcount = 0; lcount < thisLink->lLength; lcount++) {
                     /*
                     snprintf (buf, sizeof(buf), "%d(%3.3f/%3.3f) ", thisLink->list_data[lcount], nextProbs.theData[thisLink->list_data[lcount]],
                             nextProbs.theData[nRules+thisLink->list_data[lcount]]);
@@ -1448,7 +1448,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
                 }
             }
 
-            for (long lcount = 0; lcount < thisLink->lLength; lcount++) {
+            for (unsigned long lcount = 0; lcount < thisLink->lLength; lcount++) {
                 // update linked probabilities
                 nextProbs.theData[thisLink->list_data[lcount]] = linkNumer / thisLink->lLength;
                 nextProbs.theData[nRules+thisLink->list_data[lcount]] = linkDenom / thisLink->lLength;
@@ -1462,7 +1462,7 @@ _Matrix*     Scfg::Optimize (_AssociativeList const* options)  /* created by AFY
 
         // update rule probabilities with new estimates
         {
-            for (long ruleCount = 0; ruleCount < probabilities.GetHDim(); ruleCount++) {
+            for (unsigned long ruleCount = 0; ruleCount < probabilities.GetHDim(); ruleCount++) {
                 _Formula *      thisFormula = probabilities.GetFormula (ruleCount,0);
                 if (thisFormula->IsAConstant()) {
                     continue;
@@ -1552,7 +1552,7 @@ _String* Scfg::SpawnRandomString(long ntIndex, _SimpleList* storageString) {
                  sum         = 0.;
 
     
-    long            ruleIndex   = 0;
+      unsigned long            ruleIndex   = 0;
     
     _SimpleList*    aList       = (_SimpleList*)byNT2(ntIndex),
                *    aRule;
@@ -1603,8 +1603,8 @@ _StringBuffer *   Scfg::BestParseTree(void) {
     _StringBuffer *       parseTreeString = new _StringBuffer();
     //char          buf [4096];
 
-    for (long stringIndex = 0L; stringIndex < corpusInt.countitems(); stringIndex++) {
-        long    stringL     = ((_SimpleList*)corpusInt.GetItem(stringIndex))->countitems();
+    for (unsigned long stringIndex = 0L; stringIndex < corpusInt.countitems(); stringIndex++) {
+        unsigned long    stringL     = ((_SimpleList*)corpusInt.GetItem(stringIndex))->countitems();
 
         // initialize AVL tree for storing non-zero subtrees (i,j,v) to refer to _SimpleList
         _SimpleList     triplets;
@@ -1613,7 +1613,7 @@ _StringBuffer *   Scfg::BestParseTree(void) {
         _SimpleList     argMaxYZK;      // stores (y,z,k) keyed by argmax(i,j,v) in AVL
         _Vector         *theMatrix = new _Vector;     // stores likelihood for subtree (i,j,v)
 
-        for (long from = 0; from < stringL; from++) {   // initialization
+        for (unsigned long from = 0; from < stringL; from++) {   // initialization
             for (long ntIndex = 0; ntIndex < countNT; ntIndex++) {
                 long        tripletIndex    = scfgIndexIntoAnArray (from,from,ntIndex,stringL),
                             mxID         = -1;
@@ -1630,8 +1630,8 @@ _StringBuffer *   Scfg::BestParseTree(void) {
             }
         }
 
-        for (long from = 0; from < stringL-1; from++) { // iterate over all substrings and non-terminals
-            for (long to = from+1L; to < stringL; to++) {
+        for (unsigned long from = 0; from < stringL-1; from++) { // iterate over all substrings and non-terminals
+            for (unsigned long to = from+1L; to < stringL; to++) {
                 for (long ntIndex = 0L; ntIndex < countNT; ntIndex++) {
                     hyFloat      maxLk = 0.;
                   
@@ -1649,7 +1649,7 @@ _StringBuffer *   Scfg::BestParseTree(void) {
                                         rightNT             = currentRule->get(2);
 
                         if (ruleProb > 0.) {
-                            for (long bisect = from; bisect < to; bisect++) {       // iterate over all bisects of substring
+                            for (unsigned long bisect = from; bisect < to; bisect++) {       // iterate over all bisects of substring
                                 hyFloat  tryProb = ComputeInsideProb(from,bisect,stringIndex,leftNT,firstPass);
                                 if (tryProb > 0.) {
                                     hyFloat  lk  = ruleProb * tryProb *

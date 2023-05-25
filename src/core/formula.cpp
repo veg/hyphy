@@ -860,7 +860,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
                 HBLObjectRef constant_value = ((_Operation*)theFormula (top_node->go_down(left_constant?1:2)->get_data()))->GetANumber();
 
 
-                if (constant_value->ObjectClass() == NUMBER) {
+                if (constant_value->ObjectClass() == NUMBER && !op->IsHBLFunctionCall()) {
                   evaluated_to  = constant_value->Value();
 
                   switch (op->opCode) {

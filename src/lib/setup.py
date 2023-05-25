@@ -1,80 +1,81 @@
 #!/usr/bin/python
 
-from distutils.core      import setup, Extension
+from setuptools          import Extension, setup, find_packages
 from os                  import path
 from glob                import glob
 import sys
 
+from setuptools.command.build_py import build_py
+
+
 
 #incdir = get_python_inc(plat_specific=1)
 #print incdir
-
 
 #build the list of Source files
 
 scriptPath = path.realpath(path.dirname(sys.argv[0]))
 srcPath, libDir = path.split(scriptPath)
 hyphyPath, srcDir = path.split(srcPath)
+
+
 # with open('batchfiles.list') as fh:
 #     resFiles = [(f, path.join(*(['..'] * 5 + f.split('/')))) for f in fh.read().split('\n') if f != '']
 
 contribPath = path.join(hyphyPath, 'contrib')
-sqlitePath = path.join(contribPath, 'SQLite-3.8.2')
 
-linkPath = path.join(scriptPath, 'Link')
-coreSrcPath = path.join(srcPath, 'core')
-newSrcPath = path.join(srcPath, 'new')
-guiSrcPath = path.join(srcPath, 'gui')
-prefFile = [path.join(guiSrcPath, 'preferences.cpp')]
+linkPath        = path.join(scriptPath)
+coreSrcPath     = path.join(srcPath, 'core')
+newSrcPath      = path.join(srcPath, 'new')
+contribSrcPath  = path.join(srcPath, 'contrib')
 
-if sys.version_info >= (3,0,0):
-    swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_py3.cpp')]
-else:
-    swigFile = [path.join(scriptPath, 'SWIGWrappers', 'THyPhy_python.cpp')]
+swigFile = [path.join(scriptPath,  'THyPhy.i')]
 
 coreSrcFiles = glob(path.join(coreSrcPath, '*.cpp'))
 newSrcFiles = glob(path.join(newSrcPath, '*.cpp'))
-sqliteFiles = glob(path.join(sqlitePath, '*.c'))
-linkFiles = glob(path.join(linkPath, '*.cpp')) # + glob(path.join(linkPath, '*.cxx'))
+sqliteFiles = [] # glob(path.join(sqlitePath, 'sqlite3.c'))
+linkFiles = glob(path.join(linkPath, '*.cxx')) # + glob(path.join(linkPath, '*.cxx'))
 utilFiles = glob(path.join(srcPath, 'utils', '*.cpp'))
+contribFiles = glob(path.join(contribSrcPath, '*.cpp'))
 
-sourceFiles = coreSrcFiles + newSrcFiles +  sqliteFiles + prefFile + linkFiles + swigFile + utilFiles
+sourceFiles = coreSrcFiles + newSrcFiles +  contribFiles  + linkFiles + swigFile + utilFiles
 
-includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath, guiSrcPath]]
-includePaths += [linkPath, contribPath, sqlitePath]
+includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath]]
+includePaths += [linkPath, contribSrcPath]
 
-# check for 64bit and define as such
-define_macros = [('__HYPHY_64__', None)] if '64' in architecture()[0] else []
-
-# openmp on Mac OS X Lion is broken
-#major, minor = mac_ver()[0].split('.')
-#openmp = ['-fopenmp'] if int(major) < 10 or (int(major) == 10 and int(minor) < 7) else []
-
-openmp = []
+# Build extensions before python modules,
+# or the generated SWIG python files will be missing.
+class BuildPy(build_py):
+    def run(self):
+        self.run_command('build_ext')
+        super(build_py, self).run()
+        
 
 setup(
     name = 'HyPhy',
-    version = '0.1.1',
-    description = 'HyPhy package interface library',
+    version = '0.2.0',
+    description = 'HyPhy package interface library for Python',
     author = 'Sergei L Kosakovsky Pond',
     author_email = 'spond@temple.edu',
     url = 'http://www.hyphy.org/',
-    packages = ['HyPhy'],
-    package_dir = {'HyPhy': './'},
-#    data_files = resFiles,
-    # py_modules = ['HyPhy'],
-    ext_modules = [Extension('_HyPhy',
-            sourceFiles,
+    py_modules=["HyPhy"],
+    cmdclass={
+                    'build_py': BuildPy,
+              },
+              
+    package_dir={'': '.'},
+    python_requires='>=3.4',
+    ext_modules = [Extension(name='_HyPhy',
+            sources=sourceFiles,
             include_dirs = includePaths,
-            define_macros = [('SQLITE_PTR_SIZE','sizeof(long)'),
+            define_macros = [('__HYPHY_NO_SQLITE__',None),
                              ('__UNIX__', None),
                              ('__MP__', None),
                              ('__MP2__', None),
                              ('_SLKP_LFENGINE_REWRITE_', None),
                              ('__AFYP_REWRITE_BGM__', None),
                              ('__HEADLESS__', None),
-                             ('_HYPHY_LIBDIRECTORY_', '"/usr/local/lib/hyphy"')] + define_macros,
-            libraries = ['pthread', 'ssl', 'crypto', 'curl'],
+                             ('_HYPHY_LIBDIRECTORY_', '"/usr/local/lib/hyphy"')] ,
             extra_compile_args = [
                     '-Wno-int-to-pointer-cast',
                     # '-Wno-pointer-to-int-cast',
@@ -82,16 +83,15 @@ setup(
                     '-Wno-sign-compare',
                     '-Wno-parentheses',
                     '-Wno-uninitialized',
-#                    '-Wno-conversion-null',
                     '-Wno-unused-variable',
-#                    '-Wno-unused-but-set-variable',
                     '-Wno-shorten-64-to-32',
                     '-fsigned-char',
                     '-O3',
                     '-fpermissive',
                     '-fPIC',
-            ] + openmp,
-            extra_link_args = [
-            ] + openmp
+                    '-std=c++14'
+            ],
+            swig_opts = ['-c++']
     )]
+
 )

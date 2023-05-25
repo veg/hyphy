@@ -302,7 +302,7 @@ prime.beta  = model.generic.GetLocalParameter (prime.site.background_fel, terms.
 io.CheckAssertion ("None!=prime.alpha && None!=prime.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
 
-prime.site.property_model =  model.generic.DefineModel("models.codon.MG_REV_PROP.ModelDescription",
+prime.site.property_model =  model.generic.DefineModel("models.codon.MG_REV_PROPERTIES.ModelDescription",
         "prime.model.prop", {
             "0": parameters.Quote(terms.local),
             "1": prime.codon_data_info[terms.code],
@@ -310,10 +310,13 @@ prime.site.property_model =  model.generic.DefineModel("models.codon.MG_REV_PROP
         },
         prime.filter_names,
         None);
-        
+   
+      
         
 prime.json [terms.model.residue_properties] = prime.site.property_model [terms.model.residue_properties];         
 prime.json [terms.translation_table] = prime.site.property_model [terms.translation_table];
+prime.json [terms.alphabet] = prime.site.property_model [terms.alphabet];         
+prime.json [terms.model.rate_matrix] = prime.site.property_model [terms.model.rate_matrix];         
 
 
 prime.properties               = prime.site.property_model [terms.model.residue_properties];
@@ -366,7 +369,7 @@ for (key, value; in; prime.properties ) {
     parameters.SetRange ( prime.p, prime.lambda_range);
     
     parameter.local_lambda = model.generic.GetLocalParameter (prime.site.property_model , terms.propertyImportance(key));
-    io.CheckAssertion ("None != parameter.local_lambda", "Could not find expected a local parameter in \`models.codon.MG_REV_PROP.ModelDescription\`");
+    io.CheckAssertion ("None != parameter.local_lambda", "Could not find expected a local parameter in \`models.codon.MG_REV_PROPERTIES.ModelDescription\`");
     prime.lambdas [parameter.local_lambda] = prime.p;
     prime.local_to_property_name [parameter.local_lambda] = key;
     prime.property_to_index [key] = prime.i-1;

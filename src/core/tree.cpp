@@ -60,6 +60,18 @@ using namespace hyphy_global_objects;
 #define     TREE_V_SHIFT            8.0
 #define     TREE_H_SHIFT            10.0
 
+#ifdef  _SLKP_USE_AVX_INTRINSICS
+
+inline __m256d _hy_matrix_handle_axv_mfma (__m256d c, __m256d a, __m256d b) {
+    #if defined _SLKP_USE_FMA3_INTRINSICS
+        return _mm256_fmadd_pd (a,b,c);
+    #else
+        return _mm256_add_pd (c, _mm256_mul_pd (a,b));
+    #endif
+}
+
+#endif
+
 
 hyFloat  _TheTree::_timesCharWidths[256]= { // Hardcoded relative widths of all 255 characters in the Times font, for the use of PSTreeString
     0,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0.721569,0,0.25098,0.721569,0.721569,0.721569,0,0.721569,0.721569,
@@ -3154,11 +3166,11 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 term = log(accumulator) - correction;
             }
             
-            /*
-            if (likeFuncEvalCallCount == 3013) {
+            
+            /*if (likeFuncEvalCallCount == 52) {
                 fprintf (stderr, "CACHE, %ld, %ld, %20.15lg, %20.15lg, %20.15lg,  %20.15lg\n", likeFuncEvalCallCount, siteID, accumulator, correction, term, result);
-            }
-            */
+            }*/
+            
             
             hyFloat temp_sum = result + term;
             correction = (temp_sum - result) - term;
@@ -3224,7 +3236,26 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
                     hyFloat accumulator = 0.;
 #ifdef _SLKP_USE_AVX_INTRINSICS
-                    __m256d root_c = _mm256_loadu_pd (rootConditionals),
+
+
+        
+                    __m256d     c0     = _mm256_set1_pd  (branchConditionals[0]-branchConditionals[3]),
+                                c1     = _mm256_set1_pd  (branchConditionals[1]-branchConditionals[3]),
+                                c2     = _mm256_set1_pd  (branchConditionals[2]-branchConditionals[3]),
+                                c3     = _mm256_set1_pd  (branchConditionals[3]);
+    
+                    __m256d     t[2];
+  
+    
+                    t[0] = _hy_matrix_handle_axv_mfma (_mm256_mul_pd (c0, tmatrix_transpose[0]), c1, tmatrix_transpose[1]);
+                    t[1] = _hy_matrix_handle_axv_mfma (c3,c2, tmatrix_transpose[2]);
+    
+                    t[0] = _mm256_mul_pd (_mm256_loadu_pd (rootConditionals), _mm256_add_pd (t[0], t[1]));
+    
+                    accumulator = _avx_sum_4 (_mm256_mul_pd (t[0], _mm256_loadu_pd (theProbs)));
+        
+
+                    /*__m256d root_c = _mm256_loadu_pd (rootConditionals),
                     probs  = _mm256_loadu_pd (theProbs),
                     b_cond0 = _mm256_set1_pd(branchConditionals[0]),
                     b_cond1 = _mm256_set1_pd(branchConditionals[1]),
@@ -3232,49 +3263,32 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                     b_cond3 = _mm256_set1_pd(branchConditionals[3]),
                     s01    = _mm256_add_pd ( _mm256_mul_pd (b_cond0, tmatrix_transpose[0]), _mm256_mul_pd (b_cond1, tmatrix_transpose[1])),
                     s23    = _mm256_add_pd ( _mm256_mul_pd (b_cond2, tmatrix_transpose[2]), _mm256_mul_pd (b_cond3, tmatrix_transpose[3]));
-                    accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));
+                    accumulator = _avx_sum_4(_mm256_mul_pd (_mm256_mul_pd (root_c, probs), _mm256_add_pd (s01,s23)));*/
                     
 #elif defined _SLKP_USE_ARM_NEON
-                    //float64x2x2_t root_c = vld1q_f64_x2 (rootConditionals),
-                    //              probs  = vld1q_f64_x2 (theProbs);
+                
+                    float64x2_t c0     = vdupq_n_f64(branchConditionals[0]-branchConditionals[3]),
+                                c1     = vdupq_n_f64(branchConditionals[1]-branchConditionals[3]),
+                                c2     = vdupq_n_f64(branchConditionals[2]-branchConditionals[3]),
+                                c3     = vdupq_n_f64(branchConditionals[3]);
                     
-                    //printf ("NEON\n");
+                    float64x2_t t[4];
+                  
+                    t[0] = vfmaq_f64 (vmulq_f64  (c1,tmatrix_transpose[1].val[0]),c0,tmatrix_transpose[0].val[0]);
+                    t[1] = vfmaq_f64 (vmulq_f64  (c1,tmatrix_transpose[1].val[1]),c0,tmatrix_transpose[0].val[1]);
+                    t[2] = vaddq_f64 (vmulq_f64  (c2,tmatrix_transpose[2].val[0]),c3);
+                    t[3] = vaddq_f64 (vmulq_f64  (c2,tmatrix_transpose[2].val[1]),c3);
                     
-                    float64x2_t     rp0 = vmulq_f64 (vld1q_f64 (rootConditionals), vld1q_f64 (theProbs)),
-                                    rp1 = vmulq_f64 (vld1q_f64 (rootConditionals+2), vld1q_f64 (theProbs+2));
-                    
-                    float64x2_t b_cond0 = vdupq_n_f64 (branchConditionals[0]),
-                                b_cond1 = vdupq_n_f64 (branchConditionals[1]),
-                                b_cond2 = vdupq_n_f64 (branchConditionals[2]),
-                                b_cond3 = vdupq_n_f64 (branchConditionals[3]);
-                    
-                     
-                    float64x2_t t00   = vmulq_f64 (b_cond0, tmatrix_transpose[0].val[0]),
-                                        // branchConditionals[0] *  transitionMatrix[0] , branchConditionals[0] *  transitionMatrix[4]
-                                t01   = vmulq_f64 (b_cond0, tmatrix_transpose[0].val[1]),
-                                        // branchConditionals[0] *  transitionMatrix[8] , branchConditionals[0] *  transitionMatrix[12]
-                                t10   = vmulq_f64 (b_cond1, tmatrix_transpose[1].val[0]),
-                                        //  branchConditionals[1] *  transitionMatrix[1] , branchConditionals[1] *  transitionMatrix[5]
-                                t11   = vmulq_f64 (b_cond1, tmatrix_transpose[1].val[1]),
-                                t20   = vmulq_f64 (b_cond2, tmatrix_transpose[2].val[0]),
-                                t21   = vmulq_f64 (b_cond2, tmatrix_transpose[2].val[1]),
-                                t30   = vmulq_f64 (b_cond3, tmatrix_transpose[3].val[0]),
-                                t31   = vmulq_f64 (b_cond3, tmatrix_transpose[3].val[1]);
-
+                    t[0] = vmulq_f64  (vld1q_f64 (rootConditionals), vaddq_f64 (t[0], t[2]));
+                    t[1] = vmulq_f64  (vld1q_f64 (rootConditionals+2), vaddq_f64 (t[1],t[3]));
+                    t[0] = vmulq_f64 (t[0], vld1q_f64 (theProbs));
+                    t[1] = vmulq_f64 (t[1], vld1q_f64 (theProbs+2));
+                    accumulator = _neon_sum_2 (vaddq_f64 (t[0],t[1]));
                     
 
-                    t00 = vfmaq_f64 (vmulq_f64 (t00, rp0), t01, rp1);
-                    t10 = vfmaq_f64 (vmulq_f64 (t10, rp0), t11, rp1);
-                    t20 = vfmaq_f64 (vmulq_f64 (t20, rp0), t21, rp1);
-                    t30 = vfmaq_f64 (vmulq_f64 (t30, rp0), t31, rp1);
-                    
-                    t00 = vaddq_f64 (t00,t10);
-                    t20 = vaddq_f64 (t20,t30);
-                    accumulator = _neon_sum_2 (vaddq_f64 (t00,t20));
-                    
                     
 #else
-                    accumulator =    rootConditionals[0] * theProbs[0] *
+                    /*accumulator =    rootConditionals[0] * theProbs[0] *
                     (branchConditionals[0] *  transitionMatrix[0] + branchConditionals[1] *  transitionMatrix[1] + branchConditionals[2] *  transitionMatrix[2] + branchConditionals[3] *  transitionMatrix[3]) +
                     rootConditionals[1] * theProbs[1] *
                     (branchConditionals[0] *  transitionMatrix[4] + branchConditionals[1] *  transitionMatrix[5] + branchConditionals[2] *  transitionMatrix[6] + branchConditionals[3] *  transitionMatrix[7]) +
@@ -3282,6 +3296,22 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                     (branchConditionals[0] *  transitionMatrix[8] + branchConditionals[1] *  transitionMatrix[9] + branchConditionals[2] *  transitionMatrix[10] + branchConditionals[3] *  transitionMatrix[11]) +
                     rootConditionals[3] * theProbs[3] *
                     (branchConditionals[0] *  transitionMatrix[12] + branchConditionals[1] *  transitionMatrix[13] + branchConditionals[2] *  transitionMatrix[14] + branchConditionals[3] *  transitionMatrix[15]);
+                    */
+                    
+                    hyFloat t1 = branchConditionals[0] - branchConditionals[3],
+                    t2 = branchConditionals[1] - branchConditionals[3],
+                    t3 = branchConditionals[2] - branchConditionals[3],
+                    t4 = branchConditionals[3];
+                    
+                    accumulator =
+                      rootConditionals[0] * theProbs[0] * ((transitionMatrix[0]  * t1 + transitionMatrix[1] * t2) + (transitionMatrix[2] * t3 + t4))
+                    + rootConditionals[1] * theProbs[1] * ((transitionMatrix[4]  * t1 + transitionMatrix[5] * t2) + (transitionMatrix[6] * t3 + t4))
+                    + rootConditionals[2] * theProbs[2] * ((transitionMatrix[8]  * t1 + transitionMatrix[9] * t2) + (transitionMatrix[10] * t3 + t4))
+                    + rootConditionals[3] * theProbs[3] * ((transitionMatrix[12] * t1 + transitionMatrix[13] * t2) + (transitionMatrix[14] * t3 + t4));
+                    
+                    //return (parentConditionals[0] + parentConditionals[1]) + (parentConditionals[2] + parentConditionals[3]);
+                    
+                    
 #endif
                     bookkeeping (siteID, accumulator, correction, result);
                     rootConditionals += 4UL;

@@ -244,7 +244,6 @@ lfunction estimators.RemoveBranchLengthConstraints (estimates) {
                     p - ^"terms.constraint";
                 }
             }
-            
         }
     }
     return estimates;

@@ -1532,12 +1532,6 @@ L120:
         }
         /*                                  Table index */
 
-        /*if(key < 0)
-        {
-            errMsg = "Negative key in f3xact";
-            WarnError (errMsg);
-            //return 0;
-        }*/
 
         if ((ipn = key % ldst + 1) < 1) {
             ipn += ldst;
@@ -1765,12 +1759,7 @@ int f2xact_(long *nrow, long *ncol, double *table,
     i46 = i45 + k;
     i47 = i46 + k * Maximum(*nrow,*ncol);
     i48 = 1;
-    /*                                  Check table dimensions */
-    /* if (*nrow > *ldtabl) {
-        errMsg = errMsg & "NROW must be less than or equal to LDTABL.";
-        WarnError (errMsg);
-        return 0;
-     }*/
+
     if (*ncol <= 1) {
         HandleApplicationError( errMsg & "NCOL must be greater than 1.0");
         return 0;
@@ -2317,12 +2306,7 @@ int fexact_(long nrow, long ncol, double *table, double expect, double percnt, d
     /*                                  Set IREAL = 3 for SINGLE PRECISION */
     /* *********************************************************************** */
 
-    /* if (*nrow > *ldtabl) {
-        errMsg = errMsg &  "NROW must be less than or equal to LDTABL.";
-        WarnError(errMsg);
-        free (equiv_1);
-        return 0;
-     }*/
+    
 
     ntot = 0;
     for (long i = 0; i<ncol*nrow; i++) {

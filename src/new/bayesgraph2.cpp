@@ -64,7 +64,7 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
 
         rec << bgm_name << "={};\n";
  
-        for (long node = 0; node < num_nodes; node++) {
+        for (unsigned long node = 0; node < num_nodes; node++) {
           
            // start the dictionary entry for this node
            rec << bgm_name << "['" << node << "'] = {\n"
@@ -73,7 +73,7 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
           
             _SimpleList parents, d_parents, c_parents;
           
-            for (long pnode = 0; pnode < num_nodes; pnode++) {
+            for (unsigned long pnode = 0; pnode < num_nodes; pnode++) {
               if (pnode == node) {
                 continue;
               }
@@ -104,7 +104,7 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
 
 
                 // report posterior Dirichlet PDFs
-                for (long j = 0; j < n_ij.GetHDim(); j++) {
+                for (unsigned long j = 0; j < n_ij.GetHDim(); j++) {
                     rec << "\"Random({{";
                     for (long k = 0; k < num_levels.list_data[node]; k++) { // k indexes child node states
                         rec << _String(n_ijk(j,k));
@@ -113,7 +113,7 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
                         }
                     }
                     rec << "}},{'PDF':'Dirichlet'})\"";
-                    if (j < n_ij.GetHDim()-1) {
+                    if (j + 1 < n_ij.GetHDim()) {
                         rec << ',';
                     }
                 }
@@ -156,7 +156,7 @@ void _BayesianGraphicalModel::SerializeBGM (_StringBuffer & rec) {
                     _Matrix     zbpa (n_ij.get(pa), k+1, false, true),
                                 yb (n_ij.get(pa), 1, false, true);
 
-                    for (long count_n = 0L, obs = 0L; obs < theData.GetHDim(); obs++) {
+                    for (unsigned long count_n = 0L, obs = 0L; obs < theData.GetHDim(); obs++) {
                         if (pa_indexing.get(obs) == pa) {
                             zbpa.Store (count_n, 0, 1);
                             for (long cpar = 0; cpar < k; cpar++) {
@@ -254,7 +254,7 @@ bool _BayesianGraphicalModel::ImportCache (_AssociativeList * cache_import) {
     }
 
     try {
-      for (long node = 0; node < num_nodes; node++) {
+      for (unsigned long node = 0; node < num_nodes; node++) {
           _List   *   node_scores = (_List *) node_score_cache.GetItem (node);
           node_scores->Clear();
 
@@ -308,7 +308,7 @@ bool _BayesianGraphicalModel::ExportCache (_AssociativeList * cache_export) cons
     if (scores_cached) {
         ReportWarning (_String("Exporting cache with ") & num_nodes & " nodes");
 
-        for (long node = 0; node < num_nodes; node++) {
+        for (unsigned long node = 0; node < num_nodes; node++) {
             this_list = (_List *) node_score_cache.GetItem (node);
 
             for (long npar = 0; npar <= max_parents.list_data[node]; npar++) {
@@ -352,7 +352,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id) {
 hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _Matrix const &dag) {
     _SimpleList     parents;
 
-    for (long par = 0L; par < num_nodes; par++) {
+    for (unsigned long par = 0L; par < num_nodes; par++) {
         // support for discrete parents only
         if (dag(par, node_id) == 1L) {
             parents << par;
@@ -485,7 +485,7 @@ hyFloat _BayesianGraphicalModel::ComputeContinuousScore (long node_id, _SimpleLi
         _Matrix     zbpa (n_ij.get(pa), continuous_parent_count+1, false, true),
                     yb (n_ij.get(pa), 1, false, true);
 
-        for (long count_n = 0, obs = 0; obs < theData.GetHDim(); obs++) {
+        for (unsigned long count_n = 0, obs = 0; obs < theData.GetHDim(); obs++) {
           if (pa_indexing.get(obs) == pa) {
             // populate zbpa matrix with (1, y_1, y_2, ..., y_m) entries for this parental combo
             zbpa.Store (count_n, 0, 1);
@@ -582,7 +582,7 @@ hyFloat  _BayesianGraphicalModel::BottcherScore (_Matrix const& yb, _Matrix cons
 
       //ReportWarning (_String("... %*% zbpa^T = ") & (_String *) temp_mat.toStr());
 
-      for (long row = 0; row < temp_mat.GetHDim(); row++) {
+      for (unsigned long row = 0; row < temp_mat.GetHDim(); row++) {
           temp_mat.set (row, row) += 1.;
       }
 
@@ -731,7 +731,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     
     // number of steps between samples
     
-    long sampling_interval    = Maximum(impute_maxsteps / impute_samples, 1L),
+    unsigned long sampling_interval    = Maximum(impute_maxsteps / impute_samples, 1L),
     r_i                  = num_levels.get(node_id), // number of levels for child node
     max_num_levels       = r_i,
     family_size          = parents.countitems() + 1L,
@@ -749,7 +749,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     family_index[0]           = node_id;
     
     
-    for (long nlev, p = 0; p < parents.lLength; p++) {
+    for (unsigned long nlev, p = 0; p < parents.lLength; p++) {
       long parent_idx = parents.get (p);
       family_index [p+1] = parent_idx;
       nlev = family_nlevels[p+1] = num_levels.get(parent_idx);
@@ -763,7 +763,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     _Matrix n_ijk (num_parent_combos, r_i, false, true),
     n_ij  (num_parent_combos, 1, false, true),
     data_deep_copy (theData.GetHDim(), family_size, false, true),
-    observed_values (family_size, Maximum (max_num_levels, 3L), false, true);
+    observed_values (family_size, Maximum (max_num_levels, 3UL), false, true);
     
     
     // allocate space to matrices
@@ -776,15 +776,15 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     heap_tracker < vector_of_scores < reassign_probs;
     
     // allocate space to _GrowingVector object -- used for imputing discrete nodes only
-    for (long pa = 0L; pa < num_parent_combos; pa++) {
+    for (unsigned long pa = 0L; pa < num_parent_combos; pa++) {
       (*reassign_probs) << 0.;
     }
     
     
     // make deep copy, annotate which entries are missing, and record empirical distributions
-    for (long row = 0; row < theData.GetHDim(); row++) {
+    for (unsigned long row = 0; row < theData.GetHDim(); row++) {
       // findex = family-wise index
-      for (long findex = 0; findex < family_size; findex++) {
+      for (unsigned long findex = 0; findex < family_size; findex++) {
         long fnode = family_index.get (findex);  // parent node, get network-wide index
         hyFloat fstate = theData (row, fnode);
         data_deep_copy.set (row, findex) = fstate;
@@ -802,7 +802,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     
     
     // make a decision whether to use empirical or prior distribution to do initial imputations
-    for (long findex = 0L; findex < family_size; findex++) {
+    for (unsigned long findex = 0L; findex < family_size; findex++) {
        long fnode = family_index.get (findex);
       
       // count non-missing entries across states for this node
@@ -812,7 +812,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     
     
     // initialize missing entries to random assignments based on observed cases or prior info
-    for (long missing_idx = 0; missing_idx < is_missing.countitems(); missing_idx++) {
+    for (unsigned long missing_idx = 0; missing_idx < is_missing.countitems(); missing_idx++) {
       long row     = is_missing.get(missing_idx) / family_size;
       long col     = is_missing.get(missing_idx) % family_size;
       //fnode   = (col == 0) ? node_id : parents.list_data[col-1];
@@ -832,10 +832,10 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
     
     
     // tally N_ijk summary statistics for imputed data
-    for (long row = 0; row < data_deep_copy.GetHDim(); row++) {
+    for (unsigned long row = 0; row < data_deep_copy.GetHDim(); row++) {
       long pa_index    = 0;
       long child_state = data_deep_copy (row, 0);
-      for (long par = 0; par < parents.countitems(); par++) {
+      for (unsigned long par = 0; par < parents.countitems(); par++) {
         pa_index += (long) data_deep_copy (row, par+1) * multipliers[par];
       }
       n_ijk.Store (pa_index, child_state, n_ijk(pa_index, child_state) + 1);
@@ -850,14 +850,14 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
       
       log_score = K2Score (r_i, n_ij, n_ijk); // compute initial score
       
-      for (long row, col, pa_index, missing_idx = 0; missing_idx < is_missing.countitems(); missing_idx++) {
+      for (unsigned long row, col, pa_index, missing_idx = 0; missing_idx < is_missing.countitems(); missing_idx++) {
         row         = is_missing.list_data[missing_idx] / family_size;
         col         = is_missing.list_data[missing_idx] % family_size;
         pa_index    = 0;
         
         
         // determine parent combination for this row -- use [pa_indices] object instead?  AFYP
-        for (long par = 0; par < parents.countitems(); par++) {
+        for (unsigned long par = 0; par < parents.countitems(); par++) {
           pa_index += data_deep_copy (row, par+1) * multipliers.get(par);
         }
         
@@ -870,7 +870,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
           n_ijk.Store (pa_index, (long) child_state, n_ijk(pa_index, (long) child_state) - 1);
           
           // compute probabilities for all instantiations of child node
-          for (long k = 0; k < r_i; k++) {
+          for (unsigned long k = 0; k < r_i; k++) {
             reassign_probs->Store (log_score + log (n_ijk(pa_index, k) + 1));
           }
           
@@ -879,7 +879,7 @@ hyFloat _BayesianGraphicalModel::ImputeDiscreteNodeScore (long node_id, _SimpleL
           // random reassignment
           hyFloat urn = genrand_real2 ();
           
-          for (long lev = 0; lev < r_i; lev++) {
+          for (unsigned long lev = 0; lev < r_i; lev++) {
             hyFloat this_prob = exp ((* (_Matrix *) reassign_probs) (lev,0) - denom);
             
             if ( urn  <  this_prob ) {
@@ -1010,7 +1010,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
     
     // partition parent list into discrete and continuous; record stuff while we're at it
     
-    for (long p = 0; p < parents.countitems(); p++) {
+    for (unsigned long p = 0; p < parents.countitems(); p++) {
       long parent_index = parents.get (p);
       if (is_node_discrete(p)) {
         // parent is discrete-valued
@@ -1039,8 +1039,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
     _Matrix rho_mx (rho, 1, 1),
             phi_mx (phi, 1, 1);
     
-    _Matrix * iw_ptr;
-    hyFloat iw_deviate;
+    //_Matrix * iw_ptr;
 
     
     // allocate space to matrices
@@ -1069,7 +1068,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
     
     
     // make deep copy, annotate which entries are missing, and record empirical distributions
-    for (long row = 0; row < theData.GetHDim(); row++) {
+    for (unsigned long row = 0; row < theData.GetHDim(); row++) {
       // findex = family-wise index
       for (long findex = 0; findex < family_size; findex++) {
         long fnode = family_index.get (findex);  // parent node, get network-wide index
@@ -1139,7 +1138,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
     }
     
     // initialize missing entries to random assignments based on observed cases or prior info
-    for (long missing_idx = 0; missing_idx < is_missing.countitems(); missing_idx++) {
+    for (unsigned long missing_idx = 0; missing_idx < is_missing.countitems(); missing_idx++) {
       long row     = is_missing.get(missing_idx) / family_size;
       long col     = is_missing.get(missing_idx) % family_size;
       long fnode =  family_index.get (col);
@@ -1187,7 +1186,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
     
     _SimpleList pa_indices (theData.GetHDim(), 0, 0);
      // partition data set by discrete parent state combination
-    for (long obs = 0; obs < theData.GetHDim(); obs++) {
+    for (unsigned long obs = 0; obs < theData.GetHDim(); obs++) {
       long pa_index = 0;
       
       for (long findex = 1; findex < family_size; findex++) {
@@ -1220,7 +1219,7 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
       
       // populate zbpa with continuous parent states
       long batch_count = 0;
-      for (long obs = 0; obs < pa_indices.countitems(); obs++) {
+      for (unsigned long obs = 0; obs < pa_indices.countitems(); obs++) {
         if (pa_indices.get(obs) == pa) {
           // (1, x_0, x_1, ..., x_N)
           zbpa.Store (batch_count, 0, 1); // intercept
@@ -1247,11 +1246,11 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
     for (long iter = 0; iter < impute_burnin + impute_maxsteps; iter++) {
       //is_missing.Permute(1);
       
-      for (long missing_idx = 0; missing_idx < is_missing.lLength; missing_idx++) {
+      for (unsigned long missing_idx = 0; missing_idx < is_missing.lLength; missing_idx++) {
         // indices into data_deep_copy for this missing value
-        long row         = is_missing.get(missing_idx) / family_size;
-        long col         = is_missing.get(missing_idx) % family_size;
-        long pa_index    = pa_indices.get(row);
+        unsigned long row         = is_missing.get(missing_idx) / family_size;
+        unsigned long col         = is_missing.get(missing_idx) % family_size;
+        unsigned long pa_index    = pa_indices.get(row);
         
         
         // if child node, then row remains in same 'pa' batch, Z^b_pa and N_ij unchanged
@@ -1259,8 +1258,8 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
           
           // draw new state from posterior of CG node
           
-          iw_ptr = (_Matrix *) phi_mx.InverseWishartDeviate (rho_mx);
-          iw_deviate = (*iw_ptr)(0,0);
+          //iw_ptr = (_Matrix *) phi_mx.InverseWishartDeviate (rho_mx);
+          //iw_deviate = (*iw_ptr)(0,0);
           //ReportWarning(_String("sigma=") & iw_deviate);
           
           
@@ -1269,9 +1268,9 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
           
           // collect all continuous parent states under given discrete parent combination (pa_index)
           long batch_count = 0;
-          for (long obs = 0; obs < pa_indices.countitems(); obs++) {
+          for (unsigned long obs = 0; obs < pa_indices.countitems(); obs++) {
             if (obs == row) continue; // skip the current case
-            if (pa_indices.get(obs) == pa_index) {
+            if ((unsigned long)pa_indices.get(obs) == pa_index) {
               zbpa.Store (batch_count, 0, 1);
               for (long findex = 1; findex < family_size; findex++) {
                 if (is_node_continuous(family_index.get (findex))) {
@@ -1323,12 +1322,12 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
             _Matrix yb (n_ij(pa_index,0), 1, false, true);
             
             long batch_count = 0;
-            for (long obs = 0; obs < data_deep_copy.GetHDim(); obs++) {
+            for (unsigned long obs = 0; obs < data_deep_copy.GetHDim(); obs++) {
               if (obs == row) {
                 continue;    // skip this case
               }
               
-              if (pa_indices.list_data[obs] == pa_index) {
+              if ((unsigned long)pa_indices.list_data[obs] == pa_index) {
                 zbpa.Store (batch_count, 0, 1);
                 
                 for (long findex = 1; findex < family_size; findex++) {
@@ -1372,9 +1371,9 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
                 
                 batch_count = 0;
                 
-                for (long obs = 0; obs < data_deep_copy.GetHDim(); obs++) {
+                for (unsigned long obs = 0; obs < data_deep_copy.GetHDim(); obs++) {
                   // we won't update pa_indices[] for this case, already have pa_index to work with
-                  if (obs == row || pa_indices.get(obs) == pa_index) {
+                  if (obs == row || (unsigned long) pa_indices.get(obs) == pa_index) {
                     zbpa.Store (batch_count, 0, 1);
                     
                     for (long findex = 1; findex < family_size; findex++) {
@@ -1425,8 +1424,8 @@ hyFloat _BayesianGraphicalModel::ImputeCGNodeScore (long node_id, _SimpleList co
             
             long batch_count = 0;
             
-            for (long obs = 0; obs < data_deep_copy.GetHDim(); obs++) {
-              if (pa_indices.get(obs) == pa_index) {
+            for (unsigned long obs = 0; obs < data_deep_copy.GetHDim(); obs++) {
+              if ((unsigned long)pa_indices.get(obs) == pa_index) {
                 zbpa.Store (batch_count, 0, 1);
                 
                 for (long findex = 1; findex < family_size; findex++) {

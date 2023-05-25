@@ -47,6 +47,17 @@
 
 using namespace hyphy_global_objects;
 
+//_________________________________________________________
+
+inline char _uppercase_char (char in) {
+    if (in >= 'a' && in <= 'z') {
+        return (char)(in-32);
+    }
+    return in;
+}
+
+//_________________________________________________________
+
 
 #define DATA_SET_SWITCH_THRESHOLD 100000
 
@@ -245,12 +256,6 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     theMap.list_data[1]++;
     fputc(c, streamThrough);
   } else {
-    /*if (!dsh)
-    {
-        WarnError ("Internal Error in 'Write2Site' - called Write2Site before
-    any AddSite calls"); return;
-    }*/
-
     if (useHorizontalRep) {
         long currentWritten = ((_String *)list_data[0])->length();
 
@@ -326,11 +331,6 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
           rN = dsh->incompletePatterns->Find(s);
           if (rN >= 0) {
             rN = dsh->incompletePatterns->GetXtra(rN);
-            /*_Site* s2 = (_Site*)list_data[rN];
-            if (s2->GetRefNo() != -1 || !s->Equal(s2))
-            {
-                WarnError ("Mapping Error");
-            }*/
             theFrequencies[rN]++;
             s->Clear();
             s->SetRefNo(rN);
@@ -407,37 +407,75 @@ void _DataSet::Finalize(void) {
         return;
       }
 
-      _List dups;
+      //_List dups;
       _List uniquePats;
-      _AVLListX dupsAVL(&dups);
+      //_AVLListX dupsAVL(&dups);
 
+      _SimpleList   _checkSumBins;
+      _AVLListXL    checkSumBins (&_checkSumBins);
+        
       long siteCounter = ((_String *)list_data[0])->length();
-
+        
       _String site_holder (lLength, nil);
       
-      for (long i1 = 0L; i1 < siteCounter; i1++) {
-        _Site *tC = new _Site(lLength, -1);
-
-        for (long i2 = 0L; i2 < lLength; i2++) {
-          site_holder.set_char(i2,((_String *)list_data[i2])->get_char(i1));
-          //(*tC) << ;
-        }
-        (*tC) << site_holder;
-        long ff = dupsAVL.Find(tC);
-        if (ff < 0) {
+      auto insert_new_pattern = [&] (long index) -> void {
+          _SimpleList * indices = (_SimpleList *)checkSumBins.GetXtra (index);
+          _Site *tC = new _Site(lLength, -1);
+          (*indices) << uniquePats.lLength;
+          (*tC) << site_holder;
           uniquePats << tC;
-          dupsAVL.Insert(tC, theFrequencies.lLength);
+          //dupsAVL.Insert(tC, theFrequencies.lLength);
           theMap << theFrequencies.lLength;
           theFrequencies << 1;
+          DeleteObject(tC);
+      };
+
+      _SimpleList *sites_with_same_checksum = new _SimpleList;
+        
+      for (long i1 = 0L; i1 < siteCounter; i1++) {
+        for (long i2 = 0L; i2 < lLength; i2++) {
+          site_holder.set_char_no_check (i2,((_String *)list_data[i2])->get_char(i1));
+          //(*tC) << ;
+        }
+          
+        long patternChecksum = site_holder.Adler32();
+
+        long checkSumExists = checkSumBins.Insert ((BaseRef)patternChecksum, (long)sites_with_same_checksum, false, false);
+        if (checkSumExists >= 0) {
+           insert_new_pattern(checkSumExists);
+           sites_with_same_checksum = new _SimpleList;
         } else {
-          ff = dupsAVL.GetXtra(ff);
-          theMap << ff;
-          theFrequencies.list_data[ff]++;
+            //long ff = dupsAVL.Find(&site_holder);
+            
+            checkSumExists = -checkSumExists - 1;
+            
+            _SimpleList * indices = (_SimpleList *)checkSumBins.GetXtra (checkSumExists);
+            long i = 0;
+            for (; i < indices->lLength; i++) {
+                long pattern_index = indices->get(i);
+                _Site * comp = (_Site*)uniquePats.GetItem(pattern_index);
+                if (comp->Equal(site_holder)) {
+                    theMap << pattern_index;
+                    theFrequencies.list_data[pattern_index]++;
+                    break;
+                }
+            }
+            if (i == indices->lLength) {
+                insert_new_pattern(checkSumExists);
+            }
+            
+            /*if (ff < 0) {
+                insert_new_pattern ();
+            } else {
+                ff = dupsAVL.GetXtra(ff);
+                theMap << ff;
+                theFrequencies.list_data[ff]++;
+            }*/
         }
 
-        DeleteObject(tC);
       }
-      dupsAVL.Clear(false);
+      DeleteObject (sites_with_same_checksum);
+      //dupsAVL.Clear(false);
       _List::Clear();
       _List::Duplicate(&uniquePats);
     } else {
@@ -1706,7 +1744,7 @@ long    ProcessLine (_String&s , FileState *fs, _DataSet& ds) {
     
     try {
         s.Each([&] (char letter, unsigned long i) -> void {
-            letter = toupper(letter);
+            letter = _uppercase_char(letter);
             if (fs->translationTable->IsCharLegal(letter)) { // go on
                 if (fs->curSpecies==0) { // add new column
                     ds.AddSite (letter);
@@ -1838,8 +1876,10 @@ bool SkipLine (_StringBuffer& theLine, FileState* fS) {
 
 //_________________________________________________________
 void ReadNextLine (hyFile * fp, _StringBuffer *s, FileState* fs, bool, bool upCase) {
-    _StringBuffer  tempBuffer (MAX (1024L, fs->totalSitesRead));
+    
+    
   
+    fs->lineBuffer.Reset();
     fs->currentFileLine ++;
     
     char lastc;
@@ -1853,25 +1893,26 @@ void ReadNextLine (hyFile * fp, _StringBuffer *s, FileState* fs, bool, bool upCa
     
     if (fs->fileType != 3) { // not NEXUS - do not skip [..]
         if (fp)
-            while ( !fp->feof() && lastc!=10 && lastc!=13 ) {
+            while ( !fp->feof() && lastc!='\r' && lastc!='\n' ) {
                 if (lastc) {
-                    tempBuffer << lastc;
+                    fs->lineBuffer << lastc;
                 }
                 
                 lastc = fp->getc();
             }
         else
-            while (lastc && lastc!=10 && lastc!=13 ) {
-                tempBuffer << lastc;
+            while (lastc && lastc!='\r' && lastc!='\n' ) {
+                fs->lineBuffer << lastc;
                 lastc = fs->theSource->char_at(fs->pInSrc++);
             }
         
     } else {
         if (upCase) {
-            lastc = toupper(lastc);
+            lastc = _uppercase_char(lastc);
         }
         
-        while (((fp&&!fp->feof())||(fs->theSource&&(fs->pInSrc<=fs->theSource->length ()))) && lastc!='\r' && lastc!='\n') {
+        while (((fp&&!fp->feof()) ||
+                (fs->theSource&&(fs->pInSrc<=fs->theSource->length ()))) && lastc!='\r' && lastc!='\n') {
             if (lastc=='[') {
                 if (fs->isSkippingInNEXUS) {
                     ReportWarning ("Nested comments in NEXUS really shouldn't be used.");
@@ -1882,21 +1923,20 @@ void ReadNextLine (hyFile * fp, _StringBuffer *s, FileState* fs, bool, bool upCa
             if (fs->isSkippingInNEXUS) {
                 if (lastc==']') {
                     fs->isSkippingInNEXUS = false;
-                    tempBuffer << ' ';
+                    fs->lineBuffer << ' ';
                 }
             } else {
-                tempBuffer << lastc;
+                fs->lineBuffer << lastc;
             }
             
             if (fp) {
+                lastc = fp->getc();
                 if (upCase) {
-                    lastc = toupper(fp->getc());
-                } else {
-                    lastc = fp->getc();
+                    lastc = _uppercase_char(lastc);
                 }
             } else {
                 if (upCase) {
-                    lastc = toupper(fs->theSource->char_at(fs->pInSrc++));
+                    lastc = _uppercase_char(fs->theSource->char_at(fs->pInSrc++));
                 } else {
                     lastc = fs->theSource->char_at(fs->pInSrc++);
                 }
@@ -1904,25 +1944,25 @@ void ReadNextLine (hyFile * fp, _StringBuffer *s, FileState* fs, bool, bool upCa
             
         }
         
-        if ( lastc==10 || lastc==13 ) {
-            tempBuffer << ' ';
+        if ( lastc=='\r' || lastc=='\n' ) {
+            fs->lineBuffer << ' ';
         }
     }
     
-    tempBuffer.TrimSpace();
     
     if ( (fp && fp->feof ()) || (fs->theSource && fs->pInSrc >= fs->theSource->length()) ) {
-        if (tempBuffer.empty ()) {
-            *s = "";
+        if (fs->lineBuffer.empty ()) {
+            s->Clear();
             return;
         }
     }
-    *s = tempBuffer;
+    //tempBuffer.TrimSpace();
+    *s = fs->lineBuffer;
     
     if (SkipLine (*s, fs)) {
         ReadNextLine(fp,s,fs,false,upCase);
     }
-    
+        
     if (s->nonempty() && s->char_at (s->length()-1) == '\n') {
         s->Trim (0,(long)s->length()-2L);
     }

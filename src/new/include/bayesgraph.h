@@ -159,7 +159,7 @@ protected:
                     ComputeParentMultipliers (_SimpleList const&) const;
     long            ReindexParentObservations(_SimpleList const& parents, _SimpleList& n_ij, _SimpleList& pa_indexing) const;
   
-    long            num_nodes;
+    unsigned long            num_nodes;
 
     /* ------------------------------------------- */
 

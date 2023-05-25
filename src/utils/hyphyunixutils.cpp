@@ -173,7 +173,7 @@ _String *    StringFromConsole   () {
         *returnme << (char)readAChar;
     }
 #else
-    WarnError ("Unhandled standard input interaction in StringFromConsole for headless HyPhy");
+    HandleApplicationError("Unhandled standard input interaction in StringFromConsole for headless HyPhy");
     return NULL;
 #endif
     return returnme;

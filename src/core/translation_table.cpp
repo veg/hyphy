@@ -715,7 +715,7 @@ void _TranslationTable::PrepareForChecks(void) {
 
 //_________________________________________________________
 bool _TranslationTable::IsCharLegal(char c) {
-  if (!checkTable) {
+  if (__builtin_expect (!checkTable,0)) {
     PrepareForChecks();
   }
   return checkTable[(unsigned char)c];

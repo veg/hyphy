@@ -1,33 +1,39 @@
-function GaussLaguerreQuardature (n,alf)
-{
-	GLMatrix = {n,2};
+
+ffunction		GammaQuadWeight (ind, alph, type) {
+	if (alph == cachedAlpha) {
+		return cachedValues[ind][type];
+	}
+	cachedAlpha = alph;
+	if (ind == 0) {
+		cachedValues = GaussLaguerreQuardature (resp, alph-1);
+	}
+	return cachedValues[ind][type];
+}
+
+
+function GaussLaguerreQuardature (n,alf) {
+ 	GLMatrix = {n,2};
 	
 	mf = 1/(Gamma (n)*Gamma (alf+1));
 	
-	for (i=1; i<=n; i=i+1)
-	{
-		if (i==1)
-		{
+	for (i=1; i<=n; i += 1) {
+		if (i==1) {
 			z = (1+alf)*(3+0.92*alf)/(1+2.4*n+1.8*alf);
 		}
 		else
 		{
-			if (i==2)
-			{
+			if (i==2) {
 				z = z+(15+6.25*alf)/(1+.9*alf+2.5*n);
 			}
-			else
-			{
+			else {
 				ai = i-2;
 				z = z+((1+2.55*ai)/(1.9*ai)+1.26*ai*alf/(1+3.5*ai))*(z-GLMatrix[i-3][0])/(1+0.3*alf);
 			}
 		}
-		for (its=1;its<=10;its=its+1)
-		{
+		for (its=1;its<=10;its += 1) {
 			p1 = 1;
 			p2 = 0;
-			for (j=1; j<=n; j=j+1)
-			{
+			for (j=1; j<=n; j += 1) {
 				p3 = p2;
 				p2 = p1;
 				p1 = ((2*j-1+alf-z)*p2-(j-1+alf)*p3)/j;
@@ -35,8 +41,7 @@ function GaussLaguerreQuardature (n,alf)
 			pp = (n*p1-(n+alf)*p2)/z;
 			z1 = z;
 			z  = z1-p1/pp;
-			if (Abs (z-z1)<1e-14)
-			{
+			if (Abs (z-z1)<1e-14) {
 				break;
 			}
 		}
@@ -44,27 +49,13 @@ function GaussLaguerreQuardature (n,alf)
 		GLMatrix[i-1][1] = -Gamma(alf+n)*mf/(pp*n*p2);
 	}
 	
-	for (i=0; i<n; i=i+1)
-	{
+	for (i=0; i<n; i+=1){
 		GLMatrix[i][0] = GLMatrix[i][0]/(alf+1);
 	}
 	
 	return GLMatrix;
 }
 
-ffunction		GammaQuadWeight (ind, alph, type)
-{
-	if (alph == cachedAlpha)
-	{
-		return cachedValues[ind][type];
-	}
-	cachedAlpha = alph;
-	if (ind == 0)
-	{
-		cachedValues = GaussLaguerreQuardature (resp, alph-1);
-	}
-	return cachedValues[ind][type];
-}
 
 /*_________________________________________________________________________________________________________________*/
 
@@ -188,8 +179,8 @@ if (distribution==4)
 			  	    (1-P)*CGammaDist(_x_,alpha+1,beta)*(alpha/beta)*(_x_>0)
 			  	 );
 }
-if (distribution==5)
-{
+
+if (distribution==5) {
 	cachedAlpha = -1;
 	
 	global alpha = .5;
@@ -198,18 +189,16 @@ if (distribution==5)
 
 	categFreqMatrix  = {resp,1};
 	categRateMatrix	 = {resp,1};
-
-	for (h=0; h<resp; h=h+1)
-	{
-		categFreqMatrix[h][0] := GammaQuadWeight(h__,alpha,1);
-		categRateMatrix[h][0] := GammaQuadWeight(h__,alpha,0);
+	
+	for (h=0; h<resp; h += 1) {
+		categFreqMatrix[h][0] := GammaQuadWeight (h__,alpha,1);
+		categRateMatrix[h][0] := GammaQuadWeight (h__,alpha,0);
 	}
 	
-	category c = (resp, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);	
-	
+	category c = (resp, categFreqMatrix , MEAN, ,categRateMatrix, 0, 1e25);		
 }
-if (distribution==6)
-{
+
+if (distribution==6) {
 	global P;
 	P :< 1-(1e-10);
 	P = 1/(resp+1);

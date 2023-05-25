@@ -219,7 +219,7 @@ long       ExecuteFormula (_Formula*f , _Formula* f2, long code, long reference,
         if (!formulaValue) {
             return 0;
         }
-
+        
         if (code == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
             // copy by value or by reference?
             //formulaValue->AddAReference();

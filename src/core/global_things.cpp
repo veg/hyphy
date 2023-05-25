@@ -108,8 +108,7 @@ namespace hy_global {
                      kPromptForFilePlaceholder        ("PROMPT_FOR_FILE"),
                      kTemporaryFilePlaceholder        ("TEMP_FILE_NAME"),
                      kEmptyAssociativeList ("{}"),
-                     kHyPhyCiteString ("\nPlease cite S.L. Kosakovsky Pond, S. D. W. Frost and S.V. Muse. (2005) HyPhy: hypothesis testing using\
- phylogenies. Bioinformatics 21: 676-679 if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at\
+                     kHyPhyCiteString ("\nPlease cite Sergei L Kosakovsky Pond et al Mol Biol Evol (2020), 37(1): 295–299, if you use HyPhy in a publication\nIf you are a new HyPhy user, the tutorial located at\
  http://www.hyphy.org/docs/HyphyDocs.pdf may be a good starting point.\n"),
                      kXVariableName ("_x_"),
                      kNVariableName ("_n_"),
@@ -122,7 +121,7 @@ namespace hy_global {
                      kErrorStringDatasetRefIndexError ("Dataset index reference out of range"),
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
-                     kHyPhyVersion  = _String ("2.5.48"),
+                     kHyPhyVersion  = _String ("2.5.51"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -665,7 +664,7 @@ namespace hy_global {
         bool do_logging = EnvVariableTrue(message_logging);
             
 #ifdef  __HEADLESS__
-        if (globalInterfaceInstance && do_logging >= 0.1) {
+        if (globalInterfaceInstance && do_logging) {
             globalInterfaceInstance->PushWarning (&message);
         }
 #else
@@ -733,9 +732,10 @@ namespace hy_global {
             
     #ifdef  __HEADLESS__
         if (globalInterfaceInstance) {
-            globalInterfaceInstance->PushError (&st);
+            globalInterfaceInstance->PushError (&message);
         }
         terminate_execution = true;
+        return;
     #else
         char  str[] = "\nError:";
         
