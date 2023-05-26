@@ -643,20 +643,20 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     );
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-    
+    fel.ll = results[1][0];
     //console.log ("\nFEL = " + results[1][0]);
     //console.log ("alpha = " + ^"prime.site_alpha");
     //console.log ("beta = " + ^"prime.site_beta");
   
-    Export (lfe, ^lf_prop);
-    fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
+    //Export (lfe, ^lf_prop);
+    // fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
     
     /*if (^"prime.site_beta" > 0) {
         // only matters for sites with non-syn changes
     
     }*/
   
-        // fit the universal alternative
+     // fit the universal alternative
      //console.log (fel);
      ^"prime.site_beta" = Eval (^"prime.site_beta");   
      //parameters.SetConstraint ("prime.site_beta", Eval(^"prime.site_beta"),"");
@@ -675,6 +675,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
      for (l; in; ^"prime.lambdas") {
         point [l] = 0;
      }
+     
      start_grid + point;
      propNames = utility.Values (^"prime.lambdas");
      ranges = {};
@@ -732,8 +733,8 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
             "OPTIMIZATION_PRECISION": 1e-4
         });
         
-    Export (lfe, ^lf_prop);
-    fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
+    //Export (lfe, ^lf_prop);
+    //fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
     
     //console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM_VALUE" + "\nGrid best"+  ^"LF_INITIAL_GRID_MAXIMUM" + " / optimized " + results[1][0] + "\n");
     //Optimize (results, ^lf_prop,);
@@ -759,6 +760,7 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
             Optimize (results, ^lf_prop,{
                 "OPTIMIZATION_METHOD" : "nedler-mead",
                 "MAXIMUM_OPTIMIZATION_ITERATIONS" : 1000,
+                "OPTIMIZATION_START_GRID" : start_grid,
                 "OPTIMIZATION_PRECISION": 1e-4
             });
             //console.log (k + " => " + (- results[1][0] + altL));
@@ -766,8 +768,41 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
                 done = FALSE;
                 break;
             }
+            extra_its = 5;
+            while (results[1][0] < fel.ll - 1e-2 && extra_its) {
+                //console.log ("WORSE THAN FEL; REOPTIMIZING...");
+                for (sp; in; estimators.LHC (ranges, 40)) {
+                    point = {};
+        
+                    point ["prime.site_alpha"] = Random (^"prime.site_alpha" * 0.5, ^"prime.site_alpha" * 2.0);
+                    point ["prime.site_beta"] = Random (^"prime.site_beta" * 0.5, ^"prime.site_beta" * 2.0);
+        
+                    for (l,v; in; sp) {
+                      point [l] = v [^"terms.fit.MLE"];
+                    }
+                    start_grid + point;
+        
+                    point ["prime.site_alpha"] = ^"prime.site_alpha";
+                    point ["prime.site_beta"] = ^"prime.site_beta";
+        
+                    start_grid + point;
+        
+                 }
+                Optimize (results, ^lf_prop,{
+                    "OPTIMIZATION_METHOD" : "nedler-mead",
+                    "MAXIMUM_OPTIMIZATION_ITERATIONS" : 1000,
+                    "OPTIMIZATION_START_GRID" : start_grid,
+                    "OPTIMIZATION_PRECISION": 1e-4
+                });
+                //console.log (k + " => " + (results[1][0] - fel.ll));
+                extra_its += (-1);
+            }
             constrained_models[k] = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {^"terms.globals_only" : TRUE});
-            (constrained_models[k])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+            if (extra_its == 0) {
+                (constrained_models[k])[utility.getGlobalValue("terms.fit.log_likelihood")]  = 0;
+            } else {
+                (constrained_models[k])[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];           
+            }
             ^l = 0;        
             estimators.ApplyExistingEstimates (lf_prop, model_mapping, alternative, ^"terms.globals_only");
         }
