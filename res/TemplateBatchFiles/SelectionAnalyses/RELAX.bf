@@ -956,7 +956,7 @@ function relax.FitMainTestPair () {
 
     KeywordArgument ("save-fit", "Save RELAX alternative model fit to this file (default is not to save)", "/dev/null");
     relax.save_fit_path = io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]");
-    //io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], relax.save_fit_path);
+    io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], relax.save_fit_path);
  
 	if (relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 
@@ -1029,7 +1029,7 @@ function relax.FitMainTestPair () {
 				selection.io.report_dnds (relax.inferred_distribution_ref);
 
 				relax.alternative_model.fit = relax.alternative_model.fit.take2;
-                //io.SpoolLFToPath(relax.alternative_model.fit.take2[terms.likelihood_function], relax.save_fit_path);
+                io.SpoolLFToPath(relax.alternative_model.fit.take2[terms.likelihood_function], relax.save_fit_path);
 			}
 
             DeleteObject (relax.alternative_model.fit.take2);
