@@ -637,16 +637,17 @@ void    _TreeTopology::_RemoveNodeList (_SimpleList const& clean_indices) {
 
 //_______________________________________________________________________________________________
 
-void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
+_List    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
     
     // TODO SLKP 20171213; why did the original implementation delete the entire path
     // up to the root?
     
+    _List deleted_nodes;
+    
     try {
         _SimpleList clean_indices;
 
-        auto RemoveNodeByName = [this, &clean_indices] (_FString* remove_me) -> void {
-
+        auto RemoveNodeByName = [this, &clean_indices, &deleted_nodes] (_FString* remove_me) -> void {
             node<long>* remove_this_node = FindNodeByName (&remove_me->get_str()),
             * parent_of_removed_node;
             
@@ -656,15 +657,16 @@ void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
             
             
             while (parent_of_removed_node) {
+                deleted_nodes < new _String (GetNodeName (remove_this_node));
                 clean_indices << remove_this_node->in_object;
-                //  printf ("Removing %s\n", GetNodeName(remove_this_node).get_str());
+                //printf ("Removing %s\n", GetNodeName(remove_this_node).get_str());
                 parent_of_removed_node->detach_child(remove_this_node->get_child_num());
-                
                 
                 for (int orphans = 1; orphans <= remove_this_node->get_num_nodes(); orphans++) {
                     parent_of_removed_node->add_node(*remove_this_node->go_down(orphans));
                 }
                 
+                // printf ("Parent node %s, N = %d\n", GetNodeName (parent_of_removed_node).get_str(), parent_of_removed_node->get_num_nodes());
                 delete remove_this_node;
                 remove_this_node = parent_of_removed_node;
                 parent_of_removed_node = parent_of_removed_node->get_parent();
@@ -675,7 +677,6 @@ void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
                     if (compExp) {
                         node<long>* survivor = remove_this_node->go_down(1);
                         compExp->Store (survivor->in_object,0,GetBranchLength(remove_this_node)+GetBranchLength(survivor));
-                        
                     }
                     if (parent_of_removed_node == nil) {
                         /* we are promoting the single remaining child of the current root to be the root */
@@ -701,6 +702,10 @@ void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
             if (names->IsAStringMatrix()) {
                 names->ForEach([RemoveNodeByName] (HBLObjectRef n, unsigned long, unsigned long) -> void {if (n) RemoveNodeByName ((_FString*)n);},
                                [names] (unsigned long i) -> HBLObjectRef {return names->GetFormula(i, -1)->Compute();});
+                clean_indices.Sort();
+                clean_indices.DeleteDuplicates();
+                _RemoveNodeList (clean_indices);
+                //ObjectToConsole(&clean_indices);
             } else {
                 throw _String ("Matrix-valued argument was expected to contain strings");
                 
@@ -711,6 +716,8 @@ void    _TreeTopology::RemoveANode (HBLObjectRef nodeName) {
     } catch (const _String& err) {
         HandleApplicationError (err & " in " & __PRETTY_FUNCTION__);
     }
+    
+    return deleted_nodes;
 
 }
 
@@ -988,8 +995,9 @@ HBLObjectRef _TreeTopology::ExecuteSingleOp (long opCode, _List* arguments, _hyE
                 if (!arg0) {
                     return new _MathObject;
                 }
-                RemoveANode (arg0);
-                return _returnConstantOrUseCache(0.0, cache);
+                _List deleted (RemoveANode (arg0));
+                //return _returnConstantOrUseCache(0.0, cache);
+                return new _Matrix (deleted, false);
         }
         
         if (arg0) {

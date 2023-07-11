@@ -108,7 +108,8 @@ namespace fel {
 /* Prompt for one-rate or two-rate analysis */
 fel.srv = io.SelectAnOption( {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS := 1 at each site)."}},
                                   "Use synonymous rate variation? Strongly recommended YES for selection inference.");
-console.log(fel.srv);
+
+
 if (fel.srv == "Yes"){
     fel.srv = TRUE
 } else {

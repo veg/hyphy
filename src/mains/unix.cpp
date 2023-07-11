@@ -85,7 +85,7 @@ const char hy_help_message [] =
 "  BASEPATH=directory path  defines the base directory for all path operations (default is pwd)\n"
 "  CPU=integer              if compiled with OpenMP multithreading support, requests this many threads; HyPhy could use fewer than this\n"
 "                           but never more; default is the number of CPU cores (as computed by OpenMP) on the system\n"
-"  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/lib/hyphy\n"
+"  LIBPATH=directory path   defines the directory where HyPhy library files are located (default installed location is /usr/local/share/hyphy\n"
 "                           or as configured during CMake installation\n"
 "  USEPATH=directory path   specifies the optional working and relative path directory (default is BASEPATH)\n\n"
 "  ENV=expression           set HBL environment variables via explicit statements\n"

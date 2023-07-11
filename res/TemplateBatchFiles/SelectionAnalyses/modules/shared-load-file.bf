@@ -459,6 +459,9 @@ function doGTR (prefix) {
             
             if (^(prefix + ".selected_branches") / index) {
                 deleted_test = utility.Array1D ((^(prefix + ".selected_branches"))[index]);
+                //fprintf ("/Users/sergei/Desktop/slac.txt", CLEAR_FILE, "tree = " + tree + ";\n\n");
+                //fprintf ("/Users/sergei/Desktop/slac.txt", "lengths = " + (gtr_results[^"terms.branch_length"])[index] + ";\n\n");
+                //fprintf ("/Users/sergei/Desktop/slac.txt", "tested = " + (^(prefix + ".selected_branches"))[index] + ";\n\n");
                 trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], (^(prefix + ".selected_branches"))[index], deleted);
             } else {
                 trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], null, deleted);

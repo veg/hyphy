@@ -33,7 +33,7 @@ fel.analysis_description = {
     branches at a site. Site-specific synonymous (alpha) and non-synonymous (beta, one per branch set) substitution rates are estimated
     and then beta rates are tested for equality at each site. LRT and permutation tests ar used to assess significance at each site, and FDR is applied alignment wide to call sites with different selective profiles",
     terms.io.version: "0.5",
-    terms.io.reference: "TBD",
+    terms.io.reference: "Mol Biol Evol (2021), (38)3 1184–1198",
     terms.io.authors: "Sergei L Kosakovsky Pond and Steven Weaver",
     terms.io.contact: "spond@temple.edu",
     terms.io.requirements: "in-frame codon alignment and a phylogenetic tree; only single partition data are supported",

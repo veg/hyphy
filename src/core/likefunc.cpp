@@ -4397,10 +4397,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
                     _SimpleList * this_block = (_SimpleList*)gradientBlocks(b);
                     if (this_block->countitems() > 1 && this_block->countitems() <= maxGradientBlockDimension) {
-                        /*printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
-                        this_block->Each([this, b] (long item, unsigned long) -> void {
-                            printf ("Block %d, variable %s\n", b, GetIthIndependentName(item)->get_str());
-                        });*/
+                        //printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
+                        //this_block->Each([this, b] (long item, unsigned long) -> void {
+                         //   printf ("Block %d, variable %s\n", b, GetIthIndependentName(item)->get_str());
+                        //});
                         maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,kMaxGradientStepCount,this_block,maxSoFar,grad_precision);
                     } else {
                         //printf ("\n...Skipping a large gradient (or a trivial) block with %ld variables\n", this_block->countitems());
@@ -6472,7 +6472,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
     char        buffer[1024];
 
     if (verbosity_level>1) {
-        snprintf (buffer, sizeof(buffer),"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %15.12g\n",0,step_precision,gradientStep,maxSoFar);
+        snprintf (buffer, sizeof(buffer),"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %20.18g\n",0,step_precision,gradientStep,maxSoFar);
         BufferToConsole (buffer);
     }
 
@@ -6507,7 +6507,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
             
 
             if (verbosity_level>1) {
-                snprintf (buffer, sizeof(buffer),"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %15.12g, min improvement %15.12g\n",index+1,line_search_precision,gradientStep,maxSoFar,min_improvement_to_contuinue);
+                snprintf (buffer, sizeof(buffer),"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %20.18g, min improvement %15.12g\n",index+1,line_search_precision,gradientStep,maxSoFar,min_improvement_to_contuinue);
                 BufferToConsole (buffer);
             }
             //if (localOnly) {

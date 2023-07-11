@@ -5352,7 +5352,7 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
             hyFloat t;
             RowAndColumnMax (max, t, stash);
             max *= t;
-             if (max > .1) {
+            if (max > .1) {
                 max             = scale_to*sqrt (10.*max);
                 power2          = (long)((log (max)/_log2))+1L;
                 max             = exp (power2 * _log2);
@@ -5595,9 +5595,92 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
             result->Transpose();
         }
         
+        
+        /*auto check_t = [&] (bool soft)-> _Matrix* {
+            bool pass = true;
+            if (result->is_dense()) {
+                for (unsigned long r = 0L; r < result->lDim; r += result->vDim) {
+                    if (result->theData[r] > 1.) {
+                        pass = false;
+                        break;
+                    }
+                }
+            } else {
+                for (unsigned long r = 0L; r < result->hDim; r ++) {
+                    if ((*result)(r,r) > 1.) {
+                        pass = false;
+                        break;
+                    }
+                }
+            }
+            if (!pass ) {
+                if (!soft) {
+                    if (scale_to < 1.e100) {
+                        DeleteObject (result);
+                        return this->Exponentiate(scale_to * 100., true);
+                    }
+                    throw _String ("Failed to compute a valid transition matrix; this is usually caused by ill-conditioned rate matrices (e.g. very large rate values)");
+                }
+            } else { // set diag to 1 - rest of row
+                if (result->is_dense()) {
+                    for (unsigned long r = 0L; r < result->hDim; r ++) {
+                        hyFloat sum = 0.;
+                        for (unsigned long c = result->hDim * r; c < result->hDim * r + result->hDim; c ++) {
+                            sum += result->theData[c];
+                        }
+                        result->theData [r*result->vDim + r] += 1. - sum;
+                        if (isnan(sum)) {
+                            throw _String ("Failed to compute a valid transition matrix; there is a NaN in the matrix; ");
+                        }
+                    }
+                }
+            }
+        };*/
        
         //_Matrix stash_mx (*result);
                 
+        if (check_transition) {
+            bool pass = true;
+            if (result->is_dense()) {
+                for (unsigned long r = 0L; r < result->lDim; r += result->vDim) {
+                    if (result->theData[r] > 1.) {
+                        pass = false;
+                        break;
+                    }
+                }
+            } else {
+                for (unsigned long r = 0L; r < result->hDim; r ++) {
+                    if ((*result)(r,r) > 1.) {
+                        pass = false;
+                        break;
+                    }
+                }
+            }
+            if (!pass ) {
+                if (scale_to < 1.e100) {
+                    DeleteObject (result);
+                    return this->Exponentiate(scale_to * 100., true);
+                }
+                throw _String ("Failed to compute a valid transition matrix; this is usually caused by ill-conditioned rate matrices (e.g. very large rate values)");
+            
+            } else { // set diag to 1 - rest of row
+                if (result->is_dense()) {
+                    for (unsigned long r = 0L; r < result->hDim; r ++) {
+                        hyFloat sum = 0.;
+                        for (unsigned long c = result->hDim * r; c < result->hDim * r + result->hDim; c ++) {
+                            sum += result->theData[c];
+                        }
+                        result->theData [r*result->vDim + r] += 1. - sum;
+                        if (isnan(sum)) {
+                            throw _String ("Failed to compute a valid transition matrix; there is a NaN in the matrix; ");
+                        }
+                    }
+                }
+            }
+        }
+        
+        hyFloat last_diff = 0.;
+        
         for (long s = 0; s<power2; s++) {
 /*#ifndef _OPENMP
                     squarings_count++;
@@ -5626,29 +5709,31 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     }
                 }
             }*/
+            
             hyFloat maxDiff = result->Sqr(stash);
+            
+            
+            //if (s == 64) {
+                //ObjectToConsole(result);
+            //}
+            //printf ("\n%ld % ld: %g %g %g\n", s, power2, result->theData[0], maxDiff, last_diff);
             /*if (squarings_count == 3606) {
                 fprintf (stderr, "\n\n%16.12g\n\n", maxDiff);
             }*/
-            if (maxDiff < DBL_EPSILON * 1.e3) {
+            
+            
+            if (maxDiff < DBL_EPSILON * 1.e3 || (s >= 10 && maxDiff > last_diff * 100.)) {
                 break;
             }
+            
+            last_diff = maxDiff;
         }
         
         
-        if (check_transition) {
-            /*printf ("SCALE %lg : \n", scale_to);
-            
-            for (unsigned long r = 0L; r < hDim; r ++) {
-                hyFloat sum = 0.;
-                //printf ("%ld %18.16lg %18.16lg\n", r, (*result)(r,r), (*result)(r,r) - 1.);
-                for (unsigned long c = 0L; c < vDim; c++) {
-                    sum += (*result)(r,c);
-                }
-                if (sum != 1.)
-                    printf ("%ld %18.16g\n", r, sum);
-            }*/
-
+        //if (check_transition) {
+        //    check_t(false);
+        //}
+        if (check_transition && power2) {
             bool pass = true;
             if (result->is_dense()) {
                 for (unsigned long r = 0L; r < result->lDim; r += result->vDim) {
@@ -5665,18 +5750,13 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                     }
                 }
             }
-            if (!pass) {
+            if (!pass ) {
                 if (scale_to < 1.e100) {
                     DeleteObject (result);
-                    return this->Exponentiate(scale_to * 100, true);
+                    return this->Exponentiate(scale_to * 100., true);
                 }
-                
-
-                
-                //ObjectToConsole(this);
-                //ObjectToConsole(result);
-                
                 throw _String ("Failed to compute a valid transition matrix; this is usually caused by ill-conditioned rate matrices (e.g. very large rate values)");
+            
             } else { // set diag to 1 - rest of row
                 if (result->is_dense()) {
                     for (unsigned long r = 0L; r < result->hDim; r ++) {
@@ -5685,21 +5765,22 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
                             sum += result->theData[c];
                         }
                         result->theData [r*result->vDim + r] += 1. - sum;
+                        if (isnan(sum)) {
+                            throw _String ("Failed to compute a valid transition matrix; there is a NaN in the matrix; ");
+                        }
                     }
                 }
             }
-            /*
-            if (likeFuncEvalCallCount == 52) {
-                ObjectToConsole(this);
-                ObjectToConsole(result);
-            }
-            */
         }
         
         return result;
     }
     catch (const _String& e) {
-        HandleApplicationError(e);
+        //if (lockedLFID != -1) {
+        //    ((_LikelihoodFunction*)likeFuncList(lockedLFID))->_TerminateAndDump(_String(e));
+        //} else {
+            HandleApplicationError(e);
+        //}
     }
     
     return new _Matrix;
@@ -6694,6 +6775,7 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
         _Matrix temp (hDim, vDim, storageType==0?theIndex!=nil:false, storageType);
         Multiply (temp, *this);
         Swap(temp);
+        
         return DBL_EPSILON * 1.e4;
     } else {
         if (hDim==4L) {
@@ -6723,6 +6805,8 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
         }
         
         diff = MAX (MAX (diffs[0], diffs[1]), MAX (diffs[2], diffs[3]));
+        
+        //printf ("\n\n%g / %g\n\n", diff, DBL_EPSILON * 1.e3);
 
         memcpy (theData, stash, lDim * sizeof (hyFloat));
 
