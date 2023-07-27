@@ -4397,10 +4397,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
                     _SimpleList * this_block = (_SimpleList*)gradientBlocks(b);
                     if (this_block->countitems() > 1 && this_block->countitems() <= maxGradientBlockDimension) {
-                        /*printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
-                        this_block->Each([this, b] (long item, unsigned long) -> void {
-                            printf ("Block %d, variable %s\n", b, GetIthIndependentName(item)->get_str());
-                        });*/
+                        //printf ("\n...Performing a gradient pass on block with %ld variables\n", this_block->countitems());
+                        //this_block->Each([this, b] (long item, unsigned long) -> void {
+                         //   printf ("Block %d, variable %s\n", b, GetIthIndependentName(item)->get_str());
+                        //});
                         maxSoFar = ConjugateGradientDescent (currentPrecision, bestSoFar,true,kMaxGradientStepCount,this_block,maxSoFar,grad_precision);
                     } else {
                         //printf ("\n...Skipping a large gradient (or a trivial) block with %ld variables\n", this_block->countitems());
@@ -6443,7 +6443,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
     
     if (check_value != -INFINITY) {
         if (!CheckEqual(check_value, maxSoFar)) {
-            _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]";
+            _String errorStr = _String("Internal error in _LikelihoodFunction::ConjugateGradientDescent. The function evaluated at current parameter values [") & maxSoFar & "] does not match the last recorded LF maximum [" & check_value & "]. " & kErrorNumerical;
             if (check_value - 0.01 > maxSoFar) {
                 if (optimizatonHistory) {
                     ReportWarning (_String ((_String*)optimizatonHistory->toStr()));
@@ -6472,7 +6472,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
     char        buffer[1024];
 
     if (verbosity_level>1) {
-        snprintf (buffer, sizeof(buffer),"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %15.12g\n",0,step_precision,gradientStep,maxSoFar);
+        snprintf (buffer, sizeof(buffer),"\nConjugate Gradient Pass %d, precision %g, gradient step %g, max so far %20.18g\n",0,step_precision,gradientStep,maxSoFar);
         BufferToConsole (buffer);
     }
 
@@ -6507,7 +6507,7 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
             
 
             if (verbosity_level>1) {
-                snprintf (buffer, sizeof(buffer),"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %15.12g, min improvement %15.12g\n",index+1,line_search_precision,gradientStep,maxSoFar,min_improvement_to_contuinue);
+                snprintf (buffer, sizeof(buffer),"Conjugate Gradient Pass %ld, precision %g, gradient step %g, max so far %20.18g, min improvement %15.12g\n",index+1,line_search_precision,gradientStep,maxSoFar,min_improvement_to_contuinue);
                 BufferToConsole (buffer);
             }
             //if (localOnly) {
@@ -8872,7 +8872,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                     _String* node_name =   GetIthTree (index)->GetNodeFromFlatIndex(doCachedComp)->GetName(),
                              err_msg = _String("Internal error in ComputeBranchCache (branch ") & *node_name &
                              +                                       ", eval #" & likeFuncEvalCallCount &" ) reversible model cached likelihood = "& _String (checksum, "%20.16g") & ", directly computed likelihood = " & _String (sum, "%20.16g") &
-                        +                                       ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables; for smaller errors, this could be due to numerical instability of calculations for larger alignments).";
+                        +                                       ". This is most likely because a non-reversible model was incorrectly auto-detected (or specified by the model file in environment variables; for smaller errors, this could be due to numerical instability of calculations for larger alignments). " & kErrorNumerical;
                       
                     
                       

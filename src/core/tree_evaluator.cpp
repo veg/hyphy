@@ -146,7 +146,7 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
         long siteState;
         if (setBranch != nodeCode + iNodes) {
             siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.list_data[siteID]] ;
-            /*if (likeFuncEvalCallCount == 52 && siteID == 7) {
+            /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
                 fprintf (stderr, "Site-state @ %ld: %d\n", nodeCode, siteState);
             }*/
         } else {
@@ -2262,45 +2262,6 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
 
     inline double _handle4x4_pruning_case_direct (double const* childVector, void* tMatrix, double* parentConditionals) {
         
-        /*float64x2x2_t col;
-        float64x2x4_t
-                      row,
-                      row2;
-        
-        float64x2_t accumulator,
-                    accumulator2,
-                    accumulator3,
-                    accumulator4;
-        
-                      
-        col  = vld1q_f64_x2 (childVector);
-        row   = vld1q_f64_x4 (tMatrix);
-        row2  = vld1q_f64_x4 (tMatrix+8);
-        float64x2x2_t pv = vld1q_f64_x2 (parentConditionals);
-
-        accumulator  = vfmaq_f64 (vmulq_f64 (col.val[0], row.val[0]), col.val[1], row.val[1]);
-        accumulator2 = vfmaq_f64 (vmulq_f64 (col.val[0], row.val[2]), col.val[1], row.val[3]);
-        accumulator3 = vfmaq_f64 (vmulq_f64 (col.val[0], row2.val[0]), col.val[1], row2.val[1]);
-        accumulator4 = vfmaq_f64 (vmulq_f64 (col.val[0], row2.val[2]), col.val[1], row2.val[3]);
-
- 
-        pv.val[0] = vmulq_f64(pv.val[0],vaddq_f64(vzip1q_f64 (accumulator,accumulator2),vzip2q_f64 (accumulator,accumulator2)));
-        pv.val[1] = vmulq_f64(pv.val[1],vaddq_f64(vzip1q_f64 (accumulator3,accumulator4),vzip2q_f64 (accumulator3,accumulator4)));
-        vst1q_f64 (parentConditionals, pv.val[0]);
-        vst1q_f64 (parentConditionals+2, pv.val[1]);
- 
-        return vaddvq_f64(vaddq_f64(pv.val[0],pv.val[1]));*/
-        
-        /*hyFloat t1 = childVector[0] - childVector[3],
-        t2 = childVector[1] - childVector[3],
-        t3 = childVector[2] - childVector[3],
-        t4 = childVector[3];
-        
-        parentConditionals [0] *= (tMatrix[0]  * t1 + tMatrix[1] * t2) + (tMatrix[2] * t3 + t4);
-        parentConditionals [1] *= (tMatrix[4]  * t1 + tMatrix[5] * t2) + (tMatrix[6] * t3 + t4);
-        parentConditionals [2] *= (tMatrix[8]  * t1 + tMatrix[9] * t2) + (tMatrix[10] * t3 + t4);
-        parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);*/
-        
         
         float64x2x2_t * TM = (float64x2x2_t*)tMatrix;
         
@@ -3023,151 +2984,7 @@ inline void __ll_loop_handle_leaf_generic (hyFloat* _hprestrict_ pp, hyFloat *  
 }
 
 
-inline void _handle4x4_pruning_case (double const* childVector, double const* tMatrix, double* parentConditionals, void* transposed_mx) {
-#ifdef _SLKP_USE_SSE_INTRINSICS
-    double tv [4]     __attribute__ ((aligned (16))) = {childVector[0],
-        childVector[1],
-        childVector[2],
-        childVector[3]};
-    
-    __m128d buffer0 = _mm_loadu_pd (tv),
-    buffer1 = _mm_loadu_pd (tv+2),
-    matrix01 = _mm_loadu_pd (tMatrix),
-    matrix12 = _mm_loadu_pd (tMatrix+2),
-    matrix34 = _mm_loadu_pd (tMatrix+4),
-    matrix56 = _mm_loadu_pd (tMatrix+6),
-    reg_storage  = _mm_mul_pd (buffer0, matrix01),
-    reg_storage2 = _mm_mul_pd (buffer0, matrix34);
-    
-    matrix34     = _mm_mul_pd(buffer1, matrix12);
-    matrix56     = _mm_mul_pd(buffer1, matrix56);
-    reg_storage  = _mm_add_pd (reg_storage, matrix34);
-    reg_storage2 = _mm_add_pd (reg_storage2, matrix56);
-    reg_storage  = _mm_hadd_pd (reg_storage,reg_storage2);
-    matrix01 = _mm_loadu_pd (parentConditionals);
-    matrix01 = _mm_mul_pd (reg_storage, matrix01);
-    _mm_storeu_pd (parentConditionals, matrix01);
-    
-    
-    
-    matrix01 = _mm_loadu_pd (tMatrix+8);
-    matrix12 = _mm_loadu_pd (tMatrix+10);
-    matrix34 = _mm_loadu_pd (tMatrix+12);
-    matrix56 = _mm_loadu_pd (tMatrix+14);
-    reg_storage  = _mm_mul_pd (buffer0, matrix01);
-    reg_storage2 = _mm_mul_pd (buffer0, matrix34);
-    
-    matrix34     = _mm_mul_pd(buffer1, matrix12);
-    matrix56     = _mm_mul_pd(buffer1, matrix56);
-    reg_storage  = _mm_add_pd (reg_storage, matrix34);
-    reg_storage2 = _mm_add_pd (reg_storage2, matrix56);
-    reg_storage  = _mm_hadd_pd (reg_storage,reg_storage2);
-    
-    matrix01 = _mm_loadu_pd (parentConditionals+2);
-    matrix01 = _mm_mul_pd (reg_storage, matrix01);
-    _mm_storeu_pd (parentConditionals+2, matrix01);
-    
-    
-    /*
-     A1*B1 + A2*B2 + A3*B3 + A4*B4, where A4 = 1-A1-A2-A3 can be done with three multipications
-     and 3 extra additions, like
-     
-     A1*(B1-B4) + A2*(B2-B4) + A3*(B3-B4) + B4
 
-     20180914: SLKP, turning this off because of unstable numerical behavior if B1, B2, B3, B4 have
-     very different magnitudes (that occurs for poorly initialized trees that require
-     massive scaling)
-
-     */
-    
-#elif defined _SLKP_USE_AVX_INTRINSICS
-    
-    __m256d
-            c0     = _mm256_set1_pd(childVector[0]),
-            c1     = _mm256_set1_pd(childVector[1]),
-            c2     = _mm256_set1_pd(childVector[2]),
-            c3     = _mm256_set1_pd(childVector[3]),
-            t0,t1,t2,t3;
-  
-    if (transposed_mx) {
-      t0    = ((__m256d*)transposed_mx)[0];
-      t1    = ((__m256d*)transposed_mx)[1];
-      t2    = ((__m256d*)transposed_mx)[2];
-      t3    = ((__m256d*)transposed_mx)[3];
-    } else {
-      t0     = (__m256d) {tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]};
-      t1     = (__m256d) {tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]};
-      t2     = (__m256d) {tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]};
-      t3     = (__m256d) {tMatrix[3],tMatrix[7],tMatrix[11],tMatrix[15]};
-    }
-  
-  // load transition matrix by column
-#ifdef _SLKP_USE_FMA3_INTRINSICS
-    __m256d sum01 = _mm256_fmadd_pd (c0, t0,_mm256_mul_pd(c1,t1)),
-            sum23 = _mm256_fmadd_pd (c2,t2, _mm256_mul_pd(c3,t3));
-    
-    _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
-
-#else
-    __m256d sum01 = _mm256_add_pd (_mm256_mul_pd(c0,t0),_mm256_mul_pd(c1,t1)),
-    sum23 = _mm256_add_pd (_mm256_mul_pd(c2,t2), _mm256_mul_pd(c3,t3));
-    
-    _mm256_storeu_pd(parentConditionals, _mm256_mul_pd (_mm256_loadu_pd (parentConditionals), _mm256_add_pd (sum01, sum23)));
-
-#endif
-    
-#elif defined _SLKP_USE_ARM_NEON
-    float64x2_t c0     = vdupq_n_f64(childVector[0]),
-                c1     = vdupq_n_f64(childVector[1]),
-                c2     = vdupq_n_f64(childVector[2]),
-                c3     = vdupq_n_f64(childVector[3]);
-    
-    float64x2x2_t t0, t1, t2, t3;
-  
-    if (transposed_mx) {
-        t0    = ((float64x2x2_t*)transposed_mx)[0];
-        t1    = ((float64x2x2_t*)transposed_mx)[1];
-        t2    = ((float64x2x2_t*)transposed_mx)[2];
-        t3    = ((float64x2x2_t*)transposed_mx)[3];
-    } else {
-        t0    = (float64x2x2_t){tMatrix[0],tMatrix[4],tMatrix[8],tMatrix[12]};
-        t1    = (float64x2x2_t){tMatrix[1],tMatrix[5],tMatrix[9],tMatrix[13]};
-        t2    = (float64x2x2_t){tMatrix[2],tMatrix[6],tMatrix[10],tMatrix[14]};
-        t3    = (float64x2x2_t){tMatrix[3],tMatrix[7],tMatrix[11],tMatrix[15]};
-    }
-    
-    t0.val[0] = vfmaq_f64 (vmulq_f64  (c1,t1.val[0]),c0,t0.val[0]);
-    t0.val[1] = vfmaq_f64 (vmulq_f64  (c1,t1.val[1]),c0,t0.val[1]);
-    t2.val[0] = vfmaq_f64 (vmulq_f64  (c3,t3.val[0]),c2,t2.val[0]);
-    t2.val[1] = vfmaq_f64 (vmulq_f64  (c3,t3.val[1]),c2,t2.val[1]);
-    
-    vst1q_f64 (parentConditionals,
-                vmulq_f64  (vld1q_f64 (parentConditionals), vaddq_f64 (t0.val[0], t2.val[0])));
-    vst1q_f64 (parentConditionals+2,  vmulq_f64  (vld1q_f64 (parentConditionals+2), vaddq_f64 (t0.val[1], t2.val[1])));
-
-#else
-    
-    
-    // 12 multiplications, 16 additions, 3 subtractions
-    
-    /*hyFloat t1 = childVector[0] - childVector[3],
-    t2 = childVector[1] - childVector[3],
-    t3 = childVector[2] - childVector[3],
-    t4 = childVector[3];
-    
-    parentConditionals [0] *= (tMatrix[0]  * t1 + tMatrix[1] * t2) + (tMatrix[2] * t3 + t4);
-    parentConditionals [1] *= (tMatrix[4]  * t1 + tMatrix[5] * t2) + (tMatrix[6] * t3 + t4);
-    parentConditionals [2] *= (tMatrix[8]  * t1 + tMatrix[9] * t2) + (tMatrix[10] * t3 + t4);
-    parentConditionals [3] *= (tMatrix[12] * t1 + tMatrix[13] * t2) + (tMatrix[14] * t3 + t4);*/
-  
-    parentConditionals [0] *= tMatrix[0] * childVector[0] + tMatrix[1] * childVector[1] + tMatrix[2] * childVector[2] + tMatrix[3] * childVector[3];
-    parentConditionals [1] *= tMatrix[4] * childVector[0] + tMatrix[5] * childVector[1] + tMatrix[6] * childVector[2] + tMatrix[7] * childVector[3];
-    parentConditionals [2] *= tMatrix[8] * childVector[0] + tMatrix[9] * childVector[1] + tMatrix[10] * childVector[2] + tMatrix[11] * childVector[3];
-    parentConditionals [3] *= tMatrix[12] * childVector[0] + tMatrix[13] * childVector[1] + tMatrix[14] * childVector[2] + tMatrix[15] * childVector[3];
-
-#endif
-    
-}
 
 inline void __ll_handle_tcc_init (_SimpleList const* __restrict tcc, bool isLeaf, long siteCount, long siteFrom, long nodeCode, long parentCode, long& parentTCCIBit, long& parentTCCIIndex, long &currentTCCBit, long& currentTCCIndex) {
     if (tcc) {
@@ -3225,9 +3042,9 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     //if (setBranch >=0 )
        // printf ("\nSet to %d (%s)\n", setBranch, ((_CalcNode*) flatTree    (setBranch))->GetName()->get_str());
     
-    //if (likeFuncEvalCallCount == 52) {
-    //    fprintf (stderr, "\nSite ID: %ld\n%s\n", siteOrdering.get(7), theFilter->GetColumn(siteOrdering.get(7)));;
-    //}
+    /*if (likeFuncEvalCallCount == 328) {
+        fprintf (stderr, "\nSite ID: %ld\n%s\n", siteOrdering.get(30), theFilter->GetColumn(siteOrdering.get(30)));;
+    }*/
     
     for  (unsigned long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
         long    nodeCode   = updateNodes.list_data [nodeID],
@@ -3548,12 +3365,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 accumulator += rootConditionals[rootIndex] * theProbs[p];
             }
         }
-        /*if (likeFuncEvalCallCount == 52 && siteID == 7) {
-            fprintf (stderr, "\nREGULAR COMPUTE @%d %lg (%18.14lg / %ld)\n", siteID, accumulator, result,  theFilter->theFrequencies (siteOrdering.list_data[siteID])   );
-            for (long k = 0; k < alphabetDimension; k++) {
-                fprintf (stderr, "\t %d = %16.12g %16.12g\n", k, rootConditionals[rootIndex-alphabetDimension+k], theProbs[k]);
-            }
-        }*/
+        
         if (storageVec) {
             storageVec [siteOrdering.list_data[siteID]] = accumulator;
         } else {
@@ -3578,6 +3390,12 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 }
                 // Kahan sum
                 
+                /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
+                    fprintf (stderr, "\n%ld\t%18.14lg\t%18.14lg\t%18.14lg\t%ld\n", siteID, accumulator, term, result,  site_frequency   );
+                    for (long k = 0; k < alphabetDimension; k++) {
+                        fprintf (stderr, "\t %d = %16.12g %16.12g\n", k, rootConditionals[rootIndex-alphabetDimension+k], theProbs[k]);
+                    }
+                }*/
 
                 hyFloat temp_sum = result + term;
                 correction = (temp_sum - result) - term;
@@ -3990,7 +3808,7 @@ void            _TheTree::ComputeBranchCache    (
                 hyFloat  const *tMatrix = transitionMatrix;
                 if (__lcache_loop_preface<4>(
                 isLeaf, lNodeFlags, siteID, siteOrdering, nodeCode, siteCount, siteFrom, parentConditionals, tMatrix, canScale, childVector, lastUpdatedSite, tcc, currentTCCBit, currentTCCIndex, parentTCCIBit, parentTCCIIndex, notPassedRoot, lNodeResolutions)) {
-                    /*if (likeFuncEvalCallCount == 3013 && siteID == 232) {
+                    /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
                         fprintf (stderr, "__lcache_loop_preface (%ld isleaf = %d canscale = %d, %s) %g %g %g %g\n", nodeCode, isLeaf, canScale, currentTreeNode->GetName()->get_str(), parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3]);
                     }*/
                     continue;
@@ -4017,9 +3835,10 @@ void            _TheTree::ComputeBranchCache    (
 
                 }
                 
-                /*if (likeFuncEvalCallCount == 3013 && siteID == 232) {
+                /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
                     fprintf (stderr, "NODE = %ld, PARENT = %ld (%ld), P(A) = %lg, P(C) = %lg, P(G) = %lg, P(T) = %lg, scale = %ld\n", nodeCode, parentCode, canScale, parentConditionals[0], parentConditionals[1], parentConditionals[2], parentConditionals[3], didScale);
                 }*/
+                
                 childVector += 4L;
                 __handle_site_corrections(didScale, siteID);
             }
@@ -4159,7 +3978,7 @@ void            _TheTree::ComputeBranchCache    (
     const unsigned long site_bound = alphabetDimension*siteTo;
     for (unsigned long ii = siteFrom * alphabetDimension; ii < site_bound; ii++) {
         state[ii] = rootConditionals[ii];
-        /*if (likeFuncEvalCallCount == 52) {
+        /*if (likeFuncEvalCallCount == 328) {
             printf ("Site %ld, Root conditional [%ld] = %g, node state [%ld] = %g\n", ii/alphabetDimension, ii, state[ii], ii, cache[ii]);
         }*/
     }

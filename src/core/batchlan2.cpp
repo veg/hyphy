@@ -699,7 +699,11 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
             return;
         }
     }
-    // here's our unit
+    
+    if (unit == 0) {
+        HandleApplicationError (_String("Invalid DataFilter unit specification:") & ((_String*)parameters(2))->Enquote('\''));
+        return;
+    }
 
     _String             dataFilterID (chain.AddNameSpaceToID(*(_String*)parameters(0))),
                         site_partition,

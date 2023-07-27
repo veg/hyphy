@@ -3167,7 +3167,7 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
             }
             
             
-            /*if (likeFuncEvalCallCount == 52) {
+            /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
                 fprintf (stderr, "CACHE, %ld, %ld, %20.15lg, %20.15lg, %20.15lg,  %20.15lg\n", likeFuncEvalCallCount, siteID, accumulator, correction, term, result);
             }*/
             
@@ -3235,8 +3235,16 @@ hyFloat          _TheTree::ComputeLLWithBranchCache (
                 
                 for (unsigned long siteID = siteFrom; siteID < siteTo; siteID++) {
                     hyFloat accumulator = 0.;
-#ifdef _SLKP_USE_AVX_INTRINSICS
+                    /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
+                        fprintf (stderr, "CACHE, %ld, %ld, %20.15lg/%20.15lg, %20.15lg/%20.15lg, %20.15lg/%20.15lg, %20.15lg/%20.15lg\n", likeFuncEvalCallCount, siteID, rootConditionals[0],branchConditionals[0], rootConditionals[1], branchConditionals[1], rootConditionals[2], branchConditionals[2], rootConditionals[3], branchConditionals[3]);
+                        
+                        fprintf (stderr, "\n%s (%ld)\n", givenTreeNode->GetName()->get_str(), brID);
+                        for (int i = 0; i < 16; i++) {
+                            fprintf (stderr, "%ld\t%20.15lg\n", i, transitionMatrix[i]);
+                        }
+                    }*/
 
+#ifdef _SLKP_USE_AVX_INTRINSICS
 
         
                     __m256d     c0     = _mm256_set1_pd  (branchConditionals[0]-branchConditionals[3]),

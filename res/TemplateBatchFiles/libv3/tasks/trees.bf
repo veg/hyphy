@@ -393,9 +393,10 @@ lfunction trees.KillZeroBranches (tree, estimates, branch_set, zero_internal) {
 
     if (Abs (zero_internal) > 0) { // has zero internal branches
         Topology T = tree[^"terms.trees.newick_annotated"];
-        T -  Columns(zero_internal);
+                
+        deleted_nodes = T -  Columns(zero_internal);
         if (None != branch_set) {
-            for (branch; in; zero_internal) {
+            for (branch; in; deleted_nodes) {
                 branch_set - branch;
             }
         }

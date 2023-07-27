@@ -555,8 +555,9 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
  
     if (isExplicitForm && bufferedOps) {
         _Matrix * bufferedExp = (_Matrix*)GetExplicitFormModel(map_global_to_local_category (categID))->Compute (0,nil, bufferedOps);
-        #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+         #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
             fprintf (stderr, "[_CalcNode::RecomputeMatrix] Setting (buffered) category %ld/%ld for node %s\n", categID, totalCategs, GetName()->get_str());
+            ObjectToConsole(bufferedExp);
          #endif
         SetCompExp ((_Matrix*)bufferedExp->makeDynamic(), totalCategs>1?categID:-1);
         return false;

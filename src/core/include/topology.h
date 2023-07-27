@@ -158,7 +158,7 @@ protected:
 
      */
 
-    void            RemoveANode                          (HBLObjectRef);
+    _List            RemoveANode                          (HBLObjectRef);
     
     /*
      

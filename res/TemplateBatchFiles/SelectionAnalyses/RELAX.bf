@@ -916,7 +916,7 @@ function relax._report_srv (relax_model_fit, is_null) {
 
 //------------------------------------
 
-function relax.FitMainTestPair () {
+function relax.FitMainTestPair (prompt) {
     _varname_ = model.generic.GetGlobalParameter (relax.model_object_map[relax.model_namespaces[1]] , terms.AddCategory (terms.parameters.omega_ratio,1));
 
     if (relax.do_lhc) {
@@ -947,17 +947,26 @@ function relax.FitMainTestPair () {
         
     }
     
-    //fprintf ("/Users/sergei/Desktop/gd.json", CLEAR_FILE, relax.general_descriptive.fit); 
-    //fscanf ("/Users/sergei/Desktop/gd.json", "Raw", relax.general_descriptive.fit);
     relax.general_descriptive.fit = Eval (relax.general_descriptive.fit);
-
-	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, relax.trees, { "0" : relax.model_map}, relax.general_descriptive.fit, relax.model_object_map, {terms.run_options.retain_lf_object: TRUE, terms.run_options.optimization_log :  relax.optimization_log_file ( "MainALT-log.json")});
+    
+	relax.alternative_model.fit =  estimators.FitLF (relax.filter_names, 
+	                                                 relax.trees, 
+	                                                 { "0" : relax.model_map}, 
+	                                                 relax.general_descriptive.fit, 
+	                                                 relax.model_object_map, 
+	                                                 {
+	                                                    terms.run_options.retain_lf_object: TRUE, 
+	                                                    terms.run_options.optimization_log :  relax.optimization_log_file ( "MainALT-log.json")});
+	                                                    
 	io.ReportProgressMessageMD("RELAX", "alt", "* " + selection.io.report_fit (relax.alternative_model.fit, 9, relax.codon_data_info[terms.data.sample_size]));
 
-    KeywordArgument ("save-fit", "Save RELAX alternative model fit to this file (default is not to save)", "/dev/null");
-    relax.save_fit_path = io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]");
-    //io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], relax.save_fit_path);
- 
+    if (prompt) {
+        KeywordArgument ("save-fit", "Save RELAX alternative model fit to this file (default is not to save)", "/dev/null");
+        relax.save_fit_path = io.PromptUserForFilePath ("Save RELAX model fit to this file ['/dev/null' to skip]");
+    } 
+    
+    io.SpoolLFToPath(relax.alternative_model.fit[terms.likelihood_function], relax.save_fit_path);
+
 	if (relax.numbers_of_tested_groups == 2 && relax.analysis_run_mode != relax.kGroupMode) {
 
 		relax.fitted.K = estimators.GetGlobalMLE (relax.alternative_model.fit,terms.relax.k);
@@ -1029,11 +1038,12 @@ function relax.FitMainTestPair () {
 				selection.io.report_dnds (relax.inferred_distribution_ref);
 
 				relax.alternative_model.fit = relax.alternative_model.fit.take2;
-                //io.SpoolLFToPath(relax.alternative_model.fit.take2[terms.likelihood_function], relax.save_fit_path);
+                io.SpoolLFToPath(relax.alternative_model.fit.take2[terms.likelihood_function], relax.save_fit_path);
 			}
 
+            DeleteObject (relax.alternative_model.fit.take2[terms.likelihood_function]);
             DeleteObject (relax.alternative_model.fit.take2);
-
+ 
 			parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map ["relax.test"] , terms.relax.k), terms.relax.k_range);
 
 
@@ -1166,13 +1176,14 @@ relax.loop_passes = 0;
 
 do {
 	relax.loop_passes += 1;
-	relax.FitMainTestPair ();
+	relax.FitMainTestPair (relax.loop_passes == 1);
 	relax.do_lhc = FALSE;
+	
+
 	if (relax.LRT [terms.LRT] < 0) {
 		io.ReportProgressMessageMD("RELAX", "refit", "* Detected convergence issues (negative LRT). Refitting the alterative/null model pair from a new starting point");
 		relax.general_descriptive.fit = relax.null_model.fit; // reset initial conditions
 		for (relax.k = 1; relax.k < relax.numbers_of_tested_groups; relax.k += 1) { // remove constraints on K
-
 			relax.model_nmsp = relax.model_namespaces[relax.k ];
 			if (relax.k > 1) {
 				parameters.RemoveConstraint (model.generic.GetGlobalParameter (relax.model_object_map[relax.model_nmsp] , relax.relax_parameter_terms[relax.k]));
@@ -1182,8 +1193,7 @@ do {
 		}
 	} else  {
 		relax.convergence_loop = FALSE;
-	}
-	
+	}	
 } while (relax.convergence_loop && relax.loop_passes <= 5);
 
 if (relax.model_set == "All") {

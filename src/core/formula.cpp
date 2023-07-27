@@ -1879,7 +1879,7 @@ long      _Formula::ExtractMatrixExpArguments (_List* storage) {
 
                   if (cachedArg->ObjectClass() == MATRIX) {
                       equal = currentArg->CompareMatrices (cachedArg, DBL_EPSILON*100.);
-                      //printf  ("Operation index = %d, cache ID = %d, equal = %d, (0,0) vs (0,0) = %g/%g\n", i, cacheID, equal, (*currentArg)(0,0), (*cachedArg)(0,0));
+                      //printf  ("Operation index = %d, cache ID = %d, equal = %d, (0,0) vs (0,0) = %g/%g, %x/%x\n", i, cacheID, equal, (*currentArg)(0,0), (*cachedArg)(0,0), currentArg, cachedArg);
                   }
 
                   if (equal) {

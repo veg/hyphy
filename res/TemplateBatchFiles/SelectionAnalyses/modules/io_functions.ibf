@@ -421,6 +421,12 @@ function selection.io.json_store_key_value_pair(json, dict_key, key, value) {
 
 //------------------------------------------------------------------------------
 
+function selection.io.json_store_setting (json, key, value) {
+    ((json[terms.json.analysis])[terms.settings])[key] = value;
+}
+
+//------------------------------------------------------------------------------
+
 function selection.io.json_store_branch_attribute(json, attribute_name, attribute_type, display_order, partition, values) {
     utility.EnsureKey(json, terms.json.branch_attributes);
     utility.EnsureKey(json[terms.json.branch_attributes], partition);
