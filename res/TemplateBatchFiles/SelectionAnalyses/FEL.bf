@@ -1,4 +1,4 @@
-RequireVersion("2.4.0");
+RequireVersion("2.5.52");
 
 /*------------------------------------------------------------------------------
     Load library files
@@ -16,6 +16,9 @@ LoadFunctionLibrary("libv3/tasks/trees.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
 
 LoadFunctionLibrary("libv3/models/codon/MG_REV.bf");
+LoadFunctionLibrary("libv3/models/codon/MG_REV_MH.bf");
+LoadFunctionLibrary("libv3/models/codon/MG_REV_TRIP.bf");
+
 
 LoadFunctionLibrary("libv3/convenience/math.bf");
 
@@ -35,13 +38,14 @@ fel.analysis_description = {
     for testing as well, in which case an additional (nuisance) parameter will be
     inferred -- the non-synonymous rate on branches NOT selected for testing.
     Multiple partitions within a NEXUS file are also supported
-    for recombination - aware analysis.
+    for recombination - aware analysis. Version 2.5 adds MH support.
     ",
-    terms.io.version: "2.1",
+    terms.io.version: "2.5",
     terms.io.reference: "Not So Different After All: A Comparison of Methods for Detecting Amino Acid Sites Under Selection (2005). _Mol Biol Evol_ 22 (5): 1208-1222",
     terms.io.authors: "Sergei L Kosakovsky Pond and Simon DW Frost",
     terms.io.contact: "spond@temple.edu",
-    terms.io.requirements: "in-frame codon alignment and a phylogenetic tree"
+    terms.io.requirements: "in-frame codon alignment and a phylogenetic tree",
+    terms.settings: {}
 };
 io.DisplayAnalysisBanner(fel.analysis_description);
 
@@ -61,6 +65,8 @@ utility.SetEnvVariable ("NORMALIZE_SEQUENCE_NAMES", TRUE);
 fel.site_alpha = "Site relative synonymous rate";
 fel.site_beta = "Site relative non-synonymous rate (tested branches)";
 fel.site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
+fel.site_delta = "Site 2H rate";
+fel.site_psi = "Site 3H rate";
 
 // default cutoff for printing to screen
 fel.p_value = 0.1;
@@ -92,6 +98,7 @@ KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
 KeywordArgument ("branches",  "Branches to test", "All");
 KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
+KeywordArgument ("multiple-hits",  "Include support for multiple nucleotide substitutions", "None");
 KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
 KeywordArgument ("ci",  "Compute profile likelihood confidence intervals for each variable site", "No");
 // One additional KeywordArgument ("output") is called below after namespace fel.
@@ -115,80 +122,235 @@ if (fel.srv == "Yes"){
 } else {
     fel.srv = FALSE
 }
+
+selection.io.json_store_setting  (fel.json, "srv", fel.srv);
+
+
+fel.multi_hit = io.SelectAnOption ({
+                                        {"Double", "Include branch-specific rates for double nucleotide substitutions"}
+                                        {"Double+Triple", "Include branch-specific rates for double and triple nucleotide substitutions"}
+                                        {"None", "[Default] Use standard models which permit only single nucleotide changes to occur instantly"}
+                                  }, "Include support for multiple nucleotide substitutions");
+
+
+selection.io.json_store_setting  (fel.json, "multihit", fel.srv);
+
 /* Prompt for p value threshold */
 fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
+
+selection.io.json_store_setting  (fel.json, "pvalue", fel.pvalue);
 
 fel.ci = "Yes" == io.SelectAnOption( {
     {"Yes", "Compute profile likelihood confidence intervals for dN/dS at each site (~2x slower)."}, 
     {"No", "[Default] Do not compute likelihood confidence intervals"}},
     "Compute profile likelihood intervals for site-level dN/dS");
 
+selection.io.json_store_setting  (fel.json, "ci", fel.ci);
+
+
 KeywordArgument ("resample",  "[Advanced setting, will result in MUCH SLOWER run time] Perform parametric bootstrap resampling to derive site-level null LRT distributions up to this many replicates per site. Recommended use for small to medium (<30 sequences) datasets", "0");
 fel.resample  = io.PromptUser ("\n>[Advanced setting, will result in MUCH SLOWER run time] Perform parametric bootstrap resampling to derive site-level null LRT distributions up to this many replicates per site. Recommended use for small to medium (<30 sequences) datasets",50,0,1000,TRUE);
+
+selection.io.json_store_setting  (fel.json, "resample", fel.resample);
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
 fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
 
+if (fel.multi_hit != "None") {
+    KeywordArgument ("site-multihit", "Estimate multiple hit rates for each site", "Estimate");
+    fel.multi_hit_option = io.SelectAnOption ({
+                                        {"Estimate", "Include branch-specific rates for double nucleotide substitutions"}
+                                        {"Global", "Use a plug-in estimate derived from the global model fit"}
+                                  }, "Estimate multiple hit rates for each site");
+}
 
 if (^"fel.ci") {
-
-    if (^"fel.resample") {
-        fel.table_headers = {
-                                 {"alpha", "Synonymous substitution rate at a site"}
-                                 {"beta", "Non-synonymous substitution rate at a site"}
-                                 {"alpha=beta", "The rate estimate under the neutral model"}
-                                 {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
-                                 {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
-                                 {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
-                                 {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
-                                 {"dN/dS MLE", "Point estimate for site dN/dS"}
-                                 {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
-                                 {"p-asmp", "p-value derived from the asymptotic test statistic"}
-                             };
+    if (^"fel.resample" > 0) {
+        if (fel.multi_hit == "Double") {
+            fel.table_headers = {
+                                     {"alpha", "Synonymous substitution rate at a site"}
+                                     {"beta", "Non-synonymous substitution rate at a site"}
+                                     {"alpha=beta", "The rate estimate under the neutral model"}
+                                     {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                                     {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                                     {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                                     {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
+                                     {"dN/dS MLE", "Point estimate for site dN/dS"}
+                                     {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
+                                     {"p-asmp", "p-value derived from the asymptotic test statistic"}
+                                     {"2H rate", "Site-level rate for 2-nucleotide substitutions"}
+                                 };
+        }
+        if (fel.multi_hit == "Double+Triple") {
+            fel.table_headers = {
+                                     {"alpha", "Synonymous substitution rate at a site"}
+                                     {"beta", "Non-synonymous substitution rate at a site"}
+                                     {"alpha=beta", "The rate estimate under the neutral model"}
+                                     {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                                     {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                                     {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                                     {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
+                                     {"dN/dS MLE", "Point estimate for site dN/dS"}
+                                     {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
+                                     {"p-asmp", "p-value derived from the asymptotic test statistic"},
+                                     {"2H rate", "Site-level rate for 2-nucleotide substitutions"}
+                                     {"3H rate", "Site-level rate for 3-nucleotide substitutions"}
+                                 };
+        }
+        if (fel.multi_hit == "None") {
+            fel.table_headers = {
+                                     {"alpha", "Synonymous substitution rate at a site"}
+                                     {"beta", "Non-synonymous substitution rate at a site"}
+                                     {"alpha=beta", "The rate estimate under the neutral model"}
+                                     {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                                     {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                                     {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                                     {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
+                                     {"dN/dS MLE", "Point estimate for site dN/dS"}
+                                     {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
+                                     {"p-asmp", "p-value derived from the asymptotic test statistic"}
+                                 };
+        } 
     } else {
-        fel.table_headers = {
-                                 {"alpha", "Synonymous substitution rate at a site"}
-                                 {"beta", "Non-synonymous substitution rate at a site"}
-                                 {"alpha=beta", "The rate estimate under the neutral model"}
-                                 {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
-                                 {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
-                                 {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
-                                 {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
-                                 {"dN/dS MLE", "Point estimate for site dN/dS"}
-                                 {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
-                             };
+        if (fel.multi_hit == "Double") {
+             fel.table_headers = {
+                 {"alpha", "Synonymous substitution rate at a site"}
+                 {"beta", "Non-synonymous substitution rate at a site"}
+                 {"alpha=beta", "The rate estimate under the neutral model"}
+                 {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                 {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                 {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                 {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
+                 {"dN/dS MLE", "Point estimate for site dN/dS"}
+                 {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
+                 {"2H rate", "Site-level rate for 2-nucleotide substitutions"}
+              };  
+        }
+        if (fel.multi_hit == "Double+Triple") {
+            fel.table_headers = {
+                 {"alpha", "Synonymous substitution rate at a site"}
+                 {"beta", "Non-synonymous substitution rate at a site"}
+                 {"alpha=beta", "The rate estimate under the neutral model"}
+                 {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                 {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                 {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                 {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
+                 {"dN/dS MLE", "Point estimate for site dN/dS"}
+                 {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
+                 {"2H rate", "Site-level rate for 2-nucleotide substitutions"}
+                 {"3H rate", "Site-level rate for 3-nucleotide substitutions"}
+              };  
+        }
+        if (fel.multi_hit == "None") {
+               fel.table_headers = {
+                 {"alpha", "Synonymous substitution rate at a site"}
+                 {"beta", "Non-synonymous substitution rate at a site"}
+                 {"alpha=beta", "The rate estimate under the neutral model"}
+                 {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                 {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                 {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                 {"dN/dS LB", "95% profile likelihood CI lower bound for dN/dS (if available)"}
+                 {"dN/dS MLE", "Point estimate for site dN/dS"}
+                 {"dN/dS UB", "95% profile likelihood CI upper bound for dN/dS (if available)"}
+             };
+        }     
     }
-    fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?","dN/dS with confidence intervals"}};
-    fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
-
+    fel.table_screen_output  = {"0" : "Codon", "1": "Partition", "2" : "alpha", "3" : "beta", "4" : "LRT", "5" : "Selection detected?", "6" : "dN/dS with confidence intervals"};
+    if (fel.multi_hit != "None") {
+        fel.table_screen_output + "2H rate";
+        if (fel.multi_hit == "Double+Triple") {
+            fel.table_screen_output + "3H rate";
+        }
+    }
+    
 } else {
-    if (^"fel.resample") {
-        fel.table_headers = {
-                             {"alpha", "Synonymous substitution rate at a site"}
-                             {"beta", "Non-synonymous substitution rate at a site"}
-                             {"alpha=beta", "The rate estimate under the neutral model"}
-                             {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
-                             {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
-                             {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
-                             };
-    } else {
-         fel.table_headers = {  
-                                {"alpha", "Synonymous substitution rate at a site"}
-                                {"beta", "Non-synonymous substitution rate at a site"}
-                                {"alpha=beta", "The rate estimate under the neutral model"}
-                                {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
-                                {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
-                                {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
-                                {"p-asmp", "p-value derived from the asymptotic test statistic"}
-                             };
-       
-    }
-    fel.table_screen_output  = {{"Codon", "Partition", "alpha", "beta", "LRT", "Selection detected?"}};
-    fel.table_output_options = {terms.table_options.header : TRUE, terms.table_options.minimum_column_width: 16, terms.table_options.align : "center"};
+    if (^"fel.resample" > 0 ) {
+        if (fel.multi_hit == "Double") {
+            fel.table_headers = {
+                 {"alpha", "Synonymous substitution rate at a site"}
+                 {"beta", "Non-synonymous substitution rate at a site"}
+                 {"alpha=beta", "The rate estimate under the neutral model"}
+                 {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                 {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                 {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                 {"2H rate", "Site-level rate for 2-nucleotide substitutions"}
+               };
+        }
+        if (fel.multi_hit == "Double+Triple") {
+            fel.table_headers = {
+                 {"alpha", "Synonymous substitution rate at a site"}
+                 {"beta", "Non-synonymous substitution rate at a site"}
+                 {"alpha=beta", "The rate estimate under the neutral model"}
+                 {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                 {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                 {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"},
+                 {"2H rate", "Site-level rate for 2-nucleotide substitutions"}
+                 {"3H rate", "Site-level rate for 3-nucleotide substitutions"}
+                };
+        }
+        if (fel.multi_hit == "None") {
+                fel.table_headers = {
+                 {"alpha", "Synonymous substitution rate at a site"}
+                 {"beta", "Non-synonymous substitution rate at a site"}
+                 {"alpha=beta", "The rate estimate under the neutral model"}
+                 {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                 {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                 {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                };
+        }
 
+    } else {
+        if (fel.multi_hit == "Double") {
+            fel.table_headers = {  
+                {"alpha", "Synonymous substitution rate at a site"}
+                {"beta", "Non-synonymous substitution rate at a site"}
+                {"alpha=beta", "The rate estimate under the neutral model"}
+                {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                {"p-asmp", "p-value derived from the asymptotic test statistic"}
+                {"2H rate", "Site-level rate for 2-nucleotide substitutions"}
+             };      
+        }
+        if (fel.multi_hit == "Double+Triple") {
+            fel.table_headers = {  
+                {"alpha", "Synonymous substitution rate at a site"}
+                {"beta", "Non-synonymous substitution rate at a site"}
+                {"alpha=beta", "The rate estimate under the neutral model"}
+                {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                {"p-asmp", "p-value derived from the asymptotic test statistic"}
+                {"2H rate", "Site-level rate for 2-nucleotide substitutions"}
+                {"3H rate", "Site-level rate for 3-nucleotide substitutions"}
+             };      
+        }
+        if (fel.multi_hit == "None") {
+            fel.table_headers = {  
+                {"alpha", "Synonymous substitution rate at a site"}
+                {"beta", "Non-synonymous substitution rate at a site"}
+                {"alpha=beta", "The rate estimate under the neutral model"}
+                {"LRT", "Likelihood ratio test statistic for beta = alpha, versus beta &neq; alpha"}
+                {"p-value", "Asymptotic p-value for evidence of selection, i.e. beta &neq; alpha"}
+                {"Total branch length", "The total length of branches contributing to inference at this site, and used to scale dN-dS"}
+                {"p-asmp", "p-value derived from the asymptotic test statistic"}
+             };      
+        }          
+    }
+    
+    fel.table_screen_output  = {"0" : "Codon", "1": "Partition", "2" : "alpha", "3" : "beta", "4" : "LRT", "5" : "Selection detected?"};
+    if (fel.multi_hit != "None") {
+        fel.table_screen_output + "2H rate";
+        if (fel.multi_hit == "Double+Triple") {
+            fel.table_screen_output + "3H rate";
+        }
+    }
 }
 
 
+fel.table_output_options = {terms.table_options.header : TRUE, 
+                            terms.table_options.minimum_column_width: 16, 
+                            terms.table_options.align : "center"};
 
 
 fel.partition_count = Abs (fel.filter_specification);
@@ -204,6 +366,8 @@ utility.ForEachPair (fel.selected_branches, "_partition_", "_selection_",
 selection.io.startTimer (fel.json [terms.json.timers], "Model fitting",1);
 
 namespace_tag = "fel";
+
+fel.scalers = {{"fel.alpha_scaler", "fel.beta_scaler_test", "fel.beta_scaler_nuisance", "fel.delta_scaler", "fel.psi_scaler"}};
 
 KeywordArgument ("precision", "Optimization precision settings for preliminary fits", "standard");
 fel.faster = io.SelectAnOption( {{"standard", "[Default] Use standard optimization settings."}, 
@@ -223,12 +387,24 @@ namespace fel {
 
 estimators.fixSubsetOfEstimates(fel.gtr_results, fel.gtr_results[terms.global]);
 
+fel.model_name = "models.codon.MG_REV.ModelDescription";
+fel.define_constraints = None;
+    
+if (fel.multi_hit == "Double") {
+    fel.model_name = "models.codon.MG_REV_MH.ModelDescription";
+    fel.define_constraints = "fel.constrain_2H";
+} else {
+    if (fel.multi_hit == "Double+Triple") {
+        fel.model_name = "models.codon.MG_REV_TRIP.ModelDescription";
+        fel.define_constraints = "fel.constrain_3H";
+    }
+}
 
 namespace fel {
     if (faster) {
         utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", Abs(0.0001*gtr_results[^"terms.fit.log_likelihood"]));
     }
-    doPartitionedMG ("fel", FALSE);
+    doPartitionedMGModel ("fel", FALSE, model_name, define_constraints);
     if (faster) {
         utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", None);
     }
@@ -240,10 +416,10 @@ fel.run_full_mg94 = "Yes" == io.SelectAnOption( {{"Yes", "[Default] Perform bran
                                          {"No", "Skip branch length re-optimization under the full codon model (faster but less precise)"}},
                                          "Perform branch length re-optimization under the full codon model");
 
-
 if (fel.run_full_mg94) {
     io.ReportProgressMessageMD ("fel", "codon-refit", "Improving branch lengths, nucleotide substitution biases, and global dN/dS ratios under a full codon model");
 
+    
     
     if (Type (fel.save_intermediate_fits) == "AssociativeList") {
         if (None != fel.save_intermediate_fits[^"terms.data.value"]) {
@@ -259,18 +435,21 @@ if (fel.run_full_mg94) {
     
     if (fel.run_full_mg94) {    
 
+    
         if (fel.faster) {
             utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", Abs(0.0001*fel.partitioned_mg_results[^"terms.fit.log_likelihood"]));
         }
-        fel.final_partitioned_mg_results = estimators.FitMGREV (fel.filter_names, fel.trees, fel.codon_data_info [terms.code], {
+        fel.prefix = "fel";
+        fel.final_partitioned_mg_results = estimators.FitCodonModel (fel.filter_names, fel.trees, fel.model_name, fel.codon_data_info [terms.code], {
             terms.run_options.model_type: terms.local,
             terms.run_options.partitioned_omega: fel.selected_branches,
             terms.run_options.retain_lf_object: TRUE,
-            terms.run_options.apply_user_constraints: fel.zero_branch_length_constrain,
+            terms.run_options.apply_user_constraints: fel.define_constraints,
             terms.run_options.optimization_settings: {
                 "OPTIMIZATION_METHOD" : "coordinate-wise"
             }
         }, fel.partitioned_mg_results);
+        
 
         if (faster) {
             utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", None);
@@ -292,10 +471,35 @@ if (fel.run_full_mg94) {
 fel.save_intermediate_fits = None;
 
 
-io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
-fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
-utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
+//io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
 
+io.ReportProgressMessageMD("fel", "codon-refit", "* " + selection.io.report_fit (fel.final_partitioned_mg_results, 0, (fel.codon_data_info)[utility.getGlobalValue ("terms.data.sample_size")]));
+
+io.ReportProgressMessageMD ("fel", "codon-refit", "* " +
+        selection.io.report_fit_secondary_stats (fel.final_partitioned_mg_results));
+
+fel.global_dnds = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio);
+
+fel.multi_hit_MLES  = {};
+
+if (fel.multi_hit != "None") {
+    fel.global_delta = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.parameters.multiple_hit_rate);
+    for (i,k; in; fel.global_delta) {
+        fel.global_dnds + k;
+        fel.multi_hit_MLES [fel.scalers[3]] = k [terms.fit.MLE];
+    }
+    if (fel.multi_hit != "Double")  {
+        fel.global_delta = selection.io.extract_global_MLE_re (fel.final_partitioned_mg_results, "^" + terms.parameters.triple_hit_rate);
+       
+        for (i,k; in; fel.global_delta) {
+            fel.global_dnds + k;
+             fel.multi_hit_MLES [fel.scalers[4]] = k [terms.fit.MLE];
+        }    
+    }
+}
+
+
+utility.ForEach (fel.global_dnds, "_value_", 'io.ReportProgressMessageMD ("fel", "codon-refit", "* " + _value_[terms.description] + " = " + Format (_value_[terms.fit.MLE],8,4));');
 
 
 estimators.fixSubsetOfEstimates(fel.final_partitioned_mg_results, fel.final_partitioned_mg_results[terms.global]);
@@ -321,7 +525,7 @@ selection.io.stopTimer (fel.json [terms.json.timers], "Model fitting");
 
 // define the site-level likelihood function
 
-fel.site.mg_rev = model.generic.DefineModel("models.codon.MG_REV.ModelDescription",
+fel.site.mg_rev = model.generic.DefineModel(fel.model_name,
         "fel_mg", {
             "0": parameters.Quote(terms.local),
             "1": fel.codon_data_info[terms.code]
@@ -336,29 +540,64 @@ fel.site_model_mapping = {"fel_mg" : fel.site.mg_rev};
 
 fel.alpha = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
 fel.beta = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
-io.CheckAssertion ("None!=fel.alpha && None!=fel.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
+io.CheckAssertion ("None!=fel.alpha && None!=fel.beta", "Could not find expected local synonymous and non-synonymous rate parameters in model description");
+
+if (fel.multi_hit != "None") {
+    fel.delta = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.parameters.multiple_hit_rate"));
+    io.CheckAssertion ("None!=fel.delta", "Could not find expected 2H rate parameter in model description");
+    
+    if (fel.multi_hit == "Double+Triple") {
+        fel.psi = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.parameters.triple_hit_rate"));
+        fel.psi_syn = model.generic.GetLocalParameter (fel.site.mg_rev, utility.getGlobalValue("terms.parameters.triple_hit_rate_syn"));
+        io.CheckAssertion ("None!=fel.psi && None!=fel.psi_syn", "Could not find expected 3H rate parameters in model description");       
+    }
+}
+
+
 
 selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 
 //----------------------------------------------------------------------------------------
 function fel.apply_proportional_site_constraint (tree_name, node_name, alpha_parameter, beta_parameter, alpha_factor, beta_factor, branch_length) {
-
-    fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];
-    
+    fel.branch_length = (branch_length[terms.parameters.synonymous_rate])[terms.fit.MLE];    
     node_name = tree_name + "." + node_name;
-
     ExecuteCommands ("
         `node_name`.`alpha_parameter` := (`alpha_factor`) * fel.branch_length__;
         `node_name`.`beta_parameter`  := (`beta_factor`)  * fel.branch_length__;
     ");
 }
+
+//----------------------------------------------------------------------------------------
+function fel.apply_2H_constraint (tree_name, node_name, delta_parameter, delta_factor) {
+    node_name = tree_name + "." + node_name;
+    ExecuteCommands ("
+        `node_name`.`delta_parameter` := (`delta_factor`);
+    ");
+}
+
+//----------------------------------------------------------------------------------------
+function fel.apply_3H_constraint (tree_name, node_name, psi_parameter1, psi_parameter2, psi_factor) {
+    node_name = tree_name + "." + node_name;
+    ExecuteCommands ("
+        `node_name`.`psi_parameter1` := (`psi_factor`);
+        `node_name`.`psi_parameter2` := (`psi_factor`);
+    ");
+}
 //----------------------------------------------------------------------------------------
 
-fel.scalers = {{"fel.alpha_scaler", "fel.beta_scaler_test", "fel.beta_scaler_nuisance"}};
 
 model.generic.AddGlobal (fel.site.mg_rev, "fel.alpha_scaler", fel.site_alpha);
 model.generic.AddGlobal (fel.site.mg_rev, "fel.beta_scaler_test", fel.site_beta);
 model.generic.AddGlobal (fel.site.mg_rev, "fel.beta_scaler_nuisance", fel.site_beta_nuisance);
+
+if (fel.multi_hit != "None") {
+    model.generic.AddGlobal (fel.site.mg_rev, "fel.delta_scaler", fel.site_delta);
+    if (fel.multi_hit == "Double+Triple") {
+        model.generic.AddGlobal (fel.site.mg_rev, "fel.psi_scaler", fel.site_psi);      
+    }
+} 
+
+
 parameters.DeclareGlobal (fel.scalers, {});
 
 
@@ -404,7 +643,37 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
                 "fel.beta_scaler_test": 0.1,
                 "fel.beta_scaler_nuisance" : 0.1,
                 "fel.alpha_scaler" : 10.
-            }
+            },
+            "6" : {
+                "fel.beta_scaler_test": 0.5,
+                "fel.beta_scaler_nuisance" : 0.5,
+                "fel.alpha_scaler" : 0.01
+            },
+            "7" : {
+                "fel.beta_scaler_test": 5,
+                "fel.beta_scaler_nuisance" : 5,
+                "fel.alpha_scaler" : 0.01,
+            },
+            "8" : {
+                "fel.beta_scaler_test": 0.5,
+                "fel.beta_scaler_nuisance" : 0.5,
+                "fel.alpha_scaler" : 10
+            },
+            "9" : {
+                "fel.beta_scaler_test": 1.,
+                "fel.beta_scaler_nuisance" : 1.,
+                "fel.alpha_scaler" : 10
+            },
+            "10" : {
+                "fel.beta_scaler_test": 50.,
+                "fel.beta_scaler_nuisance" : 50.,
+                "fel.alpha_scaler" : 10
+            },
+            "11" : {
+                "fel.beta_scaler_test": 1,
+                "fel.beta_scaler_nuisance" : 1,
+                "fel.alpha_scaler" : 100.
+            }            
         };
     } else {
         ^"fel.alpha_scaler" := 1;
@@ -435,10 +704,27 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
             }
         };
     }
+        
     ^"fel.beta_scaler_test"  = 1;
     ^"fel.beta_scaler_nuisance"  = 1;
     
-
+    if (^"fel.multi_hit" != "None") {
+        if (^"fel.multi_hit_option" == "Estimate") {
+            for (ignore,par_rec; in; start.grid) {
+                par_rec * ^"fel.multi_hit_MLES";
+            }
+        } else {
+            for (par_name,par_rec; in; ^"fel.multi_hit_MLES") {
+                parameters.SetConstraint (par_name,+par_rec, "");
+            }
+        
+        }
+    }
+    
+    //Export (lfe, ^lf);
+    //console.log (lfe);
+    //assert (0);
+    
     Optimize (results, ^lf
         , {
             "OPTIMIZATION_METHOD" : "nedler-mead", 
@@ -527,42 +813,127 @@ fel.report.counts        = {{0,0}};
 
 
 if (^"fel.ci") {
-    fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
-                                        fel.report.partition + 1,
-                                        Format(fel.report.row[0],10,3),
-                                        Format(fel.report.row[1],10,3),
-                                        Format(fel.report.row[3],10,3),
-                                        "Pos. p = " + Format(fel.report.row[4],6,4),
-                                        Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")"}};
+    if (fel.multi_hit == "Double") {
 
-    fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
-                                        fel.report.partition + 1,
-                                        Format(fel.report.row[0],10,3),
-                                        Format(fel.report.row[1],10,3),
-                                        Format(fel.report.row[3],10,3),
-                                        "Neg. p = " + Format(fel.report.row[4],6,4),
-                                        Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")"}};
+        fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Pos. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")", Format(fel.report.row[utility.Array1D(fel.report.row)-1],10,3)}};
+
+        fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Neg. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")",
+                                            Format(fel.report.row[utility.Array1D(fel.report.row)-1],10,3)}};
+    }
+    if (fel.multi_hit == "Double+Triple") {
+
+        fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Pos. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")", 
+                                            Format(fel.report.row[utility.Array1D(fel.report.row)-2],10,3),
+                                            Format(fel.report.row[utility.Array1D(fel.report.row)-1],10,3)}};
+
+        fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Neg. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")",
+                                            Format(fel.report.row[utility.Array1D(fel.report.row)-2],10,3),
+                                            Format(fel.report.row[utility.Array1D(fel.report.row)-1],10,3)}};
+    }
+    if (fel.multi_hit == "None") {
+
+        fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Pos. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")"}};
+
+        fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Neg. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[7],7,3) + "(" + Format(fel.report.row[6],7,2) + "-" + Format(fel.report.row[8],7,2) + ")"}};
+    }
 
 } else {
-    fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
-                                        fel.report.partition + 1,
-                                        Format(fel.report.row[0],10,3),
-                                        Format(fel.report.row[1],10,3),
-                                        Format(fel.report.row[3],10,3),
-                                        "Pos. p = " + Format(fel.report.row[4],6,4)}};
+    if (fel.multi_hit == "Double") {
+         fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Pos. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[6],10,3)}};
 
-    fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
-                                        fel.report.partition + 1,
-                                        Format(fel.report.row[0],10,3),
-                                        Format(fel.report.row[1],10,3),
-                                        Format(fel.report.row[3],10,3),
-                                        "Neg. p = " + Format(fel.report.row[4],6,4)}};
+         fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Neg. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[6],10,3)}};
+    
+    }
+    if (fel.multi_hit == "Double+Triple") {
+         fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Pos. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[6],10,3),
+                                            Format(fel.report.row[7],10,3)}};
+
+         fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Neg. p = " + Format(fel.report.row[4],6,4),
+                                            Format(fel.report.row[6],10,3),
+                                            Format(fel.report.row[7],10,3)}};
+    
+    }
+    if (fel.multi_hit == "None") {
+         fel.report.positive_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Pos. p = " + Format(fel.report.row[4],6,4)}};
+
+         fel.report.negative_site = {{"" + (1+((fel.filter_specification[fel.report.partition])[terms.data.coverage])[fel.report.site]),
+                                            fel.report.partition + 1,
+                                            Format(fel.report.row[0],10,3),
+                                            Format(fel.report.row[1],10,3),
+                                            Format(fel.report.row[3],10,3),
+                                            "Neg. p = " + Format(fel.report.row[4],6,4)}};   
+    }
+
 }
 
 function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row) {
 
-    fel.print_row = None;
-    if (fel.report.row [4] < fel.pvalue) {
+     fel.print_row = None;
+     if (fel.report.row [4] < fel.pvalue) {
         if (fel.report.row[0] < fel.report.row[1]) {
             fel.print_row = fel.report.positive_site;
             fel.color = "\033[0;31m";
@@ -572,7 +943,7 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
             fel.report.counts [1] += 1;
             fel.color = "\033[0;32m";
         }
-    }
+     }
 
      if (None != fel.print_row) {
             io.ClearProgressBar();
@@ -587,9 +958,7 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
             fprintf (stdout, fel.color, 
                 io.FormatTableRow (fel.print_row,fel.table_output_options),"\033[0m"
                 );
-
-        }
-
+    }
 }
 
 
@@ -601,51 +970,54 @@ lfunction fel.store_results (node, result, arguments) {
        
     if (^"fel.ci") {
         if (^"fel.resample") {
-          result_row          = { { 0, // alpha
-                              0, // beta
-                              0, // alpha==beta
-                              0, // LRT
-                              1, // p-value,
-                              0,  // total branch length of tested branches
-                              0,   // lower bound dN/dS
-                              0,   // dN/dS MLE
-                              0,    // upper bound dN/dS
-                              1   // asymptotic p-value
-                          } };                    
+          result_row          = { 0 : 0, // alpha
+                              1 : 0 , // beta
+                              2: 0, // alpha==beta
+                              3 : 0, // LRT
+                              4 : 1, // p-value,
+                              5 : 0,  // total branch length of tested branches
+                              6 : 0,   // lower bound dN/dS
+                              7 : 0,   // dN/dS MLE
+                              8 : 0,    // upper bound dN/dS
+                              9 : 1   // asymptotic p-value
+                          } ;                    
         } else {
-            result_row   = {{ 0, // alpha
-                              0, // beta
-                              0, // alpha==beta
-                              0, // LRT
-                              1, // p-value,
-                              0,  // total branch length of tested branches
-                              0,   // lower bound dN/dS
-                              0,   // dN/dS MLE
-                              0    // upper bound dN/dS
-                           }};            
+            result_row   = { 0 :0, // alpha
+                             1:  0, // beta
+                             2:  0, // alpha==beta
+                             3:  0, // LRT
+                             4:  1, // p-value,
+                             5:  0,  // total branch length of tested branches
+                             6:  0,   // lower bound dN/dS
+                             7:  0,   // dN/dS MLE
+                             8:  0    // upper bound dN/dS
+                           };            
         }
         
     } else {
         if (^"fel.resample") {
-        result_row          = { { 0, // alpha
-                              0, // beta
-                              0, // alpha==beta
-                              0, // LRT
-                              1, // p-value,
-                              0,  // total branch length of tested branches
-                          } };
+            result_row          = { 
+                              0:0, // alpha
+                              1:0, // beta
+                              2:0, // alpha==beta
+                              3:0, // LRT
+                              4:1, // p-value,
+                              5:0,  // total branch length of tested branches
+                          } ;
         } else {
-          result_row          = { { 0, // alpha
-                              0, // beta
-                              0, // alpha==beta
-                              0, // LRT
-                              1, // p-value,
-                              0,  // total branch length of tested branches
-                          } };
+           result_row          = { 0:0, // alpha
+                              1:0, // beta
+                              2:0, // alpha==beta
+                              3:0, // LRT
+                              4:1, // p-value,
+                              5:0,  // total branch length of tested branches
+                          } ;
       
         
         }
     }
+    
+    N_col = utility.Array1D (result_row);
 
     has_lrt = FALSE;
 
@@ -691,8 +1063,16 @@ lfunction fel.store_results (node, result, arguments) {
             result_row [7] = (result [^"terms.confidence_interval"])[^"terms.fit.MLE"];
             result_row [8] = (result [^"terms.confidence_interval"])[^"terms.upper_bound"];
        }
+       
+       if (^"fel.multi_hit" == "Double") {
+            result_row[N_col] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_delta");
+       }
+       if (^"fel.multi_hit" == "Double+Triple") {
+            result_row[N_col] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_delta");
+            result_row[N_col+1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_psi");
+       }
     }
-
+    
 
     utility.EnsureKey (^"fel.site_results", partition_index);
     if (has_lrt) {
@@ -742,22 +1122,20 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
             _beta_scaler = fel.scalers[2];
          }
          fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
+         
+         
+         if (fel.multi_hit != "None") {
+            fel.apply_2H_constraint ("fel.site_tree", _node_, fel.delta, fel.scalers[3]);
+            if (fel.multi_hit == "Double+Triple") {
+                fel.apply_3H_constraint ("fel.site_tree", _node_, fel.psi, fel.psi_syn, fel.scalers[4]);
+
+            }
+         }
+
          fel.i += 1;
     }
     
  
-    /*
-    utility.ForEach (fel.case_respecting_node_names, "_node_",
-            '_node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
-             if (_node_class_ == terms.tree_attributes.test) {
-                _beta_scaler = fel.scalers[1];
-             } else {
-                _beta_scaler = fel.scalers[2];
-             }
-             fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
-        ');
-    */
-
     SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
 
 
@@ -780,7 +1158,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                    "Models" : {{"fel.site.mg_rev"}},
                                    "Headers" : {{"libv3/all-terms.bf","libv3/tasks/alignments.bf"}},
-                                   "Variables" : {{"fel.srv","fel.resample","fel.ci","fel.selected_branches_index"}}
+                                   "Variables" : {{"fel.srv","fel.resample","fel.ci","fel.selected_branches_index","fel.multi_hit","fel.multi_hit_MLES","fel.multi_hit_option"}}
                                  });
 
 

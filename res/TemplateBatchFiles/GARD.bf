@@ -11,7 +11,7 @@
     2. MAIN ANALYSIS
         2a. Evaluation of single break points with brute force
             2a1. Loop over every valid single break point
-            2a2. Report the status of the sinlge break point analysis
+            2a2. Report the status of the single break point analysis
             2a3. Evaluate if the best single breakpoint is the overall best model
         2b. Evaluation of multiple break points with genetic algorithm
             GA.1: Setup global parameters
@@ -376,9 +376,9 @@ if (gard.startWithBP > 0) {
         mpi.QueueComplete (queue);
         io.ClearProgressBar();
 
-        // 2a2. Report the status of the sinlge break point analysis
+        // 2a2. Report the status of the single break point analysis
         io.ReportProgressMessageMD('GARD', 'single-breakpoint', 'Done with single breakpoint analysis.');
-        io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   Best sinlge break point location: " + singleBreakPointBestLocation));
+        io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   Best single break point location: " + singleBreakPointBestLocation));
         io.ReportProgressMessageMD('GARD', 'single-breakpoint', ("   c-AIC  = " + singleBreakPointBest_cAIC));
     }
 

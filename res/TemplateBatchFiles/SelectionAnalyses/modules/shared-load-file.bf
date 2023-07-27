@@ -560,10 +560,79 @@ function doGTR (prefix) {
 
 
 
+/**
+ * @name doPartitionedMG
+ * Can only be used after including shared-load-file
+ * @return
+ */
+
+
+
+//------------------------------------------------------------------------------
+
+lfunction mg94mh.constrain2H (tree_name, node_name, model_description, partition) {
+    if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.parameters.multiple_hit_rate"), "String")) {
+        delta = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")];
+        g_delta = (model_description[utility.getGlobalValue ("terms.global")])[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")];
+        parameters.SetConstraint (tree_name + "." + node_name + "." + delta, g_delta, "");
+    }
+    return tree_name + "." + node_name + "." + delta;
+}
 
 
 
 
+//------------------------------------------------------------------------------
+
+function constrain_2H (lf_id, components, data_filter, tree, model_map, initial_values, model_objects) {
+    delta = prefix + ".delta_shared";
+    parameters.DeclareGlobal(delta, None);
+    for (k,i; in; model_objects) {
+        model.generic.AddGlobal (i, delta, utility.getGlobalValue ("terms.parameters.multiple_hit_rate"));
+    }
+    parameter_set = estimators.TraverseLocalParameters (lf_id, model_objects, prefix + ".mg94mh.constrain2H");
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+lfunction mg94mh.constrain3H (tree_name, node_name, model_description, partition) {
+    if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.parameters.multiple_hit_rate"), "String")) {
+        delta = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")];
+        g_delta = (model_description[utility.getGlobalValue ("terms.global")])[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")];
+        parameters.SetConstraint (tree_name + "." + node_name + "." + delta, g_delta, "");
+    }
+    if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.parameters.triple_hit_rate"), "String")) {
+        psi = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.triple_hit_rate")];
+        g_psi = (model_description[utility.getGlobalValue ("terms.global")])[utility.getGlobalValue ("terms.parameters.triple_hit_rate")];
+        parameters.SetConstraint (tree_name + "." + node_name + "." + psi, g_psi, "");
+    }
+    if (utility.Has (model_description [utility.getGlobalValue ("terms.local")], utility.getGlobalValue ("terms.parameters.triple_hit_rate_syn"), "String")) {
+        psi = (model_description [utility.getGlobalValue ("terms.local")])[utility.getGlobalValue ("terms.parameters.triple_hit_rate_syn")];
+        g_psi = (model_description[utility.getGlobalValue ("terms.global")])[utility.getGlobalValue ("terms.parameters.triple_hit_rate")];
+        parameters.SetConstraint (tree_name + "." + node_name + "." + psi, g_psi, "");
+    }
+    return {"0" : tree_name + "." + node_name + "." + delta, "1" : tree_name + "." + node_name + "." + psi};
+}
+
+
+
+
+//------------------------------------------------------------------------------
+
+function constrain_3H (lf_id, components, data_filter, tree, model_map, initial_values, model_objects) {
+    delta = prefix + ".delta_shared";
+    psi = prefix + ".psi_shared";
+    parameters.DeclareGlobal(delta, None);
+    parameters.DeclareGlobal(psi, None);
+
+    for (k,i; in; model_objects) {
+        model.generic.AddGlobal (i, delta, utility.getGlobalValue ("terms.parameters.multiple_hit_rate"));
+        model.generic.AddGlobal (i, psi, utility.getGlobalValue ("terms.parameters.triple_hit_rate"));
+    }
+    parameter_set = estimators.TraverseLocalParameters (lf_id, model_objects, prefix + ".mg94mh.constrain3H");
+    return 0;
+}
 
 /**
  * @name doPartitionedMG
@@ -571,6 +640,15 @@ function doGTR (prefix) {
  * @return
  */
 function doPartitionedMG (prefix, keep_lf) {
+    doPartitionedMGModel (prefix, keep_lf, "models.codon.MG_REV.ModelDescription", None);
+}
+
+/**
+ * @name doPartitionedMGModel
+ * Can only be used after including shared-load-file
+ * @return
+ */
+function doPartitionedMGModel (prefix, keep_lf, model, constraint) {
     io.ReportProgressMessageMD ("`prefix`", "codon-fit", "Obtaining the global omega estimate based on relative GTR branch lengths and nucleotide substitution biases");
 
 
@@ -603,11 +681,12 @@ function doPartitionedMG (prefix, keep_lf) {
     }
     
     if (run_mg94) {
-        partitioned_mg_results = estimators.FitMGREV(filter_names, trees, codon_data_info [utility.getGlobalValue("terms.code")], {
+        partitioned_mg_results = estimators.FitCodonModel (filter_names, trees, model, codon_data_info [utility.getGlobalValue("terms.code")], {
             utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"),
             utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,
             utility.getGlobalValue("terms.run_options.partitioned_omega"): selected_branches,
-            utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf
+            utility.getGlobalValue("terms.run_options.retain_lf_object"): keep_lf,
+            utility.getGlobalValue("terms.run_options.apply_user_constraints") : constraint
         }, gtr_results);
         if (Type (save_intermediate_fits) == "AssociativeList") {
             (save_intermediate_fits[^"terms.data.value"])["MG94"] = partitioned_mg_results;
@@ -620,20 +699,21 @@ function doPartitionedMG (prefix, keep_lf) {
     }
     
 
-
     io.ReportProgressMessageMD("`prefix`", "codon-fit", "* " + selection.io.report_fit (partitioned_mg_results, 0, (^"`prefix`.codon_data_info")[utility.getGlobalValue ("terms.data.sample_size")]));
     io.ReportProgressMessageMD (prefix, "nuc-fit", "* " +
         selection.io.report_fit_secondary_stats (partitioned_mg_results));
 
-    global_dnds = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.parameters.omega_ratio"));
-    utility.ForEach (global_dnds, "_value_", 'io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _value_[utility.getGlobalValue("terms.description")] + " = " + Format (_value_[utility.getGlobalValue("terms.fit.MLE")],8,4));');
-
-    if (partition_count > 1) {
-       //partition_scalers = selection.io.extract_global_MLE_re (partitioned_mg_results, "^" + utility.getGlobalValue("terms.parameters.omega_ratio"));
-
+    global_dnds = partitioned_mg_results[utility.getGlobalValue("terms.global")];
+    //selection.io.extract_global_MLE_re (partitioned_mg_results, ".");
+    
+    for (_desc_, _value_; in; global_dnds) {
+        if (utility.Has (_value_, utility.getGlobalValue("terms.constraint"), "String")) {
+            continue;
+        }
+        io.ReportProgressMessageMD ("`prefix`", "codon-fit", "* " + _desc_ + " = " + Format (_value_[utility.getGlobalValue("terms.fit.MLE")],8,4));
     }
-
-    /** extract and report dN/dS estimates */
+    
+    
 }
 
 //------------------------------------------------------------------------------

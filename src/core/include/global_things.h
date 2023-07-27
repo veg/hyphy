@@ -342,6 +342,7 @@ namespace hy_global {
   kErrorStringDatasetRefIndexError,        // -171
   kErrorStringMatrixExportError,           // -200
   kErrorStringNullOperand,                  // -666
+  kErrorNumerical,
   kErrorStringUnterminatedMatrix,
   kNoneToken,
   kNullToken,
