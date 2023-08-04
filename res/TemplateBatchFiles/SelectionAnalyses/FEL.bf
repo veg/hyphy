@@ -155,6 +155,7 @@ selection.io.json_store_setting  (fel.json, "resample", fel.resample);
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
 fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+fel.multi_hit_option = "Global";
 
 if (fel.multi_hit != "None") {
     KeywordArgument ("site-multihit", "Estimate multiple hit rates for each site", "Estimate");

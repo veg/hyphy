@@ -40,7 +40,7 @@
 "BSEL","Split a tree into two clades (compartments) and a separating branch and test for equality of dN/dS between compartments and for selection along the separating branch using a series of Likelihood Ratio Tests.","SelectionLRT.bf";
 "CORR","Assess the correlation between phylogenetic and compartment segregation using generalized correlation coefficients and permutation tests.","TreeCorrelationCoefficients.bf";
 "FST","Compute various measures of F_ST and (optionally) perform permutation tests.","F_ST.bf";
-"SM","Peform a classic and structured Slatkin-Maddison test for the number migrations.","SM-2019.bf";
+"SM","Perform a classic and structured Slatkin-Maddison test for the number migrations.","SM-2019.bf";
 "TC","Test whether a group of sequences in a sample cluster together","TestClade.bf";
 
 "","Tools for manipulating sequence files.","!Data File Tools";
@@ -93,7 +93,7 @@
 
 "BST","Use the improved branch-site REL method of Yang and Nielsen (2005) to look for episodic selection in sequences.","YangNielsenBranchSite2005.bf";
 "BT","Test whether a branch (or branches) in the tree evolves under different dN and dS than the rest of the tree.","TestBranchDNDS.bf";
-"NY","Test for positive selection using the approach of Nielsen and Yabg, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
+"NY","Test for positive selection using the approach of Nielsen and Yang, by sampling global dN/dS from an array of distributions, and using Bayesian posterior to identify the sites with dN/dS>1.","NielsenYang.bf";
 
 "","Test for recombination.","!Recombination";
 "GARD","[GARD] Screen an alignment using GARD (requires an MPI environment).","GARD.bf";
