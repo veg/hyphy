@@ -16,6 +16,14 @@ option(NOSSE4 OFF)
 option(NONEON OFF)
 option(NOZLIB OFF)
 
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+  set(NOAVX ON)
+  set(NOSSE4 ON)
+  set(NONEON ON)
+  set(NOZLIB ON)
+endif()
+
 #-------------------------------------------------------------------------------
 # SSE MACROS
 #-------------------------------------------------------------------------------
