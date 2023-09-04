@@ -37,7 +37,8 @@ fel.analysis_description = {
     terms.io.authors: "Sergei L Kosakovsky Pond and Steven Weaver",
     terms.io.contact: "spond@temple.edu",
     terms.io.requirements: "in-frame codon alignment and a phylogenetic tree; only single partition data are supported",
-    terms.io.help : "http://www.hyphy.org/methods/other/contrast-fel/"
+    terms.io.help : "http://www.hyphy.org/methods/other/contrast-fel/",
+    terms.settings: {}
 };
 
 io.DisplayAnalysisBanner(fel.analysis_description);
@@ -135,6 +136,10 @@ fel.q_value  = io.PromptUser ("\n>Select nominal the q-value threshold to use wh
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
 fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
+fel.site_filter = selection.io.handle_subset_of_sites ();
+selection.io.json_store_setting (fel.json, "site-filter", fel.site_filter );
+fel.output_file_path = fel.codon_data_info[terms.json.json];
 
 io.ReportProgressMessageMD('FEL',  'selector', 'Branches to use as the test set in the FEL-contrast analysis');
 
@@ -437,8 +442,8 @@ estimators.ApplyExistingEstimates ("fel.site_likelihood", fel.site_model_mapping
 fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                "Models" : {{"fel.site.mg_rev"}},
                                "Headers" : {{"libv3/all-terms.bf","libv3/tasks/ancestral.bf", "libv3/convenience/math.bf"}},
-                               "Functions" : {{"fel.apply_proportional_site_constraint"}},
-                               "Variables" : {{"terms.fel.test_keys","fel.permutations","fel.ignorable","fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations"}}
+                               "Functions" : {{"fel.apply_proportional_site_constraint","selection.io.sitelist_matches_pattern"}},
+                               "Variables" : {{"terms.fel.test_keys","fel.permutations","fel.ignorable","fel.alpha","fel.beta","fel.alpha.scaler","terms.fel.permutation","fel.final_partitioned_mg_results","fel.srv","fel.site_tested_classes","fel.scaler_parameter_names","fel.branches.testable","fel.branches.has_background","fel.alpha.scaler","terms.fel.pairwise","fel.branch_class_counter","fel.report.test_count", "fel.p_value","fel.site.permutations","fel.site_filter","fel.output_file_path"}}
                              });
 
 fel.pattern_count_all = utility.Array1D (fel.site_patterns);
@@ -450,7 +455,9 @@ utility.ForEachPair (fel.site_patterns, "_pattern_", "_pattern_info_",
         fel.pattern_count_this += 1;
         io.ReportProgressBar("", "Working on site pattern " + (fel.pattern_count_this) + "/" +  fel.pattern_count_all + " in partition " + (1+fel.partition_index));
 
-        if (_pattern_info_[terms.data.is_constant]) {
+        fel.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], fel.site_filter["site-filter"], FALSE);
+
+        if (_pattern_info_[terms.data.is_constant] || (!fel.run_site)) {
             fel.store_results (-1,None,{"0" : "fel.site_likelihood",
                                                             "1" : None,
                                                             "2" : fel.partition_index,
@@ -772,6 +779,14 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         utility.ForEach (counts["Branches"], "_name_", '
             `&counts_by_branch_set`[`&branch_sets`[_name_]] += ((`&counts`)["Counts"])[+`&branch_map`[_name_]];
         ');
+        
+        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE);
+    
+        if (site_match) {
+            Export  (lfe, ^lf);
+            fprintf (^"fel.output_file_path" + "_site_" + site_match + ".fit", CLEAR_FILE, lfe);
+            DeleteObject (lfe);
+        }
     }
     
     snapshot = estimators.TakeLFStateSnapshot (lf);

@@ -46,7 +46,8 @@ meme.analysis_description = {
     terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
     terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
     terms.io.contact: "spond@temple.edu",
-    terms.io.requirements: "in-frame codon alignment and a phylogenetic tree"
+    terms.io.requirements: "in-frame codon alignment and a phylogenetic tree",
+    terms.settings: {}
 };
 
 
@@ -197,6 +198,9 @@ KeywordArgument ("full-model", "Perform branch length re-optimization under the 
 meme.run_full_mg94 = "Yes" == io.SelectAnOption( {{"Yes", "[Default] Perform branch length re-optimization under the full codon model"}, 
                                          {"No", "Skip branch length re-optimization under the full codon model (faster but less precise)"}},
                                          "Perform branch length re-optimization under the full codon model");
+
+meme.site_filter = selection.io.handle_subset_of_sites ();
+selection.io.json_store_setting (meme.json, "site-filter", meme.site_filter );
 
 
 if (meme.run_full_mg94) {
@@ -363,6 +367,8 @@ meme.report.positive_site = {{"" + (1+((meme.filter_specification[meme.report.pa
 meme.site_results = {};
 meme.site_LRT = {};
 
+meme.output_file_path = meme.codon_data_info[terms.json.json];
+
 for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme.partition_index += 1) {
     meme.branch_ebf = {}; 
     meme.report.header_done = FALSE;
@@ -428,8 +434,8 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
     meme.queue = mpi.CreateQueue ({terms.mpi.LikelihoodFunctions: {{"meme.site_likelihood","meme.site_likelihood_bsrel"}},
                                    terms.mpi.Models : {{"meme.site.background_fel","meme.site.bsrel"}},
                                    terms.mpi.Headers : utility.GetListOfLoadedModules ("libv3/"),
-                                   terms.mpi.Variables : {{"meme.selected_branches","meme.branch_mixture","meme.pairwise_counts","meme.codon_data_info","meme.resample"}},
-                                   terms.mpi.Functions : {{"meme.compute_branch_EBF"}}
+                                   terms.mpi.Variables : {{"meme.selected_branches","meme.branch_mixture","meme.pairwise_counts","meme.codon_data_info","meme.resample","meme.site_filter","meme.output_file_path"}},
+                                   terms.mpi.Functions : {{"meme.compute_branch_EBF","selection.io.sitelist_matches_pattern"}}
                                  });
 
 
@@ -441,7 +447,9 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
         '
             meme.pattern_count_this += 1;
             io.ReportProgressBar("", "Working on site pattern " + (meme.pattern_count_this) + "/" +  meme.pattern_count_all + " in partition " + (1+meme.partition_index));
-            if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")]) {
+            meme.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], meme.site_filter["site-filter"], FALSE);
+
+            if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")] || (!meme.run_site)) {
                 meme.store_results (-1,None,{"0" : "meme.site_likelihood",
                                              "1" : "meme.site_likelihood_bsrel",
                                              "2" : None,
@@ -738,6 +746,14 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         DeleteObject (ancestral_info);
         branch_ebf       = {};
         branch_posterior = {};
+        
+        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"meme.site_filter")["site-save-filter"], TRUE);
+    
+        if (site_match) {
+            Export  (lfe, ^lf_bsrel);
+            fprintf (^"meme.output_file_path" + "_site_" + site_match + ".fit", CLEAR_FILE, lfe);
+            DeleteObject (lfe);
+        }
     }
 
  

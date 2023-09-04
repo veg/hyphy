@@ -456,3 +456,28 @@ function selection.io.extract_branch_info(branch_spec, callback) {
     branch_spec["selection.io._aux.extract_branch_info.callback"][""];
     return selection.io.extract_branch_info_result;
 }
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction selection.io.handle_subset_of_sites () {
+    site_filter = {};   
+    KeywordArgument ("limit-to-sites",  "Only analyze sites whose 1-based indices match the following list (null to skip)", "null");
+    site_filter ["site-filter"] = io.PromptUserForString ("Only analyze sites whose 1-based indices match the following list (null to skip)");
+    if (site_filter ["site-filter"] == "null") { site_filter ["site-filter"] = None;}
+    KeywordArgument ("save-lf-for-sites",  "For sites whose 1-based indices match the following list, write out likelihood function snapshots (empty string to skip)", "null");
+    site_filter ["site-save-filter"] = io.PromptUserForString ("For sites whose 1-based indices match the following list, write out likelihood function snapshots (null string to skip)");
+    if (site_filter ["site-save-filter"] == "null") { site_filter ["site-save-filter"] = None;}
+    return site_filter;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction selection.io.sitelist_matches_pattern (site_list, pattern, opt_in) {
+    if (Type (pattern) != "String") {if (opt_in) return 0; return site_list[0];}
+    for (i,s;in;site_list) {
+        if (None != regexp.Find ("" + (1+(+s)), pattern)) {
+            return (1+(+s));
+        }
+    }
+    return 0;
+}
