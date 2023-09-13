@@ -700,7 +700,7 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                 if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionProbsMaxProbClass || runMode == _hyphyLFConditionMPIIterate) {
                     //if (branchIndex>=0)
                     //  ((_TheTree*)LocateVar(theTrees.list_data[index]))->AddBranchToForcedRecomputeList (branchIndex+((_TheTree*)LocateVar(theTrees.list_data[index]))->GetLeafCount());
-
+                 hyFloat*        start_of_buffer = buffer + (hmmCatCount?hmmCatSize:1)*blockLength;
 #ifdef          __HYPHYMPI__
                     if (runMode == _hyphyLFConditionMPIIterate) {
                         long offset = resTransferMatrix.GetVDim();
@@ -712,8 +712,6 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                     } else
 
 #endif
-                    hyFloat*        start_of_buffer = buffer + (hmmCatCount?hmmCatSize:1)*blockLength;
-
                     ComputeBlock    (index, start_of_buffer, useThisPartitonIndex, branchIndex, branchValues);
                     
                     /***
