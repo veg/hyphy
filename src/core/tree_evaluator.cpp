@@ -3022,8 +3022,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 // that must be recomputed
 {
     // process the leaves first
-    
-    
+    //tcc = nil;
     long * storage = (long*)alloca (sizeof (long) * flatNodes.lLength);
     InitializeArray(storage, flatNodes.lLength, 0L);
     _SimpleList     taggedInternals                 (flatNodes.lLength, storage);
@@ -3063,7 +3062,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             currentTreeNode = ((_CalcNode*) flatTree    (nodeCode));
         }
         
-        //printf ("Node %d = %s\n", nodeID, //currentTreeNode->GetName()->get_str());
+        //printf ("\n***\nNode %d = %s\n", nodeID, currentTreeNode->GetName()->get_str());
         
         hyFloat  *  _hprestrict_ parentConditionals = iNodeCache +            (siteFrom + parentCode  * siteCount) * alphabetDimension;
         if (taggedInternals.list_data[parentCode] == 0) {
@@ -3176,9 +3175,6 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                     continue;
                 }
                 
-                
-                     
-                
                 /*
                 #if defined _SLKP_USE_AVX_INTRINSICS or defined _SLKP_USE_ARM_NEON
                     _handle4x4_pruning_case (childVector, tMatrix, parentConditionals, tmatrix_transpose);
@@ -3270,15 +3266,49 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     }
     else if (alphabetDimension == 61UL) {
         for (long siteID = siteFrom; siteID < siteTo; siteID++, parentConditionals += 61L) {
+
+/*
+#pragma omp critical
+            if (siteID == siteFrom && nodeID == 25) {
+                printf ("(%ld/%ld)%s\n", likeFuncEvalCallCount, siteFrom, currentTreeNode->GetName()->get_str());
+            }
+*/
+
+                    
             __ll_loop_preamble
             if (__ll_handle_conditional_array_initialization<61> (
                                                                   lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo)) {
+                                                                      
+                                                                      
                 continue;
             }
-            
+
+
+/*#pragma omp critical
+            if (hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+                if (siteOrdering.list_data[siteID] == 43) {
+                    //printf ("%ld\t%ld\t%ld\t%ld\t%16.12g\n",nodeID, siteFrom, siteTo, siteID, sum);
+                    for (int kk = 0; kk < 61; kk++) {
+                        printf ("%s\t%ld\t%ld\t%ld\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(), siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
+                    }
+                }
+            }*/
 
             _hy_mvp_blocked_4x4<61> (mvs, tMatrix, childVector);
             sum += _hy_vvmult_sum<61> (parentConditionals, mvs);
+
+/*
+#pragma omp critical
+            if (likeFuncEvalCallCount == 1 || hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+                if (siteOrdering.list_data[siteID] == 43 && nodeID == 25) {
+                    //printf ("%ld\t%ld\t%ld\t%ld\t%16.12g\n",nodeID, siteFrom, siteTo, siteID, sum);
+                    for (int kk = 0; kk < 61; kk++) {
+                        printf ("%s\t%ld\t%ld\t%ld\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(), siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
+                    }
+                }
+            }
+*/
+
             
             __ll_loop_handle_scaling<61L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
@@ -3365,7 +3395,16 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 accumulator += rootConditionals[rootIndex] * theProbs[p];
             }
         }
-        
+      
+
+/*#pragma omp critical
+        if (hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+            if (siteOrdering.list_data[siteID] == 43) {
+                printf ("\n");
+                printf ("%ld\t%ld\t%ld\t%16.12g\n",siteFrom, siteTo, siteID, accumulator);
+            }
+        }*/
+
         if (storageVec) {
             storageVec [siteOrdering.list_data[siteID]] = accumulator;
         } else {

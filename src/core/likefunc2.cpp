@@ -712,16 +712,31 @@ void            _LikelihoodFunction::PopulateConditionalProbabilities   (long in
                     } else
 
 #endif
+                    hyFloat*        start_of_buffer = buffer + (hmmCatCount?hmmCatSize:1)*blockLength;
 
-                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitonIndex, branchIndex, branchValues);
-
+                    ComputeBlock    (index, start_of_buffer, useThisPartitonIndex, branchIndex, branchValues);
+                    
+                    /***
+                     
+                        SLKP 20230912: TODO why is this always being forced to recompute?
+                        When weights of category variables are being updated (and nothing esle), this offers a great caching opportunity
+                        At least need to document specific cases when the cachine fails.
+                    ***/
+                    
                     if (runMode != _hyphyLFConditionMPIIterate && usedCachedResults) {
                         bool saveFR = forceRecomputation;
                         forceRecomputation = true;
-                        ComputeBlock    (index, buffer + (hmmCatCount?hmmCatSize:1)*blockLength, useThisPartitonIndex, branchIndex, branchValues);
+                        ComputeBlock    (index, start_of_buffer , useThisPartitonIndex, branchIndex, branchValues);
                         forceRecomputation = saveFR;
                     }
-
+                            
+                    /*if (hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+                        printf ("\n\n");
+                        
+                        for (unsigned long i = 0; i < blockLength; i++) {
+                            printf ("%ld\t%ld\t%ld\t%16.12g\n",index,i,useThisPartitonIndex, start_of_buffer[i]);
+                        }
+                    }*/
 
                     if (runMode == _hyphyLFConditionProbsWeightedSum || runMode == _hyphyLFConditionMPIIterate) {
                         long lowerBound  = hmmCatCount?blockLength*currentHMMCat:0,
