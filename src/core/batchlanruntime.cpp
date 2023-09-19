@@ -2546,7 +2546,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
             
             
             if (tree_node) {
-                if (set_this_attribute == _String("MODEL")) {
+                if (set_this_attribute == kModel) {
                   _String model_name = AppendContainerName(*GetIthParameter(2UL),current_program.nameSpacePrefix);
                   long model_type = HY_BL_MODEL, model_index;
                   _Matrix* model_object            = (_Matrix*)_GetHBLObjectByTypeMutable(model_name, model_type, &model_index);

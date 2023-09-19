@@ -641,9 +641,13 @@ void  _Variable::SetFormula (_Formula& theF) {
       HandleApplicationError (_String ("A recursive dependency error in _Variable::SetFormula; this is an HBL implementation bug; offending variable name is '") & *GetName() & "'");
       return ;
     }
+    
+
 
     bool changeMe    = false,
          isAConstant = theF.IsAConstant();
+
+   
 
     //if (doPrint) {
     //printf ("Constraining %s to %s\n", theName->sData, _String((_String*)theF.toStr()).sData);
@@ -703,6 +707,7 @@ void  _Variable::SetFormula (_Formula& theF) {
     // also update the fact that this variable is no longer independent in all declared
     // variable containers which hold references to this variable
     if (changeMe) {
+ 
           if (deferSetFormula) {
               *deferSetFormula << theIndex;
               deferIsConstant  << isAConstant;
@@ -720,6 +725,7 @@ void  _Variable::SetFormula (_Formula& theF) {
                       }
                   }
               }
+              
               
               likeFuncNamesList.ForEach ([this, isAConstant] (BaseRef lf_name, unsigned long idx) -> void {
                   if (((_String*)lf_name)->nonempty()) {

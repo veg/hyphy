@@ -302,7 +302,11 @@ void    _VariableContainer::ScanModelBasedVariables (_String const & fullName, _
                 _Variable * spawnedVar = CheckReceptacle(&var_name, kEmptyString, false, false);
                 spawnedVar->SetBounds (aVar->GetLowerBound(), aVar->GetUpperBound());
 
-                if (aVar->IsIndependent()) {
+                if (aVar->IsIndependent() && spawnedVar->IsIndependent()) {
+                /***
+                        20230918: SLKP
+                        By adding the check on spawnedVar->IsIndependent(), the code ensures that if a local variable already CONSTRAINED, the container retains memory of this constraint
+                 */
                     PushIndVariable(spawnedVar->get_index(), mVars.get(i));
                 } else {
                     PushDepVariable(spawnedVar->get_index(), mVars.get(i));
