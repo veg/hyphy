@@ -69,7 +69,7 @@ mss.ic_score = io.SelectAnOption  ({"AIC-c" : "Small Sample AIC score",
 mss.is_bic = mss.ic_score == "BIC";
 
 KeywordArgument ("classes",        "How many rate classes should be considered", "2");  
-mss.rate_classes = io.PromptUser ("How many rate classes should be considered?", 2, 2, 5, TRUE);
+mss.rate_classes = io.PromptUser ("How many rate classes should be considered?", 2, 2, 18, TRUE);
 
 
 mss.file_records = {};
