@@ -1037,7 +1037,7 @@ selection.io.json_store_lf (busted.json,
                             busted.display_orders[busted.unconstrained]);
 
 
-if (buster.error_sink) {
+if (busted.error_sink) {
     busted.run_test = busted.inferred_test_distribution_raw [busted.rate_classes-1][0] > 1 && busted.inferred_test_distribution_raw [busted.rate_classes-1][1] > 0;
 } else {
     busted.run_test = busted.inferred_test_distribution [busted.rate_classes-1][0] > 1 && busted.inferred_test_distribution [busted.rate_classes-1][1] > 0;
