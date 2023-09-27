@@ -267,8 +267,6 @@ HBLObjectRef  _Variable::Compute (void) {
             HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
             DeleteObject (varValue);
             varValue = new_value;
-            //DeleteObject (varValue);
-            //(varValue = varFormula->Compute())->AddAReference();
         }
     };
   
@@ -696,6 +694,12 @@ void  _Variable::SetFormula (_Formula& theF) {
     if (varValue) {
         DeleteAndZeroObject (varValue);
     }
+    
+    /*if (hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+        if (*theName == _String("meme.site_tree_bsrel.ELEPHSEAL.bsrel_mixture_aux_0")) {
+            printf ("\nHAI\n");
+        }
+    }*/
 
     //_Formula::Duplicate ((BaseRef)myF);
     varFormula = new _Formula;
@@ -707,7 +711,22 @@ void  _Variable::SetFormula (_Formula& theF) {
     // also update the fact that this variable is no longer independent in all declared
     // variable containers which hold references to this variable
     if (changeMe) {
- 
+          /**
+           20230925 SLKP
+           Clear the old value when setting a new formula
+           This is necessary because of the following example
+
+           x = 1;
+           y := x;
+           y = 2;
+           y:=x;
+
+           Even though the value of 'y' changed and the variable should be marked as such, after it's set to y:=x the second time, the EXPRESSION (x) hasn't changed, so y will be tagged as not having changed.
+           This messes up likelihood function calculations and other things.
+            
+         */
+        
+        
           if (deferSetFormula) {
               *deferSetFormula << theIndex;
               deferIsConstant  << isAConstant;
@@ -766,6 +785,8 @@ void  _Variable::PostMarkChanged (void) {
 //__________________________________________________________________________________
 bool  _Variable::HasChanged (bool ignoreCats, _AVLListX *) {
     // does this variable need recomputing 
+    
+    
     if (varFormula) {
         if (useGlobalUpdateFlag && (varFlags&HY_DEP_V_COMPUTED)) {
             return false;

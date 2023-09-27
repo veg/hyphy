@@ -272,4 +272,30 @@ lfunction math.minNormalizedRange(object) {
   return (Max(object, 0) - min_value ) / min_value;
 };
 
+/**
+* Returns the range normalized to the lowest value
+* @name math.ComputePosteriorsFromLF
+* @param Matrix/Dictonary logL (N entries) : log-likelihood for category i (EXCEPT the last one)
+* @param Matrix/Dictonary weights (N entries) : weight for category i (EXCEPT the last one)
+* @param Number logL0 : the combined log likelihood (denominator)
+* @returns {Matrix} (N+1)x1) : posterior probabilities for each class
+ 
+*/
+lfunction math.ComputePosteriorsFromLF (logL, weights, logL0) {
+   if (Type (logL) == "Matrix") {
+    normalizer = Max (logL0, Max (logL,0));
+   } else {
+    normalizer = Max (logL0, Max (logL,0)[^"terms.data.value"]);   
+   }
+   n = utility.Array1D (weights) + 1;
+   p = {n, 1};
+   for (is, LL; in; logL) {
+        i = +is;
+        pp = Exp (LL - normalizer) * weights[i] / Exp (logL0 - normalizer);
+        p[i] = pp;
+   }
+   p[n-1] = 1 - (+p);
+   return p;   
+};
+
 

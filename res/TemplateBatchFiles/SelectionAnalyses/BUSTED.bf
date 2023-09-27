@@ -32,11 +32,13 @@ Version 2.2 changes the grid search to LHC, and adds an initial search phase to 
 for branch-site variation in synonymous substitution rates. Version 3.1 adds HMM auto-correlation option for SRV, and binds SRV distributions for multiple branch sets.
 Version 4.0 adds support for multiple hits (MH), ancestral state reconstruction saved to JSON, and profiling of branch-site level support for selection / multiple hits.
 Version 4.2 adds calculation of MH-attributable fractions of substitutions.
+Version 4.5 adds an "error absorption" component [experimental]
 ",
-                               terms.io.version : "4.2",
+                               terms.io.version : "4.5",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71, *Synonymous Site-to-Site Substitution Rate Variation Dramatically Inflates False Positive Rates of Selection Analyses: Ignore at Your Own Peril*, Mol Biol Evol. 37(8):2430-2439",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
+                               terms.settings: {},
                                terms.io.requirements : "in-frame codon alignment and a phylogenetic tree (optionally annotated with {})"
                               };
 
@@ -128,10 +130,12 @@ busted.do_srv = io.SelectAnOption ({"Yes" : "Allow synonymous substitution rates
                                     "Synonymous rate variation"
                                     );
                                     
+selection.io.json_store_setting  (busted.json, "srv", busted.do_srv);
+
+                                    
 if (busted.do_srv == "Branch-site") {
     busted.do_bs_srv = TRUE;
     busted.do_srv = TRUE;
-    (busted.json[terms.json.analysis])[terms.settings] = "Branch-site synonymous rate variation";
 } else {
     if (busted.do_srv == "Yes") {
         busted.do_bs_srv = FALSE;
@@ -160,9 +164,25 @@ busted.multi_hit = io.SelectAnOption ({
                                         {"None", "[Default] Use standard models which permit only single nucleotide changes to occur instantly"}
                                   }, "Include support for multiple nucleotide substitutions");
 
+
+selection.io.json_store_setting  (busted.json, "multiple-hit", busted.multi_hit);
+
 if (busted.do_srv) {
     KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes);
     busted.synonymous_rate_classes = io.PromptUser ("The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes, 1, 10, TRUE);
+}
+
+KeywordArgument ("error-sink",  "[Advanced experimental setting] Include a rate class to capture misalignment artifacts", "No");
+
+busted.error_sink = io.SelectAnOption ({
+                                        {"No", "Standard dN/dS model (all rates are used for inference)"}
+                                        {"Yes", "The dN/dS model has an additional class (high dN/dS, low proportion), which 'absorbs' alignment errors"}
+                                  }, "[Advanced experimental setting] Include a rate class to capture misalignment artifacts") == "Yes";
+
+selection.io.json_store_setting  (busted.json, "error-sink", busted.error_sink);
+
+if (busted.error_sink) {
+    busted.rate_classes += 1;
 }
 
 KeywordArgument ("grid-size", "The number of points in the initial distributional guess for likelihood fitting", 250);
@@ -302,6 +322,7 @@ if (busted.do_srv) {
         busted.model_generator = "models.codon.BS_REL_SRV.ModelDescription";
         busted.rate_class_arguments = {{busted.synonymous_rate_classes__,busted.rate_classes__}};
         assert (busted.multi_hit == "None", "Multiple hit and branch site SRV combination is currently not supported");
+        assert (busted.error_sink  == FALSE, "Error sink and branch site SRV combination is currently not supported");
     } else {
     
         lfunction busted.model.with.GDD (type, code, rates) {        
@@ -432,6 +453,12 @@ for (busted.i = 1; busted.i < busted.rate_classes; busted.i += 1) {
     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.i)), terms.range01);
 }
 
+if (busted.error_sink) {
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
+     parameters.SetRange (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,1)), terms.range_high);
+     parameters.SetRange  (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)),terms.range_small_fraction);
+     parameters.SetRange  (model.generic.GetGlobalParameter (busted.background.bsrel_model , terms.AddCategory (utility.getGlobalValue("terms.mixture.mixture_aux_weight"), 1)),terms.range_small_fraction);
+}
 
 parameters.SetRange (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)), terms.range_gte1);
 
@@ -647,7 +674,8 @@ io.ReportProgressMessageMD("BUSTED", "main", "* For *test* branches, the followi
 
 selection.io.stopTimer (busted.json [terms.json.timers], "Unconstrained BUSTED model fitting");
 
-busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (busted.distribution) % 0;
+busted.inferred_test_distribution_raw = parameters.GetStickBreakingDistribution (busted.distribution);
+busted.inferred_test_distribution = busted.inferred_test_distribution_raw  % 0;
 
 busted.has_selection_support = busted.inferred_test_distribution[Rows(busted.inferred_test_distribution)-1][-1];
 busted.has_selection_support = busted.has_selection_support[0] * busted.has_selection_support[1] > 1e-8;
@@ -670,12 +698,22 @@ busted.EFV_ids = estimators.LFObjectGetEFV (busted.full_model[terms.likelihood_f
                                 
 busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "alt-mh", busted.branch_length_string, busted.model_parameters);
 
-selection.io.report_dnds (busted.inferred_test_distribution);
+if (busted.error_sink) {
+    selection.io.report_dnds_with_sink (busted.inferred_test_distribution, busted.inferred_test_distribution_raw[0][0], busted.inferred_test_distribution_raw[0][1]);
+} else {
+    selection.io.report_dnds (busted.inferred_test_distribution);
+}
 
 if (busted.has_background) {
     io.ReportProgressMessageMD("BUSTED", "main", "* For *background* branches, the following rate distribution for branch-site combinations was inferred");
-    busted.inferred_background_distribution = parameters.GetStickBreakingDistribution (busted.background_distribution) % 0;
-    selection.io.report_dnds (busted.inferred_background_distribution);
+    busted.inferred_background_distribution_raw = parameters.GetStickBreakingDistribution (busted.background_distribution);
+    busted.inferred_background_distribution  =  busted.inferred_background_distribution_raw % 0;
+    if (busted.error_sink) {
+        selection.io.report_dnds_with_sink (busted.inferred_background_distribution, busted.inferred_background_distribution_raw[0][0], busted.inferred_background_distribution_raw[0][1]);
+    } else {
+        selection.io.report_dnds (busted.inferred_background_distribution);
+    }
+    
     busted.distribution_for_json [busted.BG] = utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                          "_index_",
                                                          "{terms.json.omega_ratio : busted.inferred_background_distribution [_index_][0],
@@ -999,7 +1037,11 @@ selection.io.json_store_lf (busted.json,
                             busted.display_orders[busted.unconstrained]);
 
 
-busted.run_test = busted.inferred_test_distribution [busted.rate_classes-1][0] > 1 && busted.inferred_test_distribution [busted.rate_classes-1][1] > 0;
+if (buster.error_sink) {
+    busted.run_test = busted.inferred_test_distribution_raw [busted.rate_classes-1][0] > 1 && busted.inferred_test_distribution_raw [busted.rate_classes-1][1] > 0;
+} else {
+    busted.run_test = busted.inferred_test_distribution [busted.rate_classes-1][0] > 1 && busted.inferred_test_distribution [busted.rate_classes-1][1] > 0;
+}
 
 for (_key_, _value_; in; busted.filter_specification) {
     selection.io.json_store_branch_attribute(busted.json, busted.unconstrained, terms.branch_length, 0,
@@ -1048,7 +1090,8 @@ if (!busted.run_test) {
                                                  selection.io.extract_branch_info((busted.null_results[terms.branch_length])[_key_], "selection.io.branch.length"));');
 
     io.ReportProgressMessageMD("BUSTED", "test", "* For *test* branches under the null (no dN/dS > 1 model), the following rate distribution for branch-site combinations was inferred");
-    busted.inferred_test_distribution = parameters.GetStickBreakingDistribution (busted.distribution) % 0;
+    busted.inferred_test_distribution_raw = parameters.GetStickBreakingDistribution (busted.distribution);
+    busted.inferred_test_distribution = busted.inferred_test_distribution_raw  % 0;
 
     busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                          "_index_",
@@ -1056,7 +1099,14 @@ if (!busted.run_test) {
                                                            terms.json.proportion : busted.inferred_test_distribution [_index_][1]}")};
 
     busted.report_multi_hit  (busted.null_results, busted.distribution_for_json, "MultiHit", "null-mh",busted.branch_length_string, busted.model_parameters);
-    selection.io.report_dnds (parameters.GetStickBreakingDistribution (busted.distribution) % 0);
+    busted.null_distro_raw = parameters.GetStickBreakingDistribution (busted.distribution);
+    
+    if (busted.error_sink) {
+        selection.io.report_dnds_with_sink (busted.null_distro_raw % 0, busted.null_distro_raw[0][0], busted.null_distro_raw[0][1]);
+    } else {
+        selection.io.report_dnds (busted.null_distro_raw % 0);
+    }
+
 
     if (busted.has_background) {
         busted.inferred_background_distribution = parameters.GetStickBreakingDistribution (busted.background_distribution) % 0;
@@ -1252,10 +1302,18 @@ function busted.init_grid_setup (omega_distro) {
                     }
                 }["_MATRIX_ELEMENT_VALUE_^(busted.rate_classes-_index_[0]-1)"];
                 busted.initial_grid_presets [_name_] = 0;
-                busted.initial_ranges [_name_] = {
-                    terms.lower_bound : 0,
-                    terms.upper_bound : 1
-                };
+                
+                if (busted.error_sink && _index_[0] == 0) {
+                     busted.initial_ranges [_name_] = {
+                        terms.lower_bound : 100,
+                        terms.upper_bound : 10000
+                    };
+                } else {                
+                    busted.initial_ranges [_name_] = {
+                        terms.lower_bound : 0,
+                        terms.upper_bound : 1
+                    };
+                }
             }  else {
                 busted.initial_grid  [_name_] = {
                     {
@@ -1280,10 +1338,17 @@ function busted.init_grid_setup (omega_distro) {
                 }
             };
             busted.initial_grid_presets [_name_] = 3;
-            busted.initial_ranges [_name_] = {
-                terms.lower_bound : 0,
-                terms.upper_bound : 1
-            };
+            if (busted.error_sink && _index_[0] == 0) {
+                     busted.initial_ranges [_name_] = {
+                        terms.lower_bound : 0,
+                        terms.upper_bound : 0.01,
+                    };
+            } else { 
+                busted.initial_ranges [_name_] = {
+                    terms.lower_bound : 0,
+                    terms.upper_bound : 1
+                };
+            }
         '
     );
 

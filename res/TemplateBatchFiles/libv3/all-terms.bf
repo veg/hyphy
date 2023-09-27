@@ -103,6 +103,16 @@ namespace terms{
         upper_bound: "100"
     };
 
+    range_high = {
+        lower_bound: "100",
+        upper_bound: "1e10"
+    };
+    
+    range_small_fraction = {
+        lower_bound: "0",
+        upper_bound: "0.01"
+    };
+
 
 
 
@@ -322,6 +332,7 @@ namespace terms{
         rate                  = "rate";
         proportion            = "proportion";
         positive              = "positive test results";
+        imputed_states        = "Imputed States";
     }
 
 

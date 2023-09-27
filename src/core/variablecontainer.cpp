@@ -519,6 +519,10 @@ bool _VariableContainer::NeedToExponentiate (bool ignoreCats, _AVLListX* cache) 
             return handle_cache (var_index);
         };
 
+        /*if (hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+            printf ("\n####%s\n", GetName()->get_str());
+            printf ("Local-i %d\nGlobal %d\nLocal-d%d\n", AnyLocalVariable (iVariables, has_changed), gVariables && gVariables->Any(has_changed_global), AnyLocalVariable (dVariables, has_changed));
+        }*/
         
         return AnyLocalVariable (iVariables, has_changed) ||
                gVariables && gVariables->Any(has_changed_global) ||

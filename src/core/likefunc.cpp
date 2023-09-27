@@ -8191,9 +8191,9 @@ void    _LikelihoodFunction::UpdateIndependent (long index, bool purgeResults, _
             }
         }
 
-        if (purgeResults) {
+        //if (purgeResults) {
             computationalResults.Clear();
-        }
+        //}
     }
 
 }
@@ -8524,6 +8524,8 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
     t->InitializeTreeFrequencies          ((_Matrix*)glFreqs->ComputeNumeric());
 
     usedCachedResults                   = false;
+    
+
 
     if (computingTemplate&&templateKind) {
         if (!(forceRecomputation||!siteArrayPopulated||HasPartitionChanged(index)||rootFreqsChange)) {
@@ -8541,6 +8543,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
             #endif
             //printf ("\n[CACHED]\n");
+            
             return computationalResults.theData[index];
         }
     }

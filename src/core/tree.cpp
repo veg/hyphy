@@ -2885,7 +2885,7 @@ long        _TheTree::DetermineNodesForUpdate   (_SimpleList& updateNodes, _List
     _AVLListX       ctCache (&_ctSupp);
 
     // look for nodes with model changes and mark the path up to the root as needing an update
-    
+        
   #define DIRECT_INDEX(N) (flatParents.list_data[N]+flatLeaves.lLength)
     
   auto _handle_node = [&] (long node_id, bool do_list)->void {

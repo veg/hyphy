@@ -51,10 +51,14 @@ lfunction estimators.ConstrainAndRunLRT (lf_id, constraint) {
 
     df = Call (constraint, TRUE);
     Optimize (res, ^lf_id);
-    lrt = math.DoLRT (res[1][0],currentLL,df);
+    
+    if (df >= 0) {
+        lrt = math.DoLRT (res[1][0],currentLL,df);
+    } else {
+        lrt = math.DoLRT (currentLL,res[1][0],-df);
+    }
 
     estimators.RestoreLFStateFromSnapshot (lf_id, savedMLES);
-
     Call (constraint, FALSE);
 
     return lrt;

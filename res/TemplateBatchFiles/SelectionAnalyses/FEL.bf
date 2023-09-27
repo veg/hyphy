@@ -133,7 +133,7 @@ fel.multi_hit = io.SelectAnOption ({
                                   }, "Include support for multiple nucleotide substitutions");
 
 
-selection.io.json_store_setting  (fel.json, "multihit", fel.srv);
+selection.io.json_store_setting  (fel.json, "multihit", fel.multi_hit);
 
 /* Prompt for p value threshold */
 fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
@@ -165,6 +165,9 @@ if (fel.multi_hit != "None") {
                                         {"Estimate", "Include branch-specific rates for double nucleotide substitutions"}
                                         {"Global", "Use a plug-in estimate derived from the global model fit"}
                                   }, "Estimate multiple hit rates for each site");
+                                  
+    selection.io.json_store_setting  (fel.json, "site-multihit", fel.multi_hit);
+
 }
 
 if (^"fel.ci") {
@@ -454,7 +457,7 @@ if (fel.run_full_mg94) {
         }, fel.partitioned_mg_results);
         
 
-        if (faster) {
+        if (fel.faster) {
             utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", None);
         }
     
@@ -554,8 +557,6 @@ if (fel.multi_hit != "None") {
         io.CheckAssertion ("None!=fel.psi && None!=fel.psi_syn", "Could not find expected 3H rate parameters in model description");       
     }
 }
-
-
 
 selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 
@@ -1129,9 +1130,9 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
         _node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
          if (_node_class_ == terms.tree_attributes.test) {
              fel.selected_branches_index [fel.i] = 1;
-            _beta_scaler = fel.scalers[1];
+             _beta_scaler = fel.scalers[1];
          } else {
-            _beta_scaler = fel.scalers[2];
+             _beta_scaler = fel.scalers[2];
          }
          fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
          
@@ -1140,7 +1141,6 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
             fel.apply_2H_constraint ("fel.site_tree", _node_, fel.delta, fel.scalers[3]);
             if (fel.multi_hit == "Double+Triple") {
                 fel.apply_3H_constraint ("fel.site_tree", _node_, fel.psi, fel.psi_syn, fel.scalers[4]);
-
             }
          }
 

@@ -884,8 +884,14 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
                                                  branchID+iNodeCount, &branchValues);
                 for (long siteID = 0; siteID < patternCount; siteID++) {
                     long scaleDiff = (scalersSpecState.list_data[siteID]-scalersBaseline.list_data[siteID]);
+                    
+
                     hyFloat ratio = siteLikelihoodsSpecState[siteID]/siteLikelihoods[siteID];
                     
+                    /*if (ratio > 1 ) {
+                        printf ("%s/%d : %g, %g\n", ((_CalcNode*)blockTree->flatCLeaves.GetItem(branchID))->GetName()->get_str(),  currentChar, ratio);
+                    }*/
+
                     if (scaleDiff > 0) {
                         ratio *= acquireScalerMultiplier(scaleDiff);
                     }

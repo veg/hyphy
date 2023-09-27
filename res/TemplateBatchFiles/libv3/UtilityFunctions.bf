@@ -999,6 +999,15 @@ function utility.ExecuteInGlobalNamespace (commands) {
 }
 
 /**
+ * Evaluate an expression sin the global namespace
+ * @param commands {String} : the commands to execture
+ * @returns None
+ */
+function utility.EvalInGlobalNamespace (commands) {
+    return Eval (commands);
+}
+
+/**
  * A product function, which takes a list of k variable IDs (dicts)
  * and returns a dictionary of sets of keys (N1 x N2 x ... Nk)
  * @param {Dictionary} : a list of variable IDs to scan
