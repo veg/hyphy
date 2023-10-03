@@ -677,13 +677,13 @@ selection.io.stopTimer (busted.json [terms.json.timers], "Unconstrained BUSTED m
 busted.inferred_test_distribution_raw = parameters.GetStickBreakingDistribution (busted.distribution);
 busted.inferred_test_distribution = busted.inferred_test_distribution_raw  % 0;
 
-busted.has_selection_support = busted.inferred_test_distribution[Rows(busted.inferred_test_distribution)-1][-1];
+busted.has_selection_support = busted.inferred_test_distribution_raw[Rows(busted.inferred_test_distribution_raw)-1][-1];
 busted.has_selection_support = busted.has_selection_support[0] * busted.has_selection_support[1] > 1e-8;
 
 busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                          "_index_",
-                                                         "{terms.json.omega_ratio : busted.inferred_test_distribution [_index_][0],
-                                                           terms.json.proportion : busted.inferred_test_distribution [_index_][1]}")
+                                                         "{terms.json.omega_ratio : busted.inferred_test_distribution_raw [_index_][0],
+                                                           terms.json.proportion : busted.inferred_test_distribution_raw [_index_][1]}")
                                 };
                                 
 
@@ -716,8 +716,8 @@ if (busted.has_background) {
     
     busted.distribution_for_json [busted.BG] = utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                          "_index_",
-                                                         "{terms.json.omega_ratio : busted.inferred_background_distribution [_index_][0],
-                                                           terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
+                                                         "{terms.json.omega_ratio : busted.inferred_background_distribution_raw [_index_][0],
+                                                           terms.json.proportion : busted.inferred_background_distribution_raw [_index_][1]}");
 }
 
 if (busted.do_srv) {
@@ -769,7 +769,7 @@ if (busted.do_srv) {
 
 busted.stashLF = estimators.TakeLFStateSnapshot (busted.full_model[terms.likelihood_function]);
 
-if (busted.has_selection_support) {
+if (busted.has_selection_support || busted.error_sink) {
 
     utility.ToggleEnvVariable ("KEEP_OPTIMAL_ORDER", TRUE);
     
@@ -1095,8 +1095,8 @@ if (!busted.run_test) {
 
     busted.distribution_for_json = {busted.FG : utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                          "_index_",
-                                                         "{terms.json.omega_ratio : busted.inferred_test_distribution [_index_][0],
-                                                           terms.json.proportion : busted.inferred_test_distribution [_index_][1]}")};
+                                                         "{terms.json.omega_ratio : busted.inferred_test_distribution_raw [_index_][0],
+                                                           terms.json.proportion : busted.inferred_test_distribution_raw [_index_][1]}")};
 
     busted.report_multi_hit  (busted.null_results, busted.distribution_for_json, "MultiHit", "null-mh",busted.branch_length_string, busted.model_parameters);
     busted.null_distro_raw = parameters.GetStickBreakingDistribution (busted.distribution);
@@ -1109,12 +1109,12 @@ if (!busted.run_test) {
 
 
     if (busted.has_background) {
-        busted.inferred_background_distribution = parameters.GetStickBreakingDistribution (busted.background_distribution) % 0;
+        busted.inferred_background_distribution_raw = parameters.GetStickBreakingDistribution (busted.background_distribution);
         //selection.io.report_dnds (busted.inferred_background_distribution);
         busted.distribution_for_json [busted.BG] = utility.Map (utility.Range (busted.rate_classes, 0, 1),
                                                              "_index_",
-                                                             "{terms.json.omega_ratio : busted.inferred_background_distribution [_index_][0],
-                                                               terms.json.proportion : busted.inferred_background_distribution [_index_][1]}");
+                                                             "{terms.json.omega_ratio : busted.inferred_background_distribution_raw [_index_][0],
+                                                               terms.json.proportion : busted.inferred_background_distribution_raw [_index_][1]}");
     }
 
     if (busted.do_srv) {
