@@ -597,6 +597,9 @@ selection.io.json_store_lf (absrel.json,
                             {},
                             absrel.display_orders[absrel.full_adaptive_model]);
 
+KeywordArgument ("save-fit", "Save full adaptive aBSREL model fit to this file (default is not to save)", "/dev/null");
+io.SpoolLFToPath(absrel.likelihood_function_id, io.PromptUserForFilePath ("Save full adaptive aBSREL model fit to this file ['/dev/null' to skip]"));
+
 /***
     Testing individual branches for selection
 ***/
@@ -687,7 +690,7 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
         if (absrel.dn_ds.distro [absrel.branch.complexity[absrel.current_branch]-1][0] > 1) {
             absrel.branch.ConstrainForTesting (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
             Optimize (absrel.null.mles, ^absrel.likelihood_function_id
-                //, {"OPTIMIZATION_METHOD" : "nedler-mead", "OPTIMIZATION_PRECISION": 1e-3}
+                , {"OPTIMIZATION_METHOD" : "coordinate-wise"}
             );
             absrel.branch.test = absrel.ComputeLRT ( absrel.full_model.fit[terms.fit.log_likelihood], absrel.null.mles[1][0]);
             estimators.RestoreLFStateFromSnapshot (absrel.likelihood_function_id, absrel.full_model.mle_set);
@@ -844,9 +847,15 @@ lfunction absrel.branch.ConstrainForTesting (model, tree_id, branch_id) {
         omega_k   = terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component_count);
         parameters.SetConstraint ("`tree_id`.`branch_id`.`local_parameters[omega_k]`", "1", '');
     } else {
+        av = "`tree_id`.`branch_id`.`local_parameters[utility.getGlobalValue ('terms.parameters.nonsynonymous_rate')]`";
+        bv = "`tree_id`.`branch_id`.`local_parameters[utility.getGlobalValue ('terms.parameters.synonymous_rate')]`";
+        
+        ^av = 0.5*(^av+^bv);
+        
         parameters.SetConstraint (
-            "`tree_id`.`branch_id`.`local_parameters[utility.getGlobalValue ('terms.parameters.nonsynonymous_rate')]`",
-            "`tree_id`.`branch_id`.`local_parameters[utility.getGlobalValue ('terms.parameters.synonymous_rate')]`", '');
+            av,
+            bv, 
+            '');
     }
 
 }

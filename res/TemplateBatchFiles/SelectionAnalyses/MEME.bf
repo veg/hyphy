@@ -1411,11 +1411,11 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         }
 
         if (^rate.fel.alpha == 0) {
-            ^rate.fel.alpha = 0.01;
+            ^rate.fel.alpha = 1e-4;
         }
 
         ^rate.fel.beta_fg := ^rate.fel.alpha;
-        Optimize (results, ^lf_bsrel);
+        Optimize (results, ^lf_bsrel, {"OPTIMIZATION_METHOD" : "nedler-mead"});
 
         if (sim_mode) {
             return lrt - 2*results[1][0];

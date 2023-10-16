@@ -3284,12 +3284,12 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             }
 
 
-/*#pragma omp critical
-            if (hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
-                if (siteOrdering.list_data[siteID] == 43) {
+//#pragma omp critical
+            /*if (1 || hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+                if (siteOrdering.list_data[siteID] == 2 && nodeID == 75) {
                     //printf ("%ld\t%ld\t%ld\t%ld\t%16.12g\n",nodeID, siteFrom, siteTo, siteID, sum);
                     for (int kk = 0; kk < 61; kk++) {
-                        printf ("%s\t%ld\t%ld\t%ld\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(), siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
+                        printf ("%s (%ld)\t%ld\t%ld\t%d\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(),nodeID, siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
                     }
                 }
             }*/
@@ -3297,17 +3297,17 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             _hy_mvp_blocked_4x4<61> (mvs, tMatrix, childVector);
             sum += _hy_vvmult_sum<61> (parentConditionals, mvs);
 
-/*
-#pragma omp critical
-            if (likeFuncEvalCallCount == 1 || hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
-                if (siteOrdering.list_data[siteID] == 43 && nodeID == 25) {
+
+//#pragma omp critical
+            /*if (likeFuncEvalCallCount == 1 || hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+                if (siteOrdering.list_data[siteID] == 2 && nodeID == 75) {
                     //printf ("%ld\t%ld\t%ld\t%ld\t%16.12g\n",nodeID, siteFrom, siteTo, siteID, sum);
                     for (int kk = 0; kk < 61; kk++) {
-                        printf ("%s\t%ld\t%ld\t%ld\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(), siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
+                        printf ("%s\t%ld\t%ld\t%d\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(), siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
                     }
                 }
-            }
-*/
+            }*/
+
 
             
             __ll_loop_handle_scaling<61L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
@@ -3396,18 +3396,25 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             }
         }
       
-
-/*#pragma omp critical
+/*
+#pragma omp critical
         if (hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
-            if (siteOrdering.list_data[siteID] == 43) {
+            if (siteOrdering.list_data[siteID] == 2) {
                 printf ("\n");
                 printf ("%ld\t%ld\t%ld\t%16.12g\n",siteFrom, siteTo, siteID, accumulator);
             }
-        }*/
+        }
+*/
 
         if (storageVec) {
             storageVec [siteOrdering.list_data[siteID]] = accumulator;
-        } else {
+            if (accumulator <= 0.0)
+#pragma omp critical
+                {
+                    //printf ("BAILING WITH INFINITY %ld\n", siteID);
+                    hy_global::ReportWarning (_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a 0 probability in ComputeTreeBlockByBranch with category " & catID);
+                }
+       } else {
             if (accumulator <= 0.0) {
                 result = -INFINITY;
 #pragma omp critical

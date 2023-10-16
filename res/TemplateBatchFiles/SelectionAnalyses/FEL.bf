@@ -766,7 +766,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     } else {
         alternative = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
         alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
-         site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE);
+        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE);
     
         if (site_match) {
             Export  (lfe, ^lf);

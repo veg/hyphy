@@ -265,7 +265,7 @@ hyFloat         BenchmarkThreads (_LikelihoodFunction* lf) {
             lb = lf->GetIthIndependentBound (alterIndex,true),
             range = (lf->GetIthIndependentBound(alterIndex,false) - lb)*0.001;
     
-    //printf ("%g %g %g\n", lb, range, cached_value);
+    //printf ("\n\n%g %g %g\n", lb, range, cached_value);
 
 #ifdef  _OPENMP
     lf->SetThreadCount (1);
@@ -328,6 +328,9 @@ hyFloat            tdiff = timer.TimeSinceStart();
             lf->SetIthIndependent(i,lf->GetIthIndependent(i));
         }
     }
+        
+    //printf ("\n\n%g %g\n", lf->GetIthIndependent(alterIndex), cached_value);
+
     return logL;
 }
 
@@ -564,6 +567,9 @@ void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool o
 //__________________________________________________________________________________
 
 hyFloat myLog (hyFloat arg) {
+    //if (arg <= 0.) {
+    //    printf ("OOPS!\n");
+    //}
     return (arg>0.0)?log(arg):-1000000.;
 }
     
@@ -7285,6 +7291,9 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
      
         "CONVERGENCE PROPERTIES OF THE NELDER–MEAD SIMPLEX METHOD IN LOW DIMENSIONS"
          SIAM J. OPTIM. Vol. 9, No. 1, pp. 112–147
+     
+        Gilding the Lily: A Variant of the Nelder-Mead Algorithm Based on Golden-Section Search
+     
      **/
      
     // the dimension of the problem
@@ -7296,9 +7305,9 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
     
     hyFloat N_inv = 1./N,
             simplex_alpha = 1.,
-            simplex_beta  = 1. + 2. * N_inv,
-            simplex_gamma = .75 - 0.5*N_inv,
-            simplex_delta = 1. - N_inv;
+            simplex_beta  = /*1. + 2. * N_inv*/ GOLDEN_RATIO,
+            simplex_gamma = /*.75 - 0.5*N_inv*/ GOLDEN_RATIO_R * GOLDEN_RATIO_R,
+            simplex_delta = /*1. - N_inv*/ GOLDEN_RATIO_R * GOLDEN_RATIO_R;
     
     _Constant zero (0.);
     
@@ -7316,11 +7325,6 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
         lf_evaluations++;
         SetAllIndependent (&v);
         hyFloat ll = -Compute();
-        /*
-        if (fabs (ll  - 22.3935843505) < 0.001 ) {
-            _TerminateAndDump(_String ("Checkpoint ") & likeFuncEvalCallCount);
-        }
-        */
         return ll;
     };
     
@@ -7489,7 +7493,10 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
                         if (verbosity_level > 100) {
                             BufferToConsole ("\nOUTSIDE contraction");
                         }
+                        /*
                         t *= simplex_alpha;
+                        */
+                        t *= GOLDEN_RATIO;
                         cv += t;
                     }
                 

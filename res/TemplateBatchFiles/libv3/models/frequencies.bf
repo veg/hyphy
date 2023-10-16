@@ -455,9 +455,14 @@ lfunction frequencies._aux.empirical.collect_data(datafilter, unit, stride, posi
  * @returns {Dictionary} updated model
  */
 function frequencies._aux.empirical.singlechar(model, namespace, datafilter) {
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
-    __f = frequencies._aux.empirical.collect_data(datafilter, 1, 1, 1);
-    utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    if (None != datafilter) {
+        utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", 0);
+        __f = frequencies._aux.empirical.collect_data(datafilter, 1, 1, 1);
+        utility.ToggleEnvVariable("COUNT_GAPS_IN_FREQUENCIES", None);
+    } else {
+        __f = model [^"terms.efv_estimate"];
+    }
+
     model[terms.efv_estimate] = __f;
     return model;
 }
