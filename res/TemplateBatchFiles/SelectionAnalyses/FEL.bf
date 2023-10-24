@@ -101,8 +101,8 @@ KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes")
 KeywordArgument ("multiple-hits",  "Include support for multiple nucleotide substitutions", "None");
 KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
 KeywordArgument ("ci",  "Compute profile likelihood confidence intervals for each variable site", "No");
-// One additional KeywordArgument ("output") is called below after namespace fel.
 
+// One additional KeywordArgument ("output") is called below after namespace fel.
 
 
 
@@ -133,7 +133,7 @@ fel.multi_hit = io.SelectAnOption ({
                                   }, "Include support for multiple nucleotide substitutions");
 
 
-selection.io.json_store_setting  (fel.json, "multihit", fel.srv);
+selection.io.json_store_setting  (fel.json, "multihit", fel.multi_hit);
 
 /* Prompt for p value threshold */
 fel.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",0.1,0,1,FALSE);
@@ -147,6 +147,8 @@ fel.ci = "Yes" == io.SelectAnOption( {
 
 selection.io.json_store_setting  (fel.json, "ci", fel.ci);
 
+fel.site_filter = selection.io.handle_subset_of_sites ();
+selection.io.json_store_setting (fel.json, "site-filter", fel.site_filter );
 
 KeywordArgument ("resample",  "[Advanced setting, will result in MUCH SLOWER run time] Perform parametric bootstrap resampling to derive site-level null LRT distributions up to this many replicates per site. Recommended use for small to medium (<30 sequences) datasets", "0");
 fel.resample  = io.PromptUser ("\n>[Advanced setting, will result in MUCH SLOWER run time] Perform parametric bootstrap resampling to derive site-level null LRT distributions up to this many replicates per site. Recommended use for small to medium (<30 sequences) datasets",50,0,1000,TRUE);
@@ -155,6 +157,7 @@ selection.io.json_store_setting  (fel.json, "resample", fel.resample);
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'FEL.json')", fel.codon_data_info [terms.json.json]);
 fel.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+fel.multi_hit_option = "Global";
 
 if (fel.multi_hit != "None") {
     KeywordArgument ("site-multihit", "Estimate multiple hit rates for each site", "Estimate");
@@ -162,6 +165,9 @@ if (fel.multi_hit != "None") {
                                         {"Estimate", "Include branch-specific rates for double nucleotide substitutions"}
                                         {"Global", "Use a plug-in estimate derived from the global model fit"}
                                   }, "Estimate multiple hit rates for each site");
+                                  
+    selection.io.json_store_setting  (fel.json, "site-multihit", fel.multi_hit);
+
 }
 
 if (^"fel.ci") {
@@ -451,7 +457,7 @@ if (fel.run_full_mg94) {
         }, fel.partitioned_mg_results);
         
 
-        if (faster) {
+        if (fel.faster) {
             utility.ToggleEnvVariable("OPTIMIZATION_PRECISION", None);
         }
     
@@ -469,7 +475,6 @@ if (fel.run_full_mg94) {
 }
 
 fel.save_intermediate_fits = None;
-
 
 //io.ReportProgressMessageMD("fel", "codon-refit", "* Log(L) = " + Format(fel.final_partitioned_mg_results[terms.fit.log_likelihood],8,2));
 
@@ -552,8 +557,6 @@ if (fel.multi_hit != "None") {
         io.CheckAssertion ("None!=fel.psi && None!=fel.psi_syn", "Could not find expected 3H rate parameters in model description");       
     }
 }
-
-
 
 selection.io.startTimer (fel.json [terms.json.timers], "FEL analysis", 2);
 
@@ -733,6 +736,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
            }
     );
     
+     
     
     if (^"fel.ci") {
         if (!sim_mode) {
@@ -762,6 +766,13 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     } else {
         alternative = estimators.ExtractMLEsOptions (lf, model_mapping, {^"terms.globals_only" : TRUE});
         alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
+        site_match = selection.io.sitelist_matches_pattern (pattern_info[^"terms.data.sites"], (^"fel.site_filter")["site-save-filter"], TRUE);
+    
+        if (site_match) {
+            Export  (lfe, ^lf);
+            fprintf (^"fel.output_file_path" + "_site_" + site_match + ".fit", CLEAR_FILE, lfe);
+            DeleteObject (lfe);
+        }
     }
 
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
@@ -1096,6 +1107,8 @@ lfunction fel.store_results (node, result, arguments) {
 fel.site_results = {};
 fel.site_LRT = {};
 
+fel.output_file_path = fel.codon_data_info[terms.json.json];
+
 for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.partition_index += 1) {
     fel.report.header_done = FALSE;
     fel.table_output_options[terms.table_options.header] = TRUE;
@@ -1117,9 +1130,9 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
         _node_class_ = (fel.selected_branches[fel.partition_index])[_node_];
          if (_node_class_ == terms.tree_attributes.test) {
              fel.selected_branches_index [fel.i] = 1;
-            _beta_scaler = fel.scalers[1];
+             _beta_scaler = fel.scalers[1];
          } else {
-            _beta_scaler = fel.scalers[2];
+             _beta_scaler = fel.scalers[2];
          }
          fel.apply_proportional_site_constraint ("fel.site_tree", _node_, fel.alpha, fel.beta, fel.scalers[0], _beta_scaler, (( fel.final_partitioned_mg_results[terms.branch_length])[fel.partition_index])[_node_]);
          
@@ -1128,7 +1141,6 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
             fel.apply_2H_constraint ("fel.site_tree", _node_, fel.delta, fel.scalers[3]);
             if (fel.multi_hit == "Double+Triple") {
                 fel.apply_3H_constraint ("fel.site_tree", _node_, fel.psi, fel.psi_syn, fel.scalers[4]);
-
             }
          }
 
@@ -1158,7 +1170,8 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
     fel.queue = mpi.CreateQueue ({"LikelihoodFunctions": {{"fel.site_likelihood"}},
                                    "Models" : {{"fel.site.mg_rev"}},
                                    "Headers" : {{"libv3/all-terms.bf","libv3/tasks/alignments.bf"}},
-                                   "Variables" : {{"fel.srv","fel.resample","fel.ci","fel.selected_branches_index","fel.multi_hit","fel.multi_hit_MLES","fel.multi_hit_option"}}
+                                   "Functions" : {{"selection.io.sitelist_matches_pattern"}},
+                                   "Variables" : {{"fel.srv","fel.resample","fel.ci","fel.selected_branches_index","fel.multi_hit","fel.multi_hit_MLES","fel.multi_hit_option","fel.site_filter","fel.output_file_path"}}
                                  });
 
 
@@ -1171,8 +1184,10 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
         '
            fel.pattern_count_this += 1;
            io.ReportProgressBar("", "Working on site pattern " + (fel.pattern_count_this) + "/" +  fel.pattern_count_all + " in partition " + (1+fel.partition_index));
-
-           if (_pattern_info_[terms.data.is_constant]) {
+           
+           
+           fel.run_site = selection.io.sitelist_matches_pattern (_pattern_info_[terms.data.sites], fel.site_filter["site-filter"], FALSE);
+           if (_pattern_info_[terms.data.is_constant] || (!fel.run_site) ) {
                 fel.store_results (-1,None,{"0" : "fel.site_likelihood",
                                                                 "1" : None,
                                                                 "2" : fel.partition_index,
@@ -1192,6 +1207,7 @@ for (fel.partition_index = 0; fel.partition_index < fel.partition_count; fel.par
                                                                 },
                                                                 "fel.store_results");
             }
+            
         '
     );
     

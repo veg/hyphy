@@ -265,7 +265,7 @@ hyFloat         BenchmarkThreads (_LikelihoodFunction* lf) {
             lb = lf->GetIthIndependentBound (alterIndex,true),
             range = (lf->GetIthIndependentBound(alterIndex,false) - lb)*0.001;
     
-    //printf ("%g %g %g\n", lb, range, cached_value);
+    //printf ("\n\n%g %g %g\n", lb, range, cached_value);
 
 #ifdef  _OPENMP
     lf->SetThreadCount (1);
@@ -281,6 +281,7 @@ hyFloat         BenchmarkThreads (_LikelihoodFunction* lf) {
     }
 
 
+    bool reflush_conditionals = false;
 
 hyFloat            tdiff = timer.TimeSinceStart();
 #ifdef  _OPENMP
@@ -295,10 +296,13 @@ hyFloat            tdiff = timer.TimeSinceStart();
         
         ReportWarning       (_String("Benchmark for one thread (using ") & lf->GetIthIndependentName(alterIndex)->Enquote() & "): " & tdiff);
 
+
         for (long k = 2; k <= hy_global::system_CPU_count; k++) {
+            reflush_conditionals = true;
             lf->SetThreadCount              (k);
             TimeDifference timer;
-            lf->SetIthIndependent           (alterIndex, lb + range * genrand_real1());
+            hyFloat nv = lb + range * genrand_real1();
+            lf->SetIthIndependent           (alterIndex, nv);
             lf->Compute                     ();
             tdiff = timer.TimeSinceStart();
             ReportWarning       (_String("Benchmark for ") & k & " threads: " & tdiff);
@@ -310,12 +314,23 @@ hyFloat            tdiff = timer.TimeSinceStart();
             }
         }
         //bestTC = hy_global::system_CPU_count;
-        lf->SetThreadCount (bestTC);
+        if (bestTC != lf->GetThreadCount()) {
+            lf->SetThreadCount (bestTC);
+        }
         ReportWarning       (_String("Auto-benchmarked an optimal number (") & bestTC & ") of threads.");
     }
    
 #endif
+        
     lf->SetIthIndependent (alterIndex,cached_value);
+    if (reflush_conditionals) {
+        for (unsigned long i=0UL; i<lf->GetIndependentVars().lLength; i++) {
+            lf->SetIthIndependent(i,lf->GetIthIndependent(i));
+        }
+    }
+        
+    //printf ("\n\n%g %g\n", lf->GetIthIndependent(alterIndex), cached_value);
+
     return logL;
 }
 
@@ -552,6 +567,9 @@ void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool o
 //__________________________________________________________________________________
 
 hyFloat myLog (hyFloat arg) {
+    //if (arg <= 0.) {
+    //    printf ("OOPS!\n");
+    //}
     return (arg>0.0)?log(arg):-1000000.;
 }
     
@@ -2169,6 +2187,16 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                     } else
 #endif
                         ComputeSiteLikelihoodsForABlock    (partID, siteResults->theData, siteScalerBuffer);
+                   
+                    /*
+                    if (hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+                        const unsigned long pc = GetIthFilter(partID)->GetPatternCount();
+                        printf ("\n\n");
+                        for (unsigned long i = 0; i < pc; i++) {
+                            printf ("%ld\t%ld\t%16.12g\n",partID,i,siteResults->theData[i]);
+                        }
+                    }
+                    */
 
                     hyFloat                       blockResult = SumUpSiteLikelihoods (partID, siteResults->theData, siteScalerBuffer);
                     
@@ -4325,7 +4353,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         });
         
         auto set_and_compute = [this, &all_vars] (_AssociativeList* init) -> hyFloat {
-            
+            //hy_env::EnvVariableSet ("UBER_VERBOSE_DEBUG", new _Constant(1.0), false);
             for (AVLListXLIteratorKeyValue key_value : init->ListIterator()) {
                 _Constant * var_value = (_Constant*)key_value.get_object();
                 _String const * var_name = key_value.get_key();
@@ -4346,6 +4374,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 char buffer[512];
                 snprintf (buffer, 512, "[GRID INITIAL VALUE CALCULATION] At point %s, LF = %15.12g\n", key_value.get_key()->get_str(), this_point);
                 BufferToConsole(buffer);
+                //HandleApplicationError(_String("Exiting now...") & GetThreadCount());
             }
             
             //printf ("%s %g\n", grid_point->get_str(), this_point);
@@ -7262,6 +7291,9 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
      
         "CONVERGENCE PROPERTIES OF THE NELDER–MEAD SIMPLEX METHOD IN LOW DIMENSIONS"
          SIAM J. OPTIM. Vol. 9, No. 1, pp. 112–147
+     
+        Gilding the Lily: A Variant of the Nelder-Mead Algorithm Based on Golden-Section Search
+     
      **/
      
     // the dimension of the problem
@@ -7273,9 +7305,9 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
     
     hyFloat N_inv = 1./N,
             simplex_alpha = 1.,
-            simplex_beta  = 1. + 2. * N_inv,
-            simplex_gamma = .75 - 0.5*N_inv,
-            simplex_delta = 1. - N_inv;
+            simplex_beta  = /*1. + 2. * N_inv*/ GOLDEN_RATIO,
+            simplex_gamma = /*.75 - 0.5*N_inv*/ GOLDEN_RATIO_R * GOLDEN_RATIO_R,
+            simplex_delta = /*1. - N_inv*/ GOLDEN_RATIO_R * GOLDEN_RATIO_R;
     
     _Constant zero (0.);
     
@@ -7293,11 +7325,6 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
         lf_evaluations++;
         SetAllIndependent (&v);
         hyFloat ll = -Compute();
-        /*
-        if (fabs (ll  - 22.3935843505) < 0.001 ) {
-            _TerminateAndDump(_String ("Checkpoint ") & likeFuncEvalCallCount);
-        }
-        */
         return ll;
     };
     
@@ -7466,7 +7493,10 @@ hyFloat      _LikelihoodFunction::SimplexMethod (hyFloat& gPrecision, unsigned l
                         if (verbosity_level > 100) {
                             BufferToConsole ("\nOUTSIDE contraction");
                         }
+                        /*
                         t *= simplex_alpha;
+                        */
+                        t *= GOLDEN_RATIO;
                         cv += t;
                     }
                 
@@ -8168,9 +8198,9 @@ void    _LikelihoodFunction::UpdateIndependent (long index, bool purgeResults, _
             }
         }
 
-        if (purgeResults) {
+        //if (purgeResults) {
             computationalResults.Clear();
-        }
+        //}
     }
 
 }
@@ -8501,6 +8531,8 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
     t->InitializeTreeFrequencies          ((_Matrix*)glFreqs->ComputeNumeric());
 
     usedCachedResults                   = false;
+    
+
 
     if (computingTemplate&&templateKind) {
         if (!(forceRecomputation||!siteArrayPopulated||HasPartitionChanged(index)||rootFreqsChange)) {
@@ -8518,6 +8550,7 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
 
             #endif
             //printf ("\n[CACHED]\n");
+            
             return computationalResults.theData[index];
         }
     }
@@ -8605,6 +8638,8 @@ hyFloat  _LikelihoodFunction::ComputeBlock (long index, hyFloat* siteRes, long c
                 t->DetermineNodesForUpdate  (changedBranches,&changedModels,catID,(branchIndex >=0 )?
                                              (branchIndex<t->GetINodeCount()?branchIndex+t->GetLeafCount():branchIndex):*cbid,canClear,
                                              var_to_node_map, variables_changed_during_last_compute);
+                
+                
                 *cbid                       = -1;
                 branches                    = &changedBranches;
                 matrices                    = &changedModels;
@@ -10989,6 +11024,7 @@ void    _LikelihoodFunction::RankVariables(_AVLListX* tagger) {
             } else {
                 varRank.list_data[k] = -tagger->GetXtra(idx);
             }
+            //printf ("%s : %d\n", GetIthIndependentName (k)->get_str(), tagger->GetXtra(idx));
         }
     }
     else {

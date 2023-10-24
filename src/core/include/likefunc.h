@@ -265,10 +265,12 @@ public:
 
 #if defined _SLKP_LFENGINE_REWRITE_
 #if defined _OPENMP
-    void        SetThreadCount            (long tc) {
+    void        SetThreadCount            (long tc, bool fill_in = true) {
         if (tc != lfThreadCount) {
             lfThreadCount = tc;
-            FillInConditionals ();
+            if (fill_in) {
+                FillInConditionals ();
+            }
         }
     }
     long        GetThreadCount            (void) {

@@ -613,43 +613,34 @@ HBLObjectRef _Constant::Exp (HBLObjectRef cache){
 
 //__________________________________________________________________________________
 HBLObjectRef _Constant::FormatNumberString (HBLObjectRef p, HBLObjectRef p2, HBLObjectRef cache) {
-    long       a1 = p->Value(),
-               a2 = p2->Value();
+    
 
     char       format[32],
                buffer[256];
 
-#ifdef     __USE_LONG_DOUBLE__
-    if (a1>=0 && a2>=0) {
-        if (a1>0) {
-            snprintf    (format,32, "%%%ld.%ldLf",(long)a1,(long)a2);
-        } else {
-            snprintf    (format,32,"%%.%ldLf",(long)a2);
-        }
-    } else if (a1>=0) {
-        snprintf    (format,32,"%%%ldLf",(long)a1);
-    } else if (a2>=0) {
-        snprintf    (format,32,"%%.%ldLf",(long)a2);
+    if (p->ObjectClass() == STRING) {
+        time_t sec_epoc = Value();
+        strftime (buffer, 255, ((_FString*)p)->get_str().get_str(), localtime (&sec_epoc));
     } else {
-        snprintf    (format,32,"%%Lg");
-    }
-#else
-    if (a1>=0 && a2>=0) {
-        if (a1>0) {
-            snprintf    (format,32, "%%%ld.%ldf",(long)a1,(long)a2);
-        } else {
+        long       a1 = p->Value(),
+        a2 = p2->Value();
+        
+        if (a1>=0 && a2>=0) {
+            if (a1>0) {
+                snprintf    (format,32, "%%%ld.%ldf",(long)a1,(long)a2);
+            } else {
+                snprintf    (format,32, "%%.%ldf",(long)a2);
+            }
+        } else if (a1>=0) {
+            snprintf    (format,32, "%%%ldf",(long)a1);
+        } else if (a2>=0) {
             snprintf    (format,32, "%%.%ldf",(long)a2);
+        } else {
+            snprintf    (format,32, "%%g");
         }
-    } else if (a1>=0) {
-        snprintf    (format,32, "%%%ldf",(long)a1);
-    } else if (a2>=0) {
-        snprintf    (format,32, "%%.%ldf",(long)a2);
-    } else {
-        snprintf    (format,32, "%%g");
+        snprintf    (buffer,256, format,Value());
     }
 
-#endif
-    snprintf    (buffer,256, format,Value());
     return _returnStringOrUseCache(buffer, cache);
 }
 //__________________________________________________________________________________

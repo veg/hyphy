@@ -652,19 +652,19 @@ lfunction parameters.SetStickBreakingDistributionPrefix (parameters, values, pre
     if (utility.Has (parameters, ^"terms.parameters.synonymous_rate", "String")) {
         alpha = parameters [^"terms.parameters.synonymous_rate"];
         for (i = 0; i < rate_count; i += 1) {
-            parameters.SetConstraint (prefix + (parameters["rates"])[i], parameters.AppendMultiplicativeTerm (prefix + alpha, values[i][0]), "");
+            parameters.SetConstraint (prefix + (parameters[^"terms.parameters.rates"])[i], parameters.AppendMultiplicativeTerm (prefix + alpha, values[i][0]), "");
             if (i < rate_count - 1) {
                 break_here = values[i][1] / left_over;
-                parameters.SetValue (prefix + (parameters["weights"])[i], break_here);
+                parameters.SetValue (prefix + (parameters[^"terms.parameters.weights"])[i], break_here);
                 left_over = left_over * (1-break_here);
            }
         }    
     } else {
         for (i = 0; i < rate_count; i += 1) {
-            parameters.SetValue (prefix + (parameters["rates"])[i], values[i][0]);
+            parameters.SetValue (prefix + (parameters[^"terms.parameters.rates"])[i], values[i][0]);
             if (i < rate_count - 1) {
                 break_here = values[i][1] / left_over;
-                parameters.SetValue (prefix + (parameters["weights"])[i], break_here);
+                parameters.SetValue (prefix + (parameters[^"terms.parameters.weights"])[i], break_here);
                 left_over = left_over * (1-break_here);
            }
         }
@@ -689,16 +689,16 @@ lfunction parameters.SetStickBreakingDistribution (parameters, values) {
  */
 
 lfunction parameters.GetStickBreakingDistribution (parameters) {
-    rate_count = utility.Array1D (parameters["rates"]);
+    rate_count = utility.Array1D (parameters[^"terms.parameters.rates"]);
     distribution = {rate_count, 2};
 
     current_weight = 1;
 
     for (i = 0; i < rate_count; i += 1) {
-        distribution [i][0] = Eval ((parameters["rates"])[i]);
+        distribution [i][0] = Eval ((parameters[^"terms.parameters.rates"])[i]);
         if (i < rate_count - 1) {
-            distribution [i][1] = current_weight * Eval ((parameters["weights"])[i]);
-            current_weight = current_weight * (1-Eval ((parameters["weights"])[i]));
+            distribution [i][1] = current_weight * Eval ((parameters[^"terms.parameters.weights"])[i]);
+            current_weight = current_weight * (1-Eval ((parameters[^"terms.parameters.weights"])[i]));
         } else {
             distribution [i][1] = current_weight;
         }

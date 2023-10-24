@@ -211,6 +211,58 @@ lfunction selection.io.report_viterbi_path (path) {
 }
 
 //------------------------------------------------------------------------------
+lfunction selection.io.report_dnds_with_sink (distribution, sink_rate, sink_weight) {
+
+    // TODO remove hardcoding
+    settings = {"header" : TRUE, "column-widths": {
+            "0": 35,
+            "1": 15,
+            "2": 10,
+            "3": 35
+            }};
+
+    fprintf (stdout, "\n", io.FormatTableRow ({{"Selection mode", "dN/dS", "Proportion, %", "Notes"}}, settings));
+    rates = Rows (distribution);
+    settings ["header"] = FALSE;
+    for (i = 0; i < rates; i += 1) {
+        row_matrix = {1,4};
+
+        if (distribution[i][0] == sink_rate && distribution[i][1] == sink_weight) {
+            row_matrix[0] = "Error absorption";
+        } else {    
+            if (distribution [i][0] < 1) {
+                row_matrix [0] = "Negative selection";
+            } else {
+                if (distribution [i][0] == 1) {
+                    row_matrix [0] = "Neutral evolution";
+                } else {
+                   row_matrix [0]  = "Diversifying selection";
+                }
+            }
+        }
+
+        row_matrix [1] = Format (distribution [i][0], 6, 3);
+        row_matrix [2] =  Format (distribution [i][1] * 100, 6, 3);
+        row_matrix [3] = "";
+
+        if (distribution [i][1] < 1e-4) {
+            row_matrix [3] = "Not supported by data";
+        } else {
+            if (i > 0) {
+                if (distribution [i-1][0] == distribution [i][0] || parameters.NormalizeRatio (Abs(distribution [i-1][0] - distribution [i][0]), Max (distribution [i-1][0], distribution [i][0])) < 0.05) {
+                    row_matrix [3] = "Collapsed rate class";
+                }
+            }
+        }
+
+        fprintf (stdout, io.FormatTableRow (row_matrix, settings));
+
+    }
+    fprintf (stdout, "\n");
+    return row_matrix;
+}
+
+//------------------------------------------------------------------------------
 
 lfunction selection.io.report_dnds (distribution) {
 
@@ -455,4 +507,29 @@ function selection.io.extract_branch_info(branch_spec, callback) {
     selection.io.extract_branch_info_result = {};
     branch_spec["selection.io._aux.extract_branch_info.callback"][""];
     return selection.io.extract_branch_info_result;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction selection.io.handle_subset_of_sites () {
+    site_filter = {};   
+    KeywordArgument ("limit-to-sites",  "Only analyze sites whose 1-based indices match the following list (null to skip)", "null");
+    site_filter ["site-filter"] = io.PromptUserForString ("Only analyze sites whose 1-based indices match the following list (null to skip)");
+    if (site_filter ["site-filter"] == "null") { site_filter ["site-filter"] = None;}
+    KeywordArgument ("save-lf-for-sites",  "For sites whose 1-based indices match the following list, write out likelihood function snapshots (empty string to skip)", "null");
+    site_filter ["site-save-filter"] = io.PromptUserForString ("For sites whose 1-based indices match the following list, write out likelihood function snapshots (null string to skip)");
+    if (site_filter ["site-save-filter"] == "null") { site_filter ["site-save-filter"] = None;}
+    return site_filter;
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction selection.io.sitelist_matches_pattern (site_list, pattern, opt_in) {
+    if (Type (pattern) != "String") {if (opt_in) return 0; return site_list[0];}
+    for (i,s;in;site_list) {
+        if (None != regexp.Find ("" + (1+(+s)), pattern)) {
+            return (1+(+s));
+        }
+    }
+    return 0;
 }

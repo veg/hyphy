@@ -5295,7 +5295,7 @@ void    SerializeModel  (_StringBuffer & rec, long theModel, _AVLList* alreadyDo
         << "=(";
     
 
-    if (object_subs != substitutions) {
+    if (object_subs != substitutions && substitutions) {
         _List *ids = (_List*) substitutions->GetItem(0),
               *id_from = (_List*) object_subs->GetItem(0),
               *id_to = (_List*) object_subs->GetItem(1);

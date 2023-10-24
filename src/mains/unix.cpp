@@ -529,7 +529,7 @@ void    ProcessConfigStr (_String const & conf) {
 
           case 'm':
           case 'M': {
-            hy_messages_log_name = "messages.log";
+            hy_messages_log_name = hy_messages_log_name & "messages.log";
             break;
           }
 
@@ -767,20 +767,20 @@ int main (int argc, char* argv[]) {
               pathNames.Delete    (0);
               pathNames&&         &hy_lib_directory;
          }
-      } else if (thisArg.BeginsWith (path_consts[2])) {
+      } else if (thisArg.BeginsWith (path_consts[2])) { // USEPATH
           baseDir                      = thisArg.Cut(path_consts[2].length(),kStringEnd);
           hy_error_log_name            = baseDir & hy_error_log_name;
           hy_messages_log_name         = baseDir & hy_messages_log_name;
           pathNames.Delete    (0);
           pathNames&&         &baseDir;
-      } else if (thisArg.BeginsWith (path_consts[3])) {
+      } else if (thisArg.BeginsWith (path_consts[3])) { // CPU=
           system_CPU_count  = Maximum (1L, thisArg.Cut(path_consts[3].length(),kStringEnd).to_long());
-      } else if (thisArg.BeginsWith (path_consts[4])) {
+      } else if (thisArg.BeginsWith (path_consts[4])) { // ENV=
           hy_env::cli_env_settings = thisArg.Cut(path_consts[4].length(),kStringEnd);
       }
-      else
-      //argFile = thisArg;
-      positional_arguments && &thisArg;
+      else {
+          positional_arguments && &thisArg;
+      }
     }
     
     GlobalStartup();

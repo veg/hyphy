@@ -451,7 +451,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
 
                 if (Type (value) == "AssociativeList") {
                   	if (Abs (models.generic.SetBranchLength.expression)) {
-                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value[terms.branch_length] + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-(" + value[terms.branch_length] + ")," + models.generic.SetBranchLength.bl + ",0,10000)");
                     	Eval (models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					    messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 
@@ -464,7 +464,7 @@ function models.generic.SetBranchLength (model, value, parameter) {
 
                 } else {
  
-                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-" + value + "," + models.generic.SetBranchLength.bl + ",0,10000)");
+                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-(" + value + ")," + models.generic.SetBranchLength.bl + ",0,10000)");
                      Eval (models.generic.SetBranchLength.bl.p + "=" + models.generic.SetBranchLength.t);
                      messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + "=" + models.generic.SetBranchLength.t);
               }

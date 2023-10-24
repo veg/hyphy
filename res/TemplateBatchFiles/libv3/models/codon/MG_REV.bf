@@ -202,7 +202,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                     parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
 
 
-                    ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
+                    ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-(" + 3*value + ")," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                     Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
                     parameters.RemoveConstraint(models.codon.MG_REV.set_branch_length.beta);
                     Eval ("`models.codon.MG_REV.set_branch_length.beta.p` =" + Eval(models.codon.MG_REV.set_branch_length.beta));
@@ -217,7 +217,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
                     
                     
-                    ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
+                    ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-(" + 3*value + ")," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                     
                                         
                     Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);
@@ -245,7 +245,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
             if (utility.Array1D (models.codon.MG_REV.set_branch_length.params)) {
                 bl_string = Simplify (model[terms.model.branch_length_string],models.codon.MG_REV.set_branch_length.params.subs);
                 
-                ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + bl_string + ")-" + 3*value + "," + models.codon.MG_REV.set_branch_length.params[0] + ",0,10000)");
+                ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + bl_string + ")-(" + 3*value + ")," + models.codon.MG_REV.set_branch_length.params[0] + ",0,10000)");
                 
                 Eval (models.codon.MG_REV.set_branch_length.params[0] + "=" + models.codon.MG_REV.set_branch_length.lp);                
             }

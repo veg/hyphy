@@ -761,7 +761,7 @@ void    ProcessNexusTrees (FileState& fState, long pos, hyFile*f, _StringBuffer&
                   _String node_name (*file_tree_string, i, lastNode-1);
                   i = lastNode-1;
                   lastNode = translationsFrom.BinaryFindObject (&node_name);
-                  if (lastNode != kNotFound) {
+                  if (lastNode >= 0) {
                     revisedTreeString<< (_String*)translationsTo.list_data[lastNode];
                   } else {
                     revisedTreeString<< node_name;
