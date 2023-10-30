@@ -596,7 +596,10 @@ EM_JS(void, _jsSendStatusUpdate, (const char *status_update), {
     // Send a message back to main thread from WebWorker
     postMessage({
         type: "biowasm",
-        value: Module.AsciiToString(status_update)
+        value: {
+        text: Module.AsciiToString(status_update),
+        type : "update"
+        }
     });
 })
 #endif

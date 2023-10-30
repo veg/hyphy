@@ -1127,7 +1127,7 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
         if (do_echo && kwarg) {
             bool do_markdown = hy_env :: EnvVariableTrue(hy_env :: produce_markdown_output);
             if (do_markdown) {
-                NLToConsole(); BufferToConsole(">"); StringToConsole(*kwarg); BufferToConsole( " –> "); BufferToConsole(value); NLToConsole();
+                NLToConsole(); BufferToConsole(">"); StringToConsole(*kwarg); BufferToConsole( " => "); BufferToConsole(value); NLToConsole();
             } else {
                 StringToConsole(*kwarg); BufferToConsole( ": "); BufferToConsole(value); NLToConsole();
             }

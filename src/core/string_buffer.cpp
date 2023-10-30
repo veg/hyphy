@@ -53,6 +53,14 @@ using namespace hy_global;
     _SimpleList                 _StringBuffer::free_slots;
 #endif
 
+_List      _hyTerminalColors_aux;
+
+_AVLListXL _hyTerminalColors (&_hyTerminalColors_aux, _List (
+    new _String("RED"), new _String ("\033[31m"),
+    new _String("GREEN"), new _String ("\033[32m"),
+    new _String("NONE"), new _String ("\033[0m")
+));
+
 /*
 ==============================================================
 Utility Functions
@@ -477,6 +485,27 @@ _StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const _String& s) {
     this->SanitizeForHTMLAndAppend(s.char_at(i));
   }
   return *this;
+}
+
+_StringBuffer& _StringBuffer::ConvertToTerminalColor(const _String& s) {
+#ifdef _USE_EMSCRIPTEN_
+    static const _String kNONE ("NONE");
+#endif
+    BaseRef color_lookup = _hyTerminalColors.GetDataByKey (&s);
+    if (color_lookup) {
+#ifdef _USE_EMSCRIPTEN_
+        if (s == kNONE) {
+            (*this) << "</span>";
+        } else {
+            (*this) << "<span style='color:" << s << "'>";
+        }
+#else
+        (*this) << *(const _String*)color_lookup;
+#endif
+    } else {
+        (*this) << s;
+    }
+    return *this;
 }
 
 _StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const char c) {
