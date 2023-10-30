@@ -116,3 +116,98 @@ cd docs
 python3 -m http.server
 ```
 
+## CLI notes
+
+As noted in the documentation [here](http://www.hyphy.org/tutorials/CLI-tutorial/) 
+`hyphy` can be run as a command line tool.
+Indeed for many analyses the `hyphy` CLI will return useful 
+help messages, showing which parameter values can be set to 
+specify your analysis. For example, running `hyphy gard --help`
+
+```{bash}
+hyphy gard --help 
+
+Available analysis command line options
+---------------------------------------
+Use --option VALUE syntax to invoke
+If a [reqired] option is not provided on the command line, the analysis will prompt for its value
+[conditionally required] options may or not be required based on the values of other options
+
+type
+	The type of data to perform screening on
+	default value: nucleotide
+
+code
+	Genetic code to use (for codon alignments)
+	default value: Universal
+	applies to: Choose Genetic Code
+
+alignment [required]
+	Sequence alignment to screen for recombination
+
+model
+	The substitution model to use
+	default value: JTT
+
+rv
+	Site to site rate variation
+	default value: None
+
+max-breakpoints
+	Maximum number of breakpoints to consider
+	default value: 10000
+
+rate-classes
+	How many site rate classes to use
+	default value: 4
+
+output
+	Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'GARD.json')
+	default value: gard.defaultJsonFilePath [computed at run time]
+
+mode
+	Run mode (Normal or Faster)
+	default value: Normal
+
+output-lf
+	Write the best fitting HyPhy analysis snapshot to (default is to save to the same path as the alignment file + 'best-gard')
+	default value: gard.defaultFitFilePath [computed at run time]
+```
+
+will show you the options that can be set for the `gard` analysis.
+So for instance one could specify a `gard` run on the command line
+with the following command
+
+```{bash}
+hyphy gard --alignment /path/to/file --rv GDD --mode Faster --rate-classes 3
+```
+
+While this is a useful feature, it is not always the case that 
+older analyses will have the same level of support for command line.
+For instance, the `acd` analysis does not have CLI support and 
+so if one runs the help command
+
+```{bash}
+hyphy acd --help 
+
+Available analysis command line options
+---------------------------------------
+Use --option VALUE syntax to invoke
+If a [reqired] option is not provided on the command line, the analysis will prompt for its value
+[conditionally required] options may or not be required based on the values of other options
+
+No annotated keyword arguments are available for this analysis
+```
+
+one will see that there are no options available. In this case, 
+you can use a different CLI specification. Indeed the CLI will accept
+all of the options that are asked for in an interactive session, as 
+positional arguments. In this case I could run the `acd` analysis with
+
+```{bash}
+hyphy acd Universal <alignment.fa> MG94CUSTOMCF3X4 Global 012345 <treefile> Estimate
+
+```
+
+where the options are specified in the exact order that they are asked for in the interactive session. This will work for all `hyphy` analyses
+and provides a less readable but more flexible way to run `hyphy` analyses.
