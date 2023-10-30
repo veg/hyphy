@@ -48,9 +48,10 @@ using namespace hy_global;
 #include <utility>  // for std::move
 
 
-unsigned char               _StringBuffer::preallocated_buffer [_HY_STRING_BUFFER_PREALLOCATE_SLOTS*sizeof (_StringBuffer)];
-_SimpleList                 _StringBuffer::free_slots;
-
+#ifndef _USE_EMSCRIPTEN_
+    unsigned char               _StringBuffer::preallocated_buffer [_HY_STRING_BUFFER_PREALLOCATE_SLOTS*sizeof (_StringBuffer)];
+    _SimpleList                 _StringBuffer::free_slots;
+#endif
 
 /*
 ==============================================================
@@ -605,12 +606,14 @@ void _StringBuffer::AppendVariableValueAVL (_String const* id, _SimpleList const
 
 //__________________________________________________________________________________
 void * _StringBuffer::operator new (size_t size) {
+#ifndef _USE_EMSCRIPTEN_
     if (_StringBuffer::free_slots.nonempty()) {
         _StringBuffer * result = (_StringBuffer *)(_StringBuffer::preallocated_buffer) + _StringBuffer::free_slots.Pop();
         //printf ("Allocate slot %ld\n", _StringBuffer::free_slots.get (_StringBuffer::free_slots.countitems()));
         //result->Initialize();
         return result;
     }
+#endif
     //printf ("Allocating string buffer %ld\n", size);
     return ::operator new(size);
 }
@@ -618,6 +621,7 @@ void * _StringBuffer::operator new (size_t size) {
 
 //__________________________________________________________________________________
 void  _StringBuffer::operator delete (void * p) {
+#ifndef _USE_EMSCRIPTEN_
     _StringBuffer * sb = (_StringBuffer*) p,
                   * sbb = (_StringBuffer *)_StringBuffer::preallocated_buffer;
     
@@ -626,9 +630,12 @@ void  _StringBuffer::operator delete (void * p) {
         //sb->_StringBuffer::Clear();
         free_slots << ((long)(sb - sbb));
     } else {
+#endif
         //printf ("%p\n", p);
         ::operator delete (p);
+#ifndef _USE_EMSCRIPTEN_
     }
+#endif
 }
 
 

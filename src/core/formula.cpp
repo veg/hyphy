@@ -2255,7 +2255,7 @@ bool _Formula::AmISimple (long& stack_depth, _AVLList& variable_index) {
             }
             return false;
         }
-
+        //printf ("HERE (%d/%d)\n", i, theFormula.countitems());
         if (this_op->theNumber) {
             if (this_op->theNumber->ObjectClass() != NUMBER) {
                 return false;
@@ -2263,6 +2263,7 @@ bool _Formula::AmISimple (long& stack_depth, _AVLList& variable_index) {
         } else {
             if (this_op->theData >= 0) {
                 _Variable* this_var = LocateVar (this_op->theData);
+                //printf ("HERE/2 (%x)\n", this_var);
                 if (this_var->ObjectClass()!=NUMBER) {
                     HBLObjectRef cv = this_var->GetValue();
                     if (!CheckSimpleTerm (cv)) {
@@ -2270,6 +2271,7 @@ bool _Formula::AmISimple (long& stack_depth, _AVLList& variable_index) {
                     }
                 }
                 variable_index.InsertNumber (this_op->GetAVariable());
+                //printf ("HERE/3 (%d)\n", this_op->GetAVariable());
             } else {
                 long op_code = this_op->TheCode();
               

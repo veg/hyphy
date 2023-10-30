@@ -122,7 +122,7 @@ namespace hy_global {
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
                      kErrorNumerical                   ("To treat numerical errors as warnings, please specify \"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line argument. This often resolves the issue, which is indicative of numerical instability."),
-                     kHyPhyVersion  = _String ("2.5.55"),
+                     kHyPhyVersion  = _String ("2.5.56"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -141,7 +141,11 @@ namespace hy_global {
   
     _List            _hy_application_globals_aux,
                      _hy_standard_library_paths,
-                     _hy_standard_library_extensions;
+                     _hy_standard_library_extensions,
+                     availableTemplateFiles,
+                     availablePostProcessors;
+
+    _Trie             availableTemplateFilesAbbreviations;
   
     _AVLList         _hy_application_globals (&_hy_application_globals_aux);
   
@@ -302,6 +306,7 @@ namespace hy_global {
         hy_x_variable = CheckReceptacle(&kXVariableName, kEmptyString, false, false);
         hy_n_variable = CheckReceptacle(&kNVariableName, kEmptyString, false, false);
         
+        
         EnvVariableSet(directory_separator_char, new _FString (dd, false), false);
         EnvVariableSet(base_directory, new _FString (hy_base_directory, false), false);
         EnvVariableSet(lib_directory,  new _FString (hy_lib_directory, false), false);
@@ -345,6 +350,9 @@ namespace hy_global {
             hy_x_variable = nil;
             hy_n_variable = nil;
             pathNames.Clear();
+            BuiltInFunctions.Clear();
+            hyReservedWords.Clear();
+            UnOps.Clear();
         }
         hy_scanf_last_file_path = kEmptyString;
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
@@ -371,9 +379,10 @@ namespace hy_global {
         init_genrand            (hy_random_seed);
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
         
+#ifndef _USE_EMSCRIPTEN_
         _Constant::free_slots.Populate ((long)_HY_CONSTANT_PREALLOCATE_SLOTS, (long)_HY_CONSTANT_PREALLOCATE_SLOTS-1, -1L);
         _StringBuffer::free_slots.Populate ((long)_HY_STRING_BUFFER_PREALLOCATE_SLOTS, (long)_HY_STRING_BUFFER_PREALLOCATE_SLOTS-1, -1L);
-
+#endif
         
 #ifdef __HYPHYMPI__
         hy_env :: EnvVariableSet (hy_env::mpi_node_id, new _Constant (hy_mpi_node_rank), false);
@@ -477,7 +486,11 @@ namespace hy_global {
         _HY_HBLCommandHelper.Clear();
         _HY_ValidHBLExpressions.Clear();
         listOfCompiledFormulae.Clear();
-        
+        _hy_standard_library_paths.Clear();
+        _hy_standard_library_extensions.Clear();
+        availableTemplateFilesAbbreviations.Clear();
+        availableTemplateFiles.Clear();
+        availablePostProcessors.Clear();
         
         
 #ifdef  __HYPHYMPI__
@@ -522,6 +535,8 @@ namespace hy_global {
         if (_StringBuffer::preallocated_buffer) {
             free ((void*)_StringBuffer::preallocated_buffer);
         }*/
+        
+
         return no_errors;
     }
     

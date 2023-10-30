@@ -2893,7 +2893,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
         
         if (do_load_from_file) {
             _String file_path (*GetIthParameter(0UL));
-            
+                        
             if (file_path == kPromptForFilePlaceholder ){
                 ProcessFileName (file_path, false, false, (hyPointer)current_program.nameSpacePrefix);
             } else {

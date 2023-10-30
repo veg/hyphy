@@ -122,7 +122,7 @@ public:
     // return a non-neg number (function index) if this is a user function,
     // otherwise, return -1
 
-    virtual  long           GetAVariable        (void) const{
+    long           GetAVariable        (void) const{
         if (theData >= -1) {
             return theData;
         }

@@ -95,7 +95,8 @@ extern      _AVLList        *deferClearConstraint;
 
 extern      _String         HalfOps;
 
-extern      _Trie           UnOps;
+extern      _Trie           UnOps,
+                            FunctionNameList;
 
 
 extern      long            lastMatrixDeclared;

@@ -2489,7 +2489,6 @@ bool        _Matrix::ProcessFormulas (long& stackLength, _AVLList& varList,   _S
                     continue;
                 }
                 thisFormula = theFormulas[i];
-
                 if (runAll || thisFormula->AmISimple(stackLength,varList)) {
                     _String * flaString = (_String*)thisFormula->toStr(kFormulaStringConversionNormal, nil,true);
                     long      fref = flaStrings.Insert(flaString,newFormulas.lLength);
@@ -2680,7 +2679,7 @@ void        _Matrix::MakeMeSimple (void) {
       
         
         if (!is_dense()) {
-            CompressSparseMatrix(false, (hyFloat*)alloca (sizeof (hyFloat) * lDim));
+            CompressSparseMatrix(false, (hyFloat*)alloca (sizeof (_Formula*) * lDim));
         }
         if (ProcessFormulas (stackLength,varList,newFormulas,references,flaStrings)) {
             storageType = _SIMPLE_FORMULA_TYPE;
@@ -5146,9 +5145,9 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
         Optonally, the packe matrix can be transposed.
     */
     
+    bool do_formulas = is_expression_based();
     
     if (theIndex) {
-        
         if (compressedIndex && transpose) {
             long ai = 0;
             long from = 0L;
@@ -5227,33 +5226,67 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
               secondDim = transpose ? hDim : vDim,
               firstDim  = transpose ? vDim : hDim;
 
-
-        if (transpose) {
-            long ai = 0L;
+        if (do_formulas) {
+            _Formula ** fpointers = (_Formula **)theData;
+            _Formula ** f_stash   = (_Formula **)stash;
             
-            for (long i2=0; i2<lDim; i2++) {
-                long k = theIndex[i2];
-                if  (__builtin_expect (k!=-1,1)) {
-                    long trow = k/vDim, tcol = k - trow*vDim;
-                    long transposed_index = tcol * vDim + trow;
-                    stash[ai] = theData[i2];
-                    sortedIndex.list_data[ai] = transposed_index;
-                    sortedIndex3.list_data[ai] = transposed_index;
-                    ai++;
-                    if (max < transposed_index) max = transposed_index;
+            if (transpose) {
+                long ai = 0L;
+                
+                for (long i2=0; i2<lDim; i2++) {
+                    long k = theIndex[i2];
+                    if  (__builtin_expect (k!=-1,1)) {
+                        long trow = k/vDim, tcol = k - trow*vDim;
+                        long transposed_index = tcol * vDim + trow;
+                        f_stash[ai] = fpointers[i2];
+                        sortedIndex.list_data[ai] = transposed_index;
+                        sortedIndex3.list_data[ai] = transposed_index;
+                        ai++;
+                        if (max < transposed_index) max = transposed_index;
+                    }
+                }
+                
+                sortedIndex3.lLength = ai;
+                sortedIndex.lLength = ai;
+            } else {
+                for (long i2=0; i2<lDim; i2++) {
+                    long k = theIndex[i2];
+                    if  (__builtin_expect (k!=-1,1)) {
+                        f_stash [sortedIndex.lLength] = fpointers[i2];
+                        sortedIndex  << k;
+                        sortedIndex3 << k;
+                        if (max < k) max = k;
+                    }
                 }
             }
-            
-            sortedIndex3.lLength = ai;
-            sortedIndex.lLength = ai;
         } else {
-            for (long i2=0; i2<lDim; i2++) {
-                long k = theIndex[i2];
-                if  (__builtin_expect (k!=-1,1)) {
-                    stash[sortedIndex.lLength] = theData[i2];
-                    sortedIndex  << k;
-                    sortedIndex3 << k;
-                    if (max < k) max = k;
+            if (transpose) {
+                long ai = 0L;
+                
+                for (long i2=0; i2<lDim; i2++) {
+                    long k = theIndex[i2];
+                    if  (__builtin_expect (k!=-1,1)) {
+                        long trow = k/vDim, tcol = k - trow*vDim;
+                        long transposed_index = tcol * vDim + trow;
+                        stash[ai] = theData[i2];
+                        sortedIndex.list_data[ai] = transposed_index;
+                        sortedIndex3.list_data[ai] = transposed_index;
+                        ai++;
+                        if (max < transposed_index) max = transposed_index;
+                    }
+                }
+                
+                sortedIndex3.lLength = ai;
+                sortedIndex.lLength = ai;
+            } else {
+                for (long i2=0; i2<lDim; i2++) {
+                    long k = theIndex[i2];
+                    if  (__builtin_expect (k!=-1,1)) {
+                        stash[sortedIndex.lLength] = theData[i2];
+                        sortedIndex  << k;
+                        sortedIndex3 << k;
+                        if (max < k) max = k;
+                    }
                 }
             }
         }
@@ -5309,7 +5342,11 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
             }*/
             
             //printf (" %ld\n", theIndex[i]);
-            theData[i]  = stash[sortedIndex2.list_data[i]];
+            if (do_formulas) {
+                ((_Formula**)theData)[i]  = ((_Formula**)stash)[sortedIndex2.list_data[i]];
+            } else {
+                theData[i]  = stash[sortedIndex2.list_data[i]];
+            }
         }
         
         for (long l = currentRow; l < firstDim; l++)

@@ -141,9 +141,11 @@ public:
     void * operator new       (size_t size);
     void   operator delete    (void * p);
   
+#ifndef _USE_EMSCRIPTEN_
     static  _SimpleList                    free_slots;
     static unsigned char                       preallocated_buffer[];
-
+#endif
+    
 public:
     hyFloat theValue;
     

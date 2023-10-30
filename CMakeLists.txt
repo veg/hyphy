@@ -16,6 +16,16 @@ option(NOSSE4 OFF)
 option(NONEON OFF)
 option(NOZLIB OFF)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+   set(NOAVX ON)
+   #set(NOSSE4 ON)
+   set(NONEON ON)
+   set(NOZLIB ON)
+   set(LIBRARY_PATH "/hyphy")
+   #set(CMAKE_EXECUTABLE_SUFFIX ".html")
+   add_definitions (-D_USE_EMSCRIPTEN_)
+ endif()
+
 #-------------------------------------------------------------------------------
 # SSE MACROS
 #-------------------------------------------------------------------------------
@@ -183,12 +193,17 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     if(NOAVX)
         set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
         if(NOSSE4)
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
+	        if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+            	set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
+            endif()
         else(NOSSE4)
             PCL_CHECK_FOR_SSE4()
             if(${HAVE_SSE4_EXTENSIONS})
                 add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
                 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse4.1 ")
+                if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+				 	set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msimd128 ")
+			    endif()
             endif(${HAVE_SSE4_EXTENSIONS})
         endif(NOSSE4)
     else(NOAVX)
@@ -206,6 +221,8 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
             if(${HAVE_SSE4_EXTENSIONS})
                 add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
                 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse4.1 ")
+                
+
             endif(${HAVE_SSE4_EXTENSIONS})
         endif(${HAVE_AVX_EXTENSIONS})
     endif(NOAVX)
@@ -214,6 +231,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 		PCL_CHECK_FOR_NEON()
 		if(${HAVE_NEON_EXTENSIONS})
 			add_definitions (-D_SLKP_USE_ARM_NEON)
+
 		endif(${HAVE_NEON_EXTENSIONS})
 	endif(NOT NONEON)
 
@@ -225,13 +243,18 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2  -std=c++14 -Wall")
     if(NOAVX)
         if(NOSSE4)
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
-        else(NOSSE4)
+	        if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+            	set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
+            endif()
+         else(NOSSE4)
             PCL_CHECK_FOR_SSE4()
-            if(${HAVE_SSE4_EXTENSIONS})
-                add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse4.1 ")
-            endif(${HAVE_SSE4_EXTENSIONS})
+ 			if("${HAVE_SSE4_EXTENSIONS}" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
+				add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
+				set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse4.1 ")
+				if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+					set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msimd128 ")
+				endif()
+			endif()  
         endif(NOSSE4)
     else(NOAVX)
         PCL_CHECK_FOR_AVX()
@@ -267,7 +290,6 @@ endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
 #set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info -fopt-info-vec-missed")
 set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}")
-MESSAGE ("Set default compiler flags to ${DEFAULT_COMPILE_FLAGS}")
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
     set(DEFAULT_COMPILE_FLAGS "")
@@ -283,6 +305,11 @@ if(NOT DEFINED DEFAULT_WARNING_FLAGS)
     set(DEFAULT_WARNING_FLAGS "")
 endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+   set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -fwasm-exceptions ")
+endif()
+
+MESSAGE ("Set default compiler flags to ${DEFAULT_COMPILE_FLAGS}")
 
 #-------------------------------------------------------------------------------
 # OpenMP support
@@ -418,7 +445,11 @@ install(
     OPTIONAL
 )
 
+if (NOT DEFINED LIBRARY_PATH)
+    set(LIBRARY_PATH "${CMAKE_INSTALL_PREFIX}/share/hyphy")
+endif()
 
+MESSAGE (${LIBRARY_PATH})
 
 #-------------------------------------------------------------------------------
 # hyphy mpi target
@@ -452,7 +483,7 @@ if(${MPI_FOUND})
     # set definitions here 'cause "s_t_p" below doesn't like lists
     set_property(
         TARGET HYPHYMPI
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
+        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${LIBRARY_PATH}"
     )
 
     message ("${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -584,14 +615,10 @@ set_property(
     APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__
 )
 
-set_property(
-    TARGET hyphy HYPHYDEBUG
-    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
-)
 
 set_property(
     TARGET hyphy HYPHYDEBUG HYPHYPROFILE
-    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${CMAKE_INSTALL_PREFIX}/share/hyphy"
+    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${LIBRARY_PATH}"
 )
 
 
