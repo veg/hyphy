@@ -363,6 +363,68 @@ lfunction trees.branch_names(tree, respect_case) {
     return result;
 }
 
+/**
+ * @name trees.extract_paml_annotation
+ * @param tree_string {STRING} : PAML (#N $N annotated string)
+ * @param dictionary; tree annotation with PAML_GROUP_N
+ * @returns result
+ */
+ 
+lfunction trees.extract_paml_annotation (tree_string) {
+
+    pieces = regexp.SplitWithMatches (tree_string, "\$([0-9])");
+    N =  utility.Array1D (pieces[^("terms.regexp.separators")]);
+    
+    has_paml_clades = N > 0;
+    sanitized_string = "";
+    if (N > 0) {    
+        for (i,s; in; pieces[^("terms.regexp.strings")]) {
+            sanitized_string += s;
+            if (+i > 0) {
+                sanitized_string += "{" + regexp.Replace ((pieces[^("terms.regexp.separators")])[-1+i], "\$", "PAML_CLADE_") + "}";
+            }
+        }
+    }
+    
+    pieces = regexp.SplitWithMatches (sanitized_string, "\#([0-9])");
+    N =  utility.Array1D (pieces[^("terms.regexp.separators")]);
+    
+    if (N > 0) {    
+        for (i,s; in; pieces[^("terms.regexp.strings")]) {
+            sanitized_string += s;
+            if (+i > 0) {
+                sanitized_string += "{" + regexp.Replace ((pieces[^("terms.regexp.separators")])[-1+i], "\#", "PAML_GROUP_") + "}";
+            }
+        }
+    }
+    
+    if (Abs (sanitized_string) == 0) {
+        sanitized_string = tree_string;
+    } 
+    
+    result = trees.ExtractTreeInfo (sanitized_string);
+    
+    if (has_paml_clades) {
+        additional_annotation = {};    
+        tree_str = result[^"terms.trees.newick"];
+        Topology T = tree_str;
+        for (b, m; in; result[^"terms.trees.model_map"]) {
+            if (None != regexp.Find (m, "^PAML_CLADE_")) {
+                tag = regexp.Replace (m, "^PAML_CLADE_", "PAML_GROUP_");
+                for (n,foo; in; T[b]) {
+                    additional_annotation[n] = tag;
+                }
+            }
+        }
+        result[^"terms.trees.model_map"] * additional_annotation;
+        result[^"terms.trees.model_list"] = Columns(result[^"terms.trees.model_map"]);
+        result[^"terms.trees.newick_annotated"] = tree.Annotate (&T, result[^"terms.trees.model_map"], "{}", FALSE);
+    }
+    
+    return result;
+}
+
+
 
 /**
  * @name trees.KillZeroBranches

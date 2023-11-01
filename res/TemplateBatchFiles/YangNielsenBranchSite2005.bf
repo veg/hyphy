@@ -35,7 +35,7 @@ fprintf (stdout, "\nBase composition:\n\tA: ", Format (baseFreqs[0][0],10,5),","
 /* 5. prompt for the type of model to run */
 
 ChoiceList (modelKind, "Model", 1, SKIP_NONE,
-					   "Alternative", "Fit Model A with 4 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Positive in FG. Class 4: Neutral evolution in BG, Positive in FG",
+					   "Branch-site alternative", "Fit Model A with 4 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Positive in FG. Class 4: Neutral evolution in BG, Positive in FG",
 					   "Null for Test 1", "Fit a model with 2 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG.",
 					   "Null for Test 2", "Fit Model A with 3 rate classes. Class 1: Negative selection in FG and BG. Class 2: Neutral evolution in FG and BG. Class 3: Negative selection in BG, Neutral in FG."
 );					   
@@ -54,15 +54,13 @@ global P_0     = 0.5;
 P_0:<1;
 P_0:>0;
 
-if (modelKind == 1)
-{
+if (modelKind == 1) {
 	rateClasses = 2;
 
 	categFreqMatrix = {{P_0,1-P_0}} ;
 	categRateMatrix = {{1,2}};
 }
-else
-{
+else {
 	P_0        = 1/4;
 	global 		P_1_aux = 1/4;
 	global 		P_1     := Min(P_1_aux,1-P_0);

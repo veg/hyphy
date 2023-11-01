@@ -1,13 +1,26 @@
 
 /** @module regexp */
 
+
+namespace terms {
+
+    namespace regexp {
+    
+        strings    = "strings";
+        separators = "separators";
+   
+    }
+
+}
+ 
 /**
- * @name regexp.Replace
- * @param {String} string
- * @param {String} re - search for this expression
- * @param {String} repl - replace each occurence of re with repl
- * @returns {Dictionary} a dictionary containing split strings
- */
+* @name regexp.Replace
+* @param {String} string
+* @param {String} re - search for this expression
+* @param {String} repl - replace each occurence of re with repl
+* @returns {Dictionary} a dictionary containing split strings
+*/
+ 
 lfunction regexp.Replace(string, re, repl) {
     return string ^ {{re,repl}};
 }
@@ -46,6 +59,52 @@ lfunction regexp.Split(string, re) {
     }
     return {
         "0": string
+    };
+}
+
+/**
+ * @name regexp.SplitWithMatches
+ * @param {String} string
+ * @param {String} re - the regular expression
+ * @returns {Dictionary} a dictionary containing split strings under the key "strings" and separators under the key "separators"
+ */
+lfunction regexp.SplitWithMatches (string, re) {
+    coordinates = string || re;
+    if (coordinates[0] >= 0) {
+        strings = {};
+        separators = {};
+        
+        current_end = 0;
+
+        for (i = 0; i < Rows(coordinates); i += 2) {
+            from = coordinates[i];
+            separators + string[coordinates[i]][coordinates[i+1]];
+
+            if (current_end < from) {
+                strings + string[current_end][from - 1];
+            } else {
+                strings + "";
+            }
+            current_end = coordinates[i + 1] + 1;
+        }
+
+        if (current_end < Abs(string)) {
+            strings + string[current_end][Abs(string) - 1];
+        } else {
+            strings + "";
+        }
+
+        return {
+            ^("terms.regexp.strings") :strings,
+            ^("terms.regexp.separators") : separators
+        };
+    }
+    return {
+        ^("terms.regexp.strings") : {
+            "0": string
+        },
+        ^("terms.regexp.separators") : {
+        }
     };
 }
 
