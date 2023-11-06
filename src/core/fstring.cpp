@@ -755,7 +755,12 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
                 t = &(*(new _StringBuffer) <<  get_str().ConvertToAnIdent(fIDAllowCompound));
                 break;
             }
-              
+                  
+            case 8L: {
+                t = &(new _StringBuffer)->ConvertToTerminalColor(get_str());
+                break;
+            }
+
             default:
               t = new _StringBuffer ( get_str().ChangeCase(kStringLowerCase));
               break;

@@ -947,12 +947,12 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
      if (fel.report.row [4] < fel.pvalue) {
         if (fel.report.row[0] < fel.report.row[1]) {
             fel.print_row = fel.report.positive_site;
-            fel.color = "\033[0;31m";
+            fel.color = "RED" && 8;
             fel.report.counts[0] += 1;
         } else {
             fel.print_row = fel.report.negative_site;
             fel.report.counts [1] += 1;
-            fel.color = "\033[0;32m";
+            fel.color = "GREEN" && 8;
         }
      }
 
@@ -966,9 +966,7 @@ function fel.report.echo (fel.report.site, fel.report.partition, fel.report.row)
                 fel.table_output_options[terms.table_options.header] = FALSE;
             }
 
-            fprintf (stdout, fel.color, 
-                io.FormatTableRow (fel.print_row,fel.table_output_options),"\033[0m"
-                );
+            fprintf (stdout, io.FormatTableRowDecorators (fel.print_row,fel.table_output_options, fel.color,  "NONE" && 8));
     }
 }
 

@@ -49,9 +49,19 @@
 
 //______________________________________________________________
 
-_AVLListXL::_AVLListXL (_SimpleList* d):_AVLList(d)
-{
+_AVLListXL::_AVLListXL (_SimpleList* d):_AVLList(d){
 }
+
+//______________________________________________________________
+
+_AVLListXL::_AVLListXL (_SimpleList* d, _List&& payload):_AVLList(d) {
+    for (int i = 0; i < payload.countitems(); i+=2) {
+        payload.GetItem(i)->AddAReference();
+        payload.GetItem(i+1)->AddAReference();
+        PushPair((_String*)payload.GetItem(i), payload.GetItem(i+1));
+    }
+}
+
 
 //______________________________________________________________
 

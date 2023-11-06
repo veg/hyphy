@@ -48,9 +48,18 @@ using namespace hy_global;
 #include <utility>  // for std::move
 
 
-unsigned char               _StringBuffer::preallocated_buffer [_HY_STRING_BUFFER_PREALLOCATE_SLOTS*sizeof (_StringBuffer)];
-_SimpleList                 _StringBuffer::free_slots;
+#ifndef _USE_EMSCRIPTEN_
+    unsigned char               _StringBuffer::preallocated_buffer [_HY_STRING_BUFFER_PREALLOCATE_SLOTS*sizeof (_StringBuffer)];
+    _SimpleList                 _StringBuffer::free_slots;
+#endif
 
+_List      _hyTerminalColors_aux;
+
+_AVLListXL _hyTerminalColors (&_hyTerminalColors_aux, _List (
+    new _String("RED"), new _String ("\033[31m"),
+    new _String("GREEN"), new _String ("\033[32m"),
+    new _String("NONE"), new _String ("\033[0m")
+));
 
 /*
 ==============================================================
@@ -478,6 +487,27 @@ _StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const _String& s) {
   return *this;
 }
 
+_StringBuffer& _StringBuffer::ConvertToTerminalColor(const _String& s) {
+#ifdef _USE_EMSCRIPTEN_
+    static const _String kNONE ("NONE");
+#endif
+    BaseRef color_lookup = _hyTerminalColors.GetDataByKey (&s);
+    if (color_lookup) {
+#ifdef _USE_EMSCRIPTEN_
+        if (s == kNONE) {
+            (*this) << "</span>";
+        } else {
+            (*this) << "<span style='color:" << s << "'>";
+        }
+#else
+        (*this) << *(const _String*)color_lookup;
+#endif
+    } else {
+        (*this) << s;
+    }
+    return *this;
+}
+
 _StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const char c) {
   switch (c) {
     case '[':
@@ -605,12 +635,14 @@ void _StringBuffer::AppendVariableValueAVL (_String const* id, _SimpleList const
 
 //__________________________________________________________________________________
 void * _StringBuffer::operator new (size_t size) {
+#ifndef _USE_EMSCRIPTEN_
     if (_StringBuffer::free_slots.nonempty()) {
         _StringBuffer * result = (_StringBuffer *)(_StringBuffer::preallocated_buffer) + _StringBuffer::free_slots.Pop();
         //printf ("Allocate slot %ld\n", _StringBuffer::free_slots.get (_StringBuffer::free_slots.countitems()));
         //result->Initialize();
         return result;
     }
+#endif
     //printf ("Allocating string buffer %ld\n", size);
     return ::operator new(size);
 }
@@ -618,6 +650,7 @@ void * _StringBuffer::operator new (size_t size) {
 
 //__________________________________________________________________________________
 void  _StringBuffer::operator delete (void * p) {
+#ifndef _USE_EMSCRIPTEN_
     _StringBuffer * sb = (_StringBuffer*) p,
                   * sbb = (_StringBuffer *)_StringBuffer::preallocated_buffer;
     
@@ -626,9 +659,12 @@ void  _StringBuffer::operator delete (void * p) {
         //sb->_StringBuffer::Clear();
         free_slots << ((long)(sb - sbb));
     } else {
+#endif
         //printf ("%p\n", p);
         ::operator delete (p);
+#ifndef _USE_EMSCRIPTEN_
     }
+#endif
 }
 
 

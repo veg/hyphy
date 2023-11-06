@@ -179,6 +179,20 @@ _String *    StringFromConsole   () {
     return returnme;
 }
 
+#ifdef _USE_EMSCRIPTEN_
+#include "emscripten.h"
+
+EM_JS(void, _jsSendStatusUpdateStdout, (const char *status_update), {
+    // Send a message back to main thread from WebWorker
+    postMessage({
+        type: "biowasm",
+        value: {
+        text: Module.AsciiToString(status_update),
+        type : "print"
+        }
+    });
+})
+#endif
 //__________________________________________________________________________________
 
 void    StringToConsole (_String const & s,  void * extra) {
@@ -201,6 +215,11 @@ void    BufferToConsole (const char* s, void * extra) {
   if (extra) {
     fprintf ((FILE*)extra, "%s",s);
   } else {
+#ifdef _USE_EMSCRIPTEN_
+    if (!extra) {
+        _jsSendStatusUpdateStdout (s);
+    }
+#endif
     printf ("%s",s);
     fflush(stdout);
   }

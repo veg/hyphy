@@ -363,6 +363,12 @@ public:
    - SLKP 20170614 reviewed while porting from v3 branch
    [CHANGE-NOTE SLKP 20170614 added the kAppendAnAssignmentToBufferPlain option]
    */
+    
+   _StringBuffer& ConvertToTerminalColor(const _String&);
+   /**
+        Convert literals (upper case or NONE to standard terminal colors)
+    */
+
    void    AppendAnAssignmentToBuffer (_String const* id , _String * value, unsigned long = kAppendAnAssignmentToBufferFree);
 
   /**
@@ -392,9 +398,10 @@ public:
     void * operator new       (size_t size);
     void   operator delete    (void * p);
 
+#ifndef _USE_EMSCRIPTEN_
     static  _SimpleList                    free_slots;
     static  unsigned char                  preallocated_buffer[];
-
+#endif
     
 };
 

@@ -51,6 +51,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     attached to each string key.
 */
 
+struct _trie_payload {
+    const char * key;
+    long value;
+};
 
 //_____________________________________________________________________________
 class _Trie: public _List {
@@ -184,6 +188,13 @@ class _Trie: public _List {
         long    Insert (const _String& key, const long value);
 
         _Trie&     operator < (const char * key);
+        /**
+         * Insert the key into the trie (value is 0)
+         * @param key -- the string to insert
+         * @return the trie itself -- for chaining and such
+         */
+
+        _Trie&     operator < (const _trie_payload);
         /**
          * Insert the key into the trie (value is 0)
          * @param key -- the string to insert

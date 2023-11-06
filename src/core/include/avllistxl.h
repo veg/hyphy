@@ -53,6 +53,7 @@ class _AVLListXL: public _AVLList {
 public:
 
     _AVLListXL(_SimpleList*);
+    _AVLListXL(_SimpleList*, _List&&);
     BaseRef GetXtra(long) const;
 
     void SetXtra(long,BaseRef,bool);

@@ -344,7 +344,7 @@ lfunction io.format_object(object, options) {
  * @param row
  * @param options
  */
-lfunction io.FormatTableRow(row, options) {
+lfunction io.FormatTableRowDecorators (row, options, prefix, suffix) {
 
     if (None == options) {
         options = {};
@@ -395,7 +395,7 @@ lfunction io.FormatTableRow(row, options) {
             for (k = 0; k < padding$2; k += 1) {
                 row * " ";
             }
-            row * cells[i];
+            row * (prefix + cells[i] + suffix);
             for (k = 0; k < padding - padding$2; k += 1) {
                 row * " ";
             }
@@ -428,7 +428,7 @@ lfunction io.FormatTableRow(row, options) {
             for (k = 0; k < padding$2; k += 1) {
                 row * " ";
             }
-            row * cells[i];
+            row * (prefix + cells[i] + suffix);
             for (k = 0; k < padding - padding$2; k += 1) {
                 row * " ";
             }
@@ -437,6 +437,15 @@ lfunction io.FormatTableRow(row, options) {
     }
     row * 0;
     return row;
+}
+
+/**
+ * @name io.FormatTableRow
+ * @param row
+ * @param options
+ */
+lfunction io.FormatTableRow(row, options) {
+    return io.FormatTableRowDecorators (row, options, "", "");
 }
 
 /**

@@ -130,8 +130,9 @@ const char hy_help_message [] =
 
 
 #ifdef _OPENMP
-#include "omp.h"
+    #include "omp.h"
 #endif
+
 
 //#define _COMPARATIVE_LF_DEBUG_CHECK "/Users/sergei/Desktop/lf.sequence"
 //#define _COMPARATIVE_LF_DEBUG_DUMP "/Users/sergei/Desktop/lf.sequence"
@@ -146,11 +147,8 @@ const char hy_help_message [] =
     #endif
 #endif
 
-_List   availableTemplateFiles,
-        availablePostProcessors,
-        loggedUserInputs;
+_List   loggedUserInputs;
 
-_Trie   availableTemplateFilesAbbreviations;
 
 _String baseArgDir,
         libArgDir;
@@ -487,7 +485,7 @@ void    DisplayHelpMessage (void) {
    }
    printf ("\n");
    //fprintf( stderr, "%s\n%s\n%s", hy_usage, hy_help_message, hy_available_cli_analyses );
-   exit (0);
+   //exit (0);
 }
             
 void    ProcessConfigStr (_String const & conf) {
@@ -591,15 +589,35 @@ void    SetStatusLine               (_String s) {
 #endif
 
 }
+#ifdef _USE_EMSCRIPTEN_
+#include "emscripten.h"
+
+EM_JS(void, _jsSendStatusUpdate, (const char *status_update), {
+    // Send a message back to main thread from WebWorker
+    postMessage({
+        type: "biowasm",
+        value: {
+        text: Module.AsciiToString(status_update),
+        type : "update"
+        }
+    });
+})
+#endif
 
 //__________________________________________________________________________________
 void    SetStatusLineUser   (_String const s) {
+#ifndef _USE_EMSCRIPTEN_
   if ( has_terminal_stderr ) { // only print to terminal devices
     setvbuf(stderr, NULL, _IONBF, 0);
     BufferToConsole("\33[2K\r", stderr);
     StringToConsole(s, stderr);
     hy_need_extra_nl = true;
   }
+#else
+    if (s.nonempty()) {
+        _jsSendStatusUpdate (s.get_str());
+    }
+#endif
 }
 
 //__________________________________________________________________________________
@@ -732,7 +750,7 @@ int main (int argc, char* argv[]) {
               }
               if (thisArg == kVersionKeyword) {
                   StringToConsole(GetVersionString()); NLToConsole();
-                  exit (0);
+                  return 0;
               }
               if (thisArg == kVerboseKeyword) {
                   force_verbosity_from_cli = true;
@@ -972,7 +990,9 @@ int main (int argc, char* argv[]) {
     
     GlobalShutdown              ();
     
-
+    
+    fflush (stdout);
+    
 
 #ifdef __MINGW32__
   fflush (stdout);
@@ -985,6 +1005,7 @@ int main (int argc, char* argv[]) {
     }
 #endif
 
+    return 0;
 }
 
 #endif

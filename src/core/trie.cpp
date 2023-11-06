@@ -266,6 +266,13 @@ _Trie& _Trie::operator < (const char* key) {
 
 //----------------------------------------------------------------------------------------------------------------------
 
+_Trie& _Trie::operator < (const _trie_payload data) {
+  Insert (_String (data.key), data.value);
+  return *this;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 long    _Trie::Insert (const _String& key, const long value) {
     return InsertExtended (key, value);
 }

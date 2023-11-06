@@ -48,6 +48,7 @@
 #include "defines.h"
 #include "hy_types.h"
 #include "avllistx.h"
+#include "trie.h"
 #include "regex.h"
 
 #include <stdio.h>
@@ -356,6 +357,11 @@ namespace hy_global {
   hy_standard_library_directory,
   hy_standard_model_directory,
   hy_scanf_last_file_path;
+
+  extern _Trie availableTemplateFilesAbbreviations;
+
+  extern _List  availableTemplateFiles,
+                availablePostProcessors;
   
   extern _Variable * hy_x_variable, * hy_n_variable;
     
