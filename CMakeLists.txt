@@ -650,6 +650,7 @@ makeLink(HYPHYMP hyphy hyphy)
 # TESTS
 #-------------------------------------------------------------------------------
 
+
 add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
 add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)
 add_test (PROTEIN HYPHYMP CPU=1 tests/hbltests/SimpleOptimizations/IntermediateProtein.bf)
