@@ -64,9 +64,9 @@ BaseRef BaseObj::toStr(unsigned long) { return new _String(kNullToken); }
 BaseRef BaseObj::toErrStr(void) { return toStr(); }
 
 //______________________________________________________________________________
-void BaseObj::toFileStr(FILE *dest, unsigned long padding) {
+void BaseObj::toFileStr(hyFile *dest, unsigned long padding) {
     _String *s = (_String *)toStr(padding);
-    fwrite(s->get_str(), 1, s->length(), dest);
+    dest->fwrite(s->get_str(), 1, s->length());
     DeleteObject (s);
 }
 

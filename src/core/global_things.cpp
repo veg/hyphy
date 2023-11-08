@@ -95,7 +95,7 @@ namespace hy_global {
                      ignore_kw_defaults  = false,
                      force_verbosity_from_cli = false;
     
-    FILE            *hy_error_log_file = NULL,
+    hyFile          *hy_error_log_file = NULL,
                     *hy_message_log_file = NULL;
     
     hyTreeDefinitionPhase
@@ -122,7 +122,7 @@ namespace hy_global {
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
                      kErrorNumerical                   ("To treat numerical errors as warnings, please specify \"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line argument. This often resolves the issue, which is indicative of numerical instability."),
-                     kHyPhyVersion  = _String ("2.5.56"),
+                     kHyPhyVersion  = _String ("2.5.57"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -222,14 +222,11 @@ namespace hy_global {
 
     //____________________________________________________________________________________
     
-    FILE *      doFileOpen (const char * fileName, const char * mode, bool error) {
-        FILE    *daFile = nil;
+    hyFile *      doFileOpen (const char * fileName, hyFileOpenMode mode, bool error, bool compress) {
+        hyFile    *daFile = nil;
         
         if (fileName) {
-            daFile = fopen (fileName,mode);
-            if (!daFile && error) {
-                HandleApplicationError (_String("Could not open file '") & *fileName & "' with mode '" & *mode & "'.");
-            }
+            daFile = hyFile::openFile (fileName,mode, error, compress);
         }
         return daFile;
     }
@@ -404,7 +401,7 @@ namespace hy_global {
             
 #ifndef __HEADLESS__ // do not create log files for _HEADLESS_
             _String * prefix [2] = {&hy_error_log_name, &hy_messages_log_name};
-            FILE ** handle [2] = {&hy_error_log_file, &hy_message_log_file};
+            hyFile ** handle [2] = {&hy_error_log_file, &hy_message_log_file};
             
             for (long file_index = 0; file_index < 2; file_index++) {
                 long                    p   = 1L;
@@ -419,7 +416,7 @@ namespace hy_global {
                 _String file_name = *prefix[file_index] & ".mpinode" & (long)hy_mpi_node_rank;
     #endif
                 
-                *handle[file_index] = doFileOpen (file_name.get_str(),"w+");
+                *handle[file_index] = doFileOpen (file_name.get_str(),kFileWrite);
                 while (*handle[file_index] == nil && p<10) {
                     #ifndef __HYPHYMPI__
                          file_name = *prefix[file_index] & '.' & p;
@@ -509,21 +506,24 @@ namespace hy_global {
         
         _String * prefix [2] = {&hy_error_log_name, &hy_messages_log_name};
         char const * messages [] = {"\nCheck %s for execution error details.\n", "\nCheck %s for diagnostic messages.\n"};
-        FILE * handle [2] = {hy_error_log_file, hy_message_log_file};
+        hyFile * handle [2] = {hy_error_log_file, hy_message_log_file};
         
         for (long file_index = 0; file_index < 2; file_index++) {
        
             if (handle[file_index]) {
-                fflush (handle[file_index]);
-                fseek(handle[file_index],0,SEEK_END);
-                unsigned long fileSize = ftell(handle[file_index]);
+                //fflush (handle[file_index]);
+                handle[file_index]->flush ();
+                handle[file_index]->seek(0, SEEK_END);
+                unsigned long fileSize = handle[file_index]->tell();
                 if (fileSize) {
                     fprintf (stderr, messages[file_index], prefix[file_index]->get_str());
                     if (file_index == 0) { no_errors = false; }
-                    fclose (handle[file_index]);
+                    handle[file_index]->close();
+                    delete handle[file_index];
                     
                 } else {
-                    fclose (handle[file_index]);
+                    handle[file_index]->close();
+                    delete handle[file_index];
                     remove (prefix[file_index]->get_str());
                 }
             }
@@ -689,9 +689,9 @@ namespace hy_global {
         }
         
         char   str[] = "\n";
-        fwrite (str, 1, 1, hy_message_log_file);
-        fwrite (message.get_str(), 1, message.length(), hy_message_log_file);
-        fflush (hy_message_log_file);
+        hy_message_log_file->fwrite (str, 1, 1);
+        hy_message_log_file->fwrite (message.get_str(), 1, message.length());
+        hy_message_log_file->flush();
 #endif
     }
 
@@ -756,13 +756,14 @@ namespace hy_global {
         char  str[] = "\nError:";
         
         if (hy_error_log_file) {
-            fwrite (str, 1, 7, hy_error_log_file);
-            fwrite (message.get_str(), 1, message.length(), hy_error_log_file);
-            fflush (hy_error_log_file);
+            hy_error_log_file->fwrite (str, 1, 7);
+            hy_error_log_file->fwrite (message.get_str(), 1, message.length());
+            hy_error_log_file->flush ();
         }
             
         if (hy_error_log_file) {
-            fprintf (hy_error_log_file, "\n%s", (const char*)message);
+            hy_error_log_file->putc ('\n');
+            hy_error_log_file->puts ((const char*)message);
         }
             
         _String errMsg;
@@ -1007,128 +1008,5 @@ namespace hy_global {
     return true;
   }
 
-    //____________________________________________________________________________________
-    hyFile* hyFile::openFile (const char * file_path, const char * mode , bool error, long buffer) {
-        hyFile* f = new hyFile;
-#ifdef __ZLIB__
-        if (file_path) {
-            f->_fileReference = gzopen (file_path, mode);
-            if (!f->_fileReference && error) {
-                HandleApplicationError (_String("Could not open file '") & *file_path & "' with mode '" & *mode & "'.");
-            }
-        }
-#else
-        f->_fileReference = doFileOpen(file_path, mode, error);
-#endif
-        if (!f->_fileReference ) {
-            delete f;
-            f = nil;
-        }
-        return f;
-        
-    }
-
-    //____________________________________________________________________________________
-    void hyFile::close (void) {
-        if (valid()) {
-            #ifdef __ZLIB__
-                gzclose (_fileReference);
-            #else
-                fclose (_fileReference);
-            #endif
-            _fileReference = NULL;
-        }
-    }
-
-    //____________________________________________________________________________________
-    void hyFile::lock (void) {
-        if (valid()) {
-        #ifdef __ZLIB__
-            //gzclose (_fileReference);
-        #else
-            flockfile (_fileReference);
-        #endif
-        }
-    }
-
-    //____________________________________________________________________________________
-    void hyFile::unlock (void) {
-        if (valid()) {
-        #ifdef __ZLIB__
-            //gzclose (_fileReference);
-        #else
-            funlockfile (_fileReference);
-        #endif
-        }
-    }
-
-    //____________________________________________________________________________________
-    void hyFile::rewind (void) {
-        if (valid()) {
-        #ifdef __ZLIB__
-            gzrewind (_fileReference);
-        #else
-            ::rewind (_fileReference);
-        #endif
-        }
-    }
-
-    //____________________________________________________________________________________
-    void hyFile::seek (long pos, int whence) {
-        if (valid()) {
-        #ifdef __ZLIB__
-            gzseek (_fileReference, pos, whence);
-        #else
-            fseek (_fileReference, pos, whence);
-        #endif
-        }
-    }
     
-    //____________________________________________________________________________________
-
-    size_t hyFile::tell (void) {
-        if (valid()) {
-        #ifdef __ZLIB__
-            return gztell (_fileReference);
-        #else
-            return ftell (_fileReference);
-        #endif
-        }
-        return 0;
-    }
-    //____________________________________________________________________________________
-    bool hyFile::feof (void) {
-        if (valid()) {
-        #ifdef __ZLIB__
-            return gzeof (_fileReference);
-        #else
-            return feof_unlocked (_fileReference);
-        #endif
-        }
-        return true;
-    }
-    //____________________________________________________________________________________
-    int hyFile::getc (void) {
-        if (valid()) {
-        #ifdef __ZLIB__
-            return gzgetc (_fileReference);
-        #else
-            return getc_unlocked (_fileReference);
-        #endif
-        }
-        return 0;
-    }
-
-    //____________________________________________________________________________________
-    unsigned long hyFile::read (void* buffer, unsigned long size, unsigned long items) {
-        if (valid()) {
-        #ifdef __ZLIB__
-            return gzfread (buffer, size, items, _fileReference);
-        #else
-            return ::fread (buffer, size, items, _fileReference);
-        #endif
-        }
-        return 0;
-    }
-
 } // namespace close

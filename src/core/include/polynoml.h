@@ -158,7 +158,7 @@ public:
     virtual BaseObj*        toStr (unsigned long = 0UL);
     void                    CheckTerm(void);
 
-    virtual void            toFileStr (FILE*, unsigned long = 0UL);
+    virtual void            toFileStr (hyFile*, unsigned long = 0UL);
 
     long                    GetNoVariables(void) const {
         return variableIndex.countitems();

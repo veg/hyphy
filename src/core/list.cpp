@@ -577,17 +577,17 @@ void  _List::Replace (long index, BaseRef newObj, bool dup) {
 
 // Char* conversion
 //TODO: toFileStr should be ToFileStr to follow convention.
-void _List::toFileStr(FILE* dest, unsigned long) {
-    fprintf (dest,"{");
+void _List::toFileStr(hyFile* dest, unsigned long) {
+    dest->puts ("{");
   
     if (lLength) {
       GetItem(0)->toFileStr(dest);
       for (unsigned long i = 1UL; i<lLength; i++) {
-          fprintf (dest,", ");
+          dest->puts (", ");
           GetItem(i)->toFileStr(dest);
       }
     }
-    fprintf (dest,"}");
+    dest->puts ("}");
 }
 
 // Char* conversion

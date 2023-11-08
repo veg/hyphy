@@ -57,7 +57,7 @@ class StringFileWrapper {
    */
 public:
   
-  StringFileWrapper (_StringBuffer * string, FILE * file);
+  StringFileWrapper (_StringBuffer * string, hyFile * file);
   /** Create a wrapper around around a string / file pair 
       If both arguments are null, the wrapper will simply "eat" the 
       bufferring operations (/dev/null equivalent). If both arguments
@@ -108,7 +108,7 @@ public:
   
 private:
   _StringBuffer * string_buffer;
-  FILE*     file_buffer;
+  hyFile*     file_buffer;
   
 };
 

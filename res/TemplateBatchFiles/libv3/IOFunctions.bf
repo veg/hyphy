@@ -137,6 +137,25 @@ lfunction io._reportMessageHelper(analysis, text) {
 }
 
 /**
+ * @name io.CompressedObjectSpool
+ * @param json
+ * @param file
+ */
+ 
+lfunction io.CompressedObjectSpool (object, file) {
+    GetString (have_zip, ZLIB_ENABLED, 0);
+    if (have_zip && file != "/dev/null") {
+        if (utility.GetEnvVariable ("GZIP_OUTPUT")) {
+            utility.ToggleEnvVariable("GZIP_COMPRESSION_LEVEL", 5);
+            fprintf(file, CLEAR_FILE, object);
+            utility.ToggleEnvVariable("GZIP_COMPRESSION_LEVEL", None);
+            return;
+        }
+    }
+    fprintf(file, CLEAR_FILE, object);
+ }
+
+/**
  * @name io.SpoolJSON
  * @param json
  * @param file
@@ -144,7 +163,7 @@ lfunction io._reportMessageHelper(analysis, text) {
 lfunction io.SpoolJSON(json, file) {
     utility.ToggleEnvVariable("USE_JSON_FOR_MATRIX", 1);
     if (Type(file) == "String" && Abs (file) > 0) {
-        fprintf(file, CLEAR_FILE, json);
+        io.CompressedObjectSpool (json, file);
     } else {
         fprintf(stdout, "\n", json, "\n");
     }
@@ -550,7 +569,8 @@ lfunction io.SpoolLF(lf_id, trunk_path, tag) {
 lfunction io.SpoolLFToPath(lf_id, path) {
     if (path != "/dev/null") {
         Export(__lf_spool, ^ lf_id);
-        fprintf(path, CLEAR_FILE, __lf_spool);
+        io.CompressedObjectSpool (__lf_spool, path);
+        DeleteObject (__lf_spool);
     }
 }
 

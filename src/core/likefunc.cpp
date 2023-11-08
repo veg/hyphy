@@ -455,7 +455,7 @@ void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool o
     static _String  userStatusString;
 
     static clock_t  userTimeStart;
-    FILE           *outFile = fileName?doFileOpen (fileName->get_str(),"w"):nil;
+    hyFile           *outFile = fileName?doFileOpen (fileName->get_str(),kFileWrite):nil;
     _FString*       t;
 
     static          TimeDifference timer;
@@ -463,9 +463,6 @@ void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool o
     if (init==0) {
         lCount          = likeFuncEvalCallCount;
         timer.Start();
-#ifndef _MINGW32_MEGA_
-        setvbuf           (stdout,nil, _IONBF,1);
-#endif
         lastDone        = 0;
         userTimeStart   = clock();
         checkParameter   (optimizationStringQuantum, update_quantum, 0.0);
@@ -516,50 +513,41 @@ void        UpdateOptimizationStatus (hyFloat max, long pdone, char init, bool o
             }
 
             if (outFile) {
-                fprintf (outFile,"%s", reportString.get_str());
+                outFile->puts (reportString.get_str());
             } else
-#ifndef _MINGW32_MEGA_
                 printf ("\015%s", reportString.get_str());
-#else
-                SetStatusLine (reportString);
-#endif
         } else {
             char buffer [1024];
             if (optimization) {
-                if (outFile)
-                    fprintf (outFile,"Likelihood function optimization status\nCurrent Maximum: %-14.8g (%ld %% done)\nLikelihood Function evaluations/second: %-8.4g", (double)max, pdone,
-                             (likeFuncEvalCallCount-lCount)/elapsed_time);
-                else {
-                    long written = snprintf (buffer,1024,"Current Max: %-14.8g (%ld %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, (likeFuncEvalCallCount-lCount)/elapsed_time);
+                
+                long written = snprintf (buffer,1024,"Current Max: %-14.8g (%ld %% done) LF Evals/Sec: %-8.4g", (double)max, pdone, (likeFuncEvalCallCount-lCount)/elapsed_time);
 
-                    if (elapsed_time) {
-                        snprintf (buffer+written,1024-written, "CPU Load: %-8.4g", (clock()-userTimeStart)/((hyFloat)CLOCKS_PER_SEC*elapsed_time));
-                    }
+                if (elapsed_time) {
+                    snprintf (buffer+written,1024-written, "CPU Load: %-8.4g", (clock()-userTimeStart)/((hyFloat)CLOCKS_PER_SEC*elapsed_time));
                 }
             } else {
                 snprintf (buffer, 1024, "Sites done: %g (%ld %% done)", (double)max, pdone);
             }
 
-#ifndef _MINGW32_MEGA_
-            printf ("\015%s", buffer);
-#else
-            SetStatusLine (_String(buffer));
-#endif
+            if (outFile) {
+                outFile->puts (buffer);
+            } else {
+                printf ("\015%s", buffer);
+            }
         }
 
 
     } else {
         if (outFile) {
-            fprintf (outFile,"DONE");
+            outFile->puts ("DONE");
         } else {
-#ifndef _MINGW32_MEGA_
             printf ("\033\015 ");
             setvbuf (stdout,nil,_IOLBF,1024);
-#endif
         }
     }
     if (outFile) {
-        fclose (outFile);
+        outFile->close();
+        delete (outFile);
     }
 }
 
@@ -5168,7 +5156,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     
 void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_term) {
   
-    FILE * out = doFileOpen ("/tmp/hyphy.dump", "w");
+    hyFile * out = doFileOpen ("/tmp/hyphy.dump", kFileWrite);
   
     _String err ("Internal error ");
   
@@ -5178,8 +5166,9 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_te
       _StringBuffer          sLF (8192L);
       SerializeLF      (sLF,_hyphyLFSerializeModeVanilla);
       sLF.TrimSpace();
-      fwrite ((void*)sLF.get_str(), 1, sLF.length(), out);
-      fclose (out);
+      out->fwrite ((void*)sLF.get_str(), 1, sLF.length());
+      out->close();
+      delete out;
     }
 
     HandleApplicationError (err & '\n' & error, true);
@@ -10581,7 +10570,7 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
 
         if (storeIntermediates && !this_tree->IsDegenerate()) {
           if (storeIntermediates->nonempty()) {
-            FILE * file_for_ancestral_sequences = doFileOpen (storeIntermediates->get_str(),"w");
+            hyFile * file_for_ancestral_sequences = doFileOpen (storeIntermediates->get_str(),kFileWrite);
             if (!file_for_ancestral_sequences) {
               HandleApplicationError (_String ("Failed to open ") & storeIntermediates->Enquote() & " for writing.");
               target.Finalize();
