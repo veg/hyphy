@@ -1972,15 +1972,21 @@ void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds) {
     int  fNS      = CurrentLine.FirstNonSpaceIndex(),
     space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
     
-    // hack for PAML support
-    if (space2 > fNS && isspace(CurrentLine.char_at (space2+1))) {
-        _String     sequence_name (CurrentLine,fNS, space2);
-        CurrentLine.Trim(space2+2,-1); // chop out the name
+    if (space2 < 0 && CurrentLine.length() > 10) {
+        _String     sequence_name (CurrentLine,fNS, CurrentLine.length());
         ds.AddName(sequence_name);
+        CurrentLine.Trim(CurrentLine.length(),-1);
     } else {
-        _String     sequence_name (CurrentLine,fNS, fNS+9);
-        CurrentLine.Trim(fNS+10,-1); // chop out the name
-        ds.AddName(sequence_name);
+        // hack for PAML support
+        if (space2 > fNS && isspace(CurrentLine.char_at (space2+1))) {
+            _String     sequence_name (CurrentLine,fNS, space2);
+            CurrentLine.Trim(space2+2,-1); // chop out the name
+            ds.AddName(sequence_name);
+        } else {
+            _String     sequence_name (CurrentLine,fNS, fNS+9);
+            CurrentLine.Trim(fNS+10,-1); // chop out the name
+            ds.AddName(sequence_name);
+        }
     }
 }
 
