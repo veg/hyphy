@@ -109,7 +109,7 @@
                 case kFileWrite:
                     str_mode = "w";
                     break;
-                case kFileWrite:
+                case kFileWriteBinary:
                     str_mode = "wb";
                     break;
                 case kFileAppend:

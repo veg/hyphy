@@ -98,7 +98,6 @@ class hyFile {
     #endif
     }
         static hyFile* openFile (const char * file_path, hyFileOpenMode mode , bool error = false, bool compress = false, long buffer = 1024*128);
-        inline  bool valid (void) const {return _fileReference != NULL || _fileReferenceDirect != NULL;}
         void lock (void);
         void unlock (void);
         void rewind (void);
@@ -113,9 +112,11 @@ class hyFile {
         size_t tell ();
         int getc ();
     #ifdef __ZLIB__
+        inline  bool valid (void) const {return _fileReference != NULL || _fileReferenceDirect != NULL;}
         gzFile _fileReference;
         FILE * _fileReferenceDirect;
     #else
+        inline  bool valid (void) const {return _fileReference != NULL;}
         FILE* _fileReference;
     #endif
 };
