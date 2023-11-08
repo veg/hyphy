@@ -83,7 +83,7 @@ void    ReadModelList(void) {
     if (templateModelList.empty() == false) return;
 
     _String     modelListFile (GetStandardDirectory (HY_HBL_DIRECTORY_TEMPLATE_MODELS) & "models.lst"),
-                theData (doFileOpen (modelListFile.get_str(),"rb"));
+                theData (doFileOpen (modelListFile.get_str(),kFileReadBinary));
   
     if (theData.nonempty()) {
         _ElementaryCommand::ExtractConditions(theData,0,templateModelList);

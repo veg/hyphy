@@ -77,7 +77,8 @@ _String
 #ifdef      __UNIX__
 
 void        ConsoleBGMStatus (_String const statusLine, hyFloat percentDone, _String const * fileName) {
-    FILE           *outFile = fileName?doFileOpen (fileName->get_str(),"w"):nil;
+    
+    hyFile           *outFile = fileName?doFileOpen (fileName->get_str(),kFileWrite):nil;
     _String        reportLine (statusLine);
 
     if (percentDone >= 0.0) {
@@ -85,20 +86,21 @@ void        ConsoleBGMStatus (_String const statusLine, hyFloat percentDone, _St
     }
 
     if (outFile) {
-        fprintf (outFile,"%s", reportLine.get_str());
+        outFile->puts(reportLine.get_str());
     } else if (verbosity_level == 1) {
         printf ("\033\015 %s", reportLine.get_str());
+        if (percentDone < -1.5) {
+            printf ("\033\015 ");
+            setvbuf (stdout,nil,_IOLBF,1024);
+        } else if (percentDone < -0.5) {
+            setvbuf (stdout,nil, _IONBF,1);
+        }
     }
 
-    if (percentDone < -1.5) {
-        printf ("\033\015 ");
-        setvbuf (stdout,nil,_IOLBF,1024);
-    } else if (percentDone < -0.5) {
-        setvbuf (stdout,nil, _IONBF,1);
-    }
-  
+    
     if (outFile) {
-        fclose (outFile);
+        outFile->close();
+        delete (outFile);
     }
 }
 

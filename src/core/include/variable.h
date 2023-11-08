@@ -69,7 +69,7 @@ public:
     virtual   void          Duplicate (BaseRefConst);
     virtual   BaseRef       makeDynamic(void) const;
     virtual   BaseRef       toStr (unsigned long = 0UL);
-    virtual    void         toFileStr (FILE*, unsigned long = 0UL);
+    virtual    void         toFileStr (hyFile*, unsigned long = 0UL);
 
     virtual   void          MarkDone (void);
 

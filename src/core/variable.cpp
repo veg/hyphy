@@ -167,14 +167,14 @@ BaseRef _Variable::toStr(unsigned long padding)
 }
 
 //__________________________________________________________________________________
-void _Variable::toFileStr(FILE* f, unsigned long padding)
+void _Variable::toFileStr(hyFile* f, unsigned long padding)
 {
     if (varValue&&varValue->IsPrintable()) {
         varValue->toFileStr(f, padding);
     } else {
         HBLObjectRef vv = Compute();
         if (!vv) {
-            fprintf(f,"NAN");
+            f->puts ("NAN");
         } else {
             vv->toFileStr(f, padding);
         }

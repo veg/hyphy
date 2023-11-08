@@ -134,6 +134,7 @@ namespace hy_env {
                               .PushPairCopyKey (data_file_gap_width, new _Constant (10.0))
                               .PushPairCopyKey (accept_branch_lengths, new _Constant (HY_CONSTANT_TRUE))
                               .PushPairCopyKey (number_threads, new _Constant (0.))
+                              .PushPairCopyKey (gzip_compression_level, new _Constant (0.))
 ;
       ;
     }
@@ -221,7 +222,11 @@ _String const
         if set to `harvest_frequencies_gap_options` to TRUE, then N-fold ambigs will add 1/N to each character count in HarvestFrequencies,
         otherwise N-folds are ignored in counting
      */
-    
+    gzip_compression_level                          ("GZIP_COMPRESSION_LEVEL"),
+    /*
+        if __ZLIB__ is present, controls whether or not output files created by fprintf will be compressed by ZLIB;
+        value of 0 means no compresson
+     */
     include_model_spec                              ("INCLUDE_MODEL_SPECS"),
     /*
         controls whether or not export / serialization operations (like toStr)

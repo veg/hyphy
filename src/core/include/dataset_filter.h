@@ -68,7 +68,7 @@ public:
   virtual ~_DataSetFilter(void);
 
   virtual BaseRef toStr(unsigned long = 0UL);          // convert to string
-  virtual void toFileStr(FILE *, unsigned long = 0UL); // convert to string
+  virtual void toFileStr(hyFile *, unsigned long = 0UL); // convert to string
 
   virtual BaseRef makeDynamic(void) const;
   virtual void Duplicate(BaseRefConst);
@@ -397,7 +397,7 @@ protected:
   long dimension;
 
 private:
-  void internalToStr(FILE *, _StringBuffer *);
+  void internalToStr(hyFile *, _StringBuffer *);
   
   
    inline void retrieve_individual_site_from_raw_coordinates (_String & store, unsigned long site, unsigned long sequence) const {

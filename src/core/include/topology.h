@@ -185,7 +185,7 @@ public:
 
     char            rooted;
 
-    virtual void            toFileStr                           (FILE*, unsigned long);
+    virtual void            toFileStr                           (hyFile*, unsigned long);
     virtual BaseRef         toStr                               (unsigned long = 0UL);
     void            RerootTreeInternalTraverser         (node<long>* iterator, long, bool,_StringBuffer&, _TreeTopologyParseSettings const& settings,  hyTopologyBranchLengthMode branch_length_mode, long variable_ref  = -1L, bool = false) const;
 

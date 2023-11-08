@@ -168,7 +168,7 @@ set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPIL
 #-------------------------------------------------------------------------------
 
 set(DEFAULT_WARNING_FLAGS " -w -Weffc++ -Wextra -Wall ")
-set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare -Wno-maybe-uninitialized")
+set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare")
 
 
 

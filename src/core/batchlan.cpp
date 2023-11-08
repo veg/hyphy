@@ -2675,7 +2675,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
             }
             SetStatusLine ("Loading Data");
 
-            df = hyFile::openFile (fName.get_str(),"rb");
+            df = hyFile::openFile (fName.get_str(),kFileReadBinary);
             if (df==nil) {
                 // try reading this file as a string formula
                 fName = GetStringFromFormula ((_String*)parameters(1),chain.nameSpacePrefix);
@@ -2685,7 +2685,7 @@ void      _ElementaryCommand::ExecuteCase5 (_ExecutionList& chain) {
                     return;
                 }
 
-                df = hyFile::openFile (fName.get_str(),"rb");
+                df = hyFile::openFile (fName.get_str(),kFileReadBinary);
                 if (df==nil) {
                      HandleApplicationError ((_String ("Could not find source dataset file ") & ((_String*)parameters(1))->Enquote('"')
                                 & " (resolved to '" & fName & "')\nPath stack:\n\t" & GetPathStack ("\n\t")));
@@ -3208,12 +3208,12 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
         _String spool_file;
 
-        FILE*   main_file = nil;
+        hyFile*   main_file = nil;
 
         if (parameters.countitems () > 6) {
             spool_file = ProcessLiteralArgument (GetIthParameter(6),chain.nameSpacePrefix);
             ProcessFileName(spool_file);
-            main_file = doFileOpen (spool_file,"w");
+            main_file = doFileOpen (spool_file,kFileWrite);
             if (!main_file) {
                 throw (_String("Failed to open ") & spool_file.Enquote() & " for writing");
             }
@@ -3565,7 +3565,7 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         if (terminate_execution) {
             return false;
         }
-        FILE*   theDump = doFileOpen (fName,"rb");
+        hyFile*   theDump = doFileOpen (fName,kFileReadBinary);
         if (!theDump) {
             HandleApplicationError (((_String)("File ")&fName&_String(" couldn't be open for reading.")));
             return false;
@@ -3585,7 +3585,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         } else {
             importResult = false;
         }
-        fclose (theDump);
+        theDump->close();
+        delete (theDump);
         return importResult;
     }
     break;
@@ -5114,7 +5115,7 @@ void    ReadBatchFile (_String& fName, _ExecutionList& target) {
         FetchVar(LocateVarByName (optimizationPrecision))->SetValue(&precvalue);
     #endif*/
 
-    hyFile            *f = hyFile::openFile (fName.get_str (), "rb");
+    hyFile            *f = hyFile::openFile (fName.get_str (), kFileReadBinary);
     SetStatusLine   ("Parsing File");
     if (!f) {
         HandleApplicationError (_String("Could not read batch file '") & fName & "'.\nPath stack:\n\t" & GetPathStack("\n\t"));

@@ -283,6 +283,26 @@ _String::_String(FILE * file, long read_this_many) {
 }
 
 //=============================================================
+_String::_String(hyFile * file, long read_this_many) {
+    _String::Initialize ();
+    if (file) {
+        if (read_this_many < 0) {
+          file->seek (0, SEEK_END);
+          s_length = (unsigned long) file->tell();
+          file->rewind();
+        } else {
+          s_length = read_this_many;
+        }
+        s_data = (char *)MemAllocate(s_length + 1UL);
+        unsigned long read_items = file->read(s_data, 1, s_length);
+        if (read_items < s_length) {
+          s_data = (char*)MemReallocate(s_data,read_items+1);
+          s_length = read_items;
+        }
+        s_data[s_length] = '\0';
+    }
+}
+//=============================================================
 _String::~_String(void) {
     if (CanFreeMe()) {
         if (s_data) {

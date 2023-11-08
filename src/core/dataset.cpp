@@ -82,7 +82,7 @@ _DataSet::_DataSet(long l)
 
 //_______________________________________________________________________
 
-_DataSet::_DataSet(FILE *f) {
+_DataSet::_DataSet(hyFile *f) {
   dsh = nil;
   useHorizontalRep = false;
   theTT = &hy_default_translation_table;
@@ -196,16 +196,17 @@ void _DataSet::AddSite(char c) {
     if (theMap.list_data[0] == 0) {
       if (theMap.list_data[1] == 0) {
         if (theNames.lLength) {
-          fprintf(streamThrough, ">%s\n", ((_String *)theNames(0))->get_str());
+          streamThrough->puts ("(_String *)theNames(0))->get_str()");
+          streamThrough->putc ('\n');
         } else {
-          fprintf(streamThrough, ">Sequence 1\n");
+          streamThrough->puts (">Sequence 1");
         }
         AppendNewInstance(new _String(kEmptyString));
       }
 
       theMap.list_data[1]++;
       theMap.list_data[2]++;
-      fputc(c, streamThrough);
+      streamThrough->putc(c);
     } else {
       HandleApplicationError("Can't add more sites to a file based data set, "
                              "when more that one sequence has been written!",
@@ -235,10 +236,16 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
         theMap.list_data[0]++;
 
         if (theNames.lLength > theMap.list_data[0]) {
-          fprintf(streamThrough, "\n>%s\n",
-                  ((_String *)theNames(theMap.list_data[0]))->get_str());
+            streamThrough->puts ("\n>");
+            streamThrough->puts (((_String *)theNames(theMap.list_data[0]))->get_str());
+            streamThrough->putc ('\n');
         } else {
-          fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] + 1);
+            streamThrough->puts ("\n>");
+            char buffer[64];
+            snprintf (buffer, 64, "%ld", theMap.list_data[0] + 1);
+            streamThrough->puts (buffer);
+            streamThrough->putc ('\n');
+            //fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] + 1);
         }
 
         theMap.list_data[1] = 0;
@@ -254,7 +261,7 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     }
 
     theMap.list_data[1]++;
-    fputc(c, streamThrough);
+    streamThrough->putc(c);
   } else {
     if (useHorizontalRep) {
         long currentWritten = ((_String *)list_data[0])->length();
@@ -386,8 +393,8 @@ void _DataSet::SetTranslationTable(_TranslationTable *newTT) {
 //_______________________________________________________________________
 void _DataSet::Finalize(void) {
   if (streamThrough) {
-    fclose(streamThrough);
-    streamThrough = nil;
+    streamThrough->close();
+    delete (streamThrough);
     theMap.Clear();
   } else {
     if (useHorizontalRep) {
@@ -671,12 +678,17 @@ BaseRef _DataSet::toStr(unsigned long) {
 
 //___________________________________________________
 
-void _DataSet::toFileStr(FILE *dest, unsigned long padding) {
-  fprintf(dest, "%ld species: ", NoOfSpecies());
+void _DataSet::toFileStr(hyFile *dest, unsigned long padding) {
+  char buffer[512];
+  snprintf (buffer, 512, "%ld species: ", NoOfSpecies());
+  dest->puts (buffer);
+    
   theNames.toFileStr(dest, padding);
-
-  fprintf(dest, ";\nTotal Sites: %ld", GetNoTypes());
-  fprintf(dest, ";\nDistinct Sites: %ld", theFrequencies.lLength);
+  snprintf (buffer, 512, ";\nTotal Sites: %ld", GetNoTypes());
+  dest->puts (buffer);
+  
+  snprintf (buffer, 512, ";\nDistinct Sites: %ld", theFrequencies.lLength);
+  dest->puts (buffer);
 
   /*  fprintf (dest,"\n");
       for (long j=0; j<noOfSpecies;j++)

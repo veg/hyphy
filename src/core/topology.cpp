@@ -957,9 +957,9 @@ BaseRef     _TreeTopology::toStr (unsigned long) {
 }
 
 //__________________________________________________________________________________
-void _TreeTopology::toFileStr(FILE* f, unsigned long padding) {
+void _TreeTopology::toFileStr(hyFile * f, unsigned long padding) {
     _String * s = (_String*)toStr(padding);
-    fprintf (f, "%s", s->get_str());
+    f->puts (s->get_str());
     DeleteObject(s);
 }
 

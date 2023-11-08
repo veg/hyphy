@@ -85,8 +85,8 @@ public:
             (default = same as toStr) 
          */
 
-    virtual void toFileStr (FILE *, unsigned long padding = 0UL) ;
-        /** file representation for the object 
+    virtual void toFileStr (hyFile *, unsigned long padding = 0UL) ;
+        /** file representation for the object
             @param padding is used to allow 'pretty' rendering of nested objects, like dictss
          */
     

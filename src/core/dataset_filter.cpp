@@ -1779,7 +1779,7 @@ _String const _DataSetFilter::GenerateConsensusString (bool resolved, _SimpleLis
 
 
   //_________________________________________________________
-void    _DataSetFilter::toFileStr (FILE*dest, unsigned long) {
+void    _DataSetFilter::toFileStr (hyFile *dest, unsigned long) {
     // write out the file with this dataset filter
   if (dest) {
       internalToStr (dest,nil);
@@ -1821,7 +1821,7 @@ void    _DataSetFilter::ConvertCodeToLettersBuffered (long code, unsigned char u
 
   //_________________________________________________________
 
-void    _DataSetFilter::internalToStr (FILE * file ,_StringBuffer * string_buffer) {
+void    _DataSetFilter::internalToStr (hyFile * file ,_StringBuffer * string_buffer) {
   
     //    case 4: // labels, sequential
     //case 5: // labels, interleaved

@@ -39,7 +39,7 @@
 
 #include "string_file_wrapper.h"
 
-StringFileWrapper::StringFileWrapper (_StringBuffer *string, FILE *file) {
+StringFileWrapper::StringFileWrapper (_StringBuffer *string, hyFile *file) {
   string_buffer = string;
   file_buffer = file;
 }
@@ -48,7 +48,7 @@ StringFileWrapper& StringFileWrapper::operator << (const char* buffer) {
   if (string_buffer) {
     *string_buffer << buffer;
   } else if (file_buffer) {
-    fprintf (file_buffer, buffer);
+    file_buffer->puts (buffer);
   }
   return *this;
 }
@@ -57,7 +57,7 @@ StringFileWrapper& StringFileWrapper::operator << (const char letter) {
   if (string_buffer) {
     *string_buffer << letter;
   } else if (file_buffer) {
-    fputc (letter, file_buffer);
+      file_buffer->putc (letter);
   }
   return *this;
 }
@@ -66,7 +66,7 @@ StringFileWrapper& StringFileWrapper::operator << (const _String& buffer) {
   if (string_buffer) {
     *string_buffer << buffer;
   } else if (file_buffer) {
-    fprintf (file_buffer, "%s", (const char*)buffer);
+    file_buffer->puts ((const char*)buffer);
   }
   return *this;
 }
@@ -91,14 +91,14 @@ StringFileWrapper& StringFileWrapper::operator << (const StringFileWrapperConsta
   } else if (file_buffer) {
     switch (special) {
       case kStringFileWrapperNewLine:
-        fputc ('\n', file_buffer);
+        file_buffer->putc ('\n');
         break;
       case kStringFileWrapperLinefeed:
-        fputc ('\r', file_buffer);
-       break;
+        file_buffer->putc ('\r');
+        break;
       case kStringFileWrapperTab:
-        fputc ('\t', file_buffer);
-       break;
+        file_buffer->putc ('\t');
+        break;
     }
   }
   return *this;

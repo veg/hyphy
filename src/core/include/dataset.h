@@ -72,7 +72,7 @@ class _DataSet : public _List // a complete data set
 public:
   _DataSet(void);
   _DataSet(long);
-  _DataSet(FILE *);
+  _DataSet(hyFile *);
   // with estimated number of sites per file
   virtual ~_DataSet(void);
 
@@ -109,7 +109,7 @@ public:
   virtual BaseRef toStr(unsigned long = 0UL);
   // convert to string
 
-  virtual void toFileStr(FILE *dest, unsigned long = 0UL);
+  virtual void toFileStr(hyFile *dest, unsigned long = 0UL);
 
   void Compact(long);
   // release string overhead
@@ -194,7 +194,7 @@ private:
   _TranslationTable *theTT; // translation Table, if any
 
   _List theNames; // Names of species
-  FILE *streamThrough;
+  hyFile *streamThrough;
 
   _DSHelper *dsh;
   bool useHorizontalRep;
