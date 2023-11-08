@@ -197,7 +197,7 @@ void _DataSet::AddSite(char c) {
       if (theMap.list_data[1] == 0) {
         if (theNames.lLength) {
           streamThrough->puts ("(_String *)theNames(0))->get_str()");
-          streamThrough->putc ('\n');
+          streamThrough->fputc ('\n');
         } else {
           streamThrough->puts (">Sequence 1");
         }
@@ -206,7 +206,7 @@ void _DataSet::AddSite(char c) {
 
       theMap.list_data[1]++;
       theMap.list_data[2]++;
-      streamThrough->putc(c);
+      streamThrough->fputc(c);
     } else {
       HandleApplicationError("Can't add more sites to a file based data set, "
                              "when more that one sequence has been written!",
@@ -238,13 +238,13 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
         if (theNames.lLength > theMap.list_data[0]) {
             streamThrough->puts ("\n>");
             streamThrough->puts (((_String *)theNames(theMap.list_data[0]))->get_str());
-            streamThrough->putc ('\n');
+            streamThrough->fputc ('\n');
         } else {
             streamThrough->puts ("\n>");
             char buffer[64];
             snprintf (buffer, 64, "%ld", theMap.list_data[0] + 1);
             streamThrough->puts (buffer);
-            streamThrough->putc ('\n');
+            streamThrough->fputc ('\n');
             //fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] + 1);
         }
 
@@ -261,7 +261,7 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     }
 
     theMap.list_data[1]++;
-    streamThrough->putc(c);
+    streamThrough->fputc(c);
   } else {
     if (useHorizontalRep) {
         long currentWritten = ((_String *)list_data[0])->length();

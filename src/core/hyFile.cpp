@@ -271,7 +271,7 @@
     }
 
     //____________________________________________________________________________________
-    int hyFile::putc( int chr) {
+    int hyFile::fputc( int chr) {
         if (valid()) {
             #ifdef __ZLIB__
                 if (_fileReferenceDirect) {

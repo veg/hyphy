@@ -92,11 +92,12 @@ enum hyFileOpenMode {
 
 class hyFile {
     public:
-    hyFile (void) {_fileReference = NULL;
-    #ifdef __ZLIB__
-        _fileReferenceDirect = NULL;
-    #endif
-    }
+        hyFile (void) {
+            _fileReference = NULL;
+            #ifdef __ZLIB__
+                _fileReferenceDirect = NULL;
+            #endif
+        }
         static hyFile* openFile (const char * file_path, hyFileOpenMode mode , bool error = false, bool compress = false, long buffer = 1024*128);
         void lock (void);
         void unlock (void);
@@ -108,7 +109,7 @@ class hyFile {
         unsigned long read (void* buffer, unsigned long size, unsigned long items);
         size_t fwrite( const void* buffer, size_t size, size_t count);
         int    puts(const char *str);
-        int    putc(int chr);
+        int    fputc(int chr);
         size_t tell ();
         int getc ();
     #ifdef __ZLIB__

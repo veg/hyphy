@@ -57,7 +57,7 @@ StringFileWrapper& StringFileWrapper::operator << (const char letter) {
   if (string_buffer) {
     *string_buffer << letter;
   } else if (file_buffer) {
-      file_buffer->putc (letter);
+      file_buffer->fputc (letter);
   }
   return *this;
 }
@@ -91,13 +91,13 @@ StringFileWrapper& StringFileWrapper::operator << (const StringFileWrapperConsta
   } else if (file_buffer) {
     switch (special) {
       case kStringFileWrapperNewLine:
-        file_buffer->putc ('\n');
+        file_buffer->fputc ('\n');
         break;
       case kStringFileWrapperLinefeed:
-        file_buffer->putc ('\r');
+        file_buffer->fputc ('\r');
         break;
       case kStringFileWrapperTab:
-        file_buffer->putc ('\t');
+        file_buffer->fputc ('\t');
         break;
     }
   }

@@ -8551,9 +8551,9 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, hyFile* theDump)
     for (k=0; k<mxVariables.countitems(); k++) {
         theDump->puts (LocateVar(mxVariables(k))->GetName()->get_str());
         if (k<mxVariables.countitems()-1) {
-            theDump->putc (',');
+            theDump->fputc (',');
         } else {
-            theDump->putc (';');
+            theDump->fputc (';');
         }
         varPool[k]=topPolyCap;
     }

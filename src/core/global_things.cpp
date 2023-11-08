@@ -762,7 +762,7 @@ namespace hy_global {
         }
             
         if (hy_error_log_file) {
-            hy_error_log_file->putc ('\n');
+            hy_error_log_file->fputc ('\n');
             hy_error_log_file->puts ((const char*)message);
         }
             
