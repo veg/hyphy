@@ -116,8 +116,10 @@ class hyFile {
         inline  bool valid (void) const {return _fileReference != NULL || _fileReferenceDirect != NULL;}
         gzFile _fileReference;
         FILE * _fileReferenceDirect;
+        bool    is_compressed (void) const { return _fileReference != NULL;}
     #else
         inline  bool valid (void) const {return _fileReference != NULL;}
+        bool    is_compressed (void) const { return false;}
         FILE* _fileReference;
     #endif
 };

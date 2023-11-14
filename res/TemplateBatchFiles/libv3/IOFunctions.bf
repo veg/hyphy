@@ -179,6 +179,7 @@ lfunction io.SpoolJSON(json, file) {
 lfunction io.ParseJSON(file_path) {
     fscanf(file_path, REWIND, "Raw", test);
     parsed_test = Eval(test);
+    DeleteObject (test);
     return parsed_test;
 }
 

@@ -1988,7 +1988,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
                   if (source_object_class == TREE)
                       node_name = new _FString (map_node_to_calcnode (topTraverser)->ContextFreeName());
                   else
-                      node_name = new _FString (((_TreeTopology*)parameters.GetItem (1))->GetNodeName(topTraverser));
+                      node_name = new _FString (((_TreeTopology*)parameters.GetItem (reciever_count))->GetNodeName(topTraverser));
                         
                   if (reciever_count > 1) {
                       ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue (node_name, false, false,NULL);
@@ -1999,7 +1999,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
                               if (source_object_class == TREE)
                                   parent_name = new _FString (map_node_to_calcnode (parent_node)->ContextFreeName());
                               else
-                                  parent_name = new _FString (((_TreeTopology*)parameters.GetItem (1))->GetNodeName(parent_node));
+                                  parent_name = new _FString (((_TreeTopology*)parameters.GetItem (reciever_count))->GetNodeName(parent_node));
                               ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (parent_name, false, false,NULL);
                           } else {
                               ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _MathObject, false, false,NULL);
@@ -3795,24 +3795,42 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
           last_call_stream_position = 0L;
         }
 
-        input_stream->seek (0,SEEK_END);
-        current_stream_position    = input_stream->tell();
-        current_stream_position   -= last_call_stream_position;
-        
-        if (current_stream_position<=0) {
-          hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
-          input_stream->close();
-          delete (input_stream);
-          return true;
+          _String * file_data = nil;
+          
+          if (input_stream->is_compressed()) {
+            /**
+                20231113 : when the stream is compressed, SEEK_END is not available.
+             */
+             _StringBuffer * file_data_buffer = new _StringBuffer (input_stream);
+              if (file_data_buffer->length() == 0L) {
+                  hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
+                  input_stream->close();
+                  delete (input_stream);
+                  DeleteObject (file_data_buffer);
+                  return true;
+              }
+              file_data = file_data_buffer;
+          } else {
+              input_stream->seek (0,SEEK_END);
+              current_stream_position    = input_stream->tell();
+              current_stream_position   -= last_call_stream_position;
+              
+              if (current_stream_position<=0) {
+                  hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
+                  input_stream->close();
+                  delete (input_stream);
+                  return true;
+              }
+              
+              input_stream->rewind();
+              input_stream->seek  (last_call_stream_position, SEEK_SET);
+              file_data = new _String (input_stream, current_stream_position);
         }
         
-        input_stream->rewind();
-        input_stream->seek  (last_call_stream_position, SEEK_SET);
-        _String * file_data = new _String (input_stream, current_stream_position);
+        input_data = file_data;
         input_stream->close();
         delete (input_stream);
         dynamic_reference_manager < file_data;
-        input_data = file_data;
         current_stream_position = 0L;
       }
     }
