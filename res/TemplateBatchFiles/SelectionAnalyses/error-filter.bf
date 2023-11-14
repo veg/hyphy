@@ -255,6 +255,9 @@ for (s;in;TipName (efilter.T,-1)) {
 }
 
 
+io.ReportProgressMessageMD ("efilter","results","\nMasked a total of **`efilter.total_filtered`** or `Format (efilter.total_filtered/efilter.input[terms.json.sequences]/efilter.input[terms.json.sites]*100,8,3)`% sites");
+
+
 fprintf (stdout, "\n");
 
 KeywordArgument ("output-json", "Write the resulting JSON to this file");
