@@ -3243,7 +3243,6 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
         _Variable * category_names_id          = CheckReceptacle(&rate_variable_names, __PRETTY_FUNCTION__);
         _Matrix*    category_names       = new _Matrix (1,1,false,true);
 
-        SetStatusLine ("Simulating Data");
         { // lf must be deleted before the referenced datafilters
             _LikelihoodFunction lf (filter_specification, nil);
             
@@ -3253,7 +3252,6 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
             */
                         
             lf.Simulate (*sim_dataset, exclusions, category_values, category_names, root_states, do_internals?(main_file?&spool_file:&kEmptyString):nil);
-            SetStatusLine ("Idle");
         }
         
         

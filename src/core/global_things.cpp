@@ -347,9 +347,11 @@ namespace hy_global {
             hy_x_variable = nil;
             hy_n_variable = nil;
             pathNames.Clear();
+#ifdef _USE_EMSCRIPTEN_
             BuiltInFunctions.Clear();
             hyReservedWords.Clear();
             UnOps.Clear();
+#endif
         }
         hy_scanf_last_file_path = kEmptyString;
         EnvVariableSet(random_seed, new _Constant (hy_random_seed), false);
@@ -483,11 +485,13 @@ namespace hy_global {
         _HY_HBLCommandHelper.Clear();
         _HY_ValidHBLExpressions.Clear();
         listOfCompiledFormulae.Clear();
+#ifdef _USE_EMSCRIPTEN_
         _hy_standard_library_paths.Clear();
         _hy_standard_library_extensions.Clear();
         availableTemplateFilesAbbreviations.Clear();
         availableTemplateFiles.Clear();
         availablePostProcessors.Clear();
+#endif
         
         
 #ifdef  __HYPHYMPI__
@@ -829,6 +833,21 @@ namespace hy_global {
       theMessage <<  "MinGW ";// " & __MINGW32_VERSION;
       #endif
     #endif
+#ifdef _SLKP_USE_ARM_NEON
+      theMessage << " ARM Neon SIMD";
+#endif
+#ifdef _SLKP_USE_AVX_INTRINSICS
+      theMessage << " x86 AVX SIMD";
+#endif
+#ifdef _SLKP_USE_FMA3_INTRINSICS
+      theMessage << " with FMA3";
+#endif
+#ifdef _SLKP_USE_SSE_INTRINSICS
+      theMessage << " x86 SSE4 SIMD";
+#endif
+#ifdef __ZLIB__
+      theMessage << " zlib (v" << ZLIB_VERSION << ")";
+#endif
     return theMessage;
   }
   

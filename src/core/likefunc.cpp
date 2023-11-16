@@ -10369,8 +10369,8 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
                 
                 for (unsigned i = 0; i < this_site_count; i++) {
                     for (unsigned long discrete_category_index = 0UL;
-                       discrete_category_index < discrete_category_variables.lLength;
-                       discrete_category_index++) {
+                                       discrete_category_index < discrete_category_variables.lLength;
+                                       discrete_category_index++) {
 
 
                         _CategoryVariable* discrete_cat = GetIthCategoryVar(discrete_category_variables(discrete_category_index));
@@ -10396,8 +10396,6 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
           
           
         while (good_sites < this_site_count) {
-            
-            
           if (category_simulation_mode != kLFSimulateCategoriesNone ) {
 
             for (unsigned long hmm_category_index =0UL;
@@ -10517,9 +10515,11 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
             }
 
 
-            target.ResetIHelper();
-            for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
-              target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
+            if (!target.InternalStorageMode()) {
+              target.ResetIHelper();
+              for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                  target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
+              }
             }
 
             if (storeIntermediates ) {
@@ -10529,9 +10529,11 @@ void    _LikelihoodFunction::StateCounter (long functionCallback) const {
                     for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
                       target.Write2Site (site_offset_raw + leaf_count - sites_per_unit + character_index, simulated_unit (character_index));
                     }
-                    target.ResetIHelper();
-                    for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
-                      target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
+                    if (!target.InternalStorageMode()) {
+                      target.ResetIHelper();
+                      for (unsigned long character_index = 0UL; character_index < sites_per_unit; character_index ++) {
+                          target.Compact(site_offset_raw + leaf_count - sites_per_unit + character_index);
+                      }
                     }
                   }
               } else {

@@ -141,9 +141,8 @@ BaseRef _DataSet::makeDynamic(void) const {
 //_______________________________________________________________________
 
 void _DataSet::ResetIHelper(void) {
-  if (dsh && dsh->characterPositions.lLength == 256)
-    for (long k = 0; k < 256; k++) {
-      dsh->characterPositions.list_data[k] = -1;
+    if (dsh && dsh->characterPositions.lLength == 256) {
+        InitializeArray (dsh->characterPositions.list_data, 256, -1L);
     }
 }
 
@@ -557,44 +556,27 @@ void _DataSet::Finalize(void) {
 void _DataSet::Compact(long index) {
   if (useHorizontalRep) {
     HandleApplicationError(
-        "Internal Error: _DataSet::Compact called with compact represntation",
+        "Internal Error: _DataSet::Compact called on a dataset already using a Compact representation",
         true);
     return;
   }
-
-  _Site *tC = (_Site *)(*(_List *)this)(index);
-  if (tC->GetRefNo() != -1)
+  _Site *tC = (_Site *)GetItem (index);
+  if (tC->GetRefNo() != -1) {
   // take care of double referencing
-  {
     _Site *tCC = tC;
-    long lastRef, count = 0;
+    long lastRef, count = 0L;
     do {
       lastRef = tCC->GetRefNo();
       count++;
-      tCC = (_Site *)(*(_List *)this)(tCC->GetRefNo());
+        tCC = (_Site *)GetItem (tCC->GetRefNo());
     } while (tCC->GetRefNo() != -1);
-    if (count > 1) {
+                        
+    if (count > 1L) {
       theFrequencies[lastRef]++;
     }
 
     tC->SetRefNo(lastRef);
   }
-  /*if (tC->GetRefNo()==-1)
-  {
-   long f = dsh->incompletePatterns->Find(tC);
-   if (f >= 0)
-   {
-          f = dsh->incompletePatterns->GetXtra (f);
-          if (f<index)
-          {
-          theFrequencies[f]++;
-          tC->Clear();
-          tC->SetRefNo(f);
-      }
-      else
-          tC->Finalize();
-   }
-  }*/
 }
 
 //_______________________________________________________________________
