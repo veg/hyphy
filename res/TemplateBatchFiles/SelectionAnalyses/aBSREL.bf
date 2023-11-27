@@ -69,13 +69,11 @@ absrel.display_orders = {terms.original_name: -1,
 absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site random effects likelihood)
                             uses an adaptive random effects branch-site model framework
                             to test whether each branch has evolved under positive selection,
-                            using a procedure which infers an optimal number of rate categories per branch.",
+                            using a procedure which infers an optimal number of rate categories per branch. v2.3 adds support for SRV. v2.5 adds support for ancestral state reconstruction, identification of sites contributing to selection signal, and some diagnostics. ",
                             terms.io.version : "2.5",
                             terms.io.reference : "
                                 Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). 
                                 Mol Biol Evol 32 (5): 1342-1353. v2.2 adds support for multiple-hit models. 
-                                v2.3 adds support for SRV.
-                                v2.5 adds support for ancestral state reconstruction, identification of sites contributing to selection signal, and some diagnostics. 
                             ",
                             terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                             terms.io.contact : "spond@temple.edu",
@@ -576,6 +574,7 @@ absrel.json [terms.json.site_log_likelihood] = {
     terms.json.tested : {}
 };
 
+absrel.distribution_for_json = {};
 absrel._report_srv (absrel.full_model.fit, "Full adaptive model", absrel.likelihood_function_id);
 
 
@@ -616,7 +615,7 @@ selection.io.json_store_lf (absrel.json,
                             absrel.full_model.fit[terms.fit.log_likelihood],
                             absrel.full_model.fit[terms.parameters] + 9 ,
                             absrel.codon_data_info[terms.data.sample_size],
-                            {},
+                            absrel.distribution_for_json,
                             absrel.display_orders[absrel.full_adaptive_model]);
 
 KeywordArgument ("save-fit", "Save full adaptive aBSREL model fit to this file (default is not to save)", "/dev/null");
@@ -784,6 +783,14 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
 
     fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.testing_table.settings));
 }
+
+selection.io.json_store_branch_attribute(absrel.json,
+                                            terms.posterior, 
+                                            terms.json.branch_annotations,
+                                            -1,
+                                             0,
+                                             absrel.branch_site_level_ER);
+
 
 if (Abs (absrel.branch.delta)) {
     selection.io.json_store_branch_attribute(absrel.json, terms.parameters.multiple_hit_rate, terms.json.branch_label, absrel.display_orders[terms.parameters.multiple_hit_rate],
