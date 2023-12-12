@@ -69,11 +69,11 @@ absrel.display_orders = {terms.original_name: -1,
 absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site random effects likelihood)
                             uses an adaptive random effects branch-site model framework
                             to test whether each branch has evolved under positive selection,
-                            using a procedure which infers an optimal number of rate categories per branch. v2.3 adds support for SRV. v2.5 adds support for ancestral state reconstruction, identification of sites contributing to selection signal, and some diagnostics. ",
+                            using a procedure which infers an optimal number of rate categories per branch. v2.2 adds support for multiple-hit models. v2.3 adds support for SRV. v2.5 adds support for ancestral state reconstruction, identification of sites contributing to selection signal, and some diagnostics. ",
                             terms.io.version : "2.5",
                             terms.io.reference : "
                                 Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). 
-                                Mol Biol Evol 32 (5): 1342-1353. v2.2 adds support for multiple-hit models. 
+                                Mol Biol Evol 32 (5): 1342-1353. 
                             ",
                             terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                             terms.io.contact : "spond@temple.edu",
@@ -703,12 +703,12 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
 
     if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
         absrel.report.row [4] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
-        absrel.branch.delta [absrel.current_branch] =  absrel.report.row [3];
+        absrel.branch.delta [absrel.current_branch] =  absrel.report.row [4];
         absrel.offset = 1;
     }
     if (absrel.multi_hit == "Double+Triple") {
         absrel.report.row [5] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.triple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
-        absrel.branch.psi [absrel.current_branch] =  absrel.report.row [4];
+        absrel.branch.psi [absrel.current_branch] =  absrel.report.row [5];
         absrel.offset += 1;
     }
 
