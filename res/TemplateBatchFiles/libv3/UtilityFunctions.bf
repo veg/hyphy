@@ -793,15 +793,15 @@ lfunction utility.Has (d, key, type) {
             return FALSE;
         }
 
-        if (Type (key) == "Matrix") {
-            depth = utility.Array1D (key);
-            current_check = &d;
+         if (Type (key) == "Matrix") {
+             depth = utility.Array1D (key);
+            current_check = d;
             current_key   = key[0];
 
             for (i = 1; i < depth; i += 1) {
-                 if (Eval ("`current_check`/'`current_key`'")) {
-                    current_check = "(" + current_check + ")['`current_key`']";
-                    if (Eval ("Type(`current_check`)") != "AssociativeList") {
+                 if (current_check / current_key) {
+                    current_check = current_check[current_key];
+                    if (Type (current_check) != "AssociativeList") {
                         return FALSE;
                     }
                     current_key = key[i];
@@ -809,13 +809,17 @@ lfunction utility.Has (d, key, type) {
                     return FALSE;
                 }
             }
-
-            if ( Eval ("`current_check`/'`current_key`'") ) {
+            
+    
+            if ( current_check / current_key ) {
+                return_value = current_check[current_key];
                 if (type == None) {
                     return TRUE;
                 }
-                return Eval ("Type((`current_check`)['`current_key`'])") == type;
-            }
+                if (Type (return_value) == type) {
+                    return TRUE;
+                }
+             }
         }
     }
     return FALSE;
@@ -847,24 +851,25 @@ lfunction utility.GetByKey (d, key, type) {
         }
 
         if (Type (key) == "Matrix") {
-            depth = utility.Array1D (key);
-            current_check = &d;
+             depth = utility.Array1D (key);
+            current_check = d;
             current_key   = key[0];
 
             for (i = 1; i < depth; i += 1) {
-                 if (Eval ("`current_check`/'`current_key`'")) {
-                    current_check = "(" + current_check + ")['`current_key`']";
-                    if (Eval ("Type(`current_check`)") != "AssociativeList") {
-                        return FALSE;
+                 if (current_check / current_key) {
+                    current_check = current_check[current_key];
+                    if (Type (current_check) != "AssociativeList") {
+                        return None;
                     }
                     current_key = key[i];
                 } else {
-                    return FALSE;
+                    return None;
                 }
             }
-
-            if ( Eval ("`current_check`/'`current_key`'") ) {
-                return_value = Eval ("(`current_check`)['`current_key`']");
+            
+    
+            if ( current_check / current_key ) {
+                return_value = current_check[current_key];
                 if (type == None) {
                     return return_value;
                 }

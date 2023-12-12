@@ -82,7 +82,7 @@ _DataSet::_DataSet(long l)
 
 //_______________________________________________________________________
 
-_DataSet::_DataSet(FILE *f) {
+_DataSet::_DataSet(hyFile *f) {
   dsh = nil;
   useHorizontalRep = false;
   theTT = &hy_default_translation_table;
@@ -141,9 +141,8 @@ BaseRef _DataSet::makeDynamic(void) const {
 //_______________________________________________________________________
 
 void _DataSet::ResetIHelper(void) {
-  if (dsh && dsh->characterPositions.lLength == 256)
-    for (long k = 0; k < 256; k++) {
-      dsh->characterPositions.list_data[k] = -1;
+    if (dsh && dsh->characterPositions.lLength == 256) {
+        InitializeArray (dsh->characterPositions.list_data, 256, -1L);
     }
 }
 
@@ -196,16 +195,17 @@ void _DataSet::AddSite(char c) {
     if (theMap.list_data[0] == 0) {
       if (theMap.list_data[1] == 0) {
         if (theNames.lLength) {
-          fprintf(streamThrough, ">%s\n", ((_String *)theNames(0))->get_str());
+          streamThrough->puts ("(_String *)theNames(0))->get_str()");
+          streamThrough->fputc ('\n');
         } else {
-          fprintf(streamThrough, ">Sequence 1\n");
+          streamThrough->puts (">Sequence 1");
         }
         AppendNewInstance(new _String(kEmptyString));
       }
 
       theMap.list_data[1]++;
       theMap.list_data[2]++;
-      fputc(c, streamThrough);
+      streamThrough->fputc(c);
     } else {
       HandleApplicationError("Can't add more sites to a file based data set, "
                              "when more that one sequence has been written!",
@@ -235,10 +235,16 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
         theMap.list_data[0]++;
 
         if (theNames.lLength > theMap.list_data[0]) {
-          fprintf(streamThrough, "\n>%s\n",
-                  ((_String *)theNames(theMap.list_data[0]))->get_str());
+            streamThrough->puts ("\n>");
+            streamThrough->puts (((_String *)theNames(theMap.list_data[0]))->get_str());
+            streamThrough->fputc ('\n');
         } else {
-          fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] + 1);
+            streamThrough->puts ("\n>");
+            char buffer[64];
+            snprintf (buffer, 64, "%ld", theMap.list_data[0] + 1);
+            streamThrough->puts (buffer);
+            streamThrough->fputc ('\n');
+            //fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] + 1);
         }
 
         theMap.list_data[1] = 0;
@@ -254,7 +260,7 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     }
 
     theMap.list_data[1]++;
-    fputc(c, streamThrough);
+    streamThrough->fputc(c);
   } else {
     if (useHorizontalRep) {
         long currentWritten = ((_String *)list_data[0])->length();
@@ -386,8 +392,8 @@ void _DataSet::SetTranslationTable(_TranslationTable *newTT) {
 //_______________________________________________________________________
 void _DataSet::Finalize(void) {
   if (streamThrough) {
-    fclose(streamThrough);
-    streamThrough = nil;
+    streamThrough->close();
+    delete (streamThrough);
     theMap.Clear();
   } else {
     if (useHorizontalRep) {
@@ -550,44 +556,27 @@ void _DataSet::Finalize(void) {
 void _DataSet::Compact(long index) {
   if (useHorizontalRep) {
     HandleApplicationError(
-        "Internal Error: _DataSet::Compact called with compact represntation",
+        "Internal Error: _DataSet::Compact called on a dataset already using a Compact representation",
         true);
     return;
   }
-
-  _Site *tC = (_Site *)(*(_List *)this)(index);
-  if (tC->GetRefNo() != -1)
+  _Site *tC = (_Site *)GetItem (index);
+  if (tC->GetRefNo() != -1) {
   // take care of double referencing
-  {
     _Site *tCC = tC;
-    long lastRef, count = 0;
+    long lastRef, count = 0L;
     do {
       lastRef = tCC->GetRefNo();
       count++;
-      tCC = (_Site *)(*(_List *)this)(tCC->GetRefNo());
+        tCC = (_Site *)GetItem (tCC->GetRefNo());
     } while (tCC->GetRefNo() != -1);
-    if (count > 1) {
+                        
+    if (count > 1L) {
       theFrequencies[lastRef]++;
     }
 
     tC->SetRefNo(lastRef);
   }
-  /*if (tC->GetRefNo()==-1)
-  {
-   long f = dsh->incompletePatterns->Find(tC);
-   if (f >= 0)
-   {
-          f = dsh->incompletePatterns->GetXtra (f);
-          if (f<index)
-          {
-          theFrequencies[f]++;
-          tC->Clear();
-          tC->SetRefNo(f);
-      }
-      else
-          tC->Finalize();
-   }
-  }*/
 }
 
 //_______________________________________________________________________
@@ -671,12 +660,17 @@ BaseRef _DataSet::toStr(unsigned long) {
 
 //___________________________________________________
 
-void _DataSet::toFileStr(FILE *dest, unsigned long padding) {
-  fprintf(dest, "%ld species: ", NoOfSpecies());
+void _DataSet::toFileStr(hyFile *dest, unsigned long padding) {
+  char buffer[512];
+  snprintf (buffer, 512, "%ld species: ", NoOfSpecies());
+  dest->puts (buffer);
+    
   theNames.toFileStr(dest, padding);
-
-  fprintf(dest, ";\nTotal Sites: %ld", GetNoTypes());
-  fprintf(dest, ";\nDistinct Sites: %ld", theFrequencies.lLength);
+  snprintf (buffer, 512, ";\nTotal Sites: %ld", GetNoTypes());
+  dest->puts (buffer);
+  
+  snprintf (buffer, 512, ";\nDistinct Sites: %ld", theFrequencies.lLength);
+  dest->puts (buffer);
 
   /*  fprintf (dest,"\n");
       for (long j=0; j<noOfSpecies;j++)
@@ -1972,15 +1966,21 @@ void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds) {
     int  fNS      = CurrentLine.FirstNonSpaceIndex(),
     space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
     
-    // hack for PAML support
-    if (space2 > fNS && isspace(CurrentLine.char_at (space2+1))) {
-        _String     sequence_name (CurrentLine,fNS, space2);
-        CurrentLine.Trim(space2+2,-1); // chop out the name
+    if (space2 < 0 && CurrentLine.length() > 10) {
+        _String     sequence_name (CurrentLine,fNS, CurrentLine.length());
         ds.AddName(sequence_name);
+        CurrentLine.Trim(CurrentLine.length(),-1);
     } else {
-        _String     sequence_name (CurrentLine,fNS, fNS+9);
-        CurrentLine.Trim(fNS+10,-1); // chop out the name
-        ds.AddName(sequence_name);
+        // hack for PAML support
+        if (space2 > fNS && isspace(CurrentLine.char_at (space2+1))) {
+            _String     sequence_name (CurrentLine,fNS, space2);
+            CurrentLine.Trim(space2+2,-1); // chop out the name
+            ds.AddName(sequence_name);
+        } else {
+            _String     sequence_name (CurrentLine,fNS, fNS+9);
+            CurrentLine.Trim(fNS+10,-1); // chop out the name
+            ds.AddName(sequence_name);
+        }
     }
 }
 

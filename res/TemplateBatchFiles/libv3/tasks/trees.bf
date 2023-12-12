@@ -4,6 +4,7 @@ LoadFunctionLibrary("../convenience/regexp.bf");
 LoadFunctionLibrary("../UtilityFunctions.bf");
 LoadFunctionLibrary("TreeTools");
 LoadFunctionLibrary("distances.bf");
+LoadFunctionLibrary("../convenience/regexp.bf");
 
 /** @module trees */
 
@@ -371,39 +372,47 @@ lfunction trees.branch_names(tree, respect_case) {
  */
  
 lfunction trees.extract_paml_annotation (tree_string) {
-
-    pieces = regexp.SplitWithMatches (tree_string, "\$([0-9])");
+ 
+    pieces = regexp.SplitWithMatches (tree_string, "\$[0-9]+");
     N =  utility.Array1D (pieces[^("terms.regexp.separators")]);
     
     has_paml_clades = N > 0;
     sanitized_string = "";
     if (N > 0) {    
-        for (i,s; in; pieces[^("terms.regexp.strings")]) {
-            sanitized_string += s;
-            if (+i > 0) {
-                sanitized_string += "{" + regexp.Replace ((pieces[^("terms.regexp.separators")])[-1+i], "\$", "PAML_CLADE_") + "}";
+        for (i = 0; i <= N; i+=1) {
+            sanitized_string += (pieces[^("terms.regexp.strings")])[i];
+            if (i < N) {
+                sanitized_string += "{" + regexp.Replace ((pieces[^("terms.regexp.separators")])[i], "\$", "PAML_CLADE_") + "}";
             }
         }
+    } else {
+        sanitized_string = tree_string;  
     }
     
-    pieces = regexp.SplitWithMatches (sanitized_string, "\#([0-9])");
+    
+    pieces = regexp.SplitWithMatches (sanitized_string, "\#[0-9]+");
     N =  utility.Array1D (pieces[^("terms.regexp.separators")]);
     
     if (N > 0) {    
-        for (i,s; in; pieces[^("terms.regexp.strings")]) {
-            sanitized_string += s;
-            if (+i > 0) {
-                sanitized_string += "{" + regexp.Replace ((pieces[^("terms.regexp.separators")])[-1+i], "\#", "PAML_GROUP_") + "}";
+        sanitized_string = "";
+        for (i = 0; i <= N; i+=1) {
+            sanitized_string += (pieces[^("terms.regexp.strings")])[i];
+            if (i < N) {
+                sanitized_string += "{" + regexp.Replace ((pieces[^("terms.regexp.separators")])[i], "\#", "PAML_GROUP_") + "}";
             }
         }
     }
     
+              
     if (Abs (sanitized_string) == 0) {
         sanitized_string = tree_string;
     } 
     
+    utility.ToggleEnvVariable ("IGNORE_INTERNAL_NODE_LABELS", TRUE);  
     result = trees.ExtractTreeInfo (sanitized_string);
-    
+    utility.ToggleEnvVariable ("IGNORE_INTERNAL_NODE_LABELS", None);  
+ 
+ 
     if (has_paml_clades) {
         additional_annotation = {};    
         tree_str = result[^"terms.trees.newick"];
@@ -416,6 +425,8 @@ lfunction trees.extract_paml_annotation (tree_string) {
                 }
             }
         }
+        
+        
         result[^"terms.trees.model_map"] * additional_annotation;
         result[^"terms.trees.model_list"] = Columns(result[^"terms.trees.model_map"]);
         result[^"terms.trees.newick_annotated"] = tree.Annotate (&T, result[^"terms.trees.model_map"], "{}", FALSE);
@@ -584,6 +595,7 @@ lfunction trees.ExtractTreeInfo(tree_string) {
     Topology T = tree_string;
     res = trees.ExtractTreeInfoFromTopology (&T);
     res [^"terms.data.file"] = file_name;
+    DeleteObject (T);
     return res;
 
 }

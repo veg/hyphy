@@ -402,7 +402,7 @@ class _List:public _SimpleList {
 
         /**
         */
-        virtual void toFileStr(FILE*, unsigned long = 0UL);
+        virtual void toFileStr(hyFile*, unsigned long = 0UL);
   
         /**
          Generate a string that is not present in the list.

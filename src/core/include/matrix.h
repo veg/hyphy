@@ -407,7 +407,7 @@ public:
 
     virtual     BaseRef     toStr       (unsigned long = 0UL);       // convert this matrix to a string
 
-    virtual     void        toFileStr   (FILE*dest, unsigned long = 0UL);
+    virtual     void        toFileStr   (hyFile *dest, unsigned long = 0UL);
 
     bool        AmISparse               (void);
 
@@ -428,8 +428,8 @@ public:
 
     bool        CompareMatrices         (_Matrix const* rhs, hyFloat tolerance = kMachineEpsilon) const;
     
-    void        ExportMatrixExp         (_Matrix*, FILE*);
-    bool        ImportMatrixExp         (FILE*);
+    void        ExportMatrixExp         (_Matrix*, hyFile*);
+    bool        ImportMatrixExp         (hyFile*);
 
     hyFloat  FisherExact             (hyFloat, hyFloat, hyFloat);
 
@@ -627,7 +627,7 @@ public:
 
 private:
 
-    void     internal_to_str (_StringBuffer*, FILE*, unsigned long padding);
+    void     internal_to_str (_StringBuffer*, hyFile*, unsigned long padding);
     void     SetupSparseMatrixAllocations (void);
     bool     is_square_numeric   (bool dense = true) const;
     

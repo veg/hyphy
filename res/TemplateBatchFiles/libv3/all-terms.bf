@@ -333,6 +333,8 @@ namespace terms{
         proportion            = "proportion";
         positive              = "positive test results";
         imputed_states        = "Imputed States";
+        site_log_likelihood   = "Site Log Likelihood";
+        unconstrained         = "unconstrained";
     }
 
 

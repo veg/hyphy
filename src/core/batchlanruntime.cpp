@@ -1988,7 +1988,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
                   if (source_object_class == TREE)
                       node_name = new _FString (map_node_to_calcnode (topTraverser)->ContextFreeName());
                   else
-                      node_name = new _FString (((_TreeTopology*)parameters.GetItem (1))->GetNodeName(topTraverser));
+                      node_name = new _FString (((_TreeTopology*)parameters.GetItem (reciever_count))->GetNodeName(topTraverser));
                         
                   if (reciever_count > 1) {
                       ((_Variable*)parameters.GetItem (reciever_count+2))->SetValue (node_name, false, false,NULL);
@@ -1999,7 +1999,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
                               if (source_object_class == TREE)
                                   parent_name = new _FString (map_node_to_calcnode (parent_node)->ContextFreeName());
                               else
-                                  parent_name = new _FString (((_TreeTopology*)parameters.GetItem (1))->GetNodeName(parent_node));
+                                  parent_name = new _FString (((_TreeTopology*)parameters.GetItem (reciever_count))->GetNodeName(parent_node));
                               ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (parent_name, false, false,NULL);
                           } else {
                               ((_Variable*)parameters.GetItem (reciever_count+1))->SetValue (new _MathObject, false, false,NULL);
@@ -2728,7 +2728,7 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
   success                  = true;
 
 
-  FILE*    destination_file = nil;
+  hyFile *    destination_file = nil;
 
   try {
 
@@ -2775,10 +2775,17 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
         do_close = open_handle < 0;
 
         if (!do_close) {
-          destination_file = (FILE*)open_file_handles.GetXtra (open_handle);
+          destination_file = (hyFile*)open_file_handles.GetXtra (open_handle);
         } else {
-          if ((destination_file = doFileOpen (destination.get_str(), "a")) == nil)
-            throw  (_String  ("Could not create/open output file at path ") & destination.Enquote() & ".");
+    #ifdef __ZLIB__
+            if ((destination_file = doFileOpen (destination.get_str(), kFileAppend, false, hy_env::EnvVariableGetNumber(hy_env::gzip_compression_level) > 0)) == nil) {
+                throw  (_String  ("Could not create/open output file at path ") & destination.Enquote() & ".");
+            }
+    #else
+            if ((destination_file = doFileOpen (destination.get_str(), kFileAppend)) == nil) {
+                throw  (_String  ("Could not create/open output file at path ") & destination.Enquote() & ".");
+            }
+    #endif
         }
       }
     }
@@ -2791,8 +2798,13 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
         // handle special cases first
       if (*current_argument == kFprintfClearFile) {
         if (!print_to_stdout && destination_file) {
-          fclose (destination_file);
-          destination_file = doFileOpen (destination.get_str(), "w");
+          destination_file->close(); delete destination_file;
+#ifdef __ZLIB__
+            destination_file = doFileOpen (destination.get_str(), kFileWrite,false, hy_env::EnvVariableGetNumber(hy_env::gzip_compression_level) > 0);
+#else
+            destination_file = doFileOpen (destination.get_str(), kFileWrite);
+#endif
+            
             if (!do_close) {
               _String* destination_copy = new _String (destination);
             
@@ -2860,7 +2872,8 @@ bool      _ElementaryCommand::HandleFprintf (_ExecutionList& current_program) {
   }
 
   if (destination_file && destination_file != hy_message_log_file && do_close) {
-    fclose (destination_file);
+      destination_file->close();
+      delete destination_file;
   }
 
   return success;
@@ -2901,7 +2914,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             }
             _String original_path (file_path);
 
-            FILE * source_file = nil;
+            hyFile * source_file = nil;
             
             bool        reload          = hy_env::EnvVariableTrue(hy_env::always_reload_libraries);
             
@@ -2920,7 +2933,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                             ReportWarning (_String("Already loaded ") & original_path.Enquote() & " from " & try_path);
                             return true;
                         }
-                        if ((source_file = doFileOpen (try_path.get_str (), "rb"))) {
+                        if ((source_file = doFileOpen (try_path.get_str (), kFileReadBinary))) {
                             file_path = try_path;
                             break;
                         }
@@ -2939,7 +2952,7 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
                     return true;
                 }
                 
-                if ((source_file = doFileOpen (file_path.get_str (), "rb")) == nil) {
+                if ((source_file = doFileOpen (file_path.get_str (), kFileReadBinary)) == nil) {
                     throw (_String("Could not read command file from '") &
                            original_path & "' (expanded to '" & file_path & "')");
                 }
@@ -2952,10 +2965,13 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             
             source_code = new _StringBuffer (source_file);
             
-            if (fclose       (source_file) ) { // failed to fclose
+            if (source_file->close() ) { // failed to fclose
                 DeleteObject (source_code);
                 throw (_String("Internal error: failed in a call to fclose ") & file_path.Enquote());
             }
+            
+            delete (source_file);
+            
             pop_path = true;
             PushFilePath (file_path);
         } else { // commands are not loaded from a file
@@ -3324,7 +3340,8 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
     static const _String kVersionString                   ("HYPHY_VERSION"),
                          kTimeStamp                       ("TIME_STAMP"),
                          kListLoadedLibraries             ("LIST_OF_LOADED_LIBRARIES"),
-                         kGetNumberOfMatrixExp            ("MATRIX_EXPONENTIALS_COMPUTED");
+                         kGetNumberOfMatrixExp            ("MATRIX_EXPONENTIALS_COMPUTED"),
+                         kCanCompressFiles                ("ZLIB_ENABLED");
 
 
     _Variable * receptacle = nil;
@@ -3358,7 +3375,13 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
         return_value = new _Matrix (loadedLibraryPaths.Keys());
       } else if (*GetIthParameter(1UL) == kGetNumberOfMatrixExp) {
           return_value = new _Constant (matrix_exp_count);
-        }
+      } else if (*GetIthParameter(1UL) == kCanCompressFiles) {
+#ifdef __ZLIB__
+          return_value = new _Constant (1.);
+#else
+          return_value = new _Constant (0.);
+#endif
+      }
 
       if (!return_value) {
 
@@ -3743,11 +3766,11 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
               return false;
          }
         
-        FILE * input_stream = doFileOpen (file_path.get_str(), "rb");
+        hyFile * input_stream = doFileOpen (file_path.get_str(), kFileReadBinary);
         hy_env::EnvVariableSet(hy_env::file_created, new HY_CONSTANT_FALSE, false);
         if (!input_stream) {
             if (has_create) {
-                input_stream = doFileOpen (file_path.get_str(), "wb");
+                input_stream = doFileOpen (file_path.get_str(), kFileWriteBinary);
                 if (input_stream){
                     while (argument_index < upper_bound) {
                       _Variable * store_here = _ValidateStorageVariable (current_program, argument_index + 1UL);
@@ -3772,22 +3795,42 @@ bool      _ElementaryCommand::HandleFscanf (_ExecutionList& current_program, boo
           last_call_stream_position = 0L;
         }
 
-        fseek (input_stream,0,SEEK_END);
-        current_stream_position    = ftell (input_stream);
-        current_stream_position   -= last_call_stream_position;
-        
-        if (current_stream_position<=0) {
-          hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
-          fclose(input_stream);
-          return true;
+          _String * file_data = nil;
+          
+          if (input_stream->is_compressed()) {
+            /**
+                20231113 : when the stream is compressed, SEEK_END is not available.
+             */
+             _StringBuffer * file_data_buffer = new _StringBuffer (input_stream);
+              if (file_data_buffer->length() == 0L) {
+                  hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
+                  input_stream->close();
+                  delete (input_stream);
+                  DeleteObject (file_data_buffer);
+                  return true;
+              }
+              file_data = file_data_buffer;
+          } else {
+              input_stream->seek (0,SEEK_END);
+              current_stream_position    = input_stream->tell();
+              current_stream_position   -= last_call_stream_position;
+              
+              if (current_stream_position<=0) {
+                  hy_env::EnvVariableSet(hy_env::end_of_file, new HY_CONSTANT_TRUE, false);
+                  input_stream->close();
+                  delete (input_stream);
+                  return true;
+              }
+              
+              input_stream->rewind();
+              input_stream->seek  (last_call_stream_position, SEEK_SET);
+              file_data = new _String (input_stream, current_stream_position);
         }
         
-        rewind (input_stream);
-        fseek  (input_stream, last_call_stream_position, SEEK_SET);
-        _String * file_data = new _String (input_stream, current_stream_position);
-        fclose (input_stream);
-        dynamic_reference_manager < file_data;
         input_data = file_data;
+        input_stream->close();
+        delete (input_stream);
+        dynamic_reference_manager < file_data;
         current_stream_position = 0L;
       }
     }

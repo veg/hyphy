@@ -268,6 +268,7 @@ public:
                    specifically); also added a check that the # of chars read
                    was the same as the one requested.
    */
+  _String(hyFile *file, long read_this_many = -1L);
   _String(FILE *file, long read_this_many = -1L);
 
   /**

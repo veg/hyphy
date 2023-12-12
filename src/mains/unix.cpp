@@ -283,10 +283,10 @@ void    ReadInTemplateFiles(void) {
     _String dir_sep (get_platform_directory_char()),
             fileIndex = *((_String*)pathNames(0)) & hy_standard_library_directory & dir_sep & "files.lst";
   
-    FILE* modelList = fopen (fileIndex.get_str(),"r");
+    hyFile * modelList = doFileOpen (fileIndex.get_str(),kFileRead, false);
     if (!modelList) {
         fileIndex = baseArgDir& hy_standard_library_directory & dir_sep & "files.lst";
-        modelList = fopen (fileIndex.get_str(),"r");
+        modelList = doFileOpen (fileIndex.get_str(),kFileRead, false);
         if (!modelList) {
             return;
         }
@@ -295,7 +295,8 @@ void    ReadInTemplateFiles(void) {
     }
 
     _String theData (modelList);
-    fclose (modelList);
+    modelList->close();
+    delete (modelList);
     
     if (theData.length()) {
         _List extracted_files;

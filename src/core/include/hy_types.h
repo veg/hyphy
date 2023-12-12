@@ -40,6 +40,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef     __HY_TYPES__
 #define     __HY_TYPES__
 
+#ifdef __ZLIB__
+    #include <zlib.h>
+#endif
+
+#include <stdio.h>
+
 /**
     Put application-wide typedefs and enums here
 */
@@ -75,6 +81,47 @@ enum hyComparisonType {
     kCompareUndefined      = 0xff
 };
 
+enum hyFileOpenMode {
+    kFileRead,
+    kFileReadBinary,
+    kFileReadWrite,
+    kFileWrite,
+    kFileWriteBinary,
+    kFileAppend
+};
 
+class hyFile {
+    public:
+        hyFile (void) {
+            _fileReference = NULL;
+            #ifdef __ZLIB__
+                _fileReferenceDirect = NULL;
+            #endif
+        }
+        static hyFile* openFile (const char * file_path, hyFileOpenMode mode , bool error = false, bool compress = false, long buffer = 1024*128);
+        void lock (void);
+        void unlock (void);
+        void rewind (void);
+        void seek (long, int);
+        void flush (void);
+        int  close ();
+        bool feof (void);
+        unsigned long read (void* buffer, unsigned long size, unsigned long items);
+        size_t fwrite( const void* buffer, size_t size, size_t count);
+        int    puts(const char *str);
+        int    fputc(int chr);
+        size_t tell ();
+        int getc ();
+    #ifdef __ZLIB__
+        inline  bool valid (void) const {return _fileReference != NULL || _fileReferenceDirect != NULL;}
+        gzFile _fileReference;
+        FILE * _fileReferenceDirect;
+        bool    is_compressed (void) const { return _fileReference != NULL;}
+    #else
+        inline  bool valid (void) const {return _fileReference != NULL;}
+        bool    is_compressed (void) const { return false;}
+        FILE* _fileReference;
+    #endif
+};
 
 #endif

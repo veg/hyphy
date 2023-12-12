@@ -57,9 +57,7 @@
     #include <mpi.h>
 #endif
 
-#ifdef __ZLIB__
-    #include <zlib.h>
-#endif
+
 
 class _Variable; // forward decl
 class _ExecutionList; // forward decl
@@ -129,26 +127,7 @@ namespace hy_global {
 
   /* pass-through structure for reading / writing from a file that may or may not be compressed */
 
-  class hyFile {
-  public:
-      hyFile (void) {_fileReference = NULL;}
-      static hyFile* openFile (const char * file_path, const char * mode , bool error = false, long buffer = 1024*128);
-      inline  bool valid (void) const {return _fileReference != NULL;}
-      void lock (void);
-      void unlock (void);
-      void rewind (void);
-      void seek (long, int);
-      void close ();
-      bool feof (void);
-      unsigned long read (void* buffer, unsigned long size, unsigned long items);
-      size_t tell ();
-      int getc ();
-#ifdef __ZLIB__
-      gzFile _fileReference;
-#else
-      FILE* _fileReference;
-#endif
-  };
+  
 
   /**
    Open the file located at file_path using mode 'mode'
@@ -159,7 +138,7 @@ namespace hy_global {
    
    @return the FILE handle or nil (if file does not exist or could not be open with the requested mode)
    */
-  FILE*   doFileOpen                (const char * file_path, const char * mode , bool error = false);
+  hyFile*   doFileOpen                (const char * file_path, hyFileOpenMode mode , bool error = false, bool compress = false);
   
   /**
    The omnibus clean-up function that attempts to deallocate all application memory
@@ -300,7 +279,7 @@ namespace hy_global {
   extern  _List     _hy_standard_library_extensions,
   _hy_standard_library_paths;
   
-  extern  FILE*     hy_error_log_file,
+  extern  hyFile*     hy_error_log_file,
   *     hy_message_log_file;
   
   

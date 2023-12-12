@@ -1,4 +1,4 @@
-RequireVersion ("2.5.8");
+RequireVersion ("2.5.57");
 
 LoadFunctionLibrary("libv3/all-terms.bf"); // must be loaded before CF3x4
 
@@ -10,6 +10,7 @@ LoadFunctionLibrary("libv3/tasks/estimators.bf");
 LoadFunctionLibrary("libv3/tasks/alignments.bf");
 LoadFunctionLibrary("libv3/tasks/mpi.bf");
 LoadFunctionLibrary("libv3/tasks/trees.bf");
+LoadFunctionLibrary("libv3/tasks/ancestral.bf");
 LoadFunctionLibrary("libv3/models/rate_variation.bf");
 
 LoadFunctionLibrary("modules/io_functions.ibf");
@@ -68,12 +69,16 @@ absrel.display_orders = {terms.original_name: -1,
 absrel.analysis_description = {terms.io.info : "aBSREL (Adaptive branch-site random effects likelihood)
                             uses an adaptive random effects branch-site model framework
                             to test whether each branch has evolved under positive selection,
-                            using a procedure which infers an optimal number of rate categories per branch.",
-                            terms.io.version : "2.3",
-                            terms.io.reference : "Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). Mol Biol Evol 32 (5): 1342-1353. v2.2 adds support for multiple-hit models. v2.3 adds support for SRV",
+                            using a procedure which infers an optimal number of rate categories per branch. v2.2 adds support for multiple-hit models. v2.3 adds support for SRV. v2.5 adds support for ancestral state reconstruction, identification of sites contributing to selection signal, and some diagnostics. ",
+                            terms.io.version : "2.5",
+                            terms.io.reference : "
+                                Less Is More: An Adaptive Branch-Site Random Effects Model for Efficient Detection of Episodic Diversifying Selection (2015). 
+                                Mol Biol Evol 32 (5): 1342-1353. 
+                            ",
                             terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution group",
                             terms.io.contact : "spond@temple.edu",
-                            terms.io.requirements : "in-frame codon alignment and a phylogenetic tree"
+                            terms.io.requirements : "in-frame codon alignment and a phylogenetic tree",
+                            terms.settings : {}
                           };
 
 
@@ -119,6 +124,8 @@ absrel.multi_hit = io.SelectAnOption ({
                                   }, "Include support for multiple nucleotide substitutions");
 
 
+selection.io.json_store_setting  (absrel.json, "multiple-hit", absrel.multi_hit);
+
 KeywordArgument ("srv", "Include synonymous rate variation", "No");          
                           
 absrel.srv = io.SelectAnOption (
@@ -140,6 +147,7 @@ if (absrel.do_srv) {
     absrel.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", absrel.synonymous_rate_classes, 1, 10, TRUE);
 }  
 
+selection.io.json_store_setting  (absrel.json, "srv", absrel.do_srv);
 
 
 KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'ABSREL.json')", absrel.codon_data_info [terms.json.json]);
@@ -554,6 +562,19 @@ io.ReportProgressMessageMD("absrel", "Full adaptive model", "* " + selection.io.
 
 selection.io.stopTimer (absrel.json [terms.json.timers], "Full adaptive model fitting");
 
+
+absrel.json [terms.substitutions] = {};
+
+absrel.ancestral_info = ancestral.build (absrel.likelihood_function_id,0,FALSE);
+(absrel.json [terms.substitutions] )[0] = ancestral.ComputeCompressedSubstitutions (absrel.ancestral_info);
+DeleteObject (absrel.ancestral_info);
+
+absrel.json [terms.json.site_log_likelihood] = {
+    terms.json.unconstrained : absrel.ComputeSiteLikelihoods (absrel.likelihood_function_id),
+    terms.json.tested : {}
+};
+
+absrel.distribution_for_json = {};
 absrel._report_srv (absrel.full_model.fit, "Full adaptive model", absrel.likelihood_function_id);
 
 
@@ -594,7 +615,7 @@ selection.io.json_store_lf (absrel.json,
                             absrel.full_model.fit[terms.fit.log_likelihood],
                             absrel.full_model.fit[terms.parameters] + 9 ,
                             absrel.codon_data_info[terms.data.sample_size],
-                            {},
+                            absrel.distribution_for_json,
                             absrel.display_orders[absrel.full_adaptive_model]);
 
 KeywordArgument ("save-fit", "Save full adaptive aBSREL model fit to this file (default is not to save)", "/dev/null");
@@ -612,38 +633,41 @@ if (absrel.multi_hit == "Double") {
                     "0": 35,
                     "1": 10,
                     "2": 20,
-                    "3": 12,
-                    "4": 20,
-                    "5": 20,
-                    },
-                    terms.number_precision : 2};
-
-        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "2x rate", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
-} else {
-    if (absrel.multi_hit == "Double+Triple") {
-        absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
-                    "0": 35,
-                    "1": 10,
-                    "2": 20,
-                    "3": 12,
+                    "3": 18,
                     "4": 12,
                     "5": 20,
                     "6": 20,
                     },
                     terms.number_precision : 2};
 
-        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "2x rate","3x rate", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Sites @ EBF>=100", "2x rate", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+} else {
+    if (absrel.multi_hit == "Double+Triple") {
+        absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
+                    "0": 35,
+                    "1": 10,
+                    "2": 20,
+                    "3" :18,
+                    "4": 12,
+                    "5": 12,
+                    "6": 20,
+                    "7": 20,
+                    },
+                    terms.number_precision : 2};
+
+        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Sites @ EBF>=100", "2x rate","3x rate", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
     } else {
         absrel.testing_table.settings = {terms.table_options.header : TRUE, terms.table_options.column_widths: {
                     "0": 35,
                     "1": 10,
                     "2": 20,
-                    "3": 20,
+                    "3": 18,
                     "4": 20,
+                    "5": 20,
                     },
                     terms.number_precision : 2};
 
-        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
+        fprintf (stdout, "\n", io.FormatTableRow ({{"Branch", "Rates", "Max. dN/dS", "Sites @ EBF>=100", "Test LRT", "Uncorrected p-value"}}, absrel.testing_table.settings));
     }
 
 }
@@ -655,6 +679,8 @@ absrel.branch.p_values                                        = {};
 absrel.branch.lrt                                             = {};
 absrel.branch.delta                                           = {};
 absrel.branch.psi                                             = {};
+
+absrel.branch_site_level_ER                                   = {};
 
 for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch_id += 1) {
     absrel.current_branch           = absrel.names_sorted_by_length[absrel.branch_id];
@@ -670,46 +696,101 @@ for (absrel.branch_id = 0; absrel.branch_id < absrel.branch_count; absrel.branch
     } else {
         absrel.report.row [2] = ">1000 (" + Format (absrel.dn_ds.distro[absrel.branch.complexity[absrel.current_branch]-1][1]*100,5,2) + "%)";
     }
+    absrel.report.row [3] = "N/A";
 
     absrel.offset = 0;
     absrel.final_estimates = absrel.GetBranchEstimates(absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
 
     if (absrel.multi_hit == "Double" || absrel.multi_hit == "Double+Triple") {
-        absrel.report.row [3] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
-        absrel.branch.delta [absrel.current_branch] =  absrel.report.row [3];
+        absrel.report.row [4] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.multiple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
+        absrel.branch.delta [absrel.current_branch] =  absrel.report.row [4];
         absrel.offset = 1;
     }
     if (absrel.multi_hit == "Double+Triple") {
-        absrel.report.row [4] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.triple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
-        absrel.branch.psi [absrel.current_branch] =  absrel.report.row [4];
+        absrel.report.row [5] = (absrel.final_estimates[utility.getGlobalValue ("terms.parameters.triple_hit_rate")])[utility.getGlobalValue ("terms.fit.MLE")];
+        absrel.branch.psi [absrel.current_branch] =  absrel.report.row [5];
         absrel.offset += 1;
     }
 
 
     if ((absrel.selected_branches[0])[absrel.current_branch] == terms.tree_attributes.test) {
         if (absrel.dn_ds.distro [absrel.branch.complexity[absrel.current_branch]-1][0] > 1) {
+        
+            absrel.branch_mixtures = absrel.branch.GetMixtureParameters (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
+            
+            // stash the weights
+            if (None != absrel.branch_mixtures) {
+                 absrel.mixture_stash = {};
+                 
+                 LFCompute (^absrel.likelihood_function_id,LF_START_COMPUTE);
+                 
+                 absrel.cat_count = utility.Array1D (absrel.branch_mixtures) + 1;
+                 absrel.weights = {1,  absrel.cat_count - 1 };
+                 for (absrel.i, v; in; absrel.branch_mixtures) {
+                    absrel.mixture_stash [v] = ^v;
+                    absrel.weights[absrel.i] = ^v;
+                    ^v = 0;
+                 }
+                 
+                 absrel.weights = parameters.GetStickBreakingDistributionWeigths (absrel.weights);
+                 
+                 absrel.siteLL = absrel.ComputeSiteLikelihoods (absrel.likelihood_function_id);
+                 absrel.all_siteLL = {absrel.cat_count, Columns (absrel.siteLL)};
+                 absrel.all_siteLL [absrel.cat_count-1][0] = absrel.siteLL;
+                 
+                 for (absrel.i = 1; absrel.i < absrel.cat_count; absrel.i += 1) {
+                    if (absrel.i > 1) {
+                        ^( absrel.branch_mixtures[absrel.i-1]) = 0;
+                    }
+                    ^( absrel.branch_mixtures[absrel.i-1]) = 1;
+                    absrel.siteLL = absrel.ComputeSiteLikelihoods (absrel.likelihood_function_id);
+                    absrel.all_siteLL [absrel.i-1][0] = absrel.siteLL;
+                }
+                for (p, v; in; absrel.mixture_stash) {
+                    ^p = v;
+                 }
+                 
+                LFCompute (^absrel.likelihood_function_id,LF_DONE_COMPUTE);
+                
+                absrel.branch_site_level_ER  [absrel.current_branch] = absrel.mixture_site_logl (absrel.all_siteLL,absrel.weights );
+                
+                absrel.branch_site_level_BF = + ((absrel.compute_mixture_site_BF (absrel.branch_site_level_ER  [absrel.current_branch], absrel.weights ))[absrel.cat_count-1][-1])["_MATRIX_ELEMENT_VALUE_>=100"];
+                
+                absrel.report.row [3] = Format (absrel.branch_site_level_BF, 5, 0);
+                 
+            }
+            
             absrel.branch.ConstrainForTesting (absrel.model_defintions [absrel.branch.complexity[absrel.current_branch]], absrel.tree_id, absrel.current_branch);
             Optimize (absrel.null.mles, ^absrel.likelihood_function_id
                 , {"OPTIMIZATION_METHOD" : "coordinate-wise"}
             );
             absrel.branch.test = absrel.ComputeLRT ( absrel.full_model.fit[terms.fit.log_likelihood], absrel.null.mles[1][0]);
+            ((absrel.json [terms.json.site_log_likelihood])[terms.json.tested])[ absrel.current_branch ] = absrel.ComputeSiteLikelihoods (absrel.likelihood_function_id);
             estimators.RestoreLFStateFromSnapshot (absrel.likelihood_function_id, absrel.full_model.mle_set);
         } else {
             absrel.branch.test = {terms.LRT : 0, terms.p_value : 1};
         }
         absrel.branch.p_values [ absrel.current_branch ] = absrel.branch.test [terms.p_value];
         absrel.branch.lrt       [absrel.current_branch] = absrel.branch.test [terms.LRT];
-        absrel.report.row [3+absrel.offset] = absrel.branch.test [terms.LRT];
-        absrel.report.row [4+absrel.offset] = Format (absrel.branch.test [terms.p_value], 8, 5);
+        absrel.report.row [4+absrel.offset] = absrel.branch.test [terms.LRT];
+        absrel.report.row [5+absrel.offset] = Format (absrel.branch.test [terms.p_value], 8, 5);
     } else {
         absrel.branch.lrt [absrel.current_branch] = None;
         absrel.branch.p_values [absrel.current_branch] = None;
-        absrel.report.row [3+absrel.offset] = "Not selected";
-        absrel.report.row [4+absrel.offset] = "for testing";
+        absrel.report.row [4+absrel.offset] = "Not selected";
+        absrel.report.row [5+absrel.offset] = "for testing";
     }
 
     fprintf (stdout, io.FormatTableRow (absrel.report.row, absrel.testing_table.settings));
 }
+
+selection.io.json_store_branch_attribute(absrel.json,
+                                            terms.posterior, 
+                                            terms.json.branch_annotations,
+                                            -1,
+                                             0,
+                                             absrel.branch_site_level_ER);
+
 
 if (Abs (absrel.branch.delta)) {
     selection.io.json_store_branch_attribute(absrel.json, terms.parameters.multiple_hit_rate, terms.json.branch_label, absrel.display_orders[terms.parameters.multiple_hit_rate],
@@ -857,8 +938,25 @@ lfunction absrel.branch.ConstrainForTesting (model, tree_id, branch_id) {
             bv, 
             '');
     }
+}
+
+//------------------------------------------------------------------------------------------------------------------------
+
+lfunction absrel.branch.GetMixtureParameters (model, tree_id, branch_id) {
+    component_count = model[utility.getGlobalValue ("terms.model.components")];
+    local_parameters = (model[utility.getGlobalValue ("terms.parameters")])[utility.getGlobalValue ("terms.local")];
+     if (component_count > 1) {
+        mp = {component_count - 1, 1};
+        for (i = 0; i < component_count-1; i += 1) {
+            mp[i]  =  "`tree_id`.`branch_id`.`local_parameters[terms.AddCategory (utility.getGlobalValue('terms.mixture.mixture_aux_weight'), i+1)]`";
+        }
+        return mp;
+    } else {
+        return None;
+    }
 
 }
+
 //------------------------------------------------------------------------------------------------------------------------
 
 lfunction absrel.PopulateInitialGrid (model, tree_id, branch_id, current_estimates) {
@@ -1221,4 +1319,31 @@ function absrel._report_srv (absrel_model_fit, tag, lf_id) {
         absrel.column_weights       = absrel.column_weights["1/_MATRIX_ELEMENT_VALUE_"];
         (absrel.json [absrel.json.srv_posteriors]) =  absrel.cmx_weighted $ absrel.column_weights;
     }    
+}
+
+//------------------------------------------------------------------------------
+lfunction absrel.ComputeSiteLikelihoods (id) {
+   ConstructCategoryMatrix (sl, ^id, SITE_LOG_LIKELIHOODS);
+   return sl;
+}
+
+//------------------------------------------------------------------------------
+
+lfunction absrel.mixture_site_logl (ll, p) {
+    res = ll["0"];
+    S = Columns (ll);
+    norm      = {1,S}["Max(ll[-1][_MATRIX_ELEMENT_COLUMN_],0)"];
+    scaled_ll = ll["Exp(_MATRIX_ELEMENT_VALUE_-norm[_MATRIX_ELEMENT_COLUMN_])*p[_MATRIX_ELEMENT_ROW_]"];
+    
+    norm      = p["1"]*scaled_ll;
+    ll = scaled_ll["_MATRIX_ELEMENT_VALUE_/norm[_MATRIX_ELEMENT_COLUMN_]"];
+    return ll;
+}
+
+//------------------------------------------------------------------------------
+
+lfunction absrel.compute_mixture_site_BF (ll, p) {
+    prior_odds = p["_MATRIX_ELEMENT_VALUE_/(1-_MATRIX_ELEMENT_VALUE_)"];
+    ll = ll["(_MATRIX_ELEMENT_VALUE_/(1-_MATRIX_ELEMENT_VALUE_))/prior_odds[_MATRIX_ELEMENT_ROW_]"];
+    return ll;
 }

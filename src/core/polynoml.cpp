@@ -2730,36 +2730,37 @@ BaseObj* _Polynomial::toStr (unsigned long padding) {
 
 //__________________________________________________________________________________
 
-void _Polynomial::toFileStr (FILE*f, unsigned long padding)
+void _Polynomial::toFileStr (hyFile *f, unsigned long padding)
 {
     if (theTerms->NumberOfTerms()&&theTerms->thePowers) {
-        fprintf(f,"p(");
+        f->puts ("p(");
         _List _varNames;
         long i;
         for (i=0; i<variableIndex.countitems(); i++) {
             _varNames<<LocateVar(variableIndex(i))->GetName();
-            fprintf(f,"%s",((_String*)_varNames(i))->get_str());
+            f->puts (((_String*)_varNames(i))->get_str());
             if (i<variableIndex.countitems()-1) {
-                fprintf(f,",");
+                f->puts (",");
             }
         }
-        fprintf(f,")=");
+        f->puts (")=");
         for (i=0; i<theTerms->NumberOfTerms(); i++) {
             char number [100];
             snprintf (number, sizeof(number),PRINTF_FORMAT_STRING,theTerms->GetCoeff(i));
             if ((i>0)&&(number[0]!='-')) {
-                fprintf(f,"+");
+                f->puts ("+");
             }
-            fprintf(f,"%s",number);
+            f->puts (number);
             if ((i>0)||!theTerms->IsFirstANumber()) {
-                fprintf(f,"*");
+                f->puts ("*");
                 long *cT = theTerms->GetTerm(i);
                 for (long k=0; k<variableIndex.countitems(); k++,cT++) {
                     if (*cT>0) {
-                        fprintf(f,"%s",((_String*)_varNames(k))->get_str());
+                        f->puts (((_String*)_varNames(k))->get_str());
                         if (*cT>1) {
-                            fprintf(f,"^");;
-                            fprintf(f,"%ld",*cT);
+                            f->puts ("^");
+                            snprintf (number, sizeof(number),"%ld",*cT);
+                            f->puts (number);
                         }
                     }
                 }

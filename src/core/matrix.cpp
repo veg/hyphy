@@ -8228,7 +8228,7 @@ _Matrix     _Matrix::operator - (_Matrix& m)
 }
 
 //_________________________________________________________
-void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned long padding) {
+void    _Matrix::internal_to_str (_StringBuffer* string, hyFile * file, unsigned long padding) {
     
     StringFileWrapper res (string, file);
    _String padder (" ", padding);
@@ -8331,7 +8331,7 @@ void    _Matrix::internal_to_str (_StringBuffer* string, FILE * file, unsigned l
     }
 }
 //_________________________________________________________
-void    _Matrix::toFileStr (FILE*dest, unsigned long padding){
+void    _Matrix::toFileStr (hyFile *dest, unsigned long padding){
     internal_to_str(nil, dest, padding);
 }
 //_____________________________________________________________________________________________
@@ -8381,14 +8381,14 @@ void    _Matrix::InitMxVar (_SimpleList& mxVariables, hyFloat glValue) {
     });
 }
 //_____________________________________________________________________________________________
-bool    _Matrix::ImportMatrixExp (FILE* theSource) {
+bool    _Matrix::ImportMatrixExp (hyFile* theSource) {
     // TODO: SLKP 20171027, need to review and possibly deprecate
     long mDim=0,i,k=0,j,m;
     char buffer[255],fc=0;
     buffer[0]=0;
     while(1) {
-        buffer[mDim]=fgetc(theSource);
-        if (feof(theSource)) {
+        buffer[mDim]=theSource->getc();
+        if (theSource->feof()) {
             return false;
         }
         if (buffer[mDim]==',') {
@@ -8404,11 +8404,10 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
     i = 0;
     _SimpleList varList,c1,c2;
     while (fc!=';') {
-        fc = fgetc (theSource);
-        if ((fc==',')||(fc==';')) {
+        fc = theSource->getc();
+        if ( fc==',' || fc==';') {
             buffer [i] = 0;
             _String varName (buffer);
-
             _Variable * ppv = CheckReceptacle (&varName, kEmptyString, true);
             varList << ppv->get_index();
             i = 0;
@@ -8416,13 +8415,13 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
             buffer[i]=fc;
             i++;
         }
-        if (feof(theSource)) {
+        if (theSource->feof()) {
             return false;
         }
     }
     do {
-        fc = fgetc (theSource);
-        if (feof(theSource)) {
+        fc = theSource->getc();
+        if (theSource->feof()) {
             return false;
         }
     } while (fc!=';');
@@ -8432,10 +8431,10 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
     while (k<mDim*mDim) {
         i = 0;
         while (fc!='{') {
-            fc = fgetc (theSource);
+            fc = theSource->getc();
             buffer[i] = fc;
             i++;
-            if (feof(theSource)) {
+            if (theSource->feof()) {
                 return false;
             }
         }
@@ -8446,13 +8445,13 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
         while (fc!='}') {
             i = 0;
             do {
-                buffer[i] = fc = fgetc (theSource);
+                buffer[i] = fc = theSource->getc();
                 i++;
-                if (feof(theSource)) {
+                if (theSource->feof()) {
                     DeleteObject (thisCell);
                     return false;
                 }
-            } while ((fc!=',')&&(fc!='}'));
+            } while (fc!=',' && fc!='}');
             buffer[i]=0;
             theCoeffs[j]=atof (buffer);
             j++;
@@ -8461,7 +8460,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
                 return false;
             }
         }
-        fc = fgetc(theSource);
+        fc = theSource->getc();
         if (fc != '{') {
             DeleteObject (thisCell);
             return false;
@@ -8472,18 +8471,18 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
         while (fc!='}') {
             i = 0;
             do {
-                buffer[i] = fc = fgetc (theSource);
+                buffer[i] = fc = theSource->getc();
                 i++;
-                if (feof(theSource)) {
+                if (theSource->feof()) {
                     DeleteObject (thisCell);
                     DeleteObject (pd);
                     return false;
                 }
-            } while ((fc!=',')&&(fc!='}'));
+            } while (fc!=',' && fc!='}');
             buffer[i]=0;
             c1<<atol (buffer);
         }
-        fc = fgetc(theSource);
+        fc = theSource->getc();
         if (fc != '{') {
             DeleteObject (thisCell);
             DeleteObject (pd);
@@ -8493,14 +8492,14 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
         while (fc!='}') {
             i = 0;
             do {
-                buffer[i] = fc = fgetc (theSource);
+                buffer[i] = fc = theSource->getc();
                 i++;
-                if (feof(theSource)) {
+                if (theSource->feof()) {
                     DeleteObject (thisCell);
                     DeleteObject (pd);
                     return false;
                 }
-            } while ((fc!=',')&&(fc!='}'));
+            } while (fc!=',' && fc!='}' );
             buffer[i]=0;
             c2<<atol (buffer);
         }
@@ -8515,7 +8514,7 @@ bool    _Matrix::ImportMatrixExp (FILE* theSource) {
 
 //_____________________________________________________________________________________________
 
-void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
+void    _Matrix::ExportMatrixExp (_Matrix* theBase, hyFile* theDump)
 // TODO: SLKP 20171027, need to review and possibly deprecate
 
 // export the matrix's computational form in the following format
@@ -8534,7 +8533,11 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
         HandleApplicationError ( kErrorStringMatrixExportError );
         return;
     }
-    fprintf (theDump,"%ld,",hDim);
+    
+    char buffer [256];
+    
+    snprintf(buffer, 256, "%ld", hDim);
+    theDump->puts (buffer);
     _SimpleList mxVariables;
     {
         _AVLList        mxA (&mxVariables);
@@ -8546,11 +8549,11 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
     long k, i=0;
     hyFloat* varPool = (hyFloat*)MatrixMemAllocate (mxVariables.countitems()*sizeof(hyFloat));
     for (k=0; k<mxVariables.countitems(); k++) {
-        fprintf (theDump,"%s",LocateVar(mxVariables(k))->GetName()->get_str());
+        theDump->puts (LocateVar(mxVariables(k))->GetName()->get_str());
         if (k<mxVariables.countitems()-1) {
-            fprintf (theDump,"%c",',');
+            theDump->fputc (',');
         } else {
-            fprintf (theDump,"%c",';');
+            theDump->fputc (';');
         }
         varPool[k]=topPolyCap;
     }
@@ -8565,7 +8568,8 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
 
     DeleteObject(dummy);
     checkParameter (ANAL_MATRIX_TOLERANCE,analMatrixTolerance,1e-6);
-    fprintf (theDump,"%g,%g;",analMatrixTolerance,topPolyCap);
+    snprintf (buffer, 256, "%g,%g;",analMatrixTolerance,topPolyCap);
+    theDump->puts (buffer);
 
     // now loop thru the cells and check the precision term by term
     for (k=0; k<lDim; k++) {
@@ -8618,15 +8622,18 @@ void    _Matrix::ExportMatrixExp (_Matrix* theBase, FILE* theDump)
             wm = wm&_String(k/hDim)&","&_String(k%hDim)&"). Tolerance achieved is:"&be;
             ReportWarning (wm);
         }
-        fprintf(theDump,"%ld{",tup+1);
+        snprintf (buffer, 256,"%ld{",tup+1);
+        theDump->puts (buffer);
         for (i=0; i<=tup; i++) {
             if (i) {
-                fprintf(theDump,",%18.16g",coeffHolder[i]);
+                snprintf (buffer,256, ",%18.16g",coeffHolder[i]);
             } else {
-                fprintf(theDump,"%18.16g",coeffHolder[i]);
+                snprintf (buffer, 256,"%18.16g",coeffHolder[i]);
             }
+            theDump->puts (buffer);
         }
-        fprintf(theDump,"}%ld",tup);
+        snprintf (buffer,256,"}%ld",tup);
+        theDump->puts (buffer);
         c1.toFileStr(theDump);
         c2.toFileStr(theDump);
         MatrixMemFree (coeffHolder);

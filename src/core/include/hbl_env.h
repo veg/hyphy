@@ -206,6 +206,7 @@ namespace hy_env {
           tolerate_numerical_errors,
           tolerate_constraint_violation,
           number_threads,
+          gzip_compression_level,
           tree_parser_namespace;
 
     ;

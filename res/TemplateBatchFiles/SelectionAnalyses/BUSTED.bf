@@ -473,7 +473,7 @@ busted.initial_grid = {};
 busted.initial_grid_presets = {"0" : 0.1};
 busted.initial_ranges = {};
 
-busted.init_grid_setup (busted.distribution);
+busted.init_grid_setup (busted.distribution, busted.error_sink);
 
 /** setup parameter optimization groups */
 
@@ -487,7 +487,7 @@ if (busted.has_background) {
     busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
                                 "busted.test" :       busted.test.bsrel_model };
     busted.background_distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.background.bsrel_model);
-    busted.init_grid_setup (busted.background_distribution);
+    busted.init_grid_setup (busted.background_distribution, busted.error_sink);
 
     //PARAMETER_GROUPING + busted.background_distribution["rates"];
     //PARAMETER_GROUPING + busted.background_distribution["weights"];
@@ -529,7 +529,7 @@ if (busted.do_srv)  {
     //PARAMETER_GROUPING + busted.srv_distribution["weights"];
     PARAMETER_GROUPING + utility.Concat (busted.srv_distribution["rates"],busted.srv_distribution["weights"]);
 
-    busted.init_grid_setup (busted.srv_distribution);
+    busted.init_grid_setup (busted.srv_distribution, FALSE);
     
 }
 
@@ -559,17 +559,16 @@ for (busted.partition_index = 0; busted.partition_index < busted.partition_count
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
 busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
 
-
 //estimators.CreateInitialGrid (busted.initial_grid, busted.initial_grid.N, busted.initial_grid_presets);
 
 busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
-    'busted._renormalize (_v_, "busted.distribution", busted.initial.test_mean)'
+    'busted._renormalize (_v_, "busted.distribution", busted.initial.test_mean, busted.error_sink)'
 );
 
 if (busted.has_background) { //GDD rate category
     busted.initial.background_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+background.+"))["0"])[terms.fit.MLE];
     busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
-        'busted._renormalize (_v_, "busted.background_distribution", busted.initial.background_mean)'
+        'busted._renormalize (_v_, "busted.background_distribution", busted.initial.background_mean, busted.error_sink)'
     );
 }
 
@@ -606,6 +605,7 @@ if (Type (debug.checkpoint) != "String") {
 
     // constrain nucleotide rate parameters
     busted.tmp_fixed = models.FixParameterSetRegExp (terms.nucleotideRatePrefix,busted.test.bsrel_model);
+    
 
     busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
         "retain-lf-object": TRUE,
@@ -1227,12 +1227,18 @@ lfunction busted.DistributionGuess (mean) {
 // renormalize the grid to have the same mean as the initial omega value
 
 
-lfunction busted._renormalize (v, distro, mean) {
+lfunction busted._renormalize (v, distro, mean, skip_first) {
     parameters.SetValues (v);
     m = parameters.GetStickBreakingDistribution (^distro);
     d = Rows (m);
-    m = +(m[-1][0] $ m[-1][1]); // current mean
-    for (i = 0; i < d; i+=1) {
+    if (skip_first) {
+        m0 = m[0][0]*m[0][1];
+    } else {
+        m0 = 0;
+    }
+    m = +(m[-1][0] $ m[-1][1]) -m0; // current mean
+    
+    for (i = (skip_first != 0); i < d; i+=1) {
         (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] / m * mean;
     }
     return v;
@@ -1292,65 +1298,68 @@ lfunction busted.mixture_site_BF (ll, p) {
 
 //------------------------------------------------------------------------------
 
-function busted.init_grid_setup (omega_distro) {
-    utility.ForEachPair (omega_distro[terms.parameters.rates], "_index_", "_name_", 
-        '
-            if (_index_[0] < busted.rate_classes - 1) { // not the last rate
-                busted.initial_grid  [_name_] = {
-                    {
-                        0.01, 0.1, 0.25, 0.75
-                    }
-                }["_MATRIX_ELEMENT_VALUE_^(busted.rate_classes-_index_[0]-1)"];
-                busted.initial_grid_presets [_name_] = 0;
-                
-                if (busted.error_sink && _index_[0] == 0) {
-                     busted.initial_ranges [_name_] = {
-                        terms.lower_bound : 100,
-                        terms.upper_bound : 10000
-                    };
-                } else {                
-                    busted.initial_ranges [_name_] = {
-                        terms.lower_bound : 0,
-                        terms.upper_bound : 1
-                    };
-                }
-            }  else {
-                busted.initial_grid  [_name_] = {
-                    {
-                        1, 1.5, 2, 4, 10
-                    }
-                };
-                busted.initial_ranges [_name_] = {
-                    terms.lower_bound : 1,
-                    terms.upper_bound : 10
-                };
-                busted.initial_grid_presets [_name_] = 2;
-            }
-        '
-    );
-
-
-    utility.ForEachPair (omega_distro[terms.parameters.weights], "_index_", "_name_", 
-        '
+function busted.init_grid_setup (omega_distro, error_sink) {
+   for (_index_,_name_; in; omega_distro[terms.parameters.rates]) {
+        if (_index_ < busted.rate_classes - 1) { // not the last rate
             busted.initial_grid  [_name_] = {
                 {
-                    0.2, 0.5, 0.7, 0.8, 0.9
+                    0.01, 0.1, 0.25, 0.75
                 }
-            };
-            busted.initial_grid_presets [_name_] = 3;
-            if (busted.error_sink && _index_[0] == 0) {
-                     busted.initial_ranges [_name_] = {
-                        terms.lower_bound : 0,
-                        terms.upper_bound : 0.01,
-                    };
-            } else { 
+            }["_MATRIX_ELEMENT_VALUE_^(busted.rate_classes-_index_-1)"];
+            
+            busted.initial_grid_presets [_name_] = 0;
+            
+            if (error_sink && _index_ == 0) {
+                 busted.initial_grid  [_name_] = {{100,500,1000,5000}};
+                 busted.initial_ranges [_name_] = {
+                    terms.lower_bound : 100,
+                    terms.upper_bound : 10000
+                };
+            } else {                
                 busted.initial_ranges [_name_] = {
                     terms.lower_bound : 0,
                     terms.upper_bound : 1
                 };
             }
-        '
-    );
+        }  else {
+            busted.initial_grid  [_name_] = {
+                {
+                    1, 1.5, 2, 4, 10
+                }
+            };
+            busted.initial_ranges [_name_] = {
+                terms.lower_bound : 1,
+                terms.upper_bound : 10
+            };
+            busted.initial_grid_presets [_name_] = 2;
+        }
+    }
+
+ 
+   for (_index_, _name_; in; omega_distro[terms.parameters.weights]) {
+        busted.initial_grid  [_name_] = {
+            {
+                0.2, 0.5, 0.7, 0.8, 0.9
+            }
+        };
+        busted.initial_grid_presets [_name_] = 3;
+        if (error_sink && _index_ == 0) {
+            busted.initial_grid  [_name_] = {
+                {
+                    0, 0.001, 0.005, 0.1
+                }
+            };        
+             busted.initial_ranges [_name_] = {
+                terms.lower_bound : 0,
+                terms.upper_bound : 0.01,
+            };
+        } else { 
+            busted.initial_ranges [_name_] = {
+                terms.lower_bound : 0,
+                terms.upper_bound : 1
+            };
+        }
+    }
 
 }
 //------------------------------------------------------------------------------

@@ -912,10 +912,11 @@ HBLObjectRef   _FString::FileExists (HBLObjectRef cache) {
         _String cpy (get_str());
         if (ProcessFileName(cpy)) {
             // TODO use fstat instead
-          FILE * test = doFileOpen (cpy, "rb");
+          hyFile * test = doFileOpen (cpy, kFileReadBinary);
           if (test) {
               exists = 1.0;
-              fclose (test);
+              test->close ();
+              delete (test);
           }
         }
     }
