@@ -43,19 +43,21 @@ relax.analysis_description = {
                                                 Version 3.1 adds LHC + Nedler-Mead initial fit phase and keyword support.
                                                 Version 3.1.1 adds some bug fixes for better convergence.
                                                 Version 4.0 adds support for synonymous rate variation.
-                                                Version 4.1 adds further support for multiple hit models",
+                                                Version 4.1 adds further support for multiple hit models.
+                                                Version 4.1.1 adds reporting for convergence diagnostics",
                                terms.io.version : "3.1.1",
                                terms.io.reference : "RELAX: Detecting Relaxed Selection in a Phylogenetic Framework (2015). Mol Biol Evol 32 (3): 820-832",
                                terms.io.authors : "Sergei L Kosakovsky Pond, Ben Murrell, Steven Weaver and Temple iGEM / UCSD viral evolution g",
                                terms.io.contact : "spond@temple.edu",
-                               terms.io.requirements : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)"
+                               terms.io.requirements : "in-frame codon alignment and a phylogenetic tree, with at least two groups of branches defined using the {} notation (one group can be defined as all unlabeled branches)",
+                               terms.settings: {}
                               };
 
 relax.json    = { terms.json.analysis: relax.analysis_description,
                   terms.json.input: {},
                   terms.json.fits : {},
                   terms.json.timers : {},
-                  terms.json.test_results : {}
+                  terms.json.test_results : {},
                   };
 
 relax.relaxation_parameter        = "relax.K";
@@ -1001,6 +1003,9 @@ function relax.FitMainTestPair (prompt) {
 
 
 		if (Abs (relax.best_samples[1] - relax.best_samples[0]) < 5.) { // could be diagnostic of convergence problems
+		    selection.io.json_store_setting  (relax.json, "convergence-flat-surface", relax.best_samples[1] - relax.best_samples[0]);
+
+		
 			io.ReportProgressMessageMD("RELAX", "alt-2", "* Potential convergence issues due to flat likelihood surfaces; checking to see whether K > 1 or K < 1 is robustly inferred");
 			if (relax.fitted.K > 1) {
 				parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map ["relax.test"] , terms.relax.k), terms.range01);
@@ -1022,6 +1027,8 @@ function relax.FitMainTestPair (prompt) {
             
 
 			if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit[terms.fit.log_likelihood]) {
+			    relax.stash_fitted_K = relax.fitted.K;
+		        
 
 				io.ReportProgressMessageMD("RELAX", "alt-2", "\n### Potential for highly unreliable K inference due to multiple local maxima in the likelihood function, treat results with caution ");
 				io.ReportProgressMessageMD("RELAX", "alt-2", "> Relaxation parameter reset to opposite mode of evolution from that obtained in the initial optimization.");
@@ -1032,6 +1039,11 @@ function relax.FitMainTestPair (prompt) {
 				relax.inferred_distribution = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map ["relax.test"])) % 0;
 				selection.io.report_dnds (relax.inferred_distribution);
 
+                selection.io.json_store_setting  (relax.json, "convergence-unstable", {
+                    {relax.fitted.K, relax.alternative_model.fit.take2 [terms.fit.log_likelihood]}
+                    {relax.stash_fitted_K, relax.alternative_model.fit [terms.fit.log_likelihood]}
+                    
+                });
 
 				io.ReportProgressMessageMD("RELAX", "alt-2", "* The following rate distribution was inferred for **reference** branches");
 				relax.inferred_distribution_ref = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map ["relax.reference"])) % 0;
@@ -1182,6 +1194,8 @@ do {
 
 	if (relax.LRT [terms.LRT] < 0) {
 		io.ReportProgressMessageMD("RELAX", "refit", "* Detected convergence issues (negative LRT). Refitting the alterative/null model pair from a new starting point");
+		selection.io.json_store_setting  (relax.json, "convergence-negative-lrt", relax.loop_passes);
+
 		relax.general_descriptive.fit = relax.null_model.fit; // reset initial conditions
 		for (relax.k = 1; relax.k < relax.numbers_of_tested_groups; relax.k += 1) { // remove constraints on K
 			relax.model_nmsp = relax.model_namespaces[relax.k ];
