@@ -684,6 +684,10 @@ class _SimpleList:public BaseObj {
         long* quickArrayAccess(void) {
             return (long*)list_data;
         }
+    
+        long* _getStatic () {
+            return static_data;
+        }
 };
 
 //TODO:Why is this a global function? If it needs to be, should be in helpers.cpp

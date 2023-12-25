@@ -80,7 +80,7 @@ protected:
     _List*              resultCache;
     _Stack              theStack;
     _List               theFormula;
-    long*                simpleExpressionStatus;
+    long*               simpleExpressionStatus;
     /**
         SLKP: 20200924
             Added this shorthand to improve memory locality and speed-up SimpleCompute performance
@@ -217,7 +217,7 @@ public:
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
-    hyFloat  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
+    hyFloat  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues, long allocate_local = -1L) ;
 
     hyFloat  Newton              (_Formula&, _Variable*,  hyFloat, hyFloat, hyFloat);
     hyFloat  Newton              (_Formula&, hyFloat, hyFloat, hyFloat, _Variable*);
