@@ -2756,7 +2756,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
     //ObjectToConsole(&isExplicitForm);
     
-    unsigned long id;
+    //unsigned long id;
     
     _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
     
@@ -2773,14 +2773,14 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     if (parallel.lLength) {
 #ifdef _OPENMP
   #if _OPENMP>=201511
-    #pragma omp parallel for default(shared) private (id) schedule(dynamic, cs) proc_bind(spread) if (nt>1)  num_threads (nt)
+    #pragma omp parallel for default(shared) schedule(dynamic, cs) proc_bind(spread) if (nt>1)  num_threads (nt)
   #else
   #if _OPENMP>=200803
-    #pragma omp parallel for default(shared) private (id) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt)
+    #pragma omp parallel for default(shared) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt)
   #endif
 #endif
 #endif
-        for  (id = 0; id < parallel.lLength; id++) {
+        for  (long id = 0L; id < parallel.lLength; id++) {
             long matrixID = parallel.get (id);
             if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
                 ((_CalcNode*) nodesToDo(matrixID))->SetCompExp ((_Matrix*)matrixQueue(matrixID), catID, true);
@@ -2790,7 +2790,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         }
     }
     
-    for ( id = 0; id < serial.lLength; id++) {
+    for (long id = 0L; id < serial.lLength; id++) {
         long matrixID = serial.get (id);
         _Matrix *already_computed = ((_Matrix*)matrixQueue(matrixID));
         (*computedExponentials) [matrixID] = already_computed;

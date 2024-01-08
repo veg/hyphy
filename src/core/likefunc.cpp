@@ -4589,10 +4589,13 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     shrink_factor           = MAX(GOLDEN_RATIO,MIN(stdFactor,oldAverage/averageChange));
 
                     long       steps    = logLHistory.get_used();
+                    //printf ("DIFFS\n");
                     for (long k = 1; k <= MIN(5, steps-1); k++) {
                         diffs[k-1] = logLHistory.theData[steps-k] - logLHistory.theData[steps-k-1];
-                        //printf ("\n==> DIFFS %ld : %g\n", k, diffs[k-1]);
+                        //printf ("==> DIFFS %ld : %g\n", k, diffs[k-1]);
                     }
+                    //printf ("\n");
+                    
                     if (steps > 2 && diffs[0] >= diffs[1]) {
                         convergenceMode = 1;
                     }
@@ -4647,7 +4650,8 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 }
             }
 
-            if (convergenceMode >= 2) {
+            //printf ("NO CHANGE %d\n", noChange.countitems());
+            if (convergenceMode >= 3) {
                 noChange.Clear();
                 noChange << -1;
             }
@@ -4772,6 +4776,9 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             }
 
             large_change.Clear();
+            
+            //ObjectToConsole (&_variables_that_dont_change);
+            //NLToConsole();
 
             LoggerAddCoordinatewisePhase (shrink_factor, convergenceMode);
             
@@ -4810,12 +4817,20 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     }
                 }
 
+                if (_variables_that_dont_change.get (current_index) > 1) {
+                    if (convergenceMode <= 2 && inCount < termFactor -1) {
+                        averageChange2+=bestVal;
+                        continue;
+                    }
+                }
+                
                 _Vector     *vH = nil;
                 hyFloat     precisionStep = 0.,
                             brackStep;
 
 
                 if (use_adaptive_step) {
+                    
                     vH  = (_Vector*)(*stepHistory)(current_index);
                     //hyFloat    suggestedPrecision  = currentPrecision*(1.+198./(1.+exp(sqrt(loopCounter))));
 
@@ -4934,9 +4949,17 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                     if (cj != 0.) {
                         averageChange += fabs (ch/cj);
                     }
-                    if ((ch < precisionStep*0.01 /*|| lastLogL - maxSoFar < 1e-6*/) && inCount == 0) {
-                        nc2 << current_index;
+                    //printf ("VAR %d change %g (%g, %d)\n", current_index, ch, precisionStep*0.01, inCount);
+                    
+                    if (ch < 1e-6) {
                         _variables_that_dont_change[current_index] ++;
+                    } else {
+                        _variables_that_dont_change[current_index] = 0;
+                    }
+
+                    if ((ch < precisionStep*0.01 /*|| lastLogL - maxSoFar < 1e-6*/) && inCount < termFactor - 1) {
+                        nc2 << current_index;
+                        
                     }
                 } else {
                     averageChange  += ch;
@@ -4999,7 +5022,15 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             averageChange/=(hyFloat)(indexInd.lLength-nc2.lLength+1);
             // mean of change in parameter values during the last step
 
+            //BufferToConsole("\nNO CHANGE BEFORE\n");
+            //ObjectToConsole(&noChange);
+            //NLToConsole ();
+            //ObjectToConsole(&nc2);
+            //NLToConsole ();
+
+            
             if (glVars.lLength == indexInd.lLength) {
+                // only global variables in the LF
                 noChange.Clear();
                 noChange.Duplicate (&nc2);
             } else {
@@ -5015,20 +5046,24 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 });
                 
                 if (at_boundary.nonempty()) {
-                    _SimpleList nc3;
-                    nc3.Union (nc2,at_boundary);
-                    noChange.Subtract (nc3,glVars);
-                    //ObjectToConsole(&at_boundary);
-                    //NLToConsole();
+                    //_SimpleList nc3;
+                    //nc3.Union (nc2,at_boundary);
+                    //noChange.Subtract (nc3,glVars);
+                    noChange.Union (nc2, at_boundary);
+                    // variables on the boundary and those that did not change will be skipped in the next iteration.
                 } else {
-                    noChange.Subtract  (nc2,glVars);
+                    //noChange.Subtract  (nc2,glVars);
+                    noChange = nc2;
                 }
+                // always interate over globals
             }
 
             if (noChange.empty()) {
                 noChange << -1;
             }
-
+            
+            //BufferToConsole("\nNO CHANGE AFTER\n");
+            //ObjectToConsole(&noChange);
 
 
             forward = true;

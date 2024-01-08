@@ -175,6 +175,18 @@ for (p = 0; p < efilter.input[terms.json.partition_count]; p+=1) {
                         efilter.site_BF2 = 1e25;
                     }
                     
+                    
+                    /*if (efilter.site_BF >= efilter.threshold || efilter.site_BF2 >= efilter.ratio_threshold) {
+                        if (efilter.site_BF >= efilter.threshold && efilter.site_BF2 >= efilter.ratio_threshold) {
+                            fprintf (stdout, "FILTERED\n");
+                        } else {
+                            fprintf (stdout, "KEPT\n");
+                        }
+                        fprintf (stdout, ">" + (site+1) + "/" + node, " " + efilter.site_BF + ":" +efilter.site_BF2 + "\n");
+                        
+                    }*/
+                    
+                    
                     if (efilter.site_BF >= efilter.threshold && efilter.site_BF2 >= efilter.ratio_threshold) {
                         if (efilter.masked_sites/node) { // terminal node
                             if (efilter.masked_already [ntm] != 1) {
@@ -195,6 +207,7 @@ for (p = 0; p < efilter.input[terms.json.partition_count]; p+=1) {
                             }
                             for (ntm, ignore; in; efilter.leaf_descendants[node]) {
                                 efilter.write_out[ntm] = "---";
+                                //console.log ("Masking child " + ntm + " of parent " + node + " at site " + (1+site));   
                                 if (efilter.masked_already [ntm] != 1) {
                                     efilter.masked_sites [ntm] + (site + efilter.site_offset);
                                 }
