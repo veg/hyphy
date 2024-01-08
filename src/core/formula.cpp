@@ -2327,14 +2327,14 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
                     store_constant [used_float_slots++] = this_op->theNumber->Value();
                     simpleExpressionStatus[i] = -1L - used_float_slots;
                 } else {
-                    if (used_float_slots == available_slots) {
+                    /*if (used_float_slots == available_slots) {
                         for (long j = 0; j < i; j++) {
                             if (simpleExpressionStatus [j] < -1L && simpleExpressionStatus [j] > -64L) {
                                 simpleExpressionStatus [j] = -1;
                             }
                         }
                         used_float_slots++;
-                    }
+                    }*/
                     simpleExpressionStatus[i] = -1L;
                 }
             } else if (this_op->theData >= 0) {
@@ -2431,7 +2431,7 @@ hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum
                 continue;*/
             } else {
                 if (simpleExpressionStatus[i] <= -2L && simpleExpressionStatus[i] >= -32L) {
-                    stack[stackTop++].value = constants[simpleExpressionStatus[i] + 2L];
+                    stack[stackTop++].value = constants[-simpleExpressionStatus[i] - 2L];
                 } else {
                     if (simpleExpressionStatus[i] == -1L) {
                         stack[stackTop++].value = ((_Operation**)theFormula.list_data)[i]->theNumber->Value();
