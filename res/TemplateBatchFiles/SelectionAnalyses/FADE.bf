@@ -544,11 +544,7 @@ for (fade.residue = 0; fade.residue < 20; fade.residue += 1) {
 
         LikelihoodFunction fade.lf = (fade.lf.components);
         estimators.ApplyExistingEstimates  ("fade.lf", fade.model_id_to_object, fade.baseline_fit, None);
-        
-        Export (lfe, fade.lf);
-        fprintf ("/Users/sergei/Desktop/fade.bf", CLEAR_FILE, lfe);
-        
-    
+           
         fade.conditionals.raw = fade.ComputeOnGrid  ("fade.lf",
                              fade.grid.MatrixToDict (fade.cache[terms.fade.cache.grid]),
                             "fade.pass2.evaluator",

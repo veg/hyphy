@@ -5356,7 +5356,7 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
 
 _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Matrix * existing_storage) {
     // find the maximal elements of the matrix
-        
+    
     try {
         if (!is_square()) {
             throw _String ("Exponentiate is not defined for non-square matrices");
@@ -5676,8 +5676,9 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         if (check_transition) {
             bool pass = true;
             if (result->is_dense()) {
-                for (unsigned long r = 0L; r < result->lDim; r += result->vDim) {
+                for (unsigned long r = 0L; r < result->lDim; r += result->vDim + 1) {
                     if (result->theData[r] > 1.) {
+                        //printf ("\nDIAGONAL > 1 (%d, %g)\n", r, result->theData[r]);
                         pass = false;
                         break;
                     }
