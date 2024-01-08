@@ -2327,14 +2327,6 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
                     store_constant [used_float_slots++] = this_op->theNumber->Value();
                     simpleExpressionStatus[i] = -1L - used_float_slots;
                 } else {
-                    /*if (used_float_slots == available_slots) {
-                        for (long j = 0; j < i; j++) {
-                            if (simpleExpressionStatus [j] < -1L && simpleExpressionStatus [j] > -64L) {
-                                simpleExpressionStatus [j] = -1;
-                            }
-                        }
-                        used_float_slots++;
-                    }*/
                     simpleExpressionStatus[i] = -1L;
                 }
             } else if (this_op->theData >= 0) {
@@ -2410,33 +2402,23 @@ void _Formula::ConvertFromSimpleList (_SimpleList const& variableIndex) {
 }
 
 //__________________________________________________________________________________
-hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues, long allocate_local) {
+hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) {
     if (theFormula.nonempty()) {
         long stackTop = 0;
         unsigned long upper_bound = NumberOperations();
         
-        //if (allocate_local >= 0 && allocate_local <= MEMORYSTEP) {
-        //    stack = (_SimpleFormulaDatum*)theStack.theStack._getStatic();
-        //}
-
         const hyFloat * constants = (hyFloat*)theStack.theStack._getStatic();
         
         for (unsigned long i=0UL; i<upper_bound; i++) {
             
             if (simpleExpressionStatus[i] >= 0L) {
                 stack[stackTop++] = varValues[simpleExpressionStatus[i]];
-                
-            /*if (thisOp->theNumber) {
-                stack[stackTop++].value = thisOp->theNumber->Value();
-                continue;*/
             } else {
                 if (simpleExpressionStatus[i] <= -2L && simpleExpressionStatus[i] >= -32L) {
                     stack[stackTop++].value = constants[-simpleExpressionStatus[i] - 2L];
                 } else {
                     if (simpleExpressionStatus[i] == -1L) {
                         stack[stackTop++].value = ((_Operation**)theFormula.list_data)[i]->theNumber->Value();
-                        //ItemAt (i)->theNumber->Value();
-                        //stack[stackTop++] = varValues[simpleExpressionStatus[i]];
                     } else {
                         if (simpleExpressionStatus[i] <= -10000L) {
                             stackTop--;

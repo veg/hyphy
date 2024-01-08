@@ -217,7 +217,7 @@ public:
     void        SimplifyConstants   (void);
     _Variable * Dereference         (bool, _hyExecutionContext* = _hyDefaultExecutionContext);
 
-    hyFloat  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues, long allocate_local = -1L) ;
+    hyFloat  ComputeSimple       (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) ;
 
     hyFloat  Newton              (_Formula&, _Variable*,  hyFloat, hyFloat, hyFloat);
     hyFloat  Newton              (_Formula&, hyFloat, hyFloat, hyFloat, _Variable*);

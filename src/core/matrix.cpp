@@ -2995,7 +2995,7 @@ HBLObjectRef   _Matrix::EvaluateSimple (_Matrix* existing_storage) {
 
 
     for (long f = 0L; f < cmd->formulasToEval.lLength; f++) {
-        cmd->formulaValues [f] = ((_Formula*)cmd->formulasToEval.list_data[f])->ComputeSimple(cmd->theStack, cmd->varValues, cmd->stackDepth);
+        cmd->formulaValues [f] = ((_Formula*)cmd->formulasToEval.list_data[f])->ComputeSimple(cmd->theStack, cmd->varValues);
     }
 
     long * fidx = cmd->formulaRefs;
