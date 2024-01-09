@@ -2750,14 +2750,7 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         
 
     }
-    
-    //if (hasExpForm && (3*(flatTree.countitems() + flatLeaves.countitems()) < (mes_counter-b4)))
-    //    printf ("%d/%d (%d)\n\n", mes_counter-b4, expNodes.lLength, flatTree.countitems() + flatLeaves.countitems());
-    //printf ("%ld %d\n", nodesToDo.lLength, hasExpForm);
-    //ObjectToConsole(&isExplicitForm);
-    
-    unsigned long id;
-    
+        
     _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
     
     _SimpleList parallel, serial;
@@ -2773,14 +2766,14 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     if (parallel.lLength) {
 #ifdef _OPENMP
   #if _OPENMP>=201511
-    #pragma omp parallel for default(shared) private (id) schedule(dynamic, cs) proc_bind(spread) if (nt>1)  num_threads (nt)
+    #pragma omp parallel for default(shared) schedule(dynamic, cs) proc_bind(spread) if (nt>1)  num_threads (nt)
   #else
   #if _OPENMP>=200803
-    #pragma omp parallel for default(shared) private (id) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt)
+    #pragma omp parallel for default(shared) schedule(guided) proc_bind(spread) if (nt>1)  num_threads (nt)
   #endif
 #endif
 #endif
-        for  (id = 0; id < parallel.lLength; id++) {
+        for  (long id = 0L; id < parallel.lLength; id++) {
             long matrixID = parallel.get (id);
             if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
                 ((_CalcNode*) nodesToDo(matrixID))->SetCompExp ((_Matrix*)matrixQueue(matrixID), catID, true);
@@ -2790,27 +2783,12 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
         }
     }
     
-    for ( id = 0; id < serial.lLength; id++) {
+    for (long id = 0L; id < serial.lLength; id++) {
         long matrixID = serial.get (id);
         _Matrix *already_computed = ((_Matrix*)matrixQueue(matrixID));
         (*computedExponentials) [matrixID] = already_computed;
     }
     
-    /*for  (matrixID = 0; matrixID < matrixQueue.lLength; matrixID++) {
-        if (isExplicitForm.list_data[matrixID] == 0 || !hasExpForm) { // normal matrix to exponentiate
-            ((_CalcNode*) nodesToDo(matrixID))->SetCompExp ((_Matrix*)matrixQueue(matrixID), catID, true);
-        } else {
-            if (isExplicitForm.list_data[matrixID] > 0) {
-                (*computedExponentials) [matrixID] = ((_Matrix*)matrixQueue(matrixID))->Exponentiate(1., true);
-            } else {
-                _Matrix *already_computed = ((_Matrix*)matrixQueue(matrixID));
-                (*computedExponentials) [matrixID] = already_computed;
-                //printf ("\tNO MATRIX UPDATE %d (%d)\n", matrixID, already_computed->GetReferenceCounter());
-                //ObjectToConsole(  (*computedExponentials) [matrixID] );
-                //already_computed ->AddAReference();
-            }
-        }
-    }*/
  
     if (computedExponentials) {
         _CalcNode * current_node         = nil;

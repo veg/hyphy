@@ -80,7 +80,7 @@ protected:
     _List*              resultCache;
     _Stack              theStack;
     _List               theFormula;
-    long*                simpleExpressionStatus;
+    long*               simpleExpressionStatus;
     /**
         SLKP: 20200924
             Added this shorthand to improve memory locality and speed-up SimpleCompute performance

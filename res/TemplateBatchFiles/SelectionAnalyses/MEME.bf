@@ -659,7 +659,15 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
  
     SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
     
+    utility.ToggleEnvVariable ("LOOP_TREE_ITERATOR_PREORDER", TRUE);
+    
+    is_root = TRUE;
+    
     for (_node_; in; meme.site_tree_fel) {
+        if (is_root) {
+            is_root = FALSE;
+            continue;
+        }
         _bl_ = ((meme.final_partitioned_mg_results[terms.branch_length])[meme.partition_index])[_node_];
         _node_class_ = (meme.selected_branches[meme.partition_index])[_node_];
         if (_node_class_ != terms.tree_attributes.test) {
@@ -669,10 +677,10 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
             meme.apply_site_constraints ("meme.site_tree_bsrel",_node_,_bl_,meme.scaler_mapping ['FG']);     
             meme.apply_site_constraints ("meme.site_tree_fel",_node_,_bl_,meme.scaler_mapping ['FEL-FG']);       
         }
-        
-
      }
     
+     utility.ToggleEnvVariable ("LOOP_TREE_ITERATOR_PREORDER", None);
+
 
      SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
 

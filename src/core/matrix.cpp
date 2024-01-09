@@ -2479,6 +2479,25 @@ bool        _Matrix::ProcessFormulas (long& stackLength, _AVLList& varList,   _S
     _Formula **     theFormulas = (_Formula**)theData;
 
     bool isGood = true;
+    
+    auto process_formula = [&] (_Formula * this_formula) -> bool {
+        if (runAll || this_formula->AmISimple(stackLength,varList)) {
+            _String * flaString = (_String*)this_formula->toStr(kFormulaStringConversionNormal, nil,true);
+            long      fref = flaStrings.Insert(flaString,newFormulas.lLength);
+            if (fref < 0) {
+                references << flaStrings.GetXtra (-fref-1);
+                DeleteObject (flaString);
+            } else {
+                newFormulas << (long)this_formula;
+                references << fref;
+            }
+
+        } else {
+            isGood = false;
+            return false;
+        }
+        return true;
+    };
 
     if (theIndex) {
         for (long i = 0L; i<lDim; i++) {
@@ -2488,20 +2507,7 @@ bool        _Matrix::ProcessFormulas (long& stackLength, _AVLList& varList,   _S
                     references << -1;
                     continue;
                 }
-                thisFormula = theFormulas[i];
-                if (runAll || thisFormula->AmISimple(stackLength,varList)) {
-                    _String * flaString = (_String*)thisFormula->toStr(kFormulaStringConversionNormal, nil,true);
-                    long      fref = flaStrings.Insert(flaString,newFormulas.lLength);
-                    if (fref < 0) {
-                        references << flaStrings.GetXtra (-fref-1);
-                        DeleteObject (flaString);
-                    } else {
-                        newFormulas << (long)thisFormula;
-                        references << fref;
-                    }
-
-                } else {
-                    isGood = false;
+                if (! process_formula (theFormulas[i])) {
                     break;
                 }
             } else {
@@ -2510,28 +2516,18 @@ bool        _Matrix::ProcessFormulas (long& stackLength, _AVLList& varList,   _S
         }
     } else {
         for (long i = 0L; i<lDim; i++) {
-            if ((theFormulas[i]!=(_Formula*)ZEROPOINTER)&&(!theFormulas[i]->IsEmpty())) {
-                thisFormula = theFormulas[i];
-
+            
+            thisFormula = theFormulas[i];
+            
+            if ((thisFormula!=(_Formula*)ZEROPOINTER)&&(!thisFormula->IsEmpty())) {
                 if (stencil && CheckEqual(stencil->theData[i],0.0)) {
                     references << -1;
                     continue;
                 }
-
-                if (runAll || thisFormula->AmISimple(stackLength,varList)) {
-                    _String * flaString = (_String*)thisFormula->toStr(kFormulaStringConversionNormal, nil,true);
-                    long      fref = flaStrings.Insert(flaString,newFormulas.lLength);
-                    if (fref < 0) {
-                        references << flaStrings.GetXtra (-fref-1);
-                        DeleteObject (flaString);
-                    } else {
-                        newFormulas << (long)thisFormula;
-                        references << fref;
-                    }
-                } else {
-                    isGood = false;
+                if (! process_formula (thisFormula)) {
                     break;
                 }
+
             } else {
                 references << -1;
             }
@@ -2686,6 +2682,7 @@ void        _Matrix::MakeMeSimple (void) {
 
             cmd                         = new _CompiledMatrixData;
             cmd->has_volatile_entries   = false;
+            cmd->stackDepth = stackLength;
           
             for (unsigned long k = 0; k < newFormulas.lLength; k++) {
                 cmd->has_volatile_entries = ((_Formula*)newFormulas.get(k))->ConvertToSimple(varList) || cmd->has_volatile_entries;
@@ -5359,7 +5356,7 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
 
 _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Matrix * existing_storage) {
     // find the maximal elements of the matrix
-        
+    
     try {
         if (!is_square()) {
             throw _String ("Exponentiate is not defined for non-square matrices");
@@ -5679,8 +5676,9 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         if (check_transition) {
             bool pass = true;
             if (result->is_dense()) {
-                for (unsigned long r = 0L; r < result->lDim; r += result->vDim) {
+                for (unsigned long r = 0L; r < result->lDim; r += result->vDim + 1) {
                     if (result->theData[r] > 1.) {
+                        //printf ("\nDIAGONAL > 1 (%d, %g)\n", r, result->theData[r]);
                         pass = false;
                         break;
                     }

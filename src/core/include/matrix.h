@@ -75,6 +75,7 @@ struct      _CompiledMatrixData {
     hyFloat         * formulaValues;
 
     long      * formulaRefs;
+    long        stackDepth;
     bool        has_volatile_entries;
 
     _SimpleList varIndex,

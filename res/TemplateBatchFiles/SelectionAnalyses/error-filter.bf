@@ -94,9 +94,13 @@ if (efilter.error_sink_proportion == 0) {
 }
 efilter.error_sink_prior_odds_ratio =  Min (1e25,efilter.error_sink_proportion / efilter.fast_omega_proportion);
 
+efilter.verbose_logging = utility.GetEnvVariable ("VERBOSE_LOGGING");
+
 efilter.site_offset = 0;
 
 utility.ToggleEnvVariable ("LOOP_TREE_ITERATOR_PREORDER", TRUE);
+
+
 
 for (p = 0; p < efilter.input[terms.json.partition_count]; p+=1) {
     efilter.sequences    = {};
@@ -175,6 +179,19 @@ for (p = 0; p < efilter.input[terms.json.partition_count]; p+=1) {
                         efilter.site_BF2 = 1e25;
                     }
                     
+                    if (efilter.verbose_logging ) {
+                        if (efilter.site_BF >= efilter.threshold || efilter.site_BF2 >= efilter.ratio_threshold) {
+                            if (efilter.site_BF >= efilter.threshold && efilter.site_BF2 >= efilter.ratio_threshold) {
+                                fprintf (stdout, "FILTERED\n");
+                            } else {
+                                fprintf (stdout, "KEPT\n");
+                            }
+                            fprintf (stdout, ">" + (site+1) + "/" + node, " " + efilter.site_BF + ":" +efilter.site_BF2 + "\n");
+                        
+                        }
+                    }
+                    
+                    
                     if (efilter.site_BF >= efilter.threshold && efilter.site_BF2 >= efilter.ratio_threshold) {
                         if (efilter.masked_sites/node) { // terminal node
                             if (efilter.masked_already [ntm] != 1) {
@@ -189,12 +206,15 @@ for (p = 0; p < efilter.input[terms.json.partition_count]; p+=1) {
                                     if (efilter.masked_already [ntm] != 1) {
                                         efilter.masked_sites [ntm] + (site + efilter.site_offset);
                                     }  
-                                }      
-                                //console.log ("Masking everything " + site + " " + node + " " + Abs (efilter.leaf_descendants) / Abs (efilter.sequences));                        
+                                }   
+                                if (efilter.verbose_logging) {}   
+                                    console.log ("Masking everything " + site + " " + node + " " + Abs (efilter.leaf_descendants) / Abs (efilter.sequences));               
+                                }         
                                 break;
                             }
                             for (ntm, ignore; in; efilter.leaf_descendants[node]) {
                                 efilter.write_out[ntm] = "---";
+                                //console.log ("Masking child " + ntm + " of parent " + node + " at site " + (1+site));   
                                 if (efilter.masked_already [ntm] != 1) {
                                     efilter.masked_sites [ntm] + (site + efilter.site_offset);
                                 }

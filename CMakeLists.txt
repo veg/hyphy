@@ -169,7 +169,11 @@ set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPIL
 
 set(DEFAULT_WARNING_FLAGS " -w -Weffc++ -Wextra -Wall ")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare")
+set(ADDITIONAL_FLAGS "")
 
+if (DEBUGFLAGS)
+	set(ADDITIONAL_FLAGS "-g")
+endif()
 
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -289,7 +293,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
 #set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info -fopt-info-vec-missed")
-set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}")
+set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${ADDITIONAL_FLAGS}")
 
 if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
     set(DEFAULT_COMPILE_FLAGS "")
@@ -299,7 +303,7 @@ if(NOT DEFINED DEFAULT_LINK_FLAGS)
     set(DEFAULT_LINK_FLAGS "")
 endif(NOT DEFINED DEFAULT_LINK_FLAGS)
 
-set(DEFAULT_LINK_FLAGS "${DEFAULT_LINK_FLAGS}  ")
+set(DEFAULT_LINK_FLAGS "${DEFAULT_LINK_FLAGS}  ${ADDITIONAL_FLAGS}")
 
 if(NOT DEFINED DEFAULT_WARNING_FLAGS)
     set(DEFAULT_WARNING_FLAGS "")
@@ -309,7 +313,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
    set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -fwasm-exceptions ")
 endif()
 
-MESSAGE ("Set default compiler flags to ${DEFAULT_COMPILE_FLAGS}")
+MESSAGE ("Set compiler flags to ${DEFAULT_COMPILE_FLAGS}")
+MESSAGE ("Set linker flags to ${DEFAULT_LINK_FLAGS}")
 
 #-------------------------------------------------------------------------------
 # OpenMP support
