@@ -125,6 +125,17 @@ inline double _sse_sum_2 (__m128d const & x) {
 }
 #endif
 
+#ifdef _SLKP_USE_APPLE_BLAS_2
+enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102 };
+enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113,
+  AtlasConj=114};
+extern "C" void cblas_dgemv(const enum CBLAS_ORDER __Order,
+                 const enum CBLAS_TRANSPOSE __TransA,
+                 const int __M, const int __N,
+                 const double __alpha, const double *__A,
+                 const int __lda, const double *__X, const int __incX,
+                 const double __beta, double *__Y, const int __incY);
+#endif
 
 /*
 template<long D> inline void __ll_handle_matrix_transpose (hyFloat const * __restrict transitionMatrix, hyFloat * __restrict tMatrixT) {
@@ -3234,7 +3245,22 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                         printf ("\t %d %g %g\n", k, parentConditionals[k], childVector[k]);
                 }*/
                 
-                _hy_mvp_blocked_4x4<20> (mvs, tMatrix, childVector);
+                #ifdef _SLKP_USE_APPLE_BLAS_2
+                         cblas_dgemv(CblasRowMajor,
+                                     CblasNoTrans,
+                                     20,
+                                     20,
+                                     1.,
+                                     tMatrix,
+                                     20,
+                                     childVector,
+                                     1,
+                                     0.,
+                                     mvs,
+                                     1);
+                #else
+                        _hy_mvp_blocked_4x4<20> (mvs, tMatrix, childVector);
+                #endif
                 sum += _hy_vvmult_sum<20> (parentConditionals, mvs);
 
                 __ll_loop_handle_scaling<20L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
@@ -3294,8 +3320,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 }
             }*/
 
-            _hy_mvp_blocked_4x4<61> (mvs, tMatrix, childVector);
-            sum += _hy_vvmult_sum<61> (parentConditionals, mvs);
+        #ifdef _SLKP_USE_APPLE_BLAS_2
+                 cblas_dgemv(CblasRowMajor,
+                             CblasNoTrans,
+                             61,
+                             61,
+                             1.,
+                             tMatrix,
+                             61,
+                             childVector,
+                             1,
+                             0.,
+                             mvs,
+                             1);
+        #else
+                _hy_mvp_blocked_4x4<61> (mvs, tMatrix, childVector);
+        #endif
+        sum += _hy_vvmult_sum<61> (parentConditionals, mvs);
 
 
 //#pragma omp critical
@@ -3329,7 +3370,22 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
             
 
-            _hy_mvp_blocked_4x4<62> (mvs, tMatrix, childVector);
+            #ifdef _SLKP_USE_APPLE_BLAS_2
+                     cblas_dgemv(CblasRowMajor,
+                                 CblasNoTrans,
+                                 62,
+                                 62,
+                                 1.,
+                                 tMatrix,
+                                 62,
+                                 childVector,
+                                 1,
+                                 0.,
+                                 mvs,
+                                 1);
+            #else
+                    _hy_mvp_blocked_4x4<62> (mvs, tMatrix, childVector);
+            #endif
             sum += _hy_vvmult_sum<62> (parentConditionals, mvs);
             __ll_loop_handle_scaling<62L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
 
@@ -3345,7 +3401,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             }
             
            
-            _hy_mvp_blocked_4x4<63> (mvs, tMatrix, childVector);
+            #ifdef _SLKP_USE_APPLE_BLAS_2
+                     cblas_dgemv(CblasRowMajor,
+                                 CblasNoTrans,
+                                 63,
+                                 63,
+                                 1.,
+                                 tMatrix,
+                                 63,
+                                 childVector,
+                                 1,
+                                 0.,
+                                 mvs,
+                                 1);
+            #else
+                    _hy_mvp_blocked_4x4<63> (mvs, tMatrix, childVector);
+            #endif
+            
             sum += _hy_vvmult_sum<63> (parentConditionals, mvs);
 
             __ll_loop_handle_scaling<63L, true> (sum, parentConditionals, scalingAdjustments, didScale, parentCode, siteCount, siteID, localScalerChange, theFilter->theFrequencies.get (siteOrdering.list_data[siteID]));
@@ -3361,8 +3433,23 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 lNodeFlags, isLeaf, nodeCode, setBranch, flatTree.lLength, siteID, siteFrom, siteCount, siteOrdering, parentConditionals, tMatrix, lNodeResolutions, childVector, tcc, currentTCCBit, currentTCCIndex, lastUpdatedSite, setBranchTo, alphabetDimension)) {
                 continue;
             }
-
-             _hy_matrix_vector_product_blocked_4x4 (mvs, tMatrix, childVector, alphabetDimension);
+            #ifdef _SLKP_USE_APPLE_BLAS_2
+                 cblas_dgemv(CblasRowMajor,
+                             CblasNoTrans,
+                             alphabetDimension,
+                             alphabetDimension,
+                             1.,
+                             tMatrix,
+                             alphabetDimension,
+                             childVector,
+                             1,
+                             0.,
+                             mvs,
+                             1);
+            #else
+                _hy_matrix_vector_product_blocked_4x4 (mvs, tMatrix, childVector, alphabetDimension);
+            #endif
+             
              //_hy_mvp_blocked_4x4<16> (mvs, tMatrix, childVector);
              sum += _hy_vvmult_sum_generic (parentConditionals, mvs, alphabetDimension);
              //sum += _hy_vvmult_sum<16> (parentConditionals, mvs);

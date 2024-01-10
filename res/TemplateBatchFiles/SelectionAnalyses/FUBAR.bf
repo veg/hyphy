@@ -650,12 +650,13 @@ return fubar.json;
 //----------------------------------------------------------------------------
 
 lfunction fubar.ComputeENFP_CI (p_i,sig_level) {
+    
     N = Abs (p_i);
-
     PDF_old = {{1-p_i[0],p_i[0]}};
     PDF = PDF_old;
 
     for (i = 1; i < N; i+=1) {
+    
         PDF = {1,i+2};
         PDF[0] = PDF_old[0] * (1-p_i[i]);
         for (X = 1; X < i+1; X+=1) {
@@ -677,6 +678,7 @@ lfunction fubar.ComputeENFP_CI (p_i,sig_level) {
         _idx+=1;
         sum += PDF[_idx];
     }
+
 
     return {{lb__, _idx__}}
 }
