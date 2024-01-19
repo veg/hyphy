@@ -207,7 +207,7 @@ for (p = 0; p < efilter.input[terms.json.partition_count]; p+=1) {
                                         efilter.masked_sites [ntm] + (site + efilter.site_offset);
                                     }  
                                 }   
-                                if (efilter.verbose_logging) {}   
+                                if (efilter.verbose_logging) {
                                     console.log ("Masking everything " + site + " " + node + " " + Abs (efilter.leaf_descendants) / Abs (efilter.sequences));               
                                 }         
                                 break;

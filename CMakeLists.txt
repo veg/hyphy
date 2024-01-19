@@ -491,7 +491,7 @@ if(${MPI_FOUND})
     endif(${OPENMP_FOUND})
 
 	if(${BLAS_FOUND})
-    	target_link_libraries(hyphy PRIVATE ${BLAS_LIBRARIES})
+    	target_link_libraries(HYPHYMPI ${BLAS_LIBRARIES})
 	endif ()
 
     install(
