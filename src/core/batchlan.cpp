@@ -1154,7 +1154,9 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
                 if (user_argument) { // user argument provided
                     user_argument -> AddAReference();
                     kwarg_used = (_String*)current_tag->GetItem(0);
-                    kwargs->DeleteByKey(*kwarg_used);
+                    if (handle_multi_choice || user_argument->ObjectClass() != ASSOCIATIVE_LIST) {
+                        kwargs->DeleteByKey(*kwarg_used);
+                    }
                     ref_manager < user_argument;
                 } else { // see if there are defaults
                     if (current_tag->countitems() > 2 && ! ignore_kw_defaults) {
@@ -1184,6 +1186,25 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
                 user_argument->AddAReference();
                 throw (user_argument);
             } else {
+                if (user_argument->ObjectClass() == ASSOCIATIVE_LIST) {
+                    _AssociativeList* list_arg = (_AssociativeList*)user_argument;
+                    if (list_arg->countitems() >= 1) {
+                        _String* smallest_key = list_arg->GetSmallestNumericalKey ();
+                        _FString* value = (_FString*)list_arg->GetByKey (*smallest_key);
+                        _String *ret_value = new _String (value->get_str());
+                        echo_argument (kwarg_used, value->get_str());
+                        list_arg->DeleteByKey(smallest_key); // this will also delete smallest_key
+                        if (list_arg->countitems() == 0) {
+                            kwargs->DeleteByKey(*kwarg_used);
+                        } else {
+                            currentKwarg --;
+                        }
+                        return ret_value;
+                    } else {
+                        throw _String ("Ran out of multi-choice keyword options");
+                    }
+                    
+                }
                 throw _String ("Multi-choice keyword argument not supported in this context");
             }
         }

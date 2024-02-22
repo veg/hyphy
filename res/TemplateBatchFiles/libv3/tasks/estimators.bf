@@ -769,7 +769,6 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     can_do_restarts = null;
 
-
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
         grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
         if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"),"Number")) {
@@ -797,6 +796,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     if (optimization_log) {
         utility.ToggleEnvVariable("PRODUCE_OPTIMIZATION_LOG", 1);
     }
+    
     
     if (Type (can_do_restarts) == "AssociativeList") {
         io.ReportProgressBar("", "Working on crude initial optimizations");

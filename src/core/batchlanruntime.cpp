@@ -1071,10 +1071,14 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
             if (do_linear) {
                 unsigned long   size_allocation = sequence2->length()+1UL;
 
-                _Matrix         *buffers[6] = {nil};
-
+                _Matrix         *buffers[6]   = {nil};
+                double          *data_buffers[6] = {nil};
+                
                 ArrayForEach(buffers, 6, [=] (_Matrix* m, unsigned long) -> _Matrix* {
                     return new _Matrix (size_allocation,1,false,true);
+                });
+                ArrayForEach(data_buffers, 6, [=] (double* m, unsigned long i) -> double* {
+                    return buffers[i]->theData;
                 });
 
                 char          *alignment_route = new char[2*(size_allocation)] {0};
@@ -1083,10 +1087,28 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 ops.list_data[reference_sequence->length()+1] = sequence2->length();
                 ops.list_data[0]               = -1;
 
-                score = LinearSpaceAlign(reference_sequence,sequence2,character_map_to_integers,score_matrix,
-                                         gap_open,gap_extend,gap_open2,gap_extend2,
-                                         do_local,do_affine,ops,score,0,
-                                         reference_sequence->length(),0,sequence2->length(),buffers,0,alignment_route);
+                score = LinearSpaceAlign (reference_sequence->get_str(),
+                                          sequence2->get_str(),
+                                          reference_sequence->length(),
+                                          sequence2->length(),
+                                          character_map_to_integers,
+                                          score_matrix->theData,
+                                          score_matrix->GetVDim(),
+                                          gap_open,
+                                          gap_extend,
+                                          gap_open2,
+                                          gap_extend2,
+                                          do_local,
+                                          do_affine,
+                                          ops.list_data,
+                                          score,
+                                          0,
+                                          reference_sequence->length(),
+                                          0,
+                                          sequence2->length(),
+                                          data_buffers,
+                                          0,
+                                          alignment_route);
 
                 delete[]    alignment_route;
 
@@ -1167,6 +1189,10 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 char * str1r = nil,
                      * str2r = nil;
 
+               
+                if (do_codon && reference_sequence->length() % 3 != 0) {
+                   hy_global::HandleApplicationError ( "Reference sequence length not divisible by 3 in AlignStrings (codon mode)" );
+                }
                
                 score = AlignStrings (reference_sequence->get_str() ? reference_sequence->get_str() : "",
                                       sequence2->get_str() ? sequence2->get_str() : "",

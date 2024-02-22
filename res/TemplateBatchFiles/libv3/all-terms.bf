@@ -45,6 +45,7 @@ namespace terms{
     substitutions       = "substitutions";
     search_grid         = "search_grid";
     search_restarts     = "search_restarts";
+    multiple_files      = "multiple files";
 
     parameters     = "parameters";
     local          = "local";

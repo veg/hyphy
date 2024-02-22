@@ -307,26 +307,25 @@ namespace mpi {
 
         scores = {};
 
+
         queue  = mpi.CreateQueue ({^"terms.mpi.LikelihoodFunctions": {{lf_id}},
                                    ^"terms.mpi.Headers" : utility.GetListOfLoadedModules ("libv3/")});
 
-        
         io.ReportProgressBar("", "Computing LF on a grid");
         for (i = 1; i < Abs (jobs); i += 1) {
-           io.ReportProgressBar("", "Computing LF on a grid "  + i + "/" + Abs (jobs));
+           //io.ReportProgressBar("", "Computing LF on a grid "  + i + "/" + Abs (jobs));
            mpi.QueueJob (queue, handler, {"0" : lf_id,
                                            "1" : jobs [i],
                                            "2" : &scores}, callback);
         }
         
 
-        io.ClearProgressBar();
         Call (callback, -1, Call (handler, lf_id, jobs[0], &scores), {"0" : lf_id, "1" : jobs [0], "2" : &scores});
-
         mpi.QueueComplete (queue);
 
+        io.ClearProgressBar();
+        
         return scores;
-
     }
 
     //------------------------------------------------------------------------------
@@ -348,6 +347,7 @@ namespace mpi {
             parameters.SetValues (tasks[task_ids[i]]);
             LFCompute (^lf_id, ll);
             results [task_ids[i]] = ll;
+            io.ReportProgressBar("", "Grid result "  + i  + " = " + ll + " (best = " + Max (results, 0)[^"terms.data.value"] + ")");
 
         }
         LFCompute (^lf_id, LF_DONE_COMPUTE);

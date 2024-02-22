@@ -40,10 +40,6 @@
 #ifndef __ALIGNMENT_HEADER_FILE__
 
 #define __ALIGNMENT_HEADER_FILE__
-#include "baseobj.h"
-#include "likefunc.h"
-#include "matrix.h"
-#include "simplelist.h"
 
 double AlignStrings( char const * r_str
                    , char const * q_str
@@ -69,23 +65,26 @@ double AlignStrings( char const * r_str
                    , const bool do_true_local = false
                    );
 
-hyFloat LinearSpaceAlign( _String const * s1           // first string
-                           , _String const * s2           // second string
+double LinearSpaceAlign(    const char * s1           // first string
+                           , const char * s2           // second string
+                           , const long s1L
+                           , const long s2L
                            , long*  cmap     // char -> position in scoring matrix mapper
-                           , _Matrix * ccost        // NxN matrix of edit distances on characters
-                           , hyFloat gopen       // the cost of opening a gap in sequence 1
-                           , hyFloat gextend     // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
-                           , hyFloat gopen2      // the cost of opening a gap in sequence 2
-                           , hyFloat gextend2    // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
+                           , const double * ccost        // NxN matrix of edit distances on characters
+                           , const long costD
+                           , double gopen       // the cost of opening a gap in sequence 1
+                           , double gextend     // the cost of extending a gap in sequence 1 (ignored unless doAffine == true)
+                           , double gopen2      // the cost of opening a gap in sequence 2
+                           , double gextend2    // the cost of opening a gap in sequence 2   (ignored unless doAffine == true)
                            , bool doLocal           // ignore prefix and suffix gaps
                            , bool doAffine          // use affine gap penalties
-                           , _SimpleList & ops      // edit operations for the optimal alignment
-                           , hyFloat scoreCheck  // check the score of the alignment
+                           , long * ops      // edit operations for the optimal alignment
+                           , double scoreCheck  // check the score of the alignment
                            , long from1
                            , long to1
                            , long from2
                            , long to2
-                           , _Matrix ** buffer      // matrix storage,
+                           , double ** buffer      // matrix storage,
                            , char parentGapLink
                            , char * ha
                            );
