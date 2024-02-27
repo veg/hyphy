@@ -1530,6 +1530,7 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
         if (theIndex) {
             _Matrix*    vm = (_Matrix*) value;
             hyFloat * __restrict dp = vm ->theData;
+            const long *__restrict ip = vm->theIndex;
 
             if (vm->compressedIndex) {
                 //vm->_validateCompressedStorage();
@@ -1573,8 +1574,8 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
                 InitializeArray(tempDiags, hDim, 0.0);
 
                 if (freq_matrix) {
-                      for (long i=0; i<lDim; i++) {
-                          long p = theIndex[i];
+                      for (long i=0; i<vm->lDim; i++) {
+                          long p = ip[i];
                           if (p != -1) {
                               long h = p / vDim;
                                    p = p - h*vDim;
@@ -1585,8 +1586,8 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
                       }
                 }
                 else {
-                      for (long i=0; i<lDim; i++) {
-                          long p = theIndex[i];
+                      for (long i=0; i<vm->lDim; i++) {
+                          long p = ip[i];
                           if (p != -1) {
                               long h = p / vDim;
                                    p = p - h*vDim;

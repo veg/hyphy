@@ -736,7 +736,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
            }
     );
     
-     
     
     if (^"fel.ci") {
         if (!sim_mode) {
@@ -761,6 +760,8 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         ci = None;
     }
  
+ 
+ 
     if (sim_mode) {
         lrt = 2*results[1][0];    
     } else {
@@ -777,9 +778,10 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
 
     ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
     parameters.SetConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
-
+ 
     Optimize (results, ^lf);
 
+ 
     if (sim_mode) {
         return lrt - 2*results[1][0];
     } else {
@@ -792,11 +794,11 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         tree_name = (lfInfo["Trees"])[0];
         sum = (BranchLength (^tree_name, -1)*^"fel.selected_branches_index")[0];
         if (^"fel.resample") {
+            
             N = ^"fel.resample";
             sims = {};
             GetDataInfo (fi, ^((lfInfo["Datafilters"])[0]), "PARAMETERS");
             //Export (lfe, ^lf);
-            //console.log (lfe);
             for (i = 0; i < N; i+=1) {        
                 DataSet null_sim = SimulateDataSet (^lf);
                 DataSetFilter null_filter = CreateFilter (null_sim,3,,,fi["EXCLUSIONS"]);

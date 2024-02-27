@@ -2263,6 +2263,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
     auto assignment = [&] (long i, const _String& call) -> _String const {
         return _StringBuffer (_HY_ValidHBLExpressions.RetrieveKeyByPayload(i))
+                << " "
                 << parameter_to_string (0)
                 << " = "
                 << call
@@ -2359,6 +2360,10 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         }
         break;
 
+        case 12: { //simulate data
+            (*string_form) << assignment (HY_HBL_COMMAND_SIMULATE_DATA_SET, kEmptyString);
+        }
+        break;
  
         case 13: { // a function
             (*string_form) << "function "
