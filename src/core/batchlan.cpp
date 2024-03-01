@@ -2001,6 +2001,7 @@ bool        _ExecutionList::BuildList   (_StringBuffer& s, _SimpleList* bc, bool
               case HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX:
               case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
               case HY_HBL_COMMAND_DO_SQL:
+              case HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH:
               {
                     _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                     break;
@@ -2168,26 +2169,25 @@ _ElementaryCommand::_ElementaryCommand (_String& s) {
 
 //____________________________________________________________________________________
 _ElementaryCommand::~_ElementaryCommand (void) {
+    
+    auto clear_formulas = [this] (long start_at) -> void {
+        for (long i = start_at; i<simpleParameters.lLength; i++) {
+            _Formula* f = (_Formula*)simpleParameters(i);
+            if (f) {
+                delete (f);
+            }
+        }
+    };
+    
     if (CanFreeMe()) {
         if (code==4) { // IF
-            if (simpleParameters.lLength>2) {
-                _Formula* f = (_Formula*)simpleParameters(2);
-                delete (f);
-            }
+            clear_formulas (2);
         } else if (code==0) {
             if (simpleParameters.lLength) {
-
-                _Formula* f = (_Formula*)simpleParameters(2);
-                delete (f);
-                f = (_Formula*)simpleParameters(1);
-                delete(f);
-                simpleParameters.Clear();
-            }
-        } else if ((code==6)||(code==9)) {
-            for (long i = 0; i<simpleParameters.lLength; i++) {
-                _Formula* f = (_Formula*)simpleParameters(i);
-                delete (f);
-            }
+                clear_formulas (1);
+             }
+        } else if ( code==6 || code==9 || code == HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH) {
+            clear_formulas (0);
         } else if (code == HY_HBL_COMMAND_INIT_ITERATOR) {
             if (simpleParameters.get (1) == ASSOCIATIVE_LIST && simpleParameters.countitems() > 2) {
                 delete (AVLListXLIterator*)simpleParameters.get(2);
@@ -2341,6 +2341,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
         case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
         case HY_HBL_COMMAND_GET_INFORMATION:
+        case HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH:
         case HY_HBL_COMMAND_SIMULATE_DATA_SET: {
             (*string_form) << procedure (code);
         }
@@ -3713,6 +3714,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         return HandleFindRootOrIntegrate(chain, code == HY_HBL_COMMAND_INTEGRATE);
         break;
 
+    case HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH:
+        return HandleConvertBranchLength(chain);
+        break;
 
     case HY_HBL_COMMAND_MPI_SEND:
         return HandleMPISend (chain);

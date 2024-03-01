@@ -519,6 +519,8 @@ if (relax.model_set == "All") { // run all the models
              relax.ge_model_map [relax.index] = {"DEFAULT" : "relax.ge"};
         }
 
+
+
         if (Type (relax.ge_guess) != "Matrix") {
         
         
@@ -677,6 +679,7 @@ if (relax.model_set == "All") { // run all the models
     }
 
 } else {
+    // MINIMAL models branch
     relax.general_descriptive.fit = relax.final_partitioned_mg_results;
 }
 
@@ -833,10 +836,16 @@ if (relax.do_srv)  {
 if (relax.model_set != "All") {
     relax.do_lhc = TRUE;
     relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.model_object_map[relax.reference_model_namespace]);
-    relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.test_branches_name`.+"))["0"])[terms.fit.MLE];
+    relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_branches_name`.+"))["0"])[terms.fit.MLE];
     relax.init_grid_setup        (relax.distribution);
+    relax.initial_ranges[relax.relaxation_parameter] = {terms.lower_bound : 0.10,
+                    terms.upper_bound : 2.0};
+     
+                    
     relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
-    //parameters.SetStickBreakingDistribution (relax.distribution, relax.ge_guess);
+    relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
+                'relax._renormalize_with_weights (_v_, "relax.distribution", relax.initial.test_mean)'
+            );
 }
 
 if (relax.has_unclassified) {
@@ -1001,6 +1010,8 @@ function relax.FitMainTestPair (prompt) {
             parameters.DeclareGlobalWithRanges (relax.scaler.id, 1, 0, 1000);
         }       
         
+
+        
         relax.general_descriptive.fit =  estimators.FitLF (relax.filter_names, relax.trees, relax.model_map,
                                     relax.general_descriptive.fit,
                                     relax.model_object_map, 
@@ -1082,6 +1093,7 @@ function relax.FitMainTestPair (prompt) {
 
 		
 			io.ReportProgressMessageMD("RELAX", "alt-2", "* Potential convergence issues due to flat likelihood surfaces; checking to see whether K > 1 or K < 1 is robustly inferred");
+			
 			if (relax.fitted.K > 1) {
 				parameters.SetRange (model.generic.GetGlobalParameter (relax.model_object_map ["relax.test"] , terms.relax.k), terms.range01);
 			} else {
@@ -1089,6 +1101,8 @@ function relax.FitMainTestPair (prompt) {
 			}
 			
 			//assert (__SIGTRAP__);
+			
+			VERBOSITY_LEVEL = 10;
 						
 			relax.alternative_model.fit.take2 =  estimators.FitLF (relax.filter_names, relax.trees, relax.model_map,
 																   relax.alternative_model.fit ,
@@ -1788,7 +1802,7 @@ function relax.init_grid_setup (omega_distro) {
             }  else {
                 relax.initial_ranges [_name_] = {
                     terms.lower_bound : 1,
-                    terms.upper_bound : 10
+                    terms.upper_bound : 5
                 };
             }
         '
@@ -1845,6 +1859,64 @@ lfunction relax._renormalize (v, distro, mean) {
     return v;
     
 }
+
+//------------------------------------------------------------------------------
+
+lfunction relax._renormalize_with_weights (v, distro, mean) {
+
+    parameters.SetValues (v);
+    m = parameters.GetStickBreakingDistribution (^distro);
+    //console.log (v);
+    //console.log (m);
+    //console.log (mean);
+    d = Rows (m);
+    
+    over_one = m[d-1][0] * m[d-1][1];
+    
+    if (over_one >= mean*0.95) {
+       //console.log ("OVERAGE");
+       new_weight = mean * Random (0.9, 0.95) / m[d-1][0];
+       diff = (m[d-1][1] - new_weight)/(d-1);
+       for (k = 0; k < d-1; k += 1) {
+            m[k][1] += diff;
+       }
+       m[d-1][1] = new_weight;
+    }
+    
+    over_one = m[d-1][0] * m[d-1][1];
+    under_one = (+(m[-1][0] $ m[-1][1])) / (1-m[d-1][1]); // current mean
+    
+    for (i = 0; i < d-1; i+=1) {
+        m[i][0] = m[i][0] * mean / under_one;
+    }
+  
+    under_one = +(m[-1][0] $ m[-1][1]);
+    
+    for (i = 0; i < d; i+=1) {
+        m[i][0] = m[i][0] * mean / under_one;
+    }
+    
+    m = m%0;
+    wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
+    
+    
+
+    //console.log (v);
+
+    for (i = 0; i < d; i+=1) {
+        (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];
+    }
+    for (i = 0; i < d-1; i+=1) {
+        (v[((^distro)["weights"])[i]])[^"terms.fit.MLE"] = wts[i];
+    }
+    
+    //console.log (v);
+
+    //assert (0);
+    return v;
+    
+}
+
 
 //------------------------------------------------------------------------------
 function relax.optimization_log_file (extension) {

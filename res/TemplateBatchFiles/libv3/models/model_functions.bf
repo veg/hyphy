@@ -408,7 +408,6 @@ function models.generic.SetBranchLength (model, value, parameter) {
             if (Abs((model[terms.parameters])[terms.local]) > 1) {
              
                 models.generic.SetBranchLength.bl = Call (model [terms.model.time], model[terms.model.type]);
-                
                  
                 models.generic.SetBranchLength.bl.p = parameter + "." + models.generic.SetBranchLength.bl;
                 if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) == FALSE) {
@@ -447,33 +446,36 @@ function models.generic.SetBranchLength (model, value, parameter) {
             }
 
  
-             if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p)) {
+             if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) || model[terms.model.branch_length_override]) {
 
                 if (Type (value) == "AssociativeList") {
                   	if (Abs (models.generic.SetBranchLength.expression)) {
-                    	ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-(" + value[terms.branch_length] + ")," + models.generic.SetBranchLength.bl + ",0,10000)");
+                  	    ConvertBranchLength (models.generic.SetBranchLength.t,  models.generic.SetBranchLength.expression, ^models.generic.SetBranchLength.bl, value[terms.branch_length]);
                     	Eval (models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					    messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 
 					} else {
                    	    Eval (models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     	messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
+                    	//console.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					}
 
                     return 1;
 
                 } else {
- 
-                     ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-(" + value + ")," + models.generic.SetBranchLength.bl + ",0,10000)");
+                     ConvertBranchLength (models.generic.SetBranchLength.t,  models.generic.SetBranchLength.expression, ^models.generic.SetBranchLength.bl, value);
+        
+                     //ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-(" + value + ")," + models.generic.SetBranchLength.bl + ",0,10000)");
                      Eval (models.generic.SetBranchLength.bl.p + "=" + models.generic.SetBranchLength.t);
                      messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + "=" + models.generic.SetBranchLength.t);
               }
             } else {
                 messages.log (models.generic.SetBranchLength.bl.p + " was already constrained in models.generic.SetBranchLength");
+                
             }
         } else {
 	        messages.log ("models.generic.SetBranchLength: missing branch-length-string");
-        }
+       }
     } else {
         messages.log ("models.generic.SetBranchLength: no local model parameters");
     }
@@ -706,6 +708,37 @@ lfunction models.FixParameterSetRegExp (re, model_spec) {
  
         if (None != regexp.Find (tag, re)) {
             if (parameters.IsIndependent (id)) {
+                parameters.SetConstraint (id, Eval (id), "");
+                constraints + id;
+            }
+        }
+    }
+        
+    return constraints;
+}
+
+/**
+ * Constrain the set of global model parameters defined by the regexp to own values
+ * @name parameters.ConstrainParameterSet
+ * @param {String} re  - match this regular expression
+ * @param {Dict} model_spec  - model definition
+ * @param {Dict} ref    - a dictionary of values to use if available
+ * @returns {Dict} the list of constrained parameters
+ */ 
+ 
+lfunction models.FixParameterSetRegExpFromReference (re, model_spec, ref) {
+    constraints = {};
+    for (tag, id; in; (model_spec[^"terms.parameters"])[^"terms.global"]) {
+        if (None != regexp.Find (tag, re)) {
+            if (parameters.IsIndependent (id)) {
+                mle = ref[tag];
+                if (Type (mle) == "AssociativeList") {
+                    if (mle / ^"terms.fit.MLE") {
+                        parameters.SetConstraint (id, mle[^"terms.fit.MLE"], "");
+                        constraints + id;
+                        continue;
+                    }
+                }
                 parameters.SetConstraint (id, Eval (id), "");
                 constraints + id;
             }

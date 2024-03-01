@@ -314,6 +314,79 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& current_progra
 
 //____________________________________________________________________________________
 
+bool      _ElementaryCommand::HandleConvertBranchLength(_ExecutionList& current_program){
+    
+    _Variable * receptacle = nil;
+    current_program.advance ();
+    
+    auto cleanup_cache = [this] (long start_at) -> void {
+        for (long k = simpleParameters.countitems() - 1; k >= start_at; k --) {
+            _Formula* f = (_Formula*)simpleParameters.get (k);
+            if (f) {
+                delete f;
+            }
+            simpleParameters.Delete(k);
+        }
+    };
+    
+    try {
+        receptacle = _ValidateStorageVariable (current_program);
+        _List               dynamic_manager;
+        _FString*           expression = (_FString*)_ProcessAnArgumentByType(*GetIthParameter(1), STRING, current_program, &dynamic_manager);
+        _Formula            * lhs_expression = nil,
+                            * lhs_derivative = nil;
+
+        if (parameters.countitems () > 4) {
+            _String * cached_fla = GetIthParameter(4);
+            if (!cached_fla->Equal(expression->get_str()) || simpleParameters.empty()) {
+                cleanup_cache (0);
+                parameters.Delete (4);
+            } else {
+                lhs_expression = (_Formula*)simpleParameters.get (0);
+                if (simpleParameters.countitems() > 1) {
+                    lhs_derivative = (_Formula*)simpleParameters.get (1);
+                }
+            }
+        }
+        
+        if (parameters.countitems () <= 4) {
+            parameters < expression->get_str_ref();
+        }
+        
+        if (!lhs_expression) {
+            lhs_expression = new _Formula;
+            _CheckExpressionForCorrectness (*lhs_expression, expression->get_str(), current_program);
+            simpleParameters << (long)lhs_expression;
+        }
+        
+        
+        _Variable *         target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),current_program,NUMBER);
+
+        if (!lhs_expression->DependsOnVariable(target_variable->get_index())) {
+            throw (expression->get_str().Enquote() & " does not depend on the variable " & target_variable->GetName()->Enquote());
+        }
+        
+        hyFloat             target_value = _ProcessNumericArgumentWithExceptions(*GetIthParameter(3),current_program.nameSpacePrefix);
+        
+        if (!lhs_derivative && simpleParameters.countitems() < 2) {
+            lhs_derivative =  lhs_expression->Differentiate (*target_variable->GetName(),false);
+            simpleParameters << (long)lhs_derivative;
+        }
+
+        if (lhs_derivative) {
+            receptacle->SetValue (new _Constant (lhs_expression->Newton (*lhs_derivative,target_variable, target_value, 0.0, 10000.)),false,true, NULL);
+        } else {
+            receptacle->SetValue (new _Constant (lhs_expression->Brent (target_variable, 0.0, 10000.,1.e-7, nil, target_value)), false,true, NULL);
+        }
+
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
+    }
+    return true;
+}
+
+//____________________________________________________________________________________
+
 bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& currentProgram, bool do_integrate){
 
     _Variable * receptacle = nil;
@@ -331,7 +404,6 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
         if (!parsed_expression.DependsOnVariable(target_variable->get_index()) && !do_integrate) {
             throw (expression.Enquote() & " does not depend on the variable " & target_variable->GetName()->Enquote());
         }
-
  
         hyFloat    lb = _ProcessNumericArgumentWithExceptions (*GetIthParameter(3),currentProgram.nameSpacePrefix),
                    ub = _ProcessNumericArgumentWithExceptions (*GetIthParameter(4),currentProgram.nameSpacePrefix);

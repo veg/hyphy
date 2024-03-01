@@ -727,6 +727,30 @@ lfunction parameters.GetStickBreakingDistributionWeigths (weights) {
     return w;
 }
 
+/**
+ * @name parameters.StStickBreakingDistributionWeigths
+ * @param   {Matrix} 1xN matrix of weights
+ * @returns {Matrix} 1x(N-1) matrix of weights
+ */
+
+lfunction parameters.SetStickBreakingDistributionWeigths (weights) {
+    rate_count = utility.Array1D (weights);
+    
+    
+    w = {1, rate_count-1};
+
+    w[0] = weights[0];
+    left_over = (1-w[0]);
+
+    for (i = 1; i < rate_count -  1; i += 1) {
+        w [i] = weights[i] / left_over;
+        left_over = left_over * (1-w[i]);
+        
+    }
+    //w[i] = left_over;
+    return w;
+}
+
 
 /**
  * @name parameters.helper.stick_breaking

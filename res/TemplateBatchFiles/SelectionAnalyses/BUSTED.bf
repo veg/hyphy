@@ -555,8 +555,8 @@ for (busted.partition_index = 0; busted.partition_index < busted.partition_count
     busted.global_scaler_list [busted.partition_index] = "busted.bl.scaler_" + busted.partition_index;
     parameters.DeclareGlobalWithRanges (busted.global_scaler_list [busted.partition_index], 3, 0, 1000);
     busted.initial_ranges      [busted.global_scaler_list [busted.partition_index]] = {
-                terms.lower_bound : 2.5,
-                terms.upper_bound : 3.5
+                terms.lower_bound : 2.0,
+                terms.upper_bound : 4.0
             };
 }
 
@@ -569,7 +569,7 @@ busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initi
 //estimators.CreateInitialGrid (busted.initial_grid, busted.initial_grid.N, busted.initial_grid_presets);
 
 busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
-    'busted._renormalize (_v_, "busted.distribution", busted.initial.test_mean, busted.error_sink)'
+    'busted._renormalize_with_weights (_v_, "busted.distribution", busted.initial.test_mean, busted.error_sink)'
 );
 
 if (busted.has_background) { //GDD rate category
@@ -611,24 +611,29 @@ debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
 if (Type (debug.checkpoint) != "String") {
 
     // constrain nucleotide rate parameters
-    busted.tmp_fixed = models.FixParameterSetRegExp (terms.nucleotideRatePrefix,busted.test.bsrel_model);
+    // copy global nucleotide parameter estimates to busted.test.bsrel_model)
     
-
-    busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map, {
-        "retain-lf-object": TRUE,
-        terms.run_options.proportional_branch_length_scaler : 
-                                                busted.global_scaler_list,
-                                            
-        terms.run_options.optimization_settings : 
-            {
-                "OPTIMIZATION_METHOD" : "nedler-mead",
-                "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
-                "OPTIMIZATION_PRECISION" : busted.nm.precision
-            } ,
-                                     
-        terms.search_grid     : busted.initial_grid,
-        terms.search_restarts : busted.N.initial_guesses
-    });
+    
+    busted.tmp_fixed = models.FixParameterSetRegExpFromReference (terms.nucleotideRatePrefix,busted.test.bsrel_model, busted.final_partitioned_mg_results[terms.global]);
+ 
+    busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map,                    
+        {
+            terms.run_options.retain_lf_object: TRUE,
+            terms.run_options.proportional_branch_length_scaler : 
+                                                    busted.global_scaler_list,
+                                                
+            terms.run_options.optimization_settings : 
+                {
+                    "OPTIMIZATION_METHOD" : "nedler-mead",
+                    "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
+                    "OPTIMIZATION_PRECISION" : busted.nm.precision
+                } ,
+                                         
+            terms.search_grid     : busted.initial_grid,
+            terms.search_restarts : busted.N.initial_guesses
+        }
+    );
+    
     
     parameters.RemoveConstraint (busted.tmp_fixed );
 
@@ -1248,6 +1253,64 @@ lfunction busted._renormalize (v, distro, mean, skip_first) {
     for (i = (skip_first != 0); i < d; i+=1) {
         (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] / m * mean;
     }
+    return v;
+    
+}
+
+//------------------------------------------------------------------------------
+
+lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
+
+    parameters.SetValues (v);
+    m = parameters.GetStickBreakingDistribution (^distro);
+    d = Rows (m);
+    
+    if (skip_first) {
+        m0 = m[0][0]*m[0][1];
+    } else {
+        m0 = 0;
+    }
+    
+    over_one = m[d-1][0] * m[d-1][1];
+    
+    if (over_one >= mean*0.95) {
+       //console.log ("OVERAGE");
+       new_weight = mean * Random (0.9, 0.95) / m[d-1][0];
+       diff = (m[d-1][1] - new_weight)/(d-1);
+       for (k = (skip_first != 0); k < d-1; k += 1) {
+            m[k][1] += diff;
+       }
+       m[d-1][1] = new_weight;
+    }
+    
+    over_one = m[d-1][0] * m[d-1][1];
+    under_one = (+(m[-1][0] $ m[-1][1])) / (1-m[d-1][1]); // current mean
+    
+    for (i = (skip_first != 0); i < d-1; i+=1) {
+        m[i][0] = m[i][0] * mean / under_one;
+    }
+  
+    under_one = +(m[-1][0] $ m[-1][1]);
+    
+    for (i = (skip_first != 0); i < d; i+=1) {
+        m[i][0] = m[i][0] * mean / under_one;
+    }
+    
+    m = m%0;
+    wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
+    
+    //console.log (v);
+
+    for (i = (skip_first != 0); i < d; i+=1) {
+        (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];
+    }
+    for (i = (skip_first != 0); i < d-1; i+=1) {
+        (v[((^distro)["weights"])[i]])[^"terms.fit.MLE"] = wts[i];
+    }
+    
+    //console.log (v);
+
+    //assert (0);
     return v;
     
 }
