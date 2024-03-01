@@ -1068,12 +1068,15 @@ function relax.FitMainTestPair (prompt) {
 		relax.inferred_distribution_ref = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map ["relax.reference"])) % 0;
 		selection.io.report_dnds (relax.inferred_distribution_ref);
 
+        relax.take1_snapshot = estimators.TakeLFStateSnapshot(relax.alternative_model.fit[terms.likelihood_function]);
+
 		relax.lf.raw = relax.ComputeOnGrid  ( 
 											  relax.alternative_model.fit[terms.likelihood_function],
 											  relax.grid.MatrixToDict ({200,1}["_MATRIX_ELEMENT_ROW_*0.025"]),
 											  "relax.pass1.evaluator",
 											  "relax.pass1.result_handler"
 											);
+											
 
 		// FIND the difference between K < 1 and K > 1
 
@@ -1102,7 +1105,6 @@ function relax.FitMainTestPair (prompt) {
 			
 			//assert (__SIGTRAP__);
 			
-			VERBOSITY_LEVEL = 10;
 						
 			relax.alternative_model.fit.take2 =  estimators.FitLF (relax.filter_names, relax.trees, relax.model_map,
 																   relax.alternative_model.fit ,
@@ -1112,6 +1114,17 @@ function relax.FitMainTestPair (prompt) {
 																    terms.run_options.optimization_log :  relax.optimization_log_file("MainALT-redo-log.json")}
 																   );
 
+            io.ReportProgressMessageMD("RELAX", "alt2", "* Attempt to fit an alternative direction of K");
+ 	        io.ReportProgressMessageMD("RELAX", "alt2", "* " + selection.io.report_fit (relax.alternative_model.fit.take2, 9, relax.codon_data_info[terms.data.sample_size]));
+           io.ReportProgressMessageMD("RELAX", "alt2", "* Relaxation/intensification parameter (K) = " + Format(estimators.GetGlobalMLE (relax.alternative_model.fit.take2,terms.relax.k),8,2));
+            io.ReportProgressMessageMD("RELAX", "alt2", "* The following rate distribution was inferred for **test** branches");
+            relax.inferred_distribution2 = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map ["relax.test"])) % 0;
+            selection.io.report_dnds (relax.inferred_distribution2);
+    
+    
+            io.ReportProgressMessageMD("RELAX", "alt2", "* The following rate distribution was inferred for **reference** branches");
+            relax.inferred_distribution_ref2 = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map ["relax.reference"])) % 0;
+            selection.io.report_dnds (relax.inferred_distribution_ref2);
 
             
 
@@ -1140,6 +1153,8 @@ function relax.FitMainTestPair (prompt) {
 
 				relax.alternative_model.fit = relax.alternative_model.fit.take2;
                 io.SpoolLFToPath(relax.alternative_model.fit.take2[terms.likelihood_function], relax.save_fit_path);
+			} else {
+			    estimators.RestoreLFStateFromSnapshot(relax.alternative_model.fit[terms.likelihood_function], relax.take1_snapshot);
 			}
 
             DeleteObject (relax.alternative_model.fit.take2[terms.likelihood_function]);
