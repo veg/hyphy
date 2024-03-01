@@ -825,8 +825,6 @@ double AlignStrings( char const * r_str
                         // the extra row/column is to accommodate prefix gaps
                         
 
-    //long i, j, k, m;
-
 
     if ( do_codon && ( r_len % 3 != 0 ) ) {
         return -INFINITY;
