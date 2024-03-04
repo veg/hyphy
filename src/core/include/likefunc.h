@@ -287,6 +287,18 @@ public:
   
 #endif
 #endif
+    
+    void            ComputeDependencyLists  (_List& receptacle, long max_dep = 0x7fffffff) const;
+    /**
+        This function computes a mapping from the index of each independent variable to the list of all dependent variables that it affects.
+                index => {n1,n2,...n3}
+         special cases:
+                index => null (no dependencies)
+                index => {} (all variables, or >max_dep)
+     
+        @param max_dep the maximum number of dependent variables affected by a paritcular independent to generate an explicit list
+    */
+
 
     bool            ProcessPartitionList        (_SimpleList&, _Matrix*) const;
     // given a matrix argument (argument 2; can be nil to include all)
@@ -536,6 +548,12 @@ protected:
     void            SetupParameterMapping       (void);
     void            CleanupParameterMapping     (void);
 
+    void            ConvertDependenciesToSimpleFormulas  ();
+    /**
+        Traverse the list of dependent variables and generate simple formulas if they can be created.
+    */
+
+    
     _SimpleList     theTrees,
                     theDataFilters,
                     theProbabilities,
