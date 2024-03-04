@@ -570,29 +570,51 @@ lfunction model.MatchAlphabets (a1, a2) {
  */
 
 lfunction models.BindGlobalParameters (models, filter) {
+    c = models.BindGlobalParametersDeferred (models, filter);
+    if (None != c) {
+        parameters.BatchApplyConstraints (c);
+    }
+    return c;
+}
+
+/**
+ * @name models.BindGlobalParametersDeferred
+ * Only populate the list of constraints, do no apply them
+ * compute the algebraic expression for the branch length
+ * @param {Dict} models - list of model objects
+ * @param {RegEx} filter - only apply to parameters matching this expression
+ * @return {Dict} the set of constraints applied
+ */
+
+lfunction models.BindGlobalParametersDeferred (models, filter) {
 
 
     if (Type (models) == "AssociativeList" && utility.Array1D (models) > 1) {
 
         reference_set = (((models[0])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
-        candidate_set = utility.UniqueValues(utility.Filter (utility.Keys (reference_set), "_key_",
-            "regexp.Find (_key_,`&filter`)"
-        ));
+        candidate_set = {};
         
-
+        for (_key_, _ignore_; in; reference_set) {
+            if (regexp.Find (_key_, filter)) {
+                candidate_set[_key_] = 1;
+            }
+        }
+         
+        candidate_set = utility.Keys (candidate_set);
         constraints_set = {};
 
         for (k = 1; k < Abs (models); k+=1) {
             parameter_set = (((models[k])[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]);
             if (Type (parameter_set) == "AssociativeList") {
-                utility.ForEach (candidate_set, "_p_",
-                    "if (`&parameter_set` / _p_) {
-                        if (parameters.IsIndependent (`&parameter_set`[_p_])) {
-                            parameters.SetConstraint (`&parameter_set`[_p_], `&reference_set`[_p_], '');
-                            `&constraints_set` [`&parameter_set`[_p_]] = `&reference_set`[_p_];
+            
+                for (_p_; in; candidate_set) {
+                    if (parameter_set / _p_) {
+                        if (parameters.IsIndependent (parameter_set[_p_])) {
+                            //parameters.SetConstraint (parameter_set[_p_], reference_set[_p_], '');
+                            constraints_set [parameter_set[_p_]] = reference_set[_p_];
                         } 
-                    }"
-                );
+                    }
+                }            
             }
         }
 

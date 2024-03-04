@@ -937,3 +937,16 @@ lfunction parameters.ValidateIDs (ids) {
     return result;
 }
 
+/**
+ * Apply a set of constraints of the form LHS := RHS (stored as key/values)
+ * @param {Dict} constraints - id=>constraint
+*/
+
+lfunction parameters.BatchApplyConstraints (constraints) {
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
+    for (p, v; in; constraints) {
+        parameters.SetConstraint (p,v, "");
+    }
+    SetParameter (DEFER_CONSTRAINT_APPLICATION, 0, 0);
+}
+
