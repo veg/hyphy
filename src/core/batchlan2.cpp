@@ -175,6 +175,8 @@ void        _HBL_Init_Const_Arrays  (void)
     _HY_ValidHBLExpressions.Insert ("BGM ",                                 HY_HBL_COMMAND_BGM);
     _HY_ValidHBLExpressions.Insert ("SimulateDataSet",                      HY_HBL_COMMAND_SIMULATE_DATA_SET);
     _HY_ValidHBLExpressions.Insert ("KeywordArgument",                      HY_HBL_COMMAND_KEYWORD_ARGUMENT);
+    _HY_ValidHBLExpressions.Insert ("ConvertBranchLength(",                 HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH);
+
 /*
 const long cut, const long conditions, const char sep, const bool doTrim, const bool isAssignment, const bool needsVerb, length options
 */
@@ -462,6 +464,10 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                         
 // matrix global arrays
 
+    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH,
+                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("ConvertBranchLength(", HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH,false),
+                                                                4,
+                                                                "ConvertBranchLength(<receptacle>, <expression>, <variable to solve for>, <target value>)",','));
 
     _HY_MatrixRandomValidPDFs.Insert ("Dirichlet", _HY_MATRIX_RANDOM_DIRICHLET,
                                       "Gaussian", _HY_MATRIX_RANDOM_GAUSSIAN,

@@ -176,7 +176,6 @@ function estimators.SetGlobals2(key2, value) {
     }
 
     
-
     estimators.ApplyExistingEstimates.set_globals[key3] = {
         terms.id: key3,
         terms.fit.MLE: value
@@ -212,10 +211,11 @@ function estimators.SetGlobals2(key2, value) {
  * @returns nothing
  */
 function estimators.SetGlobals(key, value) {
-    /*_did_set = {};
-    for (i,v; in; ((value[terms.parameters])[terms.global])) {
-        _did_set [v] = 0;
-    }*/
+    //_did_set = {};
+    //console.log (((value[terms.parameters])[terms.global]));
+    //for (i,v; in; ((value[terms.parameters])[terms.global])) {
+    //   _did_set [v] = 0;
+    //}
 
     ((value[terms.parameters])[terms.global])["estimators.SetGlobals2"][""];
     
@@ -496,9 +496,12 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
 
     estimators.ApplyExistingEstimatesToTree.constraint_count = 0;
 
-
     ExecuteCommands("GetInformation (estimators.ApplyExistingEstimatesToTree.map, `_tree_name`);");
     estimators.ApplyExistingEstimatesToTree.branch_names = Rows(estimators.ApplyExistingEstimatesToTree.map);
+    
+    for (i,v; in; model_descriptions) {
+        parameters.SetCategoryVariables   (v);
+    }
 
     for (estimators.ApplyExistingEstimatesToTree.b = 0; estimators.ApplyExistingEstimatesToTree.b < Abs(estimators.ApplyExistingEstimatesToTree.map); estimators.ApplyExistingEstimatesToTree.b += 1) {
         _branch_name = estimators.ApplyExistingEstimatesToTree.branch_names[estimators.ApplyExistingEstimatesToTree.b];
@@ -565,6 +568,8 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
     estimators.ApplyExistingEstimates.df_correction = 0;
     // copy global variables first
 
+    
+
     estimators.ApplyExistingEstimates.results[terms.global] = {};
     model_descriptions["estimators.SetCategory"][""];
     // the above line traverses all model descriptions and sets
@@ -591,6 +596,8 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
 
             _application_type = None;
 
+            //console.log (branch_length_conditions);
+        
             if (Type (branch_length_conditions) == "AssociativeList") {
                 if (Abs(branch_length_conditions) > estimators.ApplyExistingEstimates.i) {
                     _application_type = branch_length_conditions[estimators.ApplyExistingEstimates.i];
@@ -762,20 +769,24 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
 
     if (Type(initial_values) == "AssociativeList") {
         utility.ToggleEnvVariable("USE_LAST_RESULTS", 1);
-        //console.log (initial_values);
         df = estimators.ApplyExistingEstimates("`&likelihoodFunction`", model_objects, initial_values, run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
-    }
-
+   }
+   
 
     can_do_restarts = null;
 
-
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
-        grid_results = mpi.ComputeOnGrid (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")], "mpi.ComputeOnGrid.SimpleEvaluator", "mpi.ComputeOnGrid.ResultHandler");
+        grid_results = mpi.ComputeOnGridSetValues (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")],  {
+            0: model_objects,
+            1: initial_values,
+            2: run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]
+        }, "mpi.ComputeOnGrid.SimpleEvaluatorWithValues", "mpi.ComputeOnGrid.ResultHandler");
+        
         if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"),"Number")) {
             restarts = run_options[utility.getGlobalValue("terms.search_restarts")];
             if (restarts > 1) {
                 grid_results    = utility.DictToSortedArray (grid_results);
+                //console.log (grid_results);
                 can_do_restarts = {};
                 for (i = 1; i <= restarts; i += 1) {
                     can_do_restarts + (run_options [utility.getGlobalValue("terms.search_grid")])[grid_results[Rows(grid_results)-i][1]];
@@ -788,6 +799,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         }
         //console.log (best_value);
         //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+        //console.log (can_do_restarts);
         //assert (0);
     }
 
@@ -797,6 +809,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     if (optimization_log) {
         utility.ToggleEnvVariable("PRODUCE_OPTIMIZATION_LOG", 1);
     }
+    
     
     if (Type (can_do_restarts) == "AssociativeList") {
         io.ReportProgressBar("", "Working on crude initial optimizations");

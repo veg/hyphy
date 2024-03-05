@@ -597,6 +597,22 @@ _List* _AssociativeList::GetKeys (void) const {
     
 }
 
+//__________________________________________________________________________________
+_String* _AssociativeList::GetSmallestNumericalKey (void) const {
+    
+    _SimpleList keys;
+    
+    for (AVLListXLIteratorKeyValue key_value : AVLListXLIterator (&avl)) {
+        keys << ((_String*)avl.Retrieve(key_value.get_index()))->to_long();
+    }
+    if (keys.empty()) {
+        return new _String;
+    }
+    keys.Sort();
+    return new _String (keys.GetElement(0));
+    
+}
+
 //_____________________________________________________________________________________________
 void        _AssociativeList::FillInList (_List& fill_me) {
   

@@ -274,6 +274,8 @@ namespace hy_global {
    Global variables (grouped by type, then alphabetically)
    */
   
+  _String* ConstructAnErrorMessage         (_String const&);
+
   extern  _AVLList  _hy_application_globals;
   
   extern  _List     _hy_standard_library_extensions,

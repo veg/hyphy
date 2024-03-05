@@ -319,6 +319,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   HY_HBL_COMMAND_KEYWORD_ARGUMENT                               567L
 #define   HY_HBL_COMMAND_INIT_ITERATOR                                  568L
 #define   HY_HBL_COMMAND_ADVANCE_ITERATOR                               569L
+#define   HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH                          570L
 
 
 //!  HyPhy standard directory locations 

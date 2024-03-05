@@ -550,12 +550,16 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
 
     if (utility.CheckKey(data_info, utility.getGlobalValue("terms.code"), "Matrix")) {
 
-
         for (i = 0; i < part_count; i += 1) {
+            if (Type (source_data) == "String") {
+                src = source_data;
+            } else {
+                src = source_data[i];            
+            }
             this_filter = {};
-            DataSetFilter test = CreateFilter( ^ source_data, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
+            DataSetFilter test = CreateFilter( ^ src, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
             this_filter[utility.getGlobalValue("terms.data.name")] = prefix + (partitions[i])[utility.getGlobalValue("terms.data.name")];
-            DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ source_data, 3, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")], , data_info[utility.getGlobalValue("terms.stop_codons")]);
+            DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ src, 3, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")], , data_info[utility.getGlobalValue("terms.stop_codons")]);
             diff = test.sites - 3 * ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".sites");
 
             io.CheckAssertion("`&diff` == 0", "Partition " + this_filter[utility.getGlobalValue("terms.data.name")] + " is either has stop codons or is not in frame");
@@ -566,10 +570,15 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
 
     } else {
         for (i = 0; i < part_count; i += 1) {
+            if (Type (source_data) == "String") {
+                src = source_data;
+            } else {
+                src = source_data[i];            
+            }
 
             this_filter = {};
             this_filter[utility.getGlobalValue("terms.data.name")] = prefix + (partitions[i])[utility.getGlobalValue("terms.data.name")];
-            DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ source_data, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
+            DataSetFilter ^ (this_filter[utility.getGlobalValue("terms.data.name")]) = CreateFilter( ^ src, 1, (partitions[i])[utility.getGlobalValue("terms.data.filter_string")]);
             this_filter[utility.getGlobalValue("terms.data.coverage")] = ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".site_map");
             filters + this_filter;
 

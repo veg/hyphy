@@ -282,6 +282,7 @@ public:
     bool      HandleExport                          (_ExecutionList&);
     bool      HandleDifferentiate                   (_ExecutionList&);
     bool      HandleFindRootOrIntegrate             (_ExecutionList&, bool do_integrate = false);
+    bool      HandleConvertBranchLength             (_ExecutionList&);
     bool      HandleMPISend                         (_ExecutionList&);
     bool      HandleMPIReceive                      (_ExecutionList&);
     bool      HandleExecuteCommandsCases            (_ExecutionList&, bool do_load_from_file = false, bool do_load_library = false);

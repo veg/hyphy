@@ -298,6 +298,71 @@ namespace mpi {
         }
     }
 
+    //------------------------------------------------------------------------------
+
+    lfunction ComputeOnGridSetValues (lf_id, grid, values, handler, callback) {
+
+        jobs = mpi.PartitionIntoBlocks(grid);
+
+        scores = {};
+
+
+        queue  = mpi.CreateQueue ({^"terms.mpi.LikelihoodFunctions": {{lf_id}},
+                                   ^"terms.mpi.Headers" : utility.GetListOfLoadedModules ("libv3/")});
+
+        io.ReportProgressBar("", "Computing LF on a grid");
+        for (i = 1; i < Abs (jobs); i += 1) {
+           //io.ReportProgressBar("", "Computing LF on a grid "  + i + "/" + Abs (jobs));
+           mpi.QueueJob (queue, handler, {"0" : lf_id,
+                                           "1" : jobs [i],
+                                           "2" : values,
+                                           "3" : &scores}, callback);
+        }
+        
+
+        Call (callback, -1, Call (handler, lf_id, jobs[0], values, &scores), {"0" : lf_id, "1" : jobs [0], "3" : values, "2" : &scores});
+        mpi.QueueComplete (queue);
+
+        io.ClearProgressBar();
+        
+        return scores;
+    }
+
+
+    //------------------------------------------------------------------------------
+
+    lfunction ComputeOnGrid.SimpleEvaluatorWithValues (lf_id, tasks, values, scores) {
+    
+      
+        //#profile START;
+        
+        LFCompute (^lf_id, LF_START_COMPUTE);
+
+        results = {};
+        task_ids = utility.Keys (tasks);
+        task_count = Abs (tasks);
+        for (i, v; in; values[0]) {
+           v[^"terms.model.branch_length_override"] = TRUE;
+        }
+        for (i = 0; i < task_count; i+=1) {
+            
+            parameters.SetValues (tasks[task_ids[i]]);
+            estimators.ApplyExistingEstimates (lf_id, values[0], values[1], values[2]);
+            //fprintf (stdout, ^lf_id);
+            LFCompute (^lf_id, ll);
+            results [task_ids[i]] = ll;
+            io.ReportProgressBar("", "Grid result "  + i  + " = " + ll + " (best = " + Max (results, 0)[^"terms.data.value"] + ")");
+
+        }
+        LFCompute (^lf_id, LF_DONE_COMPUTE);
+        for (i, v; in; values[0]) {
+           v - ^"terms.model.branch_length_override";
+        }
+        
+        //#profile _hyphy_profile_dump;
+        //utility.FinishAndPrintProfile (_hyphy_profile_dump);
+        return results;
+    }
 
     //------------------------------------------------------------------------------
 
@@ -307,26 +372,25 @@ namespace mpi {
 
         scores = {};
 
+
         queue  = mpi.CreateQueue ({^"terms.mpi.LikelihoodFunctions": {{lf_id}},
                                    ^"terms.mpi.Headers" : utility.GetListOfLoadedModules ("libv3/")});
 
-        
         io.ReportProgressBar("", "Computing LF on a grid");
         for (i = 1; i < Abs (jobs); i += 1) {
-           io.ReportProgressBar("", "Computing LF on a grid "  + i + "/" + Abs (jobs));
+           //io.ReportProgressBar("", "Computing LF on a grid "  + i + "/" + Abs (jobs));
            mpi.QueueJob (queue, handler, {"0" : lf_id,
                                            "1" : jobs [i],
                                            "2" : &scores}, callback);
         }
         
 
-        io.ClearProgressBar();
         Call (callback, -1, Call (handler, lf_id, jobs[0], &scores), {"0" : lf_id, "1" : jobs [0], "2" : &scores});
-
         mpi.QueueComplete (queue);
 
+        io.ClearProgressBar();
+        
         return scores;
-
     }
 
     //------------------------------------------------------------------------------
@@ -339,6 +403,7 @@ namespace mpi {
     //------------------------------------------------------------------------------
 
     lfunction ComputeOnGrid.SimpleEvaluator (lf_id, tasks, scores) {
+     
         LFCompute (^lf_id, LF_START_COMPUTE);
 
         results = {};
@@ -348,6 +413,7 @@ namespace mpi {
             parameters.SetValues (tasks[task_ids[i]]);
             LFCompute (^lf_id, ll);
             results [task_ids[i]] = ll;
+            io.ReportProgressBar("", "Grid result "  + i  + " = " + ll + " (best = " + Max (results, 0)[^"terms.data.value"] + ")");
 
         }
         LFCompute (^lf_id, LF_DONE_COMPUTE);

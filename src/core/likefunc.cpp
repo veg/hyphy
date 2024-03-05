@@ -1932,18 +1932,15 @@ bool      _LikelihoodFunction::SendOffToMPI       (long index) {
 
 //_______________________________________________________________________________________
 
-bool    _LikelihoodFunction::PreCompute         (void)
-{
+bool    _LikelihoodFunction::PreCompute         (void) {
 
     useGlobalUpdateFlag = true;
     // mod 20060125 to only update large globals once
-    unsigned long i = 0UL;
+    unsigned long i;
     
     _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
-
     
-    
-    for (; i < arrayToCheck->lLength; i++) {
+    for (i = 0UL; i < arrayToCheck->lLength; i++) {
         _Variable* cornholio = LocateVar(arrayToCheck->list_data[i]);
         hyFloat tp = cornholio->Compute()->Value();
          if (!cornholio->IsValueInBounds(tp)){
@@ -4252,6 +4249,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
     CheckDependentBounds();
 
+    
     currentPrecision    = get_optimization_setting (kStartingPrecision, 0.1);
     precision           = get_optimization_setting (kOptimizationPrecision, 0.001);
     maxItersPerVar      = get_optimization_setting (kMaximumIterationsPerVariable, 5000.);

@@ -314,6 +314,79 @@ bool      _ElementaryCommand::HandleDifferentiate(_ExecutionList& current_progra
 
 //____________________________________________________________________________________
 
+bool      _ElementaryCommand::HandleConvertBranchLength(_ExecutionList& current_program){
+    
+    _Variable * receptacle = nil;
+    current_program.advance ();
+    
+    auto cleanup_cache = [this] (long start_at) -> void {
+        for (long k = simpleParameters.countitems() - 1; k >= start_at; k --) {
+            _Formula* f = (_Formula*)simpleParameters.get (k);
+            if (f) {
+                delete f;
+            }
+            simpleParameters.Delete(k);
+        }
+    };
+    
+    try {
+        receptacle = _ValidateStorageVariable (current_program);
+        _List               dynamic_manager;
+        _FString*           expression = (_FString*)_ProcessAnArgumentByType(*GetIthParameter(1), STRING, current_program, &dynamic_manager);
+        _Formula            * lhs_expression = nil,
+                            * lhs_derivative = nil;
+
+        if (parameters.countitems () > 4) {
+            _String * cached_fla = GetIthParameter(4);
+            if (!cached_fla->Equal(expression->get_str()) || simpleParameters.empty()) {
+                cleanup_cache (0);
+                parameters.Delete (4);
+            } else {
+                lhs_expression = (_Formula*)simpleParameters.get (0);
+                if (simpleParameters.countitems() > 1) {
+                    lhs_derivative = (_Formula*)simpleParameters.get (1);
+                }
+            }
+        }
+        
+        if (parameters.countitems () <= 4) {
+            parameters < expression->get_str_ref();
+        }
+        
+        if (!lhs_expression) {
+            lhs_expression = new _Formula;
+            _CheckExpressionForCorrectness (*lhs_expression, expression->get_str(), current_program);
+            simpleParameters << (long)lhs_expression;
+        }
+        
+        
+        _Variable *         target_variable = _CheckForExistingVariableByType (*GetIthParameter(2),current_program,NUMBER);
+
+        if (!lhs_expression->DependsOnVariable(target_variable->get_index())) {
+            throw (expression->get_str().Enquote() & " does not depend on the variable " & target_variable->GetName()->Enquote());
+        }
+        
+        hyFloat             target_value = _ProcessNumericArgumentWithExceptions(*GetIthParameter(3),current_program.nameSpacePrefix);
+        
+        if (!lhs_derivative && simpleParameters.countitems() < 2) {
+            lhs_derivative =  lhs_expression->Differentiate (*target_variable->GetName(),false);
+            simpleParameters << (long)lhs_derivative;
+        }
+
+        if (lhs_derivative) {
+            receptacle->SetValue (new _Constant (lhs_expression->Newton (*lhs_derivative,target_variable, target_value, 0.0, 10000.)),false,true, NULL);
+        } else {
+            receptacle->SetValue (new _Constant (lhs_expression->Brent (target_variable, 0.0, 10000.,1.e-7, nil, target_value)), false,true, NULL);
+        }
+
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (receptacle, error, current_program);
+    }
+    return true;
+}
+
+//____________________________________________________________________________________
+
 bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& currentProgram, bool do_integrate){
 
     _Variable * receptacle = nil;
@@ -331,7 +404,6 @@ bool      _ElementaryCommand::HandleFindRootOrIntegrate (_ExecutionList& current
         if (!parsed_expression.DependsOnVariable(target_variable->get_index()) && !do_integrate) {
             throw (expression.Enquote() & " does not depend on the variable " & target_variable->GetName()->Enquote());
         }
-
  
         hyFloat    lb = _ProcessNumericArgumentWithExceptions (*GetIthParameter(3),currentProgram.nameSpacePrefix),
                    ub = _ProcessNumericArgumentWithExceptions (*GetIthParameter(4),currentProgram.nameSpacePrefix);
@@ -1071,10 +1143,14 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
             if (do_linear) {
                 unsigned long   size_allocation = sequence2->length()+1UL;
 
-                _Matrix         *buffers[6] = {nil};
-
+                _Matrix         *buffers[6]   = {nil};
+                double          *data_buffers[6] = {nil};
+                
                 ArrayForEach(buffers, 6, [=] (_Matrix* m, unsigned long) -> _Matrix* {
                     return new _Matrix (size_allocation,1,false,true);
+                });
+                ArrayForEach(data_buffers, 6, [=] (double* m, unsigned long i) -> double* {
+                    return buffers[i]->theData;
                 });
 
                 char          *alignment_route = new char[2*(size_allocation)] {0};
@@ -1083,10 +1159,28 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 ops.list_data[reference_sequence->length()+1] = sequence2->length();
                 ops.list_data[0]               = -1;
 
-                score = LinearSpaceAlign(reference_sequence,sequence2,character_map_to_integers,score_matrix,
-                                         gap_open,gap_extend,gap_open2,gap_extend2,
-                                         do_local,do_affine,ops,score,0,
-                                         reference_sequence->length(),0,sequence2->length(),buffers,0,alignment_route);
+                score = LinearSpaceAlign (reference_sequence->get_str(),
+                                          sequence2->get_str(),
+                                          reference_sequence->length(),
+                                          sequence2->length(),
+                                          character_map_to_integers,
+                                          score_matrix->theData,
+                                          score_matrix->GetVDim(),
+                                          gap_open,
+                                          gap_extend,
+                                          gap_open2,
+                                          gap_extend2,
+                                          do_local,
+                                          do_affine,
+                                          ops.list_data,
+                                          score,
+                                          0,
+                                          reference_sequence->length(),
+                                          0,
+                                          sequence2->length(),
+                                          data_buffers,
+                                          0,
+                                          alignment_route);
 
                 delete[]    alignment_route;
 
@@ -1167,6 +1261,10 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 char * str1r = nil,
                      * str2r = nil;
 
+               
+                if (do_codon && reference_sequence->length() % 3 != 0) {
+                   hy_global::HandleApplicationError ( "Reference sequence length not divisible by 3 in AlignStrings (codon mode)" );
+                }
                
                 score = AlignStrings (reference_sequence->get_str() ? reference_sequence->get_str() : "",
                                       sequence2->get_str() ? sequence2->get_str() : "",

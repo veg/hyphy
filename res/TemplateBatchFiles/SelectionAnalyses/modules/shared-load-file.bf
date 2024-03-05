@@ -115,20 +115,90 @@ function load_nuc_file (prefix) {
  
  }
  
+function annotate_codon_info (codon_info, filter_name) {
+    sample_size=codon_info[utility.getGlobalValue("terms.data.sites")]*codon_info[utility.getGlobalValue("terms.data.sequences")];
+
+
+    codon_info[utility.getGlobalValue("terms.data.sample_size")] = sample_size;
+    upper_prefix = prefix && 1; //uppercase the prefix for json name
+    codon_info[utility.getGlobalValue("terms.json.json")] = codon_info[utility.getGlobalValue("terms.data.file")] + "."+upper_prefix+".json";
+
+    name_mapping = codon_info[utility.getGlobalValue("terms.data.name_mapping")];
+
+        /**
+            will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
+        */
+
+    if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
+        name_mapping = {};
+        for (_value_; in; alignments.GetSequenceNames (filter_name)) {
+            name_mapping[_value_] = _value_;
+        }
+    }
+    
+    codon_info[^"terms.data.name_mapping"] = name_mapping;
+
+    // check for duplicates
+    duplicate_sequences = codon_info[^"terms.data.sequences"] - alignments.HasDuplicateSequences (codon_info[^"terms.data.datafilter"],-1);
+    if (duplicate_sequences > 0) {
+      fprintf(stdout, "\n-------\n", io.FormatLongStringToWidth(
+      ">[WARNING] '`codon_info[utility.getGlobalValue("terms.data.file")]`' contains " + duplicate_sequences + " duplicate " + io.SingularOrPlural (duplicate_sequences, 'sequence', 'sequences') + ".
+      Identical sequences do not contribute any information to the analysis and only slow down computation.
+      Please consider removing duplicate or 'nearly' duplicate sequences,
+      e.g. using https://github.com/veg/hyphy-analyses/tree/master/remove-duplicates
+      prior to running selection analyses", 72),
+      "\n-------\n");
+    }
+}
 
 function load_file (prefix) {
 
     settings = None;
+    multiple_files = FALSE;
+
 
     if (Type (prefix) == "AssociativeList") {
-        settings = prefix[utility.getGlobalValue("terms.settings")];
-        prefix = prefix [utility.getGlobalValue("terms.prefix")];
+        multiple_files  = prefix [utility.getGlobalValue("terms.multiple_files")];
+        settings        = prefix[utility.getGlobalValue("terms.settings")];
+        prefix          = prefix [utility.getGlobalValue("terms.prefix")];
     }
 
-    
+    if (multiple_files) {
+        SetDialogPrompt ("Supply a list of files to include in the analysis (one per line)");
+        codon_data_info = {};
+        fscanf (PROMPT_FOR_FILE, "Lines", file_list_path);
+        codon_data_info[utility.getGlobalValue("terms.data.file")] = ^"LAST_FILE_PATH";
+        file_list = io.validate_a_list_of_files (file_list_path);
+        file_count = utility.Array1D (file_list);
+        io.CheckAssertion("`&file_count` > 1", "At least one valid filepath is required");
+        partitions_and_trees = {};
+        codon_data_info [utility.getGlobalValue("terms.data.sequences")] = {1, file_count};
+        codon_data_info [utility.getGlobalValue("terms.data.sites")] = {1, file_count};
+        codon_data_info [utility.getGlobalValue("terms.data.sample_size")] = 0;
+        datasets = {};
 
-    codon_data_info = alignments.PromptForGeneticCodeAndAlignment(prefix+".codon_data", prefix+".codon_filter");
+        for (i, filepath; in; file_list) {
+           datasets[i] = prefix+".codon_data_" + i;
+           if (+i == 0) {
+                codon_data_info [filepath] = 
+                     alignments.LoadCodonDataFile(datasets[i],  prefix+".codon_filter_" + i , alignments.ReadCodonDataSetFromPath(prefix+".codon_data_" + i, filepath));
+                (codon_data_info)[^"terms.code"]  = (codon_data_info[filepath])[^"terms.code"];
+                (codon_data_info)[^"terms.stop_codons"]  = (codon_data_info[filepath])[^"terms.stop_codons"];
+            } else {
+                codon_data_info [filepath] = 
+                     alignments.LoadCodonDataFile(datasets[i],  prefix+".codon_filter_" + i , alignments.ReadCodonDataSetFromPathGivenCode(prefix+".codon_data_" + i, filepath, (codon_data_info)[^"terms.code"] , (codon_data_info)[^"terms.stop_codons"] ));
+            }
+            annotate_codon_info ( codon_data_info [filepath], prefix+".codon_filter_" + i);
+            partitions_and_trees + (trees.LoadAnnotatedTreeTopology.match_partitions ({{"file_" + i ,""}}, (codon_data_info [filepath])[^"terms.data.name_mapping"]))[0];
+            (codon_data_info [utility.getGlobalValue("terms.data.sequences")])[+i] =  (codon_data_info[filepath]) [utility.getGlobalValue("terms.data.sequences")];
+            (codon_data_info [utility.getGlobalValue("terms.data.sites")])[+i] =  (codon_data_info[filepath]) [utility.getGlobalValue("terms.data.sites")];
+            codon_data_info [utility.getGlobalValue("terms.data.sample_size")] +=  (codon_data_info[filepath]) [utility.getGlobalValue("terms.data.sample_size")];
+        }
+        
 
+    } else {
+        datasets = prefix+".codon_data";
+        codon_data_info = alignments.PromptForGeneticCodeAndAlignment(datasets, prefix+".codon_filter");
         /** example output
         {
             "sequences": 13,
@@ -160,98 +230,71 @@ function load_file (prefix) {
         }
 
         */
+        annotate_codon_info (codon_data_info, prefix+".codon_filter");
+        utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
+                               codon_data_info[utility.getGlobalValue("terms.data.datafilter")]);
+        partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
+         /**  this will return a dictionary of partition strings and trees; one set per partition, as in
+                {
+                    "0": {
+                        "name:" ... ,
+                        "filter-string": "0-587",
+                        "tree": {
+                            "string": ...
+                            "string_with_lengths": ...
+                            "branch_lengths": {
+                                "AF_231119": 0.00519475,
+                                ...
+                            },
+                            "annotated_string": ... ,
+                            "model_map": {
+                                "AF_231119": "",
+                                ...
+                            },
+                            "partitioned": {
+                                "AF_231119": "leaf",
+                             },
+                            "model_list": {
+                                {
+                            }
+                        }
+                    },
+                    ...
+                */
+                
+        for (_key_, _value_; in; partitions_and_trees) {
+            (partitions_and_trees[_key_])[utility.getGlobalValue("terms.data.filter_string")] = 
+                    selection.io.adjust_partition_string (_value_[utility.getGlobalValue("terms.data.filter_string")], 3*codon_data_info[utility.getGlobalValue("terms.data.sites")]);
+        }
+     }   
 
-    sample_size=codon_data_info[utility.getGlobalValue("terms.data.sites")]*codon_data_info[utility.getGlobalValue("terms.data.sequences")];
-
-
-    codon_data_info[utility.getGlobalValue("terms.data.sample_size")] = sample_size;
-    upper_prefix = prefix && 1; //uppercase the prefix for json name
-    codon_data_info[utility.getGlobalValue("terms.json.json")] = codon_data_info[utility.getGlobalValue("terms.data.file")] + "."+upper_prefix+".json";
-
-    name_mapping = codon_data_info[utility.getGlobalValue("terms.data.name_mapping")];
-
-        /**
-            will contain "mapped" -> "original" associations with sequence names; or null if no mapping was necessary
-        */
-
-    if (None == name_mapping) { /** create a 1-1 mapping if nothing was done */
-        name_mapping = {};
-        utility.ForEach (alignments.GetSequenceNames (prefix+".codon_data"), "_value_", "`&name_mapping`[_value_] = _value_");
-    }
-
-    // check for duplicates
-    duplicate_sequences = codon_data_info[^"terms.data.sequences"] - alignments.HasDuplicateSequences (codon_data_info[^"terms.data.datafilter"],-1);
-    if (duplicate_sequences > 0) {
-      fprintf(stdout, "\n-------\n", io.FormatLongStringToWidth(
-      ">[WARNING] This dataset contains " + duplicate_sequences + " duplicate " + io.SingularOrPlural (duplicate_sequences, 'sequence', 'sequences') + ".
-      Identical sequences do not contribute any information to the analysis and only slow down computation.
-      Please consider removing duplicate or 'nearly' duplicate sequences,
-      e.g. using https://github.com/veg/hyphy-analyses/tree/master/remove-duplicates
-      prior to running selection analyses", 72),
-      "\n-------\n");
-    }
-
-    utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
-                           codon_data_info[utility.getGlobalValue("terms.data.datafilter")]);
-
-
-    partitions_and_trees = trees.LoadAnnotatedTreeTopology.match_partitions (codon_data_info[utility.getGlobalValue("terms.data.partitions")], name_mapping);
-
+    
 
     utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"), None);
-
-        /**  this will return a dictionary of partition strings and trees; one set per partition, as in
-        {
-            "0": {
-                "name:" ... ,
-                "filter-string": "0-587",
-                "tree": {
-                    "string": ...
-                    "string_with_lengths": ...
-                    "branch_lengths": {
-                        "AF_231119": 0.00519475,
-                        ...
-                    },
-                    "annotated_string": ... ,
-                    "model_map": {
-                        "AF_231119": "",
-                        ...
-                    },
-                    "partitioned": {
-                        "AF_231119": "leaf",
-                     },
-                    "model_list": {
-                        {
-                    }
-                }
-            },
-            ...
-        */
-
-
     partition_count = Abs (partitions_and_trees);
 
-
-    // TODO: DE-HARDCODE "filter-string"
-    utility.ForEachPair (partitions_and_trees,
-                            "_key_",
-                            "_value_",
-                            '(`&partitions_and_trees`[_key_])[utility.getGlobalValue("terms.data.filter_string")] = selection.io.adjust_partition_string (_value_[utility.getGlobalValue("terms.data.filter_string")], 3*`&codon_data_info`[utility.getGlobalValue("terms.data.sites")])');
-        /**
-            ensure that all partitions fall on codon boundaries if they are contiguous
-        */
-
-    io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + codon_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
+    if (multiple_files) {
+        io.ReportProgressMessage ("", ">Loaded **`partition_count`** alignments from from \`" + codon_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
+        for (filepath, fileinfo; in; codon_data_info) {
+            if (Type (fileinfo) == "AssociativeList") {
+                if (utility.Has (fileinfo, utility.getGlobalValue("terms.data.sequences"), "Number")) {
+                     io.ReportProgressMessage ("", "**\``filepath`\`** : " +  fileinfo[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + fileinfo[utility.getGlobalValue("terms.data.sites")] + "** codons");
+                }
+            }
+        }
+    
+    } else {
+        io.ReportProgressMessage ("", ">Loaded a multiple sequence alignment with **" + codon_data_info[utility.getGlobalValue("terms.data.sequences")] + "** sequences, **" + codon_data_info[utility.getGlobalValue("terms.data.sites")] + "** codons, and **" + partition_count + "** partitions from \`" + codon_data_info[utility.getGlobalValue("terms.data.file")] + "\`");
+    }
 
     if (utility.Has (settings, utility.getGlobalValue("terms.settings.branch_selector"), "String")) {
         selected_branches =  Call (settings[utility.getGlobalValue("terms.settings.branch_selector")], partitions_and_trees);
     } else {
         selected_branches = selection.io.defineBranchSets(partitions_and_trees);
     }
-    
  
     // Place in own attribute called `tested`
-     selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
+    selection.io.json_store_key_value_pair (json, None, utility.getGlobalValue("terms.json.tested"), selected_branches);
 
         /**  this will return a dictionary of selected branches; one set per partition, like in
         {
@@ -281,9 +324,8 @@ function load_file (prefix) {
 
     // The trees should go into input as well and they should be w/ their branch lengths but ONLY if they have any.
 
-
-
-     filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, "`prefix`.codon_data" , "`prefix`.filter.", codon_data_info);
+    
+    filter_specification = alignments.DefineFiltersForPartitions (partitions_and_trees, datasets , "`prefix`.filter.", codon_data_info);
     /** defines codon filters for each partition, and returns the (codon) sites mapped to each filter
     {
         {
@@ -459,9 +501,6 @@ function doGTR (prefix) {
             
             if (^(prefix + ".selected_branches") / index) {
                 deleted_test = utility.Array1D ((^(prefix + ".selected_branches"))[index]);
-                //fprintf ("/Users/sergei/Desktop/slac.txt", CLEAR_FILE, "tree = " + tree + ";\n\n");
-                //fprintf ("/Users/sergei/Desktop/slac.txt", "lengths = " + (gtr_results[^"terms.branch_length"])[index] + ";\n\n");
-                //fprintf ("/Users/sergei/Desktop/slac.txt", "tested = " + (^(prefix + ".selected_branches"))[index] + ";\n\n");
                 trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], (^(prefix + ".selected_branches"))[index], deleted);
             } else {
                 trees[index] = trees.KillZeroBranches (tree, (gtr_results[^"terms.branch_length"])[index], null, deleted);

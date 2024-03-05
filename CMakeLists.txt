@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(HyPhy)
-cmake_policy(VERSION 3.0.0)
+#cmake_policy(VERSION 3.0.0)
 
 enable_testing()
 #enable_language(Fortran)
@@ -316,6 +316,11 @@ endif()
 MESSAGE ("Set compiler flags to ${DEFAULT_COMPILE_FLAGS}")
 MESSAGE ("Set linker flags to ${DEFAULT_LINK_FLAGS}")
 
+set(BLA_VENDOR Apple)
+find_package(BLAS)
+
+
+
 #-------------------------------------------------------------------------------
 # OpenMP support
 #-------------------------------------------------------------------------------
@@ -422,6 +427,10 @@ include_directories(
     contrib/SQLite-3.8.2 # SQLite
 )
 
+if (${BLAS_FOUND}) 
+	add_definitions (-D_SLKP_USE_APPLE_BLAS)
+	set(DEFAULT_LIBRARIES "${DEFAULT_LIBRARIES}")
+endif()
 
 #-------------------------------------------------------------------------------
 # shared hyphy hbl stdlib target
@@ -441,6 +450,10 @@ if(${OPENMP_FOUND})
 else(${OPENMP_FOUND})
     target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES})
 endif(${OPENMP_FOUND})
+
+if(${BLAS_FOUND})
+    target_link_libraries(hyphy PRIVATE ${BLAS_LIBRARIES})
+endif ()
 
 add_custom_target(MP DEPENDS hyphy)
 
@@ -476,6 +489,10 @@ if(${MPI_FOUND})
     else(${OPENMP_FOUND})
         target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
     endif(${OPENMP_FOUND})
+
+	if(${BLAS_FOUND})
+    	target_link_libraries(HYPHYMPI ${BLAS_LIBRARIES})
+	endif ()
 
     install(
         TARGETS HYPHYMPI

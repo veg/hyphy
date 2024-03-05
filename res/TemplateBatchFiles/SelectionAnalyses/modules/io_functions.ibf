@@ -7,6 +7,20 @@ LoadFunctionLibrary("libv3/convenience/regexp.bf");
 LoadFunctionLibrary("libv3/all-terms.bf");
 
 //------------------------------------------------------------------------------
+lfunction selection.io.SelectAllBranchSets(partition_info) {
+
+    branch_set = {};
+
+    tree_for_analysis =  (partition_info[0])[utility.getGlobalValue("terms.data.tree")];
+    
+    return {
+       "0" :  tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")]
+    };
+     
+    
+}
+
+//------------------------------------------------------------------------------
 lfunction selection.io.defineBranchSets(partition_info) {
 
     branch_set = {};

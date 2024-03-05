@@ -133,6 +133,7 @@ public:
         return ASSOCIATIVE_LIST;
     }
     _List*              GetKeys         (void) const;
+    _String*            GetSmallestNumericalKey  (void) const;
     void                FillInList      (_List&);
     unsigned long       Length          (void) const {
       return avl.countitems();

@@ -1154,7 +1154,9 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
                 if (user_argument) { // user argument provided
                     user_argument -> AddAReference();
                     kwarg_used = (_String*)current_tag->GetItem(0);
-                    kwargs->DeleteByKey(*kwarg_used);
+                    if (handle_multi_choice || user_argument->ObjectClass() != ASSOCIATIVE_LIST) {
+                        kwargs->DeleteByKey(*kwarg_used);
+                    }
                     ref_manager < user_argument;
                 } else { // see if there are defaults
                     if (current_tag->countitems() > 2 && ! ignore_kw_defaults) {
@@ -1184,6 +1186,25 @@ _String*    _ExecutionList::FetchFromStdinRedirect (_String const * dialog_tag, 
                 user_argument->AddAReference();
                 throw (user_argument);
             } else {
+                if (user_argument->ObjectClass() == ASSOCIATIVE_LIST) {
+                    _AssociativeList* list_arg = (_AssociativeList*)user_argument;
+                    if (list_arg->countitems() >= 1) {
+                        _String* smallest_key = list_arg->GetSmallestNumericalKey ();
+                        _FString* value = (_FString*)list_arg->GetByKey (*smallest_key);
+                        _String *ret_value = new _String (value->get_str());
+                        echo_argument (kwarg_used, value->get_str());
+                        list_arg->DeleteByKey(smallest_key); // this will also delete smallest_key
+                        if (list_arg->countitems() == 0) {
+                            kwargs->DeleteByKey(*kwarg_used);
+                        } else {
+                            currentKwarg --;
+                        }
+                        return ret_value;
+                    } else {
+                        throw _String ("Ran out of multi-choice keyword options");
+                    }
+                    
+                }
                 throw _String ("Multi-choice keyword argument not supported in this context");
             }
         }
@@ -1980,6 +2001,7 @@ bool        _ExecutionList::BuildList   (_StringBuffer& s, _SimpleList* bc, bool
               case HY_HBL_COMMAND_CONSTRUCT_CATEGORY_MATRIX:
               case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
               case HY_HBL_COMMAND_DO_SQL:
+              case HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH:
               {
                     _ElementaryCommand::ExtractValidateAddHBLCommand (currentLine, prefixTreeCode, pieces, commandExtraInfo, *this);
                     break;
@@ -2147,26 +2169,25 @@ _ElementaryCommand::_ElementaryCommand (_String& s) {
 
 //____________________________________________________________________________________
 _ElementaryCommand::~_ElementaryCommand (void) {
+    
+    auto clear_formulas = [this] (long start_at) -> void {
+        for (long i = start_at; i<simpleParameters.lLength; i++) {
+            _Formula* f = (_Formula*)simpleParameters(i);
+            if (f) {
+                delete (f);
+            }
+        }
+    };
+    
     if (CanFreeMe()) {
         if (code==4) { // IF
-            if (simpleParameters.lLength>2) {
-                _Formula* f = (_Formula*)simpleParameters(2);
-                delete (f);
-            }
+            clear_formulas (2);
         } else if (code==0) {
             if (simpleParameters.lLength) {
-
-                _Formula* f = (_Formula*)simpleParameters(2);
-                delete (f);
-                f = (_Formula*)simpleParameters(1);
-                delete(f);
-                simpleParameters.Clear();
-            }
-        } else if ((code==6)||(code==9)) {
-            for (long i = 0; i<simpleParameters.lLength; i++) {
-                _Formula* f = (_Formula*)simpleParameters(i);
-                delete (f);
-            }
+                clear_formulas (1);
+             }
+        } else if ( code==6 || code==9 || code == HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH) {
+            clear_formulas (0);
         } else if (code == HY_HBL_COMMAND_INIT_ITERATOR) {
             if (simpleParameters.get (1) == ASSOCIATIVE_LIST && simpleParameters.countitems() > 2) {
                 delete (AVLListXLIterator*)simpleParameters.get(2);
@@ -2242,6 +2263,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
     auto assignment = [&] (long i, const _String& call) -> _String const {
         return _StringBuffer (_HY_ValidHBLExpressions.RetrieveKeyByPayload(i))
+                << " "
                 << parameter_to_string (0)
                 << " = "
                 << call
@@ -2319,6 +2341,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         case HY_HBL_COMMAND_SELECT_TEMPLATE_MODEL:
         case HY_HBL_COMMAND_KEYWORD_ARGUMENT:
         case HY_HBL_COMMAND_GET_INFORMATION:
+        case HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH:
         case HY_HBL_COMMAND_SIMULATE_DATA_SET: {
             (*string_form) << procedure (code);
         }
@@ -2338,6 +2361,10 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
         }
         break;
 
+        case 12: { //simulate data
+            (*string_form) << assignment (HY_HBL_COMMAND_SIMULATE_DATA_SET, kEmptyString);
+        }
+        break;
  
         case 13: { // a function
             (*string_form) << "function "
@@ -3687,6 +3714,9 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         return HandleFindRootOrIntegrate(chain, code == HY_HBL_COMMAND_INTEGRATE);
         break;
 
+    case HY_HBL_COMMAND_CONVERT_BRANCH_LENGTH:
+        return HandleConvertBranchLength(chain);
+        break;
 
     case HY_HBL_COMMAND_MPI_SEND:
         return HandleMPISend (chain);

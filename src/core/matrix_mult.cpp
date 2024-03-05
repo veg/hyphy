@@ -7,7 +7,7 @@
 
 #include <matrix.h>
 
-/*#ifdef __USE_APPLE_BLAS__
+#ifdef _SLKP_USE_APPLE_BLAS
 enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102 };
 enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113,
   AtlasConj=114};
@@ -17,7 +17,7 @@ extern "C" void cblas_dgemm(const enum CBLAS_ORDER __Order,
                  const int __K, const double __alpha, const double *__A,
                  const int __lda, const double *__B, const int __ldb,
                  const double __beta, double *__C, const int __ldc);
-#endif*/
+#endif
 
 //-----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------
@@ -3617,12 +3617,13 @@ void _hy_matrix_multiply_3x4x3 (double *C, double* A, double *B, int stride, boo
 
 void _hy_matrix_multiply_NxN_blocked4 (double * C, double *A, double *B, int D) {
     
-/*#ifdef __USE_APPLE_BLAS__
+#ifdef _SLKP_USE_APPLE_BLAS
     if (D>=16) {
+        //printf ("HERE\n");
         cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, D, D, D, 1., A, D, B, D, 0.0, C, D);
         return;
     }
-#endif*/
+#endif
     auto offset = [D](int i, int j) -> int {
         return (i<<2)*D + (j << 2);
     };

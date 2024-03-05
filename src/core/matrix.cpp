@@ -94,6 +94,27 @@ _Trie       _HY_MatrixRandomValidPDFs;
 
 
 
+#ifdef _SLKP_USE_APPLE_BLAS
+    enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102 };
+    enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113,
+      AtlasConj=114};
+    extern "C" void cblas_dgemv(const enum CBLAS_ORDER __Order,
+                     const enum CBLAS_TRANSPOSE __TransA,
+                     const int __M, const int __N,
+                     const double __alpha, const double *__A,
+                     const int __lda, const double *__X, const int __incX,
+                     const double __beta, double *__Y, const int __incY);
+
+    extern "C" void cblas_daxpy(
+            const int N,
+            const double alpha,
+            const double * X,
+            const int incX,
+            double* Y,
+            const int incY);
+         
+#endif
+
 //-----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------
@@ -1509,6 +1530,7 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
         if (theIndex) {
             _Matrix*    vm = (_Matrix*) value;
             hyFloat * __restrict dp = vm ->theData;
+            const long *__restrict ip = vm->theIndex;
 
             if (vm->compressedIndex) {
                 //vm->_validateCompressedStorage();
@@ -1552,8 +1574,8 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
                 InitializeArray(tempDiags, hDim, 0.0);
 
                 if (freq_matrix) {
-                      for (long i=0; i<lDim; i++) {
-                          long p = theIndex[i];
+                      for (long i=0; i<vm->lDim; i++) {
+                          long p = ip[i];
                           if (p != -1) {
                               long h = p / vDim;
                                    p = p - h*vDim;
@@ -1564,8 +1586,8 @@ HBLObjectRef   _Matrix::MultByFreqs (long freqID, bool reuse_value_object) {
                       }
                 }
                 else {
-                      for (long i=0; i<lDim; i++) {
-                          long p = theIndex[i];
+                      for (long i=0; i<vm->lDim; i++) {
+                          long p = ip[i];
                           if (p != -1) {
                               long h = p / vDim;
                                    p = p - h*vDim;
@@ -4088,7 +4110,33 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   if (compressedIndex) {
                       
 
-                    
+#ifdef _SLKP_USE_APPLE_BLAS_NOT_USED
+              hyFloat  * _hprestrict_ res               = storage.theData;
+              long currentXIndex = 0L;
+              for (long i = 0; i < 61; i++) {
+                  long up = compressedIndex[i];
+                  
+                  
+                  if (currentXIndex < up) {
+            
+                      for (long cxi = currentXIndex; cxi < up; cxi++) {
+                          long currentXColumn = compressedIndex[cxi + 61];
+                          hyFloat  *   secArg            = secondArg.theData  + currentXColumn*61;
+                          hyFloat value = theData[cxi];
+                          cblas_daxpy(61,
+                                      value,
+                                      secArg,
+                                      1,
+                                      res,
+                                      1);
+                      }
+                              
+            
+                  }
+                  res += 61;
+                  currentXIndex = up;
+            }
+#else
 #ifdef _SLKP_USE_ARM_NEON
                     
                       
@@ -4251,7 +4299,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
 
                   }
 #endif
-                  
+#endif
                     
                 } else {
 

@@ -185,7 +185,8 @@ void            mpiOptimizerLoop (int, int);
 
 #ifdef     __HYPHY_HANDLE_TERM_SIGNAL__
     volatile sig_atomic_t hyphy_sigterm_in_progress = 0;
-     
+    volatile sig_atomic_t hyphy_sigstop_in_process = 0;
+
     void    hyphy_sigterm_handler (int sig) {
        if (hyphy_sigterm_in_progress)
            raise (sig);
@@ -201,6 +202,17 @@ void            mpiOptimizerLoop (int, int);
        
        signal (sig, SIG_DFL);
        raise  (sig);
+    }
+
+    void    hyphy_sigstop_handler (int sig) {
+       if (hyphy_sigstop_in_process)
+           raise (sig);
+           
+        hyphy_sigstop_in_process = 1;
+        StringToConsole (new _String (ConstructAnErrorMessage ("HyPhy suspended.")));
+       
+        signal (sig, SIG_DFL);
+        raise  (sig);
     }
      
 #endif  
@@ -660,8 +672,17 @@ int main (int argc, char* argv[]) {
 #ifdef __HYPHY_HANDLE_TERM_SIGNAL__
     if (signal (SIGTERM, hyphy_sigterm_handler) == SIG_IGN)
          signal (SIGTERM, SIG_IGN);
-     if (signal (SIGINT, hyphy_sigterm_handler) == SIG_IGN)
+    
+    if (signal (SIGINT, hyphy_sigterm_handler) == SIG_IGN)
          signal (SIGINT, SIG_IGN);
+    
+    if (signal (SIGTSTP, hyphy_sigstop_handler) == SIG_IGN)
+        signal (SIGTSTP, SIG_IGN);
+
+    //if (signal (SIGCONT, hyphy_sigresume_handler) == SIG_IGN)
+    //    signal (SIGCONT, SIG_IGN);
+
+    
 #endif
     //printf ("%e\n", mapParameterToInverval (1.322753E-23, 0x2, false));
     //exit (0);

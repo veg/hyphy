@@ -244,8 +244,10 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
             }
             if (utility.Array1D (models.codon.MG_REV.set_branch_length.params)) {
                 bl_string = Simplify (model[terms.model.branch_length_string],models.codon.MG_REV.set_branch_length.params.subs);
+                 
+                ConvertBranchLength (models.codon.MG_REV.set_branch_length.lp, bl_string , ^(models.codon.MG_REV.set_branch_length.params[0]), 3*value);
                 
-                ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + bl_string + ")-(" + 3*value + ")," + models.codon.MG_REV.set_branch_length.params[0] + ",0,10000)");
+                //ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + bl_string + ")-(" + 3*value + ")," + models.codon.MG_REV.set_branch_length.params[0] + ",0,10000)");
                 
                 Eval (models.codon.MG_REV.set_branch_length.params[0] + "=" + models.codon.MG_REV.set_branch_length.lp);                
             }
