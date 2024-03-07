@@ -234,6 +234,9 @@ mss.lf_id = "MSS.COMPOSITE.LF";
 mss.model_map_overall = {};
 
 
+//#profile START;
+
+mss.constraints = {};
 
 for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
      mss.prefix = mss.file_prefix  [mss_selector.path];
@@ -294,15 +297,20 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
         mss.json ["mapping"] = mss.scaler_index;
     } else {
         //utility.getGlobalValue ("terms.parameters.synonymous_rate");
-        models.BindGlobalParameters ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_between);
-        models.BindGlobalParameters ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_within);
+        mss.constraints  * models.BindGlobalParametersDeferred ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_between);
+        mss.constraints  * models.BindGlobalParametersDeferred ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_within);
     }
 }
 
+parameters.BatchApplyConstraints (mss.constraints);
+
+
+//#profile _hyphy_profile_dump;
+//utility.FinishAndPrintProfile (_hyphy_profile_dump);
 
 utility.ExecuteInGlobalNamespace ("LikelihoodFunction `mss.lf_id` = (`&mss.lf_components`)");
  
-VERBOSITY_LEVEL                 = 1;
+VERBOSITY_LEVEL                 = 10;
 USE_LAST_RESULTS                = 1;
 Optimize                        (res, ^mss.lf_id);
 
