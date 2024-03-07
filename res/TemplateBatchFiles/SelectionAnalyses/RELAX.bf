@@ -836,19 +836,15 @@ if (relax.do_srv)  {
 if (relax.model_set != "All") {
     relax.do_lhc = TRUE;
     relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.model_object_map[relax.reference_model_namespace]);
-    relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_branches_name`.+"))["0"])[terms.fit.MLE];
     relax.init_grid_setup        (relax.distribution);
     relax.initial_ranges[relax.relaxation_parameter] = {terms.lower_bound : 0.10,
                     terms.upper_bound : 2.0};
      
                     
-    relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
-    relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
-                'relax._renormalize_with_weights (_v_, "relax.distribution", relax.initial.test_mean)'
-            );
 }
 
 if (relax.has_unclassified) {
+
     relax.unclassified.bsrel_model =  model.generic.DefineMixtureModel(relax.model_generator,
         "relax.unclassified", {
             "0": parameters.Quote(terms.global),
@@ -866,19 +862,37 @@ if (relax.has_unclassified) {
         relax.distribution_uc = models.codon.BS_REL.ExtractMixtureDistribution(relax.unclassified.bsrel_model);
         relax.init_grid_setup  (relax.distribution_uc);
     }
+    
 
     parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
 
     relax.model_object_map ["relax.unclassified"] = relax.unclassified.bsrel_model;
     
-    
-     for (relax.index, relax.junk ; in; relax.filter_names) {
+    for (relax.index, relax.junk ; in; relax.filter_names) {
         (relax.model_map[relax.index]) ["relax.unclassified"] = utility.Filter (relax.selected_branches[relax.index], '_value_', '_value_ == relax.unclassified_branches_name');
      }
         
     models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.unclassified.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 }
 
+if (relax.do_lhc) {
+    relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
+    relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_branches_name`.+"))["0"])[terms.fit.MLE];
+
+    relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
+        'relax._renormalize_with_weights (_v_, "relax.distribution", relax.initial.test_mean)'
+    );
+    
+    //console.log (relax.initial_grid[0]);
+    if (relax.has_unclassified) {
+        relax.initial.unc_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.unclassified_branches_name`.+"))["0"])[terms.fit.MLE];
+        relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
+            'relax._renormalize_with_weights (_v_, "relax.distribution_uc", relax.initial.test_mean)'
+        );
+    }
+    //console.log (relax.initial_grid[0]);
+
+}
 
 
 //------------------------------------
@@ -997,6 +1011,7 @@ function relax.FitMainTestPair (prompt) {
 
      
      if (relax.do_lhc) {
+
         relax.nm.precision = -0.00025*relax.final_partitioned_mg_results[terms.fit.log_likelihood];
         //parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
         
