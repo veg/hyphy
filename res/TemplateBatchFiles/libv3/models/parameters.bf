@@ -743,11 +743,14 @@ lfunction parameters.SetStickBreakingDistributionWeigths (weights) {
     left_over = (1-w[0]);
 
     for (i = 1; i < rate_count -  1; i += 1) {
-        w [i] = weights[i] / left_over;
+        if (left_over > 0) {
+            w [i] = weights[i] / left_over;
+        } else {
+            w [i] = 0;
+        }
         left_over = left_over * (1-w[i]);
         
     }
-    //w[i] = left_over;
     return w;
 }
 
