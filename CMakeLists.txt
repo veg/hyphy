@@ -599,6 +599,9 @@ target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
+if(${BLAS_FOUND})
+    target_link_libraries(HYPHYDEBUG ${BLAS_LIBRARIES})
+endif ()
 
 set_target_properties(
     HYPHYDEBUG

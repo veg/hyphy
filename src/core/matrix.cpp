@@ -2501,25 +2501,6 @@ bool        _Matrix::ProcessFormulas (long& stackLength, _AVLList& varList,   _S
     _Formula **     theFormulas = (_Formula**)theData;
 
     bool isGood = true;
-    
-    auto process_formula = [&] (_Formula * this_formula) -> bool {
-        if (runAll || this_formula->AmISimple(stackLength,varList)) {
-            _String * flaString = (_String*)this_formula->toStr(kFormulaStringConversionNormal, nil,true);
-            long      fref = flaStrings.Insert(flaString,newFormulas.lLength);
-            if (fref < 0) {
-                references << flaStrings.GetXtra (-fref-1);
-                DeleteObject (flaString);
-            } else {
-                newFormulas << (long)this_formula;
-                references << fref;
-            }
-
-        } else {
-            isGood = false;
-            return false;
-        }
-        return true;
-    };
 
     if (theIndex) {
         for (long i = 0L; i<lDim; i++) {
@@ -2529,7 +2510,8 @@ bool        _Matrix::ProcessFormulas (long& stackLength, _AVLList& varList,   _S
                     references << -1;
                     continue;
                 }
-                if (! process_formula (theFormulas[i])) {
+                if (! theFormulas[i]->ProcessFormulaForConverstionToSimple (stackLength, varList, newFormulas, references, flaStrings, runAll)) {
+                    isGood = false;
                     break;
                 }
             } else {
@@ -2546,7 +2528,8 @@ bool        _Matrix::ProcessFormulas (long& stackLength, _AVLList& varList,   _S
                     references << -1;
                     continue;
                 }
-                if (! process_formula (thisFormula)) {
+                if (! thisFormula->ProcessFormulaForConverstionToSimple (stackLength, varList, newFormulas, references, flaStrings, runAll)) {
+                    isGood = false;
                     break;
                 }
 
@@ -2718,7 +2701,15 @@ void        _Matrix::MakeMeSimple (void) {
             memcpy (cmd->formulaRefs, references.list_data, allocation_size);
             cmd->formulaValues          = new hyFloat [newFormulas.lLength];
             cmd->formulasToEval.Duplicate (&newFormulas);
+/*
+            printf (
+"\nConverted a matrix to simple expressions. \
+\n\tStack depth: %ld\
+\n\tIndependent variables: %ld\
+\n\tUnique expressions: %ld\n", stackLength, varList.countitems(), cmd->formulasToEval.countitems());
+*/
         }
+
 
     }
 }

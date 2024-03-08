@@ -538,6 +538,14 @@ protected:
         partition
     */
 
+    void            CompileConstraints   (void);
+    void            UncompileConstraints (void);
+    
+    /**
+        20240305   SLKP
+            These two functions populate / depopulate 'compiled_constraints'
+            
+     */
 
     _List*          RecoverAncestralSequencesMarginal
     (long, _Matrix&,_List const&, bool = false);
@@ -721,6 +729,12 @@ protected:
                         ;
 
     _AssociativeList    *optimizatonHistory;
+    
+    _CompiledMatrixData *compiled_constraints;
+    /**
+        SLKP: 20240305
+        Use this object for storing compiled
+    */
 
 #ifdef  _OPENMP
     long                lfThreadCount;

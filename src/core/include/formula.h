@@ -205,7 +205,7 @@ public:
 
     */
 
-    bool        AmISimple           (long& stack_depth, _AVLList& variable_index);
+    bool        AmISimple           (long& stack_depth, _AVLList& variable_index) ;
     long        StackDepth          (long start_at = 0L, long end_at = -1L) const;
       /**
         starting at operation 'start_at', counting up to 'end_at' (-1 == the end),
@@ -249,6 +249,25 @@ public:
     
     void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive, bool simplify = true);
   
+    /**
+        Process a formula as a part of a batch to convert to simple formulas
+     
+         @author SLKP
+         @date 20240305
+         @param stackLength : keep track of the deepest stack for the formulas in the batch
+         @param var_list : the union of all independent variables that this batch depends on
+         @param new_formulas : a list of references to unique formulas in the batch
+         @param references : the index of the unique formula to which this formula refers
+         @param formula_strings : keep track of formula strings to identify unique ones
+         @param run_all : if true, process all formulas (not just those which return TRUE from AmISimple)
+
+     */
+    bool        ProcessFormulaForConverstionToSimple (long& stack_length,
+                                                      _AVLList& var_list,
+                                                      _SimpleList& new_formulas,
+                                                      _SimpleList& references,
+                                                      _AVLListX& formula_strings,
+                                                      bool run_all);
   
     /** A compute and forget utility function.
         Parse an expression, optionally check to see that it's of the right type and return the value
