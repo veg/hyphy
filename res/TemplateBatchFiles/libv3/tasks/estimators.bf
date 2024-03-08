@@ -548,6 +548,30 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
 }
 
 /**
+
+ Apply existing constraints and override previously constrained BL estimates
+
+ * @name estimators.ApplyExistingEstimatesOverride
+ * @param {String} likelihood_function_id
+ * @param {Dictionary} model_descriptions
+ * @param {Matrix} initial_values
+ * @param branch_length_conditions
+ * @returns estimators.ApplyExistingEstimates.df_correction - Abs(estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers);
+ */
+
+
+function estimators.ApplyExistingEstimatesOverride(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions) {
+    for (i, v; in; model_descriptions) {
+           v[^"terms.model.branch_length_override"] = TRUE;
+    }
+    estimators.ApplyExistingEstimates(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions);
+    for (i, v; in; model_descriptions) {
+        v - ^"terms.model.branch_length_override";
+    }
+}
+
+
+/**
  * @name
  * @param {String} likelihood_function_id
  * @param {Dictionary} model_descriptions
@@ -657,7 +681,7 @@ lfunction estimators.FitExistingLF (lf_id, model_objects) {
 
 /**
  * Makes a likelihood function object with the desired parameters
- * @name estimators.FitLF
+ * @name estimators.BuildLFObject
  * @param {Matrix} data_filters_list  - a vector of {DataFilter}s
  * @param {Matrix} tree_list  - a vector of {Tree}s
  * @param model_map
@@ -776,6 +800,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     can_do_restarts = null;
 
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
+    
         grid_results = mpi.ComputeOnGridSetValues (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")],  {
             0: model_objects,
             1: initial_values,
@@ -786,7 +811,6 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
             restarts = run_options[utility.getGlobalValue("terms.search_restarts")];
             if (restarts > 1) {
                 grid_results    = utility.DictToSortedArray (grid_results);
-                //console.log (grid_results);
                 can_do_restarts = {};
                 for (i = 1; i <= restarts; i += 1) {
                     can_do_restarts + (run_options [utility.getGlobalValue("terms.search_grid")])[grid_results[Rows(grid_results)-i][1]];
@@ -796,11 +820,9 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         if (null == can_do_restarts) {
             best_value   = Max (grid_results, 1);
             parameters.SetValues ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+            //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+            estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
         }
-        //console.log (best_value);
-        //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
-        //console.log (can_do_restarts);
-        //assert (0);
     }
 
     
@@ -810,14 +832,18 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         utility.ToggleEnvVariable("PRODUCE_OPTIMIZATION_LOG", 1);
     }
     
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 101);
+    //console.log (run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
     
     if (Type (can_do_restarts) == "AssociativeList") {
         io.ReportProgressBar("", "Working on crude initial optimizations");
         bestlog    = -1e100;
         for (i = 0; i < Abs (can_do_restarts); i += 1) {
-            parameters.SetValues (can_do_restarts[i]);
+        
+            parameters.SetValues (can_do_restarts[i]);        
+            estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
             if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
-                Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+                 Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
             } else {
                 Optimize (mles, likelihoodFunction);
             }
@@ -841,6 +867,8 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
         results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
     }
+    
+
 
 
     if (optimization_log) {

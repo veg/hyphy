@@ -553,11 +553,11 @@ busted.global_scaler_list = {};
 
 for (busted.partition_index = 0; busted.partition_index < busted.partition_count; busted.partition_index += 1) {
     busted.global_scaler_list [busted.partition_index] = "busted.bl.scaler_" + busted.partition_index;
-    parameters.DeclareGlobalWithRanges (busted.global_scaler_list [busted.partition_index], 3, 0, 1000);
-    busted.initial_ranges      [busted.global_scaler_list [busted.partition_index]] = {
-                terms.lower_bound : 2.0,
-                terms.upper_bound : 4.0
-            };
+    parameters.DeclareGlobalWithRanges (busted.global_scaler_list [busted.partition_index], 1, 0, 1000);
+   // busted.initial_ranges      [busted.global_scaler_list [busted.partition_index]] = {
+   //             terms.lower_bound : 1.0,
+   //             terms.upper_bound : 3.0
+   //         };
 }
 
             
@@ -566,19 +566,17 @@ for (busted.partition_index = 0; busted.partition_index < busted.partition_count
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
 busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
 
-//estimators.CreateInitialGrid (busted.initial_grid, busted.initial_grid.N, busted.initial_grid_presets);
-
 busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
     'busted._renormalize_with_weights (_v_, "busted.distribution", busted.initial.test_mean, busted.error_sink)'
 );
 
-if (busted.has_background) { //GDD rate category
+if (busted.has_background) { //has background
     busted.initial.background_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+background.+"))["0"])[terms.fit.MLE];
+    
     busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
-        'busted._renormalize (_v_, "busted.background_distribution", busted.initial.background_mean, busted.error_sink)'
+        'busted._renormalize_with_weights (_v_, "busted.background_distribution", busted.initial.background_mean, busted.error_sink)'
     );
 }
-
 
 busted.model_map = {};
 
@@ -1276,7 +1274,7 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
     if (over_one >= mean*0.95) {
        //console.log ("OVERAGE");
        new_weight = mean * Random (0.9, 0.95) / m[d-1][0];
-       diff = (m[d-1][1] - new_weight)/(d-1);
+       diff = (m[d-1][1] - new_weight)/(d-1-(skip_first != 0));
        for (k = (skip_first != 0); k < d-1; k += 1) {
             m[k][1] += diff;
        }
@@ -1284,8 +1282,9 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
     }
     
     over_one = m[d-1][0] * m[d-1][1];
-    under_one = (+(m[-1][0] $ m[-1][1])) / (1-m[d-1][1]); // current mean
     
+    under_one = (+(m[-1][0] $ m[-1][1]) - m0) / (1-m[d-1][1]); // current mean
+        
     for (i = (skip_first != 0); i < d-1; i+=1) {
         m[i][0] = m[i][0] * mean / under_one;
     }
@@ -1299,7 +1298,6 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
     m = m%0;
     wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
     
-    //console.log (v);
 
     for (i = (skip_first != 0); i < d; i+=1) {
         (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];
@@ -1308,8 +1306,6 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
         (v[((^distro)["weights"])[i]])[^"terms.fit.MLE"] = wts[i];
     }
     
-    //console.log (v);
-
     //assert (0);
     return v;
     

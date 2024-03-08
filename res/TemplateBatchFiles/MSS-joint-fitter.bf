@@ -53,6 +53,13 @@ io.ReportProgressMessageMD("mss", "data" , "* Loaded a list with **" + mss_selec
 KeywordArgument ("code",        "Which genetic code should be used", "Universal");  
 mss.genetic_code = alignments.LoadGeneticCode (None);
 
+KeywordArgument ("omega", "How should alignment-level omega be treated?", "Fix");
+
+mss.omega_option = io.SelectAnOption ({
+                                        {"Fix", "[Default] Fix omega estimates at those obtained with the standard MG94xREV model"}
+                                        {"Fit", "Fit omega (per alignment) together with the MSS model"}
+                                    }, "How should alignment-level omega be treated?");
+
 
 mss.file_records = {};
 mss.file_info = {};
@@ -236,12 +243,12 @@ mss.model_map_overall = {};
 
 
 //#profile START;
-
 mss.constraints = {};
 
 for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
      mss.prefix = mss.file_prefix  [mss_selector.path];
     
+     console.log (">" + mss.counter + " / " +  mss_selector.path);
     
      mss.model_name = "`mss.prefix`.model";
      mss.tree_name = "`mss.prefix`.tree";
@@ -275,8 +282,11 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
                                               (initial_values [terms.branch_length])[0],
                                               terms.model.branch_length_constrain,
                                               TRUE);
-                                              
-     models.FixParameterSetRegExp (terms.parameters.omega_ratio, ^(mss.model_name));
+                                           
+     if (mss.omega_option == "Fix") {
+        models.FixParameterSetRegExp (terms.parameters.omega_ratio, ^(mss.model_name));
+        mss.constraint_count += 1;
+     }
      models.FixParameterSetRegExp (terms.nucleotideRatePrefix, ^(mss.model_name));
       
      
@@ -298,15 +308,14 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
     } else {
         //utility.getGlobalValue ("terms.parameters.synonymous_rate");
         mss.constraints  * models.BindGlobalParametersDeferred ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, "^" + terms.MeanScaler(""));
-        //mss.constraints  * models.BindGlobalParametersDeferred ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_within);
-    }
+     }
 }
 
 parameters.BatchApplyConstraints (mss.constraints);
 
-
 //#profile _hyphy_profile_dump;
 //utility.FinishAndPrintProfile (_hyphy_profile_dump);
+utility.SetEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1);
 
 utility.ExecuteInGlobalNamespace ("LikelihoodFunction `mss.lf_id` = (`&mss.lf_components`)");
  
@@ -324,6 +333,17 @@ io.ReportProgressMessageMD("mss", "fitAlldone", "**LogL = " + res[1][0] + "**"  
 
 mss.json["joint-model"] = estimators.ExtractMLEsOptions (mss.lf_id, mss.model_map_overall, {terms.globals_only : TRUE});
 //estimators.RemoveBranchLengthConstraints (mss.json["joint-model"]);
+
+function pfilter (key, value) {
+    if (key[0] != "[" || (key $ "ratio")[0] >= 0)  {
+        mss.filtered [key] = value;
+    }
+}
+
+mss.filtered = {};
+((mss.json["joint-model"])[terms.global])["pfilter"][""];
+(mss.json ["joint-model"])[terms.global] = mss.filtered;
+
 
 io.SpoolJSON (mss.json, mss.json[terms.data.file]);  
 

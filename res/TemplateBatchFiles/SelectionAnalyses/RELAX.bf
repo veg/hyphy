@@ -879,6 +879,7 @@ if (relax.do_lhc) {
     relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
     relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_branches_name`.+"))["0"])[terms.fit.MLE];
 
+ 
     relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
         'relax._renormalize_with_weights (_v_, "relax.distribution", relax.initial.test_mean)'
     );
@@ -886,8 +887,9 @@ if (relax.do_lhc) {
     //console.log (relax.initial_grid[0]);
     if (relax.has_unclassified) {
         relax.initial.unc_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.unclassified_branches_name`.+"))["0"])[terms.fit.MLE];
+ 
         relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
-            'relax._renormalize_with_weights (_v_, "relax.distribution_uc", relax.initial.test_mean)'
+            'relax._renormalize_with_weights (_v_, "relax.distribution_uc", relax.initial.unc_mean)'
         );
     }
     //console.log (relax.initial_grid[0]);
@@ -1894,6 +1896,7 @@ lfunction relax._renormalize (v, distro, mean) {
 
 lfunction relax._renormalize_with_weights (v, distro, mean) {
 
+
     parameters.SetValues (v);
     m = parameters.GetStickBreakingDistribution (^distro);
     //console.log (v);
@@ -1922,16 +1925,16 @@ lfunction relax._renormalize_with_weights (v, distro, mean) {
   
     under_one = +(m[-1][0] $ m[-1][1]);
     
-    for (i = 0; i < d; i+=1) {
-        m[i][0] = m[i][0] * mean / under_one;
+    if (under_one > 0) {
+        for (i = 0; i < d; i+=1) {
+            m[i][0] = m[i][0] * mean / under_one;
+        }
     }
-    
+        
     m = m%0;
+    
     wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
-    
-    
-
-    //console.log (v);
+ 
 
     for (i = 0; i < d; i+=1) {
         (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];
