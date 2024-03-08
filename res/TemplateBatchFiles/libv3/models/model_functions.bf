@@ -345,7 +345,7 @@ function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filte
 }
 
 /**
- * @name model.generic.GetLocalParameter
+ * @name models.generic.post.definition 
  * @param {Model} model
  * @returns {String}
  */
@@ -599,7 +599,7 @@ lfunction models.BindGlobalParametersDeferred (models, filter) {
                 candidate_set[_key_] = 1;
             }
         }
-         
+                 
         candidate_set = utility.Keys (candidate_set);
         constraints_set = {};
 
