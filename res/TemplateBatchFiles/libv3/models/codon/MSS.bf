@@ -81,7 +81,11 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
         }
         if (partitioning_option == "SynREV") {
             return  models.codon.MSS.ModelDescription(type, code,
-               {^"terms.model.MSS.codon_classes" : mapping, ^"terms.model.MSS.neutral" : "V"}
+               {
+                    ^"terms.model.MSS.codon_classes" : mapping, 
+                    ^"terms.model.MSS.normalize" : TRUE
+                    //^"terms.model.MSS.neutral" : "V"
+               }
             );
         }
         if (partitioning_option == "SynREVFull") {
@@ -210,6 +214,7 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
         m[^"terms.model.MSS.between"] = codon_classes [^"terms.model.MSS.between"];
     }
     
+    
     if (codon_classes[utility.getGlobalValue("terms.model.MSS.normalize")]) {
         m[utility.getGlobalValue("terms.model.post_definition")] = "models.codon.MSS.post_definition";
     }
@@ -221,13 +226,24 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
 
 lfunction models.codon.MSS.post_definition (model) {
 // TBD
-    vars = {};
-    weights = {};
-    for (i; in; model.GetParameters_RegExp (model,"^" + utility.getGlobalValue ("terms.parameters.synonymous_rate"))) {
-        vars + i;
-        weights + 1;
+    rates = model.GetParameters_RegExp (model,"^" + utility.getGlobalValue ("terms.parameters.synonymous_rate"));
+    D = utility.Array1D (rates);
+    w = 1 / D;
+    
+    vars = {1,D};
+    weights = {1,D};
+    terms = {1,D};
+    
+    
+    i = 0;
+    for (t,n; in; rates) {
+        terms[i] = t;
+        vars[i] = n;
+        weights[i] = w;
+        i += 1;
     } 
-    parameters.ConstrainMeanOfSet (vars, weights, 1, "beavis");
+    ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]) * (parameters.ConstrainMeanOfSetWithTerms (vars, weights, terms, 1, model[^"terms.id"])[utility.getGlobalValue("terms.global")]);
+    model = models.generic.post.definition (model);
 }
 
 //----------------------------------------------------------------------------------------------------------------

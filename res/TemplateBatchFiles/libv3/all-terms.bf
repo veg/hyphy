@@ -154,6 +154,9 @@ namespace terms{
     function AddCategory (term, categoryID) {
         return term + " for category " + categoryID;
     }
+    function MeanScaler (term) {
+        return "Mean scaler variable for " + term;
+    }
 
 
     /* Terms accompanying category defintions */

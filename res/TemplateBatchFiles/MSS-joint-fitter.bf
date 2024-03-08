@@ -219,6 +219,7 @@ io.ReportProgressMessageMD("mss", "fit0done", "**LogL = " + mss.baselineLL + "**
 mss.json ["baseline"] = {terms.json.log_likelihood : mss.baselineLL, terms.json.AICc : mss.baseline_AIC};
 
 function mss.MSS_generator (type) {
+    mss.codon_classes [utility.getGlobalValue("terms.model.MSS.normalize")] = TRUE;
     model = Call ("models.codon.MSS.ModelDescription",type, mss.genetic_code[terms.code], mss.codon_classes);
     return model;
 }
@@ -281,7 +282,7 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
      
     if (mss.counter == 0) {
         mss.reference_set   =  ^(mss.model_name);
-        mss.mss_rate_list   =  model.GetParameters_RegExp( ^(mss.model_name),"^" + terms.parameters.synonymous_rate + "");
+        mss.mss_rate_list   =  model.GetParameters_RegExp( ^(mss.model_name),"^" + terms.MeanScaler(""));
         mss.model_dimension = utility.Array1D (mss.mss_rate_list);
         mss.scaler_prefix = 'mss.scaler_parameter_';
         mss.scaler_mapping = {};
@@ -293,12 +294,11 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
         for (mss.i2 = 0; mss.i2 < mss.model_dimension; mss.i2 += 1) {
             parameters.DeclareGlobal (mss.scaler_prefix + mss.i2, None);
         }
- 
         mss.json ["mapping"] = mss.scaler_index;
     } else {
         //utility.getGlobalValue ("terms.parameters.synonymous_rate");
-        mss.constraints  * models.BindGlobalParametersDeferred ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_between);
-        mss.constraints  * models.BindGlobalParametersDeferred ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_within);
+        mss.constraints  * models.BindGlobalParametersDeferred ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, "^" + terms.MeanScaler(""));
+        //mss.constraints  * models.BindGlobalParametersDeferred ({"0" : mss.reference_set , "1" : ^(mss.model_name)}, terms.parameters.synonymous_rate + terms.model.MSS.syn_rate_within);
     }
 }
 
