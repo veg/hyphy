@@ -264,9 +264,14 @@ HBLObjectRef  _Variable::Compute (void) {
     
     auto update_var_value = [this] () -> void {
         if (!varValue || varFormula->HasChanged()) {
-            HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
+            HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute();
+            if (varValue && new_value->ObjectClass () == NUMBER) {
+                if (varValue->ObjectClass () == NUMBER && varValue->CanFreeMe()) {
+                    ((_Constant*)varValue)->SetValue(((_Constant*)new_value)->Value());
+                }
+            }
             DeleteObject (varValue);
-            varValue = new_value;
+            varValue = (HBLObjectRef)new_value->makeDynamic();
         }
     };
   
@@ -509,6 +514,7 @@ void  _Variable::SetNumericValue (hyFloat v) // set the value of the var to a nu
     varFlags &= HY_VARIABLE_SET;
     varFlags |= HY_VARIABLE_CHANGED;
     theValue = v;
+    
 
     
     if (theValue<lowerBound || theValue>upperBound) {

@@ -103,10 +103,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // NeedToExponentiate
 #define  HY_VARIABLE_NOTSET                         0x0080
 #define  HY_VARIABLE_COMPUTING                      0x0100
+#define  HY_VARIABLE_SET_EXTERNALLY                 0x0200
 
 #define  HY_VARIABLE_SET                            0xFF7F
 #define  HY_DEP_V_INSPECTED_CLR                     0xFFF7
 #define  HY_VARIABLE_COMPUTING_CLR                  0xFEFF
+#define  HY_VARIABLE_SET_EXTERNALLY_CLR             0xFDFF
 #define  HY_VC_CLR_NO_CHECK                         0xFFBF
 #define  HY_DEP_CLEAR_MASK                          0xFFC7
 #define  HY_HY_VARIABLE_CHANGED_CLEAR               0xFFFC

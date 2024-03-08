@@ -310,7 +310,7 @@ parameters.BatchApplyConstraints (mss.constraints);
 
 utility.ExecuteInGlobalNamespace ("LikelihoodFunction `mss.lf_id` = (`&mss.lf_components`)");
  
-VERBOSITY_LEVEL                 = 10;
+VERBOSITY_LEVEL                 = 1;
 USE_LAST_RESULTS                = 1;
 Optimize                        (res, ^mss.lf_id);
 
