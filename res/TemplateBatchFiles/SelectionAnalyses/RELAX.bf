@@ -1143,11 +1143,12 @@ function relax.FitMainTestPair (prompt) {
             relax.inferred_distribution_ref2 = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map ["relax.reference"])) % 0;
             selection.io.report_dnds (relax.inferred_distribution_ref2);
 
-            
+            selection.io.json_store_setting  (relax.json, "convergence-unstable-alernative", {
+                    {estimators.GetGlobalMLE (relax.alternative_model.fit.take2,terms.relax.k), relax.alternative_model.fit.take2 [terms.fit.log_likelihood]}
+                });
 
-			if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit[terms.fit.log_likelihood]) {
+			if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit.take2[terms.fit.log_likelihood]) {
 			    relax.stash_fitted_K = relax.fitted.K;
-		        
 
 				io.ReportProgressMessageMD("RELAX", "alt-2", "\n### Potential for highly unreliable K inference due to multiple local maxima in the likelihood function, treat results with caution ");
 				io.ReportProgressMessageMD("RELAX", "alt-2", "> Relaxation parameter reset to opposite mode of evolution from that obtained in the initial optimization.");
@@ -1161,7 +1162,6 @@ function relax.FitMainTestPair (prompt) {
                 selection.io.json_store_setting  (relax.json, "convergence-unstable", {
                     {relax.fitted.K, relax.alternative_model.fit.take2 [terms.fit.log_likelihood]}
                     {relax.stash_fitted_K, relax.alternative_model.fit [terms.fit.log_likelihood]}
-                    
                 });
 
 				io.ReportProgressMessageMD("RELAX", "alt-2", "* The following rate distribution was inferred for **reference** branches");

@@ -319,7 +319,7 @@ utility.SetEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1);
 
 utility.ExecuteInGlobalNamespace ("LikelihoodFunction `mss.lf_id` = (`&mss.lf_components`)");
  
-VERBOSITY_LEVEL                 = 1;
+VERBOSITY_LEVEL                 = 10;
 USE_LAST_RESULTS                = 1;
 Optimize                        (res, ^mss.lf_id);
 
