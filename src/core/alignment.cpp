@@ -563,13 +563,14 @@ inline void BacktrackAlignCodon( signed char * const edit_ops
                 2. there's also an opportinity to use bitmasks
             
     */
+    
     switch ( code ) {
             // match
         case HY_111_111:
             r -= 3; q -= 3;
-            edit_ops [edit_ptr]   = 1;
-            edit_ops [edit_ptr+1] = 1;
-            edit_ops [edit_ptr+2] = 1;
+            edit_ops [edit_ptr]   = 0;
+            edit_ops [edit_ptr+1] = 0;
+            edit_ops [edit_ptr+2] = 0;
             edit_ptr += 3;
             return;
             
@@ -594,12 +595,11 @@ inline void BacktrackAlignCodon( signed char * const edit_ops
     
     unsigned char r_str[ 5 ] = { 1, 1, 1, 1, 1 },
          // which characters are we taking from the reference (up to 5); 1 take, 0 leave
-         q_str[ 5 ] = { 1, 1, 1, 1, 1 },
+            q_str[ 5 ] = { 1, 1, 1, 1, 1 };
          // which characters are we taking from the query (up to 5)
-         idx         = 2;
+    int     idx         = 2;
         // how many characters are we taking (max over both strings); index so the actual number is +1
         // can be 2,3, or 4
-
 
 
     switch (code) {
