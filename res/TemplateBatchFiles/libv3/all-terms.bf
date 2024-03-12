@@ -17,6 +17,7 @@ namespace terms{
     codons                  = "codons";
     codon                   = "codon";
     sense_codons            = "sense";
+    orf                     = "ORF";
     nucleotide              = "nucleotide";
     dinucleotide            = "dinucleotide";
     binary                  = "binary";
