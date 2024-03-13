@@ -1146,7 +1146,7 @@ double AlignStrings( char const * r_str
 
                     // fill in the edit_ops with the difference
                     // between q_len and j
-                    for (long k = index_R; k < q_len; ++k ) {
+                    for (long k = index_Q; k < q_len; ++k ) {
                         edit_ops[ edit_ptr++ ] = 1;
                     }
                 }
@@ -1336,10 +1336,13 @@ double AlignStrings( char const * r_str
             }
 
 
+            
             if (!took_local_shortcut) {
                 // for anything that remains,
                 // don't forget it!!!
                 // reference
+                
+                
                 while ( --index_R >= 0 )
                     edit_ops[ edit_ptr++ ] = -1;
 
