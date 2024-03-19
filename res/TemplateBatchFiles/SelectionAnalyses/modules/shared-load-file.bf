@@ -175,8 +175,9 @@ function load_file (prefix) {
         codon_data_info [utility.getGlobalValue("terms.data.sites")] = {1, file_count};
         codon_data_info [utility.getGlobalValue("terms.data.sample_size")] = 0;
         datasets = {};
-
-        for (i, filepath; in; file_list) {
+        
+        for (i = 0; i < file_count; i+=1) {
+           filepath = file_list[i];
            datasets[i] = prefix+".codon_data_" + i;
            if (+i == 0) {
                 codon_data_info [filepath] = 

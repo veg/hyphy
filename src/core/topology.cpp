@@ -402,7 +402,10 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                         if (mapped_name) {
                             //printf ("%s => %s\n", nodeName.get_str(), mapped_name->get_str().get_str());
                             nodeName = _String (mapped_name->get_str());
-                        }
+                        } /*else {
+                            //ObjectToConsole(mapping);
+                            printf ("%s => NOTHING\n", nodeName.get_str());
+                        }*/
                     }
                     
                     // handle bootstrap support for this node
