@@ -505,9 +505,13 @@ _String    _TheTree::FinalizeNode (node<long>* nodie, long number , _String node
         nodeName = settings.inode_prefix & number;
     } else {
         if (!nodeName.IsValidIdentifier(fIDAllowFirstNumeric)) {
-            _String new_name = nodeName.ConvertToAnIdent(fIDAllowFirstNumeric);
-            ReportWarning (_String ("Automatically renamed ") & nodeName.Enquote() & " to " & new_name.Enquote() & " in order to create a valid HyPhy identifier");
-            nodeName = new_name;
+            if (settings.auto_rename_nodes) {
+                _String new_name = nodeName.ConvertToAnIdent(fIDAllowFirstNumeric);
+                ReportWarning (_String ("Automatically renamed ") & nodeName.Enquote() & " to " & new_name.Enquote() & " in order to create a valid HyPhy identifier");
+                nodeName = new_name;
+            } else {
+                HandleApplicationError(nodeName.Enquote() & " is not a valid HyPhy identifier (auto-remaing not allowed).");
+            }
         }
     }
 

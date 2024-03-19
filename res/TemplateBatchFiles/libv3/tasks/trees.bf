@@ -312,6 +312,7 @@ lfunction trees.LoadAnnotatedTreeTopology.match_partitions(partitions, mapping) 
 
     partition_count = Rows(partitions);
     partrees = {};
+    
 
     tree_matrix = utility.GetEnvVariable("NEXUS_FILE_TREE_MATRIX");
 

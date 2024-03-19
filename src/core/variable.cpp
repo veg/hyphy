@@ -712,7 +712,12 @@ void  _Variable::SetFormula (_Formula& theF) {
     varFormula->Duplicate (right_hand_side);
 
     // mod 20060125 added a call to simplify constants
+    
+    //_String * fs = (_String*)varFormula->toStr(kFormulaStringConversionNormal);
+    //NLToConsole(); StringToConsole(*fs); DeleteObject (fs);
     varFormula->SimplifyConstants ();
+    //fs = (_String*)varFormula->toStr(kFormulaStringConversionNormal);
+    //BufferToConsole (" : "); StringToConsole(*fs); DeleteObject (fs);
 
     // also update the fact that this variable is no longer independent in all declared
     // variable containers which hold references to this variable

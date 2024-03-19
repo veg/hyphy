@@ -1206,7 +1206,11 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             Assumes that option["partitioned-omega"] is a dictionary where each partition has
             an entry (0-index based), which itself is a dictionary of the form: "branch-name" : "branch-set"
         */
-        utility.ForEach(option[utility.getGlobalValue("terms.run_options.partitioned_omega")], "_value_", "utility.AddToSet(`&partition_omega`,utility.UniqueValues(_value_))");
+        
+        
+        for (_value_; in; option[utility.getGlobalValue("terms.run_options.partitioned_omega")]) {
+            utility.AddToSet(partition_omega,utility.UniqueValues(_value_));
+        }        
     }
 
 
@@ -1220,10 +1224,16 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
 
         new_globals = {};
-        utility.ForEachPair(partition_omega, "_key_", "_value_",
-            '`&new_globals` [_key_] = (`&name_space` + ".omega_" + Abs (`&new_globals`)); model.generic.AddGlobal (`&mg_rev`, `&new_globals` [_key_] , (utility.getGlobalValue("terms.parameters.omega_ratio")) + " for *" + _key_ + "*")');
+        
+        for (_key_, _value_; in; partition_omega) {
+            new_globals[_key_] = name_space + ".omega_" + Abs (new_globals);
+            model.generic.AddGlobal (mg_rev, 
+                                     new_globals[_key_], 
+                                     (utility.getGlobalValue("terms.parameters.omega_ratio")) + " for *" + _key_ + "*"
+                                     );
+        }
         parameters.DeclareGlobal(new_globals, None);
-
+        
 
         /**
             now replicate the local constraint for individual branches
@@ -1232,12 +1242,13 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
         alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
         beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
+        
         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
         
         SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];
-
+        
         for (i = 0; i < components; i += 1) {
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);

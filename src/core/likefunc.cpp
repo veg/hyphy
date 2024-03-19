@@ -779,6 +779,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
                     }
                     df->SetMap(tipMatches);
                 }
+                
                 ReportWarning (_String ("The tips of the tree:") & *t->GetName() &" were matched with the species names from the data in the following numeric order (0-based) "& _String ((_String*)tipMatches.toStr()));
             } else {
                 _String warnMsg = _String ("The leaf of the tree ") & *t->GetName() &" labeled " &(*(_String*)tips(j)).Enquote()
