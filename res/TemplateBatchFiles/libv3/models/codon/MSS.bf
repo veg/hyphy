@@ -27,11 +27,10 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
     partitioning_option = io.SelectAnOption (
     {
         {"Full", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
-        {"SynREV", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
-        {"SynREVFull", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (no reference)"}
+        {"SynREV", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (mean = 1)"}
         {"SynREV2", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (no rate scaling))"}
         {"SynREV2g", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (Valine == neutral). All between-class synonymous substitutions share a rate."}
-        {"SynREVCodon", "Each codon pair that is exchangeable gets its own substitution rate (fully estimated)"}
+        {"SynREVCodon", "Each codon pair that is exchangeable gets its own substitution rate (fully estimated, mean = 1)"}
         {"Random", "Random partition (specify how many classes; largest class = neutral)"}
         {"File", "Load a TSV partition from file (prompted for neutral class)"}
     },
@@ -94,7 +93,7 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
             );
         }
         return  models.codon.MSS.ModelDescription(type, code,
-           {^"terms.model.MSS.codon_classes" : mapping_codon, ^"terms.model.MSS.neutral" : "", ^"terms.model.MSS.normalize" : FALSE}
+           {^"terms.model.MSS.codon_classes" : mapping_codon, ^"terms.model.MSS.normalize" : TRUE}
         );
    }
    
