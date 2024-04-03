@@ -1258,11 +1258,12 @@ lfunction busted._renormalize (v, distro, mean, skip_first) {
 //------------------------------------------------------------------------------
 
 lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
-
     parameters.SetValues (v);
     m = parameters.GetStickBreakingDistribution (^distro);
     d = Rows (m);
-    
+
+    mean = Max (mean, 1e-3);
+   
     if (skip_first) {
         m0 = m[0][0]*m[0][1];
     } else {
@@ -1305,8 +1306,6 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
     for (i = (skip_first != 0); i < d-1; i+=1) {
         (v[((^distro)["weights"])[i]])[^"terms.fit.MLE"] = wts[i];
     }
-    
-    //assert (0);
     return v;
     
 }

@@ -1903,6 +1903,7 @@ lfunction relax._renormalize_with_weights (v, distro, mean) {
     //console.log (m);
     //console.log (mean);
     d = Rows (m);
+    mean = Max (mean, 1e-3);
     
     over_one = m[d-1][0] * m[d-1][1];
     
