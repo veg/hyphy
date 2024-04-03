@@ -167,10 +167,18 @@ mss_selector.header = {
         {"TreeLength"},
         {"Log(L)"}
     };
+
+KeywordArgument ("model", "Substitution model to use","SynREV"); 
     
+mss.model_option = io.SelectAnOption ({
+                                        {"SynREV", "[Default] SynREV model (one rate per aa)"}
+                                        {"SynREVCodon", "SynREVCodon (one rate per codon pair)"}
+                                    }, "Which model?");
+
+  
     
 ExecuteCommands ( "mss.codon_classes = model.codon.MSS.prompt_and_define (terms.global, mss.genetic_code[terms.code])", 
-                                       {"--mss-type" : "SynREV"}
+                                       {"--mss-type" : mss.model_option}
                                     );
                                         
 io.ReportProgressMessageMD("mss", "fit0" , "Individual file statistics and simple model fits\n");
@@ -319,7 +327,7 @@ utility.SetEnvVariable ("AUTO_PARALLELIZE_OPTIMIZE", 1);
 
 utility.ExecuteInGlobalNamespace ("LikelihoodFunction `mss.lf_id` = (`&mss.lf_components`)");
  
-VERBOSITY_LEVEL                 = 10;
+VERBOSITY_LEVEL                 = 1;
 USE_LAST_RESULTS                = 1;
 Optimize                        (res, ^mss.lf_id);
 
