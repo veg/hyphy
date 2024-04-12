@@ -1767,6 +1767,7 @@ double      LinearSpaceAlign (   const char    *s1,          // first string
                                   char          *ha
                                   )
 {
+        
     if (to2 == from2 || to1 == from1) {
         return 0;
     }

@@ -1270,6 +1270,7 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
         m0 = 0;
     }
     
+    
     over_one = m[d-1][0] * m[d-1][1];
     
     if (over_one >= mean*0.95) {
@@ -1282,6 +1283,7 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
        m[d-1][1] = new_weight;
     }
     
+    
     over_one = m[d-1][0] * m[d-1][1];
     
     under_one = (+(m[-1][0] $ m[-1][1]) - m0) / (1-m[d-1][1]); // current mean
@@ -1289,16 +1291,35 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
     for (i = (skip_first != 0); i < d-1; i+=1) {
         m[i][0] = m[i][0] * mean / under_one;
     }
-  
-    under_one = +(m[-1][0] $ m[-1][1]);
+
+    if (skip_first) {
+        m_rest = m [{{1,0}}][{{d-1,1}}];
+        under_one = +(m_rest[-1][0] $ m_rest[-1][1]);
+    } else {
+        under_one = +(m[-1][0] $ m[-1][1]);
+    }
+    
     
     for (i = (skip_first != 0); i < d; i+=1) {
         m[i][0] = m[i][0] * mean / under_one;
     }
     
-    m = m%0;
-    wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
+   
+   
+    if (skip_first) {
+        m_rest = m [{{1,0}}][{{d-1,1}}];
+        m_rest = m_rest % 0;
+        for (i = 1; i < d; i+=1) {
+            m[i][0] = m_rest[i-1][0];
+            m[i][1] = m_rest[i-1][1];
+        }
+    } else {
+        m = m%0;
+    }
     
+
+    wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
+
 
     for (i = (skip_first != 0); i < d; i+=1) {
         (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];
