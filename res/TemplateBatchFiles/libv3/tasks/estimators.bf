@@ -807,6 +807,9 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
             2: run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]
         }, "mpi.ComputeOnGrid.SimpleEvaluatorWithValues", "mpi.ComputeOnGrid.ResultHandler");
         
+        //console.log (run_options [utility.getGlobalValue("terms.search_grid")]);
+        //console.log (grid_results);
+        
         if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"),"Number")) {
             restarts = run_options[utility.getGlobalValue("terms.search_restarts")];
             if (restarts > 1) {

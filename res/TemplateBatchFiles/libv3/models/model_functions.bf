@@ -400,7 +400,7 @@ function models.generic.ConstrainBranchLength (model, value, parameter) {
  */
 function models.generic.SetBranchLength (model, value, parameter) {
 
-     if (Abs((model[terms.parameters])[terms.local]) >= 1) {
+      if (Abs((model[terms.parameters])[terms.local]) >= 1) {
         
         if (Type (model [terms.model.branch_length_string]) == "String") {
             models.generic.SetBranchLength.expression = model [terms.model.branch_length_string];
@@ -446,11 +446,17 @@ function models.generic.SetBranchLength (model, value, parameter) {
             }
 
  
-             if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) || model[terms.model.branch_length_override]) {
+            if (parameters.IsIndependent (models.generic.SetBranchLength.bl.p) || model[terms.model.branch_length_override]) {
 
                 if (Type (value) == "AssociativeList") {
                   	if (Abs (models.generic.SetBranchLength.expression)) {
+                  	    //console.log (models.generic.SetBranchLength.expression);
+                  	    //console.log (value[terms.branch_length]);
+                  	    //console.log (busted._shared_srv.rv_gdd);
+                  	    //console.log (^(value[terms.model.branch_length_scaler]));
                   	    ConvertBranchLength (models.generic.SetBranchLength.t,  models.generic.SetBranchLength.expression, ^models.generic.SetBranchLength.bl, value[terms.branch_length]);
+                  	    //console.log ("**" + Eval (models.generic.SetBranchLength.expression));
+                  	    
                     	Eval (models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 					    messages.log ("models.generic.SetBranchLength: " + models.generic.SetBranchLength.bl.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + models.generic.SetBranchLength.t);
 

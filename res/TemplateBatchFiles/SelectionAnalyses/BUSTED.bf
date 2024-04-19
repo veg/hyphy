@@ -48,7 +48,6 @@ Version 4.5 adds an 'error absorption' component [experimental]
                               };
 
 
-console.log (busted.analysis_description);
 io.DisplayAnalysisBanner (busted.analysis_description);
 
 busted.FG = "Test";
@@ -536,8 +535,7 @@ if (busted.do_srv)  {
     //PARAMETER_GROUPING + busted.srv_distribution["weights"];
     PARAMETER_GROUPING + utility.Concat (busted.srv_distribution["rates"],busted.srv_distribution["weights"]);
 
-    busted.init_grid_setup (busted.srv_distribution, FALSE);
-    
+    busted.init_grid_setup (busted.srv_distribution, FALSE);    
 }
 
 if (busted.do_srv_hmm) {
@@ -613,7 +611,7 @@ if (Type (debug.checkpoint) != "String") {
     
     
     busted.tmp_fixed = models.FixParameterSetRegExpFromReference (terms.nucleotideRatePrefix,busted.test.bsrel_model, busted.final_partitioned_mg_results[terms.global]);
- 
+  
     busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map,                    
         {
             terms.run_options.retain_lf_object: TRUE,
@@ -1399,7 +1397,7 @@ function busted.init_grid_setup (omega_distro, error_sink) {
                  busted.initial_grid  [_name_] = {{100,500,1000,5000}};
                  busted.initial_ranges [_name_] = {
                     terms.lower_bound : 100,
-                    terms.upper_bound : 10000
+                    terms.upper_bound : 1000
                 };
             } else {                
                 busted.initial_ranges [_name_] = {
@@ -1432,12 +1430,12 @@ function busted.init_grid_setup (omega_distro, error_sink) {
         if (error_sink && _index_ == 0) {
             busted.initial_grid  [_name_] = {
                 {
-                    0, 0.001, 0.005, 0.1
+                    0, 0.001, 0.0025, 0.025
                 }
             };        
              busted.initial_ranges [_name_] = {
                 terms.lower_bound : 0,
-                terms.upper_bound : 0.01,
+                terms.upper_bound : 0.005,
             };
         } else { 
             busted.initial_ranges [_name_] = {
