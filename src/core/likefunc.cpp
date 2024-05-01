@@ -1956,7 +1956,7 @@ bool    _LikelihoodFunction::PreCompute         (void) {
             if (!ith_dep->IsValueInBounds(dep_value)) {
                 ReportWarning (_String ("Failing bound checks on ") & *ith_dep->GetName() & " = " & _String (dep_value, "%25.16g"));
             }
-            //git printf ("\nSetting %s to %g\n",  ith_dep->GetName()->get_str(), dep_value);
+            //printf ("\nSetting %s to %g\n",  ith_dep->GetName()->get_str(), dep_value);
             ith_dep->SetValue(dep_value);
         }
         return true;
