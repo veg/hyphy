@@ -1939,14 +1939,14 @@ bool    _LikelihoodFunction::PreCompute         (void) {
         // populate all the independent variables
         for (long i = 0; i < compiled_constraints->varIndex.lLength; i++) {
             compiled_constraints->varValues[i].value = LocateVar(compiled_constraints->varIndex[i])->Value();
-            printf ("\nArgument %s = %g\n",  LocateVar(compiled_constraints->varIndex[i])->GetName()->get_str(), compiled_constraints->varValues[i].value);
+            //printf ("\nArgument %s = %g\n",  LocateVar(compiled_constraints->varIndex[i])->GetName()->get_str(), compiled_constraints->varValues[i].value);
         }
         
         // compute all the unique expressions
         for (long i = 0; i < compiled_constraints->formulasToEval.lLength; i++) {
             compiled_constraints->formulaValues[i] = ((_Formula*)(compiled_constraints->formulasToEval.get (i)))->ComputeSimple(compiled_constraints->theStack, compiled_constraints->varValues);
             
-            printf ("\nComputed formula %d to %g\n",  i, compiled_constraints->formulaValues[i]);
+            //printf ("\nComputed formula %d to %g\n",  i, compiled_constraints->formulaValues[i]);
        }
                                                                  
         // check the ranges of all the dependent variables
@@ -1956,7 +1956,7 @@ bool    _LikelihoodFunction::PreCompute         (void) {
             if (!ith_dep->IsValueInBounds(dep_value)) {
                 ReportWarning (_String ("Failing bound checks on ") & *ith_dep->GetName() & " = " & _String (dep_value, "%25.16g"));
             }
-            printf ("\nSetting %s to %g\n",  ith_dep->GetName()->get_str(), dep_value);
+            //printf ("\nSetting %s to %g\n",  ith_dep->GetName()->get_str(), dep_value);
             ith_dep->SetValue(dep_value);
         }
         return true;
