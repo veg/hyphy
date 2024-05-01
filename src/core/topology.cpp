@@ -259,12 +259,14 @@ struct _any_char_in_set {
 
 const _TreeTopologyParseSettings    _TreeTopology::CollectParseSettings (void) {
     _String const kInternalNodePrefix("INTERNAL_NODE_PREFIX"),
-                  kIgnoreUserINames  ("IGNORE_INTERNAL_NODE_LABELS");
+                  kIgnoreUserINames  ("IGNORE_INTERNAL_NODE_LABELS"),
+                  kDoNotAutoRename   ("TREE_DO_NOT_AUTO_RENAME");
 
     _TreeTopologyParseSettings parse_settings;
     
     parse_settings.auto_convert_lengths = EnvVariableTrue(automatically_convert_branch_lengths);
     parse_settings.accept_user_lengths  = EnvVariableTrue(accept_branch_lengths);
+    parse_settings.auto_rename_nodes  = !EnvVariableTrue(kDoNotAutoRename);
     parse_settings.ingore_user_inode_names  = EnvVariableTrue(kIgnoreUserINames);
      
     HBLObjectRef user_node_name            = EnvVariableGet(kInternalNodePrefix, STRING);
@@ -400,7 +402,10 @@ _AssociativeList*    _TreeTopology::MainTreeConstructor  (_String const& parms, 
                         if (mapped_name) {
                             //printf ("%s => %s\n", nodeName.get_str(), mapped_name->get_str().get_str());
                             nodeName = _String (mapped_name->get_str());
-                        }
+                        } /*else {
+                            //ObjectToConsole(mapping);
+                            printf ("%s => NOTHING\n", nodeName.get_str());
+                        }*/
                     }
                     
                     // handle bootstrap support for this node

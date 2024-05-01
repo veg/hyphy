@@ -162,6 +162,7 @@ function cSM2partialSMs(_cdnScoreMatrix, penalties)
             m3x1[ thisCodon ][ 3 * d1 + 0 ] = max100 - p3x1;
             m3x1[ thisCodon ][ 3 * d1 + 1 ] = max010 - p3x1;
             m3x1[ thisCodon ][ 3 * d1 + 2 ] = max001 - p3x1;
+            
         }
     }
 

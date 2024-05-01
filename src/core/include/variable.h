@@ -100,7 +100,7 @@ public:
         if (varValue) { DeleteObject (varValue); varValue = nil;}
     }
 
-    const     _Formula * get_constraint (void) const {
+    _Formula * get_constraint (void) {
       return varFormula;
     }
 

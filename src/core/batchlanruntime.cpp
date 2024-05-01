@@ -1158,7 +1158,7 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                 _SimpleList ops (reference_sequence->length()+2UL,-2,0);
                 ops.list_data[reference_sequence->length()+1] = sequence2->length();
                 ops.list_data[0]               = -1;
-
+                
                 score = LinearSpaceAlign (reference_sequence->get_str(),
                                           sequence2->get_str(),
                                           reference_sequence->length(),
@@ -1181,7 +1181,7 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
                                           data_buffers,
                                           0,
                                           alignment_route);
-
+                
                 delete[]    alignment_route;
 
                 _StringBuffer     *result1 = new _StringBuffer (reference_sequence->length() + 1UL),

@@ -27,11 +27,10 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
     partitioning_option = io.SelectAnOption (
     {
         {"Full", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
-        {"SynREV", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (Valine == neutral)"}
-        {"SynREVFull", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (no reference)"}
+        {"SynREV", "Each set of codons mapping to the same amino-acid class have a separate substitution rate (mean = 1)"}
         {"SynREV2", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (no rate scaling))"}
         {"SynREV2g", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (Valine == neutral). All between-class synonymous substitutions share a rate."}
-        {"SynREVCodon", "Each codon pair that is exchangeable gets its own substitution rate (fully estimated)"}
+        {"SynREVCodon", "Each codon pair that is exchangeable gets its own substitution rate (fully estimated, mean = 1)"}
         {"Random", "Random partition (specify how many classes; largest class = neutral)"}
         {"File", "Load a TSV partition from file (prompted for neutral class)"}
     },
@@ -81,7 +80,11 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
         }
         if (partitioning_option == "SynREV") {
             return  models.codon.MSS.ModelDescription(type, code,
-               {^"terms.model.MSS.codon_classes" : mapping, ^"terms.model.MSS.neutral" : "V"}
+               {
+                    ^"terms.model.MSS.codon_classes" : mapping, 
+                    ^"terms.model.MSS.normalize" : TRUE
+                    //^"terms.model.MSS.neutral" : "V"
+               }
             );
         }
         if (partitioning_option == "SynREVFull") {
@@ -90,7 +93,7 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
             );
         }
         return  models.codon.MSS.ModelDescription(type, code,
-           {^"terms.model.MSS.codon_classes" : mapping_codon, ^"terms.model.MSS.neutral" : "", ^"terms.model.MSS.normalize" : FALSE}
+           {^"terms.model.MSS.codon_classes" : mapping_codon, ^"terms.model.MSS.normalize" : TRUE}
         );
    }
    
@@ -210,6 +213,7 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
         m[^"terms.model.MSS.between"] = codon_classes [^"terms.model.MSS.between"];
     }
     
+    
     if (codon_classes[utility.getGlobalValue("terms.model.MSS.normalize")]) {
         m[utility.getGlobalValue("terms.model.post_definition")] = "models.codon.MSS.post_definition";
     }
@@ -221,13 +225,24 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
 
 lfunction models.codon.MSS.post_definition (model) {
 // TBD
-    vars = {};
-    weights = {};
-    for (i; in; model.GetParameters_RegExp (model,"^" + utility.getGlobalValue ("terms.parameters.synonymous_rate"))) {
-        vars + i;
-        weights + 1;
+    rates = model.GetParameters_RegExp (model,"^" + utility.getGlobalValue ("terms.parameters.synonymous_rate"));
+    D = utility.Array1D (rates);
+    w = 1 / D;
+    
+    vars = {1,D};
+    weights = {1,D};
+    terms = {1,D};
+    
+    
+    i = 0;
+    for (t,n; in; rates) {
+        terms[i] = t;
+        vars[i] = n;
+        weights[i] = w;
+        i += 1;
     } 
-    parameters.ConstrainMeanOfSet (vars, weights, 1, "beavis");
+    ((model[utility.getGlobalValue("terms.parameters")])[utility.getGlobalValue("terms.global")]) * (parameters.ConstrainMeanOfSetWithTerms (vars, weights, terms, 1, model[^"terms.id"])[utility.getGlobalValue("terms.global")]);
+    model = models.generic.post.definition (model);
 }
 
 //----------------------------------------------------------------------------------------------------------------

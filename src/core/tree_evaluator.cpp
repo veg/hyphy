@@ -157,9 +157,9 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
         long siteState;
         if (setBranch != nodeCode + iNodes) {
             siteState = lNodeFlags[nodeCode*siteCount + siteOrdering.list_data[siteID]] ;
-            /*if (likeFuncEvalCallCount == 328 && siteID == 30) {
-                fprintf (stderr, "Site-state @ %ld: %d\n", nodeCode, siteState);
-            }*/
+            //if (siteID == 524) {
+            //    fprintf (stderr, "Site-state @ %ld: %d\n", nodeCode, siteState);
+            //}
         } else {
             siteState = setBranchTo[siteOrdering.list_data[siteID]] ;
         }
@@ -190,6 +190,14 @@ template<long D> inline bool __ll_handle_conditional_array_initialization ( long
             for (long k = ub; k < D; k++) {
                 parentConditionals[k] *= tMatrix[siteState+D*k];
             }
+            
+            /*
+            if (parentConditionals[siteState] == 0.) {
+                if (siteID == 524) {
+                    fprintf (stderr, "%ld/%ld / %g\n", siteState, siteID, parentConditionals[siteState]);
+                }
+            }
+            */
 #else
             #pragma GCC unroll 4
             for (long k = 0L; k < D; k++) {
@@ -3052,8 +3060,8 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
     //if (setBranch >=0 )
        // printf ("\nSet to %d (%s)\n", setBranch, ((_CalcNode*) flatTree    (setBranch))->GetName()->get_str());
     
-    /*if (likeFuncEvalCallCount == 328) {
-        fprintf (stderr, "\nSite ID: %ld\n%s\n", siteOrdering.get(30), theFilter->GetColumn(siteOrdering.get(30)));;
+    /*if (likeFuncEvalCallCount == 0) {
+        fprintf (stderr, "\nSite ID: %ld\n%s\n%s\n%s\n", siteOrdering.get(0), theFilter->GetColumn(siteOrdering.get(0)), theFilter->GetColumn(siteOrdering.get(0)+1), theFilter->GetColumn(siteOrdering.get(0)+2));
     }*/
     
     for  (unsigned long nodeID = 0; nodeID < updateNodes.lLength; nodeID++) {
@@ -3295,7 +3303,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
 
 /*
 #pragma omp critical
-            if (siteID == siteFrom && nodeID == 25) {
+            if (siteID == 524) {
                 printf ("(%ld/%ld)%s\n", likeFuncEvalCallCount, siteFrom, currentTreeNode->GetName()->get_str());
             }
 */
@@ -3310,15 +3318,18 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             }
 
 
-//#pragma omp critical
-            /*if (1 || hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
-                if (siteOrdering.list_data[siteID] == 2 && nodeID == 75) {
+/*
+#pragma omp critical
+            if (1 || hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+                if (siteID == 524) {
+                //if (siteOrdering.list_data[siteID] == 2 && nodeID == 75) {
                     //printf ("%ld\t%ld\t%ld\t%ld\t%16.12g\n",nodeID, siteFrom, siteTo, siteID, sum);
                     for (int kk = 0; kk < 61; kk++) {
                         printf ("%s (%ld)\t%ld\t%ld\t%d\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(),nodeID, siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
                     }
                 }
-            }*/
+            }
+*/
 
         #ifdef _SLKP_USE_APPLE_BLAS_2
                  cblas_dgemv(CblasRowMajor,
@@ -3338,16 +3349,18 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
         #endif
         sum += _hy_vvmult_sum<61> (parentConditionals, mvs);
 
-
-//#pragma omp critical
-            /*if (likeFuncEvalCallCount == 1 || hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
-                if (siteOrdering.list_data[siteID] == 2 && nodeID == 75) {
+/*
+#pragma omp critical
+            if (1 || hy_env::EnvVariableTrue("UBER_VERBOSE_DEBUG")) {
+                if (siteID == 524) {
+                //if (siteOrdering.list_data[siteID] == 2 && nodeID == 75) {
                     //printf ("%ld\t%ld\t%ld\t%ld\t%16.12g\n",nodeID, siteFrom, siteTo, siteID, sum);
                     for (int kk = 0; kk < 61; kk++) {
-                        printf ("%s\t%ld\t%ld\t%d\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(), siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
+                        printf ("%s (%d)\t%ld\t%ld\t%d\t%16.12g\t%16.12g\t%16.12g\n", currentTreeNode->GetName()->get_str(), nodeID, siteFrom, siteID, kk, parentConditionals[kk], childVector[kk], mvs[kk]);
                     }
                 }
-            }*/
+            }
+*/
 
 
             
@@ -3498,7 +3511,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
             if (accumulator <= 0.0)
 #pragma omp critical
                 {
-                    //printf ("BAILING WITH INFINITY %ld\n", siteID);
+                    //printf ("BAILING WITH INFINITY %ld / %ld\n", siteID, siteOrdering.list_data[siteID]);
                     hy_global::ReportWarning (_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a 0 probability in ComputeTreeBlockByBranch with category " & catID);
                 }
        } else {
@@ -3506,7 +3519,7 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 result = -INFINITY;
 #pragma omp critical
                 {
-                    //printf ("BAILING WITH INFINITY %ld\n", siteID);
+                    //printf ("BAILING WITH INFINITY %ld / %ld (%ld)\n", siteID, siteOrdering.list_data[siteID], siteOrdering.lLength);
                     hy_global::ReportWarning (_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a 0 probability in ComputeTreeBlockByBranch");
                 }
                 break;

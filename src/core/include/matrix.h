@@ -72,11 +72,11 @@ struct      _CompiledMatrixData {
     _SimpleFormulaDatum * theStack,
                         * varValues;
 
-    hyFloat         * formulaValues;
+    hyFloat             * formulaValues;
 
-    long      * formulaRefs;
-    long        stackDepth;
-    bool        has_volatile_entries;
+    long                * formulaRefs;
+    long                stackDepth;
+    bool                has_volatile_entries;
 
     _SimpleList varIndex,
                 formulasToEval;

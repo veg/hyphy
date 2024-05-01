@@ -56,8 +56,7 @@ function load_nuc_file (prefix) {
     utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"),
                            None);
 
-
-    utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"), None);
+     utility.SetEnvVariable(utility.getGlobalValue ("terms.trees.data_for_neighbor_joining"), None);
 
         /**  this will return a dictionary of partition strings and trees; one set per partition, as in
         {
@@ -176,8 +175,9 @@ function load_file (prefix) {
         codon_data_info [utility.getGlobalValue("terms.data.sites")] = {1, file_count};
         codon_data_info [utility.getGlobalValue("terms.data.sample_size")] = 0;
         datasets = {};
-
-        for (i, filepath; in; file_list) {
+        
+        for (i = 0; i < file_count; i+=1) {
+           filepath = file_list[i];
            datasets[i] = prefix+".codon_data_" + i;
            if (+i == 0) {
                 codon_data_info [filepath] = 
@@ -472,14 +472,18 @@ function doGTR (prefix) {
 
 
     if (run_gtr) {
+        utility.ToggleEnvVariable ("TREE_DO_NOT_AUTO_RENAME", TRUE);
+
         gtr_results = estimators.FitGTR(filter_names,
                                              trees,
                                              gtr_results);
                                              
-       if (Type (save_intermediate_fits) == "AssociativeList") {                                             
+         utility.ToggleEnvVariable ("TREE_DO_NOT_AUTO_RENAME", None);
+
+          if (Type (save_intermediate_fits) == "AssociativeList") {                                             
                (save_intermediate_fits[^"terms.data.value"])["GTR"] = gtr_results;
                io.SpoolJSON (save_intermediate_fits[^"terms.data.value"],save_intermediate_fits[^"terms.data.file"]);     
-       }                         
+        }                         
     }
 
     KeywordArgument ("kill-zero-lengths", "Automatically delete internal zero-length branches for computational efficiency (will not affect results otherwise)", "Yes");
@@ -698,8 +702,12 @@ function doPartitionedMGModel (prefix, keep_lf, model, constraint) {
         etc
     */
     scaler_variables = utility.PopulateDict (0, partition_count, "`prefix`.scaler_prefix + '_' + _k_", "_k_");
+    
+    for (_value_; in; scaler_variables) {
+        parameters.DeclareGlobal(_value_, None);
+        parameters.SetValue(_value_, 3);
+    }
 
-    utility.ForEach (scaler_variables, "_value_", "parameters.DeclareGlobal(_value_, None);parameters.SetValue(_value_, 3);");
     
     run_mg94 = TRUE;
     
@@ -720,6 +728,7 @@ function doPartitionedMGModel (prefix, keep_lf, model, constraint) {
     }
     
     if (run_mg94) {
+    
         partitioned_mg_results = estimators.FitCodonModel (filter_names, trees, model, codon_data_info [utility.getGlobalValue("terms.code")], {
             utility.getGlobalValue("terms.run_options.model_type"): utility.getGlobalValue("terms.local"),
             utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler"): scaler_variables,

@@ -836,19 +836,15 @@ if (relax.do_srv)  {
 if (relax.model_set != "All") {
     relax.do_lhc = TRUE;
     relax.distribution = models.codon.BS_REL.ExtractMixtureDistribution(relax.model_object_map[relax.reference_model_namespace]);
-    relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_branches_name`.+"))["0"])[terms.fit.MLE];
     relax.init_grid_setup        (relax.distribution);
     relax.initial_ranges[relax.relaxation_parameter] = {terms.lower_bound : 0.10,
                     terms.upper_bound : 2.0};
      
                     
-    relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
-    relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
-                'relax._renormalize_with_weights (_v_, "relax.distribution", relax.initial.test_mean)'
-            );
 }
 
 if (relax.has_unclassified) {
+
     relax.unclassified.bsrel_model =  model.generic.DefineMixtureModel(relax.model_generator,
         "relax.unclassified", {
             "0": parameters.Quote(terms.global),
@@ -866,19 +862,39 @@ if (relax.has_unclassified) {
         relax.distribution_uc = models.codon.BS_REL.ExtractMixtureDistribution(relax.unclassified.bsrel_model);
         relax.init_grid_setup  (relax.distribution_uc);
     }
+    
 
     parameters.SetRange (model.generic.GetGlobalParameter (relax.unclassified.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,relax.rate_classes)), terms.range_gte1);
 
     relax.model_object_map ["relax.unclassified"] = relax.unclassified.bsrel_model;
     
-    
-     for (relax.index, relax.junk ; in; relax.filter_names) {
+    for (relax.index, relax.junk ; in; relax.filter_names) {
         (relax.model_map[relax.index]) ["relax.unclassified"] = utility.Filter (relax.selected_branches[relax.index], '_value_', '_value_ == relax.unclassified_branches_name');
      }
         
     models.BindGlobalParameters ({"0" : relax.model_object_map[relax.reference_model_namespace], "1" : relax.unclassified.bsrel_model}, terms.nucleotideRate("[ACGT]","[ACGT]"));
 }
 
+if (relax.do_lhc) {
+    relax.initial_grid         = estimators.LHC (relax.initial_ranges,relax.initial_grid.N);
+    relax.initial.test_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.reference_branches_name`.+"))["0"])[terms.fit.MLE];
+
+ 
+    relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
+        'relax._renormalize_with_weights (_v_, "relax.distribution", relax.initial.test_mean)'
+    );
+    
+    //console.log (relax.initial_grid[0]);
+    if (relax.has_unclassified) {
+        relax.initial.unc_mean    = ((selection.io.extract_global_MLE_re (relax.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+`relax.unclassified_branches_name`.+"))["0"])[terms.fit.MLE];
+ 
+        relax.initial_grid = utility.Map (relax.initial_grid, "_v_", 
+            'relax._renormalize_with_weights (_v_, "relax.distribution_uc", relax.initial.unc_mean)'
+        );
+    }
+    //console.log (relax.initial_grid[0]);
+
+}
 
 
 //------------------------------------
@@ -997,6 +1013,7 @@ function relax.FitMainTestPair (prompt) {
 
      
      if (relax.do_lhc) {
+
         relax.nm.precision = -0.00025*relax.final_partitioned_mg_results[terms.fit.log_likelihood];
         //parameters.DeclareGlobalWithRanges ("relax.bl.scaler", 1, 0, 1000);
         
@@ -1126,11 +1143,12 @@ function relax.FitMainTestPair (prompt) {
             relax.inferred_distribution_ref2 = parameters.GetStickBreakingDistribution (models.codon.BS_REL.ExtractMixtureDistribution (relax.model_object_map ["relax.reference"])) % 0;
             selection.io.report_dnds (relax.inferred_distribution_ref2);
 
-            
+            selection.io.json_store_setting  (relax.json, "convergence-unstable-alernative", {
+                    {estimators.GetGlobalMLE (relax.alternative_model.fit.take2,terms.relax.k), relax.alternative_model.fit.take2 [terms.fit.log_likelihood]}
+                });
 
-			if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit[terms.fit.log_likelihood]) {
+			if (relax.alternative_model.fit.take2 [terms.fit.log_likelihood] > relax.alternative_model.fit.take2[terms.fit.log_likelihood]) {
 			    relax.stash_fitted_K = relax.fitted.K;
-		        
 
 				io.ReportProgressMessageMD("RELAX", "alt-2", "\n### Potential for highly unreliable K inference due to multiple local maxima in the likelihood function, treat results with caution ");
 				io.ReportProgressMessageMD("RELAX", "alt-2", "> Relaxation parameter reset to opposite mode of evolution from that obtained in the initial optimization.");
@@ -1144,7 +1162,6 @@ function relax.FitMainTestPair (prompt) {
                 selection.io.json_store_setting  (relax.json, "convergence-unstable", {
                     {relax.fitted.K, relax.alternative_model.fit.take2 [terms.fit.log_likelihood]}
                     {relax.stash_fitted_K, relax.alternative_model.fit [terms.fit.log_likelihood]}
-                    
                 });
 
 				io.ReportProgressMessageMD("RELAX", "alt-2", "* The following rate distribution was inferred for **reference** branches");
@@ -1879,12 +1896,14 @@ lfunction relax._renormalize (v, distro, mean) {
 
 lfunction relax._renormalize_with_weights (v, distro, mean) {
 
+
     parameters.SetValues (v);
     m = parameters.GetStickBreakingDistribution (^distro);
     //console.log (v);
     //console.log (m);
     //console.log (mean);
     d = Rows (m);
+    mean = Max (mean, 1e-3);
     
     over_one = m[d-1][0] * m[d-1][1];
     
@@ -1907,16 +1926,16 @@ lfunction relax._renormalize_with_weights (v, distro, mean) {
   
     under_one = +(m[-1][0] $ m[-1][1]);
     
-    for (i = 0; i < d; i+=1) {
-        m[i][0] = m[i][0] * mean / under_one;
+    if (under_one > 0) {
+        for (i = 0; i < d; i+=1) {
+            m[i][0] = m[i][0] * mean / under_one;
+        }
     }
-    
+        
     m = m%0;
+    
     wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
-    
-    
-
-    //console.log (v);
+ 
 
     for (i = 0; i < d; i+=1) {
         (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];

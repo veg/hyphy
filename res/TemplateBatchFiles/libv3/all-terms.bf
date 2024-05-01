@@ -17,6 +17,7 @@ namespace terms{
     codons                  = "codons";
     codon                   = "codon";
     sense_codons            = "sense";
+    orf                     = "ORF";
     nucleotide              = "nucleotide";
     dinucleotide            = "dinucleotide";
     binary                  = "binary";
@@ -153,6 +154,9 @@ namespace terms{
     }
     function AddCategory (term, categoryID) {
         return term + " for category " + categoryID;
+    }
+    function MeanScaler (term) {
+        return "Mean scaler variable for " + term;
     }
 
 

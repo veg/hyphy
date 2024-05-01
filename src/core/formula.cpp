@@ -1933,6 +1933,12 @@ _Variable * _Formula::Dereference (bool ignore_context, _hyExecutionContext* the
 HBLObjectRef _Formula::Compute (long startAt, _VariableContainer const * nameSpace, _List* additionalCacheArguments, _String* errMsg, long valid_type, bool can_cache, bool skip_comparison) {
 // compute the value of the formula
 // TODO SLKP 20170925 Needs code review
+    
+    if (simpleExpressionStatus) {
+        HandleApplicationError("Internal error, calling _Formula::Compute on a compiled _Formula object");
+    }
+
+    
     _Stack * scrap_here;
     current_formula_being_computed = this;
     if (theFormula.empty()) {
@@ -2367,16 +2373,17 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
 
 //__________________________________________________________________________________
 void _Formula::ConvertFromSimple (_AVLList const& variableIndex) {
-  delete [] simpleExpressionStatus;
-  simpleExpressionStatus = nil;
   ConvertFromSimpleList (*variableIndex.dataList);
 }
 
 //__________________________________________________________________________________
 void _Formula::ConvertFromSimpleList (_SimpleList const& variableIndex) {
-  if (theFormula.empty()) {
-    return;
-  }
+    delete [] simpleExpressionStatus;
+    simpleExpressionStatus = nil;
+
+    if (theFormula.empty()) {
+        return;
+    }
   
   for (unsigned long i=0UL; i<theFormula.countitems(); i++) {
     _Operation* this_op = ItemAt (i);
@@ -2404,6 +2411,10 @@ void _Formula::ConvertFromSimpleList (_SimpleList const& variableIndex) {
 //__________________________________________________________________________________
 hyFloat _Formula::ComputeSimple (_SimpleFormulaDatum* stack, _SimpleFormulaDatum* varValues) {
     if (theFormula.nonempty()) {
+        
+        if (!simpleExpressionStatus) {
+            HandleApplicationError("Internal error, calling _Formula::ComputeSimple on a standard _Formula object");
+        }
         long stackTop = 0;
         unsigned long upper_bound = NumberOperations();
         
@@ -2548,6 +2559,12 @@ HBLObjectRef _Formula::ConstructPolynomial (void) {
 
 //__________________________________________________________________________________
 bool _Formula::HasChanged (bool ingoreCats) {
+    
+    if (simpleExpressionStatus) {
+        HandleApplicationError("Internal error. Called _Formula::HasChanged on a compiled formula");
+    }
+ 
+    
     unsigned long const upper_bound = NumberOperations();
   
     for (unsigned long i=0UL; i<upper_bound; i++) {
@@ -2654,6 +2671,10 @@ void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursiv
 //__________________________________________________________________________________
 bool _Formula::HasChangedSimple (_SimpleList& variableIndex) {
     unsigned long const upper_bound = NumberOperations();
+    
+    if (!simpleExpressionStatus) {
+        HandleApplicationError("Internal error. Called _Formula::HasChangedSimple on a regular formula");
+    }
     
     for (unsigned long i=0UL; i<upper_bound; i++) {
       _Operation * this_op = ItemAt (i);
@@ -2923,7 +2944,7 @@ long _Formula::ObjectClass (void) {
     if (theStack.StackDepth()) {
         return ((HBLObjectRef)theStack.theStack.list_data[0])->ObjectClass();
     }
-
+    
     HBLObjectRef res =   Compute();
 
     if (res) {
@@ -3034,3 +3055,27 @@ void    _Formula::ConvertFromTree (void) {
     }
 }
 
+//__________________________________________________________________________________
+bool       _Formula::ProcessFormulaForConverstionToSimple (long& stack_length,
+                                                           _AVLList& var_list,
+                                                           _SimpleList& new_formulas,
+                                                           _SimpleList& references,
+                                                           _AVLListX& formula_strings,
+                                                           bool run_all)  {
+    
+    if (run_all || AmISimple(stack_length,var_list)) {
+        _String * formula_string = (_String*)toStr(kFormulaStringConversionNormal, nil,true);
+        long      fref = formula_strings.Insert(formula_string,new_formulas.lLength);
+        if (fref < 0) {
+            references << formula_strings.GetXtra (-fref-1);
+            DeleteObject (formula_string);
+        } else {
+            new_formulas << (long)this;
+            references << fref;
+        }
+
+    } else {
+        return false;
+    }
+    return true;
+}

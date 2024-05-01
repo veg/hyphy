@@ -15,6 +15,7 @@ option(NOAVX OFF)
 option(NOSSE4 OFF)
 option(NONEON OFF)
 option(NOZLIB OFF)
+option(NOBLAS OFF)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
    set(NOAVX ON)
@@ -427,7 +428,7 @@ include_directories(
     contrib/SQLite-3.8.2 # SQLite
 )
 
-if (${BLAS_FOUND}) 
+if (${BLAS_FOUND} AND NOT NOBLAS) 
 	add_definitions (-D_SLKP_USE_APPLE_BLAS)
 	set(DEFAULT_LIBRARIES "${DEFAULT_LIBRARIES}")
 endif()
@@ -451,7 +452,7 @@ else(${OPENMP_FOUND})
     target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES})
 endif(${OPENMP_FOUND})
 
-if(${BLAS_FOUND})
+if(${BLAS_FOUND} AND NOT NOBLAS)
     target_link_libraries(hyphy PRIVATE ${BLAS_LIBRARIES})
 endif ()
 
@@ -490,7 +491,7 @@ if(${MPI_FOUND})
         target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
     endif(${OPENMP_FOUND})
 
-	if(${BLAS_FOUND})
+	if(${BLAS_FOUND} AND NOT NOBLAS)
     	target_link_libraries(HYPHYMPI ${BLAS_LIBRARIES})
 	endif ()
 
@@ -598,6 +599,9 @@ target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
 
 add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
 
+if(${BLAS_FOUND})
+    target_link_libraries(HYPHYDEBUG ${BLAS_LIBRARIES})
+endif ()
 
 set_target_properties(
     HYPHYDEBUG

@@ -264,9 +264,14 @@ HBLObjectRef  _Variable::Compute (void) {
     
     auto update_var_value = [this] () -> void {
         if (!varValue || varFormula->HasChanged()) {
-            HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute()->makeDynamic();
+            HBLObjectRef new_value = (HBLObjectRef)varFormula->Compute();
+            if (varValue && new_value->ObjectClass () == NUMBER) {
+                if (varValue->ObjectClass () == NUMBER && varValue->CanFreeMe()) {
+                    ((_Constant*)varValue)->SetValue(((_Constant*)new_value)->Value());
+                }
+            }
             DeleteObject (varValue);
-            varValue = new_value;
+            varValue = (HBLObjectRef)new_value->makeDynamic();
         }
     };
   
@@ -509,6 +514,7 @@ void  _Variable::SetNumericValue (hyFloat v) // set the value of the var to a nu
     varFlags &= HY_VARIABLE_SET;
     varFlags |= HY_VARIABLE_CHANGED;
     theValue = v;
+    
 
     
     if (theValue<lowerBound || theValue>upperBound) {
@@ -706,7 +712,12 @@ void  _Variable::SetFormula (_Formula& theF) {
     varFormula->Duplicate (right_hand_side);
 
     // mod 20060125 added a call to simplify constants
+    
+    //_String * fs = (_String*)varFormula->toStr(kFormulaStringConversionNormal);
+    //NLToConsole(); StringToConsole(*fs); DeleteObject (fs);
     varFormula->SimplifyConstants ();
+    //fs = (_String*)varFormula->toStr(kFormulaStringConversionNormal);
+    //BufferToConsole (" : "); StringToConsole(*fs); DeleteObject (fs);
 
     // also update the fact that this variable is no longer independent in all declared
     // variable containers which hold references to this variable

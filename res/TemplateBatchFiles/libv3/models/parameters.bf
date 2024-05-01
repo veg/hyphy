@@ -227,6 +227,40 @@ function parameters.SetValues(set) {
  * @param {String} namespace - desired mean
  * @returns nothing
  */
+lfunction parameters.ConstrainMeanOfSetWithTerms (set, weights, terms, mean, namespace) {
+
+
+    if (Type (set) == "Matrix") {
+        unscaled = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");
+        constraint = utility.MapWithKey (unscaled, "_key_", "_name_", "_name_  + '*' + `&weights`[_key_[0]+_key_[1]]");
+    }
+    else {
+        return;
+    }       
+        
+    scaler_variables = {};
+    utility.ForEach (unscaled, "_name_", 'parameters.DeclareGlobal (_name_, null)');
+    global_scaler = namespace + ".scaler_variable";
+    parameters.SetConstraint (global_scaler, Join ("+", constraint), "global");
+    
+    for (i,_name_; in; set) {
+        scaler_variables[terms.MeanScaler(terms[i])] = _name_ + "_scaler_variable";
+        parameters.SetValue (_name_ + "_scaler_variable", _name_);
+        parameters.SetConstraint (_name_, "(" + mean + ")*" + _name_ + "_scaler_variable/`global_scaler`", "");
+    }
+           
+    return {^'terms.global' : scaler_variables};
+}
+
+/**
+ * Ensures that the mean of parameters in a set is maintained
+ * @name parameters.ConstrainMeanOfSet
+ * @param {Dict/Matrix}   set      - list of variable ids
+ * @param {Dict/Matrix}   weights  - weights to apply  
+ * @param {Number} mean - desired mean
+ * @param {String} namespace - desired mean
+ * @returns nothing
+ */
 lfunction parameters.ConstrainMeanOfSet (set, weights, mean, namespace) {
     if (Type (set) == "AssociativeList") {
         unscaled   = utility.Map (set, "_name_", "_name_ + '_scaler_variable'");
@@ -241,16 +275,18 @@ lfunction parameters.ConstrainMeanOfSet (set, weights, mean, namespace) {
         }
     }
         
+        
     scaler_variables = {};
     utility.ForEach (unscaled, "_name_", 'parameters.DeclareGlobal (_name_, null)');
     global_scaler = namespace + ".scaler_variable";
     parameters.SetConstraint (global_scaler, Join ("+", constraint), "global");
-    utility.ForEach (set, "_name_", '
-        `&scaler_variables`["Mean scaler variable for " + _name_] = _name_ + "_scaler_variable";
-        parameters.SetValue (_name_ + "_scaler_variable", _name_);
-        parameters.SetConstraint (_name_, "(" + `&mean` + ")*" + _name_ + "_scaler_variable/`global_scaler`", "");
-    ');
     
+    for (_name_; in; set) {
+        scaler_variables[terms.MeanScaler(_name_)] = _name_ + "_scaler_variable";
+        parameters.SetValue (_name_ + "_scaler_variable", _name_);
+        parameters.SetConstraint (_name_, "(" + mean + ")*" + _name_ + "_scaler_variable/`global_scaler`", "");
+    }
+           
     return {^'terms.global' : scaler_variables};
 }
 
@@ -743,11 +779,14 @@ lfunction parameters.SetStickBreakingDistributionWeigths (weights) {
     left_over = (1-w[0]);
 
     for (i = 1; i < rate_count -  1; i += 1) {
-        w [i] = weights[i] / left_over;
+        if (left_over > 0) {
+            w [i] = weights[i] / left_over;
+        } else {
+            w [i] = 0;
+        }
         left_over = left_over * (1-w[i]);
         
     }
-    //w[i] = left_over;
     return w;
 }
 

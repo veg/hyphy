@@ -602,6 +602,7 @@ void _LikelihoodFunction::Init (void) {
     branchCaches                            = nil;
     parameterValuesAndRanges                = nil;
     optimizatonHistory                      = nil;
+    compiled_constraints                    = nil;
     
     _variables_changed_during_last_compute  = nil;
     variables_changed_during_last_compute   = nil;
@@ -778,6 +779,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
                     }
                     df->SetMap(tipMatches);
                 }
+                
                 ReportWarning (_String ("The tips of the tree:") & *t->GetName() &" were matched with the species names from the data in the following numeric order (0-based) "& _String ((_String*)tipMatches.toStr()));
             } else {
                 _String warnMsg = _String ("The leaf of the tree ") & *t->GetName() &" labeled " &(*(_String*)tips(j)).Enquote()
@@ -1933,45 +1935,94 @@ bool      _LikelihoodFunction::SendOffToMPI       (long index) {
 //_______________________________________________________________________________________
 
 bool    _LikelihoodFunction::PreCompute         (void) {
-
-    useGlobalUpdateFlag = true;
-    // mod 20060125 to only update large globals once
-    unsigned long i;
-    
-    _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
-    
-    for (i = 0UL; i < arrayToCheck->lLength; i++) {
-        _Variable* cornholio = LocateVar(arrayToCheck->list_data[i]);
-        hyFloat tp = cornholio->Compute()->Value();
-         if (!cornholio->IsValueInBounds(tp)){
-            ReportWarning (_String ("Failing bound checks on ") & *cornholio->GetName() & " = " & _String (tp, "%25.16g"));
-            //break;
+    if (compiled_constraints) {
+        // populate all the independent variables
+        for (long i = 0; i < compiled_constraints->varIndex.lLength; i++) {
+            compiled_constraints->varValues[i].value = LocateVar(compiled_constraints->varIndex[i])->Value();
+            //printf ("\nArgument %s = %g\n",  LocateVar(compiled_constraints->varIndex[i])->GetName()->get_str(), compiled_constraints->varValues[i].value);
         }
-    }
-
-    useGlobalUpdateFlag = false;
-    // mod 20060125 to only update large globals once
-
-    for (unsigned long j=0UL; j < i; j++) {
-        _Variable* cornholio = LocateVar(arrayToCheck->list_data[j]);
-        if (cornholio->varFlags&HY_DEP_V_COMPUTED) {
-            cornholio->varFlags -= HY_DEP_V_COMPUTED;
+        
+        // compute all the unique expressions
+        for (long i = 0; i < compiled_constraints->formulasToEval.lLength; i++) {
+            compiled_constraints->formulaValues[i] = ((_Formula*)(compiled_constraints->formulasToEval.get (i)))->ComputeSimple(compiled_constraints->theStack, compiled_constraints->varValues);
+            
+            //printf ("\nComputed formula %d to %g\n",  i, compiled_constraints->formulaValues[i]);
+       }
+                                                                 
+        // check the ranges of all the dependent variables
+        for (long i = 0; i < indexDep.lLength; i++) {
+            _Variable *ith_dep = GetIthDependentVar(i);
+            hyFloat dep_value = compiled_constraints->formulaValues[compiled_constraints->formulaRefs[i]];
+            if (!ith_dep->IsValueInBounds(dep_value)) {
+                ReportWarning (_String ("Failing bound checks on ") & *ith_dep->GetName() & " = " & _String (dep_value, "%25.16g"));
+            }
+            //printf ("\nSetting %s to %g\n",  ith_dep->GetName()->get_str(), dep_value);
+            ith_dep->SetValue(dep_value);
         }
+        return true;
+        
+    } else {
+        useGlobalUpdateFlag = true;
+        // mod 20060125 to only update large globals once
+        unsigned long i;
+        
+        _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
+        
+        for (i = 0UL; i < arrayToCheck->lLength; i++) {
+            _Variable* cornholio = LocateVar(arrayToCheck->list_data[i]);
+            hyFloat tp = cornholio->Compute()->Value();
+            if (!cornholio->IsValueInBounds(tp)){
+                ReportWarning (_String ("Failing bound checks on ") & *cornholio->GetName() & " = " & _String (tp, "%25.16g"));
+                //break;
+            }
+        }
+        
+        useGlobalUpdateFlag = false;
+        // mod 20060125 to only update large globals once
+        
+        for (unsigned long j=0UL; j < i; j++) {
+            _Variable* cornholio = LocateVar(arrayToCheck->list_data[j]);
+            if (cornholio->varFlags&HY_DEP_V_COMPUTED) {
+                cornholio->varFlags -= HY_DEP_V_COMPUTED;
+            }
+        }
+        
+        
+        return (i==arrayToCheck->lLength);
     }
-
-    
-    return (i==arrayToCheck->lLength);
 }
 
 
 //_______________________________________________________________________________________
 
 void    _LikelihoodFunction::PostCompute        (void) {
-    _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
-
-    //useGlobalUpdateFlag = true;
-    for (unsigned long i=0; i<arrayToCheck->lLength; i++) {
-        LocateVar (arrayToCheck->list_data[i])->Compute();
+    
+    if (compiled_constraints) {
+        // populate all the independent variables
+        for (long i = 0; i < compiled_constraints->varIndex.lLength; i++) {
+            compiled_constraints->varValues[i].value = LocateVar(compiled_constraints->varIndex[i])->Value();
+        }
+        
+        // compute all the unique expressions
+        for (long i = 0; i < compiled_constraints->formulasToEval.lLength; i++) {
+            compiled_constraints->formulaValues[i] = ((_Formula*)(compiled_constraints->formulasToEval.get (i)))->ComputeSimple(compiled_constraints->theStack, compiled_constraints->varValues);
+        }
+                                                                 
+        // check the ranges of all the dependent variables
+        for (long i = 0; i < indexDep.lLength; i++) {
+            _Variable *ith_dep = GetIthDependentVar(i);
+            hyFloat dep_value = compiled_constraints->formulaValues[compiled_constraints->formulaRefs[i]];
+            ith_dep->SetValue(dep_value);
+        }
+        
+    } else {
+        
+        _SimpleList * arrayToCheck = nonConstantDep?nonConstantDep:&indexDep;
+        
+        //useGlobalUpdateFlag = true;
+        for (unsigned long i=0; i<arrayToCheck->lLength; i++) {
+            LocateVar (arrayToCheck->list_data[i])->Compute();
+        }
     }
     //useGlobalUpdateFlag = false;
     // mod 20060125 comment out the compute loop; seems redundant
@@ -3884,6 +3935,98 @@ void        _LikelihoodFunction::LoggerSingleVariable        (unsigned long inde
     *((_Vector*) (((_AssociativeList*)this->optimizatonHistory->GetByKey("Parameters")))->GetByKey(*GetIthIndependentName(index))) << GetIthIndependent(index);
   }
 }
+    
+//_______________________________________________________________________________________________
+
+void _LikelihoodFunction::UncompileConstraints (void) {
+    if (!compiled_constraints) return; // nothing to do
+    
+    for (unsigned long k = 0; k < compiled_constraints->formulasToEval.lLength; k++) {
+        //delete ((_Formula*)compiled_constraints->formulasToEval.get(k));
+        ((_Formula*)compiled_constraints->formulasToEval.get(k))->ConvertFromSimpleList (compiled_constraints->varIndex);
+    }
+    
+    free (compiled_constraints->theStack);
+    free (compiled_constraints->varValues);
+    free (compiled_constraints->formulaRefs);
+    delete [] compiled_constraints->formulaValues;
+    
+    delete compiled_constraints;
+    compiled_constraints = nil;
+}
+
+
+//_______________________________________________________________________________________________
+
+void _LikelihoodFunction::CompileConstraints (void) {
+    if (compiled_constraints) return; // don't REpopulate
+    
+    return;
+    long            stackLength = 0L;
+
+    compiled_constraints   = new _CompiledMatrixData;
+    
+    _SimpleList     references ;
+
+    _List           flaStringsL;
+    _AVLListX       flaStrings(&flaStringsL);
+
+    _AVLList        varList (&compiled_constraints->varIndex);
+    
+    bool is_good = true;
+    for (long i = 0L; i < indexDep.countitems(); i++) {
+        _Variable * ith_dep = GetIthDependentVar(i);
+        if (!ith_dep->get_constraint()->ProcessFormulaForConverstionToSimple(stackLength, varList, compiled_constraints->formulasToEval, references, flaStrings, false)) {
+            is_good = false;
+        }
+    }
+    
+    // SLKP 20240305 : at this time, if there are any dependent variables in the list of argument variables, bail
+    
+    for (long k = 0L; k < varList.countitems(); k++) {
+        if (!LocateVar(compiled_constraints->varIndex.get (k))->IsIndependent()) {
+            printf ("\nBAILING -- DEPENDENT 'INDEPENDENT' (%s)\n", LocateVar(compiled_constraints->varIndex.get (k))->theName->get_str());
+            is_good = false;
+            break;
+        }
+    }
+
+  
+    if (!is_good) {
+        delete compiled_constraints;
+        compiled_constraints = nil;
+        return;
+    }
+    
+    compiled_constraints->has_volatile_entries   = false;
+    compiled_constraints->stackDepth = stackLength;
+  
+    for (unsigned long k = 0; k < compiled_constraints->formulasToEval.lLength; k++) {
+        _Formula * ref = (_Formula*)compiled_constraints->formulasToEval.get(k);
+        compiled_constraints->has_volatile_entries = ref->ConvertToSimple(varList) || compiled_constraints->has_volatile_entries;
+    }
+
+    compiled_constraints->theStack               = (_SimpleFormulaDatum*)MemAllocate (stackLength*sizeof(_SimpleFormulaDatum));
+    compiled_constraints->varValues              = (_SimpleFormulaDatum*)MemAllocate ((compiled_constraints->varIndex.countitems()>0?varList.countitems():1)*sizeof(_SimpleFormulaDatum));
+    long allocation_size = MAX (references.lLength, 1) * sizeof (long);
+    compiled_constraints->formulaRefs            = (long*)MemAllocate (allocation_size);
+    memcpy (compiled_constraints->formulaRefs, references.list_data, allocation_size);
+    compiled_constraints->formulaValues          = new hyFloat [compiled_constraints->formulasToEval.lLength];
+    
+    /*for (long k = 0L; k < varList.countitems(); k++) {
+        printf ("Independent %d (%d) => %s\n", k, varListAux.get (k), LocateVar(varListAux.get (k))->theName->get_str());
+    }*/
+
+    printf (
+"\nProcessed LF constraints. \
+\n\tStack depth: %ld\
+\n\tIndependent variables: %ld\
+\n\tUnique expressions: %ld\n", stackLength, varList.countitems(), compiled_constraints->formulasToEval.countitems());
+
+    
+    
+
+}
 
 //_______________________________________________________________________________________________
 
@@ -4112,7 +4255,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     SetupLFCaches       ();
     SetupCategoryCaches ();
     
-    
 
 #ifdef __HYPHYMPI__
     if (hy_mpi_node_rank == 0) {
@@ -4134,6 +4276,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     }
 #endif
 
+    CompileConstraints  ();
     computationalResults.Clear();
 
 #if !defined __UNIX__ || defined __HEADLESS__ || defined __HYPHYQT__ || defined __HYPHY_GTK__
@@ -4168,6 +4311,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     if (custom_convergence_callback >= 0) {
          if (GetBFFunctionArgumentCount (custom_convergence_callback) != 2L) {
              HandleApplicationError("Custom convergence criterion convergence function must have exactly two arguments: current log-L, and an dictionary with id -> value mapping");
+             UncompileConstraints  ();
              return new _Matrix;
          }
     }
@@ -4254,7 +4398,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     precision           = get_optimization_setting (kOptimizationPrecision, 0.001);
     maxItersPerVar      = get_optimization_setting (kMaximumIterationsPerVariable, 5000.);
     
-    
+    if (CheckEqual (precision, 0.0)) {
+        ReportWarning (kOptimizationPrecision & " was set to 0. Resetting to a default value of 0.001");
+        precision = 0.001;
+    }
     
     _FString * method_string = get_optimization_setting_string (kOptimizationMethod);
     
@@ -4403,9 +4550,9 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             
             hyFloat grad_precision;
             if (maxSoFar > -INFINITY) {
-                grad_precision = MIN (1000., -maxSoFar / 100.);
+                grad_precision = MIN (1000., -maxSoFar / 500.);
             } else {
-                grad_precision = -0.01;
+                grad_precision = -0.005;
             }
             
             if (gradientBlocks.nonempty()) {
@@ -4428,7 +4575,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             hyFloat current_precision = MAX(1., precision);
             while (current_precision > precision) {
               ConjugateGradientDescent(current_precision, bestSoFar, true);
-              current_precision *= 0.1;
+              current_precision *= sqrt(0.1);
             }
             ConjugateGradientDescent(precision, bestSoFar, true);
         }
@@ -4451,7 +4598,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         }
         currentPrecision = kOptimizationGradientDescent==7?sqrt(precision):intermediateP;
     }
-
 
     if (optimization_mode == kOptimizationCoordinateWise) {
 
@@ -4730,7 +4876,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                         _Matrix             bestMSoFar;
                         GetAllIndependent   (bestMSoFar);
                         hyFloat prec = Minimum (diffs[0], diffs[1]),
-                                grad_precision = diffs[0] + diffs[1];
+                                grad_precision = Maximum(diffs[0],diffs[1]);
 
                         prec = Minimum (Maximum (prec, precision), 1.);
 
@@ -5182,7 +5328,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     for (unsigned long i=0UL; i<indexDep.lLength; i++) {
         result.Store(0,i+indexInd.lLength,GetIthDependent(i));
     }
-
+    
     return (_Matrix*)result.makeDynamic();
 }
 //_______________________________________________________________________________________
@@ -5212,6 +5358,8 @@ void    _LikelihoodFunction::_TerminateAndDump(const _String &error, bool sig_te
 void _LikelihoodFunction::CleanUpOptimize (void) {
     categID = 0;
     CleanupParameterMapping ();
+    UncompileConstraints  ();
+
     auto cleanup = [this] ()->void {
         for (long i=0L; i<theTrees.lLength; i++) {
             _TheTree *ith_tree = GetIthTree (i);
@@ -6292,11 +6440,11 @@ void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,hyFloat& le
 
 void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize) {
     hyFloat funcValue;
-    static const hyFloat kMaxD = 1.e4;
+    static const hyFloat kMaxD = 1.e8;
     
     if (order==1) {
         funcValue = Compute();
-        //printf ("\n%ld %20.18g\n", likeFuncEvalCallCount, funcValue);
+        //printf ("\n%ld %20.18g (%g)\n", likeFuncEvalCallCount, funcValue, gradientStep);
         
         /*
          if (verbosity_level > 100) {
@@ -6314,8 +6462,9 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                 hyFloat    currentValue  = GetIthIndependent(index),
                            ub            = GetIthIndependentBound(index,false)-currentValue,
                            lb            = currentValue-GetIthIndependentBound(index,true),
-                           testStep      = currentValue * gradientStep;//MAX(currentValue * gradientStep,gradientStep);
-                    
+                           testStep      = MAX(currentValue * gradientStep,gradientStep);
+                
+                     
                 //printf ("%ld %s %20.18g\n", index, GetIthIndependentName (index)->get_str(), currentValue);
                 hyFloat    check_vv      = currentValue;
 
@@ -6332,11 +6481,11 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                   }
                 }
 
-
+ 
                 if (!CheckEqual (testStep,0.0)) {
-                    /*if (verbosity_level > 100) {
-                        printf ("Gradient step for %s is %.16g @%.16g %\n", GetIthIndependentVar(index)->GetName()->get_str(), testStep, currentValue);
-                    }*/
+                    //if (verbosity_level > 100) {
+                        //printf ("Gradient step for %s is %.16g @%.16g %\n", GetIthIndependentVar(index)->GetName()->get_str(), testStep, currentValue);
+                    //}
                     SetIthIndependent(index,currentValue+testStep);
                     hyFloat dF = Compute();
                     gradient[index]=(dF-funcValue)/testStep;// * DerivativeCorrection (index, currentValue);
@@ -6349,9 +6498,9 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                         printf ("Negative value stashed %15.12lg\n", currentValue);
                     }
                     hyFloat check_vv = GetIthIndependent(index);*/
-                    if (verbosity_level > 150) {
-                        printf ("_LikelihoodFunction::ComputeGradient %ld\t%s\t @%20.18g\t f(x) = %20.18g, f(x+h) = %20.18g, h = %20.18g, correction = %20.18g, grad = %20.18g\n", index, GetIthIndependentName(index)->get_str(), currentValue, funcValue, dF, testStep, DerivativeCorrection (index, currentValue), gradient.theData[index]);
-                    }
+                    //if (verbosity_level > 150) {
+                        //printf ("_LikelihoodFunction::ComputeGradient %ld\t%s\t @%20.18g\t f(x) = %20.18g, f(x+h) = %20.18g, delta(F) = %20.18g, h = %20.18g, correction = %20.18g, grad = %20.18g\n", index, GetIthIndependentName(index)->get_str(), currentValue, funcValue, dF, dF-funcValue, testStep, DerivativeCorrection (index, currentValue), gradient.theData[index]);
+                    //}
                     SetIthIndependent(index,currentValue);
                 } else {
                     gradient[index]= 0.;
@@ -6542,8 +6691,8 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
 
     if (gradL > 0.0) {
         
-        current_direction   = gradient * (1./gradL);
-        gradient = current_direction;
+        current_direction   = gradient;// * (1./gradL);
+        //gradient = current_direction;
         
         
         for (long index = 0; index< MAX (dim, 10) && index < iterationLimit; index++, currentPrecision*=0.25) {
@@ -6570,33 +6719,30 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
             ComputeGradient (gradient, gradientStep, bestVal, freeze, 1, false);
             gradL = gradient.AbsValue ();
             
-            if (CheckEqual(gradL,0.0)) {
+            /*if (CheckEqual(gradL,0.0)) {
                 break;
             } else {
                 gradient *= 1./gradL;
-            }
+            }*/
  
             previous_direction = current_direction;
             hyFloat beta = 0., scalar_product = 0.;
 
             // use Polak–Ribière direction
-            for (unsigned long i = 0UL; i < dim; i++) {
+            /*for (unsigned long i = 0UL; i < dim; i++) {
                 scalar_product += previous_gradient.theData[i] * previous_gradient.theData[i];
                 beta += gradient.theData[i] * ( previous_gradient.theData[i] - gradient.theData[i]);
-            }
+            }*/
             
-            LoggerAddGradientPhase (line_search_precision, beta, scalar_product);
-            LoggerAllVariables ();
-            LoggerLogL (maxSoFar);
 
             // use Dai–Yuan
-            /*
+            
              for (unsigned long i = 0UL; i < dim; i++) {
                beta += gradient.theData[i] * gradient.theData[i];
                scalar_product += previous_direction.theData[i] * ( gradient.theData[i] - previous_gradient.theData[i]);
              }
              beta = -beta;
-            */
+             
 
             // Hestenes-Stiefel
             /*
@@ -6606,6 +6752,10 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
              }
              beta = -beta;
             */
+
+            LoggerAddGradientPhase (line_search_precision, beta, scalar_product);
+            LoggerAllVariables ();
+            LoggerLogL (maxSoFar);
 
             beta /= scalar_product;
             beta = MAX (beta, 0.0);

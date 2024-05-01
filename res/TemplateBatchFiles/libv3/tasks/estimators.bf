@@ -548,6 +548,30 @@ function estimators.ApplyExistingEstimatesToTree (_tree_name, model_descriptions
 }
 
 /**
+
+ Apply existing constraints and override previously constrained BL estimates
+
+ * @name estimators.ApplyExistingEstimatesOverride
+ * @param {String} likelihood_function_id
+ * @param {Dictionary} model_descriptions
+ * @param {Matrix} initial_values
+ * @param branch_length_conditions
+ * @returns estimators.ApplyExistingEstimates.df_correction - Abs(estimators.ApplyExistingEstimates.keep_track_of_proportional_scalers);
+ */
+
+
+function estimators.ApplyExistingEstimatesOverride(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions) {
+    for (i, v; in; model_descriptions) {
+           v[^"terms.model.branch_length_override"] = TRUE;
+    }
+    estimators.ApplyExistingEstimates(likelihood_function_id, model_descriptions, initial_values, branch_length_conditions);
+    for (i, v; in; model_descriptions) {
+        v - ^"terms.model.branch_length_override";
+    }
+}
+
+
+/**
  * @name
  * @param {String} likelihood_function_id
  * @param {Dictionary} model_descriptions
@@ -657,7 +681,7 @@ lfunction estimators.FitExistingLF (lf_id, model_objects) {
 
 /**
  * Makes a likelihood function object with the desired parameters
- * @name estimators.FitLF
+ * @name estimators.BuildLFObject
  * @param {Matrix} data_filters_list  - a vector of {DataFilter}s
  * @param {Matrix} tree_list  - a vector of {Tree}s
  * @param model_map
@@ -776,17 +800,20 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
     can_do_restarts = null;
 
     if (utility.Has (run_options, utility.getGlobalValue("terms.search_grid"),"AssociativeList")) {
+    
         grid_results = mpi.ComputeOnGridSetValues (&likelihoodFunction, run_options [utility.getGlobalValue("terms.search_grid")],  {
             0: model_objects,
             1: initial_values,
             2: run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]
         }, "mpi.ComputeOnGrid.SimpleEvaluatorWithValues", "mpi.ComputeOnGrid.ResultHandler");
         
+        //console.log (run_options [utility.getGlobalValue("terms.search_grid")]);
+        //console.log (grid_results);
+        
         if (utility.Has (run_options, utility.getGlobalValue("terms.search_restarts"),"Number")) {
             restarts = run_options[utility.getGlobalValue("terms.search_restarts")];
             if (restarts > 1) {
                 grid_results    = utility.DictToSortedArray (grid_results);
-                //console.log (grid_results);
                 can_do_restarts = {};
                 for (i = 1; i <= restarts; i += 1) {
                     can_do_restarts + (run_options [utility.getGlobalValue("terms.search_grid")])[grid_results[Rows(grid_results)-i][1]];
@@ -796,11 +823,9 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         if (null == can_do_restarts) {
             best_value   = Max (grid_results, 1);
             parameters.SetValues ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+            //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+            estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
         }
-        //console.log (best_value);
-        //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
-        //console.log (can_do_restarts);
-        //assert (0);
     }
 
     
@@ -810,14 +835,18 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         utility.ToggleEnvVariable("PRODUCE_OPTIMIZATION_LOG", 1);
     }
     
+    //utility.ToggleEnvVariable("VERBOSITY_LEVEL", 101);
+    //console.log (run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
     
     if (Type (can_do_restarts) == "AssociativeList") {
         io.ReportProgressBar("", "Working on crude initial optimizations");
         bestlog    = -1e100;
         for (i = 0; i < Abs (can_do_restarts); i += 1) {
-            parameters.SetValues (can_do_restarts[i]);
+        
+            parameters.SetValues (can_do_restarts[i]);        
+            estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
             if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
-                Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
+                 Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
             } else {
                 Optimize (mles, likelihoodFunction);
             }
@@ -841,6 +870,8 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         results = estimators.ExtractMLEs( & likelihoodFunction, model_objects);
         results[utility.getGlobalValue ("terms.fit.log_likelihood")] = mles[1][0];
     }
+    
+
 
 
     if (optimization_log) {
@@ -1178,7 +1209,11 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
             Assumes that option["partitioned-omega"] is a dictionary where each partition has
             an entry (0-index based), which itself is a dictionary of the form: "branch-name" : "branch-set"
         */
-        utility.ForEach(option[utility.getGlobalValue("terms.run_options.partitioned_omega")], "_value_", "utility.AddToSet(`&partition_omega`,utility.UniqueValues(_value_))");
+        
+        
+        for (_value_; in; option[utility.getGlobalValue("terms.run_options.partitioned_omega")]) {
+            utility.AddToSet(partition_omega,utility.UniqueValues(_value_));
+        }        
     }
 
 
@@ -1192,10 +1227,16 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
 
         new_globals = {};
-        utility.ForEachPair(partition_omega, "_key_", "_value_",
-            '`&new_globals` [_key_] = (`&name_space` + ".omega_" + Abs (`&new_globals`)); model.generic.AddGlobal (`&mg_rev`, `&new_globals` [_key_] , (utility.getGlobalValue("terms.parameters.omega_ratio")) + " for *" + _key_ + "*")');
+        
+        for (_key_, _value_; in; partition_omega) {
+            new_globals[_key_] = name_space + ".omega_" + Abs (new_globals);
+            model.generic.AddGlobal (mg_rev, 
+                                     new_globals[_key_], 
+                                     (utility.getGlobalValue("terms.parameters.omega_ratio")) + " for *" + _key_ + "*"
+                                     );
+        }
         parameters.DeclareGlobal(new_globals, None);
-
+        
 
         /**
             now replicate the local constraint for individual branches
@@ -1204,12 +1245,13 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
         alpha = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.synonymous_rate"));
         beta = model.generic.GetLocalParameter(mg_rev, utility.getGlobalValue("terms.parameters.nonsynonymous_rate"));
+        
         io.CheckAssertion("None!=`&alpha` && None!=`&beta`", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
         
         SetParameter (DEFER_CONSTRAINT_APPLICATION, 1, 0);
 
         apply_constraint: = component_tree + "." + node_name + "." + beta + ":=" + component_tree + "." + node_name + "." + alpha + "*" + new_globals[branch_map[node_name]];
-
+        
         for (i = 0; i < components; i += 1) {
             component_tree = lf_components[2 * i + 1];
             ClearConstraints( * component_tree);

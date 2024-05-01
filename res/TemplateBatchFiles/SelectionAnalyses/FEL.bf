@@ -270,7 +270,7 @@ if (^"fel.ci") {
     }
     
 } else {
-    if (^"fel.resample" > 0 ) {
+    if (^"fel.resample" == 0 ) {
         if (fel.multi_hit == "Double") {
             fel.table_headers = {
                  {"alpha", "Synonymous substitution rate at a site"}
@@ -980,7 +980,7 @@ lfunction fel.store_results (node, result, arguments) {
     
        
     if (^"fel.ci") {
-        if (^"fel.resample") {
+        if (^"fel.resample" > 0) {
           result_row          = { 0 : 0, // alpha
                               1 : 0 , // beta
                               2: 0, // alpha==beta
@@ -1014,6 +1014,7 @@ lfunction fel.store_results (node, result, arguments) {
                               3:0, // LRT
                               4:1, // p-value,
                               5:0,  // total branch length of tested branches
+                              6:0   // asymptotic p-value
                           } ;
         } else {
            result_row          = { 0:0, // alpha
@@ -1040,15 +1041,17 @@ lfunction fel.store_results (node, result, arguments) {
                     
         has_lrt = result / ^"terms.simulated";
         
-        if (^"fel.resample") {
-            result_row [utility.Array1D (result_row) - 1] = lrt [utility.getGlobalValue("terms.p_value")];
-        }
                   
+         
+        if (^"fel.resample") {
+            result_row [N_col - 1] = lrt [utility.getGlobalValue("terms.p_value")];
+        }
+       
         if (has_lrt) {
            pv = +((result[^"terms.simulated"])["_MATRIX_ELEMENT_VALUE_>=" + lrt [utility.getGlobalValue("terms.LRT")]]);
            lrt [utility.getGlobalValue("terms.p_value")] = (pv+1)/(1+^"fel.resample");
         }                 
-        
+
         result_row [0] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_alpha");
         result_row [1] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")], ^"fel.site_beta");
         result_row [2] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.Null")], ^"fel.site_beta");

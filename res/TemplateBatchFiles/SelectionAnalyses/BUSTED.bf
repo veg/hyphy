@@ -48,7 +48,6 @@ Version 4.5 adds an 'error absorption' component [experimental]
                               };
 
 
-console.log (busted.analysis_description);
 io.DisplayAnalysisBanner (busted.analysis_description);
 
 busted.FG = "Test";
@@ -536,8 +535,7 @@ if (busted.do_srv)  {
     //PARAMETER_GROUPING + busted.srv_distribution["weights"];
     PARAMETER_GROUPING + utility.Concat (busted.srv_distribution["rates"],busted.srv_distribution["weights"]);
 
-    busted.init_grid_setup (busted.srv_distribution, FALSE);
-    
+    busted.init_grid_setup (busted.srv_distribution, FALSE);    
 }
 
 if (busted.do_srv_hmm) {
@@ -553,32 +551,28 @@ busted.global_scaler_list = {};
 
 for (busted.partition_index = 0; busted.partition_index < busted.partition_count; busted.partition_index += 1) {
     busted.global_scaler_list [busted.partition_index] = "busted.bl.scaler_" + busted.partition_index;
-    parameters.DeclareGlobalWithRanges (busted.global_scaler_list [busted.partition_index], 3, 0, 1000);
-    busted.initial_ranges      [busted.global_scaler_list [busted.partition_index]] = {
-                terms.lower_bound : 2.0,
-                terms.upper_bound : 4.0
-            };
+    parameters.DeclareGlobalWithRanges (busted.global_scaler_list [busted.partition_index], 1, 0, 1000);
+   // busted.initial_ranges      [busted.global_scaler_list [busted.partition_index]] = {
+   //             terms.lower_bound : 1.0,
+   //             terms.upper_bound : 3.0
+   //         };
 }
 
-            
-            
 
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
 busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
-
-//estimators.CreateInitialGrid (busted.initial_grid, busted.initial_grid.N, busted.initial_grid_presets);
 
 busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
     'busted._renormalize_with_weights (_v_, "busted.distribution", busted.initial.test_mean, busted.error_sink)'
 );
 
-if (busted.has_background) { //GDD rate category
+if (busted.has_background) { //has background
     busted.initial.background_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+background.+"))["0"])[terms.fit.MLE];
+    
     busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
-        'busted._renormalize (_v_, "busted.background_distribution", busted.initial.background_mean, busted.error_sink)'
+        'busted._renormalize_with_weights (_v_, "busted.background_distribution", busted.initial.background_mean, busted.error_sink)'
     );
 }
-
 
 busted.model_map = {};
 
@@ -604,7 +598,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
 */
 
   
-busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
+busted.nm.precision = Max (-0.00001*busted.final_partitioned_mg_results[terms.fit.log_likelihood],0.5);
 
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
        
@@ -615,7 +609,8 @@ if (Type (debug.checkpoint) != "String") {
     
     
     busted.tmp_fixed = models.FixParameterSetRegExpFromReference (terms.nucleotideRatePrefix,busted.test.bsrel_model, busted.final_partitioned_mg_results[terms.global]);
- 
+    
+      
     busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map,                    
         {
             terms.run_options.retain_lf_object: TRUE,
@@ -634,8 +629,12 @@ if (Type (debug.checkpoint) != "String") {
         }
     );
     
+   
+    
     
     parameters.RemoveConstraint (busted.tmp_fixed );
+    //console.log (busted.tmp_fixed);
+    PARAMETER_GROUPING + Columns (busted.tmp_fixed);
 
     //PRODUCE_OPTIMIZATION_LOG        = 1;
                                                 
@@ -643,7 +642,7 @@ if (Type (debug.checkpoint) != "String") {
             "retain-lf-object": TRUE,
             terms.run_options.optimization_settings : 
                 {
-                    "OPTIMIZATION_METHOD" : "coordinate-wise",
+                    "OPTIMIZATION_METHOD" : "hybrid",
                     //"OPTIMIZATION_PRECISION" : 1.
                 } 
                                     
@@ -1260,46 +1259,68 @@ lfunction busted._renormalize (v, distro, mean, skip_first) {
 //------------------------------------------------------------------------------
 
 lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
-
     parameters.SetValues (v);
     m = parameters.GetStickBreakingDistribution (^distro);
     d = Rows (m);
-    
+
+    mean = Max (mean, 1e-3);
+   
     if (skip_first) {
         m0 = m[0][0]*m[0][1];
     } else {
         m0 = 0;
     }
     
+    
     over_one = m[d-1][0] * m[d-1][1];
     
     if (over_one >= mean*0.95) {
        //console.log ("OVERAGE");
        new_weight = mean * Random (0.9, 0.95) / m[d-1][0];
-       diff = (m[d-1][1] - new_weight)/(d-1);
+       diff = (m[d-1][1] - new_weight)/(d-1-(skip_first != 0));
        for (k = (skip_first != 0); k < d-1; k += 1) {
             m[k][1] += diff;
        }
        m[d-1][1] = new_weight;
     }
     
-    over_one = m[d-1][0] * m[d-1][1];
-    under_one = (+(m[-1][0] $ m[-1][1])) / (1-m[d-1][1]); // current mean
     
+    over_one = m[d-1][0] * m[d-1][1];
+    
+    under_one = (+(m[-1][0] $ m[-1][1]) - m0) / (1-m[d-1][1]); // current mean
+        
     for (i = (skip_first != 0); i < d-1; i+=1) {
         m[i][0] = m[i][0] * mean / under_one;
     }
-  
-    under_one = +(m[-1][0] $ m[-1][1]);
+
+    if (skip_first) {
+        m_rest = m [{{1,0}}][{{d-1,1}}];
+        under_one = +(m_rest[-1][0] $ m_rest[-1][1]);
+    } else {
+        under_one = +(m[-1][0] $ m[-1][1]);
+    }
+    
     
     for (i = (skip_first != 0); i < d; i+=1) {
         m[i][0] = m[i][0] * mean / under_one;
     }
     
-    m = m%0;
-    wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
+   
+   
+    if (skip_first) {
+        m_rest = m [{{1,0}}][{{d-1,1}}];
+        m_rest = m_rest % 0;
+        for (i = 1; i < d; i+=1) {
+            m[i][0] = m_rest[i-1][0];
+            m[i][1] = m_rest[i-1][1];
+        }
+    } else {
+        m = m%0;
+    }
     
-    //console.log (v);
+
+    wts = parameters.SetStickBreakingDistributionWeigths (m[-1][1]);
+
 
     for (i = (skip_first != 0); i < d; i+=1) {
         (v[((^distro)["rates"])[i]])[^"terms.fit.MLE"] = m[i][0];
@@ -1307,10 +1328,6 @@ lfunction busted._renormalize_with_weights (v, distro, mean, skip_first) {
     for (i = (skip_first != 0); i < d-1; i+=1) {
         (v[((^distro)["weights"])[i]])[^"terms.fit.MLE"] = wts[i];
     }
-    
-    //console.log (v);
-
-    //assert (0);
     return v;
     
 }
@@ -1383,7 +1400,7 @@ function busted.init_grid_setup (omega_distro, error_sink) {
                  busted.initial_grid  [_name_] = {{100,500,1000,5000}};
                  busted.initial_ranges [_name_] = {
                     terms.lower_bound : 100,
-                    terms.upper_bound : 10000
+                    terms.upper_bound : 1000
                 };
             } else {                
                 busted.initial_ranges [_name_] = {
@@ -1416,12 +1433,12 @@ function busted.init_grid_setup (omega_distro, error_sink) {
         if (error_sink && _index_ == 0) {
             busted.initial_grid  [_name_] = {
                 {
-                    0, 0.001, 0.005, 0.1
+                    0, 0.001, 0.0025, 0.025
                 }
             };        
              busted.initial_ranges [_name_] = {
                 terms.lower_bound : 0,
-                terms.upper_bound : 0.01,
+                terms.upper_bound : 0.005,
             };
         } else { 
             busted.initial_ranges [_name_] = {

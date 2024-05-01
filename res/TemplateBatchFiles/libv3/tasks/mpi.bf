@@ -347,8 +347,12 @@ namespace mpi {
         for (i = 0; i < task_count; i+=1) {
             
             parameters.SetValues (tasks[task_ids[i]]);
+            //console.log (tasks[task_ids[i]]);
+            //console.log (values[1]);
             estimators.ApplyExistingEstimates (lf_id, values[0], values[1], values[2]);
+            //GetInformation (i, ^"busted._shared_srv.rv_gdd");
             //fprintf (stdout, ^lf_id);
+            //assert (0);
             LFCompute (^lf_id, ll);
             results [task_ids[i]] = ll;
             io.ReportProgressBar("", "Grid result "  + i  + " = " + ll + " (best = " + Max (results, 0)[^"terms.data.value"] + ")");

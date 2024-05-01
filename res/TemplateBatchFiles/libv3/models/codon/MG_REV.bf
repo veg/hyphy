@@ -124,8 +124,6 @@ function models.codon.MG_REV._DefineQ(mg_rev, namespace) {
  */
 function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
-   
-
     if (model[terms.model.type] == terms.global) {
         // boost numeric branch length values by a factor of 3
 
@@ -180,8 +178,7 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
             } else {
                 models.codon.MG_REV.set_branch_length.lp = 0;
 
-
-                   
+                
                 if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) {
                     Eval(models.codon.MG_REV.set_branch_length.alpha.p + ":=(" + value[terms.model.branch_length_scaler] + ")*" + value[terms.branch_length]);
                     models.codon.MG_REV.set_branch_length.lp += 1;
@@ -194,9 +191,9 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
                 return models.codon.MG_REV.set_branch_length.lp;
             }
         } else {
-
+ 
             if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.alpha.p)) { // alpha is unconstrained;
-                if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) { // beta is unconstrained;
+               if (parameters.IsIndependent(models.codon.MG_REV.set_branch_length.beta.p)) { // beta is unconstrained;
 
                     models.codon.MG_REV.set_branch_length.lp = parameters.NormalizeRatio(Eval(models.codon.MG_REV.set_branch_length.beta.p), Eval(models.codon.MG_REV.set_branch_length.alpha.p));
                     parameters.SetConstraint(models.codon.MG_REV.set_branch_length.beta, models.codon.MG_REV.set_branch_length.alpha + "*" + models.codon.MG_REV.set_branch_length.lp, "");
@@ -214,10 +211,11 @@ function models.codon.MG_REV.set_branch_length(model, value, parameter) {
 
                     parameters.SetConstraint ( models.codon.MG_REV.set_branch_length.alpha.p,  models.codon.MG_REV.set_branch_length.alpha, "");
                     parameters.SetConstraint ( models.codon.MG_REV.set_branch_length.beta,  models.codon.MG_REV.set_branch_length.beta.p, "");
-
+                    
+                    ConvertBranchLength (models.codon.MG_REV.set_branch_length.lp, model[terms.model.branch_length_string], ^models.codon.MG_REV.set_branch_length.alpha, 3*value);
                     
                     
-                    ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-(" + 3*value + ")," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
+                    //ExecuteCommands("FindRoot (models.codon.MG_REV.set_branch_length.lp,(" + model[terms.model.branch_length_string] + ")-(" + 3*value + ")," + models.codon.MG_REV.set_branch_length.alpha + ",0,10000)");
                     
                                         
                     Eval("`models.codon.MG_REV.set_branch_length.alpha.p` =" + models.codon.MG_REV.set_branch_length.lp);

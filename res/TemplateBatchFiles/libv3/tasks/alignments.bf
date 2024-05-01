@@ -732,8 +732,18 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
                         };
 
         upper_bound = Abs (try_run);
+        orf          = {{0,-1}};
+        last_nonstop = 0;
+        last_stop    = -1;
         for (i = 0; i < upper_bound; i+=1) {
             if (try_run[i] / "X") { // has_stop
+                if (i > last_nonstop) {
+                    if (i-last_stop-1 > orf[1]-orf[0]) {
+                        orf[0] = last_stop+1;
+                        orf[1] = i-1;
+                    }
+                }
+                last_stop = i;
                 translation * "X";
                 frame_result [^"terms.stop_codons"] += 1;
                 if (i == upper_bound - 1) {
@@ -742,9 +752,16 @@ lfunction alignments.TranslateCodonsToAminoAcidsWithAmbiguities (sequence, offse
             } else {
                 translation * (try_run[i])["INDEXORDER"][0];
                 frame_result [^"terms.sense_codons"] += 1;
+                last_nonstop = i;
             }
         }
-
+        
+        if (last_nonstop-last_stop-1 > orf[1]-orf[0]) {
+            orf[0] = last_stop+1;
+            orf[1] = last_nonstop;
+        }
+        
+        frame_result [^"terms.orf"] = orf;
 
         translation * 0;
         frame_result [utility.getGlobalValue ("terms.data.sequence")] = translation;
