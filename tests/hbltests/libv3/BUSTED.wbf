@@ -15,14 +15,14 @@ LoadFunctionLibrary ("libv3/IOFunctions.bf");
 
 
 assert (check_value (
-    ((busted.json["fits"])["Unconstrained model"])["Log Likelihood"], -3435.55, 0.001), "Incorrect log-likelihood for the full model");
+    ((busted.json["fits"])["Unconstrained model"])["Log Likelihood"], -3413.83, 0.001), "Incorrect log-likelihood for the full model");
 
 assert (check_value (
-    ((busted.json["test results"])["p-value"]),0.18531, 0.01), "p-value for the test is incorrect");
+    ((busted.json["test results"])["p-value"]),0.2264, 0.01), "p-value for the test is incorrect");
 
 
 assert (check_value (
-    +(busted.json["Evidence Ratios"])["optimized null"],189.46, 0.01), "Incorrect sum of evidence ratios");
+    +(busted.json["Evidence Ratios"])["optimized null"],188.49, 0.01), "Incorrect sum of evidence ratios");
     
 
 

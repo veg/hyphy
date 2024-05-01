@@ -558,8 +558,6 @@ for (busted.partition_index = 0; busted.partition_index < busted.partition_count
    //         };
 }
 
-            
-            
 
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
 busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
@@ -600,7 +598,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
 */
 
   
-busted.nm.precision = -0.00025*busted.final_partitioned_mg_results[terms.fit.log_likelihood];
+busted.nm.precision = Max (-0.00001*busted.final_partitioned_mg_results[terms.fit.log_likelihood],0.5);
 
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
        
@@ -611,7 +609,8 @@ if (Type (debug.checkpoint) != "String") {
     
     
     busted.tmp_fixed = models.FixParameterSetRegExpFromReference (terms.nucleotideRatePrefix,busted.test.bsrel_model, busted.final_partitioned_mg_results[terms.global]);
-  
+    
+      
     busted.grid_search.results =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.final_partitioned_mg_results, busted.model_object_map,                    
         {
             terms.run_options.retain_lf_object: TRUE,
@@ -630,8 +629,12 @@ if (Type (debug.checkpoint) != "String") {
         }
     );
     
+   
+    
     
     parameters.RemoveConstraint (busted.tmp_fixed );
+    //console.log (busted.tmp_fixed);
+    PARAMETER_GROUPING + Columns (busted.tmp_fixed);
 
     //PRODUCE_OPTIMIZATION_LOG        = 1;
                                                 
@@ -639,7 +642,7 @@ if (Type (debug.checkpoint) != "String") {
             "retain-lf-object": TRUE,
             terms.run_options.optimization_settings : 
                 {
-                    "OPTIMIZATION_METHOD" : "coordinate-wise",
+                    "OPTIMIZATION_METHOD" : "hybrid",
                     //"OPTIMIZATION_PRECISION" : 1.
                 } 
                                     

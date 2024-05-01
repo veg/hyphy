@@ -4398,7 +4398,10 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     precision           = get_optimization_setting (kOptimizationPrecision, 0.001);
     maxItersPerVar      = get_optimization_setting (kMaximumIterationsPerVariable, 5000.);
     
-    
+    if (CheckEqual (precision, 0.0)) {
+        ReportWarning (kOptimizationPrecision & " was set to 0. Resetting to a default value of 0.001");
+        precision = 0.001;
+    }
     
     _FString * method_string = get_optimization_setting_string (kOptimizationMethod);
     
@@ -4547,9 +4550,9 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             
             hyFloat grad_precision;
             if (maxSoFar > -INFINITY) {
-                grad_precision = MIN (1000., -maxSoFar / 100.);
+                grad_precision = MIN (1000., -maxSoFar / 500.);
             } else {
-                grad_precision = -0.01;
+                grad_precision = -0.005;
             }
             
             if (gradientBlocks.nonempty()) {
@@ -4572,7 +4575,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             hyFloat current_precision = MAX(1., precision);
             while (current_precision > precision) {
               ConjugateGradientDescent(current_precision, bestSoFar, true);
-              current_precision *= 0.1;
+              current_precision *= sqrt(0.1);
             }
             ConjugateGradientDescent(precision, bestSoFar, true);
         }
@@ -4595,7 +4598,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         }
         currentPrecision = kOptimizationGradientDescent==7?sqrt(precision):intermediateP;
     }
-
 
     if (optimization_mode == kOptimizationCoordinateWise) {
 
@@ -4874,7 +4876,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                         _Matrix             bestMSoFar;
                         GetAllIndependent   (bestMSoFar);
                         hyFloat prec = Minimum (diffs[0], diffs[1]),
-                                grad_precision = diffs[0] + diffs[1];
+                                grad_precision = Maximum(diffs[0],diffs[1]);
 
                         prec = Minimum (Maximum (prec, precision), 1.);
 
@@ -6438,11 +6440,11 @@ void    _LikelihoodFunction::GetGradientStepBound (_Matrix& gradient,hyFloat& le
 
 void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradientStep, _Matrix& values,_SimpleList& freeze, long order, bool normalize) {
     hyFloat funcValue;
-    static const hyFloat kMaxD = 1.e4;
+    static const hyFloat kMaxD = 1.e8;
     
     if (order==1) {
         funcValue = Compute();
-        //printf ("\n%ld %20.18g\n", likeFuncEvalCallCount, funcValue);
+        //printf ("\n%ld %20.18g (%g)\n", likeFuncEvalCallCount, funcValue, gradientStep);
         
         /*
          if (verbosity_level > 100) {
@@ -6460,8 +6462,9 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                 hyFloat    currentValue  = GetIthIndependent(index),
                            ub            = GetIthIndependentBound(index,false)-currentValue,
                            lb            = currentValue-GetIthIndependentBound(index,true),
-                           testStep      = currentValue * gradientStep;//MAX(currentValue * gradientStep,gradientStep);
-                    
+                           testStep      = MAX(currentValue * gradientStep,gradientStep);
+                
+                     
                 //printf ("%ld %s %20.18g\n", index, GetIthIndependentName (index)->get_str(), currentValue);
                 hyFloat    check_vv      = currentValue;
 
@@ -6478,11 +6481,11 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                   }
                 }
 
-
+ 
                 if (!CheckEqual (testStep,0.0)) {
-                    /*if (verbosity_level > 100) {
-                        printf ("Gradient step for %s is %.16g @%.16g %\n", GetIthIndependentVar(index)->GetName()->get_str(), testStep, currentValue);
-                    }*/
+                    //if (verbosity_level > 100) {
+                        //printf ("Gradient step for %s is %.16g @%.16g %\n", GetIthIndependentVar(index)->GetName()->get_str(), testStep, currentValue);
+                    //}
                     SetIthIndependent(index,currentValue+testStep);
                     hyFloat dF = Compute();
                     gradient[index]=(dF-funcValue)/testStep;// * DerivativeCorrection (index, currentValue);
@@ -6495,9 +6498,9 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                         printf ("Negative value stashed %15.12lg\n", currentValue);
                     }
                     hyFloat check_vv = GetIthIndependent(index);*/
-                    if (verbosity_level > 150) {
-                        printf ("_LikelihoodFunction::ComputeGradient %ld\t%s\t @%20.18g\t f(x) = %20.18g, f(x+h) = %20.18g, h = %20.18g, correction = %20.18g, grad = %20.18g\n", index, GetIthIndependentName(index)->get_str(), currentValue, funcValue, dF, testStep, DerivativeCorrection (index, currentValue), gradient.theData[index]);
-                    }
+                    //if (verbosity_level > 150) {
+                        //printf ("_LikelihoodFunction::ComputeGradient %ld\t%s\t @%20.18g\t f(x) = %20.18g, f(x+h) = %20.18g, delta(F) = %20.18g, h = %20.18g, correction = %20.18g, grad = %20.18g\n", index, GetIthIndependentName(index)->get_str(), currentValue, funcValue, dF, dF-funcValue, testStep, DerivativeCorrection (index, currentValue), gradient.theData[index]);
+                    //}
                     SetIthIndependent(index,currentValue);
                 } else {
                     gradient[index]= 0.;
@@ -6688,8 +6691,8 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
 
     if (gradL > 0.0) {
         
-        current_direction   = gradient * (1./gradL);
-        gradient = current_direction;
+        current_direction   = gradient;// * (1./gradL);
+        //gradient = current_direction;
         
         
         for (long index = 0; index< MAX (dim, 10) && index < iterationLimit; index++, currentPrecision*=0.25) {
@@ -6716,33 +6719,30 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
             ComputeGradient (gradient, gradientStep, bestVal, freeze, 1, false);
             gradL = gradient.AbsValue ();
             
-            if (CheckEqual(gradL,0.0)) {
+            /*if (CheckEqual(gradL,0.0)) {
                 break;
             } else {
                 gradient *= 1./gradL;
-            }
+            }*/
  
             previous_direction = current_direction;
             hyFloat beta = 0., scalar_product = 0.;
 
             // use Polak–Ribière direction
-            for (unsigned long i = 0UL; i < dim; i++) {
+            /*for (unsigned long i = 0UL; i < dim; i++) {
                 scalar_product += previous_gradient.theData[i] * previous_gradient.theData[i];
                 beta += gradient.theData[i] * ( previous_gradient.theData[i] - gradient.theData[i]);
-            }
+            }*/
             
-            LoggerAddGradientPhase (line_search_precision, beta, scalar_product);
-            LoggerAllVariables ();
-            LoggerLogL (maxSoFar);
 
             // use Dai–Yuan
-            /*
+            
              for (unsigned long i = 0UL; i < dim; i++) {
                beta += gradient.theData[i] * gradient.theData[i];
                scalar_product += previous_direction.theData[i] * ( gradient.theData[i] - previous_gradient.theData[i]);
              }
              beta = -beta;
-            */
+             
 
             // Hestenes-Stiefel
             /*
@@ -6752,6 +6752,10 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
              }
              beta = -beta;
             */
+
+            LoggerAddGradientPhase (line_search_precision, beta, scalar_product);
+            LoggerAllVariables ();
+            LoggerLogL (maxSoFar);
 
             beta /= scalar_product;
             beta = MAX (beta, 0.0);
