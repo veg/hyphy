@@ -75,6 +75,11 @@ namespace terms{
     confidence_interval = "confidence interval";
     lower_bound = "LB";
     upper_bound = "UB";
+    
+    
+    range_transform = "range-transform";
+    range_transform_variable = "__rtx";
+    
     range01 = {
         lower_bound: "0",
         upper_bound: "1"

@@ -842,7 +842,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         io.ReportProgressBar("", "Working on crude initial optimizations");
         bestlog    = -1e100;
         for (i = 0; i < Abs (can_do_restarts); i += 1) {
-        
+  
             parameters.SetValues (can_do_restarts[i]);        
             estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
             if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
@@ -862,6 +862,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         }
         io.ClearProgressBar();
     } else {
+
         if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
             Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
         } else {
@@ -1494,6 +1495,7 @@ lfunction estimators.LHC (ranges, samples) {
 	    var_def [v][1] = ((ranges[var_names[v]])[^"terms.upper_bound"] - var_def [v][0]) / (samples-1);
 	    var_samplers[v] = Random ({1,samples}["_MATRIX_ELEMENT_COLUMN_"], 0);
     }
+    
 
 
     result = {};
@@ -1506,6 +1508,18 @@ lfunction estimators.LHC (ranges, samples) {
             (entry [var_names[v]])[^"terms.fit.MLE"] = var_def[v][0] + (var_samplers[v])[i] * var_def[v][1];
         }
         result + entry;
+    }
+    
+    for (v = 0; v < var_count; v += 1) {
+        if (utility.Has (ranges[var_names[v]], ^"terms.range_transform", "String")) {
+            rtf = (ranges[var_names[v]])[ ^"terms.range_transform"];
+            for (i = 0; i < samples; i+=1) {
+                utility.ExecuteInGlobalNamespace ( ^"terms.range_transform_variable" + " = " +  
+                    ((result[i])[var_names[v]])[^"terms.fit.MLE"]);
+                ((result[i])[var_names[v]])[^"terms.fit.MLE"] = utility.EvalInGlobalNamespace (rtf);
+
+            }
+        }
     }
 
     return result;

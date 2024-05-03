@@ -479,7 +479,7 @@ busted.initial_grid = {};
 busted.initial_grid_presets = {"0" : 0.1};
 busted.initial_ranges = {};
 
-busted.init_grid_setup (busted.distribution, busted.error_sink);
+busted.init_grid_setup (busted.distribution, busted.error_sink, busted.rate_classes);
 
 /** setup parameter optimization groups */
 
@@ -493,7 +493,7 @@ if (busted.has_background) {
     busted.model_object_map = { "busted.background" : busted.background.bsrel_model,
                                 "busted.test" :       busted.test.bsrel_model };
     busted.background_distribution = models.codon.BS_REL.ExtractMixtureDistribution(busted.background.bsrel_model);
-    busted.init_grid_setup (busted.background_distribution, busted.error_sink);
+    busted.init_grid_setup (busted.background_distribution, busted.error_sink, busted.rate_classes);
 
     //PARAMETER_GROUPING + busted.background_distribution["rates"];
     //PARAMETER_GROUPING + busted.background_distribution["weights"];
@@ -535,7 +535,7 @@ if (busted.do_srv)  {
     //PARAMETER_GROUPING + busted.srv_distribution["weights"];
     PARAMETER_GROUPING + utility.Concat (busted.srv_distribution["rates"],busted.srv_distribution["weights"]);
 
-    busted.init_grid_setup (busted.srv_distribution, FALSE);    
+    busted.init_grid_setup (busted.srv_distribution, FALSE, busted.synonymous_rate_classes);    
 }
 
 if (busted.do_srv_hmm) {
@@ -560,6 +560,7 @@ for (busted.partition_index = 0; busted.partition_index < busted.partition_count
 
 
 busted.initial.test_mean    = ((selection.io.extract_global_MLE_re (busted.final_partitioned_mg_results, "^" + terms.parameters.omega_ratio + ".+test.+"))["0"])[terms.fit.MLE];
+
 busted.initial_grid         = estimators.LHC (busted.initial_ranges,busted.initial_grid.N);
 
 busted.initial_grid = utility.Map (busted.initial_grid, "_v_", 
@@ -598,7 +599,7 @@ io.ReportProgressMessageMD ("BUSTED", "main", "Performing the full (dN/dS > 1 al
 */
 
   
-busted.nm.precision = Max (-0.00001*busted.final_partitioned_mg_results[terms.fit.log_likelihood],0.5);
+busted.nm.precision = Max (-0.0001*busted.final_partitioned_mg_results[terms.fit.log_likelihood],0.5);
 
 debug.checkpoint = utility.GetEnvVariable ("DEBUG_CHECKPOINT");
        
@@ -637,6 +638,7 @@ if (Type (debug.checkpoint) != "String") {
     PARAMETER_GROUPING + Columns (busted.tmp_fixed);
 
     //PRODUCE_OPTIMIZATION_LOG        = 1;
+    
                                                 
     busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
             "retain-lf-object": TRUE,
@@ -1385,14 +1387,14 @@ lfunction busted.mixture_site_BF (ll, p) {
 
 //------------------------------------------------------------------------------
 
-function busted.init_grid_setup (omega_distro, error_sink) {
+function busted.init_grid_setup (omega_distro, error_sink, rate_count) {
    for (_index_,_name_; in; omega_distro[terms.parameters.rates]) {
-        if (_index_ < busted.rate_classes - 1) { // not the last rate
+        if (_index_ < rate_count - 1) { // not the last rate
             busted.initial_grid  [_name_] = {
                 {
                     0.01, 0.1, 0.25, 0.75
                 }
-            }["_MATRIX_ELEMENT_VALUE_^(busted.rate_classes-_index_-1)"];
+            }["_MATRIX_ELEMENT_VALUE_^(rate_count-_index_-1)"];
             
             busted.initial_grid_presets [_name_] = 0;
             
@@ -1416,7 +1418,8 @@ function busted.init_grid_setup (omega_distro, error_sink) {
             };
             busted.initial_ranges [_name_] = {
                 terms.lower_bound : 1,
-                terms.upper_bound : 10
+                terms.upper_bound : 100,
+                terms.range_transform : "Sqrt(`terms.range_transform_variable`)"
             };
             busted.initial_grid_presets [_name_] = 2;
         }
@@ -1442,8 +1445,10 @@ function busted.init_grid_setup (omega_distro, error_sink) {
             };
         } else { 
             busted.initial_ranges [_name_] = {
-                terms.lower_bound : 0,
-                terms.upper_bound : 1
+                terms.lower_bound : 1e-6,
+                terms.upper_bound : 0.999,
+                terms.range_transform : "Sqrt(`terms.range_transform_variable`)"
+            
             };
         }
     }
