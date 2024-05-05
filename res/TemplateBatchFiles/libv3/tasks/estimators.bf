@@ -593,7 +593,6 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
     // copy global variables first
 
     
-
     estimators.ApplyExistingEstimates.results[terms.global] = {};
     model_descriptions["estimators.SetCategory"][""];
     // the above line traverses all model descriptions and sets
