@@ -617,13 +617,18 @@ if (Type (busted.save_intermediate_fits) == "AssociativeList") {
             busted.full_model_res * (busted.save_intermediate_fits[^"terms.data.value"])["BUSTED-alt"];
             // check to see which *global* variables have no initial values
             busted.missing = {};
+            busted.cache_set = {};
             for (m; in; busted.model_object_map) {
                 for (d, p; in; (m[terms.parameters])[terms.global]) {
                     if (busted.full_model_res[terms.global] / d == 0) {
                         busted.missing[d] = p;
-                    } 
+                    } else {
+                        busted.cache_set[p] = ((busted.full_model_res[terms.global])[d])[terms.fit.MLE];
+                    }
                 }
             }
+            
+            
             if (Abs (busted.missing) > 0) {
                 if (busted.error_sink) {
                     if (Abs (busted.missing) == 2) {
@@ -632,25 +637,35 @@ if (Type (busted.save_intermediate_fits) == "AssociativeList") {
                             busted.use_cached_full_model = TRUE;
                              for (d, k; in; busted.missing) {
                                 (busted.full_model_res[terms.global])[d] = {
-                                    terms.id : d,
+                                    terms.id : k,
                                     terms.fit.MLE : 0.
                                 };
                             }
                             for (k = busted.rate_classes; k > 1; k+=(-1)) {
                                 ((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,k)])[terms.fit.MLE] = 
                                     ((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,k-1)])[terms.fit.MLE];
+                                    
+                                busted.cache_set [((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,k)])[terms.id]] =
+                                busted.cache_set [((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,k-1)])[terms.id]]; 
                             }
                             for (k = busted.rate_classes-1; k > 1; k+=(-1)) {
                                 ((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,k)])[terms.fit.MLE] = 
                                     ((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,k-1)])[terms.fit.MLE];
+                                busted.cache_set [((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,k)])[terms.id]] =
+                                busted.cache_set [((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,k-1)])[terms.id]]; 
                             }
+                            
+ 
+                            busted.cache_set - ((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,1)])[terms.id];
+                            busted.cache_set - ((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,1)])[terms.id];
+
+                            busted.full_model_res[terms.global] - terms.AddCategory (terms.parameters.omega_ratio,1);
+                            busted.full_model_res[terms.global] - terms.AddCategory (terms.mixture.mixture_aux_weight,1);
+
+                            busted.use_cached_full_model = TRUE;
                                 
                         }
-                        ((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,1)])[terms.fit.MLE] = terms.range_high[terms.lower_bound];
-                        ((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,1)])[terms.fit.MLE] = 0.005;
-                        
-                        busted.use_cached_full_model = TRUE;
-
+ 
                 }
               }
             } else {
@@ -672,7 +687,33 @@ while (!busted.converged) {
             if (busted.use_cached_full_model) {
                 
                 
-                busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.full_model_res, busted.model_object_map, {
+                for (k,d;in;busted.initial_grid) {
+                    if (Random (0,1) < 0.6) {
+                        for (v,mle; in; d) {
+                            if (busted.cache_set / v) {
+                                ((busted.initial_grid[k])[v])[terms.fit.MLE] = busted.cache_set[v];
+                            }
+                        }
+                        
+                    }
+                }
+                
+                
+                busted.full_model_grid =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.full_model_res, busted.model_object_map, {
+                        "retain-lf-object": TRUE,
+                        terms.run_options.optimization_settings : 
+                            {
+                                "OPTIMIZATION_METHOD" : "nedler-mead",
+                                "MAXIMUM_OPTIMIZATION_ITERATIONS" : 500,
+                                "OPTIMIZATION_PRECISION" : busted.nm.precision
+                            } ,
+                                                     
+                        terms.search_grid     : busted.initial_grid,
+                        terms.search_restarts : busted.N.initial_guesses
+                                                
+                });
+                
+                busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.full_model_grid, busted.model_object_map, {
                         "retain-lf-object": TRUE,
                         terms.run_options.optimization_settings : 
                             {
@@ -680,7 +721,9 @@ while (!busted.converged) {
                                 //"OPTIMIZATION_PRECISION" : 1.
                             } 
                                                 
-                });
+                    });
+                
+                
                 busted.use_cached_full_model = FALSE;
             } else {
             
@@ -739,8 +782,10 @@ while (!busted.converged) {
             
             
        if (Type (busted.save_intermediate_fits) == "AssociativeList") {  
-           (busted.save_intermediate_fits[^"terms.data.value"])["BUSTED-alt"] = busted.full_model;
-           io.SpoolJSON (busted.save_intermediate_fits[^"terms.data.value"],busted.save_intermediate_fits[^"terms.data.file"]);     
+            if (!busted.error_sink) {
+               (busted.save_intermediate_fits[^"terms.data.value"])["BUSTED-alt"] = busted.full_model;
+               io.SpoolJSON (busted.save_intermediate_fits[^"terms.data.value"],busted.save_intermediate_fits[^"terms.data.file"]);   
+            }  
        }       
      
     } else {
