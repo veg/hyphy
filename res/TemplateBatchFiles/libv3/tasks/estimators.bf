@@ -165,6 +165,7 @@ function estimators.CopyFrequencies(model_name, model_decription) {
     (estimators.ExtractMLEs.results[terms.efv_estimate])[model_name] = model_decription[terms.efv_estimate];
 }
 
+estimators._global_do_not_set = {};
 
 function estimators.SetGlobals2(key2, value) {
 
@@ -191,11 +192,15 @@ function estimators.SetGlobals2(key2, value) {
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
-            ExecuteCommands("`value` := " + __init_value[terms.fit.MLE]);
+            if (estimators._global_do_not_set / value == 0) {
+                ExecuteCommands("`value` := " + __init_value[terms.fit.MLE]);
+            }
             //_did_set [value] = 1;
         } else {
             if (parameters.IsIndependent (value)) {
-                ExecuteCommands("`value` = " + __init_value[terms.fit.MLE]);
+                if (estimators._global_do_not_set / value == 0) {
+                    ExecuteCommands("`value` = " + __init_value[terms.fit.MLE]);
+                } 
                 //_did_set [value] = 1;
             } else {
                 messages.log (value + " was already constrained in estimators.SetGlobals2");
@@ -823,7 +828,9 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
             best_value   = Max (grid_results, 1);
             parameters.SetValues ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
             //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+            ^"estimators._global_do_not_set" = (run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]];
             estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+            ^"estimators._global_do_not_set" = {};
         }
     }
 
@@ -843,7 +850,10 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         for (i = 0; i < Abs (can_do_restarts); i += 1) {
   
             parameters.SetValues (can_do_restarts[i]);        
+            ^"estimators._global_do_not_set" = can_do_restarts[i];
+
             estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+            ^"estimators._global_do_not_set" = {};
             if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
                  Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
             } else {

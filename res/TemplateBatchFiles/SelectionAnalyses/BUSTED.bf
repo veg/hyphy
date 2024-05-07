@@ -618,52 +618,109 @@ if (Type (busted.save_intermediate_fits) == "AssociativeList") {
             // check to see which *global* variables have no initial values
             busted.missing = {};
             busted.cache_set = {};
-            for (m; in; busted.model_object_map) {
+            
+            busted.use_model_prefix = {};
+            busted.variable_overlap = {};
+            
+            for (model_name, m; in; busted.model_object_map) {
                 for (d, p; in; (m[terms.parameters])[terms.global]) {
-                    if (busted.full_model_res[terms.global] / d == 0) {
-                        busted.missing[d] = p;
+                    busted.variable_overlap[d] += 1;
+                    busted.check_id = "[`model_name`] `d`";
+                    if (busted.full_model_res[terms.global] / busted.check_id != 0) {
+                        busted.use_model_prefix [model_name] += 1;
+                    } 
+                }
+            }
+            
+            function busted._get_cache_name (model_name, parameter) {
+                if (busted.variable_overlap[parameter] > 1) {
+                    if (busted.use_model_prefix [model_name] > 0) {
+                        return "[" + model_name + "] " + parameter;
+                    }
+                }
+                return parameter;
+            }
+            
+            for (model_name, m; in; busted.model_object_map) {
+                for (d, p; in; (m[terms.parameters])[terms.global]) {
+                    busted.check_id = busted._get_cache_name (model_name, d);
+                    
+                    if (busted.full_model_res[terms.global] / busted.check_id == 0) {
+                        busted.missing[busted.check_id] = p;
                     } else {
-                        busted.cache_set[p] = ((busted.full_model_res[terms.global])[d])[terms.fit.MLE];
+                        busted.cache_set[p] = ((busted.full_model_res[terms.global])[busted.check_id])[terms.fit.MLE];
                     }
                 }
             }
             
-            
+             
             if (Abs (busted.missing) > 0) {
                 if (busted.error_sink) {
-                    if (Abs (busted.missing) == 2) {
-                        if (busted.missing / busted.omega_eds_parameter && busted.missing/busted.omega_eds_w_parameter) {
-                               
-                            busted.use_cached_full_model = TRUE;
-                             for (d, k; in; busted.missing) {
-                                (busted.full_model_res[terms.global])[d] = {
-                                    terms.id : k,
-                                    terms.fit.MLE : 0.
-                                };
-                            }
-                            for (k = busted.rate_classes; k > 1; k+=(-1)) {
-                                ((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,k)])[terms.fit.MLE] = 
-                                    ((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,k-1)])[terms.fit.MLE];
-                                    
-                                busted.cache_set [((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,k)])[terms.id]] =
-                                busted.cache_set [((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,k-1)])[terms.id]]; 
-                            }
-                            for (k = busted.rate_classes-1; k > 1; k+=(-1)) {
-                                ((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,k)])[terms.fit.MLE] = 
-                                    ((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,k-1)])[terms.fit.MLE];
-                                busted.cache_set [((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,k)])[terms.id]] =
-                                busted.cache_set [((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,k-1)])[terms.id]]; 
-                            }
-                            
- 
-                            busted.cache_set - ((busted.full_model_res[terms.global])[terms.AddCategory (terms.parameters.omega_ratio,1)])[terms.id];
-                            busted.cache_set - ((busted.full_model_res[terms.global])[terms.AddCategory (terms.mixture.mixture_aux_weight,1)])[terms.id];
+                    if (Abs (busted.missing) == 2 * (1 + busted.has_background)) {
+                        if (busted.missing /  busted._get_cache_name ("busted.test", busted.omega_eds_parameter) && busted.missing/busted._get_cache_name ("busted.test", busted.omega_eds_w_parameter)) {
 
-                            busted.full_model_res[terms.global] - terms.AddCategory (terms.parameters.omega_ratio,1);
-                            busted.full_model_res[terms.global] - terms.AddCategory (terms.mixture.mixture_aux_weight,1);
+                            if (busted.has_background) {
+                                busted.use_cached_full_model = busted.missing /  busted._get_cache_name ("busted.background", busted.omega_eds_parameter) && busted.missing/busted._get_cache_name ("busted.background", busted.omega_eds_w_parameter);
+                                busted.use_cached_full_model = TRUE;
+                            }  else {
+                                busted.use_cached_full_model = TRUE;
+                            }                         
 
-                            busted.use_cached_full_model = TRUE;
+                            if (busted.use_cached_full_model) {
+                                for (d, k; in; busted.missing) {
+                                    (busted.full_model_res[terms.global])[d] = {
+                                        terms.id : k,
+                                        terms.fit.MLE : 0.
+                                    };
+                                }
                                 
+                                
+                                function busted._swap_estimates (model_name) {
+                                    for (k = busted.rate_classes; k > 1; k+=(-1)) {
+                                        busted.cat_k   = busted._get_cache_name (model_name, terms.AddCategory (terms.parameters.omega_ratio,k));
+                                        busted.cat_k_1 =  busted._get_cache_name (model_name, terms.AddCategory (terms.parameters.omega_ratio,k-1));
+                                        
+                                    
+                                        ((busted.full_model_res[terms.global])[busted.cat_k])[terms.fit.MLE] = 
+                                            ((busted.full_model_res[terms.global])[busted.cat_k_1])[terms.fit.MLE];
+                                            
+                                        busted.cache_set [((busted.full_model_res[terms.global])[busted.cat_k])[terms.id]] =
+                                            busted.cache_set [((busted.full_model_res[terms.global])[busted.cat_k_1])[terms.id]];     
+                                    }
+                                    
+                                    for (k = busted.rate_classes-1; k > 1; k+=(-1)) {
+                                        busted.cat_k   = busted._get_cache_name (model_name, terms.AddCategory (terms.mixture.mixture_aux_weight,k));
+                                        busted.cat_k_1 =  busted._get_cache_name (model_name, terms.AddCategory (terms.mixture.mixture_aux_weight,k-1));
+                                    
+                                        ((busted.full_model_res[terms.global])[busted.cat_k])[terms.fit.MLE] = 
+                                            ((busted.full_model_res[terms.global])[busted.cat_k_1])[terms.fit.MLE];
+                                            
+                                        busted.cache_set [((busted.full_model_res[terms.global])[busted.cat_k])[terms.id]] =
+                                            busted.cache_set [((busted.full_model_res[terms.global])[busted.cat_k_1])[terms.id]];     
+                                    }
+                                }
+                                
+                                function busted._delete_cat_1 (model_name) {
+                                    busted.cat_k = busted._get_cache_name (model_name, terms.AddCategory (terms.parameters.omega_ratio,1));
+                                    busted.cat_k_1 = busted._get_cache_name (model_name, terms.AddCategory (terms.mixture.mixture_aux_weight,1));
+                                    
+                                    busted.cache_set - ((busted.full_model_res[terms.global])[busted.cat_k])[terms.id];
+                                    busted.cache_set - ((busted.full_model_res[terms.global])[busted.cat_k_1])[terms.id];
+        
+                                    //busted.full_model_res[terms.global] - busted.cat_k;
+                                    //busted.full_model_res[terms.global] - busted.cat_k_1;
+                                }
+                                
+                                busted._swap_estimates ("busted.test");
+                                busted._delete_cat_1  ("busted.test");
+                                
+                                if (busted.has_background) {
+                                    busted._swap_estimates ("busted.background");
+                                    busted._delete_cat_1  ("busted.background");
+                                }
+     
+                             }
+                               
                         }
  
                 }
@@ -685,20 +742,27 @@ while (!busted.converged) {
         if (None == busted.restart_optimization) {
         
             if (busted.use_cached_full_model) {
-                
-                
                 for (k,d;in;busted.initial_grid) {
-                    if (Random (0,1) < 0.6) {
+                    if (+k < 5 ) {
                         for (v,mle; in; d) {
-                            if (busted.cache_set / v) {
-                                ((busted.initial_grid[k])[v])[terms.fit.MLE] = busted.cache_set[v];
+                                if (busted.cache_set / v) {
+                                    ((busted.initial_grid[k])[v])[terms.fit.MLE] = busted.cache_set[v];
+                                } else {
+                                    ((busted.initial_grid[k])[v])[terms.fit.MLE] = Random (0.0,1e-6);
+                                }
+                            }
+            
+                    } else {
+                        if (Random (0,1) < 0.6) {
+                            for (v,mle; in; d) {
+                                if (busted.cache_set / v) {
+                                    ((busted.initial_grid[k])[v])[terms.fit.MLE] = busted.cache_set[v];
+                                } 
                             }
                         }
-                        
                     }
                 }
-                
-                
+                                
                 busted.full_model_grid =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.full_model_res, busted.model_object_map, {
                         "retain-lf-object": TRUE,
                         terms.run_options.optimization_settings : 
@@ -1585,7 +1649,8 @@ function busted.init_grid_setup (omega_distro, error_sink, rate_count) {
             };        
              busted.initial_ranges [_name_] = {
                 terms.lower_bound : 0,
-                terms.upper_bound : 0.005,
+                terms.upper_bound : Sqrt (0.005),
+                terms.range_transform : "`terms.range_transform_variable`^2"
             };
         } else { 
             busted.initial_ranges [_name_] = {
