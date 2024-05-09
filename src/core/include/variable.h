@@ -192,6 +192,7 @@ public:
 
 long    DereferenceVariable (long index, _MathObject const *  context, char reference_type);
 long    DereferenceString   (HBLObjectRef, _MathObject const * context, char reference_type);
+void    ResetDepComputedFlags (_SimpleList const& vars);
 _String const WrapInNamespace (_String const&, _String const*);
 
 

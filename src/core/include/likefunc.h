@@ -430,7 +430,7 @@ protected:
     void            ComputeParameterPenalty     (void);
 
 
-    bool            SendOffToMPI                (long);
+    bool            SendOffToMPI                (long, void * = nil);
     void            InitMPIOptimizer            (void);
     void            CleanupMPIOptimizer         (void);
     void            ComputeBlockInt1            (long,hyFloat&,_TheTree*,_DataSetFilter*, char);

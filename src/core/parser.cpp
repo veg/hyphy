@@ -83,9 +83,11 @@ _SimpleList     freeSlots,
                 *deferSetFormula = nil;
 
 
-_AVLList       *deferClearConstraint = nil;
+_AVLList       *deferClearConstraint = nil,
+               *_keepTrackOfDepVars  = nil;
 
 bool            useGlobalUpdateFlag = false;
+
 
 
 _String         HalfOps (":<>=!&|");

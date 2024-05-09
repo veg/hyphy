@@ -247,7 +247,7 @@ public:
     static      _Formula*        PatchFormulasTogether (const _Formula& op1, const _Formula& op2, const char op_code);
     static      _Formula*        PatchFormulasTogether (const _Formula& op1, HBLObjectRef op2, const char op_code);
     
-    void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive, bool simplify = true);
+    void        ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive, bool simplify = true, bool help_mode = false);
   
     /**
         Process a formula as a part of a batch to convert to simple formulas

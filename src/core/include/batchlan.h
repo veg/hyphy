@@ -156,7 +156,7 @@ public:
      
      */
   
-    void        BuildListOfDependancies   (_AVLListX & collection, bool recursive = true);
+    void        BuildListOfDependancies   (_AVLListX & collection, bool recursive = true, bool help_mode = false);
   
     /**
      

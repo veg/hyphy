@@ -1302,8 +1302,8 @@ void _ElementaryCommand::ScanStringExpressionForHBLFunctions (_String* expressio
   long     parseCode = Parse(&f,*expression,fpc,&f2);
   
   if (parseCode != HY_FORMULA_FAILED ) {
-    f.ScanFormulaForHBLFunctions (collection, recursive, !help_mode);
-    f2.ScanFormulaForHBLFunctions(collection, recursive, !help_mode);
+    f.ScanFormulaForHBLFunctions (collection, recursive, !help_mode, help_mode);
+    f2.ScanFormulaForHBLFunctions(collection, recursive, !help_mode, help_mode);
   }
 
   

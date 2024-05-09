@@ -2730,6 +2730,10 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
     
     //long b4 = mes_counter;
 
+    _SimpleList dpv;
+    _keepTrackOfDepVars = new _AVLList (&dpv);
+    useGlobalUpdateFlag = true;
+    
     for (unsigned long nodeID = 0; nodeID < expNodes.lLength; nodeID++) {
         long didIncrease = matrixQueue.lLength;
         _CalcNode* thisNode = (_CalcNode*) expNodes(nodeID);
@@ -2751,9 +2755,15 @@ void        _TheTree::ExponentiateMatrices  (_List& expNodes, long tc, long catI
                 nodesToDo << thisNode;
             }
         }
-        
-
     }
+    
+    //ObjectToConsole(_keepTrackOfDepVars);
+    //NLToConsole();
+    ResetDepComputedFlags (dpv);
+    DeleteAndZeroObject(_keepTrackOfDepVars);
+    
+    useGlobalUpdateFlag = false;
+
         
     _List * computedExponentials = hasExpForm? new _List (matrixQueue.lLength) : nil;
     

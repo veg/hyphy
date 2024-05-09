@@ -2564,15 +2564,13 @@ bool _Formula::HasChanged (bool ingoreCats) {
     if (simpleExpressionStatus) {
         HandleApplicationError("Internal error. Called _Formula::HasChanged on a compiled formula");
     }
- 
-    
     unsigned long const upper_bound = NumberOperations();
   
     for (unsigned long i=0UL; i<upper_bound; i++) {
         long data_id;
         _Operation * this_op = ItemAt (i);
       
-        if (this_op->IsAVariable()) {
+        if (this_op->theData >= 0 || this_op->theData < -2 || this_op->IsAVariable()) {
             data_id = this_op->GetAVariable();
             if (data_id>=0) {
                 if (((_Variable*)(((BaseRef*)(variablePtrs.list_data))[data_id]))->HasChanged(ingoreCats)) {
@@ -2601,17 +2599,17 @@ bool _Formula::HasChanged (bool ingoreCats) {
 
 //__________________________________________________________________________________
 
-void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive, bool simplify) {
+void _Formula::ScanFormulaForHBLFunctions (_AVLListX& collection , bool recursive, bool simplify, bool help_mode) {
 
 
-  auto handle_function_id = [&collection, recursive] (const long hbl_id) -> void {
+  auto handle_function_id = [&collection, recursive,help_mode] (const long hbl_id) -> void {
     if (IsBFFunctionIndexValid(hbl_id)) {
       _String function_name = GetBFFunctionNameByIndex(hbl_id);
 
       if (collection.Find(&function_name) < 0) {
         collection.Insert (new _String (function_name), HY_BL_HBL_FUNCTION, false, false);
         if (recursive) {
-          GetBFFunctionBody(hbl_id).BuildListOfDependancies(collection, true);
+          GetBFFunctionBody(hbl_id).BuildListOfDependancies(collection, true, help_mode);
         }
       }
     }
@@ -3014,7 +3012,11 @@ void    _Formula::ConvertToTree (bool err_msg) {
                 }
             }
             if (nodeStack.lLength!=1) {
-                throw ((_String)"The expression '" & toRPN (kFormulaStringConversionNormal) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
+                if (err_msg) {
+                    throw ((_String)"The expression '" & toRPN (kFormulaStringConversionNormal) & "' has " & (long)nodeStack.lLength & " terms left on the stack after evaluation");
+                } else {
+                    throw (_String("Evaluation error (no error report mode)"));
+                }
             } else {
                 theTree = (node<long>*)nodeStack(0);
             }

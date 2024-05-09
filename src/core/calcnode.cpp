@@ -589,6 +589,9 @@ bool        _CalcNode::RecomputeMatrix  (long categID, long totalCategs, _Matrix
                     _Variable * model_var = LocateVar (ref_idx);
                     if (!model_var -> IsIndependent()) {
                         _Variable * param_var = LocateVar (var_idx);
+                        if (useGlobalUpdateFlag) {
+                            model_var->varFlags &= HY_DEP_V_COMPUTED_CLEAR & HY_DEP_V_MODIFIED_CLEAR & HY_DEP_V_INSPECTED_CLR;
+                        }
                         if (param_var->IsIndependent()) {
                             param_var->SetValue(param_var->Compute(),true,true,NULL);
                         }

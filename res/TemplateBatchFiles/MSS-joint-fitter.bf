@@ -285,11 +285,15 @@ for (mss.counter, mss_selector.path; in; mss_selector.file_list) {
      mss.model_map["estimators.SetCategory"][""];
      estimators.ApplyExistingEstimates.set_globals = {};
      mss.model_map["estimators.SetGlobals"][""];
+     mss.bl_scaler = "mss.bl_scaler_" + mss.counter; 
+     
+     parameters.DeclareGlobal (mss.bl_scaler, None);
+     
      mss.constraint_count =  estimators.ApplyExistingEstimatesToTree (mss.lf_components[2 * mss.counter + 1], 
                                               mss.model_map, 
                                               (initial_values [terms.branch_length])[0],
-                                              terms.model.branch_length_constrain,
-                                              TRUE);
+                                              mss.bl_scaler,
+                                              {});
                                            
      if (mss.omega_option == "Fix") {
         models.FixParameterSetRegExp (terms.parameters.omega_ratio, ^(mss.model_name));

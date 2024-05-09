@@ -1147,11 +1147,7 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
         }
 
 
-        if (s.get_char(i) == '{') // a matrix
-            /* 20090803 SLKP:
-                 fixed the code to deal with
-            */
-        {
+        if (s.get_char(i) == '{') { // a matrix
 
             parsingContext.isVolatile() = true;
             

@@ -231,5 +231,6 @@ extern      hyFloat  pi_const, tolerance;
 
 
 extern      bool        useGlobalUpdateFlag;
+extern      _AVLList    *_keepTrackOfDepVars;
 
 #endif
