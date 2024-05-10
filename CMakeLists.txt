@@ -188,9 +188,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     endif()
 
     if(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -g -O3 -D_FORTIFY_SOURCE=2   -Wall -std=gnu++14")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2   -Wall -std=gnu++14")
     else(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -g -O3 -D_FORTIFY_SOURCE=2   -Wall -std=c++14")
+      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2   -Wall -std=c++14")
     endif(${GCC_VERSION} VERSION_LESS 6.0)
 
     #set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info")

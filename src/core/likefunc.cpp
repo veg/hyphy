@@ -1909,9 +1909,9 @@ bool      _LikelihoodFunction::SendOffToMPI       (long index, void * request) {
     bool                sendToSlave = (computationalResults.get_used() < parallelOptimizerTasks.lLength);
     _SimpleList     *   slaveParams = (_SimpleList*)parallelOptimizerTasks(index);
     
-    _SimpleList dpv;
-    _keepTrackOfDepVars = new _AVLList (&dpv);
-    useGlobalUpdateFlag = true;
+    //_SimpleList dpv;
+    //_keepTrackOfDepVars = new _AVLList (&dpv);
+    //useGlobalUpdateFlag = true;
     
     long offset = index * varTransferMatrix.GetVDim();
 
@@ -1928,9 +1928,9 @@ bool      _LikelihoodFunction::SendOffToMPI       (long index, void * request) {
     }
 
     
-    ResetDepComputedFlags (dpv);
-    DeleteAndZeroObject(_keepTrackOfDepVars);
-    useGlobalUpdateFlag = false;
+    //ResetDepComputedFlags (dpv);
+    //DeleteAndZeroObject(_keepTrackOfDepVars);
+    //useGlobalUpdateFlag = false;
 
     
     if (sendToSlave) {
@@ -2396,11 +2396,15 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                 long    totalSent = 0;
                 
                 void ** requests = new void* [parallelOptimizerTasks.lLength];
-                
+
+                _SimpleList dpv;
+                _keepTrackOfDepVars = new _AVLList (&dpv);
+                useGlobalUpdateFlag = true;
+
                 
                 for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++) {
                     MPI_Request * req_record = new  MPI_Request;
-                    bool sendToSlave = SendOffToMPI (blockID);
+                    bool sendToSlave = SendOffToMPI (blockID, req_record);
                     //printf ("Send result (result size %d): %d\n", computationalResults.GetSize(), sendToSlave);
                     if (sendToSlave) {
                        //printf ("\nMaster sending block %d off...\n", blockID);
@@ -2414,6 +2418,10 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                 }
                 
                 
+                ResetDepComputedFlags (dpv);
+                DeleteAndZeroObject(_keepTrackOfDepVars);
+                useGlobalUpdateFlag = false;
+
 
                 while (totalSent) {
                     MPI_Status      status;
