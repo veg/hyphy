@@ -1362,7 +1362,7 @@ while (!busted.converged) {
         (busted.json [busted.json.evidence_ratios])[busted.constrained] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.constrained]);
         (busted.json [busted.json.evidence_ratios ])[busted.optimized_null] = busted.EvidenceRatios ( (busted.json [busted.json.site_logl])[busted.unconstrained],  (busted.json [busted.json.site_logl])[busted.optimized_null]);
         
-        if (busted.LRT[terms.LRT] < 0) {
+        if (busted.LRT[terms.LRT] < -0.01) {
             parameters.RemoveConstraint (model.generic.GetGlobalParameter (busted.test.bsrel_model , terms.AddCategory (terms.parameters.omega_ratio,busted.rate_classes)));
             console.log ("----\n## Negative test LRT (convergence problem). Refitting the alternative model using the null model as a start.\n----\n");
             busted.restart_optimization = busted.null_results;

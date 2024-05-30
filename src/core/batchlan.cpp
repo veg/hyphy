@@ -4770,6 +4770,7 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_StringBuffer&source, _Execu
         } else if (operation_type == kBootstrap) {
             datafilter_command = new _ElementaryCommand(28);
         } else {
+            
             throw _String ("Expected: DataSetFilter	  dataSetFilterid = CreateFilter (datasetid,unit,vertical partition,horizontal partition,alphabet exclusions); or Permute/Bootstrap (dataset/filter,<atom>,<column partition>)");
         }
 

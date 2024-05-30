@@ -211,6 +211,7 @@ namespace terms{
         characters     = "characters";
         pattern_id     = "pattern id";
         filename_to_index = "filename-to-index";
+        blb_subsample  = "blb-subsample"
     }
 
 

@@ -337,6 +337,7 @@ namespace mpi {
         //#profile START;
         
         LFCompute (^lf_id, LF_START_COMPUTE);
+        
 
         results = {};
         task_ids = utility.Keys (tasks);

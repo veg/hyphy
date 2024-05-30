@@ -154,11 +154,12 @@ function load_file (prefix) {
 
     settings = None;
     multiple_files = FALSE;
-
+    blb = 1.0;
 
     if (Type (prefix) == "AssociativeList") {
         multiple_files  = prefix [utility.getGlobalValue("terms.multiple_files")];
-        settings        = prefix[utility.getGlobalValue("terms.settings")];
+        settings        = prefix [utility.getGlobalValue("terms.settings")];
+        blb             = prefix [utility.getGlobalValue("terms.data.blb_subsample")];
         prefix          = prefix [utility.getGlobalValue("terms.prefix")];
     }
 
@@ -199,6 +200,10 @@ function load_file (prefix) {
     } else {
         datasets = prefix+".codon_data";
         codon_data_info = alignments.PromptForGeneticCodeAndAlignment(datasets, prefix+".codon_filter");
+        if (blb < 1 && blb > 0) {
+            console.log (blb);
+            codon_data_info [utility.getGlobalValue("terms.data.blb_subsample")] = blb;
+        }
         /** example output
         {
             "sequences": 13,

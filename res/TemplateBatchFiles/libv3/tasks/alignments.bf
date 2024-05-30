@@ -418,6 +418,8 @@ function alignments.LoadCodonDataFile(dataset_name, datafilter_name, data_info) 
         }
         io.CheckAssertion("`datafilter_name`.sites*3==`dataset_name`.sites", "The input alignment must have the number of sites that is divisible by 3 and must not contain stop codons");
     }
+    
+     
     data_info[terms.data.sites] = ^ "`datafilter_name`.sites";
     data_info[terms.data.dataset] = dataset_name;
     data_info[terms.data.datafilter] = datafilter_name;
@@ -563,6 +565,17 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
             diff = test.sites - 3 * ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".sites");
 
             io.CheckAssertion("`&diff` == 0", "Partition " + this_filter[utility.getGlobalValue("terms.data.name")] + " is either has stop codons or is not in frame");
+            
+            if (Type (data_info[^"terms.data.blb_subsample"]) == "Number") {
+                datafilter_name = (this_filter[utility.getGlobalValue("terms.data.name")]);
+                i = (^ "`datafilter_name`.sites") ^ (data_info[^"terms.data.blb_subsample"]) $ 1;
+                if (i > 1 && i < ^"`datafilter_name`.sites") {
+                    console.log (">Subsampling/upsampling using bag of little bootstraps with sample size `i`.");
+                    DataSetFilter test = Bootstrap (^datafilter_name, {"BLB_size": i, "BLB_sampler" : ""});
+                    DataSetFilter ^datafilter_name = CreateFilter (test,3,"","", data_info[utility.getGlobalValue("terms.stop_codons")]);
+                }
+            }
+
 
             this_filter[utility.getGlobalValue("terms.data.coverage")] = utility.DictToArray(utility.Map(utility.Filter( ^ (this_filter[utility.getGlobalValue("terms.data.name")] + ".site_map"), "_value_", "_value_%3==0"), "_value_", "_value_$3"));
             filters + this_filter;

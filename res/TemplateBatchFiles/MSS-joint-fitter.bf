@@ -239,8 +239,8 @@ function mss.MSS_generator (type) {
     return model;
 }
 
-mss.tree_objects = {};
-mss.fit_objects = {};
+mss.tree_objects  = {};
+mss.fit_objects   = {};
 mss.lf_components = {   
                             2*mss_selector.file_count, 
                             1
