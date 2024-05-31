@@ -337,6 +337,7 @@ namespace mpi {
         //#profile START;
         
         LFCompute (^lf_id, LF_START_COMPUTE);
+        
 
         results = {};
         task_ids = utility.Keys (tasks);
@@ -347,12 +348,9 @@ namespace mpi {
         for (i = 0; i < task_count; i+=1) {
             
             parameters.SetValues (tasks[task_ids[i]]);
-            //console.log (tasks[task_ids[i]]);
-            //console.log (values[1]);
+            ^"estimators._global_do_not_set" = tasks[task_ids[i]];
             estimators.ApplyExistingEstimates (lf_id, values[0], values[1], values[2]);
-            //GetInformation (i, ^"busted._shared_srv.rv_gdd");
-            //fprintf (stdout, ^lf_id);
-            //assert (0);
+            ^"estimators._global_do_not_set" = {};
             LFCompute (^lf_id, ll);
             results [task_ids[i]] = ll;
             io.ReportProgressBar("", "Grid result "  + i  + " = " + ll + " (best = " + Max (results, 0)[^"terms.data.value"] + ")");

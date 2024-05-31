@@ -268,6 +268,7 @@ HBLObjectRef  _Variable::Compute (void) {
             if (varValue && new_value->ObjectClass () == NUMBER) {
                 if (varValue->ObjectClass () == NUMBER && varValue->CanFreeMe()) {
                     ((_Constant*)varValue)->SetValue(((_Constant*)new_value)->Value());
+                    return;
                 }
             }
             DeleteObject (varValue);
@@ -301,10 +302,11 @@ HBLObjectRef  _Variable::Compute (void) {
             if ((varFlags & HY_DEP_V_COMPUTED) && varValue) {
                 varFlags &= HY_VARIABLE_COMPUTING_CLR;
                 return varValue;
-            } else {
-                update_var_value ();
             }
-                
+            update_var_value ();
+            if (_keepTrackOfDepVars) {
+                _keepTrackOfDepVars->Insert ((BaseRef)theIndex);
+            }
             varFlags |= HY_DEP_V_COMPUTED;
           
         } else {
@@ -799,11 +801,32 @@ bool  _Variable::HasChanged (bool ignoreCats, _AVLListX *) {
     
     
     if (varFormula) {
-        if (useGlobalUpdateFlag && (varFlags&HY_DEP_V_COMPUTED)) {
-            return false;
+        
+        
+        if (__builtin_expect (useGlobalUpdateFlag, 0)) {
+            //bool report = IsGlobal() && VerbosityLevel() == 13;
+            if ( varFlags & HY_DEP_V_INSPECTED) {
+                //if (report) {
+                //    printf (">INSPECTED %s result = %d\n", GetName()->get_str(), varFlags & HY_DEP_V_MODIFIED);
+                //}
+                return varFlags & HY_DEP_V_MODIFIED;
+            }
+            varFlags = varFlags | HY_DEP_V_INSPECTED;
+            if (_keepTrackOfDepVars) {
+                _keepTrackOfDepVars->Insert ((BaseRef)theIndex);
+            }
+            bool res =  !varValue || varFormula->HasChanged(ignoreCats) ;
+            if (res) {
+                varFlags = varFlags | HY_DEP_V_MODIFIED;
+            }
+            //if (report) {
+            //    printf (">COMPUTED %s result = %d/%d\n", GetName()->get_str(), varFlags & HY_DEP_V_MODIFIED, res);
+            //}
+            return res;
         }
+        
 
-       return  !varValue || varFormula->HasChanged(ignoreCats) ;
+        return   !varValue || varFormula->HasChanged(ignoreCats) ;
 
     } else {
         if (varValue && varValue->IsVariable()) {
@@ -897,5 +920,12 @@ long    DereferenceVariable (long index, _MathObject const * context, char refer
     }
     
     return  DereferenceString (FetchObjectFromVariableByTypeIndex(index, STRING), context, reference_type);
+}
+
+//__________________________________________________________________________________
+void    ResetDepComputedFlags (_SimpleList const& vars) {
+    vars.Each([] (long var_index, unsigned long) -> void {
+        LocateVar(var_index)->varFlags &= (HY_DEP_V_COMPUTED_CLEAR & HY_DEP_V_MODIFIED_CLEAR & HY_DEP_V_INSPECTED_CLR);
+    });
 }
 

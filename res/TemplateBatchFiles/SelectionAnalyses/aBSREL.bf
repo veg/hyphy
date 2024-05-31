@@ -95,6 +95,8 @@ absrel.json    = {
 
 selection.io.startTimer (absrel.json [terms.json.timers], "Overall", 0);
 
+KeywordArgument ("blb", "[Advanced option] Bag of little bootstrap alignment resampling rate", 1.0);
+absrel.blb = io.PromptUser ("[Advanced option] Bag of little bootstrap alignment resampling rate", 1.0, 0.01, 1, FALSE);
 
 /*------------------------------------------------------------------------------
     Key word arguments
@@ -110,9 +112,14 @@ KeywordArgument ("branches",  "Branches to test", "All");
     Continued Analysis Setup
 */
 
+
 namespace absrel {
     LoadFunctionLibrary ("modules/shared-load-file.bf");
-    load_file ("absrel");
+    
+    load_file ({
+                utility.getGlobalValue("terms.prefix"): "absrel", 
+                utility.getGlobalValue("terms.data.blb_subsample") : blb
+               });
 }
 
 KeywordArgument ("multiple-hits",  "Include support for multiple nucleotide substitutions", "None");
@@ -146,6 +153,7 @@ if (absrel.do_srv) {
     KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", absrel.synonymous_rate_classes);
     absrel.synonymous_rate_classes = io.PromptUser ("The number omega rate classes to include in the model", absrel.synonymous_rate_classes, 1, 10, TRUE);
 }  
+
 
 selection.io.json_store_setting  (absrel.json, "srv", absrel.do_srv);
 

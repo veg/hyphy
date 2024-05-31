@@ -165,6 +165,7 @@ function estimators.CopyFrequencies(model_name, model_decription) {
     (estimators.ExtractMLEs.results[terms.efv_estimate])[model_name] = model_decription[terms.efv_estimate];
 }
 
+estimators._global_do_not_set = {};
 
 function estimators.SetGlobals2(key2, value) {
 
@@ -191,11 +192,15 @@ function estimators.SetGlobals2(key2, value) {
     if (Type(__init_value) == "AssociativeList") {
         if (__init_value[terms.fix]) {
             estimators.ApplyExistingEstimates.df_correction += parameters.IsIndependent(value);
-            ExecuteCommands("`value` := " + __init_value[terms.fit.MLE]);
+            if (estimators._global_do_not_set / value == 0) {
+                ExecuteCommands("`value` := " + __init_value[terms.fit.MLE]);
+            }
             //_did_set [value] = 1;
         } else {
             if (parameters.IsIndependent (value)) {
-                ExecuteCommands("`value` = " + __init_value[terms.fit.MLE]);
+                if (estimators._global_do_not_set / value == 0) {
+                    ExecuteCommands("`value` = " + __init_value[terms.fit.MLE]);
+                } 
                 //_did_set [value] = 1;
             } else {
                 messages.log (value + " was already constrained in estimators.SetGlobals2");
@@ -593,7 +598,6 @@ function estimators.ApplyExistingEstimates(likelihood_function_id, model_descrip
     // copy global variables first
 
     
-
     estimators.ApplyExistingEstimates.results[terms.global] = {};
     model_descriptions["estimators.SetCategory"][""];
     // the above line traverses all model descriptions and sets
@@ -824,7 +828,9 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
             best_value   = Max (grid_results, 1);
             parameters.SetValues ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
             //console.log ((run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]]);
+            ^"estimators._global_do_not_set" = (run_options [utility.getGlobalValue("terms.search_grid")])[best_value["key"]];
             estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+            ^"estimators._global_do_not_set" = {};
         }
     }
 
@@ -842,9 +848,12 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         io.ReportProgressBar("", "Working on crude initial optimizations");
         bestlog    = -1e100;
         for (i = 0; i < Abs (can_do_restarts); i += 1) {
-        
+  
             parameters.SetValues (can_do_restarts[i]);        
+            ^"estimators._global_do_not_set" = can_do_restarts[i];
+
             estimators.ApplyExistingEstimatesOverride (&likelihoodFunction, model_objects, initial_values,  run_options[utility.getGlobalValue("terms.run_options.proportional_branch_length_scaler")]);
+            ^"estimators._global_do_not_set" = {};
             if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
                  Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
             } else {
@@ -862,6 +871,7 @@ lfunction estimators.FitLF(data_filter, tree, model_map, initial_values, model_o
         }
         io.ClearProgressBar();
     } else {
+
         if (utility.Has (run_options,utility.getGlobalValue("terms.run_options.optimization_settings"),"AssociativeList")) {
             Optimize (mles, likelihoodFunction, run_options[utility.getGlobalValue("terms.run_options.optimization_settings")]);
         } else {
@@ -1494,6 +1504,7 @@ lfunction estimators.LHC (ranges, samples) {
 	    var_def [v][1] = ((ranges[var_names[v]])[^"terms.upper_bound"] - var_def [v][0]) / (samples-1);
 	    var_samplers[v] = Random ({1,samples}["_MATRIX_ELEMENT_COLUMN_"], 0);
     }
+    
 
 
     result = {};
@@ -1506,6 +1517,18 @@ lfunction estimators.LHC (ranges, samples) {
             (entry [var_names[v]])[^"terms.fit.MLE"] = var_def[v][0] + (var_samplers[v])[i] * var_def[v][1];
         }
         result + entry;
+    }
+    
+    for (v = 0; v < var_count; v += 1) {
+        if (utility.Has (ranges[var_names[v]], ^"terms.range_transform", "String")) {
+            rtf = (ranges[var_names[v]])[ ^"terms.range_transform"];
+            for (i = 0; i < samples; i+=1) {
+                utility.ExecuteInGlobalNamespace ( ^"terms.range_transform_variable" + " = " +  
+                    ((result[i])[var_names[v]])[^"terms.fit.MLE"]);
+                ((result[i])[var_names[v]])[^"terms.fit.MLE"] = utility.EvalInGlobalNamespace (rtf);
+
+            }
+        }
     }
 
     return result;

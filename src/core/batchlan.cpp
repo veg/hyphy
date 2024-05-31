@@ -1245,9 +1245,9 @@ _String  const     _ExecutionList::GetFileName     (void)  const {
 
 //____________________________________________________________________________________
 
-void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool recursive) {
+void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool recursive, bool help_mode) {
   for (unsigned long step = 0UL; step < lLength; step++) {
-    ((_ElementaryCommand*)GetItem(step))->BuildListOfDependancies (collection, recursive, *this);
+    ((_ElementaryCommand*)GetItem(step))->BuildListOfDependancies (collection, recursive, *this, help_mode);
   }
 }
 
@@ -1413,7 +1413,8 @@ HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent, bool ign
             profileCounter->theData[instCounter*2+1] += 1.0;
           }
         } else {
-            (((_ElementaryCommand**)list_data)[currentCommand])->Execute(*this);
+            GetIthCommand(currentCommand)->Execute(*this);
+            //(((_ElementaryCommand**)list_data)[currentCommand])->Execute(*this);
         }
 
         if (terminate_execution) {
@@ -4769,6 +4770,7 @@ bool    _ElementaryCommand::ConstructDataSetFilter (_StringBuffer&source, _Execu
         } else if (operation_type == kBootstrap) {
             datafilter_command = new _ElementaryCommand(28);
         } else {
+            
             throw _String ("Expected: DataSetFilter	  dataSetFilterid = CreateFilter (datasetid,unit,vertical partition,horizontal partition,alphabet exclusions); or Permute/Bootstrap (dataset/filter,<atom>,<column partition>)");
         }
 

@@ -598,7 +598,7 @@ HBLObjectRef _FString::SubstituteAndSimplify(HBLObjectRef arguments, HBLObjectRe
           evaluator.SimplifyConstants();
       }
       
-      _String * simplified = ((_String*)evaluator.toStr(kFormulaStringConversionNormal));
+      auto simplified = ((_String*)evaluator.toStr(kFormulaStringConversionNormal));
       return _returnStringOrUseCache(simplified, cache);
     }
   }

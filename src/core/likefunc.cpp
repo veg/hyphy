@@ -1896,11 +1896,11 @@ void    _LikelihoodFunction::ZeroSiteResults        (void)
 //_______________________________________________________________________________________
 
 #ifndef __HYPHYMPI__
-bool      _LikelihoodFunction::SendOffToMPI       (long)
+bool      _LikelihoodFunction::SendOffToMPI       (long, void * )
 {
     return false;
 #else
-bool      _LikelihoodFunction::SendOffToMPI       (long index) {
+bool      _LikelihoodFunction::SendOffToMPI       (long index, void * request) {
 // dispatch an MPI task to node 'index+1'
 
 /* 20170404 SLKP Need to check if the decision to recompute a partition is made correctly.
@@ -1908,21 +1908,37 @@ bool      _LikelihoodFunction::SendOffToMPI       (long index) {
 
     bool                sendToSlave = (computationalResults.get_used() < parallelOptimizerTasks.lLength);
     _SimpleList     *   slaveParams = (_SimpleList*)parallelOptimizerTasks(index);
+    
+    //_SimpleList dpv;
+    //_keepTrackOfDepVars = new _AVLList (&dpv);
+    //useGlobalUpdateFlag = true;
+    
+    long offset = index * varTransferMatrix.GetVDim();
 
     for (unsigned long varID = 0UL; varID < slaveParams->lLength; varID++) {
         _Variable * aVar = LocateVar (slaveParams->list_data[varID]);
         if (aVar->IsIndependent()) {
-            varTransferMatrix.theData[varID] = aVar->Value();
+            varTransferMatrix.theData[offset+varID] = aVar->Value();
         } else {
-            varTransferMatrix.theData[varID] = aVar->Compute()->Value();
+            varTransferMatrix.theData[offset+varID] = aVar->Compute()->Value();
         }
 
         //printf ("%s => %g\n", aVar->GetName()->sData, varTransferMatrix.theData[varID]);
         sendToSlave = sendToSlave || aVar->HasChanged();
     }
 
+    
+    //ResetDepComputedFlags (dpv);
+    //DeleteAndZeroObject(_keepTrackOfDepVars);
+    //useGlobalUpdateFlag = false;
+
+    
     if (sendToSlave) {
-        ReportMPIError(MPI_Send(varTransferMatrix.theData, slaveParams->lLength, MPI_DOUBLE, index+1 , HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD),true);
+        if (request) {
+            ReportMPIError(MPI_Isend(varTransferMatrix.theData + offset, slaveParams->lLength, MPI_DOUBLE, index+1 , HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD, (MPI_Request*)request), true);
+        } else {
+            ReportMPIError(MPI_Send(varTransferMatrix.theData + offset, slaveParams->lLength, MPI_DOUBLE, index+1 , HYPHY_MPI_VARS_TAG, MPI_COMM_WORLD),true);
+        }
     }
     return sendToSlave;
 
@@ -1980,12 +1996,15 @@ bool    _LikelihoodFunction::PreCompute         (void) {
         useGlobalUpdateFlag = false;
         // mod 20060125 to only update large globals once
         
+        ResetDepComputedFlags (*arrayToCheck);
+        /*
         for (unsigned long j=0UL; j < i; j++) {
             _Variable* cornholio = LocateVar(arrayToCheck->list_data[j]);
             if (cornholio->varFlags&HY_DEP_V_COMPUTED) {
                 cornholio->varFlags -= HY_DEP_V_COMPUTED;
             }
         }
+        */
         
         
         return (i==arrayToCheck->lLength);
@@ -2281,6 +2300,8 @@ hyFloat  _LikelihoodFunction::Compute        (void)
         if (hyphyMPIOptimizerMode == _hyphyLFMPIModeSiteTemplate && hy_mpi_node_rank == 0) {
             long    totalSent = 0,
                     blockPatternSize = PartitionLengths (0);
+            
+            
             for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++) {
                 bool sendToSlave = SendOffToMPI (blockID);
                 if (sendToSlave) {
@@ -2373,22 +2394,40 @@ hyFloat  _LikelihoodFunction::Compute        (void)
 #ifdef __HYPHYMPI__
             if (hy_mpi_node_rank == 0) {
                 long    totalSent = 0;
+                
+                void ** requests = new void* [parallelOptimizerTasks.lLength];
+
+                _SimpleList dpv;
+                _keepTrackOfDepVars = new _AVLList (&dpv);
+                useGlobalUpdateFlag = true;
+
+                
                 for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++) {
-                    //printf ("Master sending block %d off...\n", blockID);
-                    bool sendToSlave = SendOffToMPI (blockID);
+                    MPI_Request * req_record = new  MPI_Request;
+                    bool sendToSlave = SendOffToMPI (blockID, req_record);
                     //printf ("Send result (result size %d): %d\n", computationalResults.GetSize(), sendToSlave);
                     if (sendToSlave) {
-                        totalSent++;
+                       //printf ("\nMaster sending block %d off...\n", blockID);
+                       totalSent++;
+                       requests[blockID] = req_record;
                     } else {
+                        delete req_record;
+                        requests[blockID] = nil;
                         result += computationalResults[blockID];
                     }
                 }
+                
+                
+                ResetDepComputedFlags (dpv);
+                DeleteAndZeroObject(_keepTrackOfDepVars);
+                useGlobalUpdateFlag = false;
+
 
                 while (totalSent) {
                     MPI_Status      status;
                     hyFloat      blockRes;
                     ReportMPIError(MPI_Recv (&blockRes, 1, MPI_DOUBLE, MPI_ANY_SOURCE , HYPHY_MPI_DATA_TAG, MPI_COMM_WORLD,&status),true);
-                    //printf ("Got %g from block %d \n", blockRes, status.MPI_SOURCE-1);
+                    //printf ("\nGot %15.12g from block %d \n", blockRes, status.MPI_SOURCE-1);
 
                     result            += blockRes;
                     /*if (status.MPI_SOURCE == 1 && computationalResults.GetUsed()) {
@@ -2396,6 +2435,14 @@ hyFloat  _LikelihoodFunction::Compute        (void)
                     }*/
                     UpdateBlockResult (status.MPI_SOURCE-1, blockRes);
                     totalSent--;
+                }
+                //printf ("Overall result = %15.12g\n", result);
+                
+                for (long blockID = 0; blockID < parallelOptimizerTasks.lLength; blockID ++) {
+                    if (requests[blockID]) {
+                        //MPI_Wait((MPI_Request *)requests[blockID], MPI_STATUS_IGNORE);
+                        delete (MPI_Request *)requests[blockID];
+                    }
                 }
 
                 done = true;
@@ -3314,8 +3361,7 @@ inline hyFloat sqr (hyFloat x)
 
 //_______________________________________________________________________________________
 
-void    _LikelihoodFunction::InitMPIOptimizer (void)
-{
+void    _LikelihoodFunction::InitMPIOptimizer (void) {
 #ifdef __HYPHYMPI__
     parallelOptimizerTasks.Clear();
     transferrableVars  = 0;
@@ -3656,7 +3702,7 @@ void    _LikelihoodFunction::InitMPIOptimizer (void)
                     DeleteObject (mapString);
                 }
 
-                _Matrix::CreateMatrix (&varTransferMatrix, 1, transferrableVars, false, true, false);
+                _Matrix::CreateMatrix (&varTransferMatrix, slaveNodes, transferrableVars, false, true, false);
                 ReportWarning(_String("[MPI] InitMPIOptimizer:Finished with the setup. Maximum of ") & transferrableVars & " transferrable parameters.");
             }
         }
@@ -6691,8 +6737,8 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
 
     if (gradL > 0.0) {
         
-        current_direction   = gradient;// * (1./gradL);
-        //gradient = current_direction;
+        current_direction   = gradient * (1./gradL);
+        gradient = current_direction;
         
         
         for (long index = 0; index< MAX (dim, 10) && index < iterationLimit; index++, currentPrecision*=0.25) {
@@ -6719,11 +6765,11 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
             ComputeGradient (gradient, gradientStep, bestVal, freeze, 1, false);
             gradL = gradient.AbsValue ();
             
-            /*if (CheckEqual(gradL,0.0)) {
+            if (CheckEqual(gradL,0.0)) {
                 break;
             } else {
                 gradient *= 1./gradL;
-            }*/
+            }
  
             previous_direction = current_direction;
             hyFloat beta = 0., scalar_product = 0.;
@@ -7136,6 +7182,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
             maxSoFar = middleValue;
         } else {
           SetAllIndependent (&current_best_vector);
+           
           maxSoFar    = Compute();
           if (verbosity_level > 50) {
             char buf [256];

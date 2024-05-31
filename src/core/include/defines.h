@@ -96,8 +96,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define  HY_VARIABLE_CHANGED                        0x0002
 #define  HY_VARIABLE_CHANGED_CLEAR                  0xFFFD
 #define  HY_DEP_V_COMPUTED                          0x0004
+#define  HY_DEP_V_COMPUTED_CLEAR                    0xFFFB
 #define  HY_DEP_V_INSPECTED                         0x0008
 #define  HY_DEP_V_MODIFIED                          0x0010
+#define  HY_DEP_V_MODIFIED_CLEAR                    0xFFEF
 #define  HY_DEP_V_MODIFIED_CATS                     0x0020
 #define  HY_VC_NO_CHECK                             0x0040 // do not check this variable container in
 // NeedToExponentiate

@@ -927,7 +927,9 @@ void      _VariableContainer::CopyModelParameterValue (long var_idx, long ref_id
             model_var->SetValue (LocateVar (var_idx)->Compute(),true,true,NULL);
             
 #ifdef _UBER_VERBOSE_MX_UPDATE_DUMP
+            if (VerbosityLevel() == 13) {
                 fprintf (stderr, "[_CalcNode::RecomputeMatrix] Node %s, var %s, value = %15.12g\n", LocateVar (var_idx)->GetName()->get_str(), model_var->GetName()->get_str(), model_var->Compute()->Value());
+            }
 #endif
         }
     }

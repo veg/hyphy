@@ -2992,7 +2992,6 @@ HBLObjectRef   _Matrix::EvaluateSimple (_Matrix* existing_storage) {
         result = new _Matrix (hDim, vDim, bool (theIndex), true);
     }
 
-
     for (long i=0L; i<cmd->varIndex.lLength; i++) {
         _Variable* curVar = LocateVar(cmd->varIndex.list_data[i]);
         if (curVar->ObjectClass () != MATRIX) {
@@ -3005,7 +3004,7 @@ HBLObjectRef   _Matrix::EvaluateSimple (_Matrix* existing_storage) {
             cmd->varValues[i].reference = (hyPointer)((_Matrix*)LocateVar (cmd->varIndex.list_data[i])->Compute())->theData;
         }
     }
-
+    
 
     for (long f = 0L; f < cmd->formulasToEval.lLength; f++) {
         cmd->formulaValues [f] = ((_Formula*)cmd->formulasToEval.list_data[f])->ComputeSimple(cmd->theStack, cmd->varValues);

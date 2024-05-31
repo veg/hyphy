@@ -1442,8 +1442,7 @@ long RetrieveMPICount (char)
     return size;
 }
 
-void MPISwitchNodesToMPIMode (long totalNodeCount)
-{
+void MPISwitchNodesToMPIMode (long totalNodeCount) {
     _String message = mpiLoopSwitchToOptimize & hyphyMPIOptimizerMode;
 
     // send a context switch signal

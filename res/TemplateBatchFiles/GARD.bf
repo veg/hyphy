@@ -313,7 +313,7 @@ if (fastRunMode) {
 gard.queue = mpi.CreateQueue (
                             {
                             "LikelihoodFunctions" : {{"gard.exportedModel"}},
-                            "Headers" : {{"libv3/all-terms.bf"}},
+                            "Headers" : {{"libv3/all-terms.bf","libv3/tasks/estimators.bf"}},
                             "Variables" : {{"gard.globalParameterCount", "gard.numSites", "gard.alignment", "gard.variableSiteMap", "gard.dataType", "terms.gard.codon","OPTIMIZE_SUMMATION_ORDER_PARTITION", "OPTIMIZATION_PRECISION"}}
                             }
                         );
