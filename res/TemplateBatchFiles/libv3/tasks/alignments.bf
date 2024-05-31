@@ -550,6 +550,7 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
     part_count = utility.Array1D(partitions);
     filters = {};
 
+
     if (utility.CheckKey(data_info, utility.getGlobalValue("terms.code"), "Matrix")) {
 
         for (i = 0; i < part_count; i += 1) {
@@ -566,12 +567,12 @@ lfunction alignments.DefineFiltersForPartitions(partitions, source_data, prefix,
 
             io.CheckAssertion("`&diff` == 0", "Partition " + this_filter[utility.getGlobalValue("terms.data.name")] + " is either has stop codons or is not in frame");
             
-            if (Type (data_info[^"terms.data.blb_subsample"]) == "Number") {
+            if (utility.Has (data_info, ^"terms.data.blb_subsample", "Number")) { 
                 datafilter_name = (this_filter[utility.getGlobalValue("terms.data.name")]);
-                i = (^ "`datafilter_name`.sites") ^ (data_info[^"terms.data.blb_subsample"]) $ 1;
-                if (i > 1 && i < ^"`datafilter_name`.sites") {
-                    console.log (">Subsampling/upsampling using bag of little bootstraps with sample size `i`.");
-                    DataSetFilter test = Bootstrap (^datafilter_name, {"BLB_size": i, "BLB_sampler" : ""});
+                blb_size = (^ "`datafilter_name`.sites") ^ (data_info[^"terms.data.blb_subsample"]) $ 1;
+                if (blb_size > 1 && i < ^"`datafilter_name`.sites") {
+                    console.log (">Subsampling/upsampling using bag of little bootstraps with sample size `blb_size`.");
+                    DataSetFilter test = Bootstrap (^datafilter_name, {"BLB_size": blb_size, "BLB_sampler" : ""});
                     DataSetFilter ^datafilter_name = CreateFilter (test,3,"","", data_info[utility.getGlobalValue("terms.stop_codons")]);
                 }
             }
