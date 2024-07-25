@@ -752,7 +752,6 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                                                                     },
                                                                     "meme.store_results");
             }
-            pattern_count_all
         '
     );
     
