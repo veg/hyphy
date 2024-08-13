@@ -10,18 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.7
+          python-version: 3.12
       - name: Install dependencies
         run:
           python -m pip install --upgrade pip;
           python -m pip install --upgrade wheel;
           python -m pip install --upgrade cpp-coveralls;
       - name: Get HyPhy code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install and activate miniconda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: 'hyphy-test-env'
           environment-file: '.coveralls.env.yml'
