@@ -6,8 +6,8 @@ HyPhy is an open-source software package for the analysis of genetic sequences u
 
 ## Quick Start
 
-#### Install  
-`conda install hyphy`
+#### Install
+`conda install -c bioconda hyphy`
 
 #### Run with Command Line Arguments
 `hyphy <method_name> --alignment <path_to_alignment_file> <additional_method_specific_arguments>`  
@@ -63,8 +63,7 @@ If building on a heterogeneous cluster with some nodes that do not support auto-
 If you're on a UNIX-compatible system, and you're comfortable with GNU make, then run `make` with one of the following build targets:
 
 +   MP or hyphy - build a HyPhy executable (This used to be "HYPHYMP" but is now just "hyphy") using pthreads to do multiprocessing
-+   MPI - build a HyPhy executable (HYPHYMPI) using MPI to do multiprocessing
-+   HYPHYMPI - build a HyPhy executable (HYPHYMPI) using openMPI 
++   MPI or HYPHYMPI - build a HyPhy executable (HYPHYMPI) using openMPI to do multiprocessing
 +   LIB - build a HyPhy library (libhyphy_mp) using pthreads to do multiprocessing
 -   GTEST - build HyPhy's gtest testing executable (HYPHYGTEST)
 
