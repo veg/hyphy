@@ -236,7 +236,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 		PCL_CHECK_FOR_NEON()
 		if(${HAVE_NEON_EXTENSIONS})
 			add_definitions (-D_SLKP_USE_ARM_NEON)
-
+			set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mcpu=native -mtune=native ")
 		endif(${HAVE_NEON_EXTENSIONS})
 	endif(NOT NONEON)
 
@@ -284,6 +284,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		PCL_CHECK_FOR_NEON()
 		if(${HAVE_NEON_EXTENSIONS})
 			add_definitions (-D_SLKP_USE_ARM_NEON)
+			set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mcpu=native -mtune=native ")
+
 		endif(${HAVE_NEON_EXTENSIONS})
 	endif(NOT NONEON)
 
