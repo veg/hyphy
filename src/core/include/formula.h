@@ -149,7 +149,7 @@ public:
     void        Duplicate           (_Formula const *, bool deep_copy = false);
     void        DuplicateReference          (const _Formula*);
     BaseRef     makeDynamic         (void) const;
-    BaseRef     toStr               (_hyFormulaStringConversionMode mode, _List* matchNames = nil, bool = false);
+    BaseRef     toStr               (_hyFormulaStringConversionMode mode, _List* matchNames = nil, bool = false, _StringBuffer* hbl_dependencies = nil);
     _StringBuffer const     toRPN               (_hyFormulaStringConversionMode mode, _List* matchNames = nil);
 
     long        ObjectClass         (void);
@@ -288,7 +288,7 @@ public:
 
 protected:
 
-    void        SubtreeToString     (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal);
+    void        SubtreeToString     (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode = kFormulaStringConversionNormal, _StringBuffer * hbl_dependencies = nil, _AVLList* hbl_tracker = nil);
     void        ConvertToTree       (bool err_msg = true);
     void        ConvertFromTree     (void);
     bool        CheckSimpleTerm     (HBLObjectRef);

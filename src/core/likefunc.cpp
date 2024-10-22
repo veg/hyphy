@@ -1563,6 +1563,15 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
 
 
     PrepareToCompute();
+    if (runMode == _hyphyLFConstructCategoryMatrixPartitions) {
+        _Matrix     * block_likelihoods = new _Matrix (1, whichParts.lLength, false, true);
+        whichParts.Each([this, block_likelihoods] (long item, unsigned long i) -> void {
+            block_likelihoods->Store (0, i, ComputeBlock(item));
+        });
+        DoneComputing();
+        return block_likelihoods;
+    }
+    
     if (runMode == _hyphyLFConstructCategoryMatrixConditionals || runMode == _hyphyLFConstructCategoryMatrixWeights)
         // just return the matrix with class weights
     {
@@ -1608,9 +1617,8 @@ _Matrix*    _LikelihoodFunction::ConstructCategoryMatrix (const _SimpleList& whi
 
 
 
-    if (runMode == _hyphyLFConstructCategoryMatrixClasses || runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities)
+    if (runMode == _hyphyLFConstructCategoryMatrixClasses || runMode == _hyphyLFConstructCategoryMatrixSiteProbabilities) {
         // just return the maximum conditional likelihood category
-    {
         _Matrix      *result = new _Matrix (hDim,vDim,false,true),
                       *cache     = nil;
         _SimpleList  *scalerCache = nil;
@@ -10110,6 +10118,22 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
     rec.AppendAnAssignmentToBuffer(&hy_env::assume_reversible, new _String(hy_env::EnvVariableGetNumber(hy_env::assume_reversible, 0.)));
     rec.AppendAnAssignmentToBuffer(&kUseLastResults, new _String(hy_env::EnvVariableGetNumber(kUseLastResults, 0.)));
 
+    /** 20241022 SLKP
+        if there's a computing template defined, we need to export HBL functions that in may be referencing
+    */
+
+    _StringBuffer exported_compute_template, template_code;
+    
+    
+    if (computingTemplate && templateKind != _hyphyLFComputationalTemplateNone) {
+      
+        template_code << ",\"";
+        template_code << (_String *)computingTemplate->toStr(kFormulaStringConversionNormal, nil, false, &exported_compute_template);
+        template_code << '"';
+    }
+    
+    rec << exported_compute_template;
+    
     if (frequencyVectors.empty()) {
         rec << "LikelihoodFunction " << *lfName << " = (";
 
@@ -10124,6 +10148,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
             rec << *GetFilterName(redirector->get(idx)) << ',' << *LocateVar(redirectorT->list_data[idx])->GetName();
         }
     } else {
+        
         rec << "LikelihoodFunction3 " << *lfName << " = (";
 
         long dsID = 0;
@@ -10137,11 +10162,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
         }
     }
     
-    if (computingTemplate && templateKind == 1) {
-        rec << ",\"";
-        rec << (_String *)computingTemplate->toStr(kFormulaStringConversionNormal);
-        rec << '"';
-    }
+    rec << template_code;
 
     if (opt == _hyphyLFSerializeModeOptimize) {
         rec << ");\n";
@@ -10201,11 +10222,12 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
 //_______________________________________________________________________________________
 
 BaseRef _LikelihoodFunction::toStr (unsigned long) {
-    hyFloat longOrShort,
+    
+    hyFloat longOrShort = hy_env::EnvVariableGetNumber (likefuncOutput, 2.0),
                value = 0.0;
 
-    checkParameter(likefuncOutput,longOrShort,2.0);
-
+    
+ 
     if (longOrShort < 4.0) {
         PrepareToCompute();
         value = Compute();
@@ -10403,7 +10425,7 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
             _Variable* v = GetIthDependentVar(i);
             _String value ((_String*)v->GetFormulaString(kFormulaStringConversionNormal), kAppendAnAssignmentToBufferPlain);
             value = value & " = " & _String ((_String*)v->toStr());
-            res->AppendAnAssignmentToBuffer(GetIthDependentName(i), &value);
+            res->AppendAnAssignmentToBuffer(GetIthDependentName(i), &value, kAppendAnAssignmentToBufferPlain);
         }
     } else {
         * res << _String (value, "%15.15g");

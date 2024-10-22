@@ -507,11 +507,18 @@ hyBLFunctionType   GetBFFunctionType  (long idx) {
 }
 
 //____________________________________________________________________________________
-_String const ExportBFFunction (long idx, bool recursive) {
+_String const ExportBFFunction (long idx, bool recursive, _AVLList* tracker) {
 
 
   _StringBuffer bf (8192UL);
   if (IsBFFunctionIndexValid(idx)) {
+      
+    if (tracker) {
+        if (tracker->FindLong (idx) >= 0) {
+            return bf;
+        }
+        tracker->InsertNumber(idx);
+    }
 
     _String hbf_name = GetBFFunctionNameByIndex (idx);
     _ExecutionList * body = &GetBFFunctionBody(idx);
@@ -567,7 +574,7 @@ _String const ExportBFFunction (long idx, bool recursive) {
           bf << "\n/*----- Called function '"
           << *a_name
           << "' ------*/\n"
-          << ExportBFFunction (FindBFFunctionName(*a_name), false)
+          << ExportBFFunction (FindBFFunctionName(*a_name), tracker ? recursive : false, tracker)
           << "\n\n";
         }
       }

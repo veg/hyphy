@@ -887,7 +887,8 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
                                             _String ("WEIGHTS"),_hyphyLFConstructCategoryMatrixWeights,
                                             _String ("SITE_LOG_LIKELIHOODS"), _hyphyLFConstructCategoryMatrixSiteProbabilities,
                                             _String ("CLASSES"), _hyphyLFConstructCategoryMatrixClasses,
-                                            _String ("SHORT"), _hyphyLFConstructCategoryMatrixClasses
+                                            _String ("SHORT"), _hyphyLFConstructCategoryMatrixClasses,
+                                            _String ("PARTITIONS"), _hyphyLFConstructCategoryMatrixPartitions
                                           );
 
 

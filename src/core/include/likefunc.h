@@ -74,6 +74,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define   _hyphyLFConstructCategoryMatrixWeights        2
 #define   _hyphyLFConstructCategoryMatrixPosteriors     3
 #define   _hyphyLFConstructCategoryMatrixSiteProbabilities      4
+#define   _hyphyLFConstructCategoryMatrixPartitions     5
+
 
 /* likelihood seialization model */
 

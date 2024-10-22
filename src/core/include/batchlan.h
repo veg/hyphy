@@ -644,7 +644,7 @@ _ExecutionList&
           GetBFFunctionBody           (long);
 
 _String const
-          ExportBFFunction            (long, bool = true);
+          ExportBFFunction            (long, bool = true, _AVLList * = nil);
 
 
 void      ClearBFFunctionLists        (long = -1L);
