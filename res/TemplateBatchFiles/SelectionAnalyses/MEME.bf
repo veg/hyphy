@@ -752,7 +752,6 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
                                                                     },
                                                                     "meme.store_results");
             }
-            pattern_count_all
         '
     );
     
@@ -1724,7 +1723,7 @@ lfunction meme.store_results (node, result, arguments) {
         if (has_psi) {
             result_row[has_psi] = estimators.GetGlobalMLE (result[utility.getGlobalValue("terms.alternative")],^"terms.meme.fg_param_prefix"+  ^"terms.parameters.triple_hit_rate");
             if (None == result_row[has_psi]) {
-                result_row[has_delta] = ((scalers['BG'])[^"terms.parameters.triple_hit_rate"])["scaler"];
+                result_row[has_psi] = ((scalers['BG'])[^"terms.parameters.triple_hit_rate"])["scaler"];
             }
              ^"meme.site_multihit_string" += "/" + Format (result_row[has_psi],0,2);
         }

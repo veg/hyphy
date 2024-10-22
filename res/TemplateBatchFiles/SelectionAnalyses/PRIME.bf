@@ -545,7 +545,10 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
     /* run the main loop over all unique site pattern combinations */
     
     prime.pattern_count = 1;
+    
+    
     for (_pattern_, _pattern_info_; in; prime.site_patterns) {
+    
           io.ReportProgressBar("", "Working on site pattern " + (prime.pattern_count) + "/" + Abs (prime.site_patterns));
            if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")]) {
                 prime.store_results (-1,None,{"0" : "prime.site_likelihood",
@@ -556,6 +559,7 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
                                              "5" : prime.site_model_mapping
                                      });
             } else {
+            
                 mpi.QueueJob (prime.queue, "prime.handle_a_site", {"0" : "prime.site_likelihood",
                                                                  "1" : "prime.site_likelihood_property",
                                                                  "2" : alignments.serialize_site_filter
@@ -703,6 +707,8 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     //Export (lfe, ^lf_prop);
     // fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
     
+    character_map = None; 
+    
     if (^"prime.site_beta" > 0) {
   
          // fit the universal alternative
@@ -781,8 +787,8 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
                 "OPTIMIZATION_PRECISION": 1e-3
             });
         
-        // Export (lfe, ^lf_prop);
-        // fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
+        //Export (lfe, ^lf_prop);
+        //fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
     
         //console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM_VALUE" + "\nGrid best"+  ^"LF_INITIAL_GRID_MAXIMUM" + " / optimized " + results[1][0] + "\n");
         Optimize (results, ^lf_prop);
@@ -878,25 +884,41 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         //console.log ("\nPRIME = " + altL);
         //console.log ("alpha = " + ^"prime.site_alpha");
         //console.log ("beta = " + ^"prime.site_beta");
- 
-        character_map = None;    
+    
+        
         if (^"prime.impute_states") {
             DataSet anc = ReconstructAncestors ( ^lf_prop, {{0}}, MARGINAL, DOLEAVES);
             GetString   (names, anc, -1);
             GetDataInfo (codon_chars, ^((lfInfo["Datafilters"])[0]) , "CHARACTERS");
+            GetString   (names_obs, ^((lfInfo["Datafilters"])[0]), -1);
+            names_obs = utility.MatrixToDict (names_obs);
         
+    
             character_map = {};
             for (seq_id, seq_name; in; names) {
-                character_map [seq_name] = {};
-                for (char, char_support; in; (anc.marginal_support_matrix)[seq_id][-1]) {
+                GetDataInfo (site_map, ^((lfInfo["Datafilters"])[0]), names_obs[seq_name], 0);
+                character_map [seq_name] = {'observed' :{} , 'imputed' : {}, 'support' : 0};
+        
+            
+                for (char, char_support; in; site_map) {
                     if (char_support > 1e-6) {
-                        (character_map [seq_name])[codon_chars[char]] = char_support;
+                        (((character_map [seq_name]))['observed'])[codon_chars[char]] = char_support;
                     }
                 }
+            
+                for (char, char_support; in; (anc.marginal_support_matrix)[seq_id][-1]) {
+                    if (char_support > 1e-6) {
+                        (((character_map [seq_name]))['imputed'])[codon_chars[char]] = char_support;
+                        if ( (((character_map [seq_name]))['observed'])[codon_chars[char]]) {
+                            (character_map [seq_name])['support'] += char_support;
+                        }
+                    }
+                }
+            
             }
-        
         }
         
+       
         utility.ToggleEnvVariable ("TOLERATE_CONSTRAINT_VIOLATION", None);       
 
         ancestral_info = ancestral.build (lf_prop,0,FALSE);
@@ -1138,7 +1160,9 @@ lfunction prime.store_results (node, result, arguments) {
     //console.log (result_row);
 
     utility.EnsureKey (^"prime.site_results", partition_index);
-    utility.EnsureKey (^"prime.imputed_leaf_states", partition_index);
+    if (^"prime.impute_states") {
+        utility.EnsureKey (^"prime.imputed_leaf_states", partition_index);
+    }
     utility.EnsureKey (^"prime.sub_mapping", partition_index);
 
     sites_mapping_to_pattern = pattern_info[utility.getGlobalValue("terms.data.sites")];
@@ -1148,7 +1172,9 @@ lfunction prime.store_results (node, result, arguments) {
         site_index = sites_mapping_to_pattern[i];
         ((^"prime.site_results")[partition_index])[site_index] = result_row;
         ((^"prime.sub_mapping")[partition_index])[site_index] = sub_map;
-        ((^"prime.imputed_leaf_states")[partition_index])[site_index] = result[^"terms.prime_imputed_states"];
+        if (^"prime.impute_states") {
+             ((^"prime.imputed_leaf_states")[partition_index])[site_index] = result[^"terms.prime_imputed_states"];
+        }
         prime.report.echo (site_index, partition_index, result_row);
     }
 }

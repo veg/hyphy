@@ -289,7 +289,7 @@ _StringBuffer const _Formula::toRPN (_hyFormulaStringConversionMode mode, _List*
     return r;
 }
 //__________________________________________________________________________________
-BaseRef _Formula::toStr (_hyFormulaStringConversionMode mode, _List* matched_names, bool drop_tree) {
+BaseRef _Formula::toStr (_hyFormulaStringConversionMode mode, _List* matched_names, bool drop_tree, _StringBuffer * hbl_dependencies) {
     ConvertToTree(false);
 
     _StringBuffer * result = new _StringBuffer (64UL);
@@ -297,8 +297,17 @@ BaseRef _Formula::toStr (_hyFormulaStringConversionMode mode, _List* matched_nam
     long          savepd = print_digit_specification;
     print_digit_specification          = 0L;
 
+
+    
     if (theTree) { // there is something to do
-        SubtreeToString (*result, theTree, -1, matched_names, nil, mode);
+        if (hbl_dependencies) {
+            _SimpleList _tracker;
+            _AVLList tracker (&_tracker);
+            SubtreeToString (*result, theTree, -1, matched_names, nil, mode, hbl_dependencies,&tracker);
+
+        } else {
+            SubtreeToString (*result, theTree, -1, matched_names, nil, mode);
+        }
     } else {
         if (theFormula.countitems()) {
             (*result) << "RPN:" << toRPN (mode, matched_names);
@@ -990,7 +999,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
 
 
 //__________________________________________________________________________________
-void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode) {
+void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, int op_level, _List* match_names, _Operation* this_node_op, _hyFormulaStringConversionMode mode, _StringBuffer * hbl_dependencies, _AVLList* hbl_tracker) {
     
     if (!this_node_op) {
         if (!top_node) {
@@ -1142,6 +1151,9 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, in
     if (node_op_count < 0L) {
         // a user-defined function
         long func_id = this_node_op->UserFunctionID();
+        if (hbl_dependencies && hbl_tracker) {
+            (*hbl_dependencies) << ExportBFFunction(func_id, true, hbl_tracker);
+        }
         result<< & GetBFFunctionNameByIndex(func_id);
         if (top_node) {
             result<<'(';
