@@ -7,6 +7,7 @@ enable_testing()
 
 set(CMAKE_CONFIGURATION_TYPES Release)
 
+
 #-------------------------------------------------------------------------------
 # OPTIONS
 #-------------------------------------------------------------------------------
@@ -170,11 +171,13 @@ set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPIL
 
 set(DEFAULT_WARNING_FLAGS " -w -Weffc++ -Wextra -Wall ")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare")
-set(ADDITIONAL_FLAGS "")
+set(ADDITIONAL_FLAGS "-g")
 
 if (DEBUGFLAGS)
 	set(ADDITIONAL_FLAGS "-g")
 endif()
+
+#include_directories("/Library/Developer/CommandLineTools/SDKs/MacOSX15.2.sdk/usr/include/c++/v1")
 
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -368,6 +371,7 @@ if(NOT NOZLIB)
 		add_definitions (-D__ZLIB__)
 	endif(${ZLIB_FOUND})
 endif(NOT NOZLIB)
+
 
 
 
