@@ -242,42 +242,32 @@ if (distanceChoice == "Full likelihood") {
 	{
 		for (j = 0; j<=i; j = j+1)
 		{
-			if (dataType)
-			{
+			if (dataType == "Codon") {
 				DataSetFilter twoSpecFilter = CreateFilter (filteredData,3,"",(speciesIndex==i+1)||(speciesIndex==j),GeneticCodeExclusions);
 			}
-			else
-			{
+			else {
 				DataSetFilter twoSpecFilter = CreateFilter (filteredData,1,"",(speciesIndex==i+1)||(speciesIndex==j));
 			}
-			if (FREQUENCY_SENSITIVE)
-			{
-				if (USE_POSITION_SPECIFIC_FREQS)
-				{
+			if (FREQUENCY_SENSITIVE) {
+				if (USE_POSITION_SPECIFIC_FREQS) {
 					HarvestFrequencies (vectorOfFrequencies,filteredData,3,1,1);
 				}
-				else
-				{
+				else {
 					HarvestFrequencies (vectorOfFrequencies,twoSpecFilter,1,1,0);
 				}
 			}
-			if (FREQUENCY_SENSITIVE)
-			{
+			if (FREQUENCY_SENSITIVE) {
 				MULTIPLY_BY_FREQS = PopulateModelMatrix ("modelMatrix",vectorOfFrequencies);
-				if (dataType)
-				{
+				if (dataType == "Codon") {
 					codonFrequencies = BuildCodonFrequencies (vectorOfFrequencies);
 					Model pairModel = (modelMatrix, codonFrequencies, MULTIPLY_BY_FREQS);
 				}
-				else
-				{
+				else {
 					Model pairModel = (modelMatrix, vectorOfFrequencies, MULTIPLY_BY_FREQS);
 				}
 			}
-			else
-			{
-				if (i+j==0)
-				{
+			else {
+				if (i+j==0) {
 					MULTIPLY_BY_FREQS = PopulateModelMatrix ("modelMatrix",equalFreqs);
 					Model pairModel = (modelMatrix, equalFreqs, MULTIPLY_BY_FREQS);
 				}
