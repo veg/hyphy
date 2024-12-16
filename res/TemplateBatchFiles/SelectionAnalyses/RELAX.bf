@@ -276,7 +276,7 @@ relax.do_srv = io.SelectAnOption (
 if (relax.do_srv == "Branch-site") {
     relax.do_bs_srv = TRUE;
     relax.do_srv = TRUE;
-    (relax.json[terms.json.analysis])[terms.settings] = "Branch-site synonymous rate variation";
+    selection.io.json_store_setting (relax.json, "SRV type", "Branch-site synonymous rate variation");
 } else {
     if (relax.do_srv == "Yes") {
         relax.do_bs_srv = FALSE;
