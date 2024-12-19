@@ -1254,8 +1254,11 @@ hyFloat mapParameterToInverval (hyFloat in, char type, bool inverse) {
             break;
         case _hyphyIntervalMapSqueeze:
             if (inverse) {
-                return in/(1.-in);
+                in = in/(1.-in);
+                //return in;
+                return in * in;
             } else {
+                in = sqrt (in);
                 return in/(1.+in);
             }
             break;

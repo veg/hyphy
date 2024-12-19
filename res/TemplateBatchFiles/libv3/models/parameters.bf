@@ -853,18 +853,23 @@ lfunction parameters.helper.tree_lengths_to_initial_values(dict, type) {
 
     for (i = 0; i < components; i += 1) {
         this_component = {};
+        for (_branch_name_ , _branch_length_; in; (dict[i])[ utility.getGlobalValue("terms.branch_length")]) {
+            this_component [_branch_name_] = {  
+                utility.getGlobalValue('terms.fit.MLE') : 
+                factor*_branch_length_
+            };
+        }
 
-
-        utility.ForEachPair((dict[i])[ utility.getGlobalValue("terms.branch_length")], "_branch_name_", "_branch_length_",
-            "
-            `&this_component`[_branch_name_] = {utility.getGlobalValue('terms.fit.MLE') : `&factor`*_branch_length_}
-         ");
-        result[i] = this_component;
+        if (Abs (this_component)) {
+            result[i] = this_component;
+        }
 
     }
 
-    return { utility.getGlobalValue("terms.branch_length"): result
+    return { 
+        utility.getGlobalValue("terms.branch_length"): result
     };
+    
 }
 
 /**

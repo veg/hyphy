@@ -3105,7 +3105,7 @@ inline hyFloat sqr (hyFloat x)
       _Matrix       * eq_freqs     = GetIthFrequencies(partition_index);
       unsigned long tip_count      = filter->NumberSpecies();
 
-      if (filter->GetData()->GetTT()->IsStandardNucleotide() && filter->IsNormalFilter() && tip_count<150 && eq_freqs->IsIndependent()) {
+      if (filter->GetData()->GetTT()->IsStandardNucleotide() && filter->IsNormalFilter() && tip_count < 300 && eq_freqs->IsIndependent()) {
           // if not - use distance estimates
 
         if (tree->IsDegenerate()) {
@@ -4341,15 +4341,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     _variables_changed_during_last_compute = new _SimpleList ();
     variables_changed_during_last_compute = new _AVLList (_variables_changed_during_last_compute);
 
-#ifdef __HYPHYMPI__
-    if (hy_mpi_node_rank == 0) {
-#endif
-    BenchmarkThreads (this);
-#ifdef __HYPHYMPI__
-    }
-    
-    
-#endif
 
     //ObjectToConsole(variables_changed_during_last_compute);
     //NLToConsole();
@@ -4489,7 +4480,14 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
         
     }
     
-    
+#ifdef __HYPHYMPI__
+    if (hy_mpi_node_rank == 0) {
+#endif
+    BenchmarkThreads (this);
+#ifdef __HYPHYMPI__
+    }
+#endif
+
     _OptimiztionProgress progress_tracker;
     //checkParameter (optimizationMethod,optMethodP,4.0);
 
@@ -4604,10 +4602,11 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             
             hyFloat grad_precision;
             if (maxSoFar > -INFINITY) {
-                grad_precision = MIN (1000., -maxSoFar / 500.);
+                grad_precision = MIN (1000., -maxSoFar * 0.002);
             } else {
-                grad_precision = -0.005;
+                grad_precision = -0.0025;
             }
+            
             
             if (gradientBlocks.nonempty()) {
                 for (long b = 0; b < gradientBlocks.lLength; b++) {
@@ -4930,7 +4929,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                         _Matrix             bestMSoFar;
                         GetAllIndependent   (bestMSoFar);
                         hyFloat prec = Minimum (diffs[0], diffs[1]),
-                                grad_precision = Maximum(diffs[0],diffs[1]);
+                                grad_precision = Maximum (precision, Maximum(diffs[0],diffs[1]));
 
                         prec = Minimum (Maximum (prec, precision), 1.);
 
@@ -5119,9 +5118,9 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 //verbosity_level = 101;
                 if (use_adaptive_step) {
                     if (convergenceMode < 2) {
-                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, go2Bound, precisionStep);
+                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, go2Bound, precisionStep * 0.5);
                     } else {
-                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, go2Bound, precisionStep);//convergenceMode == 2? precisionStep*0.25: precisionStep*0.0625);
+                        LocateTheBump (current_index,precisionStep, maxSoFar, bestVal, go2Bound, convergenceMode == 2? precisionStep*0.25: precisionStep*0.0625);
                     }
                 } else {
                     LocateTheBump (current_index,brackStep, maxSoFar, bestVal, go2Bound);
@@ -6516,7 +6515,7 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                 hyFloat    currentValue  = GetIthIndependent(index),
                            ub            = GetIthIndependentBound(index,false)-currentValue,
                            lb            = currentValue-GetIthIndependentBound(index,true),
-                           testStep      = MAX(currentValue * gradientStep,gradientStep);
+                           testStep      = MAX(fabs(currentValue) * gradientStep,gradientStep);
                 
                      
                 //printf ("%ld %s %20.18g\n", index, GetIthIndependentName (index)->get_str(), currentValue);
@@ -6690,6 +6689,10 @@ hyFloat    _LikelihoodFunction::ConjugateGradientDescent (hyFloat step_precision
                 currentPrecision = localOnly?step_precision:.01;
     
     //printf ("\n\n_LikelihoodFunction::ConjugateGradientDescent ==> %d (%lg)\n", usedCachedResults, maxSoFar);
+    
+    if (maxSoFar == -INFINITY) {
+        return maxSoFar;
+    }
     
     if (min_improvement_to_contuinue < 0.) {
         min_improvement_to_contuinue = initial_value * min_improvement_to_contuinue;

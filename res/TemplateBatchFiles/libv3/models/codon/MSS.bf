@@ -14,7 +14,9 @@ terms.model.MSS.syn_rate_within  = " within codon class ";
 terms.model.MSS.syn_rate_between = " between codon classes ";
 terms.model.MSS.between = "synonymous rate between codon classes";
 terms.model.MSS.neutral = "neutral reference";
+terms.model.MSS.empirical = "empirical";
 terms.model.MSS.codon_classes = "codon classes";
+terms.model.MSS.codon_pairs = "codon pairs";
 terms.model.MSS.normalize = "normalize rates";
 
 //----------------------------------------------------------------------------------------------------------------
@@ -32,7 +34,9 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
         {"SynREV2g", "Each pair of synonymous codons mapping to the same amino-acid class and separated by a transition have a separate substitution rate (Valine == neutral). All between-class synonymous substitutions share a rate."}
         {"SynREVCodon", "Each codon pair that is exchangeable gets its own substitution rate (fully estimated, mean = 1)"}
         {"Random", "Random partition (specify how many classes; largest class = neutral)"}
+        {"Empirical", "Load a TSV file with an empirical rate estimate for each codon pair"}
         {"File", "Load a TSV partition from file (prompted for neutral class)"}
+        {"Codon-file", "Load a TSV partition for pairs of codons from a file (prompted for neutral class)"}
     },
     "Synonymous Codon Class Definitions");
     
@@ -182,6 +186,18 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
         return  models.codon.MSS.ModelDescription(type, code, models.codon.MSS.LoadClasses (null));
     }
     
+    if (partitioning_option == "Codon-file") {
+        KeywordArgument ("mss-file", "File defining the model partition");
+        KeywordArgument ("mss-neutral", "Designation for the neutral substitution rate");
+        return  models.codon.MSS.ModelDescription(type, code, models.codon.MSS.LoadClassesCodon (null));
+    }
+
+    if (partitioning_option == "Empirical") {
+        KeywordArgument ("mss-file", "File defining empirical rates for each pair of codons");
+        return  models.codon.MSS.ModelDescription(type, code, models.codon.MSS.LoadEmpiricalRates (null));
+    }
+
+    
     return {};
 }
 
@@ -209,6 +225,10 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
     m[utility.getGlobalValue("terms.model.q_ij")] = "models.codon.MSS._GenerateRate";
     m[utility.getGlobalValue("terms.model.MSS.codon_classes")] = codon_classes [^"terms.model.MSS.codon_classes"];
     m[utility.getGlobalValue("terms.model.MSS.neutral")] = codon_classes [^"terms.model.MSS.neutral"];
+    m[utility.getGlobalValue("terms.model.MSS.empirical")] = codon_classes [^"terms.model.MSS.empirical"];
+    m[utility.getGlobalValue("terms.model.MSS.codon_pairs")] = codon_classes [^"terms.model.MSS.codon_pairs"];
+    
+    
     if (codon_classes/utility.getGlobalValue("terms.model.MSS.between")) {
         m[^"terms.model.MSS.between"] = codon_classes [^"terms.model.MSS.between"];
     }
@@ -257,6 +277,8 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
     alpha_term = utility.getGlobalValue ("terms.parameters.synonymous_rate");
     beta_term  = utility.getGlobalValue ("terms.parameters.nonsynonymous_rate");
     nr = model[utility.getGlobalValue("terms.model.MSS.neutral")];
+    empirical = model[utility.getGlobalValue("terms.model.MSS.empirical")];
+    codon_pairs = model[utility.getGlobalValue("terms.model.MSS.codon_pairs")];
     omega      = "omega";
     alpha      = "alpha";
     beta       = "beta";
@@ -298,63 +320,86 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
             rate_entry += "*" + aa_rate;
         } else {
 
-            class_from = (model[^"terms.model.MSS.codon_classes"])[fromChar];
-            class_to   = (model[^"terms.model.MSS.codon_classes"])[toChar];
-            
-            
-            if ((Abs (class_from) && Abs (class_to)) == FALSE) {
-                class_from = (model[^"terms.model.MSS.codon_classes"])[fromChar+toChar];
-                class_to = class_from;
-            }
-            
-            assert (Abs (class_from) && Abs (class_to), "The neutral class for `fromChar` to `toChar` is not specified in the model definition");
-
-            if (class_from == class_to) {
-                if (class_from == nr) {
-                    if (model_type == utility.getGlobalValue("terms.local")) {
-                        codon_rate = alpha + "_" + class_from;
-                        (_GenerateRate.p[model_type])[alpha_term + ^"terms.model.MSS.syn_rate_within" + class_from] = codon_rate;
-                        rate_entry += "*" + codon_rate;
-                    } else {
-                        rate_entry = nuc_rate;
-                    }
+            if (empirical) {
+                if (fromChar < toChar) {
+                    key = fromChar + "|" + toChar;
                 } else {
-                    if (model_type == utility.getGlobalValue("terms.local")) {
-                        codon_rate = alpha + "_" + class_from;
-                    } else {
-                        codon_rate = parameters.ApplyNameSpace(alpha + "_" + class_from, namespace);
-                    }
-                    (_GenerateRate.p[model_type])[alpha_term + ^"terms.model.MSS.syn_rate_within" + class_from] = codon_rate;
-                    rate_entry += "*" + codon_rate;
+                    key = toChar + "|" + fromChar;                
                 }
+                
+                assert (model[^"terms.model.MSS.codon_classes"] / key, "Rate for codon pair `key` was missing from the empirical file definition");
+                rate_entry += "*" + (model[^"terms.model.MSS.codon_classes"])[key];
+ 
             } else {
-                if (class_from > class_to) {
-                    codon_rate = class_to;
-                    class_to = class_from;
-                    class_from = codon_rate;
-                }
-                if (Abs (between_rate)) {
-                    if (model_type == utility.getGlobalValue("terms.local")) {
-                        codon_rate = between_rate;
+                if (codon_pairs) {
+                    if (fromChar < toChar) {
+                        key = fromChar + "|" + toChar;
                     } else {
-                        codon_rate = parameters.ApplyNameSpace(between_rate, namespace);
+                        key = toChar + "|" + fromChar;                
                     }
-                    (_GenerateRate.p[model_type])[^"terms.model.MSS.between"] = codon_rate;
-            
-                } else {
-                    if (class_from + class_to == nr) {
-                        //console.log ("NEUTRAL");
-                        codon_rate  = 1;
+                    assert (model[^"terms.model.MSS.codon_classes"] / key, "Rate for codon pair `key` was missing from the empirical file definition");
+                    class_from =  (model[^"terms.model.MSS.codon_classes"])[key];
+                    class_to = class_from;
+                } else {               
+                    class_from = (model[^"terms.model.MSS.codon_classes"])[fromChar];
+                    class_to   = (model[^"terms.model.MSS.codon_classes"])[toChar];
+                }
+                
+                
+                if ((Abs (class_from) && Abs (class_to)) == FALSE) {
+                    class_from = (model[^"terms.model.MSS.codon_classes"])[fromChar+toChar];
+                    class_to = class_from;
+                }
+                
+                assert (Abs (class_from) && Abs (class_to), "The neutral class for `fromChar` to `toChar` is not specified in the model definition");
+    
+                if (class_from == class_to) {
+                    if (class_from == nr) {
+                        if (model_type == utility.getGlobalValue("terms.local")) {
+                            codon_rate = alpha + "_" + class_from;
+                            (_GenerateRate.p[model_type])[alpha_term + ^"terms.model.MSS.syn_rate_within" + class_from] = codon_rate;
+                            rate_entry += "*" + codon_rate;
+                        } else {
+                            rate_entry = nuc_rate;
+                        }
                     } else {
                         if (model_type == utility.getGlobalValue("terms.local")) {
-                            codon_rate = alpha + "_" + class_from + "_" + class_to;
+                            codon_rate = alpha + "_" + class_from;
                         } else {
-                            codon_rate = parameters.ApplyNameSpace(alpha + "_" + class_from + "_" + class_to, namespace);
+                            codon_rate = parameters.ApplyNameSpace(alpha + "_" + class_from, namespace);
                         }
-                        (_GenerateRate.p[model_type])[alpha_term + ^"terms.model.MSS.syn_rate_between" + class_from + " and "  + class_to] = codon_rate;
+                        (_GenerateRate.p[model_type])[alpha_term + ^"terms.model.MSS.syn_rate_within" + class_from] = codon_rate;
+                        rate_entry += "*" + codon_rate;
                     }
+                } else {
+                    if (class_from > class_to) {
+                        codon_rate = class_to;
+                        class_to = class_from;
+                        class_from = codon_rate;
+                    }
+                    if (Abs (between_rate)) {
+                        if (model_type == utility.getGlobalValue("terms.local")) {
+                            codon_rate = between_rate;
+                        } else {
+                            codon_rate = parameters.ApplyNameSpace(between_rate, namespace);
+                        }
+                        (_GenerateRate.p[model_type])[^"terms.model.MSS.between"] = codon_rate;
+                
+                    } else {
+                        if (class_from + class_to == nr) {
+                            //console.log ("NEUTRAL");
+                            codon_rate  = 1;
+                        } else {
+                            if (model_type == utility.getGlobalValue("terms.local")) {
+                                codon_rate = alpha + "_" + class_from + "_" + class_to;
+                            } else {
+                                codon_rate = parameters.ApplyNameSpace(alpha + "_" + class_from + "_" + class_to, namespace);
+                            }
+                            (_GenerateRate.p[model_type])[alpha_term + ^"terms.model.MSS.syn_rate_between" + class_from + " and "  + class_to] = codon_rate;
+                        }
+                    }
+                    rate_entry += "*" + codon_rate;
                 }
-                rate_entry += "*" + codon_rate;
             }
         }
 
@@ -362,6 +407,27 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
      }
 
     return _GenerateRate.p;
+}
+
+//----------------------------------------------------------------------------------------------------------------
+
+lfunction models.codon.MSS.LoadEmpiricalRates (file) {
+
+    SetDialogPrompt ("A TSV file with three columns (Codon1, Codon2, Empirical Rate) which is used to define relative synonymous substitution rates");
+    classes = io.ReadDelimitedFile (file, "\t", TRUE);
+    headers = utility.Array1D(classes[^'terms.io.header']);
+    io.CheckAssertion("`&headers`>=3", "Expected a TSV file with at least 3 columns; 2nd column is the codon, 3rd is the class for this codon");
+    codon_pairs = {};
+    for (_record_; in; classes [^"terms.io.rows"]) {
+        if (_record_[0] < _record_[1]) {
+            key = _record_[0] + "|" + _record_[1];
+        } else {
+            key = _record_[1] + "|" + _record_[0];
+        }
+        codon_pairs [key] = Eval (_record_[2]);
+    }
+
+    return {^"terms.model.MSS.codon_classes" : codon_pairs, ^"terms.model.MSS.empirical" : TRUE};
 }
  
  //----------------------------------------------------------------------------------------------------------------
@@ -390,4 +456,38 @@ lfunction models.codon.MSS.LoadClasses (file) {
     nr= io.SelectAnOption  (choices, "Select the codon class which will serve as the neutral rate reference (relative rate = 1)");
     
     return {^"terms.model.MSS.codon_classes" : codons_by_class, ^"terms.model.MSS.neutral" : nr};
+}
+
+//----------------------------------------------------------------------------------------------------------------
+
+lfunction models.codon.MSS.LoadClassesCodon (file) {
+
+    SetDialogPrompt ("A TSV file with three columns (Codon1, Codon2, Class) which is used to partition synonymous substitutions into groups");
+    classes = io.ReadDelimitedFile (file, "\t", TRUE);
+    headers = utility.Array1D(classes[^'terms.io.header']);
+    io.CheckAssertion("`&headers`>=3", "Expected a TSV file with at least 3 columns; 2nd column is the codon, 3rd is the class for this codon");
+    codon_pairs = {};
+    for (_record_; in; classes [^"terms.io.rows"]) {
+        if (_record_[0] < _record_[1]) {
+            key = _record_[0] + "|" + _record_[1];
+        } else {
+            key = _record_[1] + "|" + _record_[0];
+        }
+        codon_pairs [key] = _record_[2];
+    }
+    
+    classes = utility.UniqueValues(codon_pairs);
+    class_count = utility.Array1D(classes);
+    io.CheckAssertion("`&class_count`>=2", "Expected at least 2 codon classes");
+
+    choices = {class_count,2};
+    for (i = 0; i < class_count; i += 1) {
+        choices[i][0] = classes[i];
+        choices[i][1] = "Codon class " + classes[i];
+    }
+
+    nr= io.SelectAnOption  (choices, "Select the codon class which will serve as the neutral rate reference (relative rate = 1)");
+    
+    
+    return {^"terms.model.MSS.codon_classes" : codon_pairs, ^"terms.model.MSS.neutral" : nr, ^"terms.model.MSS.codon_pairs" : TRUE};
 }
