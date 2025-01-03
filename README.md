@@ -9,6 +9,16 @@ HyPhy is an open-source software package for the analysis of genetic sequences u
 #### Install
 `conda install -c bioconda hyphy`
 
+#### Running with Docker
+You can also run HyPhy without having to install it on your system using the provided Dockerfile. Following the below instructions starts an interactive Docker container where HyPhy is already available.
+
+```
+git clone https://github.com/veg/hyphy.git
+cd hyphy
+docker build -t hyphy:latest .
+docker run --rm -it hyphy:latest
+```
+
 #### Run with Command Line Arguments
 `hyphy <method_name> --alignment <path_to_alignment_file> <additional_method_specific_arguments>`  
 + _`<method_name>` is the name of the analysis you wish to run (can be: absrel, bgm, busted, fade, fel, fubar, gard, meme, relax or slac)_
