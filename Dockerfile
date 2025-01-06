@@ -2,7 +2,7 @@ FROM ubuntu:24.04
 
 # Install build dependencies
 RUN apt-get update && \
-    apt-get install -y build-essential cmake
+    apt-get install --no-install-recommends -y build-essential cmake
 
 # Add a non-root user
 RUN groupadd -r hyphyuser && useradd -r -g hyphyuser hyphyuser
