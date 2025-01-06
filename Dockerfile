@@ -1,13 +1,25 @@
-FROM alpine:3.21.0
+FROM ubuntu:24.04
 
 # Install build dependencies
-RUN apk add --no-cache build-base cmake
+RUN apt-get update && \
+    apt-get install -y build-essential cmake
+
+# Add a non-root user
+RUN groupadd -r hyphyuser && useradd -r -g hyphyuser hyphyuser
 
 # Create a directory for the project
 WORKDIR /hyphy
 
 # Copy project files
-COPY . /hyphy
+COPY ./cmake /hyphy/cmake
+COPY ./src /hyphy/src
+COPY ./contrib /hyphy/contrib
+COPY ./res /hyphy/res
+COPY CMakeLists.txt /hyphy
+
+RUN chown -R hyphyuser:hyphyuser .
 
 # Install project
 RUN cmake . && make install
+
+USER hyphyuser

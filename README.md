@@ -10,13 +10,15 @@ HyPhy is an open-source software package for the analysis of genetic sequences u
 `conda install -c bioconda hyphy`
 
 #### Running with Docker
-You can also run HyPhy without having to install it on your system using the provided Dockerfile. Following the below instructions starts an interactive Docker container where HyPhy is already available.
+You can also run HyPhy without having to install it on your system using the provided Dockerfile. Following the below instructions starts an interactive Docker container where HyPhy is already available. 
+
+**Please note you must change this code snippet to point to the appropriate location for your input data. This will be made available inside the container at `/hyphy/data`.**
 
 ```
 git clone https://github.com/veg/hyphy.git
 cd hyphy
 docker build -t hyphy:latest .
-docker run --rm -it hyphy:latest
+docker run --rm -v [path-to-your-input-data]:/hyphy/data -it hyphy:latest
 ```
 
 #### Run with Command Line Arguments
