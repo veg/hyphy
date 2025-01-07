@@ -16,10 +16,11 @@ COPY ./src /hyphy/src
 COPY ./contrib /hyphy/contrib
 COPY ./res /hyphy/res
 COPY CMakeLists.txt /hyphy
+COPY ./tests /hyphy/tests
 
 RUN chown -R hyphyuser:hyphyuser .
 
 # Install project
-RUN cmake . && make install
+RUN cmake . && make -j install
 
 USER hyphyuser
