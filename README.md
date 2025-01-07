@@ -12,6 +12,8 @@ HyPhy is an open-source software package for the analysis of genetic sequences u
 #### Running with Docker
 You can also run HyPhy without having to install it on your system using the provided Dockerfile. Following the below instructions starts an interactive Docker container where HyPhy is already available. 
 
+If you don't have Docker installed, first look at [Docker Desktop](https://docs.docker.com/desktop/).
+
 **Please note you must change this code snippet to point to the appropriate location for your input data. This will be made available inside the container at `/hyphy/data`.**
 
 ```
