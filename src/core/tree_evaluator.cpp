@@ -3519,8 +3519,12 @@ hyFloat      _TheTree::ComputeTreeBlockByBranch  (                   _SimpleList
                 result = -INFINITY;
 #pragma omp critical
                 {
-                    //printf ("BAILING WITH INFINITY %ld / %ld (%ld)\n", siteID, siteOrdering.list_data[siteID], siteOrdering.lLength);
+                    //printf ("BAILING WITH INFINITY %ld / %ld (%ld); (%ld);\n", siteID, siteOrdering.list_data[siteID], siteOrdering.lLength, theFilter->theMap .get(siteOrdering.list_data[siteID]*3));
                     hy_global::ReportWarning (_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a 0 probability in ComputeTreeBlockByBranch");
+                    /*long lfID = -1;
+                    IsLinkedToALF (lfID);
+                    ((_LikelihoodFunction*)likeFuncList (lfID))
+                    ->_TerminateAndDump (_String("Site ") & (1L+siteOrdering.list_data[siteID]) & " evaluated to a 0 probability in ComputeTreeBlockByBranch", true);*/
                 }
                 break;
             }

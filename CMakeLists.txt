@@ -682,6 +682,8 @@ makeLink(HYPHYMP hyphy hyphy)
 # TESTS
 #-------------------------------------------------------------------------------
 
+set(HYPHY_ENV_ARG "ENV=TOLERATE_NUMERICAL_ERRORS=1;")
+
 
 add_test (NAME UNIT-TESTS COMMAND bash run_unit_tests.sh)
 add_test (CODON HYPHYMP tests/hbltests/SimpleOptimizations/SmallCodon.bf)
@@ -701,8 +703,12 @@ add_test (RELAX HYPHYMP tests/hbltests/libv3/RELAX.wbf)
 add_test (FUBAR HYPHYMP tests/hbltests/libv3/FUBAR.wbf)
 add_test (BGM HYPHYMP tests/hbltests/libv3/BGM.wbf)
 add_test (CONTRAST-FEL HYPHYMP tests/hbltests/libv3/CFEL.wbf)
-add_test (GARD HYPHYMP tests/hbltests/libv3/GARD.wbf ENV="TOLERATE_NUMERICAL_ERRORS=1;")
 add_test (FADE HYPHYMP tests/hbltests/libv3/FADE.wbf)
+add_test (NAME GARD 
+          COMMAND HYPHYMP 
+          tests/hbltests/libv3/GARD.wbf 
+          ${HYPHY_ENV_ARG}
+          )
 add_test (ABSREL HYPHYMP tests/hbltests/libv3/ABSREL.wbf)
 #add_test (FMM HYPHYMP tests/hbltests/libv3/FMM.wbf)
 #add_test (NAME ABSREL-MH COMMAND HYPHYMP tests/hbltests/libv3/ABSREL-MH.wbf)

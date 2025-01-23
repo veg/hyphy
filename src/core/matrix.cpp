@@ -73,7 +73,7 @@ _String     MATRIX_AGREEMENT            = "CONVERT_TO_POLYNOMIALS",
 
 int _Matrix::precisionArg = 0;
 int _Matrix::storageIncrement = 16;
-int _Matrix::switchThreshold = 35;
+int _Matrix::switchThreshold = 30;
 
 hyFloat  _Matrix::truncPrecision = 1e-16;
 #define     MatrixMemAllocate(X) MemAllocate(X, false, 64)

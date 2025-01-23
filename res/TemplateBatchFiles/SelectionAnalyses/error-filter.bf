@@ -274,9 +274,13 @@ for (s;in;TipName (efilter.T,-1)) {
     fprintf (efilter.path, ">", s, "\n", efilter.sequences[s], "\n");
 }
 
+utility.ToggleEnvVariable ("INCLUDE_MODEL_SPECS", TRUE);
+
 if (efilter.input[terms.json.partition_count] == 1) {
     fprintf (efilter.path, "\n", Format (efilter.T,1,0));
 }
+
+utility.ToggleEnvVariable ("INCLUDE_MODEL_SPECS", None);
 
 io.ReportProgressMessageMD ("efilter","results","\nMasked a total of **`efilter.total_filtered`** or `Format (efilter.total_filtered/efilter.input[terms.json.sequences]/efilter.input[terms.json.sites]*100,8,3)`% sites");
 

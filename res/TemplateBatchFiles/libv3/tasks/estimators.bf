@@ -48,10 +48,10 @@ lfunction estimators.RestoreLFStateFromSnapshot(lf_id, snapshot) {
 lfunction estimators.ConstrainAndRunLRT (lf_id, constraint) {
     savedMLES = estimators.TakeLFStateSnapshot (lf_id);
     currentLL = estimators.ComputeLF (lf_id);
-
+    
     df = Call (constraint, TRUE);
     Optimize (res, ^lf_id);
-    
+        
     if (df >= 0) {
         lrt = math.DoLRT (res[1][0],currentLL,df);
     } else {
