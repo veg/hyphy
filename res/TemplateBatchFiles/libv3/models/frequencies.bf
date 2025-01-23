@@ -230,6 +230,29 @@ lfunction frequencies._aux.validate (model) {
 
 }
 
+lfunction frequencies._aux.pad_zeros (freqs) {
+    nr = Rows (freqs);
+    nc = Columns (freqs);
+    F = freqs;
+    
+    for (c = 0; c < nc; c += 1) {
+        s = 0;
+        for (r = 0; r < nr; r += 1) {
+            if (freqs [r][c] > 0) {
+                s += freqs [r][c];
+                F[r][c] = freqs [r][c];
+            } else {
+                s += 1e-8;
+                F[r][c] = 1e-8;
+            }
+        }
+        for (r = 0; r < nr; r += 1) {
+            F[r][c] = F[r][c]/s;
+        }
+    }
+    return F;
+}
+
 lfunction frequencies.empirical.codon_from_nuc (model, nuc_dict) {
 
  
@@ -267,6 +290,7 @@ lfunction frequencies.empirical.F3x4(model, namespace, datafilter) {
         __f = model [^"terms.efv_estimate"];
     }
 
+    __f  = frequencies._aux.pad_zeros (__f );
 
     __alphabet = model[^"terms.bases"];
     nuc_dict = {};
@@ -303,6 +327,8 @@ lfunction frequencies.empirical.F1x4(model, namespace, datafilter) {
     } else {
         __f = model [^"terms.efv_estimate"];
     }
+    
+    __f  = frequencies._aux.pad_zeros (__f );
 
     __alphabet = model[^"terms.bases"];
     nuc_dict = {};
@@ -338,6 +364,8 @@ lfunction frequencies.empirical.corrected.CF3x4(model, namespace, datafilter) {
         __f = model [^"terms.efv_estimate"];
     }
     
+     __f  = frequencies._aux.pad_zeros (__f );
+ 
     //TODO
     __alphabet = model[^"terms.alphabet"];
     __estimates = frequencies._aux.CF3x4(__f, model[^"terms.bases"], __alphabet, model[^"terms.stop_codons"]);
@@ -462,6 +490,7 @@ function frequencies._aux.empirical.singlechar(model, namespace, datafilter) {
     } else {
         __f = model [^"terms.efv_estimate"];
     }
+    __f  = frequencies._aux.pad_zeros (__f );
 
     model[terms.efv_estimate] = __f;
     return model;

@@ -436,6 +436,28 @@ lfunction trees.extract_paml_annotation (tree_string) {
     return result;
 }
 
+/**
+ * @name trees.AdjustZerosToNearZeros
+ * Given a tree dict and a list of matching parameter estimates
+ * this traverses the estimates and converts terminal branch lengths that are exactly 0 to something small (1e-6)
+ * internal branches removed and modifies in in place
+ * @param tree - dict of the tree object
+ * @param estimates - dict with branch length estimates
+ * @return nothing; estimates modified in place
+ */
+
+lfunction trees.AdjustZerosToNearZeros (tree, estimates) {
+
+    for (branch, value; in; tree [^"terms.trees.partitioned"]) {
+        if (value != ^"terms.tree_attributes.internal") {
+            if (estimates / branch) {
+                if ((estimates[branch])[^"terms.fit.MLE"] < 1e-10) {
+                    (estimates[branch])[^"terms.fit.MLE"] = 1e-6;
+                }
+            } 
+        }
+    }
+}
 
 
 /**
