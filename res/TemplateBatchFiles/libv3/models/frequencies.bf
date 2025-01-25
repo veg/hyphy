@@ -246,16 +246,18 @@ lfunction frequencies._aux.pad_zeros (freqs) {
                 F[r][c] = 1e-8;
             }
         }
-        for (r = 0; r < nr; r += 1) {
-            F[r][c] = F[r][c]/s;
+        if (s > 1) {
+            for (r = 0; r < nr; r += 1) {
+                F[r][c] = F[r][c]/s;
+            }
         }
     }
+    
     return F;
 }
 
 lfunction frequencies.empirical.codon_from_nuc (model, nuc_dict) {
 
- 
     result = {model.Dimension (model),1};
     corrector = 1;
     utility.ForEach (model[^"terms.stop_codons"], "codon",
