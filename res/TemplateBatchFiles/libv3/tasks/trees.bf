@@ -747,7 +747,7 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
    
    // pass 1 to fill in the score matrix
    for (k = 0; k < Abs (tree_avl) ; k += 1) {
-        console.log (node_name);
+        //console.log (node_name);
    	 	node_name = (tree_avl[k])["Name"];
    	 	node_children = (tree_avl[k])["Children"];
    	 	c_count = Abs (node_children);
