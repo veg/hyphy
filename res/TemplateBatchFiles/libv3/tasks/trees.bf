@@ -744,9 +744,10 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
    scores = {}; // node name -> score of optimal labeling staring at this now given parent state
    optimal_labeling = {}; // node name -> current node labeling which achieves this score
    resulting_labels = {}; // internal nodes -> label
-
+   
    // pass 1 to fill in the score matrix
    for (k = 0; k < Abs (tree_avl) ; k += 1) {
+        console.log (node_name);
    	 	node_name = (tree_avl[k])["Name"];
    	 	node_children = (tree_avl[k])["Children"];
    	 	c_count = Abs (node_children);
@@ -810,7 +811,7 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
    }
 
 
-   // pass 2 to choose the best state for subtree parents
+    // pass 2 to choose the best state for subtree parents
 
 
    total_score = 0;
@@ -847,6 +848,8 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
    	 		resulting_labels [node_name] = best_label;
    	 	}
  	}
+
+    console.log (labels);
 
    tree_avl = (^tree_id) ^ 1;
    for (k = 2; k < Abs (tree_avl); k += 1) {

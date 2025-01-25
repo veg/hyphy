@@ -73,6 +73,16 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
     }
     
     if (partitioning_option == "SynREV" || partitioning_option == "SynREVFull" || partitioning_option == "SynREVCodon" ) {
+    
+        KeywordArgument ("mss-reference-rate", "Normalize relative to these rates", "synonymous");
+
+        reference_option = io.SelectAnOption (
+            {
+                {"Synonymous", "Synonymous rates have mean 1."},
+                {"Non-synonymous ", "Non-synonymous rates are set to 1."}          
+            }
+        );
+        
         bins          = {};
         mapping       = {};
         mapping_codon = {};
@@ -97,7 +107,11 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
             );
         }
         return  models.codon.MSS.ModelDescription(type, code,
-           {^"terms.model.MSS.codon_classes" : mapping_codon, ^"terms.model.MSS.normalize" : TRUE}
+           {
+                ^"terms.model.MSS.codon_classes" : mapping_codon, 
+                ^"terms.model.MSS.normalize" : reference_option == "Synonymous",
+                ^"terms.model.MSS.non_syn_reference" : reference_option != "Synonymous"
+           }
         );
    }
    

@@ -267,12 +267,12 @@ function load_file (prefix) {
                     ...
                 */
           
-        /*      
+             
             for (_key_, _value_; in; partitions_and_trees) {
                 (partitions_and_trees[_key_])[utility.getGlobalValue("terms.data.filter_string")] = 
                         selection.io.adjust_partition_string (_value_[utility.getGlobalValue("terms.data.filter_string")], 3*codon_data_info[utility.getGlobalValue("terms.data.sites")]);
             }
-        */
+        
      }   
 
     
