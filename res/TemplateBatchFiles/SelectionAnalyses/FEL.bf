@@ -610,7 +610,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
     GetString (lfInfo, ^lf,-1);
     ExecuteCommands (filter_data); 
     __make_filter ((lfInfo["Datafilters"])[0]);
-
  
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
 
@@ -724,9 +723,6 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         }
     }
     
-    //Export (lfe, ^lf);
-    //console.log (lfe);
-    //assert (0);
     
     Optimize (results, ^lf
         , {
@@ -735,6 +731,7 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
             "OPTIMIZATION_START_GRID" : start.grid             
            }
     );
+    
     
     
     if (^"fel.ci") {
@@ -776,10 +773,13 @@ lfunction fel.handle_a_site (lf, filter_data, partition_index, pattern_info, mod
         }
     }
 
-    ^"fel.alpha_scaler" = (^"fel.alpha_scaler" + 3*^"fel.beta_scaler_test")/4;
+    ^"fel.alpha_scaler" = (Min (^"fel.alpha_scaler", 100) + 3*Min(^"fel.beta_scaler_test",100))/4;
     parameters.SetConstraint ("fel.beta_scaler_test","fel.alpha_scaler", "");
  
-    Optimize (results, ^lf);
+ 
+    Optimize (results, ^lf, {
+            "OPTIMIZATION_METHOD" : "coordinate-wise" 
+     });
 
  
     if (sim_mode) {

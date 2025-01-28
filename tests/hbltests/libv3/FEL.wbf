@@ -3,7 +3,7 @@ GetString (version, HYPHY_VERSION, 0);
 if (+version >= 2.4) {
     LoadFunctionLibrary ("SelectionAnalyses/FEL.bf", 
     {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex"/*, 
-     "--branches" : "All", 
+     "--pvalue" : "0.2",
      "--limit-to-sites" : "144", "--save-lf-for-sites" : "144"*/
     });
 } else {

@@ -93,6 +93,7 @@ namespace hy_global {
                      has_terminal_stdout = true,
                      has_terminal_stderr = true,
                      ignore_kw_defaults  = false,
+                     exiting_with_error  = false,
                      force_verbosity_from_cli = false;
     
     hyFile          *hy_error_log_file = NULL,
@@ -122,7 +123,7 @@ namespace hy_global {
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
                      kErrorNumerical                   ("To treat numerical errors as warnings, please specify \"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line argument. This often resolves the issue, which is indicative of numerical instability."),
-                     kHyPhyVersion  = _String ("2.5.67"),
+                     kHyPhyVersion  = _String ("2.5.68"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -745,6 +746,7 @@ namespace hy_global {
     //____________________________________________________________________________________
     void HandleApplicationError (const _String & message, bool force_exit, bool dump_core) {
 
+        
         if (!force_exit && currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
             currentExecutionList->ReportAnExecutionError(message, true);
             return;
@@ -785,9 +787,14 @@ namespace hy_global {
     #else
             errMsg = message;
     #endif
+        if (exiting_with_error) {
+            errMsg = errMsg & "\nAn additional error occurred while handling the first error. Error messages may be incomplete\n";
+        } else {
+            exiting_with_error = true;
             errMsg = ConstructAnErrorMessage (errMsg);
-            StringToConsole(errMsg);
-    #endif 
+        }
+        StringToConsole(errMsg);
+    #endif
         
     #if defined __UNIX__
             if (hy_drop_into_debug_mode)
