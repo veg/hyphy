@@ -1,8 +1,12 @@
 GetString (version, HYPHY_VERSION, 0);
 
+p_cut = 0.05;
 
 if (+version >= 2.4) {
-    LoadFunctionLibrary ("SelectionAnalyses/MEME.bf", {"--code" : "Universal", "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", "--branches" : "All"});
+    LoadFunctionLibrary ("SelectionAnalyses/MEME.bf", {"--code" : "Universal", 
+    "--alignment" : PATH_TO_CURRENT_BF + "data/CD2.nex", 
+    "--branches" : "All",
+    "--pvalue" : "" + p_cut});
 } else {
     LoadFunctionLibrary ("SelectionAnalyses/MEME.bf", {"0" : "Universal", "1" : PATH_TO_CURRENT_BF + "data/CD2.nex", "2" : "All", "3" : "0.1"});
 
@@ -44,16 +48,27 @@ branches   = (((meme.json["MLE"])["content"])["0"])[-1][7];
 |    149     |     1      |    0.000   |    1.968   |    1.000   |    5.229   |      Yes, p =  0.0335      |     0      |
 |    174     |     1      |    0.737   |   25.356   |    0.176   |    3.851   |      Yes, p =  0.0684      |     1      |
 
+
+|   Codon    | Partition  |   alpha    |non-syn rate (beta) distribution, rates : weights|    LRT     |Episodic selection detected?| # branches |         List of most common codon substitutions at this site          |
+|:----------:|:----------:|:----------:|:-----------------------------------------------:|:----------:|:--------------------------:|:----------:|:---------------------------------------------------------------------:|
+|     43     |     1      |    0.000   |             0.00/15.54 : 0.83/0.17              |    4.878   |      Yes, p =  0.0402      |     1      |                              [1]CTg>AAg                               |
+|     67     |     1      |    0.000   |             0.00/99.81 : 0.79/0.21              |    5.675   |      Yes, p =  0.0266      |     1      |                          [1]TcC>AcT,TCc>GAc                           |
+|     76     |     1      |    0.000   |             0.00/48.40 : 0.70/0.30              |   10.326   |      Yes, p =  0.0025      |     2      |                      [1]aCc>aTc,aGA>aCC,AGa>CTa                       |
+|     98     |     1      |    0.002   |             0.00/26.81 : 0.55/0.45              |    4.573   |      Yes, p =  0.0470      |     0      |                  [1]aCa>aAa,aCa>aTa,ACA>GAC,Aca>Gca                   |
+|    113     |     1      |    0.002   |              0.00/8.41 : 0.34/0.66              |    5.871   |      Yes, p =  0.0241      |     2      |                  [1]Tac>Cac,tAc>tCc,TCc>AAc,TCc>GAc                   |
+|    117     |     1      |    0.000   |              0.00/4.81 : 0.00/1.00              |    5.246   |      Yes, p =  0.0332      |     0      |                 [2]aCc>aTc|[1]aCc>aGc,Acc>Ccc,Acc>Gcc                 |
+|    149     |     1      |    0.000   |              0.00/4.71 : 0.00/1.00              |    5.229   |      Yes, p =  0.0335      |     0      |                  [1]aCc>aAc,ACc>GTc,Gtc>Ctc,Gtc>Ttc                   |
+
 */
 
 
 test.lrt_sum = 0;
 test.branch_sum = 0;
 
-test.expected_positives = utility.MatrixToDict({{9,34,43,55,64,67,76,81,98,113,117,122,141,149,174}});
+test.expected_positives = utility.MatrixToDict({{43,67,76,98,113,117,149}});
 
 function confirm_site (site, p, dict) {
-    if (p <= 0.1) {
+    if (p <= p_cut) {
         if (dict/(site+1)) {
             test.lrt_sum += lrts[site];
             test.branch_sum += branches[site];
@@ -75,7 +90,7 @@ utility.ForEachPair (p_values,"_index_", "_p_",
                 ");
 
 assert (check_value (
-    test.lrt_sum, 72.175, 0.05), "More than 5% difference in cumulative LRT for positively selected sites");
+    test.lrt_sum, 41.798, 0.05), "More than 5% difference in cumulative LRT for positively selected sites");
 assert (check_value (
-    test.branch_sum, 11, 0.0001), "Incorrect total # of branches with high EBF");
+    test.branch_sum, 6, 0.0001), "Incorrect total # of branches with high EBF");
     

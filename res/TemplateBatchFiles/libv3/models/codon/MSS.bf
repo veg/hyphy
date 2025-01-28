@@ -18,6 +18,7 @@ terms.model.MSS.empirical = "empirical";
 terms.model.MSS.codon_classes = "codon classes";
 terms.model.MSS.codon_pairs = "codon pairs";
 terms.model.MSS.normalize = "normalize rates";
+terms.model.MSS.non_syn_reference = "non-synonymous reference";
 
 //----------------------------------------------------------------------------------------------------------------
 
@@ -78,9 +79,10 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
 
         reference_option = io.SelectAnOption (
             {
-                {"Synonymous", "Synonymous rates have mean 1."},
-                {"Non-synonymous ", "Non-synonymous rates are set to 1."}          
-            }
+                {"synonymous", "Synonymous rates have mean 1."},
+                {"non-synonymous", "Non-synonymous rates are set to 1."}          
+            },
+            "Rate normalization"
         );
         
         bins          = {};
@@ -96,9 +98,9 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
             return  models.codon.MSS.ModelDescription(type, code,
                {
                     ^"terms.model.MSS.codon_classes" : mapping, 
-                    ^"terms.model.MSS.normalize" : TRUE
-                    //^"terms.model.MSS.neutral" : "V"
-               }
+                    ^"terms.model.MSS.normalize" : reference_option == "synonymous",
+                    ^"terms.model.MSS.non_syn_reference" : reference_option != "synonymous"
+              }
             );
         }
         if (partitioning_option == "SynREVFull") {
@@ -106,11 +108,13 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
                {^"terms.model.MSS.codon_classes" : mapping}
             );
         }
+        
+        
         return  models.codon.MSS.ModelDescription(type, code,
            {
                 ^"terms.model.MSS.codon_classes" : mapping_codon, 
-                ^"terms.model.MSS.normalize" : reference_option == "Synonymous",
-                ^"terms.model.MSS.non_syn_reference" : reference_option != "Synonymous"
+                ^"terms.model.MSS.normalize" : reference_option == "synonymous",
+                ^"terms.model.MSS.non_syn_reference" : reference_option != "synonymous"
            }
         );
    }
@@ -241,7 +245,7 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
     m[utility.getGlobalValue("terms.model.MSS.neutral")] = codon_classes [^"terms.model.MSS.neutral"];
     m[utility.getGlobalValue("terms.model.MSS.empirical")] = codon_classes [^"terms.model.MSS.empirical"];
     m[utility.getGlobalValue("terms.model.MSS.codon_pairs")] = codon_classes [^"terms.model.MSS.codon_pairs"];
-    
+    m[utility.getGlobalValue("terms.model.MSS.non_syn_reference")] = codon_classes [^"terms.model.MSS.non_syn_reference"];
     
     if (codon_classes/utility.getGlobalValue("terms.model.MSS.between")) {
         m[^"terms.model.MSS.between"] = codon_classes [^"terms.model.MSS.between"];
@@ -259,6 +263,9 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
 
 lfunction models.codon.MSS.post_definition (model) {
 // TBD
+    if (model[^"terms.model.MSS.non_syn_reference"]) {
+        return;
+    }
     rates = model.GetParameters_RegExp (model,"^" + utility.getGlobalValue ("terms.parameters.synonymous_rate"));
     D = utility.Array1D (rates);
     w = 1 / D;
@@ -293,6 +300,7 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
     nr = model[utility.getGlobalValue("terms.model.MSS.neutral")];
     empirical = model[utility.getGlobalValue("terms.model.MSS.empirical")];
     codon_pairs = model[utility.getGlobalValue("terms.model.MSS.codon_pairs")];
+    non_syn_ref = model[utility.getGlobalValue("terms.model.MSS.non_syn_reference")];
     omega      = "omega";
     alpha      = "alpha";
     beta       = "beta";
@@ -324,14 +332,16 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
 
         if (_tt[fromChar] != _tt[toChar]) {
 
-            if (model_type == utility.getGlobalValue("terms.global")) {
-                aa_rate = parameters.ApplyNameSpace(omega, namespace);
-                (_GenerateRate.p[model_type])[omega_term] = aa_rate;
-            } else {
-                aa_rate = beta;
-                (_GenerateRate.p[model_type])[beta_term] = aa_rate;
-            }
-            rate_entry += "*" + aa_rate;
+            if (!non_syn_ref) {
+                if (model_type == utility.getGlobalValue("terms.global")) {
+                    aa_rate = parameters.ApplyNameSpace(omega, namespace);
+                    (_GenerateRate.p[model_type])[omega_term] = aa_rate;
+                } else {
+                    aa_rate = beta;
+                    (_GenerateRate.p[model_type])[beta_term] = aa_rate;
+                }
+                rate_entry += "*" + aa_rate;
+            } 
         } else {
 
             if (empirical) {

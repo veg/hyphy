@@ -284,7 +284,7 @@ if (meme.run_full_mg94) {
             terms.run_options.retain_lf_object: TRUE,
             terms.run_options.apply_user_constraints: meme.define_constraints,
             terms.run_options.optimization_settings: {
-                "OPTIMIZATION_METHOD" : "coordinate-wise"
+                //"OPTIMIZATION_METHOD" : "coordinate-wise"
             }
         }, meme.partitioned_mg_results);
         
@@ -946,6 +946,7 @@ lfunction meme.apply_initial_estimates (spec) {
     for (t,d;in;spec) {
         if (None != d["init"]) {
             if (Type (d["scaler"]) == "String") {
+                //console.log (d["scaler"] + " = " + d["init"]);
                 ^(d["scaler"]) = d["init"];
             }
         }
@@ -983,6 +984,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     rate.fel.alpha   = (((scaler_mapping['BG']))[^"terms.parameters.synonymous_rate"])["scaler"];
     rate.fel.beta_fg = (((scaler_mapping['FEL-FG']))[^"terms.parameters.nonsynonymous_rate"])["scaler"];
     rate.fel.beta_bg = (((scaler_mapping['BG']))[^"terms.parameters.nonsynonymous_rate"])["scaler"];
+    
         
     meme.apply_initial_estimates (scaler_mapping["BG"]);
     meme.apply_initial_estimates (scaler_mapping["FEL-FG"]);
@@ -1002,20 +1004,22 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
 
     bsrel_tree_id = (lfInfo["Trees"])[0];
     
+    init_alpha = ^rate.fel.alpha;
+    
     character_map = None;    
 
     if (rate_count == 2) {
         // separate clauses for initial parameter values
         if ( ^rate.fel.alpha <  ^rate.fel.beta_fg) { // FEL estimated beta > alpha
-            meme.set_ith_omega (scaler_mapping, 0, 0.25, 0.25);
+            meme.set_ith_omega (scaler_mapping, 0, 0.0, 0.25);
         } else { // FEL estimated beta <= alpha
-            if (^rate.fel.alpha  > 0) {
+            if (^rate.fel.alpha  > 1e-5) {
                 omega_rate = ^rate.fel.beta_fg / ^rate.fel.alpha;
             } else {
                 omega_rate = 1;
             }
             meme.set_ith_omega (scaler_mapping, 0, omega_rate, 0.75);
-            meme.set_ith_omega (scaler_mapping, 1, 1.5*^rate.fel.alpha , None);
+            meme.set_ith_omega (scaler_mapping, 1, Max (0.1, 1.5*^rate.fel.alpha) , None);
          }
         
          rate.meme.mixture_weight1 = ((scaler_mapping["OMEGA"])[^"terms.parameters.weights"])[0];
@@ -1092,14 +1096,14 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                 meme.set_ith_omega (scaler_mapping, 1, 0.5, 0.5);
                 meme.set_ith_omega (scaler_mapping, 2, 0.5, None);
             } else { // FEL estimated beta <= alpha
-                if (^rate.fel.alpha  > 0) {
+                if (^rate.fel.alpha  > 1e-5) {
                     omega_rate = ^rate.fel.beta_fg / ^rate.fel.alpha;
                 } else {
                     omega_rate = 1;
                 }
                 meme.set_ith_omega (scaler_mapping, 0, omega_rate, 0.5);
                 meme.set_ith_omega (scaler_mapping, 1, Min (1, Max (0.5,omega_rate*2)), 0.5);
-                meme.set_ith_omega (scaler_mapping, 2, 1.5*^rate.fel.alpha , None);
+                meme.set_ith_omega (scaler_mapping, 2, Max (0.1, 1.5*^rate.fel.alpha) , None);
              }
         
              rate.meme.mixture_weight1 = ((scaler_mapping["OMEGA"])[^"terms.parameters.weights"])[0];
@@ -1191,7 +1195,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                 meme.set_ith_omega (scaler_mapping, 2, 0.5, 0.5);
                 meme.set_ith_omega (scaler_mapping, 3, ^rate.fel.beta_fg, None);
             } else { // FEL estimated beta <= alpha
-                if (^rate.fel.alpha  > 0) {
+                if (^rate.fel.alpha  > 1e-5) {
                     omega_rate = ^rate.fel.beta_fg / ^rate.fel.alpha;
                 } else {
                     omega_rate = 1;
@@ -1199,7 +1203,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
                 meme.set_ith_omega (scaler_mapping, 0, omega_rate, 0.5);
                 meme.set_ith_omega (scaler_mapping, 1, Min (1, omega_rate*0.25), 0.5);
                 meme.set_ith_omega (scaler_mapping, 2, Min (1, 0.5*omega_rate) , 0.5);
-                meme.set_ith_omega (scaler_mapping, 3, 1.5*^rate.fel.alpha , None);
+                meme.set_ith_omega (scaler_mapping, 3, Max (0.1, 1.5*^rate.fel.alpha) , None);
              }
         
              rate.meme.mixture_weight1 = ((scaler_mapping["OMEGA"])[^"terms.parameters.weights"])[0];
@@ -1309,7 +1313,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     
                  
                       
-    ^rate.fel.alpha  = ^rate.fel.alpha;   
+    ^rate.fel.alpha  = Min (100,^rate.fel.alpha);   
+    
     // SLKP 20201028 : without this, there are occasional initialization issues with 
     // the likelihood function below
     
@@ -1317,9 +1322,10 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     Optimize (results, ^lf_bsrel, {
             "OPTIMIZATION_METHOD" : "nedler-mead",
             "OPTIMIZATION_START_GRID" : initial_guess_grid
-            //"OPTIMIZATION_PRECISION" : 1e-5,
+            //,"OPTIMIZATION_PRECISION" : 1e-5,
         });
  
+
         
     /*after_opt = {
                     "alpha" : Eval("meme.site_alpha"), 
@@ -1337,7 +1343,14 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         alternative = estimators.ExtractMLEsOptions (lf_bsrel, model_mapping, {^"terms.globals_only" : TRUE});
         alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
         
-        
+        /*
+        if (^rate.fel.alpha / init_alpha > 5) {
+            console.log ("\n" + ^rate.fel.alpha / init_alpha);
+            console.log (fel["global"]);
+            console.log (alternative["global"]);
+            assert (0);
+        }
+        */
         /*
         Export (lfe, ^lf_bsrel);
         console.log (lfe);
@@ -1422,7 +1435,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
         }
 
         ^rate.fel.beta_fg := ^rate.fel.alpha;
-        Optimize (results, ^lf_bsrel, {"OPTIMIZATION_METHOD" : "nedler-mead"});
+        Optimize (results, ^lf_bsrel, {"OPTIMIZATION_METHOD" : "coordinate-wise"});
 
         if (sim_mode) {
             return lrt - 2*results[1][0];
