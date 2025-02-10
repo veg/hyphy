@@ -9874,7 +9874,7 @@ void _LikelihoodFunction::SerializeLF(_StringBuffer & rec, char opt,
                 rec << "\n\nBEGIN HYPHY;\n\n";
             }
             rec << "_tdsstring_ = \"";
-            rec.SanitizeAndAppend(*cs);
+            rec.SanitizeAndAppend(*cs,&_StringBuffer::SanitizeAndAppendGeneric);
             rec << "\";\nDataSet ";
             rec << (_String *)dataSetNamesList(indexedDataSets.list_data[idx5]);
             rec << " = ReadFromString (_tdsstring_);\n_tdsstring_=0;\n";

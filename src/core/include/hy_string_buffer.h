@@ -337,17 +337,22 @@ public:
    *  Revision history
    - SLKP 20170614 reviewed while porting from v2.3 branch
    [CHANGE-NOTE SLKP 20170614 return *this for chaining]
+   - SLKP 20250208 reduced code duplication
   */
-  _StringBuffer& SanitizeForSQLAndAppend(const char);
-  _StringBuffer& SanitizeForSQLAndAppend(const _String&);
-  _StringBuffer& SanitizeForHTMLAndAppend(const char);
-  _StringBuffer& SanitizeForHTMLAndAppend(const _String&);
-  _StringBuffer& SanitizeAndAppend(const char);
-  _StringBuffer& SanitizeAndAppend(const _String&);
-  _StringBuffer& SanitizeForPostScriptAndAppend(const char);
-  _StringBuffer& SanitizeForPostScriptAndAppend(const _String&);
-  _StringBuffer& SanitizeForRegExAndAppend(const char);
-  _StringBuffer& SanitizeForRegExAndAppend(const _String&);
+   template <typename CharacterProcessor>
+    _StringBuffer& SanitizeAndAppend(const _String& s, CharacterProcessor handler) {
+        unsigned long sl = s.length ();
+        for (unsigned long i = 0UL; i < sl; i++) {
+          (this->*handler)(s.char_at(i));
+        }
+        return *this;
+    }
+
+  void SanitizeForSQLAndAppend(const char);
+  void SanitizeForHTMLAndAppend(const char);
+  void SanitizeAndAppendGeneric(const char);
+  void SanitizeForPostScriptAndAppend(const char);
+  void SanitizeForRegExAndAppend(const char);
 
   /**
    * A utility function to append a statement of the form

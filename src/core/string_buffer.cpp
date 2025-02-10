@@ -46,6 +46,7 @@ using namespace hy_global;
 
 #include <string.h> // for strlen
 #include <utility>  // for std::move
+#include <functional> // for std::function
 
 
 #ifndef _USE_EMSCRIPTEN_
@@ -415,26 +416,17 @@ void _StringBuffer::Trim(long start, long end) {
 
 //=============================================================
 
-_StringBuffer& _StringBuffer::SanitizeForSQLAndAppend(const char c) {
+void _StringBuffer::SanitizeForSQLAndAppend(const char c) {
   this->PushChar(c);
   if (c == '\'') {
     this->PushChar(c);
   }
-  return *this;
-}
-
-_StringBuffer& _StringBuffer::SanitizeForSQLAndAppend(const _String& s) {
-  unsigned long sl = s.length ();
-  for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForSQLAndAppend(s.char_at(i));
-  }
-  return *this;
 }
 
 // MDS 20140722: modified this quite a bit, previously the switch
 // would fall through to the generic sanitize. Not sure if that was intended.
 // If so, call sanitize and append instead of pushChar as default
-_StringBuffer& _StringBuffer::SanitizeForPostScriptAndAppend(const char c) {
+void _StringBuffer::SanitizeForPostScriptAndAppend(const char c) {
   switch (c) {
     case '(':
     case ')':
@@ -445,18 +437,10 @@ _StringBuffer& _StringBuffer::SanitizeForPostScriptAndAppend(const char c) {
     default:
       this->PushChar(c);
   }
-  return *this;
 }
 
-_StringBuffer& _StringBuffer::SanitizeForPostScriptAndAppend(const _String& s) {
-  unsigned long sl = s.length ();
-  for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForPostScriptAndAppend(s.char_at(i));
-  }
-  return *this;
-}
 
-_StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const char c) {
+void _StringBuffer::SanitizeForHTMLAndAppend(const char c) {
   switch (c) {
     case '"':
       (*this) << "&quot;";
@@ -476,16 +460,8 @@ _StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const char c) {
     default:
       this->PushChar(c);
   }
-  return *this;
 }
 
-_StringBuffer& _StringBuffer::SanitizeForHTMLAndAppend(const _String& s) {
-  unsigned long sl = s.length ();
-  for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForHTMLAndAppend(s.char_at(i));
-  }
-  return *this;
-}
 
 _StringBuffer& _StringBuffer::ConvertToTerminalColor(const _String& s) {
 #ifdef _USE_EMSCRIPTEN_
@@ -508,7 +484,7 @@ _StringBuffer& _StringBuffer::ConvertToTerminalColor(const _String& s) {
     return *this;
 }
 
-_StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const char c) {
+void _StringBuffer::SanitizeForRegExAndAppend(const char c) {
   switch (c) {
     case '[':
     case '^':
@@ -529,18 +505,10 @@ _StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const char c) {
     default:
       this->PushChar(c);
   }
-  return *this;
 }
 
-_StringBuffer& _StringBuffer::SanitizeForRegExAndAppend(const _String& s) {
-  unsigned long sl = s.length ();
-  for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeForRegExAndAppend(s.char_at(i));
-  }
-  return *this;
-}
 
-_StringBuffer& _StringBuffer::SanitizeAndAppend(const char c) {
+void _StringBuffer::SanitizeAndAppendGeneric(const char c) {
   switch (c) {
     case '\n':
           this->PushChar ('\\');
@@ -559,16 +527,8 @@ _StringBuffer& _StringBuffer::SanitizeAndAppend(const char c) {
     default:
       this->PushChar(c);
   }
-  return *this;
 }
 
-_StringBuffer& _StringBuffer::SanitizeAndAppend(const _String& s) {
-  unsigned long sl = s.length ();
-  for (unsigned long i = 0UL; i < sl; i++) {
-    this->SanitizeAndAppend(s.char_at(i));
-  }
-  return *this;
-}
 
 
 
@@ -620,7 +580,7 @@ void _StringBuffer::AppendVariableValueAVL (_String const* id, _SimpleList const
           break;
         case STRING:
           (*this) << '"';
-          SanitizeAndAppend (((_FString*)varValue)->get_str());
+              SanitizeAndAppend (((_FString*)varValue)->get_str(),&_StringBuffer::SanitizeAndAppendGeneric);
           (*this) << '"';
           break;
         default:
