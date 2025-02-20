@@ -155,6 +155,7 @@ _String baseArgDir,
 
 const   _String kLoggedFileEntry ("__USER_ENTRY__"),
                 kHelpKeyword     ("--help"),
+                kHelpJSONKeyword ("--help=json"),
                 kVersionKeyword  ("--version"),
                 kVerboseKeyword  ("--verbose");
 
@@ -173,7 +174,8 @@ bool    calculatorMode    = false,
         updateMode       = false,
         pipeMode         = false,
         logInputMode   = false,
-        displayHelpAndExit = false;
+        displayHelpAndExit = false,
+        displayJsonHelpAndExit = false;
 char    prefFileName[] = ".hyphyinit";
 
 #ifdef  __HYPHYMPI__
@@ -766,6 +768,11 @@ int main (int argc, char* argv[]) {
 
       if (thisArg.get_char(0)=='-') { // -[LETTER] arguments
           if (thisArg.get_char (1) == '-') {
+
+              if (thisArg == kHelpJSONKeyword) {
+                  displayJsonHelpAndExit = true;
+                  continue;
+              }
               if (thisArg == kHelpKeyword) {
                   displayHelpAndExit = true;
                   continue;
@@ -832,6 +839,7 @@ int main (int argc, char* argv[]) {
         GlobalShutdown();
         return 0;
     }
+
     
     //ObjectToConsole(&availableTemplateFilesAbbreviations);
     
@@ -977,8 +985,32 @@ int main (int argc, char* argv[]) {
             return 0;
         }
 
+        if (displayJsonHelpAndExit) {
+#ifdef __HYPHYMPI__
+            if (hy_mpi_node_rank == 0L) {
+#endif
+            NLToConsole();
+            StringToConsole(ex.GenerateJsonHelpMessage());
+            NLToConsole();
+#ifdef __HYPHYMPI__
+            }
+#endif
+            PurgeAll                    (true);
+            GlobalShutdown              ();
+            return 0;
+        }
+
+
 
          ex.Execute();
+
+    if (displayJsonHelpAndExit) {
+        // --help returns the message below
+        //DisplayHelpMessage();
+        printf ("hola");
+        GlobalShutdown();
+        return 0;
+    }
 
  
         

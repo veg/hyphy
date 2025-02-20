@@ -97,7 +97,7 @@ KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
 KeywordArgument ("branches",  "Branches to test", "All");
-KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes");
+KeywordArgument ("srv", "Include synonymous rate variation in the model", "Yes",  null, "string", {{"Yes", "[Recommended] Consider synonymous rate variation (dS varies across sites)."}, {"No", "Ignore synonymous rate variation (dS := 1 at each site)."}});
 KeywordArgument ("multiple-hits",  "Include support for multiple nucleotide substitutions", "None");
 KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
 KeywordArgument ("ci",  "Compute profile likelihood confidence intervals for each variable site", "No");

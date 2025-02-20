@@ -139,6 +139,7 @@ public:
     }
     
     _StringBuffer const GenerateHelpMessage         (_AVLList * scanned_functions = nil) const;
+    _StringBuffer const GenerateJsonHelpMessage         (_AVLList * scanned_functions = nil) const;
     
     bool        IsErrorState    (void)     {
             return errorState;

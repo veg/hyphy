@@ -428,17 +428,22 @@ const long cut, const long conditions, const char sep, const bool doTrim, const 
                                         false,
                                         &lengthOptions));
 
-    lengthOptions.Clear();lengthOptions.Populate (3,2,1);
-    _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_KEYWORD_ARGUMENT,
-                                    (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("KeywordArgument(", HY_HBL_COMMAND_KEYWORD_ARGUMENT,false),
-                                                                -1,
-                                                                "KeywordArgument (keyword, description, [default value, [dialog reference]])",
-                                                                ',',
-                                                                true,
-                                                                false,
-                                                                false,
-                                                                &lengthOptions));
+    lengthOptions.Clear();lengthOptions.Populate (5,2,1);
 
+    _HY_HBLCommandHelper.Insert(
+        (BaseRef)HY_HBL_COMMAND_KEYWORD_ARGUMENT,
+        (long)_hyInitCommandExtras(
+            _HY_ValidHBLExpressions.Insert("KeywordArgument(", HY_HBL_COMMAND_KEYWORD_ARGUMENT, false),
+            -1,
+            "KeywordArgument (keyword, description, [default value, [dialog reference, [type, [choices]]]])",
+            ',',
+            true,
+            false,
+            false,
+            &lengthOptions
+        )
+    );
+    
     lengthOptions.Clear();lengthOptions.Populate (2,3,1); // 3 or 4
     _HY_HBLCommandHelper.Insert    ((BaseRef)HY_HBL_COMMAND_GET_STRING, 
                                     (long)_hyInitCommandExtras (_HY_ValidHBLExpressions.Insert ("GetString(", HY_HBL_COMMAND_GET_STRING,false),

@@ -1328,6 +1328,147 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned
     return help_message;
 }
 
+_StringBuffer const _ExecutionList::GenerateJsonHelpMessage(_AVLList * scanned_functions) const {
+    _StringBuffer help_message;
+
+    _List ref_manager;
+    bool nested = true;
+
+    if (!scanned_functions) {
+        _List * _aux_list = new _List;
+        scanned_functions = new _AVLList(_aux_list);
+        ref_manager < _aux_list < scanned_functions;
+        nested = false;
+    }
+
+    // Lambda to ensure strings are properly formatted
+    auto simplify_string = [](_String const * s) -> const _String {
+        _String sc(*s);
+        if (sc.IsALiteralArgument(true)) {
+            return sc;
+        }
+        return sc & " [computed at run time]";
+    };
+
+    // Start building JSON manually
+    help_message << "{\n"
+                 << "    \"description\": \"Command-line tool description here\",\n"
+                 << "    \"options\": [\n";
+
+    bool first_entry = true; // Track for comma placement
+
+    ForEach([&](BaseRef command, unsigned long index) -> void {
+        _ElementaryCommand * this_command = (_ElementaryCommand *)command;
+
+        if (this_command->code == HY_HBL_COMMAND_KEYWORD_ARGUMENT) {
+            _String * def_value = this_command->GetIthParameter(2L, false);
+            _String * applies_to = this_command->GetIthParameter(3L, false);
+            _String * type_value = this_command->GetIthParameter(4L, false);
+            BaseRef raw_choice_list = this_command->GetIthParameter(5L, false);
+
+            // Handle default values
+            if (def_value && (*def_value == kNoneToken || *def_value == kNullToken)) {
+                def_value = nullptr;
+            }
+
+            // Ensure proper JSON formatting with commas
+            if (!first_entry) {
+                help_message << ",\n";
+            }
+            first_entry = false;
+
+            help_message << "        {\n"
+                         << "            \"name\": \"" << simplify_string(this_command->GetIthParameter(0L)) << "\",\n"
+                         << "            \"description\": \"" << simplify_string(this_command->GetIthParameter(1L)) << "\",\n"
+                         << "            \"takes_value\": " << (def_value ? "true" : "false");
+
+            if (applies_to) {
+                help_message << ",\n            \"applies_to\": \"" << simplify_string(applies_to) << "\"";
+            }
+
+            // Add type field
+            help_message << ",\n            \"type\": \"" << (type_value ? simplify_string(type_value) : "string") << "\"";
+
+            if (def_value) {
+                help_message << ",\n            \"default\": \"" << simplify_string(def_value) << "\"";
+            }
+
+            // Handle choices as a string before parsing
+            if (raw_choice_list) {
+                _String * raw_choices_string = dynamic_cast<_String *>(raw_choice_list);
+
+                if (raw_choices_string) {
+                    _List parsed_choices;
+                    long start = 0, end = 0;
+
+                    while ((start = raw_choices_string->Find('{', end)) != kNotFound) {
+                        end = raw_choices_string->Find('}', start);
+                        if (end == kNotFound) {
+                            break; // Malformed input, ignore
+                        }
+
+                        _String choice_pair = raw_choices_string->Cut(start + 1, end - 1);
+                        _List choice_elements = choice_pair.Tokenize(",");
+
+                        if (choice_elements.countitems() >= 2) {
+                            _List * formatted_choice = new _List(
+                                new _String(*(_String*)choice_elements.GetItem(0)),  // Choice value
+                                new _String(*(_String*)choice_elements.GetItem(1))   // Description
+                            );
+                            parsed_choices < formatted_choice;
+                        }
+                    }
+
+                    // Convert parsed choices into JSON format
+                    if (parsed_choices.countitems() > 0) {
+                        help_message << ",\n            \"choices\": [";
+                        bool first_choice = true;
+
+                        for (unsigned long i = 0; i < parsed_choices.countitems(); i++) {
+                            _List * choice_pair = dynamic_cast<_List *>(parsed_choices.GetItem(i));
+                            if (!choice_pair) {
+                                continue;
+                            }
+
+                            if (!first_choice) {
+                                help_message << ", ";
+                            }
+                            first_choice = false;
+
+                            _String * value_str = dynamic_cast<_String *>(choice_pair->GetItem(0L));
+                            _String * desc_str = dynamic_cast<_String *>(choice_pair->GetItem(1L));
+
+                            if (value_str && desc_str) {
+                                help_message << "{ \"value\": \"" << simplify_string(value_str)
+                                             << "\", \"description\": \"" << simplify_string(desc_str) << "\" }";
+                            }
+                        }
+                        help_message << "]";
+                    } else {
+                        help_message << ",\n            \"choices\": null";
+                    }
+                } else {
+                    help_message << ",\n            \"choices\": null";
+                }
+            } else {
+                help_message << ",\n            \"choices\": null";
+            }
+
+            help_message << "\n        }";
+        }
+    });
+
+    help_message << "\n    ]\n}";
+
+    if (help_message.empty() && !nested) {
+        help_message << "{ \"message\": \"No annotated keyword arguments are available for this analysis\" }\n";
+    }
+
+    return help_message;
+}
+
+
+
 //____________________________________________________________________________________
 
 HBLObjectRef       _ExecutionList::Execute     (_ExecutionList* parent, bool ignore_CEL_kwargs) {
