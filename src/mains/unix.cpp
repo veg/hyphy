@@ -1004,14 +1004,6 @@ int main (int argc, char* argv[]) {
 
          ex.Execute();
 
-    if (displayJsonHelpAndExit) {
-        // --help returns the message below
-        //DisplayHelpMessage();
-        printf ("hola");
-        GlobalShutdown();
-        return 0;
-    }
-
  
         
 #ifdef __HYPHYMPI__
