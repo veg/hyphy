@@ -1347,7 +1347,6 @@ _StringBuffer const _ExecutionList::GenerateJsonHelpMessage(_AVLList * scanned_f
         if (sc.IsALiteralArgument(true)) {
             return sc;
         }
-        return sc & " [computed at run time]";
     };
 
     // Start building JSON manually
