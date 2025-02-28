@@ -934,7 +934,7 @@ _ExecutionList::_ExecutionList (_StringBuffer& source, _String* namespaceID , bo
     if (copySource) {
         sourceText.Duplicate (&source);
     }
-
+    
     bool result = BuildList (source, nil, false, true);
     if (successFlag) {
         *successFlag = result;
@@ -956,6 +956,7 @@ void _ExecutionList::Init (_String* namespaceID) {
     kwargs              = nil;
     kwarg_tags          = nil;
     currentKwarg        = 0;
+    dry_run             = false;
 
     if (currentExecutionList) {
         errorHandlingMode  = currentExecutionList->errorHandlingMode;
@@ -1020,6 +1021,7 @@ BaseRef     _ExecutionList::makeDynamic (void) const {
     Res->doProfile          = doProfile;
     Res->errorHandlingMode  = errorHandlingMode;
     Res->errorState         = errorState;
+    Res->dry_run            = dry_run;
 
     if(result) {
         Res->result = (HBLObjectRef)result->makeDynamic();
@@ -1039,6 +1041,8 @@ void        _ExecutionList::Duplicate   (BaseRefConst source) {
         result=(HBLObjectRef)s->result->makeDynamic();
     }
 
+        
+    dry_run            = s->dry_run;
     errorHandlingMode  = s->errorHandlingMode;
     errorState         = s->errorState;
 }
@@ -1260,16 +1264,26 @@ void _ExecutionList::BuildListOfDependancies   (_AVLListX & collection, bool rec
 
 //____________________________________________________________________________________
 
-_StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned_functions)  const {
+_StringBuffer const       _ExecutionList::GenerateHelpMessage(_List* options, _List* inputs, _AVLListXL * scanned_functions)  {
     _StringBuffer help_message;
     
     _List ref_manager;
     bool  nested = true;
     if (!scanned_functions) {
         _List * _aux_list = new _List;
-        scanned_functions = new _AVLList (_aux_list);
+        scanned_functions = new _AVLListXL (_aux_list);
         ref_manager < _aux_list < scanned_functions;
         nested = false;
+    }
+    
+    if (!inputs) {
+        inputs = new _List;
+        ref_manager < inputs;
+    }
+    
+    if (!options) {
+        options = new _List;
+        ref_manager < options;
     }
     
     auto simplify_string = [] (_String const * s) -> const _String {
@@ -1279,47 +1293,121 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_AVLList * scanned
         }
         return sc & " [computed at run time]";
     };
+    
+    auto report_option = [&help_message,simplify_string] (_ElementaryCommand * this_command, _ElementaryCommand * input_pair) -> void {
+        _String * def_value = this_command->GetIthParameter(2L, false),
+                * applies_to = this_command->GetIthParameter(3L, false);
 
-    ForEach ([&help_message, simplify_string, this, scanned_functions] (BaseRef command, unsigned long index) -> void {
-        _ElementaryCommand * this_command = (_ElementaryCommand * )command;
-        if (this_command->code == HY_HBL_COMMAND_KEYWORD_ARGUMENT) {
-            _String * def_value = this_command->GetIthParameter(2L, false),
-                    * applies_to = this_command->GetIthParameter(3L, false);
-
-            if (def_value && (*def_value == kNoneToken || *def_value == kNullToken)) {
-                def_value = nil;
-            }
-            
-            help_message << simplify_string(this_command->GetIthParameter(0L)) << (def_value == nil ? (applies_to ? " [conditionally required]" : " [required]"): "") << '\n'
-                         << '\t' << simplify_string(this_command->GetIthParameter(1L)) << '\n';
-            
-            
-            if (def_value) {
-                help_message << "\tdefault value: " << simplify_string(def_value) << '\n';
-            }
-             if (applies_to) {
-                help_message << "\tapplies to: " << simplify_string(applies_to) << '\n';
-            }
+        if (def_value && (*def_value == kNoneToken || *def_value == kNullToken)) {
+            def_value = nil;
+        }
+        
+        help_message << simplify_string(this_command->GetIthParameter(0L)) << (def_value == nil ? (applies_to ? " [conditionally required]" : " [required]"): "") << '\n'
+                     << '\t' << simplify_string(this_command->GetIthParameter(1L)) << '\n';
+        
+        
+        if (def_value) {
+            help_message << "\tdefault value: " << simplify_string(def_value) << '\n';
+        }
+         if (applies_to) {
+            help_message << "\tapplies to: " << simplify_string(applies_to) << '\n';
+        }
+        
+        /*if (input_pair) {
+            help_message << "\tinput from: " << *(_String*)input_pair->toStr();
             help_message << '\n';
+        }*/
+        help_message << '\n';
+    };
+
+    ForEach ([&help_message, &options, &inputs, simplify_string, this, scanned_functions] (BaseRef command, unsigned long index) -> void {
+        _ElementaryCommand * this_command = (_ElementaryCommand * )command;
+
+        if (this_command->code == HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY || this_command->code == HY_HBL_COMMAND_EXECUTE_A_FILE) {
+            this_command->simpleParameters << (long)options;
+            this_command->simpleParameters << (long)inputs;
+            this_command->HandleExecuteCommandsCases (*this, true, true);
+           //if (this->result) {
+            //    ObjectToConsole(this->result);
+            //}
+            //NLToConsole();
+            this_command->simpleParameters.Pop();
+            this_command->simpleParameters.Pop();
+        }
+        if (this_command->code == HY_HBL_COMMAND_FSCANF || this_command->code == HY_HBL_COMMAND_CHOICE_LIST) {
+            *inputs << this_command;
+        }
+        if (this_command->code == HY_HBL_COMMAND_KEYWORD_ARGUMENT) {
+            *options << command;
         } else {
             if (this_command->code == HY_HBL_COMMAND_FORMULA) {
+                
+                //this_command->ExecuteCase0 (*this);
                 _List      hbl_functions;
                 _AVLListX other_functions (&hbl_functions);
                 this_command->BuildListOfDependancies(other_functions, true, *this, true);
                 
+                _List * function_stash = new _List;
+                
                 for (AVLListXIteratorKeyValue function_iterator : AVLListXIterator (&other_functions)) {
                     _String * function_name = (_String *)other_functions.Retrieve (function_iterator.get_index());
-                    if (scanned_functions->Insert (new _String (*function_name),0,true, true) >= 0) {
+                    
+                    
+                    long function_placement = scanned_functions->Insert (new _String (*function_name),(long)function_stash,false, true);
+                    
+                    if (function_placement>=0) {
                         long idx = FindBFFunctionName(*function_name);
                         if (idx >= 0) {
-                            help_message << GetBFFunctionBody(idx).GenerateHelpMessage(scanned_functions);
+                            _List* fuction_options = new _List,
+                                 * function_inputs = new _List;
+                            
+                            _ExecutionList * function_body = &GetBFFunctionBody(idx);
+                            function_body->SetDryRun(true);
+                            function_body->GenerateHelpMessage(fuction_options, function_inputs, scanned_functions);
+                            function_body->SetDryRun(false);
+                            (*function_stash) < fuction_options < function_inputs;
+                            
+                            function_stash = new _List;
+                        } else {
+                            continue;
                         }
+                    } else {
+                        function_placement = -function_placement-1;
+                    }
+                    
+                    _List * fl = (_List*)scanned_functions->GetXtra (function_placement);
+                    if (fl->countitems()) {
+                        /*
+                        _List* inputz = (_List*)fl->GetItem (1);
+                        if (inputz->countitems()) {
+                            ObjectToConsole (this_command);
+                            NLToConsole();
+                            ObjectToConsole(inputz);
+                            BufferToConsole("----");
+                            ObjectToConsole((_List*)fl->GetItem (0));
+                            BufferToConsole("####");
+
+                            NLToConsole();
+                        }
+                        */
+                        (*options) << *(_List*)fl->GetItem (0);
+                        (*inputs) << *(_List*)fl->GetItem (1);
                     }
                 }
+                
+                delete function_stash;
             }
         }
         
     });
+    
+    
+    
+    if (!nested) {
+        options->ForEach ([report_option, &inputs] (BaseRef command, unsigned long i) -> void {
+            report_option ((_ElementaryCommand*) command, (_ElementaryCommand*)inputs->GetItemRangeCheck(i));
+        });
+    }
     
     if (help_message.empty() && !nested) {
         help_message << "No annotated keyword arguments are available for this analysis\n";
@@ -2533,7 +2621,20 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
 
           _FormulaParsingContext fpc (&err_msg, chain.nameSpacePrefix);
 
+          if (chain.IsDryRun()) {
+              fpc.buildComplexObjects() = false;
+          }
+          
           long     parseCode = Parse(&f,(*theFla),fpc,&f2);
+          /*
+          if (chain.IsDryRun()) {
+              if (parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
+                  ObjectToConsole(theFla);
+                  NLToConsole();
+              }
+              return;
+          }
+          */
           
           //printf ("RHS = %s\n", _String ((_String*)f2.toStr(kFormulaStringConversionNormal)).get_str());
 
@@ -5049,7 +5150,7 @@ bool    _ElementaryCommand::ConstructFunction (_StringBuffer&source, _ExecutionL
               ReportWarning(_String ("Successfully compiled code for function ") & funcID->Enquote());
           }
       }
-
+        
       //  take care of all the return statements
       returnlist.Each ([functionBody] (long value, unsigned long) -> void {
         ((_ElementaryCommand*)functionBody->GetItem(value))->simpleParameters << functionBody->countitems();
@@ -5081,7 +5182,6 @@ bool    _ElementaryCommand::ConstructFunction (_StringBuffer&source, _ExecutionL
 
       isInFunction = _HY_NAMESPACE;
       _ExecutionList   * namespace_payload = new _ExecutionList (namespace_text, funcID, false, &success);
-        
         // 20180713 SLKP -- this was marked as deleted in one of the v2.3 branches
       if (success) {
         _ElementaryCommand * nested_list = new _ElementaryCommand (HY_HBL_COMMAND_NESTED_LIST);

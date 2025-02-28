@@ -138,10 +138,18 @@ public:
         currentCommand = MAX(currentCommand,(long)lLength-1L);
     }
     
-    _StringBuffer const GenerateHelpMessage         (_AVLList * scanned_functions = nil) const;
+    _StringBuffer const GenerateHelpMessage         (_List* options = nil, _List* inputs = nil, _AVLListXL * scanned_functions = nil);
     
     bool        IsErrorState    (void)     {
             return errorState;
+    }
+
+    bool        IsDryRun    (void)     {
+            return dry_run;
+    }
+    
+    void        SetDryRun  (bool dr)     {
+        dry_run = dr;
     }
 
     void ClearExecutionList (void);
@@ -186,6 +194,7 @@ public:
     char                            doProfile;
     int                             errorHandlingMode; // how does this execution list handle errors
     bool                            errorState;
+    bool                            dry_run;
 
     HBLObjectRef                    result;
 
