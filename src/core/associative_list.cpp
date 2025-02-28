@@ -549,7 +549,7 @@ _StringBuffer * _AssociativeList::Serialize (unsigned long padding) const {
             (*out_string) << '\n' << padder << ' ';
           
             (*out_string) << '"';
-            out_string->SanitizeAndAppend (*thisKey);
+            out_string->SanitizeAndAppend (*thisKey, &_StringBuffer::SanitizeAndAppendGeneric);
             (*out_string) << '"';
 
             HBLObjectRef anObject = GetByKey (*thisKey);
@@ -557,7 +557,7 @@ _StringBuffer * _AssociativeList::Serialize (unsigned long padding) const {
             (*out_string) << ':';
             if (anObject->ObjectClass() == STRING) {
                 (*out_string) << '"';
-                out_string->SanitizeAndAppend(_String ((_String*)anObject->toStr(padding+2)));
+                out_string->SanitizeAndAppend(_String ((_String*)anObject->toStr(padding+2)), &_StringBuffer::SanitizeAndAppendGeneric);
                 (*out_string) << '"';
             } else {
                 if (anObject->ObjectClass() != HY_UNDEFINED) {

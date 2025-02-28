@@ -123,7 +123,7 @@ namespace hy_global {
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
                      kErrorNumerical                   ("To treat numerical errors as warnings, please specify \"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line argument. This often resolves the issue, which is indicative of numerical instability."),
-                     kHyPhyVersion  = _String ("2.5.68"),
+                     kHyPhyVersion  = _String ("2.5.69"),
     
                     kNoneToken = "None",
                     kNullToken = "null",

@@ -876,7 +876,7 @@ _String const  _TreeTopology::GetNodeStringForTree  (node<long> * n , int flags)
           return newick_delimiter==c;
       }
     ) != kNotFound) {
-        node_desc = _StringBuffer ().SanitizeAndAppend(node_desc).Enquote('"');
+        node_desc = _StringBuffer ().SanitizeAndAppend(node_desc, &_StringBuffer::SanitizeAndAppendGeneric).Enquote('"');
     }
     
   }

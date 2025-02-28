@@ -849,7 +849,7 @@ lfunction trees.ParsimonyLabel(tree_id, given_labels) {
    	 	}
  	}
 
-    console.log (labels);
+    //console.log (labels);
 
    tree_avl = (^tree_id) ^ 1;
    for (k = 2; k < Abs (tree_avl); k += 1) {
@@ -925,7 +925,7 @@ lfunction trees.ConjunctionLabel (tree_id, given_labels) {
 }
 
 /**
- * Compute branch labeling using conjunction, i.e. node N is labeled 'X' iff
+ * Compute branch labeling using disjunction, i.e. node N is labeled 'X' iff
  * SOME of the nodes that are in the subtree rooted at 'N' are also labeled 'N'
  * @name trees.ConjunctionLabel
  * @param 	{String} tree ID
@@ -941,7 +941,7 @@ lfunction trees.DisjunctionLabel (tree_id, given_labels) {
    labels = {};
    resulting_labels = {}; // internal nodes -> label
    inodes_labeled = 0;
-
+   
    // pass 1 to fill in the score matrix
    for (k = 0; k < Abs (tree_avl) ; k += 1) {
    	 	node_name = (tree_avl[k])["Name"];
@@ -955,18 +955,15 @@ lfunction trees.DisjunctionLabel (tree_id, given_labels) {
 
 			for (c = 0; c < c_count; c+=1) {
 				c_name = (tree_avl[node_children[c]])["Name"];
-   	 			if (utility.Has (labels, c_name, "String") == FALSE)  {
-   	 				break;
+   	 			if (utility.Has (labels, c_name, "String"))  {
+   	 				child_labels [labels[c_name]] = TRUE;
    	 			}
-   	 			child_labels [labels[c_name]] = TRUE;
 
    	 		}
-   	 		if (c > 0) { // all children labeled
+   	 		if (utility.Array1D (child_labels) == 1) { // SOME children labeled
+    	 	   labels [node_name] = (utility.Keys (child_labels))[0];
+    	 	   resulting_labels[node_name] = labels [node_name];
     	 	   inodes_labeled += 1;
-    	 	   if (utility.Array1D (child_labels) == 1) {
-    	 	       labels [node_name] = (utility.Keys (child_labels))[0];
-    	 	       resulting_labels[node_name] = labels [node_name];
-    	 	   }
    	 	 	}
    	 	} else { // leaf
    	 		if (utility.Has (given_labels, node_name, "String")) {

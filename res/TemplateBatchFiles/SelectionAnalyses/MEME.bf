@@ -41,9 +41,10 @@ meme.analysis_description = {
     for testing as well, in which case an additional (nuisance) parameter will be
     inferred -- the non-synonymous rate on branches NOT selected for testing. Multiple partitions within a NEXUS file are also supported
     for recombination - aware analysis. Version 3.0 adds a different format for ancestral state reconstruction, branch-site posterior storage, and site-level heterogeneity testing. 
-    Version 4 adds support for multiple hits and more than 2 rate classes on omega, as well as site-level imputation option
+    Version 4 adds support for multiple hits and more than 2 rate classes on omega, as well as site-level imputation option.
+    Version 4.1 fixes bugs with EBF computation for > 2 more rates and MH reporting.
     ",
-    terms.io.version: "4.0",
+    terms.io.version: "4.1",
     terms.io.reference: "Detecting Individual Sites Subject to Episodic Diversifying Selection. _PLoS Genet_ 8(7): e1002764.",
     terms.io.authors: "Sergei L. Kosakovsky Pond, Steven Weaver",
     terms.io.contact: "spond@temple.edu",
@@ -78,8 +79,8 @@ meme.parameter_site.psi = "Site 3H rate";
 meme.parameter_site_beta_nuisance = "Site relative non-synonymous rate (untested branches)";
 */
 
-meme.bsER = "Posterior prob omega class by site";
-
+meme.bsER       = "Posterior prob omega class by site";
+meme.variationP = "Variation p";
 
 
 // default cutoff for printing to screen
@@ -514,7 +515,6 @@ meme.scaler_mapping['OMEGA_DIST'] = parameters.helper.stick_breaking  (meme.omeg
 meme.global_cache = {};
 
 
-
 for (i,v; in; meme.scaler_mapping['BG']) {
     if (Type (v["scaler"]) == "String") {
         model.generic.AddGlobal (meme.site.background_fel, v["scaler"], terms.meme.bg_param_prefix  + i);
@@ -575,7 +575,7 @@ meme.table_headers[meme.row_index][0] = "FEL &alpha;"; meme.table_headers[meme.r
 meme.table_headers[meme.row_index][0] = "FEL &beta;"; meme.table_headers[meme.row_index][1] = "Non-synonymous substitution rate at a site under the FEL model";  meme.row_index+=1;
                        
 
-if (meme.multi_hit == "Double") {
+if (meme.multi_hit != "None") {
     meme.table_headers[meme.row_index][0] = "&delta;"; meme.table_headers[meme.row_index][0] = "Relative rate estimate for 2-nucleotide substitutions";  meme.row_index+=1;
 }
 
@@ -769,11 +769,12 @@ for (meme.partition_index = 0; meme.partition_index < meme.partition_count; meme
     meme.site_results[meme.partition_index] = meme.partition_matrix;
     meme.branch_ebf_matrix = {};
     for (meme.branch,meme.post; in; meme.branch_ebf) {
-        meme.post_matrix = {2, meme.site_count};
+        meme.post_matrix = {meme.nrate_classes, meme.site_count};
         for (meme.r,meme.v; in; meme.post) {
             if (Type (meme.v) == "Matrix") {
-                meme.post_matrix[0][+meme.r] = meme.v[0];
-                meme.post_matrix[1][+meme.r] = meme.v[1];
+                for (meme.i = 0; meme.i < meme.nrate_classes; meme.i += 1) {
+                    meme.post_matrix[meme.i][+meme.r] = meme.v[meme.i];               
+                }
             }
         }
         meme.branch_ebf_matrix [meme.branch] = meme.post_matrix;
@@ -890,6 +891,7 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline, scal
     scaler       = {};
     nrates       = utility.Array1D (scaler_mapping["OMEGA_DIST"]);
     
+    
     for (is,w;in; scaler_mapping["OMEGA_DIST"]) {
         i = +is;
         local = ((scaler_mapping['FG'])[terms.AddCategory (^"terms.mixture.mixture_aux_weight",i+1)])["local"];
@@ -914,8 +916,6 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline, scal
         conditionals[i] = LOGL0;
     }
     
-
-
     for (i,l; in; locals) {
         utility.ExecuteInGlobalNamespace ("`tree_name`.`branch_name`." + l + " := " + scaler[i]);  
     }
@@ -928,15 +928,12 @@ lfunction meme.compute_branch_EBF (lf_id, tree_name, branch_name, baseline, scal
         _priorOdds = 0;
     }
     
-    //console.log (conditionals);
-    //console.log (baseline);
-    //console.log (_posteriorProb);
-
     if ( _priorOdds != 0) {
         eBF = _posteriorProb[nrates-1] / (1 - _posteriorProb[nrates-1]) / _priorOdds;
     } else {
         eBF = 1;
     }
+        
     
     return {utility.getGlobalValue("terms.empirical_bayes_factor") : eBF__, 
             utility.getGlobalValue("terms.posterior") : _posteriorProb__};
@@ -980,6 +977,7 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     
     utility.SetEnvVariable ("USE_LAST_RESULTS", TRUE);
     utility.SetEnvVariable ("ASSUME_REVERSIBLE_MODELS", TRUE);
+    
 
     rate.fel.alpha   = (((scaler_mapping['BG']))[^"terms.parameters.synonymous_rate"])["scaler"];
     rate.fel.beta_fg = (((scaler_mapping['FEL-FG']))[^"terms.parameters.nonsynonymous_rate"])["scaler"];
@@ -994,9 +992,8 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
     Optimize (results, ^lf_fel
         , {"OPTIMIZATION_METHOD" : "nedler-mead", OPTIMIZATION_PRECISION: 1e-4}
     );
-
-
-
+    
+    
     fel = estimators.ExtractMLEsOptions (lf_fel, model_mapping, {^"terms.globals_only" : TRUE});
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
  
@@ -1307,12 +1304,10 @@ lfunction meme.handle_a_site (lf_fel, lf_bsrel, filter_data, partition_index, pa
             
       }
     }
-    
              
     //before_opt = {"alpha" : ^"meme.site_alpha", "other" : initial_guess_grid};
     
-                 
-                      
+                                  
     ^rate.fel.alpha  = Min (100,^rate.fel.alpha);   
     
     // SLKP 20201028 : without this, there are occasional initialization issues with 

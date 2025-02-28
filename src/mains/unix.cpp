@@ -958,6 +958,9 @@ int main (int argc, char* argv[]) {
             PushFilePath  (argFile);
             
             // if this is a nexus file, it will be executed here
+            if (displayHelpAndExit) {
+                ex.SetDryRun(true);
+            }
             ReadBatchFile (argFile,ex);
         }
 
@@ -967,6 +970,7 @@ int main (int argc, char* argv[]) {
 #endif
             NLToConsole();
             BufferToConsole(analysis_help_message);
+            ex.SetDryRun(true);
             StringToConsole(ex.GenerateHelpMessage());
             NLToConsole();
 #ifdef __HYPHYMPI__

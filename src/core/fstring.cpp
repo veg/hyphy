@@ -731,24 +731,24 @@ HBLObjectRef _FString::ExecuteSingleOp (long opCode, _List* arguments, _hyExecut
               t = new _StringBuffer ( get_str().ChangeCase(kStringUpperCase));
               break;
             case 2L: {
-              t = &(new _StringBuffer)->SanitizeAndAppend(get_str());
+                t = &(new _StringBuffer)->SanitizeAndAppend(get_str(), &_StringBuffer::SanitizeAndAppendGeneric);
               break;
             }
             case 3L: {
-              t = &(new _StringBuffer)->SanitizeForPostScriptAndAppend(get_str());
+              t = &(new _StringBuffer)->SanitizeAndAppend(get_str(),&_StringBuffer::SanitizeForPostScriptAndAppend);
               break;
             }
             case 4L: {
-              t = &(new _StringBuffer)->SanitizeForSQLAndAppend(get_str());
+              t = &(new _StringBuffer)->SanitizeAndAppend(get_str(), &_StringBuffer::SanitizeForSQLAndAppend);
               break;
             }
             case 5L: {
-              t = &(new _StringBuffer)->SanitizeForHTMLAndAppend(get_str());
+                t = &(new _StringBuffer)->SanitizeAndAppend(get_str(), &_StringBuffer::SanitizeForHTMLAndAppend);
               break;
             }
              
             case 6L: {
-              t = &(new _StringBuffer)->SanitizeForRegExAndAppend(get_str());
+                t = &(new _StringBuffer)->SanitizeAndAppend(get_str(),&_StringBuffer::SanitizeForRegExAndAppend);
               break;
             }
                   

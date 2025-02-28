@@ -3153,80 +3153,86 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
             bool result = false;
             
             _ExecutionList code (*source_code, use_this_namespace, false, &result);
-            
-            if (!result) {
-                throw (_String("Encountered an error while parsing HBL"));
+            if (current_program.IsDryRun()) {
+                code.SetDryRun(true);
+                DeleteObject (current_program.result);
+                current_program.result = new _FString (code.GenerateHelpMessage((_List*)simpleParameters.GetElement(-2),(_List*)simpleParameters.GetElement(-1)));
             } else {
                 
-                
-                _AVLListXL * stash1 = nil;
-                _List      * stash2 = nil,
-                * stash_kw_tags = nil;
-                
-                _AssociativeList * stash_kw = nil;
-                
-                bool update_kw = false;
-                
-                if (has_redirected_input) {
-                    code.stdinRedirectAux = &_aux_argument_list;
-                    code.stdinRedirect = &argument_list;
+                if (!result) {
+                    throw (_String("Encountered an error while parsing HBL"));
                 } else {
-                    if (current_program.has_stdin_redirect()) {
-                        stash1 = current_program.stdinRedirect;
-                        stash2 = current_program.stdinRedirectAux;
-                        current_program.stdinRedirect->AddAReference();
-                        current_program.stdinRedirectAux->AddAReference();
+                    
+                    
+                    _AVLListXL * stash1 = nil;
+                    _List      * stash2 = nil,
+                    * stash_kw_tags = nil;
+                    
+                    _AssociativeList * stash_kw = nil;
+                    
+                    bool update_kw = false;
+                    
+                    if (has_redirected_input) {
+                        code.stdinRedirectAux = &_aux_argument_list;
+                        code.stdinRedirect = &argument_list;
+                    } else {
+                        if (current_program.has_stdin_redirect()) {
+                            stash1 = current_program.stdinRedirect;
+                            stash2 = current_program.stdinRedirectAux;
+                            current_program.stdinRedirect->AddAReference();
+                            current_program.stdinRedirectAux->AddAReference();
+                        }
+                        code.stdinRedirect = current_program.stdinRedirect;
+                        code.stdinRedirectAux = current_program.stdinRedirectAux;
                     }
-                    code.stdinRedirect = current_program.stdinRedirect;
-                    code.stdinRedirectAux = current_program.stdinRedirectAux;
-                }
-                
-                
-                bool ignore_ces_args = false;
-                
-                if (has_user_kwargs) {
-                    code.SetKWArgs(user_kwargs);
-                    ignore_ces_args = true;
-                } else {
-                    if (current_program.has_keyword_arguments()) {
-                        code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
-                        code.kwargs = stash_kw = current_program.kwargs;
-                        if (stash_kw_tags) current_program.kwarg_tags->AddAReference();
-                        if (stash_kw) current_program.kwargs->AddAReference();
-                        code.currentKwarg = current_program.currentKwarg;
-                        update_kw = true;
+                    
+                    
+                    bool ignore_ces_args = false;
+                    
+                    if (has_user_kwargs) {
+                        code.SetKWArgs(user_kwargs);
+                        ignore_ces_args = true;
+                    } else {
+                        if (current_program.has_keyword_arguments()) {
+                            code.kwarg_tags = stash_kw_tags = current_program.kwarg_tags;
+                            code.kwargs = stash_kw = current_program.kwargs;
+                            if (stash_kw_tags) current_program.kwarg_tags->AddAReference();
+                            if (stash_kw) current_program.kwargs->AddAReference();
+                            code.currentKwarg = current_program.currentKwarg;
+                            update_kw = true;
+                        }
                     }
-                }
-                
-                
-                
-                if (!simpleParameters.empty() && code.TryToMakeSimple(true)) {
-                    ReportWarning (_String ("Successfully compiled an execution list (possibly partially).\n") & _String ((_String*)code.toStr()) );
-                    code.ExecuteSimple ();
-                } else {
-                    code.Execute(nil, ignore_ces_args);
-                }
-                
-                if (stash1) {
-                    stash1->RemoveAReference();
-                    stash2->RemoveAReference();
-                }
-                
-                if (stash_kw_tags) stash_kw_tags->RemoveAReference();
-                if (stash_kw) stash_kw->RemoveAReference();
-                
-                code.stdinRedirectAux = nil;
-                code.stdinRedirect    = nil;
-                if (update_kw) {
-                    code.kwarg_tags       = nil;
-                    code.kwargs           = nil;
-                    current_program.currentKwarg = code.currentKwarg;
-                }
-                
-                if (code.result) {
-                    DeleteObject (current_program.result);
-                    current_program.result = code.result;
-                    code.result = nil;
+                    
+                    
+                    
+                    if (!simpleParameters.empty() && code.TryToMakeSimple(true)) {
+                        ReportWarning (_String ("Successfully compiled an execution list (possibly partially).\n") & _String ((_String*)code.toStr()) );
+                        code.ExecuteSimple ();
+                    } else {
+                        code.Execute(nil, ignore_ces_args);
+                    }
+                    
+                    if (stash1) {
+                        stash1->RemoveAReference();
+                        stash2->RemoveAReference();
+                    }
+                    
+                    if (stash_kw_tags) stash_kw_tags->RemoveAReference();
+                    if (stash_kw) stash_kw->RemoveAReference();
+                    
+                    code.stdinRedirectAux = nil;
+                    code.stdinRedirect    = nil;
+                    if (update_kw) {
+                        code.kwarg_tags       = nil;
+                        code.kwargs           = nil;
+                        current_program.currentKwarg = code.currentKwarg;
+                    }
+                    
+                    if (code.result) {
+                        DeleteObject (current_program.result);
+                        current_program.result = code.result;
+                        code.result = nil;
+                    }
                 }
             }
         }
