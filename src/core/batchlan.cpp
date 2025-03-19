@@ -1050,26 +1050,28 @@ void        _ExecutionList::Duplicate   (BaseRefConst source) {
 
 //____________________________________________________________________________________
 void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCommand, bool appendToExisting) {
-    if (doCurrentCommand) {
-        _ElementaryCommand *theCommand = FetchLastCommand();
-        if (theCommand) {
-            errMsg = errMsg & " in call to " & _String ((_String*)theCommand->toStr());
-        }
-    }
-    errorState = true;
-    switch (errorHandlingMode) {
-        case HY_BL_ERROR_HANDLING_SOFT:
-            if (appendToExisting) {
-              _FString * existing = (_FString*) FetchObjectFromVariableByType(&_hyLastExecutionError, STRING);
-              if (existing) {
-                errMsg = existing->get_str() & '\n' & errMsg;
-              }
+    if (!IsDryRun()) {
+        if (doCurrentCommand) {
+            _ElementaryCommand *theCommand = FetchLastCommand();
+            if (theCommand) {
+                errMsg = errMsg & " in call to " & _String ((_String*)theCommand->toStr());
             }
-            setParameter(_hyLastExecutionError, new _FString (errMsg, false), nil, false);
-
-            break;
-        default:
-            HandleApplicationError (errMsg);
+        }
+        errorState = true;
+        switch (errorHandlingMode) {
+            case HY_BL_ERROR_HANDLING_SOFT:
+                if (appendToExisting) {
+                    _FString * existing = (_FString*) FetchObjectFromVariableByType(&_hyLastExecutionError, STRING);
+                    if (existing) {
+                        errMsg = existing->get_str() & '\n' & errMsg;
+                    }
+                }
+                setParameter(_hyLastExecutionError, new _FString (errMsg, false), nil, false);
+                
+                break;
+            default:
+                HandleApplicationError (errMsg);
+        }
     }
 }
 

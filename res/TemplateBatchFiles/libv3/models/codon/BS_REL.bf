@@ -6,6 +6,7 @@ LoadFunctionLibrary("../../UtilityFunctions.bf");
 LoadFunctionLibrary("MG_REV.bf");
 LoadFunctionLibrary("MG_REV_TRIP.bf");
 LoadFunctionLibrary("MG_REV_MH.bf");
+LoadFunctionLibrary("MSS.bf");
 LoadFunctionLibrary("../../convenience/math.bf");
 
 /** @module models.codon.BS_REL
@@ -97,7 +98,7 @@ lfunction models.codon.BS_REL_SRV.ModelDescription(type, code, components) {
     io.CheckAssertion ("Min(`&components`,0) >= 1 && Max(`&components`,0) <= 10", "must have between 1 and 10 components in call to models.codon.BS_REL_SRV.ModelDescription");
 
 
- 	template = models.codon.BS_REL.ModelDescription(type, code, 3);
+ 	template = models.codon.BS_REL.ModelDescription(type, code, components);
 	template [utility.getGlobalValue("terms.model.defineQ")] = "models.codon.BS_REL_SRV._DefineQ";
 	template [utility.getGlobalValue("terms.model.components")] = components;
 	return template;
