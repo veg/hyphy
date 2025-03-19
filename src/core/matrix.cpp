@@ -94,7 +94,7 @@ _Trie       _HY_MatrixRandomValidPDFs;
 
 
 
-#ifdef _SLKP_USE_APPLE_BLAS
+#ifdef _SLKP_USE_APPLE_BLAS_2
     enum CBLAS_ORDER {CblasRowMajor=101, CblasColMajor=102 };
     enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113,
       AtlasConj=114};
@@ -4100,7 +4100,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   if (compressedIndex) {
                       
 
-#ifdef _SLKP_USE_APPLE_BLAS_NOT_USED
+#ifdef _SLKP_USE_APPLE_BLAS_2_NOT_USED
               hyFloat  * _hprestrict_ res               = storage.theData;
               long currentXIndex = 0L;
               for (long i = 0; i < 61; i++) {

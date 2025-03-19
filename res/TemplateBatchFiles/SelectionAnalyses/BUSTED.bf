@@ -37,9 +37,11 @@ Version 4.0 adds support for multiple hits (MH), ancestral state reconstruction 
 
 Version 4.2 adds calculation of MH-attributable fractions of substitutions.
 
-Version 4.5 adds an 'error absorption' component [experimental]
+Version 4.5 adds an 'error absorption' component 
+
+Version 4.6 adds support for MSS-type models
 ",
-                               terms.io.version : "4.5",
+                               terms.io.version : "4.6",
                                terms.io.reference : "*Gene-wide identification of episodic selection*, Mol Biol Evol. 32(5):1365-71, *Synonymous Site-to-Site Substitution Rate Variation Dramatically Inflates False Positive Rates of Selection Analyses: Ignore at Your Own Peril*, Mol Biol Evol. 37(8):2430-2439",
                                terms.io.authors : "Sergei L Kosakovsky Pond",
                                terms.io.contact : "spond@temple.edu",
@@ -172,6 +174,26 @@ busted.multi_hit = io.SelectAnOption ({
 
 
 selection.io.json_store_setting  (busted.json, "multiple-hit", busted.multi_hit);
+
+KeywordArgument ("mss",  "Include support for multiple synonymous rate class substitutions", "No");
+
+busted.mss = io.SelectAnOption ({
+                                   {"No", "All synonymous substitutions happen at the same relative rates regardless of the codons involved"}
+                                   {"Yes", "Incorporate substitutions rate dependance on the codons involved"}
+                                }, 
+                                "Include support for multiple synonymous rate class substitutions");
+
+
+selection.io.json_store_setting  (busted.json, "mss", busted.mss);
+
+if (busted.mss == "Yes") {
+    assert (busted.multi_hit == "None", "Multiple hit and MSS combination is currently not supported");
+    assert (busted.do_bs_srv == FALSE, "MSS and branch-site SRV combination is currently not supported");
+    LoadFunctionLibrary("libv3/models/codon/MSS.bf");
+    busted.mss.spec = model.codon.MSS.prompt_and_define_freq (terms.global, busted.codon_data_info[terms.code], terms.frequencies.empirical.F3x4);
+    selection.io.json_store_setting  (busted.json, "mss-spec", busted.mss.spec);
+
+}
 
 if (busted.do_srv) {
     KeywordArgument ("syn-rates", "The number alpha rate classes to include in the model [1-10, default 3]", busted.synonymous_rate_classes);
@@ -319,6 +341,38 @@ if (busted.multi_hit == "None") {
         return def;
     }
     busted.model_generator = "busted.model.BS_REL_MH";
+}
+
+if (busted.mss == "Yes") { 
+     busted.post_defs = {}; 
+     lfunction busted.model.BS_REL_MSS.post_def (model) {
+        console.log ("SUP!");
+        for (k, d; in; ^"busted.post_defs") {
+            model = Call (d, model);
+        }
+        return model;
+     }
+     lfunction busted.model.BS_REL_MSS (type, code, rates) {        
+        def = models.codon.BS_REL.ModelDescription (type, code, rates);
+        pd = def[utility.getGlobalValue("terms.model.post_definition")];
+        (^"busted.post_defs") + (^"busted.mss.spec")[utility.getGlobalValue("terms.model.post_definition")];
+        models.codon.MSS.ModelDescription.CodonClassesDef (def, ^"busted.mss.spec");
+        (^"busted.post_defs") + pd;
+        def [utility.getGlobalValue("terms.model.defineQ")] = "models.codon.BS_REL._DefineQ.MH";
+        def [utility.getGlobalValue("terms.model.rate_generator")] = "
+            function rate_generator (fromChar, toChar, namespace, model_type, model) {
+                return models.codon.MSS._GenerateRate.Generic (fromChar, 
+                                                              toChar, 
+                                                              namespace, 
+                                                              model_type, 
+                                                              model,
+                                                              'alpha', utility.getGlobalValue('terms.parameters.synonymous_rate'),
+                        'beta_' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.nonsynonymous_rate'), component),
+                        'omega' + component, terms.AddCategory (utility.getGlobalValue('terms.parameters.omega_ratio'), component));
+        }";
+        return def;
+    }
+    busted.model_generator = "busted.model.BS_REL_MSS";
 }
 
 busted.baseline_model_generator = busted.model_generator;
@@ -906,8 +960,6 @@ while (!busted.converged) {
     busted.EFV_ids = estimators.LFObjectGetEFV (busted.full_model[terms.likelihood_function]);
     
     (busted.json [busted.json.site_logl])[busted.unconstrained] = busted.ComputeSiteLikelihoods (busted.full_model[terms.likelihood_function]);
-    
-    
                                     
     busted.report_multi_hit  (busted.full_model, busted.distribution_for_json, "MultiHit", "alt-mh", busted.branch_length_string, busted.model_parameters);
     

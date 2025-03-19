@@ -224,6 +224,26 @@ lfunction model.codon.MSS.prompt_and_define_freq (type, code, freq) {
 lfunction model.codon.MSS.prompt_and_define (type, code) {
     return model.codon.MSS.prompt_and_define_freq (type, code, 'CF3x4');
 }
+//----------------------------------------------------------------------------------------------------------------
+
+lfunction models.codon.MSS.ModelDescription.CodonClassesDef (m, codon_classes) {
+    m[utility.getGlobalValue("terms.model.MSS.codon_classes")] = codon_classes [^"terms.model.MSS.codon_classes"];
+    m[utility.getGlobalValue("terms.model.MSS.neutral")] = codon_classes [^"terms.model.MSS.neutral"];
+    m[utility.getGlobalValue("terms.model.MSS.empirical")] = codon_classes [^"terms.model.MSS.empirical"];
+    m[utility.getGlobalValue("terms.model.MSS.codon_pairs")] = codon_classes [^"terms.model.MSS.codon_pairs"];
+    m[utility.getGlobalValue("terms.model.MSS.non_syn_reference")] = codon_classes [^"terms.model.MSS.non_syn_reference"];
+    
+    if (codon_classes/utility.getGlobalValue("terms.model.MSS.between")) {
+        m[^"terms.model.MSS.between"] = codon_classes [^"terms.model.MSS.between"];
+    }
+    
+    
+    if (codon_classes[utility.getGlobalValue("terms.model.MSS.normalize")]) {
+        m[utility.getGlobalValue("terms.model.post_definition")] = "models.codon.MSS.post_definition";
+    }
+
+    return m;
+}
 
 //----------------------------------------------------------------------------------------------------------------
   
@@ -241,22 +261,8 @@ lfunction models.codon.MSS.ModelDescription(type, code, codon_classes) {
     }
     m[utility.getGlobalValue("terms.description")] = "The Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution, which allows multiple classes of synonymous substitution rates";
     m[utility.getGlobalValue("terms.model.q_ij")] = "models.codon.MSS._GenerateRate";
-    m[utility.getGlobalValue("terms.model.MSS.codon_classes")] = codon_classes [^"terms.model.MSS.codon_classes"];
-    m[utility.getGlobalValue("terms.model.MSS.neutral")] = codon_classes [^"terms.model.MSS.neutral"];
-    m[utility.getGlobalValue("terms.model.MSS.empirical")] = codon_classes [^"terms.model.MSS.empirical"];
-    m[utility.getGlobalValue("terms.model.MSS.codon_pairs")] = codon_classes [^"terms.model.MSS.codon_pairs"];
-    m[utility.getGlobalValue("terms.model.MSS.non_syn_reference")] = codon_classes [^"terms.model.MSS.non_syn_reference"];
     
-    if (codon_classes/utility.getGlobalValue("terms.model.MSS.between")) {
-        m[^"terms.model.MSS.between"] = codon_classes [^"terms.model.MSS.between"];
-    }
-    
-    
-    if (codon_classes[utility.getGlobalValue("terms.model.MSS.normalize")]) {
-        m[utility.getGlobalValue("terms.model.post_definition")] = "models.codon.MSS.post_definition";
-    }
-    
-    return m;
+    return  models.codon.MSS.ModelDescription.CodonClassesDef (m, codon_classes);
 }
 
 //----------------------------------------------------------------------------------------------------------------
@@ -287,23 +293,14 @@ lfunction models.codon.MSS.post_definition (model) {
 }
 
 //----------------------------------------------------------------------------------------------------------------
-
-lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_type, model) {
-
+lfunction models.codon.MSS._GenerateRate.Generic (fromChar, toChar, namespace, model_type, model, alpha, alpha_term, beta, eta_term, omega, omega_term) {
     _GenerateRate.p = {};
     _GenerateRate.diff = models.codon.diff.complete(fromChar, toChar);
     diff_count = utility.Array1D (_GenerateRate.diff);
-
-    omega_term = utility.getGlobalValue ("terms.parameters.omega_ratio");
-    alpha_term = utility.getGlobalValue ("terms.parameters.synonymous_rate");
-    beta_term  = utility.getGlobalValue ("terms.parameters.nonsynonymous_rate");
     nr = model[utility.getGlobalValue("terms.model.MSS.neutral")];
     empirical = model[utility.getGlobalValue("terms.model.MSS.empirical")];
     codon_pairs = model[utility.getGlobalValue("terms.model.MSS.codon_pairs")];
     non_syn_ref = model[utility.getGlobalValue("terms.model.MSS.non_syn_reference")];
-    omega      = "omega";
-    alpha      = "alpha";
-    beta       = "beta";
     between_rate = model[^"terms.model.MSS.between"];
 
     _tt = model[utility.getGlobalValue("terms.translation_table")];
@@ -431,6 +428,16 @@ lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_typ
      }
 
     return _GenerateRate.p;
+}
+//----------------------------------------------------------------------------------------------------------------
+
+lfunction models.codon.MSS._GenerateRate (fromChar, toChar, namespace, model_type, model) {
+
+    return models.codon.MSS._GenerateRate.Generic (fromChar, toChar, namespace, model_type, model, 
+        "alpha", utility.getGlobalValue ("terms.parameters.synonymous_rate"), 
+        "beta", utility.getGlobalValue ("terms.parameters.nonsynonymous_rate"),
+        "omega", utility.getGlobalValue ("terms.parameters.omega_ratio"));
+    
 }
 
 //----------------------------------------------------------------------------------------------------------------
