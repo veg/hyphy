@@ -2210,34 +2210,11 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
 
 
     void _mx_vect_4x4_add (float64x2x2_t &cv, double const *M, double const *V, int stride) {
-        
-        /*float64x2x2_t col;
-        float64x2x2_t
-                      row,
-                      row2,
-                      row3,
-                      row4;
-        
-        float64x2_t accumulator,
-                    accumulator2,
-                    accumulator3,
-                    accumulator4;
-        
-                      
-        col   = vld1q_f64_x2 (V);
-        row   = vld1q_f64_x2 (M);
-        row2  = vld1q_f64_x2 (M+stride);
-
-        accumulator  = vfmaq_f64 (vmulq_f64 (col.val[0], row.val[0]),  col.val[1], row.val[1]);
-        accumulator2 = vfmaq_f64 (vmulq_f64 (col.val[0], row2.val[0]), col.val[1], row2.val[1]);
-
-        row   = vld1q_f64_x2 (M+stride*2);
-        row2  = vld1q_f64_x2 (M+stride*3);
-        accumulator3 = vfmaq_f64 (vmulq_f64 (col.val[0], row.val[0]), col.val[1], row.val[1]);
-        accumulator4 = vfmaq_f64 (vmulq_f64 (col.val[0], row2.val[0]), col.val[1], row2.val[1]);
-
-        cv.val[0] = vaddq_f64(cv.val[0],vaddq_f64(vzip1q_f64 (accumulator,accumulator2),vzip2q_f64 (accumulator,accumulator2)));
-        cv.val[1] = vaddq_f64(cv.val[1],vaddq_f64(vzip1q_f64 (accumulator3,accumulator4),vzip2q_f64 (accumulator3,accumulator4)));*/
+        /*
+                Compute M = M + M*V, where M is a 4x4 matrix (in a larger matrix if stride > 4)
+                and V is a 1x4 vector (but stored as 4x1)
+         
+         */
         
         float64x2x2_t col,
                       accumulator,
@@ -2256,7 +2233,6 @@ void _mx_vect_4x4 (__m256d &cv, double const *M, double const *V, int stride) {
         accumulator.val[1] = vmulq_f64 (col.val[1], row.val[1]);
 
         row2 = vld1q_f64_x2 (M+stride);
-
         accumulator2.val[0] = vmulq_f64 (col.val[0], row2.val[0]);
         accumulator2.val[1] = vmulq_f64 (col.val[1], row2.val[1]);
         

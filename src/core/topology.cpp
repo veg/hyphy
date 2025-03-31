@@ -207,7 +207,7 @@ void    _TreeTopology::PostTreeConstructor (bool make_copy, _AssociativeList * m
                 delete theRoot;
                 theRoot = node_temp;
                 ReportWarning ("The root has a single child, which is be promoted to the root");
-                recurse = false;
+                recurse = true;
             }
             
             flatTree.Delete (node_index);
