@@ -370,7 +370,7 @@ for (key, value; in; prime.properties ) {
     parameters.DeclareGlobal ( prime.p, {});
     parameters.SetRange ( prime.p, prime.lambda_range);
     
-    parameter.local_lambda = model.generic.GetLocalParameter (prime.site.property_model , terms.propertyImportance(key));
+    parameter.local_lambda = model.generic.GetLocalParameter (prime.site.property_model , terms.propertyImportance(key,""));
     io.CheckAssertion ("None != parameter.local_lambda", "Could not find expected a local parameter in \`models.codon.MG_REV_PROPERTIES.ModelDescription\`");
     prime.lambdas [parameter.local_lambda] = prime.p;
     prime.local_to_property_name [parameter.local_lambda] = key;
@@ -546,9 +546,8 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
     
     prime.pattern_count = 1;
     
-    
-    for (_pattern_, _pattern_info_; in; prime.site_patterns) {
-    
+    utility.ForEachPair (prime.site_patterns, "_pattern_", "_pattern_info_",
+    '
           io.ReportProgressBar("", "Working on site pattern " + (prime.pattern_count) + "/" + Abs (prime.site_patterns));
            if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")]) {
                 prime.store_results (-1,None,{"0" : "prime.site_likelihood",
@@ -572,7 +571,7 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
                                                                     "prime.store_results");
             }
             prime.pattern_count  += 1;
-    }  
+    ');
 
     mpi.QueueComplete (prime.queue);
     prime.partition_matrix = {Abs (prime.site_results[prime.partition_index]), Rows (prime.table_headers)};
@@ -660,7 +659,7 @@ function prime.apply_proportional_site_constraint.property (tree_name, node_name
     ExecuteCommands (node_name + "." + alpha_parameter + ":=(" + alpha_factor + ")*" + prime.branch_length__);
     ExecuteCommands (node_name + "." + beta_parameter + ":=(" + beta_factor + ")*" + prime.branch_length__);
     //parameters.SetRange (node_name + "." + beta_parameter , prime.lambda_range);
-    
+        
     for (local, glob; in; lambdas) {
         ExecuteCommands (node_name + "." + local + ":=" + glob);
         parameters.SetRange (node_name + "." + local, prime.lambda_range);
@@ -771,8 +770,9 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         
          }
      
-     
-     
+        
+        parameters.SetConstraint ("prime.site_beta",  ^"prime.site_beta", "");
+        
         // Export (lfe, ^lf_prop);
         // fprintf ("/Users/sergei/Desktop/PRIME/site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
      

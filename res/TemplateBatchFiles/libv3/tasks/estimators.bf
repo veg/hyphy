@@ -1186,7 +1186,7 @@ lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, op
 
     name_space = & model_MGREV;
 
-    mg_rev = model.generic.DefineModel(generator,
+    mg_rev = model.generic.DefineModelAuto(generator,
         name_space, {
             "0": parameters.Quote(option[utility.getGlobalValue("terms.run_options.model_type")]),
             "1": genetic_code

@@ -234,10 +234,18 @@ lfunction model.generic.get_rate_variation (model_spec) {
  */
 function model.generic.DefineModel (model_spec, id, arguments, data_filter, estimator_type) {
 
-
     // Basic model definition
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
+    return model.generic.DefineModel_aux (id, data_filter, estimator_type);
+}
 
+/**
+ * @name model.generic.DefineModel
+ * @param id
+ * @param data_filter
+ * @param estimator_type
+ */
+function model.generic.DefineModel_aux (id, data_filter, estimator_type) {
 
 
 	// Add data filter information to model description
@@ -284,7 +292,24 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
 
 	return model.generic.DefineModel.model;
 }
+/**
+ * @name model.generic.DefineAutoModel
+ * @param model_spec
+ * @param id
+ * @param arguments
+ * @param data_filter
+ * @param estimator_type
+ */
+ 
+function model.generic.DefineModelAuto (model_spec, id, arguments, data_filter, estimator_type) {
 
+    model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
+    if (model.generic.DefineModel.model [terms.model.canonical] == "EXPLICIT_FORM_MATRIX_EXPONENTIAL") {
+        return model.generic.DefineMixtureModel_aux (id, data_filter, estimator_type);
+    } else {
+        return model.generic.DefineModel_aux (id, data_filter, estimator_type)
+    }
+}
 
 /**
  * @name model.generic.DefineMixtureModel
@@ -295,9 +320,17 @@ function model.generic.DefineModel (model_spec, id, arguments, data_filter, esti
  * @param estimator_type
  */
 function model.generic.DefineMixtureModel (model_spec, id, arguments, data_filter, estimator_type) {
-
-
 	model.generic.DefineModel.model = utility.CallFunction (model_spec, arguments);
+	return model.generic.DefineMixtureModel_aux  (id, data_filter, estimator_type);
+}
+
+/**
+ * @name model.generic.DefineMixtureModel
+ * @param id
+ * @param data_filter
+ * @param estimator_type
+ */
+function model.generic.DefineMixtureModel_aux (id, data_filter, estimator_type) {
 	if (None != estimator_type) {
 	    models.generic.AttachFilter (model.generic.DefineModel.model, data_filter);
 	}
