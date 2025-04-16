@@ -140,6 +140,7 @@ fubar.path.base = (fubar.json [terms.json.input])[terms.json.file];
 
 KeywordArgument ("cache",   "Save FUBAR cache to [default is alignment+.FUBAR.cache]", fubar.path.base + ".FUBAR.cache");
 
+fubar.RunPrompts (fubar.prompts);
 
 /*------------------------------------------------------------------------------
     Continued Analysis Setup
@@ -164,7 +165,6 @@ if (utility.Has (fubar.cache, terms.fubar.cache.settings, "AssociativeList")) {
     fubar.run_settings = fubar.cache [terms.fubar.cache.settings];
 } else {
     fubar.cache = {};
-    fubar.RunPrompts (fubar.prompts);
     fubar.cache [terms.fubar.cache.settings] = fubar.run_settings;
     io.WriteCacheToFile (fubar.path.cache, fubar.cache);
 }
@@ -198,7 +198,6 @@ if (utility.Has (fubar.cache, terms.fubar.cache.gtr, "AssociativeList")) {
 
 }
 else {
-    fubar.RunPrompts (fubar.prompts);
     namespace fubar {
         doGTR ("fubar");
     }
@@ -229,7 +228,6 @@ if (utility.Has (fubar.cache, terms.fubar.cache.grid, "Matrix") && utility.Has (
 } else {
     // define FUBAR model
 
-    fubar.RunPrompts (fubar.prompts);
     fubar.grid.matrix                            = fubar.DefineAlphaBetaGrid (fubar.run_settings["grid size"], fubar.run_settings["non-zero"]);
 
     io.ReportProgressMessageMD                  ("fubar", "codon_fit", "Computing the phylogenetic likelihood function on the grid ");
@@ -321,7 +319,6 @@ selection.io.stopTimer (fubar.json [terms.json.timers], "Grid Calculations");
 if (utility.Has (fubar.run_settings, "method", "String")) {
     fubar.prompts["method"] = FALSE;
 } else {
-    fubar.RunPrompts(fubar.prompts);
     fubar.cache [terms.fubar.cache.settings] = fubar.run_settings;
 }
 
@@ -332,7 +329,6 @@ if (fubar.run_settings["method"] != terms.fubar.methods.VB0) {
     if (utility.Has (fubar.cache, terms.fubar.cache.mcmc, "AssociativeList")) {
         io.ReportProgressMessageMD                  ("fubar", "mcmc", "_Loaded cached results from `Abs(fubar.cache[terms.fubar.cache.mcmc])` chains_");
     } else {
-        fubar.RunPrompts (fubar.prompts);
         if (fubar.run_settings["method"] == terms.fubar.methods.MH) {
             fubar.cache[terms.fubar.cache.mcmc] = fubar.RunMCMC  (fubar.run_settings,
                                                                   fubar.cache[terms.fubar.cache.grid],
@@ -353,7 +349,6 @@ if (fubar.run_settings["method"] != terms.fubar.methods.VB0) {
     if (utility.Has (fubar.cache, terms.fubar.cache.posterior, "Matrix")) { // for VB this is going to be the set of posterior weights
         io.ReportProgressMessageMD                  ("fubar", "mcmc", "_Loaded cached estimated posterior probabilities on the grid");
     } else {
-        fubar.RunPrompts (fubar.prompts);
         fubar.cache[terms.fubar.cache.posterior] = fubar.RunVariationalBayes  (fubar.run_settings,
                                                               fubar.cache[terms.fubar.cache.grid],
                                                               fubar.cache[terms.fubar.cache.conditionals],
