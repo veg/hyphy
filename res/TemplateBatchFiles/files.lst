@@ -56,11 +56,6 @@
 "PDF","Read sequence data, select a contiguous subset of sites and save it to another datafile.","PartitionDataFile.bf";
 "RMV","Remove sequences with stop codons from the data.","CleanStopCodons.bf";
 
-"","Tools for manipulating trees.","!Tree File Tools";
-"LBLT","Read a tree and (optionally) a list of sequence names, and annotate branches for subsequent analyses that accept branch partitions","lib/label-tree.bf";
-"TLBLT","Read a tree and a sequence alignment and reconcile their content; label tree partitions if specified","lib/trim-label-tree.bf";
-
-
 "","Miscellaneous items.","!Miscellaneous";
 "DEPS","Analyze Directional Evolution in Protein Sequences (DEPS)","DirectionalREL.bf";
 "FAA","Fit a multiple fitness class model to amino acid data.","FitnessAAModels.bf";
