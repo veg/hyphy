@@ -55,6 +55,7 @@
 "MV","Merge two datafiles by combining sequences (vertical merge).","MergeSequences.bf";
 "PDF","Read sequence data, select a contiguous subset of sites and save it to another datafile.","PartitionDataFile.bf";
 "RMV","Remove sequences with stop codons from the data.","CleanStopCodons.bf";
+"RD","Remove duplicate sequences from an alignment and prune the tree accordingly.","lib/remove-duplicates.bf";
 
 "","Tools for manipulating trees.","!Tree File Tools";
 "label-tree","Read a tree and (optionally) a list of sequence names, and annotate branches for subsequent analyses that accept branch partitions","lib/label-tree.bf";
