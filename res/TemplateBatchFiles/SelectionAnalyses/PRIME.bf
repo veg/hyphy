@@ -699,9 +699,9 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
     fel = estimators.ExtractMLEs (lf_fel, model_mapping);
     fel[utility.getGlobalValue("terms.fit.log_likelihood")] = results[1][0];
     fel.ll = results[1][0];
-    //console.log ("\nFEL = " + results[1][0]);
-    //console.log ("alpha = " + ^"prime.site_alpha");
-    //console.log ("beta = " + ^"prime.site_beta");
+    console.log ("\nFEL = " + results[1][0]);
+    console.log ("alpha = " + ^"prime.site_alpha");
+    console.log ("beta = " + ^"prime.site_beta");
   
     //Export (lfe, ^lf_prop);
     // fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
@@ -790,13 +790,15 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         //Export (lfe, ^lf_prop);
         //fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
     
-        //console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM_VALUE" + "\nGrid best"+  ^"LF_INITIAL_GRID_MAXIMUM" + " / optimized " + results[1][0] + "\n");
+        console.log ("\n" + ^"LF_INITIAL_GRID_MAXIMUM_VALUE" + "\nGrid best"+  ^"LF_INITIAL_GRID_MAXIMUM" + " / optimized " + results[1][0] + "\n");
         Optimize (results, ^lf_prop);
-        //console.log ("\n" +  results[1][0] + "\n");
+        console.log ("\n" +  results[1][0] + "\n");
         //fprintf (stdout, ^lf_prop);  
         altL = results[1][0];
      
-        // fit all of the nulls
+        Export (lfe, ^lf_prop);
+        fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
+       // fit all of the nulls
     
         constrained_models = {};
 
@@ -817,14 +819,14 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
                     "OPTIMIZATION_START_GRID" : start_grid,
                     "OPTIMIZATION_PRECISION": 1e-4
                 });
-                //console.log (k + " => " + (- results[1][0] + altL));
+                console.log (k + " => " + (- results[1][0] + altL));
                 if (results[1][0] - altL > 1e-2) {
                     done = FALSE;
                     break;
                 }
                 extra_its = 5;
                 while (results[1][0] < fel.ll - 1e-2 && extra_its) {
-                    //console.log ("WORSE THAN FEL; REOPTIMIZING...");
+                    console.log ("WORSE THAN FEL; REOPTIMIZING...");
                     for (sp; in; estimators.LHC (ranges, 40)) {
                         point = {};
         
@@ -848,9 +850,10 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
                         "OPTIMIZATION_START_GRID" : start_grid,
                         "OPTIMIZATION_PRECISION": 1e-3
                     });
-                    //console.log (k + " => " + (results[1][0] - fel.ll));
+                    console.log (k + " => " + (results[1][0] - fel.ll));
                     Optimize (results, ^lf_prop);
-                    //console.log (k + " => " + (results[1][0] - fel.ll));
+                    console.log (k + " => " + (results[1][0] - fel.ll));
+
                     extra_its += (-1);
                 }
                 constrained_models[k] = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {^"terms.globals_only" : TRUE});
@@ -873,17 +876,17 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
                     "OPTIMIZATION_PRECISION": 1e-4
                   });
                   altL = results[1][0]; 
-                  //console.log ("REOPTIMIZED : " + altL);
+                  console.log ("REOPTIMIZED : " + altL);
                   alternative = estimators.ExtractMLEsOptions (lf_prop, model_mapping, {});
-                  //Export (lfe, ^lf_prop);
-                  //fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
+                  Export (lfe, ^lf_prop);
+                  fprintf ("/tmp/PRIME-site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
              
             }
         }
     
-        //console.log ("\nPRIME = " + altL);
-        //console.log ("alpha = " + ^"prime.site_alpha");
-        //console.log ("beta = " + ^"prime.site_beta");
+        console.log ("\nPRIME = " + altL);
+        console.log ("alpha = " + ^"prime.site_alpha");
+        console.log ("beta = " + ^"prime.site_beta");
     
         
         if (^"prime.impute_states") {
@@ -926,9 +929,9 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         branch_mapping = ancestral.ComputeCompressedSubstitutionsBySite (ancestral_info,0);
         DeleteObject (ancestral_info);
     
-        //console.log (branch_substitution_information);
-        //console.log ("END " +(pattern_info["sites"]) + " pattern");
-        //console.log ("----------------------------------------------");
+        console.log (branch_substitution_information);
+        console.log ("END " +(pattern_info["sites"]) + " pattern");
+        console.log ("----------------------------------------------");
     
         alternative [utility.getGlobalValue("terms.fit.log_likelihood")] = altL;
  
