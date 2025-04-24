@@ -33,12 +33,11 @@ swigFile = [path.join(scriptPath,  'THyPhy.i')]
 
 coreSrcFiles = glob(path.join(coreSrcPath, '*.cpp'))
 newSrcFiles = glob(path.join(newSrcPath, '*.cpp'))
-sqliteFiles = [] # glob(path.join(sqlitePath, 'sqlite3.c'))
-linkFiles = glob(path.join(linkPath, '*.cxx')) # + glob(path.join(linkPath, '*.cxx'))
+linkFiles = glob(path.join(linkPath, '*.cxx')) 
 utilFiles = glob(path.join(srcPath, 'utils', '*.cpp'))
 contribFiles = glob(path.join(contribSrcPath, '*.cpp'))
 
-sourceFiles = coreSrcFiles + newSrcFiles +  contribFiles  + linkFiles + swigFile + utilFiles
+sourceFiles = coreSrcFiles + newSrcFiles + contribFiles + linkFiles + swigFile + utilFiles
 
 includePaths =  [path.join(p, 'include') for p in [coreSrcPath, newSrcPath]]
 includePaths += [linkPath, contribSrcPath]

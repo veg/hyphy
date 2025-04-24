@@ -58,9 +58,8 @@
 
 #include      <signal.h>
 
-#ifndef __HYPHY_NO_SQLITE__
-  #include "sqlite3.h"
-#endif
+#define __HYPHY_NO_SQLITE__
+// SQLite functionality removed
 
 using namespace hy_global;
 using namespace hyphy_global_objects;
@@ -3249,118 +3248,15 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
 //____________________________________________________________________________________
 
 bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
-
-  static _SimpleList  sql_databases;
-
-  static const _String kSQLOpen                 ("SQL_OPEN"),
-                       kSQLClose                ("SQL_CLOSE");
-
-  static auto sql_handler = [] (void* exL,int cc, char** rd, char** cn) -> int
-    {
-      static const _String  kSQLRowData              ("SQL_ROW_DATA"),
-                            kSQLColumnNames          ("SQL_COLUMN_NAMES");
-
-      _ExecutionList * caller = (_ExecutionList *)exL;
-
-      if (!terminate_execution)
-        if (caller && cc && !caller->empty()) {
-          _List     row_data,
-                    column_names;
-
-          for (long cnt = 0; cnt < cc; cnt++) {
-            if (rd[cnt]) {
-              row_data.AppendNewInstance (new _String (rd[cnt]));
-            } else {
-              row_data.AppendNewInstance (new _String);
-            }
-
-            if (cn[cnt]) {
-              column_names.AppendNewInstance (new _String (cn[cnt]));
-            } else {
-              column_names.AppendNewInstance (new _String);
-            }
-          }
-
-          CheckReceptacleCommandIDException (&kSQLRowData,HY_HBL_COMMAND_DO_SQL,false)->SetValue (new _Matrix (row_data), false, true, NULL);
-          CheckReceptacleCommandIDException (&kSQLColumnNames, HY_HBL_COMMAND_DO_SQL,false)->SetValue (new _Matrix (column_names), false,true, NULL);
-
-          caller->Execute();
-
-        }
-       return 0;
-    };
-
-
   _Variable * receptacle = nil;
-
-  current_program.advance ();
+  current_program.advance();
 
   try {
-#ifdef __HYPHY_NO_SQLITE__
-    throw _String("SQLite commands can not be used in a HyPhy version built with the __HYPHY_NO_SQLITE__ flag");
-#else
-
-    if (*GetIthParameter(0UL) == kSQLOpen) { // open a DB from file path
-      receptacle = _ValidateStorageVariable (current_program, 2UL);
-      _String file_name = _ProcessALiteralArgument (*GetIthParameter(1UL), current_program);
-      if (!ProcessFileName(file_name, true, false, (hyPointer)current_program.nameSpacePrefix,false,&current_program)) {
-        return false;
-      }
-
-      sqlite3 *db = nil;
-      int err_code = sqlite3_open (file_name.get_str(),&db);
-      if (err_code == SQLITE_OK) {
-        err_code = sqlite3_exec(db, "SELECT COUNT(*) FROM sqlite_master", sql_handler, nil, nil);
-      }
-
-      if (err_code != SQLITE_OK) {
-        _String err_msg = sqlite3_errmsg(db);
-        sqlite3_close(db);
-        throw (err_msg);
-      } else {
-        long empty_slot = sql_databases.Find (0);
-        if (empty_slot == kNotFound) {
-          empty_slot = sql_databases.countitems();
-          sql_databases << (long)db;
-        } else {
-          sql_databases.list_data[empty_slot] = (long)db;
-        }
-
-        sqlite3_busy_timeout (db, 5000);
-
-        receptacle->SetValue (new _Constant (empty_slot), false,true, NULL);
-      }
-    } else {
-      bool closing_db = *GetIthParameter(0UL) == kSQLClose;
-      long db_index   = _ProcessNumericArgumentWithExceptions(*GetIthParameter(closing_db ? 2UL : 0UL), current_program.nameSpacePrefix);
-
-      if (sql_databases.Map (db_index, 0L) == 0L) {
-        throw (GetIthParameter(closing_db ? 2UL : 0UL)-> Enquote() & " is an invalid database index");
-      }
-
-      if (closing_db) {
-        sqlite3_close ((sqlite3*)sql_databases.get(db_index));
-        sql_databases [db_index] = 0L;
-      } else {
-          _StringBuffer callback_code = _ProcessALiteralArgument(*GetIthParameter(2UL), current_program);
-
-          _ExecutionList callback_script (callback_code,current_program.nameSpacePrefix?(current_program.nameSpacePrefix->GetName()):nil);
-
-          if (!terminate_execution) {
-            _String const sql_code = _ProcessALiteralArgument(*GetIthParameter(1UL), current_program);
-
-            if (sqlite3_exec((sqlite3*)sql_databases.get(db_index), sql_code.get_str(), sql_handler, (hyPointer)&callback_script, nil) != SQLITE_OK) {
-              throw _String(sqlite3_errmsg((sqlite3*)sql_databases(db_index)));
-            }
-          }
-      }
-    }
-#endif
-
+    throw _String("SQLite functionality has been removed from this build of HyPhy");
   } catch (const _String& error) {
-    return  _DefaultExceptionHandler (receptacle, error, current_program);
+    return _DefaultExceptionHandler(receptacle, error, current_program);
   }
-
+  
   return true;
 }
 
