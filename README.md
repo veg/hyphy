@@ -100,19 +100,13 @@ And then run make install to install the software
 +   libhyphy_mp.(so/dylib/dll) will be installed at `/location/of/choice/lib`
 +   HyPhy's standard library of batchfiles will go into `/location/of/choice/lib/hyphy`
 
-#### Building HyPhy for Web Assembly
+#### WebAssembly Build
 
-Use [Emscripten](https://emscripten.org/docs/compiling/Building-Projects.html) to produce web assembly files, which can be run entirely within a modern browser. See https://observablehq.com/@spond/hyphy-biowasm for an example. 
+HyPhy provides WebAssembly builds that can run in modern browsers without installation.
 
-```
-emcmake cmake -DCMAKE_EXE_LINKER_FLAGS="-sTOTAL_STACK=2097152 -02 -sASSERTIONS=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -s EXPORTED_RUNTIME_METHODS=["callMain","FS","PROXYFS","WORKERFS","UTF8ToString","getValue","AsciiToString"] -lworkerfs.js -lproxyfs.js -s INVOKE_RUN=0 -s ENVIRONMENT="web,worker" ${EM_FLAGS//-s /-s} -fwasm-exceptions --preload-file res@/hyphy --preload-file tests/hbltests@/tests"
-``` 
+##### Using Pre-built WebAssembly Files
 
-```
-emmake make -j hyphy 
-```
-
-This creates 
+The latest WebAssembly build can be downloaded from the GitHub Actions artifacts. Go to the [GitHub Actions page](https://github.com/veg/hyphy/actions/workflows/wasm-build.yml), select the most recent successful workflow run, and download the `hyphy-wasm` artifact. The artifact contains:
 
 ```
 hyphy.js
@@ -120,7 +114,28 @@ hyphy.wasm
 hyphy.data
 ```
 
-Which should be served from the same directory.
+These three files should be served from the same directory on your web server. For an example of HyPhy running in the browser, see https://observablehq.com/@spond/hyphy-biowasm.
+
+##### Building WebAssembly Files Locally
+
+To build the WebAssembly files yourself, you'll need [Emscripten](https://emscripten.org/docs/compiling/Building-Projects.html).
+
+1. Configure the build:
+```
+emcmake cmake -DCMAKE_EXE_LINKER_FLAGS="-sTOTAL_STACK=2097152 -O2 -sASSERTIONS=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -s EXPORTED_RUNTIME_METHODS=[\"callMain\",\"FS\",\"PROXYFS\",\"WORKERFS\",\"UTF8ToString\",\"getValue\",\"AsciiToString\"] -lworkerfs.js -lproxyfs.js -s INVOKE_RUN=0 -s ENVIRONMENT=\"web,worker\" ${EM_FLAGS//-s /-s} -fwasm-exceptions --preload-file res@/hyphy --preload-file tests/hbltests@/tests"
+``` 
+
+2. Build the target:
+```
+emmake make -j hyphy 
+```
+
+3. This will create the following files which should be served from the same directory:
+```
+hyphy.js
+hyphy.wasm
+hyphy.data
+```
 
 #### Testing
 
