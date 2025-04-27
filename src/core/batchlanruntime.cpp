@@ -3247,18 +3247,6 @@ bool      _ElementaryCommand::HandleExecuteCommandsCases(_ExecutionList& current
 
 //____________________________________________________________________________________
 
-bool      _ElementaryCommand::HandleDoSQL (_ExecutionList& current_program) {
-  _Variable * receptacle = nil;
-  current_program.advance();
-
-  try {
-    throw _String("SQLite functionality has been removed from this build of HyPhy");
-  } catch (const _String& error) {
-    return _DefaultExceptionHandler(receptacle, error, current_program);
-  }
-  
-  return true;
-}
 
 //____________________________________________________________________________________
 
