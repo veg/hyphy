@@ -12,13 +12,15 @@ jobs:
     name: Build WebAssembly
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       
-      # Simply use the system emscripten instead of an action
-      - name: Install Emscripten
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v12
+        with:
+          version: 'latest'
+          
+      - name: Verify Emscripten installation
         run: |
-          sudo apt-get update
-          sudo apt-get install -y emscripten
           emcc --version
           
       - name: Configure and build with Emscripten
@@ -34,28 +36,12 @@ jobs:
           cd build
           ls -la
           
-      # Create a release for the web files instead of using upload-artifact
-      - name: Create GitHub release with WebAssembly builds
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
-        run: |
-          # Create a release
-          RELEASE_NAME="wasm-build-$(date +%Y%m%d%H%M%S)"
-          
-          # Package the WebAssembly files
-          mkdir -p wasm-package
-          cp build/hyphy.js wasm-package/
-          cp build/hyphy.wasm wasm-package/
-          cp build/hyphy.data wasm-package/
-          tar -czvf hyphy-wasm.tar.gz -C wasm-package .
-          
-          # Create a release and upload the files
-          # Use the GitHub CLI if available, otherwise use curl
-          if command -v gh &> /dev/null; then
-            gh release create $RELEASE_NAME hyphy-wasm.tar.gz --title "WebAssembly Build $RELEASE_NAME" --notes "Automated WebAssembly build"
-          else
-            # Upload using GitHub API
-            echo "GitHub CLI not found, skipping release creation"
-            echo "WebAssembly files are available in the build directory"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyphy-wasm
+          path: |
+            build/hyphy.js
+            build/hyphy.wasm
+            build/hyphy.data
+          retention-days: 30
