@@ -12,10 +12,10 @@ jobs:
     name: Build WebAssembly
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       
       - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v12
+        uses: mymindstorm/setup-emsdk@v11
         with:
           version: 'latest'
           
@@ -37,7 +37,7 @@ jobs:
           ls -la
           
       - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: hyphy-wasm
           path: |
