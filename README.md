@@ -106,7 +106,7 @@ HyPhy provides WebAssembly builds that can run in modern browsers without instal
 
 ##### Using Pre-built WebAssembly Files
 
-The latest WebAssembly build can be downloaded from the GitHub Actions artifacts. Go to the [GitHub Actions page](https://github.com/veg/hyphy/actions?query=workflow%3A%22WebAssembly+Build%22), select the most recent successful workflow run, and download the `hyphy-wasm` artifact. The artifact contains:
+The latest WebAssembly build can be downloaded from the GitHub releases page. Go to the [GitHub Releases](https://github.com/veg/hyphy/releases) and look for releases named "WebAssembly Build". Download the `hyphy-wasm.tar.gz` file and extract it to get:
 
 ```
 hyphy.js
