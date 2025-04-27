@@ -112,17 +112,18 @@ The latest WebAssembly build can be downloaded from the GitHub Actions artifacts
 hyphy.js
 hyphy.wasm
 hyphy.data
+hyphy_resources.tar.gz
 ```
 
-These three files should be served from the same directory on your web server. For an example of HyPhy running in the browser, see https://observablehq.com/@spond/hyphy-biowasm.
+Extract the resources tarball (`hyphy_resources.tar.gz`) in the same directory as the other files. All files should be served from the same directory on your web server. For an example of HyPhy running in the browser, see https://observablehq.com/@spond/hyphy-biowasm.
 
 ##### Building WebAssembly Files Locally
 
 To build the WebAssembly files yourself, you'll need [Emscripten](https://emscripten.org/docs/compiling/Building-Projects.html).
 
-1. Configure the build:
+1. Configure the build - note that we don't use preload flags during configuration to avoid CMake test issues:
 ```
-emcmake cmake -DCMAKE_EXE_LINKER_FLAGS="-sTOTAL_STACK=2097152 -O2 -sASSERTIONS=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -s EXPORTED_RUNTIME_METHODS=[\"callMain\",\"FS\",\"PROXYFS\",\"WORKERFS\",\"UTF8ToString\",\"getValue\",\"AsciiToString\"] -lworkerfs.js -lproxyfs.js -s INVOKE_RUN=0 -s ENVIRONMENT=\"web,worker\" ${EM_FLAGS//-s /-s} -fwasm-exceptions --preload-file res@/hyphy --preload-file tests/hbltests@/tests"
+emcmake cmake -DCMAKE_EXE_LINKER_FLAGS="-sTOTAL_STACK=2097152 -O2 -sASSERTIONS=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -s EXPORTED_RUNTIME_METHODS=[\"callMain\",\"FS\",\"PROXYFS\",\"WORKERFS\",\"UTF8ToString\",\"getValue\",\"AsciiToString\"] -lworkerfs.js -lproxyfs.js -s INVOKE_RUN=0 -s ENVIRONMENT=\"web,worker\" ${EM_FLAGS//-s /-s} -fwasm-exceptions"
 ``` 
 
 2. Build the target:
@@ -130,12 +131,21 @@ emcmake cmake -DCMAKE_EXE_LINKER_FLAGS="-sTOTAL_STACK=2097152 -O2 -sASSERTIONS=1
 emmake make -j hyphy 
 ```
 
-3. This will create the following files which should be served from the same directory:
+3. This will create the following files:
 ```
 hyphy.js
 hyphy.wasm
 hyphy.data
 ```
+
+4. You'll also need to copy the resource files to serve alongside the WebAssembly files:
+```
+mkdir -p hyphy_resources
+cp -r res hyphy_resources/
+cp -r tests/hbltests hyphy_resources/tests
+```
+
+5. All files should be served from the same directory on your web server.
 
 #### Testing
 
