@@ -1,0 +1,67 @@
+name: WebAssembly Build
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+  # Allows running this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build-wasm:
+    name: Build WebAssembly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v12
+        with:
+          version: 'latest'
+          
+      - name: Verify Emscripten installation
+        run: |
+          emcc --version
+          
+      - name: Configure and build with Emscripten
+        run: |
+          # Build with Emscripten - but without preloading files to avoid issues with CMake tests
+          mkdir -p build
+          cd build
+          
+          # Configure without preload files to avoid issues during compiler checks
+          emcmake cmake .. -DCMAKE_EXE_LINKER_FLAGS="-sTOTAL_STACK=2097152 -O2 -sASSERTIONS=1 -sMODULARIZE=1 -sALLOW_MEMORY_GROWTH -sFORCE_FILESYSTEM=1 -sEXIT_RUNTIME=0 -s EXPORTED_RUNTIME_METHODS=[\"callMain\",\"FS\",\"PROXYFS\",\"WORKERFS\",\"UTF8ToString\",\"getValue\",\"AsciiToString\"] -lworkerfs.js -lproxyfs.js -s INVOKE_RUN=0 -s ENVIRONMENT=\"web,worker\" -fwasm-exceptions"
+          
+          # Build without preloading files
+          emmake make -j hyphy
+          
+      - name: Package resource files
+        run: |
+          cd build
+          
+          # Instead of bundling resources, we'll package them separately for download
+          mkdir -p hyphy_resources
+          cp -r ../res hyphy_resources/
+          cp -r ../tests/hbltests hyphy_resources/tests
+          
+          # Create a README for the resources
+          echo "These resource files should be placed in the same directory as hyphy.js, hyphy.wasm, and hyphy.data" > hyphy_resources/README.txt
+          
+          # Create a zip file of the resources
+          tar -czvf hyphy_resources.tar.gz hyphy_resources
+          
+      - name: Display build artifacts
+        run: |
+          cd build
+          ls -la
+          
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyphy-wasm
+          path: |
+            build/hyphy.js
+            build/hyphy.wasm
+            build/hyphy.data
+            build/hyphy_resources.tar.gz
+          retention-days: 30
