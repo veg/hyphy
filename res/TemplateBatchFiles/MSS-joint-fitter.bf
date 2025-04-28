@@ -4,7 +4,7 @@
 
 /* 1a. Initial Setup
 ------------------------------------------------------------------------------*/
-RequireVersion ("2.5.48");
+RequireVersion ("2.5.70");
 
 LoadFunctionLibrary ("libv3/all-terms.bf");
 LoadFunctionLibrary ("libv3/convenience/regexp.bf");
