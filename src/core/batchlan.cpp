@@ -3857,7 +3857,8 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         break;
 
     case HY_HBL_COMMAND_DO_SQL:
-        return HandleDoSQL(chain);
+        chain.ReportAnExecutionError(_String("SQLite functionality has been removed from this build of HyPhy"));
+        return false;
 
     case 54: // topology id =
         ExecuteCase54 (chain);

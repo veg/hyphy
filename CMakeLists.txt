@@ -156,12 +156,11 @@ file(GLOB SRC_NEW src/new/*.cpp)
 file(GLOB SRC_CONTRIB src/contrib/*.cpp)
 
 set(SRC_LINK src/lib/link/THyPhy.cpp)
-set(SRC_SQLITE3 contrib/SQLite-3.8.2/sqlite3.c)
 set(SRC_UNIXMAIN src/mains/unix.cpp)
 set(SRC_UTILS src/utils/hyphyunixutils.cpp)
 
 
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_SQLITE3} ${SRC_UTILS} ${SRC_CONTRIB})
+set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_CONTRIB})
 set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPILE_FLAGS "-Weffc++ -Wextra -Wall")
 
 
@@ -406,10 +405,7 @@ set_property(
     APPEND_STRING PROPERTY  COMPILE_FLAGS "${DEFAULT_WARNING_FLAGS}"
 )
 
-set_property(
-    SOURCE ${SRC_SQLITE3}
-    APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-int-to-pointer-cast -Wno-pointer-to-int-cast -std=c99"
-)
+# SQLite removed
 
 set_property(
     SOURCE src/core/calcnode2.cpp
@@ -431,7 +427,6 @@ include_directories(
     src/core/include
     src/contrib
     src/lib/Link src/new/include
-    contrib/SQLite-3.8.2 # SQLite
 )
 
 if (${BLAS_FOUND} AND NOT NOBLAS) 
