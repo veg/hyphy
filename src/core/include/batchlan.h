@@ -261,7 +261,6 @@ public:
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
     void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
     void      ExecuteCase52  (_ExecutionList&); // Simulate
-    void      ExecuteCase53  (_ExecutionList&); // DoSQL
     void      ExecuteCase54  (_ExecutionList&); // Topology
     void      ExecuteCase58  (_ExecutionList&); // Profile Code
     void      ExecuteCase61  (_ExecutionList&); // SCFG
@@ -295,7 +294,6 @@ public:
     bool      HandleMPISend                         (_ExecutionList&);
     bool      HandleMPIReceive                      (_ExecutionList&);
     bool      HandleExecuteCommandsCases            (_ExecutionList&, bool do_load_from_file = false, bool do_load_library = false);
-    bool      HandleDoSQL                           (_ExecutionList&);
     bool      HandleFscanf                          (_ExecutionList&, bool is_sscanf = false);
     bool      HandleChoiceList                      (_ExecutionList&);
     bool      HandleInitializeIterator              (_ExecutionList&);
