@@ -9,6 +9,7 @@
 "FADE","[FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).","SelectionAnalyses/FADE.bf";
 "PRIME","[PRIME] ","SelectionAnalyses/PRIME.bf";
 "error-filter","[Error-Filter] Use a BUSTED-E model fit to clean-up a sequence alignment","SelectionAnalyses/error-filter.bf";
+"MSS", "[MSS] Fits a model with multiple synonymous rates (MSS model) to several genes jointly.","MSS-joint-fitter.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
 "FMM", "Fit a model that permits double (and triple) instantaneous nucleotide substitutions","SelectionAnalyses/FitMultiModel.bf";
