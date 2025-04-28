@@ -9,6 +9,7 @@
 "FADE","[FADE] Test a protein alignment for directional selection towards specific amino acids along a specified set of test branches using FADE (a FUBAR Approach to Directional Evolution).","SelectionAnalyses/FADE.bf";
 "PRIME","[PRIME] ","SelectionAnalyses/PRIME.bf";
 "error-filter","[Error-Filter] Use a BUSTED-E model fit to clean-up a sequence alignment","SelectionAnalyses/error-filter.bf";
+"MSS", "[MSS] Fits a model with multiple synonymous rates (MSS model) to several genes jointly.","MSS-joint-fitter.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
 "FMM", "Fit a model that permits double (and triple) instantaneous nucleotide substitutions","SelectionAnalyses/FitMultiModel.bf";
@@ -55,6 +56,7 @@
 "MV","Merge two datafiles by combining sequences (vertical merge).","MergeSequences.bf";
 "PDF","Read sequence data, select a contiguous subset of sites and save it to another datafile.","PartitionDataFile.bf";
 "RMV","Remove sequences with stop codons from the data.","CleanStopCodons.bf";
+"remove-duplicates","Remove duplicate sequences from an alignment and prune the tree accordingly.","lib/remove-duplicates.bf";
 
 "","Tools for manipulating trees.","!Tree File Tools";
 "label-tree","Read a tree and (optionally) a list of sequence names, and annotate branches for subsequent analyses that accept branch partitions","lib/label-tree.bf";
