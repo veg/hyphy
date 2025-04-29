@@ -1965,6 +1965,31 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
 
 //____________________________________________________________________________________
 
+bool      _ElementaryCommand::HandleNestedList (_ExecutionList& current_program) {
+    current_program.advance();
+    _FString *stash_current = (_FString*)hy_env::EnvVariableGet(kNamespaceName, STRING);
+    if (stash_current) {
+      stash_current->AddAReference();
+    }
+    hy_env::EnvVariableSet(kNamespaceName, new _FString ((_String*)GetIthParameter(1)->toStr(), false), false);
+    
+    _ExecutionList * code = (_ExecutionList*)parameters.GetItem(0);
+    if (current_program.IsDryRun()) {
+        code->SetDryRun(true);
+        DeleteObject (current_program.result);
+        current_program.result = new _FString (code->GenerateHelpMessage((_List*)simpleParameters.GetElement(-2),(_List*)simpleParameters.GetElement(-1)));
+    } else {
+        code->Execute(&current_program);
+    }
+    if (stash_current) {
+      hy_env::EnvVariableSet(kNamespaceName, stash_current, false);
+    } else {
+      hy_env::EnvVariableSet(kNamespaceName, new _MathObject, false);
+    }
+    return true;
+}
+//____________________________________________________________________________________
+
 bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_program) {
  /*
      parameters:
