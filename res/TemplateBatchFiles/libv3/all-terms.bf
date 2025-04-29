@@ -147,8 +147,12 @@ namespace terms{
         return "Substitution rate from amino-acid " + fromA + " to amino-acid " + toA;
     }
 
-    function propertyImportance  (id) {
-        return "Importance factor for property " + id;
+    function propertyImportance  (id, component) {
+        if (Abs (component)) { 
+            return "Importance factor for property " + id + " component " + component;
+        } else {
+            return "Importance factor for property " + id;
+        }
     }
 
     function binaryRate(fromX, toX) {

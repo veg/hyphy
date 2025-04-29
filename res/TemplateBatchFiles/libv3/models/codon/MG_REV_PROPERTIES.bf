@@ -584,7 +584,7 @@ lfunction model.codon.MG_REV_PROPERTIES.prompt_and_define (type, code) {
                 "Random-3" : "Three random properties (for null hypothesis testing)",
                 "Random-4" : "Four random properties (for null hypothesis testing)",
                 "Random-5" : "Five random properties (for null hypothesis testing)",
-                "Custom":"Load the set of properties from a file"
+                "Custom":    "Load the set of properties from a file"
             }, 
             "The set of properties to use in the model");
 
@@ -609,7 +609,7 @@ lfunction models.codon.MG_REV_PROPERTIES.ModelDescription(type, code, properties
     // piggyback on the standard MG_REV model for most of the code
 
     mg_base = models.codon.MG_REV.ModelDescription (type, code);
-    mg_base[utility.getGlobalValue("terms.description")] = "The Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution, which allows incorporates amino-acid residue properties into the non-synonymous rates";
+    mg_base[utility.getGlobalValue("terms.description")] = "The Muse-Gaut 94 codon-substitution model coupled with the general time reversible (GTR) model of nucleotide substitution, which incorporates amino-acid residue properties into the non-synonymous rates";
     mg_base[utility.getGlobalValue("terms.model.q_ij")] = "models.codon.MG_REV_PROPERTIES._GenerateRate";
     mg_base[utility.getGlobalValue("terms.model.residue_properties")] = models.codon.MG_REV_PROPERTIES._munge_properties(properties);
     mg_base[utility.getGlobalValue("terms.model.residue_name_map")] = parameters.ValidateIDs (utility.Keys (mg_base[utility.getGlobalValue("terms.model.residue_properties")]));
@@ -693,8 +693,8 @@ lfunction models.codon.MG_REV_PROPERTIES._GenerateRate(fromChar, toChar, namespa
         model[utility.getGlobalValue("terms.translation_table")],
         "alpha", utility.getGlobalValue("terms.parameters.synonymous_rate"),
         "beta",  utility.getGlobalValue("terms.parameters.nonsynonymous_rate"),
-        "lambda",
-        "omega",
+        "lambda", "",
+        "omega", utility.getGlobalValue("terms.parameters.log_omega_ratio"),
         model[utility.getGlobalValue("terms.model.residue_properties")],
         model[utility.getGlobalValue("terms.model.residue_name_map")]
         );
@@ -710,7 +710,7 @@ lfunction models.codon.MG_REV_PROPERTIES._GenerateRate(fromChar, toChar, namespa
  */
 
 
-lfunction models.codon.MG_REV_PROPERTIES._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, lambda, omega, properties, property_id_map) {
+lfunction models.codon.MG_REV_PROPERTIES._GenerateRate_generic (fromChar, toChar, namespace, model_type, _tt, alpha, alpha_term, beta, beta_term, lambda, lambda_term, omega, omega_term, properties, property_id_map) {
 
     _GenerateRate.p = {};
     _GenerateRate.diff = models.codon.diff.complete(fromChar, toChar);
@@ -742,17 +742,17 @@ lfunction models.codon.MG_REV_PROPERTIES._GenerateRate_generic (fromChar, toChar
                 aa_rate = {};
                 prop_count = Abs (properties);
                 prop_names = utility.Keys (properties);
-                (_GenerateRate.p[model_type]) [^"terms.parameters.log_omega_ratio"] = parameters.ApplyNameSpace (omega, namespace);
+                (_GenerateRate.p[model_type]) [omega_term] = parameters.ApplyNameSpace (omega, namespace);
 
                 for (prop_name, prop_values; in; properties) {
                     prop_diff = Abs (prop_values[_tt[fromChar]] - prop_values[_tt[toChar]]);
                     term_rate = parameters.ApplyNameSpace(lambda + "_" + property_id_map[prop_name], namespace);
-                    (_GenerateRate.p[model_type])[terms.propertyImportance (prop_name)] = term_rate;
+                    (_GenerateRate.p[model_type])[terms.propertyImportance (prop_name, lambda_term)] = term_rate;
                     aa_rate + ("`term_rate`*" + prop_diff);
                 }
 
                 //aa_rate = parameters.ApplyNameSpace(lambda, namespace);
-                rate_entry += "*Min(10000,Exp(" + (_GenerateRate.p[model_type]) [^"terms.parameters.log_omega_ratio"] + "-(" + Join("+",aa_rate) + ")))";
+                rate_entry += "*Min(10000,Exp(" + (_GenerateRate.p[model_type]) [omega_term] + "-(" + Join("+",aa_rate) + ")))";
              } else {
                 aa_rate = {};
                 prop_count = Abs (properties);
@@ -762,7 +762,7 @@ lfunction models.codon.MG_REV_PROPERTIES._GenerateRate_generic (fromChar, toChar
                 for (prop_name, prop_values; in; properties) {
                     prop_diff = Abs (prop_values[_tt[fromChar]] - prop_values[_tt[toChar]]);
                     term_rate = lambda + "_" + property_id_map[prop_name];
-                    (_GenerateRate.p[model_type])[terms.propertyImportance (prop_name)] = term_rate;
+                    (_GenerateRate.p[model_type])[terms.propertyImportance (prop_name, lambda_term)] = term_rate;
                     aa_rate + ("`term_rate`*" + prop_diff);
                 }
                 rate_entry += "*Exp(-(" + Join("+",aa_rate) + "))";
@@ -790,7 +790,8 @@ lfunction  models.codon.MG_REV_PROPERTIES.post_definition (model) {
         ^"terms.upper_bound": "10"
     };
 
-    for (id; in ; model.GetParameters_RegExp (model, terms.propertyImportance ('') + "|" + ^"terms.parameters.log_omega_ratio")) {
+
+    for (id; in ; model.GetParameters_RegExp (model, terms.propertyImportance ('', '') + "|" + ^"terms.parameters.log_omega_ratio")) {
         parameters.SetRange(id, prop_range);
         parameters.SetValue(id, 0.1);
     }
@@ -801,7 +802,7 @@ lfunction  models.codon.MG_REV_PROPERTIES.post_definition (model) {
 lfunction models.codon.MG_REV_PROPERTIES.set_branch_length(model, value, parameter) {
     
     if (utility.Has (model, ^"terms.model.MG_REV_PROPERTIES.mean_prop", "Number")) {
-      properties = model.GetLocalParameters_RegExp(model, terms.propertyImportance (""));
+      properties = model.GetLocalParameters_RegExp(model, terms.propertyImportance ("",""));
       for (tag, id; in; properties) {
         parameters.SetValue (id, model[^"terms.model.MG_REV_PROPERTIES.mean_prop"]);
       }

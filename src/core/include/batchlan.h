@@ -298,7 +298,8 @@ public:
     bool      HandleChoiceList                      (_ExecutionList&);
     bool      HandleInitializeIterator              (_ExecutionList&);
     bool      HandleAdvanceIterator                 (_ExecutionList&);
-    
+    bool      HandleNestedList                      (_ExecutionList&);
+
     long      get_code                              (void) const { return code; };
     unsigned  long parameter_count                  (void) const { return parameters.countitems();}
     

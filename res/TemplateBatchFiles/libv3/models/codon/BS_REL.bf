@@ -15,6 +15,15 @@ LoadFunctionLibrary("../../convenience/math.bf");
 
 */
 
+//----------------------------------------------------------------------------------------------------------------
+
+
+lfunction model.codon.BS_REL.prompt_and_define (type, code) {
+    KeywordArgument ("components", "How many model components?", "2");
+    components = io.PromptUser ("How many model components?", 2, 1, 10, TRUE);
+    return models.codon.BS_REL.ModelDescription(type, code, components);
+}
+
 models.codon.BS_REL.rate_term = "alpha";
 
 /**

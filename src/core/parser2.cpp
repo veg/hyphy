@@ -1219,7 +1219,14 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
         if (s.get_char(i) == '(') { // opening (
           // check to see if this is a function call
 
+          if (twoToken) {
+              char opChar = s.get_char(i-1);
+              _String thisOp (opChar);
+              levelOps->AppendNewInstance (new _Operation (thisOp,1L));
+              twoToken = false;
+          }
           _parse_new_level (level, operations, operands, levelOps, levelData, curOp, functionCallTags);
+         
           continue;
         }
 
@@ -1352,9 +1359,9 @@ long        Parse (_Formula* f, _String& s, _FormulaParsingContext& parsingConte
 
             if (twoToken) {
                 char opChar = s.get_char(i-1);
+                twoToken = false;
                 if (((_String*)BuiltInFunctions(HY_OP_CODE_REF))->Equal(opChar)) {
                     takeVarReference = true;
-                    twoToken = false;
                 } else {
                     _String thisOp (opChar);
                     levelOps->AppendNewInstance (new _Operation (thisOp,1L));

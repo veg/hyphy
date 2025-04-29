@@ -146,7 +146,6 @@ io.ReportProgressMessageMD ("BGM", "Data", "Loaded **" +
 bgm.initial_values = parameters.helper.tree_lengths_to_initial_values (bgm.trees, None);
 
 
-
 console.log ( "\n> BGM will write result file to `bgm.alignment_info[terms.json.json]`\n");
 
 bgm.selected_branches = selection.io.defineBranchSets ( bgm.partitions_and_trees );
@@ -214,8 +213,11 @@ if (bgm.type == "nucleotide") {
 
         bgm.filter_names = { "0" : "bgm.codon.filter" };
         bgm.code = bgm.alignment_info [terms.code];
+        bgm.code_mapped = genetic_code.DefineIntegerToAAMapping (bgm.code, TRUE);
     }
  }
+ 
+ 
 
 if (bgm.type == "codon") {
     //codon_data, tree, generator, genetic_code, option, initial_values
@@ -414,10 +416,7 @@ lfunction bgm.run (_bgm_data, burnin, nsteps, nsamples, max_parents) {
 function bgm.nsfilter(state1, state2, ancestral_data) {
 
     if (state1 >= 0 && state2 >= 0) {
-        if (bgm.code[state1] != bgm.code[state2] &&
-            bgm.code[state1] != genetic_code.stop_code &&
-            bgm.code[state2] != genetic_code.stop_code) {
-
+        if ( bgm.code_mapped[state1] !=  bgm.code_mapped[state2]) {
             return TRUE;
         }
     }

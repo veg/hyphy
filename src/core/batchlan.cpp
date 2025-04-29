@@ -1296,7 +1296,14 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_List* options, _L
         return sc & " [computed at run time]";
     };
     
-    auto report_option = [&help_message,simplify_string] (_ElementaryCommand * this_command, _ElementaryCommand * input_pair) -> void {
+    auto report_option = [&help_message,simplify_string] (_ElementaryCommand * this_command, _ElementaryCommand * input_pair, _AVLList& unique_checker) -> void {
+        
+        if (unique_checker.FindLong ((long)this_command) != kNotFound) {
+            return;
+        }
+        
+        unique_checker.InsertNumber((long)this_command);
+        
         _String * def_value = this_command->GetIthParameter(2L, false),
                 * applies_to = this_command->GetIthParameter(3L, false);
 
@@ -1336,6 +1343,13 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_List* options, _L
             this_command->simpleParameters.Pop();
             this_command->simpleParameters.Pop();
         }
+        if (this_command->code == HY_HBL_COMMAND_NESTED_LIST) {
+            this_command->simpleParameters << (long)options;
+            this_command->simpleParameters << (long)inputs;
+            this_command->HandleNestedList(*this);
+            this_command->simpleParameters.Pop();
+            this_command->simpleParameters.Pop();
+        }
         if (this_command->code == HY_HBL_COMMAND_FSCANF || this_command->code == HY_HBL_COMMAND_CHOICE_LIST) {
             *inputs << this_command;
         }
@@ -1358,6 +1372,7 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_List* options, _L
                     long function_placement = scanned_functions->Insert (new _String (*function_name),(long)function_stash,false, true);
                     
                     if (function_placement>=0) {
+                        //BufferToConsole(function_name->get_str()); NLToConsole();
                         long idx = FindBFFunctionName(*function_name);
                         if (idx >= 0) {
                             _List* fuction_options = new _List,
@@ -1406,8 +1421,10 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_List* options, _L
     
     
     if (!nested) {
-        options->ForEach ([report_option, &inputs] (BaseRef command, unsigned long i) -> void {
-            report_option ((_ElementaryCommand*) command, (_ElementaryCommand*)inputs->GetItemRangeCheck(i));
+        _SimpleList _already_reported;
+        _AVLList already_reported (&_already_reported);
+        options->ForEach ([report_option, &inputs, &already_reported] (BaseRef command, unsigned long i) -> void {
+            report_option ((_ElementaryCommand*) command, (_ElementaryCommand*)inputs->GetItemRangeCheck(i), already_reported);
         });
     }
     

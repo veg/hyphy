@@ -12,15 +12,18 @@ LoadFunctionLibrary ("libv3/IOFunctions.bf");
 //bgm.json = Eval (json);
 
 
+
+
+
 /*
 |   Site 1   |   Site 2   |P [Site 1 <-> Site 2]|Subs (1,2,shared)|
 |:----------:|:----------:|:-------------------:|:---------------:|
-|       6    |     146    |        0.956        |     5, 5, 5     |
-|      46    |      61    |        0.760        |     5, 5, 5     |
-|      55    |     111    |        0.726        |     6, 5, 5     |
-|      56    |      85    |        0.510        |     5, 6, 5     |
-|      64    |     178    |        0.600        |     5, 6, 5     |
-|      75    |      85    |        0.559        |     5, 6, 5     |
+|       6    |     146    |        0.939        |     5, 5, 5     |
+|       7    |      85    |        0.888        |     7, 7, 7     |
+|      34    |     161    |        0.605        |     6, 5, 5     |
+|      46    |      61    |        0.791        |     5, 5, 5     |
+|      55    |     111    |        0.718        |     6, 5, 5     |
+|      64    |     178    |        0.590        |     5, 6, 5     |
 */
 
 
@@ -34,8 +37,9 @@ test.overall_shared_subs = 0;
 
 test.expected_positives = {
     "6,146" : "0",
-    "46,61" : "1",
-    "55,111" : "2"
+    "7,85" : "1",
+    "46,61" : "2",
+    "55,111" : "3"
 } ;
 
 function confirm_pair (pair, p, dict) {
@@ -62,4 +66,4 @@ utility.ForEachPair (pp,"_index_", "_p_",
                 ");
 
 assert (check_value (
-    test.overall_shared_subs, 15, 0.001), "Incorrect number of cumulative shared substitutions");
+    test.overall_shared_subs, 22, 0.001), "Incorrect number of cumulative shared substitutions");

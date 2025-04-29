@@ -91,8 +91,6 @@ KeywordArgument ("code", "Which genetic code should be used", "Universal");
 KeywordArgument ("alignment", "An in-frame codon alignment in one of the formats supported by HyPhy");
 KeywordArgument ("tree", "A phylogenetic tree (optionally annotated with {})", null, "Please select a tree file for the data:");
 KeywordArgument ("branches",  "Branches to test", "All");
-KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
-KeywordArgument ("properties", "Which set of properties to use", "Atchley");
 
 prime.scaler_prefix = "prime.scaler";
  
@@ -128,25 +126,8 @@ namespace prime {
     load_file ("prime");
 }
 
+KeywordArgument ("pvalue",  "The p-value threshold to use when testing for selection", "0.1");
 prime.pvalue  = io.PromptUser ("\n>Select the p-value threshold to use when testing for selection",prime.pvalue,0,1,FALSE);
-
-prime.property_set = io.SelectAnOption (
-            {
-                "Atchley":"Use the five properties derived from a factor analysis of 500 amino-acid properties [Table 2 in PNAS (2005) 102(18) 6395-6400 doi: 10.1073/pnas.0408677102]",
-                "LCAP":"Use the five properties defined in the Conant and Stadler LCAP model [Mol Biol Evol (2009) 26 (5): 1155-1161. doi: 10.1093/molbev/msp031]",
-                "Random" : "Random properties (for null hypothesis testing)",
-                "Custom":"Load the set of properties from a file"
-            }, 
-            "The set of properties to use in the model");
-           
-(prime.json [terms.json.analysis])[terms.model.residue_properties] = prime.property_set;
-            
-if (prime.property_set == "Custom") {
-    KeywordArgument ("property-file", "JSON file which defines amino-acid properties");
-    prime.property_set = io.PromptUserForFilePathRead ("JSON file which defines amino-acid properties");
-    prime.property_set = io.ParseJSON(prime.property_set);
-    console.log (">Loaded a set of `Abs(prime.property_set)` properties");
-}
      
 
 KeywordArgument ("impute-states", "Use site-level model fits to impute likely character states for each sequence", "No");
@@ -159,13 +140,18 @@ prime.impute_states = io.SelectAnOption (
             "Impute likely states for sequences") == "Yes";
 
 
-KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'prime.json')", prime.codon_data_info [terms.json.json]);
-prime.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
-
-
 
 prime.pairwise_counts = genetic_code.ComputePairwiseDifferencesAndExpectedSites(prime.codon_data_info[terms.code], None);
 prime.codon_table = genetic_code.DefineCodonToAAMapping (prime.codon_data_info[terms.code]);
+
+prime.substitution_model_template = model.codon.MG_REV_PROPERTIES.prompt_and_define (terms.local, prime.codon_data_info[terms.code]);
+
+KeywordArgument ("output", "Write the resulting JSON to this file (default is to save to the same path as the alignment file + 'prime.json')", prime.codon_data_info [terms.json.json]);
+prime.codon_data_info [terms.json.json] = io.PromptUserForFilePath ("Save the resulting JSON file to");
+
+           
+(prime.json [terms.json.analysis])[terms.model.residue_properties] = prime.property_set[terms.model.residue_properties];
+
 
 selection.io.startTimer (prime.json [terms.json.timers], "Model fitting",1);
 
@@ -302,12 +288,12 @@ prime.beta  = model.generic.GetLocalParameter (prime.site.background_fel, terms.
 io.CheckAssertion ("None!=prime.alpha && None!=prime.beta", "Could not find expected local synonymous and non-synonymous rate parameters in \`estimators.FitMGREV\`");
 
 
-prime.site.property_model =  model.generic.DefineModel("models.codon.MG_REV_PROPERTIES.ModelDescription",
-        "prime.model.prop", {
-            "0": parameters.Quote(terms.local),
-            "1": prime.codon_data_info[terms.code],
-            "2": parameters.Quote (prime.property_set) // property set to use
-        },
+function prime.pass_through () {
+    return prime.substitution_model_template;
+}
+
+prime.site.property_model =  model.generic.DefineModel("prime.pass_through",
+        "prime.model.prop", None,
         prime.filter_names,
         None);
    
@@ -370,7 +356,7 @@ for (key, value; in; prime.properties ) {
     parameters.DeclareGlobal ( prime.p, {});
     parameters.SetRange ( prime.p, prime.lambda_range);
     
-    parameter.local_lambda = model.generic.GetLocalParameter (prime.site.property_model , terms.propertyImportance(key));
+    parameter.local_lambda = model.generic.GetLocalParameter (prime.site.property_model , terms.propertyImportance(key,""));
     io.CheckAssertion ("None != parameter.local_lambda", "Could not find expected a local parameter in \`models.codon.MG_REV_PROPERTIES.ModelDescription\`");
     prime.lambdas [parameter.local_lambda] = prime.p;
     prime.local_to_property_name [parameter.local_lambda] = key;
@@ -546,9 +532,8 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
     
     prime.pattern_count = 1;
     
-    
-    for (_pattern_, _pattern_info_; in; prime.site_patterns) {
-    
+    utility.ForEachPair (prime.site_patterns, "_pattern_", "_pattern_info_",
+    '
           io.ReportProgressBar("", "Working on site pattern " + (prime.pattern_count) + "/" + Abs (prime.site_patterns));
            if (_pattern_info_[utility.getGlobalValue("terms.data.is_constant")]) {
                 prime.store_results (-1,None,{"0" : "prime.site_likelihood",
@@ -572,7 +557,7 @@ for (prime.partition_index = 0; prime.partition_index < prime.partition_count; p
                                                                     "prime.store_results");
             }
             prime.pattern_count  += 1;
-    }  
+    ');
 
     mpi.QueueComplete (prime.queue);
     prime.partition_matrix = {Abs (prime.site_results[prime.partition_index]), Rows (prime.table_headers)};
@@ -660,7 +645,7 @@ function prime.apply_proportional_site_constraint.property (tree_name, node_name
     ExecuteCommands (node_name + "." + alpha_parameter + ":=(" + alpha_factor + ")*" + prime.branch_length__);
     ExecuteCommands (node_name + "." + beta_parameter + ":=(" + beta_factor + ")*" + prime.branch_length__);
     //parameters.SetRange (node_name + "." + beta_parameter , prime.lambda_range);
-    
+        
     for (local, glob; in; lambdas) {
         ExecuteCommands (node_name + "." + local + ":=" + glob);
         parameters.SetRange (node_name + "." + local, prime.lambda_range);
@@ -771,8 +756,9 @@ lfunction prime.handle_a_site (lf_fel, lf_prop, filter_data, partition_index, pa
         
          }
      
-     
-     
+        
+        parameters.SetConstraint ("prime.site_beta",  ^"prime.site_beta", "");
+        
         // Export (lfe, ^lf_prop);
         // fprintf ("/Users/sergei/Desktop/PRIME/site." + (pattern_info["sites"])[0] + ".bf",CLEAR_FILE,lfe);
      

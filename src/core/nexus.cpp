@@ -871,7 +871,8 @@ bool    ProcessNexusData (FileState& fState, long pos, hyFile*f, _StringBuffer& 
     _String newAlph;
 
     bool    done = false,
-            labels = true;
+            labels = true,
+            is_codon = false;
 
     char    charState = 0;
 
@@ -920,6 +921,9 @@ bool    ProcessNexusData (FileState& fState, long pos, hyFile*f, _StringBuffer& 
                     } else {
                         done = done||(count>1);
                         sitesExp = buffer.to_long();
+                        if (is_codon) {
+                            sitesExp *= 3;
+                        }
                     }
                 }
                 offSet = 0L;
@@ -936,7 +940,7 @@ bool    ProcessNexusData (FileState& fState, long pos, hyFile*f, _StringBuffer& 
                 buffer.Trim (buffer.FirstNonSpaceIndex(),kStringEnd);
                 if (buffer.BeginsWith(key21)) { // datatype
                     if (!(count=ReadNextNexusEquate (fState,f,CurrentLine, 0 ,buffer))) {
-                        ReportWarning ("DATATYPE is not followed by '= DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY'");
+                        ReportWarning ("DATATYPE is not followed by '= DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY|CODON'");
                         done = true;
                     } else {
                         done = done||(count>1);
@@ -962,8 +966,19 @@ bool    ProcessNexusData (FileState& fState, long pos, hyFile*f, _StringBuffer& 
                                 break;
                             }
                             continue;
-                        } else {
-                            ReportWarning (buffer.Enquote() &" is not a recognized data type (DNA|RNA|NUCLEOTIDE|PROTEIN|BINARY are allowed).");
+                        } if (buffer==_String("CODON")) {
+                            is_codon = true;
+                            sitesExp *= 3;
+                            if (newAlph.nonempty()) {
+                               ReportWarning (_String("CODON datatype directive will over-ride the custom symbols definition: ") & newAlph.Enquote());
+                              newAlph.Clear();
+                            }
+                            if (done) {
+                                done = false;
+                                break;
+                            }
+                        }else {
+                            ReportWarning (buffer.Enquote() &" is not a recognized data type (DNA|RNA|CODON|NUCLEOTIDE|PROTEIN|BINARY are allowed).");
                             done = false;
                         }
                     }
