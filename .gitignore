@@ -13,6 +13,7 @@ tags
 # CMake generated files
 CMakeCache.txt
 CMakeFiles
+CTestTestfile.cmake
 Makefile
 cmake_install.cmake
 install_manifest.txt
