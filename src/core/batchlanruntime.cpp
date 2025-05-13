@@ -2292,7 +2292,7 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& current_program) {
       _String assertion_feedback;
       _String * custom_error_message = GetIthParameter(1UL,false);
       if (custom_error_message) {
-        assertion_feedback = _ProcessALiteralArgument(*custom_error_message, current_program);
+        assertion_feedback = _String("## ASSERTION FAILED\n") & _ProcessALiteralArgument(*custom_error_message, current_program);
       } else {
         assertion_feedback = _String("Assertion ") & GetIthParameter(0UL)->Enquote() & " failed.";
       }
@@ -2301,7 +2301,7 @@ bool      _ElementaryCommand::HandleAssert (_ExecutionList& current_program) {
         NLToConsole();
         current_program.GoToLastInstruction ();
       } else {
-        current_program.ReportAnExecutionError (assertion_feedback);
+          current_program.ReportAnExecutionError (assertion_feedback, false, false, true);
       }
     }
   } catch (const _String& error) {
@@ -3355,7 +3355,9 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
                          kTimeStamp                       ("TIME_STAMP"),
                          kListLoadedLibraries             ("LIST_OF_LOADED_LIBRARIES"),
                          kGetNumberOfMatrixExp            ("MATRIX_EXPONENTIALS_COMPUTED"),
-                         kCanCompressFiles                ("ZLIB_ENABLED");
+                         kCanCompressFiles                ("ZLIB_ENABLED"),
+                         kKwargList                       ("KWARGS"),
+                         kKwargTagList                    ("KWARG_TAGS");
 
 
     _Variable * receptacle = nil;
@@ -3395,6 +3397,46 @@ bool      _ElementaryCommand::HandleGetString (_ExecutionList& current_program) 
 #else
           return_value = new _Constant (0.);
 #endif
+      } else if (*GetIthParameter(1UL) == kKwargList) {
+          
+          _AssociativeList *kwargs = new _AssociativeList;
+          
+          if (executionStack.lLength) {
+              for (long callLevel = executionStack.lLength -1L ; callLevel >=0L ; callLevel --) {
+                  _ExecutionList * currentLevel = (_ExecutionList*)executionStack (callLevel);
+                  
+                   
+                  if (currentLevel->kwargs && currentLevel->kwargs->countitems()) {
+                      for (AVLListXLIteratorKeyValue key_value : currentLevel->kwargs->ListIterator()) {
+                          _String const* my_key = key_value.get_key();
+                          HBLObjectRef my_object = (HBLObjectRef)key_value.get_object();
+                          
+                          (*kwargs) << (_associative_list_key_value){*my_key, my_object};
+                      }
+                  }
+              }
+          }
+          return_value = kwargs;
+      } else if (*GetIthParameter(1UL) == kKwargTagList) {
+          
+          _AssociativeList *kwargs = new _AssociativeList;
+          
+          long count = 0L;
+          
+          if (executionStack.lLength) {
+              for (long callLevel = executionStack.lLength -1L ; callLevel >=0L ; callLevel --) {
+                  _ExecutionList * currentLevel = (_ExecutionList*)executionStack (callLevel);
+                  
+                  if (currentLevel->kwarg_tags && currentLevel->kwarg_tags->countitems()) {
+                      currentLevel->kwarg_tags->ForEach ([&kwargs, &count] (BaseRef item, unsigned long index) {
+                          _List * kwarg = (_List*)item;
+                          (*kwargs) < (_associative_list_key_value){_String (count), new _Matrix (*kwarg)};
+                          count++;
+                      });
+                  }
+              }
+          }
+          return_value = kwargs;
       }
 
       if (!return_value) {
@@ -4381,6 +4423,130 @@ void      _ElementaryCommand::ExecuteCase38 (_ExecutionList& chain, bool sample)
   } catch (const _String& error) {
     _DefaultExceptionHandler (nil, error, chain);
   }
+}
+
+//____________________________________________________________________________________
+
+
+bool _ElementaryCommand::HandleTreeConstruction(_ExecutionList &current_program) {
+    
+    current_program.advance ();
+    
+    try {
+        _String treeIdent   = current_program.AddNameSpaceToID(*GetIthParameter (0L)),
+                treeString  (*GetIthParameter (1L));
+        
+        long  tree_var_ID = LocateVarByName (treeIdent);
+        bool replace_tree_structure = hy_env::EnvVariableTrue(replaceTreeStructure);
+        
+        _SimpleList   leftOverVars; // mod 02/03/2003
+        
+        if (tree_var_ID>=0)
+            if (FetchVar(tree_var_ID)->ObjectClass()==TREE) {
+                if (replace_tree_structure) {
+                    DeleteVariable(*FetchVar(tree_var_ID)->GetName());    // mod 11/19/2003
+                } else {
+                    DeleteTreeVariable(tree_var_ID,leftOverVars);    // mod 02/03/2003
+                }
+            }
+        
+        
+        _TheTree * tr = nil;
+        
+        if (current_program.nameSpacePrefix) {
+            hy_env::EnvVariableSet(hy_env::tree_parser_namespace, new _FString (*current_program.nameSpacePrefix->GetName()), false);
+        }
+        
+        if (treeString.get_char(0)!='(') {
+            _Formula  nameForm (treeString,current_program.nameSpacePrefix);
+            HBLObjectRef formRes = nameForm.Compute();
+            if (formRes) {
+                if (formRes->ObjectClass () == STRING) {
+                    tr = new _TheTree (treeIdent,((_FString*)formRes)->get_str(),false);
+                } else if (formRes->ObjectClass () == TOPOLOGY) {
+                    tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
+                } else if (formRes->ObjectClass () == TREE) {
+                    for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
+                        //rintf ("%s\n", LocateVar(leftOverVars.list_data[i])->GetName()->get_str());
+                        DeleteVariable(leftOverVars.list_data[i], true);
+                    }
+                    leftOverVars.Clear();
+                    tr = new _TheTree (treeIdent,(_TheTree*)formRes);
+                }
+            }
+        } else {
+            tr = new _TheTree (treeIdent,treeString,false);
+        }
+        
+        if (current_program.nameSpacePrefix) {
+            hy_env::EnvVariableSet(hy_env::tree_parser_namespace, new _MathObject, false);
+        }
+        
+        if (!tr) {
+            throw _String ("Illegal right hand side in call to Tree id = ...; it must be a string, a Newick tree spec or a topology");
+        }
+        
+        if (leftOverVars.nonempty()) { // mod 02/03/2003 - the entire "if" block
+            _SimpleList indep, dep, holder;
+            {
+                _AVLList    indepA (&indep),
+                depA   (&dep);
+                
+                tr->ScanContainerForVariables (indepA,depA);
+                indepA.ReorderList();
+                depA.ReorderList();
+            }
+            
+            holder.Union (indep,dep);
+            leftOverVars.Sort ();
+
+            /*
+             BufferToConsole("\nIndependents+nDependendts\n");
+             ObjectToConsole(&holder); NLToConsole();
+             BufferToConsole("\nLeftover\n");
+             ObjectToConsole(&leftOverVars); NLToConsole();
+             */
+            
+            /*leftOverVars.Each ([](long v, unsigned long) -> void {
+             StringToConsole(*LocateVar(v)->GetName()); NLToConsole();
+             });*/
+            
+            indep.Subtract (leftOverVars,holder);
+            
+            /* the bit with freeSlots is here b/c
+             some nodes variables may have been deleted during the unroot
+             in the tree constructor and we don't want to delete them twice,
+             do we? 08/22/2003 */
+            
+            /**
+                2025/04/30;
+                   No need to explicitly check for freeSlots
+                   Deleted variables will show up as nil records
+             
+            */
+            //dep.Clear();
+            //dep.Duplicate (&freeSlots);
+            //dep.Sort ();
+            //holder.Subtract (indep,dep);
+            
+            holder.Each ([](long v, unsigned long) -> void {
+                if (LocateVar (v)) {
+                    DeleteVariable (v);
+                }
+            });
+            
+            /*for (long var_index = holder.lLength-1L; var_index >=0 ; var_index--) {
+                
+                DeleteVariable (*LocateVar (holder.get (var_index))->GetName());
+            }*/
+            
+            tr->Clear();
+            
+        }
+    } catch (const _String& error) {
+        return  _DefaultExceptionHandler (nil, error, current_program);
+    }
+    return true;
 }
 
 

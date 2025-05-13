@@ -155,13 +155,14 @@ public:
     void ClearExecutionList (void);
 
 
-    void              ReportAnExecutionError (_String errMsg, bool doCommand = true, bool appendToExisting = false);
+    void              ReportAnExecutionError (_String errMsg, bool doCommand = true, bool appendToExisting = false, bool isAssertion = false);
     /**
      * Handle an error message according to the reporting policy of this execution list (defined by errorHandlingMode)
      * @param errMsg -- the current command text stream
      * @param doCommand -- add standard text about the current command
      * @param appendToExisting -- append text to existing error
-     
+     * @param isAssertion -- is this call triggered by an assertion (this will result in different error reporting)
+
      */
   
     void        BuildListOfDependancies   (_AVLListX & collection, bool recursive = true, bool help_mode = false);
@@ -250,16 +251,14 @@ public:
     virtual   void           Duplicate (BaseRefConst);
     virtual   BaseRef        toStr (unsigned long = 0UL);
 
+    
     bool      Execute        (_ExecutionList&); // perform this command in a given list
-    void      ExecuteCase0   (_ExecutionList&);
-    void      ExecuteCase4   (_ExecutionList&);
     void      ExecuteCase5   (_ExecutionList&);
     void      ExecuteDataFilterCases (_ExecutionList&);
     void      ExecuteCase11  (_ExecutionList&);
     void      ExecuteCase12  (_ExecutionList&);
     void      ExecuteCase31  (_ExecutionList&); // model construction
     void      ExecuteCase38  (_ExecutionList&, bool); // Reconstruct Ancestors
-    void      ExecuteCase47  (_ExecutionList&); // ConstructStateCounter
     void      ExecuteCase52  (_ExecutionList&); // Simulate
     void      ExecuteCase54  (_ExecutionList&); // Topology
     void      ExecuteCase58  (_ExecutionList&); // Profile Code
@@ -267,6 +266,8 @@ public:
     void      ExecuteCase63  (_ExecutionList&); // NN; currently not functional
     void      ExecuteCase64  (_ExecutionList&); // BGM
     
+    bool      HandleConditionalBranch               (_ExecutionList&);
+    bool      HandleGenericExpression               (_ExecutionList&);
     bool      HandleReplicateConstraint             (_ExecutionList&);
     bool      HandleAlignSequences                  (_ExecutionList&);
     bool      HandleConstructCategoryMatrix         (_ExecutionList&);
@@ -299,6 +300,8 @@ public:
     bool      HandleInitializeIterator              (_ExecutionList&);
     bool      HandleAdvanceIterator                 (_ExecutionList&);
     bool      HandleNestedList                      (_ExecutionList&);
+    bool      HandleTreeConstruction                 (_ExecutionList&);
+
 
     long      get_code                              (void) const { return code; };
     unsigned  long parameter_count                  (void) const { return parameters.countitems();}

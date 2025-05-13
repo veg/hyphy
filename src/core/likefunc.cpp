@@ -10443,11 +10443,6 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
 
 }
 
-//_______________________________________________________________________________________
-
-void    _LikelihoodFunction::StateCounter (long functionCallback) const {
-  HandleApplicationError ("This feature has not yet been implemented in the new LF engine framework");
-}
 
     //_______________________________________________________________________________________
 

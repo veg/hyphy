@@ -503,13 +503,22 @@ _Matrix::_Matrix (_List const& sl, bool parse_escapes)
     
     if (parse_escapes) {
       for (unsigned long k=0UL; k<sl.lLength; k++) {
-        StoreFormula (0L,k,*new _Formula (new _FString (*(_String*) sl.GetItem(k))), false, false);
+        BaseRef item = sl.GetItem (k);
+        if (item) {
+          StoreFormula (0L,k,*new _Formula (new _FString (*(_String*) sl.GetItem(k))), false, false);
+        } else {
+          StoreFormula (0L,k,*new _Formula (new _MathObject, false));
+        }
       }
     } else {
       for (unsigned long k=0UL; k<sl.lLength; k++) {
         _String* entry_k = (_String*) sl.GetItem(k);
-        entry_k -> AddAReference();
-        StoreFormula (0L,k,*new _Formula (new _FString (entry_k)), false, false);
+        if (entry_k) {
+          entry_k -> AddAReference();
+          StoreFormula (0L,k,*new _Formula (new _FString (entry_k)), false, false);
+        } else {
+            StoreFormula (0L,k,*new _Formula (new _MathObject, false));
+        }
       }
       
     }

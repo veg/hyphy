@@ -216,8 +216,10 @@ namespace hy_global {
    
    @param message the error message
    @param force_exit force application exit
+   @param dump_core dump the current HyPhy status to a /tmp/hyphy.dump file
+   @param minimal_error_reporting if set, do not report call stacks and such (e.g. during assertion handling)
    */
-  void      HandleApplicationError (_String const & message, bool force_exit = false, bool dump_core = false);
+  void      HandleApplicationError (_String const & message, bool force_exit = false, bool dump_core = false, bool minimal_error_reporting = false);
   
   /**
       When HyPhy encounters an error in a particular expression, it may be useful
