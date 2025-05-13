@@ -1715,10 +1715,9 @@ lfunction relax.select_branches(partition_info) {
         }
     }
     
-    
- 
+     
     list_models   = utility.sortStrings(utility.Keys(list_models)); // get keys
-    option_count  = Abs (available_models);
+    option_count  = utility.Array1D (list_models);
     can_run_group_mode = (option_count == Abs (available_models));
     
     io.CheckAssertion	("`&option_count` >= 2", "RELAX requires at least one designated set of branches in the tree.");
@@ -1753,6 +1752,8 @@ lfunction relax.select_branches(partition_info) {
 			 utility.SetEnvVariable ("relax.analysis_run_mode", kGroupMode);
 		}
 	}
+	
+	// console.log ("**** `option_count` ****");
 	
 	if (run_mode != kGroupMode) {
 

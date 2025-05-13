@@ -123,7 +123,7 @@ namespace hy_global {
                      kErrorStringMatrixExportError    ("Export matrix called with a non-polynomial matrix argument"),
                      kErrorStringNullOperand          ("Attempting to operate on an undefined value; this is probably the result of an earlier 'soft' error condition"),
                      kErrorNumerical                   ("To treat numerical errors as warnings, please specify \"ENV=TOLERATE_NUMERICAL_ERRORS=1;\" as the command line argument. This often resolves the issue, which is indicative of numerical instability."),
-                     kHyPhyVersion  = _String ("2.5.72"),
+                     kHyPhyVersion  = _String ("2.5.73"),
     
                     kNoneToken = "None",
                     kNullToken = "null",
@@ -744,7 +744,7 @@ namespace hy_global {
     }
   
     //____________________________________________________________________________________
-    void HandleApplicationError (const _String & message, bool force_exit, bool dump_core) {
+    void HandleApplicationError (const _String & message, bool force_exit, bool dump_core, bool minimal_error_reporting) {
 
         
         if (!force_exit && currentExecutionList && currentExecutionList->errorHandlingMode == HY_BL_ERROR_HANDLING_SOFT) {
@@ -759,18 +759,17 @@ namespace hy_global {
         terminate_execution = true;
         return;
     #else
-        char  str[] = "\nError:";
         
         if (hy_error_log_file) {
-            hy_error_log_file->fwrite (str, 1, 7);
+            hy_error_log_file->fwrite ("\nError:", 1, 7);
             hy_error_log_file->fwrite (message.get_str(), 1, message.length());
             hy_error_log_file->flush ();
         }
             
-        if (hy_error_log_file) {
+        /*if (hy_error_log_file) {
             hy_error_log_file->fputc ('\n');
             hy_error_log_file->puts ((const char*)message);
-        }
+        }*/
             
         _String errMsg;
     #ifdef __HYPHYMPI__
@@ -791,7 +790,9 @@ namespace hy_global {
             errMsg = errMsg & "\nAn additional error occurred while handling the first error. Error messages may be incomplete\n";
         } else {
             exiting_with_error = true;
-            errMsg = ConstructAnErrorMessage (errMsg);
+            if (!minimal_error_reporting) {
+                errMsg = ConstructAnErrorMessage (errMsg);
+            }
         }
         StringToConsole(errMsg);
     #endif

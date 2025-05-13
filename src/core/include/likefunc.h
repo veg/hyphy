@@ -262,7 +262,6 @@ public:
     _Formula*   HasComputingTemplate    (void) const{
         return computingTemplate;
     }
-    void        StateCounter            (long) const;
     void        MPI_LF_Compute          (long, bool = false);
 
 #if defined _SLKP_LFENGINE_REWRITE_

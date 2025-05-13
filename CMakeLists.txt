@@ -170,10 +170,9 @@ set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPIL
 
 set(DEFAULT_WARNING_FLAGS " -w -Weffc++ -Wextra -Wall ")
 set(DEFAULT_DEBUG_WARNING_FLAGS "-Wall -Wno-int-to-pointer-cast -Wno-conversion-null -Wno-sign-compare")
-set(ADDITIONAL_FLAGS "-pg -g")
 
 if (DEBUGFLAGS)
-	set(ADDITIONAL_FLAGS "-g")
+	set(ADDITIONAL_FLAGS "-pg -g")
 endif()
 
 #include_directories("/Library/Developer/CommandLineTools/SDKs/MacOSX15.2.sdk/usr/include/c++/v1")

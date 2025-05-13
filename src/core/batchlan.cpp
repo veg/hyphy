@@ -188,7 +188,6 @@ extern      _String             MATRIX_AGREEMENT,
             ANAL_COMP_FLAG;
 
 
-extern      _SimpleList         freeSlots;
 
 
 _AVLList    loadedLibraryPaths  (&loadedLibraryPathsBackend);
@@ -1049,7 +1048,7 @@ void        _ExecutionList::Duplicate   (BaseRefConst source) {
 
 
 //____________________________________________________________________________________
-void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCommand, bool appendToExisting) {
+void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCommand, bool appendToExisting, bool isAssertion) {
     if (!IsDryRun()) {
         if (doCurrentCommand) {
             _ElementaryCommand *theCommand = FetchLastCommand();
@@ -1070,7 +1069,7 @@ void    _ExecutionList::ReportAnExecutionError (_String errMsg, bool doCurrentCo
                 
                 break;
             default:
-                HandleApplicationError (errMsg);
+                HandleApplicationError (errMsg, false, false, isAssertion);
         }
     }
 }
@@ -1673,7 +1672,7 @@ bool        _ExecutionList::TryToMakeSimple     (bool partial_ok) {
             break;
         }
 
-        case 4:
+        case HY_HBL_COMMAND_CONDITIONAL:
             parseCodes        << -1;
             if (aStatement->simpleParameters.lLength == 3 || aStatement->parameters.lLength) {
                 if (aStatement->parameters.lLength) {
@@ -2295,7 +2294,7 @@ _ElementaryCommand::~_ElementaryCommand (void) {
     };
     
     if (CanFreeMe()) {
-        if (code==4) { // IF
+        if (code==HY_HBL_COMMAND_CONDITIONAL) { // IF
             clear_formulas (2);
         } else if (code==0) {
             if (simpleParameters.lLength) {
@@ -2399,7 +2398,7 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
             (*string_form) << parameter_to_string (0) << ";";
             break;
 
-        case 4: {
+        case HY_HBL_COMMAND_CONDITIONAL: {
             if (simpleParameters.countitems()==3 || parameters.countitems() == 1) {
                 (*string_form) << "Branch under condition "
                             << parameter_to_string (0).Enquote()
@@ -2612,10 +2611,8 @@ BaseRef   _ElementaryCommand::toStr      (unsigned long) {
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
+bool      _ElementaryCommand::HandleGenericExpression (_ExecutionList& chain) {
     chain.currentCommand++;
-
-    _String * errMsg = nil;
 
     try {
 
@@ -2628,7 +2625,7 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
           if (sti>=0) {
               chain.cli->values[sti].value = result;
           }
-          return;
+          return true;
       }
 
       if (!simpleParameters.lLength) { // not compiled yet
@@ -2645,17 +2642,6 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
           }
           
           long     parseCode = Parse(&f,(*theFla),fpc,&f2);
-          /*
-          if (chain.IsDryRun()) {
-              if (parseCode == HY_FORMULA_VARIABLE_VALUE_ASSIGNMENT) {
-                  ObjectToConsole(theFla);
-                  NLToConsole();
-              }
-              return;
-          }
-          */
-          
-          //printf ("RHS = %s\n", _String ((_String*)f2.toStr(kFormulaStringConversionNormal)).get_str());
 
           if (parseCode != HY_FORMULA_FAILED ) {
               if (fpc.isVolatile() == false) { // not a matrix constant
@@ -2670,45 +2656,46 @@ void      _ElementaryCommand::ExecuteCase0 (_ExecutionList& chain) {
               } else {
                   ExecuteFormula(&f,&f2,parseCode,fpc.assignmentRefID(),chain.nameSpacePrefix,fpc.assignmentRefType());
                   if (terminate_execution) {
-                    errMsg = new _String ("Error computing the compiled statement: ");
-                    throw 0;
+                    throw _String ("Error computing the compiled statement: ");
                   }
-                  return;
+                  return true;
               }
           } else {
-             errMsg = new _String (_String ("Parsing error ") & _String (err_msg.Enquote('(',')') & " while compiling the statement: "));
-            throw 0;
+             throw _String ("Parsing error ") & _String (err_msg.Enquote('(',')') & " while compiling the statement: ");
           }
       }
 
       ExecuteFormula ((_Formula*)simpleParameters.list_data[1],(_Formula*)simpleParameters.list_data[2],simpleParameters.list_data[0],simpleParameters.list_data[3], chain.nameSpacePrefix, simpleParameters.list_data[4]);
 
       if (terminate_execution) {
-        errMsg = new _String ("Error computing the interpreted statement: ");
-        throw 0;
+        throw _String ("Error computing the interpreted statement: ");
       }
 
-    } catch (int e) {
-      if (errMsg) {
-        HandleApplicationError (_String(errMsg) & *this);
-      }
+    } catch (const _String& err) {
+        HandleApplicationError (err & *this);
+        return false;
     }
+    
+    return true;
 }
 
 
 //____________________________________________________________________________________
 
-void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
-    chain.currentCommand++;
+bool      _ElementaryCommand::HandleConditionalBranch (_ExecutionList& chain) {
+    chain.advance();
 
     _Formula * expression = nil;
-    _String  * errMsg = nil;
+    _String  * errMsg     = nil;
 
     try {
       if (simpleParameters.lLength==3 || parameters.lLength) {
-
-
+          /** has a non-trivial condition which has either already been parsed
+                (stored as the 3rd argument in simpleParameters)
+              or not yet parsed (stored as the first argument in parameters **/
+          
           if ( parameters.lLength && simpleParameters.lLength < 3) {
+              // has an unparsed condition; parse in here
               expression = new _Formula;
               //printf ("Namespace: %x\nCode: %s\n", chain.nameSpacePrefix, ((_String*)parameters(0))->sData);
 
@@ -2730,12 +2717,9 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
           }
 
           if (chain.is_compiled(chain.currentCommand)) {
-              //if (chain.is_compiled(0) == false) {
-              //    PopulateArraysForASimpleFormula (chain.cli->varList, chain.cli->values);
-              //}
               if ( ((_Formula*)simpleParameters(2))->ComputeSimple(chain.cli->stack, chain.cli->values)==0.0) {
                   chain.currentCommand = simpleParameters.list_data[1];
-                  return;
+                  return true;
               }
           } else {
               HBLObjectRef result;
@@ -2758,7 +2742,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
 
               switch (result->ObjectClass()) {
                 case NUMBER:
-                    conditionFalse = result->Value()==0.0;
+                    conditionFalse = result->Value() == 0.0;
                     break;
                 case STRING:
                     conditionFalse = ((_FString*)result)->empty();
@@ -2777,7 +2761,7 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
 
               if (conditionFalse) {
                   chain.currentCommand = simpleParameters.list_data[1];
-                  return;
+                  return true;
               }
           }
       }
@@ -2794,13 +2778,15 @@ void      _ElementaryCommand::ExecuteCase4 (_ExecutionList& chain) {
       }
       if (errMsg) {
         if (e == 0) {
-          HandleApplicationError (_String ("'") & *(_String*)parameters(0) & "'" & errMsg);
+          HandleApplicationError (((_String*)parameters(0))->Enquote('\'') & errMsg);
         } else {
           HandleApplicationError    (errMsg);
         }
-        // note that errMsg will be deleted by _String (*_String) constructors
+        return false;
       }
     }
+    
+    return true;
 }
 
 //____________________________________________________________________________________
@@ -3165,41 +3151,6 @@ void      _ElementaryCommand::ExecuteCase12 (_ExecutionList& chain)
     }
 }
 
-//____________________________________________________________________________________
-
-void      _ElementaryCommand::ExecuteCase47 (_ExecutionList& chain) {
-    chain.currentCommand++;
-
-    _String *arg1 = GetIthParameter(0),
-            *arg2 = GetIthParameter(1);
-
-    try {
-        long type = HY_BL_LIKELIHOOD_FUNCTION;
-        _LikelihoodFunction const * lf = (_LikelihoodFunction const *)_HYRetrieveBLObjectByName(AppendContainerName(*arg1, chain.nameSpacePrefix), type );
-        if (lf) {
-            type = HY_BL_HBL_FUNCTION;
-            long function_index;
-            if (_HYRetrieveBLObjectByName(ProcessLiteralArgument (arg2,chain.nameSpacePrefix), type, &function_index)) {
-                if (GetBFFunctionArgumentCount(function_index)!=2L) {
-                    throw (arg2->Enquote() & " callback function must depend on 2 parameters ");
-                } else {
-                    lf->StateCounter (function_index);
-                }
-            } else {
-                throw (arg2->Enquote() & " is not a defined user batch language function ");
-            }
-
-        } else {
-            throw (arg1->Enquote() & " is not a defined likelihood function ID ");
-        }
-
-    } catch (const _String & err) {
-        HandleApplicationError (err);
-    }
-
-}
-
-
 
 //____________________________________________________________________________________
 
@@ -3432,139 +3383,37 @@ void      _ElementaryCommand::ExecuteCase52 (_ExecutionList& chain) {
 
 //____________________________________________________________________________________
 
+
+
+//____________________________________________________________________________________
+
 bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         
   switch (code) {
 
-    case 0: // formula reparser
-        ExecuteCase0 (chain);
+    case HY_HBL_COMMAND_FORMULA: // formula reparser
+        return HandleGenericExpression (chain);
         break;
 
 
-    case 4:
-        ExecuteCase4 (chain);
+    case HY_HBL_COMMAND_CONDITIONAL:
+        return HandleConditionalBranch(chain);
         break;
 
 
     case 5: // data set contruction
-
         ExecuteCase5 (chain);
         break;
 
     case 6:  // data set filter construction
     case 27: // Permute
     case 28: // Bootstrap
-        ExecuteDataFilterCases(chain);
+        ExecuteDataFilterCases (chain);
         break;
 
 
     case 7: { // build a tree
-        chain.currentCommand++;
-
-        _String treeIdent   = chain.AddNameSpaceToID(*(_String*)parameters(0)),
-                treeString  = *(_String*)parameters(1);
-
-        SetStatusLine (_String("Constructing Tree ")&treeIdent);
-        long  varID = LocateVarByName (treeIdent);
-
-        
-        bool replace_tree_structure = hy_env::EnvVariableTrue(replaceTreeStructure);
-
-        _SimpleList   leftOverVars; // mod 02/03/2003
-        if (varID>=0)
-            if (FetchVar(varID)->ObjectClass()==TREE) {
-                if (replace_tree_structure) {
-                    DeleteVariable(*FetchVar(varID)->GetName());    // mod 11/19/2003
-                } else {
-                    DeleteTreeVariable(varID,leftOverVars);    // mod 02/03/2003
-                }
-            }
-
-
-        _TheTree * tr = nil;
-        if (chain.nameSpacePrefix) {
-            hy_env::EnvVariableSet(hy_env::tree_parser_namespace, new _FString (*chain.nameSpacePrefix->GetName()), false);
-        }
-
-        if (treeString.get_char(0)!='(') {
-            _Formula  nameForm (treeString,chain.nameSpacePrefix);
-            HBLObjectRef formRes = nameForm.Compute();
-            if (formRes) {
-                if (formRes->ObjectClass () == STRING) {
-                    tr = new _TheTree (treeIdent,((_FString*)formRes)->get_str(),false);
-                } else if (formRes->ObjectClass () == TOPOLOGY) {
-                    tr = new _TheTree (treeIdent,(_TreeTopology*)formRes);
-                } else if (formRes->ObjectClass () == TREE) {
-                    for (unsigned long i = 0; i < leftOverVars.lLength; i++) {
-                        //rintf ("%s\n", LocateVar(leftOverVars.list_data[i])->GetName()->get_str());
-                        DeleteVariable(leftOverVars.list_data[i], true);
-                    }
-                    leftOverVars.Clear();
-                    tr = new _TheTree (treeIdent,(_TheTree*)formRes);
-                }
-            }
-        } else {
-            tr = new _TheTree (treeIdent,treeString,false);
-        }
-        
-        if (chain.nameSpacePrefix) {
-            hy_env::EnvVariableSet(hy_env::tree_parser_namespace, new _MathObject, false);
-        }
-
-        if (!tr) {
-            DeleteObject (tr);
-            HandleApplicationError("Illegal right hand side in call to Tree id = ...; it must be a string, a Newick tree spec or a topology");
-            return false;
-        }
-
-        if (leftOverVars.nonempty()) { // mod 02/03/2003 - the entire "if" block
-            _SimpleList indep, dep, holder;
-            {
-                _AVLList    indepA (&indep),
-                            depA   (&dep);
-
-                tr->ScanContainerForVariables (indepA,depA);
-                //tr.ScanForVariables (indepA,depA);
-                indepA.ReorderList();
-                depA.ReorderList();
-            }
-            
- 
-            //indep.Sort();
-            //dep.Sort();
-
-            holder.Union (indep,dep);
-            leftOverVars.Sort ();
-            /*
-            BufferToConsole("\nIndependents+nDependendts\n");
-            ObjectToConsole(&holder); NLToConsole();
-            BufferToConsole("\nLeftover\n");
-            ObjectToConsole(&leftOverVars); NLToConsole();
-            */
-            
-            /*leftOverVars.Each ([](long v, unsigned long) -> void {
-                StringToConsole(*LocateVar(v)->GetName()); NLToConsole();
-            });*/
-            
-            indep.Subtract (leftOverVars,holder);
-
-            /* the bit with freeSlots is here b/c
-               some nodes variables may have been deleted during the unroot
-               in the tree constructor and we don't want to delete them twice,
-               do we? 08/22/2003 */
-
-            dep.Clear();
-            dep.Duplicate (&freeSlots);
-            dep.Sort ();
-            holder.Subtract (indep,dep);
-            for (varID = holder.lLength-1; varID >=0 ; varID--) {
-                DeleteVariable (*LocateVar (holder.list_data[varID])->GetName());
-            }
-
-            tr->Clear();
- 
-        }
-
+        HandleTreeConstruction (chain);
     }
     break;
 
@@ -3855,9 +3704,6 @@ bool      _ElementaryCommand::Execute    (_ExecutionList& chain) {
         break;
 
 
-    case 47: // state counter; deprecate
-        ExecuteCase47 (chain);
-        break;
 
     case HY_HBL_COMMAND_LFCOMPUTE:
         return HandleComputeLFFunction(chain);
@@ -4964,7 +4810,7 @@ bool    _ElementaryCommand::ConstructModel (_StringBuffer&source, _ExecutionList
 
 bool      _ElementaryCommand::MakeJumpCommand       (_String* source,   long branch_true, long branch_false, _ExecutionList& parentList) {
     long existing_formula_handle = 0L;
-         code        = 4L;
+    code        = HY_HBL_COMMAND_CONDITIONAL;
 
     if (simpleParameters.lLength==3) {
         if (source) {

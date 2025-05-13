@@ -120,6 +120,7 @@ lfunction trees.GetTreeString(look_for_newick_tree) {
 
     if (Type(look_for_newick_tree) == "String") {
         treeString = trees.GetTreeString._sanitize(look_for_newick_tree);
+        look_for_newick_tree = None;
     } else {
         if (look_for_newick_tree == FALSE) {
             utility.SetEnvVariable("IS_TREE_PRESENT_IN_DATA", FALSE);

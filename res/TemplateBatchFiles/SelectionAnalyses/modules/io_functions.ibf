@@ -32,10 +32,13 @@ lfunction selection.io.defineBranchSets(partition_info) {
     for (k = 0; k < Abs (partition_info); k+=1) {
         tree_for_analysis = (partition_info[k])[utility.getGlobalValue("terms.data.tree")];
         available_models = {};
-        utility.ForEach (tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")], "_value_", "`&available_models`[_value_] += 1");
+        
+        for (_value_; in; tree_for_analysis[utility.getGlobalValue("terms.trees.model_map")]) {
+            available_models [_value_] += 1;
+        }
 
         for (k2; in; utility.Keys   (available_models)) {
-            key_counts[k2] = key_counts[k2] + 1;
+            key_counts[k2] += 1;
         }
     }
 

@@ -1065,7 +1065,7 @@ void   _ElementaryCommand::appendCompiledFormulae(_Formula* f, _Formula *f2) {
 //____________________________________________________________________________________
 bool    _ElementaryCommand::DecompileFormulae (void) {
   switch (code) {
-    case 0:
+    case HY_HBL_COMMAND_FORMULA:
       if (simpleParameters.nonempty()) {
         _Formula* f = (_Formula*)simpleParameters.list_data[1],
                 *f2 = (_Formula*)simpleParameters.list_data[2] ;
@@ -1086,7 +1086,7 @@ bool    _ElementaryCommand::DecompileFormulae (void) {
         return true;
       }
       break;
-    case 4: {
+    case HY_HBL_COMMAND_CONDITIONAL: {
       if (parameters.lLength && simpleParameters.lLength == 3) {
         _Formula* f = (_Formula*)simpleParameters.list_data[2];
         if (f) {

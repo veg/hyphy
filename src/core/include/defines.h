@@ -256,6 +256,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #define   HY_HBL_COMMAND_FORMULA                                        0L
+#define   HY_HBL_COMMAND_CONDITIONAL                                    4L
 
 #define   HY_HBL_COMMAND_FOR                                            500L
 #define   HY_HBL_COMMAND_WHILE                                          501L
