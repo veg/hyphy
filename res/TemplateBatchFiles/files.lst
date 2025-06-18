@@ -10,6 +10,8 @@
 "PRIME","[PRIME] ","SelectionAnalyses/PRIME.bf";
 "error-filter","[Error-Filter] Use a BUSTED-E model fit to clean-up a sequence alignment","SelectionAnalyses/error-filter.bf";
 "MSS", "[MSS] Fits a model with multiple synonymous rates (MSS model) to several genes jointly.","MSS-joint-fitter.bf";
+"MSS-GA", "[MSS-GA] Perform a Genetic Algorithm search model selection for a codon MSS model on a collection of alignments.","GA/MSS-selector-codon.bf";
+"MSS-GA-processor", "[MSS-GA-processor] Process results for a genetic algorithm codon MSS model search.","GA/processor-codon.bf";
 "BUSTED-PH","[BUSTED-PH] Test if episodic diversifying selection is associated with the set of designated (FG) branches using BUSTED (Branch-site Unrestricted Statistical Test of Episodic Diversification).","SelectionAnalyses/BUSTED-PH.bf";
 
 "","A collection of tools for evolutionary hypothesis testing coding-sequence data.","!Evolutionary Hypothesis Testing";
