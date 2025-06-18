@@ -478,7 +478,6 @@ function doGTR (prefix) {
     }
     
 
-
     if (run_gtr) {
         utility.ToggleEnvVariable ("TREE_DO_NOT_AUTO_RENAME", TRUE);
 

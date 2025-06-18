@@ -224,6 +224,9 @@ hyFloat  _CalcNode::ProcessTreeBranchLength (_String const& branch_length) {
     } else {
       res = branch_length.to_float ();
     }
+    if (res < 0.) {
+        return -1.;
+    }
     res = MAX (res, 1e-10);
   }
 

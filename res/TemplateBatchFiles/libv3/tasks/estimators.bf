@@ -1150,8 +1150,6 @@ lfunction estimators.FitMGREVExtractComponentBranchLengths(codon_data, fit_resul
  */
 lfunction estimators.FitCodonModel(codon_data, tree, generator, genetic_code, option, initial_values) {
 
-
-
     //TODO: Where is data_filter being set?
     if (Type(data_filter) == "String") {
         return estimators.FitCodonModel({
