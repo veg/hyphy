@@ -145,11 +145,11 @@ labeler.include_species = {};
 console.log ("");
 
 for (k, v; in; labeler.tree_names_dict) {
-    if (labeler.seq_names_dict[k]) {
+    if (labeler.seq_names_dict[k] || labeler.seq_names_dict[k&&1]) {
         labeler.include_species[k] = 1;
         labeler.include_species[k&&1] = 1;
     } else {
-        if (labeler.too_short / k == 0) {
+        if (labeler.too_short / k || labeler.too_short / (k && 1) == 0) {
             console.log ("- Label `k` has no matching sequence");
         }
     }

@@ -89,7 +89,7 @@ if (busted.error_sink) {
     busted.run_background_test = busted.inferred_background_distribution [busted.rate_classes-1][0] > 1 && busted.inferred_background_distribution [busted.rate_classes-1][1] > 0;
 }
 
-if (!busted.run_test) {
+if (!busted.run_background_test) {
     io.ReportProgressMessageMD ("BUSTED", "Results", "No evidence for episodic diversifying positive selection under the unconstrained model on BACKGROUND BRANCHES, skipping constrained model fitting");
     busted.json [terms.busted.background_test ] = busted.ComputeLRT (0, 0);
 } else {
@@ -154,7 +154,7 @@ if (!busted.run_test) {
                             busted.display_orders[busted.constrained] + 1);
                             
     
-}
+} 
 
 console.log ('
 =====================================================================================================

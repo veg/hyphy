@@ -502,6 +502,8 @@ function models.generic.SetBranchLength (model, value, parameter) {
                     return 1;
 
                 } else {
+                
+                     
                      ConvertBranchLength (models.generic.SetBranchLength.t,  models.generic.SetBranchLength.expression, ^models.generic.SetBranchLength.bl, value);
         
                      //ExecuteCommands ("FindRoot (models.generic.SetBranchLength.t,(" + models.generic.SetBranchLength.expression + ")-(" + value + ")," + models.generic.SetBranchLength.bl + ",0,10000)");

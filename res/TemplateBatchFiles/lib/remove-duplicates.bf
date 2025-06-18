@@ -12,7 +12,7 @@ filter.analysis_description = {terms.io.info :
                             terms.io.reference :        "TBD",
                             terms.io.authors :          "Sergei L Kosakovsky Pond",
                             terms.io.contact :          "spond@temple.edu",
-                            terms.io.requirements :     "An MSA and, optionally, a tree. v0.2 adds support for --preserve."
+                            terms.io.requirements :     "An MSA and, optionally, a tree. v0.2 adds support for --preserve.",
                             terms.io.help :             "https://github.com/veg/hyphy-analyses/tree/master/remove-duplicates"
                           };
 

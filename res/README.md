@@ -6,7 +6,7 @@ This README describes the process for adding new official analyses to HyPhy. Fol
 
 1. **Add Analysis Files**
    - Place your analysis files (`.bf` only) in the `res/TemplateBatchFiles` directory.
-   - You may organize analyses into subdirectories within `res/TemplateBatchFiles` if desired.
+   - You may organize analyses into subdirectories within `res/TemplateBatchFiles` and include Markdown-formatted READMEs in the subdirectories if desired.
 
 2. **Add a Help URL**
    - In the analysis description at the top of your `.bf` analysis file, add a help URL to the analysis header. This provides users with documentation or further information about the analysis.

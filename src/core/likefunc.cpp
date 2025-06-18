@@ -3167,7 +3167,8 @@ inline hyFloat sqr (hyFloat x)
             }
           }
         }
-
+          
+ 
          _Matrix transversions (theSystem.GetHDim(),1,false,true),
                  transitions   (theSystem.GetHDim(),1,false,true),
                  jc (theSystem.GetHDim(),1,false,true),
@@ -3206,58 +3207,60 @@ inline hyFloat sqr (hyFloat x)
 
         eq_index = 0UL;
         for (unsigned long row = 0UL; row <tip_count - 1; row++)
-          for (unsigned long column = row +1UL; column<tip_count; column++, eq_index++) {
-              // Tamura - Nei distance formula
-            filter->ComputePairwiseDifferences (diffs,row,column) ;
-            hyFloat Q = diffs.theData[1]+diffs.theData[3]+
-            diffs.theData[4]+diffs.theData[6],P1=diffs.theData[2],
-            P2=diffs.theData[5];
-            comps = Q+P1+P2+diffs.theData[0];
-            if (comps==0.0) {
-              continue;
+            for (unsigned long column = row +1UL; column<tip_count; column++, eq_index++) {
+                // Tamura - Nei distance formula
+                filter->ComputePairwiseDifferences (diffs,row,column) ;
+                                
+                hyFloat Q = diffs.theData[1]+diffs.theData[3]+
+                diffs.theData[4]+diffs.theData[6],P1=diffs.theData[2],
+                P2=diffs.theData[5];
+                comps = Q+P1+P2+diffs.theData[0];
+                if (comps==0.0) {
+                    continue;
+                }
+                if (two) {
+                    Q/=comps;
+                    P1/=comps;
+                    P2/=comps;
+                    tmp = 1-Q/(2*cR*cY);
+                    if (tmp>0.0) {
+                        transversions[eq_index] = -2*cR*cY*log(tmp);
+                    } else {
+                        transversions[eq_index] = 200*cR*cY;
+                    }
+                    
+                    tmp = 1.0-1.0/c1*P1-.5/cR*Q;
+                    if (tmp>0.0) {
+                        t2 = -c1*log(tmp);
+                    } else {
+                        t2 = c1*100;
+                    }
+                    
+                    tmp = 1.0-1.0/c2*P2-.5/cY*Q;
+                    if (tmp>0.0) {
+                        t2 -= c2*log(tmp);
+                    } else {
+                        t2 += c2*100;
+                    }
+                    
+                    tmp = 1-.5/(cR*cY)*Q;
+                    if (tmp>0.0) {
+                        t2 += c3*log(tmp);
+                    } else {
+                        t2 += c3*100;
+                    }
+                    
+                    transitions[eq_index]= t2;
+                } else {
+                    hyFloat P = (Q+P1+P2)/comps;
+                    P = 1.0-P/fP;
+                    if (P>0) {
+                        jc[eq_index]=-fP*log(P);
+                    } else {
+                        jc[eq_index]=20.0;
+                    }
+                }
             }
-            if (two) {
-              Q/=comps;
-              P1/=comps;
-              P2/=comps;
-              tmp = 1-Q/(2*cR*cY);
-              if (tmp>0.0) {
-                transversions[eq_index] = -2*cR*cY*log(tmp);
-              } else {
-                transversions[eq_index] = 200*cR*cY;
-              }
-
-              tmp = 1.0-1.0/c1*P1-.5/cR*Q;
-              if (tmp>0.0) {
-                t2 = -c1*log(tmp);
-              } else {
-                t2 = c1*100;
-              }
-
-              tmp = 1.0-1.0/c2*P2-.5/cY*Q;
-              if (tmp>0.0) {
-                t2 -= c2*log(tmp);
-              } else {
-                t2 += c2*100;
-              }
-
-              tmp = 1-.5/(cR*cY)*Q;
-              if (tmp>0.0) {
-                t2 += c3*log(tmp);
-              } else {
-                t2 += c3*100;
-              }
-
-              transitions[eq_index]= t2;
-            }
-            hyFloat P = (Q+P1+P2)/comps;
-            P = 1.0-P/fP;
-            if (P>0) {
-              jc[eq_index]=-fP*log(P);
-            } else {
-              jc[eq_index]=20.0;
-            }
-          }
 
         _Matrix *trstEst=nil,
         *trvrEst=nil,
@@ -3267,6 +3270,8 @@ inline hyFloat sqr (hyFloat x)
         theSystem*=jc;
         jc.Clear();
         jcEst = (_Matrix*)LUSystem->LUSolve(&theSystem);
+        
+          
         if (two) {
           theSystem=transpose;
           transpose*=transversions;
