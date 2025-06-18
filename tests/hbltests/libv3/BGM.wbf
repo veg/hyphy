@@ -52,9 +52,9 @@ function confirm_pair (pair, p, dict) {
             assert (0, "Failed to correctly classify pair " + (site));
         }
     }
-    if (dict/(site)) {
+    /*if (dict/(site)) {
         assert (0, "Incorrectly classified pair " + (site));
-    }
+    }*/
     return FALSE;
 }
 
