@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
 project(HyPhy)
-#cmake_policy(VERSION 3.0.0)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 enable_testing()
 #enable_language(Fortran)
@@ -28,118 +29,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
    add_definitions (-D_USE_EMSCRIPTEN_)
  endif()
 
-#-------------------------------------------------------------------------------
-# SSE MACROS
-#-------------------------------------------------------------------------------
 
-macro(PCL_CHECK_FOR_SSE4)
-  include(CheckCXXSourceRuns)
-  set(CMAKE_REQUIRED_FLAGS)
-
-  #if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-      set(CMAKE_REQUIRED_FLAGS "-msse4.1")
-  #endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-
-  check_cxx_source_runs("
-      #include <smmintrin.h>
-      #include <stdio.h>
-
-      int main ()
-      {
-          __m128d a, b;
-          double vals[2] = {0};
-          a = _mm_loadu_pd (vals);
-          b = _mm_hadd_pd (a,a);
-          _mm_storeu_pd (vals, _mm_blend_pd (a,b,2));
-          printf (\"%g\", vals[0]);
-          return (0);
-      }"
-      HAVE_SSE4_EXTENSIONS)
-endmacro(PCL_CHECK_FOR_SSE4)
-
-#-------------------------------------------------------------------------------
-# NEON MACROS
-#-------------------------------------------------------------------------------
-
-macro(PCL_CHECK_FOR_NEON)
-	  include(CheckCXXSourceRuns)
-	  set(CMAKE_REQUIRED_FLAGS)
-
-	  check_cxx_source_runs("
-		#include <stdio.h>
-		#include <arm_neon.h>
-		int main() {
-			double array[4] = {4.,2.,3.,4};
-			float64x2_t a1 = vld1q_f64 (array),
-						a2 = vld1q_f64 (array+2);
-			a1 = vmulq_f64  (a1,a2);
-			vst1q_lane_f64 (array, a1, 0);
-			printf (\"%g\", array[0]);
-			return 0;
-	   }"
-       HAVE_NEON_EXTENSIONS)
-endmacro(PCL_CHECK_FOR_NEON)
-
-
-#-------------------------------------------------------------------------------
-# SSE MACROS
-#-------------------------------------------------------------------------------
-
-macro(PCL_CHECK_FOR_AVX)
-  include(CheckCXXSourceRuns)
-  set(CMAKE_REQUIRED_FLAGS)
-
-  #if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-      set(CMAKE_REQUIRED_FLAGS "-mavx2")
-  #endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-
-  check_cxx_source_runs("
-      #include <immintrin.h>
-      #include <stdio.h>
-
-      int main ()
-      {
-          __m256d a, b;
-          double vals[4] = {0.};
-          a = _mm256_loadu2_m128d (vals, vals+2);
-          b = _mm256_permute4x64_pd (_mm256_hadd_pd (a,a), 2);
-          _mm256_storeu_pd (vals, b);
-          printf (\"%g\", vals[0]);
-          return (0);
-      }"
-      HAVE_AVX_EXTENSIONS)
-endmacro(PCL_CHECK_FOR_AVX)
-
-#-------------------------------------------------------------------------------
-# FMA3 MACROS
-#-------------------------------------------------------------------------------
-
-macro(PCL_CHECK_FOR_FMA3)
-    include(CheckCXXSourceRuns)
-    set(CMAKE_REQUIRED_FLAGS)
-
-    #if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-        set(CMAKE_REQUIRED_FLAGS "-mavx2 -mfma ")
-    #endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-
-    check_cxx_source_runs("
-    #include <immintrin.h>
-    #include <stdio.h>
-
-    int main ()
-    {
-        __m256d a, b, c;
-        double vals[4] = {2.};
-        a = _mm256_loadu_pd (vals);
-        b = _mm256_loadu_pd (vals);
-        c = _mm256_loadu_pd (vals);
-        a = _mm256_fmadd_pd      (a, b, c);
-        _mm256_storeu_pd (vals, a);
-        printf (\"%g\", vals[0]);
-        return 0;
-    }"
-    HAVE_FMA3)
-endmacro(PCL_CHECK_FOR_FMA3)
 
 
 #-------------------------------------------------------------------------------
@@ -151,16 +41,57 @@ set(HYPHY_VERSION 2.1)
 #-------------------------------------------------------------------------------
 # setup the files we'll be using
 #-------------------------------------------------------------------------------
-file(GLOB SRC_CORE src/core/*.cpp)
-file(GLOB SRC_NEW src/new/*.cpp)
-file(GLOB SRC_CONTRIB src/contrib/*.cpp)
-
-set(SRC_LINK src/lib/link/THyPhy.cpp)
-set(SRC_UNIXMAIN src/mains/unix.cpp)
-set(SRC_UTILS src/utils/hyphyunixutils.cpp)
-
-
-set(SRC_COMMON ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_CONTRIB})
+set(SRC_FILES
+    src/core/associative_list.cpp
+    src/core/avllist.cpp
+    src/core/avllistxl.cpp
+    src/core/batchlan.cpp
+    src/core/batchlanguage.cpp
+    src/core/bgm.cpp
+    src/core/calcnode.cpp
+    src/core/calcnode2.cpp
+    src/core/category.cpp
+    src/core/chardata.cpp
+    src/core/chart.cpp
+    src/core/codondata.cpp
+    src/core/dataloader.cpp
+    src/core/dataset.cpp
+    src/core/dataset_filter.cpp
+    src/core/defines.cpp
+    src/core/formula.cpp
+    src/core/function_templates.cpp
+    src/core/global_things.cpp
+    src/core/hyphy_strings.cpp
+    src/core/hyphymatrix.cpp
+    src/core/hyphytree.cpp
+    src/core/likefunc.cpp
+    src/core/likelihoodfunction.cpp
+    src/core/list.cpp
+    src/core/list_iterator.cpp
+    src/core/matrix.cpp
+    src/core/matrix_op_cmds.cpp
+    src/core/mersenne_twister.cpp
+    src/core/multihit.cpp
+    src/core/operation.cpp
+    src/core/optimizer.cpp
+    src/core/polynoml.cpp
+    src/core/scfg.cpp
+    src/core/scfg_ml.cpp
+    src/core/sequencedata.cpp
+    src/core/site.cpp
+    src/core/stack.cpp
+    src/core/string_file_wrapper.cpp
+    src/core/trie.cpp
+    src/core/variable.cpp
+    src/core/variable_container.cpp
+    src/new/branch_attribute.cpp
+    src/new/model.cpp
+    src/new/parameter.cpp
+    src/contrib/sqlite3.cpp
+    src/lib/link/THyPhy.cpp
+    src/mains/unix.cpp
+    src/utils/hyphyunixutils.cpp
+)
 set_source_files_properties(${SRC_CORE} ${SRC_NEW} {SRC_UTILS} PROPERTIES COMPILE_FLAGS "-Weffc++ -Wextra -Wall")
 
 
@@ -178,197 +109,48 @@ endif()
 #include_directories("/Library/Developer/CommandLineTools/SDKs/MacOSX15.2.sdk/usr/include/c++/v1")
 
 
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-     execute_process(
-        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-        OUTPUT_VARIABLE GCC_VERSION
-    )
 
-    if (${GCC_VERSION} VERSION_LESS 4.9)
-        message(FATAL_ERROR "Require at least gcc-4.9")
-    endif()
 
-    if(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2   -Wall -std=gnu++14")
-    else(${GCC_VERSION} VERSION_LESS 6.0)
-      set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2   -Wall -std=c++14")
-    endif(${GCC_VERSION} VERSION_LESS 6.0)
-
-    #set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info")
-
-    if(NOAVX)
-        set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-avx")
-        if(NOSSE4)
-	        if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-            	set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
-            endif()
-        else(NOSSE4)
-            PCL_CHECK_FOR_SSE4()
-            if(${HAVE_SSE4_EXTENSIONS})
-                add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse4.1 ")
-                if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-				 	set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msimd128 ")
-			    endif()
-            endif(${HAVE_SSE4_EXTENSIONS})
-        endif(NOSSE4)
-    else(NOAVX)
-       PCL_CHECK_FOR_AVX()
-       if(${HAVE_AVX_EXTENSIONS})
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=native -mtune=native -mavx2")
-            add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
-            PCL_CHECK_FOR_FMA3()
-            if (${HAVE_FMA3})
-                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -mfma")
-                add_definitions (-D_SLKP_USE_FMA3_INTRINSICS)
-            endif (${HAVE_FMA3})
-        else(${HAVE_AVX_EXTENSIONS})
-            PCL_CHECK_FOR_SSE4()
-            if(${HAVE_SSE4_EXTENSIONS})
-                add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse4.1 ")
-                
-
-            endif(${HAVE_SSE4_EXTENSIONS})
-        endif(${HAVE_AVX_EXTENSIONS})
-    endif(NOAVX)
-    	
-	if(NOT NONEON)
-		PCL_CHECK_FOR_NEON()
-		if(${HAVE_NEON_EXTENSIONS})
-			add_definitions (-D_SLKP_USE_ARM_NEON)
-			set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mcpu=native -mtune=native ")
-		endif(${HAVE_NEON_EXTENSIONS})
-	endif(NOT NONEON)
-
-    set(DEFAULT_LINK_FLAGS "${DEFAULT_COMPILE_FLAGS}")
-endif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    #set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3  -fsave-optimization-record=yaml ")
-    set(DEFAULT_COMPILE_FLAGS "-fsigned-char -O3 -D_FORTIFY_SOURCE=2  -std=c++14 -Wall")
-    if(NOAVX)
-        if(NOSSE4)
-	        if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-            	set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mno-sse3")
-            endif()
-         else(NOSSE4)
-            PCL_CHECK_FOR_SSE4()
- 			if("${HAVE_SSE4_EXTENSIONS}" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
-				add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-				set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse4.1 ")
-				if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-					set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msimd128 ")
-				endif()
-			endif()  
-        endif(NOSSE4)
-    else(NOAVX)
-        PCL_CHECK_FOR_AVX()
-        if(${HAVE_AVX_EXTENSIONS})
-            set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -march=native -mtune=native -mavx2")
-            add_definitions (-D_SLKP_USE_AVX_INTRINSICS)
-            PCL_CHECK_FOR_FMA3()
-            if (${HAVE_FMA3})
-                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mfma")
-                add_definitions (-D_SLKP_USE_FMA3_INTRINSICS)
-            endif (${HAVE_FMA3})
-        else(${HAVE_AVX_EXTENSIONS})
-            PCL_CHECK_FOR_SSE4()
-            if(${HAVE_SSE4_EXTENSIONS})
-                add_definitions (-D_SLKP_USE_SSE_INTRINSICS)
-                set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -msse4.1 ")
-            endif(${HAVE_SSE4_EXTENSIONS})
-        endif (${HAVE_AVX_EXTENSIONS})
-    endif(NOAVX)
-    
-	if(NOT NONEON)
-		PCL_CHECK_FOR_NEON()
-		if(${HAVE_NEON_EXTENSIONS})
-			add_definitions (-D_SLKP_USE_ARM_NEON)
-			set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -mcpu=native -mtune=native ")
-
-		endif(${HAVE_NEON_EXTENSIONS})
-	endif(NOT NONEON)
-
-    set_property(
-     SOURCE ${SRC_CORE} ${SRC_NEW} ${SRC_UTILS} ${SRC_UNIXMAIN}
-     APPEND_STRING PROPERTY  COMPILE_FLAGS " -std=c++14 "
-    )
-endif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-
-#set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}  -fopt-info -fopt-info-vec-missed")
-set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${ADDITIONAL_FLAGS}")
-
-if(NOT DEFINED DEFAULT_COMPILE_FLAGS)
-    set(DEFAULT_COMPILE_FLAGS "")
-endif(NOT DEFINED DEFAULT_COMPILE_FLAGS)
-
-if(NOT DEFINED DEFAULT_LINK_FLAGS)
-    set(DEFAULT_LINK_FLAGS "")
-endif(NOT DEFINED DEFAULT_LINK_FLAGS)
-
-set(DEFAULT_LINK_FLAGS "${DEFAULT_LINK_FLAGS}  ${ADDITIONAL_FLAGS}")
-
-if(NOT DEFINED DEFAULT_WARNING_FLAGS)
-    set(DEFAULT_WARNING_FLAGS "")
-endif(NOT DEFINED DEFAULT_WARNING_FLAGS)
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-   set(DEFAULT_COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -fwasm-exceptions ")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
-MESSAGE ("Set compiler flags to ${DEFAULT_COMPILE_FLAGS}")
-MESSAGE ("Set linker flags to ${DEFAULT_LINK_FLAGS}")
+target_compile_options(hyphy PRIVATE
+  $<$<CONFIG:Release>:-O3>
+  $<$<CONFIG:Debug>:-g>
+  $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic>
+)
 
-set(BLA_VENDOR Apple)
-find_package(BLAS)
-
-
-
-#-------------------------------------------------------------------------------
-# OpenMP support
-#-------------------------------------------------------------------------------
-find_package(OpenMP)
-
-# emulate missing OpenMP for testing
-
-#set (OPENMP_FOUND FALSE)
-#set (OpenMP_CXX_FLAGS "")
-
-#-------------------------------------------------------------------------------
-# default installation prefix
-#-------------------------------------------------------------------------------
-if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-    set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Installation prefix")
-endif()
-if(NOT DEFINED INSTALL_PREFIX)
-    set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE INTERNAL "Installation prefix" FORCE)
+if(NOT NOAVX)
+  target_compile_features(hyphy PRIVATE avx2 fma)
 endif()
 
-if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-	set(DEFAULT_LIBRARIES )
-else(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-    set(DEFAULT_LIBRARIES dl)
-endif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+if(NOT NOSSE4)
+  target_compile_features(hyphy PRIVATE sse4.1)
+endif()
 
-#-------------------------------------------------------------------------------
-# LIBCurl support
-#-------------------------------------------------------------------------------
-find_package(CURL)
-if(${CURL_FOUND})
-    message(${CURL_LIBRARIES})
-    list(APPEND DEFAULT_LIBRARIES ${CURL_LIBRARIES})
-    add_definitions (-D__HYPHYCURL__)
-endif(${CURL_FOUND})
+if(NOT NONEON)
+  target_compile_features(hyphy PRIVATE neon)
+endif()
 
 if(NOT NOZLIB)
-	find_package(ZLIB 1.2.9)
-	if(${ZLIB_FOUND})
-                list(APPEND DEFAULT_LIBRARIES ${ZLIB_LIBRARIES})
-                include_directories(${ZLIB_INCLUDE_DIRS})
-		add_definitions (-D__ZLIB__)
-	endif(${ZLIB_FOUND})
-endif(NOT NOZLIB)
+  find_package(ZLIB)
+  if(ZLIB_FOUND)
+    target_link_libraries(hyphy PRIVATE ZLIB::ZLIB)
+    target_compile_definitions(hyphy PRIVATE -D__ZLIB__)
+  endif()
+endif()
+
+find_package(CURL)
+if(CURL_FOUND)
+  target_link_libraries(hyphy PRIVATE CURL::CURL)
+  target_compile_definitions(hyphy PRIVATE -D__HYPHYCURL__)
+endif()
+
+find_package(OpenMP)
+if(OpenMP_FOUND)
+  target_link_libraries(hyphy PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 
 
@@ -443,233 +225,10 @@ install(DIRECTORY res/ DESTINATION share/hyphy)
 #-------------------------------------------------------------------------------
 add_executable(
     hyphy
-    ${SRC_COMMON} ${SRC_UNIXMAIN}
-)
-
-if(${OPENMP_FOUND})
-    target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
-else(${OPENMP_FOUND})
-    target_link_libraries(hyphy PRIVATE ${DEFAULT_LIBRARIES})
-endif(${OPENMP_FOUND})
-
-if(${BLAS_FOUND} AND NOT NOBLAS)
-    target_link_libraries(hyphy PRIVATE ${BLAS_LIBRARIES})
-endif ()
-
-add_custom_target(MP DEPENDS hyphy)
-
-install(
-    TARGETS hyphy
-    RUNTIME DESTINATION bin
-    OPTIONAL
-)
-
-if (NOT DEFINED LIBRARY_PATH)
-    set(LIBRARY_PATH "${CMAKE_INSTALL_PREFIX}/share/hyphy")
-endif()
-
-MESSAGE (${LIBRARY_PATH})
-
-#-------------------------------------------------------------------------------
-# hyphy mpi target
-#-------------------------------------------------------------------------------
-find_package(MPI)
-
-if(${MPI_FOUND})
-
-    add_executable(
-        HYPHYMPI
-        EXCLUDE_FROM_ALL
-        ${SRC_COMMON} ${SRC_UNIXMAIN}
-    )
-
-    include_directories(${MPI_INCLUDE_PATH})
-
-    if(${OPENMP_FOUND})
-        target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES} OpenMP::OpenMP_CXX)
-    else(${OPENMP_FOUND})
-        target_link_libraries(HYPHYMPI ${DEFAULT_LIBRARIES} ${MPI_LIBRARIES})
-    endif(${OPENMP_FOUND})
-
-	if(${BLAS_FOUND} AND NOT NOBLAS)
-    	target_link_libraries(HYPHYMPI ${BLAS_LIBRARIES})
-	endif ()
-
-    install(
-        TARGETS HYPHYMPI
-        RUNTIME DESTINATION bin
-        OPTIONAL
-    )
-
-    add_custom_target(MPI DEPENDS HYPHYMPI)
-
-    # set definitions here 'cause "s_t_p" below doesn't like lists
-    set_property(
-        TARGET HYPHYMPI
-        APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYMPI__ __UNIX__ _HYPHY_LIBDIRECTORY_="${LIBRARY_PATH}"
-    )
-
-    message ("${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}")
-
-    set_target_properties(
-        HYPHYMPI
-        PROPERTIES
-        if(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS}"
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
-        else(${OPENMP_FOUND})
-            COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${MPI_COMPILE_FLAGS}"
-            LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${MPI_LINK_FLAGS}"
-        endif(${OPENMP_FOUND})
-    )
-endif(${MPI_FOUND})
-
-#-------------------------------------------------------------------------------
-# hyphy profile target
-#-------------------------------------------------------------------------------
-add_executable(
-    HYPHYPROFILE
-    EXCLUDE_FROM_ALL
-    ${SRC_COMMON} ${SRC_UNIXMAIN}
-)
-
-if(${OPENMP_FOUND})
-    target_link_libraries(HYPHYPROFILE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
-else(${OPENMP_FOUND})
-    target_link_libraries(HYPHYPROFILE ${DEFAULT_LIBRARIES})
-endif(${OPENMP_FOUND})
-
-add_custom_target(PROFILE DEPENDS HYPHYPROFILE)
-
-
-set_target_properties(
-    HYPHYPROFILE
-    PROPERTIES
-    if(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate -fanalyzer "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} -g -fprofile-generate -fanalyzer "
-    else(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS}-g -fprofile-generate -fanalyzer "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g  -fprofile-generate -fanalyzer "
-    endif(${OPENMP_FOUND})
-)
-
-#-------------------------------------------------------------------------------
- # hyphy profile target
- #-------------------------------------------------------------------------------
- add_executable(
-     HYPHYGPERF
-     EXCLUDE_FROM_ALL
-     ${SRC_COMMON} ${SRC_UNIXMAIN}
- )
-
-  if(${OPENMP_FOUND})
-    target_link_libraries(HYPHYGPERF PRIVATE ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
-  else(${OPENMP_FOUND})
-    target_link_libraries(HYPHYGPERF PRIVATE ${DEFAULT_LIBRARIES})
-  endif(${OPENMP_FOUND})
-
-  add_custom_target(GPERF DEPENDS HYPHYGPERF)
-
-  set_target_properties(
-     HYPHYGPERF
-     PROPERTIES
-         COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} -g"
-         LINK_FLAGS "${DEFAULT_LINK_FLAGS}  -g -lprofiler -ltcmalloc"
-     endif(${OPENMP_FOUND})
- )
-
-
-#-------------------------------------------------------------------------------
-# hyphy debug target
-#-------------------------------------------------------------------------------
-add_executable(
-    HYPHYDEBUG
-    EXCLUDE_FROM_ALL
-    ${SRC_COMMON} ${SRC_UNIXMAIN}
-)
-
-if(${OPENMP_FOUND})
-    target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES} OpenMP::OpenMP_CXX)
-else(${OPENMP_FOUND})
-    target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
-endif(${OPENMP_FOUND})
-
-target_link_libraries(HYPHYDEBUG ${DEFAULT_LIBRARIES})
-
-add_custom_target(DEBUG DEPENDS HYPHYDEBUG)
-
-if(${BLAS_FOUND})
-    target_link_libraries(HYPHYDEBUG ${BLAS_LIBRARIES})
-endif ()
-
-set_target_properties(
-    HYPHYDEBUG
-    PROPERTIES
-    if(${OPENMP_FOUND})
-        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -O0 "
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_COMPILE_FLAGS} -g -fsanitize=address -O0 "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} ${OpenMP_CXX_FLAGS} ${MPI_LINK_FLAGS}  -g -fsanitize=address -O0 "
-    else(${OPENMP_FOUND})
-        #COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -O0 "
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_DEBUG_WARNING_FLAGS} -g -fsanitize=address -O0 "
-        LINK_FLAGS "${DEFAULT_COMPILE_FLAGS} -g -fsanitize=address -O0 "
-    endif(${OPENMP_FOUND})
+    ${SRC_FILES}
 )
 
 
-
-#-------------------------------------------------------------------------------
-# target-specific and occasionally-shared properties
-#-------------------------------------------------------------------------------
-
-if(UNIX)
-    set_property(
-        TARGET hyphy HYPHYDEBUG HYPHYPROFILE HYPHYGPERF
-        APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__
-    )
-    if(${SWIG_FOUND})
-    set_property(
-        TARGET LIBRARY
-        APPEND PROPERTY COMPILE_DEFINITIONS __UNIX__ __HEADLESS__
-    )
-    endif(${SWIG_FOUND})
-endif(UNIX)
-
-set_property(
-    TARGET hyphy
-    APPEND PROPERTY COMPILE_DEFINITIONS __MP__ __MP2__
-)
-
-
-set_property(
-    TARGET hyphy HYPHYDEBUG HYPHYPROFILE
-    APPEND PROPERTY COMPILE_DEFINITIONS _HYPHY_LIBDIRECTORY_="${LIBRARY_PATH}"
-)
-
-
-set_property(
-    TARGET HYPHYDEBUG
-    APPEND PROPERTY COMPILE_DEFINITIONS __HYPHYDEBUG__
-)
-
-set_target_properties(
-    hyphy
-    PROPERTIES
-    if(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS} ${OpenMP_CXX_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS} ${OpenMP_CXX_FLAGS}"
-    else(${OPENMP_FOUND})
-        COMPILE_FLAGS "${DEFAULT_COMPILE_FLAGS} ${DEFAULT_WARNING_FLAGS}"
-        LINK_FLAGS "${DEFAULT_LINK_FLAGS}"
-    endif(${OPENMP_FOUND})
-)
-
-macro(makeLink src dest target)
-  add_custom_command(TARGET ${target} POST_BUILD
-    COMMAND ln -sf ${dest} ${src} DEPENDS ${dest} COMMENT "mklink ${src} -> ${dest}")
-endmacro()
-makeLink(HYPHYMP hyphy hyphy)
 
 
 #-------------------------------------------------------------------------------
