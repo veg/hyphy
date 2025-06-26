@@ -1547,7 +1547,7 @@ double   CostOnly   (  const char * s1,                  // first string
                 from2 --;
                 from1 --;
                 for (long r=1; r<=s1Length; r++) { // iterate by rows
-                    long      c1 = cmap[s1[rev1?(to1-r):(from1+r)]];
+                    long      c1 = cmap[(unsigned char)s1[rev1?(to1-r):(from1+r)]];
 
                     if (doLocal2S) {
                         aux2        = 0.;
@@ -1599,7 +1599,7 @@ double   CostOnly   (  const char * s1,                  // first string
                         // if this is the second row, then we start a gap in the second sequence -|
 
                         if (c1>=0) {
-                            long       c2 = cmap[s2[rev2?(to2-c):(from2+c)]];
+                            long       c2 = cmap[(unsigned char)s2[rev2?(to2-c):(from2+c)]];
 
                             if (c2>=0) {
                                 gscore3 += ccost[c1*mapL+c2];
@@ -1653,7 +1653,7 @@ double   CostOnly   (  const char * s1,                  // first string
                     }
 
                     //printf ("%d: %g\t", r, scoreMatrix.theData[0]);
-                    long      c1 = cmap[s1[rev1?(to1-r):(from1+r-1)]];
+                    long      c1 = cmap[(unsigned char)s1[rev1?(to1-r):(from1+r-1)]];
 
                     for (long c=1; c<=s2Length; c++) {
                         double score1 = scoreMatrix[c], // gap in 2nd
@@ -1668,7 +1668,7 @@ double   CostOnly   (  const char * s1,                  // first string
                         }
 
                         if (c1>=0) {
-                            long       c2 = cmap[s2[rev2?(to2-c):(from2+c-1)]];
+                            long       c2 = cmap[(unsigned char)s2[rev2?(to2-c):(from2+c-1)]];
 
                             if (c2>=0) {
                                 score3 += ccost [c1*mapL+c2];
