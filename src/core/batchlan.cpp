@@ -1328,7 +1328,7 @@ _StringBuffer const       _ExecutionList::GenerateHelpMessage(_List* options, _L
         help_message << '\n';
     };
 
-    ForEach ([&help_message, &options, &inputs, simplify_string, this, scanned_functions] (BaseRef command, unsigned long index) -> void {
+    ForEach ([&options, &inputs, this, scanned_functions] (BaseRef command, unsigned long index) -> void {
         _ElementaryCommand * this_command = (_ElementaryCommand * )command;
 
         if (this_command->code == HY_HBL_COMMAND_LOAD_FUNCTION_LIBRARY || this_command->code == HY_HBL_COMMAND_EXECUTE_A_FILE) {
@@ -1958,7 +1958,7 @@ void  _ExecutionList::BuildFscanf(_List * pieces, long code) {
     static const _String kFscanfRewind ("REWIND"),
                   kScanfCreate ("CREATE_FILE");
     
-    long    names_vs_types_offset = 0L;
+    //long    names_vs_types_offset = 0L;
   
     _List   local_object_manager;
 
@@ -4901,7 +4901,7 @@ bool    _ElementaryCommand::ConstructFunction (_StringBuffer&source, _ExecutionL
     
     long mark1, mark2;
     
-    _FString *save_nmspc = nil;
+    //_FString *save_nmspc = nil;
     
     if (isNameSpace) {
         mark1 = source.FirstNonSpaceIndex(blNameSpace.length(), kStringEnd, kStringDirectionForward);
