@@ -346,7 +346,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
     }
 
     long siteOffset         = 0,
-         patternOffset      = 0,
+         //patternOffset      = 0,
          sequenceCount       ;
 
     for (long i = 0; i<doTheseOnes.lLength; i++) {
@@ -442,7 +442,7 @@ void    _LikelihoodFunction::ReconstructAncestors (_DataSet &target,_SimpleList&
         DeleteObject (thisSet);
         DeleteObject (expandedMap);
         siteOffset    += dsf->GetSiteCount();
-        patternOffset += dsf->GetPatternCount();
+        //patternOffset += dsf->GetPatternCount();
     }
 
 
@@ -1005,9 +1005,9 @@ _List*   _LikelihoodFunction::RecoverAncestralSequencesMarginal (long index, _Ma
 
 hyFloat          _LikelihoodFunction::SumUpConstantOnPartition (const hyFloat * patternLikelihoods, _Matrix const & categoryWeights, const _SimpleList& patternFreqs, const _SimpleList& scalers ) const {
     long               category_count = categoryWeights.GetVDim(),
-                       bl             = patternFreqs.countitems(),
-                       mi             = bl-1,
-                       siteScaler     = scalers.get(mi);
+                       bl             = patternFreqs.countitems();
+                       //mi             = bl-1;
+                       //siteScaler     = scalers.get(mi);
     
     _Matrix            temp  (category_count,1L,false,true);
     

@@ -568,7 +568,7 @@ namespace hyphy_global_objects {
         
         if (type & HY_BL_MODEL) {
             loc = FindModelName(name);
-            if (loc < 0 && name == hy_env::last_model_parameter_list || name == hy_env::use_last_model) {
+            if (( loc < 0 && name == hy_env::last_model_parameter_list ) || name == hy_env::use_last_model) {
                 loc = lastMatrixDeclared;
             }
             if (loc >= 0) {

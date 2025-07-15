@@ -718,8 +718,7 @@ bool    _LikelihoodFunction::MapTreeTipsToData (long f, _String *errorMessage, b
         }
 
         if (!t->IsDegenerate()) {
-            long        j,
-                        k;
+            long        j;
 
             _SimpleList tipMatches;
             // produce a sorted list of sequence names
@@ -1064,7 +1063,6 @@ bool     _LikelihoodFunction::Construct(_List& triplets, _VariableContainer* the
 
             // determine the longest filter
 
-            long             maxFilterSize = 0;
 
             if (hasSiteMx) {
                 if (templateKind == _hyphyLFComputationalTemplateNone) {
@@ -3773,7 +3771,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
     evalsSinceLastSetup = 0L;
     unsigned long  maxFilterSize = 1;
     
-    unsigned long cacheSize = 0UL;
+    //unsigned long cacheSize = 0UL;
     
     for (unsigned long i=0UL; i<theTrees.lLength; i++) {
         _TheTree * cT = GetIthTree(i);
@@ -3801,12 +3799,12 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
 
         maxFilterSize = MAX (maxFilterSize, theFilter->GetSiteCountInUnits());
         if (leafCount > 1UL) {
-            cacheSize += sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount + sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount;
+            //cacheSize += sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount + sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount;
             conditionalInternalNodeLikelihoodCaches[i] = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*stateSpaceDim*iNodeCount*cT->categoryCount, false, 64);
             branchCaches[i]                            = (hyFloat*)MemAllocate (sizeof(hyFloat)*2*patternCount*stateSpaceDim*cT->categoryCount, false, 64);
         }
 
-        cacheSize += sizeof(hyFloat)*patternCount*iNodeCount*cT->categoryCount + sizeof(long)*patternCount*MAX(2,leafCount);
+        //cacheSize += sizeof(hyFloat)*patternCount*iNodeCount*cT->categoryCount + sizeof(long)*patternCount*MAX(2,leafCount);
         siteScalingFactors[i]                          = (hyFloat*)MemAllocate (sizeof(hyFloat)*patternCount*iNodeCount*cT->categoryCount, false, 64);
         conditionalTerminalNodeStateFlag[i]            = (long*)MemAllocate (sizeof(long)*patternCount*MAX(2,leafCount), false, 64);
 
@@ -3819,7 +3817,7 @@ void            _LikelihoodFunction::SetupLFCaches              (void) {
             siteCorrectionsBackup < new _SimpleList (cT->categoryCount*patternCount,0,0);
         }
         
-        cacheSize += cT->categoryCount*patternCount * 2 * sizeof (long);
+        //cacheSize += cT->categoryCount*patternCount * 2 * sizeof (long);
         
         InitializeArray(siteScalingFactors[i] , patternCount*iNodeCount*cT->categoryCount, 1.);
 
@@ -4265,9 +4263,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
     hyFloat     intermediateP,
                 maxSoFar            = -INFINITY,
                 bestVal,
-                lastMax,
                 currentPrecision    = 0.1,
-                bP,
                 percentDone         = 0.0;
     
     long        evalsIn             = likeFuncEvalCallCount,
@@ -4887,7 +4883,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
             _SimpleList nc2;
 
             long        ncp = 0L,
-                        lcp = 0L,
                         jjj;
 
             averageChange2 = 0.0;
@@ -5285,7 +5280,7 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
                 BufferToConsole (buffer);
                 snprintf (buffer, sizeof(buffer),"\nSmoothing term: %g", smoothingTerm);
                 BufferToConsole (buffer);
-                snprintf (buffer, sizeof(buffer),"\nExponential count: %d", matrix_exp_count);
+                snprintf (buffer, sizeof(buffer),"\nExponential count: %ld", matrix_exp_count);
                 BufferToConsole (buffer);
             }
 
@@ -5379,7 +5374,6 @@ _Matrix*        _LikelihoodFunction::Optimize (_AssociativeList const * options)
 
     CleanUpOptimize();
 
-    HBLObjectRef pm;
     for (unsigned long i=0UL; i<indexInd.lLength; i++) {
         result.Store(0,i,GetIthIndependent(i));
     }
@@ -5700,8 +5694,8 @@ long    _LikelihoodFunction::Bracket (long index, hyFloat& left, hyFloat& middle
 
             leftStep = MIN (leftStep*0.125, middle-lowerBound);
             
-            if ( leftStep<initialStep*.05 && index >= 0 || index < 0 && leftStep < STD_GRAD_STEP) {
-                if (!first ||  index >= 0 && current_log_l > -INFINITY && leftStep <= 1e-8) {
+            if ( (leftStep<initialStep*.05 && index >= 0) || (index < 0 && leftStep < STD_GRAD_STEP)) {
+                if (!first ||  (index >= 0 && current_log_l > -INFINITY && leftStep <= 1e-8)) {
                     if (go2Bound) {
                         middle = lowerBound;
                         
@@ -6524,7 +6518,6 @@ void    _LikelihoodFunction::ComputeGradient (_Matrix& gradient,  hyFloat& gradi
                 
                      
                 //printf ("%ld %s %20.18g\n", index, GetIthIndependentName (index)->get_str(), currentValue);
-                hyFloat    check_vv      = currentValue;
 
                 if (testStep >= ub) {
                   if (testStep < lb) {
@@ -6853,8 +6846,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
                     gradientStep     = STD_GRAD_STEP,
                     temp,
                     tryStep,
-                    maxSoFar = Compute(),
-                    bestTry;
+                    maxSoFar = Compute();
 
     _SimpleList     leastChange,
                     freeze,
@@ -7011,7 +7003,7 @@ void    _LikelihoodFunction::GradientDescent (hyFloat& gPrecision, _Matrix& best
 
     middle_vector = bestVal;
       
-    int  outcome = Bracket(-1, left,middle,right,leftValue, middleValue, rightValue,bp, true, &gradient);
+    long  outcome = Bracket(-1, left,middle,right,leftValue, middleValue, rightValue,bp, true, &gradient);
 
     if (middleValue < initialValue) {
       SetAllIndependent (&bestVal);
@@ -7268,7 +7260,7 @@ void    _LikelihoodFunction::LocateTheBump (long index,hyFloat gPrecision, hyFlo
 
     unsigned long        inCount  = likeFuncEvalCallCount,
                          inECount = matrix_exp_count;
-    int outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp, go2Bound);
+    long outcome = Bracket (index,left,middle,right,leftValue, middleValue, rightValue,bp, go2Bound);
     unsigned long        bracket_step_count = likeFuncEvalCallCount - inCount;
 
     if (outcome != -1) { // successfull bracket
@@ -8085,7 +8077,7 @@ void    _LikelihoodFunction::ScanAllVariables (void) {
         }
     }
     
-    theTrees.Each ([this, &iia, &iid, &rankVariables, &treeSizes] (long tree_index, unsigned long index) -> void {
+    theTrees.Each ([&iia, &iid, &rankVariables, &treeSizes] (long tree_index, unsigned long index) -> void {
         _TheTree * tree_var = (_TheTree*)LocateVar(tree_index);
         tree_var->ScanAndAttachVariables ();
         tree_var->ScanForGVariables (iia, iid,&rankVariables, treeSizes.GetElement (index) << 4);
@@ -9233,7 +9225,7 @@ void    countingTraverse (node<long>* startingNode, long& totalLength, long curr
         maxSize = currentSize;
     }
 
-    for (long k=1; k<startingNode->get_num_nodes(); k++) {
+    for (int k=1; k<startingNode->get_num_nodes(); k++) {
         countingTraverse (startingNode->go_down(k), totalLength, currentSize, maxSize, true);
     }
 
@@ -9247,14 +9239,14 @@ void    countingTraverse (node<long>* startingNode, long& totalLength, long curr
 void    countingTraverseArbRoot (node<long>* startingNode, node<long>* childNode, long& totalLength, long currentSize, long& maxSize)
 {
     if (childNode)
-        for (long k=1; k<=startingNode->get_num_nodes(); k++) {
+        for (int k=1; k<=startingNode->get_num_nodes(); k++) {
             node<long>* cNode = startingNode->go_down(k);
             if (cNode!=childNode) {
                 countingTraverse (cNode, totalLength, currentSize, maxSize, true);
             }
         }
     else
-        for (long k=1; k<=startingNode->get_num_nodes(); k++) {
+        for (int k=1; k<=startingNode->get_num_nodes(); k++) {
             countingTraverse (startingNode->go_down(k), totalLength, currentSize, maxSize, true);
         }
 
@@ -9310,7 +9302,7 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
         po << (long)childNode;
 
         if (startingNode->parent) {
-            for (long k=1; k<=startingNode->get_num_nodes(); k++) {
+            for (int k=1; k<=startingNode->get_num_nodes(); k++) {
                 node<long>* cNode = startingNode->go_down(k);
                 if (cNode!=childNode) {
                     setComputingArrays (startingNode->go_down(k), nil, co,so,cs,ro,po,ff);
@@ -9321,10 +9313,10 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
         } else { // actual tree root
             bool passedUpPath = false;
 
-            for (long k=1; k<=startingNode->get_num_nodes(); k++) {
+            for (int k=1; k<=startingNode->get_num_nodes(); k++) {
                 node<long>* cNode = startingNode->go_down(k);
                 if (cNode!=childNode) {
-                    if (k == startingNode->get_num_nodes() || k == startingNode->get_num_nodes() - 1 && !passedUpPath) {
+                    if (k == startingNode->get_num_nodes() || (k == startingNode->get_num_nodes() - 1 && !passedUpPath)) {
                         cs.list_data[startingNode->in_object] = -1;
                     }
                     setComputingArrays (startingNode->go_down(k), nil, co,so,cs,ro,po,ff);
@@ -9339,7 +9331,7 @@ void    setComputingArrays (node<long>* startingNode, node<long>* childNode, _Si
             po << (long)startingNode->parent;
         }
 
-        for (long k=1; k<startingNode->get_num_nodes(); k++) {
+        for (int k=1; k<startingNode->get_num_nodes(); k++) {
             setComputingArrays (startingNode->go_down(k), nil, co,so,cs,ro,po,ff);
         }
 
@@ -9671,6 +9663,8 @@ unsigned long    _LikelihoodFunction::CountObjects (_LikelihoodFunctionCountType
           return indexDep.countitems();
       case kLFCountCategoryVariables:
           return indexCat.countitems();
+      case kLFCountPartitions:
+        return theDataFilters.countitems();
     }
 
     return theTrees.countitems();
@@ -10339,7 +10333,7 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
         for (unsigned long treeCounter = 0UL; treeCounter<theTrees.countitems(); treeCounter++) {
             _TheTree* currentTree = GetIthTree (treeCounter);
             
-            long level = 0, lastLevel = 0,l1,l2,j;
+            long level = 0, lastLevel = 0;
             *res<<"\nTree "
                 <<currentTree->GetName()
                 <<'=';
@@ -10473,7 +10467,6 @@ BaseRef _LikelihoodFunction::toStr (unsigned long) {
       
     _List           local_dynamic_cleanup;
 
-    bool            simulate_column_wise = false;
 
     if (indexCat.nonempty()) {
       checkParameter (categorySimulationMethod,categorySimMethod,2.0);
@@ -10931,7 +10924,7 @@ void    _LikelihoodFunction::BuildLeafProbs (node<long>& curNode, long unsigned 
                   }
             }
         }
-        for (unsigned long k = 1UL; k<=curNode.get_num_nodes(); k++) {
+        for (int k = 1UL; k<=curNode.get_num_nodes(); k++) {
             BuildLeafProbs (*curNode.go_down(k), curVector?curVector:baseVector, vecSize, target, curTree, leafCount, false, baseLength, dsf,DSOffset,intNodes);
         }
     } else
@@ -11012,7 +11005,7 @@ bool    _LikelihoodFunction::SingleBuildLeafProbs (node<long>& curNode, long par
 
     // now scan the "children" and pass on the parameters as needed
 
-    for (long k = 1; k<=curNode.get_num_nodes(); k++) {
+    for (int k = 1; k<=curNode.get_num_nodes(); k++) {
       if(!SingleBuildLeafProbs (*curNode.go_down(k), myState, target, theExc, curTree, false, dsf, iNodes)) {
         return false;
       }

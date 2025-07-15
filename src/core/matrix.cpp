@@ -1362,7 +1362,6 @@ HBLObjectRef   _Matrix::LUSolve (HBLObjectRef p) const {
     if (p->ObjectClass()==MATRIX) {
       _Matrix *b=(_Matrix*)p;
       if (!((b->hDim!=hDim)||(b->vDim!=1)||(b->storageType!=1))) {
-        hyFloat sum;
         _Matrix * result = new _Matrix (*b);
         result->CheckIfSparseEnough(true);
         long i = 0L,
@@ -2629,7 +2628,7 @@ _String*        _Matrix::BranchLengthExpression (_Matrix* baseFreqs, bool mbf) {
                 freqFla.AppendNewInstance ((_String*)baseFreqs->GetFormula(k,0)->toStr(kFormulaStringConversionNormal, nil,true));
             }
 
-            ForEach([this, &multipliersByRate, &references, baseFreqs, mbf, &freqFla] (BaseRef object, unsigned long direct_index, unsigned long index) -> void {
+            ForEach([this, &multipliersByRate, &references, mbf, &freqFla] (BaseRef object, unsigned long direct_index, unsigned long index) -> void {
                 long this_ref = references.get (index);
                 if (this_ref >= 0L) {
                     _StringBuffer * thisAdder = (_StringBuffer*)multipliersByRate(this_ref);
@@ -3430,11 +3429,7 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                                             S3 = vld1q_f64 (secondArg.theData + i + 4),
                                             S4 = vld1q_f64 (secondArg.theData + i + 6);
                             
-                            float64x2_t     R1,
-                                            R2,
-                                            R3,
-                                            R4;
-                            
+                             
                             long s0 = secondArg.theIndex[i],
                                  s1 = secondArg.theIndex[i+1],
                                  s2 = secondArg.theIndex[i+2],
@@ -3444,32 +3439,42 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                                  s6 = secondArg.theIndex[i+6],
                                  s7 = secondArg.theIndex[i+7];
                             
-                            R1 = vld1q_lane_f64 (storage.theData + s1,
-                                                 vld1q_lane_f64 (storage.theData + s0, R1, 0), 1);
-                            R2 = vld1q_lane_f64 (storage.theData + s3,
-                                                 vld1q_lane_f64 (storage.theData + s2, R2, 0), 1);
-                            R3 = vld1q_lane_f64 (storage.theData + s5,
-                                                 vld1q_lane_f64 (storage.theData + s4, R3, 0), 1);
-                            R4 = vld1q_lane_f64 (storage.theData + s7,
-                                                 vld1q_lane_f64 (storage.theData + s6, R3, 0), 1);
-
-                            R1 = vaddq_f64(R1,S1);
-                            R2 = vaddq_f64(R2,S2);
-                            R3 = vaddq_f64(R3,S3);
-                            R4 = vaddq_f64(R4,S4);
+                            if (s1 - s0 == 1L) {
+                                vst1q_f64 (storage.theData + s0, vaddq_f64(vld1q_f64 (storage.theData + s0),S1));
+                            } else {
+                                float64x2_t R1 = vcombine_f64 (vld1_f64 (storage.theData + s0),vld1_f64 (storage.theData + s1));
+                                R1 = vaddq_f64(R1,S1);
+                                vst1q_lane_f64 (storage.theData + s0,     R1, 0);
+                                vst1q_lane_f64 (storage.theData + s1,     R1, 1);
+                            }
  
-                            vst1q_lane_f64 (storage.theData + s0,     R1, 0);
-                            vst1q_lane_f64 (storage.theData + s1,     R1, 1);
-                            
-                            vst1q_lane_f64 (storage.theData + s2,     R2, 0);
-                            vst1q_lane_f64 (storage.theData + s3,     R2, 1);
+                            if (s3 - s2 == 1L) {
+                                vst1q_f64 (storage.theData + s2, vaddq_f64(vld1q_f64 (storage.theData + s2),S2));
+                            } else {
+                                float64x2_t R2 = vcombine_f64 (vld1_f64 (storage.theData + s2),vld1_f64 (storage.theData + s3));
+                                R2 = vaddq_f64(R2,S2);
+                                vst1q_lane_f64 (storage.theData + s2,     R2, 0);
+                                vst1q_lane_f64 (storage.theData + s3,     R2, 1);
+                             }
 
-                            vst1q_lane_f64 (storage.theData + s4,     R3, 0);
-                            vst1q_lane_f64 (storage.theData + s5,     R3, 1);
+                            if (s5 - s4 == 1L) {
+                                vst1q_f64 (storage.theData + s4, vaddq_f64(vld1q_f64 (storage.theData + s4),S3));
+                            } else {
+                                float64x2_t R3 = vcombine_f64 (vld1_f64 (storage.theData + s4),vld1_f64 (storage.theData + s5));
+                                R3 = vaddq_f64(R3,S3);
+                                vst1q_lane_f64 (storage.theData + s4,     R3, 0);
+                                vst1q_lane_f64 (storage.theData + s5,     R3, 1);
+                            }
 
-                            vst1q_lane_f64 (storage.theData + s6,     R4, 0);
-                            vst1q_lane_f64 (storage.theData + s7,     R4, 1);
+                            if (s7 - s6 == 1L) {
+                                vst1q_f64 (storage.theData + s6, vaddq_f64(vld1q_f64 (storage.theData + s6),S4));
+                            } else {
+                                float64x2_t R4 = vcombine_f64 (vld1_f64 (storage.theData + s6),vld1_f64 (storage.theData + s7));
+                                R4 = vaddq_f64(R4,S4);
+                                vst1q_lane_f64 (storage.theData + s6,     R4, 0);
+                                vst1q_lane_f64 (storage.theData + s7,     R4, 1);
 
+                            }
                         }
 #endif
                         
@@ -3570,33 +3575,14 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                     CELL_OP2 (idx+12,r4);
                 }
 #elif defined  _SLKP_USE_ARM_NEON
-        #define     CELL_OP1(x,y) float64x2_t y = vsubq_f64 (vld1q_f64 (stData+x), vld1q_f64 (argData+x))
-        #define CELL_OP2(x,y) vst1q_f64 (stData+x,y)
-        #pragma GCC unroll 4
-        #pragma clang loop vectorize(enable)
-        #pragma clang loop interleave(enable)
-        //#pragma clang loop unroll(enable)
-        #pragma GCC ivdep
-        #pragma ivdep
-                for (long idx = 0; idx < upto; idx+=16) {
-                     CELL_OP1 (idx,r1);
-                     CELL_OP1 (idx+2,r2);
-                     CELL_OP1 (idx+4,r3);
-                     CELL_OP1 (idx+6,r4);
-                     CELL_OP1 (idx+8,r5);
-                     CELL_OP1 (idx+10,r6);
-                     CELL_OP1 (idx+12,r7);
-                     CELL_OP1 (idx+14,r8);
-                     CELL_OP2 (idx,r1);
-                     CELL_OP2 (idx+2,r2);
-                     CELL_OP2 (idx+4,r3);
-                     CELL_OP2 (idx+6,r4);
-                     CELL_OP2 (idx+8,r5);
-                     CELL_OP2 (idx+10,r6);
-                     CELL_OP2 (idx+12,r7);
-                     CELL_OP2 (idx+14,r8);
-                }
 
+#pragma unroll 4
+                for (long idx = 0; idx < upto; idx+=4) {
+                    float64x2_t s1 = vsubq_f64 (vld1q_f64 (stData+idx), vld1q_f64 (argData+idx));
+                    float64x2_t s2 = vsubq_f64 (vld1q_f64 (stData+idx+2), vld1q_f64 (argData+idx+2));
+                    vst1q_f64 (stData + idx,s1);
+                    vst1q_f64 (stData + idx + 2, s2);
+                }
 #else
                 for (long idx = 0; idx < upto; idx+=4) {
                     stData[idx]-=argData[idx];
@@ -3622,32 +3608,12 @@ void    _Matrix::AddMatrix  (_Matrix& storage, _Matrix& secondArg, bool subtract
                  }
         
 #elif defined  _SLKP_USE_ARM_NEON
-        #define     CELL_OP1(x,y) float64x2_t y = vaddq_f64 (vld1q_f64 (stData+x), vld1q_f64 (argData+x))
-        #define CELL_OP2(x,y) vst1q_f64 (stData+x,y)
-        #pragma GCC unroll 4
-        #pragma clang loop vectorize(enable)
-        #pragma clang loop interleave(enable)
-        //#pragma clang loop unroll(enable)
-        #pragma GCC ivdep
-        #pragma ivdep
-              
-               for (long idx = 0; idx < upto; idx+=16) {
-                    CELL_OP1 (idx,r1);
-                    CELL_OP1 (idx+2,r2);
-                    CELL_OP1 (idx+4,r3);
-                    CELL_OP1 (idx+6,r4);
-                    CELL_OP1 (idx+8,r5);
-                    CELL_OP1 (idx+10,r6);
-                    CELL_OP1 (idx+12,r7);
-                    CELL_OP1 (idx+14,r8);
-                    CELL_OP2 (idx,r1);
-                    CELL_OP2 (idx+2,r2);
-                    CELL_OP2 (idx+4,r3);
-                    CELL_OP2 (idx+6,r4);
-                    CELL_OP2 (idx+8,r5);
-                    CELL_OP2 (idx+10,r6);
-                    CELL_OP2 (idx+12,r7);
-                    CELL_OP2 (idx+14,r8);
+        #pragma unroll 4
+               for (long idx = 0; idx < upto; idx+=4) {
+                   float64x2_t s1 = vaddq_f64 (vld1q_f64 (stData+idx), vld1q_f64 (argData+idx));
+                   float64x2_t s2 = vaddq_f64 (vld1q_f64 (stData+idx+2), vld1q_f64 (argData+idx+2));
+                   vst1q_f64 (stData + idx,s1);
+                   vst1q_f64 (stData + idx + 2, s2);
                }
                 
 #else
@@ -3983,7 +3949,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
             if ( hDim == vDim && secondArg.hDim == secondArg.vDim)
                 /* two square dense matrices */
             {
-                _hy_matrix_multiply_NxN_blocked4 (storage.theData, theData, secondArg.theData, hDim);
+                _hy_matrix_multiply_NxN_blocked4 (storage.theData, theData, secondArg.theData, (int)hDim);
 
             } else
                 /* rectangular matrices */
@@ -4149,7 +4115,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   
 #pragma unroll 3
                   for (int k = 0; k < 15; k++) {
-                      R[k] =  vld2q_f64 (res + (k<<2));
+                      R[k] =  vld1q_f64_x2 (res + (k<<2));
                   }
                   
                   hyFloat       r60 = res[60]; // and the 61st element
@@ -4165,23 +4131,23 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           int k12 = k*20,
                           k3 = k*5;
                           
-                          float64x2x2_t  C1 = vld2q_f64 (secArg + k12),
-                          C2 = vld2q_f64 (secArg + k12 + 4),
-                          C3 = vld2q_f64 (secArg + k12 + 8),
-                          C4 = vld2q_f64 (secArg + k12 + 12),
-                          C5 = vld2q_f64 (secArg + k12 + 16);
+                          float64x2x4_t  C1 = vld1q_f64_x4 (secArg + k12),
+                          C2 = vld1q_f64_x4 (secArg + k12 + 8);
+                          //C3 = vld1q_f64_x2 (secArg + k12 + 8),
+                          //C4 = vld1q_f64_x2 (secArg + k12 + 12),
+                          float64x2x2_t C5 = vld1q_f64_x2 (secArg + k12 + 16);
                           
                           R[k3].val[0] = vfmaq_f64 (R[k3].val[0], value_op, C1.val[0]);
                           R[k3].val[1] = vfmaq_f64 (R[k3].val[1], value_op, C1.val[1]);
                           
-                          R[k3+1].val[0] = vfmaq_f64 (R[k3+1].val[0], value_op, C2.val[0]);
-                          R[k3+1].val[1] = vfmaq_f64 (R[k3+1].val[1], value_op, C2.val[1]);
+                          R[k3+1].val[0] = vfmaq_f64 (R[k3+1].val[0], value_op, C1.val[2]);
+                          R[k3+1].val[1] = vfmaq_f64 (R[k3+1].val[1], value_op, C1.val[3]);
                           
-                          R[k3+2].val[0] = vfmaq_f64 (R[k3+2].val[0], value_op, C3.val[0]);
-                          R[k3+2].val[1] = vfmaq_f64 (R[k3+2].val[1], value_op, C3.val[1]);
+                          R[k3+2].val[0] = vfmaq_f64 (R[k3+2].val[0], value_op, C2.val[0]);
+                          R[k3+2].val[1] = vfmaq_f64 (R[k3+2].val[1], value_op, C2.val[1]);
 
-                          R[k3+3].val[0] = vfmaq_f64 (R[k3+3].val[0], value_op, C4.val[0]);
-                          R[k3+3].val[1] = vfmaq_f64 (R[k3+3].val[1], value_op, C4.val[1]);
+                          R[k3+3].val[0] = vfmaq_f64 (R[k3+3].val[0], value_op, C2.val[2]);
+                          R[k3+3].val[1] = vfmaq_f64 (R[k3+3].val[1], value_op, C2.val[3]);
 
                           R[k3+4].val[0] = vfmaq_f64 (R[k3+4].val[0], value_op, C5.val[0]);
                           R[k3+4].val[1] = vfmaq_f64 (R[k3+4].val[1], value_op, C5.val[1]);
@@ -4195,7 +4161,7 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                   
 #pragma unroll 3
                   for (int k = 0; k < 15; k++) {
-                      vst2q_f64 (res + (k<<2), R[k]);
+                      vst1q_f64_x2 (res + (k<<2), R[k]);
                   }
                   
                   res[60]   = r60;
@@ -4325,17 +4291,20 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                           CELL_OP(48);CELL_OP(52);CELL_OP(56);
                         #elif  _SLKP_USE_ARM_NEON
                              float64x2_t  value_op = vdupq_n_f64 (value);
-                             #define                 CELL_OP(x) vst1q_f64 (res+x, vfmaq_f64 (vld1q_f64(res+x), value_op, vld1q_f64 (secArg+x)))
+                             //#define                 CELL_OP(x) vst1q_f64 (res+x, vfmaq_f64 (vld1q_f64(res+x), value_op, vld1q_f64 (secArg+x)))
 
-
-                              CELL_OP(0);CELL_OP(2);CELL_OP(4);CELL_OP(6);
+                              #pragma unroll 
+                              for (long i = 0; i < 60; i+=2) {
+                                  vst1q_f64 (res+i, vfmaq_f64 (vld1q_f64(res+i), value_op, vld1q_f64 (secArg+i)));
+                              }
+                              /*CELL_OP(0);CELL_OP(2);CELL_OP(4);CELL_OP(6);
                               CELL_OP(8);CELL_OP(10);CELL_OP(12);CELL_OP(14);
                               CELL_OP(16);CELL_OP(18);CELL_OP(20);CELL_OP(22);
                               CELL_OP(24);CELL_OP(26);CELL_OP(28);
                               CELL_OP(30);CELL_OP(32);CELL_OP(34);CELL_OP(36);CELL_OP(38);
                               CELL_OP(40);CELL_OP(42);CELL_OP(44);CELL_OP(46);
                               CELL_OP(48);CELL_OP(50);CELL_OP(52);CELL_OP(54);
-                              CELL_OP(56);CELL_OP(58);
+                              CELL_OP(56);CELL_OP(58);*/
                         #else
                             for (unsigned long i = 0UL; i < 60UL; i+=4UL) {
                                 res[i]   += value * secArg[i];
@@ -4576,10 +4545,14 @@ void    _Matrix::Multiply  (_Matrix& storage, _Matrix const& secondArg) const
                         C1 =  vld1q_f64(secondArg.theData+secondIndex);
                         C2 =  vld1q_f64(secondArg.theData+secondIndex + 2);
 
-                        R1 = vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 1],
-                             vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim    ], R1, 0), 1);
-                        R2 = vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 3],
-                             vld1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 2], R2, 0), 1);
+                        R1 = vcombine_f64 (
+                            vld1_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim]),
+                            vld1_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 1]));
+                        
+                        R2 = vcombine_f64 (
+                            vld1_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 2]),
+                            vld1_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim + 3]));
+
                         R1 = vfmaq_f64 (R1,C1,c_value);
                         R2 = vfmaq_f64 (R2,C2,c_value);
                         vst1q_lane_f64 (storage.theData + storageIndex + secondArg.compressedIndex[secondIndex + secondArg.hDim],     R1, 0);
@@ -5031,7 +5004,7 @@ hyFloat  _Matrix::MinElement  (char doAbsValue, long* storeIndex)
 
 void    _Matrix::TransposeIntoStorage(hyFloat *storage, bool check) const {
     if (!check || is_square_numeric()) {
-        _hy_matrix_transpose_blocked(storage, theData, hDim, vDim);
+        _hy_matrix_transpose_blocked(storage, theData, (int)hDim, (int)vDim);
     }
 }
 
@@ -5193,7 +5166,6 @@ void    _Matrix::CompressSparseMatrix (bool transpose, hyFloat * stash) {
     
     if (theIndex) {
         if (compressedIndex && transpose) {
-            long ai = 0;
             long from = 0L;
             memcpy (stash, theData, sizeof (hyFloat)*lDim);
             long * by_column_counts = (long*)alloca ((hDim + lDim) * sizeof (long));
@@ -5418,8 +5390,8 @@ _Matrix*    _Matrix::Exponentiate (hyFloat scale_to, bool check_transition, _Mat
         
         hyFloat max     = 1.0,
                 mmax    = 1.0,
-                *stash,
-                *stash2 = nil;
+                *stash;
+                //*stash2 = nil;
         //  = new hyFloat[hDim*(1+vDim)];
         
  
@@ -6864,7 +6836,7 @@ hyFloat        _Matrix::Sqr (hyFloat* _hprestrict_ stash) {
             // special case for nucleotides
             _hy_matrix_multiply_4x4(stash, theData, theData, 4, false);
         } else {
-            _hy_matrix_multiply_NxN_blocked4 (stash, theData, theData, hDim);
+            _hy_matrix_multiply_NxN_blocked4 (stash, theData, theData, (int)hDim);
         }
         
         long lDimmod4 = (lDim >> 2) << 2;
@@ -7761,8 +7733,7 @@ HBLObjectRef       _Matrix::K_Means (HBLObjectRef classes, HBLObjectRef cache) {
                     cluster_means.set (cc, 0) = get(chosen_means.get(cc), 0);
                 }
 
-                hyFloat            last_error_estimate = 1.e100,
-                                   error_estimate      = 0.;
+                hyFloat            error_estimate      = 0.;
                 
                 
                 for (unsigned long cIters = 0UL; cIters < hDim * 5; cIters ++) {
@@ -9658,9 +9629,6 @@ HBLObjectRef   _Matrix::MultinomialSample (_Constant *replicates) {
                     normalized->theData[values-1-v] = sorted->theData[1+2*v] * sum;
                 }
 
- 
-                 hyFloat  seconds_accumulator = .0,
-                            temp;
 
                 for (unsigned long it = 0UL; it < samples; it++) {
                      raw_result->theData[DrawFromDiscrete(normalized->theData, values)] += 1.;
@@ -9807,7 +9775,7 @@ HBLObjectRef   _Matrix::WishartDeviate (_Matrix & df, _Matrix & decomp) {
 HBLObjectRef _returnMatrixOrUseCache (long nrow, long ncol, long type, bool is_sparse, HBLObjectRef cache) {
     if (cache && cache->ObjectClass() == MATRIX) {
         _Matrix *cached_mx = (_Matrix*)cache;
-        if (cached_mx->check_dimension(nrow, ncol) && cached_mx->has_type (type) && cached_mx->is_dense() == !is_sparse) {
+        if (cached_mx->check_dimension(nrow, ncol) && cached_mx->has_type ((int)type) && cached_mx->is_dense() == !is_sparse) {
             cached_mx->Clear(false);
         } else {
             cached_mx->Clear();

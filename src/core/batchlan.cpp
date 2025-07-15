@@ -4379,7 +4379,7 @@ bool    _ElementaryCommand::BuildIfThenElse (_StringBuffer &source, _ExecutionLi
     long    upto = ExtractConditions (source,3,pieces),
             beginning = target.lLength;
     target.lastif << target.lLength;
-    int     success = 1,
+    long    success = 1,
             intIfs = target.lastif.lLength;
 
 

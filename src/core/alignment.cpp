@@ -243,7 +243,7 @@ long CodonAlignStringsStep( double * const score_matrix
         { 3, 2, 1 }  // 0111
     };
 
-    int    local_shortcut_came_from_this_move = -1;
+    long    local_shortcut_came_from_this_move = -1;
 
     double choices[ HY_ALIGNMENT_TYPES_COUNT ],
            max_score = -INFINITY,

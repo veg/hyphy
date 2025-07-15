@@ -750,7 +750,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
     
     long    totalCategories = classCounter.Element(-1),
             globalCatCount  = containerVariables.countitems(),
-            localCategories = 1L,
+            //localCategories = 1L,
             catCount        = categoryVariables.countitems(),
             entriesPerCat   = 1L+catCount;
     
@@ -772,7 +772,7 @@ void     _CalcNode::SetupCategoryMap (_List& containerVariables, _SimpleList& cl
             if (index < 0) {
                 HandleApplicationError ("Internal error in SetupCategoryMap. Please report to sergeilkp@icloud.com");
             }
-            localCategories *= classCounter.get(index);
+            //localCategories *= classCounter.get(index);
             remappedIDs << index;
         }
         
@@ -913,7 +913,7 @@ _Formula*   _CalcNode::RecurseMC (long varToConstrain, node<long>* whereAmI, boo
     _Formula**  nodeConditions = new _Formula * [descendants-start];
     
     for (long k=start+1; k<=descendants; k++) {
-        node<long>* downWeGo = whereAmI->go_down(k);
+        node<long>* downWeGo = whereAmI->go_down((int)k);
         if (!(nodeConditions[k-1-start] = map_node_to_calcnode(downWeGo)->RecurseMC (varToConstrain, downWeGo))) {
             for (long f2 = 0; f2 < k-start-1; f2++) {
                 delete nodeConditions[f2];
