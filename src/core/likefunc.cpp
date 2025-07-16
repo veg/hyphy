@@ -11577,7 +11577,6 @@ void _LikelihoodFunction::Simulate(_DataSet &target, _List &theExclusions,
           }
 
           if (!target.InternalStorageMode()) {
-            target.ResetIHelper();
             for (unsigned long character_index = 0UL;
                  character_index < sites_per_unit; character_index++) {
               target.Compact(site_offset_raw + leaf_count - sites_per_unit +
@@ -11601,7 +11600,6 @@ void _LikelihoodFunction::Simulate(_DataSet &target, _List &theExclusions,
                                     simulated_unit(character_index));
                 }
                 if (!target.InternalStorageMode()) {
-                  target.ResetIHelper();
                   for (unsigned long character_index = 0UL;
                        character_index < sites_per_unit; character_index++) {
                     target.Compact(site_offset_raw + leaf_count -

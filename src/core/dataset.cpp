@@ -63,7 +63,6 @@ inline char _uppercase_char(char in) {
 _DataSet::_DataSet(void) {
   theTT = &hy_default_translation_table;
   streamThrough = nil;
-  dsh = nil;
   useHorizontalRep = false;
 }
 
@@ -72,7 +71,6 @@ _DataSet::_DataSet(long l)
       theFrequencies(
           (unsigned long)l) // with estimated number of sites per file
 {
-  dsh = nil;
   streamThrough = nil;
   theTT = &hy_default_translation_table;
   useHorizontalRep = false;
@@ -81,7 +79,6 @@ _DataSet::_DataSet(long l)
 //_______________________________________________________________________
 
 _DataSet::_DataSet(hyFile *f) {
-  dsh = nil;
   useHorizontalRep = false;
   theTT = &hy_default_translation_table;
   streamThrough = f;
@@ -110,11 +107,6 @@ void _DataSet::Clear(bool) {
     theTT = &hy_default_translation_table;
   }
   noOfSpecies = 0;
-  if (dsh) {
-    dsh->incompletePatterns->Clear(false);
-    delete (dsh);
-    dsh = nil;
-  }
   useHorizontalRep = false;
 }
 
@@ -131,18 +123,12 @@ BaseRef _DataSet::makeDynamic(void) const {
   r->streamThrough = streamThrough;
   // 20170507: SLKP TODO why do we need an additional reference here?
   // nInstances++;
-  r->dsh = nil;
+
   r->useHorizontalRep = false;
   return r;
 }
 
 //_______________________________________________________________________
-
-void _DataSet::ResetIHelper(void) {
-  if (dsh && dsh->characterPositions.lLength == 256) {
-    InitializeArray(dsh->characterPositions.list_data, 256, -1L);
-  }
-}
 
 //_______________________________________________________________________
 
@@ -522,11 +508,6 @@ void _DataSet::Finalize(void) {
         tC = (_Site *)GetItem(i3);
         tC->TrimSpace();
         tC->SetRefNo(0);
-      }
-      if (dsh) {
-        dsh->incompletePatterns->Clear(false);
-        delete (dsh);
-        dsh = nil;
       }
     }
   }
@@ -1834,8 +1815,6 @@ void ISelector(FileState &fState, _StringBuffer &CurrentLine,
         for (long i = fState.curSite; i < fState.totalSitesRead; i++) {
           result.Compact(i);
         }
-
-        result.ResetIHelper();
       }
       fState.curSite = fState.totalSitesRead;
       fState.curSpecies = 0;
@@ -2186,11 +2165,6 @@ _DataSet *ReadDataSetFile(hyFile *f, char execBF, _String *theS,
                     result->theMap.Clear();
                     result->Clear();
                     result->theFrequencies.Clear();
-                    if (result->dsh) {
-                      result->dsh->incompletePatterns->Clear(false);
-                      delete (result->dsh);
-                      result->dsh = nil;
-                    }
                     continue;
                   }
                   if (fState.totalSpeciesRead == 0) {
@@ -2295,7 +2269,6 @@ _DataSet *ReadDataSetFile(hyFile *f, char execBF, _String *theS,
       for (long i = fState.curSite; i < fState.totalSitesRead; i++) {
         result->Compact(i);
       }
-      result->ResetIHelper();
     }
 
     if ((!fState.interleaved) && (fState.fileType != 2)) {

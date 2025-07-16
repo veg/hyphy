@@ -180,7 +180,6 @@ public:
   hyFloat CheckAlphabetConsistency(void);
 
   void SetNoSpecies(unsigned long n) { noOfSpecies = n; }
-  void ResetIHelper(void);
 
 private:
   _SimpleList theMap,
@@ -193,7 +192,6 @@ private:
   _List theNames; // Names of species
   hyFile *streamThrough;
 
-  _DSHelper *dsh;
   bool useHorizontalRep;
 };
 
