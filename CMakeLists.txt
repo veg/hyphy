@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 project(HyPhy LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 enable_testing()
 
 set(CMAKE_CXX_STANDARD 14)
@@ -16,6 +18,16 @@ option(NOSSE4 "Disable SSE4 instruction set" OFF)
 option(NONEON "Disable NEON instruction set" OFF)
 option(NOZLIB "Disable ZLIB compression library" OFF)
 option(NOBLAS "Disable BLAS linear algebra library" OFF)
+option(RUN_CLANG_TIDY "Run clang-tidy on all files" OFF)
+
+if(RUN_CLANG_TIDY)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE})
+  else()
+    message(SEND_ERROR "clang-tidy not found")
+  endif()
+endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
    set(NOAVX ON)

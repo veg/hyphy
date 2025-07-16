@@ -39,12 +39,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #pragma once
 
+#include "function_templates.h"
 #include "global_things.h"
 #include "list.h"
+#include "site.h"
 #include "stdlib.h"
 #include "translation_table.h"
-#include "site.h"
-#include "function_templates.h"
 
 using namespace hy_global;
 
@@ -54,18 +54,15 @@ using namespace hy_global;
 // data set file state data struct
 struct _DSHelper {
 
-    _SimpleList characterPositions;
-    _List       incompletePatternStorage;
-    _AVLListX*  incompletePatterns;
+  _SimpleList characterPositions;
+  _List incompletePatternStorage;
+  _AVLListX *incompletePatterns;
 
-    _DSHelper(void) {
-        incompletePatterns = new _AVLListX (&incompletePatternStorage);
-    }
-    ~_DSHelper(void) {
-        DeleteObject (incompletePatterns);
-    }
+  _DSHelper(void) {
+    incompletePatterns = new _AVLListX(&incompletePatternStorage);
+  }
+  ~_DSHelper(void) { DeleteObject(incompletePatterns); }
 };
-
 
 class _DataSet : public _List // a complete data set
 {
@@ -113,7 +110,7 @@ public:
 
   void Compact(long);
   // release string overhead
-  void ConvertRepresentations(void);
+  void ConvertToHorizontalRepresentation(void);
 
   _Matrix *HarvestFrequencies(unsigned char, unsigned char, bool, _SimpleList &,
                               _SimpleList &, bool = true) const;
@@ -200,19 +197,16 @@ private:
   bool useHorizontalRep;
 };
 
-void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool append = false,
-                  bool upCase = true);
+void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs,
+                  bool append = false, bool upCase = true);
 
 _DataSet *ReadDataSetFile(hyFile *, char = 0, _String * = nil, _String * = nil,
                           _String * = nil,
                           _TranslationTable * = &hy_default_translation_table,
                           _ExecutionList *target = nil);
 
-
 bool StoreADataSet(_DataSet *, _String *);
-void    ReadNexusFile               (FileState& fState, hyFile*f, _DataSet& result);
-
+void ReadNexusFile(FileState &fState, hyFile *f, _DataSet &result);
 
 extern _StringBuffer nexusBFBody;
 extern _DataSet *lastNexusDataMatrix;
-

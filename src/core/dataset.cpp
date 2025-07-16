@@ -39,28 +39,26 @@
 
 #include <ctype.h>
 
-#include "dataset.h"
-#include "translation_table.h"
 #include "batchlan.h"
-#include "site.h"
+#include "dataset.h"
 #include "global_object_lists.h"
+#include "site.h"
+#include "translation_table.h"
 
 using namespace hyphy_global_objects;
 
 //_________________________________________________________
 
-inline char _uppercase_char (char in) {
-    if (in >= 'a' && in <= 'z') {
-        return (char)(in-32);
-    }
-    return in;
+inline char _uppercase_char(char in) {
+  if (in >= 'a' && in <= 'z') {
+    return (char)(in - 32);
+  }
+  return in;
 }
 
 //_________________________________________________________
 
-
 #define DATA_SET_SWITCH_THRESHOLD 100000
-
 
 _DataSet::_DataSet(void) {
   theTT = &hy_default_translation_table;
@@ -141,33 +139,35 @@ BaseRef _DataSet::makeDynamic(void) const {
 //_______________________________________________________________________
 
 void _DataSet::ResetIHelper(void) {
-    if (dsh && dsh->characterPositions.lLength == 256) {
-        InitializeArray (dsh->characterPositions.list_data, 256, -1L);
-    }
+  if (dsh && dsh->characterPositions.lLength == 256) {
+    InitializeArray(dsh->characterPositions.list_data, 256, -1L);
+  }
 }
 
 //_______________________________________________________________________
 
-void _DataSet::ConvertRepresentations(void) {
+void _DataSet::ConvertToHorizontalRepresentation(void) {
   if (useHorizontalRep == false) {
     _List horStrings;
 
     if (lLength == 0) {
-      AppendNewInstance(new _StringBuffer (128UL));
+      AppendNewInstance(new _StringBuffer(128UL));
     } else {
       _Site *aSite = (_Site *)list_data[0];
 
       for (long str = 0; str < aSite->length(); str++) {
-        horStrings < new _StringBuffer (DATA_SET_SWITCH_THRESHOLD);
+        horStrings < new _StringBuffer(DATA_SET_SWITCH_THRESHOLD);
       }
 
       for (long s = 0; s < lLength; s++) {
-        _Site *aSite = (_Site *)list_data[s];
+        _Site *aSite = (_Site *)GetItem(s);
+
         if (aSite->length() > horStrings.lLength || aSite->GetRefNo() != -1) {
-          HandleApplicationError("Irrecoverable internal error in "
-                                 "_DataSet::ConvertRepresentations. Sorry "
-                                 "about that.",
-                                 true);
+          HandleApplicationError(
+              "Irrecoverable internal error in "
+              "_DataSet::ConvertToHorizontalRepresentation. Sorry "
+              "about that.",
+              true);
           return;
         }
 
@@ -178,10 +178,9 @@ void _DataSet::ConvertRepresentations(void) {
 
       _List::Clear();
       theFrequencies.Clear();
-      {
-        for (long s = 0; s < horStrings.lLength; s++) {
-          (*this) << horStrings(s);
-        }
+
+      for (long s = 0; s < horStrings.lLength; s++) {
+        (*this) << horStrings.GetItem(s);
       }
     }
     useHorizontalRep = true;
@@ -195,10 +194,10 @@ void _DataSet::AddSite(char c) {
     if (theMap.list_data[0] == 0) {
       if (theMap.list_data[1] == 0) {
         if (theNames.lLength) {
-          streamThrough->puts ("(_String *)theNames(0))->get_str()");
-          streamThrough->fputc ('\n');
+          streamThrough->puts("(_String *)theNames(0))->get_str()");
+          streamThrough->fputc('\n');
         } else {
-          streamThrough->puts (">Sequence 1");
+          streamThrough->puts(">Sequence 1");
         }
         AppendNewInstance(new _String(kEmptyString));
       }
@@ -219,7 +218,7 @@ void _DataSet::AddSite(char c) {
         AppendNewInstance(nC);
         return;
       } else {
-        ConvertRepresentations();
+        ConvertToHorizontalRepresentation();
       }
     }
 
@@ -235,16 +234,18 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
         theMap.list_data[0]++;
 
         if (theNames.lLength > theMap.list_data[0]) {
-            streamThrough->puts ("\n>");
-            streamThrough->puts (((_String *)theNames(theMap.list_data[0]))->get_str());
-            streamThrough->fputc ('\n');
+          streamThrough->puts("\n>");
+          streamThrough->puts(
+              ((_String *)theNames(theMap.list_data[0]))->get_str());
+          streamThrough->fputc('\n');
         } else {
-            streamThrough->puts ("\n>");
-            char buffer[64];
-            snprintf (buffer, 64, "%ld", theMap.list_data[0] + 1);
-            streamThrough->puts (buffer);
-            streamThrough->fputc ('\n');
-            //fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] + 1);
+          streamThrough->puts("\n>");
+          char buffer[64];
+          snprintf(buffer, 64, "%ld", theMap.list_data[0] + 1);
+          streamThrough->puts(buffer);
+          streamThrough->fputc('\n');
+          // fprintf(streamThrough, "\n>Sequence %ld\n", theMap.list_data[0] +
+          // 1);
         }
 
         theMap.list_data[1] = 0;
@@ -263,61 +264,64 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     streamThrough->fputc(c);
   } else {
     if (useHorizontalRep) {
-        long currentWritten = ((_String *)list_data[0])->length();
+      long currentWritten = ((_String *)list_data[0])->length();
 
-        if (index >= currentWritten) {
-            /** SLKP 20211229
-                When we enter here, this means that the current string is longer that all other strings; they need to be padded
-            */
-            /*HandleApplicationError(_String("Internal Error in 'Write2Site' - index is too "
-                                   "high (using compact representation) ") & index &'/' & (long)currentWritten);
-            return;*/
-            
-            //printf ("\n%ld\n", lLength);
-            
-            for (long s = 0; s < lLength - 1; s++) {
-                _StringBuffer *aString = (_StringBuffer *)list_data[s];
-                (*aString) << skip_char;
-               // printf ("\n%ld:%ld\n", s, aString->length());
-            }
-            
-            //exit (1);
-            
-            (*(_StringBuffer *)list_data[lLength-1]) << c;
-            
-        } else {
-        
-            if (index == 0) {
-              _StringBuffer *newString = new _StringBuffer(currentWritten);
-              (*newString) << c;
-              (*this) < newString;
-            } else {
-                  // check to see if the last sequence has the right length
-                  if (((_StringBuffer *)list_data[lLength-1])->length () == index) {
-                     *((_StringBuffer *)list_data[lLength-1]) << c;
-                  } else {
-                      long s = 1;
-                      for (; s < lLength; s++) {
-                        _StringBuffer *aString = (_StringBuffer *)list_data[s];
-                        if (aString->length() == index) {
-                          (*aString) << c;
-                          break;
-                        }
-                      }
-                      if (s == lLength) {
-                        HandleApplicationError("Internal Error in 'Write2Site' - no "
-                                               "appropriate  string to write too (compact "
-                                               "representation)");
-                        return;
-                      }
-                  }
-            }
+      if (index >= currentWritten) {
+        /** SLKP 20211229
+            When we enter here, this means that the current string is longer
+           that all other strings; they need to be padded
+        */
+        /*HandleApplicationError(_String("Internal Error in 'Write2Site' - index
+        is too " "high (using compact representation) ") & index &'/' &
+        (long)currentWritten); return;*/
+
+        // printf ("\n%ld\n", lLength);
+
+        for (long s = 0; s < lLength - 1; s++) {
+          _StringBuffer *aString = (_StringBuffer *)list_data[s];
+          (*aString) << skip_char;
+          // printf ("\n%ld:%ld\n", s, aString->length());
         }
-      
+
+        // exit (1);
+
+        (*(_StringBuffer *)list_data[lLength - 1]) << c;
+
+      } else {
+
+        if (index == 0) {
+          _StringBuffer *newString = new _StringBuffer(currentWritten);
+          (*newString) << c;
+          (*this) < newString;
+        } else {
+          // check to see if the last sequence has the right length
+          if (((_StringBuffer *)list_data[lLength - 1])->length() == index) {
+            *((_StringBuffer *)list_data[lLength - 1]) << c;
+          } else {
+            long s = 1;
+            for (; s < lLength; s++) {
+              _StringBuffer *aString = (_StringBuffer *)list_data[s];
+              if (aString->length() == index) {
+                (*aString) << c;
+                break;
+              }
+            }
+            if (s == lLength) {
+              HandleApplicationError(
+                  "Internal Error in 'Write2Site' - no "
+                  "appropriate  string to write too (compact "
+                  "representation)");
+              return;
+            }
+          }
+        }
+      }
+
     } else {
       if (index >= lLength) {
         HandleApplicationError(
-            _String ("Internal Error in 'Write2Site' - index is too high. ") & index &'/' & (long)lLength);
+            _String("Internal Error in 'Write2Site' - index is too high. ") &
+            index & '/' & (long)lLength);
         return;
       }
       _Site *s = (_Site *)list_data[index];
@@ -350,8 +354,6 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
     }
   }
 }
-
-
 
 //_______________________________________________________________________
 
@@ -398,11 +400,11 @@ void _DataSet::Finalize(void) {
   } else {
     if (useHorizontalRep) {
       bool good = true;
-    
+
       for (long s = 0; s < lLength && good; s++) {
-        //printf ("\n\n%d %d\n", s, ((_String *)list_data[s])->length());
-        good = good &&
-               ((_String *)list_data[0])->length() == ((_String *)list_data[s])->length();
+        // printf ("\n\n%d %d\n", s, ((_String *)list_data[s])->length());
+        good = good && ((_String *)list_data[0])->length() ==
+                           ((_String *)list_data[s])->length();
       }
 
       if (!good) {
@@ -417,71 +419,74 @@ void _DataSet::Finalize(void) {
       _List uniquePats;
       //_AVLListX dupsAVL(&dups);
 
-      _SimpleList   _checkSumBins;
-      _AVLListXL    checkSumBins (&_checkSumBins);
-        
+      _SimpleList _checkSumBins;
+      _AVLListXL checkSumBins(&_checkSumBins);
+
       long siteCounter = ((_String *)list_data[0])->length();
-        
-      _String site_holder (lLength, nil);
-      
-      auto insert_new_pattern = [&] (long index) -> void {
-          _SimpleList * indices = (_SimpleList *)checkSumBins.GetXtra (index);
-          _Site *tC = new _Site(lLength, -1);
-          (*indices) << uniquePats.lLength;
-          (*tC) << site_holder;
-          uniquePats << tC;
-          //dupsAVL.Insert(tC, theFrequencies.lLength);
-          theMap << theFrequencies.lLength;
-          theFrequencies << 1;
-          DeleteObject(tC);
+
+      _String site_holder(lLength, nil);
+
+      auto insert_new_pattern = [&](long index) -> void {
+        _SimpleList *indices = (_SimpleList *)checkSumBins.GetXtra(index);
+        _Site *tC = new _Site(lLength, -1);
+        (*indices) << uniquePats.lLength;
+        (*tC) << site_holder;
+        uniquePats << tC;
+        // dupsAVL.Insert(tC, theFrequencies.lLength);
+        theMap << theFrequencies.lLength;
+        theFrequencies << 1;
+        DeleteObject(tC);
       };
 
       _SimpleList *sites_with_same_checksum = new _SimpleList;
-        
+
       for (long i1 = 0L; i1 < siteCounter; i1++) {
         for (long i2 = 0L; i2 < lLength; i2++) {
-          site_holder.set_char_no_check (i2,((_String *)list_data[i2])->get_char(i1));
+          site_holder.set_char_no_check(
+              i2, ((_String *)list_data[i2])->get_char(i1));
           //(*tC) << ;
         }
-          
+
         long patternChecksum = site_holder.Adler32();
 
-        long checkSumExists = checkSumBins.Insert ((BaseRef)patternChecksum, (long)sites_with_same_checksum, false, false);
+        long checkSumExists =
+            checkSumBins.Insert((BaseRef)patternChecksum,
+                                (long)sites_with_same_checksum, false, false);
         if (checkSumExists >= 0) {
-           insert_new_pattern(checkSumExists);
-           sites_with_same_checksum = new _SimpleList;
+          insert_new_pattern(checkSumExists);
+          sites_with_same_checksum = new _SimpleList;
         } else {
-            //long ff = dupsAVL.Find(&site_holder);
-            
-            checkSumExists = -checkSumExists - 1;
-            
-            _SimpleList * indices = (_SimpleList *)checkSumBins.GetXtra (checkSumExists);
-            long i = 0;
-            for (; i < indices->lLength; i++) {
-                long pattern_index = indices->get(i);
-                _Site * comp = (_Site*)uniquePats.GetItem(pattern_index);
-                if (comp->Equal(site_holder)) {
-                    theMap << pattern_index;
-                    theFrequencies.list_data[pattern_index]++;
-                    break;
-                }
-            }
-            if (i == indices->lLength) {
-                insert_new_pattern(checkSumExists);
-            }
-            
-            /*if (ff < 0) {
-                insert_new_pattern ();
-            } else {
-                ff = dupsAVL.GetXtra(ff);
-                theMap << ff;
-                theFrequencies.list_data[ff]++;
-            }*/
-        }
+          // long ff = dupsAVL.Find(&site_holder);
 
+          checkSumExists = -checkSumExists - 1;
+
+          _SimpleList *indices =
+              (_SimpleList *)checkSumBins.GetXtra(checkSumExists);
+          long i = 0;
+          for (; i < indices->lLength; i++) {
+            long pattern_index = indices->get(i);
+            _Site *comp = (_Site *)uniquePats.GetItem(pattern_index);
+            if (comp->Equal(site_holder)) {
+              theMap << pattern_index;
+              theFrequencies.list_data[pattern_index]++;
+              break;
+            }
+          }
+          if (i == indices->lLength) {
+            insert_new_pattern(checkSumExists);
+          }
+
+          /*if (ff < 0) {
+              insert_new_pattern ();
+          } else {
+              ff = dupsAVL.GetXtra(ff);
+              theMap << ff;
+              theFrequencies.list_data[ff]++;
+          }*/
+        }
       }
-      DeleteObject (sites_with_same_checksum);
-      //dupsAVL.Clear(false);
+      DeleteObject(sites_with_same_checksum);
+      // dupsAVL.Clear(false);
       _List::Clear();
       _List::Duplicate(&uniquePats);
     } else {
@@ -540,7 +545,7 @@ void _DataSet::Finalize(void) {
       theFrequencies.DeleteList(toDelete);
 
       for (long i3 = 0; i3 < lLength; i3++) {
-        tC = (_Site *)(*(_List *)this)(i3);
+        tC = (_Site *)GetItem(i3);
         tC->TrimSpace();
         tC->SetRefNo(0);
       }
@@ -555,22 +560,22 @@ void _DataSet::Finalize(void) {
 //_______________________________________________________________________
 void _DataSet::Compact(long index) {
   if (useHorizontalRep) {
-    HandleApplicationError(
-        "Internal Error: _DataSet::Compact called on a dataset already using a Compact representation",
-        true);
+    HandleApplicationError("Internal Error: _DataSet::Compact called on a "
+                           "dataset already using a Compact representation",
+                           true);
     return;
   }
-  _Site *tC = (_Site *)GetItem (index);
+  _Site *tC = (_Site *)GetItem(index);
   if (tC->GetRefNo() != -1) {
-  // take care of double referencing
+    // take care of double referencing
     _Site *tCC = tC;
     long lastRef, count = 0L;
     do {
       lastRef = tCC->GetRefNo();
       count++;
-        tCC = (_Site *)GetItem (tCC->GetRefNo());
+      tCC = (_Site *)GetItem(tCC->GetRefNo());
     } while (tCC->GetRefNo() != -1);
-                        
+
     if (count > 1L) {
       theFrequencies[lastRef]++;
     }
@@ -662,15 +667,15 @@ BaseRef _DataSet::toStr(unsigned long) {
 
 void _DataSet::toFileStr(hyFile *dest, unsigned long padding) {
   char buffer[512];
-  snprintf (buffer, 512, "%ld species: ", NoOfSpecies());
-  dest->puts (buffer);
-    
+  snprintf(buffer, 512, "%ld species: ", NoOfSpecies());
+  dest->puts(buffer);
+
   theNames.toFileStr(dest, padding);
-  snprintf (buffer, 512, ";\nTotal Sites: %ld", GetNoTypes());
-  dest->puts (buffer);
-  
-  snprintf (buffer, 512, ";\nDistinct Sites: %ld", theFrequencies.lLength);
-  dest->puts (buffer);
+  snprintf(buffer, 512, ";\nTotal Sites: %ld", GetNoTypes());
+  dest->puts(buffer);
+
+  snprintf(buffer, 512, ";\nDistinct Sites: %ld", theFrequencies.lLength);
+  dest->puts(buffer);
 
   /*  fprintf (dest,"\n");
       for (long j=0; j<noOfSpecies;j++)
@@ -772,492 +777,530 @@ _TranslationTable *_DataSet::CheckCompatibility(_SimpleList const &ref,
 
 //_________________________________________________________
 
-_Matrix * _DataSet::HarvestFrequencies (unsigned char unit, unsigned char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps) const {
-    
-    if (hSegmentation.empty () || vSegmentation.countitems() < unit) { // revert to default (all data)
-        if (hSegmentation.empty ()) {
-            hSegmentation.Populate (NoOfSpecies(),0,1);
-        }
-        if (vSegmentation.countitems () <unit) {
-            vSegmentation.Clear();
-            vSegmentation.Populate (GetNoTypes(),0,1);
-        }
+_Matrix *_DataSet::HarvestFrequencies(unsigned char unit, unsigned char atom,
+                                      bool posSpec, _SimpleList &hSegmentation,
+                                      _SimpleList &vSegmentation,
+                                      bool countGaps) const {
+
+  if (hSegmentation.empty() ||
+      vSegmentation.countitems() < unit) { // revert to default (all data)
+    if (hSegmentation.empty()) {
+      hSegmentation.Populate(NoOfSpecies(), 0, 1);
     }
-    
-    if (atom == 0 || unit%atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
-        HandleApplicationError (_String("Atom must be non-zero and divide unit, had ") & _String ((long)unit) & "/" & _String ((long)atom));
-        return new _Matrix (1,1);
+    if (vSegmentation.countitems() < unit) {
+      vSegmentation.Clear();
+      vSegmentation.Populate(GetNoTypes(), 0, 1);
     }
-    
-    _Matrix   *  out = new _Matrix (ComputePower (theTT->LengthOfAlphabet(), atom),
-                                    posSpec?unit/atom:1,
-                                    false,
-                                    true);
-    
-    long     positions  =   unit/atom,
-    static_store [HYPHY_SITE_DEFAULT_BUFFER_SIZE];
-    
-    _String unit_for_counting ((unsigned long)atom);
-    
-    for (unsigned long site_pattern = 0UL; site_pattern + unit <= vSegmentation.lLength;  site_pattern +=unit) { // loop over the set of segments
-        // make sure the partition is kosher
-        
-        /*
-         if (site_pattern + unit > vSegmentation.lLength) {
-            break;
-        }
-        */
-        
-        for (unsigned long primary_site = site_pattern; primary_site < site_pattern+unit; primary_site += atom) {
-            
-            long   index_in_pattern = (primary_site-site_pattern)/atom;
-            
-            for (unsigned long sequence_index = 0; sequence_index <hSegmentation.lLength; sequence_index ++) {
-                // loop down each column
-                
-                unsigned long mapped_sequence_index = hSegmentation.list_data[sequence_index];
-                // build atomic probabilities
-                
-                for (unsigned long m = 0UL; m<atom; m++ ) {
-                    unit_for_counting.set_char (m, (*this)(vSegmentation.list_data[primary_site+m],mapped_sequence_index,atom));
-                }
-                
-                long resolution_count = theTT->MultiTokenResolutions(unit_for_counting, static_store, countGaps);
-                
-                if (resolution_count > 0UL) {
-                    
-                    hyFloat    normalized = 1./resolution_count;
-                    
-                    for (long resolution_index = 0UL; resolution_index < resolution_count; resolution_index ++) {
-                        out->theData[posSpec? static_store[resolution_index]*positions+index_in_pattern: static_store[resolution_index]] += normalized;
-                    }
-                }
-            }
-        }
+  }
+
+  if (atom == 0 ||
+      unit % atom > 0) { // 20120814 SLKP: changed this behavior to throw errors
+    HandleApplicationError(
+        _String("Atom must be non-zero and divide unit, had ") &
+        _String((long)unit) & "/" & _String((long)atom));
+    return new _Matrix(1, 1);
+  }
+
+  _Matrix *out = new _Matrix(ComputePower(theTT->LengthOfAlphabet(), atom),
+                             posSpec ? unit / atom : 1, false, true);
+
+  long positions = unit / atom, static_store[HYPHY_SITE_DEFAULT_BUFFER_SIZE];
+
+  _String unit_for_counting((unsigned long)atom);
+
+  for (unsigned long site_pattern = 0UL;
+       site_pattern + unit <= vSegmentation.lLength;
+       site_pattern += unit) { // loop over the set of segments
+    // make sure the partition is kosher
+
+    /*
+     if (site_pattern + unit > vSegmentation.lLength) {
+        break;
     }
-    
-    //scale the matrix now
-    
-    unsigned long row_count    = out->GetHDim(),
-    column_count = out->GetVDim();
-    
-    for (unsigned long column =0UL; column < column_count; column++) { // normalize each _column_ to sum to 1.
-        hyFloat sum = 0.0;
-        
-        for (unsigned long row = 0UL; row < row_count; row++) {
-            sum += out->theData [row*column_count + column];
+    */
+
+    for (unsigned long primary_site = site_pattern;
+         primary_site < site_pattern + unit; primary_site += atom) {
+
+      long index_in_pattern = (primary_site - site_pattern) / atom;
+
+      for (unsigned long sequence_index = 0;
+           sequence_index < hSegmentation.lLength; sequence_index++) {
+        // loop down each column
+
+        unsigned long mapped_sequence_index =
+            hSegmentation.list_data[sequence_index];
+        // build atomic probabilities
+
+        for (unsigned long m = 0UL; m < atom; m++) {
+          unit_for_counting.set_char(
+              m, (*this)(vSegmentation.list_data[primary_site + m],
+                         mapped_sequence_index, atom));
         }
-        
-        for (unsigned long row = 0UL; row < row_count; row++) {
-            out->theData [row*column_count + column] /= sum;
+
+        long resolution_count = theTT->MultiTokenResolutions(
+            unit_for_counting, static_store, countGaps);
+
+        if (resolution_count > 0UL) {
+
+          hyFloat normalized = 1. / resolution_count;
+
+          for (long resolution_index = 0UL; resolution_index < resolution_count;
+               resolution_index++) {
+            out->theData[posSpec ? static_store[resolution_index] * positions +
+                                       index_in_pattern
+                                 : static_store[resolution_index]] +=
+                normalized;
+          }
         }
+      }
     }
-    
-    
-    return out;
+  }
+
+  // scale the matrix now
+
+  unsigned long row_count = out->GetHDim(), column_count = out->GetVDim();
+
+  for (unsigned long column = 0UL; column < column_count;
+       column++) { // normalize each _column_ to sum to 1.
+    hyFloat sum = 0.0;
+
+    for (unsigned long row = 0UL; row < row_count; row++) {
+      sum += out->theData[row * column_count + column];
+    }
+
+    for (unsigned long row = 0UL; row < row_count; row++) {
+      out->theData[row * column_count + column] /= sum;
+    }
+  }
+
+  return out;
 }
-
-
-
 
 //_______________________________________________________________________
 
-void    _DataSet::ProcessPartition (_String const & input2 , _SimpleList & target , bool isVertical, int unit_length, _SimpleList const* additionalFilter, _SimpleList const* otherDimension, _String const* scope) const {
-    // TODO SLKP : 20170928 this needs serious cleanup and testing
-    
-    if (input2.empty()) {
-        return;
-    }
-    // decide if the input is an enumeration or a formula
-    long totalLength;
-    
-    if (additionalFilter) {
-        totalLength = additionalFilter->countitems();
-    } else {
-        totalLength = isVertical?theMap.countitems():noOfSpecies;
-    }
-    
-    _String input (input2);
-    
-    if (!input.IsALiteralArgument(true)) { // not a literal argument
-        
-        _Formula fmla, lhs;
-        _FormulaParsingContext fpc;
-        fpc.setScope (scope);
-        
-        long     outcome = Parse (&fmla, input, fpc,&lhs);
-        
-        if (outcome!=HY_FORMULA_EXPRESSION) {
-            HandleApplicationError(input.Enquote() & _String(" is an invalid partition specification"));
-            return;
-        }
-        HBLObjectRef   fV = fmla.Compute();
-        if (fV && fV->ObjectClass()==STRING) {
-            ProcessPartition (((_FString*)fV)->get_str().Enquote(), target, isVertical, unit_length, additionalFilter, nil, scope);
-        } else {
-            _DataSet::MatchIndices (fmla, target, isVertical, totalLength, scope);
-        }
-    } else { // an explicit enumeration or a regular expression
-        
-        // check to see if argument is a callback
-        
-        bool is_regexp   = input (0) =='/' && input (-1) == '/';
-        long is_hbl_function = -1L;
-        
-        if (!is_regexp) {
-            is_hbl_function = hyphy_global_objects::FindBFFunctionName (input);
-            if (is_hbl_function >= 0) {
-                if (GetBFFunctionArgumentCount (is_hbl_function) !=  2) {
-                    HandleApplicationError(input.Enquote() & _String(" is not a valid callback function: must have two arguments (name, sequence for sites; string, frequencies for sites)"));
-                    return;
-                }
-            }
-        }
-        
-        if (is_regexp || is_hbl_function >= 0L) {
-            // a regular expression or a callback
-            regex_t*   regex = nil;
-            _Formula   filter_formula;
-            
-            if (is_regexp) {
-                input.Trim(1,input.length()-2);
-                int   errCode;
-                regex = _String::PrepRegExp (input, errCode, true);
-                if (errCode) {
-                    HandleApplicationError(_String::GetRegExpError(errCode));
-                    return;
-                }
-            }
-            // now set do the matching
-            // using only the sites that are specced in the additionalFilter
-            
-            if (!isVertical) { // partitioning sequences
-               _FString * string_object = nil,
-                        * string_name = nil;
-               if (!is_regexp) {
-                        filter_formula.GetList() < new _Operation()
-                                                 < new _Operation()
-                                                 < new _Operation(kEmptyString,-is_hbl_function-1L);
-                   
-                   string_object = new _FString;
-                   string_name   = new _FString;
-               }
-                
-                const long loop_limit = additionalFilter ? additionalFilter->lLength : totalLength;
-                
-                for (long specCount = 0L; specCount < loop_limit; specCount++) {
-                    _String pattern ((unsigned long)theMap.countitems());
-                    long    seqPos = additionalFilter ? additionalFilter->Element (specCount) : specCount;
-                    
-                    
-                    if (otherDimension) {
-                        for (long seqSlider = 0L; seqSlider < otherDimension->lLength; seqSlider ++) {
-                            pattern.set_char(seqSlider, GetSite(otherDimension->Element(seqSlider))->get_char (seqPos));
-                        }
-                    }
-                    else {
-                        for (long seqSlider = 0L; seqSlider < theMap.lLength; seqSlider ++) {
-                            pattern.set_char(seqSlider, GetSite(seqSlider)->get_char (seqPos));
-                        }
-                    }
-                    
-                    if (is_regexp) {
-                        if (pattern.RegExpMatch (regex, 0L).countitems()) {
-                            target << specCount;
-                        }
-                    } else {
-                        string_object->SetStringContent(new _StringBuffer (pattern));
-                        string_name->SetStringContent  (new _StringBuffer (*GetSequenceName(seqPos)));
-                        filter_formula.GetIthTerm(1)->SetNumber(string_object);
-                        filter_formula.GetIthTerm(0)->SetNumber(string_name);
-                        if (!CheckEqual(0.,filter_formula.Compute()->Value())) {
-                            target << specCount;
-                        }
-                    }
-                }
-                            
-                if (!is_regexp) {
-                    filter_formula.GetIthTerm(0)->SetNumber(nil);
-                    filter_formula.GetIthTerm(1)->SetNumber(nil);
-                    DeleteObject (string_object);
-                    DeleteObject (string_name);
-                }
-            } else {
-                
-                auto map_site = [] (const _Site* site, _String& buffer, _SimpleList const * mapper) -> void {
-                    mapper->Each ([&] (long value, unsigned long index) -> void {
-                        buffer.set_char (index, site->char_at (value));
-                    });
-                };
-                
-                bool         *eligibleMarks = nil;
-                
-        
-                
-                if (is_regexp) {
-                    eligibleMarks = new bool[lLength];
-                    if (additionalFilter) {
-                        InitializeArray(eligibleMarks, lLength, false);
-                        for (long siteIndex = 0; siteIndex < additionalFilter->lLength; siteIndex ++) {
-                            eligibleMarks[theMap.list_data[additionalFilter->list_data[siteIndex]]] = true;
-                        }
-                    }
-                    else {
-                        InitializeArray(eligibleMarks, lLength, true);
-                    }
-                    
-                    _String     *tempString = nil;
-                    _SimpleList matches;
-                    if (otherDimension) {
-                        tempString = new _String (otherDimension->countitems());
-                    }
-                    
-                    for (long siteCounter = 0; siteCounter < lLength; siteCounter ++)
-                        if (eligibleMarks[siteCounter]) {
-                            matches.Clear();
-                            if (otherDimension) {
-                                map_site ((_Site*)GetItem(siteCounter), *tempString, otherDimension);
-                                matches = tempString->RegExpMatch (regex, 0L);
-                            } else {
-                                matches = ((_Site**)list_data)[siteCounter]->RegExpMatch (regex, 0L);
-                            }
-                            if (matches.empty()) {
-                                eligibleMarks[siteCounter] = false;
-                            }
-                        }
-                    
-                    DeleteObject (tempString);
-                    if (additionalFilter) {
-                        for (long afi = 0; afi < additionalFilter->lLength; afi++) {
-                            if (eligibleMarks[theMap.list_data[additionalFilter->list_data[afi]]]) {
-                                target << afi;
-                            }
-                        }
-                    } else {
-                        theMap.Each  ([&target, eligibleMarks] (long site_pattern, unsigned long index) -> void {
-                            if (eligibleMarks [site_pattern]) {
-                                target << index;
-                            }
-                        });
-                    }
-                } else {
-                    
-                    
-                    long freq_dimension = ComputePower (GetCharDimension(), unit_length);
-                    
-                    if (freq_dimension > 0xffff) {
-                        HandleApplicationError("The dimension of the character space is too high for callback filtering");
-                        return;
-                    }
-                    eligibleMarks = new bool[theMap.lLength];
-                    
-                    if (additionalFilter) {
-                        InitializeArray(eligibleMarks, theMap.lLength, false);
-                        for (long siteIndex = 0; siteIndex < additionalFilter->lLength; siteIndex ++) {
-                            eligibleMarks[additionalFilter->list_data[siteIndex]] = true;
-                        }
-                    }
-                    else {
-                        InitializeArray(eligibleMarks, theMap.lLength, true);
-                    }
+void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
+                                bool isVertical, int unit_length,
+                                _SimpleList const *additionalFilter,
+                                _SimpleList const *otherDimension,
+                                _String const *scope) const {
+  // TODO SLKP : 20170928 this needs serious cleanup and testing
 
-                    filter_formula.GetList() < new _Operation()
-                                             < new _Operation()
-                                             < new _Operation(kEmptyString,-is_hbl_function-1L);
-                    
-                    _Matrix * strings     = nil,
-                            * frequencies = nil;
-                    
-                    
-                    
-                    _List string_list,
-                          string_storage;
-                    
-                    
-                    if (otherDimension) {
-                        for (int i = 0; i < unit_length; i++) {
-                            string_storage < new _String (otherDimension->countitems());
-                        }
-                    }
-                    
-                    _SimpleList sites (unit_length, 0, 0),
-                                sequences;
-                    
-                    if (otherDimension) {
-                        sequences = *otherDimension;
-                    } else {
-                        sequences.Populate((unsigned long)NoOfSpecies(), 0, 1);
-                    }
-                    
-                    for (long siteCounter = 0L; siteCounter + unit_length <= theMap.lLength; siteCounter += unit_length) {
-                        long unit_space = 0L;
-                        string_list.Clear();
-                        for (; unit_space < unit_length; unit_space++) {
-                            if (eligibleMarks[siteCounter + unit_space]) {
-                                sites[unit_space] = siteCounter + unit_space;
-                                if (otherDimension) {
-                                    map_site ((_Site*)GetSite(siteCounter + unit_space), *(_String*)string_storage.GetItem (unit_space), otherDimension);
-                                } else {
-                                    string_list << GetSite (siteCounter + unit_space);
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                        
-                        if (unit_space == unit_length) {
-                            //eligibleMarks[siteCounter + unit_space]
-                            BatchDelete(strings, frequencies);
-                            if (otherDimension) {
-                                strings = new _Matrix (string_storage);
-                            } else {
-                                strings = new _Matrix (string_list);
-                            }
-                            
-                            filter_formula.GetIthTerm(0)->SetNumber(strings);
-                            
-                            //(unsigned char unit, unsigned char atom, bool posSpec, _SimpleList& hSegmentation, _SimpleList& vSegmentation, bool countGaps)
-                            frequencies = HarvestFrequencies (unit_space, unit_space, false, sequences, sites, false);
-                            filter_formula.GetIthTerm(1)->SetNumber(frequencies);
-                            
-                            if (!CheckEqual(0.,filter_formula.Compute()->Value())) {
-                                continue;
-                            }
-                       }
-                        
-                        for (unit_space = 0L; unit_space < unit_length; unit_space++) {
-                            eligibleMarks[siteCounter + unit_space] = false;
-                        }
-                    }
-                    
-                    theMap.Each  ([&target, eligibleMarks] (long site_pattern, unsigned long index) -> void {
-                        if (eligibleMarks [index]) {
-                            target << index;
-                        }
-                    });
-                    // strings && frequencies will be cleaned up by the destructor of filter_formula
-                }
-               
-                delete [] eligibleMarks;
-            }
-            if (regex) {
-                _String::FlushRegExp (regex);
-            }
-        } else {
-            input = input.KillSpaces ();
-            // now process the string
-            long count = 0L,anchor;
-            
-            _SimpleList numbers,
-            links;
-            
-            numbers.RequestSpace (1024);
-            links.RequestSpace (1024);
-            
-            // first check if it is has a comb filter
-            
-            if ( input (0) =='<' && input (-1) =='>') {
-                for (count=1; count<input.length()-1; count++) {
-                    if (input.char_at(count) != '0') {
-                        numbers<<count-1;
-                    }
-                }
-                if (numbers.countitems()) {
-                    long k = input.length()-2; // step size
-                    anchor = 0;
-                    if (totalLength == -1) {
-                        totalLength = theMap.lLength;
-                    }
-                    while (anchor<totalLength-k) {
-                        for (count = 0; count< numbers.lLength; count++) {
-                            target<<anchor+numbers.list_data[count];
-                        }
-                        anchor+=k;
-                    }
-                    if ( (k=totalLength-1-anchor) ) {
-                        for (count = 0; count< numbers.lLength; count++) {
-                            if (numbers.list_data[count]>k) {
-                                break;
-                            }
-                            target<<anchor+numbers.list_data[count];
-                        }
-                    }
-                    return;
-                    
-                }
-            }
-            
-            while (count<input.length()) {
-                anchor = count;
-                
-                for (; count<input.length() && isdigit(input.char_at (count)); count++) ;
-                
-                long    aNumber = (input.Cut (anchor,count-1)).to_long();
-                
-                if (aNumber < 0) {
-                    _String warnMsg ("A negative number was found in partition specification: ");
-                    ReportWarning (warnMsg & input.Cut (0,anchor-1) & '?' & input.Cut (anchor,-1));
-                    target.Clear();
-                    return;
-                }
-                numbers<< aNumber;
-                
-                char current_char = input.char_at (count);
-                
-                if (current_char == '<' || current_char == '>') {
-                    ReportWarning (_String  ("A comb partition cannot be combined with other types. The entire partition is reset to first..last") & input.Cut (0,anchor-1) & '?' & input.Cut (anchor,-1));
-                    target.Clear();
-                    return;
-                }
-                
-                if (current_char == '&') {
-                    links << numbers.lLength;
-                }
-                
-                // TODO SLKP 20171001 this needs to be checked for correctness
-                if (current_char == ',' || count == input.length()) { // wrap it up dude
-                    if (numbers.countitems() == 1) {
-                        target<<numbers(0);
-                    } else {
-                        if (links.empty()) {
-                            if (numbers[0]>numbers[1]) { // backward order
-                                for (long k = numbers[0]; k>=numbers[1]; k--) {
-                                    target<<k;
-                                }
-                            } else {
-                                for (long k = numbers[0]; k<=numbers[1]; k++) {
-                                    target<<k;
-                                }
-                            }
-                        } else {
-                            // linked locations
-                            if (links.countitems() != (numbers.countitems()-2) / 2) {
-                                ReportWarning ("A part of the partition specification has not been understood and is being skipped.");
-                                target.Clear();
-                                return;
-                            } else {
-                                _SimpleList signs;
-                                signs<<(numbers(0)<numbers(1)?1:-1);
-                                for (long k = 0; k<links.lLength; k+=2) {
-                                    signs<<(numbers(links(k))<numbers(links(k+1))?1:-1);
-                                }
-                                
-                                for (long k=numbers(0), l=0 ; signs(0)*k<=signs(0)*numbers(1); k+=signs(0), l++) {
-                                    target<<numbers(0)+l*signs(0);
-                                    for (long m=0; m<links.lLength; m++) {
-                                        target<<numbers(links(m))+l*signs(m+1);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    numbers.Clear();
-                    links.Clear();
-                }
-                count++;
-            }
-        }
+  if (input2.empty()) {
+    return;
+  }
+  // decide if the input is an enumeration or a formula
+  long totalLength;
+
+  if (additionalFilter) {
+    totalLength = additionalFilter->countitems();
+  } else {
+    totalLength = isVertical ? theMap.countitems() : noOfSpecies;
+  }
+
+  _String input(input2);
+
+  if (!input.IsALiteralArgument(true)) { // not a literal argument
+
+    _Formula fmla, lhs;
+    _FormulaParsingContext fpc;
+    fpc.setScope(scope);
+
+    long outcome = Parse(&fmla, input, fpc, &lhs);
+
+    if (outcome != HY_FORMULA_EXPRESSION) {
+      HandleApplicationError(input.Enquote() &
+                             _String(" is an invalid partition specification"));
+      return;
     }
+    HBLObjectRef fV = fmla.Compute();
+    if (fV && fV->ObjectClass() == STRING) {
+      ProcessPartition(((_FString *)fV)->get_str().Enquote(), target,
+                       isVertical, unit_length, additionalFilter, nil, scope);
+    } else {
+      _DataSet::MatchIndices(fmla, target, isVertical, totalLength, scope);
+    }
+  } else { // an explicit enumeration or a regular expression
+
+    // check to see if argument is a callback
+
+    bool is_regexp = input(0) == '/' && input(-1) == '/';
+    long is_hbl_function = -1L;
+
+    if (!is_regexp) {
+      is_hbl_function = hyphy_global_objects::FindBFFunctionName(input);
+      if (is_hbl_function >= 0) {
+        if (GetBFFunctionArgumentCount(is_hbl_function) != 2) {
+          HandleApplicationError(
+              input.Enquote() &
+              _String(
+                  " is not a valid callback function: must have two arguments "
+                  "(name, sequence for sites; string, frequencies for sites)"));
+          return;
+        }
+      }
+    }
+
+    if (is_regexp || is_hbl_function >= 0L) {
+      // a regular expression or a callback
+      regex_t *regex = nil;
+      _Formula filter_formula;
+
+      if (is_regexp) {
+        input.Trim(1, input.length() - 2);
+        int errCode;
+        regex = _String::PrepRegExp(input, errCode, true);
+        if (errCode) {
+          HandleApplicationError(_String::GetRegExpError(errCode));
+          return;
+        }
+      }
+      // now set do the matching
+      // using only the sites that are specced in the additionalFilter
+
+      if (!isVertical) { // partitioning sequences
+        _FString *string_object = nil, *string_name = nil;
+        if (!is_regexp) {
+          filter_formula.GetList() < new _Operation() < new _Operation() <
+              new _Operation(kEmptyString, -is_hbl_function - 1L);
+
+          string_object = new _FString;
+          string_name = new _FString;
+        }
+
+        const long loop_limit =
+            additionalFilter ? additionalFilter->lLength : totalLength;
+
+        for (long specCount = 0L; specCount < loop_limit; specCount++) {
+          _String pattern((unsigned long)theMap.countitems());
+          long seqPos = additionalFilter ? additionalFilter->Element(specCount)
+                                         : specCount;
+
+          if (otherDimension) {
+            for (long seqSlider = 0L; seqSlider < otherDimension->lLength;
+                 seqSlider++) {
+              pattern.set_char(seqSlider,
+                               GetSite(otherDimension->Element(seqSlider))
+                                   ->get_char(seqPos));
+            }
+          } else {
+            for (long seqSlider = 0L; seqSlider < theMap.lLength; seqSlider++) {
+              pattern.set_char(seqSlider, GetSite(seqSlider)->get_char(seqPos));
+            }
+          }
+
+          if (is_regexp) {
+            if (pattern.RegExpMatch(regex, 0L).countitems()) {
+              target << specCount;
+            }
+          } else {
+            string_object->SetStringContent(new _StringBuffer(pattern));
+            string_name->SetStringContent(
+                new _StringBuffer(*GetSequenceName(seqPos)));
+            filter_formula.GetIthTerm(1)->SetNumber(string_object);
+            filter_formula.GetIthTerm(0)->SetNumber(string_name);
+            if (!CheckEqual(0., filter_formula.Compute()->Value())) {
+              target << specCount;
+            }
+          }
+        }
+
+        if (!is_regexp) {
+          filter_formula.GetIthTerm(0)->SetNumber(nil);
+          filter_formula.GetIthTerm(1)->SetNumber(nil);
+          DeleteObject(string_object);
+          DeleteObject(string_name);
+        }
+      } else {
+
+        auto map_site = [](const _Site *site, _String &buffer,
+                           _SimpleList const *mapper) -> void {
+          mapper->Each([&](long value, unsigned long index) -> void {
+            buffer.set_char(index, site->char_at(value));
+          });
+        };
+
+        bool *eligibleMarks = nil;
+
+        if (is_regexp) {
+          eligibleMarks = new bool[lLength];
+          if (additionalFilter) {
+            InitializeArray(eligibleMarks, lLength, false);
+            for (long siteIndex = 0; siteIndex < additionalFilter->lLength;
+                 siteIndex++) {
+              eligibleMarks
+                  [theMap.list_data[additionalFilter->list_data[siteIndex]]] =
+                      true;
+            }
+          } else {
+            InitializeArray(eligibleMarks, lLength, true);
+          }
+
+          _String *tempString = nil;
+          _SimpleList matches;
+          if (otherDimension) {
+            tempString = new _String(otherDimension->countitems());
+          }
+
+          for (long siteCounter = 0; siteCounter < lLength; siteCounter++)
+            if (eligibleMarks[siteCounter]) {
+              matches.Clear();
+              if (otherDimension) {
+                map_site((_Site *)GetItem(siteCounter), *tempString,
+                         otherDimension);
+                matches = tempString->RegExpMatch(regex, 0L);
+              } else {
+                matches =
+                    ((_Site **)list_data)[siteCounter]->RegExpMatch(regex, 0L);
+              }
+              if (matches.empty()) {
+                eligibleMarks[siteCounter] = false;
+              }
+            }
+
+          DeleteObject(tempString);
+          if (additionalFilter) {
+            for (long afi = 0; afi < additionalFilter->lLength; afi++) {
+              if (eligibleMarks
+                      [theMap.list_data[additionalFilter->list_data[afi]]]) {
+                target << afi;
+              }
+            }
+          } else {
+            theMap.Each([&target, eligibleMarks](long site_pattern,
+                                                 unsigned long index) -> void {
+              if (eligibleMarks[site_pattern]) {
+                target << index;
+              }
+            });
+          }
+        } else {
+
+          long freq_dimension = ComputePower(GetCharDimension(), unit_length);
+
+          if (freq_dimension > 0xffff) {
+            HandleApplicationError("The dimension of the character space is "
+                                   "too high for callback filtering");
+            return;
+          }
+          eligibleMarks = new bool[theMap.lLength];
+
+          if (additionalFilter) {
+            InitializeArray(eligibleMarks, theMap.lLength, false);
+            for (long siteIndex = 0; siteIndex < additionalFilter->lLength;
+                 siteIndex++) {
+              eligibleMarks[additionalFilter->list_data[siteIndex]] = true;
+            }
+          } else {
+            InitializeArray(eligibleMarks, theMap.lLength, true);
+          }
+
+          filter_formula.GetList() < new _Operation() < new _Operation() <
+              new _Operation(kEmptyString, -is_hbl_function - 1L);
+
+          _Matrix *strings = nil, *frequencies = nil;
+
+          _List string_list, string_storage;
+
+          if (otherDimension) {
+            for (int i = 0; i < unit_length; i++) {
+              string_storage < new _String(otherDimension->countitems());
+            }
+          }
+
+          _SimpleList sites(unit_length, 0, 0), sequences;
+
+          if (otherDimension) {
+            sequences = *otherDimension;
+          } else {
+            sequences.Populate((unsigned long)NoOfSpecies(), 0, 1);
+          }
+
+          for (long siteCounter = 0L;
+               siteCounter + unit_length <= theMap.lLength;
+               siteCounter += unit_length) {
+            long unit_space = 0L;
+            string_list.Clear();
+            for (; unit_space < unit_length; unit_space++) {
+              if (eligibleMarks[siteCounter + unit_space]) {
+                sites[unit_space] = siteCounter + unit_space;
+                if (otherDimension) {
+                  map_site((_Site *)GetSite(siteCounter + unit_space),
+                           *(_String *)string_storage.GetItem(unit_space),
+                           otherDimension);
+                } else {
+                  string_list << GetSite(siteCounter + unit_space);
+                }
+              } else {
+                break;
+              }
+            }
+
+            if (unit_space == unit_length) {
+              // eligibleMarks[siteCounter + unit_space]
+              BatchDelete(strings, frequencies);
+              if (otherDimension) {
+                strings = new _Matrix(string_storage);
+              } else {
+                strings = new _Matrix(string_list);
+              }
+
+              filter_formula.GetIthTerm(0)->SetNumber(strings);
+
+              //(unsigned char unit, unsigned char atom, bool posSpec,
+              //_SimpleList& hSegmentation, _SimpleList& vSegmentation, bool
+              // countGaps)
+              frequencies = HarvestFrequencies(unit_space, unit_space, false,
+                                               sequences, sites, false);
+              filter_formula.GetIthTerm(1)->SetNumber(frequencies);
+
+              if (!CheckEqual(0., filter_formula.Compute()->Value())) {
+                continue;
+              }
+            }
+
+            for (unit_space = 0L; unit_space < unit_length; unit_space++) {
+              eligibleMarks[siteCounter + unit_space] = false;
+            }
+          }
+
+          theMap.Each([&target, eligibleMarks](long site_pattern,
+                                               unsigned long index) -> void {
+            if (eligibleMarks[index]) {
+              target << index;
+            }
+          });
+          // strings && frequencies will be cleaned up by the destructor of
+          // filter_formula
+        }
+
+        delete[] eligibleMarks;
+      }
+      if (regex) {
+        _String::FlushRegExp(regex);
+      }
+    } else {
+      input = input.KillSpaces();
+      // now process the string
+      long count = 0L, anchor;
+
+      _SimpleList numbers, links;
+
+      numbers.RequestSpace(1024);
+      links.RequestSpace(1024);
+
+      // first check if it is has a comb filter
+
+      if (input(0) == '<' && input(-1) == '>') {
+        for (count = 1; count < input.length() - 1; count++) {
+          if (input.char_at(count) != '0') {
+            numbers << count - 1;
+          }
+        }
+        if (numbers.countitems()) {
+          long k = input.length() - 2; // step size
+          anchor = 0;
+          if (totalLength == -1) {
+            totalLength = theMap.lLength;
+          }
+          while (anchor < totalLength - k) {
+            for (count = 0; count < numbers.lLength; count++) {
+              target << anchor + numbers.list_data[count];
+            }
+            anchor += k;
+          }
+          if ((k = totalLength - 1 - anchor)) {
+            for (count = 0; count < numbers.lLength; count++) {
+              if (numbers.list_data[count] > k) {
+                break;
+              }
+              target << anchor + numbers.list_data[count];
+            }
+          }
+          return;
+        }
+      }
+
+      while (count < input.length()) {
+        anchor = count;
+
+        for (; count < input.length() && isdigit(input.char_at(count)); count++)
+          ;
+
+        long aNumber = (input.Cut(anchor, count - 1)).to_long();
+
+        if (aNumber < 0) {
+          _String warnMsg(
+              "A negative number was found in partition specification: ");
+          ReportWarning(warnMsg & input.Cut(0, anchor - 1) & '?' &
+                        input.Cut(anchor, -1));
+          target.Clear();
+          return;
+        }
+        numbers << aNumber;
+
+        char current_char = input.char_at(count);
+
+        if (current_char == '<' || current_char == '>') {
+          ReportWarning(
+              _String("A comb partition cannot be combined with other types. "
+                      "The entire partition is reset to first..last") &
+              input.Cut(0, anchor - 1) & '?' & input.Cut(anchor, -1));
+          target.Clear();
+          return;
+        }
+
+        if (current_char == '&') {
+          links << numbers.lLength;
+        }
+
+        // TODO SLKP 20171001 this needs to be checked for correctness
+        if (current_char == ',' || count == input.length()) { // wrap it up dude
+          if (numbers.countitems() == 1) {
+            target << numbers(0);
+          } else {
+            if (links.empty()) {
+              if (numbers[0] > numbers[1]) { // backward order
+                for (long k = numbers[0]; k >= numbers[1]; k--) {
+                  target << k;
+                }
+              } else {
+                for (long k = numbers[0]; k <= numbers[1]; k++) {
+                  target << k;
+                }
+              }
+            } else {
+              // linked locations
+              if (links.countitems() != (numbers.countitems() - 2) / 2) {
+                ReportWarning("A part of the partition specification has not "
+                              "been understood and is being skipped.");
+                target.Clear();
+                return;
+              } else {
+                _SimpleList signs;
+                signs << (numbers(0) < numbers(1) ? 1 : -1);
+                for (long k = 0; k < links.lLength; k += 2) {
+                  signs << (numbers(links(k)) < numbers(links(k + 1)) ? 1 : -1);
+                }
+
+                for (long k = numbers(0), l = 0;
+                     signs(0) * k <= signs(0) * numbers(1);
+                     k += signs(0), l++) {
+                  target << numbers(0) + l * signs(0);
+                  for (long m = 0; m < links.lLength; m++) {
+                    target << numbers(links(m)) + l * signs(m + 1);
+                  }
+                }
+              }
+            }
+          }
+          numbers.Clear();
+          links.Clear();
+        }
+        count++;
+      }
+    }
+  }
 }
 
 //_________________________________________________________
@@ -1402,104 +1445,122 @@ _DataSet *_DataSet::Combine(_SimpleList const &ref) {
   return combined_data;
 }
 
-  //_______________________________________________________________________
+//_______________________________________________________________________
 
-_String*        _DataSet::GetSequenceCharacters (long seqID)  const{
-  
-  unsigned long        upTo = NoOfColumns();
-  _StringBuffer * aSequence = new _StringBuffer (upTo);
-  
+_String *_DataSet::GetSequenceCharacters(long seqID) const {
+
+  unsigned long upTo = NoOfColumns();
+  _StringBuffer *aSequence = new _StringBuffer(upTo);
+
   if (seqID >= 0L && seqID < noOfSpecies) {
-    for (unsigned long k2=0UL; k2<upTo; k2++) {
-      (*aSequence) << GetSite (k2)->char_at(seqID);
+    for (unsigned long k2 = 0UL; k2 < upTo; k2++) {
+      (*aSequence) << GetSite(k2)->char_at(seqID);
     }
   }
-  aSequence->TrimSpace ();
+  aSequence->TrimSpace();
   return aSequence;
 }
 
 //_________________________________________________________
 
-bool    StoreADataSet (_DataSet* ds, _String* setName) {
-    if (!setName->IsValidIdentifier (fIDAllowCompound | fIDAllowFirstNumeric)) {
-        HandleApplicationError (setName->Enquote() & " is not a valid identifier while constructing a DataSet");
-        return false;
-    }
-    
-    long type = HY_BL_DATASET, index;
-    _DataSet * existing_ds = (_DataSet * )_HYRetrieveBLObjectByNameMutable (*setName, type, &index, false, false);
-    
-    
-    if (! existing_ds) {
-        dataSetNamesList << setName;
-        dataSetList < ds;
-    } else {
-        
-        
-        bool isDifferent = existing_ds->NoOfSpecies () != ds->NoOfSpecies() ||
-        existing_ds->NoOfColumns () != ds->NoOfColumns() ||
-        existing_ds->NoOfUniqueColumns () != ds->NoOfUniqueColumns() ||
-        (existing_ds->GetTT () != ds->GetTT() && !(*existing_ds->GetTT () == *ds->GetTT()));
-        
-        for (AVLListXLIteratorKeyValue filter_key_value : ObjectIndexer (HY_BL_DATASET_FILTER)) {
-            _DataSetFilter * filter = (_DataSetFilter*) filter_key_value.get_object();
-            if (filter->GetData() == existing_ds) {
-                if (isDifferent) {
-                    ReportWarning (_String("Overwriting dataset '") & *setName & "' caused DataSetFilter " & GetFilterName(filter_key_value.get_index())->Enquote('\'') & " to be deleted");
-                    DeleteDataFilter(filter_key_value.get_index());
-                } else {
-                    filter->SetData(ds);
-                }
-            }
-        }
-        
-        dataSetList.Replace(index,ds,false);
-    }
-    
-    CheckReceptacleAndStore (*setName&".mapping",kEmptyString,false, new _MathObject, false);
+bool StoreADataSet(_DataSet *ds, _String *setName) {
+  if (!setName->IsValidIdentifier(fIDAllowCompound | fIDAllowFirstNumeric)) {
+    HandleApplicationError(
+        setName->Enquote() &
+        " is not a valid identifier while constructing a DataSet");
+    return false;
+  }
 
-    if (hy_env::EnvVariableTrue(hy_env::normalize_sequence_names)) {
-        _List _id_mapping;
-        _AVLListXL id_mapping (&_id_mapping);
-        bool       did_something = false;
-        
-        for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i ++) {
-            _String * old_name = new _String (*ds->GetSequenceName (i));
-            if (! old_name->IsValidIdentifier(fIDAllowFirstNumeric) ) {
-                *ds->GetSequenceName (i) = ds->GetSequenceName (i)->ConvertToAnIdent(fIDAllowFirstNumeric);
-                did_something = true;
-            }
-            if (id_mapping.Find (ds->GetSequenceName (i)) >= 0) {
-                _String new_name (*ds->GetSequenceName (i));
-                long suffix = 1L;
-                do {
-                    new_name = *ds->GetSequenceName (i) & "_" & suffix++;
-                } while (id_mapping.Find (&new_name) >= 0);
-                *ds->GetSequenceName (i) = new_name;
-                did_something = true;
-            }
-            
-            ds->GetSequenceName (i)->AddAReference();
-            id_mapping.Insert (ds->GetSequenceName (i), (long)old_name, false, false);
+  long type = HY_BL_DATASET, index;
+  _DataSet *existing_ds = (_DataSet *)_HYRetrieveBLObjectByNameMutable(
+      *setName, type, &index, false, false);
+
+  if (!existing_ds) {
+    dataSetNamesList << setName;
+    dataSetList < ds;
+  } else {
+
+    bool isDifferent =
+        existing_ds->NoOfSpecies() != ds->NoOfSpecies() ||
+        existing_ds->NoOfColumns() != ds->NoOfColumns() ||
+        existing_ds->NoOfUniqueColumns() != ds->NoOfUniqueColumns() ||
+        (existing_ds->GetTT() != ds->GetTT() &&
+         !(*existing_ds->GetTT() == *ds->GetTT()));
+
+    for (AVLListXLIteratorKeyValue filter_key_value :
+         ObjectIndexer(HY_BL_DATASET_FILTER)) {
+      _DataSetFilter *filter = (_DataSetFilter *)filter_key_value.get_object();
+      if (filter->GetData() == existing_ds) {
+        if (isDifferent) {
+          ReportWarning(
+              _String("Overwriting dataset '") & *setName &
+              "' caused DataSetFilter " &
+              GetFilterName(filter_key_value.get_index())->Enquote('\'') &
+              " to be deleted");
+          DeleteDataFilter(filter_key_value.get_index());
+        } else {
+          filter->SetData(ds);
         }
-        
-        if (did_something) {
-            _AssociativeList * mapping = new _AssociativeList();
-            
-            for (AVLListXLIteratorKeyValue filter_key_value : AVLListXLIterator (&id_mapping)) {
-                //printf ("%d => %s\n", filter_key_value.get_index(), ((_String*)filter_key_value.get_object())->get_str());
-                mapping->MStore(*(_String *)id_mapping.Retrieve (filter_key_value.get_index()), *(_String*)filter_key_value.get_object());
-            }
-            
-            CheckReceptacleAndStore (*setName&".mapping",kEmptyString,false, mapping, false);
-        }
+      }
     }
-    
-    CheckReceptacleAndStore (*setName&".species",kEmptyString,false, new _Constant (ds->NoOfSpecies()), false);
-    CheckReceptacleAndStore (*setName&".sites",kEmptyString,false, new _Constant (ds->NoOfColumns()), false);
-    CheckReceptacleAndStore (*setName&".unique_sites",kEmptyString,false, new _Constant (ds->NoOfUniqueColumns()), false);
-    
-    return true;
+
+    dataSetList.Replace(index, ds, false);
+  }
+
+  CheckReceptacleAndStore(*setName & ".mapping", kEmptyString, false,
+                          new _MathObject, false);
+
+  if (hy_env::EnvVariableTrue(hy_env::normalize_sequence_names)) {
+    _List _id_mapping;
+    _AVLListXL id_mapping(&_id_mapping);
+    bool did_something = false;
+
+    for (unsigned long i = 0UL; i < ds->NoOfSpecies(); i++) {
+      _String *old_name = new _String(*ds->GetSequenceName(i));
+      if (!old_name->IsValidIdentifier(fIDAllowFirstNumeric)) {
+        *ds->GetSequenceName(i) =
+            ds->GetSequenceName(i)->ConvertToAnIdent(fIDAllowFirstNumeric);
+        did_something = true;
+      }
+      if (id_mapping.Find(ds->GetSequenceName(i)) >= 0) {
+        _String new_name(*ds->GetSequenceName(i));
+        long suffix = 1L;
+        do {
+          new_name = *ds->GetSequenceName(i) & "_" & suffix++;
+        } while (id_mapping.Find(&new_name) >= 0);
+        *ds->GetSequenceName(i) = new_name;
+        did_something = true;
+      }
+
+      ds->GetSequenceName(i)->AddAReference();
+      id_mapping.Insert(ds->GetSequenceName(i), (long)old_name, false, false);
+    }
+
+    if (did_something) {
+      _AssociativeList *mapping = new _AssociativeList();
+
+      for (AVLListXLIteratorKeyValue filter_key_value :
+           AVLListXLIterator(&id_mapping)) {
+        // printf ("%d => %s\n", filter_key_value.get_index(),
+        // ((_String*)filter_key_value.get_object())->get_str());
+        mapping->MStore(
+            *(_String *)id_mapping.Retrieve(filter_key_value.get_index()),
+            *(_String *)filter_key_value.get_object());
+      }
+
+      CheckReceptacleAndStore(*setName & ".mapping", kEmptyString, false,
+                              mapping, false);
+    }
+  }
+
+  CheckReceptacleAndStore(*setName & ".species", kEmptyString, false,
+                          new _Constant(ds->NoOfSpecies()), false);
+  CheckReceptacleAndStore(*setName & ".sites", kEmptyString, false,
+                          new _Constant(ds->NoOfColumns()), false);
+  CheckReceptacleAndStore(*setName & ".unique_sites", kEmptyString, false,
+                          new _Constant(ds->NoOfUniqueColumns()), false);
+
+  return true;
 }
 
 //_________________________________________________________
@@ -1507,842 +1568,858 @@ bool    StoreADataSet (_DataSet* ds, _String* setName) {
 // reading the data set file in here
 
 //_________________________________________________________
-void    checkTTStatus (FileState* fs) {// check whether the translation table needs to be refreshed}
-    if (fs->translationTable == &hy_default_translation_table) {
-        fs->translationTable =  (_TranslationTable*)hy_default_translation_table.makeDynamic();
-    }
+void checkTTStatus(FileState *fs) { // check whether the translation table needs
+                                    // to be refreshed}
+  if (fs->translationTable == &hy_default_translation_table) {
+    fs->translationTable =
+        (_TranslationTable *)hy_default_translation_table.makeDynamic();
+  }
 }
 //_________________________________________________________
-void    processCommand (_String * s, FileState*fs) {
-    
-    static const _List _CommandList (
-        new _String ("BASESET"),
-        new _String ("FORMAT"),
-        new _String ("RAWLINE"),
-        new _String ("REPEAT"),
-        new _String ("TOKEN")
-    );
-    
-    static const _String  kBase20  ("BASE20"),
-                          kPHYLIPi ("PHYLIPI"),
-                          kPHYLIPs ("PHYLIPS"),
-                          kRAW     ("RAW");
-    
-    
-    long f = -1,
-         command_index;
+void processCommand(_String *s, FileState *fs) {
 
-    for (command_index=0L; command_index<_CommandList.countitems(); ++command_index) {
-        f = s->Find (*(_String*)_CommandList.GetItem (command_index));
-        if ( f!= kNotFound) {
-            break;
-        }
-    }
-    
-    try {
-        if (f==-1) { // unrecognized command
-            return;
-        } else {
-            // trim the string
-            //s->Trim (f+((_String*)CommandList(i))->Length(),-1);
-            
-            f = s->Find (":", f + 1L + ((_String*)_CommandList.GetItem (command_index))->length());
-            
-            if (f == kNotFound) { // poorly formed command
-                throw (s->Enquote('[', ']') & " was not of the form COMMAND : DATA");
-            }
-            
-            
-            if (command_index >= 1 &&  command_index<=3 ) {
-                long start = f + 1;
-                long end = s->ExtractEnclosedExpression(start, '"', '"', 0);
-                
-                if (end == kNotFound || end - start <= 2L) {
-                    throw (s->Enquote('[', ']') & " was not of the form COMMAND : \"DATA\" (missing quotes)");
-                }
-                s->Trim (start + 1L, end - 1L);
-           } else {
-               s->Trim (f + 1L, kStringEnd);
-           }
-            
-           // 's' should now contain only the payload of the command
-            
-            switch (command_index) {
-                    
-                case 4: {// new token
-                    checkTTStatus (fs);
-                    // attempt to extract a token. Looking for (e.g):   "c" = "AC"
-                    
-                    _SimpleList matches = s->RegExpMatch("\\\"([a-z,A-Z])\\\"\\ *=\\ *\\\"([a-z,A-Z]+)\\\"", false, true);
-                    if (matches.countitems() == 6) {
-                        fs->translationTable->AddTokenCode (matches.get (2),s->Cut (matches.get(3), matches.get(4)));
-                    } else {
-                        throw (s->Enquote('[', ']') & " was not of the form \"token\"=\"translation\"");
-                    }
-                }
-                break;
-                    
-                    
-                case 0: { // new code set, e.g  "ACGU"
-                    checkTTStatus(fs);
-                    // erase previous char definitions
-                    fs->translationTable->translationsAdded.Clear();
-                    fs->translationTable->tokensAdded = "";
-                    if (*s != kBase20) {
-                        long start = 0;
-                        long end = s->ExtractEnclosedExpression(start, '"', '"', 0);
-                        if (end == kNotFound || end - start <= 3L) {
-                             throw (s->Enquote('[', ']') & " was not of the form \"at least two letters\"");
-                        }
-                        // TODO : there is no check that baseset is actually valid (e.g. no duplicate characters etc)
-                        fs->translationTable->AddBaseSet (s->Cut (start + 1, end - 1));
-                    } else {
-                        fs->translationTable->AddBaseSet (kEmptyString);
-                        fs->translationTable->baseLength = 20;
-                    }
-                }
-                break;
-                    
-                case 1: //FORMAT
-                    if (*s== kPHYLIPi) { // PHYLIP Interleaved
-                        fs->fileType = 1;
-                        fs->interleaved = TRUE;
-                    } else if (*s== kPHYLIPs) { // PHYLIP sequential
-                        fs->fileType = 1;
-                        fs->interleaved = FALSE;
-                    }
-                    if (*s== kRAW) { // RAW Sequential Data (as in NEXUS)
-                        fs->fileType = 2;
-                        fs->interleaved = FALSE;
-                    }
-                    fs->autoDetect = false;
-                    break;
-                    
-                case 3: // REPEAT CHAR
-                    fs->repeat = s->get_char(0);
-                    break;
-                    
-                case 2: // RAWLINE template e.g 1,-1 skips one word at the beginning and one word at the end
-                    _List chips (s,',');
-                    chips.ForEach([&] (BaseRef number, unsigned long index) -> void {
-                        fs->rawLinesFormat<< ((_String*)number)->to_long();
-                    });
-                    break;
-                    
-            }
-        }
-    } catch (const _String& warning) {
-        ReportWarning (warning);
-    }
-}
-//_________________________________________________________
+  static const _List _CommandList(new _String("BASESET"), new _String("FORMAT"),
+                                  new _String("RAWLINE"), new _String("REPEAT"),
+                                  new _String("TOKEN"));
 
-void    FilterRawString (_String& s, FileState* fs, _DataSet & ds) {
-    // TODO: SLKP 20180803 this needs to be tested or deprecated.
-    s.CompressSpaces();
-    _List words (s.Tokenize(" "));
-    
-    long current_start = 0L,
-         current_end   = (long)words.countitems () - 1L;
-                 
-    fs->rawLinesFormat.Each([&] (long word, unsigned long idx) -> void {
-        if (word > 0L) {
-            current_start += word;
-        } else {
-            if (word < 0L) {
-                current_end += word;
-            } else {
-                if (current_start < current_end) {
-                    ds.AddName (*((_String*)words.GetItem (current_start)));
-                    current_start ++;
-                }
-            }
-        }
-    });
-    
-    if (current_start >= current_end) {
-        s = kEmptyString;
+  static const _String kBase20("BASE20"), kPHYLIPi("PHYLIPI"),
+      kPHYLIPs("PHYLIPS"), kRAW("RAW");
+
+  long f = -1, command_index;
+
+  for (command_index = 0L; command_index < _CommandList.countitems();
+       ++command_index) {
+    f = s->Find(*(_String *)_CommandList.GetItem(command_index));
+    if (f != kNotFound) {
+      break;
+    }
+  }
+
+  try {
+    if (f == -1) { // unrecognized command
+      return;
     } else {
-        s = words.Join(" ", current_start, current_end);
-    }
-}
-//_________________________________________________________________________________________________
+      // trim the string
+      // s->Trim (f+((_String*)CommandList(i))->Length(),-1);
 
+      f = s->Find(
+          ":",
+          f + 1L + ((_String *)_CommandList.GetItem(command_index))->length());
 
-//_________________________________________________________________________________________________
+      if (f == kNotFound) { // poorly formed command
+        throw(s->Enquote('[', ']') & " was not of the form COMMAND : DATA");
+      }
 
-void    ProcessTree (FileState *fState, hyFile * f, _StringBuffer& CurrentLine) {
-    
-    // TODO SLKP 20180921 this does extra work to read in the tree string multiple times;
-    // the solution is to have a proper buffer wrapper, and to
-    
-    
-    _StringBuffer * tree_string = new _StringBuffer (128L);
-    long start_index = 0,
-         end_index   = CurrentLine.ExtractEnclosedExpression(start_index, '(', ')', fExtractRespectQuote|fExtractRespectEscape);
-    
-    while (start_index == kNotFound || end_index == kNotFound) {
-        _StringBuffer next_line;
-        ReadNextLine (f,&next_line,fState, false);
-        CurrentLine = CurrentLine & next_line;
-        start_index = 0L;
-        end_index   = CurrentLine.ExtractEnclosedExpression(start_index, '(', ')', fExtractRespectQuote|fExtractRespectEscape);
-    }
-    
-    if (start_index == kNotFound || end_index == kNotFound) {
-        ReportWarning (tree_string->Enquote() & " has mimatched '(' and ')'");
-        DeleteObject (tree_string);
-    } else {
-        *tree_string << CurrentLine.Cut (start_index, end_index);
-        tree_string->TrimSpace();
-        CurrentLine.Trim (end_index + 1, kStringEnd);
-        hy_env::EnvVariableSetNamespace(hy_env::data_file_tree, new HY_CONSTANT_TRUE, fState->theNamespace, false);
-        hy_env::EnvVariableSetNamespace(hy_env::data_file_tree_string, new _FString (tree_string), nil, false);
-    }
-}
+      if (command_index >= 1 && command_index <= 3) {
+        long start = f + 1;
+        long end = s->ExtractEnclosedExpression(start, '"', '"', 0);
 
-//_________________________________________________________
+        if (end == kNotFound || end - start <= 2L) {
+          throw(s->Enquote('[', ']') &
+                " was not of the form COMMAND : \"DATA\" (missing quotes)");
+        }
+        s->Trim(start + 1L, end - 1L);
+      } else {
+        s->Trim(f + 1L, kStringEnd);
+      }
 
-long    ProcessLine (_String&s , FileState *fs, _DataSet& ds) {
-    long sitesAttached = 0L;
-    
-    try {
-        s.Each([&] (char letter, unsigned long i) -> void {
-            letter = _uppercase_char(letter);
-            if (fs->translationTable->IsCharLegal(letter)) { // go on
-                if (fs->curSpecies==0) { // add new column
-                    ds.AddSite (letter);
-                    sitesAttached++;
-                } else { //append to exisiting column
-                         //if (c == fs->skip) continue;
-                         // check to see if this species needs to be padded
-                    
-                    if (letter == fs->repeat) {
-                        if ( fs->curSite+sitesAttached >= ds.lLength) { // a dot not matched by a previously read character; ignore
-                            throw sitesAttached;
-                        }
-                        
-                        letter = ((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->get_char(0);
-                        if (letter=='\0') {
-                            letter = ((_Site*)(ds._List::operator ()
-                                          (((_Site*)(ds._List::operator () (fs->curSite+sitesAttached)))->GetRefNo())))->get_char(0);
-                        }
-                    }
-                    
-                    if (fs->curSite+sitesAttached+1>fs->totalSitesRead) {
-                        // pad previous species to full length
-                        _Site * newS = new _Site (fs->skip);
-                        newS->AppendNCopies(fs->skip, fs->curSpecies-1L);
-                        (*newS) << letter;
-                        
-                        
-                        ds.theFrequencies << 1;
-                        newS->SetRefNo(-1);
-                        
-                        ds < newS;
-                        fs->totalSitesRead++;
-                    } else {
-                        ds.Write2Site (fs->curSite+sitesAttached, letter, fs->skip);
-                    }
-                    
-                    sitesAttached++;
-                }
-            }
+      // 's' should now contain only the payload of the command
+
+      switch (command_index) {
+
+      case 4: { // new token
+        checkTTStatus(fs);
+        // attempt to extract a token. Looking for (e.g):   "c" = "AC"
+
+        _SimpleList matches = s->RegExpMatch(
+            "\\\"([a-z,A-Z])\\\"\\ *=\\ *\\\"([a-z,A-Z]+)\\\"", false, true);
+        if (matches.countitems() == 6) {
+          fs->translationTable->AddTokenCode(
+              matches.get(2), s->Cut(matches.get(3), matches.get(4)));
+        } else {
+          throw(s->Enquote('[', ']') &
+                " was not of the form \"token\"=\"translation\"");
+        }
+      } break;
+
+      case 0: { // new code set, e.g  "ACGU"
+        checkTTStatus(fs);
+        // erase previous char definitions
+        fs->translationTable->translationsAdded.Clear();
+        fs->translationTable->tokensAdded = "";
+        if (*s != kBase20) {
+          long start = 0;
+          long end = s->ExtractEnclosedExpression(start, '"', '"', 0);
+          if (end == kNotFound || end - start <= 3L) {
+            throw(s->Enquote('[', ']') &
+                  " was not of the form \"at least two letters\"");
+          }
+          // TODO : there is no check that baseset is actually valid (e.g. no
+          // duplicate characters etc)
+          fs->translationTable->AddBaseSet(s->Cut(start + 1, end - 1));
+        } else {
+          fs->translationTable->AddBaseSet(kEmptyString);
+          fs->translationTable->baseLength = 20;
+        }
+      } break;
+
+      case 1:                 // FORMAT
+        if (*s == kPHYLIPi) { // PHYLIP Interleaved
+          fs->fileType = 1;
+          fs->interleaved = TRUE;
+        } else if (*s == kPHYLIPs) { // PHYLIP sequential
+          fs->fileType = 1;
+          fs->interleaved = FALSE;
+        }
+        if (*s == kRAW) { // RAW Sequential Data (as in NEXUS)
+          fs->fileType = 2;
+          fs->interleaved = FALSE;
+        }
+        fs->autoDetect = false;
+        break;
+
+      case 3: // REPEAT CHAR
+        fs->repeat = s->get_char(0);
+        break;
+
+      case 2: // RAWLINE template e.g 1,-1 skips one word at the beginning and
+              // one word at the end
+        _List chips(s, ',');
+        chips.ForEach([&](BaseRef number, unsigned long index) -> void {
+          fs->rawLinesFormat << ((_String *)number)->to_long();
         });
-    } catch (long e) {
-        return e;
+        break;
+      }
     }
-    
-    // make sure that this species has enough data in it, and if not - pad it with '?'
-    
-    if ( fs->curSite+sitesAttached<fs->totalSitesRead && fs->interleaved) {
-        // pad this species to full length
-        for (long j = fs->curSite+sitesAttached; j<fs->totalSitesRead; j++) {
-            ds.Write2Site (j, fs->skip);
-        }
-    }
-    if (!fs->curSpecies) {
-        fs->totalSitesRead+=sitesAttached;
-    }
-    return sitesAttached;
+  } catch (const _String &warning) {
+    ReportWarning(warning);
+  }
 }
-
 //_________________________________________________________
-void    PadLine (FileState& fState, _DataSet& result) { // make sure that there is enough data in this line
-                                                      // and if not - "pad" it with '?''s
-    if (fState.curSite<fState.totalSitesRead) {// pad line if needed
-        //printf ("\nPADLINE %d %d\n", fState.curSpecies, fState.totalSitesRead-fState.curSite);
-        for (long j = fState.curSite; j<fState.totalSitesRead; j++) {
-            result.Write2Site (j, fState.skip);
-        }
-    }
-}
 
-//_________________________________________________________
-void    ISelector (FileState& fState, _StringBuffer& CurrentLine, _DataSet& result) {
-    if (fState.interleaved) { // interleaved file
-        if (fState.curSpecies&&(!((fState.curSpecies)%fState.totalSpeciesExpected))) { // read a chunk of all species
-            if (fState.totalSitesRead && !result.InternalStorageMode()) {
-                for (long i = fState.curSite; i<fState.totalSitesRead; i++) {
-                    result.Compact(i);
-                }
-                
-                result.ResetIHelper();
-                
-            }
-            fState.curSite = fState.totalSitesRead;
-            fState.curSpecies = 0;
-            ProcessLine (CurrentLine, &fState, result);
-            fState.curSpecies = 1;
-            if (!fState.curSite) {
-                fState.totalSpeciesRead++;
-            }
-        } else {
-            ProcessLine (CurrentLine, &fState, result);
-            if (!fState.curSite) {
-                fState.totalSpeciesRead++;
-            }
-            fState.curSpecies++;
-        }
+void FilterRawString(_String &s, FileState *fs, _DataSet &ds) {
+  // TODO: SLKP 20180803 this needs to be tested or deprecated.
+  s.CompressSpaces();
+  _List words(s.Tokenize(" "));
+
+  long current_start = 0L, current_end = (long)words.countitems() - 1L;
+
+  fs->rawLinesFormat.Each([&](long word, unsigned long idx) -> void {
+    if (word > 0L) {
+      current_start += word;
     } else {
-        if (fState.curSpecies+1<fState.totalSpeciesExpected) {
-            fState.curSpecies++;
+      if (word < 0L) {
+        current_end += word;
+      } else {
+        if (current_start < current_end) {
+          ds.AddName(*((_String *)words.GetItem(current_start)));
+          current_start++;
         }
-        if (fState.curSpecies == fState.totalSpeciesRead) {
-            PadLine (fState, result);
-            fState.curSite = 0;
-        }
-        if (fState.totalSpeciesRead<fState.totalSpeciesExpected) {
-            fState.totalSpeciesRead++;
-        }
-        
-        fState.curSite+=ProcessLine (CurrentLine, &fState, result);
-        
+      }
     }
+  });
+
+  if (current_start >= current_end) {
+    s = kEmptyString;
+  } else {
+    s = words.Join(" ", current_start, current_end);
+  }
+}
+//_________________________________________________________________________________________________
+
+//_________________________________________________________________________________________________
+
+void ProcessTree(FileState *fState, hyFile *f, _StringBuffer &CurrentLine) {
+
+  // TODO SLKP 20180921 this does extra work to read in the tree string multiple
+  // times; the solution is to have a proper buffer wrapper, and to
+
+  _StringBuffer *tree_string = new _StringBuffer(128L);
+  long start_index = 0,
+       end_index = CurrentLine.ExtractEnclosedExpression(
+           start_index, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
+
+  while (start_index == kNotFound || end_index == kNotFound) {
+    _StringBuffer next_line;
+    ReadNextLine(f, &next_line, fState, false);
+    CurrentLine = CurrentLine & next_line;
+    start_index = 0L;
+    end_index = CurrentLine.ExtractEnclosedExpression(
+        start_index, '(', ')', fExtractRespectQuote | fExtractRespectEscape);
+  }
+
+  if (start_index == kNotFound || end_index == kNotFound) {
+    ReportWarning(tree_string->Enquote() & " has mimatched '(' and ')'");
+    DeleteObject(tree_string);
+  } else {
+    *tree_string << CurrentLine.Cut(start_index, end_index);
+    tree_string->TrimSpace();
+    CurrentLine.Trim(end_index + 1, kStringEnd);
+    hy_env::EnvVariableSetNamespace(hy_env::data_file_tree,
+                                    new HY_CONSTANT_TRUE, fState->theNamespace,
+                                    false);
+    hy_env::EnvVariableSetNamespace(hy_env::data_file_tree_string,
+                                    new _FString(tree_string), nil, false);
+  }
 }
 
 //_________________________________________________________
-bool SkipLine (_StringBuffer& theLine, FileState* fS) {
-    
-    if ( theLine.char_at(0) =='/' && theLine.char_at(1)=='/' ) {
-        return true;
+
+long ProcessLine(_String &s, FileState *fs, _DataSet &ds) {
+  long sitesAttached = 0L;
+
+  try {
+    s.Each([&](char letter, unsigned long i) -> void {
+      letter = _uppercase_char(letter);
+      if (fs->translationTable->IsCharLegal(letter)) { // go on
+        if (fs->curSpecies == 0) {                     // add new column
+          ds.AddSite(letter);
+          sitesAttached++;
+        } else { // append to exisiting column
+                 // if (c == fs->skip) continue;
+                 //  check to see if this species needs to be padded
+
+          if (letter == fs->repeat) {
+            if (fs->curSite + sitesAttached >=
+                ds.lLength) { // a dot not matched by a previously read
+                              // character; ignore
+              throw sitesAttached;
+            }
+
+            letter =
+                ((_Site *)(ds._List::operator()(fs->curSite + sitesAttached)))
+                    ->get_char(0);
+            if (letter == '\0') {
+              letter = ((_Site *)(ds._List::operator()(
+                            ((_Site *)(ds._List::operator()(fs->curSite +
+                                                            sitesAttached)))
+                                ->GetRefNo())))
+                           ->get_char(0);
+            }
+          }
+
+          if (fs->curSite + sitesAttached + 1 > fs->totalSitesRead) {
+            // pad previous species to full length
+            _Site *newS = new _Site(fs->skip);
+            newS->AppendNCopies(fs->skip, fs->curSpecies - 1L);
+            (*newS) << letter;
+
+            ds.theFrequencies << 1;
+            newS->SetRefNo(-1);
+
+            ds < newS;
+            fs->totalSitesRead++;
+          } else {
+            ds.Write2Site(fs->curSite + sitesAttached, letter, fs->skip);
+          }
+
+          sitesAttached++;
+        }
+      }
+    });
+  } catch (long e) {
+    return e;
+  }
+
+  // make sure that this species has enough data in it, and if not - pad it with
+  // '?'
+
+  if (fs->curSite + sitesAttached < fs->totalSitesRead && fs->interleaved) {
+    // pad this species to full length
+    for (long j = fs->curSite + sitesAttached; j < fs->totalSitesRead; j++) {
+      ds.Write2Site(j, fs->skip);
     }
-    
-    char c = theLine.FirstNonSpace();
-    
-    if (c&& (!( c=='$' && !fS->acceptingCommands)) ) {
-        return false;
+  }
+  if (!fs->curSpecies) {
+    fs->totalSitesRead += sitesAttached;
+  }
+  return sitesAttached;
+}
+
+//_________________________________________________________
+void PadLine(FileState &fState,
+             _DataSet &result) { // make sure that there is enough data in this
+                                 // line and if not - "pad" it with '?''s
+  if (fState.curSite < fState.totalSitesRead) { // pad line if needed
+    // printf ("\nPADLINE %d %d\n", fState.curSpecies,
+    // fState.totalSitesRead-fState.curSite);
+    for (long j = fState.curSite; j < fState.totalSitesRead; j++) {
+      result.Write2Site(j, fState.skip);
     }
-    
+  }
+}
+
+//_________________________________________________________
+void ISelector(FileState &fState, _StringBuffer &CurrentLine,
+               _DataSet &result) {
+  if (fState.interleaved) { // interleaved file
+    if (fState.curSpecies &&
+        (!((fState.curSpecies) %
+           fState.totalSpeciesExpected))) { // read a chunk of all species
+      if (fState.totalSitesRead && !result.InternalStorageMode()) {
+        for (long i = fState.curSite; i < fState.totalSitesRead; i++) {
+          result.Compact(i);
+        }
+
+        result.ResetIHelper();
+      }
+      fState.curSite = fState.totalSitesRead;
+      fState.curSpecies = 0;
+      ProcessLine(CurrentLine, &fState, result);
+      fState.curSpecies = 1;
+      if (!fState.curSite) {
+        fState.totalSpeciesRead++;
+      }
+    } else {
+      ProcessLine(CurrentLine, &fState, result);
+      if (!fState.curSite) {
+        fState.totalSpeciesRead++;
+      }
+      fState.curSpecies++;
+    }
+  } else {
+    if (fState.curSpecies + 1 < fState.totalSpeciesExpected) {
+      fState.curSpecies++;
+    }
+    if (fState.curSpecies == fState.totalSpeciesRead) {
+      PadLine(fState, result);
+      fState.curSite = 0;
+    }
+    if (fState.totalSpeciesRead < fState.totalSpeciesExpected) {
+      fState.totalSpeciesRead++;
+    }
+
+    fState.curSite += ProcessLine(CurrentLine, &fState, result);
+  }
+}
+
+//_________________________________________________________
+bool SkipLine(_StringBuffer &theLine, FileState *fS) {
+
+  if (theLine.char_at(0) == '/' && theLine.char_at(1) == '/') {
     return true;
+  }
+
+  char c = theLine.FirstNonSpace();
+
+  if (c && (!(c == '$' && !fS->acceptingCommands))) {
+    return false;
+  }
+
+  return true;
 }
 
-
 //_________________________________________________________
-void ReadNextLine (hyFile * fp, _StringBuffer *s, FileState* fs, bool, bool upCase) {
-    
-    
-  
-    fs->lineBuffer.Reset();
-    fs->currentFileLine ++;
-    
-    char lastc;
-    
-    if (fp) {
+void ReadNextLine(hyFile *fp, _StringBuffer *s, FileState *fs, bool,
+                  bool upCase) {
+
+  fs->lineBuffer.Reset();
+  fs->currentFileLine++;
+
+  char lastc;
+
+  if (fp) {
+    lastc = fp->getc();
+  } else {
+    lastc = fs->pInSrc < fs->theSource->length()
+                ? fs->theSource->char_at(fs->pInSrc++)
+                : 0;
+  }
+
+  if (fs->fileType != 3) { // not NEXUS - do not skip [..]
+    if (fp)
+      while (!fp->feof() && lastc != '\r' && lastc != '\n') {
+        if (lastc) {
+          fs->lineBuffer << lastc;
+        }
+
         lastc = fp->getc();
-    } else {
-        lastc = fs->pInSrc<fs->theSource->length()?fs->theSource->char_at(fs->pInSrc++):0;
+      }
+    else
+      while (lastc && lastc != '\r' && lastc != '\n') {
+        fs->lineBuffer << lastc;
+        lastc = fs->theSource->char_at(fs->pInSrc++);
+      }
+
+  } else {
+    if (upCase) {
+      lastc = _uppercase_char(lastc);
     }
-    
-    
-    if (fs->fileType != 3) { // not NEXUS - do not skip [..]
-        if (fp)
-            while ( !fp->feof() && lastc!='\r' && lastc!='\n' ) {
-                if (lastc) {
-                    fs->lineBuffer << lastc;
-                }
-                
-                lastc = fp->getc();
-            }
-        else
-            while (lastc && lastc!='\r' && lastc!='\n' ) {
-                fs->lineBuffer << lastc;
-                lastc = fs->theSource->char_at(fs->pInSrc++);
-            }
-        
-    } else {
+
+    while (((fp && !fp->feof()) ||
+            (fs->theSource && (fs->pInSrc <= fs->theSource->length()))) &&
+           lastc != '\r' && lastc != '\n') {
+      if (lastc == '[') {
+        if (fs->isSkippingInNEXUS) {
+          ReportWarning("Nested comments in NEXUS really shouldn't be used.");
+        } else {
+          fs->isSkippingInNEXUS = true;
+        }
+      }
+      if (fs->isSkippingInNEXUS) {
+        if (lastc == ']') {
+          fs->isSkippingInNEXUS = false;
+          fs->lineBuffer << ' ';
+        }
+      } else {
+        fs->lineBuffer << lastc;
+      }
+
+      if (fp) {
+        lastc = fp->getc();
         if (upCase) {
-            lastc = _uppercase_char(lastc);
+          lastc = _uppercase_char(lastc);
         }
-        
-        while (((fp&&!fp->feof()) ||
-                (fs->theSource&&(fs->pInSrc<=fs->theSource->length ()))) && lastc!='\r' && lastc!='\n') {
-            if (lastc=='[') {
-                if (fs->isSkippingInNEXUS) {
-                    ReportWarning ("Nested comments in NEXUS really shouldn't be used.");
-                } else {
-                    fs->isSkippingInNEXUS = true;
-                }
-            }
-            if (fs->isSkippingInNEXUS) {
-                if (lastc==']') {
-                    fs->isSkippingInNEXUS = false;
-                    fs->lineBuffer << ' ';
-                }
-            } else {
-                fs->lineBuffer << lastc;
-            }
-            
-            if (fp) {
-                lastc = fp->getc();
-                if (upCase) {
-                    lastc = _uppercase_char(lastc);
-                }
-            } else {
-                if (upCase) {
-                    lastc = _uppercase_char(fs->theSource->char_at(fs->pInSrc++));
-                } else {
-                    lastc = fs->theSource->char_at(fs->pInSrc++);
-                }
-            }
-            
+      } else {
+        if (upCase) {
+          lastc = _uppercase_char(fs->theSource->char_at(fs->pInSrc++));
+        } else {
+          lastc = fs->theSource->char_at(fs->pInSrc++);
         }
-        
-        if ( lastc=='\r' || lastc=='\n' ) {
-            fs->lineBuffer << ' ';
-        }
+      }
     }
-    
-    
-    if ( (fp && fp->feof ()) || (fs->theSource && fs->pInSrc >= fs->theSource->length()) ) {
-        if (fs->lineBuffer.empty ()) {
-            s->Clear();
-            return;
-        }
+
+    if (lastc == '\r' || lastc == '\n') {
+      fs->lineBuffer << ' ';
     }
-    //tempBuffer.TrimSpace();
-    *s = fs->lineBuffer;
-    
-    if (SkipLine (*s, fs)) {
-        ReadNextLine(fp,s,fs,false,upCase);
+  }
+
+  if ((fp && fp->feof()) ||
+      (fs->theSource && fs->pInSrc >= fs->theSource->length())) {
+    if (fs->lineBuffer.empty()) {
+      s->Clear();
+      return;
     }
-        
-    if (s->nonempty() && s->char_at (s->length()-1) == '\n') {
-        s->Trim (0,(long)s->length()-2L);
-    }
+  }
+  // tempBuffer.TrimSpace();
+  *s = fs->lineBuffer;
+
+  if (SkipLine(*s, fs)) {
+    ReadNextLine(fp, s, fs, false, upCase);
+  }
+
+  if (s->nonempty() && s->char_at(s->length() - 1) == '\n') {
+    s->Trim(0, (long)s->length() - 2L);
+  }
 }
 //_________________________________________________________
-void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds) {
-    long  fNS      = CurrentLine.FirstNonSpaceIndex(),
-    space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
-    
-    if (space2 < 0 && CurrentLine.length() > 10) {
-        _String     sequence_name (CurrentLine,fNS, CurrentLine.length());
-        ds.AddName(sequence_name);
-        CurrentLine.Trim(CurrentLine.length(),-1);
+void TrimPhylipLine(_String &CurrentLine, _DataSet &ds) {
+  long fNS = CurrentLine.FirstNonSpaceIndex(),
+       space2 = CurrentLine.FirstSpaceIndex(fNS + 1);
+
+  if (space2 < 0 && CurrentLine.length() > 10) {
+    _String sequence_name(CurrentLine, fNS, CurrentLine.length());
+    ds.AddName(sequence_name);
+    CurrentLine.Trim(CurrentLine.length(), -1);
+  } else {
+    // hack for PAML support
+    if (space2 > fNS && isspace(CurrentLine.char_at(space2 + 1))) {
+      _String sequence_name(CurrentLine, fNS, space2);
+      CurrentLine.Trim(space2 + 2, -1); // chop out the name
+      ds.AddName(sequence_name);
     } else {
-        // hack for PAML support
-        if (space2 > fNS && isspace(CurrentLine.char_at (space2+1))) {
-            _String     sequence_name (CurrentLine,fNS, space2);
-            CurrentLine.Trim(space2+2,-1); // chop out the name
-            ds.AddName(sequence_name);
-        } else {
-            _String     sequence_name (CurrentLine,fNS, fNS+9);
-            CurrentLine.Trim(fNS+10,-1); // chop out the name
-            ds.AddName(sequence_name);
-        }
+      _String sequence_name(CurrentLine, fNS, fNS + 9);
+      CurrentLine.Trim(fNS + 10, -1); // chop out the name
+      ds.AddName(sequence_name);
     }
+  }
 }
-
 
 //_________________________________________________________
-_DataSet* ReadDataSetFile (hyFile *f, char execBF, _String* theS, _String* bfName, _String* namespaceID, _TranslationTable* dT, _ExecutionList* ex) {
-    
-    static const _String kNEXUS ("#NEXUS"),
-                         kDefSeqNamePrefix ("Species");
-    
-    bool     doAlphaConsistencyCheck = true;
-    _DataSet* result = new _DataSet;
-    
-    try {
-    
-        //if (f) flockfile (f);
-        if (f) f->lock();
-        
-        hy_env::EnvVariableSet(hy_env::data_file_tree_string, new _Matrix, false);
-        
-        _String savedLine;
-        
-        /*_String         CurrentLine = hy_env::data_file_tree_string & "={{}};",
-                        savedLine;
-        
-        _ExecutionList reset (CurrentLine);
-        reset.Execute();*/
-        
-    #ifdef __HYPHYMPI__
-        if (hy_mpi_node_rank == 0L)
-    #endif
-        terminate_execution = false;
-        
-        hy_env::EnvVariableSet(hy_env::data_file_tree, new HY_CONSTANT_FALSE, false);
-        
-        // initialize the instance of a file state variable
-        FileState   fState;
-        fState.translationTable =  dT;
-        fState.curSpecies =
-        fState.totalSpeciesRead =
-        fState.totalSitesRead =
-        fState.totalSpeciesExpected =
-        fState.totalSitesExpected =
-        fState.curSite =
-        fState.currentFileLine =
-        fState.maxStringLength   = 0;
-        fState.acceptingCommands = true;
-        fState.allSpeciesDefined = false;
-        fState.interleaved       = false;
-        fState.isSkippingInNEXUS = false;
-        fState.autoDetect        = true;
-        fState.fileType          = -1;
-        fState.baseLength        = 4;
-        fState.repeat            = '.',
-        fState.skip            = 0;
-        fState.theSource         = theS;
-        fState.pInSrc            = 0;
-        fState.theNamespace      = namespaceID;
-        
-        if (! f && !theS) {
-            throw _String ("ReadDataSetFile received null file AND string references. At least one must be specified");
-        }
-        // done initializing
-        
-        if       (f) {
-            f->rewind  ();
-        }
-        
-        _StringBuffer     CurrentLine;
-        
-        //if (f==NULL) return (_DataSet*)result.makeDynamic();
-        // nothing to do
-        
-        //CurrentLine = kEmptyString;
-        
-        ReadNextLine (f,&CurrentLine,&fState);
-        if (CurrentLine.empty()) {
-            throw _String ("Empty File Encountered By ReadDataSet.");
-        } else {
-            if (CurrentLine.BeginsWith (kNEXUS,false)) {
-                ReadNexusFile (fState,f,(*result));
-                doAlphaConsistencyCheck = false;
-            } else {
-                long i,j,k, filePosition = -1, saveSpecExpected = 0x7FFFFFFF;
-                char c;
-                while (CurrentLine.nonempty()) { // stuff to do
-                                              // check if the line has a command in it
-                    
-                    c = CurrentLine.FirstNonSpace();
-                    while (1) {
-                        if (fState.acceptingCommands) {
-                            if (c == '$') { // command line
-                                processCommand(&CurrentLine, &fState);
-                                break;
-                            }
-                        }
-                        
-                        if (!fState.skip) {
-                            fState.skip = fState.translationTable->GetSkipChar();
-                        }
-                        fState.acceptingCommands = FALSE;
-                        
-                        if (fState.fileType==-1) { // undecided file type - assume it is PHYLIP sequential
-                            if ((c == '#')||(c=='>')) { // hash-mark format
-                                fState.fileType = 0;
-                            } else { // assume this is a sequential PHYLIP file
-                                fState.fileType = 1;
-                                fState.interleaved = false;
-                            }
-                            
-                        }
-                        // decide what to do next
-                        // if format is PHYLIP and we do not know the expected dimensions,
-                        //   we must read those in first
-                        if (fState.fileType==1) { // PHYLIP
-                            if ((filePosition<0)&&(fState.autoDetect)) {
-                                filePosition = (f?
-                                                f->tell ()
-    #ifdef __WINDOZE__
-                                                -1
-    #endif
-                                                :fState.pInSrc);
-                                savedLine = CurrentLine;
-                            }
-                            
-                            if (fState.totalSitesExpected==0 || fState.totalSpeciesExpected==0) { // must read dimensions first
-                                i = CurrentLine.FirstNonSpaceIndex();
-                                j = CurrentLine.FirstSpaceIndex(i);
-                                if (j != kNotFound) {
-                                    k = CurrentLine.FirstNonSpaceIndex(j);
-                                    if (k != kNotFound) { // could have dimensions
-                                        saveSpecExpected = fState.totalSpeciesExpected = CurrentLine.Cut(i,j-1L).to_long();
-                                        fState.totalSitesExpected=CurrentLine.Cut(k, kStringEnd).to_long();
-                                    }
-                                    if (CurrentLine.Find ('I', k, kStringDirectionBackward)>=0) { // interleaved
-                                        fState.interleaved = true;
-                                    }
-                                }
-                            } else
-                                // now for the data crunching part
-                                // detect a line, diagnose it and dispatch accordingly
-                            {
-                                if (fState.interleaved) {
-                                    if (fState.totalSpeciesRead<fState.totalSpeciesExpected) {
-                                        TrimPhylipLine (CurrentLine, (*result));
-                                    }
-                                    if (fState.curSite && fState.curSpecies >= saveSpecExpected &&
-                                        fState.totalSitesRead >= fState.totalSitesExpected) {
-                                        // reached the end of the data - see maybe there is a tree
-                                        ReadNextLine (f,&CurrentLine,&fState);
-                                        if (CurrentLine.nonempty()) {
-                                            if (CurrentLine.FirstNonSpace()=='(') { // could be a tree string
-                                                ProcessTree (&fState,f, CurrentLine);
-                                            }
-                                        }
-                                        break;
-                                    }
-                                    
-                                } else {
-                                    if (fState.totalSitesRead > fState.totalSitesExpected)
-                                        // oops - autodetect incorrectly assumed that the file was sequential
-                                    {
-                                        fState.curSpecies =
-                                        fState.totalSpeciesRead =
-                                        fState.totalSitesRead =
-                                        fState.curSite =
-                                        fState.totalSpeciesExpected =
-                                        fState.totalSitesExpected =
-                                        fState.maxStringLength = 0;
-                                        fState.allSpeciesDefined = false;
-                                        fState.interleaved = true;
-                                        fState.autoDetect = true;
-                                        
-                                        if(f) {
-                                            f->seek (filePosition, SEEK_SET);
-                                        } else {
-                                            fState.pInSrc = filePosition;
-                                        }
-                                        
-                                        CurrentLine = savedLine;
-                                        result->ForEach ([] (BaseRef site, unsigned long) -> void {
-                                            ((_Site*)site)->TrimSpace();
-                                        });
-                                        
-                                        result->theNames.Clear();
-                                        result->theMap.Clear();
-                                        result->Clear();
-                                        result->theFrequencies.Clear();
-                                        if (result->dsh) {
-                                            result->dsh->incompletePatterns->Clear(false);
-                                            delete (result->dsh);
-                                            result->dsh = nil;
-                                        }
-                                        continue;
-                                    }
-                                    if (fState.totalSpeciesRead==0) {
-                                        fState.totalSpeciesExpected = 1;
-                                        if (!fState.curSite) {
-                                            TrimPhylipLine (CurrentLine, (*result));
-                                        }
-                                    }
-                                    
-                                    else if (fState.curSite>=fState.totalSitesExpected) {
-                                        fState.totalSpeciesExpected++;
-                                        if (fState.totalSpeciesExpected>saveSpecExpected) {
-                                            // reached the end of the data - see maybe there is a tree
-                                            ReadNextLine (f,&CurrentLine,&fState);
-                                            if (CurrentLine.nonempty()) {
-                                                if (CurrentLine.FirstNonSpace()=='(') { // could be a tree string
-                                                    ProcessTree (&fState,f, CurrentLine);
-                                                }
-                                            }
-                                            break;
-                                        }
-                                        TrimPhylipLine (CurrentLine, (*result));
-                                    }
-                                }
-                                
-                                ISelector (fState, CurrentLine, (*result));
-                            }
-                            break;
-                        }
-                        // that's all for PHYLIP
-                        
-                        // now handle raw data case
-                        if (fState.fileType == 2) { // raw data
-                            FilterRawString(CurrentLine, &fState, (*result));
-                            if (CurrentLine.nonempty()) {
-                                break;
-                            }
-                            if (ProcessLine (CurrentLine, &fState, (*result))) {
-                                fState.curSpecies++;
-                                fState.totalSpeciesRead++;
-                            }
-                            break;
-                        }
-                        
-                        // lastly, handle the auto-detect standard case
-                        
-                        // check to see if the string defines a name
-                        if (c=='#' || c=='>') { // a name it is
-                            if (fState.allSpeciesDefined) { // can't define the species after data
-                                break;
-                            } else {
-                                if ((!fState.totalSpeciesRead)&&(fState.totalSpeciesExpected>=1)) {
-                                    fState.interleaved = TRUE;
-                                } else {
-                                    fState.interleaved = FALSE;
-                                }
-                                fState.totalSpeciesExpected++;
-                                CurrentLine.Trim(CurrentLine.FirstNonSpaceIndex(1),kStringEnd);
-                                if (CurrentLine.char_at(0) == '#' || CurrentLine.char_at(0) == '>') {
-                                    CurrentLine = kDefSeqNamePrefix &_String(fState.totalSpeciesExpected);
-                                }
-                                result->AddName (CurrentLine);
-                            }
-                            break;
-                        }
-                        // check to see if the string defines a tree
-                        if (c=='(') {
-                            ProcessTree (&fState,f, CurrentLine);
-                            ReadNextLine (f,&CurrentLine,&fState);
-                        }
-                        
-                        // check to see where to stick the incoming line
-                        
-                        if (fState.totalSpeciesExpected == 0) {
-                            // raw data fed before names defined - skip
-                            break;
-                        }
-                        if( fState.totalSpeciesExpected>1 && fState.totalSpeciesRead == 0) {
-                            fState.allSpeciesDefined = TRUE;
-                        }
-                        
-                        // repeat the structure of PHYLIP reader
-                        
-                        ISelector (fState, CurrentLine, (*result));
-                        
-                        break;
-                    }
-                    
-                    ReadNextLine (f,&CurrentLine,&fState);
-                    
-                }
-            }
-        }
-        
-        
-        
-        if (fState.totalSitesRead && fState.interleaved && !result->InternalStorageMode()) {
-            for (long i = fState.curSite; i<fState.totalSitesRead; i++) {
-                result->Compact(i);
-            }
-            result->ResetIHelper();
-        }
-        
-        if ((!fState.interleaved)&&(fState.fileType!=2)) {
-            PadLine (fState, (*result));
-        }
-        
-        
-        
-        // make sure interleaved duplications are handled correctly
-        
-        result->Finalize();
-        result->noOfSpecies       = fState.totalSpeciesRead;
-        result->theTT             = fState.translationTable;
-        
-        // check to see if result may be an amino-acid data
-        if (doAlphaConsistencyCheck && result->theTT == &hy_default_translation_table) {
-            if (result->GetNoTypes() == 0)
-                // emptyString data set
-                // try binary data
-            {
-                _TranslationTable *trialTable = new _TranslationTable (hy_default_translation_table);
-                trialTable->baseLength = 2;
-                if (f)  f->unlock();
-                _DataSet * res2 = ReadDataSetFile (f, execBF, theS, bfName, namespaceID, trialTable);
-                if (res2->GetNoTypes()) {
-                    DeleteObject (result);
-                    return res2;
-                }
-                DeleteObject (res2);
-            } else
-                // check it out
-                if (result->CheckAlphabetConsistency()<0.5)
-                    // less than 50% of the data in the alphabet is not in the basic alphabet
-                {
-                    _TranslationTable trialTable (hy_default_translation_table);
-                    trialTable.baseLength = 20;
-                    (*result).theTT = &trialTable;
-                    if ((*result).CheckAlphabetConsistency()<0.5) {
-                        CurrentLine = "More than 50% of characters in the data are not in the alphabet.";
-                        (*result).theTT =  &hy_default_translation_table;
-                        ReportWarning (CurrentLine);
-                    } else {
-                        (*result).theTT = (_TranslationTable*)trialTable.makeDynamic();
-                    }
-                    
-                }
-            
-        }
-        if (nexusBFBody.nonempty()) {
-            if (execBF == 1) {
-                lastNexusDataMatrix = result;
-                
-                long            bfl = GetBFFunctionCount ();
-                
-                _ExecutionList * nexusBF = ex ? ex :  new _ExecutionList;
-                if (namespaceID) {
-                    nexusBF->SetNameSpace(*namespaceID);
-                }
-                
-                
-                bool do_profile = hy_env::EnvVariableTrue("_PROFILE_NEXUS_LOADS_");
-                
-                
-                nexusBF->BuildList(nexusBFBody,nil, false, true);
-                //_ExecutionList nexusBF (nexusBFBody,namespaceID);
-                
-                
-                if (bfName) {
-                    nexusBF->sourceFile = *bfName;
-                }
+_DataSet *ReadDataSetFile(hyFile *f, char execBF, _String *theS,
+                          _String *bfName, _String *namespaceID,
+                          _TranslationTable *dT, _ExecutionList *ex) {
 
-                if (do_profile) {
-                    nexusBF->StartProfile();
-                }
-                nexusBF->ExecuteAndClean(bfl);
-                if (do_profile) {
-                    CheckReceptacleAndStore("_NEXUS_PROFILE_DATA_", kEmptyString, false , nexusBF->CollectProfile(), false);
-                }
+  static const _String kNEXUS("#NEXUS"), kDefSeqNamePrefix("Species");
 
-                if (nexusBF != ex) {
-                    DeleteObject (nexusBF);
-                } else {
-                    ex->ClearExecutionList();
-                    ex->Clear();
-                }
-                nexusBFBody         = kEmptyString;
-            } else if (execBF == 0) {
-                nexusBFBody         = kEmptyString;
-            }
-        }
-    } catch (const _String& err) {
-        DeleteObject (result);
-        if (f) f->unlock();
-        HandleApplicationError(err);
-        result = nil;
+  bool doAlphaConsistencyCheck = true;
+  _DataSet *result = new _DataSet;
+
+  try {
+
+    // if (f) flockfile (f);
+    if (f)
+      f->lock();
+
+    hy_env::EnvVariableSet(hy_env::data_file_tree_string, new _Matrix, false);
+
+    _String savedLine;
+
+    /*_String         CurrentLine = hy_env::data_file_tree_string & "={{}};",
+                    savedLine;
+
+    _ExecutionList reset (CurrentLine);
+    reset.Execute();*/
+
+#ifdef __HYPHYMPI__
+    if (hy_mpi_node_rank == 0L)
+#endif
+      terminate_execution = false;
+
+    hy_env::EnvVariableSet(hy_env::data_file_tree, new HY_CONSTANT_FALSE,
+                           false);
+
+    // initialize the instance of a file state variable
+    FileState fState;
+    fState.translationTable = dT;
+    fState.curSpecies = fState.totalSpeciesRead = fState.totalSitesRead =
+        fState.totalSpeciesExpected = fState.totalSitesExpected =
+            fState.curSite = fState.currentFileLine = fState.maxStringLength =
+                0;
+    fState.acceptingCommands = true;
+    fState.allSpeciesDefined = false;
+    fState.interleaved = false;
+    fState.isSkippingInNEXUS = false;
+    fState.autoDetect = true;
+    fState.fileType = -1;
+    fState.baseLength = 4;
+    fState.repeat = '.', fState.skip = 0;
+    fState.theSource = theS;
+    fState.pInSrc = 0;
+    fState.theNamespace = namespaceID;
+
+    if (!f && !theS) {
+      throw _String("ReadDataSetFile received null file AND string references. "
+                    "At least one must be specified");
     }
-    if (f) f->unlock();
-    return result;
+    // done initializing
+
+    if (f) {
+      f->rewind();
+    }
+
+    _StringBuffer CurrentLine;
+
+    // if (f==NULL) return (_DataSet*)result.makeDynamic();
+    //  nothing to do
+
+    // CurrentLine = kEmptyString;
+
+    ReadNextLine(f, &CurrentLine, &fState);
+    if (CurrentLine.empty()) {
+      throw _String("Empty File Encountered By ReadDataSet.");
+    } else {
+      if (CurrentLine.BeginsWith(kNEXUS, false)) {
+        ReadNexusFile(fState, f, (*result));
+        doAlphaConsistencyCheck = false;
+      } else {
+        long i, j, k, filePosition = -1, saveSpecExpected = 0x7FFFFFFF;
+        char c;
+        while (CurrentLine.nonempty()) { // stuff to do
+          // check if the line has a command in it
+
+          c = CurrentLine.FirstNonSpace();
+          while (1) {
+            if (fState.acceptingCommands) {
+              if (c == '$') { // command line
+                processCommand(&CurrentLine, &fState);
+                break;
+              }
+            }
+
+            if (!fState.skip) {
+              fState.skip = fState.translationTable->GetSkipChar();
+            }
+            fState.acceptingCommands = FALSE;
+
+            if (fState.fileType ==
+                -1) { // undecided file type - assume it is PHYLIP sequential
+              if ((c == '#') || (c == '>')) { // hash-mark format
+                fState.fileType = 0;
+              } else { // assume this is a sequential PHYLIP file
+                fState.fileType = 1;
+                fState.interleaved = false;
+              }
+            }
+            // decide what to do next
+            // if format is PHYLIP and we do not know the expected dimensions,
+            //   we must read those in first
+            if (fState.fileType == 1) { // PHYLIP
+              if ((filePosition < 0) && (fState.autoDetect)) {
+                filePosition = (f ? f->tell()
+#ifdef __WINDOZE__
+                                        - 1
+#endif
+                                  : fState.pInSrc);
+                savedLine = CurrentLine;
+              }
+
+              if (fState.totalSitesExpected == 0 ||
+                  fState.totalSpeciesExpected ==
+                      0) { // must read dimensions first
+                i = CurrentLine.FirstNonSpaceIndex();
+                j = CurrentLine.FirstSpaceIndex(i);
+                if (j != kNotFound) {
+                  k = CurrentLine.FirstNonSpaceIndex(j);
+                  if (k != kNotFound) { // could have dimensions
+                    saveSpecExpected = fState.totalSpeciesExpected =
+                        CurrentLine.Cut(i, j - 1L).to_long();
+                    fState.totalSitesExpected =
+                        CurrentLine.Cut(k, kStringEnd).to_long();
+                  }
+                  if (CurrentLine.Find('I', k, kStringDirectionBackward) >=
+                      0) { // interleaved
+                    fState.interleaved = true;
+                  }
+                }
+              } else
+              // now for the data crunching part
+              // detect a line, diagnose it and dispatch accordingly
+              {
+                if (fState.interleaved) {
+                  if (fState.totalSpeciesRead < fState.totalSpeciesExpected) {
+                    TrimPhylipLine(CurrentLine, (*result));
+                  }
+                  if (fState.curSite && fState.curSpecies >= saveSpecExpected &&
+                      fState.totalSitesRead >= fState.totalSitesExpected) {
+                    // reached the end of the data - see maybe there is a tree
+                    ReadNextLine(f, &CurrentLine, &fState);
+                    if (CurrentLine.nonempty()) {
+                      if (CurrentLine.FirstNonSpace() ==
+                          '(') { // could be a tree string
+                        ProcessTree(&fState, f, CurrentLine);
+                      }
+                    }
+                    break;
+                  }
+
+                } else {
+                  if (fState.totalSitesRead > fState.totalSitesExpected)
+                  // oops - autodetect incorrectly assumed that the file was
+                  // sequential
+                  {
+                    fState.curSpecies = fState.totalSpeciesRead =
+                        fState.totalSitesRead = fState.curSite =
+                            fState.totalSpeciesExpected =
+                                fState.totalSitesExpected =
+                                    fState.maxStringLength = 0;
+                    fState.allSpeciesDefined = false;
+                    fState.interleaved = true;
+                    fState.autoDetect = true;
+
+                    if (f) {
+                      f->seek(filePosition, SEEK_SET);
+                    } else {
+                      fState.pInSrc = filePosition;
+                    }
+
+                    CurrentLine = savedLine;
+                    result->ForEach([](BaseRef site, unsigned long) -> void {
+                      ((_Site *)site)->TrimSpace();
+                    });
+
+                    result->theNames.Clear();
+                    result->theMap.Clear();
+                    result->Clear();
+                    result->theFrequencies.Clear();
+                    if (result->dsh) {
+                      result->dsh->incompletePatterns->Clear(false);
+                      delete (result->dsh);
+                      result->dsh = nil;
+                    }
+                    continue;
+                  }
+                  if (fState.totalSpeciesRead == 0) {
+                    fState.totalSpeciesExpected = 1;
+                    if (!fState.curSite) {
+                      TrimPhylipLine(CurrentLine, (*result));
+                    }
+                  }
+
+                  else if (fState.curSite >= fState.totalSitesExpected) {
+                    fState.totalSpeciesExpected++;
+                    if (fState.totalSpeciesExpected > saveSpecExpected) {
+                      // reached the end of the data - see maybe there is a tree
+                      ReadNextLine(f, &CurrentLine, &fState);
+                      if (CurrentLine.nonempty()) {
+                        if (CurrentLine.FirstNonSpace() ==
+                            '(') { // could be a tree string
+                          ProcessTree(&fState, f, CurrentLine);
+                        }
+                      }
+                      break;
+                    }
+                    TrimPhylipLine(CurrentLine, (*result));
+                  }
+                }
+
+                ISelector(fState, CurrentLine, (*result));
+              }
+              break;
+            }
+            // that's all for PHYLIP
+
+            // now handle raw data case
+            if (fState.fileType == 2) { // raw data
+              FilterRawString(CurrentLine, &fState, (*result));
+              if (CurrentLine.nonempty()) {
+                break;
+              }
+              if (ProcessLine(CurrentLine, &fState, (*result))) {
+                fState.curSpecies++;
+                fState.totalSpeciesRead++;
+              }
+              break;
+            }
+
+            // lastly, handle the auto-detect standard case
+
+            // check to see if the string defines a name
+            if (c == '#' || c == '>') {       // a name it is
+              if (fState.allSpeciesDefined) { // can't define the species after
+                                              // data
+                break;
+              } else {
+                if ((!fState.totalSpeciesRead) &&
+                    (fState.totalSpeciesExpected >= 1)) {
+                  fState.interleaved = TRUE;
+                } else {
+                  fState.interleaved = FALSE;
+                }
+                fState.totalSpeciesExpected++;
+                CurrentLine.Trim(CurrentLine.FirstNonSpaceIndex(1), kStringEnd);
+                if (CurrentLine.char_at(0) == '#' ||
+                    CurrentLine.char_at(0) == '>') {
+                  CurrentLine =
+                      kDefSeqNamePrefix & _String(fState.totalSpeciesExpected);
+                }
+                result->AddName(CurrentLine);
+              }
+              break;
+            }
+            // check to see if the string defines a tree
+            if (c == '(') {
+              ProcessTree(&fState, f, CurrentLine);
+              ReadNextLine(f, &CurrentLine, &fState);
+            }
+
+            // check to see where to stick the incoming line
+
+            if (fState.totalSpeciesExpected == 0) {
+              // raw data fed before names defined - skip
+              break;
+            }
+            if (fState.totalSpeciesExpected > 1 &&
+                fState.totalSpeciesRead == 0) {
+              fState.allSpeciesDefined = TRUE;
+            }
+
+            // repeat the structure of PHYLIP reader
+
+            ISelector(fState, CurrentLine, (*result));
+
+            break;
+          }
+
+          ReadNextLine(f, &CurrentLine, &fState);
+        }
+      }
+    }
+
+    if (fState.totalSitesRead && fState.interleaved &&
+        !result->InternalStorageMode()) {
+      for (long i = fState.curSite; i < fState.totalSitesRead; i++) {
+        result->Compact(i);
+      }
+      result->ResetIHelper();
+    }
+
+    if ((!fState.interleaved) && (fState.fileType != 2)) {
+      PadLine(fState, (*result));
+    }
+
+    // make sure interleaved duplications are handled correctly
+
+    result->Finalize();
+    result->noOfSpecies = fState.totalSpeciesRead;
+    result->theTT = fState.translationTable;
+
+    // check to see if result may be an amino-acid data
+    if (doAlphaConsistencyCheck &&
+        result->theTT == &hy_default_translation_table) {
+      if (result->GetNoTypes() == 0)
+      // emptyString data set
+      // try binary data
+      {
+        _TranslationTable *trialTable =
+            new _TranslationTable(hy_default_translation_table);
+        trialTable->baseLength = 2;
+        if (f)
+          f->unlock();
+        _DataSet *res2 =
+            ReadDataSetFile(f, execBF, theS, bfName, namespaceID, trialTable);
+        if (res2->GetNoTypes()) {
+          DeleteObject(result);
+          return res2;
+        }
+        DeleteObject(res2);
+      } else
+        // check it out
+        if (result->CheckAlphabetConsistency() < 0.5)
+        // less than 50% of the data in the alphabet is not in the basic
+        // alphabet
+        {
+          _TranslationTable trialTable(hy_default_translation_table);
+          trialTable.baseLength = 20;
+          (*result).theTT = &trialTable;
+          if ((*result).CheckAlphabetConsistency() < 0.5) {
+            CurrentLine = "More than 50% of characters in the data are not in "
+                          "the alphabet.";
+            (*result).theTT = &hy_default_translation_table;
+            ReportWarning(CurrentLine);
+          } else {
+            (*result).theTT = (_TranslationTable *)trialTable.makeDynamic();
+          }
+        }
+    }
+    if (nexusBFBody.nonempty()) {
+      if (execBF == 1) {
+        lastNexusDataMatrix = result;
+
+        long bfl = GetBFFunctionCount();
+
+        _ExecutionList *nexusBF = ex ? ex : new _ExecutionList;
+        if (namespaceID) {
+          nexusBF->SetNameSpace(*namespaceID);
+        }
+
+        bool do_profile = hy_env::EnvVariableTrue("_PROFILE_NEXUS_LOADS_");
+
+        nexusBF->BuildList(nexusBFBody, nil, false, true);
+        //_ExecutionList nexusBF (nexusBFBody,namespaceID);
+
+        if (bfName) {
+          nexusBF->sourceFile = *bfName;
+        }
+
+        if (do_profile) {
+          nexusBF->StartProfile();
+        }
+        nexusBF->ExecuteAndClean(bfl);
+        if (do_profile) {
+          CheckReceptacleAndStore("_NEXUS_PROFILE_DATA_", kEmptyString, false,
+                                  nexusBF->CollectProfile(), false);
+        }
+
+        if (nexusBF != ex) {
+          DeleteObject(nexusBF);
+        } else {
+          ex->ClearExecutionList();
+          ex->Clear();
+        }
+        nexusBFBody = kEmptyString;
+      } else if (execBF == 0) {
+        nexusBFBody = kEmptyString;
+      }
+    }
+  } catch (const _String &err) {
+    DeleteObject(result);
+    if (f)
+      f->unlock();
+    HandleApplicationError(err);
+    result = nil;
+  }
+  if (f)
+    f->unlock();
+  return result;
 }
-
-
