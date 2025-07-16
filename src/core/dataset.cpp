@@ -646,7 +646,7 @@ hyFloat _DataSet::CheckAlphabetConsistency(void) {
 //___________________________________________________
 
 BaseRef _DataSet::toStr(unsigned long) {
-  _StringBuffer *s = new _StringBuffer(NoOfSpecies() * 30), *str;
+  _StringBuffer *s = new _StringBuffer(NoOfSpecies() * 30);
 
   (*s) << _String((long)NoOfSpecies()) << " species:";
 
@@ -1568,7 +1568,6 @@ void    processCommand (_String * s, FileState*fs) {
            // 's' should now contain only the payload of the command
             
             switch (command_index) {
-                    char c;
                     
                 case 4: {// new token
                     checkTTStatus (fs);
@@ -1677,35 +1676,6 @@ void    ProcessTree (FileState *fState, hyFile * f, _StringBuffer& CurrentLine) 
     // TODO SLKP 20180921 this does extra work to read in the tree string multiple times;
     // the solution is to have a proper buffer wrapper, and to
     
-    class _MultilineBuffer : public _StringBuffer {
-        public:
-        
-        _MultilineBuffer (_String const& current_line, FileState *fs, hyFile* f) : _StringBuffer (current_line) {
-            file_state = fs;
-            file = f;
-        }
-        
-        virtual char get_char(long index) {
-            if (index >= 0L && index < s_length) {
-                return s_data[index];
-            } else {
-                _StringBuffer  next_line;
-                ReadNextLine (file,&next_line,file_state, false);
-                if (next_line.nonempty()) {
-                    *this << next_line;
-                    return get_char (index);
-                }
-            }
-            return _String::default_return;
-        }
-        
-        FileState *file_state;
-        hyFile * file;
-
-    };
-    
-    
-    //_MultilineBuffer mlb (CurrentLine, fState, f);
     
     _StringBuffer * tree_string = new _StringBuffer (128L);
     long start_index = 0,
@@ -1963,7 +1933,7 @@ void ReadNextLine (hyFile * fp, _StringBuffer *s, FileState* fs, bool, bool upCa
 }
 //_________________________________________________________
 void    TrimPhylipLine (_String& CurrentLine, _DataSet& ds) {
-    int  fNS      = CurrentLine.FirstNonSpaceIndex(),
+    long  fNS      = CurrentLine.FirstNonSpaceIndex(),
     space2   = CurrentLine.FirstSpaceIndex (fNS + 1);
     
     if (space2 < 0 && CurrentLine.length() > 10) {

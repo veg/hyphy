@@ -483,7 +483,7 @@ protected:  // data members
 
     _List       parameters;        // a list of parameters
     _SimpleList simpleParameters;  // a list of numeric parameters
-    int         code;              // code describing this command
+    long        code;              // code describing this command
   
 
 };

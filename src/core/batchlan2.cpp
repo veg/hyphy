@@ -722,7 +722,7 @@ void      _ElementaryCommand::ExecuteDataFilterCases (_ExecutionList& chain) {
         try {
              _AssociativeList *blb_data = (_AssociativeList*)blb;
              HBLObjectRef  blb_size     = blb_data->GetByKeyException(kBLBSize, NUMBER);
-             HBLObjectRef  blb_sampler  = blb_data->GetByKeyException(kBLBSampler, STRING);
+             //HBLObjectRef  blb_sampler  = blb_data->GetByKeyException(kBLBSampler, STRING);
             
              const _DataSetFilter * source_filter = GetDataFilter (dsID);
              blb_sample_size  = (long) round (blb_size->Compute()->Value()) ;

@@ -793,8 +793,9 @@ void  _AVLList::Delete (BaseRefConst b, bool delMe) {
             //if (p==root)
             //root = r;
         } else {
-            long s;
-            int  j = k++;
+            long s,
+                 j = k++;
+            
             for (;;) {
                 da.list_data[k]   = 0;
                 pa.list_data[k++] = r;

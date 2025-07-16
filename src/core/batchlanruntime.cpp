@@ -748,9 +748,9 @@ bool      _ElementaryCommand::HandleGetInformation (_ExecutionList& current_prog
     current_program.advance();
     try {
 
-        _Matrix*   result     = nil;
         receptacle = _ValidateStorageVariable (current_program);
         const _String source_name = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
+        _Matrix*   result     = nil;
 
         long            object_type = HY_BL_LIKELIHOOD_FUNCTION | HY_BL_DATASET_FILTER | HY_BL_MODEL  ,
                         object_index;
@@ -896,7 +896,6 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
 
     try {
 
-        _Matrix*   result     = nil;
         receptacle = _ValidateStorageVariable (current_program);
         const _String source_name = AppendContainerName (*GetIthParameter(1), current_program.nameSpacePrefix);
         long            object_type = HY_BL_LIKELIHOOD_FUNCTION  | HY_BL_TREE,
@@ -924,7 +923,7 @@ bool      _ElementaryCommand::HandleConstructCategoryMatrix (_ExecutionList& cur
                     }
                 }
 
-                receptacle->SetValue(like_func->ConstructCategoryMatrix(included_partitions, run_mode ,true, receptacle->GetName()), false,true, NULL);
+                receptacle->SetValue(like_func->ConstructCategoryMatrix(included_partitions, (unsigned)run_mode ,true, receptacle->GetName()), false,true, NULL);
             }
             break;
                 
@@ -1013,7 +1012,6 @@ bool      _ElementaryCommand::HandleAlignSequences(_ExecutionList& current_progr
     _List   dynamic_variable_cleanup;
 
     try {
-        _Matrix   * result     = nil;
         receptacle = _ValidateStorageVariable (current_program);
         _Matrix   * input_seqs = (_Matrix   *)_ProcessAnArgumentByType(*GetIthParameter(1), MATRIX, current_program, &dynamic_variable_cleanup);
  
@@ -1318,7 +1316,6 @@ bool      _ElementaryCommand::HandleHarvestFrequencies (_ExecutionList& current_
     current_program.advance();
 
     try {
-        _Matrix   * result     = nil;
 
         receptacle = _ValidateStorageVariable (current_program);
 
@@ -1951,7 +1948,7 @@ bool      _ElementaryCommand::HandleInitializeIterator (_ExecutionList& current_
           } else {
               simpleParameters[1] = iterator_substrate->ObjectClass();
               _TreeTopology * source_tree = (_TreeTopology*)iterator_substrate;
-              long traversal_type = hy_env::EnvVariableTrue(kTreeIteratorPreOrder) ? _HY_TREE_TRAVERSAL_PREORDER : _HY_TREE_TRAVERSAL_POSTORDER;
+              int traversal_type = hy_env::EnvVariableTrue(kTreeIteratorPreOrder) ? _HY_TREE_TRAVERSAL_PREORDER : _HY_TREE_TRAVERSAL_POSTORDER;
               simpleParameters << (long) new node_iterator<long> (&source_tree->GetRoot(), traversal_type);
               simpleParameters << traversal_type;
           }
@@ -2106,7 +2103,7 @@ bool      _ElementaryCommand::HandleAdvanceIterator(_ExecutionList& current_prog
               
               bool do_preorder = simpleParameters[3] == _HY_TREE_TRAVERSAL_PREORDER;
               
-              if (topTraverser && (!do_preorder && !topTraverser->is_root() || topTraverser)) {
+              if (topTraverser && ((!do_preorder && !topTraverser->is_root()) || topTraverser)) {
                   _FString *node_name;
                   if (source_object_class == TREE)
                       node_name = new _FString (map_node_to_calcnode (topTraverser)->ContextFreeName());
@@ -2672,7 +2669,7 @@ bool      _ElementaryCommand::HandleSetParameter (_ExecutionList& current_progra
                 if (set_this_attribute == kModel) {
                   _String model_name = AppendContainerName(*GetIthParameter(2UL),current_program.nameSpacePrefix);
                   long model_type = HY_BL_MODEL, model_index;
-                  _Matrix* model_object            = (_Matrix*)_GetHBLObjectByTypeMutable(model_name, model_type, &model_index);
+                  _GetHBLObjectByTypeMutable(model_name, model_type, &model_index);
                   _TheTree * parent_tree = (_TheTree * )tree_node->ParentTree();
                   if (!parent_tree) {
                     throw (GetIthParameter(0UL)->Enquote() & " is an orphaned tree node (the parent tree has been deleted)");
@@ -4175,7 +4172,6 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                         
                         handle_exclusions (target_variable->GetHDim(), excluded).Each (
                              [&] (long value, unsigned long ) -> void {
-                                 _String const * parameter_name = LocateVar(value)->GetName();
                                  BaseRef key = choices.GetItem(value << 1),
                                          description = choices.GetItem(1L + (value << 1));
                                  key->AddAReference(); description->AddAReference();
@@ -4270,7 +4266,7 @@ bool      _ElementaryCommand::HandleChoiceList (_ExecutionList& current_program)
                 selections << match_found;
             }
             
-            need_to_prompt_user = selections.countitems() != required && !variable_number || variable_number && selections.empty();
+            need_to_prompt_user = (selections.countitems() != required && !variable_number) || (variable_number && selections.empty());
         }
         
         if (need_to_prompt_user) {

@@ -147,8 +147,17 @@ for (k, v; in; labeler.tree_names_dict) {
 
 labeler.tree_names_dict - labeler.include_species;
 
-if (Abs (labeler.tree_names_dict)) {
-    T - Rows(labeler.tree_names_dict);
+while (Abs (labeler.tree_names_dict)) {
+    to_delete = Rows(labeler.tree_names_dict);
+    // repeat until no sequences are deleted in case there are identical tip names;
+    T - to_delete;
+    next_pass = {};
+    for (n;in;TipName(T,-1)) {
+        if (labeler.tree_names_dict[n]) {
+            next_pass[n] = 1;
+        }
+    }
+    labeler.tree_names_dict = next_pass;
 }
 
 

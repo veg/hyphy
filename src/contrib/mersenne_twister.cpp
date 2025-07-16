@@ -82,7 +82,7 @@ void init_genrand(unsigned long s)
 /* key_length is its length */
 void init_by_array(unsigned long init_key[], unsigned long key_length)
 {
-    int i, j, k;
+    unsigned long i, j, k;
     init_genrand(19650218UL);
     i=1;
     j=0;

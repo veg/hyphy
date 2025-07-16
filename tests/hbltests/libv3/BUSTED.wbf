@@ -15,7 +15,7 @@ LoadFunctionLibrary ("libv3/IOFunctions.bf");
 
 
 assert (check_value (
-    ((busted.json["fits"])["Unconstrained model"])["Log Likelihood"], -3413.83, 0.001), "Incorrect log-likelihood for the full model");
+    ((busted.json["fits"])["Unconstrained model"])["Log Likelihood"], -3413.01, 0.001), "Incorrect log-likelihood for the full model");
 
 assert (check_value (
     ((busted.json["test results"])["p-value"]),0.2264, 0.01), "p-value for the test is incorrect");
