@@ -876,8 +876,7 @@ while (!busted.converged) {
                 PARAMETER_GROUPING + Columns (busted.tmp_fixed);
             
                 //PRODUCE_OPTIMIZATION_LOG        = 1;
-                
-                                                            
+                                                               
                 busted.full_model =  estimators.FitLF (busted.filter_names, busted.trees, busted.model_map, busted.grid_search.results, busted.model_object_map, {
                         "retain-lf-object": TRUE,
                         terms.run_options.optimization_settings : 
