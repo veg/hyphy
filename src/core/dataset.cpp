@@ -194,7 +194,7 @@ void _DataSet::AddSite(char c) {
     if (theMap.list_data[0] == 0) {
       if (theMap.list_data[1] == 0) {
         if (theNames.lLength) {
-          streamThrough->puts("(_String *)theNames(0))->get_str()");
+          streamThrough->puts(((_String *)theNames(0))->get_str());
           streamThrough->fputc('\n');
         } else {
           streamThrough->puts(">Sequence 1");
@@ -324,33 +324,7 @@ void _DataSet::Write2Site(long index, char c, char skip_char) {
             index & '/' & (long)lLength);
         return;
       }
-      _Site *s = (_Site *)list_data[index];
-      long rN = s->GetRefNo();
-      if (rN == -1) { // independent site
-        // dsh->incompletePatterns->Delete (s,false);
-        (*s) << c;
-        // dsh->incompletePatterns->Insert (s,index);
-      } else {
-        _Site *ss = (_Site *)list_data[rN];
-        long sL = ss->length() - 1;
-        if (ss->get_char(sL) != c) { // appending distinct char
-          s->Duplicate(ss);
-          s->set_char(sL, c);
-          theFrequencies.list_data[rN]--;
-
-          rN = dsh->incompletePatterns->Find(s);
-          if (rN >= 0) {
-            rN = dsh->incompletePatterns->GetXtra(rN);
-            theFrequencies[rN]++;
-            s->Clear();
-            s->SetRefNo(rN);
-          } else {
-            theFrequencies[index]++;
-            s->SetRefNo(-1);
-            dsh->incompletePatterns->Insert(s, index);
-          }
-        }
-      }
+      (*(_Site *)GetItem(index)) << c;
     }
   }
 }
