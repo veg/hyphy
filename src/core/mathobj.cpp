@@ -85,8 +85,8 @@ bool _MathObject::         Equal      (_MathObject* rhs)     {
         return true;
     }
     return false;
-    // null is equal to null, otherwise false\
-    return false;
+    /* null is equal to null, otherwise false\
+    return false;*/
 }
 _MathObject* _MathObject:: Abs        (_MathObject*)             {
     return _null_handler();

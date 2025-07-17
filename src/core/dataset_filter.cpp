@@ -259,7 +259,7 @@ unsigned long    _DataSetFilter::FindUniqueSequences  (_SimpleList& indices, _Si
                                 
                                 // Gaps can match resolved positions, but not the other way around
                                 // count2 is the number of resolutions in the currently stored sequence
-                                if (count2 > 1L && count2 < vd || count1 < vd) {
+                                if ( (count2 > 1L && count2 < vd) || count1 < vd ) {
                                     check_state = false;
                                     break;
                                 }
@@ -1105,7 +1105,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
             long seq_i = theNodeMap.get (i),
                  seq_j = theNodeMap.get (j);
           
-            int c1, c2;
+            long c1, c2;
             
             c1 = direct_index_character (site_pattern, seq_i),
             c2 = direct_index_character (site_pattern, seq_j);
@@ -1114,7 +1114,7 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                 s1 = conversionCache.list_data[(c1-40)*(undimension+1)+undimension],
                 s2 = conversionCache.list_data[(c2-40)*(undimension+1)+undimension];
             } else {
-                int         c12 = direct_index_character (site_pattern + 1, seq_i),
+                long        c12 = direct_index_character (site_pattern + 1, seq_i),
                             c22 = direct_index_character (site_pattern + 1, seq_j);
                 
                 
@@ -1140,8 +1140,8 @@ _Matrix* _DataSetFilter::ComputePairwiseDifferences (long i, long j, _hy_dataset
                         s2 = tcodes[c2*ccount+c22];
                     }
                 } else {
-                    int         c13 = direct_index_character (site_pattern + 2, seq_i),
-                    c23 = direct_index_character (site_pattern + 2, seq_j);
+                    long         c13 = direct_index_character (site_pattern + 2, seq_i),
+                                 c23 = direct_index_character (site_pattern + 2, seq_j);
                     
                     //printf ("\n%c %c", c13, c23);
                     state1.set_char(2, c13);
@@ -1621,7 +1621,7 @@ long    _DataSetFilter::LookupConversion (char s, hyFloat* parvect) const
         return cCache[4];
         
     } else {
-        int idx = (s-40)*(undimension+1);
+        long idx = (s-40)*(undimension+1);
         for (long i=0; i<undimension; parvect[i++] = conversionCache.list_data[idx++]) ;
         return conversionCache.list_data[idx];
     }
@@ -1828,7 +1828,7 @@ void    _DataSetFilter::internalToStr (hyFile * file ,_StringBuffer * string_buf
     //case 6: // no labels, sequential
     //case 7: { // no labels, interleaved
 
-  const enum    {
+   enum    {
       kFormatMEGASequential             = 0,
       kFormatMEGAInterleaved            = 1,
       kFormatPHYLIPSequential           = 2,
@@ -1842,7 +1842,7 @@ void    _DataSetFilter::internalToStr (hyFile * file ,_StringBuffer * string_buf
       kFormatFASTAInterleaved           = 10,
       kFormatPAML                       = 11,
       kFormatSTOCKHOLM                  = 12
-  } datafile_format = kFormatMEGASequential;
+  };
   
   auto trim_to_10 = [] (const _String& seq_name) -> _String const {
     if (seq_name.length() >= 10) {

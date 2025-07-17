@@ -37,9 +37,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
-#include "global_things.h"
 #include "translation_table.h"
 #include "function_templates.h"
+#include "global_things.h"
 
 #define HYPHY_SITE_DEFAULT_BUFFER_SIZE 256
 
@@ -78,21 +78,20 @@ _TranslationTable::_TranslationTable(unsigned char baseL) {
 }
 
 //_________________________________________________________
-_TranslationTable::_TranslationTable(_TranslationTable const &t) {
-   *this = t;
-}
-                                                 
+_TranslationTable::_TranslationTable(_TranslationTable const &t) { *this = t; }
+
 //_________________________________________________________
-_TranslationTable const & _TranslationTable::operator = (_TranslationTable const &t) {
-   if (this != &t) {
-       tokensAdded = t.tokensAdded;
-       baseLength = t.baseLength;
-       baseSet = t.baseSet;
-       translationsAdded << t.translationsAdded;
-       checkTable = NULL;
-    }
-    return *this;
- }
+_TranslationTable const &
+_TranslationTable::operator=(_TranslationTable const &t) {
+  if (this != &t) {
+    tokensAdded = t.tokensAdded;
+    baseLength = t.baseLength;
+    baseSet = t.baseSet;
+    translationsAdded << t.translationsAdded;
+    checkTable = NULL;
+  }
+  return *this;
+}
 
 //_________________________________________________________
 _TranslationTable::_TranslationTable(_String &alphabet) {
@@ -235,13 +234,12 @@ long _TranslationTable::MultiTokenResolutions(_String const &tokens,
                                               bool gapToOnes) const {
 
   if (tokens.length() == 1UL) {
-    return TokenResolutions(tokens.char_at (0UL), receptacle, gapToOnes);
+    return TokenResolutions(tokens.char_at(0UL), receptacle, gapToOnes);
   } else {
 
     long *large_store, large_store_static[HYPHY_SITE_DEFAULT_BUFFER_SIZE];
 
-    if ((baseLength + 1)* tokens.length()  >=
-        HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
+    if ((baseLength + 1) * tokens.length() >= HYPHY_SITE_DEFAULT_BUFFER_SIZE) {
       large_store = new long[baseLength * tokens.length() + tokens.length()];
     } else {
       large_store = large_store_static;
@@ -300,18 +298,16 @@ long _TranslationTable::MultiTokenResolutions(_String const &tokens,
         }
 
         if (tokens.length() == 3) {
-          long digits[3],
-              *resolution_arrays[3] = {large_store + tokens.length(),
-                                       large_store + tokens.length() +
-                                           baseLength,
-                                       large_store + tokens.length() +
-                                           2 * baseLength},
-              resolutions_index = 0L;
+          long *resolution_arrays[3] = {large_store + tokens.length(),
+                                        large_store + tokens.length() +
+                                            baseLength,
+                                        large_store + tokens.length() +
+                                            2 * baseLength},
+               resolutions_index = 0L;
 
-          for ( long digit1 = 0L; digit1 < large_store[0]; digit1++) {
-            for ( long digit2 = 0L; digit2 < large_store[1]; digit2++) {
-              for ( long digit3 = 0L; digit3 < large_store[2];
-                   digit3++) {
+          for (long digit1 = 0L; digit1 < large_store[0]; digit1++) {
+            for (long digit2 = 0L; digit2 < large_store[1]; digit2++) {
+              for (long digit3 = 0L; digit3 < large_store[2]; digit3++) {
                 receptacle[resolutions_index++] =
                     resolution_arrays[0][digit1] * baseLength * baseLength +
                     resolution_arrays[1][digit2] * baseLength +
@@ -323,13 +319,12 @@ long _TranslationTable::MultiTokenResolutions(_String const &tokens,
         } else {
           if (tokens.length() == 2) {
             long *resolution_arrays[2] = {large_store + tokens.length(),
-                                         large_store + tokens.length() +
-                                             baseLength},
-                resolutions_index = 0L;
+                                          large_store + tokens.length() +
+                                              baseLength},
+                 resolutions_index = 0L;
 
-            for ( long digit1 = 0L; digit1 < large_store[0]; digit1++) {
-                for ( long digit2 = 0L; digit2 < large_store[1];
-                   digit2++) {
+            for (long digit1 = 0L; digit1 < large_store[0]; digit1++) {
+              for (long digit2 = 0L; digit2 < large_store[1]; digit2++) {
                 receptacle[resolutions_index++] =
                     resolution_arrays[0][digit1] * baseLength +
                     resolution_arrays[1][digit2];
@@ -715,7 +710,7 @@ void _TranslationTable::PrepareForChecks(void) {
 
 //_________________________________________________________
 bool _TranslationTable::IsCharLegal(char c) {
-  if (__builtin_expect (!checkTable,0)) {
+  if (__builtin_expect(!checkTable, 0)) {
     PrepareForChecks();
   }
   return checkTable[(unsigned char)c];
@@ -844,13 +839,13 @@ char _TranslationTable::GetGapChar(void) const {
 const _String
 _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
 
-  _String res ((unsigned long)base);
+  _String res((unsigned long)base);
 
   if (code >= 0) {
     // OPTIMIZE FLAG; repeated memory allocation/deallocation
     if (baseSet.length())
       for (long k = 1; k <= base; k++, code /= baseLength) {
-        res.set_char(base - k,baseSet.char_at(code % baseLength));
+        res.set_char(base - k, baseSet.char_at(code % baseLength));
       }
     else if (baseLength == 4) {
       for (long k = 1; k <= base; k++, code /= baseLength) {
@@ -900,7 +895,7 @@ _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
   } else {
     char c = GetGapChar();
     for (long k = 0L; k < base; k++) {
-      res.set_char(k,c);
+      res.set_char(k, c);
     }
   }
   return res;
@@ -908,31 +903,30 @@ _TranslationTable::ConvertCodeToLetters(long code, unsigned char base) const {
 
 //_________________________________________________________
 
-bool _TranslationTable::operator == (const _TranslationTable& rhs) const {
-    
-    if (baseSet.length() == rhs.baseSet.length()) {
-        if (baseSet.empty()) { // standard alphabet
-            if (baseLength != rhs.baseLength) {
-                return false;
-            }
-        } else if (baseSet != rhs.baseSet) {
-            return false;
-        }
-        
-        if (tokensAdded.length() == rhs.tokensAdded.length()) {
-            
-            for (unsigned i = 0; i < tokensAdded.length(); i++) {
-                if (ExpandToken (tokensAdded.get_char(i)) != rhs.ExpandToken (tokensAdded.get_char(i))) {
-                    return false;
-                }
-            }
-            
-            return true;
-        }
-        
-    }
-    return false;
+bool _TranslationTable::operator==(const _TranslationTable &rhs) const {
 
+  if (baseSet.length() == rhs.baseSet.length()) {
+    if (baseSet.empty()) { // standard alphabet
+      if (baseLength != rhs.baseLength) {
+        return false;
+      }
+    } else if (baseSet != rhs.baseSet) {
+      return false;
+    }
+
+    if (tokensAdded.length() == rhs.tokensAdded.length()) {
+
+      for (unsigned i = 0; i < tokensAdded.length(); i++) {
+        if (ExpandToken(tokensAdded.get_char(i)) !=
+            rhs.ExpandToken(tokensAdded.get_char(i))) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }
+  return false;
 }
 
 //_________________________________________________________
@@ -973,5 +967,3 @@ _TranslationTable::MergeTables(_TranslationTable const *table2) const
   }
   return nil;
 }
-
-

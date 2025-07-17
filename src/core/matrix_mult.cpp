@@ -25,41 +25,30 @@ extern "C" void cblas_dgemm(const enum CBLAS_ORDER __Order,
 
 
 #ifdef _SLKP_USE_ARM_NEON
-void _hy_matrix_multiply_4x4 (double * C, double *A, double *B, int stride, bool add) {
+void _hy_matrix_multiply_4x4 (double *__restrict__ C, double *__restrict__ A, double *__restrict__ B, int stride, bool add) {
     
-    float64x2x2_t A1, A2, A3, A4, A5, A6, A7, A8;
     float64x2x2_t B1;
     float64x2x2_t C1, C2, C3, C4;
     
-    auto handle_block = [&] ()-> void {
-        C1.val[0] = vmulq_f64 (A1.val[0],B1.val[0]);
-        // C00 = A00 * B00; C01 = A00 * B01
-        C1.val[1] = vmulq_f64 (A1.val[0],B1.val[1]);
-        // C02 = A00 * B02; C01 = A00 * B03
-        C2.val[0] = vmulq_f64 (A2.val[0],B1.val[0]);
-        // C10 = A10 * B00; C01 = A00 * B01
-        C2.val[1] = vmulq_f64 (A2.val[0],B1.val[1]);
-        // C12 = A10 * B02; C13 = A10 * B03
-        C3.val[0] = vmulq_f64 (A3.val[0],B1.val[0]);
-        C3.val[1] = vmulq_f64 (A3.val[0],B1.val[1]);
-        C4.val[0] = vmulq_f64 (A4.val[0],B1.val[0]);
-        // C30 = A30 * B00; C30
-        C4.val[1] = vmulq_f64 (A4.val[0],B1.val[1]);
+    auto handle_block = [&] (float64x2_t a1, float64x2_t a2, float64x2_t a3, float64x2_t a4)-> void {
+        C1.val[0] = vmulq_f64 (a1,B1.val[0]);
+        C1.val[1] = vmulq_f64 (a1,B1.val[1]);
+        C2.val[0] = vmulq_f64 (a2,B1.val[0]);
+        C2.val[1] = vmulq_f64 (a2,B1.val[1]);
+        C3.val[0] = vmulq_f64 (a3,B1.val[0]);
+        C3.val[1] = vmulq_f64 (a3,B1.val[1]);
+        C4.val[0] = vmulq_f64 (a4,B1.val[0]);
+        C4.val[1] = vmulq_f64 (a4,B1.val[1]);
     };
     
     auto handle_block2 = [&] (float64x2_t a1, float64x2_t a2, float64x2_t a3, float64x2_t a4) -> void {
         C1.val[0] = vfmaq_f64 (C1.val[0],a1,B1.val[0]);
-        // C00 = A00 * B00; C01 = A00 * B01
         C2.val[0] = vfmaq_f64 (C2.val[0],a2,B1.val[0]);
         C3.val[0] = vfmaq_f64 (C3.val[0],a3,B1.val[0]);
         C4.val[0] = vfmaq_f64 (C4.val[0],a4,B1.val[0]);
         C1.val[1] = vfmaq_f64 (C1.val[1],a1,B1.val[1]);
-        // C02 = A00 * B02; C01 = A00 * B03
-        // C10 = A10 * B00; C01 = A00 * B01
         C2.val[1] = vfmaq_f64 (C2.val[1],a2,B1.val[1]);
-        // C12 = A10 * B02; C13 = A10 * B03
         C3.val[1] = vfmaq_f64 (C3.val[1],a3,B1.val[1]);
-        // C30 = A30 * B00; C30
         C4.val[1] = vfmaq_f64 (C4.val[1],a4,B1.val[1]);
     };
     
@@ -67,16 +56,15 @@ void _hy_matrix_multiply_4x4 (double * C, double *A, double *B, int stride, bool
          S2 = stride << 1,
          S3 = S2 + stride;
     
+    float64x2_t a_r0 = vld1q_f64(A);
+    float64x2_t a_r1 = vld1q_f64(A+S1);
+    float64x2_t a_r2 = vld1q_f64(A+S2);
+    float64x2_t a_r3 = vld1q_f64(A+S3);
 
-    A1 = vld2q_dup_f64 (A);
-    A2 = vld2q_dup_f64 (A+S1);
-    A3 = vld2q_dup_f64 (A+S2);
-    A4 = vld2q_dup_f64 (A+S3);
-
-    A5 = vld2q_dup_f64 (A+2);
-    A6 = vld2q_dup_f64 (A+S1+2);
-    A7 = vld2q_dup_f64 (A+S2+2);
-    A8 = vld2q_dup_f64 (A+S3+2);
+    float64x2_t a_r0_2 = vld1q_f64(A+2);
+    float64x2_t a_r1_2 = vld1q_f64(A+S1+2);
+    float64x2_t a_r2_2 = vld1q_f64(A+S2+2);
+    float64x2_t a_r3_2 = vld1q_f64(A+S3+2);
 
     B1 = vld1q_f64_x2 (B);
     if (add) {
@@ -84,26 +72,25 @@ void _hy_matrix_multiply_4x4 (double * C, double *A, double *B, int stride, bool
         C2 = vld1q_f64_x2 (C+S1);
         C3 = vld1q_f64_x2 (C+S2);
         C4 = vld1q_f64_x2 (C+S3);
-        handle_block2 (A1.val[0],A2.val[0],A3.val[0],A4.val[0]);
+        handle_block2 (vdupq_laneq_f64(a_r0,0), vdupq_laneq_f64(a_r1,0), vdupq_laneq_f64(a_r2,0), vdupq_laneq_f64(a_r3,0));
     } else {
-        handle_block ();
+        handle_block (vdupq_laneq_f64(a_r0,0), vdupq_laneq_f64(a_r1,0), vdupq_laneq_f64(a_r2,0), vdupq_laneq_f64(a_r3,0));
     }
-    
+
     B1 = vld1q_f64_x2 (B+S1);
-    handle_block2 (A1.val[1],A2.val[1],A3.val[1],A4.val[1]);
+    handle_block2 (vdupq_laneq_f64(a_r0,1), vdupq_laneq_f64(a_r1,1), vdupq_laneq_f64(a_r2,1), vdupq_laneq_f64(a_r3,1));
 
     B1 = vld1q_f64_x2 (B+S2);
-    handle_block2 (A5.val[0],A6.val[0],A7.val[0],A8.val[0]);
+    handle_block2 (vdupq_laneq_f64(a_r0_2,0), vdupq_laneq_f64(a_r1_2,0), vdupq_laneq_f64(a_r2_2,0), vdupq_laneq_f64(a_r3_2,0));
 
     B1 = vld1q_f64_x2 (B+S3);
-    handle_block2 (A5.val[1],A6.val[1],A7.val[1],A8.val[1]);
+    handle_block2 (vdupq_laneq_f64(a_r0_2,1), vdupq_laneq_f64(a_r1_2,1), vdupq_laneq_f64(a_r2_2,1), vdupq_laneq_f64(a_r3_2,1));
 
     vst1q_f64_x2 (C,    C1);
     vst1q_f64_x2 (C+S1, C2);
     vst1q_f64_x2 (C+S2, C3);
     vst1q_f64_x2 (C+S3, C4);
 }
-
 
 
 /**

@@ -330,7 +330,7 @@ node<long>* _Formula::DuplicateFormula (node<long>* src, _Formula& tgt) const {
     node<long>* copied = new node<long>;
     
     for (long k=1L; k<=src->get_num_nodes(); k++) {
-        copied->add_node (*DuplicateFormula (src->go_down (k), tgt));
+        copied->add_node (*DuplicateFormula (src->go_down ((int)k), tgt));
     }
 
     copied->in_object = tgt.theFormula.lLength;
@@ -822,7 +822,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
 // returns true if the subexpression at
 // and below startnode is constant
     _Operation* op = GetIthTerm(top_node->get_data());
-    long        n_children = top_node->get_num_nodes();
+    int        n_children = top_node->get_num_nodes();
 
     if  (n_children == 0L) {
       return !op->IsAVariable();
@@ -833,7 +833,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
                 left_constant  = true,
                 right_constant = (n_children>1L);
 
-    long        prune_this_child = -1;
+    int        prune_this_child = -1;
 
     hyFloat     evaluated_to      = 0.0;
     HBLObjectRef   replace_with      = nil;
@@ -841,7 +841,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
 
     //printf ("InternalSimplify %x\n", startNode);
 
-    for  (unsigned long k=1UL; k<=n_children; k++) {
+    for  (unsigned int k=1UL; k<=n_children; k++) {
         if (k==1UL) {
             left_constant = InternalSimplify (top_node->go_down(k));
         } else if (k==2UL) {
@@ -858,7 +858,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
     if (op->opCode > HY_OP_CODE_NONE) {
         if (all_constant) { // this executes the subxpression starting at the current node
             _Stack scrap;
-            for  (unsigned long k=1UL; k<=n_children; k++) {
+            for  (unsigned int k=1UL; k<=n_children; k++) {
                 ((_Operation*)theFormula (top_node->go_down(k)->get_data()))->Execute (scrap);
             }
             op->Execute (scrap);
@@ -957,7 +957,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
 
               top_node->kill_all_nodes();
 
-              for (unsigned long k=1; k<=pruned_tree->get_num_nodes(); k++) {
+              for (unsigned int k=1; k<=pruned_tree->get_num_nodes(); k++) {
                   top_node->add_node (*pruned_tree->go_down(k));
               }
               top_node->in_object = pruned_tree->in_object;
@@ -985,7 +985,7 @@ bool _Formula::InternalSimplify (node<long>* top_node) {
                 delete (top_node->go_down(1));
                 top_node->in_object = remaining_trunk->in_object;
                 top_node->kill_all_nodes();
-                for (long k = 1; k <= remaining_trunk->get_num_nodes(); k++) {
+                for (unsigned int k = 1; k <= remaining_trunk->get_num_nodes(); k++) {
                     top_node->add_node (*remaining_trunk->go_down (k));
                 }
                 delete remaining_trunk;
@@ -1118,7 +1118,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, in
                 result<<&this_node_op->GetCode();
                 if (top_node) {
                     result<<'(';
-                    SubtreeToString (result, top_node->go_down(1),opPrecedence(f),match_names,nil, mode);
+                    SubtreeToString (result, top_node->go_down(1), static_cast<int>(opPrecedence(f)), match_names, nil, mode);
                     result<<')';
                 }
                 return;
@@ -1129,7 +1129,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, in
                 if (top_node) {
                     result<<'(';
                     SubtreeToString (result, top_node->go_down(1),-1,match_names,nil, mode);
-                    for (long k=2UL; k <= node_op_count; k++) {
+                    for (unsigned int k=2UL; k <= node_op_count; k++) {
                         result << ',';
                         SubtreeToString (result, top_node->go_down(k),-1,match_names,nil, mode);
                     }
@@ -1138,7 +1138,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, in
             } else { // matrix element access - treat specially
                 if (top_node) {
                     SubtreeToString (result, top_node->go_down(1),-1,match_names,nil,mode);
-                    for (long k=2; k<=node_op_count; k++) {
+                    for (unsigned int k=2; k<=node_op_count; k++) {
                         result<<'[';
                         SubtreeToString (result, top_node->go_down(k),-1,match_names,nil, mode);
                         result<<']';
@@ -1159,7 +1159,7 @@ void _Formula::SubtreeToString (_StringBuffer & result, node<long>* top_node, in
             result<<'(';
             long argument_count = GetBFFunctionArgumentCount(func_id);
             SubtreeToString (result, top_node->go_down(1),-1,match_names,nil,mode);
-            for (long k=2L; k<=argument_count; k++) {
+            for (unsigned int k=2L; k<=argument_count; k++) {
                 result<<',';
                 SubtreeToString (result, top_node->go_down(k),-1,match_names,nil,mode);
             }
@@ -2385,7 +2385,7 @@ bool _Formula::ConvertToSimple (_AVLList& variable_index) {
 
 //__________________________________________________________________________________
 void _Formula::ConvertFromSimple (_AVLList const& variableIndex) {
-  ConvertFromSimpleList (*variableIndex.dataList);
+    ConvertFromSimpleList (*variableIndex.dataList);
 }
 
 //__________________________________________________________________________________
@@ -3036,7 +3036,7 @@ void    _Formula::ConvertToTree (bool err_msg) {
             if (err_msg) {
                 HandleApplicationError(e);
             }
-            nodeStack.Each ([this] (long v, unsigned long) -> void {
+            nodeStack.Each ([] (long v, unsigned long) -> void {
                 node<long>* operationNode = (node<long>*)v;
                 operationNode->delete_tree();
                 delete (operationNode);
@@ -3094,3 +3094,4 @@ bool       _Formula::ProcessFormulaForConverstionToSimple (long& stack_length,
     }
     return true;
 }
+

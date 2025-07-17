@@ -54,6 +54,7 @@ else
 
 SetDialogPrompt		("Save results to:");
 fprintf 			(PROMPT_FOR_FILE,CLEAR_FILE);
+RESULT_FILE_PATH = LAST_FILE_PATH;
 SelectTemplateModel (filteredData);
 
 windowWidth:>0;
@@ -199,12 +200,12 @@ if (MPI_NODE_COUNT>1)
 	
 	for (nodeCounter = 0; nodeCounter*windowShift < ds.sites; nodeCounter=nodeCounter+1)
 	{
-		fprintf (LAST_FILE_PATH,"\n",Format(nodeCounter*windowShift,0,0)," , ",
+		fprintf (RESULT_FILE_PATH,"\n",Format(nodeCounter*windowShift,0,0)," , ",
 									 Format(Min((1+nodeCounter)*windowShift,ds.sites-1),0,0),",",MPI_Results_Cache[dataDimension][nodeCounter]);	
 		
 		for (i=0;i<dataDimension;i=i+1)
 		{
-			fprintf (LAST_FILE_PATH,",",MPI_Results_Cache[i][nodeCounter]);
+			fprintf (RESULT_FILE_PATH,",",MPI_Results_Cache[i][nodeCounter]);
 		}			
 	}
 }
@@ -240,11 +241,11 @@ function ReceiveJobs (sendOrNot)
 		
 		dataDimension = Columns(lf_MLES);
 		
-		fprintf (LAST_FILE_PATH,"\nStarting bp,Ending bp,Ln-likelihood");
+		fprintf (RESULT_FILE_PATH,"\nStarting bp,Ending bp,Ln-likelihood");
 		for (i=0;i<dataDimension;i=i+1)
 		{
 			GetString (argName,lf,i);
-			fprintf	  (LAST_FILE_PATH,",",argName);
+			fprintf	  (RESULT_FILE_PATH,",",argName);
 		}
 		
 		if (MPI_NODE_COUNT>1)
@@ -256,11 +257,11 @@ function ReceiveJobs (sendOrNot)
 	fprintf (stdout,"Finshed Segment ",Format(segmentStart,0,0)," - ",Format(segmentEnd,0,0),"\n");
 	if (MPI_NODE_COUNT<2)
 	{
-		fprintf (LAST_FILE_PATH,"\n",Format(segmentStart,0,0)," , ",Format(segmentEnd,0,0),",",lf_MLES[1][0]);
+		fprintf (RESULT_FILE_PATH,"\n",Format(segmentStart,0,0)," , ",Format(segmentEnd,0,0),",",lf_MLES[1][0]);
 		
 		for (i=0;i<dataDimension;i=i+1)
 		{
-			fprintf (LAST_FILE_PATH,",",lf_MLES[0][i]);
+			fprintf (RESULT_FILE_PATH,",",lf_MLES[0][i]);
 		}			
 	}
 	else
