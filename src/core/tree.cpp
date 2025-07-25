@@ -2989,7 +2989,6 @@ void _TheTree::ExponentiateMatrices(_List &expNodes, long tc, long catID) {
           ? 1
           : (MIN(tc,
                  (cBase < 60 ? parallel.lLength >> 1 : parallel.lLength) + 1));
-  unsigned long cs = cBase < 20 ? 10 : (cBase < 60 ? 2 : 1);
 
   // printf ("_TheTree::ExponentiateMatrices %d total, %d no update, (block
   // update %d)\n", parallel.lLength, serial.lLength, nt);
@@ -2997,7 +2996,8 @@ void _TheTree::ExponentiateMatrices(_List &expNodes, long tc, long catID) {
   if (parallel.lLength) {
 #ifdef _OPENMP
 #if _OPENMP >= 201511
-#pragma omp parallel for default(shared) schedule(dynamic, cs)                 \
+#pragma omp parallel for default(shared)                                       \
+    schedule(dynamic, cBase < 20 ? 10 : (cBase < 60 ? 2 : 1))                  \
     proc_bind(spread) if (nt > 1) num_threads(nt)
 #else
 #if _OPENMP >= 200803

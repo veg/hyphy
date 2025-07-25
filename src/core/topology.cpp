@@ -300,7 +300,7 @@ _TreeTopology::MainTreeConstructor(_String const &parms,
    are parsed incorrectly
    */
 
-  long i, nodeCount = 0, lastNode;
+  long i, nodeCount = 0L, lastNode = 0L;
 
   static _String kBootstrap("bootstrap"), kComment("comment");
 
@@ -570,17 +570,18 @@ _TreeTopology::MainTreeConstructor(_String const &parms,
 
   if (nodeStack.countitems() > 1) {
     HandleApplicationError("Unbalanced () in tree string");
-  }
-  if (nodeStack.countitems() == 1) {
-    parentNode = (node<long> *)nodeStack(0);
-    if (mapping) {
-      _FString *mapped_name = (_FString *)mapping->GetByKey(nodeName, STRING);
-      if (mapped_name) {
-        nodeName = _String(mapped_name->get_str());
+  } else {
+    if (nodeStack.countitems() == 1) {
+      parentNode = (node<long> *)nodeStack(0);
+      if (mapping) {
+        _FString *mapped_name = (_FString *)mapping->GetByKey(nodeName, STRING);
+        if (mapped_name) {
+          nodeName = _String(mapped_name->get_str());
+        }
       }
+      FinalizeNode(parentNode, nodeNumbers.get(lastNode), nodeName,
+                   nodeParameters, nodeValue, parse_settings);
     }
-    FinalizeNode(parentNode, nodeNumbers.get(lastNode), nodeName,
-                 nodeParameters, nodeValue, parse_settings);
   }
 
   isDefiningATree = kTreeNotBeingDefined;

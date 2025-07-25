@@ -716,11 +716,19 @@ void _LikelihoodFunction::PopulateConditionalProbabilities(
           forceRecomputation = saveFR;
         }
 
-        if (runMode == _hyphyLFConditionProbsRawMatrixMode)
-          for (long p = 0; p < blockLength; p++) {
-            scalers.list_data[p + indexShifter] = siteCorrectors[p];
+        if (runMode == _hyphyLFConditionProbsRawMatrixMode) {
+          if (siteCorrectors) {
+            for (long p = 0; p < blockLength; p++) {
+              scalers.list_data[p + indexShifter] = siteCorrectors[p];
+            }
+          } else {
+            HandleApplicationError(
+                "Internal error in PopulateConditionalProbabilities: "
+                "siteCorrectors == nil for _hyphyLFConditionProbsRawMatrixMode "
+                "run mode");
+            return;
           }
-        else {
+        } else {
           if (siteCorrectors) {
             for (long r1 = 0; r1 < blockLength; r1++) {
               long scv = *siteCorrectors,

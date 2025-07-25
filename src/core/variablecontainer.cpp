@@ -875,8 +875,8 @@ long _VariableContainer::SetDependance(long varIndex) {
 //__________________________________________________________________________________
 bool _VariableContainer::SetMDependance(_SimpleList const &mDep) {
   if (iVariables) {
-    if (mDep.lLength * 2 > iVariables->lLength)
-      for (long k = iVariables->lLength - 2; k >= 0; k -= 2) {
+    if ((mDep.lLength << 2) > iVariables->lLength)
+      for (long k = iVariables->lLength - 2; k >= 0 && iVariables; k -= 2) {
         long f = mDep.BinaryFind(iVariables->list_data[k]);
         if (f >= 0) {
           SetDependance(-k - 1);

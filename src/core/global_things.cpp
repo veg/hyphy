@@ -744,6 +744,13 @@ const _String PrepareErrorContext(_String const &context, long from,
 }
 
 //____________________________________________________________________________________
+[[noreturn]] void HandleApplicationErrorAndExit(const _String &message) {
+  HandleApplicationError(message, true);
+  // this will actually never be reached
+  exit(1);
+}
+
+//____________________________________________________________________________________
 void HandleApplicationError(const _String &message, bool force_exit,
                             bool dump_core, bool minimal_error_reporting) {
 

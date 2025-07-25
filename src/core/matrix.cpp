@@ -2818,109 +2818,116 @@ HBLObjectRef _Matrix::Evaluate(bool replace)
 {
   _Matrix result(hDim, vDim, bool(theIndex), true);
 
-  if (is_expression_based()) {
-    HBLObjectRef formValue = nil;
-    _Formula **theFormulas = (_Formula **)theData;
-    if (theIndex) {
-      bool *diag_skip = (bool *)alloca(sizeof(bool) * hDim);
-      memset(diag_skip, 0, sizeof(bool) * hDim);
+  if (hDim && vDim) {
 
-      for (long i = 0; i < lDim; i++) {
-        long k = theIndex[i];
-        if (k != -1L) {
-          formValue = theFormulas[i]->Compute();
-          if (formValue) {
-            long ri = k / vDim, ci = k - ri * vDim;
+    if (is_expression_based()) {
+      HBLObjectRef formValue = nil;
+      _Formula **theFormulas = (_Formula **)theData;
+      if (theIndex) {
+        bool *diag_skip = (bool *)alloca(sizeof(bool) * hDim);
+        memset(diag_skip, 0, sizeof(bool) * hDim);
 
-            result.Store(ri, ci, formValue->Value());
-            if (ci == ri)
-              diag_skip[ri] = true;
-          } else {
-            result[k] = 0;
+        for (long i = 0; i < lDim; i++) {
+          long k = theIndex[i];
+          if (k != -1L) {
+            formValue = theFormulas[i]->Compute();
+            if (formValue) {
+              long ri = k / vDim, ci = k - ri * vDim;
+
+              result.Store(ri, ci, formValue->Value());
+              if (ci == ri)
+                diag_skip[ri] = true;
+            } else {
+              result[k] = 0;
+            }
           }
         }
-      }
-      // check for probablilty matrices * fillers
-      if (hDim == vDim && !replace) {
+        // check for probablilty matrices * fillers
+        if (hDim == vDim && !replace) {
 
-        hyFloat *diag_storage = (hyFloat *)alloca(sizeof(hyFloat) * hDim);
-        memset(diag_storage, 0, sizeof(hyFloat) * hDim);
+          hyFloat *diag_storage = (hyFloat *)alloca(sizeof(hyFloat) * hDim);
+          memset(diag_storage, 0, sizeof(hyFloat) * hDim);
 
-        for (long nz = 0; nz < result.lDim; nz++) {
-          long k = result.theIndex[nz];
-          if (k != -1) {
-            long ri = k / vDim;
-            if (diag_skip[ri] == false) {
-              long ci = k - ri * vDim;
-              if (ci != ri) {
-                diag_storage[ri] -= result.theData[nz];
+          if (!result.theIndex) {
+            HandleApplicationError(
+                "Internal error in _Matrix::Evaluate; result matrix is "
+                "expected to be sparse but was not");
+            return nil;
+          }
+
+          for (long nz = 0; nz < result.lDim; nz++) {
+            long k = result.theIndex[nz];
+            if (k != -1) {
+              long ri = k / vDim;
+              if (diag_skip[ri] == false) {
+                long ci = k - ri * vDim;
+                if (ci != ri) {
+                  diag_storage[ri] -= result.theData[nz];
+                }
               }
             }
           }
-        }
 
-        for (long i = 0; i < hDim; i++) {
-          if (diag_skip[i] == false) {
-            result.Store(i, i, diag_storage[i]);
+          for (long i = 0; i < hDim; i++) {
+            if (diag_skip[i] == false) {
+              result.Store(i, i, diag_storage[i]);
+            }
           }
         }
-      }
-    } else {
-      for (long i = 0; i < lDim; i++) {
-        if (theFormulas[i] != (_Formula *)ZEROPOINTER) {
-          formValue = theFormulas[i]->Compute();
-          if (formValue && formValue->ObjectClass() == NUMBER) {
-            result.theData[i] = formValue->Value();
-            // DeleteObject (formValue);
-          } else {
-            result.theData[i] = 0;
+      } else {
+        for (long i = 0; i < lDim; i++) {
+          if (theFormulas[i] != (_Formula *)ZEROPOINTER) {
+            formValue = theFormulas[i]->Compute();
+            if (formValue && formValue->ObjectClass() == NUMBER) {
+              result.theData[i] = formValue->Value();
+              // DeleteObject (formValue);
+            } else {
+              result.theData[i] = 0;
+            }
           }
         }
-      }
-      // check for probablilty matrices * fillers
+        // check for probablilty matrices * fillers
 
-      if ((hDim == vDim) && (!replace))
-        for (long i = 0; i < lDim; i += vDim + 1) {
-          if (theFormulas[i] == (_Formula *)ZEROPOINTER ||
-              theFormulas[i]->IsEmpty()) {
-            hyFloat st = 0;
-            long k = i / vDim, j;
-            for (j = k * vDim; j < k * vDim + k; j++) {
-              st -= result.theData[j];
+        if ((hDim == vDim) && (!replace))
+          for (long k = 0L, i = 0L; i < lDim; k++, i += vDim + 1) {
+            if (theFormulas[i] == (_Formula *)ZEROPOINTER ||
+                theFormulas[i]->IsEmpty()) {
+              result.theData[i] = 0.;
+              hyFloat st = 0.;
+              for (long j = k * vDim; j < (k + 1) * vDim; j++) {
+                st -= result.theData[j];
+              }
+              result.theData[i] = st;
             }
-            for (j = k * vDim + k + 1; j < (k + 1) * vDim; j++) {
-              st -= result.theData[j];
-            }
-            result.theData[i] = st;
           }
-        }
+      }
     }
-  }
-  if (storageType == 0) {
-    HBLObjectRef polValue = nil;
-    _MathObject **thePoly = (_MathObject **)theData;
-    if (theIndex) {
-      for (long i = 0; i < lDim; i++) {
-        if (IsNonEmpty(i)) {
-          polValue = thePoly[i]->Compute();
-          if (polValue) {
-            result[HashBack(i)] = polValue->Value();
-            DeleteObject(polValue);
-          } else {
-            result[i] = 0;
+    if (storageType == 0) {
+      HBLObjectRef polValue = nil;
+      _MathObject **thePoly = (_MathObject **)theData;
+      if (theIndex) {
+        for (long i = 0; i < lDim; i++) {
+          if (IsNonEmpty(i)) {
+            polValue = thePoly[i]->Compute();
+            if (polValue) {
+              result[HashBack(i)] = polValue->Value();
+              DeleteObject(polValue);
+            } else {
+              result[i] = 0;
+            }
           }
         }
-      }
 
-    } else {
-      for (long i = 0; i < lDim; i++) {
-        if (thePoly[i] != (_MathObject *)ZEROPOINTER) {
-          polValue = thePoly[i]->Compute();
-          if (polValue) {
-            result[i] = polValue->Value();
-            DeleteObject(polValue);
-          } else {
-            result[i] = 0;
+      } else {
+        for (long i = 0; i < lDim; i++) {
+          if (thePoly[i] != (_MathObject *)ZEROPOINTER) {
+            polValue = thePoly[i]->Compute();
+            if (polValue) {
+              result[i] = polValue->Value();
+              DeleteObject(polValue);
+            } else {
+              result[i] = 0;
+            }
           }
         }
       }
@@ -4049,8 +4056,8 @@ void _Matrix::Multiply(_Matrix &storage, _Matrix const &secondArg) const
   // simplest case of two non-sparse matrices - multiply in a straightforward
   // way
   {
-    if (storageType == 0 &&
-        secondArg.storageType == 0) { // both matrices are polynomial in nature
+    if (is_polynomial() &&
+        secondArg.is_polynomial()) { // both matrices are polynomial in nature
       for (long i = 0; i < hDim; i++)
         for (long j = i * secondArg.vDim; j < (i + 1) * secondArg.vDim; j++) {
           _MathObject *secTerm = secondArg.GetMatrixObject(j % secondArg.vDim),

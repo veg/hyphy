@@ -277,30 +277,32 @@ long _SimpleList::BinaryFind(long s, long startAt) const {
 
   long top = lLength - 1, bottom = startAt, middle;
 
-  while (top > bottom) {
-    middle = (top + bottom) >> 1;
-    if (s < list_data[middle]) {
-      top = middle == top ? top - 1 : middle;
-    } else if (s > list_data[middle]) {
-      bottom = middle == bottom ? bottom + 1 : middle;
+  while (top >= bottom) {
+    middle = bottom + ((top - bottom) >> 1);
+    long middle_value = list_data[middle];
+    if (s < middle_value) {
+      top = middle - 1;
+    } else if (s > middle_value) {
+      bottom = middle + 1;
     } else {
       return middle;
     }
   }
 
-  middle = top;
-  long comp = list_data[middle] - s;
-  if (!comp) {
-    return middle;
-  }
+  return -bottom - 2;
 
-  return comp < 0 ? -middle - 3 : -middle - 2;
+  // exiting here; because no match was found and middle = top = bottom
+  // if middle_value < s, then bottom = middle + 1, so we return -middle - 3
+  // if middle_value < s then bottom = middle - 1, otherwise bottom = middle
+
+  // comp < 0, means middle_value < s
+  // return comp < 0 ? -middle - 3 : -middle - 2;
 }
 
 long _SimpleList::BinaryInsert(long n) {
   if (lLength == 0L) {
     (*this) << n;
-    return 0;
+    return 0L;
   }
 
   long pos = -BinaryFind(n) - 2;
@@ -454,7 +456,10 @@ _SimpleList *_SimpleList::CountingSort(long upperBound, _SimpleList *ordering,
 
       result->lLength = lLength;
     }
-
+    if (storage) {
+      // this is to remove a static analysis warning
+      buffer.list_data = nil;
+    }
     return result;
   }
   return wantResult ? new _SimpleList : nil;

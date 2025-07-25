@@ -329,13 +329,14 @@ void _String::Duplicate(BaseRefConst ref) {
 }
 
 //=============================================================
-void _String::operator=(_String const &s) {
+_String &_String::operator=(_String const &s) {
   if (&s != this)
     Duplicate(&s);
+  return *this;
 }
 
 //=============================================================
-void _String::operator=(_String &&rhs) {
+_String &_String::operator=(_String &&rhs) {
   if (this != &rhs) {
     if (s_data) {
       free(s_data);
@@ -344,6 +345,7 @@ void _String::operator=(_String &&rhs) {
     s_length = rhs.s_length;
     rhs.s_data = nil;
   }
+  return *this;
 }
 
 /*

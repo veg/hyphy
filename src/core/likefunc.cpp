@@ -220,7 +220,8 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
 
   hyFloat cached_value = lf->GetIthIndependent(alterIndex),
           lb = lf->GetIthIndependentBound(alterIndex, true),
-          range = (lf->GetIthIndependentBound(alterIndex, false) - lb) * 0.001;
+          range = (lf->GetIthIndependentBound(alterIndex, false) - lb) * 0.001,
+          nv;
 
   // printf ("\n\n%g %g %g\n", lb, range, cached_value);
 
@@ -231,8 +232,8 @@ hyFloat BenchmarkThreads(_LikelihoodFunction *lf) {
 #ifdef __HYPHYMPI__
   if (hy_mpi_node_rank == 0)
 #endif
-    hyFloat nv = lb + range * genrand_real1();
   {
+    nv = lb + range * genrand_real1();
     lf->SetIthIndependent(alterIndex, lb + range * genrand_real1());
     logL = lf->Compute();
   }
@@ -2733,27 +2734,16 @@ void _LikelihoodFunction::RecurseConstantOnPartition(
 
 //_______________________________________________________________________________________
 
-void _LikelihoodFunction::RecurseCategory(long blockIndex, long index,
-                                          long dependence, long highestIndex,
-                                          hyFloat weight
-#ifdef _SLKP_LFENGINE_REWRITE_
-                                          ,
-                                          _SimpleList *siteMultipliers,
-                                          char runMode, hyFloat *runStorage,
-                                          long branchIndex,
-                                          _SimpleList *branchValues
-#endif
-) {
+void _LikelihoodFunction::RecurseCategory(
+    long blockIndex, long index, long dependence, long highestIndex,
+    hyFloat weight, _SimpleList *siteMultipliers, char runMode,
+    hyFloat *runStorage, long branchIndex, _SimpleList *branchValues) {
   _CategoryVariable *thisC =
       (_CategoryVariable *)LocateVar(indexCat.list_data[index]);
   if (index < highestIndex) {
     if ((!CheckNthBit(dependence, index)) || thisC->is_hidden_markov())
-      RecurseCategory(blockIndex, index + 1, dependence, highestIndex, weight
-#ifdef _SLKP_LFENGINE_REWRITE_
-                      ,
-                      siteMultipliers, runMode, runStorage
-#endif
-      );
+      RecurseCategory(blockIndex, index + 1, dependence, highestIndex, weight,
+                      siteMultipliers, runMode, runStorage);
     else {
       thisC->Refresh();
       long nI = thisC->GetNumberOfIntervals();
@@ -2761,13 +2751,8 @@ void _LikelihoodFunction::RecurseCategory(long blockIndex, long index,
       for (long k = 0; k < nI; k++) {
         thisC->SetIntervalValue(k);
         RecurseCategory(blockIndex, index + 1, dependence, highestIndex,
-                        weight * thisC->GetIntervalWeight(k)
-#ifdef _SLKP_LFENGINE_REWRITE_
-                            ,
-                        siteMultipliers, runMode, runStorage, branchIndex,
-                        branchValues
-#endif
-        );
+                        weight * thisC->GetIntervalWeight(k), siteMultipliers,
+                        runMode, runStorage, branchIndex, branchValues);
         categID += offsetCounter / nI;
       }
       offsetCounter /= nI;
@@ -2789,20 +2774,17 @@ void _LikelihoodFunction::RecurseCategory(long blockIndex, long index,
       hyFloat *sR = siteResults->fastIndex();
       _Matrix *cws = thisC->GetWeights();
 
-#ifdef _SLKP_LFENGINE_REWRITE_
       long *siteCorrectors =
           ((_SimpleList **)siteCorrections.list_data)[blockIndex]->lLength
               ? (((_SimpleList **)siteCorrections.list_data)[blockIndex]
                      ->list_data) +
                     categID * currentOffset
               : nil;
-#endif
 
       for (long k = 0; k < nI; k++) {
         thisC->SetIntervalValue(k, !k);
         ComputeBlock(blockIndex, sR + hDim);
         hyFloat localWeight = cws->theData[k] * weight;
-#ifdef _SLKP_LFENGINE_REWRITE_
         if (runMode == 1)
         // decide what is the most likely category assignment
         {
@@ -2874,9 +2856,7 @@ void _LikelihoodFunction::RecurseCategory(long blockIndex, long index,
               }
           }
           else*/
-#endif
           for (long r1 = 0, r2 = hDim; r1 < currentOffset; r1++, r2++) {
-#ifdef _SLKP_LFENGINE_REWRITE_
             if (siteCorrectors) {
               long scv = *siteCorrectors;
 
@@ -2909,18 +2889,13 @@ void _LikelihoodFunction::RecurseCategory(long blockIndex, long index,
 
               siteCorrectors++;
             } else
-#endif
               sR[r1] += localWeight * sR[r2];
           }
-#ifdef _SLKP_LFENGINE_REWRITE_
         }
-#endif
         categID += offsetCounter;
-#ifdef _SLKP_LFENGINE_REWRITE_
         if (offsetCounter > 1) {
           siteCorrectors += (offsetCounter - 1) * currentOffset;
         }
-#endif
       }
       if (offsetCounter > 1) {
         categID -= nI * offsetCounter;
@@ -6010,7 +5985,7 @@ long _LikelihoodFunction::Bracket(long index, hyFloat &left, hyFloat &middle,
   hyFloat lowerBound = curVar ? GetIthIndependentBound(index, true) : 0.,
           upperBound = curVar ? GetIthIndependentBound(index, false) : 0.,
           practicalUB,
-          magR = 2., // GOLDEN_RATIO,
+          magR = 2.5, // GOLDEN_RATIO,
       // r,q,u,d,
       leftStep = initialStep * .5, rightStep = initialStep * .5,
           saveL = index < 0 ? middle : NAN, saveM = index < 0 ? NAN : middle,
@@ -7044,7 +7019,7 @@ void _LikelihoodFunction::ComputeGradient(_Matrix &gradient,
                                           _Matrix &values, _SimpleList &freeze,
                                           long order, bool normalize) {
   hyFloat funcValue;
-  static const hyFloat kMaxD = 1.e8;
+  static const hyFloat kMaxD = 1.e6;
 
   if (order == 1) {
     funcValue = Compute();
@@ -7858,7 +7833,7 @@ void _LikelihoodFunction::LocateTheBump(long index, hyFloat gPrecision,
                                         bool go2Bound, hyFloat bracketSetting) {
   hyFloat left = -INFINITY, right = -INFINITY, middle = bestVal,
           leftValue = NAN, middleValue = maxSoFar, rightValue = NAN,
-          bp = 2. * gPrecision,
+          bp = 4. * gPrecision,
           brentPrec = bracketSetting > 0. ? bracketSetting : gPrecision,
           originalValue = index >= 0 ? GetIthIndependent(index) : 0.;
 

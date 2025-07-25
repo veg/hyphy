@@ -343,6 +343,14 @@ void _DataSetFilter::SetFilter(_DataSet const *ds, unsigned char unit,
   // theOriginalOrder is the receptacle for the original site order in the data
   // filter
 
+  if (unit == 0) {
+    // added this to suppress division by zero static code errors
+    // and extra due diligence
+    hy_global::HandleApplicationError(
+        "Internal error: attempting to create a filter with 0 unit size", true);
+    return;
+  }
+
   bool copiedSelf = false; // tag if refiltering self
 
   _DataSetFilter *firstOne = nil;

@@ -180,8 +180,7 @@ add_custom_target(uninstall
 add_executable(hyphy ${SRC_COMMON} ${SRC_UNIXMAIN})
 target_compile_options(hyphy PRIVATE ${COMMON_COMPILE_FLAGS})
 target_compile_definitions(hyphy PRIVATE
-    _SLKP_LFENGINE_REWRITE_
-    __AFYP_REWRITE_BGM__
+     __AFYP_REWRITE_BGM__
     __UNIX__
     __MP__
     __MP2__
@@ -231,7 +230,6 @@ if(MPI_FOUND)
     add_executable(HYPHYMPI EXCLUDE_FROM_ALL ${SRC_COMMON} ${SRC_UNIXMAIN})
     target_compile_options(HYPHYMPI PRIVATE ${COMMON_COMPILE_FLAGS})
     target_compile_definitions(HYPHYMPI PRIVATE
-        _SLKP_LFENGINE_REWRITE_
         __AFYP_REWRITE_BGM__
         __UNIX__
         __HYPHYMPI__
@@ -265,7 +263,6 @@ target_compile_options(HYPHYDEBUG PRIVATE
     -O0
 )
 target_compile_definitions(HYPHYDEBUG PRIVATE
-    _SLKP_LFENGINE_REWRITE_
     __AFYP_REWRITE_BGM__
     __UNIX__
     __HYPHYDEBUG__
