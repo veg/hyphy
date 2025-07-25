@@ -56,6 +56,7 @@
 
 #include "function_templates.h"
 
+#include <regex>
 #include <signal.h>
 
 #define __HYPHY_NO_SQLITE__
@@ -1002,7 +1003,7 @@ bool _ElementaryCommand::HandleGetInformation(_ExecutionList &current_program) {
             GetStringFromFormula(&source_name, current_program.nameSpacePrefix);
         if (reg_exp != *source_name) {
           int errNo = 0;
-          regex_t *regex = PrepRegExp(reg_exp, errNo, true);
+          std::regex *regex = _String::PrepRegExp(reg_exp, errNo, true);
           if (regex) {
             _List matches;
 

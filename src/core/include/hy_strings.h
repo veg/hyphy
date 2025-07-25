@@ -42,8 +42,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "baseobj.h"
 #include "hy_types.h"
-#include "regex.h"
 #include "wchar.h"
+#include <regex>
 
 #define fExtractRespectQuote 0x01
 #define fExtractRespectEscape 0x02
@@ -1417,8 +1417,8 @@ public:
                     const &
    - SLKP 20180803; added the option for automatic error decoding
    */
-  static regex_t *PrepRegExp(_String const &pattern, int &error_code,
-                             bool case_sensitive, bool throw_errors = false);
+  static std::regex *PrepRegExp(_String const &pattern, int &error_code,
+                                bool case_sensitive, bool throw_errors = false);
 
   /**
    * Free a reg_exp datastructure previously returned by PrepRegExp
@@ -1429,7 +1429,7 @@ public:
    - SLKP 20170616; reviewed while porting from the v3 branch
                     maded static member of the class
    */
-  static void FlushRegExp(regex_t *re);
+  static void FlushRegExp(std::regex *re);
 
   /**
    * Convert internal regexp code into a string message
@@ -1462,7 +1462,7 @@ public:
    * @sa RegExpAllMatches()
    */
 
-  _SimpleList const RegExpMatch(regex_t const *re,
+  _SimpleList const RegExpMatch(std::regex const *re,
                                 unsigned long start = 0) const;
 
   /**
@@ -1481,7 +1481,7 @@ public:
    * @sa RegExpMatch
     */
 
-  _SimpleList const RegExpAllMatches(regex_t const *re) const;
+  _SimpleList const RegExpAllMatches(std::regex const *re) const;
 
   /**
      Convenience wrappers for RegExpMatch and RegExpAllMatches taking in regex_t

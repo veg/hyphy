@@ -46,6 +46,7 @@
 #include "function_templates.h"
 #include "global_things.h"
 #include "hy_string_buffer.h"
+
 #include "hy_strings.h"
 #include "mersenne_twister.h"
 
@@ -1475,65 +1476,50 @@ _String::ProcessVariableReferenceCases(_String &referenced_object,
  */
 
 const _String _String::GetRegExpError(int error) {
-  char buffer[512];
-  buffer[regerror(error, nil, buffer, 511)] = 0;
-  return _String("Regular Expression error:") & _String(buffer).Enquote();
+  return _String("Regular Expression error: ") &
+         _String(std::to_string(error).c_str()).Enquote();
 }
 
 //=============================================================
 
-void _String::FlushRegExp(regex_t *re) {
-  regfree(re);
-  delete re;
-}
+void _String::FlushRegExp(std::regex *re) { delete re; }
 
 //=============================================================
 
-regex_t *_String::PrepRegExp(const _String &pattern, int &error_code,
-                             bool case_sensitive, bool throw_errors) {
-  regex_t *res = new regex_t;
+std::regex *_String::PrepRegExp(const _String &pattern, int &error_code,
+                                bool case_sensitive, bool throw_errors) {
 
-  error_code = regcomp(res, pattern.get_str(),
-                       REG_EXTENDED | (case_sensitive ? 0 : REG_ICASE));
+  std::regex_constants::syntax_option_type flags =
+      std::regex_constants::ECMAScript;
+  if (!case_sensitive) {
+    flags |= std::regex_constants::icase;
+  }
 
-  if (error_code) {
-    FlushRegExp(res);
+  try {
+    std::regex *res = new std::regex(pattern.get_str(), flags);
+    error_code = 0;
+    return res;
+  } catch (const std::regex_error &e) {
+    error_code = e.code();
     if (throw_errors) {
-      throw(GetRegExpError(error_code));
+      throw(_String(e.what()));
     }
     return nil;
   }
-  return res;
 }
 
 //=============================================================
 
-const _SimpleList _String::RegExpMatch(regex_t const *re,
+const _SimpleList _String::RegExpMatch(std::regex const *re,
                                        unsigned long start) const {
   _SimpleList matched_pairs;
 
   if (s_length && start < s_length) {
-
-    regmatch_t static_matches[4];
-    if (re->re_nsub <= 3) {
-      int error_code =
-          regexec(re, s_data + start, re->re_nsub + 1, static_matches, 0);
-      if (error_code == 0) {
-        for (long k = 0L; k <= re->re_nsub; k++) {
-          matched_pairs << static_matches[k].rm_so + start
-                        << static_matches[k].rm_eo - 1 + start;
-        }
+    std::cmatch static_matches;
+    if (std::regex_search(s_data + start, static_matches, *re)) {
+      for (auto const &match : static_matches) {
+        matched_pairs << match.first - s_data << (match.second - s_data) - 1;
       }
-    } else {
-      regmatch_t *matches = new regmatch_t[re->re_nsub + 1];
-      int error_code = regexec(re, s_data + start, re->re_nsub + 1, matches, 0);
-      if (error_code == 0) {
-        for (long k = 0L; k <= re->re_nsub; k++) {
-          matched_pairs << matches[k].rm_so + start
-                        << matches[k].rm_eo - 1 + start;
-        }
-      }
-      delete[] matches;
     }
   }
 
@@ -1542,28 +1528,18 @@ const _SimpleList _String::RegExpMatch(regex_t const *re,
 
 //=============================================================
 
-const _SimpleList _String::RegExpAllMatches(regex_t const *re) const {
+const _SimpleList _String::RegExpAllMatches(std::regex const *re) const {
   _SimpleList matched_pairs;
 
   if (s_length) {
 
-    regmatch_t *matches = new regmatch_t[re->re_nsub + 1];
-    int error_code = regexec(re, s_data, re->re_nsub + 1, matches, 0);
-    while (error_code == 0) {
-      long offset =
-          matched_pairs.countitems() ? matched_pairs.Element(-1) + 1 : 0;
+    std::cregex_iterator it(s_data, s_data + s_length, *re);
+    std::cregex_iterator end;
 
-      matched_pairs << matches[0].rm_so + offset
-                    << matches[0].rm_eo - 1 + offset;
-
-      offset += matches[0].rm_eo;
-      if (offset < s_length) {
-        error_code = regexec(re, s_data + offset, re->re_nsub + 1, matches, 0);
-      } else {
-        break;
-      }
+    while (it != end) {
+      matched_pairs << it->position() << (it->position() + it->length() - 1);
+      ++it;
     }
-    delete[] matches;
   }
   return matched_pairs;
 }
@@ -1576,14 +1552,16 @@ const _SimpleList _String::_IntRegExpMatch(const _String &pattern,
                                            bool match_all) const {
   if (s_length) {
     int err_code = 0;
-    regex_t *regex = PrepRegExp(pattern, err_code, case_sensitive);
+    std::regex *regex = PrepRegExp(pattern, err_code, case_sensitive);
     if (regex) {
       _SimpleList hits =
           match_all ? RegExpAllMatches(regex) : RegExpMatch(regex);
       FlushRegExp(regex);
       return hits;
     } else if (handle_errors) {
-      HandleApplicationError(GetRegExpError(err_code));
+      HandleApplicationError(
+          _String("Regular Expression error: ") &
+          _String(std::to_string(err_code).c_str()).Enquote());
     }
   }
   return _SimpleList();

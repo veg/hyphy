@@ -898,17 +898,18 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
 
     if (is_regexp || is_hbl_function >= 0L) {
       // a regular expression or a callback
-      regex_t *regex = nil;
+      std::regex *regex = nil;
       _Formula filter_formula;
 
       if (is_regexp) {
         input.Trim(1, input.length() - 2);
-        int errCode;
-        regex = _String::PrepRegExp(input, errCode, true);
+        int errCode = 0;
+        std::regex *regex_ptr = _String::PrepRegExp(input, errCode, true);
         if (errCode) {
           HandleApplicationError(_String::GetRegExpError(errCode));
           return;
         }
+        regex = regex_ptr;
       }
       // now set do the matching
       // using only the sites that are specced in the additionalFilter
@@ -945,7 +946,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
           }
 
           if (is_regexp) {
-            if (pattern.RegExpMatch(regex, 0L).countitems()) {
+            if (pattern.RegExpMatch(regex, 0UL).countitems()) {
               target << specCount;
             }
           } else {
@@ -1003,10 +1004,10 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
               if (otherDimension) {
                 map_site((_Site *)GetItem(siteCounter), *tempString,
                          otherDimension);
-                matches = tempString->RegExpMatch(regex, 0L);
+                matches = tempString->RegExpMatch(regex, 0UL);
               } else {
                 matches =
-                    ((_Site **)list_data)[siteCounter]->RegExpMatch(regex, 0L);
+                    ((_Site **)list_data)[siteCounter]->RegExpMatch(regex, 0UL);
               }
               if (matches.empty()) {
                 eligibleMarks[siteCounter] = false;
@@ -1134,6 +1135,7 @@ void _DataSet::ProcessPartition(_String const &input2, _SimpleList &target,
       if (regex) {
         _String::FlushRegExp(regex);
       }
+
     } else {
       input = input.KillSpaces();
       // now process the string

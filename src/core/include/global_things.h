@@ -47,8 +47,8 @@
 #include "avllistx.h"
 #include "defines.h"
 #include "hy_types.h"
-#include "regex.h"
 #include "trie.h"
+#include <regex>
 
 #include <stdio.h>
 
@@ -341,7 +341,7 @@ extern _Variable *hy_x_variable, *hy_n_variable;
 
 extern const hyFloat kMachineEpsilon;
 
-extern regex_t *hy_float_regex, *hy_replicate_constraint_regexp;
+extern std::regex *hy_float_regex, *hy_replicate_constraint_regexp;
 
 } // namespace hy_global
 
